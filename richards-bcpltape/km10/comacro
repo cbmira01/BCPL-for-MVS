@@ -1,0 +1,1349 @@
+JOB KM10 *  PRINT MACRO LIBRARY
+LIMSTORE 68K
+PRINTER 3K
+NOTIFY, ROUTE RECEPTION
+//D  EXEC  DELETE,
+//        NAME='KM10.COMACLIB'
+//U  EXEC PGM=IEBUPDTE,REGION=68K,PARM=NEW
+//SYSPRINT  DD  DUMMY
+//SYSUT2  DD  UNIT=SYSDA,
+//             DISP=(,KEEP),SPACE=(TRK,(10,1,3),RLSE),
+//             DSNAME=KM10.COMACLIB,
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=2480)
+//SYSIN  DD  *
+./       ADD LIST=ALL,NAME=APPLY
+         MACRO
+&NAME    APPLY     &GLOB,&FRAME=12
+         AIF   ('&FRAME' NE 'SET').TEST
+&NAME    L     B,4*&GLOB.(G)
+         AGO   .ENT
+.TEST    AIF   ('&FRAME' EQ '0').LOAD
+&NAME    LA    R15,&FRAME.(P) .         NEW STACK POINTER
+         AGO   .GLOB
+.LOAD    ANOP
+&NAME    LR    R15,P
+.GLOB    L     B,4*&GLOB.(G)
+.ENT     BALR  L,B
+         MEND
+./       ADD LIST=ALL,NAME=CHKLIST
+         MACRO
+&NAME    CHKLIST   &LIST,&TEST,&SET=NONE
+         LCLC  &S
+         LCLC  &L
+         AIF   (K'&LIST EQ 0).LISTSET
+&S       SETC  '&LIST'(1,1)
+&L       SETC  'LIST'
+&NAME    L     A3,DCB&S&L
+         AGO   .CHECK
+.LISTSET AIF   (K'&NAME EQ 0).CHECK
+&NAME    EQU   *
+.CHECK   AIF   ('&SET' EQ 'BOTH').LINK
+         AIF   ('&SET' EQ 'ENTRY').TEST
+         LA    R15,CHKLIST
+         AIF   ('&SET' EQ 'TEST').LINK
+.TEST    LA    A4,&TEST
+.LINK    BALR  R,R15
+         MEND
+./       ADD LIST=ALL,NAME=COBASE
+         MACRO
+         COBASE
+         SPACE 2
+*        THE FOLLOWING DSECT DESCRIBES THE FORMAT OF A COROUTINE BASE
+         SPACE 2
+COBASE   DSECT
+         SPACE
+COLINK   DS    AL4 .               COROUTINE CHAIN
+         SPACE
+COFATHER DS    F .                 ACTIVATOR OR 0 IF INACTIVE
+COPSAVE  DS    AL4 .               SAVE STACK POINTER
+         SPACE
+COLBASE  DS    F .                 LOCAL STACK BASE, WORD ADDRESS
+COLEND   DS    F .                 LOCAL STACK LIMIT, WORD ADDRESS
+         SPACE
+COSTKLIM DS    AL4 .               LOCAL STACK LIMIT, BYTE ADDRESS
+         SPACE
+FATHER   EQU   COFATHER-COBASE .   OFFSET OF FATHER FIELD
+         SPACE
+         DS    0D
+         SPACE
+CODATA   EQU   (*-COBASE)/4 .      NUMBER OF HEADER WORDS
+         SPACE 2
+*        NOW THE LOCAL COROUTINE STACK
+         SPACE
+COSTACK  EQU *
+         SPACE
+COENTRY  DS    AL4 .               MAIN ENTRY POINT
+COBSEPTR DS    AL4 .               BASE OF STACK
+COEXIT   DS    AL4 .               COROUTINE EXIT
+CORTNARG DS    F .                 ARGUMENT WORD
+         SPACE 2
+*        STACK AREA FOR INITIAL WAIT STATE
+         SPACE
+COHOLD   DS    AL4 .               FIRST WAIT POINT
+COLDPTR  DS    AL4 .               OLD STACK POINTER
+COSTART  DS    AL4 .               START-UP ROUTINE
+         SPACE
+COXTEND  DS    D .                 FORCE STACK INITIALISATION
+         SPACE
+COMIN    EQU   (*-COSTACK)/4 .     MINIMUM STACK SIZE, WORDS
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=DCBAREA
+         MACRO
+         DCBAREA
+         SPACE 2
+         DCBD  DSORG=PS,DEVD=DA
+         SPACE 4
+*        THE EXIT LIST CAN CONTAIN UP TO THREE ENTRIES
+         SPACE
+DCBKABND DS    F .                 ABEND EXIT ROUTINE
+DCBKEXIT DS    F .                 DCB EXIT DURING OPEN
+DCBKJFCB DS    F .                 ADDRESS FOR 'TYPE=J'
+         SPACE 3
+ENDDCB   EQU   *
+         SPACE 2
+*        FOR PRIVATE DCB TYPES THE FIRST EXIT LIST SLOT HOLDS THE
+*        ADDRESS OF THE APPROPRIATE 'CLOSE' ROUTINE
+         SPACE
+DCBCLOSE EQU   DCBKABND
+         SPACE 2
+         ORG   IHADCB
+         SPACE
+DCB      DS    CL(ENDDCB-IHADCB)
+         SPACE 4
+*        FIRST FIELD REQUIRED IN PSEUDO DCB'S IS DCBRECFM.   AN
+*        APPROPRIATE OFFSET IS ESTABLISHED VIA SYMBOL 'RECFM' .
+         SPACE
+RECFM    EQU   DCBRECFM-DCB
+         EJECT
+         SPACE
+*        AUXILIARY FIELDS ARE DEFINED TO RECORD CONTROL INFORMATION
+*        FOR BCPL.  THE FOLLOWING FIELDS ARE DEFINED FOR THE DUMMY
+*        'NULLDCB' , WHICH IS TACKED ON TO BOTH INPUT AND OUTPUT LISTS.
+         SPACE
+DCBNAME  DS    CL9 .               BCPL STRING DDNAME
+         SPACE
+DCBKFLG1 DS    XL1 .               USE DEFINED IN 'MANIFEST'
+         SPACE
+DCBMINCH DS    0H .                MINIMUM OUTPUT RECORD LENGTH
+DCBLSTCH DS    H .                 LAST CHARACTER READ ON INPUT
+         SPACE
+DCBNEXT  DS    F .                 NEXT DCB IN LIST
+NEXT     EQU   DCBNEXT-DCB .       OFFSET OF LINK FIELD
+         SPACE 2
+*        ADDITIONAL FIELDS RECORD CURRENT BUFFER, CHARACTER POSITION,
+*        AND THE LENGTH OF THE BUFFER.
+         SPACE
+DCBKSTOW DS    0CL12 .             PARAMETER LIST FOR STOW
+DCBKMEM  DS    CL8 .               MEMBER NAME OR ZEROS
+         SPACE
+DCBKBLK  DS    0F .     (BLOCK)    BLOCK NUMBER FOR BSD'S
+DCBKRES  DS    0F .     (INPUT)    CONSTANT ZERO FOR INPUT
+DCBKCCP  DS    F .      (OUTPUT)   CONTROL CHARACTER POSITION
+         SPACE
+DCBSDERR DS    0XL1 .   (BLOCK)    SAVE ERROR CODE AFTER SYNAD
+         SPACE
+DCBCBCH  DS    F .                 CURRENT CHARACTER POSITION
+DCBCBUF  DS    F .                 CURRENT BUFFER ADDRESS
+DCBCBSZE DS    F .                 CURRENT BUFFER LENGTH
+         SPACE
+DCBRECNO DS    H .                 CURRENT RECORD NUMBER
+DCBKCAT  DS    0XL1 .   (INPUT)    CONCATENATION LEVEL CONTROL
+DCBKBOPT DS    0XL1 .   (BLOCK)    WHETHER OPENED FOR UPDATE
+DCBKDCC  DS    XL1 .    (OUTPUT)   DEFAULT CONTROL CHARACTER
+DCBKFLG2 DS    XL1 .               ADDITIONAL FLAGS FOR UNIT
+         SPACE 2
+*        MAXIMUM SEGMENT LENGTH ASSOCIATED WITH RECORD INPUT.
+         SPACE
+DCBKSEG  DS    F .                 DEFAULT IS DCBLRECL
+DCBKDFLG DS    XL1 .               DEVICE DEPENDENT FLAGS
+DCBKFLG3 DS    XL1 .               SAVE BYTE FOR FLAGS
+         SPACE 2
+*        FOR NON-QSAM DATA SETS ADDITIONAL CONTROL FLAGS ARE USED
+         SPACE
+DCBKFLG4 DS    XL1 .               NON-QSAM CONTROL FLAGS
+         SPACE
+         DS    0D
+         SPACE
+DCBLEN   EQU   *-DCB
+         EJECT
+         SPACE 2
+*        THE FOLLOWING FIELDS RECORD DETAILS OF THE STORAGE AREA
+*        ALLOCATED FOR THE BUFFERS ASSOCIATED WITH THE DCB.
+         SPACE
+DCBKDLEN DS    F .                 LENGTH OF EACH BUFFER, BYTES
+DCBKBUFP DS    F .                 BCPL ADDRESS OF BUFFER AREA
+         SPACE 3
+*        EACH DCB HAS AN ASSOCIATED DECB AREA TO CONTROL TRANSFERS
+         SPACE
+DECB     DS    F .                 EVENT CONTROL BLOCK
+         SPACE
+DECBTYP  DS    XL1 .               FLAG FOR READ-WRITE LENGTH
+DECBTYP2 DS    XL1 .               FLAG FOR ACCESS TYPE
+         SPACE
+DECBYTES DS    H .                 BLOCK LENGTH FOR TRANSFER
+         SPACE
+DECBDCB  DS    F .                 DCB POINTER
+DECBXBUF DS    F .                 BUFFER FOR TRANSFER
+DECBIOB  DS    F .                 IOB POINTER
+         SPACE
+DECBKEY  DS    F .                 KEY ADDRESS FOR BDAM
+DECBBLK  DS    F .                 BLOCK ADDRESS FOR BDAM
+DECBNEXT DS    F .                 NEXT ADDRESS FOR BDAM
+         SPACE 2
+*        FOR BSAM/BPAM ONLY THE FIRST 20 BYTES ARE RELEVANT.
+         SPACE
+         ORG   DECBKEY
+         SPACE
+DECBENDB DS    F .                 POINTER PAST CURRENT BLOCK
+DECBLREC DS    F .                 NEXT LOGICAL RECORD SEGMENT
+         SPACE
+DECBYBUF DS    F .                 NON-TRANSFER BUFFER POINTER
+         SPACE 2
+         ORG
+         SPACE
+         DS    0D
+         SPACE
+DCBEND   EQU   *
+         MEND
+./       ADD LIST=ALL,NAME=DEFAULTS
+         MACRO
+         DEFAULTS
+         SPACE 2
+*        THIS MACRO DEFINES THE STRUCTURE OF THE DEVICE DEFAULT TABLES
+         SPACE
+DFLTBL   DSECT
+         SPACE
+DFLTBS   DS    H .                 DEFAULT BLOCK SIZE
+DFLTLR   DS    H .                 LOGICAL RECORD LENGTH
+         SPACE
+DFLTRF   DS    XL1 .               DEFAULT RECORD FORMAT
+DFLTBFN  DS    XL1 .               NUMBER OF BUFFERS
+         SPACE
+DFLTDFLG DS    XL1 .               DEVICE TYPE CHARACTERISTICS
+DFLTMSK  DS    XL1 .               MASK OUT UNWANTED FLAGS
+         SPACE
+DFLTCCA  DS    XL1 .               DEFAULT ANSI CONTROL
+DFLTCCM  DS    XL1 .               DEFAULT MACHINE CONTROL
+         MEND
+./       ADD LIST=ALL,NAME=ERRCTL
+         MACRO
+         ERRCTL    &N,&FLAGS
+         AIF   ('&FLAGS' EQ '').NOFLAG
+         DC    AL2((&FLAGS)*256+(FMT&N-TXTTBL))
+         AGO   .SPACE
+.NOFLAG  DC    AL2(FMT&N-TXTTBL)
+.SPACE   SPACE
+         MEND
+./       ADD LIST=ALL,NAME=EXITSAVE
+         MACRO
+         EXITSAVE
+         SPACE 2
+*        A  24-WORD  SAVE AREA IS ESTABLISHED FOR USE BY EXIT ROUTINES.
+         SPACE
+XAREA    DSECT
+         SPACE
+         DS    18F
+         SPACE 2
+X14TO1   DS    4F .                SAVE EXIT ENVIRONMENT HERE
+         SPACE
+XDEVT    DS    2F .                RETURN AREA FOR 'DEVTYPE'
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=FREEAREA
+         MACRO
+         FREEAREA
+         SPACE 2
+*        THIS MACRO PROVIDES SYMBOLIC NAMES FOR THE CONTROL FIELDS
+*        ASSOCIATED WITH THE ROUTINES 'GETVEC' AND 'FREEVEC' .
+         SPACE
+BLOCK    DSECT
+         SPACE
+BLKHDR   DS    F .                 TITLE WORD OF BLOCK
+         SPACE
+USERBLK  EQU   * .                 FIRST WORD ALLOCATED
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=GETGLOB
+         MACRO
+&NAME    GETGLOB   &NUM,&R
+&NAME    L     &R,4*&NUM.(G)
+         MEND
+./       ADD LIST=ALL,NAME=GETNAME
+         MACRO
+&NAME    GETNAME   &R
+         AIF   ('&R' EQ 'A1').LINK
+&NAME    LR    A1,&R .             TRANSFER ARGUMENT
+         BAL   R,GETNAME
+         MEXIT
+.LINK    ANOP
+&NAME    BAL   R,GETNAME .         LINK TO ROUTINE
+         MEND
+./       ADD LIST=ALL,NAME=GLOBDEF
+         MACRO
+&NAME    GLOBDEF   &NUM,&LABEL,&ALABEL=
+&NAME    DC    A(4*&NUM)
+&ALABEL  DC    A(&LABEL)
+         SPACE
+         MEND
+./       ADD LIST=ALL,NAME=INITSAVE
+         MACRO
+         INITSAVE
+         SPACE 2
+ISA      DSECT
+         SPACE 2
+*        START OFF WITH THE STANDARD SAVE AREA.
+         SPACE
+         DS    18F
+         SPACE 3
+*        AREA RESERVED FOR THE 'GETMAIN' THAT OBTAINS AND ALLOCATES
+*        SPACE FOR THE GLOBAL VECTOR AND THE STACK.
+         SPACE
+STKMAIN  DS    2F .                ADDRESS AND LENGTH OF SEGMENT
+STKPARS  DS    CL10 .              SPACE FOR EXECUTE LIST
+         SPACE 3
+*        THESE FIELDS RECORD PARAMETER STRING OPTIONS
+         SPACE
+         ORG   STKPARS
+         SPACE
+OPTIONS  DS    0CL16 .             OPTION CONTROL FIELDS
+         SPACE
+PNUM     DS    F .                 REQUEST STACK SIZE IN BYTES
+HNUM     DS    0F .                NUMBER OF BYTES IN HEAP
+         SPACE
+LNUM     DS    H .                 O.S. SPACE FOR LOADS ETC, KBYTES
+KNUM     DS    H .                 SPACE FOR (HEAP + O.S.), KBYTES
+DFLG     DS    XL2 .               STAE/SPIE OPTION, ETC
+TNUM     DS    H .                 TIDY UP TIME IN CENTISECS
+INUM     DS    H .                 EXTENT OF STACK CLEARANCE, KBYTES
+GNUM     DS    H .                 ALLOCATION UNIT FOR GLOBAL VECTOR
+         SPACE 2
+         ORG
+         SPACE
+         DS    0D
+         SPACE
+ISALEN   EQU   *-ISA
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=IOHEADER
+         MACRO
+&NAME    IOHEADER  &ARGS=0         NAME AND NUMBER OF ARGUMENTS
+         SPACE 2
+         DS    0F
+         SPACE
+*        I/O ROUTINE ENTRY POINT.  INITIALLY THE PREVIOUS STACK VALUE
+*        IS USED TO SAVE LINKAGE OVERHEADS.
+         SPACE
+         DC    X'07' .             LENGTH OF STRING
+         DC    CL7'&NAME' .        PRINT NAME OF ROUTINE
+         SPACE
+         AIF   (&ARGS GE 4).PLUS4
+         AIF   (&ARGS EQ 0).ZERO
+&NAME    STM   B,A&ARGS,0(R15) .       STORE LINK DATA AND ARGUMENTS
+         AGO   .SPACE
+.PLUS4   ANOP
+&NAME    STM   B,A4,0(R15) .       STORE LINK DATA AND ARGUMENTS
+         AGO   .SPACE
+.ZERO    ANOP
+&NAME    STM   B,L,0(R15) .        STORE LINK DATA
+.SPACE   SPACE
+         USING &NAME,B
+         SPACE
+         MEND
+./       ADD LIST=ALL,NAME=IOROUTIN
+         MACRO
+&NAME    IOROUTIN  &ARGS=0         NAME AND NUMBER OF ARGUMENTS
+         SPACE 2
+         DS    0F
+         SPACE
+*        I/O ROUTINE ENTRY POINT.  STACK POINTER IS RESET FROM  R15 .
+         SPACE
+         DC    X'07' .             LENGTH OF STRING
+         DC    CL7'&NAME' .        PRINT NAME OF ROUTINE
+         SPACE
+         AIF   (&ARGS GE 4).PLUS4
+         AIF   (&ARGS EQ 0).ZERO
+&NAME    STM   B,A&ARGS,0(R15) .       STORE LINK DATA AND ARGUMENTS
+         AGO   .LOAD
+.PLUS4   ANOP
+&NAME    STM   B,A4,0(R15) .       STORE LINK DATA AND ARGUMENTS
+         AGO   .LOAD
+.ZERO    ANOP
+&NAME    STM   B,L,0(R15) .        STORE LINK DATA
+.LOAD    LR    P,R15 .             SET NEW STACK POINTER
+         SPACE
+         USING &NAME,B
+         SPACE
+         MEND
+./       ADD LIST=ALL,NAME=LAPPLY
+         MACRO
+&NAME    LAPPLY    &ENTRY,&FRAME=12,&LINK=
+         AIF   (K'&ENTRY NE 0).SETB
+         AIF   (K'&NAME EQ 0).SETP
+&NAME    EQU   *
+         AGO   .SETP
+.SETB    ANOP
+&NAME    LA    B,&ENTRY
+.SETP    AIF   ('&FRAME' EQ 'SET').ENT
+         AIF   (&FRAME EQ 0).LOAD
+         LA    R15,&FRAME.(P) .         NEW STACK POINTER
+         AGO   .ENT
+.LOAD    LR    R15,P .             TRANSFER STACK POINTER
+.ENT     AIF   ('&LINK' EQ 'SET').NOLINK
+         BALR  L,B
+         MEXIT
+.NOLINK  BR    B .                 LINK ALREADY SET
+         MEND
+./       ADD LIST=ALL,NAME=LOADAREA
+         MACRO
+         LOADAREA
+         SPACE 2
+*        THIS MACRO DEFINES THE FORMAT OF A LOAD-LIST ENTRY.
+*        THERE ARE TWO DISTINCT USES OF THE SPACE  -
+*
+*              1.      AS A BLDL LIST TO DESCRIBE THE MODULE.
+*              2.      AS A LOAD LIST NODE AFTER LOADING.
+*
+*        IF A MODULE IS UNLOADED BY  'UNLOADMODULE(INFOVEC)'
+*        THE BLDL LIST IS RETAINED AND MAY BE REUSED.
+         SPACE 2
+LOADNODE DSECT
+         SPACE 2
+*        AFTER THE BLDL LIST HAS BEEN CONSTRUCTED, 'LOADMODULE'
+*        READS THE MODULE AND COMPLETES THE LOAD-LIST ENTRY.
+         SPACE
+LOADCHK  DS    0F .                INFORMATION WORD
+         SPACE
+LOADLINK DS    A .                 DESCRIPTOR NODE CHAIN FIELD
+         SPACE
+LOADNTRY DS    A .                 MODULE ENTRY ADDRESS
+LOADLIM  DS    F .                 HIGH ADDRESS FOR MODULE
+         SPACE
+LOADRSLT DS    F .                 RESULT FROM LOADING MODULE
+LOADUSE  DS    F .                  USE COUNT FOR LOAD/DELETE
+         SPACE
+DLTENAME DS    CL9 .               BCPL STRING NAME OF MODULE
+LOADFLGS DS    XL1 .                 FLAG LOAD MODULE TYPE
+         SPACE
+         DS    0D .                END OF LIST NODE FORMAT
+         SPACE 3
+*        ATTRIBUTES DEFINED IN THE FLAG BYTE 'LOADFLGS'
+         SPACE
+BCPLMOD  EQU   X'80' .             GLOBAL PROCESSING REQUIRED
+FTNMOD   EQU   X'40' .             RESULT IS TO BE ENTRY POINT
+OSMOD    EQU   X'20' .             OBTAINED VIA AN O.S. LOAD
+SYSLOAD  EQU   X'10' .             INITIATED BY LOAD/LOADFORT
+INCORE   EQU   X'08' .             CODE FOR MODULE IS LOADED
+         EJECT
+         SPACE 2
+*        THE BLDL LIST ENTRY IS CONSTRUCTED BY 'CHECKMODULE', AND
+*        IS LEFT INTACT FOR SUBSEQUENT REREADING OF THE CODE.
+         SPACE
+LOADDCB  DS    0F .                POINTER TO THE LOADER DCB
+         SPACE
+BLDLGEN  DS    F .                 ONE ENTRY, LENGTH 58 BYTES
+         SPACE
+LOADNAME DS    CL8 .               MODULE NAME
+         DS    CL3
+LOADCAT  DS    XL1 .               CONCATENATION LEVEL
+         DS    CL2
+TEXTTTR  DS    CL3 .               TTR OF FIRST TEXT RECORD
+         DS    CL5
+BLDLFLG1 DS    XL1 .               MODULE ATTRIBUTE
+BLDLFLG2 DS    XL1 .                  FLAG BYTES
+         SPACE
+LOADCORE DS    XL3 .               MAIN STORAGE REQUIRED
+TEXTLEN  DS    0XL2 .              LENGTH OF FIRST TEXT RECORD
+         SPACE
+MDLENTRY DS    A .                 ENTRY POINT OFFSET
+TEXTBASE DS    XL3 .               ORIGIN FOR FIRST TEXT RECORD
+         SPACE
+         ORG   LOADNAME+58
+         SPACE
+         DS    0D .                ALIGN END OF LOAD NODE AREA
+         SPACE 3
+LOADSIZE EQU   *-LOADNODE .       LENGTH OF LOAD NODE IN BYTES
+         SPACE
+BLDLLEN  EQU   LOADSIZE/4 .       AREA REQUIRED FOR GETVEC, WORDS
+         SPACE 3
+*        ATTRIBUTES DEFINED IN THE FLAG BYTE 'BLDLFLG1'
+         SPACE
+OVERLAY  EQU   X'20' .             MODULE IN OVERLAY FORMAT
+SCATTER  EQU   X'04' .             SCATTER LOADING FORMAT
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=LOGAREA
+         MACRO
+         LOGAREA
+         SPACE 2
+*        THIS DUMMY SECTION DESCRIBES THE FORMAT OF THE DATA AREA
+*        OBTAINED FOR THE PSEUDO OUTPUT STREAM TO THE PROGRAM LOG
+         SPACE
+LOGAREA  DSECT
+         SPACE
+LOGLINE  DS    XL1 .               STRING LENGTH
+LOGBUF   DS    CL120 .             MAXIMUM LENGTH
+         SPACE
+         DS    0F
+         SPACE 2
+*        FIRST RELEVANT DCB FIELD IS  'DCBRECFM'
+         SPACE
+LOGDCB   EQU   *-X'24' .           EFFECTIVE DCB BASE
+         SPACE
+         ORG   LOGDCB+X'60'
+         SPACE 2
+*        THE FIRST EXIT SLOT HOLDS THE ADDRESS OF THE CLOSE ROUTINE
+         SPACE
+         DS    F
+LOGPTR   DC    A(LOGAREA)
+         DS    F
+         SPACE 2
+*        REMAINING FIELDS ARE USED AS IN A STANDARD DCB
+         SPACE
+         ORG   LOGDCB+DCBLEN
+         SPACE
+LOGEND   DS    0D
+         SPACE
+LOGLEN   EQU   LOGEND-LOGAREA
+         MEND
+./       ADD LIST=ALL,NAME=LROUTINE
+         MACRO
+&NAME    LROUTINE  &ARGS=0,&TYPE=
+         SPACE
+         AIF   (K'&TYPE EQ 0).RNAME
+         CNOP  2,4
+         AGO   .ENTRY
+.RNAME   DS    0F
+         SPACE
+         DC    X'07' .             LENGTH OF STRING
+         DC    CL7'&NAME' .        PRINT NAME OF ROUTINE
+.ENTRY   SPACE
+&NAME    STM   B,A&ARGS,0(R15) .       STORE LINK DATA AND ARGUMENTS
+         LR    P,R15 .             SET NEW STACK POINTER
+         SPACE
+         USING &NAME,B
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=MANIFEST
+         MACRO
+         MANIFEST
+         SPACE
+*        THE FOLLOWING SYMBOLS ARE DEFINED TO AID READABILITY.
+*
+*        CHARACTER CONSTANTS USED AS RECORD TERMINATORS.
+         SPACE
+NL       EQU   X'15' .             NEWLINE, STANDARD TERMINATOR
+FF       EQU   X'0C' .             FORM-FEED (NEWPAGE)
+CR       EQU   X'0D' .             CARRIAGE RETURN
+LF       EQU   X'25' .             LINE FEED
+ESC      EQU   X'27' .             ESCAPE
+         SPACE 2
+*        BITS DEFINED IN THE FLAG BYTES OF 'DCBMACRF' IN THE DCB.
+         SPACE
+QSAM     EQU   X'40' .             GET/PUT
+BSAM     EQU   X'20' .             READ/WRITE
+         SPACE 2
+*        FLAG BITS DEFINED IN THE CONTROL BYTE  'DCBKFLG1'  ASSOCIATED
+*        WITH EACH DCB.  THESE FLAGS CANNOT BE RESET BY THE USER.
+         SPACE
+BUFSW    EQU   X'80' .             BUFFER SET CURRENTLY
+RECSW    EQU   X'40' .             RECORD HAS BEEN TRANSPUT
+EOFSW    EQU   X'20' .             END-OF-FILE ON INPUT
+ACCSW    EQU   X'10' .  (INPUT)    TRIM DEFAULT IS UNSET
+CRSW     EQU   X'10' .  (OUTPUT)   FOR OUTPUT STREAMS RECORD C.R.
+CRBLK    EQU   X'10' .  (BLOCK)    BSAM 'CREATE BDAM' MODE
+PVTESW   EQU   X'08' .             BCPL PSEUDO STREAM
+DEVTSW   EQU   X'04' .  (OPEN)     'DEVTYPE' ALREADY ISSUED
+NL1SW    EQU   X'04' .             ONE NEWLINE PENDING
+NL2SW    EQU   X'02' .             TWO NEWLINES PENDING
+RRSW     EQU   X'02' .  (INPUT)    REREAD LAST CHARACTER
+UPDATE   EQU   X'02' .  (BLOCK)    WRITE ACCESS ALLOWED
+ERRSW    EQU   X'01' .             FLAGS ERROR DCB
+         SPACE 2
+*        FLAG BITS DEFINED IN THE CONTROL BYTE  'DCBKFLG2'  ASSOCIATED
+*        WITH EACH DCB.  SOME OF THESE FLAGS CAN BE RESET BY THE USER.
+         SPACE
+SPANSW   EQU   X'80' .             VARIABLE SPANNED RECORDS
+ANSISW   EQU   X'40' .             ASA CARRIAGE CONTROL
+TRIMSW   EQU   X'20' .             TRUNCATION SUSPENDED FOR STREAM
+PRTSW    EQU   X'10' .             PRINTER WITH C.C.
+CCSW     EQU   X'08' .             OUTPUT CONTROL CHARACTERS REQUIRED
+*                                  'INCONTROL(FALSE)' HAS BEEN ISSUED
+RDBIN    EQU   X'04' .             BINARY INPUT STREAM
+         SPACE
+*        BITS DEFINED IN SEGMENT DESCRIPTOR WORD ARE FOR EACH RECORD
+*        READ COPIED TO THE FLAG BYTE  'DCBKFLG2' .
+         SPACE
+TRAIL    EQU   X'02' .             SEGMENT IS NOT HEADER
+HEAD     EQU   X'01' .             SEGMENT IS NOT TRAILER
+         EJECT
+         SPACE
+*        FLAG BITS DEFINED IN THE CONTROL BYTE  'DCBKFLG4'  THAT
+*        HANDLES BSAM-BPAM-BDAM INPUT/OUTPUT.
+         SPACE
+BBLKSW   EQU   X'80' .             BUFFER BLOCK EXISTS
+XFRSW    EQU   X'40' .             TRANSFER IN PROGRESS
+LRECSW   EQU   X'20' .             LOGICAL RECORD EXISTS
+BPAMSW   EQU   X'10' .             PARTITIONED DATA SET
+SFAIL    EQU   X'08' .             FAILURE IN STOW
+CHKSW    EQU   X'04' .  (OUTPUT)   CHECK ON WRITE OPERATION, BSAM
+XFAIL    EQU   X'04' .  (BLOCK)    TRANSFER FAILURE, BDAM
+BFAIL    EQU   X'02' .             NO BUFFER ALLOCATED
+OFAIL    EQU   X'01' .             FAILURE DURING OPEN
+         SPACE 2
+*        SWITCHES DEFINED IN THE U.S.A. FLAG BYTE  'USABITS' .
+         SPACE
+STIMER   EQU   X'80' .             'STIMER' PREVIOUSLY ISSUED
+TIMESW   EQU   X'40' .             'TIME()' FUNCTION INOPERATIVE
+STCKSW   EQU   X'20' .             STACK POINTER HAS BEEN RESET
+STAESW   EQU   X'10' .             OUTSTANDING STAE EXIT
+ONLINE   EQU   X'08' .             ONLINE - JOB RUNNING UNDER TSO
+BREAK    EQU   X'04' .             TERMINAL 'BREAK' TO PROCESS
+STAXSW   EQU   X'02' .             LOCAL STAX EXIT ESTABLISHED
+MVTSW    EQU   X'01' .             RUNNING UNDER M.V.T.
+         SPACE 2
+*        SWITCHES DEFINED IN THE U.S.A. FLAG BYTE  'USAFLAGS' .
+         SPACE
+STOPPING EQU   X'80' .             'STOP()' PROCESSING STARTED
+         SPACE 2
+*        BITS DEFINED IN THE FLAG BYTE  'DCBRECFM'  IN THE DCB.
+         SPACE
+FBIT     EQU   X'80' .             FIXED FORMAT
+VBIT     EQU   X'40' .             VARIABLE FORMAT
+UBITS    EQU   FBIT+VBIT .         UNDEFINED RECORDS
+BBIT     EQU   X'10' .             BLOCKED RECORDS
+SBIT     EQU   X'08' .             SPANNED (OR STANDARD)
+CCA      EQU   X'04' .             ANSI CONTROL
+CCM      EQU   X'02' .             MACHINE CONTROL
+CCBITS   EQU   CCA+CCM .           CONTROL CHARACTERS ARE PRESENT
+         SPACE 2
+*        BITS DEFINED IN THE DEVICE FLAG BYTE  'DCBKDFLG'  IN THE DCB.
+         SPACE
+WRBIN    EQU   X'40' .             BINARY OUTPUT STREAM
+TAPE     EQU   X'20' .             MAGNETIC TAPE
+PRINT    EQU   X'10' .             LINE PRINTER
+PUNCH    EQU   X'08' .             CARD READER OR CARD PUNCH
+TSO      EQU   X'04' .             TSO - QSAM  ONLINE DEVICE
+DUMMY    EQU   X'02' .             DUMMY DATA SET
+WRAP     EQU   X'01' .             IF BIT SET PERMIT WRAPROUND
+         EJECT
+         SPACE
+*        THE FOLLOWING SYMBOL AIDS READABILITY OF INSTRUCTIONS THAT
+*        UNSET SWITCHES.
+         SPACE
+NOT      EQU   X'FF' .             COMPLETE MASK FOR SUBTRACTION
+         SPACE 2
+*        SYMBOLS DEFINING REGISTER CODE OPTIONS FOR TPUT/TGET
+         SPACE
+TPUT     EQU   0
+TGET     EQU   X'80'
+WAIT     EQU   0
+NOWAIT   EQU   X'10'
+EDIT     EQU   0
+ASIS     EQU   X'01'
+         SPACE 2
+*        SYMBOLIC NAMES ARE GIVEN TO MAKE DIRECT SVC CALLS READABLE.
+         SPACE
+FREEMAIN EQU   10
+SPIE     EQU   14
+OPEN     EQU   19
+CLOSE    EQU   20
+TPUTTGET EQU   93
+         SPACE 2
+*        SYMBOLIC NAMES ARE DEFINED FOR REFERENCE TO THE BCPL GLOBAL
+*        ROUTINES THAT ARE APPLIED DURING EXECUTION OF LIBRARY
+*        FUNCTIONS.  IN THE CASE OF ROUTINES THAT FORM PART OF THE
+*        LIBRARY, THESE NAMES WILL OF COURSE BE DIFFERENT FROM THE
+*        ENTRY POINT NAMES.
+         SPACE
+START    EQU   1 .                 START IS GLOBAL 1
+ABORT    EQU   3 .                 FATAL END
+ERRMSGE  EQU   5 .                 ERROR MESSAGE WRITER
+PURGEL   EQU   7 .                 PURGE THE LOAD LIST
+DELETE   EQU   9 .                 ROUTINE TO 'UNLOAD'
+SLCTIN   EQU   11 .                SELECTINPUT
+SLCTOUT  EQU   12 .                SELECTOUTPUT
+WRITEC   EQU   14 .                WRCH
+WRSEG    EQU   24 .                WRITESEG
+WTOLOG   EQU   37 .                WRITETOLOG
+FINDIN   EQU   42 .                FINDINPUT
+FINDOUT  EQU   41 .                FINDOUTPUT
+FINDLIB  EQU   43 .                FINDLIBRARY
+INPUTM   EQU   44 .                INPUTMEMBER
+PARMS    EQU   45 .                PARAMETER STRING
+OUTPUTM  EQU   49 .                OUTPUTMEMBER
+WRITEF   EQU   76 .                WRITEF
+RESULT2  EQU   91 .                REMAINDER FOLLOWING MULDIV, ETC.
+CODELETE EQU   102 .               COROUTINE DELETION ROUTINE
+         MEND
+./       ADD LIST=ALL,NAME=MODULE
+         MACRO
+&NAME    MODULE
+         GBLC  &ENDLBL
+         LCLA  &COUNT
+&ENDLBL  SETC  'END&NAME'
+&COUNT   SETA  K'&NAME
+         AIF   (&COUNT LT 9).COUNTOK
+&COUNT   SETA  8
+.COUNTOK SETPLAN
+         SPACE 2
+&NAME    CSECT
+         SPACE 4
+*        THE ENTRY SEQUENCE FOR THIS ROUTINE IS STANDARD, TO COVER THE
+*        CASE IN WHICH IT IS LOADED AT THE HEAD OF A BCPL PROGRAM.
+         SPACE
+         STM   14,12,12(13) .      SAVE REGISTERS ON ENTRY
+         L     B,12(,R15) .        ADDRESS OF BCPLMAIN
+         BR    B .                 STANDARD LINKAGE TO INITIAL SECTION
+         SPACE
+         DC    AL2(&ENDLBL-&NAME) . OFFSET OF END OF ROUTINE
+         DC    V(BCPLMAIN) .         ADDRESS CONSTANT FOR LINKAGE
+         SPACE
+         DC    X'0B' .             LENGTH OF STRING
+         DC    C'  *UNDATED*' .     NOT COMPILED !
+         SPACE
+         DC    X'&COUNT'
+&COUNT   SETA  4*(&COUNT/4)+3
+         DC    CL&COUNT.'&NAME' .       ROUTINE NAME
+         SPACE 3
+*        THE FIRST 16 BYTES OF ALL 'BCPL' ROUTINES ARE IDENTICAL TO
+*        THE ABOVE.  THUS THERE IS AN IMMEDIATE BRANCH TO 'BCPLMAIN',
+*        WITH  R15  CONTAINING THE ORIGINAL ENTRY POINT OF THE MODULE.
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=MODULEND
+         MACRO
+         MODULEND
+         GBLC  &ENDLBL
+         SPACE
+&ENDLBL  DS    0D
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=MOVELONG
+         MACRO
+&NAME    MOVELONG
+         GBLA  &CPU
+         AIF   (&CPU EQ 360).MOVE
+&NAME    MVCL  A2,R2 .             SUPER 370 INSTRUCTION
+         MEXIT
+.MOVE    ANOP
+&NAME    BAL   L,MOVELONG .        CALL 'MOVE' SUBROUTINE
+         MEND
+./       ADD LIST=ALL,NAME=PARMAREA
+         MACRO
+         PARMAREA
+         SPACE 2
+*        THIS DUMMY SECTION DESCRIBES THE FORMAT OF THE DATA AREA
+*        OBTAINED FOR THE PSEUDO INPUT STREAM FROM THE PARM STRING
+         SPACE
+PARMAREA DSECT
+         SPACE 2
+*        FIRST RELEVANT DCB FIELD IS  'DCBRECFM'
+         SPACE
+PARMDCB  EQU   *-RECFM .           EFFECTIVE DCB BASE
+         SPACE
+         ORG   PARMAREA+(X'60'-RECFM)
+         SPACE 2
+*        THE FIRST EXIT SLOT HOLDS THE ADDRESS OF THE CLOSE ROUTINE
+         SPACE
+         DS    F
+         DS    F
+         DS    F
+         SPACE 2
+*        REMAINING FIELDS ARE USED AS IN A STANDARD DCB
+         SPACE
+         ORG   PARMAREA+(DCBLEN-RECFM)
+         SPACE
+PARMEND  DS    0D
+         SPACE
+PARMLEN  EQU   PARMEND-PARMAREA
+         MEND
+./       ADD LIST=ALL,NAME=PARMFLD
+         MACRO
+         PARMFLD
+         SPACE 2
+PFIELD   DSECT
+         SPACE
+         DS    XL1
+         SPACE
+PSTRING  EQU   *
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=RESETP
+         MACRO
+&NAME    RESETP    &ARGS=0
+&NAME    LR    R15,P .             SET NEW STACK POINTER FROM CURRENT
+         LM    P,A&ARGS,OLDP .         OLD STACK + LINK ( + ARGUMENTS)
+         MEND
+./       ADD LIST=ALL,NAME=REXIT
+         MACRO
+&NAME    REXIT     &COND=15,&BASE=
+         AIF   ('&BASE' NE 'SET').RTN
+&NAME    BCR   &COND,L .              RETURN ON LINK ADDRESS
+         MEXIT
+.RTN     ANOP
+&NAME    L     B,0(P) .            PREVIOUS PROCEDURE BASE
+         BCR   &COND,L .               RETURN ON LINK ADDRESS
+         MEND
+./       ADD LIST=ALL,NAME=RLDAREA
+         MACRO
+         RLDAREA
+         SPACE 2
+*        THIS DSECT ESTABLISHES THE FORMAT OF RLD/CONTROL RECORDS
+         SPACE
+RLDPTR   DSECT
+         SPACE
+RLDCODE  DS    XL1 .               RECORD IDENTIFICATION BYTE
+         DS    XL3
+         SPACE
+         DS    H .                 BYTES OF CONTROL INFORMATION
+RLDBYTES DS    H .                 BYTES OF RLD INFORMATION
+         SPACE
+RLDCCW   DS    0D .                CCW FOR TEXT RECORD
+         SPACE
+RLDBASE  DS    A .                 OFFSET OF TEXT RECORD
+         DS    XL2
+RLDLEN   DS    H .                 LENGTH OF TEXT RECORD
+         SPACE 2
+RLDDATA  DS    0D .                BASE OF RLD DATA, IF ANY
+         SPACE 3
+*        USE OF BITS IN IDENTIFIER 'RLDCODE'
+         SPACE
+EOM      EQU   X'0C' .             LAST RECORD OF MODULE
+RLD      EQU   X'02' .             FLAGS AN RLD RECORD
+CTL      EQU   X'01' .             TEXT RECORD FOLLOWS
+         SPACE 3
+*        BITS USED IN THE FLAG BYTE WITHIN RLD DATA FIELDS
+         SPACE
+RLDSKIP  EQU   X'80' .             WORD TO BE IGNORED
+RLD4BYTE EQU   X'0C' .             BOTH ON, 4-BYTE ADCON
+RLDSUB   EQU   X'02' .             SUBTRACT RELOCATION FACTOR
+OMITRP   EQU   X'01' .             NEXT (R,P) PAIR OMITTED
+         MEND
+./       ADD LIST=ALL,NAME=RRTURN
+         MACRO
+&NAME    RRTURN    &COND=15
+&NAME    BCR   &COND,S
+         MEND
+./       ADD LIST=ALL,NAME=SETDFLT
+         MACRO
+&NAME    SETDFLT   &RECFM=,&LRECL=0,&BLKSIZE=0,&BUFNO=0,&CCA=,         X
+               &CCM=0,&MASK=0,&DEVT=0
+         LCLA  &COUNT
+         LCLA  &INDEX
+         LCLA  &RF
+         LCLC  &CHAR
+&COUNT   SETA  K'&RECFM
+.LOOP    AIF   (&INDEX EQ &COUNT).SET
+&INDEX   SETA  &INDEX+1
+&CHAR    SETC  '&RECFM'(&INDEX,1)
+         AIF   ('&CHAR' NE 'F' AND '&CHAR' NE 'U').NOFBIT
+&RF      SETA  &RF+128
+.NOFBIT  AIF   ('&CHAR' NE 'V' AND '&CHAR' NE 'U').NOVBIT
+&RF      SETA  &RF+64
+.NOVBIT  AIF   ('&CHAR' NE 'B').NOBBIT
+&RF      SETA  &RF+16
+.NOBBIT  AIF   ('&CHAR' NE 'S').NOSBIT
+&RF      SETA  &RF+8
+.NOSBIT  AIF   ('&CHAR' NE 'A').NOABIT
+&RF      SETA  &RF+4
+.NOABIT  AIF   ('&CHAR' NE 'M').LOOP
+&RF      SETA  &RF+2
+         AGO   .LOOP
+.SET     SPACE
+&NAME    DC    AL2(&BLKSIZE)
+         AIF   ('&LRECL' EQ 'X').X
+         DC    AL2(&LRECL)
+         AGO   .NOTX
+.X       DC    AL2(32768)
+.NOTX    SPACE
+         DC    AL1(&RF)
+         DC    AL1(&BUFNO)
+         SPACE
+         DC    AL1(&DEVT)
+         AIF   ('&MASK' NE '0').FLAGS
+         DC    X'FF'
+         AGO   .CCTEST
+.FLAGS   DC    AL1(NOT-(&MASK))
+.CCTEST  AIF   ('&CCM' EQ '0').EXIT
+         SPACE
+         AIF   (K'&CCA EQ 0).BLANK
+         DC    CL1'&CCA'
+         AGO   .CCM
+.BLANK   DC    C' '
+.CCM     DC    XL1'&CCM'
+.EXIT    SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=SETGLOB
+         MACRO
+&NAME    SETGLOB   &NUM,&R
+&NAME    ST    &R,4*&NUM.(G)
+         MEND
+./       ADD LIST=ALL,NAME=SETP
+         MACRO
+&NAME    SETP
+&NAME    LR    P,R15 .             SET STANDARD BCPL LINKAGE
+         MEND
+./       ADD LIST=ALL,NAME=SETPLAN
+         MACRO
+         SETPLAN
+         GBLC  &PLAN
+         GBLA  &CGOPT
+         GBLA  &OVLAY
+         GBLC  &NSTACK
+&PLAN    SETC  'BCPL'
+&CGOPT   SETA  1
+&OVLAY   SETA  0
+&NSTACK  SETC  'R15'
+         MEND
+./       ADD LIST=ALL,NAME=SHIFTL
+         MACRO
+&NAME    SHIFTL    &R
+         GBLA  &CGOPT
+         AIF   (&CGOPT NE 1).TESTN
+&NAME    SLL   &R,2
+         MEXIT
+.TESTN   AIF   ('&NAME' EQ '').OUT
+&NAME    EQU   *
+.OUT     MEND
+./       ADD LIST=ALL,NAME=SHIFTR
+         MACRO
+&NAME    SHIFTR    &R
+         GBLA  &CGOPT
+         AIF   (&CGOPT NE 1).TESTN
+&NAME    SRL   &R,2
+         MEXIT
+.TESTN   AIF   ('&NAME' EQ '').OUT
+&NAME    EQU   *
+.OUT     MEND
+./       ADD LIST=ALL,NAME=SPIEXIT
+         MACRO
+&NAME    SPIEXIT   &EXIT
+         GBLA  &CPU
+&NAME    LA    R2,&EXIT .          EXIT ADDRESS REQUIRED
+         AIF   (&CPU EQ 370).SPI370
+         IC    R0,8(R1) .          SAVE PROGRAM MASK
+         ST    R2,8(R1) .          SET RESUME PSW
+         STC   R0,8(R1) .          RESTORE PROGRAM MASK
+         MEXIT
+.SPI370  STCM  R2,B'0111',9(R1) .     SET RESUME PSW
+         MEND
+./       ADD LIST=ALL,NAME=STKFRAME
+         MACRO
+         STKFRAME
+         SPACE 2
+*        THIS DSECT ESTABLISHES SYMBOLIC NAMES FOR FIELDS ADDRESSED
+*        RELATIVE TO THE CURRENT STACK POINTER.
+         SPACE
+STACK    DSECT
+         SPACE
+BASE     DS    F .                 CURRENT PROCEDURE BASE
+         SPACE
+OLDP     DS    F .                 PREVIOUS STACK POINTER
+OLDL     DS    F .                 LINK ADDRESS ON ENTRY
+         SPACE
+ARG1     DS    F .                 ARGUMENTS ON ENTRY
+ARG2     DS    F
+ARG3     DS    F
+ARG4     DS    F
+         SPACE 2
+*        THE NEXT FIELDS STORE DATA ACROSS CALLS TO THE ERROR WRITER.
+         SPACE
+ERRLNK   DS    F .                 LINK ON ENTRY
+RESULT   DS    F .                 RESULT ON EXIT
+         SPACE
+SAVE2    DS    F .                 SAVE AREA FOR ARGUMENT REGISTERS
+SAVE3    DS    F
+SAVE4    DS    F
+         SPACE
+NEWPTR   EQU   * .                 NEW STACK POINTER
+         SPACE 3
+         MEND
+./       ADD LIST=ALL,NAME=STRGVAL
+         MACRO
+&NAME    STRGVAL   &R
+         GBLA  &CGOPT
+         AIF   (&CGOPT NE 1).TEST
+&NAME    SRL   &R,2
+         MEXIT
+.TEST    AIF   ('&NAME' EQ '').END
+&NAME    EQU   *
+.END     MEND
+./       ADD LIST=ALL,NAME=STRING
+         MACRO
+&NAME    STRING    &TEXT
+         LCLA  &COUNT
+&COUNT   SETA  K'&TEXT-2
+         DS    0F
+&NAME    DC    AL1(&COUNT)
+&COUNT   SETA  4*(&COUNT/4)+3
+         DC    CL&COUNT.&TEXT
+         SPACE
+         MEND
+./       ADD LIST=ALL,NAME=STRINIT
+         MACRO
+&NAME    STRINIT
+&NAME    SVC   203 .               CMS SERVICE SVC
+         DC    H'7' .              INITIALISE STORE
+         MEND
+./       ADD LIST=ALL,NAME=SYMBREG
+         MACRO
+         SYMBREG
+         SPACE 2
+*        SYMBOLIC NAMES ARE GIVEN TO ALL GENERAL REGISTERS.
+         SPACE
+*        REGISTERS 0 TO 3 CONTAIN CONSTANTS 0, 4K, 8K, 12K .
+         SPACE
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+         SPACE
+B        EQU   4 .                 CURRENT PROGRAM BASE
+P        EQU   5 .                 STACK POINTER
+L        EQU   6 .                 LINK REGISTER
+         SPACE
+*        REGISTERS 7 TO 10 HOLD THE FIRST FOUR ARGUMENTS TO A PROCEDURE
+         SPACE
+A0       EQU   6 .                 COMPATIBILITY WITH  A1 - A4
+A1       EQU   7
+A2       EQU   8
+A3       EQU   9
+A4       EQU   10
+         SPACE
+S        EQU   11 .                SYSTEM SUBROUTINE BASE
+G        EQU   12 .                GLOBAL VECTOR POINTER
+         SPACE
+R13      EQU   13 .                O.S. SAVE AREA POINTER
+R        EQU   14 .                RETURN REGISTER FOR LOCAL ROUTINES
+A        EQU   14 .                WORK REGISTER
+R15      EQU   15 .                LOCAL WORK REGISTER
+CODE     EQU   15 .                S.V.C. COMPLETION CODES
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=TIMEAREA
+         MACRO
+         TIMEAREA
+         SPACE 2
+*        THE EXIT ROUTINE SAVE-AREA SPACE IS USED BY THE ROUTINE THAT
+*        CONVERTS DATE AND TIME TO MANAGEABLE CHARACTER FORM.
+         SPACE
+TIMEAREA DSECT
+         SPACE
+         DS    CL5
+         SPACE
+MONTHS   DS    CL60 .              SPACE FOR MONTH TABLE
+         SPACE 2
+*        THE SPACE IS USED AS A STATIC AREA TO HOLD BCPL STRINGS.
+         SPACE
+         DS    0F
+         SPACE
+DATECH   DS    CL12 .              STORAGE OF THE DATE STRING
+         SPACE
+         ORG   DATECH+1
+DAYCH    DS    CL4 .               SPACE FOR DAY OF THE MONTH
+         SPACE
+         ORG   DATECH+6
+MONTHCH  DS    CL3 .               CHARACTER FORM OF MONTH
+         SPACE
+         ORG   DATECH+7
+YEARCH   DS    CL5 .               LAST TWO DIGITS OF YEAR
+         SPACE
+TIMECH   DS    CL10 .              STORAGE OF THE TIME STRING
+         SPACE 3
+*        TWO FULL-WORDS HOLD THE FORMS RETURNED BY THE TIME MACRO.
+         SPACE
+TIMEPK   DS    F .                 TIME SENT TO REGISTER 0
+DATEPK   DS    F .                 DATE SENT TO REGISTER 1
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=TSOAREA
+         MACRO
+         TSOAREA
+         SPACE 2
+*        THIS DUMMY SECTION DESCRIBES THE FORMAT OF THE DATA AREA
+*        OBTAINED FOR STREAMS TO AND FROM THE TSO TERMINAL
+         SPACE
+TSOAREA  DSECT
+         SPACE 2
+*        FIRST RELEVANT DCB FIELD IS  'DCBRECFM'
+         SPACE
+TSODCB   EQU   *-RECFM .           EFFECTIVE DCB BASE
+         SPACE
+         ORG   TSOAREA+(X'60'-RECFM)
+         SPACE 2
+*        THE FIRST EXIT SLOT HOLDS THE ADDRESS OF THE CLOSE ROUTINE
+         SPACE
+         DS    F
+TSOBFSZE DS    F .                 TERMINAL LINE WIDTH
+TSOPTR   DS    0XL1 .              FLAGS FOR TGET/TPUT MACRO
+         DC    A(TSOBUF) .         TRANSFER BUFFER ADDRESS
+         SPACE 2
+*        REMAINING FIELDS ARE USED AS IN A STANDARD DCB
+         SPACE
+         ORG   TSOAREA+(DCBLEN-RECFM)
+         SPACE
+TSOBLK   DS    F .                 SIZE OF AREA OBTAINED
+         SPACE 2
+*        ESTABLISH THE HEADER FOR THE TGET/TPUT BUFFER   (REFM=VS)
+         SPACE
+TSOCOUNT DS    H .                 COUNT FOR SDW
+TSOSDW   DS    XL1 .               FLAGS SEGMENT TYPE
+         DS    XL1
+         SPACE
+TSOBUF   EQU   *
+         SPACE
+TSOLEN   EQU   TSOBUF-TSOAREA
+         MEND
+./       ADD LIST=ALL,NAME=TSODATA
+         MACRO
+         TSODATA
+         SPACE 2
+*        THIS DUMMY SECTION DESCRIBES THE FORMAT OF THE CONTROL
+*        DATA REQUIRED BY FINDTERMINAL(IN/OUT).
+         SPACE 2
+TSODATA  DSECT
+         SPACE 2
+*        RELEVANT FIELDS ARE THE TRANSFER ROUTINE ENTRY POINT,
+*        AND THE FLAGS TO BE SUPPLIED TO THE TGET/TPUT SVC.
+*
+*        INITIAL STATE FLAGS ARE ALSO DIFFERENT FOR TGET/TPUT.
+         SPACE 2
+TSOXFR   DS    AL4 .               ENTRY ADDRESS FOR DCBGET
+         SPACE
+TSOFLAGS DS    AL1 .               OPTION BYTE FOR TPUT/TGET SVC
+TSOFLG1  DS    AL1 .               INITIAL VALUE FOR DCBKFLG1
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=USERSAVE
+         MACRO
+         USERSAVE
+         SPACE 2
+USA      DSECT
+         SPACE 2
+*        THE FIRST EIGHTEEN WORDS FORM THE STANDARD USER SAVE AREA.
+         SPACE
+         DS    F
+         SPACE
+HSA      DS    AL4 .               HIGHER SAVE AREA
+LSA      DS    AL4 .               LOWER SAVE AREA
+         SPACE
+RSAVE    DS    15F .               CURRENT 14 TO 12
+         SPACE 3
+*        GENERAL DATA SPECIFIC TO THE TASK FOLLOWS HERE.
+         SPACE
+USABASE  EQU   *
+         SPACE 2
+*        THE FOLLOWING AREA IS USED TO CONTAIN A CIVILISED CHARACTER
+*        REPRESENTATION OF THE DATE.
+         SPACE
+DATESTR  DS    CL12 .              BCPL DATE STRING AREA
+         SPACE 3
+*        A WORKAREA IS USED TO BUILD UP BCPL STRING NAMES
+         SPACE
+DDSPACE  DC    C' ' .              FOR CLEARING NAME FIELD
+         SPACE
+NAMEAREA DS    0CL9
+         SPACE
+NAMELEN  DS    XL1 .               NUMBER OF CHARACTERS
+DDNAME   DS    CL8 .               STRING NAME
+         SPACE
+PARMLIST EQU   DDSPACE+4 .         PERMANENT WORK-WORD
+         EJECT
+         SPACE
+*        THE SEGMENT DESCRIPTOR WORD IS CONSTRUCTED HERE.
+         SPACE
+SDW      EQU   *-2
+         DC    X'0300' .           SET 'HEAD+TRAIL'
+         SPACE 2
+*        A DOUBLE-WORD IS RESERVED FOR FLOATING-POINT CONVERSION.
+         SPACE
+DWORD    DC    D'0' .              DOUBLE WORD FOR FIX/FLOAT AT X'60'
+         SPACE 2
+*        THE MEMBER NAME FOR LIBRARY INPUT IS STORED HERE TEMPORARILY
+         SPACE
+DDMEMBER DS    CL8 .               WORKSPACE FOR 'INPUTMEMBER'
+         SPACE 3
+*        THE FOLLOWING WORD IS USED BY THE PROGRAM INTERRUPT HANDLER
+*        AND BY THE INPUT/OUTPUT ERROR CONTROL ROUTINE.
+         SPACE
+PISW     DS    0XL1 .              FLAG BYTE FOR INTERRUPT HANDLER
+PINUM    DS    H .                 COUNT OF PROGRAM INTERRUPTS
+ERROR2   DS    0XL1 .              FLAG FIRST CALL OF ABORT
+ERRCNT   DS    H .                 COUNT FOR I/O ERRORS
+         SPACE 3
+*        A LIST OF 'LOADED' MODULES IS MAINTAINED FOR USE BY 'DELETE'
+         SPACE
+LOADLIST DC    F'0' .              HEAD OF LOAD LIST
+         SPACE 3
+*        POINTERS TO CURRENTLY SELECTED INPUT AND OUTPUT DCB'S FOLLOW.
+         SPACE
+CIS      DS    F .                 CURRENT INPUT STREAM
+COS      DS    F .                 CURRENT OUTPUT STREAM
+         SPACE 3
+*        BYTE ADDRESSES ARE RECORDED FOR THE POST-MORTEM STACK AREA,
+*        THE SAFE STACK LIMIT, AND THE BYTE BEYOND THE AREA ALLOCATED
+*        TO THE STACK.   THESE FIELDS MUST BE DEFINED IN THIS ORDER.
+*
+*        ALSO RECORD THE ADDRESS OF THE PREVIOUS P.I.C.A.
+         SPACE
+PMSTACK  DS    F .                 POST-MORTEM STACK AREA
+STKLIM   DS    F .                 SAFE LIMIT FOR STACK
+STKHIGH  DS    F .                 ONE BYTE BEYOND STACK
+         SPACE
+OLDPICA  DS    F .                 PREVIOUS INTERRUPT CONTROL AREA
+         EJECT
+         SPACE
+*        RECORD DETAILS OF THE AREA OBTAINED TO FILL THE FINAL PAGE
+         SPACE
+SP0BASE  DS    F .                 BASE OF PAD IN FINAL PAGE
+SP0LEN   DS    F .                 LENGTH OF SUBPOOL 0 PAD
+         SPACE 3
+*        FOR EACH PROCESS A LIST IS MAINTAINED OF DCB'S OPEN FOR INPUT
+*        AND OUTPUT, ALSO THOSE OPEN FOR LOAD MODULE LIBRARIES.
+         SPACE
+LISTBASE DS    0F
+         SPACE
+DCBILIST DS    F .                 LIST OF INPUT DCB'S
+DCBOLIST DS    F .                 LIST OF OUTPUT DCB'S
+DCBLLIST DS    F .                 LOAD MODULE LIBRARY DCB'S
+DCBBLIST DS    F .                 LIST OF DCB'S FOR BLOCK FILES
+         SPACE
+LISTSIZE EQU   *-LISTBASE
+         SPACE
+INLIST   EQU   DCBILIST-NEXT .     PSEUDO-BASE FOR EACH DCB LIST
+OUTLIST  EQU   DCBOLIST-NEXT
+LIBLIST  EQU   DCBLLIST-NEXT
+BLKLIST  EQU   DCBBLIST-NEXT
+         SPACE 3
+*        TEN BYTES ARE RESERVED FOR  'TIMEOFDAY()' .
+         SPACE
+TIMVAL   DS    F .                 CLOCK START CONSTANT
+TIMESTR  DS    CL10 .              BCPL TIME STRING AREA
+         SPACE
+USAFLAGS DS    XL1 .               USE DEFINED IN 'MANIFEST'
+         SPACE
+USATCB   DS    F .                 POINTER TO TASK CONTROL BLOCK
+         SPACE
+USABITS  DS    XL1 .               TIMER OPTIONS SET ETC.
+LASTIO   DS    XL1 .               MOST RECENT I/O ERROR
+TSIZE    DS    H .                 TERMINAL LINE SIZE
+         SPACE 3
+*        ADDRESS OF THE BASE OF THE VECTOR MANAGEMENT REGION
+         SPACE
+FREEBASE DS    F .                 BASE FOR VECTOR ALLOCATION
+         SPACE 3
+*        RECORD DETAILS OF FINAL STORAGE BLOCK TO BE FREED ON EXIT.
+*        NEXT WORD HOLDS THE ADDRESS OF THE EXIT ROUTINE SAVE AREA.
+         SPACE
+SP1AREA  DS    2F .                SUBPOOL, LENGTH, BASE
+EXITSAVE DS    F .                 SAVE AREA ADDRESS
+         EJECT
+         SPACE
+*        PARAMETER LISTS FOR 'GETMAIN' ARE MODIFIED LOCALLY.   REMOTE
+*        EXIT LISTS ARE ALSO ESTABLISHED FOR THE STAE AND STAX MACROS.
+         SPACE
+STAXLIST DS    CL20 .              LIST FOR STAX MACRO
+GMLIST   DS    0CL10 .             SPACE FOR GETMAIN PARAMETER LIST
+STAELIST DS    CL12 .              EXECUTE LIST FOR 'STAE' MACRO
+         SPACE 4
+*        THE STAE RETRY ROUTINE IS CONSTRUCTED IN THE USER SAVE AREA
+         SPACE
+STARETRY LM    S,A,8(R15) .        PICK UP THE ENVIRONMENT
+         USING SUBS,S
+         SPACE
+         B     RSETSTA .           MAIN RETRY ROUTINE
+         SPACE
+         DROP  S
+         SPACE 2
+USASUBS  DS    AL4 .               ADDRESS OF 'SUBS' FOR REG  S
+USAGPTR  DS    AL4 .               GLOBAL VECTOR ADDRESS
+USAUSA   DS    AL4 .               DATA AREA SELF-POINTER
+USATCBCC DS    F .                 TASK COMPLETION CODE FIELD
+         SPACE 3
+*        THE STACK POINTER IS SAVED ACROSS ANY CALL TO ACCESS METHODS.
+*        TWO WORDS RECORD THE LINK TO THE STANDARD SAVE SUBROUTINE AS
+*        WELL AS THE CURRENT VALUE OF THE STACK POINTER ITSELF.
+         SPACE
+IOLINK   DS    F .                 LINK SAVED FROM R14
+IOSTACK  DS    F .                 TRANSIENT STACK POINTER (OR ZERO)
+         SPACE 3
+*        THE COROUTINE SUPPORT DEPENDS ON THREE WORDS OF INFORMATION,
+*        A POINTER TO THE HEAD OF THE LIST OF COROUTINE BASES, THE
+*        CURRENT COROUTINE BASE AND THE BASE FOR THE MAIN ROUTINE.
+         SPACE
+COLIST   DS    F .                 HEAD POINTER FOR COBASES
+USACBASE DS    F .                 CURRENT COROUTINE BASE
+MAINBASE DS    F .                 MAIN COROUTINE BASE
+         SPACE 2
+*        THE ROOT COROUTINE STACK IS ALWAYS USED FOR ERROR PROCESSING.
+*        ON ENTRY TO THE ERROR ROUTINE THE ACTIVE COROUTINE IS SAVED.
+         SPACE
+SAVEBASE DS    F .                 SAVE ACTIVATION ON ERROR
+         EJECT
+         SPACE
+*        RLD BUFFER FOR LOADING SHARES THE EXIT ROUTINE SAVE AREA
+         SPACE
+RLDAREA  EQU   EXITSAVE .          POINTER TO 256-BYTE AREA
+         SPACE 3
+*        A BYTE POINTER TO THE FIRST UNALLOCATED WORD IN THE
+*        HEAP IS MAINTAINED TO CUT DOWN THE COST OF GETVEC.
+*        A BYTE POINTER TO THE LAST DOUBLE-WORD OF THE HEAP
+*        REGION IS ESTABLISHED FOR 'HEAPHWM()'.
+         SPACE
+NEXTFREE DS    AL4 .               INITIALLY AT THE BASE
+LASTFREE DS    AL4 .               LAST DOUBLE-WORD OF HEAP
+         SPACE 3
+*        A COPY OF THE ERROR CONTROL FLAGS IS COPIED TO THE USER
+*        SAVE AREA SO THAT PARTICULAR ERRORS MAY BE IGNORED.
+         SPACE
+USAECTL  EQU   *-1 .               BASE OF CONTROL TABLE
+USAELEN  EQU   ETXTLEN/2 .         SINGLE BYTE ENTRIES
+         SPACE
+         ORG   USAECTL+USAELEN
+         SPACE 3
+*        FIELDS ASSOCIATED WITH PARAMETER STRING DECODING.
+         SPACE
+         ORG   STAXLIST
+         SPACE
+USEROPT  DS    0CL16 .             USER OPTION FIELDS
+         SPACE
+USAPNUM  DS    F .                 NUMBER OF BYTES IN STACK
+USAHNUM  DS    F .                 NUMBER OF BYTES IN HEAP
+         SPACE
+USADFLG  DS    XL2 .               STAE/SPIE OPTION, ETC
+USATNUM  DS    H .                 TIDY UP TIME IN CENTISECS
+         SPACE
+USAINUM  DS    H .                 EXTENT OF STACK CLEARANCE
+USAGNUM  DS    H .                 ALLOCATION UNIT FOR GLOBALS
+         SPACE 4
+*        ALLOCATE PARAMETER STRING SPACE ON A FULL-WORD BOUNDARY AT
+*        THE TOP OF THE USER SAVE AREA.
+         SPACE
+         ORG
+         SPACE
+USAEND   DS    0F .                ALIGN FOR PARAMETER STRING
+PARM     DS    0XL1 .              PARAMETER STRING LENGTH
+         SPACE 2
+         MEND
+./       ADD LIST=ALL,NAME=VECAREA
+         MACRO
+         VECAREA
+         SPACE 2
+*        THIS MACRO PROVIDES SYMBOLIC NAMES FOR THE CONTROL FIELDS
+*        ASSOCIATED WITH THE ROUTINES 'GETVEC' AND 'FREEVEC' .
+         SPACE
+VECTOR   DSECT
+         SPACE
+VECBASE  DS    F .                 BCPL ADDRESS OF VECTOR
+         SPACE
+VECLEN   DS    F .                 NUMBER OF BYTES OBTAINED
+         SPACE
+VECNEXT  DS    F .                 LINK FIELD TO NEXT VECTOR
+         SPACE 2
+VLINK    EQU   VECNEXT-VECTOR .    LINK OFFSET
+         SPACE 2
+         MEND
+./       ENDUP
+//P    EXEC   LISTPDS,
+//         PDS='KM10.COMACLIB'

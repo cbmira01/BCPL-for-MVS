@@ -1,0 +1,2135 @@
+// header file for the PDP 11 code-generator  NOV 77
+
+GET "LIBHDR"
+
+MANIFEST
+$(
+//relocatable object blocks
+T.HUNK=1000
+T.RELOC=1001
+T.END=1002
+$)
+
+MANIFEST $( SECWORD=12345 $)
+
+MANIFEST
+$(
+// OCODE keywords
+S.TRUE=4; S.FALSE=5
+S.RV=8; S.FNAP=10
+S.MULT=11; S.DIV=12; S.REM=13
+S.PLUS=14; S.MINUS=15; S.QUERY=16; S.NEG=17; S.ABS=19
+S.EQ=20; S.NE=21; S.LS=22; S.GR=23; S.LE=24; S.GE=25
+S.NOT=30; S.LSHIFT=31; S.RSHIFT=32; S.LOGAND=33
+S.LOGOR=34; S.EQV=35; S.NEQV=36
+S.LP=40; S.LG=41; S.LN=42; S.LSTR=43; S.LL=44
+S.LLP=45; S.LLG=46; S.LLL=47
+S.NEEDS=48; S.SECTION=49
+S.RTAP=51; S.GOTO=52
+S.RETURN=67; S.FINISH=68
+S.SWITCHON=70
+S.GLOBAL=76
+S.SP=80; S.SG=81; S.SL=82; S.STIND=83
+S.JUMP=85; S.JT=86; S.JF=87; S.ENDFOR=88
+S.LAB=90; S.STACK=91; S.STORE=92; S.RSTACK=93; S.ENTRY=94
+S.SAVE=95; S.FNRN=96; S.RTRN=97; S.RES=98
+S.DATALAB=100; S.ITEML=101; S.ITEMN=102
+S.ENDPROC=103
+S.DEBUG=109; S.NONE=111
+S.GETBYTE=120; S.PUTBYTE=121
+$)
+
+// selectors
+MANIFEST $( H1=0; H2=1; H3=2; H4=3  $)
+
+
+GLOBAL $(
+
+// global routines
+CGSECTS:100
+RDN:101
+RDL:102
+RDGN:103
+NEXTPARAM:104
+CHECKPARAM:105
+CGERROR:106
+INITSTACK:107
+STACK:108
+STORE:109
+SCAN:110
+CGPENDINGOP:111
+CGGLOBCALL:112
+NUMBERIS:113
+GETVALUE:114
+MOVETOANYRSH:115
+MOVETOANYR:116
+MOVETOR:117
+LOOKINREGS:118
+LOOKINFREEREGS:119
+NEXTR:120
+REGUSEDBY:121
+ISFREE:122
+FREEREG:123
+STORET:124
+LOADT:125
+LOSE1:126
+CGBYTEAP:127
+CGSTIND:128
+STOREIN:129
+CGRV:130
+CGSHIFTK:131
+CGADDK:132
+CGPLUS:133
+CGMINUS:134
+CGLOGAND:135
+CGGLOBAL:136
+CGENTRY:137
+CGSAVE:138
+CGAPPLY:139
+CGRETURN:140
+CGJUMP:141
+CGCMP:142
+CGSWITCH:143
+BSWITCH:144
+LSWITCH:145
+CHECKBREFS:146
+GENBREFJUMPS:147
+BRLABREF:148
+CONDBRFN:149
+GENBRANCH:150
+GENMOV:151
+GENSD:152
+GENRS:153
+GENRD:154
+GEND:155
+GEN:156
+GENJ:157
+FORMSADDR:158
+FORMDADDR:159
+FORMADDR:160
+REMEM:161
+SETINFO:162
+FORGET:163
+FORGETVARS:164
+FORGETALL:165
+CODE:166
+CODERAND:167
+CODED:168
+CODERS:169
+CODESD:170
+INSERTCOUNT:171
+SETLAB:172
+CGLAB:173
+CGNAME:174
+RAD50:175
+CGSTRING:176
+LABREF:177
+CGDATA:178
+CGSTATICS:179
+INITDATALISTS:180
+CHECKSPACE:181
+OUTPUTSECTION:182
+OBJWORD:183
+RSXWORD:184
+ENDRECORD:185
+DBOUTPUT:186
+WRKN:187
+
+
+// global variables
+ARG1:190
+ARG2:191
+PENDINGOP:192
+OP:193
+TEMPV:194
+TEMPT:195
+SSP:196
+DLIST:197
+DLISTE:198
+REFLIST:199
+REFLISTE:200
+NEEDSLIST:201
+NEEDSLISTE:202
+STVP:203
+STV:204
+DP:205
+PROGSIZE:206
+REG.K:207
+REG.N:208
+MOVED:209
+ADDR.M:210
+ADDR.V:211
+CASEK:212
+CASEL:213
+PARAMNUMBER:214
+BREFV:215
+BREFP:216
+BREFT:217
+LABV:218
+INCODE:219
+MAXGN:220
+MAXLAB:221
+MAXSSP:222
+STKCHKING:223
+PROCSTK:224
+PROCSTKP:225
+MAPPING:226
+NAMING:227
+CALLCOUNTING:228
+PROFILE:229
+COUNTFLAG:230
+RESTRICTED:231
+LISTING:232
+BINING:233
+RSXOBJ:234
+OVERLAYING:235
+DEBUGGING:236
+GOSTREAM:237
+OCODE:238
+BINV:239
+BINP:240
+$)
+
+
+MANIFEST
+$(
+// registers
+R0=0; R1=1; R2=2; R3=3; R.G=4; R.P=5; R.SP=6; R.PC=7
+
+// items in simulated stack, in registers, or
+// arguments to GEN routines
+K.NONE=1
+K.NUMB=2
+K.LOC=3; K.GLOB=4; K.LAB=5
+K.MLOC=6; K.MGLOB=7; K.MLAB=8
+K.LVLOC=9; K.LVGLOB=10; K.LVLAB=11
+K.REG=12
+K.X0=13; K.X1=14; K.X2=15; K.X3=16
+
+// global routine numbers
+GN.STOP=2
+GN.CHECKSTK=3
+GN.MULT=4
+GN.DIV =5
+GN.REM =6
+GN.LSHIFT=7
+GN.RSHIFT=8
+
+// PDP addressing modes
+M.V=#100; M.L=#200 // operand and label flags
+
+M.10=#10           // indirect bit
+
+M.20=#20; M.V27=#127; M.L27=#227; M.2P=#25; M.2S=#26
+
+M.4P=#45
+
+M.V60=#160; M.V6G=#164; M.V6P=#165; M.V67=#167; M.L67=#267
+M.V70=#170; M.V7S=#176; M.L77=#277
+$)
+
+MANIFEST
+$(
+// single operand instructions
+// compiled by GEND(F,K,N)
+F.CLR = #05000
+F.CLRB=#105000
+F.DEC = #05300
+F.INC = #05200
+F.NEG = #05400
+F.ADC = #05500
+F.TST = #05700
+F.COM = #05100
+F.ASR = #06200
+F.ASL = #06300
+F.SXT = #06700
+F.ROR = #06000
+F.SWAB= #00300
+
+// register source instructions
+// compiled by GENRS(F,K,N)
+F.ASH = #72000
+F.ASHC= #73000
+F.MUL = #70000
+F.DIV = #71000
+
+// register destination instructions
+// compiled by GENRD(F,K,N)
+F.XOR = #74000
+
+// jump instructions
+// compiled by GENJ(F,R,K,N)
+F.JMP = #00100
+F.JSR = #04000
+
+// double operand instructions
+// compiled by GENSD(F,K1,N1,K2,N2)
+F.MOV = #10000
+F.MOVB=#110000
+F.ADD = #60000
+F.SUB =#160000
+F.CMP = #20000
+F.BIS = #50000
+F.BISB=#150000
+F.BIT = #30000
+F.BIC = #40000
+
+// branch and condition code instructions
+// compiled by GENBRANCH(F,L), GEN(F)
+F.BR  = #00400   // this bit reverses a cond branch
+F.BEQ = #01400
+F.BNE = #01000
+F.BLT = #02400
+F.BGE = #02000
+F.BLE = #03400
+F.BGT = #03000
+
+F.CLC = #00241
+$)
+
+.
+
+SECTION "CGPDP1"
+
+GET "TCG.BPL"
+
+LET START() BE
+$(1 LET WORKSPACESIZE = 10000
+ $( LET CMDSTR = FINDINPUT("TEMP.CMD")
+    LET CH,I = 0,0
+    LET FLV = VEC 40
+    WRITES("DOS CG V01*N")
+    LISTING, BINING, RSXOBJ := FALSE, FALSE, FALSE
+    PROFILE,CALLCOUNTING,RESTRICTED:=FALSE,FALSE,FALSE
+    MAPPING,STKCHKING,DEBUGGING := FALSE,FALSE,FALSE
+    OVERLAYING, NAMING := FALSE, TRUE
+    IF CMDSTR<0 DO
+    $( CGERROR("FILE TEMP.CMD")
+       STOP(1) $)
+    SELECTINPUT(CMDSTR)
+    UNTIL CH='.' \/ CH='[' \/ CH='*N' DO
+    $( PUTBYTE(FLV,I,CH)
+       I := I+1
+       CH := RDCH() $)
+    FOR J=1 TO 4 DO
+    $( PUTBYTE(FLV,I,GETBYTE(".OBJ",J))
+       I := I+1 $)
+    UNTIL CH='[' \/ CH='*N' DO
+       CH := RDCH()
+    UNTIL CH='*N' DO
+    $( PUTBYTE(FLV,I,CH)
+       I := I+1
+       CH := RDCH() $)
+    FOR J=1 TO 5 DO
+    $( PUTBYTE(FLV,I,GETBYTE("/DD:B",J))
+       I := I+1 $)
+    PUTBYTE(FLV,0,I-1)
+
+    $(2 CH := RDCH()
+ NXT:   SWITCHON CH INTO
+          $(SW  DEFAULT:  LOOP
+                CASE '*N':BREAK
+                CASE 'W': WORKSPACESIZE := READN()
+                          CH := TERMINATOR
+                          GOTO NXT
+                CASE 'N': NAMING := FALSE
+                          LOOP
+                CASE 'M': MAPPING:=TRUE
+                          LOOP
+                CASE 'P': PROFILE:=TRUE
+                CASE 'K': CALLCOUNTING:=TRUE
+                          LOOP
+                CASE 'R': RESTRICTED := TRUE
+                          LOOP
+                CASE 'B': BINING := TRUE
+                          LOOP
+                CASE 'V': OVERLAYING := TRUE
+                CASE 'O': RSXOBJ := TRUE
+                          LOOP
+                CASE 'D': DEBUGGING := TRUE
+                          LOOP
+                CASE 'L': LISTING := TRUE
+                          LOOP
+                CASE 'S': STKCHKING := TRUE
+                          LOOP
+               $)SW
+    $)2 REPEAT
+
+    ENDREAD()
+    OCODE := FINDINPUT("TEMP.OCD")
+    IF OCODE<0 DO
+    $( CGERROR("FILE TEMP.OCD")
+       STOP(1) $)
+    IF BINING \/ RSXOBJ DO
+       $( GOSTREAM := FINDOUTPUT(FLV)
+          IF GOSTREAM<0 DO
+          $( CGERROR("FILE %S",FLV)
+             STOP(1) $)
+       $)
+ $)
+    SELECTINPUT(OCODE)
+    PROGSIZE := 0
+    OP := RDN()
+    IF WORKSPACESIZE<2000 DO
+        $( CGERROR("TOO LITTLE WORKSPACE")
+           STOP(1)  $)
+    APTOVEC(CGSECTS,WORKSPACESIZE)
+    WRITEF("PROGRAM SIZE = %N WORDS*N", PROGSIZE)
+    DELETEFILE("TEMP.CMD")
+    DELETEFILE("TEMP.OCD")
+    IF MAPPING DO MAPSTORE()
+$)1
+
+
+
+AND CGSECTS(WORKVEC, VECSIZE) BE
+$(1 LET P = WORKVEC
+    TEMPV := P
+    P := P+300
+    TEMPT := P
+    BREFV, BREFP := P, P
+    P := P+128
+    PROCSTK, PROCSTKP := P, 0
+    P := P+20
+    REG.K := P
+    P := P+4
+    REG.N := P
+    P := P+4
+    DP := WORKVEC+VECSIZE
+    LABV := P
+    PARAMNUMBER := (DP-P)/10+10
+    P := P+PARAMNUMBER
+    FOR LP = LABV TO P-1 DO !LP := -1
+    STV := P
+    STVP := 0
+    INITDATALISTS()
+    INCODE := FALSE
+    COUNTFLAG := FALSE
+    MAXGN := 0
+    MAXLAB := 0
+    MAXSSP := 0
+    IF OP=0 RETURN
+    INITSTACK(2)
+    CODE(0, 0)
+    TEST OP=S.SECTION
+      THEN $( CGNAME(S.SECTION,RDN())
+              OP := RDN() $)
+      ELSE CGNAME(S.SECTION,0)
+    SCAN()
+    OP := RDN()
+    STV!0 := STVP
+    OUTPUTSECTION(OP=0)
+    PROGSIZE := PROGSIZE + STVP
+
+$)1 REPEAT
+
+
+// read in OCODE operator or argument
+// argument may be of form Ln
+AND RDN() = VALOF
+    $( LET A, SIGN = 0, '+'
+       LET CH = 0
+
+       CH := RDCH() REPEATWHILE
+          CH='*S' \/ CH='*N' \/ CH='L'
+
+       IF CH=ENDSTREAMCH RESULTIS 0
+
+       IF CH='-' DO $( SIGN := '-'
+                       CH := RDCH()  $)
+
+       WHILE '0'<=CH<='9' DO $( A := 10*A + CH - '0'
+                                CH := RDCH()  $)
+
+       IF SIGN='-' DO A := -A
+       RESULTIS A
+    $)
+
+// read in an OCODE label
+AND RDL() = VALOF
+    $( LET L = RDN()
+       IF MAXLAB<L DO
+       $( MAXLAB := L
+          CHECKPARAM() $)
+       RESULTIS L  $)
+
+// read in a global number
+AND RDGN() = VALOF
+    $( LET G = RDN()
+       IF MAXGN<G DO MAXGN := G
+       RESULTIS G  $)
+
+
+// generate next label parameter
+AND NEXTPARAM() = VALOF
+    $( PARAMNUMBER := PARAMNUMBER-1
+       CHECKPARAM()
+       RESULTIS PARAMNUMBER  $)
+
+
+AND CHECKPARAM() BE
+       IF MAXLAB>=PARAMNUMBER DO
+       $( CGERROR("TOO MANY LABELS - INCREASE WORKSPACE")
+          STOP(1) $)
+
+
+AND CGERROR(N,A) BE
+    $( WRITES("*NERROR: ")
+       WRITEF(N,A)
+       NEWLINE()  $)
+
+
+.
+
+SECTION "CGPDP2"
+
+GET "TCG.BPL"
+
+// initialise the simulated stack (SS)
+LET INITSTACK(N) BE
+    $( ARG2, ARG1 := TEMPV, TEMPV+3
+       SSP := N
+       PENDINGOP := S.NONE
+       H1!ARG2, H2!ARG2, H3!ARG2 := K.LOC, SSP-2, SSP-2
+       H1!ARG1, H2!ARG1, H3!ARG1 := K.LOC, SSP-1, SSP-1
+       IF MAXSSP<SSP DO MAXSSP := SSP  $)
+
+
+// move simulated stack (SS) pointer to N
+AND STACK(N) BE
+$(1 IF MAXSSP<N DO MAXSSP := N
+    IF N>=SSP+4 DO
+        $( STORE(0,SSP-1)
+           INITSTACK(N)
+           RETURN   $)
+
+    WHILE N>SSP DO LOADT(K.LOC, SSP)
+
+    UNTIL N=SSP DO
+    $( IF ARG2=TEMPV DO
+       $( TEST N=SSP-1
+            THEN $( SSP := N
+                    H1!ARG1,H2!ARG1 := H1!ARG2,H2!ARG2
+                    H3!ARG1 := SSP-1
+                    H1!ARG2,H2!ARG2 := K.LOC,SSP-2
+                    H3!ARG2 := SSP-2  $)
+            ELSE INITSTACK(N)
+          RETURN  $)
+
+       ARG1, ARG2 := ARG1-3, ARG2-3
+       SSP := SSP-1  $)
+$)1
+
+
+
+// store all SS items from A to B in their true
+// locations on the stack
+AND STORE(A,B) BE FOR P = TEMPV TO ARG1 BY 3 DO
+    $( LET S = H3!P
+       IF S>B RETURN
+       IF S>=A DO STORET(P)  $)
+
+
+
+AND SCAN() BE
+
+$(1 SWITCHON OP INTO
+
+ $(SW DEFAULT:     CGERROR("BAD OP %N", OP)
+                   ENDCASE
+
+      CASE 0:      RETURN
+
+      CASE S.DEBUG:DEBUGGING := NOT DEBUGGING
+                   ENDCASE
+
+      CASE S.LP:   LOADT(K.LOC, RDN()); ENDCASE
+      CASE S.LG:   LOADT(K.GLOB, RDGN()); ENDCASE
+      CASE S.LL:   LOADT(K.LAB, RDL()); ENDCASE
+      CASE S.LN:   LOADT(K.NUMB, RDN()); ENDCASE
+
+      CASE S.LSTR: CGSTRING(RDN()); ENDCASE
+
+      CASE S.TRUE: LOADT(K.NUMB, #177777); ENDCASE
+      CASE S.FALSE:LOADT(K.NUMB, 0); ENDCASE
+
+      CASE S.LLP:  LOADT(K.LVLOC, RDN()); ENDCASE
+      CASE S.LLG:  LOADT(K.LVGLOB, RDGN()); ENDCASE
+      CASE S.LLL:  LOADT(K.LVLAB, RDL()); ENDCASE
+
+      CASE S.SP:   STOREIN(K.LOC, RDN()); ENDCASE
+      CASE S.SG:   STOREIN(K.GLOB, RDGN()); ENDCASE
+      CASE S.SL:   STOREIN(K.LAB, RDL()); ENDCASE
+
+      CASE S.STIND:CGSTIND(); ENDCASE
+
+      CASE S.RV:   CGRV(); ENDCASE
+
+      CASE S.MULT:CASE S.DIV:CASE S.REM:
+      CASE S.PLUS:CASE S.MINUS:
+      CASE S.EQ: CASE S.NE:
+      CASE S.LS:CASE S.GR:CASE S.LE:CASE S.GE:
+      CASE S.LSHIFT:CASE S.RSHIFT:
+      CASE S.LOGAND:CASE S.LOGOR:CASE S.EQV:CASE S.NEQV:
+      CASE S.NOT:CASE S.NEG:CASE S.ABS:
+                   CGPENDINGOP()
+                   PENDINGOP := OP
+                   ENDCASE
+
+      CASE S.JUMP: CGPENDINGOP()
+                   STORE(0, SSP-1)
+                   GENBRANCH(F.BR, RDL())
+                   ENDCASE
+
+      CASE S.ENDFOR:
+                   CGPENDINGOP()
+                   PENDINGOP := S.LE
+      CASE S.JT:   CGJUMP(TRUE, RDL())
+                   ENDCASE
+
+      CASE S.JF:   CGJUMP(FALSE, RDL())
+                   ENDCASE
+
+      CASE S.GOTO: CGPENDINGOP()
+                   STORE(0, SSP-2)
+                   GENJ(F.JMP,0,H1!ARG1,H2!ARG1)
+                   STACK(SSP-1)
+                   ENDCASE
+
+      CASE S.LAB:  CGPENDINGOP()
+                   STORE(0, SSP-1)
+                   CGLAB(RDL())
+                   ENDCASE
+
+      CASE S.QUERY:CGPENDINGOP()
+                   STACK(SSP+1)
+                   ENDCASE
+
+      CASE S.STACK:CGPENDINGOP()
+                   STACK(RDN())
+                   ENDCASE
+
+      CASE S.STORE:CGPENDINGOP()
+                   STORE(0, SSP-1)
+                   ENDCASE
+
+      CASE S.ENTRY:
+                $( LET N = RDN()
+                   LET L = RDL()
+                   CGENTRY(N, L)
+                   ENDCASE  $)
+
+      CASE S.SAVE: CGSAVE(RDN())
+                   IF STKCHKING DO
+                   $( IF PROCSTKP>=20 DO
+                      $( CGERROR("PROC STACK OVF")
+                         STOP(1) $)
+                      PROCSTK!PROCSTKP := MAXSSP
+                      GENJ(F.JSR,R.PC,K.GLOB,GN.CHECKSTK)
+                      PROCSTK!(PROCSTKP+1) := STVP
+                      CODE(0,0)
+                      MAXSSP := SSP $)
+                   PROCSTKP := PROCSTKP+2
+                   ENDCASE
+
+      CASE S.FNAP:
+      CASE S.RTAP: CGAPPLY(OP, RDN())
+                   ENDCASE
+
+      CASE S.RTRN:
+      CASE S.FNRN: CGRETURN(OP)
+                   ENDCASE
+
+      CASE S.ENDPROC:
+                $( LET N = RDN()
+                   PROCSTKP := PROCSTKP-2
+                   IF STKCHKING  DO
+                   $( STV!(PROCSTK!(PROCSTKP+1)) :=
+                         2*MAXSSP-2
+                      MAXSSP := PROCSTK!PROCSTKP $)
+                   ENDCASE  $)
+
+      CASE S.RES:  CGPENDINGOP()
+                   STORE(0, SSP-2)
+                   MOVETOR(ARG1,R0)
+                   GENBRANCH(F.BR, RDL())
+                   STACK(SSP-1)
+                   ENDCASE
+
+      CASE S.RSTACK:
+                   INITSTACK(RDN())
+                   LOADT(K.REG, R0)
+                   ENDCASE
+
+      CASE S.FINISH:
+                   LOADT(K.NUMB, 0)
+                   LOADT(K.NUMB, 0)
+                   CGGLOBCALL(GN.STOP)
+                   ENDCASE
+
+      CASE S.SWITCHON:
+                   APTOVEC(CGSWITCH,2*RDN()+1)
+                   ENDCASE
+
+      CASE S.GETBYTE:
+      CASE S.PUTBYTE:
+                   CGBYTEAP(OP)
+                   ENDCASE
+
+      CASE S.NEEDS:CGNAME(S.NEEDS,RDN())
+                   ENDCASE
+
+      CASE S.GLOBAL:
+                   CGGLOBAL(RDN())
+                   RETURN
+
+      CASE S.DATALAB:
+      CASE S.ITEML:CGDATA(OP, RDL()); ENDCASE
+      CASE S.ITEMN:CGDATA(OP, RDN()); ENDCASE
+ $)SW
+
+    IF DEBUGGING DO DBOUTPUT()
+    OP := RDN()
+
+$)1 REPEAT
+
+
+.
+
+SECTION "CGPDP3"
+
+GET "TCG.BPL"
+
+// compiles code to deal with any pending op
+LET CGPENDINGOP() BE
+
+$(1 LET R = 0
+    LET SW = FALSE
+    LET PENDOP = PENDINGOP
+    LET NUM1 = H1!ARG1=K.NUMB
+    LET KK = H2!ARG1
+    LET RAND1,RAND2 = ARG1,ARG2
+
+    PENDINGOP := S.NONE
+
+    SWITCHON PENDOP INTO
+    $(SW CASE S.ABS:
+                 R := MOVETOANYR(ARG1)
+                 UNLESS MOVED DO GEND(F.TST,K.REG,R)
+                 CHECKBREFS(3)
+                 CODE(F.BGE+1,0)
+         CASE S.NEG:
+                 SW := TRUE
+         CASE S.NOT:
+                 R := MOVETOANYR(ARG1)
+                 GEND(SW->F.NEG,F.COM, K.REG, R)
+         CASE S.NONE:
+                 RETURN
+    $)SW
+
+    GETVALUE(ARG1)
+    GETVALUE(ARG2)
+
+    IF H1!ARG2=K.NUMB \/ H1!ARG1=K.REG \/
+          LOOKINFREEREGS(ARG1)>=0 DO
+       // swop operands for symetric ops
+       RAND1,RAND2 := ARG2,ARG1
+
+    SWITCHON PENDOP INTO
+
+    $(SW DEFAULT:CGERROR("BAD PNDOP %N",PENDOP)
+                 RETURN
+
+         CASE S.EQ: CASE S.NE:
+         CASE S.LS: CASE S.GR:
+         CASE S.LE: CASE S.GE:
+                 // comparisons are ARG2 <op> ARG1
+              $( LET F = CONDBRFN(PENDOP)
+                 R := NEXTR()
+                 GEND(F.CLR,K.REG,R)
+                 F := CGCMP(FALSE,F)
+                 CHECKBREFS(3)
+                 CODE(F+1,0)
+                 GEND(F.COM,K.REG,R)
+                 ENDCASE $)
+
+         CASE S.EQV:
+                 SW := TRUE
+         CASE S.NEQV:
+              $( LET RS = MOVETOANYR(ARG1)
+                 R := MOVETOANYR(ARG2)
+
+                 TEST RESTRICTED
+                 THEN $( LET W = NEXTR()
+                         GENSD(F.MOV,K.REG,RS,K.REG,W)
+                         GENSD(F.BIC,K.REG,R,K.REG,W)
+                         GENSD(F.BIC,K.REG,RS,K.REG,R)
+                         GENSD(F.BIS,K.REG,W,K.REG,R) $)
+                 ELSE GENRD(F.XOR, RS, K.REG, R)
+
+                 IF SW DO GEND(F.COM, K.REG, R)
+                 ENDCASE  $)
+
+         CASE S.PLUS:
+                 IF NUM1 & H1!ARG2=K.NUMB DO
+                 $( LOSE1(K.NUMB, KK+H2!ARG2)
+                    RETURN  $)
+
+                 R := MOVETOANYR(RAND2)
+                 CGPLUS(RAND1,K.REG,R)
+                 ENDCASE
+
+         CASE S.MINUS:
+                 R := MOVETOANYR(ARG2)
+                 CGMINUS(ARG1,K.REG,R)
+                 ENDCASE
+
+         CASE S.MULT:
+                 IF NUMBERIS(2,RAND1) DO
+                 $( R := MOVETOANYR(RAND2)
+                    GEND(F.ASL, K.REG, R)
+                    ENDCASE  $)
+
+                 IF RESTRICTED DO
+                 $( CGGLOBCALL(GN.MULT)
+                    LOADT(K.REG, R0)
+                    RETURN  $)
+
+                 R := H1!RAND2=K.REG -> H2!RAND2,
+                           ISFREE(1) -> 1,3
+                 MOVETOR(RAND2,R)
+                 IF (R&1)=0 DO FREEREG(R\/1,RAND1)
+                 GENRS(F.MUL,R,H1!RAND1,H2!RAND1)
+                 R := R\/1
+                 ENDCASE
+
+         CASE S.DIV:
+                 SW := TRUE
+         CASE S.REM:
+                 TEST RESTRICTED
+
+                 THEN $( CGGLOBCALL(SW->GN.DIV,GN.REM)
+                         LOADT(K.REG,R0)
+                         RETURN  $)
+
+                 ELSE $( LET N = REGUSEDBY(ARG2)
+                         R := ISFREE(0) & ISFREE(1) -> 0,
+                              ISFREE(2) & ISFREE(3) -> 2,
+                              N>=0 -> N&2, NEXTR()&2
+                         FREEREG(R,ARG2)
+                         MOVETOR(ARG2, R+1)
+                         UNLESS MOVED DO
+                            GEND(F.TST,K.REG,R+1)
+                         GEND(F.SXT, K.REG, R)
+                         GENRS(F.DIV,R,H1!ARG1,H2!ARG1)
+                         UNLESS SW DO R := R+1  $)
+
+                 ENDCASE
+
+          CASE S.LOGOR:
+                 R := MOVETOANYR(RAND2)
+                 GENSD(F.BIS,H1!RAND1,H2!RAND1,K.REG,R)
+                 ENDCASE
+
+          CASE S.LOGAND:
+                 R := MOVETOANYR(RAND2)
+                 CGLOGAND(RAND1,K.REG,R)
+                 ENDCASE
+
+          CASE S.LSHIFT:
+                 SW := TRUE
+          CASE S.RSHIFT:
+                 IF NUM1 DO
+                 $( IF KK=1 \/ KK=2 \/ KK=8 DO
+                    $( R := MOVETOANYR(ARG2)
+                       CGSHIFTK(SW,KK,K.REG,R)
+                       ENDCASE
+                    $)
+
+                    UNLESS RESTRICTED DO
+                    $( R := MOVETOANYR(ARG2)
+                       TEST SW
+                       THEN GENRS(F.ASH,R,K.NUMB,KK)
+                       ELSE $( GEN(F.CLC)
+                               GEND(F.ROR,K.REG,R)
+                               GENRS(F.ASH,R,K.NUMB,1-KK)
+                            $)
+                       ENDCASE
+                    $)
+                 $)
+
+             IF RESTRICTED DO
+             $( CGGLOBCALL(SW->GN.LSHIFT,GN.RSHIFT)
+                LOADT(K.REG,R0)
+                RETURN  $)
+
+             TEST SW
+
+             THEN $( R := MOVETOANYR(ARG2)
+                     GENRS(F.ASH,R,H1!ARG1,H2!ARG1)  $)
+
+             ELSE $( LET N = REGUSEDBY(ARG2)
+                     LET S = NEXTR()
+                     R := S=0 \/ S=1 ->  2,0
+                     GENMOV(K.NUMB,16,K.REG,S)
+                     GENSD(F.SUB,H1!ARG1,H2!ARG1,K.REG,S)
+                     H1!ARG1, H2!ARG1 := K.REG, S
+                     MOVETOR(ARG2, R+1)
+                     FREEREG(R,0)
+                     GEND(F.CLR, K.REG, R)
+                     GENRS(F.ASHC, R, K.REG, S)  $)
+
+             ENDCASE
+
+    $)SW
+
+    LOSE1(K.REG, R)
+$)1
+
+
+
+// compiles a global call for out of
+// line functions
+AND CGGLOBCALL(GN) BE
+    $( CGPENDINGOP()
+       STORE(0,SSP-3)
+       MOVETOR(ARG2, R0)
+       MOVETOR(ARG1, R1)
+       STACK(SSP-2)
+       GENJ(F.JSR,R.PC,K.GLOB,GN)
+       CODE(2*SSP,0)
+       FORGETALL()
+       IF GN=GN.STOP DO INCODE := FALSE
+    $)
+
+
+AND NUMBERIS(N,A) =
+       H1!A=K.NUMB & H2!A=N -> TRUE, FALSE
+
+
+.
+
+SECTION "CGPDP4"
+
+GET "TCG.BPL"
+
+// make any Lvalues addressable - ie get them
+// into a register
+LET GETVALUE(A) BE
+       IF H1!A=K.LVLOC \/ H1!A=K.LVGLOB \/ H1!A=K.LVLAB DO
+          MOVETOANYR(A)
+
+
+// move a SS item into any register and shift
+// it left for use with CGRV
+AND MOVETOANYRSH(A) = VALOF
+    $( LET K,N,R = H1!A,H2!A,-1
+       LET KM = K=K.LOC -> K.MLOC,
+                K=K.LAB -> K.MLAB,
+                K=K.GLOB -> K.MGLOB, K.NONE
+       UNLESS KM=K.NONE DO
+       $( R := LOOKINREGS(KM,N)
+          IF R>=0 RESULTIS R $)
+       R := MOVETOANYR(A)
+       GEND(F.ASL,K.REG,R)
+       SETINFO(R,KM,N)
+       RESULTIS R
+    $)
+
+
+// move a SS item into any register
+AND MOVETOANYR(A) = VALOF
+    $( LET K,N,R = H1!A,H2!A,0
+       MOVED := FALSE
+       IF K=K.REG RESULTIS N
+       R := LOOKINFREEREGS(K,N)
+       IF R>=0 DO
+       $( H1!A,H2!A := K.REG,R
+          RESULTIS R $)
+       RESULTIS MOVETOR(A,NEXTR())
+    $)
+
+
+// move a SS item into a given  register
+AND MOVETOR(A,R) = VALOF
+    $( FREEREG(R,A)
+       MOVED := FALSE
+       GENMOV(H1!A,H2!A,K.REG,R)
+       H1!A,H2!A := K.REG,R
+       RESULTIS R
+    $)
+
+
+// look for the value of an item (K,N) in the
+// registers; the register will not be modified
+AND LOOKINREGS(K,N) = VALOF
+    $( FOR R=R0 TO R3 DO
+          IF REG.K!R=K & REG.N!R=N RESULTIS R
+       RESULTIS -1
+    $)
+
+
+// look for the value of an item (K,N) in the
+// free registers; the register may be modified
+AND LOOKINFREEREGS(K,N) = VALOF
+    $( FOR R=R0 TO R3 DO
+          IF REG.K!R=K & REG.N!R=N & ISFREE(R) RESULTIS R
+       RESULTIS -1
+    $)
+
+
+// allocate the next register;
+// free it if required
+AND NEXTR() = VALOF
+    $( FOR R=R0 TO R3 DO
+          IF REG.K!R=K.NONE & ISFREE(R) RESULTIS R
+       FOR R=R0 TO R3 DO
+          IF ISFREE(R) RESULTIS R
+       FOR T=TEMPV TO ARG1 BY 3 DO
+       $( LET R=REGUSEDBY(T)
+          IF R>=0 DO
+          $( FREEREG(R,0)
+             RESULTIS R $)
+       $)
+    $)
+
+
+// find which register, if any, is used by
+// a SS item
+AND REGUSEDBY(A) = VALOF
+    $( LET K=H1!A
+       IF K=K.REG RESULTIS H2!A
+       IF K.X0<=K<=K.X3 RESULTIS K-K.X0
+       RESULTIS -1  $)
+
+
+AND ISFREE(R) = VALOF
+    $( FOR T=TEMPV TO ARG1 BY 3 DO
+          IF REGUSEDBY(T)=R RESULTIS FALSE
+       RESULTIS TRUE
+    $)
+
+
+// free register R by storing the values of
+// all SS items (except X) that depend upon it
+AND FREEREG(R,X) BE
+       FOR T=TEMPV TO ARG1 BY 3 DO
+          UNLESS T=X DO IF REGUSEDBY(T)=R DO
+             STORET(T)
+
+
+// store the value of a SS item in its true
+// stack location
+AND STORET(A) BE
+    $( GETVALUE(A)
+       GENMOV(H1!A,H2!A,K.LOC,H3!A)
+       H1!A := K.LOC
+       H2!A := H3!A  $)
+
+
+// load an item (K,N) onto the SS
+AND LOADT(K, N) BE
+    $( CGPENDINGOP()
+       ARG2 := ARG1
+       ARG1 := ARG1 + 3
+       IF ARG1=TEMPT DO
+       $( CGERROR("SIM STACK OVF")
+          STOP(1) $)
+       H1!ARG1,H2!ARG1,H3!ARG1 := K,N,SSP
+       SSP := SSP + 1
+       IF MAXSSP<SSP DO MAXSSP := SSP
+    $)
+
+
+// replace the top two SS items by (K,N)
+AND LOSE1(K, N) BE
+    $( SSP := SSP - 1
+       TEST ARG2=TEMPV
+       THEN $( H1!ARG2,H2!ARG2 := K.LOC,SSP-2
+               H3!ARG2 := SSP-2 $)
+       ELSE $( ARG1 := ARG2
+               ARG2 := ARG2-3 $)
+       H1!ARG1, H2!ARG1, H3!ARG1 := K,N,SSP-1
+    $)
+
+
+AND CGBYTEAP(OP) BE
+$(1 CGPENDINGOP()
+ $( LET S = MOVETOANYRSH(ARG2)
+    LET I = H2!ARG1
+    UNLESS H1!ARG1=K.NUMB DO
+    $( FREEREG(S,ARG2)
+       CGPLUS(ARG1,K.REG,S)
+       I := 0 $)
+    TEST OP=S.GETBYTE
+    THEN $( LET R = NEXTR()
+            GEND(F.CLR,K.REG,R)
+            CODESD(F.BISB,M.V60+S,I,R,0)
+            LOSE1(K.REG,R)
+         $)
+    ELSE $( TEST ARG2=TEMPV
+            THEN FORMSADDR(K.LOC,SSP-3)
+            ELSE $( LET ARG3 = ARG2-3
+                    GETVALUE(ARG3)
+                    FORMSADDR(H1!ARG3,H2!ARG3)
+                 $)
+            CODESD(F.MOVB,ADDR.M,ADDR.V,M.V60+S,I)
+            FORGETVARS()
+            STACK(SSP-3)
+         $)
+ $)
+$)1
+
+
+AND CGSTIND() BE
+    $( CGRV()
+       GETVALUE(ARG2)
+       GENMOV(H1!ARG2,H2!ARG2,H1!ARG1,H2!ARG1)
+       FORGETVARS()
+       STACK(SSP-2)
+    $)
+
+
+// store the top item of the SS in (K,N)
+AND STOREIN(K, N) BE
+
+$(1 LET B = (H1!ARG1=K & H2!ARG1=N) -> 1,
+            (H1!ARG2=K & H2!ARG2=N) -> 2, 0
+    LET ARG = B=2 -> ARG1,ARG2
+    LET NUM = B=2 & H1!ARG=K.NUMB
+    LET KK = H2!ARG
+    LET SW = FALSE
+    LET PENDOP = PENDINGOP
+
+    IF B=0 GOTO GENCASE
+
+    PENDINGOP := S.NONE
+    SWITCHON PENDOP INTO
+
+    $(2 DEFAULT:
+        GENCASE: PENDINGOP := PENDOP
+                 CGPENDINGOP()
+
+        CASE S.NONE:
+                 GETVALUE(ARG1)
+                 GENMOV(H1!ARG1,H2!ARG1,K,N)
+                 STACK(SSP-1)
+                 RETURN
+
+        CASE S.PLUS:
+                 GETVALUE(ARG)
+                 CGPLUS(ARG, K, N)
+                 ENDCASE
+
+        CASE S.MINUS:
+                 GETVALUE(ARG)
+                 CGMINUS(ARG, K, N)
+                 IF B=1 DO GEND(F.NEG,K, N)
+                 ENDCASE
+
+        CASE S.NEG:
+                 SW := TRUE
+        CASE S.NOT:
+                 UNLESS B=1 GOTO GENCASE
+                 GEND(SW->F.NEG,F.COM, K, N)
+                 STACK(SSP-1)
+                 RETURN
+
+        CASE S.LOGOR:
+                 GETVALUE(ARG)
+                 GENSD(F.BIS,H1!ARG,H2!ARG,K,N)
+                 ENDCASE
+
+        CASE S.LOGAND:
+                 GETVALUE(ARG)
+                 CGLOGAND(ARG, K, N)
+                 ENDCASE
+
+        CASE S.NEQV:
+                 IF RESTRICTED GOTO GENCASE
+                 GENRD(F.XOR,MOVETOANYR(ARG),K,N)
+                 ENDCASE
+
+        CASE S.MULT:
+                 IF H1!ARG=K.NUMB DO
+                    IF KK=2 \/ KK=4 DO
+                    $( CGSHIFTK(TRUE,KK/2,K,N)
+                       ENDCASE
+                    $)
+                 GOTO GENCASE
+
+        CASE S.LSHIFT:
+                 SW := TRUE
+        CASE S.RSHIFT:
+                 IF NUM DO
+                    IF KK=1 \/ KK=2 \/ KK=8 DO
+                    $( CGSHIFTK(SW,KK,K,N)
+                       ENDCASE
+                    $)
+
+                 GOTO GENCASE
+    $)2
+    STACK(SSP-2)
+$)1
+
+
+.
+
+SECTION "CGPDP5"
+
+GET "TCG.BPL"
+
+LET CGRV() BE
+
+$(1 LET R = 0
+
+    IF PENDINGOP=S.MINUS & H1!ARG1=K.NUMB DO
+             PENDINGOP, H2!ARG1 := S.PLUS, -H2!ARG1
+
+    TEST PENDINGOP=S.PLUS &
+          (H1!ARG1=K.NUMB \/ H1!ARG2=K.NUMB)
+
+    THEN $( LET ARG = ARG2
+            LET N = H2!ARG1
+            IF H1!ARG2=K.NUMB DO ARG,N := ARG1,H2!ARG2
+            PENDINGOP := S.NONE
+            R := MOVETOANYRSH(ARG)
+            LOSE1(K.X0+R,N) $)
+
+    ELSE $( CGPENDINGOP()
+            R := MOVETOANYRSH(ARG1)
+            H1!ARG1, H2!ARG1 := K.X0+R, 0 $)
+$)1
+
+
+AND CGSHIFTK(SW,KK,K,N) BE
+$(1 IF KK=8 DO
+    $( GEND(SW->F.SWAB,F.CLRB, K, N)
+       GEND(SW->F.CLRB,F.SWAB, K, N)
+       RETURN
+    $)
+    UNLESS SW DO GEN(F.CLC)
+    GEND(SW->F.ASL,F.ROR, K, N)
+    IF KK=2 DO GEND(SW->F.ASL,F.ASR, K, N)
+$)1
+
+
+AND CGADDK(KK, K, N) BE UNLESS KK=0 DO
+$(1 IF KK=1  DO $( GEND(F.INC, K, N); RETURN  $)
+    IF KK=-1 DO $( GEND(F.DEC, K, N); RETURN  $)
+    GENSD(F.ADD, K.NUMB, KK, K, N)
+$)1
+
+
+AND CGPLUS(A,K,N) BE TEST H1!A=K.NUMB
+    THEN CGADDK(H2!A, K, N)
+    ELSE GENSD(F.ADD, H1!A, H2!A, K, N)
+
+
+AND CGMINUS(A,K,N) BE TEST H1!A=K.NUMB
+    THEN CGADDK(-H2!A, K, N)
+    ELSE GENSD(F.SUB, H1!A, H2!A, K, N)
+
+
+AND CGLOGAND(A,K,N) BE TEST H1!A=K.NUMB
+    THEN GENSD(F.BIC,K.NUMB,NOT H2!A,K,N)
+    ELSE $( LET RA=MOVETOANYR(A)
+            GEND(F.COM,K.REG,RA)
+            GENSD(F.BIC,K.REG,RA,K,N)  $)
+
+
+AND CGGLOBAL(N) BE
+$(1 CGSTATICS()
+    CODE(0, 0)
+    FOR I = 1 TO N DO
+    $( CODE(RDGN(), 0)
+       CODE(LABV!RDL(), 0)  $)
+    CODE(MAXGN, 0)
+$)1
+
+
+AND CGENTRY(N,L) BE
+$(1 GENBREFJUMPS(25,0)
+    CGNAME(S.ENTRY,N)
+    SETLAB(L)
+    INCODE := TRUE
+    CODESD(F.ADD,M.V7S,0,R.P,0)      // ADD @0(SP),P
+    CODESD(F.MOV,M.2S,0,M.2P,0)      // MOV (SP)+,(P)+
+    IF NAMING DO
+       CODESD(F.MOV,R.PC,0,M.V6P,-4) // MOV PC,-4(P)
+    COUNTFLAG := CALLCOUNTING
+    FORGETALL()
+$)1
+
+
+AND CGSAVE(N) BE
+$(1 TEST N>=5
+    THEN $( IF N>=6 DO CODESD(F.MOV,R3,0,M.V6P,6)
+            CODESD(F.MOV,R.P,0,R3,0)
+            FOR R=R0 TO R2 DO
+            $( CODESD(F.MOV,R,0,M.20+R3,0)
+               SETINFO(R,K.LOC,R+2)
+            $)
+         $)
+    ELSE $( IF N>=3 DO GENMOV(K.REG,R0,K.LOC,2)
+            IF N>=4 DO GENMOV(K.REG,R1,K.LOC,3)
+         $)
+    INITSTACK(N)
+$)1
+
+
+// function or routine call
+AND CGAPPLY(OP,K) BE
+
+$(1 LET SR0 = K+2
+    LET SR3 = K+5
+
+    CGPENDINGOP()
+
+    // store args 5,6,...
+    STORE(SR3+1, SSP-2)
+
+    // now deal with non-args
+    FOR T = TEMPV TO ARG2 BY 3 DO
+        $( IF H3!T>=K BREAK
+           IF REGUSEDBY(T)>=0 DO STORET(T)  $)
+
+    // move args 1-4 to arg registers
+    FOR T = ARG2 TO TEMPV BY -3 DO
+        $( LET S = H3!T
+           LET R = S-SR0
+           IF S<SR0 BREAK
+           IF S<=SR3 & ISFREE(R) DO MOVETOR(T,R)  $)
+    FOR T = ARG2 TO TEMPV BY -3 DO
+        $( LET S = H3!T
+           LET R = S-SR0
+           IF S<SR0 BREAK
+           IF S<=SR3 DO MOVETOR(T,R)  $)
+
+    // deal with args not in SS
+    FOR S = SR0 TO SR3 DO
+    $( LET R = S-SR0
+       IF S>=H3!TEMPV BREAK
+       FREEREG(R,0)
+       GENMOV(K.LOC, S, K.REG, R)  $)
+
+    GENJ(F.JSR,R.PC,H1!ARG1,H2!ARG1)
+    CODE(2*K-2,0)
+    FORGETALL()
+    STACK(K)
+    IF OP=S.FNAP DO LOADT(K.REG,R0)
+$)1
+
+
+AND CGRETURN(OP) BE
+
+$(1 CGPENDINGOP()
+    IF OP=S.FNRN DO
+    $( MOVETOR(ARG1,R0)
+       STACK(SSP-1)  $)
+    CODESD(F.MOV,M.4P, 0, R3, 0)      // MOV -(P),R3
+    CODESD(F.SUB, M.20+R3, 0, R.P, 0) // SUB (R3)+,P
+    GENJ(F.JMP,0,K.REG,R3)            // JMP (R3)
+    INITSTACK(SSP)
+$)1
+
+
+// used for OCODE operators JT and JF
+AND CGJUMP(B,L) BE
+$(1 LET F = CONDBRFN(PENDINGOP)
+    IF F=0 DO
+    $( CGPENDINGOP()
+       LOADT(K.NUMB,0)
+       F := F.BNE $)
+    PENDINGOP := S.NONE
+    STORE(0,SSP-3)
+    F := CGCMP(B,F)
+    GENBRANCH(F,L)
+    STACK(SSP-2)
+    COUNTFLAG := PROFILE
+$)1
+
+
+AND CGCMP(B,F) = VALOF
+$(1 TEST NUMBERIS(0,ARG1)
+    THEN GEND(F.TST,H1!ARG2,H2!ARG2)
+    ELSE TEST NUMBERIS(0,ARG2)
+         THEN $( GEND(F.TST,H1!ARG1,H2!ARG1)
+                 F := VALOF SWITCHON F INTO
+                    $( CASE F.BLT: RESULTIS F.BGT
+                       CASE F.BGE: RESULTIS F.BLE
+                       CASE F.BLE: RESULTIS F.BGE
+                       CASE F.BGT: RESULTIS F.BLT
+                       DEFAULT:    RESULTIS F
+                    $)
+              $)
+         ELSE GENSD(F.CMP,H1!ARG2,H2!ARG2,H1!ARG1,H2!ARG1)
+    RESULTIS B -> F, F NEQV F.BR
+$)1
+
+
+.
+
+SECTION "CGPDP6"
+
+GET "TCG.BPL"
+
+// compiles code for SWITCHON
+// N = no. of cases
+// D = default label
+LET CGSWITCH(V,M) BE
+    $(1 LET N =(M-1)/2
+        LET D = RDL()
+        CASEK, CASEL := V, V+N
+
+        // read and sort (K,L) pairs
+        FOR I = 1 TO N DO
+          $( LET A = RDN()
+             LET L = RDL()
+             LET J = I-1
+             UNTIL J=0 DO
+               $( IF A > CASEK!J BREAK
+                  CASEK!(J+1) := CASEK!J
+                  CASEL!(J+1) := CASEL!J
+                  J := J - 1  $)
+             CASEK!(J+1), CASEL!(J+1) := A, L  $)
+
+        CGPENDINGOP()
+        STORE(0, SSP-2)
+        MOVETOR(ARG1,R0)
+        STACK(SSP-1)
+
+        // care with overflow !
+        TEST 2*N-6 > CASEK!N/2-CASEK!1/2
+
+                THEN LSWITCH(1, N, D)
+
+                OR $( BSWITCH(1, N, D)
+
+                      GENBRANCH(F.BR, D)  $)
+    $)1
+
+
+// binary switch
+AND BSWITCH(P, Q, D) BE TEST Q-P>6
+
+      THEN $( LET M = NEXTPARAM()
+              LET T = (P+Q)/2
+              GENSD(F.CMP,K.REG,R0,K.NUMB,CASEK!T)
+              GENBRANCH(F.BGE,M)
+              BSWITCH(P, T-1, D)
+              GENBRANCH(F.BR,D)
+              GENBREFJUMPS(25,0)
+              SETLAB(M)
+              INCODE := TRUE
+              GENBRANCH(F.BEQ,CASEL!T)
+              BSWITCH(T+1, Q, D)  $)
+
+      ELSE FOR I = P TO Q DO
+              $( GENSD(F.CMP,K.REG,R0,K.NUMB,CASEK!I)
+                 GENBRANCH(F.BEQ,CASEL!I) $)
+
+
+
+// label vector switch
+AND LSWITCH(P,Q,D) BE
+    $(1 LET L = NEXTPARAM()
+        GENSD(F.CMP,K.REG,R0,K.NUMB,CASEK!P)
+        GENBRANCH(F.BLT,D)
+        GENSD(F.CMP,K.REG,R0,K.NUMB,CASEK!Q)
+        GENBRANCH(F.BGT,D)
+        GEND(F.ASL,K.REG,R0)
+        CHECKBREFS(2)
+        GEN(F.JMP+#70+R0)
+        CODE(-2*CASEK!P, L)
+        INCODE := FALSE
+        GENBREFJUMPS(CASEK!Q-CASEK!P+25,0)
+        SETLAB(L)
+        FOR K=CASEK!P TO CASEK!Q TEST CASEK!P=K
+            THEN $( CODE(0, CASEL!P);
+                    P := P+1 $)
+            ELSE CODE(0, D)
+    $)1
+
+
+// checks that at least N consecutive words
+// may be compiled without any branch refs
+// going out of range
+AND CHECKBREFS(N) BE
+  $( IF COUNTFLAG DO INSERTCOUNT()
+     UNLESS BREFV=BREFP \/
+      BREFV!1+127-N-(BREFP-BREFV)/2>STVP DO
+        TEST INCODE
+        THEN $( LET L = NEXTPARAM()
+                BRLABREF(L, STVP)
+                CODE(F.BR, 0)
+                GENBREFJUMPS(N+25,0)
+                SETLAB(L)  $)
+        ELSE GENBREFJUMPS(N+25,0)
+  $)
+
+
+// generates jumps to fill in enough branch
+// refs to ensure that at least N words may
+// be compiled, given that label X is to be
+// defined as the next location; is only
+// called when INCODE is (should be) false
+AND GENBREFJUMPS(N,X) BE
+  $( LET P = BREFV
+     UNTIL P=BREFP \/
+      P!1+127-N-(BREFP-BREFV)/2>STVP DO
+        $( IF P!0=X DO     // leave refs to X
+           $( P := P+2
+              LOOP $)
+           IF BREFV!0=X DO // check X still in range
+           $( UNLESS BREFV!1+127>STVP DO
+              $( GENBREFJUMPS(N,0)
+                 RETURN $)
+           $)
+        $( LET L=P!0
+           SETLAB(L)       // to fill in branch refs
+           LABV!L := -1    // then unset L again
+           CODE(F.JMP+#67, 0)
+           CODERAND(M.L67,L)
+        $)
+        $)
+  $)
+
+
+// generate a label ref for a branch instr
+AND BRLABREF(L, A) BE
+     $( BREFP!0, BREFP!1 := L, A
+        BREFP := BREFP + 2  $)
+
+
+AND CONDBRFN(OP) = VALOF SWITCHON OP INTO
+     $( CASE S.EQ:  RESULTIS F.BEQ
+        CASE S.NE:  RESULTIS F.BNE
+        CASE S.GR:  RESULTIS F.BGT
+        CASE S.LE:  RESULTIS F.BLE
+        CASE S.GE:  RESULTIS F.BGE
+        CASE S.LS:  RESULTIS F.BLT
+        DEFAULT:    RESULTIS 0
+     $)
+
+
+AND GENBRANCH(F, L) BE IF INCODE DO
+    $(1 LET A = LABV!L
+
+        CHECKBREFS(1)
+
+        IF A=-1 DO         // label is unset
+           $( BRLABREF(L, STVP)
+              CODE(F,0)
+              IF F=F.BR DO INCODE := FALSE
+              RETURN  $)
+
+        IF STVP-A > 127 DO // back jump too far for BR
+           $( LET M = 0
+              IF F=F.BR DO
+              $( CODED(F.JMP,M.L67,L)
+                 INCODE := FALSE
+                 RETURN $)
+              F := F NEQV F.BR
+              M := NEXTPARAM()
+              GENBRANCH(F, M)
+              CODED(F.JMP, M.L67, L)
+              GENBREFJUMPS(25,M)
+              SETLAB(M)
+              RETURN  $)
+
+        // it must be a short backward jump
+        CODE(F+(A-STVP-1 & #377), 0)
+        IF F=F.BR DO INCODE := FALSE
+    $)1
+
+
+// generate a MOV instr; will calculate Lvalues
+AND GENMOV(K1,N1,K2,N2) BE UNLESS K1=K2 & N1=N2 DO
+   $(1 LET MV,M1,V1 = 0,0,0
+       LET R=LOOKINREGS(K1,N1)
+       IF R>=0 DO K1,N1 := K.REG,R
+       UNLESS K1=K2 & N1=N2 DO
+       $( SWITCHON K1 INTO
+          $( CASE K.LVLOC:
+                M1,MV := R.P,2*(N1-2)
+                GOTO L
+
+             CASE K.LVGLOB:
+                M1,MV := R.G,2*N1
+                GOTO L
+
+             CASE K.LVLAB:
+                M1,V1 := M.L27,N1
+           L:   FORMDADDR(K2,N2)
+                CODESD(F.MOV,M1,V1,ADDR.M,ADDR.V)
+                UNLESS MV=0 DO
+                   CODESD(F.ADD,M.V27,MV,ADDR.M,ADDR.V)
+                IF MV<=0 DO GEN(F.CLC)
+                CODED(F.ROR,ADDR.M,ADDR.V)
+                ENDCASE
+
+             CASE K.NUMB:
+                IF N1=0 DO
+                $( FORMDADDR(K2,N2)
+                   CODED(F.CLR,ADDR.M,ADDR.V)
+                   ENDCASE $)
+
+             DEFAULT:
+                GENSD(F.MOV,K1,N1,K2,N2)
+          $)
+          MOVED := TRUE
+       $)
+       REMEM(K1,N1,K2,N2)
+   $)1
+
+
+AND GENSD(F,K1,N1,K2,N2) BE
+    $( FORMSADDR(K1,N1)
+    $( LET M1,V1 = ADDR.M,ADDR.V
+       TEST F=F.CMP
+         THEN FORMSADDR(K2,N2)
+         ELSE FORMDADDR(K2,N2)
+       CODESD(F,M1,V1,ADDR.M,ADDR.V)
+    $) $)
+
+
+AND GENRS(F,R,K,N) BE
+    $( FORMSADDR(K,N)
+       FORGET(K.REG,R)
+       IF F=F.MUL \/ F=F.DIV \/ F=F.ASHC DO
+          // these instrs use a register pair
+          FORGET(K.REG,R\/1)
+       CODERS(F,R,ADDR.M,ADDR.V)
+    $)
+
+
+AND GENRD(F,R,K,N) BE
+    $( FORMDADDR(K,N)
+       CODERS(F,R,ADDR.M,ADDR.V)
+    $)
+
+
+AND GEND(F,K,N) BE
+    $( TEST F=F.TST
+         THEN FORMSADDR(K,N)
+         ELSE FORMDADDR(K,N)
+       CODED(F,ADDR.M,ADDR.V)
+    $)
+
+
+AND GEN(F) BE IF INCODE DO
+    $( CHECKBREFS(1)
+       CODE(F,0)
+    $)
+
+
+// generate a JMP or JSR instr;
+// one extra level of indirection
+AND GENJ(F,R,K,N) BE
+    $( FORMSADDR(K,N)
+       ADDR.M := (ADDR.M & M.10)=0 ->
+          ADDR.M+M.10, (ADDR.M & 7)+M.V70
+       IF F=F.JSR DO CHECKBREFS(3)
+       CODERS(F,R,ADDR.M,ADDR.V)
+       IF F=F.JMP DO INCODE := FALSE
+    $)
+
+
+.
+
+SECTION "CGPDP7"
+
+GET "TCG.BPL"
+
+// forms a source address (M,V) pair;
+// looks in the registers
+LET FORMSADDR(K,N) BE
+    $( LET R=LOOKINREGS(K,N)
+       IF R>=0 DO
+       $( ADDR.M,ADDR.V := R,0
+          RETURN $)
+       FORMADDR(K,N)
+    $)
+
+
+// forms a destination address (M,V) pair;
+// forgets the value of the destination
+AND FORMDADDR(K,N) BE
+    $( FORGET(K,N)
+       FORMADDR(K,N)
+    $)
+
+
+// forms a machine address pair (M,V)
+// for use by a CODE- routine
+AND FORMADDR(K,N) BE
+   $(1 SWITCHON K INTO
+       $( CASE K.LOC:
+             ADDR.M,ADDR.V := M.V6P,2*(N-2)
+             ENDCASE
+
+          CASE K.GLOB:
+             ADDR.M,ADDR.V := M.V6G,2*N
+             ENDCASE
+
+          CASE K.LAB:
+             ADDR.M,ADDR.V := M.L67,N
+             ENDCASE
+
+          CASE K.NUMB:
+             ADDR.M,ADDR.V := M.V27,N
+             ENDCASE
+
+          CASE K.REG:
+             ADDR.M,ADDR.V := N,0
+             ENDCASE
+
+          CASE K.X0: CASE K.X1: CASE K.X2: CASE K.X3:
+             ADDR.M,ADDR.V := M.V60+K-K.X0,2*N
+       $)
+       IF M.V60<=ADDR.M<=M.V67 & ADDR.V=0 DO
+          ADDR.M := (ADDR.M & 7)+M.10
+   $)1
+
+
+
+// called by GENMOV to update the contents
+// of the registers
+AND REMEM(K1,N1,K2,N2) BE
+       TEST K2=K.REG
+         THEN SETINFO(N2,K1,N1)
+         ELSE IF K1=K.REG & REG.K!N1=K.NONE DO
+                 SETINFO(N1,K2,N2)
+
+
+// sets the info for register R to (K,N)
+AND SETINFO(R,K,N) BE
+    $( SWITCHON K INTO
+       $( CASE K.REG:
+             K := REG.K!N
+             N := REG.N!N
+             ENDCASE
+
+          DEFAULT:
+             K := K.NONE
+          CASE K.LOC: CASE K.GLOB:
+          CASE K.LAB:
+          CASE K.MLOC: CASE K.MGLOB:
+          CASE K.MLAB:
+          CASE K.LVLOC: CASE K.LVGLOB:
+          CASE K.LVLAB:
+          CASE K.NUMB:
+       $)
+       REG.K!R := K
+       REG.N!R := N
+    $)
+
+
+// forgets the value of a register or variable
+AND FORGET(K,N) BE
+    $( SWITCHON K INTO
+       $( CASE K.REG:
+             REG.K!N := K.NONE
+          DEFAULT:
+             RETURN
+
+          CASE K.LOC:
+             FORGET(K.MLOC,N)
+             ENDCASE
+
+          CASE K.GLOB:
+             FORGET(K.MGLOB,N)
+             ENDCASE
+
+          CASE K.LAB:
+             FORGET(K.MLAB,N)
+
+          CASE K.MLOC: CASE K.MGLOB: CASE K.MLAB:
+       $)
+       FOR R=R0 TO R3 DO IF REG.K!R=K & REG.N!R=N DO
+             REG.K!R := K.NONE
+    $)
+
+
+// forgets the values of all variables; called
+// after an indirect assignment
+AND FORGETVARS() BE
+    FOR R=R0 TO R3 SWITCHON REG.K!R INTO
+       $( CASE K.LOC: CASE K.GLOB:
+          CASE K.LAB:
+          CASE K.MLOC: CASE K.MGLOB:
+          CASE K.MLAB:
+             REG.K!R := K.NONE
+          DEFAULT:
+       $)
+
+
+// forgets the contents of all registers; called
+// after labels, procedure calls
+AND FORGETALL() BE
+    FOR R=R0 TO R3 DO REG.K!R := K.NONE
+
+
+// makes one word of code; L indicates a label ref
+AND CODE(A, L) BE
+$(1 UNLESS L=0 DO LABREF(L, STVP)
+    STV!STVP := A
+    STVP := STVP + 1
+    CHECKSPACE()
+$)1
+
+// make an operand if required
+AND CODERAND(M, V) BE
+$(1 UNLESS (M&M.V)=0 DO CODE(V, 0)
+    UNLESS (M&M.L)=0 DO TEST M=M.L27
+       THEN CODE(0,V)
+       ELSE CODE(-2*STVP-2, -V)
+$)1
+
+AND CODED(F, M, V) BE IF INCODE DO
+$(1 CHECKBREFS(2)
+    CODE(F+(M&#77),0)
+    CODERAND(M, V)  $)1
+
+AND CODERS(F, R, M, V) BE IF INCODE DO
+$(1 CHECKBREFS(2)
+    CODE(F+(R<<6)+(M&#77),0)
+    CODERAND(M, V)  $)1
+
+AND CODESD(F, M1, V1, M2, V2) BE IF INCODE DO
+$(1 CHECKBREFS(3)
+    CODE(F+((M1&#77)<<6)+(M2&#77),0)
+    CODERAND(M1,V1)
+    CODERAND(M2,V2)  $)1
+
+
+// inserts a profile count
+AND INSERTCOUNT() BE
+$(1 COUNTFLAG := FALSE
+    CODESD(F.ADD,M.V27,1,M.V27,0)
+    CODED(F.ADC,M.V27,0) $)1
+
+
+// set the label L to the current location
+AND SETLAB(L) BE
+$(1 LET P = BREFV
+    UNLESS LABV!L=-1 DO CGERROR("LABEL L%N SET TWICE", L)
+    LABV!L := STVP
+    // fill in forward branch refs
+    UNTIL P>=BREFP DO TEST !P=L
+      THEN $( LET LOC = P!1
+              LET A = STVP - LOC - 1
+              IF A>127 DO CGERROR("BAD BR LABEL L%N", L)
+              STV!LOC := STV!LOC + A
+              BREFP := BREFP - 2
+              FOR Q = P TO BREFP-1 DO Q!0 := Q!2  $)
+      ELSE P := P+2
+$)1
+
+
+// compile OCODE label L
+AND CGLAB(L) BE
+$(1 UNLESS INCODE DO GENBREFJUMPS(25,L)
+    UNLESS BREFP=BREFV DO
+       // eliminate redundant branches  (BR .+2)
+       IF (BREFP-2)!0=L & (BREFP-2)!1=STVP-1 DO
+          STVP, BREFP := STVP-1, BREFP-2
+    SETLAB(L)
+    INCODE := TRUE
+    COUNTFLAG := PROFILE
+    FORGETALL()
+$)1
+
+
+// compiles names for S.ENTRY, S.SECTION, S.NEEDS
+AND CGNAME(OP,N) BE
+$(1 LET V = VEC 9
+    DATE(V+4)
+    PUTBYTE(V, 0, OP=S.ENTRY->7,17)
+    FOR I=1 TO N DO
+    $( LET C = RDN()
+       IF I<=7 DO PUTBYTE(V,I,C) $)
+    FOR I = N+1 TO 7 DO PUTBYTE(V, I, N=0->'**','*S')
+    PUTBYTE(V,8,'*S')
+    UNLESS OP=S.ENTRY \/ N=0 DO
+    $( DP := DP-4
+       CHECKSPACE()
+       H1!DP, H2!DP := 0, OP
+       H3!DP := RAD50(V,1)
+       H4!DP := RAD50(V,4)
+       !NEEDSLISTE := DP
+       NEEDSLISTE := DP
+    $)
+    UNLESS OP=S.NEEDS DO IF NAMING DO
+    $( IF OP=S.SECTION DO CODE(SECWORD,0)
+       FOR I = 0 TO OP=S.ENTRY->3,8 DO CODE(V!I,0)
+    $)
+$)1
+
+
+AND RAD50(S,I) = VALOF
+$(1 LET R(C) =
+       'A' <= C <= 'Z' -> C-#100,
+              C  = '$' -> #33,
+              C  = '.' -> #34,
+       '0' <= C <= '9' -> C-#22, 0
+    LET VAL = 0
+    FOR J = I TO I+2 DO VAL := VAL*#50+R(GETBYTE(S,J))
+    RESULTIS VAL
+$)1
+
+
+AND CGSTRING(N) BE
+    $(1 LET L,W = NEXTPARAM(),N
+        LOADT(K.LVLAB,L)
+        CGDATA(S.DATALAB, L)
+        $( UNLESS N=0 DO W := RDN()<<8 \/ W
+           CGDATA(S.ITEMN, W)
+           IF N<=1 BREAK
+           N, W := N-2, RDN()  $) REPEAT
+    $)1
+
+
+// generate a label reference
+// L>0 => relocation
+AND LABREF(L, P) BE
+$(1 DP := DP-3
+    CHECKSPACE()
+    H1!DP, H2!DP, H3!DP := 0, L, P
+    !REFLISTE := DP
+    REFLISTE := DP  $)1
+
+
+AND CGDATA(A, L) BE
+$(1 DP := DP-3
+    CHECKSPACE()
+    H1!DP, H2!DP, H3!DP := 0, A, L
+    !DLISTE := DP
+    DLISTE := DP  $)1
+
+
+AND CGSTATICS() BE
+$(1 LET D = DLIST
+    UNTIL D=0 DO
+    $( SWITCHON H2!D INTO
+       $( CASE S.DATALAB: SETLAB(H3!D);    ENDCASE
+          CASE S.ITEML:   CODE(0, H3!D);   ENDCASE
+          CASE S.ITEMN:   CODE(H3!D, 0);   ENDCASE  $)
+       D := !D  $)
+$)1
+
+
+
+AND INITDATALISTS() BE
+$(1 REFLIST := 0
+    REFLISTE := @REFLIST
+    DLIST := 0
+    DLISTE := @DLIST
+    NEEDSLIST := 0
+    NEEDSLISTE := @NEEDSLIST
+$)1
+
+
+AND CHECKSPACE() BE IF STV+STVP>DP DO
+$(1 CGERROR("PROGRAM TOO LARGE %N WORDS COMPILED", STVP)
+    STOP(1)  $)1
+
+
+.
+
+SECTION "CGPDP8"
+
+GET "TCG.BPL"
+
+LET OUTPUTSECTION(LAST) BE
+$(1 LET RL = REFLIST
+    LET RC = 0
+
+    UNTIL RL=0 DO      // fill in label refs
+    $( LET L = H2!RL
+       AND A = H3!RL
+       LET LABVAL = 0
+       TEST L>0
+         THEN RC := RC+1
+         ELSE L := -L
+       LABVAL := LABV!L
+       IF LABVAL=-1 DO
+          CGERROR("LABEL L%N UNSET", L)
+       STV!A := STV!A + 2*LABVAL
+       RL := !RL  $)
+
+    IF LISTING DO
+    $( WRITES("*N; .CSECT*NB:*N")
+       RL := REFLIST
+       FOR P = 0 TO STVP-1 DO
+       $( LET S = "  "
+          WRITEF(" %O6",STV!P&#177777)
+          UNLESS RL=0 DO IF H3!RL=P DO
+          $( IF H2!RL>0 DO S := "+B"
+             RL := !RL  $)
+          WRITEF("%S; %O4*N", S, 2*P)  $)
+       WRITES(" .END*N")
+    $)
+
+    IF BINING DO
+    $( SELECTOUTPUT(GOSTREAM)  // output a HUNK
+       OBJWORD(T.HUNK)
+       OBJWORD(STVP)
+       FOR P=0 TO STVP-1 DO OBJWORD(STV!P)
+       IF RC>0 DO              // output RELOC block
+       $( OBJWORD(T.RELOC)
+          OBJWORD(RC)
+          RL := REFLIST
+          UNTIL RL=0 DO
+          $( IF H2!RL>0 DO OBJWORD(H3!RL)
+             RL := !RL $)
+       $)
+       OBJWORD(T.END)
+       SELECTOUTPUT(SYSOUT)
+    $)
+
+    IF RSXOBJ DO
+    $( LET GSDREC = TABLE
+               #X0001,  // GSD
+               #006410, // RAD50  "BCPL  "
+               #045400,
+               0,
+               0,
+               #63337,  // RAD50  "PROG  "
+               #25700,
+               #02450,  // PSECT name
+               #0       // fill in length here
+       LET V = VEC 50
+       BINV,BINP := V,0
+       IF OVERLAYING & LAST DO CODE(0,0)
+       SELECTOUTPUT(GOSTREAM)
+       GSDREC!8 := STVP*2      // fill in length
+       FOR I = 0 TO 8 DO       // output GSD record
+          RSXWORD(GSDREC!I)
+       ENDRECORD()
+       RL := NEEDSLIST         // output externals
+       UNTIL RL=0 DO
+       $( LET T = #02100       // .GLOBAL reference
+          RSXWORD(#X0001)      // GSD
+          IF H2!RL=S.SECTION DO
+          $( RSXWORD(H3!RL)    // name
+             RSXWORD(H4!RL)
+             RSXWORD(#02150)   // .GLOBAL definition
+             RSXWORD(0)
+             T := #03000 $)    // .IDENT
+          RSXWORD(H3!RL)       // name
+          RSXWORD(H4!RL)
+          RSXWORD(T)
+          RSXWORD(0)
+          ENDRECORD()
+          RL := !RL
+       $)
+       RSXWORD(#X0002)         // end of GSD
+       ENDRECORD()
+       RSXWORD(#X0004)         // RLD to set loc counter
+       RSXWORD(#X0007)
+       RSXWORD(#63337)         // RAD50 "PROG  "
+       RSXWORD(#25700)
+       RSXWORD(0)
+       ENDRECORD()
+       RL := REFLIST
+       FOR T = 0 TO STVP-1 BY 20 DO
+       $( LET RLDSW = FALSE    // set TRUE if RLD req
+          RSXWORD(#X0003)      // TXT record
+          RSXWORD(2*T)         // load address
+          FOR P = T TO T+19 DO
+             IF P<STVP DO RSXWORD(STV!P)
+          ENDRECORD()
+          UNTIL RL=0 DO
+          $( LET A = H3!RL     // addr of word to reloc
+             IF H2!RL>0 DO
+             $( IF A>T+19 BREAK
+                UNLESS RLDSW DO   // start RLD record
+                   RSXWORD(#X0004)
+                RLDSW := TRUE
+                RSXWORD(#X0001+(2*(A-T+2)<<8))
+                RSXWORD(STV!A)  $)
+             RL := !RL  $)
+          IF RLDSW DO             // end record if req
+             ENDRECORD()
+       $)
+       RSXWORD(#X0006)         // end of module record
+       ENDRECORD()
+       SELECTOUTPUT(SYSOUT)
+    $)
+$)1
+
+
+AND OBJWORD(W) BE
+$(1 WRCH(W & 255)
+    WRCH(W>>8 & 255)  $)1
+
+
+AND RSXWORD(W) BE
+$(1 BINV!BINP := W
+    BINP := BINP+1 $)1
+
+
+AND ENDRECORD() BE
+$(1 LET BYTES = 2*BINP+4
+    LET CKSUM = -1-BYTES
+    OBJWORD(1)
+    OBJWORD(BYTES)
+    FOR I=0 TO BINP-1 DO
+    $( LET W = BINV!I
+       OBJWORD(W)
+       CKSUM := CKSUM-W-(W>>8)
+    $)
+    OBJWORD(CKSUM&255)
+    BINP := 0
+$)1
+
+
+AND DBOUTPUT() BE
+$(1 LET NL = "*N      "
+    WRITEF("OP=%N PNDOP=%N SSP=%N LOC=%O4*NSTACK ",
+           OP,PENDINGOP,SSP,STVP*2)
+    FOR P=ARG1 TO TEMPV BY -3 DO
+    $( IF (ARG1-P) REM 30 = 27 DO WRITES(NL)
+       WRKN(H1!P,H2!P) $)
+    WRITES("*NBREFS ")
+    FOR P=BREFV TO BREFP-2 BY 2 DO
+    $( IF P-BREFV REM 10 = 8 DO WRITES(NL)
+       WRITEF("L%N %O4 ",P!0,2*P!1) $)
+    WRITES("*NREGS  ")
+    FOR R=R0 TO R3 DO UNLESS REG.K!R=K.NONE DO
+    $( WRITEF("R%N=",R)
+       WRKN(REG.K!R,REG.N!R) $)
+    NEWLINE()
+$)1
+
+
+AND WRKN(K,N) BE
+$(1 LET S = VALOF
+       SWITCHON K INTO
+       $( DEFAULT: RESULTIS "?"
+          CASE K.NUMB:   RESULTIS "N"
+          CASE K.LOC:    RESULTIS "P"
+          CASE K.GLOB:   RESULTIS "G"
+          CASE K.LAB:    RESULTIS "L"
+          CASE K.MLOC:   RESULTIS "ML"
+          CASE K.MGLOB:  RESULTIS "MG"
+          CASE K.MLAB:   RESULTIS "ML"
+          CASE K.LVLOC:  RESULTIS "@P"
+          CASE K.LVGLOB: RESULTIS "@G"
+          CASE K.LVLAB:  RESULTIS "@L"
+          CASE K.REG:    RESULTIS "R"
+          CASE K.X0:     RESULTIS "X0 "
+          CASE K.X1:     RESULTIS "X1 "
+          CASE K.X2:     RESULTIS "X2 "
+          CASE K.X3:     RESULTIS "X3 "
+       $)
+    WRITEF("%S%N  ",S,N)
+$)1
+
+
+
+
+
+

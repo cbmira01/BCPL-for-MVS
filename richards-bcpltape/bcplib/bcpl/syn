@@ -1,0 +1,1099 @@
+SECTION "SYN"
+GET "LIBHDR"
+GET "HEADERS(SYNHDR)"
+
+LET NEWVEC(N) = VALOF
+    $(  TREEP := TREEP - N - 1
+        IF TREEP <= WORKBASE THEN CAEREPORT(-98)
+        RESULTIS TREEP  $)
+
+AND UNLIST(P, N) BE
+    $( IF P=TREEP DO TREEP := TREEP + N $)
+
+AND LIST1(X) = VALOF
+    $( LET P = NEWVEC(0)
+       P!0 := X
+       RESULTIS P  $)
+
+AND LIST2(X, Y) = VALOF
+     $( LET P = NEWVEC(1)
+        P!0, P!1 := X, Y
+        RESULTIS P   $)
+
+AND LIST3(X, Y, Z) = VALOF
+     $( LET P = NEWVEC(2)
+        P!0, P!1, P!2 := X, Y, Z
+        RESULTIS P     $)
+
+AND LIST4(X, Y, Z, T) = VALOF
+     $( LET P = NEWVEC(3)
+        P!0, P!1, P!2, P!3 := X, Y, Z, T
+        RESULTIS P   $)
+
+AND LIST5(X, Y, Z, T, U) = VALOF
+     $( LET P = NEWVEC(4)
+        P!0, P!1, P!2, P!3, P!4 := X, Y, Z, T, U
+        RESULTIS P   $)
+
+AND LIST6(X, Y, Z, T, U, V) = VALOF
+     $( LET P = NEWVEC(5)
+        P!0, P!1, P!2, P!3, P!4, P!5 := X, Y, Z, T, U, V
+        RESULTIS P  $)
+
+AND LIST7(X, Y, Z, T, U, V, W) = VALOF
+     $( LET P = NEWVEC(6)
+        P!0, P!1, P!2, P!3, P!4, P!5, P!6 := X, Y, Z, T, U, V, W
+        RESULTIS P  $)
+
+AND ISCCOREND(CH) = CH='*N' -> TRUE,
+               CH='*P' -> TRUE,
+               CH='*C' -> TRUE,
+               CH=ENDSTREAMCH -> TRUE,
+                          FALSE
+
+
+AND CAERRWRITE(N) BE
+           $( IF PRSOURCE & NOT ISCCOREND(CH) DO NEWLINE()
+              WRITEF("Syntax error near line %N", LINECOUNT REM 10000)
+              TEST LINECOUNT >= 10000 DO
+                  WRITES(" of GET file:  ")
+              OR
+                  WRITES(":  ")
+              CAEMESSAGE(N)
+              TEST PRSOURCE & LINECOUNT < 10000 DO
+                  TEST ISCCOREND(CH) DO NEWLINE() OR WRITES("*N        ... ")
+              OR  WRCHBUF()
+              IF REPORTCOUNT>=REPORTMAX DO
+                      WRITES("COMPILATION ABORTED*N")  $)
+
+AND CAEREPORT(N) BE
+     $( REPORTCOUNT := REPORTCOUNT + 1
+        IF N<0 THEN $( N := -N; REPORTMAX := 0 $)
+
+        IF QUIET & NOT PRSOURCE & REPORTCOUNT=1 &
+               GETBYTE(SECTIONNAME, 0) ~= 0 DO
+            WRITEF("Section *"%S*"*N", SECTIONNAME)
+
+        CAERRWRITE(N)
+
+        IF REPORTCOUNT>=REPORTMAX DO STOP(8)
+        NLPENDING := FALSE
+
+        UNTIL SYMB=S.LSECT | SYMB=S.RSECT |
+              SYMB=S.LET | SYMB=S.AND |
+              SYMB=S.GLOBAL | SYMB=S.STATIC | SYMB=S.MANIFEST |
+              SYMB=S.END | NLPENDING  | SYMB=S.SEMICOLON
+                    DO NEXTSYMB()
+        IGNORE(S.SEMICOLON)
+        LONGJUMP(REC.P, REC.L)   $)
+
+AND FORMTREE() =  VALOF
+    $(1 CHCOUNT := 0
+        FOR I = 0 TO 63 DO CHBUF!I := 0
+
+     $( LET V = VEC 10   || for 'GET' streams
+        GETV, GETP, GETT := V, 0, 10
+
+     $( LET V = VEC 100
+        WORDV := V
+
+     $( LET V = VEC 256
+        CHARV, CHARP := V, 0
+
+     $( LET V = VEC 100
+        NAMETABLE, NAMETABLESIZE := V, 100
+        FOR I = 0 TO 100 DO NAMETABLE!I := 0
+
+        REC.P, REC.L := LEVEL(), L1
+
+        RCH()
+
+        IF CH=ENDSTREAMCH RESULTIS 0
+
+        DECLSYSWORDS()
+     L: NEXTSYMB()
+
+     L2:IF LEXTEST DO   ||   PP debugging option
+             $( WRITEF("%N %S*N", SYMB, WORDV)
+                IF SYMB=S.END RESULTIS 0
+                GOTO L  $)
+
+    $(  LET RSPROG(N) = VALOF
+        $(  LET A = 0
+            NEXTSYMB(); A := RBEXP()
+            UNLESS H1!A=S.STRING DO CAEREPORT(89)
+            IF N=S.SECTION DO
+            $(  SECTIONNAME!0, SECTIONNAME!1, SECTIONNAME!2 :=
+                           A!1, A!2, A!3
+                IF GETBYTE(SECTIONNAME, 0) > 8 DO
+                    PUTBYTE(SECTIONNAME, 0, 8)
+                UNLESS PRSOURCE | QUIET DO
+                    WRITEF("Section *"%S*"*N", SECTIONNAME)
+            $)
+            RESULTIS LIST3(N, A, RPROG())
+        $)
+
+        AND RPROG() =
+                SYMB=S.NEEDS -> RSPROG(S.NEEDS),
+                                RDBLOCKBODY()
+
+        LET A = SYMB=S.SECTION -> RSPROG(S.SECTION),
+                                RPROG()
+        UNLESS SYMB=S.END DO CAEREPORT(99)
+
+        RESULTIS A
+    $)
+    L1: IF SYMB=S.RSECT THEN NEXTSYMB()
+        IF SYMB=S.AND THEN SYMB := S.LET
+        GOTO L2
+$)1
+
+
+
+AND CAEMESSAGE(N) BE
+    $( LET S = VALOF
+
+         SWITCHON N INTO
+
+         $( DEFAULT:  WRITEN(N); RETURN
+
+            CASE 87: RESULTIS "GETs too deeply nested"
+            CASE 88: WRITEF("Input %S not provided for GET", WORDV)
+                     RETURN
+            CASE 94: WRITEF("Illegal character (hex %X2)", CH)
+                     CH := '*S'
+                     RETURN
+            CASE 89: RESULTIS "String expected"
+            CASE 91: RESULTIS "'(' or ')' expected"
+            CASE 95: RESULTIS "String too long"
+            CASE 98: RESULTIS "Workspace too small, increase region"
+            CASE 99: RESULTIS "Incorrect termination"
+
+            CASE 8:CASE 40:CASE 43:
+                     RESULTIS "Name expected"
+            CASE 6: RESULTIS "'$(' expected"
+            CASE 7: RESULTIS "'$)' expected"
+            CASE 9: RESULTIS "Untagged '$)' mismatch"
+            CASE 32: RESULTIS "Error in expression"
+            CASE 33: RESULTIS "Error in number"
+            CASE 34: RESULTIS "Incorrect use of newline in a string"
+            CASE 15:CASE 19:CASE 41: RESULTIS "')' missing"
+            CASE 35: RESULTIS "Illegal floating-point operator"
+            CASE 30: RESULTIS "',' missing"
+            CASE 45: RESULTIS "':' or '=' expected"
+            CASE 42: RESULTIS "'=' or 'BE' expected"
+            CASE 44: RESULTIS "'=' or '(' expected"
+            CASE 50: RESULTIS "Error in label"
+            CASE 51: RESULTIS "Error in command"
+            CASE 54: RESULTIS "'OR' expected"
+            CASE 57: RESULTIS "'=' expected"
+            CASE 58: RESULTIS "'TO' expected"
+            CASE 60: RESULTIS "'INTO' expected"
+            CASE 61:CASE 62: RESULTIS "':' expected"
+            CASE 63: RESULTIS "'**|' or '**/' missing"
+                       $)
+
+         WRITES(S)
+            $)
+
+LET RDBLOCKBODY() = VALOF
+    $(1 LET P, L = REC.P, REC.L
+        LET A = 0
+        LET LN = LINECOUNT
+
+        REC.P, REC.L := LEVEL(), RECOVER
+
+        IGNORE(S.SEMICOLON)
+
+        SWITCHON SYMB INTO
+     $( CASE S.MANIFEST:
+        CASE S.STATIC:
+        CASE S.GLOBAL:
+            $(  LET OP = SYMB
+                NEXTSYMB()
+                A := RDSECT(RDCDEFS)
+                A := LIST4(OP, A, RDBLOCKBODY(), LN)
+                GOTO RET  $)
+
+
+        CASE S.LET:
+                    NEXTSYMB()
+                    A := RDEF()
+           RECOVER: WHILE SYMB=S.AND DO
+                          $( LET LN2 = LINECOUNT
+                             NEXTSYMB()
+                             A := LIST4(S.AND, A, RDEF(), LN2)  $)
+                    A := LIST4(S.LET, A, RDBLOCKBODY(), LN)
+                    GOTO RET
+
+        DEFAULT: A := RDSEQ()
+
+                 UNLESS SYMB=S.RSECT \/ SYMB=S.END DO
+                          CAEREPORT(51)
+
+        RET:   REC.P, REC.L := P, L
+               RESULTIS A   $)1
+
+AND RDSEQ() = VALOF
+    $( LET A = 0
+       IGNORE(S.SEMICOLON)
+       IF SYMB=S.RSECT | SYMB=S.END RESULTIS 0
+       A := RCOM()
+       IF SYMB=S.RSECT | SYMB=S.END RESULTIS A
+       RESULTIS LIST3(S.SEQ, A, RDSEQ())   $)
+
+
+AND RDCDEFS() = VALOF
+    $(1 LET A, B = 0, 0
+        LET PTR = @ A
+        LET P, L = REC.P, REC.L
+        REC.P, REC.L := LEVEL(), RECOVER
+
+        $( B := RNAME()
+           TEST SYMB=S.EQ | SYMB=S.COLON THEN NEXTSYMB()
+                                           OR CAEREPORT(45)
+           !PTR := LIST4(S.CONSTDEF, 0, B, REXP(0))
+           PTR := @ H2!(!PTR)
+  RECOVER: IGNORE(S.SEMICOLON) $) REPEATWHILE SYMB=S.NAME
+
+        REC.P, REC.L := P, L
+        RESULTIS A  $)1
+
+AND RDSECT(R) = VALOF
+    $(  LET TAG, A = WORDNODE, 0
+        LET P, L = REC.P, REC.L
+        REC.P, REC.L := LEVEL(), RECOVER
+        CHECKFOR(S.LSECT, 6)
+L99:    A := R()
+        REC.P, REC.L := P, L
+        UNLESS SYMB=S.RSECT DO CAEREPORT(7)
+        TEST TAG=WORDNODE
+             THEN NEXTSYMB()
+               OR IF WORDNODE=NULLTAG DO
+                      $( SYMB := 0
+                         CAEREPORT(9)  $)
+        RESULTIS A
+
+RECOVER:  IF R = RDSEQ DO R := RDBLOCKBODY
+          GOTO L99
+
+                     $)
+
+
+AND RNAMELIST() = VALOF
+    $(  LET A = RNAME()
+        UNLESS SYMB=S.COMMA RESULTIS A
+        NEXTSYMB()
+        RESULTIS LIST3(S.COMMA, A, RNAMELIST())   $)
+
+
+AND RNAME() = VALOF
+    $( LET A = WORDNODE
+       CHECKFOR(S.NAME, 8)
+       RESULTIS A  $)
+
+AND IGNORE(ITEM) BE IF SYMB=ITEM DO NEXTSYMB()
+
+AND CHECKFOR(ITEM, N) BE
+      $( UNLESS SYMB=ITEM DO CAEREPORT(N)
+         NEXTSYMB()  $)
+
+LET RBEXP() = VALOF
+  $(1   LET A, OP = 0, SYMB
+
+        SWITCHON SYMB INTO
+
+    $(  DEFAULT:
+            CAEREPORT(32)
+
+        CASE S.QUERY:
+            NEXTSYMB(); RESULTIS LIST1(S.QUERY)
+
+        CASE S.TRUE:
+        CASE S.FALSE:
+        CASE S.NAME:
+            A := WORDNODE
+            NEXTSYMB()
+            RESULTIS A
+
+        CASE S.STRING:
+            A := NEWVEC(WORDSIZE+1)
+            A!0 := S.STRING
+            FOR I = 0 TO WORDSIZE DO A!(I+1) := WORDV!I
+            NEXTSYMB()
+            RESULTIS A
+
+        CASE S.NUMBER:
+            A := LIST2(S.NUMBER, DECVAL)
+            NEXTSYMB()
+            RESULTIS A
+
+        CASE S.LPAREN:
+            NEXTSYMB()
+            A := REXP(0)
+            CHECKFOR(S.RPAREN, 15)
+            RESULTIS A
+
+        CASE S.VALOF:
+            NEXTSYMB()
+            RESULTIS LIST2(S.VALOF, RCOM())
+
+        CASE S.VECAP: OP := S.RV
+        CASE S.FLOAT:CASE S.FIX:CASE S.ABS:CASE S.FABS:
+        CASE S.LV:
+        CASE S.RV: NEXTSYMB(); RESULTIS LIST2(OP, REXP(35))
+
+        CASE S.FPLUS:
+        CASE S.PLUS: NEXTSYMB(); RESULTIS REXP(34)
+
+        CASE S.FMINUS: NEXTSYMB(); RESULTIS LIST2(S.FNEG, REXP(34))
+
+        CASE S.MINUS: NEXTSYMB()
+                      A := REXP(34)
+                      TEST H1!A=S.NUMBER
+                          THEN H2!A := - H2!A
+                            OR A := LIST2(S.NEG, A)
+                      RESULTIS A
+
+        CASE S.NOT: NEXTSYMB(); RESULTIS LIST2(S.NOT, REXP(24))
+
+        CASE S.SLCT:
+        $(  LET B, C = 0, 0
+            NEXTSYMB(); A := REXP(0)
+            IF SYMB=S.COLON THEN
+            $(  NEXTSYMB(); B := REXP(0)
+                IF SYMB=S.COLON THEN
+                $(  NEXTSYMB(); C := REXP(0)   $)
+            $)
+            RESULTIS LIST4(S.SLCT, A, B, C)
+        $)
+
+        CASE S.TABLE: NEXTSYMB()
+                      RESULTIS LIST2(S.TABLE, REXPLIST())   $)1
+
+
+AND REXP(N) = VALOF
+    $(1 LET A = RBEXP()
+
+        LET B, C, P, Q = 0, 0, 0, 0
+
+  L: $( LET OP = SYMB
+
+        IF NLPENDING RESULTIS A
+
+        SWITCHON OP INTO
+    $(B DEFAULT: RESULTIS A
+
+        CASE S.LPAREN: NEXTSYMB()
+                       B := 0
+                       UNLESS SYMB=S.RPAREN DO B := REXPLIST()
+                       CHECKFOR(S.RPAREN, 19)
+                       A := LIST3(S.FNAP, A, B)
+                       GOTO L
+
+        CASE S.SLCTAP:
+        CASE S.VECAP: P := 40; GOTO LASSOC
+        CASE S.BYTEAP: P := 36; GOTO LASSOC
+
+        CASE S.FMULT: CASE S.FDIV:
+        CASE S.REM:CASE S.MULT:CASE S.DIV: P := 35; GOTO LASSOC
+
+        CASE S.FPLUS: CASE S.FMINUS:
+        CASE S.PLUS:CASE S.MINUS: P := 34; GOTO LASSOC
+
+        CASE S.FEQ: CASE S.FNE:
+        CASE S.FLE: CASE S.FGE:
+        CASE S.FLS: CASE S.FGR:
+        CASE S.EQ:CASE S.NE:
+        CASE S.LE:CASE S.GE:
+        CASE S.LS:CASE S.GR:
+            IF N GE 30 RESULTIS A
+
+            $(R NEXTSYMB()
+                B := REXP(30)
+                A := LIST3(OP, A, B)
+                TEST C=0 THEN C :=  A
+                           OR C := LIST3(S.LOGAND, C, A)
+                A, OP := B, SYMB
+            $)R REPEATWHILE S.EQ<=OP<=S.GE | S.FEQ<=OP<=S.FGE
+
+            A := C
+            GOTO L
+
+        CASE S.LSHIFT:CASE S.RSHIFT: P, Q := 25, 30; GOTO DIADIC
+
+        CASE S.LOGAND: P := 23; GOTO LASSOC
+
+        CASE S.LOGOR: P := 22; GOTO LASSOC
+
+        CASE S.EQV:CASE S.NEQV: P := 21; GOTO LASSOC
+
+        CASE S.COND:
+                IF N GE 13 RESULTIS A
+                NEXTSYMB()
+                B := REXP(0)
+                CHECKFOR(S.COMMA, 30)
+                A := LIST4(S.COND, A, B, REXP(0))
+                GOTO L
+
+
+        LASSOC: Q := P
+
+        DIADIC: IF N GE P RESULTIS A
+                NEXTSYMB()
+                A := LIST3(OP, A, REXP(Q))
+                GOTO L                     $)B     $)1
+
+LET REXPLIST() = VALOF
+    $(1 LET A = 0
+        LET PTR = @ A
+
+     $( LET B = REXP(0)
+        UNLESS SYMB=S.COMMA DO $( !PTR := B
+                                  RESULTIS A  $)
+        NEXTSYMB()
+        !PTR := LIST3(S.COMMA, B, 0)
+        PTR := @ H3!(!PTR)  $) REPEAT
+    $)1
+
+LET RDEF() = VALOF
+    $(1 LET N = RNAMELIST()
+        SWITCHON SYMB INTO
+     $( CASE S.LPAREN:
+             $( LET A = 0
+                NEXTSYMB()
+                UNLESS H1!N=S.NAME DO CAEREPORT(40)
+                IF SYMB=S.NAME DO A := RNAMELIST()
+                CHECKFOR(S.RPAREN, 41)
+
+                IF SYMB=S.BE DO
+                     $( NEXTSYMB()
+                        RESULTIS LIST5(S.RTDEF, N, A, RCOM(), 0)  $)
+
+                IF SYMB=S.EQ DO
+                     $( NEXTSYMB()
+                        RESULTIS LIST5(S.FNDEF, N, A, REXP(0), 0)  $)
+
+                CAEREPORT(42)  $)
+
+        DEFAULT: CAEREPORT(44)
+
+        CASE S.EQ:
+                NEXTSYMB()
+                IF SYMB=S.VEC DO
+                     $( NEXTSYMB()
+                        UNLESS H1!N=S.NAME DO CAEREPORT(43)
+                        RESULTIS LIST3(S.VECDEF, N, REXP(0))  $)
+                RESULTIS LIST3(S.VALDEF, N, REXPLIST())  $)1
+
+LET RBCOM() = VALOF
+   $(1 LET A, B, OP = 0, 0, SYMB
+       LET L = LINECOUNT
+
+        SWITCHON SYMB INTO
+     $( DEFAULT: RESULTIS 0
+
+        CASE S.NAME:CASE S.NUMBER:CASE S.STRING:
+        CASE S.TRUE:CASE S.FALSE:CASE S.LV:CASE S.RV:CASE S.VECAP:
+        CASE S.LPAREN:
+                A := REXPLIST()
+
+                IF SYMB=S.ASS | (SYMB&BECOMESBIT) NE 0 THEN
+                    $(  OP := SYMB
+                        NEXTSYMB()
+                        RESULTIS LIST4(OP, A, REXPLIST(), L)  $)
+
+                IF SYMB=S.COLON DO
+                     $( UNLESS H1!A=S.NAME DO CAEREPORT(50)
+                        NEXTSYMB()
+                        RESULTIS LIST4(S.COLON, A, RBCOM(), 0)  $)
+
+                IF H1!A=S.FNAP DO
+                     $( LET B, C = H2!A, H3!A
+                        UNLIST(A, 3)
+                        RESULTIS LIST4(S.RTAP, B, C, L)
+                                                        $)
+
+                CAEREPORT(51)
+                RESULTIS A
+
+        CASE S.GOTO:CASE S.RESULTIS:
+                NEXTSYMB()
+                RESULTIS LIST3(OP, REXP(0), L)
+
+        CASE S.IF:CASE S.UNLESS:
+        CASE S.WHILE:CASE S.UNTIL:
+                NEXTSYMB()
+                A := REXP(0)
+                IGNORE(S.DO)
+                RESULTIS LIST4(OP, A, RCOM(), L)
+
+        CASE S.TEST:
+                NEXTSYMB()
+                A := REXP(0)
+                IGNORE(S.DO)
+                B := RCOM()
+                CHECKFOR(S.OR, 54)
+                RESULTIS LIST5(S.TEST, A, B, RCOM(), L)
+
+        CASE S.FOR:
+            $(  LET I, J, K = 0, 0, 0
+                NEXTSYMB()
+                A := RNAME()
+                CHECKFOR(S.EQ, 57)
+                I := REXP(0)
+                CHECKFOR(S.TO, 58)
+                J := REXP(0)
+                IF SYMB=S.BY DO $( NEXTSYMB()
+                                   K := REXP(0)  $)
+                IGNORE(S.DO)
+                RESULTIS LIST7(S.FOR, A, I, J, K, RCOM(), L)  $)
+
+        CASE S.LOOP:
+        CASE S.BREAK:CASE S.RETURN:CASE S.FINISH:CASE S.ENDCASE:
+                A := WORDNODE
+                NEXTSYMB()
+                RESULTIS A
+
+        CASE S.SWITCHON:
+                NEXTSYMB()
+                A := REXP(0)
+                CHECKFOR(S.INTO, 60)
+                B := RDSECT(RDSEQ)
+                IF B=0 RESULTIS 0
+                RESULTIS LIST4(S.SWITCHON, A, B, L)
+
+        CASE S.CASE:
+                NEXTSYMB()
+                A := REXP(0)
+                CHECKFOR(S.COLON, 61)
+                RESULTIS LIST3(S.CASE, A, RBCOM())
+
+        CASE S.DEFAULT:
+                NEXTSYMB()
+                CHECKFOR(S.COLON, 62)
+                RESULTIS LIST2(S.DEFAULT, RBCOM())
+
+        CASE S.LSECT:
+                RESULTIS RDSECT(RDBLOCKBODY)   $)1
+
+
+AND RCOM() = VALOF
+$(1 LET A = RBCOM()
+
+    IF A=0 DO CAEREPORT(51)
+
+    WHILE SYMB=S.CONT DO
+        $( LET B = 0
+           NEXTSYMB()
+           B := RBCOM()
+           IF B=0 DO CAEREPORT(51)
+           A := LIST3(S.SEQ, A, B)  $)
+
+        WHILE SYMB=S.REPEAT | SYMB=S.REPEATWHILE |
+                    SYMB=S.REPEATUNTIL DO
+                  $( LET OP = SYMB
+                     LET L = LINECOUNT
+                     NEXTSYMB()
+                     TEST OP=S.REPEAT
+                         THEN A := LIST3(OP, A, L)
+                           OR A := LIST4(OP, A, REXP(0), L)   $)
+
+        RESULTIS A  $)1
+
+
+LET PLIST(X, N, D) BE
+    $(1 LET SIZE = 0
+
+        LET OP = 0
+
+        LET V = TABLE 0,0,0,0,0,0,0,0,0,0,
+                      0,0,0,0,0,0,0,0,0,0,
+                      0,0,0,0,0,0,0,0,0,0,
+                      0,0,0,0,0,0,0,0,0,0
+
+        IF X=0 DO $( WRITES("NIL"); RETURN  $)
+
+        OP := H1!X
+
+        SWITCHON OP&255 INTO
+    $(  CASE S.NUMBER: WRITEN(H2!X); RETURN
+
+        CASE S.NAME: WRITES(X+2); RETURN
+
+        CASE S.STRING: WRITEF("*"%S*"", X+1); RETURN
+
+        CASE S.FOR:
+                SIZE := SIZE + 2
+
+        CASE S.BYTEAP:
+        CASE S.SLCT:
+        CASE S.COND:CASE S.FNDEF:CASE S.RTDEF:
+        CASE S.TEST:CASE S.CONSTDEF:
+                SIZE := SIZE + 1
+
+        CASE S.SECTION: CASE S.NEEDS:
+        CASE S.SLCTAP:CASE S.VECAP:CASE S.FNAP:
+        CASE S.MULT:CASE S.DIV:CASE S.REM:CASE S.PLUS:CASE S.MINUS:
+        CASE S.EQ:CASE S.NE:CASE S.LS:CASE S.GR:CASE S.LE:CASE S.GE:
+        CASE S.LSHIFT:CASE S.RSHIFT:CASE S.LOGAND:CASE S.LOGOR:
+        CASE S.EQV:CASE S.NEQV:CASE S.COMMA:
+        CASE S.AND:CASE S.VALDEF:CASE S.VECDEF:
+        CASE S.ASS:CASE S.RTAP:CASE S.COLON:CASE S.IF:CASE S.UNLESS:
+        CASE S.WHILE:CASE S.UNTIL:CASE S.REPEATWHILE:
+        CASE S.REPEATUNTIL:
+        CASE S.SWITCHON:CASE S.CASE:CASE S.SEQ:CASE S.LET:
+        CASE S.MANIFEST:CASE S.STATIC:CASE S.GLOBAL:
+                SIZE := SIZE + 1
+
+        CASE S.ABS:CASE S.FIX:
+        CASE S.VALOF:CASE S.LV:CASE S.RV:CASE S.NEG:CASE S.NOT:
+        CASE S.TABLE:CASE S.GOTO:CASE S.RESULTIS:CASE S.REPEAT:
+        CASE S.DEFAULT:
+                SIZE := SIZE + 1
+
+        CASE S.LOOP:
+        CASE S.BREAK:CASE S.RETURN:CASE S.FINISH:CASE S.ENDCASE:
+        CASE S.TRUE:CASE S.FALSE:CASE S.QUERY:
+        DEFAULT:
+                SIZE := SIZE + 1
+
+                IF N=D DO $( WRITES("ETC")
+                             RETURN  $)
+
+                WRITES ("OP")
+                WRITEN(OP&255)
+                UNLESS (OP&FLBIT)=0 DO WRITES(" #")
+                UNLESS (OP&BECOMESBIT)=0 DO WRITES(" :=")
+
+                FOR I = 2 TO SIZE DO
+                     $( NEWLINE()
+                        FOR J=0 TO N-1 DO WRITES( V!J )
+                        WRITES("**-")
+                        V!N := I=SIZE->"  ","! "
+                        PLIST(H1!(X+I-1), N+1, D)  $)
+                RETURN  $)1
+
+.
+SECTION "LEX"
+GET "LIBHDR"
+GET "HEADERS(SYNHDR)"
+
+LET READCOMMENT(TERM) BE
+    $(  RCH()
+        $(  IF ISCC(CH) THEN LINECOUNT := LINECOUNT + 1
+            IF CH='**' THEN
+            $(  RCH(); UNLESS CH=TERM THEN LOOP
+                RCH(); RETURN
+            $)
+            IF CH=ENDSTREAMCH THEN CAEREPORT(63)
+            RCH()
+        $) REPEAT
+    $)
+
+AND ISCC(CH) = CH='*N' -> TRUE,
+               CH='*P' -> TRUE,
+               CH='*C' -> TRUE,
+                          FALSE
+
+LET NEXTSYMB() BE
+$(1 NLPENDING := FALSE
+NEXT:
+    IF PPTRACE THEN WRCH(CH)
+
+    SWITCHON CH INTO
+
+    $(  CASE '*P':
+        CASE '*N': LINECOUNT := LINECOUNT + 1
+                   NLPENDING := TRUE  || ignorable characters
+        CASE '*T':
+        CASE '*S': RCH() REPEATWHILE CH='*S'
+                   GOTO NEXT
+
+        CASE '0':CASE '1':CASE '2':CASE '3':CASE '4':
+        CASE '5':CASE '6':CASE '7':CASE '8':CASE '9':
+            SYMB := S.NUMBER
+            READNUMBER(10)
+            IF CH='.' | CH='E' | CH='e' THEN READFLOAT()
+            RETURN
+
+        CASE 'a':CASE 'b':CASE 'c':CASE 'd':CASE 'e':
+        CASE 'f':CASE 'g':CASE 'h':CASE 'i':CASE 'j':
+        CASE 'k':CASE 'l':CASE 'm':CASE 'n':CASE 'o':
+        CASE 'p':CASE 'q':CASE 'r':CASE 's':CASE 't':
+        CASE 'u':CASE 'v':CASE 'w':CASE 'x':CASE 'y':
+        CASE 'z':
+        CASE 'A':CASE 'B':CASE 'C':CASE 'D':CASE 'E':
+        CASE 'F':CASE 'G':CASE 'H':CASE 'I':CASE 'J':
+        CASE 'K':CASE 'L':CASE 'M':CASE 'N':CASE 'O':
+        CASE 'P':CASE 'Q':CASE 'R':CASE 'S':CASE 'T':
+        CASE 'U':CASE 'V':CASE 'W':CASE 'X':CASE 'Y':
+        CASE 'Z':
+            RDTAG(CH)
+            SYMB := LOOKUPWORD()
+                SWITCHON SYMB INTO
+                $(  CASE S.GET:
+                        PERFORMGET(); GOTO NEXT
+
+                    CASE S.REM:
+                    CASE S.LOGAND:CASE S.LOGOR:CASE S.EQV:CASE S.NEQV:
+                        GOTO CHECKASSX
+
+                    DEFAULT:
+                        RETURN
+                $)
+
+        CASE '$': RCH()
+             UNLESS CH='(' | CH=')' DO CAEREPORT(91)
+             SYMB := CH='(' -> S.LSECT, S.RSECT
+             RDTAG('$')
+             LOOKUPWORD()
+             RETURN
+
+
+        CASE '[':
+        CASE '(': SYMB := S.LPAREN; GOTO L
+        CASE ']':
+        CASE ')': SYMB := S.RPAREN; GOTO L
+        CASE '#':
+            SYMB := S.NUMBER
+            RCH()
+            IF '0'<=CH<='7' DO $( READNUMBER(8); RETURN  $)
+            CH := UPPERCASE(CH)
+            IF CH='B' DO $( RCH(); READNUMBER(2); RETURN  $)
+            IF CH='O' DO $( RCH(); READNUMBER(8); RETURN  $)
+            IF CH='X' DO $( RCH(); READNUMBER(16); RETURN  $)
+
+            NEXTSYMB()
+            SWITCHON SYMB&(\BECOMESBIT) INTO
+            $(  DEFAULT: CAEREPORT(35)
+                CASE S.PLUS:CASE S.MINUS:CASE S.MULT:
+                CASE S.DIV:CASE S.ABS:CASE S.LS:CASE S.GR:
+                CASE S.GE: CASE S.LE: CASE S.NE: CASE S.EQ:
+                    SYMB := SYMB|FLBIT
+                    RETURN
+            $)
+
+        CASE '?': SYMB := S.QUERY; GOTO L
+        CASE '+': SYMB := S.PLUS; GOTO CHECKASS
+        CASE ',': SYMB := S.COMMA; GOTO L
+        CASE ';': SYMB := S.SEMICOLON; GOTO L
+        CASE '@': SYMB := S.LV; GOTO L
+        CASE '&': SYMB := S.LOGAND; GOTO CHECKASS
+        CASE '=': SYMB := S.EQ; GOTO L
+        CASE '!': SYMB := S.VECAP; GOTO L
+        CASE '%': SYMB := S.BYTEAP; GOTO L
+        CASE '_': SYMB := S.ASS; GOTO L
+        CASE '**':SYMB := S.MULT; GOTO CHECKASS
+        CASE '~': RCH(); GOTO CNOT
+
+        CASE '/': RCH()
+            IF CH='\' DO $( SYMB := S.LOGAND; GOTO CHECKASS $)
+            IF CH='**' THEN $( READCOMMENT('/'); GOTO NEXT $)
+            UNLESS CH='/' THEN $( SYMB := S.DIV; GOTO CHECKASSX $)
+        COMMENT:
+            RCH() REPEATUNTIL ISCC(CH) | CH=ENDSTREAMCH
+            GOTO NEXT
+
+        CASE '|':
+            RCH()
+            IF CH='|' THEN GOTO COMMENT
+            UNLESS CH='**' THEN $( SYMB := S.LOGOR; GOTO CHECKASSX $)
+            READCOMMENT('|')
+            GOTO NEXT
+
+
+        CASE '\': RCH()
+            IF CH='/' DO $( SYMB := S.LOGOR; GOTO CHECKASS  $)
+            IF CH='**' THEN GOTO COMMENT
+        CNOT:
+            IF CH='=' THEN $( SYMB := S.NE; GOTO L  $)
+            SYMB := S.NOT
+            RETURN
+
+        CASE '<': RCH()
+            IF CH='=' DO $( SYMB := S.LE; GOTO L  $)
+            IF CH='<' DO $( SYMB := S.LSHIFT; GOTO L $)
+            IF CH='>' THEN $( SYMB := S.CONT; GOTO L $)
+            SYMB := S.LS
+            RETURN
+
+        CASE '>': RCH()
+                 IF CH='=' DO $( SYMB := S.GE; GOTO L  $)
+                 IF CH='>' DO $( SYMB := S.RSHIFT; GOTO L  $)
+                 SYMB := S.GR
+                 RETURN
+
+        CASE '-': RCH()
+                 IF CH='>' DO $( SYMB := S.COND; GOTO L  $)
+                 SYMB := S.MINUS
+                 GOTO CHECKASSX
+
+        CASE ':': RCH()
+            IF CH='=' THEN $( SYMB := S.ASS; GOTO L $)
+            IF CH=':' THEN $( SYMB := S.SLCTAP; GOTO L $)
+            SYMB := S.COLON
+            RETURN
+
+        CASE '*'':CASE '*"':
+             $(1 LET QUOTE = CH
+                 CHARP := 0
+
+              $( RCH()
+                 IF CH=QUOTE | CHARP=255 DO
+                        $( UNLESS CH=QUOTE DO CAEREPORT(95)
+                           IF CHARP=1 & CH='*'' DO
+                                   $( SYMB := S.NUMBER
+                                      DECVAL := CHARCODE(DECVAL)
+                                      GOTO L  $)
+                           CHARV!0 := CHARP
+                           WORDSIZE := PACKSTRING(CHARV, WORDV)
+                           SYMB := S.STRING
+                           GOTO L   $)
+
+
+                 IF ISCC(CH) THEN CAEREPORT(34)
+
+                 IF CH='**' DO
+                    $( RCH()
+                       IF ISCC(CH) THEN
+                       $(  LINECOUNT := LINECOUNT + 1
+                           RCH() REPEATWHILE CH='*S' | CH='*T'
+                           UNLESS CH='**' THEN CAEREPORT(34)
+                           LOOP
+                       $)
+                       $( LET X = UPPERCASE(CH)
+                          IF X='T' DO CH := '*T'
+                          IF X='S' DO CH := '*S'
+                          IF X='N' DO CH := '*N'
+                          IF X='E' DO CH := '*E'
+                          IF X='C' DO CH := '*C'
+                          IF X='B' DO CH := '*B'
+                          IF X='P' DO CH := '*P'  $)
+                    $)
+
+                 DECVAL, CHARP := CH, CHARP+1
+                 CHARV!CHARP := CH  $) REPEAT  $)1
+
+
+
+       DEFAULT:    SYMB := 0
+                   CAEREPORT(94)
+
+       CASE ENDSTREAMCH:
+       CASE '.':    $( IF GETP=0 DO
+                             $( SYMB := S.END
+                                TEST CH = ENDSTREAMCH DO
+                                $(  ENDREAD()
+                                    SOURCESTREAM := 0
+                                $)
+                                OR
+                                $(  SKIPREC()
+                                    CH := '*N'
+                                    LINECOUNT := LINECOUNT+1
+                                    IF PRSOURCE DO NEWLINE()
+                                $)
+                                RETURN   $)
+
+                       ENDREAD()
+                       GETP := GETP - 3
+                       SOURCESTREAM := GETV!GETP
+                       SELECTINPUT(SOURCESTREAM)
+                       LINECOUNT := GETV!(GETP+1)
+                       CH := GETV!(GETP+2)
+                       GOTO NEXT  $)
+
+
+       CHECKASS:  RCH()
+       CHECKASSX: IF CH=':' DO $( RCH()
+                                  UNLESS CH='=' DO CAEREPORT(57)
+                                  CH := '_'  $)
+                  UNLESS CH='_' RETURN
+                  SYMB := SYMB + BECOMESBIT
+
+       L: RCH()   $)  $)1
+
+STATIC $( CODEP=0  $)
+
+LET D(WORDS) BE
+    $(1 LET I, LENGTH = 1, 0
+
+        $( LET CH = GETBYTE(WORDS, I)
+           TEST CH='/' THEN $( IF LENGTH=0 RETURN
+                               CHARV!0 := LENGTH
+                               WORDSIZE := PACKSTRING(CHARV, WORDV)
+                               LOOKUPWORD()
+                               H1!WORDNODE := !CODEP
+                               CODEP := CODEP + 1
+                               LENGTH := 0  $)
+                       ELSE $( LENGTH := LENGTH + 1
+                               CHARV!LENGTH := CH  $)
+           I := I + 1
+        $) REPEAT
+    $)1
+
+LET DECLSYSWORDS() BE
+   $(1 CODEP := TABLE
+          S.AND,S.ABS,
+          S.BE,S.BREAK,S.BY,
+          S.CASE,
+          S.DO,S.DEFAULT,
+          S.EQ,S.EQV,S.OR,S.ENDCASE,
+          S.FALSE,S.FOR,S.FINISH,S.FLOAT,S.FIX,
+          S.GOTO,S.GE,S.GR,S.GLOBAL,S.GET,
+          S.IF,S.INTO,
+          S.LET,S.LV,S.LE,S.LS,S.LOGOR,S.LOGAND,S.LOOP,S.LSHIFT,
+          S.MANIFEST,
+          S.NE,S.NOT,S.NEQV,S.NEEDS,
+          S.SLCTAP,S.OR,
+          S.RESULTIS,S.RETURN,S.REM,S.RSHIFT,S.RV,
+          S.REPEAT,S.REPEATWHILE,S.REPEATUNTIL,
+          S.SWITCHON,S.STATIC,S.SLCT,S.SECTION,
+          S.TO,S.TEST,S.TRUE,S.DO,S.TABLE,
+          S.UNTIL,S.UNLESS,
+          S.VEC,S.VALOF,
+          S.WHILE,
+          0
+
+       D("AND/ABS/*
+         *BE/BREAK/BY/*
+         *CASE/*
+         *DO/DEFAULT/*
+         *EQ/EQV/ELSE/ENDCASE/*
+         *FALSE/FOR/FINISH/FLOAT/FIX/*
+         *GOTO/GE/GR/GLOBAL/GET/*
+         *IF/INTO/*
+         *LET/LV/LE/LS/LOGOR/LOGAND/LOOP/LSHIFT//")
+
+       D("MANIFEST/*
+         *NE/NOT/NEQV/NEEDS/*
+         *OF/OR/*
+         *RESULTIS/RETURN/REM/RSHIFT/RV/*
+         *REPEAT/REPEATWHILE/REPEATUNTIL/*
+         *SWITCHON/STATIC/SLCT/SECTION/*
+         *TO/TEST/TRUE/THEN/TABLE/*
+         *UNTIL/UNLESS/*
+         *VEC/VALOF/*
+         *WHILE/*
+         *$//")
+
+        NULLTAG := WORDNODE  $)1
+
+AND LOOKUPWORD() = VALOF
+
+$(1     LET HASHVAL = (WORDV!0+WORDV!WORDSIZE >> 1) REM NAMETABLESIZE
+        LET I = 0
+
+        WORDNODE := NAMETABLE!HASHVAL
+
+        UNTIL WORDNODE=0 \/ I>WORDSIZE DO
+              TEST WORDNODE!(I+2)=WORDV!I
+                THEN I := I+1
+                ELSE WORDNODE, I := H2!WORDNODE, 0
+
+        IF WORDNODE=0 DO
+          $( WORDNODE := NEWVEC(WORDSIZE+2)
+             WORDNODE!0, WORDNODE!1 := S.NAME, NAMETABLE!HASHVAL
+             FOR I = 0 TO WORDSIZE DO WORDNODE!(I+2) := WORDV!I
+             NAMETABLE!HASHVAL := WORDNODE  $)
+
+        RESULTIS H1!WORDNODE  $)1
+
+LET RCH() BE
+    $( CH := RDCH()
+
+       IF PRSOURCE DO IF GETP=0 /\ CH NE ENDSTREAMCH DO
+          $( UNLESS LINECOUNT=PRLINE DO $( WRITEF("%I4  ", LINECOUNT)
+                                           PRLINE := LINECOUNT  $)
+             WRCH(CH)  $)
+
+       CHCOUNT := CHCOUNT + 1
+       CHBUF!(CHCOUNT&63) := CH  $)
+
+AND WRCHBUF() BE
+    $( WRITES("*N...")
+       FOR P = CHCOUNT-63 TO CHCOUNT DO
+                $( LET K = CHBUF!(P&63)
+                   UNLESS K=0 \/ K=ENDSTREAMCH DO WRCH(K)  $)
+       NEWLINE()  $)
+
+
+AND RDTAG(X) BE
+    $( CHARP, CHARV!1 := 1, FORCEUPPERCASE -> UPPERCASE(X), X
+
+        $(  RCH()
+            UNLESS 'A' <=CH <='Z' |
+                   '0' <=CH <='9' |
+                   'a' <= CH <= 'z' |
+                    CH='_' |            || underline
+                    CH='.' BREAK
+            CHARP := CHARP+1
+            CHARV!CHARP := FORCEUPPERCASE -> UPPERCASE(CH), CH  $) REPEAT
+
+       CHARV!0 := CHARP
+       WORDSIZE := PACKSTRING(CHARV, WORDV)  $)
+
+
+AND PERFORMGET() BE
+    $( NEXTSYMB()
+       UNLESS SYMB=S.STRING THEN CAEREPORT(89)
+
+       IF NOGET RETURN
+
+       IF GETP+2 > GETT DO CAEREPORT(-87)
+       GETV!GETP := SOURCESTREAM
+       GETV!(GETP+1) := LINECOUNT
+       GETV!(GETP+2) := CH
+       GETP := GETP + 3
+       SOURCESTREAM := FINDINPUT(WORDV)
+       IF SOURCESTREAM=0 THEN CAEREPORT(-88)
+       LINECOUNT := 10001
+       SELECTINPUT(SOURCESTREAM)
+       RCH()   $)
+
+AND READNUMBER(BASE) BE
+
+$( LET D = VALUE(CH)
+   DECVAL := D
+   IF D>=BASE DO CAEREPORT(33)
+
+   $( RCH()
+      D := VALUE(CH)
+      IF D>=BASE RETURN
+      DECVAL := DECVAL*BASE+D  $) REPEAT
+$)
+
+AND VALUE(CHAR) = VALOF
+$(  CHAR := UPPERCASE(CHAR)
+    RESULTIS
+        '0'<=CHAR<='9' -> CHAR-'0',
+            'A'<=CHAR<='Z' -> CHAR-'A'+10,
+               500
+$)
+
+AND READFLOAT() BE
+
+$(  LET EXP, N = 0, 0
+    LET FLTEN = FLOAT 10
+    DECVAL := FLOAT DECVAL; SYMB := S.NUMBER
+    IF CH='.' THEN
+    $(  RCH(); N := VALUE(CH)
+        IF N>=10 THEN BREAK
+        EXP := EXP-1
+        DECVAL := DECVAL #* FLTEN #+ FLOAT N
+    $) REPEAT
+    IF CH='E' | CH='e' THEN
+    $(  LET NEG = FALSE
+        RCH(); IF CH='+' | CH='-' THEN  $( NEG := CH='-'; RCH()  $)
+        N := DECVAL
+        READNUMBER(10)
+        TEST NEG THEN EXP := EXP - DECVAL
+                   OR EXP := EXP + DECVAL
+        DECVAL := N
+    $)
+    WHILE EXP NE 0 DO
+    $(  TEST EXP<0
+        THEN  $(  DECVAL := DECVAL #/ FLTEN; EXP := EXP + 1  $)
+          OR  $(  DECVAL := DECVAL #* FLTEN; EXP := EXP - 1  $)
+    $)
+$)

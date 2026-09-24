@@ -1,0 +1,97 @@
+SECTION "$IOS$"
+
+GET "LIBHDR"
+
+MANIFEST   $(  INPUTLIST=38; OUTPUTLIST=39    //  SAVE-AREA FIELDS
+               FLAGWORD=29; EOF=#X200000      //  FLAGS WITHIN DCB
+               DCBRECFM=9; DCBBLKSI=15; DCBLRECL=20
+               DDNAME=27; NEXTSTREAM=30; MEMBERNAME=31
+               NUMBER=37            //    FIELDS ASSOCIATED WITH DCB
+
+               FBIT=#X80; VBIT=#X40; BBIT=#X10
+               SBIT=#X08; ABIT=#X04; MBIT=#X02
+               U=FBIT+VBIT; VS=VBIT+SBIT; RHALF=#XFFFF     $)
+
+GLOBAL     $(  IOSTATUS:79  $)      //    SPECIAL USERPOSTMORTEM
+
+
+
+LET  IOSTATUS()  BE
+
+    $(IOS   WRITES("*N*N")
+            LISTSTREAMS(INPUTLIST, "INPUT", "READ   ")
+            LISTSTREAMS(OUTPUTLIST, "OUTPUT", "WRITTEN")    $)IOS
+
+
+AND  LISTSTREAMS(LIST, S1, S2)  BE
+
+    $(LS  LET  T = SAVEAREA!LIST
+
+          UNLESS  T<0  DO
+
+             $(  WRITEF("%S STREAMS OPEN*N*N", S1)
+
+                 $(1  T := T>>2             //   WORD ADDRESS
+
+                  $(  LET UNENDED = ((T!FLAGWORD & EOF) = 0)
+                      LET  DD = T+DDNAME
+                      LET  DDLEN = GETBYTE(DD, 0)
+
+                      WRITEF("     %S",  DD)
+                      UNLESS  T!MEMBERNAME=0   DO
+                            DDLEN := DDLEN + WRITEMEMBER(T) + 2
+                      FOR I = DDLEN TO 18  DO WRCH('*S')
+
+                      WRITEF("%I5%SRECORDS %S       ",
+                        (T!NUMBER)>>16, (UNENDED -> "  ", "** "), S2)
+
+                      WRITERECFORM(T)
+                      NEWLINE()
+
+                      T := T!NEXTSTREAM    $)1  REPEATUNTIL T<0
+
+                 WRITES("*N*N")    $)            $)LS
+
+
+AND  WRITEMEMBER(T)  =  VALOF
+
+    $(WM  LET  P = T + MEMBERNAME
+          LET  L = 0
+          WRCH('(')
+
+          WHILE  L<8  DO
+              $(  LET CH = GETBYTE(P, L)
+                  IF  CH='*S'  BREAK
+                  L := L+1
+                  WRCH(CH)    $)
+
+          WRCH(')')
+          RESULTIS  L         $)WM
+
+
+AND  WRITERECFORM(T)  BE
+
+    $(WRF  LET RECFORM = (T!DCBRECFM) >> 24
+           LET TYPE = RECFORM & (FBIT+VBIT)
+
+           LET LRECL = (T!DCBLRECL) & RHALF
+           LET BLKSIZE = (T!DCBBLKSI) & RHALF
+
+           LET CHAR = (TYPE=FBIT)  -> 'F',
+                      (TYPE=VBIT)  -> 'V',
+                      (TYPE=U)     -> 'U',
+                                      '-'
+
+           WRCH(CHAR)
+           UNLESS  (RECFORM & BBIT)=0    DO  WRCH('B')
+           UNLESS  (RECFORM & ABIT)=0    DO  WRCH('A')
+           UNLESS  (RECFORM & MBIT)=0    DO  WRCH('M')
+           UNLESS  (RECFORM & SBIT)=0    DO  WRCH('S')
+           WRITES("  ")
+
+           TEST  TYPE=U   THEN   WRCH('-')
+             OR  TEST  (RECFORM&VS)=VS & (LRECL>=32768)
+                          THEN   WRCH('X')
+                            OR   WRITEN(LRECL)
+
+           WRITEF("  %N", BLKSIZE)              $)WRF

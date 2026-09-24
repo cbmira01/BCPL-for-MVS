@@ -1,0 +1,165 @@
+1                       NEW RELEASE OF BCPL
++                       ___________________
+
+ The changes to the BCPL compiler are as follows:-
+
+ Conditional compilation.
++________________________
+
+ A system of conditional compilation similar to that available on
+ other machines in Cambridge has been implemented. A full
+ specification of this system is given below. The change is fully
+ upwards compatible, and existing programs should not be affected.
+
+ New escape combinations
++_______________________
+
+ Two new escape combinations are available in string and character
+ constants. Both provide means of specifying a character in terms
+ of its numeric value. This value may be specified either by *X
+ immediately followed by two hexadecimal digits or by *O followed
+ by three octal digits. In the octal case the value is taken
+ modulo 256.
+
+ Lower case letters
++__________________
+
+ Lower case letters are now treated as equivalent to upper case in
+ the strings following GET, SECTION or NEEDS. This is in line with
+ a recent change in the library whereby lower case letters are
+ treated as equivalent to upper case in DDnames and member names.
+
+ Warning messages
++________________
+
+ The compiler now produces warning messages in certain cases where
+ the program, although compilable, is probably not what was
+ intended. Warnings are given if: there is more than one character
+ between single quotation marks; if a tagged closing section
+ bracket is supplied automatically; if RETURN is used within the
+ body of a function; and if control may pass out of a VALOF block
+ without a RESULTIS being obeyed. This last message may be
+ produced spuriously if the last command in a VALOF block involves
+ a call of a procedure which never returns (e.g. LONGJUMP, STOP).
+ The production of warning messages is controlled by a new
+ compiler option I. I0 will prevent warning messages being
+ produces. The default, I30, permits at most 30 warnings per
+ section.
+
+ Improved code
++_____________
+
+ The translation phase of the compiler has been altered to produce
+ better code. Expressions are evaluated within the translator
+ whenever possible. The translation of FOR loops and the operator
+ -> have been improved.
+
+ Constant expressions
++____________________
+
+ The rules for constant expressions have been liberalised. Now,
+ any arithmetic, relational or logical operators are permitted
+ (even floating-point), and the conditional operator (->) may be
+ used.
+-
+                                 1
+1Dead code
++_________
+
+ A new compiler option, D, is provided. This option controls the
+ compilation of IF, UNLESS and TEST commands and the operator ->
+ in cases when the condition can be evaluated at compile time. If
+ the D options is specified, no code whatsoever is generated for
+ branch which cannot be taken. Routines and labels declared within
+ such omitted code will not be compiled (even if they are global).
+ This option provides a portable conditional compilation feature.
+ A similar feature is available, and indeed not optional, with
+ some other BCPL compilers (e.g. those at Essex and NUMAC).
+
+ Specification of conditional compilation
++________________________________________
+
+ The Cambridge 370 compiler provides a simple conditional
+ compilation facility. This facility is similar to that supported
+ on many of the other machines in Cambridge, and may therefore be
+ of use to those writing programs intended to run on more than one
+ of these machines. However, conditional compilation is not a
+ general feature of BCPL compilers, and the form described here
+ is, at the time of going to press, entirely local to Cambridge.
+ Those writing programs intended for export should not use
+ conditional compilation.
+
+ The system depends on truth-values associated with tags at
+ compile time. Each tag (sequence of letters, digits, underlines
+ and dots) has associated with it a truth value. These values are
+ in no way connected with the values of any variables in the
+ program. The scope of a conditional compilation tag is the entire
+ program section, as is the extent of its value.
+
+ By default, all tags are FALSE. The value of a tag may be
+ modified in two ways. First,
+
+         $TAG
+
+ may be included in the parameter string passed to the compiler.
+ This causes TAG to be true at the start of each program section.
+ At Cambridge, the Phoenix and JCL procedures include $IBM370 in
+ the parameter string by default.
+
+ Secondly, tag settings of the form
+
+         $$TAG := boolean-expression;
+
+ may be included in the program. The expression is parsed
+ according to normal BCPL rules, and may contain the operators ->
+ $~ & and | (or any of their synonyms), TRUE, FALSE, and
+ references to the values of tags (in the form $$TAG). The tag
+ being set may be referred to in the expression; its previous
+ value is taken. The terminal semi-colon may be omitted at the end
+ of a line, or before any lexical item not permitted in the
+ expression. Brackets may be used.
+
+ Text between
+
+         $<TAG   and   $>TAG
+-                                2
+1is included in the program only if TAG has associated value TRUE,
+ and text between
+
+        $<TAG'  and   $>TAG'
+
+ is included only if the associated value is FALSE.
+
+ Tagged angle brackets and tag-settings my occur anywhere in the
+ program where a /$*...$*/ comment would be allowed, except within
+ tag-settings.
+
+ If a compiler listing is produced, a $ appears immediately after
+ the line number if the compiler is in skipping mode at the start
+ of the line.
+
+ It is an error to mismatch tagged angle brackets, and any such
+ brackets opened in a file obtained by GET should be closed within
+ the same file.
+
+ The text skipped is treated as comment and not lexically
+ analysed. Thus the code omitted need not even be syntactically
+ acceptable to the compiler. On the other hand, as quotation marks
+ and comment brackets are ignored, closing tagged angle brackets
+ may be recognised within strings and comments.
+
+ The D compiler option, which allows dead code to be omitted from
+ a program, may provide an acceptable, portable alternative to
+ conditional compilation for some purposes. See above.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+
+                                 3

@@ -1,0 +1,2692 @@
+1
+-
+-
+-
+-
+-
+-
+-
+-
+-                             Appendix A
+1
+                              Appendix A
+-
+         The contents of this appendix are likely to be of interest to
+ most programmers in BCPL.  The library routines available are described
+ in detail, and there is a discussion of all run-time error messages.
+-
+ A.1        This section lists the global routines and variables by
+        functional groups.  A detailed specification of each can be
+        found in Appendix A.2, which is arranged by global number.
+-A.2        This section gives a detailed description of each library
+        procedure, distinguishing between routines and functions.  The
+        arguments and their types are specified in full.
+-A.3        This section contains the names defined as GLOBAL and
+        MANIFEST in the standard header file, listing them in
+        alphabetical order.  There is a short description of the
+        action of each routine.
+-A.4        Details are given of the error messages returned by the
+        input/output system, with suggestions of the probable cause.
+-A.5        In the normal way the BCPL run-time system will handle all
+        error situations including O.S. abends.  The completion code
+        returned by a BCPL program on exit will be set to 100 following
+        any fatal error, provided that the standard recovery routines
+        are successful.   This section gives details of all the ways in
+        which a BCPL run can terminate.
+-A.6        When a fatal error takes place a global routine ABORT is
+        entered by the run-time system.  Arguments are passed to give
+        details of the nature and location of the error ; this section
+        describes the calling sequence for ABORT.
+-A.7        This section describes the format of the standard run-time
+        system post-mortem ; a typical example is used for illustration.
+-A.8        The environment of a BCPL program can be varied in a number
+        of ways, control being effected by directives in the parameter
+        string that are aimed at the run-time system.  The options and
+        the control syntax are described here.
+-A.9        The BCPL library contains a number of parameters that enable
+        the action to be tailored to a particular installation.  This
+        section describes these parameters in detail.
+1
+                                Appendix A.1
+-
+ BCPL Library globals grouped by function
+ ----------------------------------------
+0    This quick index may help BCPL users to locate relevant library
+ routines.  Each global is identified as a Routine, a Function or a
+ Variable.  For a more detailed description of the routines in the
+ library see Appendix A.2.
+-SEQUENTIAL (Character/Record) I/O
+ ---------------------------------
+0A)  INPUT
+     -----
+0Stream organisation
+042  FINDINPUT       (F)  create input stream from ddname
+ 44  INPUTMEMBER     (F)  create input from member of PDS
+ 39  FINDPARM        (F)  turn parameter string into input stream
+ 16  INPUT           (F)  returns CIS descriptor
+ 11  SELECTINPUT     (R)  select input stream as CIS
+ 35  REWIND          (F)  rewind CIS
+ 46  ENDREAD         (F)  close CIS
+0Input Control
+018  INCONTROL       (R)  to deal with control chars
+ 20  TRIMINPUT       (R)  to deal with trailing spaces
+ 21  SETWINDOW       (R)  set segment size for READREC
+ 22  BINARYINPUT     (R)  do not supply record separators
+0Data Transfer
+013  RDCH            (F)  read a character
+ 15  UNRDCH          (R)  step input character pointer back one
+ 70  READN           (F)  read a number, see below
+ 71  TERMINATOR      (V)  set to terminating character of READN
+ 23  READREC         (F)  read a record (or record segment)
+ 26  SKIPREC         (R)  skip to next input record
+-B)  OUTPUT
+     ------
+0Stream Organisation
+041  FINDOUTPUT      (F)  create output stream to ddname
+ 49  OUTPUTMEMBER    (F)  create output to member of PDS
+ 36  FINDLOG         (F)  create output to the program log
+ 17  OUTPUT          (F)  returns COS descriptor
+ 12  SELECTOUTPUT    (R)  select output stream as COS
+ 51  ENDTOINPUT      (F)  rewind COS as an input stream (unselected)
+ 47  ENDWRITE        (F)  close COS
+1
+ Output Control
+019  OUTCONTROL      (R)  to deal with control characters on output
+0Data transfer
+014  WRCH            (R)  write a character, interpret separators
+ 34  BINWRCH         (R)  write a binary character
+ 63  NEWLINE         (R)  terminate a record with newline
+ 64  NEWPAGE         (R)  terminate a record with newpage
+024  WRITEREC        (R)  write a part-record, terminate with newline
+ 25  WRITESEG        (R)  write a part-record, do not terminate
+ 60  WRITES          (R)  write a character string
+ 37  WRITETOLOG      (R)  write a string to the program log
+ 76  WRITEF          (R)  write an output list under format
+069  WRITEARG        (R)  write number or subroutine name
+ 68  WRITED          (R)  write number in decimal with specified width
+ 62  WRITEN          (R)  write number in decimal with natural width
+ 77  WRITEOCT        (R)  write number in octal with specified width
+ 65  WRITEO          (R)  write number giving 8 octal digits
+ 75  WRITEHEX        (R)  write number in hexadecimal to specified width
+ 74  WRITEX          (R)  write number giving 8 hexadecimal digits
+-C)  ONLINE
+     ------
+038  FINDTERMINAL    (F)  create stream to or from online console
+-
+ RANDOM (Block) I/O
+ ------------------
+092  BLOCKSIZE       (F)  returns block size, in bytes
+ 93  CREATEBLOCKFILE (F)  create output to new random file
+ 94  OPENBLOCKFILE   (F)  open old random file for updating
+ 95  CLOSEBLOCKFILE  (R)  close specified random file
+096  READBLOCK       (F)  read from old random file
+ 97  WRITEBLOCK      (F)  write to old random file
+ 98  WRNEXTBLOCK     (F)  write to new random file
+-
+ LIBRARY MANAGEMENT
+ ------------------
+043  FINDLIBRARY     (F)  open ddname of PDS for loading
+ 48  CLOSELIBRARY    (R)  close ddname (after loading members)
+1
+ LOADING/UNLOADING of PROGRAM MODULES
+ ------------------------------------
+010  LOAD            (F)  load member (generated by BCPL compiler)
+ 8   LOADFORT        (F)  load member (generated by FORTRAN et al.)
+ 9   UNLOAD          (F)  release named module from current program
+ 7   UNLOADALL       (R)  delete all loaded modules from store
+-
+ TIME & DATE SERVICES
+ --------------------
+029  DATE            (F)  returns date as a BCPL string
+ 27  TIMEOFDAY       (F)  returns time of day as a BCPL string
+ 28  TIME            (F)  returns elapsed time in units of 1/38400 sec
+-
+ SYSTEM & PROGRAM PARAMETERS
+ ---------------------------
+045  PARMS           (V)  unabsorbed part of JCL param, as a BCPL string
+ 52  LOADPOINT       (V)  address of first word of program
+ 53  ENDPOINT        (V)  address of first word beyond program
+ 54  STACKBASE       (V)  address of first word of stack
+ 55  STACKEND        (V)  address of first word beyond stack
+ 56  STACKHWM        (F)  returns high water mark of stack to date
+ 58  INPROGRAM       (F)  returns TRUE if argument is program address
+ 59  VALIDPOINTER    (F)  returns TRUE if argument is in BCPL machine
+ 6   SAVEAREA        (V)  address of the base of the user's environment
+-
+ PROGRAM CONTROL
+ ---------------
+01   START           (R)  entry point to program
+ 30  STOP            (R)  abandon program
+ 31  LEVEL           (F)  returns current activation level, see below
+ 32  LONGJUMP        (R)  jump to label at an outer activation
+ 80  CALLIFORT       (F)  call FORTRAN module - return integer result
+ 81  CALLRFORT       (F)  call FORTRAN module - return real result
+-
+ DIAGNOSTIC AIDS
+ ---------------
+02   SETPM           (R)  controls H-option post-mortem format
+ 3   ABORT           (R)  entered after any fatal error
+ 4   BACKTRACE       (R)  print trace of last 50 routine applications
+ 78  MAPSTORE        (R)  print addresses of routine entry points, etc.
+ 79  USERPOSTMORTEM  (R)  called from ABORT if entry point is defined
+ 84  ERRORRESET      (R)  call if wishing to continue after fatal error
+ 5   ERRORMESSAGE    (R)  system message writer (not for general use)
+1
+ STRING/BYTE HANDLING
+ --------------------
+066  PACKSTRING      (F)  pack characters from a vector into a string
+ 67  UNPACKSTRING    (R)  unpack characters from a string to a vector
+ 86  PUTBYTE         (R)  insert specified 8-bit byte
+ 85  GETBYTE         (F)  extract specified 8-bit byte
+ 99  MOVEBYTES       (R)  move block of bytes within store
+ 61  COMPAREBYTES    (F)  compares groups of bytes lexically
+-
+ MISCELLANEOUS
+ -------------
+040  APTOVEC         (F)  supply vector of computed length to function
+ 82  SETBREAK        (R)  set flag if BREAK key hit
+ 83  ISBREAK         (F)  test & clear BREAK key flag
+ 87  GETVEC          (F)  obtain 'static' vector
+ 88  FREEVEC         (R)  release 'static' vector
+ 89  RANDOM          (F)  pseudo-random number generator
+ 90  MULDIV          (F)  compute (A*B)/C in double length
+ 91  RESULT2         (V)  set by CALLIFORT, CALLRFORT and MULDIV
+1
+                                Appendix A.2
+-Specification of routines in BCPLMAIN and BLIB
+ ----------------------------------------------
+0Abbreviations:   B  BCPL;  M  machine code;
+                  CIS  current input stream; COS  current output stream.
+0Characters are eight bits long.
+-
+ GLOBAL   B or M              CALL
+ ------   ------              ----
+02           B       SETPM(PROCDEPTH,POINTERWIDTH,POINTERDEPTH)
+0          This routine controls the format of the extended post-mortem
+     (Harry's PM).  The traceback will be to the specified procedure
+     depth ; BCPL pointers will be printed with width POINTERWIDTH on
+     each line, chains being followed to a depth POINTERDEPTH.
+-3           B       ABORT(CODE,ADDRESS,OLDSTACK,DATA)
+0          This routine is the standard fatal error post-mortem ; it
+     is called whenever the STAE or SPIE exit is entered.  An error
+     message that is appropriate to CODE is first written to SYSPRINT,
+     then BACKTRACE() is called provided the stack pointer is intact.
+     If global 79 has been set the value is taken to be the entry point
+     of a user-defined post-mortem, which is called with argument CODE.
+     Finally MAPSTORE() is called, and the task is terminated by calling
+     STOP(100).   See Appendix A.6 for more details of this routine.
+-4           B       BACKTRACE()
+0          This routine provides a procedure traceback to the
+     initial entry to START.  It is called by the library version of
+     ABORT after any fatal error.  Values of the first 8 local
+     variables are printed at each activation level, up to a limit of
+     50 activation levels.  This routine may be useful for debugging
+     purposes.  All output is to the COS.
+-5           B       ERRORMESSAGE(FAULT,FORMAT,ROUTINE,DDNAME)
+0          Writes a suitable error message to SYSPRINT following an
+     error in a library routine.   This routine serves the machine-code
+     input-output program and is not intended for general use.
+-7           M       UNLOADALL()
+0          This routine deletes every module on the load list.  It
+     is called from STOP and during termination following an entry of
+     ABORT.  The routine does not depend on a call of UNLOAD as
+     global 9.
+1
+-8           M       ENTRY := LOADFORT(MEMBER,DDNAME)
+0          Load the member whose string name is MEMBER from the PDS
+     whose ddname is the string DDNAME.   If DDNAME=0 the partitioned
+     data set must be made available through a STEPLIB or JOBLIB
+     dd-card, unless it is in a system library such as SYS1.LINKLIB.
+     A list of loaded modules is maintained, a node being created at the
+     first load request and a use count set to 1.   Subsequent requests
+     merely increment this use count.
+0    This routine loads non-BCPL modules, the result returned being
+     the byte address of the entry point of the loaded module.  See
+     the functions CALLIFORT and CALLRFORT for ways of accessing such
+     non-BCPL modules.  The result will be :
+                 -1      if module cannot be found
+                 0,1     if already loaded by LOAD
+                 N>1     result is routine entry
+     No test is made to ensure that there is enough storage
+     available ; if there is not the task will abend.
+-
+ 9           M       B := UNLOAD(MEMBER)
+0          This function scans the list of loaded routines for one
+     with string name MEMBER.  The use count is decremented by one,
+     the module being deleted if the new count is zero.  If the
+     module was brought into store by LOAD all global entry points
+     defined within it are given their unset value.  The result will
+     be :
+                TRUE     provided all goes well
+                FALSE    if module cannot be found.
+-
+ 10          M       CODE := LOAD(MEMBER,DDNAME)
+0          Load the member whose string name is MEMBER from the PDS
+     whose ddname is the string DDNAME.   If DDNAME=0 the partitioned
+     data set must be made available through a STEPLIB or JOBLIB
+     dd-card, unless it is in a system library such as SYS1.LINKLIB.
+     A list of loaded modules is maintained, a node being created at the
+     first load request and a use count set to 1.   Subsequent requests
+     merely increment this use count.
+0    The module is assumed to obey the conventions for BCPL program
+     sections.  All global entry points defined within the module are
+     set in the global vector.  The result will be :
+                  0      provided all goes well
+                 -1      if module cannot be found
+                  1      if some global cannot be set  (for example if
+                           the global vector is not large enough)
+                 N>1     if already loaded by LOADFORT
+     No test is made to ensure that there is enough storage
+     available ; if there is not the task will abend.
+1
+-11          M       SELECTINPUT(D)
+0          Select input stream descriptor D to be CIS.
+-12          M       SELECTOUTPUT(D)
+0          Select output stream descriptor D to be COS.
+-
+ 13          M       CH := RDCH()
+0          Result is next character from CIS.  If CIS is exhausted,
+     result is ENDSTREAMCH.
+-14          M       WRCH(CH)
+0          Write character CH to COS.  An output record is
+     terminated if CH is a record separator character.  Note that
+     record separators are translated appropriately for streams that
+     have either ASA or machine control characters.
+-15          M       UNRDCH()
+0          Cause the next call of RDCH() for the CIS to return the
+     same result as the previous call for the same stream.  The
+     routine has no effect on calls of READREC(V).
+-
+ 16          M       D := INPUT()
+0          Result is descriptor of CIS.
+-17          M       D := OUTPUT()
+0          Result is descriptor of COS.
+-
+ 18          M       INCONTROL(B)
+0          By default the run-time system translates ASA control
+     characters on input, generating appropriate record separators.
+     If the routine is called with argument FALSE this translation is
+     suspended for the CIS, and the control character is returned as
+     the first character of the record ; a call with argument TRUE
+     restores the default handling.
+119          M       OUTCONTROL(B)
+0          By default the run-time system translates record
+     separators on output to appropriate control characters for
+     streams with either ASA or machine control.  If this routine is
+     called with argument FALSE the translation is suspended for the
+     COS, and the first character of each record is taken as a
+     control character ; a call with argument TRUE restores the
+     default situation.
+-20          M       TRIMINPUT(B)
+0          Default treatment of trailing blanks is that they will
+     be truncated if the first record of an input stream is accessed
+     via RDCH(), but not if the first access is via READREC(V).  This
+     routine offers explicit control for the CIS ; if the argument is
+     TRUE truncation is enabled, if FALSE truncation is disabled.
+-21          M       SETWINDOW(N)
+0          READREC(V) transfers characters to vector V up to some
+     maximum 'window' size.  By default this size is the blocksize
+     for data sets with RECFM=U or RECFM=V(B)S, otherwise the logical
+     record length.  This routine resets the window size explicitly
+     for the CIS.  The byte size supplied as argument is always
+     rounded up to the next multiple of 4.
+-22          M       BINARYINPUT(B)
+0          If this routine is called with argument TRUE the CIS is
+     read as a binary input stream.  'Newline' is not returned at the
+     end of each record, and automatic truncation of trailing spaces
+     is suspended.  If called with argument FALSE newlines are once
+     again supplied, but the TRIM option is not reset.  If necessary
+     use TRIMINPUT(TRUE).   This routine will cause chaos if the
+     stream has ASA control characters.
+-23          M       N := READREC(V)
+0          Read the next logical record from the CIS, segmenting at
+     the current window size if necessary.  Pack the characters 4
+     to a word in V!0 onwards.  The result is the number of
+     characters read, positive if the line was read to completion,
+     negative if characters remain.  The result is -1 if the CIS is
+     exhausted.
+-24          M       WRITEREC(V,N)
+0          Write a record of |N| characters to the COS from words
+     V!0 onwards, the characters being packed four per word.  ASA
+     or machine control characters will be supplied as necessary.
+     The record is terminated by a newline.
+125          M       WRITESEG(V,N)
+0          Write a segment of |N| characters to the current
+     output logical record, taking words from V!0 onwards, the
+     characters packed 4 per word.  The record is NOT terminated.
+-26          M       SKIPREC()
+0          Space past the current input logical record.
+-27          M       S := TIMEOFDAY()
+0          Result is time-of-day as string " 10.23.47"
+-28          M       S := TIME()
+0          Result is real time elapsed in timer units.   The value of a
+     timer unit is 1/38400 seconds.
+-29          M       S := DATE()
+0          Result is the date as string "  17 JAN 74".
+-30          M       STOP(N)
+0          Terminate the job.  N is the completion code.
+-31          M       P := LEVEL()
+0          Result is P pointer for use with LONGJUMP.
+-32          M       LONGJUMP(P,L)
+0          Cause a non-local jump to label L at the activation
+     level given by P.
+-34          M       BINWRCH(CH)
+0          Write character CH to the COS.  There is no check for
+     record separator characters.  Records are written automatically
+     when the logical record length is reached, but may also be
+     forced by calling NEWLINE().  Beware of padding with spaces when
+     forcing output to RECFM=F(B) data sets.
+-35          M       B := REWIND()
+0          Rewind CIS.  The stream remains selected.  Result is
+     TRUE if all goes well, otherwise FALSE.
+136          M       D := FINDLOG()
+0          Create an output stream to 'WTO ,ROUTCDE=11'.  The result
+     is a descriptor of this stream.   The destination of this stream
+     depends on the environment, being the terminal if running online
+     under TSO, the HASP program log, etc.
+-37          M       WRITETOLOG(S)
+0          Write string S via 'WTO ,ROUTCDE=11', destination as FINDLOG.
+     This is independent of FINDLOG().
+-38          M       D := FINDTERMINAL(CODE)
+0          Create a stream to or from the online terminal interface.
+     The stream will be for input if CODE=1, otherwise for output.
+     The function fails with a result of 0 unless running online
+     under TSO.  If all goes well the result is a stream descriptor.
+-39          M       D := FINDPARM()
+0          Create an input stream from the parameter string.  The
+     characters of the PARM field will be returned by successive
+     calls of RDCH(), followed by a newline and the end-of-stream
+     character.
+-40          M       RESULT := APTOVEC(F,N)
+0          Apply the function or routine F to two arguments V
+     and N where V is a vector whose maximum subscript is N.  APTOVEC
+     could(illegally) be defined in BCPL as follows:
+0             LET APTOVEC(F, N) = VALOF
+                   $( LET V = VEC N
+                      RESULTIS F(V, N)  $)
+-41          M       D := FINDOUTPUT(DD)
+0          This function creates an open output stream to the data
+     set described by argument DD.  DD must be a string of the form
+     "DDNAME" or "DDNAME(MEMBER)".  Provided that the data set is
+     opened successfully the result is a descriptor of the stream,
+     otherwise 0.
+-42          M       D := FINDINPUT(DD)
+0          This function creates an open input stream from the data
+     set described by argument DD.  DD must be a string of the form
+     "DDNAME" or "DDNAME(MEMBER)".  Provided that the data set is
+     opened successfully the result is a descriptor of the stream,
+     otherwise 0.
+143          M       D := FINDLIBRARY(DDNAME)
+0          This function opens the library whose ddname is DDNAME.
+     The most likely use would be to establish an open PDS for LOAD
+     or LOADFORT.  The result is a descriptor of the library, or 0
+     if there is any trouble.
+-44          M       D := INPUTMEMBER(DDNAME,MEMBER)
+0          Create an open input stream from the member MEMBER of
+     the PDS whose ddname is DDNAME.  Input streams can be open
+     simultaneously for many members of the same PDS.  The result is
+     a descriptor of the input stream, or 0 if there is any trouble.
+-46          M       B := ENDREAD()
+0          Close CIS with default positioning.  Unset input stream
+     selection.  The result will be FALSE if errors are detected,
+     otherwise TRUE.
+-47          M       B := ENDWRITE()
+0          Close COS with default positioning.  Unset output stream
+     selection.  The result will be FALSE if errors are detected,
+     otherwise TRUE.
+-48          M       CLOSELIBRARY(DDNAME)
+0          If a library having ddname DDNAME has been opened, close
+     it.  The most likely use would be following the implicit open
+     issued by LOAD or LOADFORT.
+-49          M       D := OUTPUTMEMBER(DDNAME,MEMBER)
+0          Create an open output stream to the member MEMBER of the
+     PDS whose ddname is DDNAME.  Only one output stream may be
+     established for a given PDS, though this stream may co-exist
+     with one or more inputs from the same PDS.  The result is a
+     descriptor of the output stream, or 0 if there is any trouble.
+-51          M       B := ENDTOINPUT()
+0          Close COS and reopen for input.  Unset the output stream
+     selection.  The result will be FALSE if errors are detected,
+     otherwise TRUE.
+-56          B       P := STACKHWM()
+0          Result is the BCPL address of the highest word of the
+     stack that has been used, or 0 if the stack was not initialised.
+160          B       WRITES(S)
+0          Write string S to COS.
+-62          B       WRITEN(N)
+0          WRITED(N,0).
+-63          B       NEWLINE()
+0          Output newline to COS.
+-64          B       NEWPAGE()
+0          Output newpage to COS.  For streams without control
+     characters effect is as NEWLINE().
+-65          B       WRITEO(N)
+0          WRITEOCT(N,8).
+-66          B       I := PACKSTRING(V,S)
+0          Pack characters V!1 to V!N into vector S, where N = V!0
+     & 255.  The result is the subscript of the highest element of S
+     used (i.e. N/4 on the IBM System/370).   The junior bytes of the
+     final word will be padded with zeroes.   Note that PACKSTRING(V,V)
+     will behave correctly in this implementation, though the use of
+     the function in this way is not recommended.
+-67          B       UNPACKSTRING(S,V)
+0          Unpack characters from vector S into V!1 to V!N, where
+     N = S!0 >> 24, and set V!0 = N.
+-68          B       WRITED(N,D)
+0          Output number N on COS, in field of width D.  '-' sign
+     precedes if necessary; leading zeros replaced by spaces.  If D
+     is too small, number is printed correctly in as many places as
+     are necessary.  No space is output before a positive number
+     unless the field is large enough.
+-69          B       WRITEARG(D)
+0          If data D is a function or routine entry address write
+     the print name according to format "  '%S'".  Otherwise write as
+     an integer by calling WRITED(D,11).
+170          B       N := READN()
+0          Result is next number from CIS.  Preceding spaces, tabs
+     and newlines ignored.  Any non-digit terminates the number.
+     Optional sign must immediately precede number.  The terminating
+     character is left in TERMINATOR.
+-74          B       WRITEX(N)
+0          WRITEHEX(N,8)
+-75          B       WRITEHEX(N,D)
+0          Output D least significant hexadecimal digits of N to
+     COS.  Leading zeroes are printed.
+-76          B       WRITEF(FORMAT,A,B, ...)
+0          Outputs A,B, ... on COS according to FORMAT.  The FORMAT
+     string is copied to COS until the end is reached or the warning
+     character '%' is encountered.  The character following the '%'
+     defines the format of the next value to be printed as follows:
+         %%      print '%'
+         %S      print next arg as a     string.
+         %C                              character
+         %N                              number (minimum width)
+         %In                             number width n.
+         %On                             octal number width n.
+         %Xn                             hexadecimal width n.
+     The routine takes a maximum of 11 arguments in addition to the
+     format.
+-77          B       WRITEOCT(N,D)
+0          Output D least significant octal digits of N to COS.
+     Leading zeros are printed.
+-78          B       MAPSTORE()
+0          Print out all function and routine entry points with use
+     counts.  Print all values set in the global vector (see appendix
+     A.7).  Program segments are printed in order of occurrence in
+     store, each being labelled with date of compilation, SECTION
+     name, and length in words.
+-79          B(?)    USERPOSTMORTEM(CODE)
+0          See the specification of ABORT.  One such post-mortem
+     routine provides information on the current status of input and
+     output streams, and is to be found in the standard library under
+     the SECTION name "$IOS$".
+180          M       RESULT := CALLIFORT(ENTRY, 4*@A, 4*@B, 4*@C, ...)
+0          This function calls the routine with entry point ENTRY,
+     supplying as argument list pointer the address of the second
+     argument position in the stack.  This routine copes with
+     integer-valued functions, and will give the same result as the
+     FORTRAN call
+                     ENTRY(A, B, C, ...)   .
+0          Typically ENTRY will be the result from some previous
+     call of LOADFORT.  Note that the form of the argument list given
+     is correct for most FORTRAN library routines, but will not be
+     appropriate for other languages such as PL/1.
+0          There is an IBM FORTRAN IV extension to provide exception
+     return labels in subroutine calls, typical syntax being
+     CALL SUBJIM(A, B, C, &10, &20) ,  where A, B, C, are arguments,
+     and 10 and 20 label main program FORTRAN statements.   The exit
+     is defined by the command 'RETURN I', see the IBM FORTRAN IV
+     manual for details.   This facility is implemented via a code
+     returned in  R15 , value 4*I corresponding to 'RETURN I' .   On
+     return from such a subroutine the value of I is stored in RESULT2,
+     defined as global 91 ; a result of 0 indicates a normal RETURN.
+-81          M       RESULT := CALLRFORT(ENTRY, 4*@A, 4*@B, 4*@C, ...)
+0          This function calls the routine with entry point ENTRY,
+     supplying as argument list pointer the address of the second
+     argument position in the stack.  This routine copes with
+     real-valued functions, and will give the same result as the
+     FORTRAN call
+                     ENTRY(A, B, C, ...)   .
+0          The function operates in just the same way as CALLIFORT.
+-
+ 82          M       SETBREAK(B)
+0          This routine controls the provision of an attention exit
+     routine for the BREAK key of a user's online console.  If the
+     argument is TRUE an exit is established, if FALSE any attention
+     exit is cancelled.  The characters
+0                *** (BCPL) BREAK
+0    are typed at the console ; if BREAK is hit again while this
+     line is being typed the new attention will be handled at the
+     higher command level.
+-83          M       B := ISBREAK()
+0          This function tests to see whether there is an
+     outstanding console attention.  If so the result will be TRUE,
+     otherwise FALSE.  A call of this function will always reset the
+     flag showing the outstanding attention.
+184          M       B := ERRORRESET()
+0          This function can be called if the user wishes to retry
+     after an entry of ABORT.  The result is TRUE if the stack is
+     still intact, FALSE if the pointer has been reset.  In the
+     latter case apply any retry routine directly rather than by a
+     LONGJUMP to an outer level.   To use this routine it will be
+     necessary to replace ABORT or to provide a USERPOSTMORTEM.
+-85          M       CH := GETBYTE(S,N)
+0          Result is the value of the 8-bit byte at offset N from
+     vector S.
+-86          M       PUTBYTE(S,N,CH)
+0          This routine sets the 8-bit byte at offset N from vector
+     S to the junior 8 bits of the argument CH.
+-87          M       V := GETVEC(N)
+0          This function obtains a new vector with suffix range 0
+     to N and returns a BCPL word address as result ; if insufficient
+     store is available the result is 0.  The store is taken via an
+     OS GETMAIN SVC from the area that was returned to the system
+     from above the initial program segment ; writing beyond the end
+     of a vector allocated in this way could well cause chaos.
+-88          M       FREEVEC(V)
+0          This routine returns the store obtained for vector V by
+     a call of GETVEC(N).  If no such vector V is found no action is
+     taken.
+-89          M       N := RANDOM(N)
+0          The function RANDOM(N) is a 32-bit mixed congruential
+     pseudo-random number generator.  The formula used is :
+              RANDOM(N) = A*N + B   (mod 2**32) ,
+                  where   A = 2147001325
+                    and   B =  715136305  .
+     This function should be used by selecting an initial value for
+     the seed N and then giving calls of the above form, taking the
+     set of values of N obtained as the random sequence.
+-90          M       D := MULDIV(A,B,C)
+0          This function computes (A*B)/C , holding the product
+     (A*B) as a double-length integer.  If the result exceeds the
+     range for 32-bit integers there is a program interrupt.  The
+     remainder of the division is left in RESULT2.
+1
+ 92          M       BYTES := BLOCKSIZE(FILE)
+0          This function returns the blocksize of FILE in bytes.  FILE
+     must be the result of OPENBLOCKFILE or CREATEBLOCKFILE, or a result
+     of 0 will be returned.
+-93          M       FILE := CREATEBLOCKFILE(DDNAME,BYTESIZE)
+0          Create an output stream to the data set having ddname DDNAME.
+     The stream is opened for BSAM 'Create BDAM' mode ; the associated
+     DD statement must specify 'DSORG=DA' .   WRNEXTBLOCK(FILE,V)  must
+     write the number of records required to format the data set.  The
+     file is created with a blocksize of BYTESIZE bytes.
+-94          M       FILE := OPENBLOCKFILE(DDNAME)
+0          Open the data set having ddname DDNAME for updating via BDAM.
+     Blocks are addressed by relative block number, the first block being
+     block 0 ; use READBLOCK and WRITEBLOCK for updating the file.  The
+     result is a descriptor to the open block file.
+-95          M       CLOSEBLOCKFILE(DDNAME)
+0          If a block file having ddname DDNAME has been opened, close
+     it.  The routine closes files opened by both CREATEBLOCKFILE and
+     OPENBLOCKFILE.  Files open at termination are closed automatically.
+-96          M       B := READBLOCK(FILE,N,V)
+0          Read relative block N from block file FILE to BCPL address V.
+     FILE must be the result of a call to OPENBLOCKFILE.  The result will
+     be FALSE if there is any error, otherwise TRUE ; an error message is
+     written except in the case of the first block beyond the data set.
+-97          M       B := WRITEBLOCK(FILE,N,V)
+0          Write relative block N of block file FILE from BCPL address V.
+     FILE must be the result of a call to OPENBLOCKFILE.  The result will
+     be FALSE if there is any error, otherwise TRUE ; an error message is
+     written except in the case of the first block beyond the data set.
+-98          M       CODE := WRNEXTBLOCK(FILE,V)
+0          Write the next block to block file FILE from BCPL address V.
+     FILE must be the result of a call of CREATEBLOCKFILE ; this routine
+     must only be used when setting up a block file initially.  CODE is
+     the value returned in general register 15 following the WRITE ; this
+     result is 0 unless the block that has just been written has filled
+     a track, 4 for each block written that has filled a track but not
+     an extent, and 8 for each block written that has filled an extent.
+     CODE may be tested to force initialisation of the entire primary
+     allocation, etc.
+1
+0Routines to handle groups of bytes
++__________________________________
+0        Sequences of consecutive bytes are described by nodes of three
+ words, the descriptor being the BCPL address of the first word in the
+ node ; the first word is a BCPL vector address giving the storage area
+ base, the second the byte offset of the first byte in the group, and
+ the third the number of bytes in the group.
+0                            -----------------------
+                            |       |       |       |
+     Thus      D  ------>   |   V   |   I   |   N   |
+                            |       |       |       |
+                             -----------------------
+0        The following routines accept these descriptors as arguments,
+ being written originally to make the power of the IBM/370 instructions
+ CLCL and MVCL available to the BCPL programmer.
+-
+ 61          M       CODE := COMPAREBYTES(D1,D2)
+0          The routine  COMPAREBYTES(D1,D2)  compares lexically the
+     group D1 and the group D2.  The length of each string is masked to
+     24 bits before the comparison (on the 360 the shorter length must
+     lie in the range  0 - 256  bytes) .  The result will be  -1, 0, 1
+     as the first operand is lexically  LT, EQ, GT  the second.
+0    A definition of the function in BCPL would be  -
+0       LET COMPAREBYTES(D1,D2) = VALOF
+0          $(  LET  V1, I1, N1 = D1!0, D1!1, D1!2
+               AND  V2, I2, N2 = D2!0, D2!1, D2!2
+0              LET  N =  (N1<=N2) ->  N1, N2
+0              FOR I = 0 TO (N-1) DO
+                   $(  LET CH1 = GETBYTE(V1, I1+I)
+                       AND CH2 = GETBYTE(V2, I2+I)
+                       IF  CH1<CH2  RESULTIS -1
+                       IF  CH1>CH2  RESULTIS 1
+                   $)
+0              RESULTIS   (N1<N2)  ->  -1,
+                          (N1=N2)  ->   0,  1
+           $)
+-
+ 99          M       MOVEBYTES(D1,D2)
+0          This routine copies the group D2 to the group location D1 ;
+     if group D2 is the longer it is truncated, if the shorter it will
+     be extended with binary zeroes, i.e. by the character X'00'.  The
+     result is undefined if the source and destination overlap.
+1
+0    A definition of the routine in BCPL would be  -
+0       LET MOVEBYTES(D1,D2) BE
+0          $(   LET  V1, I1, N1  =  D1!0, D1!1, D1!2
+                AND  V2, I2, N2  =  D2!0, D2!1, D2!2
+0               LET  N  =   (N1<=N2)  ->  N1, N2
+                FOR I = 0 TO (N-1) DO PUTBYTE(V1, I1+I, GETBYTE(V2,I2+I))
+                FOR I = N2 TO (N1-1) DO PUTBYTE(V1, I1+I, 0)
+           $)
+-
+0Other reserved GLOBAL numbers
+ -----------------------------
+01       START           routine entry point of start of program.
+ 6       SAVEAREA        BCPL address (i.e. vector pointer) of the user
+                         save area.  This area is addressed throughout
+                         execution by register 13, and is the root of the
+                         data structure defining the user's environment.
+ 45      PARMS           BCPL address of the vector recording the portion
+                         of the PARM field that was not accepted by the
+                         run-time system.  Format is that of a packed
+                         BCPL string.
+ 52      LOADPOINT       BCPL address of the first word of the program
+                         segment.
+ 53      ENDPOINT        BCPL address of the first word beyond the main
+                         program segment.  The next block of store is
+                         returned to the system for allocation as
+                         buffers, space for DCB's, OS control blocks,
+                         modules brought into store by LOAD and LOADFORT,
+                         etc.  The number of bytes so returned can be
+                         controlled by a directive in the PARM field.
+ 54      STACKBASE       Address of the first word of the BCPL stack.
+ 55      STACKEND        Address of the first word beyond the BCPL stack.
+ 57      (SYSTEM)        Set to characters 'CMS' when running CMS under
+                         VM/370 via the CMS simulation of OS, otherwise
+                         to characters 'OS'.  In either case the
+                         characters are right aligned in the word, the
+                         leftmost bytes being set to zero.  No name is
+                         associated with this global in the standard
+                         header file.
+ 71      TERMINATOR      Set by READN to terminating character of number.
+ 91      RESULT2         Set by CALLIFORT and CALLRFORT to a quarter of
+                         the value in Register 15 after return from the
+                         FORTRAN subroutine.   Following a 'RETURN I'
+                         statement this global will therefore be set to
+                         I ; if such a 'RETURN I' is used normal RETURN
+                         statements will give result 0.   Note that the
+                         exception exit is a FORTRAN IV extension.
+                         Also set by MULDIV(A, B, C) to the remainder on
+                         dividing (A*B) by C.
+1
+                                Appendix A.3
+-
+ Library declarations
+ --------------------
+0The directive
+0   GET "LIBHDR"
+0will insert the standard library declarations from the data-set whose
+ DDNAME is LIBHDR.  The BCPL procedures include a dd-card for LIBHDR
+ that accesses this standard header file.
+         The items declared in this file are shown below.  By convention
+ library variables are given global numbers in the range 1 - 99, so users
+ should avoid allocating these globals for their own purposes.  Globally
+ defined names are listed in alphabetical order for convenience.
+0   GLOBAL
+    $(  ABORT:3               //  Calls BACKTRACE and MAPSTORE
+        APTOVEC:40            //  Apply function to dynamic vector
+        BACKTRACE:4           //  Summarise the run-time stack
+        BINARYINPUT:22        //  Ignore input record separators
+        BINWRCH:34            //  Write character treated as binary
+        BLOCKSIZE:92          //  Return the block size in bytes, BDAM
+        CALLIFORT:80          //  Call FORTRAN function, integer result
+        CALLRFORT:81          //  Call FORTRAN function, real result
+        CLOSEBLOCKFILE:95     //  Close block file after update, create
+        CLOSELIBRARY:48       //  Close library after LOAD, LOADFORT
+        COMPAREBYTES:61       //  compare groups of bytes lexically
+        CREATEBLOCKFILE:93    //  Open block file for BSAM 'Create BDAM'
+        DATE:29               //  Date as string "  17 DEC 74"
+        ENDPOINT:53           //  Last word of user's program
+        ENDREAD:46            //  Close input stream
+        ENDTOINPUT;51         //  Close and reposition output stream
+        ENDWRITE:47           //  Close output stream
+        ERRORMESSAGE:5        //  Write input/output error message
+        ERRORRESET:84         //  Permit retry after call of ABORT
+        FINDINPUT:42          //  Find specified input stream
+        FINDLIBRARY:43        //  Open library for LOAD, LOADFORT
+        FINDLOG:36            //  Create output to 'WTO ,ROUTCDE=11'
+        FINDOUTPUT:41         //  Find specified output stream
+        FINDPARM:39           //  Create input from parameter list
+        FINDTERMINAL:38       //  Create stream to online interface
+        FREEVEC:88            //  Free vector allocated by GETVEC
+        GETBYTE:85            //  Obtain a character from a string
+        GETVEC:87             //  Allocate vector of N words
+        INCONTROL:18          //  Handle input control characters
+        INPROGRAM:58          //  validate pointer into BCPL code
+        INPUT:16              //  Find current input
+        INPUTMEMBER:44        //  Create input from named member
+        ISBREAK:83            //  Test and clear the BREAK key flag
+        LEVEL:31              //  Find activation pointer
+        LOAD:10               //  Load BCPL routine and set globals
+        LOADFORT:8            //  Load named routine, return entry
+        LOADPOINT:52          //  First word of user's program
+        LONGJUMP:32           //  Make non-local jump
+        MAPSTORE:78           //  Map the store
+        MOVEBYTES:99          //  Move byte-addressed storage block
+        MULDIV:90             //  Compute (A*B)/C via a 64-bit product
+        NEWLINE:63            //  Write a newline
+        NEWPAGE:64            //  Write a newpage
+        OPENBLOCKFILE:94      //  Open block file for BDAM updating
+        OUTCONTROL:19         //  Handle output control characters
+        OUTPUT:17             //  Find current output
+        OUTPUTMEMBER:49       //  Create output to named member
+        PACKSTRING:66         //  Pack characters
+        PARMS:45              //  Parameter list as BCPL string
+        PUTBYTE:86            //  Update a character in a string
+        RANDOM:89             //  32-bit pseudo-random number generator
+        RDCH:13               //  Read a character
+        READBLOCK:96          //  Read in a block from a BDAM file
+        READN:70              //  Read a number
+        READREC:23            //  Read a record
+        RESULT2:91            //  Extra result from MULDIV, CALLIFORT
+        REWIND:35             //  Rewind input stream
+        SAVEAREA:6            //  Root of user's data structure
+        SELECTINPUT:11        //  Select input stream
+        SELECTOUTPUT:12       //  Select output stream
+        SETBREAK:82           //  Set a flag if the BREAK key is hit
+        SETPM:2               //  set format for H-option post-mortem
+        SETWINDOW:21          //  Set segment size for READREC
+        SKIPREC:26            //  Throw away current input record
+        STACKBASE:54          //  Base of stack pointer
+        STACKEND:55           //  End of stack pointer
+        STACKHWM:56           //  Function to return stack use limit
+        START:1               //  The main routine
+        STOP:30               //  Terminate job step
+        TERMINATOR:71         //  Terminator character of READN
+        TIMEOFDAY:27          //  Time as string  " 10.23.47"
+        TIME:28               //  Find computation time
+        TRIMINPUT:20          //  Set trailing blank control
+        UNLOAD:9              //  Delete named routine (use count)
+        UNLOADALL:7           //  Delete all loaded routines
+        UNPACKSTRING:67       //  Unpack characters
+        UNRDCH:15             //  Repeat last character read
+        USERPOSTMORTEM:79     //  Routine, called in ABORT if defined
+        VALIDPOINTER:59       //  validate pointer into BCPL machine
+        WRCH:14               //  Write a character
+        WRITEARG:69           //  Write as number or 'ROUTINE' entry
+        WRITEBLOCK:97         //  Write a block to a BDAM file
+        WRITED:68             //  Write a number, specified width
+        WRITEF:76             //  Write with format
+        WRITEHEX:75           //  Write a hexadecimal number
+        WRITEN:62             //  Write a number (minimum width)
+        WRITEO:65             //  Write a word in octal
+        WRITEOCT:77           //  Write an octal number
+        WRITEREC:24           //  Write record
+        WRITES:60             //  Write a string
+        WRITESEG:25           //  Write part-record
+        WRITETOLOG:37         //  Write string via 'WTO ,ROUTCDE=11'
+        WRITEX:74             //  Write a hexadecimal number
+        WRNEXTBLOCK:98        //  Write the next block in 'Create BDAM'
+    $)
+1
+         The following constants are defined in the standard header
+ as an aid to writing transportable programs ; it is not of course
+ guaranteed that they will be found in all implementations.
+0   MANIFEST
+    $(  ENDSTREAMCH=-1        //  End of stream character
+        BYTESPERWORD=4        //  Number of characters per word
+        TICKSPERSECOND=38400  //  TIME() notched up per second
+    $)
+1
+                                Appendix A.4
+0Input/Output error messages
+ ---------------------------
+0        The machine-code library BCPLMAIN handles the interface with
+ O.S.   In particular it contains the input/output routines, and thus
+ has to cope with any error condition that may arise.
+0        All error messages are output to SYSPRINT, assuming that
+ the data set can be opened for output successfully.  If not  -
+ in particular if the fault is associated with SYSPRINT  -  a message
+ will be written instead to the program log.
+0        Diagnostic messages take the following standard form:
+0FAULT <n> IN ROUTINE <routine>
+ <message describing the fault>
+-        Here <n> is a number associated with the fault, provided merely
+ for ease of reference to descriptive material.
+0        <routine> is the print name of the library routine that was in
+ execution when the error was diagnosed.  The first 7 characters only are
+ printed ; thus WRITERE for WRITEREC, etc.
+0        Messages should usually be sufficient to identify the cause of
+ error.  Where appropriate the DDNAME associated with the transfer will
+ make up part of the message.  The following notes may be of assistance
+ in chasing up the root of the problem.
+-FAULT         MESSAGE
+ -----         -------
+01       NO SELECTED INPUT
+0        Input selection has failed for some reason, typically because
+ an invalid argument has been passed to SELECTINPUT.  Alternatively
+ ENDREAD has not been followed by a new selection.  The result from
+ FINDINPUT should always be checked for value 0.
+-2       NO SELECTED OUTPUT
+0        Output selection has failed for some reason, typically because
+ an invalid argument has been passed to SELECTOUTPUT.  Alternatively
+ ENDWRITE has not been followed by a new selection.  The result from
+ FINDOUTPUT should always be checked for value 0.
+-3       FAILURE RE-OPENING ddname FOR INPUT
+0        An 'Open for input' that was initiated by ENDTOINPUT or
+ REWIND has failed.  Such an error suggests that the request was
+ rather an odd one.
+1
+ 4       OVERLONG RECORD TO ddname
+0        A record being constructed by WRCH, WRITEREC or WRITESEG has
+ exceeded the logical record length.  The record is wrapped round
+ by calling WRCH('*N').  Note that automatic wrap-round without error
+ is the rule for line-printers and on-line terminals.  See also the
+ specification of BINWRCH.
+-5       ddname OPEN, BUT NOT FOR INPUT
+0        The data set defined by DDNAME is already open for output.
+-6       UNABLE TO OPEN ddname FOR OUTPUT
+0        The data set defined by DDNAME has already been opened for
+ some incompatible BCPL stream.  This could occur for a variety of
+ reasons, notably if the data set has been opened for input or as a
+ module library.  The most likely source of error is confusion over the
+ rules for streams to and from members of a single PDS ; any number of
+ input streams, with at most one output, may be open at a given time.
+-7       TOO MANY ERRORS
+0        The run is cancelled if some limit of input/output errors has
+ been reached.  The value of this limit is an installation dependent
+ parameter, controlled by the setting of the symbol ERRMAX in the macro
+ MANIFEST.  Note that only the first of a sequence of errors of 'null
+ selection' is recorded.
+-8       ddname OPEN, BUT NOT AS A LIBRARY
+0        The data set defined by DDNAME is already open for output.
+-9       ddname DIRECTORY FULL, STOW FAILED
+0        An error occurred when closing an output stream that had been
+ opened for a member of a partitioned data set, see the specification
+ of OUTPUTMEMBER and FINDOUTPUT.  The new member is lost.  In addition
+ a message is written to the program log giving the member name.
+-10      TROUBLE WITH BLOCK FILE ddname
+0        A request has been made to create a block file that is already
+ open for updating, or vice versa.  The routine name will make the exact
+ nature of the problem clear.
+-11      TROUBLE WITH BLOCK FILE ddname
+0        An error has occurred during a block transfer.  Details may be
+ extracted from bits 8 to 23 of DECB and the field DCBKBLK.  Status bits
+ in R1 on entry to the SYNAD are saved in DCBSDERR.  See Appendix C.3.
+1                               Appendix A.5
+-Completion codes
+ ----------------
+0        The normal exit from BCPL is obtained by giving the command
+ FINISH, or equivalently by completing execution of the block defined
+ for START.  In such a case a completion code of zero will be given.
+ A non-zero code may be returned by calling the library routine STOP(N).
+0        Various special completion codes are returned by the BCPL
+ run-time system following diagnosis of an error situation.
+0     Code 20      Failure in a STOW issued during termination
+      Code 60      Insufficient storage to initialise BCPL
+      Code 80      Same as code 60, but a rather worse situation
+      Code 88      Invalid run-time option string
+      Code 100     Fatal error during program execution
+-        The code of 20 is returned only if the completion code would
+ otherwise have been 0 ; if STOP has already been called with a code
+ other than zero no attempt is made to interfere.
+0        Codes of 60, 80 and 88 should have immediate remedies.
+0        The code of 100 is returned only in hard error situations,
+ notably when the STAE or SPIE exit has been taken.  ABORT should
+ have been entered to produce a high-level post-mortem.  For the
+ interpretation of such output see Appendix A.7.
+-
+-User abend 111
+ --------------
+0        In certain catastrophic situations the BCPL error recovery
+ routines will themselves fail, bringing a danger of looping in the
+ post-mortem.  The routine ABORT can therefore be called only once,
+ a first-time switch being set awhen it is called ; unless this switch
+ has been reset by a call of ERRORRESET (this will of course involve
+ either the replacement of ABORT or the provision of an appropriate
+ USERPOSTMORTEM) any subsequent entry will result in immediate error
+ termination with a completion code of 100.
+0        Even this safety-valve may blow, typically when the program
+ has over-written the stack, global vector, program, DCB's, or other
+ vital organ.  No attempt is made to wind up the run gracefully, and
+ the ABEND SVC is called with a user completion code of 111.  This
+ code is in itself an indicator of a major error of the over-writing
+ variety, but it is not possible to provide much help for debugging.
+ If mere contemplation fails to bring light then a hexadecimal dump
+ is likely to be the only answer ; use the D option in the parameter
+ string to the run-time system, include a SYSUDUMP dd-card, and summon
+ an expert.
+1
+                                Appendix A.6
+-Calling sequence for ABORT
+ --------------------------
+0        When a BCPL program is initialised STAE and SPIE exits are set
+ to handle most of the run-time error situations that are likely to
+ arise.   If a program then abends a nominated routine (ABORT, global 3)
+ is called with arguments describing the error.   The call is
+0        ABORT(CODE, ADDR, OLDSTACK, DATA)   ,
+0where       CODE        is a system or user completion code
+             ADDR        the program counter at the time of error
+             OLDSTACK    stack register contents at the time of error
+             DATA        additional information dependent on the error.
+0        ABORT being global may of course be defined by a BCPL programmer
+ to be any user-supplied routine, this routine then being called with the
+ above arguments when a fatal error occurs.   It is then the duty of the
+ user routine to take sensible action and to avoid such unpleasantness as
+ abend recursion.   The standard library contains a version of ABORT that
+ will write an appropriate error message, call a user post-mortem if one
+ has been defined, and print diagnostic information.   See Appendix A.7
+ for an example of the output of the system ABORT routine.
+0        The format of CODE is X'00SSSUUU', where the three hexadecimal
+ digits 'SSS' will be the standard system completion code for all ABENDs
+ issued by O.S.   Here the two junior digits will often be the number
+ of an SVC associated with the fault ; note in particular that codes of
+ the form X'?0A' and X'?04' are associated with GETMAIN requests, and
+ probably imply that there is insufficient storage available.   Codes of
+ the form X'0C?', where the junior digit runs from 1 to F, correspond to
+ the usual program interrupt codes.   See the IBM Manual 'Messages and
+ Codes' (GC28-6631) for the complete list of system completion codes.
+ User completion codes will only arise from problem program calls of
+ ABORT.
+0        The second argument ADDR is only interpreted for program
+ interrupts, and is likely to be meaningless for most other system
+ codes.   Note that the special default values assigned to unset global
+ variables make it possible to diagnose errors caused by applying
+ undefined global routines, see Appendix A.7.
+0        The third argument OLDSTACK provides a check that the stack
+ pointer value was correctly set before ABORT was called ; unless this
+ variable corresponds to the previous stack pointer on entry then the
+ pointer will have been reset to the base of the stack, thus losing the
+ chance of providing BACKTRACE information, etc.   This variable must
+ be set when calling the system ABORT routine if a standard BACKTRACE
+ is required.
+0        DATA is at present relevant only to time-out interception, the
+ value passed being the number of timer units of active task CPU time
+ that had elapsed before time-out.
+1
+0        The provision of user completion codes enables a programmer
+ to call ABORT at any stage of execution, giving a diagnostic code
+ and obtaining a standard BACKTRACE and MAPSTORE.   In such a case the
+ variable OLDSTACK must be set appropriately, thus
+ ABORT(CODE, 0, LEVEL()) .
+0        CODE should be given an integer value in the range 0 to 4095.
+ The second argument is not tested by the system version of ABORT, and
+ the value of 0 is merely conventional.   The current stack level must
+ be passed as the third argument if a BACKTRACE is required.
+-
+ Values of CODE
+ --------------
+0        In all cases when ABORT is called by the BCPL run-time system
+ to terminate a run, the argument CODE will occupy the system completion
+ code digits.   In most cases the value will simply be the relevant O.S.
+ code that was supplied by the STAE or SPIE exit routine.   However,
+ there are three special cases ; the description given corresponds to
+ an argument X'00SSS000'.
+0        0D1     O.S. time-out has been intercepted.   Both ADDR and
+                  the stack pointer may be meaningless.   DATA is set
+                  to the elapsed CPU time in timer units.
+0        0D2     If the limit of input-output errors has been exceeded
+                  ABORT is called to terminate the run.   This value of
+                  CODE distinguishes this situation.
+0        0D3     Stack overflow has occurred.   This code will only arise
+                  if the code-generator stack checking option was set.
+-
+ Examples of ABORT messages
+ --------------------------
+0        The standard version of ABORT writes a brief message in the
+ light of the CODE supplied.   The following examples should cover any
+ case that may arise.
+0        Code                    Message
+         ----                    -------
+0        (0D1)        COMP EXHAUSTED AT 208069 AFTER 1.30 SECS
+         (0D2)        FAULT 7 IN ROUTINE START
+                      TOO MANY ERRORS
+         (0D3)        STACK OVERFLOW
+         (80A)        STEP ABEND SYSTEM CODE 80A
+      User (064)      STEP ABEND USER CODE 100
+0        The last message arose from the call  ABORT(100, 0, LEVEL()).
+1
+                                Appendix A.7
+0A typical Post-mortem
+ ---------------------
+0        Debugging information for BCPL programs is presented in terms
+ of the BCPL machine.  All addresses are given in decimal ; except in the
+ case of entry points, labels, and the linkage information saved in the
+ stack during routine application the address is that of a BCPL word.
+0        ABORT is called with an argument CODE that gives the reason
+ for the fatal termination of the run.   The format of ABEND codes is
+ X'00SSSUUU' ; conventionally system completion codes are recorded in
+ hexadecimal, user codes in decimal.   A short message analysing the
+ code will be printed at the head of the post-mortem, see Appendix A.6.
+0        BACKTRACE() is called to provide a routine traceback to the
+ initial entry to START().  For each level the stack pointer value and
+ the print name of the routine are printed, together with up to 8 local
+ variables.  The values of variables are printed by calling WRITEARG(D) ;
+ note that a vector value V will be the word address of V!0.
+0        On return from BACKTRACE a check is made to see whether global
+ 79 has been set ; if so it is assumed to be the entry point of a user
+ supplied post-mortem routine, and this routine is then called.   An
+ example of such a routine is IOSTATUS, which is provided in the BCPL
+ library ; this routine is included in the following post-mortem.
+0        MAPSTORE() provides a map of program store together with entry
+ counts.  This can be used with the post-mortem information to determine
+ for example in which routine a program interrupt has occurred.  This
+ map is printed as part of the post-mortem, being preceded by a list of
+ the values set in the global vector.  Errors are often caused by the
+ failure to initialise globals  -  this list, which gives the print name
+ for all routine entry points, should enable such failure to be readily
+ identified.
+-        The following program was run to produce a post-mortem listing.
+0SECTION "TESTPM"
+ NEEDS "$IOS$"
+ GLOBAL   $(  START:1;  UNDEFINED:101  $)
+0LET START() BE UNDEFINED()
+-        The compiler has of course no reason to complain ; for UNDEFINED
+ was declared as a GLOBAL, and is presumably to be loaded in some other
+ segment.  However, as soon as the program goes into execution, routine
+ application of UNDEFINED() causes a reference outside store.  Note that
+ the post-mortem routine has managed to identify the nature of the
+ problem ; this happy situation is the exception rather than the rule,
+ and arises from the initialisation of entries in the global vector to
+ values that are global number dependent.
+0        The result is the following post-mortem:
+1
+-PROGRAM INTERRUPT 0C5 AT 3472485(D3F196)
+0IS G101 DEFINED?
+-BACKTRACE CALLED
+0   P        FUNCTION       VAR1       VAR2    . . .
+0231749:    'ABORT  '        197   13889942     926944     144000     923448     923448        197          0
+ 231736:    'START  '     923448      STACK      STACK      STACK      STACK      STACK      STACK      STACK
+0BASE OF STACK
+0END OF BACKTRACE
+-
+ OUTPUT STREAMS OPEN
+0     "SYSPRINT"      11 RECORDS WRITTEN
+1
+ EXTENT OF STACK AND MAXIMUM UTILISATION
+0     LIMIT OF STACK       248320
+      HIGH WATER MARK      231829
+      BASE OF STACK        231736
+-
+ VALUES SET IN GLOBAL VECTOR(231534)          200 GLOBALS ALLOCATED
+0      G   1   'START  '      G   3   'ABORT  '      G   4   'BACKTRA'      G   5   'ERRORME'      G   6      231466
+       G  11   'SELECTI'      G  12   'SELECTO'      G  13   'RDCH   '      G  14   'WRCH   '      G  15   'UNRDCH '
+       G  16   'INPUT  '      G  17   'OUTPUT '      G  18   'INCONTR'      G  19   'OUTCONT'      G  20   'TRIMINP'
+       G  21   'SETWIND'      G  22   'BINARYI'      G  23   'READREC'      G  24   'WRITERE'      G  25   'WRITESE'
+       G  26   'SKIPREC'      G  27   'TIMEOFD'      G  28   'TIME   '      G  29   'DATE   '      G  30   'STOP   '
+       G  31   'LEVEL  '      G  32   'LONGJUM'      G  34   'BINWRCH'      G  35   'REWIND '      G  36   'FINDLOG'
+       G  37   'WRITETO'      G  39   'FINDPAR'      G  40   'APTOVEC'      G  41   'FINDOUT'      G  42   'FINDINP'
+       G  43   'FINDLIB'      G  44   'INPUTME'      G  45      231532      G  46   'ENDREAD'      G  47   'ENDWRIT'
+       G  48   'CLOSELI'      G  49   'OUTPUTM'      G  51   'ENDTOIN'      G  52      218640      G  53      222720
+       G  54      231736      G  55      248320      G  56   'STACKHW'      G  57       55010      G  60   'WRITES '
+       G  62   'WRITEN '      G  63   'NEWLINE'      G  64   'NEWPAGE'      G  65   'WRITEO '      G  66   'PACKSTR'
+       G  67   'UNPACKS'      G  68   'WRITED '      G  69   'WRITEAR'      G  70   'READN  '      G  74   'WRITEX '
+       G  75   'WRITEHE'      G  76   'WRITEF '      G  77   'WRITEOC'      G  78   'MAPSTOR'      G  79   'IOSTATU'
+       G  84   'ERRORRE'      G  85   'GETBYTE'      G  86   'PUTBYTE'      G  87   'GETVEC '      G  88   'FREEVEC'
+       G  89   'RANDOM '      G  90   'MULDIV '
+-
+ MAP AND COUNTS FROM 218640(0D5840) TO 222720
+- 218640  SECTION TESTPM   COMPILED ON   1 JUL 75   LENGTH 24 WORDS
+0 218653/START       218654:      1
+0 218664  SECTION $IOS$   COMPILED ON  14 JUN 74   LENGTH 176 WORDS
+0 218677/IOSTATU     218702/LISTSTR     218772/WRITEME
+0 218840  SECTION BCPLMAIN   COMPILED ON  16 JUN 75   LENGTH 2412 WORDS
+0 219391/STOP        219636/INPUTME     219654/FINDINP     219680/OUTPUTM     219689/FINDOUT     219720/FINDLIB
+  219786/SELECTI     219795/SELECTO     219804/ENDREAD     219812/CLOSELI     219824/ENDWRIT     219833/REWIND
+  219857/ENDTOIN     219946/RDCH        220026/UNRDCH      220037/READREC     220190/WRCH        220309/BINWRCH
+  220337/WRITERE     220344/WRITESE     220494/INPUT       220500/OUTPUT      220506/SKIPREC     220521/SETWIND
+  220531/TRIMINP     220542/BINARYI     220553/INCONTR     220566/OUTCONT     220576/FINDPAR     220627/FINDLOG
+  220696/WRITETO     220730/TIME        220740/TIMEOFD     220755/DATE        220801/ERRORRE     220814/GETBYTE
+  220822/PUTBYTE     220829/LEVEL       220834/LONGJUM     220839/APTOVEC     220847/GETVEC      220869/FREEVEC
+  220883/RANDOM      220892/MULDIV
+0 221252  SECTION BLIB   COMPILED ON  30 MAY 75   LENGTH 1468 WORDS
+0 221265/WRITES      221290/UNPACKS     221315/PACKSTR     221359/WRITEF      221476/ABORT       221648/ERRORME
+  221725/STACKHW     221765/MAPSTOR     221771/MAPOUT      222044/BACKTRA     222150/WRITEAR     222196/WRITED
+  222264/WRITEN      222272/NEWLINE     222281/NEWPAGE     222290/READN       222344/WRITEOC     222362/WRITEHE
+  222383/WRITEO      222392/WRITEX
+1
+                                Appendix A.8
+-
+ Runtime options
+ ---------------
+0        Initialisation of a BCPL program takes place as described in
+ Appendix C.1.   Various parameters control the allocation of storage for
+ the stack, global vector, etc ; the default values of these parameters
+ are installation dependent.   By means of directives passed to the
+ run-time system in the parameter string these values may be varied.
+0        If the PARM field supplied to a program has an initial string
+ held between matching dollar signs, this string is analysed for valid
+ control syntax.   If the syntax is not satisfied the run is terminated
+ with completion code of 88 ; if all is well the initial string is removed
+ and the remainder passed to the program as argument to START , beginning
+ with the first character following the dollar sign that closed the
+ option directives.   A single '$' at the start of the parameter string
+ is assumed to introduce control directives ; hence if it is intended to
+ pass a user PARM string whose first character is a dollar sign it is
+ essential to provide a control directive string at the head  -  this
+ may of course be null, thus  '$$$ . . . ' .
+0        Runtime options are identified by control letters (which must
+ be in upper case) in some cases preceded by a decimal integer ; options
+ may be separated by spaces.   Details are as follows.
+0        nK        The default algorithm controlling the reservation of
+                    storage for buffers etc. is suspended ; instead  nK
+                    bytes are to be reserved.
+0        nG        Globals are to be initialised in blocks of n rather
+                    than in blocks of 100 ; n is always rounded up to
+                    the next even number.  (Main use of the directive
+                    is to force a large initial allocation to establish
+                    global vector slots for a routine that is to be
+                    loaded by  LOAD("routine", "library")  at run-time)
+0        nI        Initialise the first nK bytes of the stack to the
+                    character constants '* STCK *' .   If all of the
+                    stack has been initialised any traceback will give
+                    the maximum stack utilisation.
+0        nT        Set the time allowed for tidy-up following time-out
+                    interception to n centisecs.   Time-out interception
+                    will be enabled only if at least 2n centisecs of CPU
+                    time remain for execution on entry to the program.
+                    If n=0 there will be no time-out interception.
+0        D         Disable the setting of STAE and SPIE exits, and allow
+                    normal error processing.   It is occasionally of
+                    use when a program is overwriting information
+                    that is needed by the high-level post-mortem.
+1
+0        The default values of the parameters associated with run-time
+ options are established as follows on the 370/165 that is running at
+ the Cambridge University Computer Centre under Release 21 of OS/MVT.
+0    Option                             Default
+     ------                             -------
+0      K                  See the description of the default storage
+                    allocation algorithm in Section 8 and Appendix B.
+0      G                  By default global vector slots are allocated
+                    in units of 100 globals at a time.
+0      I                  By default the first 256K bytes of the stack
+                    will be initialised.
+0      T                  The time allowed for tidy-up following the
+                    interception of system time-out will be 0.75 secs
+                    of active task CPU time.
+0      D                  STAE and SPIE exits are by default enabled.
+1
+                                Appendix A.9
+-
+ Installation dependent defaults
+ -------------------------------
+0        It is desirable that various parameters in the library are
+ tuned to the particular configuration on which the system is to be
+ run.   For convenience these are divided into three distinct groups.
+-Global Assembly switches
+ ------------------------
+0&CPU        This SETA switch determines the instructions generated
+         during the assembly of the machine-code library.   Possible
+         values are 360 and 370 ; the initial setting in distributed
+         systems is the former.   See Appendix B.5 for details of the
+         program EDITMAIN that is provided to tailor the machine-code
+         library source for a particular installation.
+0&NOTCB      This SETB switch prevents assembly of any instructions
+         that depend on a detailed knowledge of O.S. control blocks.
+         The default setting is to 0 (FALSE), thus enabling the full
+         power of the run-time system to be obtained.   A setting to 1
+         (TRUE) will disable some library functions, notably time-out
+         interception.   This switch must be set to 1 if a library to
+         run BCPL under the CMS simulation of O.S. is required.   See
+         Appendix B.5 for the details of EDITMAIN.
+0&CGOPT      This SETA switch makes provision for subsequent variation
+         of the code-generator representation of BCPL entities.   At
+         present no such changes are foreseen.   The switch is set by
+         the macro SETPLAN, which is called as the first active step
+         of assembly.
+-Manifest constants
+ ------------------
+0        Various symbols are defined via EQU directives at the head of
+ the library assembly, subsequently being used to control aspects of
+ library behaviour.   Some of these are associated with default values
+ of options controlled via the PARM field.
+0PIMAX       The value of this parameter determines the number of
+         program interrupts that the system will handle before forcing
+         termination.   Note that in the normal way the first such
+         interrupt will be fatal ; only if ERRORRESET is called can
+         execution be resumed.
+0ERRMAX      The value of this symbol determines the number of input-
+         output error messages that will be generated by the run-time
+         system.   Once this limit is exceeded ABORT will be called to
+         wind up the run with a completion code of 100.
+1
+0SPNO        The value of this symbol determines the main storage
+         sub-pool that is used to obtain core for the global vector
+         and the stack during initialisation, and later for space
+         for DCB's.
+0TSOLINE     The value of this symbol sets the default terminal line
+         width.   Provided that &NOTCB=0 the system macro GTSIZE is
+         called for each user terminal on entry, and the value of the
+         symbol is therefore relevant only for installations in which
+         access to O.S. control blocks has been suppressed.
+0TIDYUP      The value of this symbol determines the default tidy-up
+         time in centisecs.   See Appendix A.8.
+0STKCLEAR    The value of this symbol determines the size of the part
+         of the stack that has been cleared, the unit being a block of
+         1024 bytes.   See Appendix A.8.
+0        Current default values on the 370/165 at Cambridge are  -
+0PIMAX=20, ERRMAX=20, SPNO=1, TSOLINE=72, TIDYUP=75 and STKCLEAR=256.
+-
+0Default DCB characteristics
+ ---------------------------
+0        When a BCPL data set is opened for input or output the library
+ provides a DCB exit to record data set characteristics such as the
+ presence of control characters, the physical device type, etc.   If on
+ entry DCB information is incomplete appropriate defaults will be copied
+ in before return to the OPEN SVC.   These defaults are device-dependent
+ and may vary from installation to installation ; a private macro SETDFLT
+ sets up a control block to specify the defaults for a given device.
+ Control block names and the associated devices are given below ; the
+ distributed defaults are those currently in use at Cambridge.
+-Special devices
+ ---------------
+0RDRPNCH   (card reader/punch)    RECFM=V,LRECL=84,BLKSIZE=88
+ PRTDFLT   (line printer)         RECFM=VM,LRECL=137,BLKSIZE=141
+ DDDUMMY   (DUMMY data set)       RECFM=F,LRECL=140,BLKSIZE=140
+ TSODFLT   (on-line terminal)     RECFM=V,LRECL=TSOLINE+4
+0        A flag is set for printer, terminal and DUMMY data sets to force
+ wrap-round without error when a logical record is full.   The value of
+ LRECL for DUMMY data sets is thus a compromise between the store wasted
+ for buffers and the time lost calling the DUMMY write routine.   For
+ libraries generated for O.S. with TSO the terminal line-width will be
+ obtained via the GTSIZE macro ; only under CMS will the terminal line
+ width be taken from TSOLINE.
+1
+-Other devices
+ -------------
+0INDFLT    (input data sets)      All DCB information remains unset
+ OUTDFLT   (output data sets)     RECFM=VBS,LRECL=400,BLKSIZE=400
+0        For input data sets unset DCB information at open time will
+ almost certainly be due to error, and no attempt is made to rescue
+ the situation.   For output data sets RECFM=VBS is the standard system
+ default ; the segment interface is used rather than the record one,
+ and the setting of LRECL is thus irrelevant for most purposes.   The
+ value of 400 provided may however make life a bit easier for other
+ programs ; for data sets written via the default BCPL DCB setting any
+ record length is permitted, and the information will be correctly
+ interpreted by the BCPL input routines.
+1
+-
+-
+-
+-
+-
+-
+-
+-
+-                             Appendix B
+1
+                              Appendix B
+-
+         The contents of this appendix describe those details of the
+ implementation that may be of interest to the average programmer.
+ Topics covered include register allocation, stack management, module
+ structure, etc.
+-
+ B.1        During execution of a BCPL program the 370 general registers
+        are used in a specific way.  This section gives details of this
+        register use, and notes the registers that are available to a
+        programmer wishing to supply an assembler routine to run under
+        BCPL.
+-B.2        This section describes the calling conventions for the
+        recursive application of BCPL functions and routines.
+-B.3        This section describes the structure of the standard object
+        modules that are output by the BCPL compiler.
+-B.4        A number of assembler language macro-instructions have been
+        written to aid in the development of the BCPL run-time system.
+        This section describes the more important of these macros.
+-B.5        All BCPL modules are dated by the compiler.  Identical
+        provision should therefore be made for assembler language
+        routines that are to run under BCPL.  This section describes
+        the facilities available for dating such machine-code modules.
+1
+                                Appendix B.1
+-Register use by BCPL
+ --------------------
+0        The following table gives the use that is made of the general
+ registers during execution of a BCPL program.  It is not fully reliable,
+ since registers are used in a non-standard way during initialisation and
+ during execution of some library routines.
+0NUMBER  SYMBOL  DESCRIPTION
+ ------  ------  -----------
+00*      R0      Contains the constant 0 at all times.  This register
+                 may be used by assembler language programmers only if
+                 it is restored to this value before exit.  Note that
+                 any communication with O.S. is likely to corrupt it.
+01*      R1      Holds the constant 4096 for addressing.  This register
+                 may be used by assembler language programmers only if
+                 it is restored to this value before exit.  Note that
+                 any communication with O.S. is likely to corrupt it.
+02*      R2      Holds the constant 8192 for addressing.  This register
+                 may be used by assembler language programmers only if
+                 it is restored to this value before exit.
+03*      R3      Holds the constant 12288 for addressing.  This register
+                 may be used by assembler language programmers only if
+                 it is restored to this value before exit.
+04*      B       Used as the program base register for the currently
+                 executing routine.
+05       P       Points to the current stack-pointer position.  This
+                 address is the base for the local variables.
+06*      L       Holds the link address when a recursive procedure is
+                 called.  This register will be available if standard
+                 BCPL linkage conventions are followed.
+07*      A1      Holds the value of the first argument during procedure
+                 calls.  This register is also used to return the result
+                 following function calls.  The register is available for
+                 use by assembler language programmers.
+08*      A2      Holds the value of the second argument during procedure
+                 calls.  The register is available for use by assembler
+                 language programmers.
+09*      A3      Holds the value of the third argument during procedure
+                 calls.  The register is available for use by assembler
+                 language programmers.
+1
+010*     A4      Holds the value of the fourth argument during procedure
+                 calls.  The register is available for use by assembler
+                 language programmers.
+011      S       Holds the address of the RETURN subprogram.  It is also
+                 used as a base address for various common subroutines in
+                 the machine-code library.
+012      G       Holds the address of the GLOBAL vector.
+013      R13     Holds the O.S. save area address permanently.  The user
+                 dependent data area immediately follows this save area,
+                 and R13 is therefore a root for the complete user data
+                 structure.  This register should never be reset.
+014*     A       Permanently available as a work register.  This register
+                 is used by the run-time system for counts associated
+                 with the PROFILE option, etc.
+015*     R15     Used to hold the new stack pointer value during routine
+                 application, see the section on stack management.  If
+                 using R15 in an assembler routine remember that its
+                 contents are destroyed by most SVC's.
+-
+0        Registers marked * can safely be used as work registers by
+ anyone wishing to provide an assembler language routine compatible
+ with the BCPL runtime system.  It will be convenient to use register 4
+ as a base register for the program.
+1
+                                 Appendix B.2
+-Procedure application
+ ---------------------
+-        The first four arguments to a BCPL routine are passed in general
+ registers A1 - A4, the fifth and beyond being placed on the stack before
+ the routine is entered ; the first three words of the stack hold linkage
+ information, the arguments being placed at word offset 3 and thereafter.
+ During entry to the routine the linkage information is saved at  0(R15),
+ 4(R15) and  8(R15),  with the first four arguments following in adjacent
+ words.  R15 is set to the new stack pointer value by in-line code in the
+ calling routine, which also sets the program base for the new procedure.
+-
+ CALL
+ ----
+0        Suppose that the routine  WRITEN(X)  is to be applied, where
+ X is a local variable and the current stack frame is 19 words.  Assume
+ that X is stored at word offset 15 and has a current value of 64.  Code
+ for the call might be as follows :-
+0                . . .
+0                L     A1,60(P)         LOAD ARGUMENT
+                 L     B,4*62(G)        ADDRESS OF 'WRITEN'
+                 LA    R15,76(P)        NEW STACK POINTER
+                 BALR  L,B              APPLY NEW ROUTINE
+0       LINK     EQU   *
+0                . . .
+0        The calling sequence has updated the stack pointer by 76
+ bytes (for larger stack frame sizes different code will be generated)
+ to preserve the local variables of the calling routine.
+-
+ SAVE
+ ----
+0        Each BCPL function or routine has a standard header consisting
+ the print name and a section of code that establishes the linkage
+ information and sets the first four arguments.  This header will be as
+ follows for the single argument routine WRITEN.
+0                DC    X'07'            LENGTH OF STRING
+                 DC    CL7'WRITEN'      NAME OF ROUTINE
+0       WRITEN   STM   B,A1,0(R15)      LINK INFORMATION
+                 LR    P,R15            NEW STACK POINTER
+1
+ After entry to WRITEN the stack will be as follows :-
+-    --------------------------------------------------------
+    :           :    Old    :           :           :     local
+    : A(WRITEN) :   stack   :  A(LINK)  :    64     :   variables
+    :           :  pointer  :           :           :   of WRITEN
+     --------------------------------------------------------
+0   ´           4           8           12          16
+    |
+    |
+    |
+0   P
+0When returning recursively the old stack pointer and link are
+ recovered from the stack, and the program base for the calling
+ routine is restored from the save information of that routine.
+0This is effected by a library subprogram, the entry point being
+ held permanently in register S.  This register is used as a base
+ for various other system routines, in particular the subprograms
+ that handle the updating of PROFILE counts and the checking for
+ stack overflow.
+0There is a macro-instruction in the standard macro-library
+0              RRTURN    &COND=15
+0which expands into a conditional branch on register S.  This is
+ used in the machine-code library and may be useful for machine
+ code programmers.
+-
+0RETURN
+ ------
+0        The following subprogram handles the return from recursive
+ functions and routines.  The address of this subprogram is held in
+ register S throughout execution.
+-                USING SUBS,S
+0       SUBS     LM    P,L,4(P)            OLD STACK + LINK
+                 L     B,0(P)              OLD PROCEDURE BASE
+                 BR    L                   RETURN TO CALL
+1
+                                 Appendix B.3
+-BCPL module structure
+ ---------------------
+0        Each separately compiled BCPL program section generates an
+ object module.   If the source is headed by a SECTION directive this
+ object module will be given the defined CSECT name ; if not the compiler
+ output will be an unnamed section, 'private code'.   The use of CSECT
+ names is recommended in all cases other than that of single section test
+ programs, since it is not possible to use the linkage editor to replace
+ private code.
+0        At the head of each such module the compiler inserts a block
+ of code to force an immediate entry to the BCPL library prologue.   For
+ post-mortem purposes the CSECT name if any and the date of compilation
+ are also recorded.
+0        The following is the typical heading information for a module
+ named via  SECTION "FRED" , the offset of the end of the routine being
+ defined by the label  ENDFRED .
+-FRED     CSECT
+0         STM   14,12,12(13)        SAVE REGISTERS ON ENTRY
+          L     B,12(,R15)          ADDRESS OF BCPLMAIN
+          BR    B                   STANDARD LINKAGE TO INITIAL SECTION
+0         DC    AL2(ENDFRED-FRED)   OFFSET OF END OF ROUTINE
+          DC    V(BCPLMAIN)          ADDRESS CONSTANT FOR LINKAGE
+0         DC    X'0B'               LENGTH OF STRING
+          DC    C'  17 JAN 74'      DATE OF COMPILATION
+0         DC    X'07'
+          DC    CL7'FRED'           ROUTINE NAME
+-        The first 16 bytes of all BCPL routines are identical to the
+ above.   Thus when a program is entered, necessarily at the head of some
+ routine, there is an immediate branch to BCPLMAIN ; register B contains
+ the address of BCPLMAIN, and the original entry point of the program is
+ left in R15.   Initialisation then proceeds, storage for all data areas
+ being obtained, and all global entry points being set ; see section 8
+ for a description of events during initialisation.
+0        Data controlling global initialisation is concentrated in a
+ block at the end of each separately compiled BCPL section.   Since the
+ header holds the offset of the end of the object module a list built
+ there is accessible ; the routine that sets globals accepts as data
+ pairs of words, the first defining the entry point value, the second the
+ byte offset in the global vector.   The list is terminated by an entry
+ having zero definition word ; the corresponding offset gives the highest
+ global value referenced in the current program section.
+1
+0        The following is typical trailer information for the module
+ corresponding to section FRED above, it being assumed that two global
+ routines labelled TOM and HARRY are defined, their global numbers being
+ 111 and 112.   Assume also that the highest global referenced in the
+ section is global 120.
+-         DS    0D                  ALIGN FOR DEFINITION LIST
+0         DC    A(4*120)            HIGHEST GLOBAL REFERENCED
+          DC    A(0)                LAST ENTRY OF LIST
+0         DC    A(4*112)            GLOBAL SLOT
+          DC    A(HARRY)            ENTRY POINT
+0         DC    A(4*111)            GLOBAL SLOT
+          DC    A(TOM)              ENTRY POINT
+0ENDFRED  DS    0D                  LAST BYTE OF MODULE
+-        All sections, including the machine-code library, conform to
+ the pattern above.   Various macros have been written to make life
+ easy for the programmer who wishes to write private machine-code
+ routines ; see Appendix B.4 for a discussion of the macro library.
+ Sections whose header is constructed using the macro MODULE will be
+ undated following assembly ; a utility program DATEMOD has been written
+ to overcome this snag, see Appendix B.5.
+1
+0                                Appendix B.4
+-Assembler macro library
+ -----------------------
+0        A substantial library of macro definitions has been written
+ to ease library development and maintenance.   Many of these macros
+ are specific to the main input-output library and are unlikely to
+ be of interest to the general machine-code programmer, but others,
+ in particular those dealing with object module structure and routine
+ application and stack management, could well prove useful.   Most
+ BCPL data structures are defined by DSECT's, these being maintained as
+ macros for flexibility during program development.   Source for the
+ macro library is distributed in the file KM10.BCPLMAC in the form of a
+ control stream for IEBGENER ; for use under CMS it will be necessary
+ to remove the definitions from the surrounding JCL, but once this is
+ done the MACLIB GEN command will do the rest.
+         The macros that are most likely to be useful are described
+ below under separate functional headings.
+-
+ The overall BCPL environment
+ ----------------------------
+0        The BCPL run-time system accesses all data structures via a
+ central control block, the User Save Area, whose address is held in
+ register 13 throughout execution of a BCPL program.   All BCPL streams
+ are controlled via a single control block, which contains the DCB and
+ DECB together with information specific to BCPL ; pseudo-streams have
+ similar control blocks, but not all DCB fields will be present, and no
+ DECB is required (see Appendix C.9).
+-Symbol definitions
+ ------------------
+0    SYMBREG       This macro defines symbolic names for the general
+               registers, see Appendix B.1.
+     MANIFEST      All symbolic definitions of switches in control bytes,
+               internal names for routines, etc., are defined here.
+-Central Data Structures
+ -----------------------
+0    USERSAVE      This macro expands into a DSECT that defines the
+               format of the User Save Area ; see Appendix C.2.
+     DCBAREA       This macro expands into a DSECT that defines the
+               format of a BCPL stream control area ; see Appendix C.3.
+     STKFRAME      This macro defines the format of the current stack
+               frame ; see Appendix B.2 for further details.
+-General purpose macros
+ ----------------------
+0    STRING        Establishes a BCPL string and forces alignment to the
+               next full-word boundary.   Note that the string argument
+               must not contain embedded single quotes.
+     STRGVAL       This macro yields a string value in a register which
+               initially points to the string base (in the standard
+               string representation the register will be shifted two
+               places right).
+     SHIFTL        This macro converts the argument general register from
+               BCPL vector representation to a byte address.
+     SHIFTR        This macro converts the argument general register from
+               a byte address to BCPL vector representation.
+     SETGLOB       Set the argument global vector slot from the argument
+               general register.
+-
+ Aids to machine-code programming
+ --------------------------------
+0        Provided that the run-time system is well understood it is an
+ easy matter to supply machine-code routines for BCPL.   Macros and
+ utility programs are available for some frequently needed purposes.
+-Object module support
+ ---------------------
+0    MODULE        This macro writes the standard object module header,
+               specifying the CSECT name supplied.   Note that a CSECT
+               name is obligatory, and that the module must be wound up
+               by the macro MODULEND.
+     MODULEND      This macro terminates an object module ; it may only
+               be used for modules whose header was written by MODULE.
+     GLOBDEF       Define a machine-code entry point as global.   See
+               Appendix B.3.
+-Recursive routine management
+ ----------------------------
+0    IOROUTIN      Write the header for a BCPL routine entry point using
+               standard linkage for the current activation.   See the
+               description in Appendix B.2.
+     IOHEADER      Write a BCPL routine header, but do not update the
+               current stack pointer.   This macro is used for library
+               routines where efficiency is paramount.
+     RRTURN        Return from a BCPL routine that was entered in the
+               standard way, restoring the former stack pointer value.
+               This is achieved by a common subprogram, the entry point
+               address being held in register S.
+     REXIT         Return from a BCPL routine that was entered in the
+               non-standard way ; there is no need to restore the stack
+               pointer, but the previous routine base must be recovered.
+     SETP          Establish standard linkage in a routine whose initial
+               entry point was defined by IOHEADER.   See e.g. RDCH.
+     RESETP        Reverses the effect of SETP.   Only necessary when
+               program paths for standard and non-standard linkage meet.
+     APPLY         Apply a global BCPL routine recursively, specifying
+               the current stack frame size.
+-
+ Macros restricted to BCPLMAIN
+ -----------------------------
+0        The remaining macro-definitions are tied to the machine-code
+ library in an essential way, and are not likely to help the general
+ programmer.   An understanding of their operation will however clarify
+ the library logic, and will be necessary if the library is to be altered
+ substantially.
+-Device-dependent DCB defaults
+ -----------------------------
+0    SETDFLT       This macro sets the default DCB characteristics for a
+               particular device type.   See Appendix A.9 for details.
+-Storage area formats
+ --------------------
+0    INITSAVE      At first entry to BCPLMAIN a 96-byte temporary save
+               area is obtained ; this is described by a DSECT.
+     EXITSAVE      The standard O.S. save area is not available during
+               the DCB exit from OPEN ; the format of the required
+               auxiliary save area is described by a DSECT.
+     LOADNODE      All modules loaded dynamically are recorded as members
+               of a list, a control block containing the module name, use
+               count, etc.   The format of the block is described by a
+               DSECT.
+     VECAREA       See the library routines GETVEC and FREEVEC for details
+               of the dynamic allocation of vectors.   Vector areas so
+               obtained are linked together, the header format being
+               described by a DSECT.
+     DEFAULTS      This macro expands into a DSECT that describes the
+               format of the block that defines device-dependent DCB
+               defaults.   See Appendix A.9.
+-Pseudo-stream control blocks
+ ----------------------------
+0    PARMAREA      The function FINDPARM returns as result a descriptor
+               of a stream that takes input from the parameter string.
+               This macro describes the block that controls this stream.
+     LOGAREA       The function FINDLOG creates an output stream to the
+               destination associated with  'WTO  ,ROUTCDE=11' .   This
+               macro describes the block that controls this stream.
+     TSOAREA       The function FINDTERMINAL creates a stream that
+               reads or writes via the TPUT/TGET SVC.   This macro
+               describes the block that controls such streams.
+-Special purpose macros
+ ----------------------
+0    GETNAME       This macro calls a subroutine to decode a string
+               value supplied in a general register and set up a copy
+               of the string at a fixed location in the user save area.
+1
+     CHKLIST       This macro scans a list of BCPL DCB's until a given
+               condition is met or the list is exhausted.   A3 is set to
+               point to the first DCB satisfying the condition, or the
+               null DCB if the list is exhausted ; the condition code on
+               exit will be 0 if all goes well and 1 in case of failure.
+     MOVELONG      Block moves of storage areas are accomplished on the
+               370 by the MVCL instruction, which is simulated by a
+               subprogram on the 360.   This macro generates code that is
+               appropriate to the setting of &CPU.
+     SPIEXIT       This macro is only issued in SPIE exit routines ; its
+               purpose is to establish a resume address following return
+               from the exit routine via a  'BR 14' .
+     ERRCTL        This macro sets up the control field for a specific
+               type of input-output error.   See the comments preceding
+               the routine ERRWTE in the machine-code library.
+     LROUTINE      Write the header for an entry point to a recursive
+               routine that is called only within the machine-code
+               library.
+     LAPPLY        Apply a local routine recursively.  Stack management
+               and exit sequences will be standard.
+1
+                                Appendix B.5
+-
+ Dating of machine-code sections
+ -------------------------------
+0        All object modules output by the BCPL compiler are dated in a
+ standard format, see Appendix B.3.   This date is printed by the BCPL
+ MAPSTORE routine, and thus during the system post-mortem, see Appendix
+ A.7.   It will be noted that in the sample output the machine-code
+ library BCPLMAIN is correctly dated ; this dating is achieved by a
+ utility program EDITMAIN that has been written to process the library
+ source before assembly, dating being one of several functions performed.
+-
+ The program EDITMAIN
+ --------------------
+0        See Appendix A.9 for details of the global switches that
+ control assembly of BCPLMAIN.   The library source is filed with &CPU
+ set to 360 and &NOTCB set to 0 (FALSE) ; the procedures that generate
+ library object modules call EDITMAIN to set these switches and insert
+ the current date.   In the normal way the library is assembled to form
+ a multiple CSECT object module, the separate members being generated as
+ load modules by the linkage editor REPLACE option.
+0        There is however no direct analogue of the linkage editor in
+ CMS, and it is therefore necessary to provide a means of assembling
+ the library to produce separate object modules.   This trick is also
+ achieved by EDITMAIN, there being options to perform assembly with all
+ library sections bar one declared as DSECT ; the result of such an
+ assembly will be an appropriate object module for the remaining member.
+0        EDITMAIN takes input from dd-name "FROM" and writes output to
+ dd-name "TO" .   The first group of options generate source in which
+ the separate library sections are all defined as CSECT, the effect of
+ editing being to date the various sections and establish the settings
+ of &CPU and &NOTCB.
+0            '360'         &CPU=360    &NOTCB=0 (FALSE)
+             '370'         &CPU=370    &NOTCB=0
+             'STANDARD'    &CPU=360    &NOTCB=1 (TRUE)
+             'CMS'         &CPU=370    &NOTCB=1
+0        The next group of options are designed to split the library
+ into separate object modules.   The options specify the CSECT name of
+ the member for which object code is required, the result of editing
+ being to define all other sections as DSECT.   These options change the
+ setting of neither &CPU nor &NOTCB.
+0            'MAIN'        Generate $MAIN$ only
+             'LOAD'        Generate $LOAD$ only
+             'TPUT'        Generate $TPUT$ only
+             'BLOCK'       Generate $BLOCK$ only
+1
+0        A final option is available for use with private machine-code
+ sections, and performs date editing only.   Any record having the
+ characters  "'  *UNDATED*"  starting at column 17 will be replaced,
+ "*UNDATED*" being overwritten by the current date in the standard BCPL
+ format "17 JAN 74".   Note that this method will not work if the macro
+ MODULE is used to set up the section header ; see the program DATEMOD
+ defined below.
+0            'DATE'        Perform date editing only
+0        All options other than 360 and 370 are recognized by the first
+ character only ; if an invalid option is specified '370' will be
+ assumed, an error message being output to  'WTO   ,ROUTCDE=11' .
+-
+0The program DATEMOD
+ -------------------
+0        This program is designed to edit those object modules that
+ have a standard BCPL header, the sole purpose being to replace the
+ characters "*UNDATED*" by the current date.   Input is taken from
+ dd-name "FROM", output written to dd-name "TO".
+0        The copying is done using record input-output.   The first
+ TEXT record in the object module is located, and the words starting
+ from word offset 8 checked for the characters
+0         DC    X'0B'
+          DC    C'  *UNDATED*' .
+0        If the characters are found "*UNDATED*" will be replaced by
+ the current date.
+1
+-
+-
+-
+-
+-
+-
+-
+-
+-                             Appendix C
+1
+                              Appendix C
+-
+         This appendix describes the data structures used in the BCPL
+ run-time system ; it is likely to be of interest only to those who
+ have to maintain or modify the BCPL machine-code library.
+-
+ C.1        This section describes the overall storage allocation
+        strategy during the execution of a BCPL program.
+-C.2        The user save area is at the root of the data structure
+        associated with a particular BCPL run.  This section describes
+        the format in detail.
+-C.3        All streams are represented by a stream control block,
+        which contains the O.S. DCB and DECB together with the various
+        housekeeping fields required to provide character-by-character
+        transfer.  The format of the block is described here.
+-C.4        This section defines the linkage information that is held
+        in the stack to implement recursive procedure apllication.
+-C.5        All routines loaded dynamically during execution of a BCPL
+        program are added to a list maintained by the run-time system.
+        This section specifies the format of a node in this list.
+-C.6        This defines the format of the 96-byte save area that is
+        used during system initialisation.
+-C.7        This section defines the format of the special save area
+        that is used during all DCB exit routines.
+-C.8        The routines GETVEC and FREEVEC implement the dynamic
+        allocation of areas of store.  Each element of store obtained
+        is recorded on a list ; this section describes the format of
+        a node in the list.
+-C.9        This section describes the details of the implementation
+        of BCPL pseudo-streams.
+1
+                                Appendix C.1
+-
+ BCPL storage layout
+ -------------------
+0        The BCPL run-time system manages core in such a way as to reduce
+ the risk of corruption of vital O.S. control blocks by wild programs.
+0        The diagram that follows may help to give some idea of the use
+ of the region by the BCPL run-time system.  On entry the program will
+ have been loaded to the low store address part of the region, aligned
+ in such a way that the high address of the program lies on a 2K-page
+ boundary ; subpool 251 will be used for this purpose.  The only other
+ page to contain information relevant to BCPL is the subpool 0 page at
+ the high address end of the region ; this will contain the parameter
+ string supplied to the program, and also holds the 18 words allocated
+ to the O.S. highest save area at the start of a job step.
+0        During initialisation a temporary save area is obtained from
+ this latter subpool 0 page, thus enabling variable length GETMAIN's to
+ be used subsequently.  All store between the program and this page is
+ obtained at the outset, the parameter string being decoded to determine
+ how much is to be returned for input-output buffers and the like, see
+ Appendix A.8 ; subpool 1 is used for this purpose, the area stopping
+ short of the final page.  The highest save area contents are copied to
+ the low store address of the region that is being retained, the next 96
+ bytes being reserved for a save area for use by the open exit routines.
+ The next block of store is allocated to the user save area, the residue
+ of the parameter string being transferred to the top of this area in
+ conventional BCPL string format.  The effect of this is to protect the
+ information in the top page ; the temporary save area may thus be freed,
+ the save area at the base of the user save area being used subsequently.
+ It is however vital that the page is not allocated for any purpose, and
+ a variable GETMAIN is therefore issued to fill the page completely.
+0        Once this has been done the low store portion of the subpool 1
+ area is returned to O.S. for subsequent allocation for control blocks,
+ loaded modules, buffers and the like.  Modules will be loaded into pages
+ assigned to subpool 251, these pages being allocated from the base of
+ the area returned ; buffers and control blocks will in general be placed
+ to subpool 0, pages being taken from the high store end of the area.
+0        Finally the initialisation is finished, the various sections of
+ the program being scanned to set all global entry points.  When this
+ process is complete the size of the global vector is set in global 0 and
+ the remainder of the area allocated to the BCPL stack.  Note that the
+ stack can corrupt the final subpool 0 page without a catastrophe taking
+ place, for the highest save area contents are restored from the private
+ copy before exit from the system.
+0        Before START is called the globals LOADPOINT, ENDPOINT, PARMS,
+ SAVEAREA, STACKBASE and STACKEND are set appropriately.
+1
+0  2K page boundary     -----------------------------------------------
+                       |///////////////////////////////////////////////|
+                       |///////////////////////////////////////////////|
+    LOADPOINT   --->    -----------------------------------------------
+                       |                                               |
+                       |                                               |
+                       |                                               |
+                       |                    PROGRAM                    |
+                       |                                               |
+                       |                                               |
+                       |                                               |
+    ENDPOINT    --->    -----------------------------------------------
+ (Page boundary)       |///////////////////////////////////////////////|
+                       |///////////////////////////////////////////////|
+                       |/////                                      ////|
+                       |////  AREA RESERVED FOR INPUT-OUTPUT SPACE  ///|
+                       |/////                                      ////|
+                       |///////////////////////////////////////////////|
+                       |///////////////////////////////////////////////|
+   2K page boundary     -----------------------------------------------
+                       |                                               |
+                       |           COPY OF HIGHEST SAVE AREA           |
+                       |                                               |
+                   72   -----------------------------------------------
+                       |                                               |
+                       |          SAVE AREA FOR EXIT ROUTINES          |
+                       |                                               |
+     R13  --->    168   -----------------------------------------------
+                       |                                               |
+                       |                 USER SAVE AREA                |
+                       |                                               |
+      G   --->      0   -----------------------------------------------
+                       |                       |                       |
+                       |   NUMBER OF GLOBALS   |    ADDRESS OF START   |
+                       |                       |                       |
+                    8   -----------------------------------------------
+                       |                                               |
+                       |                                               |
+                       |                 GLOBAL VECTOR                 |
+                       |                                               |
+                       |                                               |
+    STACKBASE   --->    -----------------------------------------------
+                       |                                               |
+                       |                                               |
+                       |                                               |
+                       |                     STACK                     |
+                       |                                               |
+                       |                                               |
+                       |                                               |
+      P   --->          -----------------------------------------------
+                       |///////////////////////////////////////////////|
+                       |///////////////////////////////////////////////|
+                       |///////////////////////////////////////////////|
+    STACKEND    --->    -----------------------------------------------
+ (Page boundary)
+1
+         On entry to the program there is a certain amount of vital
+ information already in the final readable page of the region, notably
+ the O.S. provided highest save area.  A copy of this area is taken to
+ protect in the event of stack overflow, but it is also essential that
+ no other control block is built in this page.  A variable length
+ GETMAIN is issued to take up the space, thus forcing subsequent O.S.
+ storage requests to be satisfied from the 'AREA RESERVED' directly
+ following the program.
+-
+   2K page boundary     -----------------------------------------------
+                       |///////////////////////////////////////////////|
+                       |/////                                      ////|
+                       |////  AREA OBTAINED TO FILL THE FINAL PAGE  ///|
+                       |/////                                      ////|
+                       |///////////////////////////////////////////////|
+                        -----------------------------------------------
+                       |                                               |
+                       |       O.S. VERSION OF HIGHEST SAVE AREA       |
+                       |                                               |
+                        -----------------------------------------------
+                       |                                               |
+                       |             O.S. PARAMETER STRING             |
+                       |                                               |
+   2K page boundary     -----------------------------------------------
+1
+                                Appendix C.2
+-
+0User save area
+ --------------
+0        The user save area is the central control block for the user
+ of BCPL under O.S.  At its base is the standard O.S. save area, which
+ is addressed by R13 throughout execution.  The BCPL programmer has
+ access to the data structure via global 6 ; this global  -  which is
+ given the name SAVEAREA in the standard header file  -  is set to the
+ BCPL word address of the user save area.
+0        This area contains pointers to all data local to a particular
+ user, and holds also the flags and fields that record the user options.
+ Thus there are fields recording the current stream selections, pointers
+ to the head of each list of DCB's, the terminal line width, etc.   Also,
+ following an abend the STAE retry routine is constructed within the
+ area (this gets round a tiresome O.S. addressability problem).
+-        The format of the user save area is as given below.
+-   0   ---------------------------------------------------------------
+       |///////////////////////////////|                               |
+       |///////////////////////////////|              HSA              |
+       |///////////////////////////////|                               |
+    8   ---------------------------------------------------------------
+       |                               |                               |
+       |              LSA              |             RSAVE             |
+       |                               |                               |
+        ---------------------------------------------------------------
+0  72   ---------------------------------------------------------------
+       |                                                               |
+       |                             DATECH                            |
+       |                                                               |
+        ---------------------------------------------------------------
+0  84   ---------------------------------------------------------------
+       |       |       |                                               |
+       |  DDS- |  NAM- |                     DDNAME                    |
+       |  PACE |  ELEN |                                               |
+   94   ---------------------------------------------------------------
+       |               |
+       |    SDWFLAGS   |
+       |               |
+        ---------------
+0  96   ---------------------------------------------------------------
+       |                                                               |
+       |                             DWORD                             |
+       |                                                               |
+        ---------------------------------------------------------------
+1
+0 104   ---------------------------------------------------------------
+       |                                                               |
+       |                            DDMEMBER                           |
+       |                                                               |
+        ---------------------------------------------------------------
+0 112   ---------------------------------------------------------------
+       |       |       |       |       |                               |
+       |  PISW | PINUM |  ERR- |  ERR- |            LOADLIST           |
+       |       |       |  OR2  |  CNT  |                               |
+  120   ---------------------------------------------------------------
+       |                               |                               |
+       |              CIS              |              COS              |
+       |                               |                               |
+        ---------------------------------------------------------------
+0 128   ---------------------------------------------------------------
+       |                               |                               |
+       |            STKBASE            |             STKLIM            |
+       |                               |                               |
+  136   ---------------------------------------------------------------
+       |                               |                               |
+       |            STKHIGH            |            OLDPICA            |
+       |                               |                               |
+  144   ---------------------------------------------------------------
+       |                               |                               |
+       |            SP0BASE            |             SP0LEN            |
+       |                               |                               |
+        ---------------------------------------------------------------
+0 152   ---------------------------------------------------------------
+       |                               |                               |
+       |            DCBILIST           |            DCBOLIST           |
+       |                               |                               |
+  160   ---------------------------------------------------------------
+       |                               |                               |
+       |            DCBLLIST           |            DCBBLIST           |
+       |                               |                               |
+        ---------------------------------------------------------------
+0 168   ---------------------------------------------------------------
+       |                               |                               |
+       |             TIMVAL            |             TIMECH            |
+       |                               |                               |
+  184   ---------------------------------------------------------------
+       |                               |       |       |               |
+       |             USATCB            |  USA- |  LAS- |     TSIZE     |
+       |                               |  BITS |  TIO  |               |
+  192   ---------------------------------------------------------------
+       |                               |                               |
+       |            VECLIST            |             SP1LEN            |
+       |                               |                               |
+  200   ---------------------------------------------------------------
+       |                               |                               |
+       |            SP1BASE            |            EXITSAVE           |
+       |                               |                               |
+        ---------------------------------------------------------------
+1
+0 208   ---------------------------------------------------------------
+       |                                                               |
+       |                            STAXLIST                           |
+       |                                                               |
+  228   ---------------------------------------------------------------
+       |                                                               |
+       |                            STAELIST                           |
+       |                                                               |
+        ---------------------------------------------------------------
+0 240   ---------------------------------------------------------------
+       |                                                               |
+       |                            STARETRY                           |
+       |                                                               |
+  248   ---------------------------------------------------------------
+       |                               |                               |
+       |            USASUBS            |            USAGPTR            |
+       |                               |                               |
+  256   ---------------------------------------------------------------
+       |                               |                               |
+       |             USAUSA            |            USATCBCC           |
+       |                               |                               |
+        ---------------------------------------------------------------
+0 264   ---------------------------------------------------------------
+       |                                                               |
+       |                              PARM                             |
+       |                                                               |
+        ---------------------------------------------------------------
+-
+  Byte    Word    Field   Width
+  ----    ----    -----   -----
+0   4       1    HSA        4    Address of O.S. highest save area
+    8       2    LSA        4    Lower save pointer, set to 0
+   12       3    RSAVE      4    Save area for registers 14 to 12
+0  72      18    DATECH    12    Holds string result of function DATE
+0  84      21    DDSPACE    1    Character SPACE for clearing DDNAME
+   85            NAMELEN    1    Length of string decoded by GETNAME
+   86            DDNAME     8    Character string decoded by GETNAME
+0  94            SDWFLAGS   2    Segment descriptor word bytes 2 and 3
+0  96      24    DWORD      8    Work area for floating-point routines
+0 104      26    DDMEMBER   8    Workspace for member name of a PDS
+0 112      28    PISW       1    Program interrupt status switch
+0                     11111111      no interrupt (ERRORRESET resets)
+                      00000000      first program interrupt handled
+                      00001111      second interrupt has occurred
+1
+- 113            PINUM      1    Number of program interrupts handled
+0 114            ERROR2     1    Switch recording calls of ABORT
+0                     11111111      ABORT called after fatal error
+                      00000000      no fatal error (ERRORRESET resets)
+0 115            ERRCNT     1    Number of input/output errors handled
+0 116      29    LOADLIST   4    Pointer to head of loaded module list
+0 120      30    CIS        4    Current input stream selection
+  124      31    COS        4    Current output stream selection
+0 128      32    STKBASE    4    Byte address of base of stack
+  132      33    STKLIM     4    Safe limit for writing to stack
+  136      34    STKHIGH    4    Address of first byte beyond stack
+0 140      35    OLDPICA    4    PICA address on entry to BCPL
+0 144      36    SP0BASE    4    Base address of final page pad
+  148      37    SP0LEN     4    Length of pad GOTMAIN in final page
+0 152      38    DCBILIST   4    Pointer to input DCB list
+  156      39    DCBOLIST   4    Pointer to output DCB list
+  160      40    DCBLLIST   4    Pointer to library DCB list
+  164      41    DCBBLIST   4    Pointer to block DCB list
+0 168      42    TIMVAL     4    Timer value on entry to BCPL
+0 172      43    TIMECH    10    Holds string result of function DATE
+0 184      46    USATCB     4    Pointer to TCB under standard O.S.
+0 188      47    USABITS    1    Flags for user options, environment
+0                     1.......      STIMER SVC previously issued
+                      .1......      TIME function inoperative
+                      ..1.....      stack pointer has been reset
+                      ...1....      STAE and SPIE exits established
+                      ....1...      job running online under TSO
+                      .....1..      outstanding BREAK from console
+                      ......1.      local STAX exit established
+0 189            LASTIO     1    Fault number of last input/output error
+0 190            TSIZE      2    Terminal line width in bytes
+0 192      48    VECLIST    4    Pointer to head of GETVEC list
+0 196      49    SP1LEN     4    Subpool and length of principal region
+  200      50    SP1BASE    4    Base address of principal region
+0 204      51    EXITSAVE   4    Address of DCB exit save area
+1
+- 208      52    STAXLIST  20    List for execute form of STAX macro
+0 228      57    STAELIST  12    List for execute form of STAE macro
+0 240      60    STARETRY   8    Area for remote STAE retry routine
+0 248      62    USASUBS    4    RETURN subprogram address, register 11
+  252      63    USAGPTR    4    Global vector address, register 12
+  256      64    USAUSA     4    Pointer to user save area, register 13
+  260      65    USATCBCC   4    ABEND completion code, to register 14
+0 264      66    PARM       ?    BCPL parameter string supplied to user
+1
+                                Appendix C.3
+-
+ Stream control block
+ --------------------
+0        Streams are established by FIND functions, see Appendix A.2.
+ Such functions construct a stream control block, attaching the block to
+ a list of open streams  -  there are separate lists for input, output
+ and library streams  -  and returning a pointer to it as result.  The
+ stream once open is available for selection, this being accomplished
+ by supplying the result of a FIND function as argument to a SELECT
+ routine.  All arguments are checked for validity, any error causing
+ selection of the null stream.
+0        Pseudo-streams are created as a result of the functions FINDLOG,
+ FINDTERMINAL and FINDPARM, which also set up stream control blocks.
+ The format of these blocks is somewhat non-standard ; for details see
+ the macros LOGAREA, TSOAREA and PARMAREA.
+-        Stream control blocks are headed by a standard O.S. DCB.  See
+ the IBM manual 'System control blocks', GC28-6628, for the details.
+0   0   ---------------------------------------------------------------
+       |                                                               |
+       |                              DCB                              |
+       |                                                               |
+        ---------------------------------------------------------------
+-        The three words following the DCB hold the exit list.  This is
+ local to the DCB so that if necessary the RDJFCB macro can be used.
+0  96   ---------------------------------------------------------------
+       |                               |                               |
+       |            DCBKABND           |            DCBKEXIT           |
+       |                               |                               |
+  104   ---------------------------------------------------------------
+       |                               |
+       |            DCBKJFCB           |
+       |                               |
+        -------------------------------
+-        The next four words are common to all stream control blocks,
+ including the null stream marker that acts as a stopper on all lists.
+0 108   ---------------------------------------------------------------
+       |                                                               |
+       |                            DCBNAME                            |
+       |                                                               |
+  117   ---------------------------------------------------------------
+               |       |               |                               |
+               |  DCB- |    DCBLSTCH   |            DCBNEXT            |
+               | KFLG1 |               |                               |
+                -------------------------------------------------------
+1
+-        The fields that follow handle the detailed control of all
+ peripheral transfers, and record stream dependent options, the input
+ window size, default carriage control characters, etc.  Note that the
+ formats are not identical for input and output streams.
+0 124   ---------------------------------------------------------------
+       |                                                               |
+       |                            DCBKMEM                            |
+       |                                                               |
+  132   ---------------------------------------------------------------
+       |                               |                               |
+       |            DCBKCCP            |            DCBCBCH            |
+       |                               |                               |
+  140   ---------------------------------------------------------------
+       |                               |                               |
+       |            DCBCBUF            |            DCBCBSZE           |
+       |                               |                               |
+  148   ---------------------------------------------------------------
+       |               |       |       |
+       |    DCBRECNO   |  DCB- |  DCB- |
+       |               |  KDCC | KFLG2 |
+  152   -------------------------------------------------------
+       |                               |       |       |       |
+       |            DCBKSEG            |  DCB- |  DCB- |  DCB- |
+       |                               | KDFLG | KFLG3 | KFLG4 |
+  160   ---------------------------------------------------------------
+       |                               |                               |
+       |            DCBKDLEN           |            DCBKBUFP           |
+       |                               |                               |
+        ---------------------------------------------------------------
+-        Since all transfers are carried out using BSAM/BPAM a DECB is
+ required.  Additional fields hold the information relevant to the QSAM
+ GET/PUT interface simulation.
+0 168   ---------------------------------------------------------------
+       |                               |       |       |               |
+       |              DECB             |  DEC- |  DEC- |    DECBYTES   |
+       |                               |  BTYP | BTYP2 |               |
+  176   ---------------------------------------------------------------
+       |                               |                               |
+       |            DECBDCB            |            DECBXBUF           |
+       |                               |                               |
+  184   ---------------------------------------------------------------
+       |                               |                               |
+       |            DECBIOB            |            DECBENDB           |
+       |                               |                               |
+  192   ---------------------------------------------------------------
+       |                               |                               |
+       |            DECBLREC           |            DECBYBUF           |
+       |                               |                               |
+  200   ---------------------------------------------------------------
+1
+  Byte    Word    Field   Width
+  ----    ----    -----   -----
+0   0       0    DCB       96    O.S. DCB.   See 'System control blocks'
+0  96      24    DCBKABND   4    DCB exit list.  The first slot holds the
+                               address of the open abend exit routine.
+  100      25    DCBKEXIT   4    Address of the DCB open exit routine.
+  104      26    DCBKJFCB   4    Reserved for an in-core JFCB address.
+0 108      27    DCBNAME    9    DD-name as a BCPL string.
+0 117            DCBKFLG1   1    Byte of stream control flags
+0                     1.......      buffer currently associated
+                      .1......      record has been transferred
+                      ..1.....      end-of-file reached (input)
+                      ...1....      trim default is unset (input)
+                      ...1....      pending carriage return (output)
+                      ....1...      BCPL pseudo-stream (private CLOSE)
+                      .....10.      DEVTYPE issued (OPEN time only)
+                      .....10.      newline pending (after OPEN time)
+                      .....11.      two newlines pending
+                      00000010      reread last character (input)
+                      .......1      set in null stream only
+0 118            DCBLSTCH   2    Last character read (input)
+                                 Minimum record length (output)
+0 120      30    DCBNEXT    4    Link field to next DCB of list
+0 124      31    DCBKMEM    8    Member name if BPAM access to a PDS
+                                 Set to binary zeroes if not a PDS member
+0 132      33    DCBKCCP    4    Control character position (output)
+                 DCBKRES    4    Set to constant 0 for RDCH (input)
+                 DCBKBLK    4    Current transfer block number (block)
+0 136      34    DCBSDERR   1    Byte for transfer error flags (block)
+0 136      34    DCBCBCH    4    Character offset within buffer (stream)
+  140      35    DCBCBUF    4    Pointer to current buffer
+  144      36    DCBCBSZE   4    Length of current buffer
+0 148      37    DCBRECNO   2    Number of records transferred
+  150            DCBKDCC    1    Default control character (output)
+                                 Switch for concatenation (input)
+0 151            DCBKFLG2   1    Byte of stream characteristic flags
+0                     1.......      variable spanned records
+                      .1......      ASA control characters exist
+                      ..1.....      suspend blank truncation (input)
+                      ...1....      printer with control characters
+                      ....1...      control characters exist (output)
+                                    INCONTROL(FALSE) issued (input)
+                      .....1..      binary input stream
+                      ......1.      non-header segment, V(B)S only
+                      .......1      non-trailing segment, V(B)S only
+1
+-
+  152      38    DCBKSEG    4    Window size for READREC input
+0 156      39    DCBKDFLG   1    Byte of device dependent flags
+0                     .1......      wrapround binary stream (output)
+                      ..1.....      magnetic tape unit
+                      ...1....      device is line-printer
+                      ....1...      card reader or card punch
+                      .....1..      TSO/BSAM online stream
+                      ......1.      DUMMY data set
+                      .......1      enable automatic wrapround (output)
+0 157            DCBKFLG3   1    Save byte for DCBKFLG1 (input reread)
+                                 Save byte for DCBKFLG2 (output)
+0 158            DCBKFLG4   1    Flag byte for QSAM simulation
+0                     1.......      buffer block has been allocated
+                      .1......      transfer in progress
+                      ..1.....      logical record exists
+                      ...1....      BPAM access to a PDS
+                      ....1...      failure during STOW
+0 160      40    DCBKDLEN   4    Length of block allocated for buffers
+  164      41    DCBKBUFP   4    Buffer area base address
+0 168      42    DECB       4    Event control block for data transfer
+  172      43    DECBTYP    1    Flag for READ-WRITE length control
+  173            DECBTYP2   1    Access type (see System Control Blocks)
+  174            DECBYTES   2    Block length for transfer
+  176      44    DECBDCB    4    DECB pointer to the DCB
+  180      45    DECBXBUF   4    Current transfer buffer pointer
+  184      46    DECBIOB    4    DECB pointer to the IOB
+0 188      47    DECBENDB   4    Pointer beyond block, QSAM simulation
+  192      48    DECBLREC   4    Next logical record, QSAM simulation
+0 196      49    DECBYBUF   4    Alternative buffer pointer
+1
+                                Appendix C.4
+-
+ Current stack frame
+ -------------------
+0        The diagram below describes the allocation of words in the stack
+ frame at the current activation level.  The first three words are used
+ for linkage, the arguments to the current routine following immediately.
+ Special use is made of words 7 and beyond when handling input-output
+ errors, see the comments at ERRWTE in the machine-code library.
+-   0   ---------------------------------------------------------------
+       |                               |                               |
+       |              BASE             |              OLDP             |
+       |                               |                               |
+    8   ---------------------------------------------------------------
+       |                               |                               |
+       |              OLDL             |              ARG1             |
+       |                               |                               |
+   16   ---------------------------------------------------------------
+       |                               |                               |
+       |              ARG2             |              ARG3             |
+       |                               |                               |
+   24   ---------------------------------------------------------------
+       |                               |
+       |              ARG4             |
+       |                               |
+        -------------------------------
+0  28   ---------------------------------------------------------------
+       |                               |                               |
+       |             ERRLNK            |             RESULT            |
+       |                               |                               |
+   36   ---------------------------------------------------------------
+       |                               |                               |
+       |             SAVE2             |             SAVE3             |
+       |                               |                               |
+   44   ---------------------------------------------------------------
+       |                               |
+       |             SAVE4             |
+       |                               |
+   48   -------------------------------
+-
+  Byte    Word    Field   Width
+  ----    ----    -----   -----
+0   0       0    BASE       4    Current procedure base
+    4       1    OLDP       4    Previous stack pointer
+    8       2    OLDL       4    Link address on entry
+   12       3    ARG1       4    First argument or local variable
+   16       4    ARG2       4
+   20       5    ARG3       4
+   24       6    ARG4       4
+1
+0        The rest of the data structure has significance only for
+ the handling of input-output errors in the machine-code library.
+0  28       7    ERRLNK     4    Link address on a call to ERRWTE
+   32       8    RESULT     4    Result to return on exit from ERRWTE
+   36       9    SAVE2      4    Save area for registers  A2 - A4
+   40      10    SAVE3      4
+   44      11    SAVE4      4
+1
+                                Appendix C.5
+-
+ LOAD and LOADFORT
+ -----------------
+0        The routines LOAD and LOADFORT use the O.S. load facilities to
+ bring modules into storage at run-time ; the BCPL system keeps track of
+ all loaded modules, each one having an associated control block which
+ contains in particular a use count.   The format of such a control block
+ is as described below.
+-
+    0   -------------------------------
+       |                               |
+       |            LOADLINK           |
+       |                               |
+    4   ---------------------------------------------------------------
+       |                                                               |
+       |                            LOADNAME                           |
+       |                                                               |
+   12   ---------------------------------------------------------------
+       |                               |                               |
+       |            LOADNTRY           |            LOADLIM            |
+       |                               |                               |
+   20   ---------------------------------------------------------------
+       |                               |                               |
+       |             LOADCC            |            LOADUSE            |
+       |                               |                               |
+   28   ---------------------------------------------------------------
+       |                                                               |
+       |                            DLTENAME                           |
+       |                                                               |
+   37   ---------------------------------------------------------------
+       |       |
+       | LOAD- |
+       |  FLGS |
+   38   -------
+-
+0 Byte    Word    Field   Width
+  ----    ----    -----   -----
+0   0       0    LOADLINK   4    Link to next item on the load list.
+                               Zero flags the final item on the list.
+    4       1    LOADNAME   8    Module name in format for O.S.
+   12       3    LOADNTRY   4    Entry point of the module
+   16       4    LOADLIM    4    Pointer beyond area occupied by module
+   20       5    LOADCC     4    Result returned by LOAD or LOADFORT
+   24       6    LOADUSE    4    Use count for LOAD/DELETE
+   28       7    DLTENAME   9    Module name as a BCPL string
+   37            LOADFLGS   1    Flag byte specifying the module type
+0                     10......      module loaded by LOAD, BCPL code
+                      01......      module loaded by LOADFORT, non-BCPL
+1
+                                Appendix C.6
+-Save area during initialisation
+ -------------------------------
+0        When a BCPL program is first entered there is an immediate
+ branch to the machine-code library BCPLMAIN.  The parameter string is
+ decoded, and store obtained for the global vector and the stack ; see
+ the diagram describing storage allocation in Appendix C.1.  During
+ initialisation a save area is required, and the first action of the
+ system is therefore to obtain a temporary 96-byte region ; the extra
+ 24 bytes are used as a work area, see the diagram below.
+-   0   ---------------------------------------------------------------
+       |                                                               |
+       |                              ISA                              |
+       |                                                               |
+        ---------------------------------------------------------------
+0  72   ---------------------------------------------------------------
+       |                               |                               |
+       |              BASE             |             LENGTH            |
+       |                               |                               |
+   80   ---------------------------------------------------------------
+       |                                                               |
+       |                            STKPARS                            |
+       |                                                               |
+        ---------------------------------------------------------------
+0  72   ---------------------------------------------------------------
+       |                               |               |               |
+       |              SNUM             |      GNUM     |      KNUM     |
+       |                               |               |               |
+   80   ---------------------------------------------------------------
+       |               |               |               |///////////////|
+       |      DFLG     |      TNUM     |      INUM     |///////////////|
+       |               |               |               |///////////////|
+   88   ---------------------------------------------------------------
+-
+  Byte    Word    Field   Width
+  ----    ----    -----   -----
+0   0       0    ISA       72    Save area for general registers
+0  72      18    BASE       4    Base address of main storage obtained
+   76      19    LENGTH     4    Number of bytes of storage obtained
+   80      20    STKPARS   10    Parameter area for GETMAIN
+0  72      18    SNUM       4    Bytes to be allocated for the stack
+   76      19    GNUM       2    Unit for global allocation
+   78            KNUM       2    Bytes * 1024 required for input-output
+   80      20    DFLG       2    Flags for STAE/SPIE option etc.
+   82            TNUM       2    Time for tidy-up in centisecs
+   84      21    INUM       2    Stack initialisation limit
+1
+                                Appendix C.7
+-
+ Save area for exit routines
+ ---------------------------
+0        The DCB exit that is taken during OPEN processing is entered in
+ such a way that the standard O.S. save area is not available.  It is
+ therefore necessary to establish a special save area so that SVC's may
+ be issued ; note also that registers 14, 15, 0 and 1 must be saved.
+-   0   ---------------------------------------------------------------
+       |                                                               |
+       |                            EXITSAVE                           |
+       |                                                               |
+   72   ---------------------------------------------------------------
+       |                               |                               |
+       |             SAVE14            |             SAVE15            |
+       |                               |                               |
+   80   ---------------------------------------------------------------
+       |                               |                               |
+       |             SAVE0             |             SAVE1             |
+       |                               |                               |
+   88   ---------------------------------------------------------------
+       |                                                               |
+       |                            DEVTYPE                            |
+       |                                                               |
+   96   ---------------------------------------------------------------
+-
+0 Byte    Word    Field   Width
+  ----    ----    -----   -----
+0   0       0    EXITSAVE  72    Save area for general registers
+0  72      18    SAVE14     4    Holds register 14 contents on entry
+   76      19    SAVE15     4           as above for R15
+   80      20    SAVE0      4           as above for R0
+   84      21    SAVE1      4           as above for R1
+0  88      22    DEVTYPE    8    Area for DEVTYPE information
+1
+                                Appendix C.8
+-
+ GETVEC and FREEVEC
+ ------------------
+0        See Appendix C.1 for a description of the storage allocation
+ while a BCPL program is running.  Workspace will usually be obtained
+ by vector declarations, though see the specification of the function
+ APTOVEC.
+0        It is also possible to obtain vectors via the function GETVEC,
+ the storage being taken from the area 'RESERVED FOR INPUT-OUTPUT SPACE'.
+ When such a vector is obtained the details are recorded in a control
+ block, the blocks being linked so that all storage can be returned on
+ exit from the system.  The format of the control block is given below.
+-   0   ---------------------------------------------------------------
+       |                               |                               |
+       |            VECBASE            |             VECLEN            |
+       |                               |                               |
+    8   ---------------------------------------------------------------
+       |                               |                               |
+       |            VECNEXT            |          USER VECTOR          |
+       |                               |                               |
+        ---------------------------------------------------------------
+-
+0 Byte    Word    Field   Width
+  ----    ----    -----   -----
+0   0       0    VECBASE    4    BCPL address of user vector area
+    4       1    VECLEN     4    Total number of bytes obtained
+    8       2    VECNEXT    4    Pointer to the next item on the vector
+                               list.  Zero flags the final list item.
+0  12       3    USER VECTOR     Start of the area returned to the user.
+1
+                                Appendix C.9
+-
+ BCPL pseudo-streams
+ -------------------
+0        A standard interface has been defined to make it possible to set
+ up streams for which transfers are effected by means other than the
+ standard BSAM/BPAM macros to data sets and devices defined by DD-cards.
+ Three such streams are available in the library as distributed, see the
+ functions FINDPARM, FINDLOG and FINDTERMINAL.
+0        The notes given below should make it easy for additional pseudo-
+ streams to be created when the need arises.  Typically three routines
+ must be supplied for each such stream, a FIND function to establish it
+ in the first place, a transfer routine that is entered via a standard
+ O.S. calling sequence, and a CLOSE routine.
+0        The requirements are somewhat different for input and output,
+ the two cases being discussed in detail below.  Note that there is no
+ restriction on the choice of RECFORM, BLOCKSIZE, etc ; provided that
+ the routines supplied take a consistent view all formats should be easy
+ to simulate.  The setting of the BSAM bit in the flag byte DCBMACRF(+1)
+ determines whether blocked records are passed to the transfer routine.
+0        The recommended way of adding pseudo-streams to the library is
+ to incorporate the source before assembly ; the advantage of this is
+ that service routines such as GETNAME and CHKLIST will be available,
+ also all data constants in the common area.  It is perhaps a good idea
+ to add the routines for a new pseudo-stream in a separate CSECT as has
+ been done for the TPUT/TGET routines providing terminal transfer, but
+ it may be desirable to extend the utility EDITMAIN, see Appendix B.5.
+0        For examples of pseudo-stream creation see FINDPARM, FINDLOG,
+ TSOCLOSE etc.  Note that there is effectively no GET routine from the
+ parameter string, the input buffer being established at open time and
+ the stream becoming exhausted once this buffer has been read.
+-
+ FIND function
+ -------------
+0        The purpose of this function is to establish the stream control
+ block for the pseudo-stream, the result being a pointer to the block.
+0Typical logic for such a function will be as follows  -
+0    1.  Scan the appropriate DCB list to see whether the pseudo-stream
+ is already set up ; if so return the control block pointer as result.
+0    2.  If not, allocate storage for the stream control block and set
+ all relevant fields.  The fields initialised should include a private
+ DD name, the addresses of the transfer and close routines, and the flag
+ byte DCBKFLG1, which must have PVTESW (X'08') set on.
+0    3.  Link the new stream control block at the head of the relevant
+ DCB list and return a pointer to it as result.
+1
+ Transfer routine
+ ----------------
+0        This routine is entered via a standard O.S. calling sequence.
+ It will almost certainly be convenient to ensure that the BSAM flag in
+ the byte DCBMACRF(+1) is set off, in which case a QSAM transfer will be
+ assumed ; the routine should then simulate a LOCATE mode QSAM routine.
+0        Arguments are supplied in general registers as follows  -
+0                A1          Record separator (output only)
+                 A4          Address of the pseudo-DCB
+                 A           Link address from caller
+                 R15         Entry point of routine
+0        The current buffer and character pointers will be available in
+ the stream control block in the usual way.  Note that if QSAM is used
+ LOCATE mode is understood, and it will thus be necessary to return the
+ new buffer pointer in register R1.  On output the record separator that
+ caused the transfer will be found in the junior 8 bits of register A1,
+ see TSOPUT where this knowledge is used.
+0        On input it will be necessary to cope with the end-of-stream
+ situation.  When the stream is exhausted control must be passed to the
+ label EODATA in the routine RECREAD in BCPLMAIN ; the address of this
+ entry point is held in the common data area under the label AEOD, and
+ is addressable via register S.  All general registers must be restored
+ before branching to this label.
+-
+ CLOSE routine
+ -------------
+0        The CLOSE routine is responsible for coping with the functions
+ ENDREAD and REWIND on input, and ENDWRITE and ENDTOINPUT for output
+ pseudo-streams.  It will be called from the routine CLOSEDCB that
+ handles these functions for the BCPL programmer, and also from STOP,
+ in each case being entered via a BCPL recursive calling sequence.
+ Note that although the routine is entered in a standard way registers
+ A2 - A4 must be restored before exit, in addition to resetting R0 - R3.
+0        The BCPL functions return a Boolean result to indicate success
+ or failure, this result requiring to be established in register A1
+ before exit from the private close routine.  In addition a code must be
+ returned in R15 to indicate the future action required.
+0        Registers are set on entry to the CLOSE routine as follows  -
+0                A1 = 0      ENDREAD or ENDWRITE
+                    > 0      REWIND or ENDTOINPUT
+                 A4          Pointer to pseudo-DCB
+0        On exit R15 must be set to the following completion code  -
+0                R15 < 0     REWIND has failed
+                     = 0     No further action
+                     > 0     Link new input DCB
+1
+0        The following diagram should give an indication of the fields
+ that are relevant in the stream control block that is created by the
+ function FINDPARM to handle input from the parameter string.  The area
+ allocated begins at offset 0, the result returned being 36 bytes less.
+- -36   ---------------------------------------------------------------
+       |///////////////////////////////////////////////////////////////|
+       |///////////////////////////////////////////////////////////////|
+       |///////////////////////////////////////////////////////////////|
+    0   ---------------------------------------------------------------
+       |       |///////////////////////////////////////////////////////|
+       |  REC- |///////////////////////////////////////////////////////|
+       |  FORM |///////////////////////////////////////////////////////|
+   12   ---------------------------------------------------------------
+       |                               |///////////////////////////////|
+       |     Address of GET routine    |///////////////////////////////|
+       |                               |///////////////////////////////|
+   60   ---------------------------------------------------------------
+       |                               |///////////////////////////////|
+       |    Address of CLOSE routine   |///////////////////////////////|
+       |                               |///////////////////////////////|
+        ---------------------------------------------------------------
+0  72   ---------------------------------------------------------------
+       |       |       |       |       |       |       |       |       |
+       |   8   |  '*'  |  ' '  |  'P'  |  'A'  |  'R'  |  'M'  |  ' '  |
+       |       |       |       |       |       |       |       |       |
+   80   ---------------------------------------------------------------
+       |       |       |               |                               |
+       |  '*'  |  DCB- |    DCBLSTCH   |            DCBNEXT            |
+       |       | KFLG1 |               |                               |
+        ---------------------------------------------------------------
+0  88   ---------------------------------------------------------------
+       |                                                               |
+       |                     Member name field of 0                    |
+       |                                                               |
+   96   ---------------------------------------------------------------
+       |                               |                               |
+       |           Constant 0          |       Character position      |
+       |                               |                               |
+  104   ---------------------------------------------------------------
+       |                               |                               |
+       |    Parameter string pointer   |        Length of string       |
+       |                               |                               |
+  112   ---------------------------------------------------------------
+       |///////////////////////|       |                               |
+       |///////////////////////|  DCB- |       Window size of 80       |
+       |///////////////////////| KFLG2 |                               |
+  120   ---------------------------------------------------------------
+       |       |       |       |///////////////////////////////////////|
+       |   0   |  DCB- |   0   |///////////////////////////////////////|
+       |       | KFLG3 |       |///////////////////////////////////////|
+  128   ---------------------------------------------------------------
+1

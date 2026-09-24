@@ -1,0 +1,13 @@
+This is bcpltape.tar as made available by Ken Yap, but with the character
+mapping problems corrected, and the files renamed from f01 through
+f75 into suitable UNIX names, on the basis of information appearing
+in file f01.  The INDEX file shows how the filenames are mapped, and
+incorporates comments based on those found in the f01 file.
+
+There are only 55 files.  Those missing have "-" in place of a filename
+in the INDEX file.
+
+The README.orig file is Ken Yap's original README.
+
+Robert Nordier
+www.nordier.com

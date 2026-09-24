@@ -1,0 +1,2310 @@
+1
+-
+-
+-
+-                      A PROPOSED DEFINITION OF THE LANGUAGE
+-
+-                                     B C P L
+-
+-               This  document  sets  out  a  proposal   for   the
+                definition  of a standard BCPL and was prepared by
+                M.D. Middleton in collaboration with
+0                  R. Firth (HPAC Ltd.)
+                   M. Richards (University Cambridge)
+                   I. Willers (CERN Geneva)
+0               who are members of the  BCPL  Standards  Committee
+                elected at the BCPL User Meeting on 7th March 1979
+                in Cambridge.
+-
+-
+0          M.D. Middleton
+           Das RZ der Universitaet Regensburg
+           Universitaetsstrasse 31
+           D-8400 Regensburg
+           W.-Germany
+-
+-
+-
+-
+1                                  BCPL Standard
+-
+0          1 Introduction
++            ____________
+-
+0          1.1 Scope and Purpose
++              _________________
+-             This document has been produced in response to requests at
+0          the   inaugural   meeting   of   the   BCPL  Users  Group  on
+0          7th March 1979.  It  is  a  revised  version  of  a  previous
+0          attempt at standardization (Middleton 1979) which was in turn
+0          based on the original BCPL manual (Richards 1969, 1973).   It
+0          is  intended  as  a  specification  of  the  language and its
+0          runtime system which will be  adopted  as  a  standard  at  a
+0          subsequent BCPL User Group meeting.
+-
+           1.2 Language Extensions
++              ___________________
+-             The  language  and runtime system described in the body of
+0          this paper is BCPL-level 0 and is intended to form the  basis
+0          of a standard to which all implementations should adhere.
+-             The Appendix gives a number of possible extensions.  These
+0          are grouped into 'Packets'.  None of the packets is mandatory
+0          but if any facilities from any given packet described in  the
+0          appendix  are  included  then  the  whole  packet  should  be
+0          implemented in the form described there.
+-
+-
+-
+           1.10.1979                                                   1
+1                                  BCPL Standard
+-          1.3 Meta-Language
++              _____________
+-                For  the syntactic definition Backus Naur Form with the
+0          following extension is used:
+-             []    are  metabrackets  which  mean  that  the categories
+0          between the brackets must occur at least n times but not more
+0          than  m  times.   If n or m is omitted the default values are
+0          n = 0 and m =   .
+-             For the semantic definition the following conventions  are
+0          used unless explicitly qualified in a particular section.
+0               E, E1, E2,...  stand for arbitrary expressions
+0               K, K1, K2,...  stand for arbitrary constant expressions
+0               and
+0               C, C1, C2,...  stand for arbitrary commands.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+0          2                                                   1.10.1979
+1                                  BCPL Standard
+-
+0          2 Data
++            ____
+-             There are no explicit data types in BCPL.  The  only  unit
+0          of  data  is the BCPL word which for any given implementation
+0          is a bit string of fixed length not less  than  16  bits.   A
+0          BCPL  word  may be used to represent values of many different
+0          types including integers, characters and  truth  values.   As
+0          there  are  no  explicit  data types the compiler performs no
+0          type checking and  always  assumes  that  operands  have  the
+0          required type.
+-             The basic unit of storage is a cell which is large  enough
+0          to  hold  a  BCPL  word.   Each available cell has an integer
+0          address which can be operated upon and stored in the same way
+0          as   any  other  BCPL  word.   Adjacent  cells  have  integer
+0          addresses that differ by one.
+-
+           2.1 Data Storage
++              ____________
+-             A BCPL program has  at  least  three  available  areas  of
+0          storage:  dynamic, static and global.
+-
+-
+-
+-
+-
+0          1.10.1979                                                   3
+1                                  BCPL Standard
+-          2.1.1 Dynamic
++                _______
+-             This area is normally a single block of contiguous storage
+0          which is used for storage of temporary  results  and  dynamic
+0          variables.
+-
+           2.1.2 Static
++                ______
+-             This is a not necessarily  contiguous  area  of  store  in
+0          which static variables can be stored.
+-
+           2.1.3 Global
++                ______
+-             This  is  a  block  of  contiguous store which is used for
+0          communication between seperately compiled sections of a  BCPL
+0          program.   The  cells of this block are numbered from zero up
+0          to some limit and all are available to each section.
+-
+           2.1.4 Other storage areas
++                ___________________
+-             Other  storage  areas  may  (but  do  not have to) be made
+0          available to the program by means of  procedure  calls.   See
+0          section A7 in the Appendix.
+-
+-
+-
+-
+-
+           4                                                   1.10.1979
+1                                  BCPL Standard
+-
+0          3 Lexical considerations
++            ______________________
+-             The machine representation of a BCPL program is  dependent
+0          on the character set used.
+-
+           3.1 Character set
++              _____________
+-             The character set is divided into the following:
+0            <layout char>     ::= <space char> | <newline char>
+0            <space char>          includes at least 'space' and 'tab'
+0            <newline char>        is  any  'carriage control character'
+                                   such as linefeed, new page etc.
+0            <letter>              includes all upper case letters  and,
+                                   if  the  implementation allows, lower
+                                   case  letters.   Lower  case  letters
+                                   have  the  same meaning as upper case
+                                   letters   except   in   strings   and
+                                   character  constants where they stand
+                                   for themselves.
+0            <digit>           ::= 0|1|2|3|4|5|6|7|8|9
+0            <special>             a set of special characters which are
+                                   used to build BCPL basic symbols.
+0            <other>               all other characters in the character
+                                   set.   These  may   occur   only   in
+                                   strings,   character   constants  and
+                                   comments.
+-
+-
+-
+-
+-
+0          1.10.1979                                                   5
+1                                  BCPL Standard
+-          3.2 Basic contructions of the language
++              __________________________________
+-             The basic syntactic unit in BCPL is the <symbol>
+0            <symbol>          ::= <element> | <basic symbol>.
+-          With  the  exception  of a restriction on <newline character>
+0          any  number  of  <layout  character>s  may   appear   between
+0          <symbol>s,  but  <layout  character>s may not appear within a
+0          <symbol>.  It will also be seen from the syntax that  <layout
+0          character>s  are  sometimes  necessary  to separate <symbol>s
+0          which would otherwise elide,  for  example  <name>  and  <dec
+0          number>.
+-
+           3.2.1 Tag, Name, Identifier
++                _____________________
+-            <tag>             ::=  [<tag character>]
+0          where  <tag character>  is  one  of  <letter>,   <digit>   or
+           '.' (dot).   Some  implementations  also  allow the underline
+           character in tags.
+0            <name>            ::=  <letter> <tag>
+0            <identifier> is a <name> which is not a <basic symbol>.
+-
+           3.2.2 Basic Symbol
++                ____________
+-             A <basic symbol> is a symbol made up of either a  sequence
+0          of letters or a sequence of <special>s.
+-             The   machine   representation   of   <basic  symbol>s  is
+0          implementation dependent and in  this  document  a  canonical
+0          representation of the <basic symbol>s is used.  The following
+-
+0          6                                                   1.10.1979
+1                                  BCPL Standard
+-          table  gives  the  set  of canonical <basic symbol>s together
+0          with a list of alternative representations.
+-                   basic               alternative
+                    symbol              representation(s)
+-                   TRUE
+                    FALSE
+                    ?                   NIL
+                    (                   [
+                    )                   ]
+                    @                   LV
+                    !(monadic)          RV
+                    !(dyadic)
+                    *
+                    /
+                    REM
+                    +
+                    -
+                    =                   EQ
+                    ~=                   =        NE        \=
+                    <                   LT
+                    <=                  LE
+                    >                   GT
+                    >=                  GE
+                    <<                  LSHIFT
+                    >>                  RSHIFT
+                    NOT                 ~                   \
+                    &                   /\        LOGAND
+                    |                   \/        LOGOR
+                    EQV
+                    NEQV
+                    ->
+                    ,
+                    TABLE
+                    VALOF
+                    ;
+                    :
+                    VEC
+                    BE
+                    LET
+                    AND
+                    :=
+                    BREAK
+                    LOOP
+                    ENDCASE
+                    RETURN
+                    FINISH
+                    GOTO
+                    RESULTIS
+-
+           1.10.1979                                                   7
+1                                  BCPL Standard
+0                   SWITCHON
+                    INTO
+                    REPEAT
+                    REPEATUNTIL
+                    REPEATWHILE
+                    UNTIL
+                    WHILE
+                    FOR
+                    TO
+                    BY
+                    IF
+                    UNLESS
+                    CASE
+                    DEFAULT
+                    DO                  THEN
+                    ELSE                OR
+                    ABS
+                    GET
+                    MANIFEST
+                    GLOBAL
+                    STATIC
+-          Further Symbols
++          _______________
+-             The following character combinations are used  in  certain
+0          BCPL constructions and are given here for completeness.
+0              character                       construction
+               combination
+0              $(                            ) section brackets
+               $)                            )
+               '(single quote)                 character constant
+               "(double quote)                 string constant
+               #                               literal
+               //                            ) comments
+               /*                            )
+               */                            )
+-          Extended Basic Symbols
++          ______________________
+-             The following  list  gives  basic  symbols  and  character
+0          combinations used in recommended extensions.
+-
+-
+-          8                                                   1.10.1979
+1                                  BCPL Standard
+0              symbol         alternative representations
+0              #+
+               #-
+               #*
+               #/
+               #=             #EQ
+               #~=            #NE       # =       #\=
+               #<             #LT
+               #<=            #LE
+               #>             #GT
+               #>=            #GE
+               #ABS
+               FIX
+               FLOAT
+               SECTION
+               NEEDS
+               EXTERNAL
+               %
+               $$
+               $<
+               $>
+-
+           3.2.3 Element
++                _______
+-            <element>         ::= <identifier> | <literal>
+-          An <identifier> represents either a variable which at runtime
+0          will  be  bound  to  some  particular  cell  or  a  <manifest
+0          constant> which is treated as a literal.  A  <literal>  is  a
+0          direct representation of a constant.
+0            <literal>         ::= <number> | <character constant> |
+                                   <string constant> | <logical value> |
+                                   <undefined>
+-          Number
++          ______
+-            <number>          ::= <based number> | [<digit>]
+0            <based number>    ::= #[O]  [<octal digit>]  |
+                                   #B[<binary digit>]  |
+                                   #X[<hex digit>]
+-
+-          1.10.1979                                                   9
+1                                  BCPL Standard
+0            <octal digit>     ::= 0 | 1 | ... 7
+0            <binary digit>    ::= 0 | 1
+0            <hex digit>       ::= 0|1|2|3|4|5|6|7|8|9||A|B|C|D|E|F
+-          Semantics
++          _________
+-             A number has some machine representation which  is  chosen
+0          such  that  the  BCPL  operators  have  the expected results.
+0          Binary, octal and hexadecimal numbers  may  be  written  with
+0          leading  zeros  suppressed and, so long as the cell length of
+0          the implementation is not  exceeded,  the  normal  rules  for
+0          conversion between positive numbers in these bases hold.
+-          Character constant
++          __________________
+-            <character constant>  ::=   '<string character>'
+-          Any  single  character  may  appear  within the single quotes
+0          except *, ' or <newline character>.  <string  character>  may
+0          also be any of the following special representations:
+-              special             represents
+               representation
+0              **                  *
+               *'                  '(single quote)
+               *"                  "(double quote)
+               *S or *s            space
+               *T or *t            tab
+               *N or *n            newline
+               *P or *p            newpage
+               *Xnn or *xnn        the hexadecimal character nn
+               *Onnn or *onnn      the octal character nnn
+-
+-
+-
+           10                                                  1.10.1979
+1                                  BCPL Standard
+-
+           Semantics
++          _________
+-             A  character  constant  is the representation of the given
+0          character in an implementation dependent internal  code.   It
+0          occupies  a  complete  BCPL  word  and is right justified and
+0          padded on the left with zeros.
+-          String constant
++          _______________
+-            <string constant> ::= "<up to K string characters>"
+-          Within  a  string any character represents itself except *, "
+0          and  <newline  character>.   The  special  representation  of
+0          character  constants (see above) may be used within a string.
+0          K is an implementation constant whose value is not less  than
+0          127;  in most implementations it is 255.
+-             In a string the sequence
+-                               * [<layout char>] *
+-          is ignored.
+-          Semantics
++          _________
+-             A string constant is represented by  the  BCPL-address  of
+0          the zeroth of a set of contiguous cells which at runtime hold
+0          the actual characters of the string together with its  length
+0          packed.   Each  cell is divided into a number of 'bytes' (not
+0          necessarily of the same size).  Byte zero of cell zero  of  a
+-
+-          1.10.1979                                                  11
+1                                  BCPL Standard
+-          string  contains  the length and subsequent bytes contain the
+0          characters packed contiguously and  in  the  given  sequence.
+0          The  unused  bytes  of  the  last cell are filled with binary
+0          zeros.  See section 10.3 for  information  about  the  string
+0          handling library procedures.
+-          Logical value
++          _____________
+-            <logical value>   ::=  TRUE | FALSE
+-             The meaning  of  the  values  is  self  explanatory.   The
+0          machine representation is such that the operators
+0                              NOT, &, |, EQV, NEQV
+-          have  the  expected  results,  see  section  4.3.1.  Thus the
+0          representation of FALSE is a bit pattern of all zeros and the
+0          representation of TRUE is a bit patern of all ones.
+-          Undefined
++          _________
+-            <undefined>       ::= ?
+-          The value of this is undefined.
+-
+-
+-
+-
+-
+-
+           12                                                  1.10.1979
+1                                  BCPL Standard
+-          3.3 Omission of symbols
++              ___________________
+-             The symbols ; (semicolon), DO and THEN can be omitted when
+0          the compiler can tell by context whether one is  required  or
+0          not.   There  are, however, a few cases where ambiguities can
+0          arise and these are resolved by the compiler according to the
+0          following two rules:
+-            a) The  first symbol after a newline character may not be a
+                dyadic operator, or -> or a comma.
+0            b) The  compiler  reads  the  source  program  sequentially
+                symbol for symbol without backtracking and while parsing
+                a given construction accepts all symbols which (with the
+                exception  of  rule  (a)  could  possibly belong to that
+                construction.  The first symbol which could  not  belong
+                to the given construction is taken as the start of a new
+                construction.
+-          With these rules in mind the  following  recommendations  are
+0          made to programmers over omission of symbols.
+-             The following syntactic conventions are safe.
+-            a) Semicolon  should  only  be  omitted  if  it is the last
+                non-comment symbol on a line.
+0            b) DO or THEN should only be  omitted  when  the  following
+                symbol is one that can only start a command.
+-
+-
+-
+-
+-
+-          1.10.1979                                                  13
+1                                  BCPL Standard
+-          3.4 Tagged brackets
++              _______________
+-             The  section  brackets $( and $) may be written as $(<tag>
+0          and $)<tag>.  Each opening section bracket must be matched by
+0          an  identically  tagged  closing  bracket.  However, when the
+0          compiler finds a closing section bracket with a non-null tag,
+0          if  the  nearest opening section bracket does not match, that
+0          section is  closed  and  the  process  is  repeated  until  a
+0          matching    opening   section   bracket   is   found.    Thus
+0          syntactically a tagged opening section bracket is the same as
+0          a  null-tagged (untagged) one and a tagged closing bracket is
+0          the same as one or more untagged  closing  section  brackets.
+0          Some  implementations  generate a warning message if a tagged
+0          section bracket is not explicitly closed by a matching one.
+-
+           3.5 Comments
++              ________
+-             Comments may be introduced by one of the two symbols
+-                       // or /*
+-             The sequence
+-          // [<character other than <newline char>>] <newline char>
+-          has the syntactic significance of a <newline>
+-             The sequence
+-
+-
+-          14                                                  1.10.1979
+1                                  BCPL Standard
+-             /* <any character sequence that does not contain*/> */
+-          has the syntactic significance of a <layout char>.
+-
+           3.6 GET
++              ___
+-             It is possible to include a file in  the  source  text  by
+0          using the directive
+0                               GET <file identity>
+-          where <file identity> is a machine  dependent  identification
+0          of a file.  This is usually a string.
+-             The GET directive must appear on a line by itself and  the
+0          effect  is  to  replace  this line with the text of the given
+0          file.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-          1.10.1979                                                  15
+1                                  BCPL Standard
+-
+0          4 Expressions
++            ___________
+-
+0          4.1 Syntax of expression
++              ____________________
+-             The following syntax defines the form of BCPL expressions.
+0          This  syntax  must  be  used  in conjunction with the binding
+0          power of the operators to give an unambiguous parsing  of  an
+0          expression.
+-
+             <expression>      ::= <element> | (<expression>) |
+                                   <function call> |
+                                   <expression> [<dyop> <expression>] |
+                                   <monop> <expression> |
+                                   <conditional exp> | VALOF <command> |
+                                   TABLE <expression list>
+0            <monop>           ::= ! | @ | ABS | + | - | NOT
+0            <dyop>            ::= ! | * | REM | / | + | - | = | ~= |
+                                   < | > | <= | >=| << | >> | & | | |
+                                   EQV | NEQV
+0            <function call>   ::= <procedure call>
+0            <procedure call>  ::= <expression>(<expression list>) |
+                                   <expression>()
+0            <conditional exp> ::= <expression> -> <expression>,
+                                   <expression>
+0            <expression list> ::= <expression> [,<expression>]
+-          <command> is defined in section 5.
+-
+-
+-
+-          16                                                  1.10.1979
+1                                  BCPL Standard
+-          4.2 Operator precedence
++              ___________________
+-             Ambiguities  in  the  above  syntax  are  resolved  by the
+0          following order of binding power.
+0          (highest, most binding)    () (bracketed expression)
+                                      Procedure call
+                                      ! (dyadic)
+                                      ! (monadic) @
+                                      * / REM
+                                      + - (monadic and dyadic)
+                                      = ~= < <= > >=
+                                      << >>
+                                      NOT
+                                      &
+                                      |
+                                      EQV NEQV
+                                      -> , (conditional comma)
+                                      TABLE , (comma in a table)
+           (lowest, least binding)    VALOF
+0          Operators of equal precedence associate to the left.
+-             VALOF is different from the other  operators  in  that  it
+0          operates  on a <command> rather than on an expression.  In so
+0          far as this <command> can  terminate  with  an  <expression>,
+0          VALOF is the least binding operator.
+-
+           4.3 Semantics of expression
++              _______________________
+-             There  are  five  context dependent modes of evaluation of
+0          expressions
+0                          R-mode
+0                          L-mode
+0                          assignment mode
+0                          truth value mode
+0                          constant.
+-
+0          1.10.1979                                                  17
+1                                  BCPL Standard
+-          4.3.1 R-mode expressions
++                __________________
+-             The  normal  mode  is  R-mode  and unless something to the
+0          contrary is stated all  expressions  are  evaluated  in  this
+0          mode.  All operators are valid in R-mode.
+-          Brackets
++          ________
+-                  (E)
+-             Brackets  serve only to affect the grouping of operands of
+0          an expression.
+-          Function call
++          _____________
+-                  E(E1, E2, ...)
+-             See procedure call section 6.7
+-          Vector application
++          __________________
+-                  E1!E2
+-             The BCPL vector application is a symetrical operation such
+0          that:
+0                                E1!E2 = !(E1+E2)
+-          Note  that this implies E1!E2 = E2!E1.  One interpretation of
+0          the expression E1!E2 is that E1 is a  pointer  to  a  set  of
+0          contiguous  cells  (a vector) and E2 is an index.  The result
+0          of the operation is the E2th cell of the vector.
+-
+-
+           18                                                  1.10.1979
+1                                  BCPL Standard
+-
+           Indirection
++          ___________
+-                   !E
+-             The  !  operator  acts  as  an  indirection operator.  The
+0          expression E is evaluated and is interpreted as  the  address
+0          of  a  cell  whose  content  is  then the result of the whole
+0          expression.
+-          Address of
++          __________
+-                   @E
+-             The operator  @  causes E to be evaluated as  an  address.
+0          The expression E is evaluated in L-mode and the result of the
+0          whole expression is then this value.
+-          Arithmetic operators
++          ____________________
+-             The arithmetic operators
+-                           * / REM + -
+-          operate on values as if  they  were  integers.   REM  is  the
+0          remainder (modulus) operator:
+0                           if   m/n = q
+0                           and  m REM n = r
+0                           then q * n + r = m
+0          for m, n (except n=0), if m and n are both positive then q is
+0          the largest integer which satisfies the above  equations  for
+-
+-          1.10.1979                                                  19
+1                                  BCPL Standard
+-          positive  r.   The direction of rounding is undefined for the
+0          operator / if either of its operands are negative.
+-             For  all  arithmetic  operations  the  effect  of  integer
+0          overflow is ignored.
+-          Relations
++          _________
+-             A relational operator compares the integer values  of  its
+0          two  operands  and  yields  a  truth-value (TRUE or FALSE) as
+0          result.  The operators are as follows:
+0                          =    equal
+                           ~=   not equal
+                           <    less than
+                           <=   less than or equal
+                           >    greater than
+                           >=   greater than or equal
+-          These   operators   make   arithmetic  comparisons  of  their
+0          operands.  An extended relational expression such as
+0                                'A' <= CH <= 'Z'
+0          is equivalent to
+0                              'A' <= CH & CH <= 'Z'
+-          Shift operators
++          _______________
+-             In the expression E1<<E2 (E1>>E2), E2 should  evaluate  to
+0          yield  a  non-negative  integer.  The value is E1, taken as a
+0          bit pattern, shifted left (or right) by E2  places.   Vacated
+0          positions  are  filled with 0 bits.  If the value of E2 is an
+0          integer  larger than the word length  on  the  implementation
+0          number  of  bits  in  a  word then the then the result of the
+-
+0          20                                                  1.10.1979
+1                                  BCPL Standard
+-          shift operations is undefined.
+-          Logical operations
++          __________________
+-             These operate on values considered as  bit  patterns:  the
+0          operator  NOT  causes  bit  by  bit  complementation  of  its
+0          operand.  The other operators combine their operands  bit  by
+0          bit according to the following table.
+-                      Operands           Operator
+0                                     &   |  EQV NEQV
+0                      0   0          0   0   1   0
+0                      0   1          0   1   0   1
+0                      1   0          0   1   0   1
+0                      1   1          1   1   1   0
+-          Conditional operations
++          ______________________
+-                     E1 -> E2, E3
+-          E1 is evaluated in  truth-value  mode.   The  result  of  the
+0          expression  is  the value obtained by either evaluating E2 or
+0          E3  depending  on  whether   E1   yields   TRUE   or   FALSE,
+0          respectively.   If  E1  yields  neither  then  the  result is
+0          undefined.
+-          Table
++          _____
+-             The value of the expression
+-                TABLE K0, K1, K2, ..., Kn
+-
+0          1.10.1979                                                  21
+1                                  BCPL Standard
+-          is  the  address  of the zeroth element of a static vector of
+0          n + 1 cells initialized to the values K0,  K1,  K2,  ...,  Kn
+0          which must be constant expressions.
+-          VALOF expression
++          ________________
+-             The expression
+0                          VALOF C
+0          where C is a command, is evaluated by  executing  C  until  a
+0          RESULTIS  command  is  encountered.   The  value of the VALOF
+0          expression is then the value of the expression  contained  in
+0          the RESULTIS command and execution of C finishes.
+-
+           4.3.2 L-mode expressions
++                __________________
+-             L-mode expressions occur in two contexts:
+-           a) as operand of the @ operator, or
+0           b) on the left hand side of an assignment command.
+-          An expression is evaluated in L-mode to give the address of a
+0          cell.   Therefore  only  the  following   constructions   are
+0          allowed:
+0            N       where N is an identifier which is  the  name  of  a
+                     dynamic,  static  or global cell.  The value is the
+                     address of the given cell.
+0            !E      where E is any expression.  The value is E
+0            E1!E2   where E1 and E2 are any expressions.  The value  is
+                     E1 + E2.
+-
+-
+0          22                                                  1.10.1979
+1                                  BCPL Standard
+-          4.3.3 Assigment mode
++                ______________
+-             An  assignment  mode  context occurs only on the left hand
+0          side of  an  assignment  command.   Here  the  expression  is
+0          evaluated to give the address of a cell in which a value will
+0          be stored.  For further details of  the  assignment  command,
+0          see section 5.2.
+-
+           4.3.4 Truth-value mode
++                ________________
+-             A truth-value context occurs whenever the  result  of  the
+0          expression  will be interpreted immediately as TRUE or FALSE.
+0          The expression is evaluated only so long as is  necessary  to
+0          determine  whether  it  is true or false - more precisely: if
+0          after parsing (i.e. taking account of  brackets  and  binding
+0          power)  the  least  binding  operator  is  &,  | or NOT it is
+0          evaluated from left  to  right  according  to  the  following
+0          rules:
+0           Op   Form of      Evaluation as truth value
+                Expression
+0           NOT  NOT E1       E1 is evaluated in truth-value mode and if
+                              this   is   TRUE   the  result  is  FALSE,
+                              otherwise the result is TRUE.
+0           &    E1&E2        E1 is evaluated in truth-value  mode.   If
+                              this result is FALSE, the whole expression
+                              is FALSE, otherwise the expression has the
+                              result E2 evaluated in truth-value mode.
+0           |    E1|E2        E1  is  evaluated in truth-value mode.  If
+                              this  result  is  true  then   the   whole
+                              expression  is  true,  otherwise the whole
+                              expression has the value of  E2  evaluated
+                              in truth-value mode.
+-
+-          1.10.1979                                                  23
+1                                  BCPL Standard
+-          In  all other cases the expression is evaluated in R-mode and
+0          the result is interpreted as TRUE or FALSE.  If the result of
+0          this  evaluation does not actually yield either of the values
+0          TRUE or FALSE then the result is undefined.
+-
+           4.3.5 Constant expressions
++                ____________________
+-             A constant expression is one which must  be  evaluated  at
+0          compile time and may include only:
+0            <identifiers> declared as MANIFEST constants
+             <number>
+             <character constant>
+             <logical value>
+             <undefined>
+             ABS
+             + - * / REM
+             << >>
+             NOT & | EQV NEQV
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+           24                                                  1.10.1979
+1                                  BCPL Standard
+-
+0          5 Commands
++            ________
+-             The complete set of commands is given in this section
+0            <unlabelled command>  ::= <routine call> | <assignment> |
+                                   <conditional> | <repetitive> |
+                                   <for command> | <resultis> |
+                                   <switchon> | <transfer> | <block> |
+                                   <compound>
+0          A definition of compound commands  and  blocks  is  given  in
+0          section 7.2.  The definition of the remainder of the commands
+0          is given in the following subsections.
+-
+           5.1 Routine call
++              ____________
+-            <routine call>    ::= <procedure call>
+0          See procedure call section 6.7.
+-
+           5.2 Assignment
++              __________
+-            <assignment>      ::= <expression list> <assop>
+                                   <expression list>
+0            <assop>           ::= :=
+-          Semantics
++          _________
+-             There are two basic forms of the assignment command:
+-           a) Simple assignment command
+0                  E1 := E2
+0              The expression E2 is  evaluated  in  R  mode  to  give  a
+0              BCPL-word   and   the   expression  E1  is  evaluated  in
+-
+0          1.10.1979                                                  25
+1                                  BCPL Standard
+-              assignment  mode  to  give  the identity of a place where
+0              this should be stored.  If E1  is  an  L-mode  expression
+0              this  is  simply  a  cell  in  which  the result is to be
+0              stored.
+-           b) Multiple assignment
+0                  L1, L2, ... := E1, E2, ...
+0              The expressions L1, L2, ...,  E1, E2, ...  are  evaluated
+0              and  assigned to the cells defined by the assignment mode
+0              expressions L1, L2, ...  in  an  undefined  order.   Some
+0              assignment  may take place before all left and right hand
+0              expressions have been evaluated.
+-
+           5.3 Conditional
++              ___________
+-
+           Syntax
++          ______
+-            <conditional>     ::= IF <expression> THEN <command> |
+                                   UNLESS <expression> THEN <command> |
+                                   TEST <expression> THEN <command> ELSE
+                                   <command>
+-          Semantics
++          _________
+-             The semantic forms of the command are
+0               IF E THEN C1
+0               UNLESS E THEN C2
+0               TEST E THEN C1 ELSE C2
+0          E is evaluated in truth-value mode and if the result is  true
+0          C1 is executed otherwise C2 is executed.
+-
+0          26                                                  1.10.1979
+1                                  BCPL Standard
+-          5.4 Repetitive commands
++              ___________________
+-
+           Syntax
++          ______
+-            <repetitive>      ::= WHILE <expression> DO <command> |
+                                   UNTIL <expression> DO <command> |
+                                   <command> REPEAT |
+                                   <command> REPEATWHILE <expression> |
+                                   <command> REPEATUNTIL <expression>
+-          Semantics
++          _________
+-             The command is executed  repeatedly  until  the  condition
+0          (<expression>)  becomes  true  or  false  as  implied  by the
+0          command.  If the condition preceeds the body  (WHILE,  UNTIL)
+0          the  test will be made before each execution of the body.  If
+0          it follows the body (REPEATUNTIL, REPEATWHILE) the test  will
+0          be  made  after  execution  of  the  body  which is therefore
+0          executed at least once.  The rule that as much as possible is
+0          included  in the construction being parsed (see section 3.3),
+0          applies here.  Thus for example
+0               WHILE E1 DO C REPEATUNTIL E2
+0          is the same as
+0               WHILE E1 DO $( C REPEATUNTIL E2 $)
+0          and
+0               E := VALOF C REPEAT
+0          is the same as
+0               E := VALOF $( C REPEAT $)
+-
+-
+-          1.10.1979                                                  27
+1                                  BCPL Standard
+-          5.5 FOR command
++              ___________
+-
+           Syntax
++          ______
+-            <for command>     ::= FOR <indentifier> = <expression>
+                                   TO <expression> [BY <expression>]  DO
+                                   <command>
+-          Semantics
++          _________
+-                  FOR N = E1 TO E2 BY K DO C
+0          If the constant K is positive this is equivalent to
+0                  $( LET N, d = E1, E2
+                      WHILE N <= d DO
+                      $( C
+                         N := N + K
+                      $)
+                   $)
+0          If the value of K is negative N <= d is replaced by N >= d.
+0          If 'BY K' is omitted 'BY 1' is assumed.  The declaration
+0                  LET N, d
+0          declares  two new variables N and d; d being a new identifier
+0          which  does  not  occur  in  C.   On   some   implementations
+0          (particularly  16  bit  word  addressed  machines  capable of
+0          addressing a segment of more than 32k words) the test is  for
+0          N-d <= 0 or N-d >= 0 as the case may be.
+-
+-
+-
+-
+-
+           28                                                  1.10.1979
+1                                  BCPL Standard
+-          5.5 RESULTIS command
++              ________________
+-
+           Syntax
++          ______
+-            <resultis>        ::= RESULTIS <expression>
+-          Semantics
++          _________
+-             This command gives the result of  the  smallest  textually
+0          enclosing VALOF expression (see section 4.3.1).  It may occur
+0          only in the body of a VALOF expression.
+-
+           5.6 Switchon
++              ________
+-
+           Syntax
++          ______
+-            <switchon>        ::= SWITCHON <expression> INTO <compound>
+0          where the compound command contains <case label>s.
+-          Semantics
++          _________
+-             A case label has the form
+0                 CASE K:
+0             or  DEFAULT:
+0          where K is a constant expression.
+0          The  switchon  command  is  executed  by first evaluating the
+0          expression and if a case exists which  has  a  constant  with
+0          this  value,  then  execution  is  continued from that label;
+0          otherwise if there is a default label execution is  continued
+-
+-          1.10.1979                                                  29
+1                                  BCPL Standard
+-          from  there;  otherwise execution is continued from the point
+0          just after the end of the switchon command.
+-
+           5.7 Transfer
++              ________
+-
+           Syntax
++          ______
+-            <transfer>        ::= GOTO <expression> | FINISH | RETURN |
+                                   BREAK | LOOP | ENDCASE
+-          Semantics
++          _________
+-          a)  GOTO E
+0              The expression is evaluated and interpreted as an address
+0              to  which  control  is  transferred.  The only meaningful
+0              result of the expression is the value associated  with  a
+0              label  (see section 6.8).  GOTO may occur anywhere in the
+0              program where a command is allowed.  The label  to  which
+0              control is transferred must be in the same procedure body
+0              as the GOTO command.
+-          b)  FINISH
+0              may  occur  anywhere  in  the  program where a command is
+0              allowed   and   causes   an   implementation    dependent
+0              termination of the entire program.
+-          c)  RETURN
+0              causes  control  to  be  returned  to  the  caller of the
+0              current procedure.
+-
+-          30                                                  1.10.1979
+1                                  BCPL Standard
+-          d)  BREAK
+0              causes execution of looping  command  to  be  terminated.
+0              Control  is  resumed  just  after the end of the smallest
+0              textually  enclosing  looping  command.   The  resumption
+0              point  must  be  in  the same procedure body as the BREAK
+0              command.   A  looping  command  is  either  a  repetitive
+0              command or a FOR command.
+-          e)  LOOP
+0              causes execution of a looping  command  to  be  repeated.
+0              Control  is  transferred to the point just before the end
+0              of the body of the looping command.  For  a  FOR  command
+0              this   is   the  point  where  the  control  variable  is
+0              incremented and for the repetitive  commands  it  is  the
+0              point  where  the  condition  (if  any)  is  tested.  The
+0              resumption point must be within the same  procedure  body
+0              as the LOOP command.
+-          f)  ENDCASE
+0              causes  control to be transferred to the point just after
+0              the end of  the  smallest  textually  enclosing  switchon
+0              command.   The  resumption  point must be within the same
+0              procedure body as the ENDCASE command.
+-
+-
+-
+-
+0          1.10.1979                                                  31
+1                                  BCPL Standard
+-
+0          6 Declarations
++            ____________
+-             Every identifier used in a BCPL program must  be  declared
+0          explicitly.  There are 10 distinct declarations in BCPL which
+0          fall into two groups.
+0            a) Static declaration:
+0               Global, Static, Manifest, Function, Routine, Label.
+0            b) Dynamic declarations:
+0               Dynamic, Vector, Formal-parameter, For-command-control.
+0          The  declaration of formal parameters is described in section
+0          6.7. and the for-command is described in  section  5.5.   All
+0          other  declarations  except  label  declarations occur at the
+0          head of a block and are known as block-head-declarations.
+0            <block head declaration>  ::= <global dec> | <static dec> |
+                                   <manifest dec> | <dynamic dec> |
+                                   <vector dec> | <function dec> |
+                                   <routine dec>
+-
+           6.1 Scope and extent of block-head-declarations
++              ___________________________________________
+-             The scope of an identifier (i.e. the region of the program
+0          in  which  it  is  known)  is  the  declaration  in which the
+0          identifier is declared (to allow for  recursive  definition),
+0          the subsequent declarations and commands up to the end of the
+0          smallest textually enclosing block, or the end of the program
+0          if  there  is  no  textually enclosing block; but for dynamic
+0          declarations excluding any textually nested procedure bodies.
+0          This  restriction  on  dynamic  declarations  means  that  no
+-
+0          32                                                  1.10.1979
+1                                  BCPL Standard
+-          reference  may  be  made  in  a  procedure  to  a dynamically
+0          declared identifier which is declared outside  the  procedure
+0          (such quantities are called dynamic free variables).
+-             Identifiers declared at the same level must have different
+0          names, but an identifier may be declared with the  same  name
+0          as  one  declared  a  different  level.  In this case the two
+0          identifiers are normally distinct and the identifier declared
+0          at  the  textually  outer  level  is  not directly accessible
+0          within the scope of the  identifier  declared  at  the  inner
+0          level.   (For  exceptions  see  rule  for initializing global
+0          cells in sections 6.7 and 6.8).
+-             The  extent  of an identifier (that is the duration at run
+0          time when a cell is  actually  assigned  to  the  identifier)
+0          depends  on  the  type  of  the  declaration.   There are two
+0          possible extents in BCPL.
+0          a) Static
++             ______
+0             The  identifier  is  permanently   associated   with   one
+0             particular cell and this cell remains available throughout
+0             the run.
+0          b) Dynamic
++             _______
+0             On each entry to the block containing  the  declaration  a
+0             cell is associated with the identifier.  This cell remains
+0             available until control passes to the  end  of  the  block
+0             containing  the declaration.  Note that if the declaration
+0             is invoked recursively there may be more than one instance
+-
+-          1.10.1979                                                  33
+1                                  BCPL Standard
+-             of the same identifier existing at any one time.
+-
+           6.2 Global declaration
++              __________________
+-             The  means  of  communication  between separately compiled
+0          segments of a program is the global vector.
+-          Syntax
++          ______
+-            <global dec>      ::= GLOBAL <glob defs>
+0            <glob defs>       ::= $( <glob def> [;<glob def>] $)
+0            <glob def>        ::= <identifier>:<expression>
+-          Semantics
++          _________
+-             The declaration
+0              GLOBAL $( <glob def1>; <glob def2>; ... <glob defn> $)
+0          is a syntactic abbreviation of
+0              GLOBAL $( <glob def1>  $)
+0              GLOBAL $( <glob def2>  $)
+0              ...
+0              GLOBAL $( <glob defn>  $)
+-             The declaration
+0              GLOBAL $( N : K $)
+0          (where  K is a constant expression) associates the identifier
+0          N with the Kth cell of the global vector.  Thus N  identifies
+0          a  static  cell  which  may  be  accessed  by  N or any other
+0          identifier associated with the same global vector cell.
+-
+-          34                                                  1.10.1979
+1                                  BCPL Standard
+-          6.3 Static Declaration
++              __________________
+-
+           Syntax
++          ______
+-
+             <static dec>      ::= STATIC <sm defs>
+-            <sm defs>         ::= $( <sm def> [; <sm def>] $)
+-            <sm def>          ::= <indentifier> = <expression>
+-          Semantics
++          _________
+-             The declaration
+0              STATIC $( <sm def1>; <sm def2>; ... <sm defn> $)
+0          is a syntactic abbreviation of
+0              STATIC $( <sm def1> $)
+0              STATIC $( <sm def2> $)
+0              ...
+0              STATIC $( <sm defn> $)
+-             The declaration
+0              STATIC $( N = K $)
+0          where  K is a constant expression causes permanent allocation
+0          of a cell to the identifier N.  This cell will be initialized
+0          to the value K prior to execution of the program.
+-
+-
+-
+-
+           1.10.1979                                                  35
+1                                  BCPL Standard
+-          6.4 Manifest
++              ________
+-
+           Syntax
++          ______
+-            <manifest dec>    ::= MANIFEST <sm defs> sp
+0          <sm defs> is defined in section 6.3.
+-          Semantics
++          _________
+-             The declaration
+0              MANIFEST  $( <sm def1>; <sm def2>; ... <sm defn> $)
+0          is a syntactic abbreviation of
+0              MANIFEST  $( <sm def1> $)
+0              MANIFEST  $( <sm def2> $)
+0              ...
+0              MANIFEST  $( <sm defn> $).
+-             The declaration
+0               MANIFEST $( N = K $ )
+0          causes the name N to be associated with the  value  given  by
+0          the  constant  expression K.  This association takes place at
+0          compile time and no storage cell is  involved  at  run  time.
+0          Thus the value associated with the name cannot be changed and
+0          the name cannot  be  used  in  a  L-mode  or  assignment-mode
+0          contexts.
+-
+-
+-
+-          36                                                  1.10.1979
+1                                  BCPL Standard
+-          6.5 Dynamic declaration
++              ___________________
+-
+           Syntax
++          ______
+-            <dynamic dec>     ::= LET <identifier list> =
+                                   <expression list>
+0            <identifier list> ::= <identifier>[, <identifier>]
+-          Semantics
++          _________
+-             LET N1, N2, ... Nn = E1, E2, ... En
+-          declares  identifiers  N1, N2, ... Nn.  At run time a cell is
+0          allocated to  each  of  these  identifiers  dynamically  when
+0          control  passes  through the declaration, and these cells are
+0          initialized in an undefined order with the values E1, E2, ...
+0          En.   The initial value may also be given as undefined (?) in
+0          which case no initialization takes place.
+-
+           6.6 Vector declaration
++              __________________
+-
+           Syntax
++          ______
+-            <vector dec>      ::= LET <identifier> = VEC <expression>
+-          Semantics
++          _________
+-             LET N = VEC K
+-          declares a variable N which points to a vector of  K+1  cells
+0          where K is a constant expression.  At run time K+1 contiguous
+-
+0          1.10.1979                                                  37
+1                                  BCPL Standard
+-          cells  numbered  from  0 to K are allocated dynamically and a
+0          further cell  is  allocated  with  which  the  identifier  is
+0          associated.  This latter cell is initialized with the address
+0          of the zeroth cell of the vector.  The cells  of  the  vector
+0          are not initialized.
+-
+           6.7 Procedure
++              _________
+-             There are two types of procedure in BCPL: the function and
+0          the routine.
+-          Syntax
++          ______
+-            <function dec>    ::= LET <identifier> <par list> =
+                                   <expression>
+0            <routine dec>     ::= LET <identifier> <par list> BE
+                                   <command>
+0            <par list>        ::= () | (<identifier list>)
+-          Semantics
++          _________
+-             Routines  and  functions  are  equivalent  except  that  a
+0          function yields a result  whereas  a  routine  does  not.   A
+0          function  may  be  called  as  a routine and a routine may be
+0          called as a function (returning an undefined value).
+-             The declarations
+-               LET N(P1, P2, ... Pn) = E
+0               LET N(P1, P2, ... Pn) BE C
+-
+-
+           38                                                  1.10.1979
+1                                  BCPL Standard
+-          declare  a function (routine) named N with n parameters.  The
+0          brackets are required even if n=0.  A parameter has the scope
+0          of the expression E (command C).
+-             If  the  procedure declaration is in the scope of a global
+0          declaration with the same name, then the global cell will  be
+0          initialized  with  the  entry address of the procedure before
+0          execution of  the  program.   Otherwise,  a  static  cell  is
+0          created,   is  associated  with  the  identifier  N,  and  is
+0          initialized with the entry address.
+-             A procedure is invoked by the call
+-             E0(E1, E2, ... En)
+-          where  E0  is  evaluated  to  give  the  entry  address.   In
+0          particular,  within  the  scope  of  the  identifier  N,  the
+0          procedure N may be invoked by the call
+-             N(E1, E2, ... En)
+-          provided the value of N has not been changed during execution
+0          of the program.
+-             Arguments are passed by  value.   Each  argument  (Ei)  is
+0          evaluated  and  the value is copied into a newly created cell
+0          which is then associated with the parameter Pi.  The order of
+0          evaluation  of  arguments  is  undefined.   These  cells  are
+0          consecutive in store so that the argument list  behaves  like
+0          an  initialized vector.  The space allocated to parameters is
+-
+0          1.10.1979                                                  39
+1                                  BCPL Standard
+-          released  when  evaluation  of  the  procedure  is  complete.
+0          Notice that although arguments are always  passed  by  value,
+0          this value may be an address.
+-
+           6.8 Labels and Prefixes
++              ___________________
+-
+           Syntax
++          ______
+-            <prefix>          ::= <label> | <case label> |
+                                   <default label>
+0            <label>           ::= <identifier>:
+0            <case label>      ::= CASE <expression>:
+0            <default label>   ::= DEFAULT:
+0            <command>         ::= <unlabelled command> |
+                                   <prefix> <command> | <prefix>
+-          Semantics
++          _________
+-             Case  label and default label are described in section 5.6
+0          (Switchon).
+-             The declaration
+0                  N:
+0          declares  the  label N. Exactly as in the case of a procedure
+0          declaration a label causes a static to be declared if  it  is
+0          not  within  the  scope  of  a global declaration of the same
+0          identifier.  The local or global cell is  initialized  before
+0          execution of the program with the address of the point in the
+0          program labelled, so that the command
+-
+-          40                                                  1.10.1979
+1                                  BCPL Standard
+-                  GOTO N
+0          has the expected effect.
+-             The scope of a label is  the  smallest  of  the  following
+0          regions:
+0              a) the  command  sequence  of  the   smallest   textually
+                  enclosing block, or
+0              b) the  body  of  the  smallest textually enclosing VALOF
+                  expression routine or for-command.
+0          Using  a goto command to transfer control to a label which is
+0          outside  the  current  procedure   will   produce   undefined
+0          (chaotic)  results.  Such transfers can be performed by using
+0          the library procedures LEVEL and LONGJUMP (see section 10.2).
+-
+           6.9 Simultaneous declarations
++              _________________________
+-             Any declaration of the form
+0                  LET ...
+0          may be followed by one or more declarations of the form
+0                  AND ...
+0          where  any  construction which may follow LET may also follow
+0          AND.  As far as the scope is concerned, such a collection  of
+0          declarations  is  treated as a single declaration.  The order
+0          in which declarations are evaluated is undefined.
+-
+-
+-
+-
+0          1.10.1979                                                  41
+1                                  BCPL Standard
+-
+0          7 The program constructions
++            _________________________
+-             A  BCPL  program  consists  of  a  number  of   separately
+0          compilable  sections  (modules) which will be loaded together
+0          with a runtime system to produce  a  complete  program.   The
+0          individual  sections communicate with one another by means of
+0          the global vector.
+-
+           7.1 Section
++              _______
+-
+           Syntax
++          ______
+-            <BCPL section>    ::= <declarations>
+0            <declarations>    ::= <block head declaration>
+                                   [; <block head declaration>]
+-          Semantics
++          _________
+-             Although  in  principle  all  block-head-declarations  are
+0          allowed  in a BCPL section, only global, static, manifest and
+0          procedure declarations are meaningful.
+-
+-
+-
+-
+-
+-
+           42                                                  1.10.1979
+1                                  BCPL Standard
+-          7.2 Block and compound command
++              __________________________
+-
+           Syntax
++          ______
+-            <block>           ::= $( <declarations> ;
+                                   <command sequence> $)
+0            <compound>        ::= $( <command sequence> $)
+0            <command sequence>    ::= <command> [; <command>]
+-          Semantics
++          _________
+-             A block or compound command is syntactically equivalent to
+0          a  single  command.   The  commands in a command sequence are
+0          executed in the order in which they occur.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+           1.10.1979                                                  43
+1                                  BCPL Standard
+-
+0          8 Standard Header File
++            ____________________
+-             In order to simplify the language and allow for  efficient
+0          interfacing   with   the   operating  system  the  procedures
+0          described in sections 9 and 10 are not declared  as  standard
+0          in  the  compiler.   The  declarations for these routines are
+0          contained in a standard header file which may be incorporated
+0          into  each program by means of a GET directive.  This process
+0          costs a little at compile time but has significant advantages
+0          for cross-compilation and transportation of BCPL programs.
+-             Global cells 0 to n, where n is implementation  dependent,
+0          are  reserved  for system procedures and these are defined in
+0          the standard header,  together  with  a  number  of  manifest
+0          constants.  On most implementations, n is at least 99.
+-
+           8.1 Globals in the Standard Header File
++              ___________________________________
+-             All   Procedures  names  (including  START)  described  in
+0          sections 9 and 10 of this document are allocated cells in the
+0          global  vector.  All further procedures from the appendix and
+0          implementation dependent routines which  are  implemented  as
+0          part  of  the  runtime  system  of  the installation are also
+0          included, as is the global cell:
+-          RESULT2
+0               A general working cell which may be used by functions to
+-
+-          44                                                  1.10.1979
+1                                  BCPL Standard
+-               return a 'second result'.
+-
+           8.2 Manifest Constants in the Standard Header
++              _________________________________________
+-             The  following  manifest  constants  are  defined  in  the
+0          standard header.
+-          ENDSTREAMCH
+0               The result returned by RDCH when a stream is  exhausted.
+0               On most implementations ENDSTREAMCH=-1.
+-          BYTESPERWORD
+0               The number of 'bytes' (=characters) packed in a cell  in
+0               strings and in PUTBYTE and GETBYTE.
+-          FIRSTFREEGLOBAL
+0               The  number  of the first global cell which is available
+0               to the user.
+-          BITSPERWORD
+0               The number of bits in a BCPL word.
+-          MAXINT
+0               The  most  positive  integer which may be held in a BCPL
+0               word.
+-          MININT
+0               The  most  negative  number  which may be held in a BCPL
+0               word.
+-
+-
+           1.10.1979                                                  45
+1                                  BCPL Standard
+-
+0          9 Input/Output
++            ____________
+-             Input/output facilities in  BCPL  are  always  invoked  by
+0          procedure  calls.   The  basic form of I/O always takes place
+0          via streams.  A stream is basically an  ordered  sequence  of
+0          normal  characters, intermixed with newline, space, and other
+0          format characters, which  are  accessed  sequentially.   Each
+0          stream  is  identified by a stream identity the form of which
+0          is implementation dependent.   Normally  this  is  either  an
+0          integer  in  a given range or the address of a control block.
+0          On entry to a BCPL program  an  input  stream  (the  standard
+0          input  for  the  operating  system),  and  an  output  stream
+0          (standard output = printer or terminal) may  be  set  up  and
+0          selected.
+-             Many of  the  procedures  associated  with  input  do  not
+0          include  a  stream  identity  in  the call.  These procedures
+0          operate on the 'Current Input Stream' (CIS) which is  defined
+0          by  the routine SELECTINPUT.  Likewise many output procedures
+0          operate on the 'Current Output Stream' (COS).
+-
+-
+-
+-
+-
+-          46                                                  1.10.1979
+1                                  BCPL Standard
+-          9.1 Standard Stream Organization Procedures
++              _______________________________________
+-          STREAM := FINDINPUT(S)
+0               This function initializes a stream for reading.  S is  a
+0               string  which  identifies  the  stream  to the operating
+0               system.  The content of  the  string  is  implementation
+0               dependent.   The  result  of the function is the a value
+0               which represents the stream and is used SELECTINPUT.  If
+0               the  stream  cannot  be opened for some reason the value
+0               zero is returned and an implementation  dependent  error
+0               code is given in RESULT2.
+-          STREAM := FINDOUTPUT(S)
+0               As for FINDINPUT but for output streams.
+-          SELECTINPUT(N)
+0               CIS:=N. All calls of RDCH will operate on stream N until
+0               changed  by a further call of SELECTINPUT.  This routine
+0               may be called with a given stream indentity even if this
+0               stream  is  already  the CIS.  N=0 is allowed and causes
+0               CIS to be undefined in which case future calls  of  RDCH
+0               will cause an error.
+-          SELECTOUTPUT(N)
+0               COS:=N. As SELECTINPUT.
+-          ENDREAD()
+0               This routine  closes  CIS  and  sets  the  input  stream
+0               selection to undefined.
+-
+0          1.10.1979                                                  47
+1                                  BCPL Standard
+-          ENDWRITE()
+0               This routine closes  COS  and  sets  the  output  stream
+0               selection to undefined.
+-          REWIND()
+0               The CIS is rewound.  Not  all  streams  are  rewindable.
+0               The CIS is closed and re-opened for input.
+-          STREAM := INPUT()
+0               The  stream  identity  of  the  CIS is returned.  If the
+0               result is zero there was  no  currently  selected  input
+0               stream.
+0          STREAM := OUTPUT()
+0               The  stream  identity  of  the  COS is returned.  If the
+0               result is zero there was no  currently  selected  output
+0               stream.
+-
+           9.2 Standard Input/Output Procedures
++              ________________________________
+-          CH := RDCH()
+0               This function delivers the next character from CIS.   If
+0               the  stream is exhausted it yields the value ENDSTREAMCH
+0               which is a manifest constant.
+-          UNRDCH()
+0               This routine backspaces the CIS so that the next call of
+0               RDCH  will  have  the  same  effect  as  the  last call.
+0               UNRDCH() may be applied to many  streams  independently:
+-
+-          48                                                  1.10.1979
+1                                  BCPL Standard
+-               each  stream  has  its own one-character "unread" state.
+0               The effect of successive calls of UNRDCH  is  undefined.
+0               If  UNRDCH  is  called when no characters have been read
+0               the effect is undefined.
+-          N := READN()
+0               This  function  reads  and yields the value of a decimal
+0               number [<format>][+|-] [<digit>]  where  <format>  is  a
+0               sequence  of  layout characters ('*S', '*N', '*P', '*T')
+0               and <digit> is a decimal digit.   READN  will  read  all
+0               characters up to the first non digit following the digit
+0               string.  The terminating character is  returned  to  the
+0               input  stream  using  UNRDCH.   If there were no decimal
+0               digits the number returned is zero.  All numbers capable
+0               of  being  represented  in  an  integer  (including  the
+0               largest negative number on a  twos  complement  machine)
+0               will  be  read  correctly.   The result of attempting to
+0               read a number which cannot be represented as an  integer
+0               is undefined.
+-          WRCH(CH)
+0               This routine writes CH to COS.
+-          WRITES(S)
+0               This routine writes the string S to COS using WRCH.
+-
+-
+-
+0          1.10.1979                                                  49
+1                                  BCPL Standard
+-          WRITED(N,W)
+0               This routine writes N to  COS  in  decimal  using  WRCH,
+0               right  justified  and  with  sign if negative in a field
+0               width W.  If the given field is not big enough  to  hold
+0               the  value  then  it  is  output in the minimum possible
+0               field length.
+-          WRITEN(N)
+0               This  routine  writes  N  to  COS in minimum field width
+0               using WRCH.
+-          WRITEOCT(N,D)
+0               This routine writes D least signigicant octal digits  of
+0               N to COS using WRCH.
+-          WRITEHEX(N,D)
+0               This routine  writes  D  least  significant  hexadecimal
+0               digits of N to COS using WRCH.
+-          WRITEF(F,A1,A2,...,A11)
+0               This  routine  writes  the  arguments  A1,A2,...  to COS
+0               according to the format string F.  The format  string  F
+0               is  copied  character for character to COS until the end
+0               is reached in which case the procedure is terminated  or
+0               until  a  warning  character '%' is encountered in which
+0               case the action depends  on  the  next  character(s)  as
+-
+-
+-
+           50                                                  1.10.1979
+1                                  BCPL Standard
+-               follows:
+0                S  Write next arg.(Ai) by WRITES(Ai)
+                 C  Write next arg.(Ai) by WRCH(Ai)
+                 N  Write next arg.(Ai) by WRITEN(Ai)
+                 In Write next arg.(Ai) by WRITED(Ai,n)
+                 On Write next arg.(Ai) by WRITEOCT(Ai,n)
+                 Xn Write next arg.(Ai) by WRITEHEX(Ai,n)
+                 %  Write '%'
+                 $  Skip next arg.(Ai)
+-               The  letters  S,C,N,I,O,X  in  the above table may be in
+0               upper or lower case.  The field width n is a single  hex
+0               digit  (0-9,  A-F).   After  outputing  the argument the
+0               whole process is repeated starting at the next character
+0               of the format string.
+-          NEWLINE()
+0               This routine writes a newline to COS using WRCH.
+-          NEWPAGE()
+0               This routine writes a newpage to COS using WRCH.
+-
+-
+-
+-
+-
+-
+-
+-
+0          1.10.1979                                                  51
+1                                  BCPL Standard
+-
+0          10 BCPL Runtime System
++             ___________________
+-             The runtime system includes code necessary for such things
+0          as  initialization,  procedure  entry  and exit etc. together
+0          with the standard I/O and other routines  described  in  this
+0          chapter and accessible via the global vector.
+-
+           10.1 Start and Stop
++               ______________
+-          START(ARG)
+0               A  BCPL program is invoked by calling the (user written)
+0               function START which is by convention global number one.
+0               On  many  implementations  the  argument ARG is a string
+0               which is passed from the operating system  to  the  user
+0               program.   On  some  implementations  parameters  may be
+0               passed to  the  user  program  via  a  stream  which  is
+0               accessed  via FINDINPUT with an implementation dependent
+0               argument.  On entry to START a standard input stream and
+0               a  standard  output  stream  may  exist and be selected.
+0               Return from START is exactly equivalent to FINISH.
+-          STOP(N)
+0               This  routine  causes  termination of the program.  N is
+0               the completion code that is passed back to the operating
+0               system.  STOP(0) is equivalent to FINISH.
+-
+-
+-          52                                                  1.10.1979
+1                                  BCPL Standard
+-          10.2 Stack organization routines
++               ___________________________
+-          P := LEVEL()
+0               This function gives  a  representation  of  the  current
+0               procedure activation level for use with LONGJUMP.
+-          LONGJUMP(P,L)
+0               This  routine  causes a non-local jump to the label L at
+0               the activation level P.
+-          RES := APTOVEC(F, N)
+0               This function applies the procedure F to two arguments V
+0               and N where V is a vector of size N.  The result is  the
+0               value (if any) returned by the call of F.  APTOVEC could
+0               be described in (illegal) BCPL as:
+0                   LET APTOVEC(F,N) = VALOF
+                    $( LET V = VEC N // illegal because N not constant
+                       RESULTIS F(V,N)
+                    $)
+-
+           10.3 String handling
++               _______________
+-             In BCPL strings are packed with more  than  one  character
+0          per  word  so  as  to  ecomonize  space.  The exact manner of
+0          packing is  implementation  dependent  and  is  described  in
+0          section 3.2.3.
+-             It is however sometimes convenient in BCPL to  operate  on
+0          individual  characters  each  in  a separate cell.  In such a
+0          representation the characters are stored in cells 1 to n of a
+-
+-          1.10.1979                                                  53
+1                                  BCPL Standard
+-          vector U and the length (i.e. the number of characters in the
+0          string) is stored in U!0.  These two forms of  a  string  are
+0          known  as  a  'packed  string'  (or  simply  string  where no
+0          confusion will arise) and 'unpacked string'.
+-          UNPACKSTRING(S, U)
+0               This  routine  unpacks the characters from S into U!1 to
+0               U!N where N is the length of the string and sets  U!0=N.
+0               The  effect  of  UNPACKSTRING  is  undefined  if S and U
+0               overlap.
+-          I := PACKSTRING(U, S)
+0               This function packs N and the characters U!1 to U!N into
+0               S  where  N = U!0.   The  result is the subscript of the
+0               highest element of S used.  The effect of PACKSTRING  is
+0               undefined if U and S overlap
+-          CH := GETBYTE(V, N)
+0               This function yields the Nth byte from vector V.
+-          PUTBYTE(V, N, B)
+0               This routine puts the byte B in the Nth byte position of
+0               vector V.
+-          Acknowledgements
++          ________________
+-             The criticisms and suggestions of Benedict Heal (Newcastle
+0          University)   and  Mike  Jordan  (Fendragon,  Cambridge)  are
+0          gratefully acknowledged together with discussions  with  many
+-
+-          54                                                  1.10.1979
+1                                  BCPL Standard
+-          BCPL users (too many to mention by name here).
+-          References
++          __________
+0          Middleton M.D. (1977) A Proposed Definition of  the  Language
+                BCPL, das RZ der Universitaet Regensburg, Regensburg
+0          Richards,  M.  (1969)  BCPL:  A tool for Compiler Writing and
+                Systems Programming, Proceedings  of  the  Spring  Joint
+                Computer Conference, Vol 34.
+0          Richards, M. (1973)   The   BCPL   Programming   Manual,  The
+                Computer Laboratory, Cambridge
+0          Richards, M.  and  Whitby-Strevens,  C.  (1979)  BCPL  -  The
+                Language and its Compiler Cambridge University Press.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+           1.10.1979                                                  55
+1                                  BCPL Standard
+-
+           Appendix - Extensions
++          _____________________
+-             This  appendix  contains  a  list of recommended extension
+0          packets.  None of these packets is mandatory, but if any  one
+0          feature  of  a  packet  is  implemented then the whole packet
+0          should as far as  possible  be  implemented.   Variations  of
+0          packets  should  not  be  implemented.  Before an implementor
+0          introduces any change in  the  language  he  should  consider
+0          carefully  if  the  proposed  changes are really necessary as
+0          non-standard language elements can lead  to  severe  problems
+0          with  portability.  Extensions to the standard procedures are
+0          much easier to cope with  and  these  should  always  be  the
+0          preferred method of extending the language.
+-
+0          A1 Character Constants
++             ___________________
+-             The   following  additional  special  representations  are
+0          allowed:
+0              special        represents
+               representation
+0              *C or *c       Carriage return
+               *B or *b       Backspace
+               *E or *e       Causes  output   of   currently   buffered
+                              characters   on   the   stream  without  a
+                              carriage  control  character  if  this  is
+                              possible.
+0          N.B.
+0             Each  of the special representations will be mapped onto a
+              distinct values in the internal code of the machine.   The
+              actual effect of the characters will however depend on the
+              I/O medium used and the effect of a given character is not
+              necessarily uniquely defined for every medium.
+-
+           56                                                  1.10.1979
+1                                  BCPL Standard
+-          A2 Character Operator
++             __________________
+-             The dyadic operator % has binding power just less than the
+0          operator ! and may occur in two contexts.
+0          a) In an R-mode expression
+0             E1  %  E2  is  equivalent  to  the  standard  meaning   of
+0             GETBYTE(E1, E2).
+0          b) In an assignment mode expression
+0             E1  %  E2  :=  E3 is equivalent to the standard meaning of
+0             PUTBYTE(E1, E2, E3).
+-
+           A3 Field Selectors
++             _______________
+-
+           Syntax
++          ______
+-            <expression>      ::= SLCT [<expression> :]  <expression>
+0          SLCT and : have lower binding power than any other expression
+0          operator.
+-          Semantics
++          _________
+-                  SLCT K1:K2:K3
+-          where K1, K2 and K3 are constant expressions.  This operation
+0          defines a field within a vector.  K1 is the size of the field
+0          in bits.  K2 is the number of bits between the right most bit
+0          of the field and the right hand end of the cell containing it
+0          and K3  is  the  subscript  of  the  element  of  the  vector
+0          containing the field.  If the size (K1) or the shift (K2) are
+-
+0          1.10.1979                                                  57
+1                                  BCPL Standard
+-          not  explicitly  specified  zero  is assumed.  A size (K1) of
+0          zero implies that the field extends to the left most  bit  of
+0          the cell containing it.
+-             The  effect  of  the  SLCT  operator  is to pack the three
+0          values into a BCPL word for use later  by  the  operator  OF.
+0          There  are  implementation  dependent  limits on the possible
+0          sizes of K1, K2 and K3.  The exact method  of  packing  field
+0          selectors is implementation dependent except that, subject to
+0          limits of size
+0                  SLCT 0:0:n = n
+0          SLCT K1:K2:K3 is a constant expression.
+-          Field selector application
++          __________________________
+-
+           Syntax
++          ______
+-            <dyop>            ::= OF
+-          Semantics
++          _________
+-             The field selector operator OF may occur in two contexts:
+0          a) R-mode expression
+0                  K OF E
+0             K is a constant expression which is interpreted as a field
+0             selector.  E is any expression and is interpreted  as  the
+0             address of the zeroth cell of a vector.  The effect of the
+0             OF operator is to extract the field defined by K from  the
+0             vector  defined  by E and shift this so that the result is
+-
+0          58                                                  1.10.1979
+1                                  BCPL Standard
+-             right justified.
+0          b) Assignment mode
+0                  K OF E1 := E2
+0             K is interpreted as a field selector and  the  appropriate
+0             number of bits from the right hand end of the result of E2
+0             are assigned to the specified field.
+-
+           A4 Optional compilation
++             ____________________
+-             A directive of the form:-
+0                  $$tag
+0          will set the value of $$tag to the complement of its previous
+0          value.   Such  a directive can occur anywhere in the program.
+0          A tag retains its value until the end  of  the  program  text
+0          unless  complemented explicitly.  All tags have initial value
+0          FALSE.  The text enclosed between
+-                  $<tag  and  $>tag
+-          will only be compiled if the value of $$tag is TRUE.  The tag
+0          complementing directive is only executed if it  is  encounted
+0          in a region of text that is not being skipped.
+-
+-
+-
+-
+-
+0          1.10.1979                                                  59
+1                                  BCPL Standard
+-          A5 Compound Assignment
++             ___________________
+-
+           Syntax
++          ______
+-            <assignment>      ::= <expression list> <assop>
+                                   <expression list>
+0            <assop>           ::= *:= | /:= | REM:= | +:= | -:= | &:= |
+                                   |:= | EQV:= | NEQV:=
+-          Although <assop> is a basic symbol and as such may  not  have
+0          embedded  layout characters it is nevertheless made up out of
+0          the two symbols <op> and := and all the synonyms for a  given
+0          <op> are also allowed.
+-          Semantics
++          _________
+-             There are two forms of compound assignment:
+-          a) E1 <assop> E2
+0             where  <assop>  has  the  form  <op>:=.  This has the same
+0             effect as
+0                  E1 := E1 <op> E2
+0          b) Compound multiple assignment
+0                  L1, L2, ... <op>:= E1, E2, ...
+0             This has the same effect as
+0                  L1, L2, ... := L1 <op> E1,  L2 <op> E2,  ...
+-
+-
+-
+-
+           60                                                  1.10.1979
+1                                  BCPL Standard
+-          A6 Section and needs
++             _________________
+-             A  segment of a BCPL program may start with a directive of
+0          the form
+0                  SECTION "<name>"
+0          when <name> is a module name acceptable to  the  linker.   It
+0          defines  the section name to be given to the generated object
+0          module.  A new block-head-declaration is defined:
+0            <needs dec>       ::= NEEDS "<name>"
+0          is a <block head declaration>, where <name> is  also  a  name
+0          acceptable  to the linker.  This directive causes an external
+0          reference to be set up in the  object  module,  so  that  the
+0          specified object module will be included automatically by the
+0          linker.
+-
+           A7 Store Allocation
++             ________________
+-             In  addition to the normal BCPL stack there may be another
+0          area of dynamically allocated storage called the heap.   This
+0          area  may  be  used by the I/O system for maintaining buffers
+0          etc. but is also available to the user.  The  procedures  for
+0          accessing the heap are as follows.
+-          SIZE := MAXVEC()
+0               This function returns the size  of  the  largest  vector
+0               that  there  is room for in the heap.  Note that on some
+0               implementations the heap and  stack  will  grow  towards
+0               each  other  an  this (as well as the fact that the heap
+-
+0          1.10.1979                                                  61
+1                                  BCPL Standard
+-               may  be  used  for I/O buffers) must be allowed for when
+0               interpreting   the   result    of    MAXVEC.     Further
+0               complications may arise in a real-time system.
+-          V := GETVEC(SIZE)
+0               This function allocates a contiguous area  of  store  of
+0               SIZE + 1  words  from  the  heap  and returns its vector
+0               address (so that V!0 to V!SIZE are available).  If  this
+0               is not possible the value 0 is returned instead.
+-          FREEVEC(V)
+0               This  routine returns a vector to the heap.  V must be a
+0               vector allocated by GETVEC, and only entire vectors  may
+0               be  returned.  The heap mechanism is defined to coalesce
+0               a returned vector with any contiguous free store, and to
+0               return store released to the common stack/heap pool.
+-          SIZE := STACKSIZE()
+0               This routine returns an approximation to the amount  (in
+0               words)  of stack space free.  Note that on systems where
+0               the heap and stack grow towards  each  other  the  stack
+0               space  available  may  be  affected  by calls of GETVEC,
+0               FREEVEC, and I/O routines (which may involve  allocation
+0               or deallocation of buffers).
+-
+-
+-
+-
+           62                                                  1.10.1979
+1                                  BCPL Standard
+-          A8 Scaled arithmetic
++             _________________
+-
+           RES := MULDIV(A,B,C)
+0               This   function   calculates   (A*B)/C,   holding    the
+0               intermediate  product  (A*B) as a double length integer.
+0               If the result does not  fit  in  a  normal  integer  the
+0               action  of  MULDIV is undefined.  The remainder from the
+0               division is left in global variable RESULT2.
+-
+           A9 Block I/O
++             _________
+-             Data can be  accessed  from  normal  input/output  streams
+0          block  by  block.  Depending on the implementation, a 'block'
+0          implies either a physical or logical block or more usually  a
+0          logical  record.   The  result of mixing block I/O and normal
+0          character I/O in a stream is undefined and it is  recommended
+0          that  the  two  types of access are not both used on the same
+0          stream.  The size of a block is measured in  units,  normally
+0          bytes or words, which are implementation dependent.
+-          RES := RDBLOCK(B, L)
+0               This  function  reads  the  next  'block'  from CIS into
+0               buffer B which is of size L.  The result is  the  number
+0               of units actually read.  A result of zero indicates that
+0               the 'block' was too large to fit into the  buffer  -  in
+0               this  case  the first L units of the block are read into
+0               the buffer and the next call of RDBLOCK will attempt  to
+-
+-          1.10.1979                                                  63
+1                                  BCPL Standard
+-               deliver  the rest.  A result of less than zero indicates
+0               an error or that  the  stream  is  exhausted  -  further
+0               details in RESULT2.
+-          RES := WRBLOCK(B,L)
+0               This routine writes a 'block' of size L from buffer B to
+0               the stream COS.  A result of zero indicates a successful
+0               transfer.   A  non-zero  result   indicates   an   error
+0               condition - further details in RESULT2.
+-
+           A10 Binary I/O
++              __________
+-             Binary I/O is inherently machine dependent  and  therefore
+0          very   difficult   to   standardize.   For  this  reason  two
+0          alternative schemes are put  forward.   Whichever  scheme  is
+0          used,  the  effect  of  mixing  binary and character I/O on a
+0          given stream is undefined.
+-          a) Via stream definition
+0             Streams  are  defined  on  creation  as binary by means of
+0             suitable implementation dependent arguments to  FINDINPUT.
+0             and  FINDOUTPUT.   Binary  I/O  then  takes  place via the
+0             routines RDCH and WRCH.
+-          b) Via special binary I/O procedures
+0             The following two routines may be used on  normal  streams
+0             to read/write in binary:
+0               RDBIN() gives the next binary character on the CIS
+-
+-          64                                                  1.10.1979
+1                                  BCPL Standard
+-               WRBIN(x) writes x in binary to the COS.
+-          Further Facilities for both schemes
++          ___________________________________
+-             In both schemes a means of specifying record sperators  is
+0          necessary:
+0          i)  The  standard  header  contains   a   manifest   constant
+0              ENDRECORDCH  (usually = -2) which is returned by RDBIN or
+0              RDCH on binary streams and indicates the end of a record.
+0          ii) The  routine  ENDRECORD()  causes  an end of record to be
+0              output to the COS.
+-
+           A11 Direct access I/O
++              _________________
+-             The facilities  for  direct  access  of  data  offered  by
+0          different   operating  systems  vary  considerably,  and  the
+0          primitives offered in BCPL are deliberately kept simple so as
+0          to encompass as many variations as possible.  The term 'file'
+0          here means a logical collection of data such is  a  data  set
+0          which  is  organized  as  a  number  of 'blocks' which may be
+0          accessed in a random  order.   The  term  'block'  means  the
+0          physical  or  logical block or record which is transferred by
+0          the operating system.  It may be possible on  some  operating
+0          systems  to  access some files both by means of direct access
+0          I/O and stream oriented I/O.  This is however not  mandatory.
+0          The  size  of a block is measured in units, normally bytes or
+0          words, which is implementation dependent.
+-
+-
+           1.10.1979                                                  65
+1                                  BCPL Standard
+-          D := FINDDIRECT(S,K)
+0               This  function  is  the  direct  access   analogue   for
+0               FINDINPUT  and FINDOUTPUT.  The 'file' identified by the
+0               string S  is  located  and  opened  for  reading  and/or
+0               writing.   The key K specifies the type of access.  This
+0               should be defined  by  a  manifest  constant  which  can
+0               include the following values:
+0                     DA.IN  - read access only
+0                     DA.OUT - write access only
+0                     DA.IO  - read and write access
+0               The  result  D  is  a 'file identifier' which is used in
+0               other direct access I/O procedures.  A  result  of  zero
+0               indicates  that  the  file could not be opened - further
+0               information is obtainable in RESULT2.
+-          RES := READDIRECT(D, N, B, L)
+0               This   function   reads  block  N  from  the  file  with
+0               identifier D into buffer B which  is  of  size  L.   The
+0               block  identifier  N  will normally be an integer (block
+0               number) but could, in some implementations, be a  string
+0               which  is  used as a key.  The result is number of units
+0               actually read.  A negative result indicates an  error  -
+0               further details in RESULT2.
+-          RES := WRITEDIRECT(D, N, B, L)
+0               This  function writes a buffer B of size L to block N of
+0               the file with file identifier D.  Block identifier N  is
+-
+-          66                                                  1.10.1979
+1                                  BCPL Standard
+-               as  in READBLOCK.  A zero result indicates success and a
+0               negative result indicates an error - further details  in
+0               RESULT2.
+-          CLOSEDIRECT(D)
+0               Closes file D.
+-
+           A12 System Services
++              _______________
+-             It is recommended that two procedures are provided to give
+0          access to the implementation dependent system  services,  one
+0          for the filing system and one for the other services.
+-          RES := FILESYS(OP, A1, A2,...)
+0               OP is a constant  specifying  a  filing  system  service
+0               (such  as 'deletefile' or 'renamefile').  A1, A2,... are
+0               appropriate arguments for the specified service and  the
+0               result  RES  will usually indicate whether the operation
+0               was successful.
+-          RES := OPSYS(OP, A1, A2,...)
+0               OP is a constant specifying an operating system  service
+0               and  A1,  A2,...   are  appropriate  arguments  for that
+0               service.  RES is an implementation dependent result.
+-
+-
+-
+-
+0          1.10.1979                                                  67
+1                                  BCPL Standard
+-          A13 Floating point
++              ______________
+-             There  are  two  possible  schemes  for  a  floating point
+0          package in BCPL:  on implementations where the cell  size  is
+0          big  enough  to hold the machine representation of a floating
+0          point number  the  Floating  Point  Language  Packet  may  be
+0          implemented and where this is not possible the Floating Point
+0          Procedure Packet may be  implemented.   In  either  case  the
+0          Floating Point I/O Procedures should be implemented.
+-          a) Floating Point Language Packet
++          _________________________________
+-
+           Floating point constants
++          ________________________
+-             A   floating   point   constant   is   syntactically   and
+0          semantically  equivalent  to <number> and may have one of the
+0          forms
+0                i.jEk
+0                i.j
+0                iEk
+0          where i and j are unsigned integers  and  k  is  a  (possibly
+0          signed)  integer.  The value is the machine representation of
+0          a floating point number.
+-          Floating point operators
++          ________________________
+-             The  floating point operations are formed by prefixing the
+0          corresponding integer operation with  the  character  #.  See
+0          section  3.2.2  for  the  complete list.  The precedence of a
+-
+0          68                                                  1.10.1979
+1                                  BCPL Standard
+-          floating   point   operator   is  the  same  as  its  integer
+0          equivalent.  In addition there are the monadic operators  FIX
+0          and   FLOAT,  which  have  the  same  precedence  as  @,  for
+0          conversion between integer and floating point representation.
+0          Note  that  the  omission  of  # in a negative floating point
+0          constant such as #-1.2 will produce an unexpected value.
+-          b) Floating Point Procedure Packet
++          __________________________________
+-             A  floating  point number is represented by a pointer to a
+0          vector of FP.LEN cells where FP.LEN is  a  manifest  constant
+0          declared  in  the  standard  library header.  The arithemetic
+0          procedures   are   functions   which   operate    on    these
+0          representations  and  require  1  or  2  arguments  as normal
+0          operands plus a further argument as destination.  The  result
+0          of the function is in this case the destination.
+-          Arithmetic Functions
++          ____________________
+-             FPLUS(A,B,C)    C:=A#+B     resultis C
+0             FMINUS(A,B,C)   C:=A#-B     resultis C
+0             FNEG(A,B)       B:=#-A      resultis B
+0             FMULT(A,B,C)    C:=A#*B     resultis C
+0             FDIV(A,B,C)     C:=A#/B     resultis C
+0             FABS(A,B)       B:=#ABS A   resultis B
+0          Any number of the arguments in the  above  functions  may  be
+0          identical.
+-
+-
+0          1.10.1979                                                  69
+1                                  BCPL Standard
+-
+           Other Functions
++          _______________
+-             FFIX(A)                     resultis FIX A
+0             FFLOAT(A,B)     B:=FLOAT A  resultis B
+0             FCOMP(A,B)                  resultis (  0 A = B
+0                                                  ( -1 A < B
+0                                                  (  1 A > B
+-          c) Floating Point I/O Procedures
++          ________________________________
+-
+           WRITEFP(A,F,N)
+0               This routine writes the FP number A to the stream COS in
+0               the  form m.n where F is the total field width and N the
+0               number of places after the decimal point.  If N is  zero
+0               or  cannot  be  represented  in  the  given format it is
+0               output in the form m.nE[+|-]dd in a field width of F.
+-          RES := READFP(A)
+0               This function reads a FP  number  from  stream  CIS  and
+0               converts   it   to  its  internal  representation.   For
+0               implementations with the FP Procedure Packet  it  stores
+0               this  in  the  vector A and yields A as the result.  For
+0               implementations with the FP Language Packet  it  returns
+0               the  explicit  internal  representation of the FP number
+0               and does not use A.
+-
+-
+-
+           70                                                  1.10.1979
+1                                  BCPL Standard
+-          A14 Time and Date
++              _____________
+-             Information about time and date is provided as follows:
+-          DATE(V)
+0               This  routine  packs  the date as a string into vector V
+0               and returns as result the pointer V.
+-          TIMEOFDAY(V)
+0               This  routine  packs  the  time  of day as a string into
+0               vector V and returns a pointer to V.
+-          T := TIME()
+0               The result T is an integer  representing  the  CPU  time
+0               used  in  implementation  dependent  units.  The unit is
+0               defined in the standard library header by TICKSPERSEC.
+-
+           A15 External procedure
++              __________________
+-             The facilities offered by linkers vary  considerably  from
+0          machine  to  machine.   For  this  reason  it is difficult to
+0          specify  a  mechanism  that  is  generally   applicable   for
+0          interfacing  BCPL  programs  with  routines  written in other
+0          languages.  It is therefore recommended  that  the  following
+0          scheme  be  adopted  if  possible,  but  if  for  some reason
+0          variations are necessary different  system  words  should  be
+0          used.
+-
+-
+-          1.10.1979                                                  71
+1                                  BCPL Standard
+-
+           External declaration
++          ____________________
+-
+           Syntax
++          ______
+-            <blockhead declaration> ::= <ext dec>
+0            <ext dec>         ::= EXTERNAL <ext defs>
+0            <ext defs>        ::= $( <ext def> [; <ext def>] $)
+0            <ext def>         ::= <name> : <string>
+-          Semantics
++          _________
+-             The declaration
+0                              EXTERNAL $( N : S $)
+0          where S is a string constant causes permanent allocation of a
+0          cell named N.  This cell will be initialized to the value  of
+0          the external reference S prior to execution of the program.
+-          Calling non-BCPL procedures
++          ___________________________
+-             Standard procedures are available for  calling  procedures
+0          defined in other languages.  It is recommended that the names
+0          of these standard procedures are of the form  CALLlang  where
+0          lang specifies which language, e.g. CALLFORT.
+-          CALLlang(RTN,N,A1,A2,...,An)
+0               RTN is the  procedure  to  be  called  which  should  be
+0               declared by an EXTERNAL declaration.  N is the number of
+0               arguments passed to RTN  and  may  be  omitted  in  some
+0               implementations.   A1,A2,...,An are the arguments passed
+-
+0          72                                                  1.10.1979
+1                                  BCPL Standard
+-               to  RTN.   The form of these arguments is implementation
+0               dependent.  If RTN is a function,  CALLlang  yields  the
+0               result.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+           1.10.1979                                                  73
+1                                  BCPL Standard
+-                                INDEX of non-terminals
++                                ______________________
+-
+                     <assignment>.  .  .  .  .  .  .  .  .  .  .  .  25
+0                                .  .  .  .  .  .  .  .  .  .  .  .  60
+0                    <assop>  .  .  .  .  .  .  .  .  .  .  .  .  .  25
+0                             .  .  .  .  .  .  .  .  .  .  .  .  .  60
+0                    <based number> .  .  .  .  .  .  .  .  .  .  .   9
+0                    <basic symbol> .  .  .  .  .  .  .  .  .  .  .   6
+0                    <BCPL section> .  .  .  .  .  .  .  .  .  .  .  42
+0                    <binary digit> .  .  .  .  .  .  .  .  .  .  .  10
+0                    <block>  .  .  .  .  .  .  .  .  .  .  .  .  .  43
+0                    <block head declaration>.  .  .  .  .  .  .  .  32
+0                                            .  .  .  .  .  .  .  .  72
+0                    <case label>.  .  .  .  .  .  .  .  .  .  .  .  40
+0                    <character constant> .  .  .  .  .  .  .  .  .  10
+0                    <command>.  .  .  .  .  .  .  .  .  .  .  .  .  40
+0                    <command sequence>.  .  .  .  .  .  .  .  .  .  43
+0                    <compound>  .  .  .  .  .  .  .  .  .  .  .  .  43
+0                    <conditional>  .  .  .  .  .  .  .  .  .  .  .  26
+0                    <conditional exp> .  .  .  .  .  .  .  .  .  .  16
+0                    <declarations> .  .  .  .  .  .  .  .  .  .  .  42
+0                    <default label>.  .  .  .  .  .  .  .  .  .  .  40
+0                    <digit>  .  .  .  .  .  .  .  .  .  .  .  .  .   5
+0                    <dynamic dec>  .  .  .  .  .  .  .  .  .  .  .  37
+0                    <dyop>.  .  .  .  .  .  .  .  .  .  .  .  .  .  16
+0                          .  .  .  .  .  .  .  .  .  .  .  .  .  .  58
+-
+-          74                                                  1.10.1979
+1                                  BCPL Standard
+-                    <element>.  .  .  .  .  .  .  .  .  .  .  .  .   9
+0                    <expression>.  .  .  .  .  .  .  .  .  .  .  .  16
+0                                .  .  .  .  .  .  .  .  .  .  .  .  57
+0                    <expression list> .  .  .  .  .  .  .  .  .  .  16
+0                    <ext dec>.  .  .  .  .  .  .  .  .  .  .  .  .  72
+0                    <ext def>.  .  .  .  .  .  .  .  .  .  .  .  .  72
+0                    <ext defs>  .  .  .  .  .  .  .  .  .  .  .  .  72
+0                    <for command>  .  .  .  .  .  .  .  .  .  .  .  28
+0                    <function call>.  .  .  .  .  .  .  .  .  .  .  16
+0                    <function dec> .  .  .  .  .  .  .  .  .  .  .  38
+0                    <glob def>  .  .  .  .  .  .  .  .  .  .  .  .  34
+0                    <glob defs> .  .  .  .  .  .  .  .  .  .  .  .  34
+0                    <global dec>.  .  .  .  .  .  .  .  .  .  .  .  34
+0                    <hex digit> .  .  .  .  .  .  .  .  .  .  .  .  10
+0                    <identifier>.  .  .  .  .  .  .  .  .  .  .  .   6
+0                    <identifier list> .  .  .  .  .  .  .  .  .  .  37
+0                    <label>  .  .  .  .  .  .  .  .  .  .  .  .  .  40
+0                    <layout char>  .  .  .  .  .  .  .  .  .  .  .   5
+0                    <letter> .  .  .  .  .  .  .  .  .  .  .  .  .   5
+0                    <literal>.  .  .  .  .  .  .  .  .  .  .  .  .   9
+0                    <logical value>.  .  .  .  .  .  .  .  .  .  .  12
+0                    <manifest dec> .  .  .  .  .  .  .  .  .  .  .  36
+0                    <monop>  .  .  .  .  .  .  .  .  .  .  .  .  .  16
+0                    <name>.  .  .  .  .  .  .  .  .  .  .  .  .  .   6
+0                    <needs dec> .  .  .  .  .  .  .  .  .  .  .  .  61
+0                    <newline char> .  .  .  .  .  .  .  .  .  .  .   5
+-
+-          1.10.1979                                                  75
+1                                  BCPL Standard
+-                    <number> .  .  .  .  .  .  .  .  .  .  .  .  .   9
+0                    <octal digit>  .  .  .  .  .  .  .  .  .  .  .  10
+0                    <other>  .  .  .  .  .  .  .  .  .  .  .  .  .   5
+0                    <par list>  .  .  .  .  .  .  .  .  .  .  .  .  38
+0                    <prefix> .  .  .  .  .  .  .  .  .  .  .  .  .  40
+0                    <procedure call>  .  .  .  .  .  .  .  .  .  .  16
+0                    <repetative>.  .  .  .  .  .  .  .  .  .  .  .  27
+0                    <resultis>  .  .  .  .  .  .  .  .  .  .  .  .  29
+0                    <routine call> .  .  .  .  .  .  .  .  .  .  .  25
+0                    <routine dec>  .  .  .  .  .  .  .  .  .  .  .  38
+0                    <sm def> .  .  .  .  .  .  .  .  .  .  .  .  .  35
+0                    <sm defs>.  .  .  .  .  .  .  .  .  .  .  .  .  35
+0                    <space char>.  .  .  .  .  .  .  .  .  .  .  .   5
+0                    <special>.  .  .  .  .  .  .  .  .  .  .  .  .   5
+0                    <static dec>.  .  .  .  .  .  .  .  .  .  .  .  35
+0                    <string character>.  .  .  .  .  .  .  .  .  .  10
+0                    <string constant> .  .  .  .  .  .  .  .  .  .  11
+0                    <switchon>  .  .  .  .  .  .  .  .  .  .  .  .  29
+0                    <symbol> .  .  .  .  .  .  .  .  .  .  .  .  .   6
+0                    <tag> .  .  .  .  .  .  .  .  .  .  .  .  .  .   6
+0                    <tag char>  .  .  .  .  .  .  .  .  .  .  .  .   6
+0                    <transfer>  .  .  .  .  .  .  .  .  .  .  .  .  30
+0                    <undefined> .  .  .  .  .  .  .  .  .  .  .  .  12
+0                    <unlabelled command> .  .  .  .  .  .  .  .  .  25
+0                    <vector dec>.  .  .  .  .  .  .  .  .  .  .  .  37
+-
+-
+0          76                                                  1.10.1979
+1

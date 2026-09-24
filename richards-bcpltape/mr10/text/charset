@@ -1,0 +1,23 @@
+THE BCPL EBCDIC CHARACTER SET
+
+
+                   FIRST HEX DIGIT
+     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+
+S 0 NUL         *S  &  -                          0
+E 1                    /     a  j        A  J     1
+C 2              [     \     b  k  s     B  K  S  2
+O 3              ]           c  l  t     C  L  T  3
+N 4              £           d  m  u     D  M  U  4
+D 5 *T *N        ¤           e  n  v     E  N  V  5
+  6    *B              _     f  o  w     F  O  W  6
+H 7       *E                 g  p  x     G  P  X  7
+E 8                          h  q  y     H  Q  Y  8
+X 9                          i  r  z     I  R  Z  9
+  A                 !     :
+D B              .  $  ,  #
+I C *P           <  *  %  @
+G D *C           (  )  _  '
+I E              +  ;  >  =
+T F              |  ~  ?  "
+

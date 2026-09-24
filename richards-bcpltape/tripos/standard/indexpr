@@ -1,0 +1,112 @@
+1
+-
+0                                  CONTENTS
++                                  ________
+-
+           1      Introduction     .  .  .  .  .  .  .  .  .  .    1
+0          1.1    Scope and Purpose   .  .  .  .  .  .  .  .  .    1
+0          1.2    Language Extensions    .  .  .  .  .  .  .  .    1
+0          1.3    Meta-Language       .  .  .  .  .  .  .  .  .    2
+0          2      Data       .  .  .  .  .  .  .  .  .  .  .  .    3
+0          2.1    Data Storage     .  .  .  .  .  .  .  .  .  .    3
+0          2.1.1  Dynamic       .  .  .  .  .  .  .  .  .  .  .    4
+0          2.1.2  Static     .  .  .  .  .  .  .  .  .  .  .  .    4
+0          2.1.3  Global     .  .  .  .  .  .  .  .  .  .  .  .    4
+0          2.1.4  Other storage areas    .  .  .  .  .  .  .  .    4
+0          3      Lexical considerations    .  .  .  .  .  .  .    5
+0          3.1    Character set    .  .  .  .  .  .  .  .  .  .    5
+0          3.2    Basic contructions of the language .  .  .  .    6
+0          3.2.1  Tag, Name, Identifier     .  .  .  .  .  .  .    6
+0          3.2.2  Basic Symbol     .  .  .  .  .  .  .  .  .  .    6
+0          3.2.3  Element       .  .  .  .  .  .  .  .  .  .  .    9
+0          3.3    Omission of symbols    .  .  .  .  .  .  .  .   13
+0          3.4    Tagged brackets     .  .  .  .  .  .  .  .  .   14
+0          3.5    Comments      .  .  .  .  .  .  .  .  .  .  .   14
+0          3.6    GET     .  .  .  .  .  .  .  .  .  .  .  .  .   15
+0          4      Expressions      .  .  .  .  .  .  .  .  .  .   16
+0          4.1    Syntax of expression   .  .  .  .  .  .  .  .   16
+0          4.2    Operator precedence    .  .  .  .  .  .  .  .   17
+0          4.3    Semantics of expression   .  .  .  .  .  .  .   17
+-
+           1.10.1979                                                  i
+1
+-
+0          4.3.1  R-mode expressions     .  .  .  .  .  .  .  .   18
+0          4.3.2  L-mode expressions     .  .  .  .  .  .  .  .   22
+0          4.3.3  Assigment mode      .  .  .  .  .  .  .  .  .   23
+0          4.3.4  Truth-value mode    .  .  .  .  .  .  .  .  .   23
+0          4.3.5  Constant expressions      .  .  .  .  .  .  .   24
+0          5      Commands      .  .  .  .  .  .  .  .  .  .  .   25
+0          5.1    Routine call     .  .  .  .  .  .  .  .  .  .   25
+0          5.2    Assignment       .  .  .  .  .  .  .  .  .  .   25
+0          5.3    Conditional      .  .  .  .  .  .  .  .  .  .   26
+0          5.4    Repetitive commands    .  .  .  .  .  .  .  .   27
+0          5.5    FOR command      .  .  .  .  .  .  .  .  .  .   28
+0          5.5    RESULTIS command    .  .  .  .  .  .  .  .  .   29
+0          5.6    Switchon      .  .  .  .  .  .  .  .  .  .  .   29
+0          5.7    Transfer      .  .  .  .  .  .  .  .  .  .  .   30
+0          6      Declarations     .  .  .  .  .  .  .  .  .  .   32
+0          6.1    Scope and extent of block-head-declarations .   32
+0          6.2    Global declaration     .  .  .  .  .  .  .  .   34
+0          6.3    Static Declaration     .  .  .  .  .  .  .  .   35
+0          6.4    Manifest      .  .  .  .  .  .  .  .  .  .  .   36
+0          6.5    Dynamic declaration    .  .  .  .  .  .  .  .   37
+0          6.6    Vector declaration     .  .  .  .  .  .  .  .   37
+0          6.7    Procedure     .  .  .  .  .  .  .  .  .  .  .   38
+0          6.8    Labels and Prefixes    .  .  .  .  .  .  .  .   40
+0          6.9    Simultaneous declarations    .  .  .  .  .  .   41
+0          7      The program constructions    .  .  .  .  .  .   42
+0          7.1    Section       .  .  .  .  .  .  .  .  .  .  .   42
+-
+           ii                                                 1.10.1979
+1
+-
+0          7.2    Block and compound command   .  .  .  .  .  .   43
+0          8      Standard Header File   .  .  .  .  .  .  .  .   44
+0          8.1    Globals in the Standard Header File.  .  .  .   44
+0          8.2    Manifest Constants in the Standard Header.  .   45
+0          9      Input/Output     .  .  .  .  .  .  .  .  .  .   46
+0          9.1    Standard Stream Organization Procedures  .  .   47
+0          9.2    Standard Input/Output Procedures   .  .  .  .   48
+0          10     BCPL Runtime System    .  .  .  .  .  .  .  .   52
+0          10.1   Start and Stop   .  .  .  .  .  .  .  .  .  .   52
+0          10.2   Stack organization routines     .  .  .  .  .   53
+0          10.3   String handling     .  .  .  .  .  .  .  .  .   53
+-                 Appendix.  .  .  .  .  .  .  .  .  .  .  .  .   56
+0          A1     Character Constants    .  .  .  .  .  .  .  .   56
+0          A2     Character Operator     .  .  .  .  .  .  .  .   57
+0          A3     Field Selectors     .  .  .  .  .  .  .  .  .   57
+0          A4     Optional compilation      .  .  .  .  .  .  .   59
+0          A5     Compound Assignment    .  .  .  .  .  .  .  .   60
+0          A6     Section and needs   .  .  .  .  .  .  .  .  .   61
+0          A7     Store Allocation    .  .  .  .  .  .  .  .  .   61
+0          A8     Scaled arithmetic      .  .  .  .  .  .  .  .   63
+0          A9     Block I/O     .  .  .  .  .  .  .  .  .  .  .   63
+0          A10    Binary I/O    .  .  .  .  .  .  .  .  .  .  .   64
+0          A11    Direct access I/O   .  .  .  .  .  .  .  .  .   65
+0          A12    System Services     .  .  .  .  .  .  .  .  .   67
+0          A13    Floating point      .  .  .  .  .  .  .  .  .   68
+0          A14    Time and Date    .  .  .  .  .  .  .  .  .  .   71
+-          1.10.1979                                                iii
+1
+-
+0          A15    External procedure     .  .  .  .  .  .  .  .   71
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-          iv                                                 1.10.1979
+1

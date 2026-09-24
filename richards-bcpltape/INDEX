@@ -1,0 +1,91 @@
+# Miscellaneous files to aid system generation
+f01 MR10.JCLDUMP.TOMR10A5   mr10/jcldump/tomr10a5
+f02 BCPLIB.JCL(MAKEOBJ)     bcplib/jcl/makeobj
+f03 BCPLIB.JCL(MAKELIB)     bcplib/jcl/makelib
+f04 MR10.TEXT(CHARSET)      mr10/text/charset
+f05 SYS1.USERPROC(BCPLCLG)  sys1/userproc/bcplclg
+f06 KM10.BCPLTEST(DATEMOD)  km10/bcpltest/datemod
+f07 MR10.B(CMPLTEST)        mr10/b/cmpltest
+# Source of the BCPL compiler and library
+f08 SYS3.BCPL.LIBHDR        sys3/bcpl/libhdr
+f09 BCPLIB.BCPL(BCPL)       bcplib/bcpl/bcpl
+f10 BCPLIB.BCPL(SYNHDR)     bcplib/bcpl/synhdr
+f11 BCPLIB.BCPL(SYN)        bcplib/bcpl/syn
+f12 BCPLIB.BCPL(TRNHDR)     bcplib/bcpl/trnhdr
+f13 BCPLIB.BCPL(TRN)        bcplib/bcpl/trn
+f14 BCPLIB.BCPL(CGHDR)      bcplib/bcpl/cghdr
+f15 BCPLIB.BCPL(CG)         bcplib/bcpl/cg
+f16 BCPLIB.BCPL(BLIB)       bcplib/bcpl/blib
+f17 BCPLIB.BCPL(IOS)        bcplib/bcpl/ios
+f18 BCPLIB.BCPL(PM)         bcplib/bcpl/pm
+f19 BCPLIB.BCPL(EDITMAIN)   bcplib/bcpl/editmain
+#
+f20 BCPLIB.ASM(BCPLMAIN)    -
+f21 BCPLIB.ASM(PROGRAM)     bcplib/asm/program
+# Corresponding object modules
+f22 BCPLIB.OBJ(BCPL)        -
+f23 BCPLIB.OBJ(SYN)         -
+f24 BCPLIB.OBJ(TRN)         -
+f25 BCPLIB.OBJ(CG)          -
+f26 BCPLIB.OBJ(BLIB)        -
+f27 BCPLIB.OBJ(COMPBLIB)    -
+f28 BCPLIB.OBJ(IOS)         -
+f29 BCPLIB.OBJ(PM)          -
+f30 BCPLIB.OBJ(BCPLMAIN)    -
+f31 BCPLIB.OBJ(PROGRAM)     -
+#
+f32 KM10.BCPLMAC            km10/bcplmac
+# Interim documentation
+f33 INFO.CHANGES.BCPL       info/changes/bcpl
+# Coroutine library
+f34 KM10.COMAIN             -
+f35 KM10.COMACRO            km10/comacro
+f36 KM10.COBLIB(CORTN)      km10/coblib/cortn
+f37 KM10.COBLIB(STANDARD)   km10/coblib/standard
+f38 KM10.J(COLIB)           km10/j/colib
+# BCPL source for the BCPL kit (INTCODE) compiler
+f39 MR10.BCPLKIT(BLIB)      mr10/bcplkit/blib
+f40 MR10.BCPLKIT(SYN)       mr10/bcplkit/syn
+f41 MR10.BCPLKIT(TRN)       mr10/bcplkit/trn
+f42 MR10.BCPLKIT(CG)        mr10/bcplkit/cg
+f43 MR10.BCPLKIT(ICINT)     mr10/bcplkit/icint
+# Corresponding INTCODE compilations
+f44 MR10.BCPLKIT(BLIBI)     mr10/bcplkit/blibi
+f45 MR10.BCPLKIT(SYNI)      mr10/bcplkit/syni
+f46 MR10.BCPLKIT(TRNI)      mr10/bcplkit/trni
+f47 MR10.BCPLKIT(CGI)       mr10/bcplkit/cgi
+# Tripos front-end
+f48 MR10.B(BCPLHDR)         mr10/b/bcplhdr
+f49 MR10.B(BCPLMSTR)        mr10/b/bcplmstr
+f50 MR10.B(BCPLARGS)        mr10/b/bcplargs
+f51 MR10.B(BCPLSYN)         mr10/b/bcplsyn
+f52 MR10.B(BCPLTRN)         mr10/b/bcpltrn
+f53 MR10.B(BCPLERR)         mr10/b/bcplerr
+# Alternative front-end
+f54 MR10.B(FE)              mr10/b/fe
+# Code generators for the Nova and PDP11
+f55 MR10.B(NOVATCG)         mr10/b/novatcg
+f56 MR10.B(PDP11TCG)        mr10/b/pdp11tcg
+# Cross referencing program and GPM
+f57 MR10.B(XREF)            mr10/b/xref
+f58 MR10.B(GPM)             mr10/b/gpm
+# Miscellaneous documentation
+f59 MR10.PRINT(MANUAL)      mr10/print/manual
+f60 KM10.DOCMEMO            km10/docmemo
+f61 KM10.VMMEMO             km10/vmmemo
+f62 TRIPOS.STANDARD.PRINT   tripos/standard/print
+f63 TRIPOS.STANDARD.INDEXPR tripos/standard/indexpr
+f64 TRIPOS.PRINT.COMMSPEC   tripos/print/commspec
+f65 MR10.TRIPOS.ALLSPEC     mr10/tripos/allspec
+# Source and object forms of the CMS version of the assembler library
+f66 KM10.CMSINIT            -
+f67 KM10.TXTCMS(CMSINIT)    -
+f68 KM10.TXTCMS(LOAD)       -
+f69 KM10.TXTCMS(MAIN)       -
+f70 KM10.TXTCMS(MAIN)       -
+f71 KM10.TXTCMS(TPUT)       -
+f72 KM10.TXTCMS(BLOCK)      -
+f73 KM10.CMSEXEC            -
+# Papers on the BCPL kit
+f74 MR10.TEXT(INTCODE)      mr10/text/intcode
+f75 MR10.TEXT(BSTRBCPL)     mr10/text/bstrbcpl

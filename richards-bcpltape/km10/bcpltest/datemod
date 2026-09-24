@@ -1,0 +1,60 @@
+SECTION "DATEMOD"
+
+GET "LIBHDR"
+
+
+ //    THIS PROGRAM IS DESIGNED TO EDIT THOSE OBJECT MODULES
+ //    THAT HAVE A STANDARD BCPL HEADER.   IT TAKES INPUT FROM
+ //    DD-NAME "FROM", AND WRITES OUTPUT TO DD-NAME "TO".
+
+
+LET  START()  BE
+
+    $(S   LET  V = VEC 100
+          AND  S = DATE()
+
+          LET  INDCB = FINDINPUT("FROM")
+          AND  OUTDCB = FINDOUTPUT("TO")
+
+       //   DDNAMES "TO" AND "FROM" ARE REQUIRED, AND WE VERIFY
+       //   THEIR EXISTENCE BEFORE PROCEEDING.
+
+          IF  INDCB=0    DO  $(  WRITETOLOG("NO *"FROM*" DD-NAME")
+                                 STOP(20)    $)
+
+          IF  OUTDCB=0   DO  $(  WRITETOLOG("NO *"TO*" DD-NAME")
+                                 STOP(20)    $)
+
+          SELECTINPUT(INDCB);  SELECTOUTPUT(OUTDCB)
+
+
+       //   THE WORK IS DONE USING RECORD I/O.   THE FIRST TEXT
+       //   RECORD IN THE OBJECT MODULE IS LOCATED, AND THE WORDS
+       //   AT WORD OFFSET 8 CHECKED FOR THE CHARACTERS
+
+       //         DC    X'0B'
+       //         DC    C'  *UNDATED*'
+
+       //   IF FOUND THESE ARE REPLACED BY THE CURRENT DATE.
+
+
+     $(   LET  N = READREC(V)
+
+          UNTIL  (N=-1) | (V!0=#X02E3E7E3)  DO
+               $(   WRITEREC(V, N);    N := READREC(V)    $)
+
+          IF  N=-1  FINISH
+
+
+       //   WHEN GENERATING BINARY WE WISH TO INCLUDE THE DATE OF
+       //   ASSEMBLY IN STANDARD FORM AS A BCPL STRING.   TO DO THIS
+       //   CHECK THE FIRST TEXT RECORD FOR THE STRING  "  *UNDATED*" .
+       //   NOTE THAT THIS ONLY PLANTS THE CURRENT DATE IN AN OBJECT
+       //   MODULE WHICH HAS AN UNDATED BCPL HEADER.
+
+          IF  (V!8=#X0B40405C) & (V!9=#XE4D5C4C1) & (V!10=#XE3C5C45C)
+               DO  FOR I = 1 TO GETBYTE(S,0)
+                    DO  PUTBYTE(V, I+32, GETBYTE(S,I))
+
+          UNTIL  N=-1  DO
+               $(   WRITEREC(V, N);    N := READREC(V)    $)S

@@ -1,0 +1,532 @@
+
+
+1                    USING BCPL UNDER VM/370
+
+
+
+         Files relating to the BCPL system are to be found on the mini-disk
+ MOODY 191 .   These include the compiler itself BCPL MODULE ,  the library
+ TEXT files which are held in the text library  BCPLIB TXTLIB ,  and the
+ standard header file  LIBHDR BCPL  which contains global declarations for
+ all the library routines.   There are also files  BCPL EXEC  and  BCPLMOD EXEC
+ which drive the compilation of files of file-type BCPL to object modules of
+ file-type TEXT and executable programs of file-type MODULE .
+
+         For a definition of the BCPL language and considerably more details
+ of the library routines available under the 370 implementation see the file
+ BCPL MANUAL .
+
+
+
+ 1       Compilation
++        ___________
+
+          The BCPL compiler reads from ddname SYSIN ,  and outputs to three
+ streams ; the object module is written to ddname SYSGO ,  the compilation
+ listing to ddname SYSPRINT ,  and diagnostics only to ddname ERROR .   The EXEC
+ files  BCPL EXEC  and  BCPLMOD EXEC  translate compiler options into  FILEDEF
+ commands and are the recommended method of invoking the compiler.
+
+         The file  BCPL EXEC  will compile a number of BCPL source files to
+ produce object modules of file-type TEXT .   The file is invoked thus :
+
+ BCPL  <(runtime-options)>  fn1  <fn2 <fn3 ... >>    < (compiler-options >
+
+        BCPL source files must have file-type BCPL.   The above command will
+ invoke the BCPL compiler for each of the files    fn1  <fn2 <fn3 ... >> .
+
+         As already noted compiler output is to three streams ; when compiling
+ FILENAME BCPL the default is to create an object module FILENAME TEXT ,
+ fixed format with record length 80, to direct the listing to the disk file
+ FILENAME LISTING ,  which has the standard attributes for file-type LISTING,
+ and to send any compiler diagnostics back to the terminal.
+
+         The following options are available to redirect these streams ; they
+ should be self-explanatory.
+
+     LIST    NOLIST    PRINT    NOPRINT    TERM    OBJECT    NOOBJECT
+
+         NOPRINT disables the LISTING file, but diagnostics if any are still
+ returned to the terminal.
+
+
+         The following command will generate an executable module from a number
+ of BCPL source files :
+
+ BCPLMOD  <(runtime-options)>  fn1  <fn2 <fn3 ... >>    < (compiler-options >
+
+         When generating an executable module the defaults governing compiler
+ output are somewhat different ; unless otherwise directed all object modules
+ will be deleted, a disk file FNi LISTING will be created for each source file
+ FNi BCPL ,  and any diagnostics will be sent back to the terminal.   The same
+ options control compiler output as apply to the file BCPL EXEC.
+
+         The CMS LOAD and GENMOD commands are called to create an executable
+ module from the text files.   This module will be named  FN1 MODULE , where
+ FN1 BCPL  is the first source file.   The BCPL library is incorporated by
+ specifying the LIBE option to the loader ; the library BCPLIB TXTLIB is
+ therefore made available by the CMS GLOBAL command.   The following options
+ control the destination of the MAP produced by the loader ; there are two
+ independent pairs,  (MAP,NOMAP) ,  and  (TYPE,NOTYPE) .   Option MAP creates
+ a disk file  FN1 MAP  containing the map of the executable module created.
+ Default is  (NOMAP,NOTYPE) .
+
+           MAP          NOMAP          TYPE          NOTYPE
+
+
+         The 'compiler-options' requested are searched for the above tokens ;
+ any tokens not recognised are passed on to the BCPL compiler.   Compiler
+ directives determine how much information is output to the listing, and also
+ control the code-generator.
+
+         It should seldom be necessary to specify any 'runtime-options' when
+ invoking the compiler ; for details of the options available see 2.3.
+
+
+ 1.1     Library declarations
++        ____________________
+
+ The directive
+
+         GET "LIBHDR"
+
+ will insert the standard library declarations from the data-set whose
+ DDNAME is LIBHDR.   The EXEC files described above set up LIBHDR to the
+ disk file LIBHDR BCPL ; the FILEDEF command specifies the NOCHANGE option,
+ and it is therefore easy to over-ride this setting.
+         The items declared in this file are shown below.   By convention
+ library variables are given global numbers in the range 1 to 99, so users
+ should avoid allocating these globals for their own purposes.
+
+        GLOBAL
+        $(  START:1             // The main routine
+            ABORT:3             // Calls BACKTRACE and MAPSTORE
+            BACKTRACE:4         // Summarise the run-time stack
+            ERRORMESSAGE:5      // Write input/output error message
+            SAVEAREA:6          // Root of user's data structure
+            UNLOADALL:7         // Delete all loaded routines
+            LOADFORT:8          // Load named routine, return entry
+            UNLOAD:9            // Delete named routine (use count)
+            LOAD:10             // Load BCPL routine and set globals
+            SELECTINPUT:11      // Select input stream
+            SELECTOUTPUT:12     // Select output stream
+            RDCH:13             // Read a character
+            WRCH:14             // Write a character
+            UNRDCH:15           // Repeat last character read
+            INPUT:16            // Find current input
+            OUTPUT:17           // Find current output
+            INCONTROL:18        // Handle input control characters
+            OUTCONTROL:19       // Handle output control characters
+            TRIMINPUT:20        // Set trailing blank control
+            SETWINDOW:21        // Set segment size for READREC
+            BINARYINPUT:22      // Ignore input record separators
+            READREC:23          // Read a record
+            WRITEREC:24         // Write record
+            WRITESEG:25         // Write part-record
+            SKIPREC:26          // Throw away current input record
+            TIMEOFDAY:27        // Time as string  " 10.23.47"
+            TIME:28             // Find computation time
+            DATE:29             // Date as string "  17 DEC 74"
+            STOP:30             // Terminate job step
+            LEVEL:31            // Find activation pointer
+            LONGJUMP:32         // Make non-local jump
+            BINWRCH:34          // Write character treated as binary
+            REWIND:35           // Rewind input stream
+            FINDLOG:36          // Create output to 'WTO ,ROUTCDE=11'
+            WRITETOLOG:37       // Write string via 'WTO ,ROUTCDE=11'
+            FINDTPUT:38         // Create output to TPUT interface
+            FINDPARM:39         // Create input from parameter list
+            APTOVEC:40          // Apply function to dynamic vector
+            FINDOUTPUT:41       // Find specified output stream
+            FINDINPUT:42        // Find specified input stream
+            FINDLIBRARY:43      // Open library for LOAD, LOADFORT
+            INPUTMEMBER:44      // Create input form named member
+            PARMS:45            // Parameter list as BCPL string
+            ENDREAD:46          // Close input stream
+            ENDWRITE:47         // Close output stream
+            CLOSELIBRARY:48     // Close library after LOAD, LOADFORT
+            OUTPUTMEMBER:49     // Create output to named member
+            ENDTOINPUT;51       // Close and reposition output stream
+            LOADPOINT:52        // First word of user's program
+            ENDPOINT:53         // Last word of user's program
+            STACKBASE:54        // Base of stack pointer
+            STACKEND:55         // End of stack pointer
+            STACKHWM:56         // Function to return stack use limit
+            WRITES:60           // Write a string
+            WRITEN:62           // Write a number (minimum width)
+            NEWLINE:63          // Write a newline
+            NEWPAGE:64          // Write a newpage
+            WRITEO:65           // Write a word in octal
+            PACKSTRING:66       // Pack characters
+            UNPACKSTRING:67     // Unpack characters
+            WRITED:68           // Write a number
+            WRITEARG:69         // Write as number or 'ROUTINE' entry
+            READN:70            // Read a number
+            TERMINATOR:71       // Terminator character of READN
+            WRITEX:74           // Write a hexadecimal number
+            WRITEHEX:75         // Write a hexadecimal number
+            WRITEF:76           // Write with format
+            WRITEOCT:77         // Write an octal number
+            MAPSTORE:78         // Map the store
+            USERPOSTMORTEM:79   // Routine called in ABORT if defined
+            CALLIFORT:80        // Call FORTRAN function, integer result
+            CALLRFORT:81        // Call FORTRAN function, real result
+            SETBREAK:82         // Set a flag if the BREAK key is hit
+            ISBREAK:83          // Test and clear the BREAK key flag
+            ERRORRESET:84       // Permit retry after call of ABORT
+            GETBYTE:85          // Obtain a character from a string
+            PUTBYTE:86          // Update a character in a string
+            GETVEC:87           // Allocate vector of N words
+            FREEVEC:88          // Free vector allocated by GETVEC
+            RANDOM:89           // 32-bit pseudo-random number generator
+            MULDIV:90           // Compute (A*B)/C via a 64-bit product
+            REMAINDER:91        // Remainder following a call of MULDIV
+        $)
+
+        MANIFEST
+        $(  ENDSTREAMCH= -1     // End of stream character
+            BYTESPERWORD=4      // Number of characters per word
+        $)
+
+
+ 1.2     Diagnostics
++        ___________
+
+         The BCPL compiler has three passes: parse, translate and
+ code-generate.   There are correspondingly three kinds of error
+ diagnostic.
+
+         A parse diagnostic occurs when a relatively simple syntactic
+ error is detected during the first pass of compilation.   The message
+ includes a portion of the source program to give the context and a brief
+ description of the probable error.   The compiler usually skips to the
+ end of the line before continuing the parse.   Later error messages
+ should be viewed with suspicion since the automatic recovery is often
+ not very successful.
+
+         Translation phase diagnostics occur in the second pass of
+ compilation and report errors such as the use of an undeclared
+ identifier.   Each error is briefly described and a representation of
+ the relevant portion of the parse tree is printed.
+
+         Code-generation diagnostics are rare and usually result from
+ table overflows or compiler errors.
+
+
+ 1.3     Compilation options
++        ___________________
+
+         The compilation of a program can be controlled by various
+ compilation options passed to the compiler in the parameter list of the
+ command that invoked the compiler.   The options for the code-generator
+ are separated from those for the first phase of the compiler by a slash.
+ Most options are specified by single letters and some are primarily
+ debugging aids for the implementer of the compiler.   Spaces are ignored
+ during the analysis of the parameter list, which may therefore be hacked
+ into chunks of token size or less.
+
+         The first phase options are as follows:
+
+ Ln      Set the size of work-space area used during compilation.
+         The default setting under VM is 24000 words.
+
+ N       Disable the GET directive.
+
+ I       Print a list of all identifiers occurring in the source program.
+
+ S       List the source program with line numbers.
+
+ T       Print the parse tree of the source program.
+
+ O       Print the intermediate object code form of the program.
+
+         The code generator options are as follows:
+
+ K       Compile instructions with each function and routine to count
+         the number of times they are executed.   The counts can be
+         printed using MAPSTORE.
+
+ P       Compile instructions after labels and conditional jumps to
+         accumulate execution counts.   These counts can be printed
+         using MAPSTORE and allow one to make a detailed analysis of
+         the execution of the program.
+
+ L       Output an assembly listing of the compiled program.
+
+ N       Do not generate an object module for the program.
+
+
+
+ 2       Execution
++        _________
+
+
+ 2.1     Loading
++        _______
+
+         Each compiled segment of a BCPL program has an external
+ reference to BCPLMAIN which is the entry point of the standard machine
+ code library and this, in turn, has a reference to BLIB which is the
+ portion of the standard library written in BCPL.   Thus, when the
+ compiled segments are loaded, the library modules are automatically
+ incorporated ; library modules are held in the file  BCPLIB TXTLIB ,
+ which is set up automatically in the EXEC file  BCPLMOD EXEC .   The
+ member satisfying the reference to BCPLMAIN includes as well as the
+ main machine code library a short interface routine whose CSECT name
+ is $CMS$ ; all BCPL programs are entered at this interface routine,
+ whose main function is to convert the VM parameter list to OS format.
+
+         When the complete program is executed, the machine code library
+ initialises the run-time system and obtains space for the global vector
+ and stack.   The globals are initialised to their appropriate values and
+ then control is passed to the BCPL program by calling the routine START
+ (global 1) which must have been defined by the programmer.   START is
+ passed in string form the parameter list of the command that caused the
+ program to be executed.
+
+         The actions performed during system initialisation may be modified
+ by giving directives between parentheses at the start of the parameter
+ list.   The initialisation routine scans the parameter list for initial
+ matching parentheses ; should these be present they must contain valid
+ run-time option directives.   In the absence of any such directives the
+ following default actions are performed.
+
+         The size of the global vector is the smallest multiple of 100
+ words large enough to accommodate the highest global number actually
+ used in any segment of the loaded program.   The size of the run-time
+ stack depends on the space available in the region in which the program
+ is run ; as much space as is available is obtained by the BCPL run-time
+ system, some being reserved for use as input/output buffers, space for
+ DCB's, use by LOAD and LOADFORT, and the like.   The limits of the stack
+ are held in STACKBASE and STACKEND .
+
+         The default algorithm controlling the reservation of space for
+ buffers etc. is as follows :
+         Suppose that N bytes are obtained initially ; necessarily N must
+ be at least 6K bytes.
+                 If  N <= 38K ,    (3N/4) - 512  bytes are reserved.
+                 If  N >= 38K ,    (N/8) + 23808  bytes are reserved.
+         For compatibility with OS storage management the amount of store
+ reserved is always rounded down to the next multiple of 2K.
+
+         When START is called, the initial output selection is to
+ SYSPRINT, if it exists; and the initial input selection is from SYSIN,
+ if it exists.
+
+
+ 2.2     Execution faults
++        ________________
+
+         In the event of an execution fault such as division by zero or a
+ protection exception the routine ABORT is called.   This will print the
+ fault number and the program address when the fault was detected,
+ followed by a summary of the runtime stack (printed out by BACKTRACE)
+ and a map of the program store and globals (printed out by MAPSTORE).
+ This information is output to ddname SYSPRINT.
+
+
+ 2.3     Runtime options
++        _______________
+
+         If the parameter list supplied to a program starts with a string
+ held between matching parentheses, this string is analysed for valid
+ control syntax.   If the syntax is not satisfied the run is terminated
+ with completion code of 88 ; if all is well the initial string is removed
+ and the remainder passed to the program as argument to START , beginning
+ with the first character of the token following the ')' that closed the
+ option directives.
+
+         Runtime options are identified by control letters (which must
+ be in upper case) in some cases preceded by a decimal integer ; options
+ may be separated by spaces.   Details are as follows.
+
+         nK        The default algorithm controlling the reservation of
+                    storage for buffers etc. is suspended ; instead  nK
+                    bytes are to be reserved.
+
+         nG        Globals are to be initialised in blocks of n rather
+                    than in blocks of 100 ; n is always rounded up to
+                    the next even number.  (Main use of the directive
+                    is to force a large initial allocation to establish
+                    global vector slots for a routine that is to be
+                    loaded by  LOAD("routine", 0)  during execution)
+
+         nI        Initialise the first nK bytes of the stack to the
+                    character constants '* STCK *' .   If all of the
+                    stack has been initialised any traceback will give
+                    the maximum stack utilisation.
+
+         D         Disable the setting of STAE and SPIE exits, and allow
+                    normal error processing.   It is occasionally of
+                    use when a program is overwriting information
+                    that is needed by the high-level post-mortem.
+
+         If runtime options are given with BCPL EXEC or BCPLMOD EXEC
+ they will be passed unaltered to the compiler at each invocation.
+
+
+
+ 3       An example
++        __________
+
+         The following simple test program changes the comments of a
+ BCPL program from upper to lower case.   (Beware !   It is just an
+ example, and no attempt is made to do the job properly.   Only those
+ comments introduced by '//' are handled, and literals are not scanned
+ for this token).   Assume that the source file is  LCOM BCPL .
+
+
+ SECTION "LCOM"
+
+ GET  "LIBHDR"
+
+ GLOBAL  $(  CH:101  $)
+
+ LET START()  BE
+
+    $(S   UNTIL  CH='/'   COPY()              //         scan looking for '/'
+          COPY()
+          UNLESS  CH='/'  LOOP                //         comment if doubled
+
+     $(   CH := RDCH()                        //         depress all upper case
+          IF  UPPERCASE(CH)   DO  LOWERCASE()
+          WRCH(CH)
+          IF  CH='*N'  BREAK   $)   REPEAT    //         process rest of line
+
+                              $)S   REPEAT    //      while text keeps coming
+
+
+
+ AND  COPY()  BE
+
+     $(C  CH := RDCH()
+          IF  CH=ENDSTREAMCH  FINISH
+          WRCH(CH)      $)C
+
+
+
+ AND  LOWERCASE()     BE   CH := CH - 64
+
+
+
+ AND  UPPERCASE(CHAR)  =  VALOF
+
+     $(AB  SWITCHON  CHAR  INTO
+
+               $(   CASE 'A':  CASE 'B':  CASE 'C':  CASE 'D':  CASE 'E':
+                    CASE 'F':  CASE 'G':  CASE 'H':  CASE 'I':  CASE 'J':
+                    CASE 'K':  CASE 'L':  CASE 'M':  CASE 'N':  CASE 'O':
+                    CASE 'P':  CASE 'Q':  CASE 'R':  CASE 'S':  CASE 'T':
+                    CASE 'U':  CASE 'V':  CASE 'W':  CASE 'X':  CASE 'Y':
+                    CASE 'Z':
+                                         RESULTIS  TRUE
+
+                    DEFAULT:             RESULTIS  FALSE          $)AB
+
+
+         Some test data for this program has been assembled in the file
+ TEST DATA ; the contents of this file are as follows.
+
+  TEST DIVIDE OPERATOR :        X / Y
+  TEST STANDARD TEXT :   PETER PIPER PICKED A PECK OF ?
+  TEST COMMENT HANDLING :     A + B   //  THIS IS A COMMENT
+  THIS SHOULD BE BACK IN UPPER CASE
+  X + Y / Z    IS AN EXPRESSION
+  Test mixed case outside comments
+  ALSO COMMENT      //   Test mixed case Within COMMENT
+
+         The following commands will compile the program to produce an
+ executable module and will run the program on the test data routing
+ the results to the terminal.
+
+     BCPLMOD LCOM
+     FI SYSIN DISK TEST DATA
+     FI SYSPRINT TERM (LOWCASE
+     LCOM
+
+
+
+1              Appendix:  Basic symbols and synonyms
++                         __________________________
+
+
+         The following list of words and symbols are treated as atoms by
+ the syntax analyser.   The name of the symbol or its standard
+ representation on the 370 is given in the first column, and examples or
+ synonyms are given in the second.
+
+
+         Basic symbol         Examples and synonyms
++        ____________         _____________________
+
+         identifier           A  H1  PQRST  TAX_RATE
+         number               126  7249  #3771
+         string constant      "A"  "*NTEST"
+         character constant   'X'  ')'  '*N'  '"'
+         TRUE
+         FALSE
+         (
+         )
+         @                    LV
+         !                    RV
+         *
+         /
+         REM
+         +
+         -
+         =                    EQ
+         ~=                   NE
+         <=                   LE
+         >=                   GE
+         <                    LS
+         >                    GR
+         <<                   LSHIFT
+         >>                   RSHIFT
+         ~                    NOT
+         &                    /\  LOGAND
+         |                    \/  LOGOR
+         EQV
+         NEQV
+         ->
+         ,
+         TABLE
+         VALOF
+         ;
+         :
+         $(                   $(AB  $(1
+         $)                   $)AB  $)1
+         VEC
+         BE
+         LET
+         AND
+         :=
+         BREAK
+         LOOP
+         ENDCASE
+
+
+         RETURN
+         FINISH
+         GOTO
+         RESULTIS
+         SWITCHON
+         INTO
+         REPEAT
+         REPEATUNTIL
+         REPEATWHILE
+         DO                   THEN
+         UNTIL
+         WHILE
+         FOR
+         TO
+         BY
+         TEST
+         THEN                 DO
+         OR                   ELSE
+         IF
+         UNLESS
+         CASE
+         DEFAULT
+
+
+
