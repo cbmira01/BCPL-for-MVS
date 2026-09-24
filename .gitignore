@@ -1,0 +1,38 @@
+# Build products
+build/
+dist/
+*.o
+*.obj
+*.bin
+*.lst
+*.log
+
+# Local Compose configuration
+compose.override.yaml
+compose.override.yml
+.env
+.env.*
+!.env.example
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local virtual environments
+.venv/
+venv/
+
+# Tool caches, if used
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Project local work areas
+/work/
+/mvs-state/
