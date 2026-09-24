@@ -2,11 +2,13 @@
 
 ## Historical BCPL sources
 
-This project uses and studies files from the historical BCPL distribution tape associated with **Martin Richards**, the creator of BCPL. The source used here is the version of `bcpltape` curated by **Robert Nordier** and made available through [Martin Richards’ BCPL and Tripos Archive](https://www.cl.cam.ac.uk/~mr10/Archive.html), in the `oldbcpl` directory.
+This project uses historical BCPL compiler and runtime material from the `bcpltape` transport tape associated with **Martin Richards**, the designer and original implementer of BCPL. The copy used here was curated by **Robert Nordier** and is available in the `oldbcpl` directory of [Martin Richards’ BCPL and Tripos Archive](https://www.cl.cam.ac.uk/~mr10/Archive.html).
 
-**Ken Yap** made an earlier archive of Richards’ transport tape available. Nordier later corrected character mapping problems, assigned meaningful filenames, and organized the files into directories. We thank Richards, Yap, Nordier, and the other original contributors for preserving and making this material available.
+**Ken Yap** made an earlier archive of the tape available. Nordier corrected character mapping problems, assigned filenames, and organized the files into directories. We thank Richards, Yap, Nordier, and the other contributors who created and preserved this material.
 
-The historical files remain the work of their respective authors. This project’s MIT License applies to its own original work and does not relicense those files. Any copyright and license notices accompanying source files should be retained.
+The historical files remain the work of their respective authors. This project’s MIT License applies only to its original work and does not relicense those files. Retain any notices accompanying the historical sources.
+
+Martin Richards’ [BCPL home page](https://www.cl.cam.ac.uk/~mr10/) describes terms for his *current* BCPL distribution. Those terms should not be assumed to grant redistribution rights for every file on the historical tape.
 
 ## Container packaging
 

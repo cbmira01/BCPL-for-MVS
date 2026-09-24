@@ -1,2 +1,2 @@
-# Keep shell scripts in LF form across platforms.
 *.sh text eol=lf
+* text=auto
