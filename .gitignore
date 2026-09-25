@@ -36,8 +36,11 @@ Thumbs.db
 # Project local work area
 /work/
 
-# Ignore all generated Hercules/MVS data
-mvs-state/**/*
+# Ignore everything under mvs-state
+mvs-state/**
 
-# But do not ignore the structural placeholder files
+# But allow Git to traverse the directory structure
+!mvs-state/**/
+
+# Keep structural placeholders
 !mvs-state/**/.gitkeep
