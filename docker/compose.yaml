@@ -40,11 +40,11 @@ services:
       # Unit-record output.
       - type: bind
         source: ../mvs-state/prt
-        target: /tk5/printer
+        target: /tk5/prt
 
       - type: bind
         source: ../mvs-state/pch
-        target: /tk5/punch
+        target: /tk5/pch
 
       # Hercules/TK5 logs and hardcopy.
       - type: bind
