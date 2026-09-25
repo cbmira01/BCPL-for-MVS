@@ -33,14 +33,8 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Project local work area
-/work/
-
-# Ignore everything under mvs-state
+# Ignore everything under mvs-state, but allow Git to traverse 
+#   the directory structure and keep the structural placeholders
 mvs-state/**
-
-# But allow Git to traverse the directory structure
 !mvs-state/**/
-
-# Keep structural placeholders
 !mvs-state/**/.gitkeep

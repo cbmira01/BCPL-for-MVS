@@ -1,0 +1,6 @@
+# Ignore everything in this directory.
+*
+
+# Keep this file so the directory exists after clone.
+!.gitignore
+
