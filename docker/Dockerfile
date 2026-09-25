@@ -31,6 +31,7 @@ RUN unzip /tmp/mvs-tk5.zip -d /tmp/tk5 \
     && rm -rf /tmp/tk5 /tmp/mvs-tk5.zip \
     && chmod -R a+rX /tk5 \
     && chmod +x /tk5/mvs \
+    && chmod -R a+rx /tk5/hercules/linux/64/bin \
     && printf '%s\n' 'CONSOLE' > /tk5/unattended/mode \
     && rm -rf /tk5/hercules/darwin \
               /tk5/hercules/windows
@@ -46,17 +47,31 @@ LABEL org.opencontainers.image.description="MVS 3.8J Turnkey 5 running under Her
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
+        curl \
         libbz2-1.0 \
         libstdc++6 \
+        netbase \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /tk5 /tk5
 
+ENV PATH="/tk5/hercules/linux/64/bin:${PATH}" \
+    LD_LIBRARY_PATH="/tk5/hercules/linux/64/lib:/tk5/hercules/linux/64/lib/hercules"
+
 COPY LICENSE.md THIRD-PARTY-NOTICES.md /usr/share/doc/mvs38j/
+
+COPY docker/entrypoint.sh /usr/local/bin/mvs-entrypoint
+COPY docker/run-tk5.sh /usr/local/bin/run-tk5
+
+RUN chmod 0755 \
+    /usr/local/bin/mvs-entrypoint \
+    /usr/local/bin/run-tk5
 
 WORKDIR /tk5
 
 # 3270 terminal, JES card reader, and Hercules web interface.
 EXPOSE 3270 3505 8038
 
-CMD ["/tk5/mvs"]
+ENTRYPOINT ["/usr/local/bin/mvs-entrypoint"]
+CMD ["/usr/local/bin/run-tk5"]
+
