@@ -1,0 +1,60 @@
+
+name: mvs38j
+
+services:
+  mvs:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+
+    image: mvs38j-tk5:local
+    container_name: mvs38j
+
+    platform: linux/amd64
+
+    stdin_open: true
+    tty: true
+    stop_grace_period: 180s
+
+    # Hercules adjusts worker-thread priorities during initialization.
+    # Grant only the capability required for that operation.
+    cap_add:
+      - SYS_NICE
+
+    ports:
+      - "3270:3270"  # 3270 terminal
+      - "3505:3505"  # JES card reader
+      - "8038:8038"  # Hercules web interface
+
+    volumes:
+      # Persistent user/development DASD.
+      - type: bind
+        source: ../mvs-state/dasd.usr
+        target: /tk5/dasd.usr
+
+      # Virtual tape media.
+      - type: bind
+        source: ../mvs-state/tape
+        target: /tk5/tape
+
+      # Unit-record output.
+      - type: bind
+        source: ../mvs-state/prt
+        target: /tk5/printer
+
+      - type: bind
+        source: ../mvs-state/pch
+        target: /tk5/punch
+
+      # Hercules/TK5 logs and hardcopy.
+      - type: bind
+        source: ../mvs-state/log
+        target: /tk5/log
+
+      # Expose the Git checkout to container-side tooling without
+      # allowing the container to modify repository contents.
+      - type: bind
+        source: ..
+        target: /workspace
+        read_only: true
+
