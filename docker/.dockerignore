@@ -1,0 +1,9 @@
+# The Hercules development image is built entirely from this directory.
+# Do not accidentally send a # repository checkout, TK5 tree, DASD, tape, 
+# or other local state as context.
+*
+!Dockerfile
+!entrypoint.sh
+!run-tk5.sh
+!README.md
+!.dockerignore

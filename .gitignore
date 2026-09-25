@@ -33,6 +33,11 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Project local work areas
+# Project local work area
 /work/
-/mvs-state/
+
+# Ignore all generated Hercules/MVS data
+mvs-state/**/*
+
+# But do not ignore the structural placeholder files
+!mvs-state/**/.gitkeep
