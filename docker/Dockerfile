@@ -48,6 +48,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
         curl \
+        gosu \
         libbz2-1.0 \
         libstdc++6 \
         netbase \

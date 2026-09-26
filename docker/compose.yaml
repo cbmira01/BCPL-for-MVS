@@ -1,4 +1,3 @@
-
 name: Hercules
 
 services:
@@ -11,6 +10,13 @@ services:
     container_name: mvs38j
 
     platform: linux/amd64
+
+    # Pass the invoking host user's numeric identity to the container.
+    # The entrypoint drops privileges to this UID/GID before starting
+    # TK5/Hercules so bind-mounted files retain useful host ownership.
+    environment:
+      MVS_UID: "${MVS_UID:-}"
+      MVS_GID: "${MVS_GID:-}"
 
     stdin_open: true
     tty: true

@@ -41,6 +41,9 @@ while (( $# )); do
     esac
 done
 
+export MVS_UID="$(id -u)"
+export MVS_GID="$(id -g)"
+
 cd "$repo_root"
 
 if [[ "$mode" == "detached" ]]; then
