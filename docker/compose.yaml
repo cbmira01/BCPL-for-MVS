@@ -22,11 +22,6 @@ services:
     tty: true
     stop_grace_period: 180s
 
-    # Hercules adjusts worker-thread priorities during initialization.
-    # Grant only the capability required for that operation.
-    cap_add:
-      - SYS_NICE
-
     ports:
       - "3270:3270"  # 3270 terminal
       - "3505:3505"  # JES card reader
