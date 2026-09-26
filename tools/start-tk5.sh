@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: tools/start-tk5.sh [--attached | --detached]
+
+Start the TK5/MVS container.
+
+Options:
+  -a, --attached    Run attached and display the Hercules/MVS event stream.
+                    This is the default.
+  -d, --detached    Run in the background.
+  -h, --help        Show this help.
+EOF
+}
+
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+compose_file="$repo_root/docker/compose.yaml"
+mode=attached
+
+while (( $# )); do
+    case "$1" in
+        -a|--attached)
+            mode=attached
+            shift
+            ;;
+        -d|--detached)
+            mode=detached
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo >&2 "Unknown argument: $1"
+            usage >&2
+            exit 64
+            ;;
+    esac
+done
+
+cd "$repo_root"
+
+if [[ "$mode" == "detached" ]]; then
+    echo "Starting TK5/MVS detached..."
+    docker compose -f "$compose_file" up -d
+else
+    echo "Starting TK5/MVS attached..."
+    exec docker compose -f "$compose_file" up
+fi
+

@@ -1,4 +1,3 @@
-
 # MVS 3.8J Docker Environment
 
 This directory contains the Docker configuration for running the MVS 3.8J Turnkey 5 (TK5) environment under Hercules.
@@ -14,11 +13,11 @@ The host requires:
 - An `amd64`-compatible Docker environment, either native or through emulation
 - Internet access when initially building the image
 
-Run the following commands from the repository root unless otherwise noted.
+Run the following commands from the repository root.
 
 ## Build the Image
 
-Build the image using:
+Build the image with Docker Compose:
 
 ```console
 docker compose -f docker/compose.yaml build
@@ -26,17 +25,29 @@ docker compose -f docker/compose.yaml build
 
 The build downloads the TK5 distribution and constructs the local MVS/Hercules image.
 
-## Create and Start the Container
+## Start MVS
 
-Start MVS with:
+The `tools/start-tk5.sh` script starts Hercules and performs the normal TK5/MVS IPL.
+
+To start attached to the Hercules/MVS event stream:
 
 ```console
-docker compose -f docker/compose.yaml up -d
+./tools/start-tk5.sh
 ```
 
-Docker creates the container if necessary and starts Hercules and MVS.
+Attached operation is the default. It can also be requested explicitly:
 
-To see the container status:
+```console
+./tools/start-tk5.sh --attached
+```
+
+To start the container in the background:
+
+```console
+./tools/start-tk5.sh --detached
+```
+
+To check its status:
 
 ```console
 docker compose -f docker/compose.yaml ps
@@ -52,25 +63,27 @@ The container publishes these services:
 | 3505 | JES card-reader interface |
 | 8038 | Hercules web interface |
 
-Connect a TN3270 client to port `3270` to use an interactive MVS terminal.
+Connect a TN3270 client to port `3270` for interactive MVS access.
 
-JCL can be submitted to the card-reader service on port `3505`.
+JCL can be submitted to the JES card-reader interface on port `3505`.
 
-The repository is mounted read-only inside the container as:
+The Git repository is available read-only inside the container at:
 
 ```text
 /workspace
 ```
 
-Persistent MVS files, virtual tapes, printer output, punch output, and logs are maintained under:
+Persistent MVS state, virtual tapes, printer output, punch output, and logs are maintained under:
 
 ```text
 mvs-state/
 ```
 
-## View Hercules Output
+## View the Event Log
 
-View the container output with:
+When started in attached mode, Hercules and MVS events are displayed directly on the terminal.
+
+For a detached container, display the log with:
 
 ```console
 docker compose -f docker/compose.yaml logs
@@ -82,15 +95,17 @@ Follow it continuously with:
 docker compose -f docker/compose.yaml logs -f
 ```
 
-## Stop MVS
+## Shut Down MVS
 
-Perform a normal Compose shutdown with:
+Use the shutdown helper:
 
 ```console
-docker compose -f docker/compose.yaml down
+./tools/shutdown-tk5.sh
 ```
 
-The container may be recreated later. Files stored in the repository's `mvs-state/` directories remain on the host.
+The container handles the MVS-specific shutdown sequence and allows TK5/MVS to shut down cleanly before Hercules exits.
 
-MVS should normally be shut down cleanly before the container is forcibly stopped, particularly when writable DASD devices are active.
+Allow up to **three minutes** for an orderly shutdown. Do not forcibly terminate the container during this interval unless recovery from a failed shutdown is necessary.
+
+Files stored under `mvs-state/` remain on the host when the container is stopped or recreated.
 
