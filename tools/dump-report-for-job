@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 || ! $1 =~ ^[0-9]+$ ]]; then
+    echo "Usage: $(basename "$0") JOB_NUMBER" >&2
+    exit 2
+fi
+
+JOB_NUMBER=$1
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPORT="$ROOT/mvs-state/prt/prt00e.txt"
+
+if [[ ! -f "$REPORT" ]]; then
+    echo "$(basename "$0"): Printer output file does not exist: $REPORT" >&2
+    exit 1
+fi
+
+awk -v job="$JOB_NUMBER" '
+BEGIN {
+    pattern = sprintf("JOB %4d", job)
+    in_job = 0
+    found = 0
+}
+
+# START banner for the requested job.
+index($0, "****A  START") && index($0, pattern) {
+    in_job = 1
+    found = 1
+    next
+}
+
+# END banner for the requested job.
+in_job && index($0, "****A   END") && index($0, pattern) {
+    exit
+}
+
+in_job {
+    # Translate printer form feed to CRLF.
+    gsub(/\f/, "\r\n")
+    print
+}
+
+END {
+    if (!found) {
+        print "Job " job " not found in printer output." > "/dev/stderr"
+        exit 1
+    }
+}
+' "$REPORT"
+
