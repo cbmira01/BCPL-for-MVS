@@ -133,7 +133,7 @@ def main(argv: list[str] | None = None) -> int:
             "Generate an IFOX/IEWL/GO JCL deck from an assembler source file."
         ),
         epilog=(
-            "Example: python tools/make-asm-job.py "
+            "Example: python tools/make-asm-job "
             "asm/assembler-demo.asm --output-dir jcl --listing heavy "
             "--parm XS,1"
         ),

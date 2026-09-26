@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'USAGE'
-Usage: tools/submit-jcl.sh [--timeout SECONDS] JCL
+Usage: tools/submit-jcl [--timeout SECONDS] JCL
 
 Submit a JCL deck to the local TK5 socket reader and print the JES job
 number on stdout. Progress and errors are written to stderr.
