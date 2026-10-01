@@ -13,7 +13,6 @@ Current work focuses on the tape's `ICINT` interpreter and the preserved compile
 ## Where to start
 
 - [`richards-bcpltape/README.md`](richards-bcpltape/README.md) — introduction to the historical BCPL transport-tape material and its provenance
-- [`richards-bcpltape/INDEX`](richards-bcpltape/INDEX) — detailed map of the surviving files in the historical distribution
 - [`docker/README.md`](docker/README.md) — Hercules/TK5 development environment
 - [`docs/README.md`](docs/README.md) — programmer orientation briefings for System/370, MVS 3.8J, Hercules, and the development toolchain
 - [`tools/README.md`](tools/README.md) — host-side build, submission, job-reporting, and INTCODE tools
