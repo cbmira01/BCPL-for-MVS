@@ -18,55 +18,20 @@ effectively.
 
 ## Briefings
 
-  ----------------------------------------------------------------------------
-  Document                                 Subject
-  ---------------------------------------- -----------------------------------
-  `System_370-briefing.md`                 System/370 architecture from the
-                                           programmer's viewpoint
-
-  `MVS-3_8-briefing.md`                    MVS 3.8 organization, services, and
-                                           programming environment
-
-  `Hercules-briefing.md`                   Hercules architecture,
-                                           configuration, operation, devices,
-                                           interfaces, and tooling
-
-  `IFOX-assembler-toolchain-briefing.md`   IFOX assembler, linkage editor,
-                                           libraries, listings, and
-                                           development workflow
-
-  `JCL-for-the-programmer.md`              Programmer-oriented JCL: JOB, EXEC,
-                                           DD, procedures, data sets, and job
-                                           output
-
-  `MVS-access-methods.md`                  Data sets, record formats, DCBs,
-                                           QSAM, BSAM, BPAM, and I/O
-
-  `MVS-program-execution.md`               Register conventions, save areas,
-                                           parameters, linkage, and
-                                           program-management services
-
-  `MVS-debugging.md`                       Condition codes, ABENDs, PSWs,
-                                           registers, dumps, listings, and
-                                           link maps
-
-  `S370-object-and-load-modules.md`        Object modules, ESD/TXT/RLD/END,
-                                           relocation, linkage editing, and
-                                           load modules
-
-  `MVS-storage-and-addressing.md`          Virtual storage, address spaces,
-                                           regions, tasks, storage protection,
-                                           and addressability
-
-  `MVS-system-programming-interfaces.md`   Macros, SVCs, control blocks, task
-                                           services, synchronization,
-                                           recovery, and EXCP
-
-  `IBM-data-representation.md`             EBCDIC, integers, addresses,
-                                           decimal data, floating point,
-                                           records, and host/guest
-                                           representation
-  ----------------------------------------------------------------------------
+| Document | Subject |
+| --- | --- |
+| [`System_370-briefing.md`](System_370-briefing.md) | System/370 architecture from the programmer's viewpoint |
+| [`MVS-3_8-briefing.md`](MVS-3_8-briefing.md) | MVS 3.8 organization, services, and programming environment |
+| [`Hercules-briefing.md`](Hercules-briefing.md) | Hercules architecture, configuration, operation, devices, interfaces, and tooling |
+| [`IFOX-assembler-toolchain-briefing.md`](IFOX-assembler-toolchain-briefing.md) | IFOX assembler, linkage editor, libraries, listings, and development workflow |
+| [`JCL-for-the-programmer.md`](JCL-for-the-programmer.md) | Programmer-oriented JCL: JOB, EXEC, DD, procedures, data sets, and job output |
+| [`MVS-access-methods.md`](MVS-access-methods.md) | Data sets, record formats, DCBs, QSAM, BSAM, BPAM, and I/O |
+| [`MVS-program-execution.md`](MVS-program-execution.md) | Register conventions, save areas, parameters, linkage, and program-management services |
+| [`MVS-debugging.md`](MVS-debugging.md) | Condition codes, ABENDs, PSWs, registers, dumps, listings, and link maps |
+| [`S370-object-and-load-modules.md`](S370-object-and-load-modules.md) | Object modules, ESD/TXT/RLD/END, relocation, linkage editing, and load modules |
+| [`MVS-storage-and-addressing.md`](MVS-storage-and-addressing.md) | Virtual storage, address spaces, regions, tasks, storage protection, and addressability |
+| [`MVS-system-programming-interfaces.md`](MVS-system-programming-interfaces.md) | Macros, SVCs, control blocks, task services, synchronization, recovery, and EXCP |
+| [`IBM-data-representation.md`](IBM-data-representation.md) | EBCDIC, integers, addresses, decimal data, floating point, records, and host/guest representation |
 
 Some overlap is intentional. A subject such as program linkage appears
 differently when viewed from the architecture, assembler,
@@ -226,7 +191,7 @@ knowledge.
 
 ### MVS 3.8J Turnkey 5
 
-The **MVS 3.8J Tur(n)key 5** distribution supplies a configured MVS 3.8J
+The **MVS 3.8J Turnkey 5** distribution supplies a configured MVS 3.8J
 environment for Hercules:
 
 <https://www.prince-webdesign.nl/tk5>
