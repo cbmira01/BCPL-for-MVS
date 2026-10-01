@@ -1,6 +1,4 @@
-
-
-# BCPL reconstruction for IBM MVS 3.8 
+# BCPL reconstruction for IBM MVS 3.8
 
 This project is a reconstruction of a BCPL development environment for IBM MVS 3.8, using the historical BCPL transport tape associated with Martin Richards as its primary source. Development and testing use Hercules.
 
@@ -10,12 +8,15 @@ The repository contains historical source material, reconstruction work, tests, 
 
 The native compiler and much of its supporting source survive on the transport tape. A key missing component is `BCPLMAIN`, which provided the native runtime and MVS services. It should be possible to reconstruct a runtime library for the BCPL compiler, from documentation and from client code.
 
-Current work focuses on the tape’s `ICINT` interpreter and the preserved compiler bootstrap stages.
+Current work focuses on the tape's `ICINT` interpreter and the preserved compiler bootstrap stages.
 
 ## Where to start
 
-- [`richards-bcpltape/INDEX`](richards-bcpltape/INDEX) — historical source inventory
-- [`docker/README.md`](docker/README.md) — development environment
+- [`richards-bcpltape/README.md`](richards-bcpltape/README.md) — introduction to the historical BCPL transport-tape material and its provenance
+- [`richards-bcpltape/INDEX`](richards-bcpltape/INDEX) — detailed map of the surviving files in the historical distribution
+- [`docker/README.md`](docker/README.md) — Hercules/TK5 development environment
+- [`docs/README.md`](docs/README.md) — programmer orientation briefings for System/370, MVS 3.8J, Hercules, and the development toolchain
+- [`tools/README.md`](tools/README.md) — host-side build, submission, job-reporting, and INTCODE tools
 
 ## BCPL documentation online
 
