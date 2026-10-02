@@ -16,9 +16,9 @@ generated INTCODE modules are concatenated, in command-line order, for the
 final ICINT load/run with BLIBI and ICLIB.
 
 Optional --dd NAME=PATH arguments make ASCII host files available to each BCPL
-compile step as ordinary MVS DDNAME input streams.  Optional save taps copy
-each module's OCODE and/or INTCODE to marked SYSOUT data sets and recover those
-records into host files after job completion.
+compile step as ordinary MVS DDNAME input streams and to the final RUN step.
+Optional save taps copy each module's OCODE and/or INTCODE to marked SYSOUT
+data sets and recover those records into host files after job completion.
 """
 
 from __future__ import annotations
@@ -471,6 +471,7 @@ def build_deck(
         "EXECUTE COMPILED BCPL PROGRAM",
         (f"INPUT: {module_list} + &&BLIBI + &&ICLIB",),
         run_parts,
+        named_dd_text,
     )
 
     deck += "//\n"
@@ -681,7 +682,7 @@ def make_parser() -> argparse.ArgumentParser:
         metavar="NAME=PATH",
         help=(
             "make an ASCII host file available as named input DDNAME on every "
-            "BCPL compile step; repeat as needed"
+            "BCPL compile step and the final RUN step; repeat as needed"
         ),
     )
     parser.add_argument(
