@@ -29,7 +29,7 @@ suite programs.
 `demo.bcpl` seeds the generator, prints five raw values, reseeds it, and prints ten
 values in the range 0 through 99.
 
-Run it as a two-module BCPL program:
+Run the demonstration from the repository root with:
 
 ```sh
 tools/compile-and-run --results \
