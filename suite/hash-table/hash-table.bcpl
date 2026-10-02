@@ -1,0 +1,45 @@
+// HASH-TABLE.BCPL
+// Small chained hash table using vector-backed buckets and nodes.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET HASH(KEY) = KEY REM 7
+
+AND INSERT(KEY, BUCKET, KEYS, NEXT, COUNT) BE
+$( LET N = COUNT!0
+   LET H = HASH(KEY)
+   KEYS!N := KEY
+   NEXT!N := BUCKET!H
+   BUCKET!H := N
+   COUNT!0 := N+1
+$)
+
+AND FIND(KEY, BUCKET, KEYS, NEXT) = VALOF
+$( LET P = BUCKET!HASH(KEY)
+   UNTIL P<0 DO
+   $( IF KEYS!P=KEY RESULTIS TRUE
+      P := NEXT!P
+   $)
+   RESULTIS FALSE
+$)
+
+AND START() BE
+$( LET BUCKET = VEC 6
+   AND KEYS = VEC 15
+   AND NEXT = VEC 15
+   AND COUNT = VEC 0
+
+   FOR I = 0 TO 6 DO BUCKET!I := -1
+   COUNT!0 := 0
+
+   FOR I = 0 TO 9 DO
+      INSERT(I!TABLE 14,21,8,1,15,29,36,17,24,31,
+             BUCKET, KEYS, NEXT, COUNT)
+
+   FOR K = 0 TO 4 DO
+   $( LET KEY = K!TABLE 1,17,29,22,99
+      WRITEF("KEY %N PRESENT = %N*N", KEY,
+             FIND(KEY, BUCKET, KEYS, NEXT))
+   $)
+   FINISH
+$)
