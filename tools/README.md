@@ -262,9 +262,39 @@ generated INTCODE modules are concatenated for the final ICINT load/run, in
 command-line order. The `04-module-test` regression demonstrates cross-module
 BCPL `GLOBAL`-vector linkage.
 
+### Named input DDs
+
+Repeatable `--dd NAME=PATH` options make ASCII host text files available to
+each BCPL compile step under ordinary MVS DDNAMEs:
+
+```text
+tools/compile-and-run \
+    --results \
+    --dd EXTRA=tests/05-named-dd/extra.bcpl \
+    asm/icintv15.asm \
+    tests/05-named-dd/main.bcpl
+```
+
+The example above emits an in-stream `//EXTRA DD *` on the compiler step.
+Historical BCPL code can then obtain that stream through `FINDINPUT("EXTRA")`;
+the compiler's `GET "EXTRA"` facility uses that same path. The
+`05-named-dd` regression test uses `GET` to include a small manifest from the
+host file.
+
+`--dd` may be repeated for multiple names. DDNAMEs are uppercased and must be
+valid one-to-eight-character MVS names. Names already owned by the generated
+compile step, such as `SYSIN`, `OCODE`, `INTIN`, and `SYSPRINT`, are rejected.
+Duplicate names are also rejected.
+
+Named input files use the same conservative card-image rules as other host
+text inputs: ASCII, nonempty, no record longer than 80 characters, and no
+record consisting exactly of `/*`. The named DDs are supplied to every
+separate BCPL compile step; CGI and final RUN steps do not receive them.
+
 Current compiler options include:
 
 ```text
+--dd NAME=PATH
 --results
 --save-ocode
 --save-intcode
@@ -276,11 +306,6 @@ Current compiler options include:
 --timeout SECONDS
 --poll SECONDS
 ```
-
-A planned near-term extension is a convenient named-DD option for mapping
-host files to arbitrary MVS DDNAMEs. That will allow historical BCPL
-`FINDINPUT("name")`, compiler `OPTIONS`, and `GET "name"` paths to be exercised
-without hand-editing generated JCL.
 
 Use `tools/compile-and-run --help` for the current interface.
 
