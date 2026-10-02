@@ -1,0 +1,47 @@
+// RPN-CALCULATOR.BCPL
+// Evaluate a small reverse-Polish expression with an explicit stack.
+
+GLOBAL $( START:1; GETBYTE:85; WRITEF:76 $)
+
+LET DIGIT(CH) = '0'<=CH & CH<='9'
+
+AND START() BE
+$( LET EXPR = "12 3 4 + * 6 -"
+   LET STACK = VEC 19
+   LET SP = 0
+   LET P = 1
+   LET NCH = GETBYTE(EXPR, 0)
+
+   WHILE P<=NCH DO
+   $( LET CH = GETBYTE(EXPR, P)
+      IF CH='*S' DO $( P := P+1; LOOP $)
+
+      IF DIGIT(CH) DO
+      $( LET N = 0
+         WHILE P<=NCH & DIGIT(GETBYTE(EXPR,P)) DO
+         $( N := 10*N + GETBYTE(EXPR,P)-'0'
+            P := P+1
+         $)
+         STACK!SP := N
+         SP := SP+1
+         LOOP
+      $)
+
+      LET B = STACK!(SP-1)
+      AND A = STACK!(SP-2)
+      SP := SP-2
+      SWITCHON CH INTO
+      $( CASE '+': STACK!SP := A+B; ENDCASE
+         CASE '-': STACK!SP := A-B; ENDCASE
+         CASE '**': STACK!SP := A*B; ENDCASE
+         CASE '/': STACK!SP := A/B; ENDCASE
+         DEFAULT: WRITEF("BAD OPERATOR %C*N", CH); FINISH
+      $)
+      SP := SP+1
+      P := P+1
+   $)
+
+   WRITEF("EXPRESSION: %S*N", EXPR)
+   WRITEF("RESULT: %N*N", STACK!0)
+   FINISH
+$)
