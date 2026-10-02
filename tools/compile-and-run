@@ -623,7 +623,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--save-intcode",
         action="store_true",
-        help="save generated INTCODE as workarea/MODULE.int for each module",
+        help="save generated INTCODE as workarea/MODULE.intcode for each module",
     )
     parser.add_argument(
         "--jcl",
@@ -778,7 +778,7 @@ def main(argv=None) -> int:
 
         if args.save_intcode:
             for number, source in enumerate(sources, 1):
-                output = WORKAREA / f"{source.stem}.int"
+                output = WORKAREA / f"{source.stem}.intcode"
                 output.write_text(
                     extract_saved_stream(report, "intcode", number),
                     encoding="ascii",
