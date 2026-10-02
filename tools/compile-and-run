@@ -1,30 +1,22 @@
 #!/usr/bin/env python3
 """
-Compile a BCPL source program through the interpreted MR10 compiler pipeline
-and run the generated INTCODE under a selected ICINT implementation.
+Compile one or more BCPL source modules through the interpreted MR10 compiler
+pipeline and run the generated INTCODE under a selected ICINT implementation.
 
 This is intentionally separate from tools/run-intcode.  run-intcode remains
 the small interpreter/runtime test driver; compile-and-run owns compiler phase
 staging and MVS dataset handoffs.
 
-Pipeline, all in one MVS job:
+Additional BCPL modules use the same +PATH convention as run-intcode:
 
-    assemble/link ICINT once
+    compile-and-run interpreter.asm main.bcpl +module2.bcpl +module3.bcpl
 
-    SYNI + TRNI + BLIBI + ICLIB
-        SYSIN   <- BCPL source
-        OCODE   -> &&OCODE
+Each BCPL module is compiled separately through SYNI/TRNI and CGI.  Only the
+generated INTCODE modules are concatenated, in command-line order, for the
+final ICINT load/run with BLIBI and ICLIB.
 
-    CGI + BLIBI + ICLIB
-        SYSIN   <- &&OCODE
-        INTCODE -> &&INTCODE
-
-    generated INTCODE + BLIBI + ICLIB
-        -> final program execution
-
-Optional save taps copy &&OCODE and/or &&INTCODE to dedicated SYSOUT data sets
-and recover those records into host files after job completion.  The compiler
-pipeline data sets themselves are not modified by the save operation.
+Optional save taps copy each module's OCODE and/or INTCODE to marked SYSOUT
+data sets and recover those records into host files after job completion.
 """
 
 from __future__ import annotations
@@ -35,6 +27,7 @@ from pathlib import Path
 import re
 import socket
 import sys
+import textwrap
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,6 +45,7 @@ DEFAULT_READER_HOST = "127.0.0.1"
 DEFAULT_READER_PORT = 3505
 DEFAULT_TIMEOUT = 180.0
 DEFAULT_POLL = 0.25
+MAX_MODULES = 99
 
 MVS_NAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
 PROFILES = {
@@ -61,11 +55,6 @@ PROFILES = {
         "OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD",
         "LET,NCAL,LIST,XREF",
     ),
-}
-
-SAVE_MARKERS = {
-    "ocode": ("@@BCPL-OCODE-BEGIN@@", "@@BCPL-OCODE-END@@"),
-    "intcode": ("@@BCPL-INTCODE-BEGIN@@", "@@BCPL-INTCODE-END@@"),
 }
 
 
@@ -83,6 +72,17 @@ def resolve_repo_path(text: str) -> Path:
     if not path.is_absolute():
         path = ROOT / path
     return path.resolve()
+
+
+def parse_modules(tokens: list[str]) -> list[Path]:
+    modules = []
+    for token in tokens:
+        if not token.startswith("+") or token == "+":
+            raise ValueError(
+                f"additional BCPL module must use +PATH syntax: {token}"
+            )
+        modules.append(resolve_repo_path(token[1:]))
+    return modules
 
 
 def read_ascii_records(path: Path, description: str, width: int = 80) -> str:
@@ -119,47 +119,78 @@ def derive_job_name(source: Path) -> str:
     return job
 
 
+def numbered_name(base: str, number: int, count: int) -> str:
+    if count == 1:
+        return base
+    return f"{base}{number:02d}"
+
+
+def ocode_dsn(number: int) -> str:
+    return f"&&OC{number:02d}"
+
+
+def intcode_dsn(number: int) -> str:
+    return f"&&IC{number:02d}"
+
+
+def save_markers(kind: str, number: int) -> tuple[str, str]:
+    label = kind.upper()
+    return (
+        f"@@BCPL-{label}-{number:02d}-BEGIN@@",
+        f"@@BCPL-{label}-{number:02d}-END@@",
+    )
+
+
 def jcl_banner(title: str, *details: str) -> str:
     width = 68
     lines = ["//*" + "*" * width + "\n"]
-    lines.append(f"//*  {title}\n")
-    for detail in details:
-        if detail:
-            lines.append(f"//*  {detail}\n")
+    for text in (title, *details):
+        if not text:
+            continue
+        wrapped = textwrap.wrap(str(text), width=66) or [""]
+        lines.extend(f"//*  {part}\n" for part in wrapped)
     lines.append("//*" + "*" * width + "\n")
     return "".join(lines)
 
 
 def job_map(
     interpreter: Path,
-    source: Path,
+    sources: list[Path],
     listing: str,
     save_ocode: bool,
     save_intcode: bool,
 ) -> str:
-    return (
+    lines = [
         jcl_banner(
             "BCPL COMPILE-AND-RUN JOB MAP",
             f"INTERPRETER: {interpreter.name}",
-            f"BCPL SOURCE: {source.name}",
+            f"COMPILATION UNITS: {len(sources)}",
             f"LISTING: {listing.upper()}",
             f"SAVE OCODE: {'YES' if save_ocode else 'NO'}",
             f"SAVE INTCODE: {'YES' if save_intcode else 'NO'}",
-        )
-        + "//*  ASM       BUILD ICINT WITH IFOX\n"
-        + "//*  LKED      LINK-EDIT ICINT AS RUNMOD\n"
-        + "//*  STGSYNI   STAGE SYNI\n"
-        + "//*  STGTRNI   STAGE TRNI\n"
-        + "//*  STGCGI    STAGE CGI\n"
-        + "//*  STGBLIB   STAGE BLIBI\n"
-        + "//*  STGICLIB  STAGE ICLIB\n"
-        + "//*  COMP      BCPL SOURCE -> OCODE\n"
-        + ("//*  SAVEOC    COPY OCODE TO SAVE SYSOUT\n" if save_ocode else "")
-        + "//*  CG        OCODE -> INTCODE\n"
-        + ("//*  SAVEINT   COPY INTCODE TO SAVE SYSOUT\n" if save_intcode else "")
-        + "//*  RUN       EXECUTE INTCODE + BLIBI + ICLIB\n"
-        + "//*\n"
-    )
+        ),
+        "//*  ASM       BUILD ICINT WITH IFOX\n",
+        "//*  LKED      LINK-EDIT ICINT AS RUNMOD\n",
+        "//*  STGSYNI   STAGE SYNI\n",
+        "//*  STGTRNI   STAGE TRNI\n",
+        "//*  STGCGI    STAGE CGI\n",
+        "//*  STGBLIB   STAGE BLIBI\n",
+        "//*  STGICLIB  STAGE ICLIB\n",
+    ]
+    for number, source in enumerate(sources, 1):
+        comp = numbered_name("COMP", number, len(sources))
+        cg = numbered_name("CG", number, len(sources))
+        lines.append(f"//*  {comp:<8} {source.name} -> {ocode_dsn(number)}\n")
+        if save_ocode:
+            step = numbered_name("SVOC", number, len(sources))
+            lines.append(f"//*  {step:<8} SAVE {source.name} OCODE\n")
+        lines.append(f"//*  {cg:<8} {ocode_dsn(number)} -> {intcode_dsn(number)}\n")
+        if save_intcode:
+            step = numbered_name("SVIN", number, len(sources))
+            lines.append(f"//*  {step:<8} SAVE {source.name} INTCODE\n")
+    lines.append("//*  RUN       LOAD ALL INTCODE UNITS + BLIBI + ICLIB\n")
+    lines.append("//*\n")
+    return "".join(lines)
 
 
 def temp_output_dd(ddname: str, dsn: str, disposition: str = "PASS") -> str:
@@ -188,13 +219,14 @@ def stage_step(step: str, title: str, dsn: str, content: str) -> str:
     )
 
 
-def save_step(step: str, kind: str, dsn: str) -> str:
-    begin, end = SAVE_MARKERS[kind]
+def save_step(step: str, kind: str, number: int, source: Path, dsn: str) -> str:
+    begin, end = save_markers(kind, number)
     label = kind.upper()
     return (
         jcl_banner(
-            f"SAVE {label}",
-            f"COPY {dsn} TO A MARKED SYSOUT DATASET FOR HOST RECOVERY",
+            f"SAVE {label} - COMPILATION UNIT {number}",
+            f"SOURCE: {source.name}",
+            f"COPY {dsn} TO MARKED SYSOUT FOR HOST RECOVERY",
         )
         + f"//{step:<8} EXEC PGM=IEBGENER,COND=(4,LT)\n"
         + "//SYSPRINT DD  SYSOUT=*\n"
@@ -212,15 +244,12 @@ def save_step(step: str, kind: str, dsn: str) -> str:
 
 
 def intin_concat(parts: list[tuple[str, str]]) -> str:
-    """Build an INTIN DD concatenation from [(dsn, disposition), ...]."""
     if not parts:
         raise ValueError("empty INTIN concatenation")
     lines = []
     for index, (dsn, disposition) in enumerate(parts):
         ddname = "INTIN" if index == 0 else ""
-        lines.append(
-            f"//{ddname:<8} DD  DSN={dsn},DISP=(OLD,{disposition})\n"
-        )
+        lines.append(f"//{ddname:<8} DD  DSN={dsn},DISP=(OLD,{disposition})\n")
     return "".join(lines)
 
 
@@ -245,7 +274,7 @@ def runtime_step(
 
 def build_deck(
     interpreter: Path,
-    bcpl_source: Path,
+    sources: list[Path],
     job_name: str,
     listing: str,
     save_ocode: bool = False,
@@ -259,19 +288,21 @@ def build_deck(
             f"cannot infer valid interpreter entry point from {interpreter}"
         )
 
-    bcpl = read_ascii_records(bcpl_source, "BCPL source")
+    bcpl_sources = [
+        read_ascii_records(source, f"BCPL source {source.name}")
+        for source in sources
+    ]
     syni = read_ascii_records(SYNI, "SYNI")
     trni = read_ascii_records(TRNI, "TRNI")
     cgi = read_ascii_records(CGI, "CGI")
     blibi = read_ascii_records(BLIBI, "BLIBI")
     iclib = read_ascii_records(ICLIB, "ICLIB")
-
     asm_options, link_options = PROFILES[listing]
 
     deck = (
         f"//{job_name:<8} JOB (BCPL),'BCPL COMPILE RUN',CLASS=A,MSGCLASS=A,\n"
         "//             MSGLEVEL=(1,1)\n"
-        + job_map(interpreter, bcpl_source, listing, save_ocode, save_intcode)
+        + job_map(interpreter, sources, listing, save_ocode, save_intcode)
         + jcl_banner(
             "PHASE 1 - ASSEMBLE ICINT",
             f"SOURCE: {interpreter.name}",
@@ -316,56 +347,67 @@ def build_deck(
     deck += stage_step("STGBLIB", "STAGE RUNTIME - BLIBI", "&&BLIBI", blibi)
     deck += stage_step("STGICLIB", "STAGE RUNTIME - ICLIB", "&&ICLIB", iclib)
 
-    comp_dds = (
-        "//SYSIN    DD  *\n"
-        + bcpl
-        + "/*\n"
-        + temp_output_dd("OCODE", "&&OCODE")
-    )
-    deck += runtime_step(
-        "COMP",
-        "COMPILE 1 - BCPL TO OCODE",
-        (f"SOURCE: {bcpl_source.name}", "OUTPUT: &&OCODE"),
-        [
-            ("&&SYNI", "DELETE"),
-            ("&&TRNI", "DELETE"),
-            ("&&BLIBI", "PASS"),
-            ("&&ICLIB", "PASS"),
-        ],
-        comp_dds,
-    )
+    count = len(sources)
+    for number, (source, bcpl) in enumerate(zip(sources, bcpl_sources), 1):
+        ocode = ocode_dsn(number)
+        intcode = intcode_dsn(number)
+        comp_step = numbered_name("COMP", number, count)
+        cg_step = numbered_name("CG", number, count)
 
-    if save_ocode:
-        deck += save_step("SAVEOC", "ocode", "&&OCODE")
+        comp_dds = (
+            "//SYSIN    DD  *\n"
+            + bcpl
+            + "/*\n"
+            + temp_output_dd("OCODE", ocode)
+        )
+        deck += runtime_step(
+            comp_step,
+            f"COMPILE {number} - BCPL TO OCODE",
+            (f"SOURCE: {source.name}", f"OUTPUT: {ocode}"),
+            [
+                ("&&SYNI", "PASS"),
+                ("&&TRNI", "PASS"),
+                ("&&BLIBI", "PASS"),
+                ("&&ICLIB", "PASS"),
+            ],
+            comp_dds,
+        )
 
-    cg_dds = (
-        "//SYSIN    DD  DSN=&&OCODE,DISP=(OLD,DELETE)\n"
-        + temp_output_dd("INTCODE", "&&INTCODE")
-    )
-    deck += runtime_step(
-        "CG",
-        "CODE GENERATION 1 - OCODE TO INTCODE",
-        ("SOURCE: &&OCODE", "OUTPUT: &&INTCODE"),
-        [
-            ("&&CGI", "DELETE"),
-            ("&&BLIBI", "PASS"),
-            ("&&ICLIB", "PASS"),
-        ],
-        cg_dds,
-    )
+        if save_ocode:
+            save_name = numbered_name("SVOC", number, count)
+            deck += save_step(save_name, "ocode", number, source, ocode)
 
-    if save_intcode:
-        deck += save_step("SAVEINT", "intcode", "&&INTCODE")
+        cg_dds = (
+            f"//SYSIN    DD  DSN={ocode},DISP=(OLD,DELETE)\n"
+            + temp_output_dd("INTCODE", intcode)
+        )
+        deck += runtime_step(
+            cg_step,
+            f"CODE GENERATION {number} - OCODE TO INTCODE",
+            (f"SOURCE: {ocode}", f"OUTPUT: {intcode}"),
+            [
+                ("&&CGI", "PASS"),
+                ("&&BLIBI", "PASS"),
+                ("&&ICLIB", "PASS"),
+            ],
+            cg_dds,
+        )
 
+        if save_intcode:
+            save_name = numbered_name("SVIN", number, count)
+            deck += save_step(save_name, "intcode", number, source, intcode)
+
+    run_parts = [(intcode_dsn(number), "DELETE") for number in range(1, count + 1)]
+    run_parts.extend([
+        ("&&BLIBI", "DELETE"),
+        ("&&ICLIB", "DELETE"),
+    ])
+    module_list = " + ".join(intcode_dsn(number) for number in range(1, count + 1))
     deck += runtime_step(
         "RUN",
         "EXECUTE COMPILED BCPL PROGRAM",
-        ("INPUT: &&INTCODE + &&BLIBI + &&ICLIB",),
-        [
-            ("&&INTCODE", "DELETE"),
-            ("&&BLIBI", "DELETE"),
-            ("&&ICLIB", "DELETE"),
-        ],
+        (f"INPUT: {module_list} + &&BLIBI + &&ICLIB",),
+        run_parts,
     )
 
     deck += "//\n"
@@ -475,11 +517,7 @@ def extract_complete_job(report: str, job_number: int) -> str | None:
     return None
 
 
-def wait_for_job_report(
-    job_number: int,
-    timeout: float,
-    poll: float,
-) -> str:
+def wait_for_job_report(job_number: int, timeout: float, poll: float) -> str:
     deadline = time.monotonic() + timeout
     while True:
         job = extract_complete_job(read_printer(), job_number)
@@ -492,17 +530,18 @@ def wait_for_job_report(
         time.sleep(poll)
 
 
-def extract_final_results(job_report: str) -> str:
+def extract_final_results(job_report: str, module_count: int) -> str:
     lines = [line.replace("\f", "") for line in job_report.splitlines()]
     starts = [
         index
         for index, line in enumerate(lines)
         if line.strip() == "INTCODE SYSTEM ENTERED"
     ]
-    if len(starts) < 3:
+    expected = module_count * 2 + 1
+    if len(starts) < expected:
         raise RuntimeError(
             "compiler pipeline did not reach final RUN step "
-            f"(found {len(starts)} ICINT execution(s), expected 3)"
+            f"(found {len(starts)} ICINT execution(s), expected {expected})"
         )
 
     start = starts[-1]
@@ -526,8 +565,8 @@ def extract_final_results(job_report: str) -> str:
     return "\n".join(lines[start:end + 1]).strip("\r\n") + "\n"
 
 
-def extract_saved_stream(job_report: str, kind: str) -> str:
-    begin, end = SAVE_MARKERS[kind]
+def extract_saved_stream(job_report: str, kind: str, number: int) -> str:
+    begin, end = save_markers(kind, number)
     lines = [line.replace("\f", "") for line in job_report.splitlines()]
     begin_index = None
     for index, line in enumerate(lines):
@@ -535,7 +574,9 @@ def extract_saved_stream(job_report: str, kind: str) -> str:
             begin_index = index + 1
             break
     if begin_index is None:
-        raise RuntimeError(f"saved {kind.upper()} begin marker not found in job report")
+        raise RuntimeError(
+            f"saved {kind.upper()} unit {number} begin marker not found"
+        )
 
     records = []
     for line in lines[begin_index:]:
@@ -543,27 +584,32 @@ def extract_saved_stream(job_report: str, kind: str) -> str:
             return "\n".join(record.rstrip() for record in records) + "\n"
         records.append(line)
 
-    raise RuntimeError(f"saved {kind.upper()} end marker not found in job report")
+    raise RuntimeError(f"saved {kind.upper()} unit {number} end marker not found")
 
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="compile-and-run",
         description=(
-            "Compile BCPL through SYNI/TRNI and CGI under ICINT, then run "
-            "the generated INTCODE with BLIBI and ICLIB."
+            "Compile one or more BCPL modules through SYNI/TRNI and CGI under "
+            "ICINT, then load/run their INTCODE with BLIBI and ICLIB."
         ),
         epilog=(
             "Example: tools/compile-and-run --results --save-ocode "
-            "--save-intcode asm/icintv15.asm "
-            "tests/richards-factorial-test.bcpl"
+            "--save-intcode asm/icintv15.asm main.bcpl +module2.bcpl"
         ),
     )
     parser.add_argument(
         "interpreter",
-        help="IFOX ICINT assembler source (normally asm/icintv15.asm)",
+        help="IFOX ICINT assembler source (normally under asm/)",
     )
-    parser.add_argument("source", help="BCPL source program")
+    parser.add_argument("source", help="primary BCPL source module")
+    parser.add_argument(
+        "modules",
+        nargs="*",
+        metavar="+MODULE",
+        help="additional BCPL module; repeat in desired INTCODE load order",
+    )
     parser.add_argument(
         "--results",
         action="store_true",
@@ -572,12 +618,12 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--save-ocode",
         action="store_true",
-        help="save generated OCODE as workarea/SOURCE.ocode",
+        help="save generated OCODE as workarea/MODULE.ocode for each module",
     )
     parser.add_argument(
         "--save-intcode",
         action="store_true",
-        help="save generated INTCODE as workarea/SOURCE.int",
+        help="save generated INTCODE as workarea/MODULE.int for each module",
     )
     parser.add_argument(
         "--jcl",
@@ -633,12 +679,17 @@ def main(argv=None) -> int:
 
     try:
         interpreter = resolve_repo_path(args.interpreter)
-        source = resolve_repo_path(args.source)
+        primary = resolve_repo_path(args.source)
+        modules = parse_modules(args.modules)
+        sources = [primary, *modules]
 
+        if len(sources) > MAX_MODULES:
+            raise ValueError(f"at most {MAX_MODULES} BCPL modules are supported")
         if not interpreter.is_file():
             raise ValueError(f"interpreter does not exist: {interpreter}")
-        if not source.is_file():
-            raise ValueError(f"BCPL source does not exist: {source}")
+        for source in sources:
+            if not source.is_file():
+                raise ValueError(f"BCPL source does not exist: {source}")
 
         for description, path in (
             ("SYNI", SYNI),
@@ -650,6 +701,12 @@ def main(argv=None) -> int:
             if not path.is_file():
                 raise ValueError(f"{description} does not exist: {path}")
 
+        if (args.save_ocode or args.save_intcode) and len(
+            {source.stem for source in sources}
+        ) != len(sources):
+            raise ValueError(
+                "saved intermediate files require unique BCPL source stems"
+            )
         if not 1 <= args.reader_port <= 65535:
             raise ValueError("--reader-port must be between 1 and 65535")
         if args.timeout <= 0:
@@ -660,7 +717,7 @@ def main(argv=None) -> int:
         job_name = (
             args.job_name.upper()
             if args.job_name
-            else derive_job_name(source)
+            else derive_job_name(primary)
         )
         if not MVS_NAME.fullmatch(job_name):
             raise ValueError(
@@ -669,7 +726,7 @@ def main(argv=None) -> int:
 
         deck = build_deck(
             interpreter=interpreter,
-            bcpl_source=source,
+            sources=sources,
             job_name=job_name,
             listing=args.listing,
             save_ocode=args.save_ocode,
@@ -679,7 +736,7 @@ def main(argv=None) -> int:
         jcl_path = (
             resolve_repo_path(args.jcl)
             if args.jcl
-            else WORKAREA / f"compile-and-run-{source.stem}.jcl"
+            else WORKAREA / f"compile-and-run-{primary.stem}.jcl"
         )
         jcl_path.parent.mkdir(parents=True, exist_ok=True)
         jcl_path.write_text(deck, encoding="ascii", newline="\n")
@@ -710,25 +767,27 @@ def main(argv=None) -> int:
             )
 
         if args.save_ocode:
-            output = WORKAREA / f"{source.stem}.ocode"
-            output.write_text(
-                extract_saved_stream(report, "ocode"),
-                encoding="ascii",
-                newline="\n",
-            )
-            print(f"saved OCODE: {output.relative_to(ROOT)}")
+            for number, source in enumerate(sources, 1):
+                output = WORKAREA / f"{source.stem}.ocode"
+                output.write_text(
+                    extract_saved_stream(report, "ocode", number),
+                    encoding="ascii",
+                    newline="\n",
+                )
+                print(f"saved OCODE: {output.relative_to(ROOT)}")
 
         if args.save_intcode:
-            output = WORKAREA / f"{source.stem}.int"
-            output.write_text(
-                extract_saved_stream(report, "intcode"),
-                encoding="ascii",
-                newline="\n",
-            )
-            print(f"saved INTCODE: {output.relative_to(ROOT)}")
+            for number, source in enumerate(sources, 1):
+                output = WORKAREA / f"{source.stem}.int"
+                output.write_text(
+                    extract_saved_stream(report, "intcode", number),
+                    encoding="ascii",
+                    newline="\n",
+                )
+                print(f"saved INTCODE: {output.relative_to(ROOT)}")
 
         if args.results:
-            sys.stdout.write(extract_final_results(report))
+            sys.stdout.write(extract_final_results(report, len(sources)))
 
         return 0
 
