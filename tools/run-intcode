@@ -25,8 +25,11 @@ Also wait for completion and print the ICINT run results:
 
 The generated JCL contains IFOX assemble, IEWL link-edit, and GO steps.
 INTIN contains the primary program followed by every +module in the exact
-order supplied. If --sysin is supplied, each host text line becomes one
-in-stream SYSIN record. Without --sysin, no SYSIN DD statement is generated.
+order supplied. The GO step always supplies an 80-column INTCODE output DD
+for interpreters that implement FINDOUTPUT("INTCODE"); older interpreters
+simply ignore the extra DD. If --sysin is supplied, each host text line
+becomes one in-stream SYSIN record. Without --sysin, no SYSIN DD statement
+is generated.
 """
 
 from __future__ import annotations
@@ -149,6 +152,7 @@ def build_deck(interpreter, intin, sysin, job_name, listing):
         raise RuntimeError("unexpected make-asm-job GO-step layout")
     runtime_dds = (
         "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
+        "//INTCODE  DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)\n"
         "//INTIN    DD  *\n" + intin + "/*\n"
     )
     if sysin is not None:
