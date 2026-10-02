@@ -1,0 +1,47 @@
+// WORD-COUNT.BCPL
+// Count characters, words, and lines from named input stream TEXT.
+
+GLOBAL $(
+START:1
+SELECTINPUT:11
+RDCH:13
+FINDINPUT:42
+ENDREAD:46
+WRITEF:76
+$)
+
+MANIFEST $( ENDSTREAMCH=-1 $)
+
+LET SPACE(CH) = CH='*S' \/ CH='*T' \/ CH='*N'
+
+AND START() BE
+$( LET S = FINDINPUT("TEXT")
+   LET CHARS = 0
+   AND WORDS = 0
+   AND LINES = 0
+   AND INWORD = FALSE
+
+   IF S=0 DO
+   $( WRITEF("TEXT DD NOT FOUND*N")
+      FINISH
+   $)
+
+   SELECTINPUT(S)
+   $( LET CH = RDCH()
+      IF CH=ENDSTREAMCH BREAK
+      CHARS := CHARS+1
+      IF CH='*N' DO LINES := LINES+1
+      TEST SPACE(CH)
+         THEN INWORD := FALSE
+         OR UNLESS INWORD DO
+            $( WORDS := WORDS+1
+               INWORD := TRUE
+            $)
+   $) REPEAT
+   ENDREAD()
+
+   WRITEF("CHARACTERS = %N*N", CHARS)
+   WRITEF("WORDS      = %N*N", WORDS)
+   WRITEF("LINES      = %N*N", LINES)
+   FINISH
+$)
