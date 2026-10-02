@@ -1,0 +1,64 @@
+// MAZE.BCPL
+// Solve a small maze with recursive depth-first search.
+
+GLOBAL $( START:1; GETBYTE:85; WRCH:14; NEWLINE:63; WRITEF:76 $)
+
+LET SOLVE(X, Y, WALL, MARK) = VALOF
+$( LET P = Y*7+X
+   IF WALL!P RESULTIS FALSE
+   IF MARK!P RESULTIS FALSE
+   MARK!P := 1
+
+   IF X=5 & Y=5 DO
+   $( MARK!P := 2
+      RESULTIS TRUE
+   $)
+
+   IF SOLVE(X+1,Y,WALL,MARK) \/
+      SOLVE(X,Y+1,WALL,MARK) \/
+      SOLVE(X-1,Y,WALL,MARK) \/
+      SOLVE(X,Y-1,WALL,MARK) DO
+   $( MARK!P := 2
+      RESULTIS TRUE
+   $)
+
+   RESULTIS FALSE
+$)
+
+AND START() BE
+$( LET ROW = VEC 6
+   AND WALL = VEC 48
+   AND MARK = VEC 48
+
+   ROW!0 := "#######"
+   ROW!1 := "#.....#"
+   ROW!2 := "#.###.#"
+   ROW!3 := "#...#.#"
+   ROW!4 := "###.#.#"
+   ROW!5 := "#.....#"
+   ROW!6 := "#######"
+
+   FOR Y = 0 TO 6 DO
+      FOR X = 0 TO 6 DO
+      $( LET P = Y*7+X
+         WALL!P := GETBYTE(ROW!Y,X+1)='#'
+         MARK!P := 0
+      $)
+
+   UNLESS SOLVE(1,1,WALL,MARK) DO
+   $( WRITEF("NO PATH*N")
+      FINISH
+   $)
+
+   WRITEF("MAZE PATH*N")
+   FOR Y = 0 TO 6 DO
+   $( FOR X = 0 TO 6 DO
+      $( LET P = Y*7+X
+         TEST WALL!P
+            THEN WRCH('#')
+            OR TEST MARK!P=2 THEN WRCH('O') OR WRCH('.')
+      $)
+      NEWLINE()
+   $)
+   FINISH
+$)
