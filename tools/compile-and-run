@@ -22,13 +22,9 @@ Pipeline, all in one MVS job:
     generated INTCODE + BLIBI + ICLIB
         -> final program execution
 
-The compiler/runtime INTCODE components are repository-standard inputs and
-are staged into temporary MVS datasets before the three ICINT executions.
-
-Initial host-DD scope:
-    - COMP supplies //OCODE explicitly.
-    - CG supplies //INTCODE explicitly.
-    - Additional named compiler/program DDs will be added here later.
+Optional save taps copy &&OCODE and/or &&INTCODE to dedicated SYSOUT data sets
+and recover those records into host files after job completion.  The compiler
+pipeline data sets themselves are not modified by the save operation.
 """
 
 from __future__ import annotations
@@ -61,8 +57,15 @@ MVS_NAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
 PROFILES = {
     "light": ("OBJECT,NODECK,NOLIST,NOXREF", "LET,NCAL"),
     "medium": ("OBJECT,NODECK,LIST,XREF(SHORT)", "LET,NCAL,MAP"),
-    "heavy": ("OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD",
-              "LET,NCAL,LIST,XREF"),
+    "heavy": (
+        "OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD",
+        "LET,NCAL,LIST,XREF",
+    ),
+}
+
+SAVE_MARKERS = {
+    "ocode": ("@@BCPL-OCODE-BEGIN@@", "@@BCPL-OCODE-END@@"),
+    "intcode": ("@@BCPL-INTCODE-BEGIN@@", "@@BCPL-INTCODE-END@@"),
 }
 
 
@@ -116,6 +119,49 @@ def derive_job_name(source: Path) -> str:
     return job
 
 
+def jcl_banner(title: str, *details: str) -> str:
+    width = 68
+    lines = ["//*" + "*" * width + "\n"]
+    lines.append(f"//*  {title}\n")
+    for detail in details:
+        if detail:
+            lines.append(f"//*  {detail}\n")
+    lines.append("//*" + "*" * width + "\n")
+    return "".join(lines)
+
+
+def job_map(
+    interpreter: Path,
+    source: Path,
+    listing: str,
+    save_ocode: bool,
+    save_intcode: bool,
+) -> str:
+    return (
+        jcl_banner(
+            "BCPL COMPILE-AND-RUN JOB MAP",
+            f"INTERPRETER: {interpreter.name}",
+            f"BCPL SOURCE: {source.name}",
+            f"LISTING: {listing.upper()}",
+            f"SAVE OCODE: {'YES' if save_ocode else 'NO'}",
+            f"SAVE INTCODE: {'YES' if save_intcode else 'NO'}",
+        )
+        + "//*  ASM       BUILD ICINT WITH IFOX\n"
+        + "//*  LKED      LINK-EDIT ICINT AS RUNMOD\n"
+        + "//*  STGSYNI   STAGE SYNI\n"
+        + "//*  STGTRNI   STAGE TRNI\n"
+        + "//*  STGCGI    STAGE CGI\n"
+        + "//*  STGBLIB   STAGE BLIBI\n"
+        + "//*  STGICLIB  STAGE ICLIB\n"
+        + "//*  COMP      BCPL SOURCE -> OCODE\n"
+        + ("//*  SAVEOC    COPY OCODE TO SAVE SYSOUT\n" if save_ocode else "")
+        + "//*  CG        OCODE -> INTCODE\n"
+        + ("//*  SAVEINT   COPY INTCODE TO SAVE SYSOUT\n" if save_intcode else "")
+        + "//*  RUN       EXECUTE INTCODE + BLIBI + ICLIB\n"
+        + "//*\n"
+    )
+
+
 def temp_output_dd(ddname: str, dsn: str, disposition: str = "PASS") -> str:
     return (
         f"//{ddname:<8} DD  DSN={dsn},UNIT=SYSDA,\n"
@@ -125,19 +171,43 @@ def temp_output_dd(ddname: str, dsn: str, disposition: str = "PASS") -> str:
     )
 
 
-def stage_step(step: str, dsn: str, content: str) -> str:
+def stage_step(step: str, title: str, dsn: str, content: str) -> str:
     return (
-        f"//{step:<8} EXEC PGM=IEBGENER,COND=(4,LT)\n"
-        "//SYSPRINT DD  SYSOUT=*\n"
-        "//SYSIN    DD  DUMMY\n"
-        f"//SYSUT2   DD  DSN={dsn},UNIT=SYSDA,\n"
-        "//             SPACE=(80,(1000,500)),\n"
-        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),\n"
-        "//             DISP=(NEW,PASS)\n"
-        "//SYSUT1   DD  *\n"
-        f"{content}"
-        "/*\n"
-        "//*\n"
+        jcl_banner(title, f"OUTPUT DATASET: {dsn}")
+        + f"//{step:<8} EXEC PGM=IEBGENER,COND=(4,LT)\n"
+        + "//SYSPRINT DD  SYSOUT=*\n"
+        + "//SYSIN    DD  DUMMY\n"
+        + f"//SYSUT2   DD  DSN={dsn},UNIT=SYSDA,\n"
+        + "//             SPACE=(80,(1000,500)),\n"
+        + "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),\n"
+        + "//             DISP=(NEW,PASS)\n"
+        + "//SYSUT1   DD  *\n"
+        + content
+        + "/*\n"
+        + "//*\n"
+    )
+
+
+def save_step(step: str, kind: str, dsn: str) -> str:
+    begin, end = SAVE_MARKERS[kind]
+    label = kind.upper()
+    return (
+        jcl_banner(
+            f"SAVE {label}",
+            f"COPY {dsn} TO A MARKED SYSOUT DATASET FOR HOST RECOVERY",
+        )
+        + f"//{step:<8} EXEC PGM=IEBGENER,COND=(4,LT)\n"
+        + "//SYSPRINT DD  SYSOUT=*\n"
+        + "//SYSIN    DD  DUMMY\n"
+        + "//SYSUT1   DD  *\n"
+        + f"{begin}\n"
+        + "/*\n"
+        + f"//         DD  DSN={dsn},DISP=(OLD,PASS)\n"
+        + "//         DD  *\n"
+        + f"{end}\n"
+        + "/*\n"
+        + "//SYSUT2   DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)\n"
+        + "//*\n"
     )
 
 
@@ -156,17 +226,20 @@ def intin_concat(parts: list[tuple[str, str]]) -> str:
 
 def runtime_step(
     step: str,
+    title: str,
+    details: tuple[str, ...],
     intin_parts: list[tuple[str, str]],
     extra_dds: str = "",
 ) -> str:
     return (
-        f"//{step:<8} EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)\n"
-        "//STEPLIB  DD  DSN=&&GOSET,DISP=(OLD,PASS)\n"
-        "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
-        f"{intin_concat(intin_parts)}"
-        f"{extra_dds}"
-        "//SYSUDUMP DD  SYSOUT=*\n"
-        "//*\n"
+        jcl_banner(title, *details)
+        + f"//{step:<8} EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)\n"
+        + "//STEPLIB  DD  DSN=&&GOSET,DISP=(OLD,PASS)\n"
+        + "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
+        + intin_concat(intin_parts)
+        + extra_dds
+        + "//SYSUDUMP DD  SYSOUT=*\n"
+        + "//*\n"
     )
 
 
@@ -175,6 +248,8 @@ def build_deck(
     bcpl_source: Path,
     job_name: str,
     listing: str,
+    save_ocode: bool = False,
+    save_intcode: bool = False,
 ) -> str:
     make_asm = load_make_asm()
     asm_source = make_asm.check_source(interpreter)
@@ -196,55 +271,61 @@ def build_deck(
     deck = (
         f"//{job_name:<8} JOB (BCPL),'BCPL COMPILE RUN',CLASS=A,MSGCLASS=A,\n"
         "//             MSGLEVEL=(1,1)\n"
-        f"//* GENERATED FROM {interpreter.name}; LISTING={listing.upper()}\n"
-        f"//* BCPL SOURCE: {bcpl_source.name}\n"
-        "//* ONE ICINT ASSEMBLY/LINK; COMP, CG AND RUN REUSE &&GOSET.\n"
-        "//*\n"
-        "//ASM      EXEC PGM=IFOX00,\n"
-        f"//             PARM='{asm_options}',REGION=256K\n"
-        "//SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR\n"
-        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1700,(600,100))\n"
-        "//SYSUT2   DD  UNIT=SYSDA,SPACE=(1700,(300,50))\n"
-        "//SYSUT3   DD  UNIT=SYSDA,SPACE=(1700,(300,50))\n"
-        "//SYSPRINT DD  SYSOUT=*\n"
-        "//SYSPUNCH DD  DUMMY\n"
-        "//SYSGO    DD  DSN=&&OBJSET,UNIT=SYSDA,SPACE=(80,(300,100)),\n"
-        "//             DISP=(MOD,PASS)\n"
-        "//SYSIN    DD  *\n"
-        f"{asm_source}"
-        "/*\n"
-        "//*\n"
-        f"//LKED     EXEC PGM=IEWL,PARM='{link_options}',REGION=256K,\n"
-        "//             COND=(4,LT,ASM)\n"
-        "//SYSLIN   DD  DSN=&&OBJSET,DISP=(OLD,DELETE)\n"
-        "//         DD  *\n"
-        f"  ENTRY {entry}\n"
-        "  NAME RUNMOD(R)\n"
-        "/*\n"
-        "//SYSLMOD  DD  DSN=&&GOSET(RUNMOD),UNIT=SYSDA,\n"
-        "//             SPACE=(1024,(50,20,1)),DISP=(MOD,PASS)\n"
-        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))\n"
-        "//SYSPRINT DD  SYSOUT=*\n"
-        "//*\n"
+        + job_map(interpreter, bcpl_source, listing, save_ocode, save_intcode)
+        + jcl_banner(
+            "PHASE 1 - ASSEMBLE ICINT",
+            f"SOURCE: {interpreter.name}",
+            f"PROFILE: {listing.upper()}",
+        )
+        + "//ASM      EXEC PGM=IFOX00,\n"
+        + f"//             PARM='{asm_options}',REGION=256K\n"
+        + "//SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR\n"
+        + "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1700,(600,100))\n"
+        + "//SYSUT2   DD  UNIT=SYSDA,SPACE=(1700,(300,50))\n"
+        + "//SYSUT3   DD  UNIT=SYSDA,SPACE=(1700,(300,50))\n"
+        + "//SYSPRINT DD  SYSOUT=*\n"
+        + "//SYSPUNCH DD  DUMMY\n"
+        + "//SYSGO    DD  DSN=&&OBJSET,UNIT=SYSDA,SPACE=(80,(300,100)),\n"
+        + "//             DISP=(MOD,PASS)\n"
+        + "//SYSIN    DD  *\n"
+        + asm_source
+        + "/*\n"
+        + "//*\n"
+        + jcl_banner(
+            "PHASE 2 - LINK-EDIT ICINT",
+            f"ENTRY: {entry}",
+            "OUTPUT: &&GOSET(RUNMOD)",
+        )
+        + f"//LKED     EXEC PGM=IEWL,PARM='{link_options}',REGION=256K,\n"
+        + "//             COND=(4,LT,ASM)\n"
+        + "//SYSLIN   DD  DSN=&&OBJSET,DISP=(OLD,DELETE)\n"
+        + "//         DD  *\n"
+        + f"  ENTRY {entry}\n"
+        + "  NAME RUNMOD(R)\n"
+        + "/*\n"
+        + "//SYSLMOD  DD  DSN=&&GOSET(RUNMOD),UNIT=SYSDA,\n"
+        + "//             SPACE=(1024,(50,20,1)),DISP=(MOD,PASS)\n"
+        + "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))\n"
+        + "//SYSPRINT DD  SYSOUT=*\n"
+        + "//*\n"
     )
 
-    # Stage compiler phases and runtime libraries once as temporary datasets.
-    deck += stage_step("STGSYNI", "&&SYNI", syni)
-    deck += stage_step("STGTRNI", "&&TRNI", trni)
-    deck += stage_step("STGCGI", "&&CGI", cgi)
-    deck += stage_step("STGBLIB", "&&BLIBI", blibi)
-    deck += stage_step("STGICLIB", "&&ICLIB", iclib)
+    deck += stage_step("STGSYNI", "STAGE COMPILER PHASE - SYNI", "&&SYNI", syni)
+    deck += stage_step("STGTRNI", "STAGE COMPILER PHASE - TRNI", "&&TRNI", trni)
+    deck += stage_step("STGCGI", "STAGE CODE GENERATOR - CGI", "&&CGI", cgi)
+    deck += stage_step("STGBLIB", "STAGE RUNTIME - BLIBI", "&&BLIBI", blibi)
+    deck += stage_step("STGICLIB", "STAGE RUNTIME - ICLIB", "&&ICLIB", iclib)
 
-    # SYN/TRN: BCPL source -> OCODE.  OCODE is deliberately an explicit DD
-    # here; later versions of this tool can add the other named compiler DDs.
     comp_dds = (
         "//SYSIN    DD  *\n"
-        f"{bcpl}"
-        "/*\n"
+        + bcpl
+        + "/*\n"
         + temp_output_dd("OCODE", "&&OCODE")
     )
     deck += runtime_step(
         "COMP",
+        "COMPILE 1 - BCPL TO OCODE",
+        (f"SOURCE: {bcpl_source.name}", "OUTPUT: &&OCODE"),
         [
             ("&&SYNI", "DELETE"),
             ("&&TRNI", "DELETE"),
@@ -254,13 +335,17 @@ def build_deck(
         comp_dds,
     )
 
-    # CGI: OCODE -> INTCODE.
+    if save_ocode:
+        deck += save_step("SAVEOC", "ocode", "&&OCODE")
+
     cg_dds = (
         "//SYSIN    DD  DSN=&&OCODE,DISP=(OLD,DELETE)\n"
         + temp_output_dd("INTCODE", "&&INTCODE")
     )
     deck += runtime_step(
         "CG",
+        "CODE GENERATION 1 - OCODE TO INTCODE",
+        ("SOURCE: &&OCODE", "OUTPUT: &&INTCODE"),
         [
             ("&&CGI", "DELETE"),
             ("&&BLIBI", "PASS"),
@@ -269,9 +354,13 @@ def build_deck(
         cg_dds,
     )
 
-    # Final execution: generated program plus the standard runtime modules.
+    if save_intcode:
+        deck += save_step("SAVEINT", "intcode", "&&INTCODE")
+
     deck += runtime_step(
         "RUN",
+        "EXECUTE COMPILED BCPL PROGRAM",
+        ("INPUT: &&INTCODE + &&BLIBI + &&ICLIB",),
         [
             ("&&INTCODE", "DELETE"),
             ("&&BLIBI", "DELETE"),
@@ -437,6 +526,26 @@ def extract_final_results(job_report: str) -> str:
     return "\n".join(lines[start:end + 1]).strip("\r\n") + "\n"
 
 
+def extract_saved_stream(job_report: str, kind: str) -> str:
+    begin, end = SAVE_MARKERS[kind]
+    lines = [line.replace("\f", "") for line in job_report.splitlines()]
+    begin_index = None
+    for index, line in enumerate(lines):
+        if line.strip() == begin:
+            begin_index = index + 1
+            break
+    if begin_index is None:
+        raise RuntimeError(f"saved {kind.upper()} begin marker not found in job report")
+
+    records = []
+    for line in lines[begin_index:]:
+        if line.strip() == end:
+            return "\n".join(record.rstrip() for record in records) + "\n"
+        records.append(line)
+
+    raise RuntimeError(f"saved {kind.upper()} end marker not found in job report")
+
+
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="compile-and-run",
@@ -445,8 +554,9 @@ def make_parser() -> argparse.ArgumentParser:
             "the generated INTCODE with BLIBI and ICLIB."
         ),
         epilog=(
-            "Example: tools/compile-and-run --results "
-            "asm/icintv15.asm tests/richards-factorial-test.bcpl"
+            "Example: tools/compile-and-run --results --save-ocode "
+            "--save-intcode asm/icintv15.asm "
+            "tests/richards-factorial-test.bcpl"
         ),
     )
     parser.add_argument(
@@ -460,10 +570,20 @@ def make_parser() -> argparse.ArgumentParser:
         help="wait for completion and print only the final BCPL program results",
     )
     parser.add_argument(
+        "--save-ocode",
+        action="store_true",
+        help="save generated OCODE as workarea/SOURCE.ocode",
+    )
+    parser.add_argument(
+        "--save-intcode",
+        action="store_true",
+        help="save generated INTCODE as workarea/SOURCE.int",
+    )
+    parser.add_argument(
         "--jcl",
         metavar="PATH",
         help="generated JCL deck "
-             "(default: workarea/compile-and-run-SOURCE.jcl)",
+        "(default: workarea/compile-and-run-SOURCE.jcl)",
     )
     parser.add_argument(
         "--job-name",
@@ -495,7 +615,7 @@ def make_parser() -> argparse.ArgumentParser:
         default=DEFAULT_TIMEOUT,
         metavar="SECONDS",
         help=f"maximum wait for JES/result completion "
-             f"(default: {DEFAULT_TIMEOUT:g})",
+        f"(default: {DEFAULT_TIMEOUT:g})",
     )
     parser.add_argument(
         "--poll",
@@ -552,6 +672,8 @@ def main(argv=None) -> int:
             bcpl_source=source,
             job_name=job_name,
             listing=args.listing,
+            save_ocode=args.save_ocode,
+            save_intcode=args.save_intcode,
         )
 
         jcl_path = (
@@ -562,8 +684,10 @@ def main(argv=None) -> int:
         jcl_path.parent.mkdir(parents=True, exist_ok=True)
         jcl_path.write_text(deck, encoding="ascii", newline="\n")
 
-        print(f"submitting {jcl_path.relative_to(ROOT)} as {job_name} "
-              f"through reader port {args.reader_port}")
+        print(
+            f"submitting {jcl_path.relative_to(ROOT)} as {job_name} "
+            f"through reader port {args.reader_port}"
+        )
         start_offset = submit_job(
             jcl_path,
             args.reader_host,
@@ -577,12 +701,33 @@ def main(argv=None) -> int:
         )
         print(f"JOB {job_number}")
 
-        if args.results:
+        report = None
+        if args.results or args.save_ocode or args.save_intcode:
             report = wait_for_job_report(
                 job_number,
                 args.timeout,
                 args.poll,
             )
+
+        if args.save_ocode:
+            output = WORKAREA / f"{source.stem}.ocode"
+            output.write_text(
+                extract_saved_stream(report, "ocode"),
+                encoding="ascii",
+                newline="\n",
+            )
+            print(f"saved OCODE: {output.relative_to(ROOT)}")
+
+        if args.save_intcode:
+            output = WORKAREA / f"{source.stem}.int"
+            output.write_text(
+                extract_saved_stream(report, "intcode"),
+                encoding="ascii",
+                newline="\n",
+            )
+            print(f"saved INTCODE: {output.relative_to(ROOT)}")
+
+        if args.results:
             sys.stdout.write(extract_final_results(report))
 
         return 0
