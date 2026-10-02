@@ -15,8 +15,10 @@ Each BCPL module is compiled separately through SYNI/TRNI and CGI.  Only the
 generated INTCODE modules are concatenated, in command-line order, for the
 final ICINT load/run with BLIBI and ICLIB.
 
-Optional save taps copy each module's OCODE and/or INTCODE to marked SYSOUT
-data sets and recover those records into host files after job completion.
+Optional --dd NAME=PATH arguments make ASCII host files available to each BCPL
+compile step as ordinary MVS DDNAME input streams.  Optional save taps copy
+each module's OCODE and/or INTCODE to marked SYSOUT data sets and recover those
+records into host files after job completion.
 """
 
 from __future__ import annotations
@@ -48,6 +50,14 @@ DEFAULT_POLL = 0.25
 MAX_MODULES = 99
 
 MVS_NAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
+RESERVED_COMPILE_DDNAMES = {
+    "STEPLIB",
+    "SYSPRINT",
+    "INTIN",
+    "SYSIN",
+    "OCODE",
+    "SYSUDUMP",
+}
 PROFILES = {
     "light": ("OBJECT,NODECK,NOLIST,NOXREF", "LET,NCAL"),
     "medium": ("OBJECT,NODECK,LIST,XREF(SHORT)", "LET,NCAL,MAP"),
@@ -83,6 +93,29 @@ def parse_modules(tokens: list[str]) -> list[Path]:
             )
         modules.append(resolve_repo_path(token[1:]))
     return modules
+
+
+def parse_named_dds(tokens: list[str]) -> list[tuple[str, Path]]:
+    named_dds = []
+    used = set()
+    for token in tokens:
+        if "=" not in token:
+            raise ValueError(f"--dd must use NAME=PATH syntax: {token}")
+        name, path_text = token.split("=", 1)
+        name = name.upper()
+        if not MVS_NAME.fullmatch(name):
+            raise ValueError(
+                f"--dd name must be a valid MVS DDNAME of at most 8 characters: {name}"
+            )
+        if name in RESERVED_COMPILE_DDNAMES:
+            raise ValueError(f"--dd {name} conflicts with a compile-and-run DDNAME")
+        if name in used:
+            raise ValueError(f"duplicate --dd name: {name}")
+        if not path_text:
+            raise ValueError(f"--dd {name} requires a host file path")
+        used.add(name)
+        named_dds.append((name, resolve_repo_path(path_text)))
+    return named_dds
 
 
 def read_ascii_records(path: Path, description: str, width: int = 80) -> str:
@@ -159,7 +192,13 @@ def job_map(
     listing: str,
     save_ocode: bool,
     save_intcode: bool,
+    named_dds: list[tuple[str, Path]],
 ) -> str:
+    dd_summary = (
+        "NAMED INPUT DDS: " + ", ".join(name for name, _ in named_dds)
+        if named_dds
+        else "NAMED INPUT DDS: NONE"
+    )
     lines = [
         jcl_banner(
             "BCPL COMPILE-AND-RUN JOB MAP",
@@ -168,6 +207,7 @@ def job_map(
             f"LISTING: {listing.upper()}",
             f"SAVE OCODE: {'YES' if save_ocode else 'NO'}",
             f"SAVE INTCODE: {'YES' if save_intcode else 'NO'}",
+            dd_summary,
         ),
         "//*  ASM       BUILD ICINT WITH IFOX\n",
         "//*  LKED      LINK-EDIT ICINT AS RUNMOD\n",
@@ -200,6 +240,10 @@ def temp_output_dd(ddname: str, dsn: str, disposition: str = "PASS") -> str:
         "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),\n"
         f"//             DISP=(NEW,{disposition})\n"
     )
+
+
+def inline_dd(ddname: str, content: str) -> str:
+    return f"//{ddname:<8} DD  *\n" + content + "/*\n"
 
 
 def stage_step(step: str, title: str, dsn: str, content: str) -> str:
@@ -277,6 +321,7 @@ def build_deck(
     sources: list[Path],
     job_name: str,
     listing: str,
+    named_dds: list[tuple[str, Path]],
     save_ocode: bool = False,
     save_intcode: bool = False,
 ) -> str:
@@ -292,6 +337,10 @@ def build_deck(
         read_ascii_records(source, f"BCPL source {source.name}")
         for source in sources
     ]
+    named_inputs = [
+        (name, path, read_ascii_records(path, f"--dd {name} input"))
+        for name, path in named_dds
+    ]
     syni = read_ascii_records(SYNI, "SYNI")
     trni = read_ascii_records(TRNI, "TRNI")
     cgi = read_ascii_records(CGI, "CGI")
@@ -302,7 +351,14 @@ def build_deck(
     deck = (
         f"//{job_name:<8} JOB (BCPL),'BCPL COMPILE RUN',CLASS=A,MSGCLASS=A,\n"
         "//             MSGLEVEL=(1,1)\n"
-        + job_map(interpreter, sources, listing, save_ocode, save_intcode)
+        + job_map(
+            interpreter,
+            sources,
+            listing,
+            save_ocode,
+            save_intcode,
+            named_dds,
+        )
         + jcl_banner(
             "PHASE 1 - ASSEMBLE ICINT",
             f"SOURCE: {interpreter.name}",
@@ -348,6 +404,9 @@ def build_deck(
     deck += stage_step("STGICLIB", "STAGE RUNTIME - ICLIB", "&&ICLIB", iclib)
 
     count = len(sources)
+    named_dd_text = "".join(
+        inline_dd(name, content) for name, _path, content in named_inputs
+    )
     for number, (source, bcpl) in enumerate(zip(sources, bcpl_sources), 1):
         ocode = ocode_dsn(number)
         intcode = intcode_dsn(number)
@@ -355,15 +414,19 @@ def build_deck(
         cg_step = numbered_name("CG", number, count)
 
         comp_dds = (
-            "//SYSIN    DD  *\n"
-            + bcpl
-            + "/*\n"
+            inline_dd("SYSIN", bcpl)
+            + named_dd_text
             + temp_output_dd("OCODE", ocode)
         )
+        details = [f"SOURCE: {source.name}", f"OUTPUT: {ocode}"]
+        if named_dds:
+            details.append(
+                "NAMED INPUT DDS: " + ", ".join(name for name, _ in named_dds)
+            )
         deck += runtime_step(
             comp_step,
             f"COMPILE {number} - BCPL TO OCODE",
-            (f"SOURCE: {source.name}", f"OUTPUT: {ocode}"),
+            tuple(details),
             [
                 ("&&SYNI", "PASS"),
                 ("&&TRNI", "PASS"),
@@ -596,7 +659,8 @@ def make_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Example: tools/compile-and-run --results --save-ocode "
-            "--save-intcode asm/icintv15.asm main.bcpl +module2.bcpl"
+            "--save-intcode --dd EXTRA=extra.bcpl asm/icintv15.asm "
+            "main.bcpl +module2.bcpl"
         ),
     )
     parser.add_argument(
@@ -609,6 +673,16 @@ def make_parser() -> argparse.ArgumentParser:
         nargs="*",
         metavar="+MODULE",
         help="additional BCPL module; repeat in desired INTCODE load order",
+    )
+    parser.add_argument(
+        "--dd",
+        action="append",
+        default=[],
+        metavar="NAME=PATH",
+        help=(
+            "make an ASCII host file available as named input DDNAME on every "
+            "BCPL compile step; repeat as needed"
+        ),
     )
     parser.add_argument(
         "--results",
@@ -628,8 +702,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--jcl",
         metavar="PATH",
-        help="generated JCL deck "
-        "(default: workarea/compile-and-run-SOURCE.jcl)",
+        help="generated JCL deck (default: workarea/compile-and-run-SOURCE.jcl)",
     )
     parser.add_argument(
         "--job-name",
@@ -660,8 +733,7 @@ def make_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_TIMEOUT,
         metavar="SECONDS",
-        help=f"maximum wait for JES/result completion "
-        f"(default: {DEFAULT_TIMEOUT:g})",
+        help=f"maximum wait for JES/result completion (default: {DEFAULT_TIMEOUT:g})",
     )
     parser.add_argument(
         "--poll",
@@ -681,6 +753,7 @@ def main(argv=None) -> int:
         interpreter = resolve_repo_path(args.interpreter)
         primary = resolve_repo_path(args.source)
         modules = parse_modules(args.modules)
+        named_dds = parse_named_dds(args.dd)
         sources = [primary, *modules]
 
         if len(sources) > MAX_MODULES:
@@ -690,6 +763,9 @@ def main(argv=None) -> int:
         for source in sources:
             if not source.is_file():
                 raise ValueError(f"BCPL source does not exist: {source}")
+        for name, path in named_dds:
+            if not path.is_file():
+                raise ValueError(f"--dd {name} input does not exist: {path}")
 
         for description, path in (
             ("SYNI", SYNI),
@@ -714,11 +790,7 @@ def main(argv=None) -> int:
         if args.poll <= 0:
             raise ValueError("--poll must be greater than zero")
 
-        job_name = (
-            args.job_name.upper()
-            if args.job_name
-            else derive_job_name(primary)
-        )
+        job_name = args.job_name.upper() if args.job_name else derive_job_name(primary)
         if not MVS_NAME.fullmatch(job_name):
             raise ValueError(
                 "--job-name must be a valid MVS name of at most 8 characters"
@@ -729,6 +801,7 @@ def main(argv=None) -> int:
             sources=sources,
             job_name=job_name,
             listing=args.listing,
+            named_dds=named_dds,
             save_ocode=args.save_ocode,
             save_intcode=args.save_intcode,
         )
@@ -745,11 +818,7 @@ def main(argv=None) -> int:
             f"submitting {jcl_path.relative_to(ROOT)} as {job_name} "
             f"through reader port {args.reader_port}"
         )
-        start_offset = submit_job(
-            jcl_path,
-            args.reader_host,
-            args.reader_port,
-        )
+        start_offset = submit_job(jcl_path, args.reader_host, args.reader_port)
         job_number = wait_for_new_job(
             job_name,
             start_offset,
@@ -760,11 +829,7 @@ def main(argv=None) -> int:
 
         report = None
         if args.results or args.save_ocode or args.save_intcode:
-            report = wait_for_job_report(
-                job_number,
-                args.timeout,
-                args.poll,
-            )
+            report = wait_for_job_report(job_number, args.timeout, args.poll)
 
         if args.save_ocode:
             for number, source in enumerate(sources, 1):
