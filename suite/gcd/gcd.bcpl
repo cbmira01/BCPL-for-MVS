@@ -1,0 +1,22 @@
+// GCD.BCPL
+// Euclid's algorithm, plus an LCM derived from the GCD.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET GCD(A, B) = VALOF
+$( IF A<0 DO A := -A
+   IF B<0 DO B := -B
+   UNTIL B=0 DO A, B := B, A REM B
+   RESULTIS A
+$)
+
+AND LCM(A, B) = A=0 \/ B=0 -> 0, (A/GCD(A,B))*B
+
+AND START() BE
+$( LET A = 1071
+   AND B = 462
+   WRITEF("A = %N, B = %N*N", A, B)
+   WRITEF("GCD = %N*N", GCD(A, B))
+   WRITEF("LCM = %N*N", LCM(A, B))
+   FINISH
+$)
