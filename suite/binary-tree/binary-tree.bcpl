@@ -1,0 +1,60 @@
+// BINARY-TREE.BCPL
+// Build and traverse a binary search tree using vector-backed nodes.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET INSERT(ROOT, KEY, KEYS, LEFT, RIGHT, NEXTNODE) = VALOF
+$( LET N = NEXTNODE!0
+   KEYS!N := KEY
+   LEFT!N := -1
+   RIGHT!N := -1
+   NEXTNODE!0 := N+1
+
+   IF ROOT<0 RESULTIS N
+
+   LET P = ROOT
+   $( TEST KEY<KEYS!P
+         THEN TEST LEFT!P<0
+                 THEN $( LEFT!P := N; RESULTIS ROOT $)
+                 OR P := LEFT!P
+         OR TEST RIGHT!P<0
+                 THEN $( RIGHT!P := N; RESULTIS ROOT $)
+                 OR P := RIGHT!P
+   $) REPEAT
+$)
+
+AND INORDER(P, KEYS, LEFT, RIGHT) BE
+$( IF P<0 RETURN
+   INORDER(LEFT!P, KEYS, LEFT, RIGHT)
+   WRITEF(" %N", KEYS!P)
+   INORDER(RIGHT!P, KEYS, LEFT, RIGHT)
+$)
+
+AND SEARCH(P, KEY, KEYS, LEFT, RIGHT) = VALOF
+$( UNTIL P<0 DO
+   $( IF KEYS!P=KEY RESULTIS TRUE
+      P := KEY<KEYS!P -> LEFT!P, RIGHT!P
+   $)
+   RESULTIS FALSE
+$)
+
+AND START() BE
+$( LET KEYS = VEC 15
+   AND LEFT = VEC 15
+   AND RIGHT = VEC 15
+   AND NEXTNODE = VEC 0
+   LET ROOT = -1
+
+   NEXTNODE!0 := 0
+   FOR I = 0 TO 8 DO
+   $( LET K = I!TABLE 50, 25, 75, 10, 30, 60, 90, 27, 65
+      ROOT := INSERT(ROOT, K, KEYS, LEFT, RIGHT, NEXTNODE)
+   $)
+
+   WRITEF("INORDER:")
+   INORDER(ROOT, KEYS, LEFT, RIGHT)
+   WRITEF("*N")
+   WRITEF("SEARCH 27: %N*N", SEARCH(ROOT,27,KEYS,LEFT,RIGHT))
+   WRITEF("SEARCH 44: %N*N", SEARCH(ROOT,44,KEYS,LEFT,RIGHT))
+   FINISH
+$)
