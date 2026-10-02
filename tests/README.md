@@ -1,9 +1,9 @@
 # Tests
 
 This directory contains regression, acceptance, and diagnostic workloads for
-the BCPL-for-MVS reconstruction.  The tests now cover both direct INTCODE
-execution under `ICINT` and the interpreted BCPL compiler pipeline through
-SYNI/TRNI, CGI, and the runtime libraries.
+the BCPL-for-MVS reconstruction. The tests cover both direct INTCODE execution
+under `ICINT` and the interpreted BCPL compiler pipeline through SYNI/TRNI,
+CGI, and the runtime libraries.
 
 The tests are grouped by purpose rather than kept as one flat collection.
 Numbered directory names roughly follow the order in which the capabilities
@@ -23,20 +23,23 @@ were established.
 [`tools/run-intcode`](../tools/run-intcode) is the normal driver for tests
 whose primary input is already INTCODE.
 
-For example, the stream echo test is intended to run with the standard runtime
-components:
+For example, the stream echo test uses the standard interpreted runtime and a
+host file mapped to `SYSIN`:
 
 ```text
-tools/run-intcode --runtime --results \
+tools/run-intcode --results \
+    --sysin tests/01-echo-test/best-of-times.txt \
     asm/icintv15.asm \
-    tests/01-echo-test/echo-sysin.int
+    tests/01-echo-test/echo-sysin.int \
+    +intcode/blibi.int \
+    +intcode/iclib.int
 ```
 
 The test program itself documents that it uses the `RDCH`/`WRCH` idiom and
 expects runtime support.
 
 The files in `02-honors-thesis-and-mapstore` are likewise direct INTCODE
-workloads.  The MAPSTORE test is intentionally a failure-path diagnostic:
+workloads. The MAPSTORE test is intentionally a failure-path diagnostic:
 `X38` is outside the implemented X-op range and is used to force the normal
 INTCODE error and MAPSTORE path.
 
@@ -72,7 +75,7 @@ not be mistaken for the current save-file naming convention.
 ## Separate BCPL modules
 
 `04-module-test` is the first regression test for true separate BCPL
-compilation under the interpreted toolchain.  Its two source files are compiled
+compilation under the interpreted toolchain. Its two source files are compiled
 independently through SYN/TRN and CGI, then their INTCODE modules are loaded in
 command-line order into the common ICINT global vector.
 
@@ -90,15 +93,15 @@ tools/compile-and-run \
     +tests/04-module-test/module-test-2.bcpl
 ```
 
-Module 1 declares `F:2` and calls through global slot 2.  Module 2 also declares
+Module 1 declares `F:2` and calls through global slot 2. Module 2 also declares
 `F:2` and defines `F`, so its generated INTCODE publishes the entry point in
-that same slot.  Successful execution therefore demonstrates cross-module
+that same slot. Successful execution therefore demonstrates cross-module
 GLOBAL-vector rendezvous rather than simple BCPL source concatenation.
 
 ## File conventions
 
-BCPL source files use `.bcpl`.  Current saved compiler intermediates use
-`.ocode` and `.intcode`.  Direct or historical INTCODE workloads may still use
+BCPL source files use `.bcpl`. Current saved compiler intermediates use
+`.ocode` and `.intcode`. Direct or historical INTCODE workloads may still use
 `.int`; those filenames record the development state in which the tests were
 created and are intentionally retained where they are useful as evidence.
 
@@ -106,12 +109,23 @@ Files ending in `.expected` contain reference output associated with a test.
 Comments at the beginning of diagnostic INTCODE files are part of the test
 documentation and should be retained when modifying or extending a workload.
 
+## Future test directions
+
+Useful next test groups include:
+
+- arbitrary named input DDs exercised through historical `FINDINPUT`/`GET`;
+- DASD-resident input and output data sets rather than only in-stream data;
+- native System/370 code generated from OCODE;
+- reconstructed runtime/`BCPLMAIN` services as they are discovered; and
+- a small suite of BCPL example programs that exercise language and runtime
+  facilities in readable, practical ways.
+
 ## Maintenance
 
-Keep each test group focused on one capability or milestone.  When a new test
-establishes a distinct compiler, interpreter, stream, runtime, or linkage
-behavior, add it as a clearly named test group and update this README so the
-purpose and normal invocation remain obvious.
+Keep each test group focused on one capability or milestone. When a new test
+establishes a distinct compiler, interpreter, stream, runtime, storage, or
+linkage behavior, add it as a clearly named test group and update this README
+so the purpose and normal invocation remain obvious.
 
 See [`tools/README.md`](../tools/README.md) for the host-side command-line tools
 and [`intcode/README.md`](../intcode/README.md) for the standard INTCODE compiler
