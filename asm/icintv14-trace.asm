@@ -411,7 +411,7 @@ AZTEST   C     R8,=F'500'
          L     R2,LABV
          LR    R3,R8
          SLL   R3,2
-         L     R5,0(R4,R3)
+         L     R5,0(R3,R2)
          LTR   R5,R5
          BNP   AZNEXT
          LA    R2,UNSETMSG
@@ -1168,7 +1168,7 @@ INTSAVE  DS    4F
 TRKCALL  DS    0H
          ST    R14,TRKRET
          L     R2,TRCOUNT
-         C     R2,=F'TRMAX'
+         C     R2,=F'300'
          BNL   TRKRTN
          LA    R2,1(R2)
          ST    R2,TRCOUNT
@@ -1209,7 +1209,7 @@ TRKRET   DS    F
 TRX4     DS    0H
          ST    R14,TR4RET
          L     R2,TRCOUNT
-         C     R2,=F'TRMAX'
+         C     R2,=F'300'
          BNL   TR4RTN
          LA    R2,1(R2)
          ST    R2,TRCOUNT
@@ -1241,7 +1241,7 @@ TR4RET   DS    F
 TRX5     DS    0H
          ST    R14,TR5RET
          L     R2,TRCOUNT
-         C     R2,=F'TRMAX'
+         C     R2,=F'300'
          BNL   TR5RTN
          LA    R2,1(R2)
          ST    R2,TRCOUNT
@@ -1265,7 +1265,7 @@ TR5RET   DS    F
 TRX22    DS    0H
          ST    R14,TR22RET
          L     R2,TRCOUNT
-         C     R2,=F'TRMAX'
+         C     R2,=F'300'
          BNL   TR22RTN
          LA    R2,1(R2)
          ST    R2,TRCOUNT
@@ -2094,7 +2094,7 @@ TRKMSG2  DC    AL1(17),C'  P=%N A=%N B=%N',X'15'
 TRK7MSG  DC    AL1(23),C'  K7 P2=%N P3=%N P4=%N',X'15'
 TR4MSG1  DC    AL1(22),C'TR X4 CY=%N C=%N P=%N',X'15'
 TR4MSG2  DC    AL1(19),C'  A=%N P0=%N P1=%N',X'15'
-TR5MSG   DC    AL1(20),C'TR X5 B=%N A=%N R=%N',X'15'
+TR5MSG   DC    AL1(21),C'TR X5 B=%N A=%N R=%N',X'15'
 TR22MSG  DC    AL1(23),C'TR X22 CY=%N C=%N P=%N',X'15'
 TR22MS2  DC    AL1(17),C'  A=%N B=%N D=%N',X'15'
 
