@@ -1,4 +1,3 @@
-
          TITLE 'ICINT V14 - RICHARDS INTCODE ASSEMBLER/INTERPRETER'
          PRINT NOGEN
 *
@@ -1350,11 +1349,11 @@ HOSTWR   DS    0H
          BZ    HWRDONE
          L     R5,SDTYPE(R4)
          C     R5,=F'4'
-         BNE   HWRNORMAL
+         BNE   HWRNORM
          L     R2,HWRCHAR
          BAL   R14,ICOUTWR
          B     HWRDONE
-HWRNORMAL L    R2,HWRCHAR
+HWRNORM L    R2,HWRCHAR
          CH    R2,=H'21'
          BE    HWRFLUSH
          L     R3,SDPOS(R4)
@@ -1389,7 +1388,7 @@ HWRCHAR  DS    F
 ICOUTWR  DS    0H
          ST    R14,ICWRET
          STM   R6,R9,ICWSAVE
-         ST    R2,ICWSAVECH
+         ST    R2,ICWSAVC
          CLI   ICPEND,1
          BNE   ICWNOPND
          MVI   ICPEND,0
@@ -1398,7 +1397,7 @@ ICOUTWR  DS    0H
 * PENDING SLASH WAS LITERAL: APPEND IT BEFORE CURRENT CHARACTER.
          LA    R2,97
          BAL   R14,ICTOKCHR
-         L     R2,ICWSAVECH
+         L     R2,ICWSAVC
 ICWNOPND STC   R2,ICWTEMP
          CLI   ICWTEMP,C'/'
          BNE   ICWNOTSL
@@ -1414,14 +1413,14 @@ ICWNOTNL CLI   ICWTEMP,C' '
          BNE   ICWAPPND
          BAL   R14,ICCOMMIT
          B     ICWRTN
-ICWAPPND L     R2,ICWSAVECH
+ICWAPPND L     R2,ICWSAVC
          BAL   R14,ICTOKCHR
 ICWRTN   LM    R6,R9,ICWSAVE
          L     R14,ICWRET
          BR    R14
 ICWRET   DS    F
 ICWSAVE  DS    4F
-ICWSAVECH DS   F
+ICWSAVC DS   F
 ICWTEMP  DS    X
          DS    0F
 
@@ -1457,7 +1456,9 @@ ICCNEED  AR    R8,R7
 ICCCOPY  LTR   R7,R7
          BZ    ICCNOSPC
          LA    R5,INTOBUF
-         MVI   0(R7,R5),C' '
+         LR    R1,R5
+         AR    R1,R7
+         MVI   0(R1),C' '
          LA    R7,1(R7)
 ICCNOSPC SR    R8,R8
          LA    R4,ICTOKBUF
@@ -1776,7 +1777,9 @@ PRINTCO  L     R3,SDPOS(R2)
          LA    R5,INTOBUF
 PRICPAD  C     R3,=F'80'
          BNL   PRICPUT
-         MVI   0(R3,R5),C' '
+         LR    R1,R5
+         AR    R1,R3
+         MVI   0(R1),C' '
          LA    R3,1(R3)
          B     PRICPAD
 PRICPUT  PUT   INTCODCB,INTOBUF
