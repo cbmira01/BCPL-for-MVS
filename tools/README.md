@@ -130,27 +130,41 @@ Typical use:
 tools/run-intcode asm/icintv13.asm intcode/factorial.int
 ```
 
-To include the standard INTCODE runtime components:
+Additional INTCODE modules can be appended explicitly using `+PATH`.
+They are concatenated to `INTIN` in exactly the order written on the
+command line:
 
 ```text
-tools/run-intcode --runtime \
-    asm/icintv13.asm intcode/factorial.int
+tools/run-intcode \
+    asm/icintv13.asm \
+    intcode/syni.int \
+    +intcode/trni.int \
+    +intcode/blibi.int \
+    +intcode/iclib.int
 ```
 
-To wait for execution and print the ICINT results:
+This replaces the former special-purpose `--runtime`, `--library`, and
+`--wrapper` options. Runtime components are now ordinary explicit modules.
+For example, a program using the standard BCPL runtime can be run as:
 
 ```text
-tools/run-intcode --runtime --results \
-    asm/icintv13.asm intcode/factorial.int
+tools/run-intcode --results \
+    asm/icintv13.asm \
+    intcode/program.int \
+    +intcode/blibi.int \
+    +intcode/iclib.int
 ```
 
 To supply standard input to the running INTCODE/BCPL program, use
 `--sysin` with an ASCII host text file:
 
 ```text
-tools/run-intcode --runtime --results \
+tools/run-intcode --results \
     --sysin tests/program-input.txt \
-    asm/icintv13.asm intcode/program.int
+    asm/icintv13.asm \
+    intcode/program.int \
+    +intcode/blibi.int \
+    +intcode/iclib.int
 ```
 
 Each line in the host file becomes one MVS `SYSIN` card-image record in
@@ -164,31 +178,34 @@ If `--sysin` is not specified, the generated GO step contains **no
 stream is supplied to ICINT; it is not represented by `DD DUMMY`.
 
 The tool constructs an assemble/link/run job for ICINT, supplies the
-requested INTCODE input, submits the job through the TK5 socket reader,
+requested INTCODE modules, submits the job through the TK5 socket reader,
 and obtains its status and results from the Hercules printer stream.
 
-When `--runtime` is specified, the `INTIN` stream is formed in this order:
+The `INTIN` stream is formed as:
 
 ```text
-program
-BLIBI
-ICLIB
+primary program
++module 1
++module 2
+...
 ```
 
-The standard runtime components are located under `intcode/`. `--library`
-and `--wrapper` override the default runtime files and imply `--runtime`.
+The first INTCODE path after the interpreter is the primary program. Each
+following positional argument must begin with `+`, making the load order
+visible and preventing accidental ambiguity with options or other files.
 
 Other useful options are:
 
 ```text
---results                 wait for completion and print ICINT output
---jcl PATH                choose the generated JCL path
---job-name NAME           override the generated MVS job name
+--sysin PATH               supply ASCII SYSIN records
+--results                  wait for completion and print ICINT output
+--jcl PATH                 choose the generated JCL path
+--job-name NAME            override the generated MVS job name
 --listing light|medium|heavy
---reader-host HOST        Hercules socket-reader host
---reader-port PORT        Hercules socket-reader port
---timeout SECONDS         JES/results wait timeout
---poll SECONDS            printer polling interval
+--reader-host HOST         Hercules socket-reader host
+--reader-port PORT         Hercules socket-reader port
+--timeout SECONDS          JES/results wait timeout
+--poll SECONDS             printer polling interval
 ```
 
 Use `tools/run-intcode --help` for the complete interface.
@@ -219,18 +236,23 @@ For ICINT development and INTCODE testing, `run-intcode` combines most
 of the individual steps:
 
 ```text
-tools/run-intcode --runtime --results \
+tools/run-intcode --results \
     asm/icintv13.asm \
-    intcode/program.int
+    intcode/program.int \
+    +intcode/blibi.int \
+    +intcode/iclib.int
 ```
 
-For a program requiring input:
+For a compiler-phase experiment requiring source input:
 
 ```text
-tools/run-intcode --runtime --results \
-    --sysin tests/program-input.txt \
+tools/run-intcode --results \
+    --sysin tests/richards-factorial-test.bcpl \
     asm/icintv13.asm \
-    intcode/program.int
+    intcode/syni.int \
+    +intcode/trni.int \
+    +intcode/blibi.int \
+    +intcode/iclib.int
 ```
 
 The lower-level tools remain useful when the generated JCL or complete
