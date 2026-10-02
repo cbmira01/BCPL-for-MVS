@@ -1,0 +1,54 @@
+// QUICKSORT.BCPL
+// Quicksort a vector, choosing pivots with the shared random module.
+
+GLOBAL $(
+START:1
+WRITEF:76
+RANDSEED:190
+RANDRANGE:192
+$)
+
+LET SWAP(V, A, B) BE
+$( LET T = V!A
+   V!A := V!B
+   V!B := T
+$)
+
+AND QSORT(V, LO, HI) BE
+$( IF LO>=HI RETURN
+   LET P = LO + RANDRANGE(HI-LO+1)
+   LET PIVOT = V!P
+   LET I = LO
+   AND J = HI
+
+   $( WHILE V!I<PIVOT DO I := I+1
+      WHILE V!J>PIVOT DO J := J-1
+      IF I<=J DO
+      $( SWAP(V, I, J)
+         I := I+1
+         J := J-1
+      $)
+   $) REPEATWHILE I<=J
+
+   IF LO<J DO QSORT(V, LO, J)
+   IF I<HI DO QSORT(V, I, HI)
+$)
+
+AND START() BE
+$( LET V = VEC 11
+   V!0:=37; V!1:=4;  V!2:=19; V!3:=52
+   V!4:=8;  V!5:=41; V!6:=3;  V!7:=27
+   V!8:=15; V!9:=6;  V!10:=33; V!11:=11
+
+   RANDSEED(2026)
+   WRITEF("BEFORE:")
+   FOR I = 0 TO 11 DO WRITEF(" %N", V!I)
+   WRITEF("*N")
+
+   QSORT(V, 0, 11)
+
+   WRITEF("AFTER :")
+   FOR I = 0 TO 11 DO WRITEF(" %N", V!I)
+   WRITEF("*N")
+   FINISH
+$)
