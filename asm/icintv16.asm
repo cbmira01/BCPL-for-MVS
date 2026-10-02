@@ -1370,7 +1370,7 @@ DYFALCK  LTR   R15,R15
          LR    R6,R1
 
          C     R8,=F'2'
-         BE    DYFINITIN
+         BE    DYFINIT
 
 * OUTPUT OBJECT
          XC    0(DYNOLEN,R6),0(R6)
@@ -1383,10 +1383,10 @@ DYFALCK  LTR   R15,R15
          MVC   SDNAME(8,R6),NAMEBUF
          MVC   0(DYNODCBL,R5),DYNODCBT
          MVC   DDNAMOFF(8,R5),NAMEBUF
-         B     DYFVERIFY
+         B     DYFVERIF
 
 * INPUT OBJECT
-DYFINITIN XC   0(DYNILEN,R6),0(R6)
+DYFINIT XC   0(DYNILEN,R6),0(R6)
          ST    R8,SDTYPE(R6)
          LA    R5,DYDCBOFF(R6)
          ST    R5,SDDCB(R6)
@@ -1397,7 +1397,7 @@ DYFINITIN XC   0(DYNILEN,R6),0(R6)
          MVC   0(DYNIDCBL,R5),DYNIDCBT
          MVC   DDNAMOFF(8,R5),NAMEBUF
 
-DYFVERIFY LR   R2,R5
+DYFVERIF LR   R2,R5
          RDJFCB ((2))
          LTR   R15,R15
          BNZ   DYFBADDD
