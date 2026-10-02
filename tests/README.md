@@ -1,87 +1,26 @@
-# Tests
+# BCPL-for-MVS tests
 
-This directory contains regression, acceptance, and diagnostic workloads for
-the BCPL-for-MVS reconstruction. The tests cover both direct INTCODE execution
-under `ICINT` and the interpreted BCPL compiler pipeline through SYNI/TRNI,
-CGI, and the runtime libraries.
+The `tests` tree contains small, focused workloads used to validate the reconstructed BCPL bootstrap, compiler phases, INTCODE interpreter, runtime behavior, and MVS host adapters. Each directory should test one distinct capability and should remain readable enough to serve as evidence when later changes regress behavior.
 
-The tests are grouped by purpose rather than kept as one flat collection.
-Numbered directory names roughly follow the order in which the capabilities
-were established.
+The current test groups are organized as follows.
 
-## Test groups
+## 01-factorial
 
-| Directory | Purpose |
-| --- | --- |
-| [`01-echo-test`](01-echo-test/) | Basic stream-I/O test. `echo-sysin.int` uses the historical-style `RDCH`/`WRCH` calling idiom to copy `SYSIN` to `SYSPRINT`; `best-of-times.txt` is sample input. |
-| [`02-honors-thesis-and-mapstore`](02-honors-thesis-and-mapstore/) | Interpreter acceptance and diagnostics. Includes the V12 honors-thesis workload and expected output, plus the V13 MAPSTORE diagnostic that deliberately executes unsupported `X38` after building a recognizable BCPL call chain and global/local state. |
-| [`03-compile-richards-factorial`](03-compile-richards-factorial/) | Compiler-pipeline evidence centered on Martin Richards's factorial example. Contains BCPL source plus historical/derived OCODE and INTCODE artifacts used while validating compilation through SYN/TRN and CGI and subsequent execution under ICINT. |
-| [`04-module-test`](04-module-test/) | Separate-compilation test. The factorial program is split into two independently compiled BCPL modules: module 1 contains `START`, module 2 contains recursive `F`, and both rendezvous through `GLOBAL` slot 2. Saved `.ocode` and `.intcode` files show the independently generated intermediate forms. |
-| [`05-named-dd`](05-named-dd/) | Named-stream discovery test. `main.bcpl` executes `GET "EXTRA"`; `compile-and-run --dd EXTRA=...` supplies `extra.bcpl` as an MVS `//EXTRA` input DD, whose manifest value must become visible in the compilation unit. |
+A minimal INTCODE execution test. It is useful for verifying that ICINT still assembles, interprets ordinary arithmetic/control flow, and returns expected output after structural changes to the interpreter.
 
-## Running direct INTCODE tests
+## 02-cg-test
 
-[`tools/run-intcode`](../tools/run-intcode) is the normal driver for tests
-whose primary input is already INTCODE.
+Exercises CGI and INTCODE generation. This test is useful when changes affect CGI output formatting, ICINT input recordization, or the path by which generated INTCODE is fed back to the interpreter.
 
-For example, the stream echo test uses the standard interpreted runtime and a
-host file mapped to `SYSIN`:
+## 03-compiler-test
 
-```text
-tools/run-intcode --results \
-    --sysin tests/01-echo-test/best-of-times.txt \
-    asm/icintv15.asm \
-    tests/01-echo-test/echo-sysin.int \
-    +intcode/blibi.int \
-    +intcode/iclib.int
-```
+Exercises the historical SYN/TRN compiler path and the CGI code generator as an integrated bootstrap chain.
 
-The test program itself documents that it uses the `RDCH`/`WRCH` idiom and
-expects runtime support.
+## 04-module-test
 
-The files in `02-honors-thesis-and-mapstore` are likewise direct INTCODE
-workloads. The MAPSTORE test is intentionally a failure-path diagnostic:
-`X38` is outside the implemented X-op range and is used to force the normal
-INTCODE error and MAPSTORE path.
+Exercises separate BCPL compilation and common-GLOBAL-vector rendezvous. Each BCPL source module is compiled independently through SYN/TRN and CGI, then their INTCODE modules are loaded in command-line order into the common ICINT global vector.
 
-## Running BCPL compiler tests
-
-[`tools/compile-and-run`](../tools/compile-and-run) drives BCPL source through
-the interpreted compiler pipeline and then executes the generated INTCODE.
-
-A single-module Richards factorial run is represented by the material in
-`03-compile-richards-factorial`:
-
-```text
-tools/compile-and-run \
-    --results \
-    --save-ocode \
-    --save-intcode \
-    asm/icintv15.asm \
-    tests/03-compile-richards-factorial/richards-factorial-test.bcpl
-```
-
-With the save options enabled, generated host-side intermediates use these
-extensions:
-
-```text
-<module>.ocode
-<module>.intcode
-```
-
-The older `.int`, `.OCODE`, and similarly named files retained in
-`03-compile-richards-factorial` are historical development artifacts and should
-not be mistaken for the current save-file naming convention.
-
-## Separate BCPL modules
-
-`04-module-test` is the first regression test for true separate BCPL
-compilation under the interpreted toolchain. Its two source files are compiled
-independently through SYN/TRN and CGI, then their INTCODE modules are loaded in
-command-line order into the common ICINT global vector.
-
-Run it with the same `+PATH` convention used by `run-intcode` for additional
-modules:
+Run it with the same `+PATH` convention used by `run-intcode` for additional modules:
 
 ```text
 tools/compile-and-run \
@@ -137,16 +76,50 @@ VALUE FROM EXTRA = 12345
 This is intentionally a textual inclusion test, not a separate-compilation
 or `GLOBAL`-linkage test.
 
+## V16 dynamic stream test
+
+`06-dynamic-streams` exercises V16's GETMAIN-managed ordinary input streams.
+The source nesting deliberately requires four simultaneously live generic
+input streams: `SYSIN`, `LEVEL1`, `LEVEL2`, and `LEVEL3`. That exceeds V15's
+three fixed generic-input slots and therefore directly tests the reason for
+the V16 stream refactor.
+
+Run it as:
+
+```text
+tools/compile-and-run \
+    --results \
+    --job-name DYNSTRM \
+    --dd LEVEL1=tests/06-dynamic-streams/level1.bcpl \
+    --dd LEVEL2=tests/06-dynamic-streams/level2.bcpl \
+    --dd LEVEL3=tests/06-dynamic-streams/level3.bcpl \
+    asm/icintv16.asm \
+    tests/06-dynamic-streams/main.bcpl
+```
+
+The include chain is:
+
+```text
+SYSIN -> LEVEL1 -> LEVEL2 -> LEVEL3
+```
+
+`LEVEL3` defines:
+
+```text
+MANIFEST $( DEEPVAL = 24680 $)
+```
+
+Successful compilation and execution should print:
+
+```text
+DEEPEST GET VALUE = 24680
+```
+
 ## File conventions
 
-BCPL source files use `.bcpl`. Current saved compiler intermediates use
-`.ocode` and `.intcode`. Direct or historical INTCODE workloads may still use
-`.int`; those filenames record the development state in which the tests were
-created and are intentionally retained where they are useful as evidence.
+BCPL source files use `.bcpl`. Current saved compiler intermediates use `.ocode` and `.intcode`. Direct or historical INTCODE workloads may still use `.int`; those filenames record the development state in which the tests were created and are intentionally retained where they are useful as evidence.
 
-Files ending in `.expected` contain reference output associated with a test.
-Comments at the beginning of diagnostic INTCODE files are part of the test
-documentation and should be retained when modifying or extending a workload.
+Files ending in `.expected` contain reference output associated with a test. Comments at the beginning of diagnostic INTCODE files are part of the test documentation and should be retained when modifying or extending a workload.
 
 ## Future test directions
 
@@ -156,16 +129,10 @@ Useful next test groups include:
 - DASD-resident input and output data sets rather than only in-stream data;
 - native System/370 code generated from OCODE;
 - reconstructed runtime/`BCPLMAIN` services as they are discovered; and
-- a small suite of BCPL example programs that exercise language and runtime
-  facilities in readable, practical ways.
+- a small suite of BCPL example programs that exercise language and runtime facilities in readable, practical ways.
 
 ## Maintenance
 
-Keep each test group focused on one capability or milestone. When a new test
-establishes a distinct compiler, interpreter, stream, runtime, storage, or
-linkage behavior, add it as a clearly named test group and update this README
-so the purpose and normal invocation remain obvious.
+Keep each test group focused on one capability or milestone. When a new test establishes a distinct compiler, interpreter, stream, runtime, storage, or linkage behavior, add it as a clearly named test group and update this README so the purpose and normal invocation remain obvious.
 
-See [`tools/README.md`](../tools/README.md) for the host-side command-line tools
-and [`intcode/README.md`](../intcode/README.md) for the standard INTCODE compiler
-and runtime components.
+See [`tools/README.md`](../tools/README.md) for the host-side command-line tools and [`intcode/README.md`](../intcode/README.md) for the standard INTCODE compiler and runtime components.
