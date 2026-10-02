@@ -17,6 +17,7 @@ were established.
 | [`02-honors-thesis-and-mapstore`](02-honors-thesis-and-mapstore/) | Interpreter acceptance and diagnostics. Includes the V12 honors-thesis workload and expected output, plus the V13 MAPSTORE diagnostic that deliberately executes unsupported `X38` after building a recognizable BCPL call chain and global/local state. |
 | [`03-compile-richards-factorial`](03-compile-richards-factorial/) | Compiler-pipeline evidence centered on Martin Richards's factorial example. Contains BCPL source plus historical/derived OCODE and INTCODE artifacts used while validating compilation through SYN/TRN and CGI and subsequent execution under ICINT. |
 | [`04-module-test`](04-module-test/) | Separate-compilation test. The factorial program is split into two independently compiled BCPL modules: module 1 contains `START`, module 2 contains recursive `F`, and both rendezvous through `GLOBAL` slot 2. Saved `.ocode` and `.intcode` files show the independently generated intermediate forms. |
+| [`05-named-dd`](05-named-dd/) | Named-stream discovery test. `main.bcpl` executes `GET "EXTRA"`; `compile-and-run --dd EXTRA=...` supplies `extra.bcpl` as an MVS `//EXTRA` input DD, whose manifest value must become visible in the compilation unit. |
 
 ## Running direct INTCODE tests
 
@@ -98,6 +99,44 @@ Module 1 declares `F:2` and calls through global slot 2. Module 2 also declares
 that same slot. Successful execution therefore demonstrates cross-module
 GLOBAL-vector rendezvous rather than simple BCPL source concatenation.
 
+## Named DD and `GET` test
+
+`05-named-dd` exercises V15's generic input-stream discovery through the
+historical compiler's textual `GET` mechanism. Run it as:
+
+```text
+tools/compile-and-run \
+    --results \
+    --job-name NAMEDD \
+    --dd EXTRA=tests/05-named-dd/extra.bcpl \
+    asm/icintv15.asm \
+    tests/05-named-dd/main.bcpl
+```
+
+`compile-and-run` places the host file into the compiler step as an in-stream
+MVS DD named `EXTRA`. When SYN encounters:
+
+```text
+GET "EXTRA"
+```
+
+it calls the normal named-input-stream path. V15 should discover `//EXTRA`,
+open it, and allow the compiler to read the included BCPL text. The included
+file defines:
+
+```text
+MANIFEST $( EXTRAVALUE = 12345 $)
+```
+
+so successful compilation and execution should print:
+
+```text
+VALUE FROM EXTRA = 12345
+```
+
+This is intentionally a textual inclusion test, not a separate-compilation
+or `GLOBAL`-linkage test.
+
 ## File conventions
 
 BCPL source files use `.bcpl`. Current saved compiler intermediates use
@@ -113,7 +152,7 @@ documentation and should be retained when modifying or extending a workload.
 
 Useful next test groups include:
 
-- arbitrary named input DDs exercised through historical `FINDINPUT`/`GET`;
+- additional arbitrary named input DDs, including optional compiler `OPTIONS`;
 - DASD-resident input and output data sets rather than only in-stream data;
 - native System/370 code generated from OCODE;
 - reconstructed runtime/`BCPLMAIN` services as they are discovered; and
