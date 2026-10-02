@@ -11,29 +11,20 @@ Include the standard INTCODE runtime library and host wrappers:
     tools/run-intcode --runtime \
         asm/icintv13.asm intcode/factorial.int
 
+Supply runtime standard input from a host text file:
+
+    tools/run-intcode --runtime --sysin tests/input.txt \
+        asm/icintv13.asm intcode/program.int
+
 Also wait for completion and print the ICINT run results:
 
     tools/run-intcode --runtime --results \
         asm/icintv13.asm intcode/factorial.int
 
-The generated JCL contains:
-
-    IFOX assemble
-    IEWL link-edit
-    GO
-
-The INTIN stream is assembled in this order:
-
-    program
-    BLIBI       if --runtime
-    ICLIB       if --runtime
-
-The default runtime files are discovered under repo-root/intcode.
-
-JCL is submitted directly to the Hercules/TK5 socket reader.
-The JES job number and run results are discovered from:
-
-    mvs-state/prt/prt00e.txt
+The generated JCL contains IFOX assemble, IEWL link-edit, and GO steps.
+INTIN contains the program followed by BLIBI and ICLIB when --runtime is
+used.  If --sysin is supplied, each host text line becomes one in-stream
+SYSIN record.  Without --sysin, no SYSIN DD statement is generated.
 """
 
 from __future__ import annotations
@@ -46,955 +37,382 @@ import socket
 import sys
 import time
 
-
 ROOT = Path(__file__).resolve().parents[1]
-
 MAKE_ASM = ROOT / "tools" / "make-asm-job.py"
 PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
 WORKAREA = ROOT / "workarea"
 INTCODE_DIR = ROOT / "intcode"
-
 DEFAULT_READER_HOST = "127.0.0.1"
 DEFAULT_READER_PORT = 3505
 DEFAULT_TIMEOUT = 120.0
 DEFAULT_POLL = 0.25
-
 MVS_NAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
 
 
 def load_make_asm():
-    """Load the repository's make-asm-job.py as a Python module."""
-    spec = importlib.util.spec_from_file_location(
-        "make_asm_job",
-        MAKE_ASM,
-    )
-
+    spec = importlib.util.spec_from_file_location("make_asm_job", MAKE_ASM)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {MAKE_ASM}")
-
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-
     return module
 
 
 def resolve_repo_path(text: str) -> Path:
-    """
-    Interpret relative command-line paths relative to repository root.
-
-    Absolute paths are accepted unchanged.
-    """
     path = Path(text)
-
     if not path.is_absolute():
         path = ROOT / path
-
     return path.resolve()
 
 
 def read_ascii(path: Path, description: str) -> str:
-    """Read one nonempty ASCII input file."""
     if not path.is_file():
         raise ValueError(f"{description} does not exist: {path}")
-
     try:
         text = path.read_text(encoding="ascii")
     except (OSError, UnicodeError) as exc:
-        raise ValueError(
-            f"cannot read ASCII {description} {path}: {exc}"
-        ) from exc
-
+        raise ValueError(f"cannot read ASCII {description} {path}: {exc}") from exc
     if not text.strip():
         raise ValueError(f"{description} is empty: {path}")
-
     return text.rstrip("\r\n") + "\n"
 
 
+def read_sysin(path: Path) -> str:
+    """Read ASCII SYSIN text, preserving one host line per MVS record."""
+    if not path.is_file():
+        raise ValueError(f"SYSIN file does not exist: {path}")
+    try:
+        text = path.read_text(encoding="ascii")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError(f"cannot read ASCII SYSIN file {path}: {exc}") from exc
+
+    # splitlines() removes host newline conventions without discarding blank records.
+    records = text.splitlines()
+    for number, record in enumerate(records, 1):
+        if len(record) > 80:
+            raise ValueError(
+                f"SYSIN record {number} is {len(record)} characters; maximum is 80"
+            )
+        if record == "/*":
+            raise ValueError(
+                f"SYSIN record {number} is '/*', which would terminate in-stream JCL data"
+            )
+    return "".join(record + "\n" for record in records)
+
+
 def find_runtime_file(kind: str) -> Path:
-    """
-    Locate BLIBI or ICLIB under intcode/.
-
-    Prefer simple lowercase names, but tolerate common suffixes and
-    uppercase archival spellings.
-    """
     if kind == "library":
-        names = (
-            "blibi",
-            "blibi.int",
-            "BLIBI",
-            "BLIBI.int",
-        )
-
+        names = ("blibi", "blibi.int", "BLIBI", "BLIBI.int")
     elif kind == "wrapper":
-        names = (
-            "iclib",
-            "iclib.int",
-            "ICLIB",
-            "ICLIB.int",
-        )
-
+        names = ("iclib", "iclib.int", "ICLIB", "ICLIB.int")
     else:
         raise ValueError(f"unknown runtime component: {kind}")
-
     for name in names:
         path = INTCODE_DIR / name
-
         if path.is_file():
             return path.resolve()
-
-    wanted = ", ".join(
-        str(INTCODE_DIR / name)
-        for name in names
-    )
-
-    raise ValueError(
-        f"cannot locate default {kind}; tried: {wanted}"
-    )
+    wanted = ", ".join(str(INTCODE_DIR / name) for name in names)
+    raise ValueError(f"cannot locate default {kind}; tried: {wanted}")
 
 
-def make_intin(
-    program_path: Path,
-    include_runtime: bool,
-    library_path: Path | None,
-    wrapper_path: Path | None,
-) -> tuple[str, list[Path]]:
-    """
-    Construct the complete INTIN stream.
-
-    Physical order:
-
-        program
-        runtime library
-        host wrapper
-
-    No Z records or other INTCODE are synthesized. Each component must
-    contain its own required segment terminator(s).
-    """
+def make_intin(program_path, include_runtime, library_path, wrapper_path):
     paths = [program_path]
     parts = [read_ascii(program_path, "INTCODE program")]
-
     if include_runtime:
         library = library_path or find_runtime_file("library")
         wrapper = wrapper_path or find_runtime_file("wrapper")
-
-        parts.append(
-            read_ascii(
-                library,
-                "INTCODE runtime library",
-            )
-        )
-
-        parts.append(
-            read_ascii(
-                wrapper,
-                "INTCODE runtime wrapper",
-            )
-        )
-
-        paths.extend(
-            (
-                library,
-                wrapper,
-            )
-        )
-
+        parts.append(read_ascii(library, "INTCODE runtime library"))
+        parts.append(read_ascii(wrapper, "INTCODE runtime wrapper"))
+        paths.extend((library, wrapper))
     return "".join(parts), paths
 
 
 def derive_job_name(program: Path) -> str:
-    """
-    Derive an MVS-safe JOB name.
-
-    Prefix IC ensures the first character is alphabetic.
-    """
-    stem = re.sub(
-        r"[^A-Z0-9]",
-        "",
-        program.stem.upper(),
-    )
-
+    stem = re.sub(r"[^A-Z0-9]", "", program.stem.upper())
     job = "IC" + stem[:6]
-
     if not MVS_NAME.fullmatch(job):
-        raise ValueError(
-            f"cannot derive a valid MVS job name from {program.name}"
-        )
-
+        raise ValueError(f"cannot derive a valid MVS job name from {program.name}")
     return job
 
 
-def build_deck(
-    interpreter: Path,
-    intin: str,
-    job_name: str,
-    listing: str,
-) -> str:
-    """Build the complete assemble/link/go JCL deck."""
+def build_deck(interpreter, intin, sysin, job_name, listing):
     make_asm = load_make_asm()
-
     source = make_asm.check_source(interpreter)
-
-    entry = (
-        make_asm.source_entry(source)
-        or "ICINT"
-    ).upper()
-
+    entry = (make_asm.source_entry(source) or "ICINT").upper()
     if not MVS_NAME.fullmatch(entry):
-        raise ValueError(
-            f"cannot infer valid interpreter entry point "
-            f"from {interpreter}"
-        )
-
+        raise ValueError(f"cannot infer valid interpreter entry point from {interpreter}")
     deck = make_asm.make_deck(
-        source=source,
-        name=interpreter.stem,
-        entry=entry,
-        job=job_name,
-        listing=listing,
-        parm=None,
+        source=source, name=interpreter.stem, entry=entry,
+        job=job_name, listing=listing, parm=None,
     )
-
     marker = (
-        "//SYSPRINT DD  SYSOUT=*,"
-        "DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
-        "//SYSUDUMP DD  SYSOUT=*\n"
-        "//\n"
+        "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
+        "//SYSUDUMP DD  SYSOUT=*\n//\n"
     )
-
     if deck.count(marker) != 1:
-        raise RuntimeError(
-            "unexpected make-asm-job GO-step layout"
-        )
-
+        raise RuntimeError("unexpected make-asm-job GO-step layout")
     runtime_dds = (
-        "//SYSPRINT DD  SYSOUT=*,"
-        "DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
-        "//INTIN    DD  *\n"
-        + intin
-        + "/*\n"
-        "//SYSIN    DD  DUMMY,"
-        "DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)\n"
-        "//SYSUDUMP DD  SYSOUT=*\n"
-        "//\n"
+        "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
+        "//INTIN    DD  *\n" + intin + "/*\n"
     )
-
-    return deck.replace(
-        marker,
-        runtime_dds,
-        1,
-    )
+    if sysin is not None:
+        runtime_dds += "//SYSIN    DD  *\n" + sysin + "/*\n"
+    runtime_dds += "//SYSUDUMP DD  SYSOUT=*\n//\n"
+    return deck.replace(marker, runtime_dds, 1)
 
 
-def read_printer() -> str:
-    """Read the Hercules printer report as byte-preserving text."""
+def read_printer():
     if not PRINTER.is_file():
         return ""
-
     try:
-        return PRINTER.read_text(
-            encoding="latin-1",
-            errors="replace",
-        )
+        return PRINTER.read_text(encoding="latin-1", errors="replace")
     except OSError as exc:
-        raise RuntimeError(
-            f"cannot read printer report {PRINTER}: {exc}"
-        ) from exc
+        raise RuntimeError(f"cannot read printer report {PRINTER}: {exc}") from exc
 
 
-def printer_offset() -> int:
-    """
-    Return the current printer-file size.
-
-    This lets us distinguish newly submitted jobs from old jobs whose JES
-    numbers may still exist earlier in the printer file.
-    """
+def printer_offset():
     if not PRINTER.exists():
         return 0
-
     try:
         return PRINTER.stat().st_size
     except OSError as exc:
-        raise RuntimeError(
-            f"cannot stat printer report {PRINTER}: {exc}"
-        ) from exc
+        raise RuntimeError(f"cannot stat printer report {PRINTER}: {exc}") from exc
 
 
-def submit_job(
-    jcl_path: Path,
-    reader_host: str,
-    reader_port: int,
-) -> int:
-    """
-    Submit JCL directly to the Hercules socket reader.
-
-    Returns the printer-file byte offset that existed immediately before
-    submission.
-    """
+def submit_job(jcl_path, reader_host, reader_port):
     before = printer_offset()
-
     try:
         deck = jcl_path.read_bytes()
     except OSError as exc:
-        raise RuntimeError(
-            f"cannot read JCL deck {jcl_path}: {exc}"
-        ) from exc
-
+        raise RuntimeError(f"cannot read JCL deck {jcl_path}: {exc}") from exc
     if not deck.endswith(b"\n"):
         deck += b"\n"
-
     try:
-        with socket.create_connection(
-            (
-                reader_host,
-                reader_port,
-            ),
-            timeout=10.0,
-        ) as sock:
+        with socket.create_connection((reader_host, reader_port), timeout=10.0) as sock:
             sock.sendall(deck)
-
     except OSError as exc:
         raise RuntimeError(
-            f"cannot submit JCL to "
-            f"{reader_host}:{reader_port}: {exc}"
+            f"cannot submit JCL to {reader_host}:{reader_port}: {exc}"
         ) from exc
-
     return before
 
 
-def find_new_job_number(
-    job_name: str,
-    start_offset: int,
-) -> int | None:
-    """
-    Look for the submitted job's JES number after the submission point.
-
-    The printer banners normally contain both the JOB number and JOB name.
-    """
+def find_new_job_number(job_name, start_offset):
     if not PRINTER.is_file():
         return None
-
     try:
         with PRINTER.open("rb") as stream:
             stream.seek(start_offset)
             data = stream.read()
     except OSError as exc:
-        raise RuntimeError(
-            f"cannot read printer report {PRINTER}: {exc}"
-        ) from exc
-
-    text = data.decode(
-        "latin-1",
-        errors="replace",
-    )
-
+        raise RuntimeError(f"cannot read printer report {PRINTER}: {exc}") from exc
+    text = data.decode("latin-1", errors="replace")
     escaped = re.escape(job_name)
-
     patterns = (
-        re.compile(
-            rf"\bJOB\s+([0-9]+)\b.*\b{escaped}\b"
-        ),
-        re.compile(
-            rf"\b{escaped}\b.*\bJOB\s+([0-9]+)\b"
-        ),
+        re.compile(rf"\bJOB\s+([0-9]+)\b.*\b{escaped}\b"),
+        re.compile(rf"\b{escaped}\b.*\bJOB\s+([0-9]+)\b"),
     )
-
     for line in text.splitlines():
         if "****A  START" not in line:
             continue
-
         for pattern in patterns:
             match = pattern.search(line)
-
             if match is not None:
                 return int(match.group(1))
-
     return None
 
 
-def wait_for_new_job(
-    job_name: str,
-    start_offset: int,
-    timeout: float,
-    poll: float,
-) -> int:
-    """Wait for JES to assign a job number to the submitted deck."""
+def wait_for_new_job(job_name, start_offset, timeout, poll):
     deadline = time.monotonic() + timeout
-
     while True:
-        number = find_new_job_number(
-            job_name=job_name,
-            start_offset=start_offset,
-        )
-
+        number = find_new_job_number(job_name, start_offset)
         if number is not None:
             return number
-
         if time.monotonic() >= deadline:
             raise TimeoutError(
-                f"could not find JES job number for "
-                f"{job_name} within {timeout:g} seconds"
+                f"could not find JES job number for {job_name} within {timeout:g} seconds"
             )
-
         time.sleep(poll)
 
 
-def job_banner(job_number: int) -> str:
-    """Printer-banner form of a JES job number."""
+def job_banner(job_number):
     return f"JOB {job_number:4d}"
 
 
-def extract_complete_job(
-    report: str,
-    job_number: int,
-) -> str | None:
-    """
-    Extract one complete JES printer report.
-
-    Uses the same START/END banner convention as dump-report-for-job.
-    """
+def extract_complete_job(report, job_number):
     wanted = job_banner(job_number)
-
     lines = report.splitlines()
-
-    start: int | None = None
-
+    start = None
     for index, line in enumerate(lines):
-        if (
-            "****A  START" in line
-            and wanted in line
-        ):
+        if "****A  START" in line and wanted in line:
             start = index + 1
             break
-
     if start is None:
         return None
-
-    for index in range(
-        start,
-        len(lines),
-    ):
-        line = lines[index]
-
-        if (
-            "****A   END" in line
-            and wanted in line
-        ):
-            return (
-                "\n".join(
-                    lines[start:index]
-                )
-                + "\n"
-            )
-
+    for index in range(start, len(lines)):
+        if "****A   END" in lines[index] and wanted in lines[index]:
+            return "\n".join(lines[start:index]) + "\n"
     return None
 
 
-def wait_for_job_report(
-    job_number: int,
-    timeout: float,
-    poll: float,
-) -> str:
-    """Wait until the complete printer report for a JES job exists."""
+def wait_for_job_report(job_number, timeout, poll):
     deadline = time.monotonic() + timeout
-
     while True:
-        report = read_printer()
-
-        job = extract_complete_job(
-            report,
-            job_number,
-        )
-
+        job = extract_complete_job(read_printer(), job_number)
         if job is not None:
             return job
-
         if time.monotonic() >= deadline:
             raise TimeoutError(
-                f"job {job_number} did not complete "
-                f"within {timeout:g} seconds"
+                f"job {job_number} did not complete within {timeout:g} seconds"
             )
-
         time.sleep(poll)
 
 
-def clean_printer_line(line: str) -> str:
-    """
-    Remove printer form-feed characters.
-
-    Otherwise leave ICINT output untouched.
-    """
-    return line.replace(
-        "\f",
-        "",
-    )
+def clean_printer_line(line):
+    return line.replace("\f", "")
 
 
-def extract_icint_results(
-    job_report: str,
-) -> str:
-    """
-    Extract ICINT runtime output from a complete JES report.
-
-    Normal successful run:
-
-        INTCODE SYSTEM ENTERED
-        ...
-        EXECUTION CYCLES = ..., CODE = ...
-
-    V13 diagnostic run may continue through:
-
-        *** END MAPSTORE ***
-
-    Assembler/linker/JES output is excluded.
-    """
-    lines = [
-        clean_printer_line(line)
-        for line in job_report.splitlines()
-    ]
-
-    start: int | None = None
-
+def extract_icint_results(job_report):
+    lines = [clean_printer_line(line) for line in job_report.splitlines()]
+    start = None
     for index, line in enumerate(lines):
         if "INTCODE SYSTEM ENTERED" in line:
             start = index
             break
-
     if start is None:
-        raise RuntimeError(
-            "job completed, but ICINT runtime output "
-            "was not found"
-        )
-
-    execution_end: int | None = None
-    mapstore_end: int | None = None
-
-    for index in range(
-        start,
-        len(lines),
-    ):
+        raise RuntimeError("job completed, but ICINT runtime output was not found")
+    execution_end = None
+    mapstore_end = None
+    for index in range(start, len(lines)):
         stripped = lines[index].strip()
-
-        if stripped.startswith(
-            "EXECUTION CYCLES ="
-        ):
+        if stripped.startswith("EXECUTION CYCLES ="):
             execution_end = index
-
         if stripped == "*** END MAPSTORE ***":
             mapstore_end = index
             break
-
     if mapstore_end is not None:
         end = mapstore_end
-
     elif execution_end is not None:
         end = execution_end
-
     else:
         end = len(lines) - 1
-
-        for index in range(
-            start + 1,
-            len(lines),
-        ):
+        for index in range(start + 1, len(lines)):
             stripped = lines[index].lstrip()
-
-            if (
-                stripped.startswith("IEF")
-                or stripped.startswith("$HASP")
-                or "****A   END" in lines[index]
-            ):
+            if (stripped.startswith("IEF") or stripped.startswith("$HASP")
+                    or "****A   END" in lines[index]):
                 end = index - 1
                 break
-
-    result = "\n".join(
-        lines[start:end + 1]
-    )
-
-    return (
-        result.strip("\r\n")
-        + "\n"
-    )
+    return "\n".join(lines[start:end + 1]).strip("\r\n") + "\n"
 
 
-def make_parser() -> argparse.ArgumentParser:
+def make_parser():
     parser = argparse.ArgumentParser(
         prog="run-intcode",
         description=(
-            "Assemble an ICINT interpreter, run an INTCODE "
-            "program, and optionally print its runtime results."
+            "Assemble an ICINT interpreter, run an INTCODE program, "
+            "and optionally print its runtime results."
         ),
         epilog=(
             "Example: tools/run-intcode --runtime --results "
             "asm/icintv13.asm intcode/factorial.int"
         ),
     )
-
-    parser.add_argument(
-        "interpreter",
-        help=(
-            "IFOX ICINT assembler source "
-            "(normally under asm/)"
-        ),
-    )
-
-    parser.add_argument(
-        "program",
-        help=(
-            "INTCODE program "
-            "(normally under intcode/)"
-        ),
-    )
-
-    parser.add_argument(
-        "--runtime",
-        action="store_true",
-        help=(
-            "append the BCPL runtime library and ICLIB "
-            "wrapper after the program"
-        ),
-    )
-
-    parser.add_argument(
-        "--library",
-        metavar="PATH",
-        help=(
-            "runtime-library INTCODE file; implies "
-            "--runtime "
-            "(default: discover intcode/blibi)"
-        ),
-    )
-
-    parser.add_argument(
-        "--wrapper",
-        metavar="PATH",
-        help=(
-            "ICLIB wrapper INTCODE file; implies "
-            "--runtime "
-            "(default: discover intcode/iclib)"
-        ),
-    )
-
-    parser.add_argument(
-        "--results",
-        action="store_true",
-        help=(
-            "wait for the JES job to finish and print "
-            "only the ICINT runtime results"
-        ),
-    )
-
-    parser.add_argument(
-        "--jcl",
-        metavar="PATH",
-        help=(
-            "generated JCL deck "
-            "(default: workarea/run-intcode-PROGRAM.jcl)"
-        ),
-    )
-
-    parser.add_argument(
-        "--job-name",
-        metavar="NAME",
-        help=(
-            "override the generated MVS JOB name"
-        ),
-    )
-
-    parser.add_argument(
-        "--listing",
-        choices=(
-            "light",
-            "medium",
-            "heavy",
-        ),
-        default="light",
-        help=(
-            "assembler/linker listing profile "
-            "(default: light)"
-        ),
-    )
-
-    parser.add_argument(
-        "--reader-host",
-        default=DEFAULT_READER_HOST,
-        metavar="HOST",
-        help=(
-            "Hercules socket-reader host "
-            f"(default: {DEFAULT_READER_HOST})"
-        ),
-    )
-
-    parser.add_argument(
-        "--reader-port",
-        type=int,
-        default=DEFAULT_READER_PORT,
-        metavar="PORT",
-        help=(
-            "Hercules socket-reader port "
-            f"(default: {DEFAULT_READER_PORT})"
-        ),
-    )
-
-    parser.add_argument(
-        "--timeout",
-        type=float,
-        default=DEFAULT_TIMEOUT,
-        metavar="SECONDS",
-        help=(
-            "maximum wait for JES assignment or "
-            f"--results (default: {DEFAULT_TIMEOUT:g})"
-        ),
-    )
-
-    parser.add_argument(
-        "--poll",
-        type=float,
-        default=DEFAULT_POLL,
-        metavar="SECONDS",
-        help=(
-            "printer-report polling interval "
-            f"(default: {DEFAULT_POLL:g})"
-        ),
-    )
-
+    parser.add_argument("interpreter", help="IFOX ICINT assembler source (normally under asm/)")
+    parser.add_argument("program", help="INTCODE program (normally under intcode/)")
+    parser.add_argument("--runtime", action="store_true",
+                        help="append the BCPL runtime library and ICLIB wrapper after the program")
+    parser.add_argument("--library", metavar="PATH",
+                        help="runtime-library INTCODE file; implies --runtime (default: discover intcode/blibi)")
+    parser.add_argument("--wrapper", metavar="PATH",
+                        help="ICLIB wrapper INTCODE file; implies --runtime (default: discover intcode/iclib)")
+    parser.add_argument("--sysin", metavar="PATH",
+                        help="ASCII runtime input file; each line becomes one SYSIN record (maximum 80 characters)")
+    parser.add_argument("--results", action="store_true",
+                        help="wait for the JES job to finish and print only the ICINT runtime results")
+    parser.add_argument("--jcl", metavar="PATH",
+                        help="generated JCL deck (default: workarea/run-intcode-PROGRAM.jcl)")
+    parser.add_argument("--job-name", metavar="NAME", help="override the generated MVS JOB name")
+    parser.add_argument("--listing", choices=("light", "medium", "heavy"), default="light",
+                        help="assembler/linker listing profile (default: light)")
+    parser.add_argument("--reader-host", default=DEFAULT_READER_HOST, metavar="HOST",
+                        help=f"Hercules socket-reader host (default: {DEFAULT_READER_HOST})")
+    parser.add_argument("--reader-port", type=int, default=DEFAULT_READER_PORT, metavar="PORT",
+                        help=f"Hercules socket-reader port (default: {DEFAULT_READER_PORT})")
+    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, metavar="SECONDS",
+                        help=f"maximum wait for JES assignment or --results (default: {DEFAULT_TIMEOUT:g})")
+    parser.add_argument("--poll", type=float, default=DEFAULT_POLL, metavar="SECONDS",
+                        help=f"printer-report polling interval (default: {DEFAULT_POLL:g})")
     return parser
 
 
-def main(
-    argv: list[str] | None = None,
-) -> int:
+def main(argv=None):
     parser = make_parser()
     args = parser.parse_args(argv)
-
     try:
-        interpreter = resolve_repo_path(
-            args.interpreter
-        )
-
-        program = resolve_repo_path(
-            args.program
-        )
-
+        interpreter = resolve_repo_path(args.interpreter)
+        program = resolve_repo_path(args.program)
         if not interpreter.is_file():
-            raise ValueError(
-                f"interpreter does not exist: "
-                f"{interpreter}"
-            )
-
+            raise ValueError(f"interpreter does not exist: {interpreter}")
         if not program.is_file():
-            raise ValueError(
-                f"INTCODE program does not exist: "
-                f"{program}"
-            )
-
-        if args.reader_port < 1 or args.reader_port > 65535:
-            raise ValueError(
-                "--reader-port must be between 1 and 65535"
-            )
-
+            raise ValueError(f"INTCODE program does not exist: {program}")
+        if not 1 <= args.reader_port <= 65535:
+            raise ValueError("--reader-port must be between 1 and 65535")
         if args.timeout <= 0:
-            raise ValueError(
-                "--timeout must be greater than zero"
-            )
-
+            raise ValueError("--timeout must be greater than zero")
         if args.poll <= 0:
-            raise ValueError(
-                "--poll must be greater than zero"
-            )
+            raise ValueError("--poll must be greater than zero")
 
-        include_runtime = bool(
-            args.runtime
-            or args.library is not None
-            or args.wrapper is not None
-        )
+        include_runtime = bool(args.runtime or args.library is not None or args.wrapper is not None)
+        library = resolve_repo_path(args.library) if args.library is not None else None
+        wrapper = resolve_repo_path(args.wrapper) if args.wrapper is not None else None
+        intin, components = make_intin(program, include_runtime, library, wrapper)
 
-        library = (
-            resolve_repo_path(
-                args.library
-            )
-            if args.library is not None
-            else None
-        )
+        sysin_path = resolve_repo_path(args.sysin) if args.sysin is not None else None
+        sysin = read_sysin(sysin_path) if sysin_path is not None else None
 
-        wrapper = (
-            resolve_repo_path(
-                args.wrapper
-            )
-            if args.wrapper is not None
-            else None
-        )
-
-        intin, components = make_intin(
-            program_path=program,
-            include_runtime=include_runtime,
-            library_path=library,
-            wrapper_path=wrapper,
-        )
-
-        job_name = (
-            args.job_name.upper()
-            if args.job_name
-            else derive_job_name(program)
-        )
-
+        job_name = args.job_name.upper() if args.job_name else derive_job_name(program)
         if not MVS_NAME.fullmatch(job_name):
-            raise ValueError(
-                "--job-name must be a valid MVS "
-                "name of at most 8 characters"
-            )
+            raise ValueError("--job-name must be a valid MVS name of at most 8 characters")
 
-        deck = build_deck(
-            interpreter=interpreter,
-            intin=intin,
-            job_name=job_name,
-            listing=args.listing,
-        )
-
-        if args.jcl:
-            jcl_path = resolve_repo_path(
-                args.jcl
-            )
-
-        else:
-            jcl_path = (
-                WORKAREA
-                / f"run-intcode-{program.stem}.jcl"
-            )
-
-        jcl_path.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
+        deck = build_deck(interpreter, intin, sysin, job_name, args.listing)
+        jcl_path = (resolve_repo_path(args.jcl) if args.jcl else
+                    WORKAREA / f"run-intcode-{program.stem}.jcl")
+        jcl_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            jcl_path.write_text(
-                deck,
-                encoding="ascii",
-                newline="\n",
-            )
+            jcl_path.write_text(deck, encoding="ascii", newline="\n")
+        except (OSError, UnicodeError) as exc:
+            raise RuntimeError(f"cannot write JCL deck {jcl_path}: {exc}") from exc
 
-        except (
-            OSError,
-            UnicodeError,
-        ) as exc:
-            raise RuntimeError(
-                f"cannot write JCL deck "
-                f"{jcl_path}: {exc}"
-            ) from exc
+        def shown(path):
+            try:
+                return path.relative_to(ROOT)
+            except ValueError:
+                return path
 
-        try:
-            shown_interpreter = (
-                interpreter.relative_to(ROOT)
-            )
-        except ValueError:
-            shown_interpreter = interpreter
-
-        try:
-            shown_program = (
-                program.relative_to(ROOT)
-            )
-        except ValueError:
-            shown_program = program
-
-        try:
-            shown_jcl = (
-                jcl_path.relative_to(ROOT)
-            )
-        except ValueError:
-            shown_jcl = jcl_path
-
-        print(
-            f"INTERPRETER {shown_interpreter}"
-        )
-
-        print(
-            f"PROGRAM     {shown_program}"
-        )
-
+        print(f"INTERPRETER {shown(interpreter)}")
+        print(f"PROGRAM     {shown(program)}")
         if include_runtime:
-            try:
-                shown_library = (
-                    components[1].relative_to(ROOT)
-                )
-            except ValueError:
-                shown_library = components[1]
+            print(f"LIBRARY     {shown(components[1])}")
+            print(f"WRAPPER     {shown(components[2])}")
+        if sysin_path is not None:
+            print(f"SYSIN       {shown(sysin_path)}")
+        print(f"JCL         {shown(jcl_path)}")
+        print(f"READER      {args.reader_host}:{args.reader_port}")
 
-            try:
-                shown_wrapper = (
-                    components[2].relative_to(ROOT)
-                )
-            except ValueError:
-                shown_wrapper = components[2]
-
-            print(
-                f"LIBRARY     {shown_library}"
-            )
-
-            print(
-                f"WRAPPER     {shown_wrapper}"
-            )
-
-        print(
-            f"JCL         {shown_jcl}"
-        )
-
-        print(
-            f"READER      "
-            f"{args.reader_host}:{args.reader_port}"
-        )
-
-        start_offset = submit_job(
-            jcl_path=jcl_path,
-            reader_host=args.reader_host,
-            reader_port=args.reader_port,
-        )
-
+        start_offset = submit_job(jcl_path, args.reader_host, args.reader_port)
         job_number = wait_for_new_job(
-            job_name=job_name,
-            start_offset=start_offset,
-            timeout=args.timeout,
-            poll=args.poll,
+            job_name, start_offset, args.timeout, args.poll
         )
-
-        print(
-            f"JOB {job_number}"
-        )
-
+        print(f"JOB {job_number}")
         if args.results:
-            report = wait_for_job_report(
-                job_number=job_number,
-                timeout=args.timeout,
-                poll=args.poll,
-            )
-
-            results = extract_icint_results(
-                report
-            )
-
+            report = wait_for_job_report(job_number, args.timeout, args.poll)
             print()
-            print(
-                results,
-                end="",
-            )
-
+            print(extract_icint_results(report), end="")
         return 0
-
-    except (
-        ValueError,
-        RuntimeError,
-        TimeoutError,
-        OSError,
-    ) as exc:
-        print(
-            f"run-intcode: {exc}",
-            file=sys.stderr,
-        )
-
+    except (ValueError, RuntimeError, TimeoutError, OSError) as exc:
+        print(f"run-intcode: {exc}", file=sys.stderr)
         return 1
 
 
 if __name__ == "__main__":
-    sys.exit(
-        main()
-    )
-
+    sys.exit(main())
