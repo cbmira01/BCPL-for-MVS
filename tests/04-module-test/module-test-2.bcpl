@@ -1,0 +1,4 @@
+GLOBAL $( F:2 $)
+
+LET F(N) = N=0 -> 1, N*F(N-1)
+
