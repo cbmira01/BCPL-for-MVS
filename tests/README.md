@@ -1,57 +1,118 @@
-# Test Inputs
+# Tests
 
-This directory contains test and diagnostic inputs used while developing
-and validating the BCPL-for-MVS reconstruction.
+This directory contains regression, acceptance, and diagnostic workloads for
+the BCPL-for-MVS reconstruction.  The tests now cover both direct INTCODE
+execution under `ICINT` and the interpreted BCPL compiler pipeline through
+SYNI/TRNI, CGI, and the runtime libraries.
 
-At present the tests are primarily INTCODE workloads for the project's
-MVS `ICINT` interpreter. Some preserve historical examples; others are
-purpose-built diagnostics for particular interpreter capabilities.
+The tests are grouped by purpose rather than kept as one flat collection.
+Numbered directory names roughly follow the order in which the capabilities
+were established.
 
-## Files
+## Test groups
 
-| File | Purpose |
+| Directory | Purpose |
 | --- | --- |
-| [`richards-example.int`](richards-example.int) | Martin Richards's published factorial INTCODE example, with a small number of normalized archival readings. It contains the example program only, without runtime-library material or test wrappers. |
-| [`intcode-v12-honors-thesis.int`](intcode-v12-honors-thesis.int) | V12 acceptance workload built around Richards's factorial example and used to exercise the interpreter more completely. |
-| [`intcode-v12-honors-thesis.expected`](intcode-v12-honors-thesis.expected) | Expected output for the V12 honors-thesis acceptance workload, including factorial results, execution-cycle count, and completion code. |
-| [`intcode-v13-mapstore.int`](intcode-v13-mapstore.int) | V13 diagnostic workload that constructs a recognizable BCPL call chain and values in locals/globals, then deliberately executes an unsupported X-op to exercise the interpreter's error and MAPSTORE diagnostics. |
+| [`01-echo-test`](01-echo-test/) | Basic stream-I/O test. `echo-sysin.int` uses the historical-style `RDCH`/`WRCH` calling idiom to copy `SYSIN` to `SYSPRINT`; `best-of-times.txt` is sample input. |
+| [`02-honors-thesis-and-mapstore`](02-honors-thesis-and-mapstore/) | Interpreter acceptance and diagnostics. Includes the V12 honors-thesis workload and expected output, plus the V13 MAPSTORE diagnostic that deliberately executes unsupported `X38` after building a recognizable BCPL call chain and global/local state. |
+| [`03-compile-richards-factorial`](03-compile-richards-factorial/) | Compiler-pipeline evidence centered on Martin Richards's factorial example. Contains BCPL source plus historical/derived OCODE and INTCODE artifacts used while validating compilation through SYN/TRN and CGI and subsequent execution under ICINT. |
+| [`04-module-test`](04-module-test/) | Separate-compilation test. The factorial program is split into two independently compiled BCPL modules: module 1 contains `START`, module 2 contains recursive `F`, and both rendezvous through `GLOBAL` slot 2. Saved `.ocode` and `.intcode` files show the independently generated intermediate forms. |
 
-The comments at the beginning of individual `.int` files are part of the
-test documentation and should be retained when modifying or extending a
-workload.
+## Running direct INTCODE tests
 
-## Running tests
+[`tools/run-intcode`](../tools/run-intcode) is the normal driver for tests
+whose primary input is already INTCODE.
 
-The host-side [`tools/run-intcode`](../tools/run-intcode) command is the
-normal way to execute these workloads under the MVS `ICINT`
-implementation.
-
-For example:
+For example, the stream echo test is intended to run with the standard runtime
+components:
 
 ```text
 tools/run-intcode --runtime --results \
-    asm/icintv13.asm \
-    tests/richards-example.int
+    asm/icintv15.asm \
+    tests/01-echo-test/echo-sysin.int
 ```
 
-See [`tools/README.md`](../tools/README.md) for the current command-line
-workflow and [`intcode/README.md`](../intcode/README.md) for the standard
-INTCODE runtime components.
+The test program itself documents that it uses the `RDCH`/`WRCH` idiom and
+expects runtime support.
 
-## Test organization
+The files in `02-honors-thesis-and-mapstore` are likewise direct INTCODE
+workloads.  The MAPSTORE test is intentionally a failure-path diagnostic:
+`X38` is outside the implemented X-op range and is used to force the normal
+INTCODE error and MAPSTORE path.
 
-Where practical, test names identify the interpreter version or feature
-for which the workload was introduced. A version in a filename records
-that historical development point; it does not necessarily mean that the
-test is useful only with that version.
+## Running BCPL compiler tests
 
-Files ending in `.expected` contain reference output associated with a
-test workload. Diagnostic tests may instead describe their expected
-state or failure directly in comments when exact textual output is not
-the principal assertion.
+[`tools/compile-and-run`](../tools/compile-and-run) drives BCPL source through
+the interpreted compiler pipeline and then executes the generated INTCODE.
+
+A single-module Richards factorial run is represented by the material in
+`03-compile-richards-factorial`:
+
+```text
+tools/compile-and-run \
+    --results \
+    --save-ocode \
+    --save-intcode \
+    asm/icintv15.asm \
+    tests/03-compile-richards-factorial/richards-factorial-test.bcpl
+```
+
+With the save options enabled, generated host-side intermediates use these
+extensions:
+
+```text
+<module>.ocode
+<module>.intcode
+```
+
+The older `.int`, `.OCODE`, and similarly named files retained in
+`03-compile-richards-factorial` are historical development artifacts and should
+not be mistaken for the current save-file naming convention.
+
+## Separate BCPL modules
+
+`04-module-test` is the first regression test for true separate BCPL
+compilation under the interpreted toolchain.  Its two source files are compiled
+independently through SYN/TRN and CGI, then their INTCODE modules are loaded in
+command-line order into the common ICINT global vector.
+
+Run it with the same `+PATH` convention used by `run-intcode` for additional
+modules:
+
+```text
+tools/compile-and-run \
+    --results \
+    --save-ocode \
+    --save-intcode \
+    --job-name MODLTEST \
+    asm/icintv15.asm \
+    tests/04-module-test/module-test-1.bcpl \
+    +tests/04-module-test/module-test-2.bcpl
+```
+
+Module 1 declares `F:2` and calls through global slot 2.  Module 2 also declares
+`F:2` and defines `F`, so its generated INTCODE publishes the entry point in
+that same slot.  Successful execution therefore demonstrates cross-module
+GLOBAL-vector rendezvous rather than simple BCPL source concatenation.
+
+## File conventions
+
+BCPL source files use `.bcpl`.  Current saved compiler intermediates use
+`.ocode` and `.intcode`.  Direct or historical INTCODE workloads may still use
+`.int`; those filenames record the development state in which the tests were
+created and are intentionally retained where they are useful as evidence.
+
+Files ending in `.expected` contain reference output associated with a test.
+Comments at the beginning of diagnostic INTCODE files are part of the test
+documentation and should be retained when modifying or extending a workload.
 
 ## Maintenance
 
-This directory is expected to grow as ICINT, the compiler bootstrap, and
-the reconstructed BCPL runtime develop. Add or update entries here when
-a test has a distinct purpose that is not obvious from its filename.
+Keep each test group focused on one capability or milestone.  When a new test
+establishes a distinct compiler, interpreter, stream, runtime, or linkage
+behavior, add it as a clearly named test group and update this README so the
+purpose and normal invocation remain obvious.
+
+See [`tools/README.md`](../tools/README.md) for the host-side command-line tools
+and [`intcode/README.md`](../intcode/README.md) for the standard INTCODE compiler
+and runtime components.
