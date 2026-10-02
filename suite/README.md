@@ -10,6 +10,18 @@ and useful as examples of the programming style found in historical BCPL systems
 Where practical, each program should also exercise some meaningful part of the
 compiler, INTCODE interpreter, runtime library, or MVS host interface.
 
+## Shared modules
+
+Some demonstrations benefit from small reusable BCPL modules rather than embedding
+all support code in each program.
+
+- **random** — a seedable pseudo-random number generator for reproducible test data,
+  randomized searches, shuffling, maze work, randomized sorting choices, and similar
+  demonstrations.  See `random/README.md`.
+
+Shared modules should have a small documented GLOBAL-vector interface and should be
+usable through the existing multi-module `compile-and-run` mechanism.
+
 ## Core demonstration programs
 
 The initial suite consists of fifteen representative programs:
