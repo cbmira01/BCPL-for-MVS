@@ -243,7 +243,7 @@ def temp_output_dd(ddname: str, dsn: str, disposition: str = "PASS") -> str:
 
 
 def inline_dd(ddname: str, content: str) -> str:
-    return f"//{ddname:<8} DD  *\n" + content + "/*\n"
+    return f"//{ddname:<8} DD  DATA\n" + content + "/*\n"
 
 
 def stage_step(step: str, title: str, dsn: str, content: str) -> str:
