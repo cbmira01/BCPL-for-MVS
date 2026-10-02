@@ -65,13 +65,7 @@ assembler `END` statement. It can be specified explicitly with
 
 An MVS EXEC parameter can be supplied with `--parm`.
 
-Use:
-
-```text
-tools/make-asm-job --help
-```
-
-for the complete interface.
+Use `tools/make-asm-job --help` for the complete interface.
 
 `make-asm-job.py` contains the underlying Python implementation and is
 also used as a module by other project tools. For normal command-line
@@ -86,17 +80,10 @@ card reader.
 tools/submit-jcl jcl/program-light.jcl
 ```
 
-The repository's reader is expected on TCP port 3505.
-
-The command watches the main printer output for the JES start message
-and prints the assigned JES job number:
-
-```text
-JOB 42
-```
-
-This job number can then be passed to `job-summary` or
-`dump-report-for-job`.
+The repository's reader is expected on TCP port 3505. The command watches
+the main printer output for the JES start message and prints the assigned
+JES job number, for example `JOB 42`. This job number can then be passed
+to `job-summary` or `dump-report-for-job`.
 
 ### `job-summary`
 
@@ -107,9 +94,8 @@ tools/job-summary 42
 ```
 
 The report includes the executed steps and return codes and, when
-available, assembler status and resource information.
-
-By default, return codes through 4 are considered successful.
+available, assembler status and resource information. By default, return
+codes through 4 are considered successful.
 
 Useful options include:
 
@@ -118,11 +104,7 @@ tools/job-summary 42 --verbose
 tools/job-summary 42 --max-rc 0
 ```
 
-The normal printer source is:
-
-```text
-mvs-state/prt/prt00e.txt
-```
+The normal printer source is `mvs-state/prt/prt00e.txt`.
 
 ### `dump-report-for-job`
 
@@ -134,7 +116,6 @@ tools/dump-report-for-job 42
 
 This is useful when `job-summary` identifies a problem and the complete
 assembler, linkage-editor, execution, or diagnostic output is needed.
-
 Printer form feeds are converted so that the resulting report is
 convenient to inspect in a normal terminal or redirect to a file.
 
@@ -163,12 +144,30 @@ tools/run-intcode --runtime --results \
     asm/icintv13.asm intcode/factorial.int
 ```
 
+To supply standard input to the running INTCODE/BCPL program, use
+`--sysin` with an ASCII host text file:
+
+```text
+tools/run-intcode --runtime --results \
+    --sysin tests/program-input.txt \
+    asm/icintv13.asm intcode/program.int
+```
+
+Each line in the host file becomes one MVS `SYSIN` card-image record in
+the generated JCL. Blank lines are preserved as blank records. Records
+may contain at most 80 characters; `run-intcode` rejects a longer record
+rather than silently truncating it. A line consisting exactly of `/*` is
+also rejected because that sequence terminates JCL in-stream data.
+
+If `--sysin` is not specified, the generated GO step contains **no
+`SYSIN` DD statement**. Thus absence of the option means that no SYSIN
+stream is supplied to ICINT; it is not represented by `DD DUMMY`.
+
 The tool constructs an assemble/link/run job for ICINT, supplies the
 requested INTCODE input, submits the job through the TK5 socket reader,
 and obtains its status and results from the Hercules printer stream.
 
-When `--runtime` is specified, the INTCODE input stream is formed in
-this order:
+When `--runtime` is specified, the `INTIN` stream is formed in this order:
 
 ```text
 program
@@ -176,15 +175,23 @@ BLIBI
 ICLIB
 ```
 
-The standard runtime components are located under `intcode/`.
+The standard runtime components are located under `intcode/`. `--library`
+and `--wrapper` override the default runtime files and imply `--runtime`.
 
-Use:
+Other useful options are:
 
 ```text
-tools/run-intcode --help
+--results                 wait for completion and print ICINT output
+--jcl PATH                choose the generated JCL path
+--job-name NAME           override the generated MVS job name
+--listing light|medium|heavy
+--reader-host HOST        Hercules socket-reader host
+--reader-port PORT        Hercules socket-reader port
+--timeout SECONDS         JES/results wait timeout
+--poll SECONDS            printer polling interval
 ```
 
-for the complete interface.
+Use `tools/run-intcode --help` for the complete interface.
 
 ## Typical assembler workflow
 
@@ -217,6 +224,15 @@ tools/run-intcode --runtime --results \
     intcode/program.int
 ```
 
+For a program requiring input:
+
+```text
+tools/run-intcode --runtime --results \
+    --sysin tests/program-input.txt \
+    asm/icintv13.asm \
+    intcode/program.int
+```
+
 The lower-level tools remain useful when the generated JCL or complete
 MVS job output needs to be examined directly.
 
@@ -225,13 +241,9 @@ MVS job output needs to be examined directly.
 The tools assume the repository's Hercules/TK5 environment and directory
 layout.
 
-Depending on the command, host requirements include:
-
-- Python 3
-- Bash
-- Docker with Docker Compose
-- `nc` (netcat)
-- standard Unix utilities such as `awk`, `grep`, `tail`, and `timeout`
+Depending on the command, host requirements include Python 3, Bash,
+Docker with Docker Compose, `nc` (netcat), and standard Unix utilities
+such as `awk`, `grep`, `tail`, and `timeout`.
 
 The running MVS system is expected to use the repository's configured
 Hercules socket reader on port 3505 and printer output under
