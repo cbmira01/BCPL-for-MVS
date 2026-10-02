@@ -1,0 +1,3 @@
+BCPL is a compact systems programming language.
+This demonstration counts words, lines, and characters.
+Named MVS streams make the example useful here.
