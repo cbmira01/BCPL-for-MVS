@@ -1,0 +1,44 @@
+// QUEENS.BCPL
+// Solve the eight-queens problem by recursive backtracking.
+
+GLOBAL $(
+START:1
+WRCH:14
+NEWLINE:63
+WRITEF:76
+$)
+
+LET SAFE(C, R, Q) = VALOF
+$( FOR J = 0 TO C-1 DO
+   $( LET D = Q!J - R
+      IF D<0 DO D := -D
+      IF Q!J=R \/ D=C-J RESULTIS FALSE
+   $)
+   RESULTIS TRUE
+$)
+
+AND PLACE(C, Q) = VALOF
+$( IF C=8 RESULTIS TRUE
+   FOR R = 0 TO 7 DO
+      IF SAFE(C, R, Q) DO
+      $( Q!C := R
+         IF PLACE(C+1, Q) RESULTIS TRUE
+      $)
+   RESULTIS FALSE
+$)
+
+AND START() BE
+$( LET Q = VEC 7
+   UNLESS PLACE(0, Q) DO
+   $( WRITEF("NO SOLUTION*N")
+      FINISH
+   $)
+
+   WRITEF("EIGHT QUEENS*N")
+   FOR R = 0 TO 7 DO
+   $( FOR C = 0 TO 7 DO
+         TEST Q!C=R THEN WRCH('Q') OR WRCH('.')
+      NEWLINE()
+   $)
+   FINISH
+$)
