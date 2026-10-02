@@ -1,52 +1,58 @@
 # BCPL-for-MVS Host Tools
 
 This directory contains host-side tools used to operate the project's
-Hercules/TK5 MVS system and to support development and testing of the
-BCPL implementation.
+Hercules/TK5 MVS system and to support assembler, ICINT, and BCPL compiler
+development.
 
-These commands run on the host, not under MVS.
+These commands run on the host, not under MVS. Unless otherwise noted,
+examples assume they are run from the repository root.
 
-Unless otherwise noted, examples assume that they are run from the
-repository root.
+## Tool overview
 
-## Tools
+| Tool | Purpose |
+| --- | --- |
+| `start-tk5` | Start the Hercules/TK5 MVS environment. |
+| `shutdown-tk5` | Perform an orderly MVS/Hercules shutdown. |
+| `make-asm-job` | Generate a self-contained IFOX assemble/link/run JCL deck. |
+| `submit-jcl` | Submit a JCL deck through the Hercules socket reader and report the JES job number. |
+| `job-summary` | Summarize executed steps and return codes from printer output. |
+| `dump-report-for-job` | Extract the complete printer report for one JES job. |
+| `run-intcode` | Assemble/link ICINT and run one or more already-existing INTCODE modules. |
+| `compile-and-run` | Compile one or more BCPL source modules through the interpreted compiler pipeline and execute the generated INTCODE. |
 
-### `start-tk5`
+## Starting and stopping MVS
 
-Starts the Hercules/TK5 MVS container.
+Start attached to the Hercules/MVS event stream:
 
 ```text
 tools/start-tk5
+```
+
+or start detached:
+
+```text
 tools/start-tk5 --detached
 ```
 
-The default is attached operation, which leaves the Hercules/MVS event
-stream visible in the terminal. `--detached` starts the container in the
-background.
-
-The command uses `docker/compose.yaml`.
-
-### `shutdown-tk5`
-
-Stops the MVS container, allowing up to 180 seconds for shutdown.
+For normal shutdown:
 
 ```text
 tools/shutdown-tk5
 ```
 
-Use this rather than an abrupt container termination when shutting down
-the development system normally.
+The container and persistent-state layout are documented in
+[`docker/README.md`](../docker/README.md).
 
-### `make-asm-job`
+## `make-asm-job`
 
 Generates a self-contained MVS JCL deck that assembles an IFOX assembler
-source file, link-edits the resulting object module, and executes it.
+source, link-edits the resulting object module, and executes it.
 
 ```text
 tools/make-asm-job asm/program.asm --output-dir jcl
 ```
 
-Three listing levels are available:
+Listing profiles are:
 
 ```text
 --listing light
@@ -54,48 +60,42 @@ Three listing levels are available:
 --listing heavy
 ```
 
-`light` is the default and suppresses most assembler and linkage-editor
-listing material. `medium` adds an assembler listing, short cross
-reference, and linkage map. `heavy` requests the detailed diagnostic
-material useful during assembler development.
+`light` is the default. `medium` adds an assembler listing, short cross
+reference, and linkage map. `heavy` requests the detailed material useful
+when inspecting assembler and linkage-editor behavior.
 
-The program entry point is normally inferred from the operand of the
-assembler `END` statement. It can be specified explicitly with
-`--entry`.
+The program entry point is normally inferred from the assembler `END`
+operand; `--entry` can override it. An MVS EXEC parameter can be supplied
+with `--parm`.
 
-An MVS EXEC parameter can be supplied with `--parm`.
+`make-asm-job.py` is the underlying Python implementation and is imported by
+other tools. For normal command-line use, invoke `make-asm-job`.
 
-Use `tools/make-asm-job --help` for the complete interface.
+## `submit-jcl`
 
-`make-asm-job.py` contains the underlying Python implementation and is
-also used as a module by other project tools. For normal command-line
-use, use `make-asm-job`.
-
-### `submit-jcl`
-
-Submits a JCL deck to the running TK5 system through the Hercules socket
-card reader.
+Submits a deck through the Hercules socket card reader, normally TCP port
+3505:
 
 ```text
 tools/submit-jcl jcl/program-light.jcl
 ```
 
-The repository's reader is expected on TCP port 3505. The command watches
-the main printer output for the JES start message and prints the assigned
-JES job number, for example `JOB 42`. This job number can then be passed
-to `job-summary` or `dump-report-for-job`.
+The command watches the main printer output for the JES start record and
+prints the assigned job number, for example:
 
-### `job-summary`
+```text
+JOB 42
+```
 
-Prints a compact summary of an MVS job from the TK5 printer output.
+That number can be passed directly to the reporting tools.
+
+## `job-summary`
+
+Prints a compact summary of an MVS job:
 
 ```text
 tools/job-summary 42
 ```
-
-The report includes the executed steps and return codes and, when
-available, assembler status and resource information. By default, return
-codes through 4 are considered successful.
 
 Useful options include:
 
@@ -106,167 +106,221 @@ tools/job-summary 42 --max-rc 0
 
 The normal printer source is `mvs-state/prt/prt00e.txt`.
 
-### `dump-report-for-job`
+## `dump-report-for-job`
 
-Extracts the complete printer report belonging to one JES job.
+Extracts the complete printer report belonging to one JES job:
 
 ```text
 tools/dump-report-for-job 42
 ```
 
-This is useful when `job-summary` identifies a problem and the complete
-assembler, linkage-editor, execution, or diagnostic output is needed.
-Printer form feeds are converted so that the resulting report is
-convenient to inspect in a normal terminal or redirect to a file.
+This is the normal follow-up when a job summary shows a failure or when the
+assembler listing, link map, generated JCL banners, data-set disposition, or
+program output needs close inspection.
 
-### `run-intcode`
+## `run-intcode`
 
-Provides the higher-level development path for running INTCODE under
-the project's ICINT implementation.
-
-Typical use:
-
-```text
-tools/run-intcode asm/icintv13.asm intcode/factorial.int
-```
-
-Additional INTCODE modules can be appended explicitly using `+PATH`.
-They are concatenated to `INTIN` in exactly the order written on the
-command line:
-
-```text
-tools/run-intcode \
-    asm/icintv13.asm \
-    intcode/syni.int \
-    +intcode/trni.int \
-    +intcode/blibi.int \
-    +intcode/iclib.int
-```
-
-This replaces the former special-purpose `--runtime`, `--library`, and
-`--wrapper` options. Runtime components are now ordinary explicit modules.
-For example, a program using the standard BCPL runtime can be run as:
+`run-intcode` is the direct ICINT/INTCODE driver. Use it when the program or
+component being tested is already INTCODE.
 
 ```text
 tools/run-intcode --results \
-    asm/icintv13.asm \
-    intcode/program.int \
+    asm/icintv15.asm \
+    tests/01-echo-test/echo-sysin.int \
     +intcode/blibi.int \
     +intcode/iclib.int
 ```
 
-To supply standard input to the running INTCODE/BCPL program, use
-`--sysin` with an ASCII host text file:
+The first INTCODE path is the primary module. Every additional module is
+written explicitly as `+PATH` and is concatenated to `INTIN` in command-line
+order:
 
 ```text
-tools/run-intcode --results \
-    --sysin tests/program-input.txt \
-    asm/icintv13.asm \
-    intcode/program.int \
-    +intcode/blibi.int \
-    +intcode/iclib.int
-```
-
-Each line in the host file becomes one MVS `SYSIN` card-image record in
-the generated JCL. Blank lines are preserved as blank records. Records
-may contain at most 80 characters; `run-intcode` rejects a longer record
-rather than silently truncating it. A line consisting exactly of `/*` is
-also rejected because that sequence terminates JCL in-stream data.
-
-If `--sysin` is not specified, the generated GO step contains **no
-`SYSIN` DD statement**. Thus absence of the option means that no SYSIN
-stream is supplied to ICINT; it is not represented by `DD DUMMY`.
-
-The tool constructs an assemble/link/run job for ICINT, supplies the
-requested INTCODE modules, submits the job through the TK5 socket reader,
-and obtains its status and results from the Hercules printer stream.
-
-The `INTIN` stream is formed as:
-
-```text
-primary program
+primary
 +module 1
 +module 2
 ...
 ```
 
-The first INTCODE path after the interpreter is the primary program. Each
-following positional argument must begin with `+`, making the load order
-visible and preventing accidental ambiguity with options or other files.
+Runtime components are ordinary modules. Earlier special-purpose runtime,
+library, or wrapper switches are not the current interface.
 
-Other useful options are:
+### SYSIN input
+
+A host text file can be supplied as MVS `SYSIN`:
 
 ```text
---sysin PATH               supply ASCII SYSIN records
---results                  wait for completion and print ICINT output
---jcl PATH                 choose the generated JCL path
---job-name NAME            override the generated MVS job name
+tools/run-intcode --results \
+    --sysin tests/01-echo-test/best-of-times.txt \
+    asm/icintv15.asm \
+    tests/01-echo-test/echo-sysin.int \
+    +intcode/blibi.int \
+    +intcode/iclib.int
+```
+
+Each host line becomes one 80-column-or-shorter card-image record. Blank lines
+are preserved. A record longer than 80 characters, or a line consisting
+exactly of `/*`, is rejected rather than silently changed.
+
+If `--sysin` is omitted, the generated execution step has no `SYSIN` DD. This
+is intentionally different from `DD DUMMY`: absence of the DD allows ICINT's
+stream-discovery semantics to distinguish an unavailable stream.
+
+Other useful options include:
+
+```text
+--results
+--jcl PATH
+--job-name NAME
 --listing light|medium|heavy
---reader-host HOST         Hercules socket-reader host
---reader-port PORT         Hercules socket-reader port
---timeout SECONDS          JES/results wait timeout
---poll SECONDS             printer polling interval
+--reader-host HOST
+--reader-port PORT
+--timeout SECONDS
+--poll SECONDS
 ```
 
 Use `tools/run-intcode --help` for the complete interface.
 
-## Typical assembler workflow
+## `compile-and-run`
 
-For ordinary assembler development, the tools fit together as follows:
+`compile-and-run` is the normal driver for the interpreted BCPL compiler
+pipeline. It deliberately remains separate from `run-intcode` so direct
+INTCODE testing and compiler-phase work do not become entangled.
+
+For one BCPL source module:
 
 ```text
-tools/start-tk5 --detached
+tools/compile-and-run \
+    --results \
+    --save-ocode \
+    --save-intcode \
+    --listing heavy \
+    asm/icintv15.asm \
+    tests/03-compile-richards-factorial/richards-factorial-test.bcpl
+```
 
-tools/make-asm-job asm/program.asm \
-    --output-dir jcl \
-    --listing heavy
+The generated MVS job assembles and links ICINT once, stages the preserved
+compiler/runtime components, and runs this pipeline:
 
+```text
+BCPL source
+    |
+    v
+SYNI + TRNI
+    |
+    v
+OCODE
+    |
+    v
+CGI
+    |
+    v
+INTCODE
+    |
+    v
+ICINT + BLIBI + ICLIB
+```
+
+The generated JCL contains a job map and conspicuous phase banners so long
+printer reports can be navigated by eye.
+
+### Saved intermediates
+
+`--save-ocode` recovers each compiler unit's OCODE to:
+
+```text
+workarea/<module>.ocode
+```
+
+`--save-intcode` recovers generated INTCODE to:
+
+```text
+workarea/<module>.intcode
+```
+
+The save steps copy temporary MVS data sets after the compiler phases; they do
+not alter the OCODE/INTCODE streams used by the pipeline itself.
+
+### Separate BCPL compilation units
+
+Additional BCPL sources use the same explicit `+PATH` convention as
+`run-intcode`:
+
+```text
+tools/compile-and-run \
+    --results \
+    --save-ocode \
+    --save-intcode \
+    --job-name MODLTEST \
+    asm/icintv15.asm \
+    tests/04-module-test/module-test-1.bcpl \
+    +tests/04-module-test/module-test-2.bcpl
+```
+
+Each BCPL source is compiled independently through SYN/TRN and CGI. Only the
+generated INTCODE modules are concatenated for the final ICINT load/run, in
+command-line order. The `04-module-test` regression demonstrates cross-module
+BCPL `GLOBAL`-vector linkage.
+
+Current compiler options include:
+
+```text
+--results
+--save-ocode
+--save-intcode
+--jcl PATH
+--job-name NAME
+--listing light|medium|heavy
+--reader-host HOST
+--reader-port PORT
+--timeout SECONDS
+--poll SECONDS
+```
+
+A planned near-term extension is a convenient named-DD option for mapping
+host files to arbitrary MVS DDNAMEs. That will allow historical BCPL
+`FINDINPUT("name")`, compiler `OPTIONS`, and `GET "name"` paths to be exercised
+without hand-editing generated JCL.
+
+Use `tools/compile-and-run --help` for the current interface.
+
+## Typical workflows
+
+Assembler development:
+
+```text
+tools/make-asm-job asm/program.asm --output-dir jcl --listing heavy
 tools/submit-jcl jcl/program-heavy.jcl
-
 tools/job-summary JOB_NUMBER
-
 tools/dump-report-for-job JOB_NUMBER
 ```
 
-Edit the assembler source, regenerate the JCL deck, and repeat.
-
-## Typical INTCODE workflow
-
-For ICINT development and INTCODE testing, `run-intcode` combines most
-of the individual steps:
+Direct INTCODE execution:
 
 ```text
 tools/run-intcode --results \
-    asm/icintv13.asm \
-    intcode/program.int \
+    asm/icintv15.asm \
+    program.intcode \
     +intcode/blibi.int \
     +intcode/iclib.int
 ```
 
-For a compiler-phase experiment requiring source input:
+BCPL source compilation and execution:
 
 ```text
-tools/run-intcode --results \
-    --sysin tests/richards-factorial-test.bcpl \
-    asm/icintv13.asm \
-    intcode/syni.int \
-    +intcode/trni.int \
-    +intcode/blibi.int \
-    +intcode/iclib.int
+tools/compile-and-run --results \
+    asm/icintv15.asm \
+    program.bcpl
 ```
 
-The lower-level tools remain useful when the generated JCL or complete
-MVS job output needs to be examined directly.
+The lower-level tools remain useful whenever generated JCL or complete MVS
+job output needs to be examined directly.
 
 ## Host requirements
 
 The tools assume the repository's Hercules/TK5 environment and directory
-layout.
+layout. Depending on the command, host requirements include Python 3, Bash,
+Docker with Docker Compose, `nc` (netcat), and standard Unix utilities.
 
-Depending on the command, host requirements include Python 3, Bash,
-Docker with Docker Compose, `nc` (netcat), and standard Unix utilities
-such as `awk`, `grep`, `tail`, and `timeout`.
-
-The running MVS system is expected to use the repository's configured
-Hercules socket reader on port 3505 and printer output under
-`mvs-state/prt/`.
+The running system is expected to use the configured socket reader on port
+3505 and printer output under `mvs-state/prt/`.
