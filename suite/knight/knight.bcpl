@@ -1,0 +1,63 @@
+// KNIGHT.BCPL
+// Construct a 5x5 knight's tour with Warnsdorff's heuristic.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET INSIDE(X, Y) = 0<=X & X<5 & 0<=Y & Y<5
+
+AND DEGREE(X, Y, BOARD, DX, DY) = VALOF
+$( LET N = 0
+   FOR K = 0 TO 7 DO
+   $( LET NX = X + DX!K
+      AND NY = Y + DY!K
+      IF INSIDE(NX, NY) & BOARD!(NY*5+NX)=0 DO N := N+1
+   $)
+   RESULTIS N
+$)
+
+AND START() BE
+$( LET BOARD = VEC 24
+   AND DX = VEC 7
+   AND DY = VEC 7
+   LET X = 0
+   AND Y = 0
+
+   DX!0:=2;  DY!0:=1
+   DX!1:=1;  DY!1:=2
+   DX!2:=-1; DY!2:=2
+   DX!3:=-2; DY!3:=1
+   DX!4:=-2; DY!4:=-1
+   DX!5:=-1; DY!5:=-2
+   DX!6:=1;  DY!6:=-2
+   DX!7:=2;  DY!7:=-1
+
+   FOR I = 0 TO 24 DO BOARD!I := 0
+   BOARD!0 := 1
+
+   FOR STEP = 2 TO 25 DO
+   $( LET BEST = -1
+      AND BESTD = 99
+      FOR K = 0 TO 7 DO
+      $( LET NX = X + DX!K
+         AND NY = Y + DY!K
+         IF INSIDE(NX, NY) & BOARD!(NY*5+NX)=0 DO
+         $( LET D = DEGREE(NX, NY, BOARD, DX, DY)
+            IF D<BESTD DO BEST, BESTD := K, D
+         $)
+      $)
+      IF BEST<0 DO
+      $( WRITEF("TOUR FAILED AT STEP %N*N", STEP)
+         FINISH
+      $)
+      X := X + DX!BEST
+      Y := Y + DY!BEST
+      BOARD!(Y*5+X) := STEP
+   $)
+
+   WRITEF("5 X 5 KNIGHT TOUR*N")
+   FOR R = 0 TO 4 DO
+   $( FOR C = 0 TO 4 DO WRITEF("%I3", BOARD!(R*5+C))
+      WRITEF("*N")
+   $)
+   FINISH
+$)
