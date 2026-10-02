@@ -1,0 +1,17 @@
+// HANOI.BCPL
+// Solve the Towers of Hanoi recursively.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET MOVE(N, FROM, TO, SPARE) BE
+$( IF N=0 RETURN
+   MOVE(N-1, FROM, SPARE, TO)
+   WRITEF("MOVE DISK %N FROM %C TO %C*N", N, FROM, TO)
+   MOVE(N-1, SPARE, TO, FROM)
+$)
+
+AND START() BE
+$( WRITEF("TOWERS OF HANOI - FOUR DISKS*N")
+   MOVE(4, 'A', 'C', 'B')
+   FINISH
+$)
