@@ -1,30 +1,27 @@
 # MVS JCL Decks
 
-This directory contains JCL used to build, run, test, and inspect the
+This directory contains retained JCL used to build, run, test, and inspect the
 BCPL-for-MVS development system under MVS 3.8J.
 
-Some decks are generated development artifacts that capture a particular
-assembler or ICINT test configuration. Others are small hand-written
-system-inspection jobs used while investigating the TK5/MVS environment.
+The project now generates most day-to-day assembler, ICINT, and compiler jobs
+from host-side tools. Files kept here are therefore either durable examples,
+important historical acceptance decks, or small system-inspection jobs.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
-| [`hello-world-heavy.jcl`](hello-world-heavy.jcl) | Assemble, link-edit, and run the `hello-world.asm` example with the heavy diagnostic/listing profile. Useful as a complete IFOX toolchain example. |
-| [`icintv12-honors-thesis.jcl`](icintv12-honors-thesis.jcl) | Self-contained V12 ICINT acceptance job for the honors-thesis/factorial workload. Preserves the JCL used to validate the V12 word-addressed representation. |
-| [`icintv13-honors-thesis.jcl`](icintv13-honors-thesis.jcl) | V13 ICINT job using the honors-thesis/factorial acceptance workload, retained for regression testing against the validated V12 behavior. |
-| [`icintv13-mapstore.jcl`](icintv13-mapstore.jcl) | V13 diagnostic job for the reconstructed MAPSTORE facility and its deliberately failing INTCODE workload. |
-| [`dump-jes2-parameters.jcl`](dump-jes2-parameters.jcl) | Uses `IEBPTPCH` to print selected members of `SYS1.JES2PARM` for inspection of the TK5 JES2 configuration. |
-| [`list-parmlib-members.jcl`](list-parmlib-members.jcl) | Uses `IEHLIST` to list the members of `SYS1.PARMLIB` on the TK5 system residence volume. |
+| [`hello-world-heavy.jcl`](hello-world-heavy.jcl) | Assemble, link-edit, and run `asm/hello-world.asm` with the heavy listing profile. Useful as a compact complete IFOX toolchain example. |
+| [`icintv12-honors-thesis.jcl`](icintv12-honors-thesis.jcl) | Self-contained V12 ICINT acceptance job for the honors-thesis/factorial workload. Preserves the job used to validate the V12 word-addressed BCPL representation. |
+| [`icintv13-honors-thesis.jcl`](icintv13-honors-thesis.jcl) | V13 ICINT regression job using the same factorial acceptance workload. |
+| [`icintv13-mapstore.jcl`](icintv13-mapstore.jcl) | V13 diagnostic job for the reconstructed MAPSTORE path and deliberately failing INTCODE workload. |
+| [`dump-jes2-parameters.jcl`](dump-jes2-parameters.jcl) | Uses `IEBPTPCH` to inspect selected JES2 parameter material. |
+| [`list-parmlib-members.jcl`](list-parmlib-members.jcl) | Uses `IEHLIST` to list members of `SYS1.PARMLIB` on the TK5 system residence volume. |
 
 ## Generated assembler jobs
 
-The host-side [`tools/make-asm-job`](../tools/make-asm-job) command
-creates self-contained IFOX assemble/link/run decks in this directory
-when `jcl` is supplied as its output directory.
-
-For example:
+[`tools/make-asm-job`](../tools/make-asm-job) creates self-contained IFOX
+assemble/link/run decks.
 
 ```text
 tools/make-asm-job asm/hello-world.asm \
@@ -32,53 +29,63 @@ tools/make-asm-job asm/hello-world.asm \
     --listing heavy
 ```
 
-Generated decks inline the assembler source. If the source changes, the
-corresponding generated JCL should be regenerated rather than edited as
-though it were the primary source.
+Generated decks inline the assembler source. Regenerate them after source
+changes rather than treating the JCL as the primary source.
 
-The listing suffix records the requested diagnostic profile, such as
-`-light`, `-medium`, or `-heavy`.
+## ICINT and compiler jobs
 
-## ICINT jobs
+For direct INTCODE execution, use [`tools/run-intcode`](../tools/run-intcode).
+For BCPL source compilation through the preserved interpreted compiler, use
+[`tools/compile-and-run`](../tools/compile-and-run).
 
-The larger `icint*.jcl` files are self-contained development and
-acceptance jobs. They combine the ICINT assembler source with the
-INTCODE input needed for a particular test. Keeping selected known-good
-decks in the repository provides a reproducible record of important
-interpreter checkpoints.
+Those tools generate working decks under `workarea/` by default. In particular,
+`compile-and-run` now emits a prominent job map and phase banners so long JES
+printouts can be navigated easily. It supports single- and multi-module BCPL
+compilation, optional saved OCODE/INTCODE intermediates, and explicit listing
+profiles.
 
-For day-to-day ICINT development, [`tools/run-intcode`](../tools/run-intcode)
-is normally more convenient than maintaining a JCL deck by hand. It can
-construct and submit the required job directly from an ICINT assembler
-source and an INTCODE workload.
+The older `icint*.jcl` files retained here are therefore historical acceptance
+artifacts, not templates that must be kept synchronized with the current V15
+implementation.
 
-See [`asm/README.md`](../asm/README.md),
-[`intcode/README.md`](../intcode/README.md), and
-[`tests/README.md`](../tests/README.md) for the corresponding source,
-runtime, and test material.
+## Submitting and inspecting a deck
 
-## Submitting a deck
-
-With the TK5 system running, submit a JCL file through the Hercules
-socket reader with:
+With TK5 running:
 
 ```text
 tools/submit-jcl jcl/job.jcl
 ```
 
-The command reports the assigned JES job number. That number can then be
-used with:
+The command reports the assigned JES job number. Inspect it with:
 
 ```text
 tools/job-summary JOB_NUMBER
 tools/dump-report-for-job JOB_NUMBER
 ```
 
-See [`tools/README.md`](../tools/README.md) for details.
+The complete report is often the most useful artifact when diagnosing
+assembler addressability, linkage-editor behavior, DD/data-set handling, or
+compiler-pipeline failures.
+
+## Future JCL work
+
+As the reconstruction moves toward native code generation and MVS-resident
+operation, this directory is expected to gain a few deliberately annotated job
+streams rather than a large collection of transient generated decks. Important
+future candidates include:
+
+- DASD-resident compiler and data-handling examples;
+- native OCODE-to-System/370 code-generation jobs; and
+- a reproducible "compile the compiler and compare the results" bootstrap job.
+
+See [`asm/README.md`](../asm/README.md),
+[`intcode/README.md`](../intcode/README.md),
+[`tests/README.md`](../tests/README.md), and
+[`tools/README.md`](../tools/README.md) for the corresponding source,
+runtime, tests, and host tooling.
 
 ## Maintenance
 
-This directory may contain both durable checkpoint decks and temporary
-or investigative JCL. When a deck represents an important reproducible
-project checkpoint or has a distinct system-administration purpose, add
-or update its description here.
+Keep only JCL that is useful as a durable example, acceptance record, bootstrap
+artifact, or system-inspection tool. Temporary generated decks belong in
+`workarea/`.
