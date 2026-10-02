@@ -1,0 +1,596 @@
+#!/usr/bin/env python3
+"""
+Compile a BCPL source program through the interpreted MR10 compiler pipeline
+and run the generated INTCODE under a selected ICINT implementation.
+
+This is intentionally separate from tools/run-intcode.  run-intcode remains
+the small interpreter/runtime test driver; compile-and-run owns compiler phase
+staging and MVS dataset handoffs.
+
+Pipeline, all in one MVS job:
+
+    assemble/link ICINT once
+
+    SYNI + TRNI + BLIBI + ICLIB
+        SYSIN   <- BCPL source
+        OCODE   -> &&OCODE
+
+    CGI + BLIBI + ICLIB
+        SYSIN   <- &&OCODE
+        INTCODE -> &&INTCODE
+
+    generated INTCODE + BLIBI + ICLIB
+        -> final program execution
+
+The compiler/runtime INTCODE components are repository-standard inputs and
+are staged into temporary MVS datasets before the three ICINT executions.
+
+Initial host-DD scope:
+    - COMP supplies //OCODE explicitly.
+    - CG supplies //INTCODE explicitly.
+    - Additional named compiler/program DDs will be added here later.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+from pathlib import Path
+import re
+import socket
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+MAKE_ASM = ROOT / "tools" / "make-asm-job.py"
+PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
+WORKAREA = ROOT / "workarea"
+
+SYNI = ROOT / "intcode" / "syni.int"
+TRNI = ROOT / "intcode" / "trni.int"
+CGI = ROOT / "intcode" / "cgi.int"
+BLIBI = ROOT / "intcode" / "blibi.int"
+ICLIB = ROOT / "intcode" / "iclib.int"
+
+DEFAULT_READER_HOST = "127.0.0.1"
+DEFAULT_READER_PORT = 3505
+DEFAULT_TIMEOUT = 180.0
+DEFAULT_POLL = 0.25
+
+MVS_NAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
+PROFILES = {
+    "light": ("OBJECT,NODECK,NOLIST,NOXREF", "LET,NCAL"),
+    "medium": ("OBJECT,NODECK,LIST,XREF(SHORT)", "LET,NCAL,MAP"),
+    "heavy": ("OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD",
+              "LET,NCAL,LIST,XREF"),
+}
+
+
+def load_make_asm():
+    spec = importlib.util.spec_from_file_location("make_asm_job", MAKE_ASM)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {MAKE_ASM}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def resolve_repo_path(text: str) -> Path:
+    path = Path(text)
+    if not path.is_absolute():
+        path = ROOT / path
+    return path.resolve()
+
+
+def read_ascii_records(path: Path, description: str, width: int = 80) -> str:
+    if not path.is_file():
+        raise ValueError(f"{description} does not exist: {path}")
+    try:
+        text = path.read_text(encoding="ascii")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError(f"cannot read ASCII {description} {path}: {exc}") from exc
+
+    records = text.splitlines()
+    if not records:
+        raise ValueError(f"{description} is empty: {path}")
+
+    for number, record in enumerate(records, 1):
+        if len(record) > width:
+            raise ValueError(
+                f"{description} {path}:{number}: record is {len(record)} "
+                f"characters; maximum is {width}"
+            )
+        if record == "/*":
+            raise ValueError(
+                f"{description} {path}:{number}: '/*' would terminate "
+                "in-stream JCL data"
+            )
+    return "".join(record + "\n" for record in records)
+
+
+def derive_job_name(source: Path) -> str:
+    stem = re.sub(r"[^A-Z0-9]", "", source.stem.upper())
+    job = "BC" + stem[:6]
+    if not MVS_NAME.fullmatch(job):
+        raise ValueError(f"cannot derive a valid MVS job name from {source.name}")
+    return job
+
+
+def temp_output_dd(ddname: str, dsn: str, disposition: str = "PASS") -> str:
+    return (
+        f"//{ddname:<8} DD  DSN={dsn},UNIT=SYSDA,\n"
+        "//             SPACE=(80,(1000,500)),\n"
+        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),\n"
+        f"//             DISP=(NEW,{disposition})\n"
+    )
+
+
+def stage_step(step: str, dsn: str, content: str) -> str:
+    return (
+        f"//{step:<8} EXEC PGM=IEBGENER,COND=(4,LT)\n"
+        "//SYSPRINT DD  SYSOUT=*\n"
+        "//SYSIN    DD  DUMMY\n"
+        f"//SYSUT2   DD  DSN={dsn},UNIT=SYSDA,\n"
+        "//             SPACE=(80,(1000,500)),\n"
+        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),\n"
+        "//             DISP=(NEW,PASS)\n"
+        "//SYSUT1   DD  *\n"
+        f"{content}"
+        "/*\n"
+        "//*\n"
+    )
+
+
+def intin_concat(parts: list[tuple[str, str]]) -> str:
+    """Build an INTIN DD concatenation from [(dsn, disposition), ...]."""
+    if not parts:
+        raise ValueError("empty INTIN concatenation")
+    lines = []
+    for index, (dsn, disposition) in enumerate(parts):
+        ddname = "INTIN" if index == 0 else ""
+        lines.append(
+            f"//{ddname:<8} DD  DSN={dsn},DISP=(OLD,{disposition})\n"
+        )
+    return "".join(lines)
+
+
+def runtime_step(
+    step: str,
+    intin_parts: list[tuple[str, str]],
+    extra_dds: str = "",
+) -> str:
+    return (
+        f"//{step:<8} EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)\n"
+        "//STEPLIB  DD  DSN=&&GOSET,DISP=(OLD,PASS)\n"
+        "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
+        f"{intin_concat(intin_parts)}"
+        f"{extra_dds}"
+        "//SYSUDUMP DD  SYSOUT=*\n"
+        "//*\n"
+    )
+
+
+def build_deck(
+    interpreter: Path,
+    bcpl_source: Path,
+    job_name: str,
+    listing: str,
+) -> str:
+    make_asm = load_make_asm()
+    asm_source = make_asm.check_source(interpreter)
+    entry = (make_asm.source_entry(asm_source) or "ICINT").upper()
+    if not MVS_NAME.fullmatch(entry):
+        raise ValueError(
+            f"cannot infer valid interpreter entry point from {interpreter}"
+        )
+
+    bcpl = read_ascii_records(bcpl_source, "BCPL source")
+    syni = read_ascii_records(SYNI, "SYNI")
+    trni = read_ascii_records(TRNI, "TRNI")
+    cgi = read_ascii_records(CGI, "CGI")
+    blibi = read_ascii_records(BLIBI, "BLIBI")
+    iclib = read_ascii_records(ICLIB, "ICLIB")
+
+    asm_options, link_options = PROFILES[listing]
+
+    deck = (
+        f"//{job_name:<8} JOB (BCPL),'BCPL COMPILE RUN',CLASS=A,MSGCLASS=A,\n"
+        "//             MSGLEVEL=(1,1)\n"
+        f"//* GENERATED FROM {interpreter.name}; LISTING={listing.upper()}\n"
+        f"//* BCPL SOURCE: {bcpl_source.name}\n"
+        "//* ONE ICINT ASSEMBLY/LINK; COMP, CG AND RUN REUSE &&GOSET.\n"
+        "//*\n"
+        "//ASM      EXEC PGM=IFOX00,\n"
+        f"//             PARM='{asm_options}',REGION=256K\n"
+        "//SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR\n"
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1700,(600,100))\n"
+        "//SYSUT2   DD  UNIT=SYSDA,SPACE=(1700,(300,50))\n"
+        "//SYSUT3   DD  UNIT=SYSDA,SPACE=(1700,(300,50))\n"
+        "//SYSPRINT DD  SYSOUT=*\n"
+        "//SYSPUNCH DD  DUMMY\n"
+        "//SYSGO    DD  DSN=&&OBJSET,UNIT=SYSDA,SPACE=(80,(300,100)),\n"
+        "//             DISP=(MOD,PASS)\n"
+        "//SYSIN    DD  *\n"
+        f"{asm_source}"
+        "/*\n"
+        "//*\n"
+        f"//LKED     EXEC PGM=IEWL,PARM='{link_options}',REGION=256K,\n"
+        "//             COND=(4,LT,ASM)\n"
+        "//SYSLIN   DD  DSN=&&OBJSET,DISP=(OLD,DELETE)\n"
+        "//         DD  *\n"
+        f"  ENTRY {entry}\n"
+        "  NAME RUNMOD(R)\n"
+        "/*\n"
+        "//SYSLMOD  DD  DSN=&&GOSET(RUNMOD),UNIT=SYSDA,\n"
+        "//             SPACE=(1024,(50,20,1)),DISP=(MOD,PASS)\n"
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))\n"
+        "//SYSPRINT DD  SYSOUT=*\n"
+        "//*\n"
+    )
+
+    # Stage compiler phases and runtime libraries once as temporary datasets.
+    deck += stage_step("STGSYNI", "&&SYNI", syni)
+    deck += stage_step("STGTRNI", "&&TRNI", trni)
+    deck += stage_step("STGCGI", "&&CGI", cgi)
+    deck += stage_step("STGBLIB", "&&BLIBI", blibi)
+    deck += stage_step("STGICLIB", "&&ICLIB", iclib)
+
+    # SYN/TRN: BCPL source -> OCODE.  OCODE is deliberately an explicit DD
+    # here; later versions of this tool can add the other named compiler DDs.
+    comp_dds = (
+        "//SYSIN    DD  *\n"
+        f"{bcpl}"
+        "/*\n"
+        + temp_output_dd("OCODE", "&&OCODE")
+    )
+    deck += runtime_step(
+        "COMP",
+        [
+            ("&&SYNI", "DELETE"),
+            ("&&TRNI", "DELETE"),
+            ("&&BLIBI", "PASS"),
+            ("&&ICLIB", "PASS"),
+        ],
+        comp_dds,
+    )
+
+    # CGI: OCODE -> INTCODE.
+    cg_dds = (
+        "//SYSIN    DD  DSN=&&OCODE,DISP=(OLD,DELETE)\n"
+        + temp_output_dd("INTCODE", "&&INTCODE")
+    )
+    deck += runtime_step(
+        "CG",
+        [
+            ("&&CGI", "DELETE"),
+            ("&&BLIBI", "PASS"),
+            ("&&ICLIB", "PASS"),
+        ],
+        cg_dds,
+    )
+
+    # Final execution: generated program plus the standard runtime modules.
+    deck += runtime_step(
+        "RUN",
+        [
+            ("&&INTCODE", "DELETE"),
+            ("&&BLIBI", "DELETE"),
+            ("&&ICLIB", "DELETE"),
+        ],
+    )
+
+    deck += "//\n"
+    return deck
+
+
+def read_printer() -> str:
+    if not PRINTER.is_file():
+        return ""
+    try:
+        return PRINTER.read_text(encoding="latin-1", errors="replace")
+    except OSError as exc:
+        raise RuntimeError(f"cannot read printer report {PRINTER}: {exc}") from exc
+
+
+def printer_offset() -> int:
+    if not PRINTER.exists():
+        return 0
+    try:
+        return PRINTER.stat().st_size
+    except OSError as exc:
+        raise RuntimeError(f"cannot stat printer report {PRINTER}: {exc}") from exc
+
+
+def submit_job(jcl_path: Path, reader_host: str, reader_port: int) -> int:
+    before = printer_offset()
+    try:
+        deck = jcl_path.read_bytes()
+    except OSError as exc:
+        raise RuntimeError(f"cannot read JCL deck {jcl_path}: {exc}") from exc
+    if not deck.endswith(b"\n"):
+        deck += b"\n"
+    try:
+        with socket.create_connection(
+            (reader_host, reader_port), timeout=10.0
+        ) as sock:
+            sock.sendall(deck)
+    except OSError as exc:
+        raise RuntimeError(
+            f"cannot submit JCL to {reader_host}:{reader_port}: {exc}"
+        ) from exc
+    return before
+
+
+def find_new_job_number(job_name: str, start_offset: int) -> int | None:
+    if not PRINTER.is_file():
+        return None
+    try:
+        with PRINTER.open("rb") as stream:
+            stream.seek(start_offset)
+            data = stream.read()
+    except OSError as exc:
+        raise RuntimeError(f"cannot read printer report {PRINTER}: {exc}") from exc
+
+    text = data.decode("latin-1", errors="replace")
+    escaped = re.escape(job_name)
+    patterns = (
+        re.compile(rf"\bJOB\s+([0-9]+)\b.*\b{escaped}\b"),
+        re.compile(rf"\b{escaped}\b.*\bJOB\s+([0-9]+)\b"),
+    )
+    for line in text.splitlines():
+        if "****A  START" not in line:
+            continue
+        for pattern in patterns:
+            match = pattern.search(line)
+            if match is not None:
+                return int(match.group(1))
+    return None
+
+
+def wait_for_new_job(
+    job_name: str,
+    start_offset: int,
+    timeout: float,
+    poll: float,
+) -> int:
+    deadline = time.monotonic() + timeout
+    while True:
+        number = find_new_job_number(job_name, start_offset)
+        if number is not None:
+            return number
+        if time.monotonic() >= deadline:
+            raise TimeoutError(
+                f"could not find JES job number for {job_name} "
+                f"within {timeout:g} seconds"
+            )
+        time.sleep(poll)
+
+
+def job_banner(job_number: int) -> str:
+    return f"JOB {job_number:4d}"
+
+
+def extract_complete_job(report: str, job_number: int) -> str | None:
+    wanted = job_banner(job_number)
+    lines = report.splitlines()
+    start = None
+    for index, line in enumerate(lines):
+        if "****A  START" in line and wanted in line:
+            start = index + 1
+            break
+    if start is None:
+        return None
+    for index in range(start, len(lines)):
+        if "****A   END" in lines[index] and wanted in lines[index]:
+            return "\n".join(lines[start:index]) + "\n"
+    return None
+
+
+def wait_for_job_report(
+    job_number: int,
+    timeout: float,
+    poll: float,
+) -> str:
+    deadline = time.monotonic() + timeout
+    while True:
+        job = extract_complete_job(read_printer(), job_number)
+        if job is not None:
+            return job
+        if time.monotonic() >= deadline:
+            raise TimeoutError(
+                f"job {job_number} did not complete within {timeout:g} seconds"
+            )
+        time.sleep(poll)
+
+
+def extract_final_results(job_report: str) -> str:
+    lines = [line.replace("\f", "") for line in job_report.splitlines()]
+    starts = [
+        index
+        for index, line in enumerate(lines)
+        if line.strip() == "INTCODE SYSTEM ENTERED"
+    ]
+    if len(starts) < 3:
+        raise RuntimeError(
+            "compiler pipeline did not reach final RUN step "
+            f"(found {len(starts)} ICINT execution(s), expected 3)"
+        )
+
+    start = starts[-1]
+    execution_end = None
+    mapstore_end = None
+    for index in range(start, len(lines)):
+        stripped = lines[index].strip()
+        if stripped.startswith("EXECUTION CYCLES ="):
+            execution_end = index
+        if stripped == "*** END MAPSTORE ***":
+            mapstore_end = index
+            break
+
+    if mapstore_end is not None:
+        end = mapstore_end
+    elif execution_end is not None:
+        end = execution_end
+    else:
+        raise RuntimeError("final RUN output has no execution-completion record")
+
+    return "\n".join(lines[start:end + 1]).strip("\r\n") + "\n"
+
+
+def make_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="compile-and-run",
+        description=(
+            "Compile BCPL through SYNI/TRNI and CGI under ICINT, then run "
+            "the generated INTCODE with BLIBI and ICLIB."
+        ),
+        epilog=(
+            "Example: tools/compile-and-run --results "
+            "asm/icintv15.asm tests/richards-factorial-test.bcpl"
+        ),
+    )
+    parser.add_argument(
+        "interpreter",
+        help="IFOX ICINT assembler source (normally asm/icintv15.asm)",
+    )
+    parser.add_argument("source", help="BCPL source program")
+    parser.add_argument(
+        "--results",
+        action="store_true",
+        help="wait for completion and print only the final BCPL program results",
+    )
+    parser.add_argument(
+        "--jcl",
+        metavar="PATH",
+        help="generated JCL deck "
+             "(default: workarea/compile-and-run-SOURCE.jcl)",
+    )
+    parser.add_argument(
+        "--job-name",
+        metavar="NAME",
+        help="override the generated MVS JOB name",
+    )
+    parser.add_argument(
+        "--listing",
+        choices=tuple(PROFILES),
+        default="light",
+        help="assembler/linker listing profile (default: light)",
+    )
+    parser.add_argument(
+        "--reader-host",
+        default=DEFAULT_READER_HOST,
+        metavar="HOST",
+        help=f"Hercules socket-reader host (default: {DEFAULT_READER_HOST})",
+    )
+    parser.add_argument(
+        "--reader-port",
+        type=int,
+        default=DEFAULT_READER_PORT,
+        metavar="PORT",
+        help=f"Hercules socket-reader port (default: {DEFAULT_READER_PORT})",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT,
+        metavar="SECONDS",
+        help=f"maximum wait for JES/result completion "
+             f"(default: {DEFAULT_TIMEOUT:g})",
+    )
+    parser.add_argument(
+        "--poll",
+        type=float,
+        default=DEFAULT_POLL,
+        metavar="SECONDS",
+        help=f"printer-report polling interval (default: {DEFAULT_POLL:g})",
+    )
+    return parser
+
+
+def main(argv=None) -> int:
+    parser = make_parser()
+    args = parser.parse_args(argv)
+
+    try:
+        interpreter = resolve_repo_path(args.interpreter)
+        source = resolve_repo_path(args.source)
+
+        if not interpreter.is_file():
+            raise ValueError(f"interpreter does not exist: {interpreter}")
+        if not source.is_file():
+            raise ValueError(f"BCPL source does not exist: {source}")
+
+        for description, path in (
+            ("SYNI", SYNI),
+            ("TRNI", TRNI),
+            ("CGI", CGI),
+            ("BLIBI", BLIBI),
+            ("ICLIB", ICLIB),
+        ):
+            if not path.is_file():
+                raise ValueError(f"{description} does not exist: {path}")
+
+        if not 1 <= args.reader_port <= 65535:
+            raise ValueError("--reader-port must be between 1 and 65535")
+        if args.timeout <= 0:
+            raise ValueError("--timeout must be greater than zero")
+        if args.poll <= 0:
+            raise ValueError("--poll must be greater than zero")
+
+        job_name = (
+            args.job_name.upper()
+            if args.job_name
+            else derive_job_name(source)
+        )
+        if not MVS_NAME.fullmatch(job_name):
+            raise ValueError(
+                "--job-name must be a valid MVS name of at most 8 characters"
+            )
+
+        deck = build_deck(
+            interpreter=interpreter,
+            bcpl_source=source,
+            job_name=job_name,
+            listing=args.listing,
+        )
+
+        jcl_path = (
+            resolve_repo_path(args.jcl)
+            if args.jcl
+            else WORKAREA / f"compile-and-run-{source.stem}.jcl"
+        )
+        jcl_path.parent.mkdir(parents=True, exist_ok=True)
+        jcl_path.write_text(deck, encoding="ascii", newline="\n")
+
+        print(f"submitting {jcl_path.relative_to(ROOT)} as {job_name} "
+              f"through reader port {args.reader_port}")
+        start_offset = submit_job(
+            jcl_path,
+            args.reader_host,
+            args.reader_port,
+        )
+        job_number = wait_for_new_job(
+            job_name,
+            start_offset,
+            args.timeout,
+            args.poll,
+        )
+        print(f"JOB {job_number}")
+
+        if args.results:
+            report = wait_for_job_report(
+                job_number,
+                args.timeout,
+                args.poll,
+            )
+            sys.stdout.write(extract_final_results(report))
+
+        return 0
+
+    except (ValueError, RuntimeError, OSError, TimeoutError) as exc:
+        print(f"compile-and-run: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
