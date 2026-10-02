@@ -1,0 +1,54 @@
+// EXPRESSION-PARSER.BCPL
+// Recursive-descent parser for +, -, *, /, parentheses, and integers.
+
+GLOBAL $( START:1; GETBYTE:85; WRITEF:76 $)
+
+LET DIGIT(CH) = '0'<=CH & CH<='9'
+
+AND FACTOR(S, P) = VALOF
+$( LET CH = GETBYTE(S, P!0)
+   IF CH='(' DO
+   $( P!0 := P!0+1
+      LET V = EXPR(S, P)
+      IF GETBYTE(S,P!0)=')' DO P!0 := P!0+1
+      RESULTIS V
+   $)
+
+   LET N = 0
+   WHILE DIGIT(GETBYTE(S,P!0)) DO
+   $( N := 10*N + GETBYTE(S,P!0)-'0'
+      P!0 := P!0+1
+   $)
+   RESULTIS N
+$)
+
+AND TERM(S, P) = VALOF
+$( LET V = FACTOR(S, P)
+   $( LET CH = GETBYTE(S, P!0)
+      UNLESS CH='**' \/ CH='/' BREAK
+      P!0 := P!0+1
+      LET R = FACTOR(S, P)
+      V := CH='**' -> V*R, V/R
+   $) REPEAT
+   RESULTIS V
+$)
+
+AND EXPR(S, P) = VALOF
+$( LET V = TERM(S, P)
+   $( LET CH = GETBYTE(S, P!0)
+      UNLESS CH='+' \/ CH='-' BREAK
+      P!0 := P!0+1
+      LET R = TERM(S, P)
+      V := CH='+' -> V+R, V-R
+   $) REPEAT
+   RESULTIS V
+$)
+
+AND START() BE
+$( LET S = "(2+3)*(4+5)-6"
+   LET P = VEC 0
+   P!0 := 1
+   WRITEF("EXPRESSION: %S*N", S)
+   WRITEF("VALUE: %N*N", EXPR(S, P))
+   FINISH
+$)
