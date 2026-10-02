@@ -125,7 +125,7 @@ open it, and allow the compiler to read the included BCPL text. The included
 file defines:
 
 ```text
-MANIFEST $( EXTRAVALUE = 12345 $)
+MANIFEST $( XVAL = 12345 $)
 ```
 
 so successful compilation and execution should print:
