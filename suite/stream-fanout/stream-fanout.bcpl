@@ -1,0 +1,43 @@
+// STREAM-FANOUT.BCPL
+// Open several named MVS input streams at once, then read each one.
+
+GLOBAL $(
+START:1
+SELECTINPUT:11
+RDCH:13
+WRCH:14
+FINDINPUT:42
+ENDREAD:46
+WRITEF:76
+$)
+
+MANIFEST $( ENDSTREAMCH=-1 $)
+
+LET START() BE
+$( LET S = VEC 2
+   S!0 := FINDINPUT("AIN")
+   S!1 := FINDINPUT("BIN")
+   S!2 := FINDINPUT("CIN")
+
+   FOR I = 0 TO 2 DO
+      IF S!I=0 DO
+      $( WRITEF("FAILED TO OPEN STREAM %N*N", I+1)
+         FINISH
+      $)
+
+   WRITEF("OPENED THREE STREAMS*N")
+
+   FOR I = 0 TO 2 DO
+   $( SELECTINPUT(S!I)
+      WRITEF("STREAM %N: ", I+1)
+      $( LET CH = RDCH()
+         IF CH=ENDSTREAMCH \/ CH='*N' BREAK
+         WRCH(CH)
+      $) REPEAT
+      WRITEF("*N")
+      ENDREAD()
+   $)
+
+   WRITEF("ALL STREAMS CLOSED*N")
+   FINISH
+$)
