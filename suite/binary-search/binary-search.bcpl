@@ -1,0 +1,31 @@
+// BINARY-SEARCH.BCPL
+// Search a sorted vector with iterative binary search.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET BSEARCH(V, N, KEY) = VALOF
+$( LET LO = 0
+   AND HI = N-1
+   WHILE LO<=HI DO
+   $( LET MID = (LO+HI)/2
+      IF V!MID=KEY RESULTIS MID
+      TEST V!MID<KEY
+         THEN LO := MID+1
+         OR HI := MID-1
+   $)
+   RESULTIS -1
+$)
+
+AND START() BE
+$( LET V = VEC 15
+   FOR I = 0 TO 15 DO V!I := I*I
+
+   FOR K = 0 TO 4 DO
+   $( LET KEY = K!TABLE 49, 81, 100, 169, 250
+      LET P = BSEARCH(V, 16, KEY)
+      TEST P>=0
+         THEN WRITEF("%N FOUND AT INDEX %N*N", KEY, P)
+         OR WRITEF("%N NOT FOUND*N", KEY)
+   $)
+   FINISH
+$)
