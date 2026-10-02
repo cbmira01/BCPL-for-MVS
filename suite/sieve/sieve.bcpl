@@ -1,0 +1,19 @@
+// SIEVE.BCPL
+// Generate primes through 100 with the Sieve of Eratosthenes.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET COMPOSITE = VEC 100
+   FOR I = 0 TO 100 DO COMPOSITE!I := FALSE
+
+   FOR P = 2 TO 10 DO
+      UNLESS COMPOSITE!P DO
+         FOR M = P*P TO 100 BY P DO COMPOSITE!M := TRUE
+
+   WRITEF("PRIMES THROUGH 100:*N")
+   FOR N = 2 TO 100 DO
+      UNLESS COMPOSITE!N DO WRITEF("%N ", N)
+   WRITEF("*N")
+   FINISH
+$)
