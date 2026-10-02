@@ -1,0 +1,45 @@
+// LINKED-LIST.BCPL
+// Represent a singly linked list with parallel vectors and integer links.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET PRINTLIST(HEAD, VALUE, NEXT) BE
+$( LET P = HEAD
+   UNTIL P<0 DO
+   $( WRITEF(" %N", VALUE!P)
+      P := NEXT!P
+   $)
+   WRITEF("*N")
+$)
+
+AND REVERSE(HEAD, NEXT) = VALOF
+$( LET PREV = -1
+   AND P = HEAD
+   UNTIL P<0 DO
+   $( LET Q = NEXT!P
+      NEXT!P := PREV
+      PREV := P
+      P := Q
+   $)
+   RESULTIS PREV
+$)
+
+AND START() BE
+$( LET VALUE = VEC 7
+   AND NEXT = VEC 7
+   LET HEAD = -1
+
+   FOR I = 0 TO 7 DO
+   $( VALUE!I := (I+1)*10
+      NEXT!I := HEAD
+      HEAD := I
+   $)
+
+   WRITEF("LIST:")
+   PRINTLIST(HEAD, VALUE, NEXT)
+
+   HEAD := REVERSE(HEAD, NEXT)
+   WRITEF("REVERSED:")
+   PRINTLIST(HEAD, VALUE, NEXT)
+   FINISH
+$)
