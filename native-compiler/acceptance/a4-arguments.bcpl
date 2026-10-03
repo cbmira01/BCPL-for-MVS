@@ -1,11 +1,11 @@
 // A4-ARGUMENTS.BCPL
 // Native acceptance: four register arguments plus a fifth workspace argument.
 
-GLOBAL $( START:1; NATIVE_RESULT:400 $)
+GLOBAL $( START:1; NATIVERESULT:400 $)
 
 LET SUM5(A, B, C, D, E) = A+B+C+D+E
 
 AND START() BE
-$( NATIVE_RESULT := SUM5(10, 20, 30, 40, 50)
+$( NATIVERESULT := SUM5(10, 20, 30, 40, 50)
    FINISH
 $)
