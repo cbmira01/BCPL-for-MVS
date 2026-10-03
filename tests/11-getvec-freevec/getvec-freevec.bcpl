@@ -61,9 +61,8 @@ $( LET B = V-2
    AND PREV = 0
    AND NEXT = FREEHEAD
 
-   UNTIL NEXT = 0 DO
-   $( IF NEXT > B BREAK
-      PREV := NEXT
+   WHILE NEXT \= 0 & NEXT < B DO
+   $( PREV := NEXT
       NEXT := NEXT!1
    $)
 
