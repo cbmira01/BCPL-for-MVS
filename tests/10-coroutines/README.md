@@ -199,12 +199,67 @@ uses `RESUMECO` to transfer directly to B, and B's `COWAIT(222)` returns to
 root. This proves that the parent relationship itself has moved from A to B,
 rather than merely performing another nested `CALLCO`.
 
+## 5. CREATECO / DELETECO with a test allocator
+
+Source:
+
+```text
+create-delete-static-pool.bcpl
+```
+
+This test exercises `CREATECO`, `DELETECO`, and `COLIST` while deliberately
+keeping allocation separate from coroutine semantics. A tiny two-slot
+`ALLOCVEC` / `FREEVEC` implementation is supplied by the test itself; it is
+not intended to become the production MVS allocator.
+
+Run:
+
+```bash
+tools/compile-and-run --results --listing heavy \
+    asm/icintv17.asm \
+    tests/10-coroutines/create-delete-static-pool.bcpl
+```
+
+Expected output:
+
+```text
+CREATED 2
+LIST COUNT 3
+A RETURNED 11
+B RETURNED 21
+DELETED A
+LIST COUNT 2
+DELETED B
+LIST COUNT 1
+C RETURNED 31
+LIST COUNT 2
+DELETED C
+FINAL LIST COUNT 1
+```
+
+followed by an interpreted completion code of zero.
+
+The root coroutine remains on `COLIST`, so a final count of one is correct.
+The recreation of C after deleting A and B also proves that coroutine storage
+can be returned to an allocator and reused without changing the coroutine
+control-transfer semantics.
+
+For this MR10 compiler, the initial `CREATECO(FN,SIZE,C)` frame occupies
+`C!0` through `C!4`, so this reconstruction uses `C!5` as the `COLIST` link.
+That placement is derived from the compiler probes above; it should not be
+silently replaced with offsets taken from later Cintcode implementations.
+
 ## Runtime implementation status
 
 The current reference implementation of `CHANGECO` lives in hand-written
 INTCODE in `intcode/iclib.int`. It is deliberately a proof of the coroutine
-runtime contract and uses already-proven INTCODE mechanisms rather than yet
+runtime contract and uses already-proven INTCODE mechanisms rather than
 requiring a new ICINT opcode.
+
+An experimental direct-X38 wrapper is retained separately as
+`intcode/iclib-x38.int`. It is not the default runtime and should not replace
+the proven reference path until a matching interpreter implementation has
+been tested.
 
 The long-term architecture should preserve the same BCPL-level contract while
 allowing the machine-dependent primitive to change by backend:
@@ -221,11 +276,11 @@ machine-dependent layer:
     CHANGECO
 ```
 
-For the interpreted bootstrap, CHANGECO may be implemented by INTCODE and/or a
-dedicated ICINT operation. For the eventual native System/370 compiler and
-runtime, CHANGECO should become a small native routine that saves the current
-BCPL resumable frame, installs the target coroutine frame, preserves the
-transfer value, and continues at the corresponding return continuation.
+For the interpreted bootstrap, CHANGECO can remain implemented in INTCODE.
+For the eventual native System/370 compiler and runtime, CHANGECO should
+become a small native routine that saves the current BCPL resumable frame,
+installs the target coroutine frame, preserves the transfer value, and
+continues at the corresponding return continuation.
 
 The portable coroutine semantics should not depend on whether the backend is
 ICINT or native System/370 code.
