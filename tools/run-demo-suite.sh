@@ -115,6 +115,13 @@ run_demo "stream-fanout" \
     "$ICINT" \
     "$SUITE/stream-fanout/stream-fanout.bcpl"
 
+run_demo "coroutines" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/coroutines/coroutines.bcpl" \
+    +library/getvec-freevec.bcpl \
+    +library/coroutines.bcpl
+
 echo
 echo "================================================================"
 echo "SUITE COMPLETE"
@@ -122,7 +129,7 @@ echo "================================================================"
 
 if [ "$FAILURES" -eq 0 ]
 then
-    echo "All 15 demos passed."
+    echo "All 16 demos passed."
     exit 0
 else
     echo "$FAILURES demo(s) failed."
