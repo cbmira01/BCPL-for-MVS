@@ -1,0 +1,21 @@
+// MULTIPLE-ASSIGNMENT.BCPL
+// Verify that right-hand sides are evaluated before left-hand-side stores.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET A = 1
+   AND B = 2
+
+   WRITEF("SWAP BEFORE A=%N B=%N*N", A, B)
+   A, B := B, A
+   WRITEF("SWAP AFTER  A=%N B=%N*N", A, B)
+
+   A := 1071
+   B := 462
+   WRITEF("EUCLID BEFORE A=%N B=%N*N", A, B)
+   A, B := B, A REM B
+   WRITEF("EUCLID AFTER  A=%N B=%N*N", A, B)
+
+   FINISH
+$)
