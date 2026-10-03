@@ -1,0 +1,22 @@
+// Regression: IF, FOR, SWITCHON, and CASE dispatch.
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET CLASS(N) = VALOF
+$( SWITCHON N INTO
+   $( CASE 0: RESULTIS 10
+      CASE 1: RESULTIS 20
+      DEFAULT: RESULTIS 30
+   $)
+$)
+
+AND START() BE
+$( LET S = 0
+   AND F = 0
+
+   FOR I = 1 TO 4 DO S := S+I
+   IF S=10 DO F := 1
+
+   WRITEF("RP: CONTROL %N %N %N %N*N",
+          S, F, CLASS(0), CLASS(7))
+   FINISH
+$)
