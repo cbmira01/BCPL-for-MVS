@@ -1,0 +1,9 @@
+// A1-ARITHMETIC.BCPL
+// Native acceptance: literals and integer arithmetic.
+
+GLOBAL $( START:1; NATIVE_RESULT:150 $)
+
+LET START() BE
+$( NATIVE_RESULT := (7+5)*4-6
+   FINISH
+$)
