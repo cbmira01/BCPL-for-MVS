@@ -1,0 +1,27 @@
+// FRAME-LAYOUT-PROBE.BCPL
+//
+// Compiler-observation source for the MR10 coroutine reconstruction.
+// The CREATEFRAME routine is not executed.  Its generated OCODE/INTCODE
+// reveals the P-relative locations assigned to FN, SIZE, and C across the
+// CHANGECO call, so that a synthetic coroutine frame can be initialized
+// without borrowing offsets from later Cintcode implementations.
+
+GLOBAL $(
+START:1
+CHANGECO:6
+WRITEF:76
+$)
+
+LET CREATEFRAME(FN, SIZE, C) = VALOF
+$( C!0 := C
+   C!1 := FN
+   C!2 := SIZE
+   CHANGECO(0, C)
+   C := FN(C)
+   RESULTIS C
+$)
+
+AND START() BE
+$( WRITEF("COROUTINE FRAME PROBE COMPILED*N")
+   FINISH
+$)
