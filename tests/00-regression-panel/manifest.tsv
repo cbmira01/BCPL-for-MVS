@@ -1,0 +1,10 @@
+# name	category	source	extras	compile_args	expected	expected_code
+scalar-vector	data-movement	data-movement/scalar-vector.bcpl			data-movement/scalar-vector.expected	0
+bytes	data-movement	data-movement/bytes.bcpl			data-movement/bytes.expected	0
+integer-arithmetic	calculation	calculation/integer-arithmetic.bcpl			calculation/integer-arithmetic.expected	0
+branches-loops	control	control/branches-loops.bcpl			control/branches-loops.expected	0
+nested-recursion	calls	calls/nested-recursion.bcpl			calls/nested-recursion.expected	0
+separate-module	modules	modules/main.bcpl	+modules/helper.bcpl		modules/separate-module.expected	0
+basic-library	standard-library	standard-library/basic-library.bcpl			standard-library/basic-library.expected	0
+getvec-reuse	storage	storage/getvec-reuse.bcpl	+library/getvec-freevec.bcpl		storage/getvec-reuse.expected	0
+basic-coroutine	coroutines	coroutines/basic-coroutine.bcpl	+library/getvec-freevec.bcpl +library/coroutines.bcpl		coroutines/basic-coroutine.expected	0
