@@ -594,6 +594,55 @@ def wait_for_job_report(job_number: int, timeout: float, poll: float) -> str:
         time.sleep(poll)
 
 
+def interpreted_execution_codes(job_report: str) -> list[int | None]:
+    lines = [line.replace("\f", "") for line in job_report.splitlines()]
+    starts = [
+        index
+        for index, line in enumerate(lines)
+        if line.strip() == "INTCODE SYSTEM ENTERED"
+    ]
+    codes: list[int | None] = []
+    code_pattern = re.compile(r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)")
+    for position, start in enumerate(starts):
+        stop = starts[position + 1] if position + 1 < len(starts) else len(lines)
+        code = None
+        for line in lines[start:stop]:
+            match = code_pattern.search(line)
+            if match is not None:
+                code = int(match.group(1))
+                break
+        codes.append(code)
+    return codes
+
+
+def validate_compiler_pipeline(job_report: str, module_count: int) -> None:
+    codes = interpreted_execution_codes(job_report)
+    expected = module_count * 2 + 1
+    if len(codes) < expected:
+        raise RuntimeError(
+            "compiler pipeline did not reach final RUN step "
+            f"(found {len(codes)} ICINT execution(s), expected {expected})"
+        )
+
+    for number in range(1, module_count + 1):
+        comp_index = (number - 1) * 2
+        cg_index = comp_index + 1
+        comp_code = codes[comp_index]
+        cg_code = codes[cg_index]
+        if comp_code is None:
+            raise RuntimeError(
+                f"BCPL compile unit {number} has no execution-completion record"
+            )
+        if comp_code != 0:
+            raise RuntimeError(f"BCPL compile unit {number} failed with code {comp_code}")
+        if cg_code is None:
+            raise RuntimeError(
+                f"CGI unit {number} has no execution-completion record"
+            )
+        if cg_code != 0:
+            raise RuntimeError(f"CGI unit {number} failed with code {cg_code}")
+
+
 def extract_final_results(job_report: str, module_count: int) -> str:
     lines = [line.replace("\f", "") for line in job_report.splitlines()]
     starts = [
@@ -645,7 +694,10 @@ def extract_saved_stream(job_report: str, kind: str, number: int) -> str:
     records = []
     for line in lines[begin_index:]:
         if line.strip() == end:
-            return "\n".join(record.rstrip() for record in records) + "\n"
+            content = "\n".join(record.rstrip() for record in records).rstrip()
+            if not content:
+                raise RuntimeError(f"saved {kind.upper()} unit {number} is empty")
+            return content + "\n"
         records.append(line)
 
     raise RuntimeError(f"saved {kind.upper()} unit {number} end marker not found")
@@ -815,6 +867,17 @@ def main(argv=None) -> int:
         jcl_path.parent.mkdir(parents=True, exist_ok=True)
         jcl_path.write_text(deck, encoding="ascii", newline="\n")
 
+        if args.save_ocode:
+            for source in sources:
+                output = WORKAREA / f"{source.stem}.ocode"
+                if output.exists():
+                    output.unlink()
+        if args.save_intcode:
+            for source in sources:
+                output = WORKAREA / f"{source.stem}.intcode"
+                if output.exists():
+                    output.unlink()
+
         print(
             f"submitting {jcl_path.relative_to(ROOT)} as {job_name} "
             f"through reader port {args.reader_port}"
@@ -831,6 +894,7 @@ def main(argv=None) -> int:
         report = None
         if args.results or args.save_ocode or args.save_intcode:
             report = wait_for_job_report(job_number, args.timeout, args.poll)
+            validate_compiler_pipeline(report, len(sources))
 
         if args.save_ocode:
             for number, source in enumerate(sources, 1):
