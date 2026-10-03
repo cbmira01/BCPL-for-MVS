@@ -20,6 +20,7 @@ effectively.
 
 | Document | Subject |
 | --- | --- |
+| [`BCPL-history-and-porting.md`](BCPL-history-and-porting.md) | Brief history of BCPL, its uses and implementations, and a human-oriented sketch of the MVS porting/bootstrap process |
 | [`System_370-briefing.md`](System_370-briefing.md) | System/370 architecture from the programmer's viewpoint |
 | [`MVS-3_8-briefing.md`](MVS-3_8-briefing.md) | MVS 3.8 organization, services, and programming environment |
 | [`Hercules-briefing.md`](Hercules-briefing.md) | Hercules architecture, configuration, operation, devices, interfaces, and tooling |
@@ -42,6 +43,9 @@ linkage-editor, and operating-system layers.
 There is no required order, but a new reader might use:
 
 ``` text
+BCPL history and porting
+    |
+    v
 System/370
     |
     v
@@ -66,8 +70,9 @@ JCL
 MVS system-programming interfaces
 ```
 
-The first four establish the broad environment. The others can
-increasingly be used as topical references.
+The BCPL history/porting note explains why the project needs these
+machine and operating-system topics. The next four establish the broad
+environment. The others can increasingly be used as topical references.
 
 ## Provenance
 
