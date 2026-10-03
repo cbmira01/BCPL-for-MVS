@@ -17,7 +17,9 @@ BCPL INTCODE compiler and runtime components.
 | [`icintv13.asm`](icintv13.asm) | V13 milestone. Added a reconstructed `MAPSTORE` diagnostic while preserving V12 execution semantics. The diagnostic format is project reconstruction, not a claim to reproduce Richards's original `MAPSTORE` exactly. |
 | [`icintv14.asm`](icintv14.asm) | V14 milestone. Added reliable `FINDOUTPUT("INTCODE")` handling and the special INTCODE output recordizer needed to capture CGI output as valid 80-byte records, allowing generated INTCODE to be saved and re-ingested. |
 | [`icintv14-trace.asm`](icintv14-trace.asm) | Development/diagnostic V14 variant retained for historical comparison. |
-| [`icintv15.asm`](icintv15.asm) | Current ICINT milestone. Generalizes MVS stream discovery so ordinary BCPL stream names map to discovered DDNAMEs, while retaining special handling only where the host requires it. V15 has successfully hosted the complete interpreted compiler pipeline and separate BCPL compilation with `GLOBAL`-vector linkage. |
+| [`icintv15.asm`](icintv15.asm) | V15 milestone. Generalized MVS stream discovery so ordinary BCPL stream names map to discovered DDNAMEs. |
+| [`icintv16.asm`](icintv16.asm) | V16 milestone. Replaced fixed generic stream pools with dynamically allocated stream descriptors and retained special handling only for the bootstrap streams that require it. |
+| [`icintv17.asm`](icintv17.asm) | Current validated ICINT baseline. Retains V16 stream and character-translation behavior and adds recent-instruction tracing plus guarded OP1 stores for more useful failure diagnostics. All current compiler, allocator, coroutine, and demonstration-suite work uses V17. |
 
 The comments at the beginning of each ICINT version are the primary record of
 that version's design, scope, representation choices, and acceptance target.
@@ -71,7 +73,7 @@ For example:
 
 ```text
 tools/run-intcode --results \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/01-echo-test/echo-sysin.int \
     +intcode/blibi.int \
     +intcode/iclib.int
@@ -93,7 +95,7 @@ tools/compile-and-run \
     --results \
     --save-ocode \
     --save-intcode \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/03-compile-richards-factorial/richards-factorial-test.bcpl
 ```
 
@@ -102,14 +104,15 @@ Separate source modules use the same `+PATH` notation:
 ```text
 tools/compile-and-run \
     --results \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/04-module-test/module-test-1.bcpl \
     +tests/04-module-test/module-test-2.bcpl
 ```
 
 The standard interpreted compiler/runtime components are described in
-[`intcode/README.md`](../intcode/README.md), and regression workloads are
-described in [`tests/README.md`](../tests/README.md).
+[`intcode/README.md`](../intcode/README.md), reconstructed portable runtime
+modules are described in [`library/README.md`](../library/README.md), and
+regression workloads are described in [`tests/README.md`](../tests/README.md).
 
 ## Next native work
 
