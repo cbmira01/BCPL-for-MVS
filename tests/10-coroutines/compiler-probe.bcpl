@@ -1,0 +1,22 @@
+// COMPILER-PROBE.BCPL
+//
+// Observe how the MR10 compiler represents a two-argument CHANGECO call.
+// CHANGECO is deliberately referenced but never executed by START, so this
+// source can be compiled and run with ICINT V17 before coroutine support is
+// added to the interpreter.
+
+GLOBAL $(
+START:1
+CHANGECO:6
+WRITEF:76
+$)
+
+LET CALLCHANGE(VALUE, CPTR) = CHANGECO(VALUE, CPTR)
+
+AND WAITCHANGE(VALUE, PARENT) = VALOF
+$( RESULTIS CHANGECO(VALUE, PARENT) $)
+
+AND START() BE
+$( WRITEF("COROUTINE COMPILER PROBE COMPILED*N")
+   FINISH
+$)
