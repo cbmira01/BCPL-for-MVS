@@ -72,6 +72,26 @@ run_demo "strings-bytes" \
     "$ICINT" \
     "$SUITE/strings-bytes/strings-bytes.bcpl"
 
+run_demo "test-then-or" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/test-then-or/test-then-or.bcpl"
+
+run_demo "boolean-operators" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/boolean-operators/boolean-operators.bcpl"
+
+run_demo "pointer-idioms" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/pointer-idioms/pointer-idioms.bcpl"
+
+run_demo "function-values" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/function-values/function-values.bcpl"
+
 echo
 echo "================================================================"
 echo "LANGUAGE SUITE COMPLETE"
