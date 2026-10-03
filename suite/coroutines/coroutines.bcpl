@@ -1,0 +1,26 @@
+// COROUTINES.BCPL
+//
+// Demonstrate the reconstructed BCPL coroutine runtime as a simple generator.
+// A coroutine preserves its local FOR-loop state while repeatedly yielding
+// values to the root coroutine with COWAIT.
+
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+COWAIT:94
+$)
+
+LET GENERATOR(IGNORED) = VALOF
+$( FOR N = 1 TO 5 DO
+   $( WRITEF("  GENERATOR YIELDS %N*N", N)
+      COWAIT(N)
+   $)
+
+   COWAIT(-1)
+   RESULT
