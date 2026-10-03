@@ -1,106 +1,22 @@
 // CREATE-DELETE-STATIC-POOL.BCPL
 //
-// Exercise CREATECO, DELETECO, and COLIST using the reconstructed reusable
-// GETVEC/FREEVEC runtime module.  START supplies a long-lived fixed arena
-// through HEAPINIT; coroutine allocation itself is no longer test-specific.
-//
-// MR10 frame evidence for CREATECO(FN,SIZE,C):
-//     P!2 = FN
-//     P!3 = SIZE
-//     P!4 = C
-//
-// Keep the coroutine descriptor separate from that synthetic MR10 frame:
-//     C!0 = saved P
-//     C!1 = parent
-//     C!2 = COLIST link
-//     P   = C+3
-//
-// Thus the synthetic frame begins at C+3, with FN/SIZE/C at C!5/C!6/C!7.
-// Nested calls may then use words above the frame without overwriting the
-// coroutine descriptor.
+// Regression for the packaged coroutine runtime.  Coroutine operations come
+// from library/coroutines.bcpl; allocation comes from
+// library/getvec-freevec.bcpl.  This source contains only test setup and
+// observations.
 
 GLOBAL $(
 START:1
-CHANGECO:6
 CURRCO:7
 COLIST:8
 WRITEF:76
-GETVEC:87
-FREEVEC:88
 HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
 $)
 
-LET CALLCO(CPTR, A) = VALOF
-$( IF CPTR!1 \= 0 RESULTIS -999
-   CPTR!1 := CURRCO
-   RESULTIS CHANGECO(A, CPTR)
-$)
-
-AND COWAIT(A) = VALOF
-$( LET PARENT = CURRCO!1
-   CURRCO!1 := 0
-   RESULTIS CHANGECO(A, PARENT)
-$)
-
-AND RESUMECO(CPTR, A) = VALOF
-$( LET PARENT = CURRCO!1
-   CURRCO!1 := 0
-   IF CPTR!1 \= 0 RESULTIS -998
-   CPTR!1 := PARENT
-   RESULTIS CHANGECO(A, CPTR)
-$)
-
-AND CREATECO(FN, SIZE) = VALOF
-$( LET C = GETVEC(SIZE+9)
-   AND P = 0
-
-   IF C = 0 RESULTIS 0
-
-   P := C+3
-
-   C!0 := P
-   C!1 := CURRCO
-   C!2 := COLIST
-
-   P!0 := 0
-   P!1 := 0
-   P!2 := FN
-   P!3 := SIZE
-   P!4 := C
-
-   COLIST := C
-
-   CHANGECO(0, C)
-
-   C := FN(COWAIT(C)) REPEAT
-$)
-
-AND DELETECO(C) = VALOF
-$( LET P = COLIST
-
-   IF C = 0 RESULTIS FALSE
-   IF C = CURRCO RESULTIS FALSE
-   IF C!1 \= 0 RESULTIS FALSE
-
-   IF COLIST = C DO
-   $( COLIST := C!2
-      FREEVEC(C)
-      RESULTIS TRUE
-   $)
-
-   UNTIL P = 0 DO
-   $( IF P!2 = C DO
-      $( P!2 := C!2
-         FREEVEC(C)
-         RESULTIS TRUE
-      $)
-      P := P!2
-   $)
-
-   RESULTIS FALSE
-$)
-
-AND COUNTCO() = VALOF
+LET COUNTCO() = VALOF
 $( LET N = 0
    AND C = COLIST
 
