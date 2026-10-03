@@ -83,11 +83,11 @@ Do not require the complete later OCODE language before the first native program
 
 ---
 
-## Finding 3: the historical backend was intended to emit linkable object decks
+## Finding 3: the historical backend emitted both listings and linkable object decks
 
-The later generator contains both listing and binary/deck paths. `CGSTART` records an external dependency on `BCPLMAIN`. `CGEND` performs relocation fixups and calls `DECKOUT()` when binary output is enabled.
+The later generator contains both readable listing and binary/deck paths. `CGSTART` records an external dependency on `BCPLMAIN`. `CGEND` performs relocation fixups and calls `DECKOUT()` when binary output is enabled.
 
-The surviving historical procedure `BCPLCLG` runs:
+The surviving historical procedure `BCPLCLG` ran:
 
 ```text
 BCPL compiler
@@ -102,15 +102,51 @@ IEWL linkage editor
 load module
 ```
 
-The `SYSGO` data set is explicitly `RECFM=FB,LRECL=80`, consistent with the generator's card/deck machinery.
+That historical object-deck path is valuable evidence and should ultimately be recoverable.
 
-### Decision
+### Decision for reconstruction
 
-**The primary native output format should be the historical relocatable object-deck path suitable for IEWL.**
+**The first reconstructed CG370 will emit IFOX assembler source.**
 
-A readable assembler listing is still valuable for diagnostics, but generating IFOX source is not a prerequisite for the native compiler.
+The reasons are practical and diagnostic:
 
-This decision deliberately preserves the surviving implementation and the historical MVS build model.
+- generated code is directly readable;
+- IFOX validates instruction forms and addressability;
+- assembler listings expose generated addresses, symbols, constants, and base-register choices;
+- assembler errors localize code-generator defects much better than malformed object cards;
+- IEWL maps and relocation information remain available after assembly;
+- the project already has a reliable assemble-link-run workflow under MVS;
+- it separates semantic/code-generation reconstruction from historical object-deck encoding.
+
+The initial native path is therefore:
+
+```text
+MR10 OCODE
+    |
+    v
+reconstructed CG370
+    |
+    v
+IFOX assembler source
+    |
+    v
+IFOX00
+    |
+    v
+System/370 object module
+    |
+    v
+IEWL
+    |
+    v
+native load module
+```
+
+### Deferred compatibility target
+
+The original relocatable object-deck generator is **not discarded**. Once the native ABI and instruction selection are established, the historical `DECKOUT`/relocation path can be revived as a later compatibility and efficiency milestone.
+
+This is a deliberate reconstruction choice, not a claim that the historical compiler itself primarily emitted assembler source.
 
 ---
 
@@ -232,7 +268,7 @@ same BCPL source
      |
      +--> CGI --> INTCODE --> ICINT
      |
-     +--> native CG --> S/370 object --> IEWL --> native execution
+     +--> CG370 --> IFOX assembler --> IFOX --> IEWL --> native execution
 
 compare observable behavior
 ```
@@ -246,39 +282,45 @@ The interpreted result is not assumed to prove every historical native ABI detai
 The recommended implementation sequence is:
 
 1. **OCODE capture and compatibility probe**
-   - save OCODE for a very small set of existing regression programs;
-   - confirm which MR10 operators occur;
+   - save OCODE for the native acceptance corpus;
+   - inventory every operator observed;
    - map each operator to surviving later-CG handling or mark it for adaptation.
 
 2. **Extract a bootstrap S/370 generator**
    - reuse later target algorithms;
    - initially support only the MR10 OCODE subset required by the acceptance ladder;
+   - emit readable IFOX assembler;
    - keep unsupported operators explicit and fatal.
 
 3. **Provide minimal native runtime/startup**
    - establish R12 global vector;
    - establish BCPL workspace/frame state;
-   - provide the minimum termination/output support needed by acceptance tests;
-   - satisfy the generated `BCPLMAIN` external dependency in a deliberately small reconstructed shim.
+   - provide the minimum termination/result-reporting support needed by acceptance tests;
+   - reconstruct only the BCPLMAIN behavior demonstrated as necessary.
 
-4. **Generate an object deck and link it with IEWL**
-   - retain listings/deck evidence;
-   - verify relocation/global initialization.
+4. **Assemble and link with the normal MVS toolchain**
+   - IFOX00 assembles generated source;
+   - IEWL produces the load module;
+   - retain assembler listing and link map as evidence.
 
 5. **Run the acceptance ladder**
    - constants/arithmetic;
    - branches/loops;
    - procedure call/value return;
    - globals;
-   - bytes/strings;
    - separate modules;
-   - selected runtime/library calls.
+   - then bytes/strings and selected runtime/library calls.
 
 6. **Expand toward compiler self-hosting**
    - implement remaining MR10 OCODE operations as encountered;
    - compile portable library components;
    - compile the compiler phases;
    - only then broaden toward later compiler extensions if useful.
+
+7. **Revisit historical object-deck emission**
+   - once semantics and ABI are stable;
+   - use surviving relocation/deck code as the reference;
+   - validate generated decks against IFOX-produced object behavior.
 
 ---
 
@@ -292,7 +334,7 @@ These are not prerequisites for starting native compiler implementation:
 - LOADSEG/UNLOADSEG;
 - floating-point support;
 - full later-compiler OCODE extensions;
-- direct replacement of the historical object-deck generator;
+- historical direct object-deck output;
 - removal of the historical 4K-word section limit;
 - polished installation/distribution media.
 
@@ -306,4 +348,10 @@ The project is ready to begin native code-generator implementation.
 
 The remaining uncertainty is no longer primarily architectural. The critical unknowns are now best resolved by constructing and running the first native generated programs.
 
-The key constraint is to **adapt surviving code rather than replace it with a newly invented compiler architecture**.
+The key constraints are:
+
+- preserve the recovered historical BCPL/System-370 ABI where evidence is strong;
+- use the working MR10 compiler as the OCODE semantic reference;
+- adapt the surviving later S/370 generator rather than inventing instruction selection from scratch;
+- emit IFOX assembler first so every generated instruction is inspectable;
+- add native acceptance tests before expanding toward self-hosting.
