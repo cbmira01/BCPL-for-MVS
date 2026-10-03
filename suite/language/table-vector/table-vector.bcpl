@@ -1,0 +1,18 @@
+// TABLE-VECTOR.BCPL
+// Demonstrate TABLE expressions, vectors, ! indexing, and copying values.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET V = VEC 4
+
+   FOR I = 0 TO 4 DO
+      V!I := I!TABLE 11, 22, 33, 44, 55
+
+   WRITEF("TABLE TO VECTOR:")
+   FOR I = 0 TO 4 DO WRITEF(" %N", V!I)
+   WRITEF("*N")
+
+   WRITEF("INDEX 2 = %N*N", V!2)
+   FINISH
+$)
