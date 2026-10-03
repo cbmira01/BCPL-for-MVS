@@ -8,54 +8,496 @@ The working bootstrap compiler comes from `richards-bcpltape/mr10/bcplkit/`. The
 
 The first native compiler should therefore target the **OCODE actually emitted by the working MR10 compiler**, while borrowing target-machine implementation from the later System/370 CG.
 
+The inventory below is an implementation contract, but it is not yet proof that every listed MR10 operator is emitted by our current accepted source programs. Saved OCODE from the native acceptance corpus will turn the static inventory into observed coverage.
+
 ---
 
-## MR10 operator set
+## Machine model used by OCODE
 
-The MR10 code generator defines these OCODE operators:
+OCODE describes computation in terms of:
+
+- a conceptual evaluation stack;
+- a BCPL workspace/frame addressed by `P`;
+- a numbered GLOBAL vector;
+- generated labels and static data;
+- function/routine application;
+- procedure entry/exit;
+- word and indirect memory operations.
+
+The native CG is allowed to keep stack values in System/370 registers as the historical generator does, but it must preserve the OCODE stack semantics.
+
+For notation below:
 
 ```text
-TRUE FALSE
-RV FNAP
-MULT DIV REM PLUS MINUS QUERY NEG
-EQ NE LS GR LE GE
-NOT LSHIFT RSHIFT LOGAND LOGOR EQV NEQV COND
-LP LG LN LSTR LL LLP LLG LLL
-RTAP GOTO RETURN FINISH SWITCHON GLOBAL
-SP SG SL STIND
-JUMP JT JF
-LAB STACK STORE RSTACK ENTRY SAVE FNRN RTRN RES RESLAB
-DATALAB ITEML ITEMN ENDPROC END CHAR DEBUG
+[..., X]          top value is X
+[..., X, Y]       Y is top, X is next
+push(X)           add one conceptual stack value
+pop()             remove one conceptual stack value
+P[n]              workspace word n
+G[n]              global-vector word n
+MEM[a]            BCPL word at address a
+L<n>              generated label n
 ```
 
-Not every manifest name necessarily appears in every emitted program. The implementation should be driven by captured OCODE from the regression suite.
+Exact stack depths around procedure-control operators are governed by accompanying `STACK`, `SAVE`, `RSTACK`, and call operands; acceptance OCODE will be retained to validate those details.
 
 ---
 
-## Later System/370 operator set
+# MR10 operator inventory
 
-The later native generator recognizes the same broad core, plus later extensions including:
+## Constants and primary loads
+
+### `TRUE`
 
 ```text
-NEEDS SECTION
-FIX ABS
-SLCTAP SLCTST
-STARTBLOCK ENDBLOCK
-MOD MODSLCT
-GETBYTE PUTBYTE
-floating-point arithmetic/comparisons
-FLOAT
+[] -> [TRUE]
 ```
 
-The later generator does not present the MR10 vocabulary in exactly the same form. In particular, MR10-era names such as `QUERY`, `COND`, `RETURN`, `RESLAB`, and `CHAR` need to be checked against the actual OCODE emitted by the working front end before assuming they require new backend code.
+Push BCPL true.
+
+Later S/370 CG: direct match.
+
+### `FALSE`
+
+```text
+[] -> [FALSE]
+```
+
+Push BCPL false.
+
+Later S/370 CG: direct match.
+
+### `LN n`
+
+```text
+[] -> [n]
+```
+
+Push literal integer `n`.
+
+Later S/370 CG: direct match.
+
+### `LP n`
+
+```text
+[] -> [P[n]]
+```
+
+Load value from local/workspace slot `n`.
+
+Native mapping uses displacement `4*n` from R5.
+
+### `LG n`
+
+```text
+[] -> [G[n]]
+```
+
+Load global-vector slot `n`.
+
+Native mapping uses displacement `4*n` from R12.
+
+### `LL Lx`
+
+```text
+[] -> [address(Lx)]
+```
+
+Push generated code/data label address.
+
+### `LSTR ...`
+
+```text
+[] -> [address(packed-string)]
+```
+
+Load address of generated packed BCPL string data. Operand encoding includes the string length/content.
+
+### `LLP n`
+
+```text
+[] -> [address(P[n])]
+```
+
+Load address of workspace slot.
+
+### `LLG n`
+
+```text
+[] -> [address(G[n])]
+```
+
+Load address of global-vector slot.
+
+### `LLL Lx`
+
+```text
+[] -> [address(Lx)]
+```
+
+Load address represented by a generated label; semantically an lvalue/address form distinct from `LL` in the OCODE producer even where target code may converge.
 
 ---
 
-## Compatibility classes
+## Dereference and stores
 
-### Class A: direct semantic matches
+### `RV`
 
-These have clear counterparts in the later System/370 generator and should be implemented by adapting the surviving code:
+```text
+[..., A] -> [..., MEM[A]]
+```
+
+Replace address on top of stack with the word stored at that address.
+
+### `SP n`
+
+```text
+[..., X] -> [...]
+P[n] := X
+```
+
+Store top value into workspace slot `n` and consume the value.
+
+### `SG n`
+
+```text
+[..., X] -> [...]
+G[n] := X
+```
+
+Store top value into global slot `n` and consume the value.
+
+### `SL Lx`
+
+```text
+[..., X] -> [...]
+MEM[address(Lx)] := X
+```
+
+Store into generated static-label location.
+
+### `STIND`
+
+```text
+[..., VALUE, ADDRESS] -> [...]
+MEM[ADDRESS] := VALUE
+```
+
+The exact top-two ordering above follows the later CG's treatment of `ARG1`/`ARG2` and must be confirmed with one saved MR10 OCODE case before implementation is frozen.
+
+---
+
+## Integer arithmetic
+
+Binary operators consume two values and produce one unless otherwise stated.
+
+### `PLUS`
+
+```text
+[..., X, Y] -> [..., X+Y]
+```
+
+### `MINUS`
+
+```text
+[..., X, Y] -> [..., X-Y]
+```
+
+### `MULT`
+
+```text
+[..., X, Y] -> [..., X*Y]
+```
+
+### `DIV`
+
+```text
+[..., X, Y] -> [..., X/Y]
+```
+
+Integer division using BCPL/System/370 signed integer semantics. Division-by-zero behavior is a runtime/processor error condition, not normalized by the CG.
+
+### `REM`
+
+```text
+[..., X, Y] -> [..., X REM Y]
+```
+
+Remainder paired with signed integer division semantics.
+
+### `NEG`
+
+```text
+[..., X] -> [..., -X]
+```
+
+### `QUERY`
+
+Present in MR10 manifests/parser. Semantics must be recovered from MR10 TRN/CG evidence or observed OCODE before implementation. Do not guess.
+
+---
+
+## Comparisons
+
+Each consumes two operands and produces a BCPL truth value or feeds branch-oriented optimization in the CG.
+
+```text
+EQ   X = Y
+NE   X ~= Y
+LS   X < Y
+GR   X > Y
+LE   X <= Y
+GE   X >= Y
+```
+
+Conceptual effect:
+
+```text
+[..., X, Y] -> [..., boolean]
+```
+
+The later generator may fuse comparison with an immediately following conditional branch; that optimization must not change semantics.
+
+---
+
+## Logical and shift operations
+
+### `NOT`
+
+```text
+[..., X] -> [..., NOT X]
+```
+
+Bitwise/logical BCPL complement according to historical word semantics.
+
+### `LSHIFT`
+
+```text
+[..., X, N] -> [..., X << N]
+```
+
+### `RSHIFT`
+
+```text
+[..., X, N] -> [..., X >> N]
+```
+
+The later S/370 backend uses logical shift instructions for these operators. Signed/right-shift expectations should be validated against interpreted tests if negative operands matter.
+
+### `LOGAND`
+
+```text
+[..., X, Y] -> [..., X & Y]
+```
+
+### `LOGOR`
+
+```text
+[..., X, Y] -> [..., X | Y]
+```
+
+### `EQV`
+
+Bitwise equivalence, implemented historically via XOR plus complement.
+
+### `NEQV`
+
+Bitwise non-equivalence/XOR.
+
+### `COND`
+
+Present in MR10 vocabulary. Exact OCODE-level operand/control semantics must be recovered from the MR10 translator or observed output before implementation.
+
+---
+
+## Labels and control flow
+
+### `LAB Lx`
+
+Define label `Lx` at the current code position.
+
+No conceptual stack change, but the CG must reconcile/spill virtual stack state at control-flow joins.
+
+### `JUMP Lx`
+
+Unconditional transfer to label `Lx`.
+
+### `JT Lx`
+
+```text
+[..., X] -> [...]
+if X ~= FALSE goto Lx
+```
+
+Consumes condition.
+
+### `JF Lx`
+
+```text
+[..., X] -> [...]
+if X = FALSE goto Lx
+```
+
+Consumes condition.
+
+### `GOTO`
+
+```text
+[..., ADDRESS] -> [...]
+branch ADDRESS
+```
+
+Computed transfer of control.
+
+### `SWITCHON n ...`
+
+Consumes switch expression and a following table of case constants/labels plus default label according to OCODE encoding.
+
+The later S/370 CG can choose either label-vector or binary-tree implementation.
+
+---
+
+## Procedure/workspace control
+
+### `STACK n`
+
+Set/reconcile conceptual stack/workspace depth to `n` while preserving required values.
+
+This is compiler bookkeeping with real consequences for spill locations.
+
+### `STORE n` / `STORE`
+
+Force live conceptual stack/register values into workspace so control flow or procedure operations see canonical storage.
+
+The MR10 textual syntax/operand use must be taken from captured OCODE; the later generator's `STORE(0,SSP)` calls are internal CG operations, not necessarily identical to the OCODE spelling.
+
+### `ENTRY name,label`
+
+Begin a generated procedure entry. Carries procedure name information and label identity.
+
+Target responsibilities include label/alignment generation and any debugging/name metadata selected by policy.
+
+### `SAVE n`
+
+Establish callee workspace/frame of size/depth `n`.
+
+Under the recovered native ABI this includes:
+
+```text
+save incoming BCPL registers into the new workspace as required
+R5 := R15
+make register arguments visible in their expected local slots
+```
+
+### `FNAP k`
+
+Function application.
+
+Conceptually:
+
+```text
+function/address + arguments -> returned value
+```
+
+The operand `k` identifies the new-workspace boundary/offset used to compute:
+
+```text
+new P = old P + 4*k
+```
+
+Native call protocol is specified in `native-abi.md`.
+
+### `RTAP k`
+
+Routine application using the same call-frame construction as `FNAP`, but no returned expression value is pushed.
+
+### `FNRN`
+
+Return from function with top expression value as function result.
+
+Native result register: R7.
+
+### `RTRN`
+
+Return from routine without expression result.
+
+### `RSTACK n`
+
+Restore/reconcile stack after a result-producing construct; later generator loads R7 as the resulting value. Exact MR10 producer context should be retained from captured OCODE.
+
+### `RES Lx`
+
+Return/result transfer used by `VALOF`/`RESULTIS` compilation. Stores canonical state, places result in the ABI result register, and branches to label `Lx` in the later generator.
+
+### `RESLAB`
+
+MR10 vocabulary item associated with result-label handling. Exact emitted form must be confirmed before implementation.
+
+### `RETURN`
+
+MR10 vocabulary item. Its distinction from `RTRN` must be established from MR10 source/observed OCODE before implementation.
+
+---
+
+## Program termination
+
+### `FINISH`
+
+Terminate BCPL execution through the runtime support path.
+
+The later native CG branches to a support entry relative to R11 rather than issuing an MVS SVC directly. The reconstructed runtime contract must provide equivalent behavior.
+
+---
+
+## Static data and section finalization
+
+### `DATALAB Lx`
+
+Define static-data label.
+
+### `ITEMN n`
+
+Emit numeric word in static data.
+
+### `ITEML Lx`
+
+Emit relocatable/generated label address in static data.
+
+### `ENDPROC`
+
+Terminate procedure-generation context and associated optional name/debug metadata.
+
+### `GLOBAL n ...`
+
+Ends a generated section and supplies global-number/label definitions.
+
+Semantically, it causes the module's generated entry addresses to be installed into corresponding slots in the BCPL GLOBAL vector when the module is initialized/loaded.
+
+This is the essential BCPL cross-module linkage mechanism.
+
+### `END`
+
+End OCODE input/section stream.
+
+---
+
+## Miscellaneous MR10 vocabulary requiring evidence
+
+### `CHAR`
+
+Present in MR10 manifest. Exact emitted semantics are not yet established from accepted OCODE. Do not infer from name alone.
+
+### `DEBUG`
+
+Debug/metadata operation. The later CG has `DEBUG` support, but the exact MR10 input format and whether current TRNI emits it must be observed.
+
+---
+
+# Compatibility classes
+
+## Class A — direct later-CG matches
+
+These have clear later System/370 implementations and should be adapted first when observed:
 
 ```text
 TRUE FALSE
@@ -63,17 +505,16 @@ RV FNAP RTAP
 MULT DIV REM PLUS MINUS NEG
 EQ NE LS GR LE GE
 NOT LSHIFT RSHIFT LOGAND LOGOR EQV NEQV
-LP LG LN LSTR LL
-LLP LLG LLL
+LP LG LN LSTR LL LLP LLG LLL
 SP SG SL STIND
 GOTO JUMP JT JF LAB
-STACK STORE RSTACK
-ENTRY SAVE FNRN RTRN RES
+STACK
+ENTRY SAVE FNRN RTRN RES RSTACK
 FINISH SWITCHON GLOBAL
 DATALAB ITEML ITEMN ENDPROC END
 ```
 
-### Class B: MR10 names requiring evidence before implementation
+## Class B — MR10-specific/unresolved until observed
 
 ```text
 QUERY
@@ -84,11 +525,9 @@ CHAR
 DEBUG
 ```
 
-For these, the correct first question is not “how should CG370 implement this?” but “does current TRNI emit it for any accepted source program?”
+The rule is: **inspect producer semantics first; do not design from the mnemonic.**
 
-If an operator is never emitted by the current compiler path, it is not a readiness blocker.
-
-### Class C: later extensions, deferred initially
+## Class C — later extensions, not initial MR10 requirements
 
 ```text
 NEEDS SECTION
@@ -101,200 +540,70 @@ floating-point family
 FLOAT
 ```
 
-Some of these may become desirable very early, especially `GETBYTE`/`PUTBYTE`, but they should not be required merely because the later compiler supports them.
+These become relevant only when we intentionally move from MR10 bootstrap compatibility toward the later compiler source.
 
 ---
 
-## Operand-reading conventions
+# Input representation decision
 
-The MR10 generator parses textual OCODE. Examples of operand forms include:
-
-```text
-LP n
-LG n
-LN n
-LL Ln
-LLP n
-LLG n
-LLL Ln
-SP n
-SG n
-SL Ln
-LAB Ln
-STACK n
-ENTRY <name data> Ln
-SAVE n
-FNAP n
-RTAP n
-RES Ln
-SWITCHON n ...
-GLOBAL n ...
-```
-
-The later compiler stores OCODE in a compact byte-coded representation and reads it through `READOP`, `READN`, `READL`, and `READGN`.
+The MR10 generator reads textual OCODE. The later S/370 generator reads a compact encoded representation through `READOP`, `READN`, `READL`, and `READGN`.
 
 ### Decision
 
-The first bootstrap native generator should not depend on the later compact OCODE encoding unless that proves advantageous.
+The first reconstructed CG370 may consume **saved textual OCODE from the current MR10 pipeline**.
 
-A clean first adaptation is allowed to consume the textual OCODE already producible/savable by the current pipeline, provided semantics are preserved.
-
-This separates two problems:
+This keeps the first problem narrowly defined:
 
 ```text
-OCODE semantics
-    versus
-historical OCODE storage encoding
+OCODE semantics -> System/370 assembler
 ```
 
-The storage encoding can be reconciled later if necessary for self-hosting the later compiler source directly.
-
----
-
-## Stack-machine model
-
-Both generators treat OCODE as operations over a conceptual BCPL evaluation stack/workspace.
-
-Important recurring concepts are:
-
-- local/workspace slot (`LP`, `SP`, `LLP`);
-- global slot (`LG`, `SG`, `LLG`);
-- literal number (`LN`);
-- label/code address (`LL`, `LLL`);
-- value-at-address (`RV`);
-- indirect store (`STIND`);
-- procedure call (`FNAP`, `RTAP`);
-- procedure frame management (`ENTRY`, `SAVE`, `STACK`, `RSTACK`, return operations).
-
-The later S/370 generator keeps a virtual description of the top of the BCPL stack in registers and spills it to workspace as required. That optimization can be preserved, but the semantic contract is independent of the optimization.
-
----
-
-## Global-vector semantics
-
-`LG n` and `SG n` access BCPL global slot `n` through the global-vector base register in the native ABI.
-
-`GLOBAL` terminates a generated section with initialization information associating global numbers with generated addresses.
-
-This mechanism is fundamental and must be preserved even if MVS linkage-editing is used for the surrounding load module.
-
----
-
-## Calls
-
-`FNAP k` and `RTAP k` invoke a function/routine using a workspace offset/frame boundary `k`.
-
-The later System/370 generator maps these to its recovered native convention:
-
-- create the new workspace pointer from current `P + 4*k`;
-- marshal initial arguments into R7-R10 where applicable;
-- spill remaining arguments to the workspace;
-- load function address into R4;
-- call with `BALR R6,R4`;
-- return a function result in R7.
-
-The exact MR10 `k` interpretation must be verified with saved OCODE examples, but the structural correspondence is strong.
-
----
-
-## Procedure entry and return
-
-The later generator handles:
+rather than combining it with:
 
 ```text
-ENTRY
-SAVE
-FNRN
-RTRN
+new compact OCODE decoder
 ```
 
-as the core procedure protocol.
-
-The first native generator should preserve this protocol rather than translating BCPL procedures into conventional OS linkage frames.
-
-MVS-standard linkage belongs only at the outer runtime boundary.
+When self-hosting later compiler components requires the compact representation, add that input layer without changing the target semantics.
 
 ---
 
-## Data and strings
+# Output representation decision
 
-The common operators:
+The reconstructed CG370 initially emits **IFOX assembler source**.
+
+That is a reconstruction/debugging decision. The later historical CG's direct object-deck generation remains primary evidence for relocation and eventual compatibility, but it is deferred until the generated instruction stream and ABI are established.
+
+---
+
+# Coverage table to maintain
+
+As acceptance OCODE is captured, append/update a table of this form:
+
+| OCODE | Observed? | First acceptance case | Later S/370 implementation | Native status |
+| --- | --- | --- | --- | --- |
+| `LN` | pending capture | A1 | `SCAN`, `LOAD(NUMBER,...)` | planned |
+| `PLUS` | pending capture | A1 | `CGPLUS` | planned |
+| `LP` | pending capture | A2 | `SCAN`, `LOAD(LOC,...)` | planned |
+| `FNAP` | pending capture | A3 | `CGAPPLY` | planned |
+| `GLOBAL` | pending capture | A5 or earlier | `CGGLOBAL` | planned |
+
+Do not mark an operator “required by MR10” merely because it is present in `CGHDR`; mark it required when captured output demonstrates that current TRNI emits it for supported source.
+
+---
+
+# Unsupported-operation rule
+
+During native-CG development, an unimplemented OCODE operation must fail explicitly and diagnostically.
+
+Report at least:
 
 ```text
-LSTR
-DATALAB
-ITEML
-ITEMN
-GLOBAL
+operator name/number
+OCODE input position or record if available
+current section/procedure if known
 ```
 
-are enough to represent literal strings, static data, label references, numeric data, and global initialization.
+Silent approximation is prohibited.
 
-The later generator already maintains separate lists for strings, fullword constants, halfword constants, data labels, and relocations. Those mechanisms should be reused where possible.
-
----
-
-## Byte operations
-
-The later generator has native `GETBYTE` and `PUTBYTE` OCODE operations. The MR10 kit historically exposes byte operations as runtime/system functions in some contexts.
-
-### Decision
-
-Do not assume byte access must initially be a dedicated OCODE operator.
-
-Use whatever form the current MR10 compiler actually emits. If ordinary source using `GETBYTE`/`PUTBYTE` compiles into global calls, support those calls first. If the current pipeline emits byte operators, adapt `CGBYTEAP` from the later generator.
-
----
-
-## Floating point
-
-The later System/370 generator contains substantial floating-point support.
-
-### Decision
-
-Floating point is explicitly outside the first native acceptance milestone.
-
-The code should remain recoverable and documented, but not required before integer/system-programming workloads run natively.
-
----
-
-## Required readiness experiment
-
-Before implementation expands beyond the first few operators, save OCODE for the acceptance corpus using the existing compiler pipeline.
-
-For each program, record:
-
-```text
-source file
-exact compile-and-run command used to save OCODE
-saved OCODE artifact
-set of operators observed
-```
-
-Then maintain a table of:
-
-```text
-operator
-observed in current compiler output?
-later CG implementation location
-native implementation status
-regression that exercises it
-```
-
-This table should become the authoritative scope tracker for the bootstrap CG.
-
----
-
-## Rule for unsupported OCODE
-
-During native-CG development, an unimplemented OCODE operation must fail explicitly with:
-
-```text
-operator number/name
-input position if available
-current procedure/section if available
-```
-
-Do not silently approximate an unsupported operation.
-
-The native generator is easier to trust if missing coverage is loud and local.
+This makes incomplete coverage visible and keeps the native compiler trustworthy while it grows.
