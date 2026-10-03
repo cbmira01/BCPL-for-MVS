@@ -126,7 +126,7 @@ component being tested is already INTCODE.
 
 ```text
 tools/run-intcode --results \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/01-echo-test/echo-sysin.int \
     +intcode/blibi.int \
     +intcode/iclib.int
@@ -153,7 +153,7 @@ A host text file can be supplied as MVS `SYSIN`:
 ```text
 tools/run-intcode --results \
     --sysin tests/01-echo-test/best-of-times.txt \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/01-echo-test/echo-sysin.int \
     +intcode/blibi.int \
     +intcode/iclib.int
@@ -196,7 +196,7 @@ tools/compile-and-run \
     --save-ocode \
     --save-intcode \
     --listing heavy \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/03-compile-richards-factorial/richards-factorial-test.bcpl
 ```
 
@@ -253,7 +253,7 @@ tools/compile-and-run \
     --save-ocode \
     --save-intcode \
     --job-name MODLTEST \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/04-module-test/module-test-1.bcpl \
     +tests/04-module-test/module-test-2.bcpl
 ```
@@ -272,7 +272,7 @@ each BCPL compile step under ordinary MVS DDNAMEs:
 tools/compile-and-run \
     --results \
     --dd EXTRA=tests/05-named-dd/extra.bcpl \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/05-named-dd/main.bcpl
 ```
 
@@ -325,16 +325,16 @@ tools/run-demo-suite.sh
 The script determines its own location, changes to the repository root, and
 therefore does not depend on the caller's current working directory.
 
-The current suite contains 15 demonstrations covering recursion, arithmetic,
+The current suite contains 16 demonstrations covering recursion, arithmetic,
 iteration, vectors, sorting and searching, linked structures, parsing,
-character and string handling, and stream I/O. A normal successful run ends
-with:
+character and string handling, stream I/O, and the reconstructed coroutine
+runtime. A normal successful run ends with:
 
 ```text
 ================================================================
 SUITE COMPLETE
 ================================================================
-All 15 demos passed.
+All 16 demos passed.
 ```
 
 A `PASS` means the BCPL source compiled through the interpreted compiler
@@ -348,7 +348,7 @@ specific language or runtime behavior matters.
 The suite currently provides a useful broad regression checkpoint for ICINT
 and compiler-host changes. Focused behavior tests remain under `tests/` and
 should be preferred when isolating a particular compiler, interpreter,
-stream, storage, linkage, or language-semantic issue.
+stream, storage, linkage, runtime, or language-semantic issue.
 
 ## Typical workflows
 
@@ -365,7 +365,7 @@ Direct INTCODE execution:
 
 ```text
 tools/run-intcode --results \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     program.intcode \
     +intcode/blibi.int \
     +intcode/iclib.int
@@ -375,7 +375,7 @@ BCPL source compilation and execution:
 
 ```text
 tools/compile-and-run --results \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     program.bcpl
 ```
 
