@@ -88,20 +88,22 @@ $( LET P = COLIST
    IF C = CURRCO RESULTIS FALSE
    IF C!1 \= 0 RESULTIS FALSE
 
-   TEST COLIST = C
-   THEN COLIST := C!5
-   ELSE
-   $( $( IF P = 0 BREAK
-         IF P!5 = C BREAK
-         P := P!5
-      $) REPEAT
-
-      IF P = 0 RESULTIS FALSE
-      P!5 := C!5
+   IF COLIST = C DO
+   $( COLIST := C!5
+      FREEVEC(C)
+      RESULTIS TRUE
    $)
 
-   FREEVEC(C)
-   RESULTIS TRUE
+   UNTIL P = 0 DO
+   $( IF P!5 = C DO
+      $( P!5 := C!5
+         FREEVEC(C)
+         RESULTIS TRUE
+      $)
+      P := P!5
+   $)
+
+   RESULTIS FALSE
 $)
 
 AND COUNTCO() = VALOF
