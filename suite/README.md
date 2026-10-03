@@ -34,33 +34,36 @@ usable through the existing multi-module `compile-and-run` mechanism.
 
 ## Core demonstration programs
 
-The current suite consists of sixteen representative programs:
+The current suite consists of seventeen representative programs:
 
-1. **[queens](queens/)** — solve the eight-queens problem by recursive backtracking.
-2. **[knight](knight/)** — construct a 5x5 knight's tour with Warnsdorff's heuristic.
-3. **[hanoi](hanoi/)** — solve the Towers of Hanoi recursively.
-4. **[sieve](sieve/)** — generate primes with the Sieve of Eratosthenes.
-5. **[gcd](gcd/)** — demonstrate Euclid's algorithm and derive an LCM.
-6. **[quicksort](quicksort/)** — recursively sort a vector; pivot selection uses the
+1. **[richards-factorial](richards-factorial/)** — the compact historical recursive
+   factorial program used during the early bootstrap reconstruction; retained here as
+   a readable BCPL demonstration while the original probe remains under `tests/03`.
+2. **[queens](queens/)** — solve the eight-queens problem by recursive backtracking.
+3. **[knight](knight/)** — construct a 5x5 knight's tour with Warnsdorff's heuristic.
+4. **[hanoi](hanoi/)** — solve the Towers of Hanoi recursively.
+5. **[sieve](sieve/)** — generate primes with the Sieve of Eratosthenes.
+6. **[gcd](gcd/)** — demonstrate Euclid's algorithm and derive an LCM.
+7. **[quicksort](quicksort/)** — recursively sort a vector; pivot selection uses the
    shared `random` module.
-7. **[binary-search](binary-search/)** — search a sorted vector by iterative binary
+8. **[binary-search](binary-search/)** — search a sorted vector by iterative binary
    search.
-8. **[linked-list](linked-list/)** — construct, traverse, and reverse a singly linked
+9. **[linked-list](linked-list/)** — construct, traverse, and reverse a singly linked
    list represented in vector-backed storage.
-9. **[binary-tree](binary-tree/)** — build, traverse, and search a binary search tree
-   represented in vector-backed storage.
-10. **[hash-table](hash-table/)** — demonstrate hashing and chained collision handling
+10. **[binary-tree](binary-tree/)** — build, traverse, and search a binary search tree
+    represented in vector-backed storage.
+11. **[hash-table](hash-table/)** — demonstrate hashing and chained collision handling
     with vector-backed buckets and nodes.
-11. **[word-count](word-count/)** — count characters, words, and lines from a named
+12. **[word-count](word-count/)** — count characters, words, and lines from a named
     MVS input DD.
-12. **[rpn-calculator](rpn-calculator/)** — evaluate a reverse-Polish expression with
+13. **[rpn-calculator](rpn-calculator/)** — evaluate a reverse-Polish expression with
     an explicit stack.
-13. **[expression-parser](expression-parser/)** — recursively parse and evaluate a
+14. **[expression-parser](expression-parser/)** — recursively parse and evaluate a
     small arithmetic expression language.
-14. **[maze](maze/)** — solve a fixed maze with recursive depth-first search.
-15. **[stream-fanout](stream-fanout/)** — open several named MVS streams
+15. **[maze](maze/)** — solve a fixed maze with recursive depth-first search.
+16. **[stream-fanout](stream-fanout/)** — open several named MVS streams
     simultaneously, read them, and close them explicitly.
-16. **[coroutines](coroutines/)** — dynamically create a generator coroutine, exchange
+17. **[coroutines](coroutines/)** — dynamically create a generator coroutine, exchange
     values through `CALLCO` / `COWAIT`, preserve suspended local state, and delete the
     coroutine through the packaged runtime.
 
