@@ -1,0 +1,86 @@
+// NUMERIC-CONVERSION.BCPL
+// Integer/string conversions for packed BCPL strings.
+// Caller supplies writable destination storage for ITOA/ITOHEX.
+// GLOBAL slots 117..120 are reconstruction-local library assignments.
+
+GLOBAL $(
+GETBYTE:85
+PUTBYTE:86
+ATOI:117
+ITOA:118
+HEXTOI:119
+ITOHEX:120
+$)
+
+LET ATOI(S) = VALOF
+$( LET N = GETBYTE(S, 0)
+   AND I = 1
+   AND NEG = FALSE
+   AND VALUE = 0
+
+   IF N=0 RESULTIS 0
+   IF GETBYTE(S, I)='-' DO NEG, I := TRUE, I+1
+   IF I<=N & GETBYTE(S, I)='+' DO I := I+1
+   WHILE I<=N & '0'<=GETBYTE(S, I)<='9' DO
+   $( VALUE := VALUE*10 + GETBYTE(S, I)-'0'
+      I := I+1
+   $)
+   RESULTIS NEG -> -VALUE, VALUE
+$)
+
+AND ITOA(N, S) = VALOF
+$( LET DIGITS = VEC 15
+   AND COUNT = 0
+   AND NEG = N<0
+   AND K = N
+
+   IF NEG DO K := -K
+   $( DIGITS!COUNT := K REM 10
+      COUNT := COUNT+1
+      K := K/10
+   $) REPEATUNTIL K=0
+
+   PUTBYTE(S, 0, COUNT + (NEG -> 1, 0))
+   K := 1
+   IF NEG DO
+   $( PUTBYTE(S, K, '-')
+      K := K+1
+   $)
+   FOR I = COUNT-1 TO 0 BY -1 DO
+   $( PUTBYTE(S, K, DIGITS!I+'0')
+      K := K+1
+   $)
+   RESULTIS S
+$)
+
+AND HEXTOI(S) = VALOF
+$( LET N = GETBYTE(S, 0)
+   AND I = 1
+   AND VALUE = 0
+   WHILE I<=N DO
+   $( LET CH = GETBYTE(S, I)
+      AND D = -1
+      IF '0'<=CH<='9' DO D := CH-'0'
+      IF 'A'<=CH<='F' DO D := CH-'A'+10
+      IF 'a'<=CH<='f' DO D := CH-'a'+10
+      IF D<0 RESULTIS VALUE
+      VALUE := VALUE*16 + D
+      I := I+1
+   $)
+   RESULTIS VALUE
+$)
+
+AND ITOHEX(N, S) = VALOF
+$( LET DIGITS = VEC 7
+   AND COUNT = 0
+   AND TABLE = TABLE '0','1','2','3','4','5','6','7',
+                           '8','9','A','B','C','D','E','F'
+   IF N<0 RESULTIS 0
+   $( DIGITS!COUNT := N REM 16
+      COUNT := COUNT+1
+      N := N/16
+   $) REPEATUNTIL N=0
+   PUTBYTE(S, 0, COUNT)
+   FOR I = 0 TO COUNT-1 DO PUTBYTE(S, I+1, DIGITS!(COUNT-I-1)!TABLE)
+   RESULTIS S
+$)
