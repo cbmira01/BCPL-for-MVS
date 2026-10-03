@@ -28,24 +28,27 @@ MR10 front end / OCODE semantics
 compatibility and bootstrap adaptation
              |
              v
-later IBM System/370 CG implementation
+reconstructed CG370 using later IBM/370 algorithms
              |
              v
-MVS object deck + listing
+IFOX assembler source
              |
              v
-IEWL
+IFOX00 + IEWL
              |
              v
 native load module
 ```
 
+The historical direct object-deck generator remains important evidence and a later compatibility target, but the first reconstruction emits IFOX source so generated instructions, symbols, addressability, and relocation can be inspected directly.
+
 The readiness research is split into:
 
 - [`readiness-decisions.md`](readiness-decisions.md) — evidence, decisions, risks, and implementation order;
-- [`ocode-contract.md`](ocode-contract.md) — OCODE compatibility surface between the working MR10 compiler and the later S/370 generator;
-- [`native-abi.md`](native-abi.md) — the System/370 BCPL register, call-frame, global, and runtime conventions recoverable from surviving source;
-- [`acceptance-plan.md`](acceptance-plan.md) — staged native-code acceptance tests and interpreted/native cross-checking.
+- [`ocode-contract.md`](ocode-contract.md) — OCODE instruction/semantics inventory and compatibility surface;
+- [`native-abi.md`](native-abi.md) — the System/370 BCPL register, call-frame, GLOBAL, startup, and runtime contract;
+- [`acceptance-plan.md`](acceptance-plan.md) — staged native-code acceptance gates and interpreted/native cross-checking;
+- [`acceptance/README.md`](acceptance/README.md) — the actual small BCPL acceptance corpus.
 
 ## Primary historical evidence
 
@@ -65,10 +68,29 @@ richards-bcpltape/sys1/userproc/bcplclg
 
 A crucial absence is also evidence: the tape index identifies `BCPLIB.ASM(BCPLMAIN)` but the corresponding source is not present in the surviving repository. The native runtime boundary therefore still requires reconstruction.
 
-## Current decision
+## Current decisions
 
 The next implementation target is **not** the whole native compiler and **not** BCPLMAIN in full.
 
-The next target is a bootstrap-capable native code-generation path that can consume OCODE produced by the already-working MR10 front end and produce linkable System/370 code while preserving as much of the surviving IBM/370 generator as practical.
+It is a bootstrap-capable CG370 path that:
 
-Implementation should begin only after the contracts in this directory are kept synchronized with what experiments establish.
+1. consumes OCODE produced by the already-working MR10 front end;
+2. adapts the surviving later S/370 instruction-selection and ABI logic;
+3. emits inspectable IFOX assembler;
+4. links against a deliberately minimal reconstructed runtime/startup shim;
+5. advances through the acceptance corpus one contract at a time.
+
+The first acceptance sequence is:
+
+```text
+A0 startup/FINISH
+A1 arithmetic
+A2 locals/branch/loop
+A3 function call/return
+A4 multi-argument call
+A5 GLOBAL vector
+```
+
+Only after these are understood should implementation expand toward separate modules, ordinary libraries, strings/bytes, and eventually compiler self-hosting.
+
+The contracts in this directory are living reconstruction documents. Update them when experiments establish details more precisely than the surviving source alone can.
