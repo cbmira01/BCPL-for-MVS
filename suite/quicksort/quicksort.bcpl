@@ -15,11 +15,16 @@ $( LET T = V!A
 $)
 
 AND QSORT(V, LO, HI) BE
-$( IF LO>=HI RETURN
-   LET P = LO + RANDRANGE(HI-LO+1)
-   LET PIVOT = V!P
-   LET I = LO
-   AND J = HI
+$( LET P = 0
+   AND PIVOT = 0
+   AND I = 0
+   AND J = 0
+
+   IF LO>=HI RETURN
+   P := LO + RANDRANGE(HI-LO+1)
+   PIVOT := V!P
+   I := LO
+   J := HI
 
    $( WHILE V!I<PIVOT DO I := I+1
       WHILE V!J>PIVOT DO J := J-1
