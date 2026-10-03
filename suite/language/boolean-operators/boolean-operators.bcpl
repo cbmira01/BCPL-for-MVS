@@ -1,0 +1,18 @@
+// BOOLEAN-OPERATORS.BCPL
+// Demonstrate BCPL truth values and logical/relational operators.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET A = 7
+   AND B = 12
+
+   WRITEF("A<B       = %N*N", A<B)
+   WRITEF("A=B       = %N*N", A=B)
+   WRITEF("A\=B      = %N*N", A\=B)
+   WRITEF("A<B /\\ B>0 = %N*N", A<B /\ B>0)
+   WRITEF("A>B \\/ B=12 = %N*N", A>B \/ B=12)
+   WRITEF("\(A=B)    = %N*N", \(A=B))
+
+   FINISH
+$)
