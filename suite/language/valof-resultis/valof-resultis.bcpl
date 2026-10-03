@@ -1,0 +1,24 @@
+// VALOF-RESULTIS.BCPL
+// Demonstrate expression-valued blocks using VALOF and RESULTIS.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET ABS(N) = VALOF
+$( IF N<0 RESULTIS -N
+   RESULTIS N
+$)
+
+AND MAX(A, B) = VALOF
+$( IF A>B RESULTIS A
+   RESULTIS B
+$)
+
+AND START() BE
+$( LET X = -37
+   AND Y = 12
+
+   WRITEF("ABS(%N) = %N*N", X, ABS(X))
+   WRITEF("MAX(%N,%N) = %N*N", X, Y, MAX(X,Y))
+   WRITEF("MAX(ABS(%N),%N) = %N*N", X, Y, MAX(ABS(X),Y))
+   FINISH
+$)
