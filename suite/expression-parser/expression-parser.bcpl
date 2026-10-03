@@ -25,7 +25,7 @@ $)
 AND TERM(S, P) = VALOF
 $( LET V = FACTOR(S, P)
    $( LET CH = GETBYTE(S, P!0)
-      UNLESS CH='**' | CH='/' BREAK
+      UNLESS CH='**' \/ CH='/' BREAK
       P!0 := P!0+1
       LET R = FACTOR(S, P)
       V := CH='**' -> V*R, V/R
@@ -36,7 +36,7 @@ $)
 AND EXPR(S, P) = VALOF
 $( LET V = TERM(S, P)
    $( LET CH = GETBYTE(S, P!0)
-      UNLESS CH='+' | CH='-' BREAK
+      UNLESS CH='+' \/ CH='-' BREAK
       P!0 := P!0+1
       LET R = TERM(S, P)
       V := CH='+' -> V+R, V-R
