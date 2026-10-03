@@ -19,6 +19,7 @@ examples assume they are run from the repository root.
 | `dump-report-for-job` | Extract the complete printer report for one JES job. |
 | `run-intcode` | Assemble/link ICINT and run one or more already-existing INTCODE modules. |
 | `compile-and-run` | Compile one or more BCPL source modules through the interpreted compiler pipeline and execute the generated INTCODE. |
+| `run-demo-suite.sh` | Run the complete BCPL demonstration suite through the current ICINT/compiler pipeline. |
 
 ## Starting and stopping MVS
 
@@ -309,6 +310,46 @@ Current compiler options include:
 
 Use `tools/compile-and-run --help` for the current interface.
 
+## `run-demo-suite.sh`
+
+`run-demo-suite.sh` is the convenient regression driver for the example
+programs under `suite/`. It runs each demo through `compile-and-run` using the
+current ICINT V17 interpreter and reports each workload as `PASS` or `FAIL`.
+
+Run the complete suite with:
+
+```text
+tools/run-demo-suite.sh
+```
+
+The script determines its own location, changes to the repository root, and
+therefore does not depend on the caller's current working directory.
+
+The current suite contains 15 demonstrations covering recursion, arithmetic,
+iteration, vectors, sorting and searching, linked structures, parsing,
+character and string handling, and stream I/O. A normal successful run ends
+with:
+
+```text
+================================================================
+SUITE COMPLETE
+================================================================
+All 15 demos passed.
+```
+
+A `PASS` means the BCPL source compiled through the interpreted compiler
+pipeline, CGI generated INTCODE, the resulting program executed under ICINT,
+and the execution completed with code zero. The demonstrations are also
+intended to have human-readable results so semantic errors remain visible in
+the printed output; the suite runner itself should not be treated as a
+substitute for checking or adding explicit expected-output regressions when a
+specific language or runtime behavior matters.
+
+The suite currently provides a useful broad regression checkpoint for ICINT
+and compiler-host changes. Focused behavior tests remain under `tests/` and
+should be preferred when isolating a particular compiler, interpreter,
+stream, storage, linkage, or language-semantic issue.
+
 ## Typical workflows
 
 Assembler development:
@@ -336,6 +377,12 @@ BCPL source compilation and execution:
 tools/compile-and-run --results \
     asm/icintv15.asm \
     program.bcpl
+```
+
+Complete demo regression suite:
+
+```text
+tools/run-demo-suite.sh
 ```
 
 The lower-level tools remain useful whenever generated JCL or complete MVS
