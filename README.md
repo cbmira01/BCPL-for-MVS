@@ -2,22 +2,25 @@
 
 This project is a reconstruction of a BCPL development environment for IBM MVS 3.8, using the historical BCPL transport tape associated with Martin Richards as its primary source. Development and testing use Hercules and the MVS 3.8J Turnkey/TK5 environment.
 
-The repository contains historical source material, reconstructed System/370 code, compiler and runtime components, tests, JCL, and host-side tools. The long-term deliverable is a native BCPL system that can be installed and used on an existing MVS 3.8 system, ultimately packaged in a form suitable for archival distribution such as virtual tape.
+The repository contains historical source material, reconstructed System/370 code, compiler and runtime components, tests, JCL, host-side tools, and a demonstration suite. The long-term deliverable is a native BCPL system that can be installed and used on an existing MVS 3.8 system, ultimately packaged in a form suitable for archival distribution such as virtual tape.
 
 ## Current status
 
 The interpreted bootstrap path is working.
 
-The reconstructed System/370 `ICINT` interpreter can execute the preserved BCPL compiler and runtime components. Using `asm/icintv15.asm` and the host-side `tools/compile-and-run` driver, the project has demonstrated:
+The current validated interpreter baseline is `asm/icintv17.asm`. Using ICINT V17 and the host-side `tools/compile-and-run` driver, the project has demonstrated:
 
 - BCPL source compiled by the preserved `SYNI` and `TRNI` phases into OCODE;
 - OCODE translated by preserved `CGI` into INTCODE;
 - generated INTCODE executed under ICINT with `BLIBI` and `ICLIB`;
 - saved OCODE and INTCODE intermediate files;
-- separate compilation of multiple BCPL source modules; and
-- cross-module linkage through the BCPL `GLOBAL` vector.
+- separate compilation of multiple BCPL source modules;
+- cross-module linkage through the BCPL `GLOBAL` vector;
+- dynamic named MVS stream handling;
+- a reconstructed portable `GETVEC` / `FREEVEC` allocator over BCPL-addressable storage; and
+- a reconstructed coroutine runtime with `CREATECO`, `DELETECO`, `CALLCO`, `COWAIT`, and `RESUMECO`, using the machine-dependent `CHANGECO` primitive supplied by the interpreted runtime.
 
-The Richards factorial example is used as a compact regression workload for both single-module and separate-module compilation. See [`tests/README.md`](tests/README.md).
+The Richards factorial example remains a compact compiler/interpreter regression workload. More focused reconstruction tests live under [`tests/`](tests/), and readable BCPL examples live under [`suite/`](suite/), including a coroutine generator demonstration. See [`tests/README.md`](tests/README.md) and [`suite/README.md`](suite/README.md).
 
 The native compiler and much of its supporting source survive on the transport tape. A major missing native component is `BCPLMAIN`, which supplied runtime and MVS services. Rather than reconstructing that contract in isolation, the project expects to recover more of it experimentally as native code generation and MVS-resident workloads are developed.
 
@@ -25,12 +28,12 @@ The native compiler and much of its supporting source survive on the transport t
 
 Current priorities are:
 
-1. strengthen host-to-MVS data handling, including convenient named-DD input for BCPL programs and compiler phases;
-2. exercise ordinary MVS data sets and DASD-resident workflows rather than relying only on in-stream temporary data;
+1. consolidate the reconstructed portable runtime and settle its final global-vector interface;
+2. continue exercising ordinary MVS data sets and DASD-resident workflows;
 3. reconstruct a System/370 BCPL code generator capable of translating compiler OCODE into native assembler;
 4. use that code generator to clarify the runtime services and calling conventions required from the eventual `BCPLMAIN` replacement;
 5. bootstrap a native compiler that can compile and maintain itself on MVS; and
-6. build a small suite of BCPL example programs that exercise the language and reconstructed runtime in practical ways.
+6. keep the regression and demonstration suites aligned with the capabilities established by the reconstruction.
 
 A later milestone will be an annotated "compile the compiler and compare the results" job stream that rebuilds the native compiler from BCPL sources and makes the bootstrap reproducible and inspectable.
 
@@ -39,7 +42,9 @@ A later milestone will be an annotated "compile the compiler and compare the res
 - [`richards-bcpltape/README.md`](richards-bcpltape/README.md) — introduction to the historical BCPL transport-tape material and its provenance
 - [`asm/README.md`](asm/README.md) — reconstructed System/370 assembler sources, especially ICINT
 - [`intcode/README.md`](intcode/README.md) — preserved INTCODE compiler and runtime components
-- [`tests/README.md`](tests/README.md) — interpreter, compiler-pipeline, and separate-module regression tests
+- [`library/README.md`](library/README.md) — reconstructed portable BCPL runtime modules
+- [`tests/README.md`](tests/README.md) — interpreter, compiler-pipeline, runtime, and separate-module regression tests
+- [`suite/README.md`](suite/README.md) — readable BCPL demonstration programs
 - [`tools/README.md`](tools/README.md) — host-side build, submission, job-reporting, INTCODE, and BCPL compile/run tools
 - [`jcl/README.md`](jcl/README.md) — retained JCL examples and historical development decks
 - [`docker/README.md`](docker/README.md) — Hercules/TK5 development environment
