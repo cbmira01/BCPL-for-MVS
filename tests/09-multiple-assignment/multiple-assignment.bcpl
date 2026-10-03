@@ -1,5 +1,5 @@
 // MULTIPLE-ASSIGNMENT.BCPL
-// Verify that right-hand sides are evaluated before left-hand-side stores.
+// Verify the historical MR10 translator's sequential multiple-assignment behavior.
 
 GLOBAL $( START:1; WRITEF:76 $)
 
