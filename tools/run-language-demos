@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
+set -u
+set -o pipefail
+
+COMPILE="tools/compile-and-run"
+ICINT="asm/icintv17.asm"
+SUITE="suite/language"
+
+FAILURES=0
+TOTAL=0
+
+run_demo()
+{
+    name="$1"
+    shift
+    TOTAL=$((TOTAL + 1))
+
+    echo
+    echo "================================================================"
+    echo "LANGUAGE DEMO: $name"
+    echo "================================================================"
+
+    if "$@"
+    then
+        echo
+        echo "PASS: $name"
+    else
+        rc=$?
+        echo
+        echo "FAIL: $name (rc=$rc)"
+        FAILURES=$((FAILURES + 1))
+    fi
+}
+
+run_demo "declarations" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/declarations/declarations.bcpl"
+
+run_demo "valof-resultis" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/valof-resultis/valof-resultis.bcpl"
+
+run_demo "switchon" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/switchon/switchon.bcpl"
+
+run_demo "table-vector" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/table-vector/table-vector.bcpl"
+
+echo
+echo "================================================================"
+echo "LANGUAGE SUITE COMPLETE"
+echo "================================================================"
+
+if [ "$FAILURES" -eq 0 ]
+then
+    echo "All $TOTAL language demos passed."
+    exit 0
+else
+    echo "$FAILURES of $TOTAL language demo(s) failed."
+    exit 1
+fi
