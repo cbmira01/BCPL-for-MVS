@@ -1,0 +1,47 @@
+// LINE-IO.BCPL
+// Line-oriented helpers built on the selected BCPL character streams.
+// READLINE stores at most MAX characters in S and consumes through newline.
+// It returns -1 on immediate end-of-stream; otherwise it returns the stored
+// character count.  WRITELINE writes a packed string followed by newline.
+// GLOBAL slots 126..127 are reconstruction-local library assignments.
+
+GLOBAL $(
+RDCH:13
+WRCH:14
+GETBYTE:85
+PUTBYTE:86
+READLINE:126
+WRITELINE:127
+$)
+
+MANIFEST $( ENDSTREAMCH=-1 $)
+
+LET READLINE(S, MAX) = VALOF
+$( LET N = 0
+   AND SAW = FALSE
+
+   IF MAX<0 DO MAX := 0
+   PUTBYTE(S, 0, 0)
+
+   $( LET CH = RDCH()
+      IF CH=ENDSTREAMCH DO
+      $( IF \SAW RESULTIS -1
+         PUTBYTE(S, 0, N)
+         RESULTIS N
+      $)
+      SAW := TRUE
+      IF CH='*N' DO
+      $( PUTBYTE(S, 0, N)
+         RESULTIS N
+      $)
+      IF N<MAX DO
+      $( N := N+1
+         PUTBYTE(S, N, CH)
+      $)
+   $) REPEAT
+$)
+
+AND WRITELINE(S) BE
+$( FOR I = 1 TO GETBYTE(S, 0) DO WRCH(GETBYTE(S, I))
+   WRCH('*N')
+$)
