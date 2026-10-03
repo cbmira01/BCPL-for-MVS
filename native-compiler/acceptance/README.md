@@ -8,22 +8,25 @@ They are deliberately smaller than the normal regression suite. Their job is to 
 
 The early cases avoid depending on `WRITEF`, streams, or the full historical runtime.
 
-They reserve:
+They reserve the top of the current interpreted GLOBAL capacity:
 
 ```text
-NATIVE_RESULT:150
+NATIVE_COUNTER:399
+NATIVE_RESULT:400
 ```
 
-as a **test-only result mailbox**.
+as **test-only globals**.
 
-A program writes its semantic result to global 150 before `FINISH`. The reconstructed native startup/test shim can inspect that slot after program termination or through the `FINISH` path.
+The general-purpose project library range is 96..159, so these acceptance globals deliberately sit outside that range. They are also within ICINT V17's currently established 0..400 GLOBAL capacity, allowing the same source to be compiled/executed by the interpreted reference path when useful.
 
-This global is not proposed as part of the production BCPL ABI. It exists only for the native acceptance harness and should disappear once ordinary native output/runtime services are established.
+A program writes its semantic result to global 400 before `FINISH`. Case A5 also uses global 399 to verify independent GLOBAL load/store state.
 
-Expected files use the notation:
+These globals are not proposed as part of the production BCPL ABI. They exist only for the native acceptance harness and should disappear once ordinary native output/runtime services are established.
+
+Expected files use notation such as:
 
 ```text
-GLOBAL 150 = value
+GLOBAL 400 = value
 ```
 
 A0 is the exception: it tests startup and termination only.
