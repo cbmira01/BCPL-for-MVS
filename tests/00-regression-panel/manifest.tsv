@@ -1,10 +1,10 @@
 # name	category	source	extras	compile_args	expected	expected_code
-scalar-vector	data-movement	data-movement/scalar-vector.bcpl			data-movement/scalar-vector.expected	0
-bytes	data-movement	data-movement/bytes.bcpl			data-movement/bytes.expected	0
-integer-arithmetic	calculation	calculation/integer-arithmetic.bcpl			calculation/integer-arithmetic.expected	0
-branches-loops	control	control/branches-loops.bcpl			control/branches-loops.expected	0
-nested-recursion	calls	calls/nested-recursion.bcpl			calls/nested-recursion.expected	0
-separate-module	modules	modules/main.bcpl	+modules/helper.bcpl		modules/separate-module.expected	0
-basic-library	standard-library	standard-library/basic-library.bcpl			standard-library/basic-library.expected	0
-getvec-reuse	storage	storage/getvec-reuse.bcpl	+library/getvec-freevec.bcpl		storage/getvec-reuse.expected	0
-basic-coroutine	coroutines	coroutines/basic-coroutine.bcpl	+library/getvec-freevec.bcpl +library/coroutines.bcpl		coroutines/basic-coroutine.expected	0
+scalar-vector	data-movement	tests/00-regression-panel/data-movement/scalar-vector.bcpl			tests/00-regression-panel/data-movement/scalar-vector.expected	0
+bytes	data-movement	tests/00-regression-panel/data-movement/bytes.bcpl			tests/00-regression-panel/data-movement/bytes.expected	0
+integer-arithmetic	calculation	tests/00-regression-panel/calculation/integer-arithmetic.bcpl			tests/00-regression-panel/calculation/integer-arithmetic.expected	0
+branches-loops	control	tests/00-regression-panel/control/branches-loops.bcpl			tests/00-regression-panel/control/branches-loops.expected	0
+nested-recursion	calls	tests/00-regression-panel/calls/nested-recursion.bcpl			tests/00-regression-panel/calls/nested-recursion.expected	0
+separate-module	modules	tests/00-regression-panel/modules/main.bcpl	+tests/00-regression-panel/modules/helper.bcpl		tests/00-regression-panel/modules/separate-module.expected	0
+basic-library	standard-library	tests/00-regression-panel/standard-library/basic-library.bcpl			tests/00-regression-panel/standard-library/basic-library.expected	0
+getvec-reuse	storage	tests/00-regression-panel/storage/getvec-reuse.bcpl	+library/getvec-freevec.bcpl		tests/00-regression-panel/storage/getvec-reuse.expected	0
+basic-coroutine	coroutines	tests/00-regression-panel/coroutines/basic-coroutine.bcpl	+library/getvec-freevec.bcpl +library/coroutines.bcpl		tests/00-regression-panel/coroutines/basic-coroutine.expected	0
