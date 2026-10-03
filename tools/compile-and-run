@@ -7,6 +7,7 @@ MVS execution policy to every RUNMOD step:
   * TIME=(,30) by default.
   * SYSUDUMP is discarded by default.
   * --dump restores SYSUDUMP SYSOUT=* for explicit dump collection.
+  * Both legacy and combined ICINT startup banners are recognized.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 from pathlib import Path
+import re
 import sys
 
 CORE = Path(__file__).with_name("compile-and-run-core.py")
@@ -74,8 +76,65 @@ def main() -> int:
         text = text.replace(exec_prefix, policy + exec_prefix, 1)
         return text
 
+    def icint_starts(lines):
+        return [
+            index
+            for index, line in enumerate(lines)
+            if line.strip().startswith("INTCODE SYSTEM ENTERED")
+        ]
+
+    def interpreted_execution_codes(job_report: str):
+        lines = [line.replace("\f", "") for line in job_report.splitlines()]
+        starts = icint_starts(lines)
+        codes = []
+        code_pattern = re.compile(
+            r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)"
+        )
+        for position, start in enumerate(starts):
+            stop = starts[position + 1] if position + 1 < len(starts) else len(lines)
+            code = None
+            for line in lines[start:stop]:
+                match = code_pattern.search(line)
+                if match is not None:
+                    code = int(match.group(1))
+                    break
+            codes.append(code)
+        return codes
+
+    def extract_final_results(job_report: str, module_count: int) -> str:
+        lines = [line.replace("\f", "") for line in job_report.splitlines()]
+        starts = icint_starts(lines)
+        expected = module_count * 2 + 1
+        if len(starts) < expected:
+            raise RuntimeError(
+                "compiler pipeline did not reach final RUN step "
+                f"(found {len(starts)} ICINT execution(s), expected {expected})"
+            )
+
+        start = starts[-1]
+        execution_end = None
+        mapstore_end = None
+        for index in range(start, len(lines)):
+            stripped = lines[index].strip()
+            if stripped.startswith("EXECUTION CYCLES ="):
+                execution_end = index
+            if stripped == "*** END MAPSTORE ***":
+                mapstore_end = index
+                break
+
+        if mapstore_end is not None:
+            end = mapstore_end
+        elif execution_end is not None:
+            end = execution_end
+        else:
+            raise RuntimeError("final RUN output has no execution-completion record")
+
+        return "\n".join(lines[start:end + 1]).strip("\r\n") + "\n"
+
     core.make_parser = make_parser
     core.runtime_step = runtime_step
+    core.interpreted_execution_codes = interpreted_execution_codes
+    core.extract_final_results = extract_final_results
     return core.main()
 
 
