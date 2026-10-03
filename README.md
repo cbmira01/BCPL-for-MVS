@@ -4,6 +4,8 @@ This project is a reconstruction of a BCPL development environment for IBM MVS 3
 
 The repository contains historical source material, reconstructed System/370 code, compiler and runtime components, tests, JCL, host-side tools, and a demonstration suite. The long-term deliverable is a native BCPL system that can be installed and used on an existing MVS 3.8 system, ultimately packaged in a form suitable for archival distribution such as virtual tape.
 
+For a contributor-oriented overview of where things live, how development is organized, why the project runs a real MVS instance, and where to find deeper documentation, start with [`docs/project-map.md`](docs/project-map.md).
+
 ## Current status
 
 The interpreted bootstrap path is working.
@@ -39,6 +41,7 @@ A later milestone will be an annotated "compile the compiler and compare the res
 
 ## Repository map
 
+- [`docs/project-map.md`](docs/project-map.md) — high-level project map, repository layout, development conventions, MVS/Hercules workflow, and links to detailed component documentation
 - [`richards-bcpltape/README.md`](richards-bcpltape/README.md) — introduction to the historical BCPL transport-tape material and its provenance
 - [`asm/README.md`](asm/README.md) — reconstructed System/370 assembler sources, especially ICINT
 - [`intcode/README.md`](intcode/README.md) — preserved INTCODE compiler and runtime components
