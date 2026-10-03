@@ -1,0 +1,21 @@
+// Regression: random, integer, and character utility modules.
+GLOBAL $(
+START:1
+WRITEF:76
+SRAND:96; RAND:97; RANDRANGE:98
+ABS:101; MIN:102; MAX:103; SIGN:104; GCD:105; IPOW:106
+ISDIGIT:121; ISALPHA:122; ISSPACE:123; TOUPPER:124; TOLOWER:125
+$)
+
+LET B(N) = N -> 1, 0
+
+AND START() BE
+$( SRAND(1)
+   WRITEF("RP: RAND %N %N %N*N", RAND(), RAND(), RANDRANGE(100))
+   WRITEF("RP: INT %N %N %N %N %N %N*N",
+          ABS(-17), MIN(9,4), MAX(9,4), SIGN(-22), GCD(1071,462), IPOW(3,5))
+   WRITEF("RP: CHAR %N %N %N %C %C*N",
+          B(ISDIGIT('7')), B(ISALPHA('q')), B(ISSPACE('*T')),
+          TOUPPER('b'), TOLOWER('Q'))
+   FINISH
+$)
