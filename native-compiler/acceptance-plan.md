@@ -6,7 +6,7 @@ This document defines the first native-code acceptance corpus for the reconstruc
 
 The objective is not to demonstrate the whole language at once. The objective is to expose one compiler/runtime contract at a time and compare native behavior with the already-working interpreted path.
 
-Each source program should be tiny, stable, and have exact expected output.
+Each source program is intentionally tiny and stable.
 
 The preferred validation pattern is:
 
@@ -17,108 +17,142 @@ same BCPL source
      |
      +--> current MR10 compiler --> saved OCODE --> CG370 --> IFOX --> IEWL --> native
 
-compare semantic output
+compare semantic result
 ```
 
-The interpreted path is the language-semantics reference. Native assembler listings and link maps are retained as target-code evidence.
+For the earliest native cases, semantic results are written into test-only GLOBAL mailbox slots rather than through formatted I/O. This prevents `WRITEF` and stream reconstruction from becoming prerequisites for validating arithmetic, control flow, calls, and GLOBAL-vector semantics.
+
+The interpreted path remains the language-semantics reference. Native assembler listings and link maps are retained as target-code evidence.
 
 ---
 
 ## Corpus layout
 
-Use:
+The actual sources live in:
 
 ```text
 native-compiler/acceptance/
 ```
 
-Each case should eventually contain:
+Each case contains:
 
 ```text
 <name>.bcpl
 <name>.expected
 <name>.ocode          saved/canonical OCODE once captured
-README.md             only when a case needs special explanation
 ```
+
+The acceptance-directory README documents the test-only GLOBAL convention.
 
 Do not identify retained evidence by JES job number.
 
 ---
 
+## Test-only result globals
+
+The early corpus reserves:
+
+```text
+NATIVE_COUNTER:399
+NATIVE_RESULT:400
+```
+
+These are outside the project general-purpose library range 96..159 and remain within ICINT V17's current 0..400 GLOBAL capacity.
+
+They are **not production ABI assignments**.
+
+The native test shim may inspect these slots after `FINISH` or as part of its termination path.
+
+Expected files use notation such as:
+
+```text
+GLOBAL 400 = 42
+```
+
+---
+
 ## A0 — minimal startup and finish
 
-### Source intent
+Source:
 
-A `START` routine that performs no calculation and terminates normally.
-
-Conceptually:
-
-```bcpl
-GLOBAL $( START:1 $)
-
-LET START() BE FINISH
+```text
+acceptance/a0-finish.bcpl
 ```
 
 ### What it proves
 
-- generated section can be assembled by IFOX;
-- object can be link-edited by IEWL;
-- MVS startup shim can establish enough BCPL machine state to enter generated code;
-- global slot 1 can resolve `START`;
-- native termination works;
+- generated section assembles under IFOX;
+- object link-edits under IEWL;
+- MVS startup shim establishes enough BCPL state to enter generated code;
+- global slot 1 resolves `START`;
+- native `FINISH`/termination works;
 - no ordinary BCPL function call is required yet.
 
-### Expected output
+### Expected result
 
-No semantic output is required. Native completion must be normal and deterministic.
+```text
+NORMAL COMPLETION
+```
 
-This is the first test because it separates startup/linkage from expression and I/O semantics.
+This separates startup/linkage from expression and I/O semantics.
 
 ---
 
 ## A1 — constant and integer arithmetic
 
-### Source intent
-
-Compute a fixed expression from literals using only integer arithmetic, then report the result through the smallest available result/output mechanism.
-
-Suggested semantic result:
+Source:
 
 ```text
-RP: ARITH 42
+acceptance/a1-arithmetic.bcpl
 ```
 
-Exercise at least:
+Computes:
+
+```text
+(7+5)*4-6 = 42
+```
+
+Expected result:
+
+```text
+GLOBAL 400 = 42
+```
+
+Likely OCODE coverage includes:
 
 ```text
 LN
 PLUS
-MINUS
 MULT
+MINUS
+SG
+FINISH
 ```
-
-Division/remainder can be added after the basic accumulator/register path is working.
 
 ### What it proves
 
 - literal loading;
-- evaluation stack discipline;
+- evaluation-stack discipline;
 - arithmetic instruction selection;
 - result preservation;
-- one minimal runtime/global call if output is used.
+- first generated GLOBAL store.
 
 ---
 
 ## A2 — local variables, comparison, branch, loop
 
-### Source intent
-
-Use local variables and a loop to compute a simple sum, for example `1+2+...+10`.
-
-Expected semantic result:
+Source:
 
 ```text
-RP: LOOP 55
+acceptance/a2-loop.bcpl
+```
+
+Computes the sum `1+2+...+10`.
+
+Expected result:
+
+```text
+GLOBAL 400 = 55
 ```
 
 Likely OCODE surface includes:
@@ -149,25 +183,23 @@ STACK/STORE as generated
 
 ## A3 — BCPL function call and return value
 
-### Source intent
-
-Define a small function such as:
-
-```bcpl
-LET ADD3(X) = X+3
-```
-
-and call it from `START`.
-
-Expected semantic result:
+Source:
 
 ```text
-RP: CALL 10
+acceptance/a3-function-call.bcpl
+```
+
+Defines `ADD3(X)` and calls it with 7.
+
+Expected result:
+
+```text
+GLOBAL 400 = 10
 ```
 
 ### What it proves
 
-This is the decisive ABI test.
+This is the decisive first ABI test.
 
 It must exercise and verify:
 
@@ -181,54 +213,62 @@ R11  native BCPL return-support convention
 ENTRY / SAVE / FNAP / FNRN
 ```
 
-The first successful run should be accompanied by a short register-by-register trace or annotated listing in the acceptance evidence.
-
-Do not proceed to complicated native runtime work until this contract is understood.
+The first successful run should retain an annotated listing/register trace around caller and callee.
 
 ---
 
-## A4 — multiple arguments and routine call
+## A4 — five arguments
 
-### Source intent
-
-Exercise two to four arguments and both function and routine application.
-
-Example semantic output:
+Source:
 
 ```text
-RP: ARGS 10 20 30 40 100
+acceptance/a4-arguments.bcpl
+```
+
+Calls `SUM5(10,20,30,40,50)`.
+
+Expected result:
+
+```text
+GLOBAL 400 = 150
 ```
 
 ### What it proves
 
-- R7-R10 argument convention;
+- R7-R10 argument convention for the first four arguments;
+- fifth argument through workspace;
 - argument-to-workspace save performed by `SAVE`;
-- `FNAP` versus `RTAP` behavior;
 - workspace offset `K` handling;
 - caller/callee stack integrity.
 
-A later variant should exercise a fifth argument so that at least one argument travels through workspace rather than only through argument registers.
+A separate RTAP-specific case can be added after this function-call path is established.
 
 ---
 
-## A5 — global vector load/store
+## A5 — GLOBAL vector load/store
 
-### Source intent
-
-Use a user global variable or global function so that generated code must load/store through R12.
-
-Expected output should demonstrate both initial resolution and mutation, for example:
+Source:
 
 ```text
-RP: GLOBAL 17 18
+acceptance/a5-global.bcpl
+```
+
+Uses two GLOBAL slots and mutates one of them.
+
+Expected result:
+
+```text
+GLOBAL 399 = 18
+GLOBAL 400 = 1718
 ```
 
 ### What it proves
 
 - R12 global-vector base;
-- `LG`, `SG`, and `LLG` as actually emitted;
+- `LG`, `SG`, and possibly `LLG` as actually emitted;
 - generated GLOBAL definition table;
 - startup/runtime global initialization;
+- independent GLOBAL slot state;
 - correct distinction between BCPL GLOBAL linkage and MVS external symbols.
 
 This is a prerequisite for useful library calls and separate modules.
@@ -237,41 +277,27 @@ This is a prerequisite for useful library calls and separate modules.
 
 ## A6 — strings and bytes
 
-### Source intent
+Not yet instantiated as source.
 
-Use one packed BCPL string and inspect a few bytes.
+It should use one packed BCPL string and inspect a few bytes only after saved OCODE confirms whether current MR10 output uses global runtime calls or dedicated byte-oriented OCODE.
 
-Expected output could be:
-
-```text
-RP: STRING 4 B C P L
-```
-
-### What it proves
+### What it should prove
 
 - `LSTR` and generated static string data;
 - label/address constants;
 - BCPL packed string representation;
 - byte-address calculation;
-- either native byte operators or the runtime `GETBYTE` path, depending on what MR10 OCODE actually emits.
-
-This test should be implemented only after saved OCODE confirms the relevant MR10 form.
+- native byte behavior matching ICINT.
 
 ---
 
 ## A7 — separate modules through GLOBAL
 
-### Source intent
+Not yet instantiated as source.
 
-Compile a main module and a helper module separately, with the helper exported through a GLOBAL slot.
+Compile a main module and helper module separately, with the helper exported through a GLOBAL slot.
 
-Expected output:
-
-```text
-RP: MODULE 42
-```
-
-### What it proves
+### What it should prove
 
 - more than one generated native section/object;
 - GLOBAL initialization from multiple modules;
@@ -279,22 +305,18 @@ RP: MODULE 42
 - cross-module code addresses;
 - consistent ABI across separately generated modules.
 
-This is the first strong indication that the native compiler is producing reusable BCPL objects rather than one-off standalone programs.
-
 ---
 
 ## A8 — minimal portable library call
 
-After A7 is established, compile one already-tested portable library module alongside the main program.
+Not yet instantiated as source.
 
 A good early candidate is `library/integer-utils.bcpl`, because it does not require storage allocation, streams, coroutines, or host-dependent machinery.
 
-Expected output should exercise one or two functions such as `ABS` and `GCD`.
+### What it should prove
 
-### What it proves
-
-- ordinary project library source can be compiled by the native path;
-- project-local GLOBAL allocation convention survives native compilation;
+- ordinary project library source compiles through the native path;
+- project-local GLOBAL allocation survives native compilation;
 - generated code is compatible across nontrivial BCPL modules.
 
 ---
@@ -328,12 +350,12 @@ source path
 exact command used to save OCODE
 OCODE file
 set of OCODE operations observed
-expected semantic output
+expected mailbox/result state
 native assembler generated
-native output
+native result
 ```
 
-The OCODE inventory in `ocode-contract.md` should be updated from these observations.
+Update the coverage table in `ocode-contract.md` from observed OCODE rather than manifest membership alone.
 
 ---
 
@@ -347,7 +369,7 @@ A native acceptance case passes only when all applicable levels succeed:
 4. Generated IFOX assembler assembles without errors.
 5. IEWL links the generated object with the required runtime shim.
 6. The native MVS program completes normally.
-7. Semantic output matches the interpreted reference exactly, ignoring only deliberately documented presentation differences.
+7. Test GLOBAL state or later semantic output matches the expected result exactly.
 
 Warnings and nonzero assembler/link-editor condition codes must be explained rather than casually accepted.
 
@@ -360,13 +382,11 @@ A0 startup/finish
 A1 integer expression
 A2 locals/branch/loop
 A3 function call/return
-A4 arguments/routine call
+A4 five arguments
 A5 globals
 A7 separate modules
 A8 simple library
 A6 strings/bytes
 ```
 
-A6 is listed later than its number because byte/string behavior is less fundamental than establishing calls and GLOBAL linkage.
-
-After these pass, the native backend is ready to begin compiling larger existing regression and language-suite programs.
+After A0-A5 pass, the fundamental native ABI and integer compiler path should be stable enough to begin broader language-suite coverage.
