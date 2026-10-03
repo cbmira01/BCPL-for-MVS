@@ -100,7 +100,7 @@ run_demo "quicksort" \
     "$COMPILE" --results \
     "$ICINT" \
     "$SUITE/quicksort/quicksort.bcpl" \
-    +"$SUITE/random/random.bcpl"
+    +library/random.bcpl
 
 run_demo "binary-search" \
     "$COMPILE" --results \
