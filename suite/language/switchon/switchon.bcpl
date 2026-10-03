@@ -1,0 +1,33 @@
+// SWITCHON.BCPL
+// Demonstrate SWITCHON, CASE, DEFAULT, and ENDCASE.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET CLASSIFY(N) BE
+$( SWITCHON N INTO
+   $( CASE 0:
+         WRITEF("%N IS ZERO*N", N)
+         ENDCASE
+
+      CASE 1:
+      CASE 2:
+      CASE 3:
+         WRITEF("%N IS SMALL*N", N)
+         ENDCASE
+
+      CASE 10:
+         WRITEF("%N IS TEN*N", N)
+         ENDCASE
+
+      DEFAULT:
+         WRITEF("%N USES DEFAULT*N", N)
+   $)
+$)
+
+AND START() BE
+$( CLASSIFY(0)
+   CLASSIFY(2)
+   CLASSIFY(10)
+   CLASSIFY(27)
+   FINISH
+$)
