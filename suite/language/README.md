@@ -9,6 +9,14 @@ The first group covers constructs already well exercised by the hosted MR10 comp
 - `switchon` — `SWITCHON`, `CASE`, `DEFAULT`, and `ENDCASE`;
 - `table-vector` — `TABLE` expressions, vectors, `!` indexing, and simple copying.
 
+Run the complete language demonstration class with:
+
+```text
+tools/run-language-demos
+```
+
+The runner currently executes all four validated examples above using ICINT V17 and reports each as `PASS` or `FAIL`.
+
 Run an individual example from the repository root with:
 
 ```text
