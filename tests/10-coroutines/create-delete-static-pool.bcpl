@@ -8,8 +8,16 @@
 //     P!2 = FN
 //     P!3 = SIZE
 //     P!4 = C
-// so the initial coroutine frame uses words 0..4.  Word 5 is available
-// here as the COLIST link.
+//
+// Keep the coroutine descriptor separate from that synthetic MR10 frame:
+//     C!0 = saved P
+//     C!1 = parent
+//     C!2 = COLIST link
+//     P   = C+3
+//
+// Thus the synthetic frame begins at C+3, with FN/SIZE/C at C!5/C!6/C!7.
+// Nested calls may then use words above the frame without overwriting the
+// coroutine descriptor.
 
 GLOBAL $(
 START:1
@@ -44,7 +52,7 @@ $( LET PARENT = CURRCO!1
 $)
 
 AND ALLOCVEC(N) = VALOF
-$( IF N > 106 RESULTIS 0
+$( IF N > 109 RESULTIS 0
 
    IF USED1 = 0 DO
    $( USED1 := 1
@@ -65,15 +73,23 @@ $( IF V = POOL1 DO USED1 := 0
 $)
 
 AND CREATECO(FN, SIZE) = VALOF
-$( LET C = ALLOCVEC(SIZE+6)
+$( LET C = ALLOCVEC(SIZE+9)
+   AND P = 0
+
    IF C = 0 RESULTIS 0
 
-   C!0 := C
+   P := C+3
+
+   C!0 := P
    C!1 := CURRCO
-   C!2 := FN
-   C!3 := SIZE
-   C!4 := C
-   C!5 := COLIST
+   C!2 := COLIST
+
+   P!0 := 0
+   P!1 := 0
+   P!2 := FN
+   P!3 := SIZE
+   P!4 := C
+
    COLIST := C
 
    CHANGECO(0, C)
@@ -89,18 +105,18 @@ $( LET P = COLIST
    IF C!1 \= 0 RESULTIS FALSE
 
    IF COLIST = C DO
-   $( COLIST := C!5
+   $( COLIST := C!2
       FREEVEC(C)
       RESULTIS TRUE
    $)
 
    UNTIL P = 0 DO
-   $( IF P!5 = C DO
-      $( P!5 := C!5
+   $( IF P!2 = C DO
+      $( P!2 := C!2
          FREEVEC(C)
          RESULTIS TRUE
       $)
-      P := P!5
+      P := P!2
    $)
 
    RESULTIS FALSE
@@ -112,7 +128,7 @@ $( LET N = 0
 
    UNTIL C = 0 DO
    $( N := N+1
-      C := C!5
+      C := C!2
    $)
 
    RESULTIS N
@@ -121,9 +137,9 @@ $)
 AND WORKER(A) = A+1
 
 AND START() BE
-$( LET ROOT = VEC 5
-   AND ASTORE = VEC 106
-   AND BSTORE = VEC 106
+$( LET ROOT = VEC 2
+   AND ASTORE = VEC 109
+   AND BSTORE = VEC 109
    AND ACO = 0
    AND BCO = 0
    AND CCO = 0
@@ -137,7 +153,7 @@ $( LET ROOT = VEC 5
    CURRCO := ROOT
    ROOT!0 := 0
    ROOT!1 := -1
-   ROOT!5 := 0
+   ROOT!2 := 0
    COLIST := ROOT
 
    ACO := CREATECO(WORKER, 100)
