@@ -6,7 +6,7 @@ GLOBAL $( START:1; GETBYTE:85; WRITEF:76 $)
 LET DIGIT(CH) = '0'<=CH & CH<='9'
 
 AND START() BE
-$( LET EXPR = "12 3 4 + * 6 -"
+$( LET EXPR = "12 3 4 + ** 6 -"
    LET STACK = VEC 19
    LET SP = 0
    LET P = 1
