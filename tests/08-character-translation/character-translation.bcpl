@@ -1,0 +1,44 @@
+// CHARACTER-TRANSLATION.BCPL
+// Exercise historically valid BCPL spellings that contain backslash,
+// then report character codes returned by RDCH from a named MVS input DD.
+
+GLOBAL $(
+START:1
+SELECTINPUT:11
+RDCH:13
+FINDINPUT:42
+ENDREAD:46
+WRITEF:76
+$)
+
+MANIFEST $( ENDSTREAMCH=-1 $)
+
+LET START() BE
+$( LET LOR  = TRUE \/ FALSE
+   AND LAND = TRUE /\ TRUE
+   AND NEQ  = 1 \= 2
+   AND LNOT = \FALSE
+
+   WRITEF("BACKSLASH OPERATORS*N")
+   WRITEF("LOGICAL OR  = %N*N", LOR)
+   WRITEF("LOGICAL AND = %N*N", LAND)
+   WRITEF("NOT EQUAL   = %N*N", NEQ)
+   WRITEF("LOGICAL NOT = %N*N", LNOT)
+
+   LET S = FINDINPUT("PUNCT")
+   IF S=0 DO
+   $( WRITEF("PUNCT DD NOT FOUND*N")
+      FINISH
+   $)
+
+   SELECTINPUT(S)
+   WRITEF("RDCH CHARACTER CODES*N")
+
+   $( LET CH = RDCH()
+      IF CH=ENDSTREAMCH BREAK
+      WRITEF("%N*N", CH)
+   $) REPEAT
+
+   ENDREAD()
+   FINISH
+$)
