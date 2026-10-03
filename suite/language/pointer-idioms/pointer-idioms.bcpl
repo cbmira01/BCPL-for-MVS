@@ -1,0 +1,24 @@
+// POINTER-IDIOMS.BCPL
+// Demonstrate BCPL word pointers and ! indexing through an alias.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET V = VEC 4
+   LET P = V
+
+   FOR I = 0 TO 4 DO V!I := (I+1)*10
+
+   WRITEF("VECTOR:")
+   FOR I = 0 TO 4 DO WRITEF(" %N", V!I)
+   WRITEF("*N")
+
+   WRITEF("THROUGH P:")
+   FOR I = 0 TO 4 DO WRITEF(" %N", P!I)
+   WRITEF("*N")
+
+   P!2 := 99
+   WRITEF("AFTER P!2:=99, V!2 = %N*N", V!2)
+
+   FINISH
+$)
