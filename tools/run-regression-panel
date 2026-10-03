@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+"""Run the BCPL-for-MVS regression panel from its manifest."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+MANIFEST = ROOT / "tests" / "00-regression-panel" / "manifest.tsv"
+COMPILE = ROOT / "tools" / "compile-and-run"
+CURRENT = ROOT / "tools" / "current-icint"
+CODE_RE = re.compile(r"EXECUTION CYCLES\s*=.*?,\s*CODE\s*=\s*(-?\d+)")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="run-regression-panel",
+        description="Run manifest-defined focused BCPL regression tests.",
+    )
+    parser.add_argument(
+        "--icint",
+        metavar="PATH",
+        help="ICINT assembler source; default is the promoted asm/CURRENT baseline",
+    )
+    parser.add_argument(
+        "--category",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="run only this category; repeat to select more than one",
+    )
+    parser.add_argument(
+        "--test",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="run only this named test; repeat to select more than one",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="list selected tests without running them",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="show each compile-and-run command and full captured result",
+    )
+    parser.add_argument(
+        "--stop-on-fail",
+        action="store_true",
+        help="stop after the first failed regression",
+    )
+    return parser.parse_args()
+
+
+def resolve_icint(override: str | None) -> Path:
+    if override:
+        path = Path(override)
+        if not path.is_absolute():
+            path = ROOT / path
+        path = path.resolve()
+    else:
+        proc = subprocess.run(
+            ["bash", str(CURRENT)],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(proc.stderr.strip() or "current-icint failed")
+        path = Path(proc.stdout.strip()).resolve()
+
+    if not path.is_file():
+        raise RuntimeError(f"ICINT does not exist: {path}")
+    return path
+
+
+def load_manifest() -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    with MANIFEST.open("r", encoding="utf-8", newline="") as handle:
+        for raw in handle:
+            if not raw.strip() or raw.startswith("#"):
+                continue
+            fields = raw.rstrip("\n").split("\t")
+            if len(fields) != 7:
+                raise RuntimeError(
+                    f"{MANIFEST.relative_to(ROOT)}: expected 7 tab-separated fields"
+                )
+            rows.append(
+                dict(
+                    zip(
+                        (
+                            "name",
+                            "category",
+                            "source",
+                            "extras",
+                            "compile_args",
+                            "expected",
+                            "expected_code",
+                        ),
+                        fields,
+                    )
+                )
+            )
+    return rows
+
+
+def selected(rows: list[dict[str, str]], args: argparse.Namespace) -> list[dict[str, str]]:
+    wanted_categories = set(args.category)
+    wanted_tests = set(args.test)
+    result = []
+    for row in rows:
+        if wanted_categories and row["category"] not in wanted_categories:
+            continue
+        if wanted_tests and row["name"] not in wanted_tests:
+            continue
+        result.append(row)
+    return result
+
+
+def rp_records(output: str) -> list[str]:
+    records = []
+    for line in output.splitlines():
+        marker = line.find("RP:")
+        if marker >= 0:
+            records.append(line[marker:].rstrip())
+    return records
+
+
+def expected_records(path: Path) -> list[str]:
+    return [line.rstrip() for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def run_case(row: dict[str, str], icint: Path, verbose: bool) -> tuple[bool, str]:
+    source = ROOT / row["source"]
+    expected = ROOT / row["expected"]
+    if not source.is_file():
+        return False, f"source does not exist: {row['source']}"
+    if not expected.is_file():
+        return False, f"expected output does not exist: {row['expected']}"
+
+    extras = shlex.split(row["extras"])
+    compile_args = shlex.split(row["compile_args"])
+    command = [
+        str(COMPILE),
+        "--results",
+        *compile_args,
+        str(icint),
+        str(source),
+        *extras,
+    ]
+
+    if verbose:
+        print("COMMAND:", " ".join(shlex.quote(part) for part in command))
+
+    proc = subprocess.run(
+        command,
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    output = proc.stdout
+
+    if verbose:
+        print(output, end="" if output.endswith("\n") else "\n")
+
+    if proc.returncode != 0:
+        return False, f"compile-and-run returned {proc.returncode}\n{output.rstrip()}"
+
+    matches = CODE_RE.findall(output)
+    if not matches:
+        return False, f"no interpreted completion code found\n{output.rstrip()}"
+    actual_code = int(matches[-1])
+    expected_code = int(row["expected_code"])
+    if actual_code != expected_code:
+        return False, (
+            f"interpreted CODE {actual_code}, expected {expected_code}\n{output.rstrip()}"
+        )
+
+    actual = rp_records(output)
+    golden = expected_records(expected)
+    if actual != golden:
+        details = ["semantic output mismatch", "EXPECTED:"]
+        details.extend(f"  {line}" for line in golden)
+        details.append("ACTUAL:")
+        details.extend(f"  {line}" for line in actual)
+        details.append("FULL RESULT:")
+        details.append(output.rstrip())
+        return False, "\n".join(details)
+
+    return True, ""
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        icint = resolve_icint(args.icint)
+        rows = selected(load_manifest(), args)
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"run-regression-panel: {exc}", file=sys.stderr)
+        return 2
+
+    if not rows:
+        print("run-regression-panel: no tests selected", file=sys.stderr)
+        return 2
+
+    if args.list:
+        for row in rows:
+            print(f"{row['name']}\t{row['category']}")
+        return 0
+
+    try:
+        shown_icint = icint.relative_to(ROOT)
+    except ValueError:
+        shown_icint = icint
+
+    print("REGRESSION PANEL")
+    print(f"ICINT: {shown_icint}")
+    print(f"Tests: {len(rows)}")
+
+    failures = 0
+    for row in rows:
+        label = f"{row['category']}/{row['name']}"
+        print(f"RUN   {label}")
+        ok, detail = run_case(row, icint, args.verbose)
+        if ok:
+            print(f"PASS  {label}")
+        else:
+            failures += 1
+            print(f"FAIL  {label}")
+            print(detail)
+            if args.stop_on_fail:
+                break
+
+    run_count = len(rows) if not args.stop_on_fail or failures == 0 else None
+    passed = (run_count - failures) if run_count is not None else "?"
+
+    print()
+    print("REGRESSION PANEL COMPLETE")
+    if run_count is not None:
+        print(f"PASS  {passed}")
+        print(f"FAIL  {failures}")
+        print(f"TOTAL {run_count}")
+    else:
+        print(f"FAIL  {failures}")
+        print("Stopped on first failure.")
+
+    return 0 if failures == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
