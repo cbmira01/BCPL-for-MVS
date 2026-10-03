@@ -60,11 +60,7 @@ $( IF N > 106 RESULTIS 0
 $)
 
 AND FREEVEC(V) BE
-$( IF V = POOL1 DO
-   $( USED1 := 0
-      RESULTIS
-   $)
-
+$( IF V = POOL1 DO USED1 := 0
    IF V = POOL2 DO USED2 := 0
 $)
 
@@ -92,10 +88,14 @@ $( LET P = COLIST
    IF C = CURRCO RESULTIS FALSE
    IF C!1 \= 0 RESULTIS FALSE
 
-   IF COLIST = C
-   $( COLIST := C!5 $)
+   TEST COLIST = C
+   THEN COLIST := C!5
    ELSE
-   $( UNTIL P = 0 | P!5 = C DO P := P!5
+   $( $( IF P = 0 BREAK
+         IF P!5 = C BREAK
+         P := P!5
+      $) REPEAT
+
       IF P = 0 RESULTIS FALSE
       P!5 := C!5
    $)
@@ -120,8 +120,8 @@ AND WORKER(A) = A+1
 
 AND START() BE
 $( LET ROOT = VEC 5
-   AND ASTORE = VEC 105
-   AND BSTORE = VEC 105
+   AND ASTORE = VEC 106
+   AND BSTORE = VEC 106
    AND ACO = 0
    AND BCO = 0
    AND CCO = 0
@@ -141,8 +141,13 @@ $( LET ROOT = VEC 5
    ACO := CREATECO(WORKER, 100)
    BCO := CREATECO(WORKER, 100)
 
-   IF ACO = 0 | BCO = 0 DO
-   $( WRITEF("CREATE FAILED*N")
+   IF ACO = 0 DO
+   $( WRITEF("CREATE A FAILED*N")
+      FINISH
+   $)
+
+   IF BCO = 0 DO
+   $( WRITEF("CREATE B FAILED*N")
       FINISH
    $)
 
