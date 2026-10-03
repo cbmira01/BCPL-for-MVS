@@ -1,0 +1,21 @@
+// FUNCTION-VALUES.BCPL
+// Demonstrate selecting a routine as a value and calling it indirectly.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET SQUARE(N) = N*N
+AND DOUBLE(N) = N+N
+
+AND APPLY(F, N) = F(N)
+
+AND START() BE
+$( LET F = SQUARE
+   AND X = 7
+
+   WRITEF("SQUARE(%N) THROUGH F = %N*N", X, APPLY(F, X))
+
+   F := DOUBLE
+   WRITEF("DOUBLE(%N) THROUGH F = %N*N", X, APPLY(F, X))
+
+   FINISH
+$)
