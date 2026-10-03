@@ -1,0 +1,17 @@
+// Regression: scalar assignment and vector load/store.
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET A = 17
+   AND B = 42
+   AND V = VEC 3
+
+   V!0 := 5
+   V!1 := 10
+   V!2 := 15
+   V!3 := 20
+
+   WRITEF("RP: SCALAR %N %N*N", A, B)
+   WRITEF("RP: VECTOR %N %N %N %N*N", V!0, V!1, V!2, V!3)
+   FINISH
+$)
