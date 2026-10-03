@@ -240,14 +240,34 @@ FINAL LIST COUNT 1
 followed by an interpreted completion code of zero.
 
 The root coroutine remains on `COLIST`, so a final count of one is correct.
-The recreation of C after deleting A and B also proves that coroutine storage
-can be returned to an allocator and reused without changing the coroutine
+The recreation of C after deleting A and B proves that coroutine storage can
+be returned to an allocator and reused without changing the coroutine
 control-transfer semantics.
 
-For this MR10 compiler, the initial `CREATECO(FN,SIZE,C)` frame occupies
-`C!0` through `C!4`, so this reconstruction uses `C!5` as the `COLIST` link.
-That placement is derived from the compiler probes above; it should not be
-silently replaced with offsets taken from later Cintcode implementations.
+An earlier version placed the `COLIST` link in word 5 immediately above the
+synthetic MR10 frame. That initially looked free, but once the coroutine ran
+and called `COWAIT`, later call frames reused that area and corrupted the
+list. The working layout keeps the persistent descriptor below the synthetic
+frame:
+
+```text
+C!0 = saved P
+C!1 = parent
+C!2 = COLIST link
+
+P = C+3
+P!2 = FN
+P!3 = SIZE
+P!4 = C
+```
+
+Thus the descriptor occupies `C!0` through `C!2`, while the synthetic MR10
+`CREATECO(FN,SIZE,C)` frame begins at `C+3`. Nested calls grow above that
+frame and do not overwrite descriptor metadata.
+
+This layout is now demonstrated by successful creation of two coroutines,
+execution of both, deletion of both, reuse of freed storage for a third
+coroutine, and deletion of the third.
 
 ## Runtime implementation status
 
