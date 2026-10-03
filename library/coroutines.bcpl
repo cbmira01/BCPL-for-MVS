@@ -1,0 +1,122 @@
+// COROUTINES.BCPL
+//
+// Portable coroutine layer for the reconstructed MR10 runtime.
+//
+// Machine-dependent primitive:
+//     CHANGECO:6
+//
+// Historical runtime state:
+//     CURRCO:7
+//     COLIST:8
+//
+// Reconstructed allocator services:
+//     GETVEC:87
+//     FREEVEC:88
+//
+// Provisional portable coroutine entry points:
+//     CREATECO:91
+//     DELETECO:92
+//     CALLCO:93
+//     COWAIT:94
+//     RESUMECO:95
+//
+// The 91..95 assignments are reconstruction-local until the final runtime
+// header is reconciled.  The calling semantics are already established by
+// the coroutine regression suite.
+//
+// Coroutine descriptor:
+//     C!0 = saved P
+//     C!1 = parent coroutine, or 0 when inactive
+//     C!2 = COLIST link
+//
+// The synthetic MR10 startup frame begins at P=C+3:
+//     P!2 = FN
+//     P!3 = SIZE
+//     P!4 = C
+
+GLOBAL $(
+CHANGECO:6
+CURRCO:7
+COLIST:8
+GETVEC:87
+FREEVEC:88
+CREATECO:91
+DELETECO:92
+CALLCO:93
+COWAIT:94
+RESUMECO:95
+$)
+
+LET CALLCO(CPTR, A) = VALOF
+$( IF CPTR = 0 RESULTIS -997
+   IF CPTR!1 \= 0 RESULTIS -999
+   CPTR!1 := CURRCO
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND COWAIT(A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   RESULTIS CHANGECO(A, PARENT)
+$)
+
+AND RESUMECO(CPTR, A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+
+   IF CPTR = 0 RESULTIS -996
+   IF CPTR!1 \= 0 RESULTIS -998
+
+   CPTR!1 := PARENT
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND CREATECO(FN, SIZE) = VALOF
+$( LET C = GETVEC(SIZE+9)
+   AND P = 0
+
+   IF C = 0 RESULTIS 0
+
+   P := C+3
+
+   C!0 := P
+   C!1 := CURRCO
+   C!2 := COLIST
+
+   P!0 := 0
+   P!1 := 0
+   P!2 := FN
+   P!3 := SIZE
+   P!4 := C
+
+   COLIST := C
+
+   CHANGECO(0, C)
+
+   C := FN(COWAIT(C)) REPEAT
+$)
+
+AND DELETECO(C) = VALOF
+$( LET P = COLIST
+
+   IF C = 0 RESULTIS FALSE
+   IF C = CURRCO RESULTIS FALSE
+   IF C!1 \= 0 RESULTIS FALSE
+
+   IF COLIST = C DO
+   $( COLIST := C!2
+      FREEVEC(C)
+      RESULTIS TRUE
+   $)
+
+   UNTIL P = 0 DO
+   $( IF P!2 = C DO
+      $( P!2 := C!2
+         FREEVEC(C)
+         RESULTIS TRUE
+      $)
+      P := P!2
+   $)
+
+   RESULTIS FALSE
+$)
