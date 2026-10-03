@@ -6,5 +6,8 @@ branches-loops	control	tests/00-regression-panel/control/branches-loops.bcpl			t
 nested-recursion	calls	tests/00-regression-panel/calls/nested-recursion.bcpl			tests/00-regression-panel/calls/nested-recursion.expected	0
 separate-module	modules	tests/00-regression-panel/modules/main.bcpl	+tests/00-regression-panel/modules/helper.bcpl		tests/00-regression-panel/modules/separate-module.expected	0
 basic-library	standard-library	tests/00-regression-panel/standard-library/basic-library.bcpl			tests/00-regression-panel/standard-library/basic-library.expected	0
+library-scalars	standard-library	tests/00-regression-panel/standard-library/random-integer-char.bcpl	+library/random.bcpl +library/integer-utils.bcpl +library/char-utils.bcpl		tests/00-regression-panel/standard-library/random-integer-char.expected	0
+library-strings	standard-library	tests/00-regression-panel/standard-library/string-memory-conversion.bcpl	+library/string-utils.bcpl +library/memory-utils.bcpl +library/numeric-conversion.bcpl		tests/00-regression-panel/standard-library/string-memory-conversion.expected	0
+library-line-io	standard-library	tests/00-regression-panel/standard-library/line-io.bcpl	+library/line-io.bcpl	--dd LINE=tests/00-regression-panel/standard-library/line-input.txt	tests/00-regression-panel/standard-library/line-io.expected	0
 getvec-reuse	storage	tests/00-regression-panel/storage/getvec-reuse.bcpl	+library/getvec-freevec.bcpl		tests/00-regression-panel/storage/getvec-reuse.expected	0
 basic-coroutine	coroutines	tests/00-regression-panel/coroutines/basic-coroutine.bcpl	+library/getvec-freevec.bcpl +library/coroutines.bcpl		tests/00-regression-panel/coroutines/basic-coroutine.expected	0
