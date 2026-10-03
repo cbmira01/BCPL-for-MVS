@@ -12,7 +12,7 @@ These files are executable input for the project's `ICINT` interpreter, not Syst
 | [`trni.int`](trni.int) | INTCODE form of the BCPL translation phase (`TRNI`). |
 | [`cgi.int`](cgi.int) | INTCODE form of the historical compiler code-generator phase (`CGI`), which translates OCODE into INTCODE. |
 | [`blibi.int`](blibi.int) | INTCODE BCPL library support (`BLIBI`) used by interpreted compiler phases and programs. |
-| [`iclib.int`](iclib.int) | Small INTCODE support library (`ICLIB`) used by the interpreted environment. |
+| [`iclib.int`](iclib.int) | Small INTCODE support library (`ICLIB`) used by the interpreted environment. Its current G6 `CHANGECO` implementation supports the reconstructed coroutine runtime without requiring a new ICINT opcode. |
 
 Together, `SYNI`, `TRNI`, and `CGI` form the preserved compiler pipeline used by the current bootstrap:
 
@@ -34,13 +34,15 @@ INTCODE
 
 The generated INTCODE is then loaded with `BLIBI` and `ICLIB` and executed by `ICINT`.
 
+The current validated interpreter baseline is `asm/icintv17.asm`.
+
 ## Direct INTCODE execution
 
 Use [`tools/run-intcode`](../tools/run-intcode) when the primary thing being tested is already INTCODE.
 
 ```text
 tools/run-intcode --results \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/01-echo-test/echo-sysin.int \
     +intcode/blibi.int \
     +intcode/iclib.int
@@ -57,7 +59,7 @@ tools/compile-and-run \
     --results \
     --save-ocode \
     --save-intcode \
-    asm/icintv15.asm \
+    asm/icintv17.asm \
     tests/03-compile-richards-factorial/richards-factorial-test.bcpl
 ```
 
@@ -71,6 +73,8 @@ With the save options enabled, host-side intermediate files are written as:
 Separate BCPL compilation units are supported. Additional sources use the same `+PATH` convention as `run-intcode`; each source is compiled independently before the generated INTCODE modules are loaded together through the common BCPL `GLOBAL` vector.
 
 See [`tests/04-module-test`](../tests/04-module-test/) for the first validated separate-compilation example.
+
+Portable reconstructed runtime services such as `GETVEC`, `FREEVEC`, and the BCPL-level coroutine operations now live under [`library/`](../library/). Machine-dependent interpreted support remains in `iclib.int` where appropriate.
 
 ## Historical role and future direction
 
