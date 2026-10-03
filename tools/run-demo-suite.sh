@@ -66,6 +66,11 @@ run_demo()
     fi
 }
 
+run_demo "richards-factorial" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/richards-factorial/richards-factorial.bcpl"
+
 run_demo "queens" \
     "$COMPILE" --results \
     "$ICINT" \
@@ -160,7 +165,7 @@ echo "================================================================"
 
 if [ "$FAILURES" -eq 0 ]
 then
-    echo "All 16 demos passed."
+    echo "All 17 demos passed."
     exit 0
 else
     echo "$FAILURES demo(s) failed."
