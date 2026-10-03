@@ -11,11 +11,13 @@ The early cases avoid depending on `WRITEF`, streams, or the full historical run
 They reserve the top of the current interpreted GLOBAL capacity:
 
 ```text
-NATIVE_COUNTER:399
-NATIVE_RESULT:400
+NATIVECOUNTER:399
+NATIVERESULT:400
 ```
 
 as **test-only globals**.
+
+The spellings deliberately avoid underscores because the MR10 compiler used by the bootstrap does not accept `_` in identifiers.
 
 The general-purpose project library range is 96..159, so these acceptance globals deliberately sit outside that range. They are also within ICINT V17's currently established 0..400 GLOBAL capacity, allowing the same source to be compiled/executed by the interpreted reference path when useful.
 
