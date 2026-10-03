@@ -12,7 +12,7 @@ $)
 
 MANIFEST $( ENDSTREAMCH=-1 $)
 
-LET SPACE(CH) = CH='*S' \/ CH='*T' \/ CH='*N'
+LET SPACE(CH) = CH='*S' | CH='*T' | CH='*N'
 
 AND START() BE
 $( LET S = FINDINPUT("TEXT")
