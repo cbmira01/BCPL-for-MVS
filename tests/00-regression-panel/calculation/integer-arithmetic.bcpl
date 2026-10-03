@@ -1,0 +1,10 @@
+// Regression: integer arithmetic and remainder.
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET A = 17
+   AND B = 5
+   WRITEF("RP: ARITH %N %N %N %N %N*N",
+          A+B, A-B, A*B, A/B, A REM B)
+   FINISH
+$)
