@@ -5,6 +5,7 @@ GLOBAL $( START:1; WRITEF:76 $)
 
 LET INSERT(ROOT, KEY, KEYS, LEFT, RIGHT, NEXTNODE) = VALOF
 $( LET N = NEXTNODE!0
+   AND P = ROOT
    KEYS!N := KEY
    LEFT!N := -1
    RIGHT!N := -1
@@ -12,7 +13,6 @@ $( LET N = NEXTNODE!0
 
    IF ROOT<0 RESULTIS N
 
-   LET P = ROOT
    $( TEST KEY<KEYS!P
          THEN TEST LEFT!P<0
                  THEN $( LEFT!P := N; RESULTIS ROOT $)
@@ -43,7 +43,7 @@ $( LET KEYS = VEC 15
    AND LEFT = VEC 15
    AND RIGHT = VEC 15
    AND NEXTNODE = VEC 0
-   LET ROOT = -1
+   AND ROOT = -1
 
    NEXTNODE!0 := 0
    FOR I = 0 TO 8 DO
