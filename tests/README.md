@@ -115,6 +115,34 @@ Successful compilation and execution should print:
 DEEPEST GET VALUE = 24680
 ```
 
+## Character translation regression test
+
+`08-character-translation` exercises host ASCII to MVS EBCDIC to ICINT to BCPL character handling, with particular attention to punctuation whose EBCDIC encoding varies by code page.
+
+The source deliberately contains the historical BCPL spellings `\/`, `/\`, `\=`, and unary `\`. These must compile correctly; replacing them with alternate syntax would hide the host-character defect instead of fixing it.
+
+Run it from the repository root with intermediate recovery enabled:
+
+```text
+tools/compile-and-run \
+    --results \
+    --save-ocode \
+    --save-intcode \
+    --job-name CHARXLT \
+    --dd PUNCT=tests/08-character-translation/punct.txt \
+    asm/icintv16.asm \
+    tests/08-character-translation/character-translation.bcpl
+```
+
+A successful run should recover both:
+
+```text
+workarea/character-translation.ocode
+workarea/character-translation.intcode
+```
+
+The program then reads the `PUNCT` DD through ordinary `RDCH` and reports the resulting BCPL character codes. See the test-local README for the fixture and diagnostic intent.
+
 ## File conventions
 
 BCPL source files use `.bcpl`. Current saved compiler intermediates use `.ocode` and `.intcode`. Direct or historical INTCODE workloads may still use `.int`; those filenames record the development state in which the tests were created and are intentionally retained where they are useful as evidence.
