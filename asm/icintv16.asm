@@ -1130,7 +1130,7 @@ X35      L     R2,B
          ST    R3,8(R1)
          L     R4,B
          ST    R4,12(R1)
-         ST    R2,P
+         ST    R3,P
          L     R4,A
          ST    R4,C
          B     FETCH
@@ -2364,9 +2364,9 @@ ETOATAB  DC    F'-1'
          DC    F'0',F'126',F'115',F'116',F'117',F'118',F'119',F'120'
 * HERCULES DEFAULT INPUT USES X'AD' FOR '['.
          DC    F'121',F'122',F'0',F'0',F'0',F'91',F'0',F'0'
+         DC    F'0',F'0',F'0',F'0',F'0',F'0',F'0',F'0'
 * HERCULES DEFAULT INPUT USES X'BD' FOR ']'.
          DC    F'0',F'0',F'0',F'0',F'0',F'93',F'0',F'0'
-         DC    F'0',F'0',F'0',F'0',F'0',F'0',F'0',F'0'
 * HERCULES DEFAULT INPUT USES X'C0' FOR '{'.
          DC    F'123',F'65',F'66',F'67',F'68',F'69',F'70',F'71'
          DC    F'72',F'73',F'0',F'0',F'0',F'0',F'0',F'0'
