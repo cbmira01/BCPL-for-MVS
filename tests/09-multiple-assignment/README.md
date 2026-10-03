@@ -27,14 +27,14 @@ EUCLID BEFORE A=1071 B=462
 EUCLID AFTER  A=462 B=0
 ```
 
-This behavior was confirmed under ICINT V17 by job 172. The test is retained so that later compiler reconstruction work does not accidentally change this historical MR10 behavior without an explicit decision.
-
 Run from the repository root with:
 
-```text
+```bash
 tools/compile-and-run --results --listing heavy \
     asm/icintv17.asm \
     tests/09-multiple-assignment/multiple-assignment.bcpl
 ```
+
+A run producing the expected output above records the historical MR10 behavior directly and reproducibly. The test is retained so that later compiler reconstruction work does not accidentally change that behavior without an explicit decision.
 
 Programs that require simultaneous assignment semantics must use explicit temporaries when compiled by this MR10 translator.
