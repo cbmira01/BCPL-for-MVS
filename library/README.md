@@ -4,6 +4,45 @@ The `library/` directory contains portable BCPL runtime components reconstructed
 
 The current validation baseline is `asm/icintv17.asm`.
 
+## Validation status
+
+The packaged allocator and coroutine layers have both been exercised successfully under ICINT V17.
+
+The allocator regression:
+
+```bash
+tools/compile-and-run --results --listing heavy \
+    asm/icintv17.asm \
+    tests/11-getvec-freevec/getvec-freevec.bcpl \
+    +library/getvec-freevec.bcpl
+```
+
+completes with interpreted `CODE = 0` after demonstrating variable-sized allocation, payload access, reuse, coalescing, and larger post-coalesce allocation.
+
+The packaged coroutine create/delete regression:
+
+```bash
+tools/compile-and-run --results --listing heavy \
+    asm/icintv17.asm \
+    tests/10-coroutines/create-delete-static-pool.bcpl \
+    +library/getvec-freevec.bcpl \
+    +library/coroutines.bcpl
+```
+
+completes with interpreted `CODE = 0` after creating two coroutines, executing them, deleting them, reusing freed storage for a third coroutine, and returning to a root-only coroutine list.
+
+The packaged `RESUMECO` parent-transfer regression:
+
+```bash
+tools/compile-and-run --results --listing heavy \
+    asm/icintv17.asm \
+    tests/10-coroutines/resumeco-chain.bcpl \
+    +library/getvec-freevec.bcpl \
+    +library/coroutines.bcpl
+```
+
+also completes with interpreted `CODE = 0`, preserving the already-established parent-transfer behavior through the library boundary.
+
 ## `getvec-freevec.bcpl`
 
 Provides a simple first-fit fixed-arena allocator:
@@ -18,17 +57,6 @@ FREEHEAD:90
 `HEAPINIT(BASE, WORDS)` installs an already BCPL-addressable arena. `GETVEC(N)` returns storage for a BCPL `VEC N`, and `FREEVEC(V)` reinserts the block by address and coalesces adjacent free blocks.
 
 The allocator deliberately does not request arbitrary MVS storage. The arena remains inside ICINT's existing BCPL word-address space, so the V12 pointer representation does not change.
-
-The focused regression is:
-
-```bash
-tools/compile-and-run --results --listing heavy \
-    asm/icintv17.asm \
-    tests/11-getvec-freevec/getvec-freevec.bcpl \
-    +library/getvec-freevec.bcpl
-```
-
-Expected behavior includes variable-sized allocation, first/last payload access, exact reuse of a freed block, coalescing, and a larger subsequent allocation, ending with interpreted `CODE = 0`.
 
 ## `coroutines.bcpl`
 
@@ -73,26 +101,6 @@ P!4 = C
 ```
 
 Keeping the descriptor below the synthetic frame is important: an earlier experiment stored persistent list metadata immediately above the initial frame, where nested calls later overwrote it.
-
-Package-level coroutine validation uses both runtime modules:
-
-```bash
-tools/compile-and-run --results --listing heavy \
-    asm/icintv17.asm \
-    tests/10-coroutines/create-delete-static-pool.bcpl \
-    +library/getvec-freevec.bcpl \
-    +library/coroutines.bcpl
-```
-
-The `RESUMECO` parent-transfer regression is:
-
-```bash
-tools/compile-and-run --results --listing heavy \
-    asm/icintv17.asm \
-    tests/10-coroutines/resumeco-chain.bcpl \
-    +library/getvec-freevec.bcpl \
-    +library/coroutines.bcpl
-```
 
 ## Current architectural boundary
 
