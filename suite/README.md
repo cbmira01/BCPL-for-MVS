@@ -23,13 +23,18 @@ all support code in each program.
   reproducible test data, randomized searches, shuffling, randomized sorting choices,
   and similar demonstrations.  This module has already been exercised successfully
   through the multi-module `compile-and-run` path.
+- **[`../library/getvec-freevec.bcpl`](../library/getvec-freevec.bcpl)** — reconstructed
+  fixed-arena `GETVEC` / `FREEVEC` runtime support.
+- **[`../library/coroutines.bcpl`](../library/coroutines.bcpl)** — reconstructed portable
+  coroutine interface providing `CREATECO`, `DELETECO`, `CALLCO`, `COWAIT`, and
+  `RESUMECO` over the machine-dependent `CHANGECO` primitive.
 
 Shared modules should have a small documented GLOBAL-vector interface and should be
 usable through the existing multi-module `compile-and-run` mechanism.
 
 ## Core demonstration programs
 
-The initial suite consists of fifteen representative programs:
+The current suite consists of sixteen representative programs:
 
 1. **[queens](queens/)** — solve the eight-queens problem by recursive backtracking.
 2. **[knight](knight/)** — construct a 5x5 knight's tour with Warnsdorff's heuristic.
@@ -55,21 +60,24 @@ The initial suite consists of fifteen representative programs:
 14. **[maze](maze/)** — solve a fixed maze with recursive depth-first search.
 15. **[stream-fanout](stream-fanout/)** — open several named MVS streams
     simultaneously, read them, and close them explicitly.
+16. **[coroutines](coroutines/)** — dynamically create a generator coroutine, exchange
+    values through `CALLCO` / `COWAIT`, preserve suspended local state, and delete the
+    coroutine through the packaged runtime.
 
-The data-structure examples deliberately use explicit vector-backed storage rather
-than assuming a dynamic-allocation interface not yet established as part of the small
-MR10 runtime being hosted here.
+The older data-structure examples deliberately use explicit vector-backed storage so
+their algorithms remain visible.  Dynamic allocation is now also available through
+the reconstructed `GETVEC` / `FREEVEC` runtime and is demonstrated indirectly by the
+coroutine example.
 
 Collectively these programs exercise recursion, iteration, vectors, `TABLE`
 expressions, packed strings, byte access, arithmetic, searching, sorting, linked data
-structures, parsing, explicit stacks, stream I/O, multiple open streams, and the
-GLOBAL-vector calling model.
+structures, parsing, explicit stacks, stream I/O, multiple open streams, dynamic
+allocation, coroutine switching, and the GLOBAL-vector calling model.
 
 ## BCPL idioms
 
-A separate set of small examples should demonstrate BCPL itself rather than merely
-implementing familiar algorithms.  Topics should include, as suitable examples are
-developed:
+A separate set of small examples demonstrates BCPL itself rather than merely
+implementing familiar algorithms.  Topics include, as suitable examples are developed:
 
 - `LET`, `AND`, and simultaneous declarations;
 - `VALOF` and `RESULTIS`;
@@ -85,7 +93,8 @@ developed:
 - pointer-oriented BCPL programming;
 - explicit input and output stream selection;
 - multiple simultaneously open streams;
-- recursion and non-local control mechanisms where historically appropriate.
+- recursion; and
+- coroutines and non-local control mechanisms where historically appropriate.
 
 The idiom examples may be independent programs or particularly clear programs from
 the core suite.  Their purpose is to make characteristic BCPL constructs easy to
@@ -93,15 +102,16 @@ find and understand.
 
 ## Coroutines
 
-Coroutine support is an advanced part of the suite and should be treated separately
-until the historical BCPL interface and runtime implementation have been researched.
-The Richards distributions and other surviving BCPL material should be examined
-before choosing names, calling conventions, or semantics for coroutine primitives.
+Coroutine support is now established in the reconstructed interpreted runtime and
+packaged as portable BCPL code in `library/coroutines.bcpl`, with `CHANGECO` remaining
+the machine-dependent primitive supplied by the INTCODE runtime.
 
-Once the historical mechanism is understood and supported by the reconstructed
-runtime, the suite should contain at least one small coroutine demonstration.  A
-producer/consumer example, or cooperating generators that exchange values, would be
-a suitable first program.
+The **[coroutines](coroutines/)** demo presents the mechanism as a small generator:
+the generator retains its `FOR`-loop state across suspensions, yields values with
+`COWAIT`, is resumed with `CALLCO`, and is finally reclaimed with `DELETECO`.
+
+The detailed reconstruction evidence and lower-level regression tests remain under
+[`tests/10-coroutines`](../tests/10-coroutines/).
 
 ## Style of the suite
 
