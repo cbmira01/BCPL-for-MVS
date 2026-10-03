@@ -1,0 +1,4 @@
+// Regression helper module.
+GLOBAL $( HELPER:180 $)
+
+LET HELPER(N) = N*3+1
