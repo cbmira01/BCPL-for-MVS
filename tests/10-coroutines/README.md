@@ -199,7 +199,7 @@ uses `RESUMECO` to transfer directly to B, and B's `COWAIT(222)` returns to
 root. This proves that the parent relationship itself has moved from A to B,
 rather than merely performing another nested `CALLCO`.
 
-## 5. CREATECO / DELETECO with a test allocator
+## 5. CREATECO / DELETECO with shared GETVEC / FREEVEC
 
 Source:
 
@@ -207,17 +207,19 @@ Source:
 create-delete-static-pool.bcpl
 ```
 
-This test exercises `CREATECO`, `DELETECO`, and `COLIST` while deliberately
-keeping allocation separate from coroutine semantics. A tiny two-slot
-`ALLOCVEC` / `FREEVEC` implementation is supplied by the test itself; it is
-not intended to become the production MVS allocator.
+The historical filename remains, but the test no longer contains a private
+two-slot allocator. It now uses the reusable runtime allocator in
+`library/getvec-freevec.bcpl`. `START` supplies a long-lived fixed arena with
+`HEAPINIT`, and `CREATECO` obtains coroutine storage through `GETVEC`; `DELETECO`
+returns it through `FREEVEC`.
 
 Run:
 
 ```bash
 tools/compile-and-run --results --listing heavy \
     asm/icintv17.asm \
-    tests/10-coroutines/create-delete-static-pool.bcpl
+    tests/10-coroutines/create-delete-static-pool.bcpl \
+    +library/getvec-freevec.bcpl
 ```
 
 Expected output:
@@ -241,8 +243,8 @@ followed by an interpreted completion code of zero.
 
 The root coroutine remains on `COLIST`, so a final count of one is correct.
 The recreation of C after deleting A and B proves that coroutine storage can
-be returned to an allocator and reused without changing the coroutine
-control-transfer semantics.
+be returned through `FREEVEC` and reused by a later `GETVEC` request without
+changing the coroutine control-transfer semantics.
 
 An earlier version placed the `COLIST` link in word 5 immediately above the
 synthetic MR10 frame. That initially looked free, but once the coroutine ran
@@ -265,9 +267,9 @@ Thus the descriptor occupies `C!0` through `C!2`, while the synthetic MR10
 `CREATECO(FN,SIZE,C)` frame begins at `C+3`. Nested calls grow above that
 frame and do not overwrite descriptor metadata.
 
-This layout is now demonstrated by successful creation of two coroutines,
-execution of both, deletion of both, reuse of freed storage for a third
-coroutine, and deletion of the third.
+This layout is now demonstrated together with the shared allocator by
+successful creation of two coroutines, execution of both, deletion of both,
+reuse of freed storage for a third coroutine, and deletion of the third.
 
 ## Runtime implementation status
 
@@ -275,6 +277,12 @@ The current reference implementation of `CHANGECO` lives in hand-written
 INTCODE in `intcode/iclib.int`. It is deliberately a proof of the coroutine
 runtime contract and uses already-proven INTCODE mechanisms rather than
 requiring a new ICINT opcode.
+
+The current reconstructed dynamic-storage service lives in
+`library/getvec-freevec.bcpl`. It provides `HEAPINIT`, `GETVEC`, and `FREEVEC`
+over an already BCPL-addressable fixed arena. The allocator is therefore
+portable BCPL code; ICINT does not need a new heap opcode or a change to the
+V12 word-pointer representation.
 
 An experimental direct-X38 wrapper is retained separately as
 `intcode/iclib-x38.int`. It is not the default runtime and should not replace
@@ -286,6 +294,9 @@ allowing the machine-dependent primitive to change by backend:
 
 ```text
 portable BCPL layer:
+    HEAPINIT
+    GETVEC
+    FREEVEC
     CREATECO
     DELETECO
     CALLCO
@@ -302,8 +313,8 @@ become a small native routine that saves the current BCPL resumable frame,
 installs the target coroutine frame, preserves the transfer value, and
 continues at the corresponding return continuation.
 
-The portable coroutine semantics should not depend on whether the backend is
-ICINT or native System/370 code.
+The portable allocator and coroutine semantics should not depend on whether
+the backend is ICINT or native System/370 code.
 
 ## Evidence files
 
