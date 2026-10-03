@@ -8,17 +8,16 @@ The rule here is empirical: an operator appears only when it has been observed i
 
 | Case | Saved OCODE | Purpose |
 | --- | --- | --- |
+| A0 | `acceptance/a0-finish.ocode` | startup and FINISH only |
 | A1 | `acceptance/a1-arithmetic.ocode` | literals and integer arithmetic |
 | A2 | `acceptance/a2-loop.ocode` | locals, comparison, branches, loop |
 | A3 | `acceptance/a3-function-call.ocode` | function call and returned value |
 | A4 | `acceptance/a4-arguments.ocode` | five arguments |
 | A5 | `acceptance/a5-global.ocode` | GLOBAL load/store |
 
-A0 currently has no saved `.ocode` file in the corpus. It should be captured separately if the pipeline emits useful OCODE for the minimal FINISH-only source.
-
 ## Cumulative operator surface
 
-### A1 — arithmetic
+### A0 — startup and FINISH
 
 Observed:
 
@@ -27,11 +26,6 @@ STACK
 JUMP
 ENTRY
 SAVE
-LN
-PLUS
-MULT
-MINUS
-SG
 FINISH
 RTRN
 ENDPROC
@@ -40,7 +34,28 @@ STORE
 GLOBAL
 ```
 
-The exact saved stream is intentionally small. It establishes that even the arithmetic case includes section/procedure scaffolding and GLOBAL initialization in addition to expression operators.
+The exact OCODE is:
+
+```text
+STACK 2 JUMP L2 ENTRY 5 L1 83 84 65 82 84 SAVE 2 FINISH RTRN ENDPROC
+0 STACK 2 LAB L2 STORE GLOBAL 1 1 L1
+```
+
+This establishes the true minimum native bootstrap surface. No expression evaluation, local/global data access, or arithmetic is required to prove initial generated-code startup and termination.
+
+### A1 — arithmetic
+
+Adds:
+
+```text
+LN
+PLUS
+MULT
+MINUS
+SG
+```
+
+The arithmetic case therefore becomes the second implementation rung rather than the first.
 
 ### A2 — locals and loop
 
@@ -119,27 +134,27 @@ JT
 
 This is the authoritative initial implementation surface for reconstructed CG370.
 
-Operators that exist in MR10 but do not appear above are not required for A1-A5 and should not delay the first native generated program.
+Operators that exist in MR10 but do not appear above are not required for A0-A5 and should not delay the first native generated program.
 
 ## Per-operator coverage
 
 | OCODE | First observed | Initial native requirement |
 | --- | --- | --- |
-| `STACK` | A1 | yes |
-| `JUMP` | A1 | yes |
-| `ENTRY` | A1 | yes |
-| `SAVE` | A1 | yes |
-| `LN` | A1 | yes |
-| `PLUS` | A1 | yes |
-| `MULT` | A1 | yes |
-| `MINUS` | A1 | yes |
-| `SG` | A1 | yes |
-| `FINISH` | A1 | yes |
-| `RTRN` | A1 | yes |
-| `ENDPROC` | A1 | yes |
-| `LAB` | A1 | yes |
-| `STORE` | A1 | yes |
-| `GLOBAL` | A1 | yes |
+| `STACK` | A0 | yes |
+| `JUMP` | A0 | yes |
+| `ENTRY` | A0 | yes |
+| `SAVE` | A0 | yes |
+| `FINISH` | A0 | yes |
+| `RTRN` | A0 | yes |
+| `ENDPROC` | A0 | yes |
+| `LAB` | A0 | yes |
+| `STORE` | A0 | yes |
+| `GLOBAL` | A0 | yes |
+| `LN` | A1 | after A0 |
+| `PLUS` | A1 | after A0 |
+| `MULT` | A1 | after A0 |
+| `MINUS` | A1 | after A0 |
+| `SG` | A1 | after A0 |
 | `LP` | A2 | after A1 |
 | `SP` | A2 | after A1 |
 | `LE` | A2 | after A1 |
@@ -155,7 +170,7 @@ Operators that exist in MR10 but do not appear above are not required for A1-A5 
 
 ### START is represented through GLOBAL initialization
 
-A1 ends with:
+A0 and A1 both end with:
 
 ```text
 GLOBAL 1 1 L1
@@ -203,8 +218,8 @@ The OCODE vocabulary is unchanged from A3, but the generated SAVE/local layout c
 
 ## Next implementation target
 
-Implement only the A1 subset first.
+Implement only the A0 subset first.
 
-The first reconstructed generator should accept the exact committed `a1-arithmetic.ocode`, emit inspectable IFOX assembler, and fail explicitly on every OCODE mnemonic outside the A1 set.
+The first reconstructed generator should accept the exact committed `a0-finish.ocode`, emit inspectable IFOX assembler, and fail explicitly on every OCODE mnemonic outside the A0 set.
 
-Once A1 assembles, links, and executes correctly, add A2 operators, then A3 call/data operators.
+Once A0 assembles, links, and executes correctly, add the A1 arithmetic/global-store operators, then A2 locals/branches, then A3 call/data operators.
