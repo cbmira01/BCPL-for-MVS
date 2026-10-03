@@ -1,0 +1,7 @@
+// Regression: separate compilation and GLOBAL-vector linkage.
+GLOBAL $( START:1; WRITEF:76; HELPER:180 $)
+
+LET START() BE
+$( WRITEF("RP: MODULE %N*N", HELPER(14))
+   FINISH
+$)
