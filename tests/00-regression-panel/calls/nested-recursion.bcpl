@@ -1,0 +1,11 @@
+// Regression: argument passing, nested calls, and recursion.
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET ADD3(A,B,C) = A+B+C
+
+AND FACT(N) = N=0 -> 1, N*FACT(N-1)
+
+AND START() BE
+$( WRITEF("RP: CALLS %N %N*N", ADD3(2,3,4), FACT(5))
+   FINISH
+$)
