@@ -167,17 +167,19 @@ Source:
 resumeco-chain.bcpl
 ```
 
-This test adds the historical `RESUMECO` operation to the already-proven
-fixed-stack mechanism. `RESUMECO(target, value)` transfers the current
-coroutine's parent link to `target`, clears the current coroutine's parent,
-and then switches directly to `target`.
+This test exercises the historical `RESUMECO` operation through the packaged
+coroutine runtime. `RESUMECO(target, value)` transfers the current coroutine's
+parent link to `target`, clears the current coroutine's parent, and then
+switches directly to `target`.
 
 Run:
 
 ```bash
 tools/compile-and-run --results --listing heavy \
     asm/icintv17.asm \
-    tests/10-coroutines/resumeco-chain.bcpl
+    tests/10-coroutines/resumeco-chain.bcpl \
+    +library/getvec-freevec.bcpl \
+    +library/coroutines.bcpl
 ```
 
 Expected program output:
@@ -208,10 +210,10 @@ create-delete-static-pool.bcpl
 ```
 
 The historical filename remains, but the test no longer contains a private
-two-slot allocator. It now uses the reusable runtime allocator in
-`library/getvec-freevec.bcpl`. `START` supplies a long-lived fixed arena with
-`HEAPINIT`, and `CREATECO` obtains coroutine storage through `GETVEC`; `DELETECO`
-returns it through `FREEVEC`.
+two-slot allocator or private coroutine implementation. It uses the packaged
+runtime modules in `library/`. `START` supplies a long-lived fixed arena with
+`HEAPINIT`, `CREATECO` obtains coroutine storage through `GETVEC`, and
+`DELETECO` returns it through `FREEVEC`.
 
 Run:
 
@@ -219,7 +221,8 @@ Run:
 tools/compile-and-run --results --listing heavy \
     asm/icintv17.asm \
     tests/10-coroutines/create-delete-static-pool.bcpl \
-    +library/getvec-freevec.bcpl
+    +library/getvec-freevec.bcpl \
+    +library/coroutines.bcpl
 ```
 
 Expected output:
@@ -273,23 +276,20 @@ reuse of freed storage for a third coroutine, and deletion of the third.
 
 ## Runtime implementation status
 
-The current reference implementation of `CHANGECO` lives in hand-written
-INTCODE in `intcode/iclib.int`. It is deliberately a proof of the coroutine
-runtime contract and uses already-proven INTCODE mechanisms rather than
-requiring a new ICINT opcode.
+The established implementation of `CHANGECO` lives in hand-written INTCODE in
+`intcode/iclib.int`. It implements the machine-dependent switch using already
+proven INTCODE mechanisms and does not require a special ICINT opcode.
 
-The current reconstructed dynamic-storage service lives in
+The reconstructed dynamic-storage service lives in
 `library/getvec-freevec.bcpl`. It provides `HEAPINIT`, `GETVEC`, and `FREEVEC`
 over an already BCPL-addressable fixed arena. The allocator is therefore
 portable BCPL code; ICINT does not need a new heap opcode or a change to the
 V12 word-pointer representation.
 
-An experimental direct-X38 wrapper is retained separately as
-`intcode/iclib-x38.int`. It is not the default runtime and should not replace
-the proven reference path until a matching interpreter implementation has
-been tested.
+The packaged portable coroutine layer lives in `library/coroutines.bcpl` and
+provides `CREATECO`, `DELETECO`, `CALLCO`, `COWAIT`, and `RESUMECO`.
 
-The long-term architecture should preserve the same BCPL-level contract while
+The long-term architecture preserves the same BCPL-level contract while
 allowing the machine-dependent primitive to change by backend:
 
 ```text
@@ -307,11 +307,11 @@ machine-dependent layer:
     CHANGECO
 ```
 
-For the interpreted bootstrap, CHANGECO can remain implemented in INTCODE.
-For the eventual native System/370 compiler and runtime, CHANGECO should
-become a small native routine that saves the current BCPL resumable frame,
-installs the target coroutine frame, preserves the transfer value, and
-continues at the corresponding return continuation.
+For the interpreted bootstrap, CHANGECO remains implemented in INTCODE. For
+the eventual native System/370 compiler and runtime, CHANGECO should become a
+small native routine that saves the current BCPL resumable frame, installs the
+target coroutine frame, preserves the transfer value, and continues at the
+corresponding return continuation.
 
 The portable allocator and coroutine semantics should not depend on whether
 the backend is ICINT or native System/370 code.
