@@ -1,0 +1,22 @@
+// STRINGS-BYTES.BCPL
+// Demonstrate packed BCPL strings and GETBYTE access.
+
+GLOBAL $( START:1; GETBYTE:85; WRITEF:76 $)
+
+LET START() BE
+$( LET S = "BCPL"
+   LET N = GETBYTE(S, 0)
+   LET I = 1
+
+   WRITEF("STRING = %S*N", S)
+   WRITEF("LENGTH = %N*N", N)
+   WRITEF("BYTES:")
+
+   WHILE I<=N DO
+   $( WRITEF(" %N", GETBYTE(S, I))
+      I := I+1
+   $)
+   WRITEF("*N")
+
+   FINISH
+$)
