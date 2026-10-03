@@ -1,8 +1,8 @@
 // CREATE-DELETE-STATIC-POOL.BCPL
 //
-// Exercise CREATECO, DELETECO, and COLIST independently of the eventual
-// MVS allocator.  ALLOCVEC/FREEVEC below are deliberately tiny test-only
-// services backed by two statically reserved coroutine workspaces.
+// Exercise CREATECO, DELETECO, and COLIST using the reconstructed reusable
+// GETVEC/FREEVEC runtime module.  START supplies a long-lived fixed arena
+// through HEAPINIT; coroutine allocation itself is no longer test-specific.
 //
 // MR10 frame evidence for CREATECO(FN,SIZE,C):
 //     P!2 = FN
@@ -25,10 +25,9 @@ CHANGECO:6
 CURRCO:7
 COLIST:8
 WRITEF:76
-POOL1:300
-POOL2:301
-USED1:302
-USED2:303
+GETVEC:87
+FREEVEC:88
+HEAPINIT:89
 $)
 
 LET CALLCO(CPTR, A) = VALOF
@@ -51,29 +50,8 @@ $( LET PARENT = CURRCO!1
    RESULTIS CHANGECO(A, CPTR)
 $)
 
-AND ALLOCVEC(N) = VALOF
-$( IF N > 109 RESULTIS 0
-
-   IF USED1 = 0 DO
-   $( USED1 := 1
-      RESULTIS POOL1
-   $)
-
-   IF USED2 = 0 DO
-   $( USED2 := 1
-      RESULTIS POOL2
-   $)
-
-   RESULTIS 0
-$)
-
-AND FREEVEC(V) BE
-$( IF V = POOL1 DO USED1 := 0
-   IF V = POOL2 DO USED2 := 0
-$)
-
 AND CREATECO(FN, SIZE) = VALOF
-$( LET C = ALLOCVEC(SIZE+9)
+$( LET C = GETVEC(SIZE+9)
    AND P = 0
 
    IF C = 0 RESULTIS 0
@@ -138,17 +116,13 @@ AND WORKER(A) = A+1
 
 AND START() BE
 $( LET ROOT = VEC 2
-   AND ASTORE = VEC 109
-   AND BSTORE = VEC 109
+   AND ARENA = VEC 400
    AND ACO = 0
    AND BCO = 0
    AND CCO = 0
    AND V = 0
 
-   POOL1 := ASTORE
-   POOL2 := BSTORE
-   USED1 := 0
-   USED2 := 0
+   HEAPINIT(ARENA, 401)
 
    CURRCO := ROOT
    ROOT!0 := 0
