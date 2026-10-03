@@ -1,0 +1,11 @@
+// A3-FUNCTION-CALL.BCPL
+// Native acceptance: BCPL function call and returned value.
+
+GLOBAL $( START:1; NATIVE_RESULT:150 $)
+
+LET ADD3(X) = X+3
+
+AND START() BE
+$( NATIVE_RESULT := ADD3(7)
+   FINISH
+$)
