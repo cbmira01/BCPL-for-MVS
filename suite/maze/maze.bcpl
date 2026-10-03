@@ -14,9 +14,9 @@ $( LET P = Y*7+X
       RESULTIS TRUE
    $)
 
-   IF SOLVE(X+1,Y,WALL,MARK) |
-      SOLVE(X,Y+1,WALL,MARK) |
-      SOLVE(X-1,Y,WALL,MARK) |
+   IF SOLVE(X+1,Y,WALL,MARK) \/
+      SOLVE(X,Y+1,WALL,MARK) \/
+      SOLVE(X-1,Y,WALL,MARK) \/
       SOLVE(X,Y-1,WALL,MARK) DO
    $( MARK!P := 2
       RESULTIS TRUE
