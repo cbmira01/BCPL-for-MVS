@@ -1,7 +1,7 @@
 // A2-LOOP.BCPL
 // Native acceptance: locals, comparison, branch, and loop.
 
-GLOBAL $( START:1; NATIVE_RESULT:400 $)
+GLOBAL $( START:1; NATIVERESULT:400 $)
 
 LET START() BE
 $( LET I = 1
@@ -12,6 +12,6 @@ $( LET I = 1
       I := I+1
    $)
 
-   NATIVE_RESULT := SUM
+   NATIVERESULT := SUM
    FINISH
 $)
