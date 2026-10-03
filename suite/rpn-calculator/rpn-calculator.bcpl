@@ -14,6 +14,9 @@ $( LET EXPR = "12 3 4 + * 6 -"
 
    WHILE P<=NCH DO
    $( LET CH = GETBYTE(EXPR, P)
+      AND B = 0
+      AND A = 0
+
       IF CH='*S' DO $( P := P+1; LOOP $)
 
       IF DIGIT(CH) DO
@@ -27,8 +30,8 @@ $( LET EXPR = "12 3 4 + * 6 -"
          LOOP
       $)
 
-      LET B = STACK!(SP-1)
-      AND A = STACK!(SP-2)
+      B := STACK!(SP-1)
+      A := STACK!(SP-2)
       SP := SP-2
       SWITCHON CH INTO
       $( CASE '+': STACK!SP := A+B; ENDCASE
