@@ -1,0 +1,42 @@
+// INTEGER-UTILS.BCPL
+// Small, portable integer helpers.
+// GLOBAL slots 101..106 are reconstruction-local library assignments.
+
+GLOBAL $(
+ABS:101
+MIN:102
+MAX:103
+SIGN:104
+GCD:105
+IPOW:106
+$)
+
+LET ABS(N) = N<0 -> -N, N
+
+AND MIN(A, B) = A<B -> A, B
+
+AND MAX(A, B) = A>B -> A, B
+
+AND SIGN(N) = N<0 -> -1, N>0 -> 1, 0
+
+AND GCD(A, B) = VALOF
+$( A := ABS(A)
+   B := ABS(B)
+   WHILE B \= 0 DO
+   $( LET T = A REM B
+      A := B
+      B := T
+   $)
+   RESULTIS A
+$)
+
+AND IPOW(BASE, EXP) = VALOF
+$( LET R = 1
+   IF EXP<0 RESULTIS 0
+   WHILE EXP>0 DO
+   $( IF (EXP&1) \= 0 DO R := R*BASE
+      EXP := EXP/2
+      IF EXP>0 DO BASE := BASE*BASE
+   $)
+   RESULTIS R
+$)
