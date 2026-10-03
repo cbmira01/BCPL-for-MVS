@@ -2347,25 +2347,34 @@ ETOATAB  DC    F'-1'
          DC    F'32',F'0',F'91',F'93',F'0',F'0',F'0',F'0'
          DC    F'0',F'0',F'0',F'46',F'60',F'40',F'43',F'124'
          DC    F'38',F'0',F'0',F'0',F'0',F'0',F'0',F'0'
-         DC    F'0',F'0',F'33',F'36',F'42',F'41',F'59',F'126'
+* HERCULES DEFAULT INPUT USES X'5F' FOR '^'; HISTORICAL X'65' BELOW
+* REMAINS AS A NON-CONFLICTING ALIAS FOR '^'.
+         DC    F'0',F'0',F'33',F'36',F'42',F'41',F'59',F'94'
          DC    F'45',F'47',F'92',F'0',F'0',F'94',F'95',F'0'
-         DC    F'0',F'0',F'0',F'44',F'37',F'96',F'62',F'63'
+* HERCULES DEFAULT INPUT USES X'6A' FOR '|'. HISTORICAL X'4F' ABOVE
+* REMAINS AS A NON-CONFLICTING ALIAS.
+         DC    F'0',F'0',F'124',F'44',F'37',F'96',F'62',F'63'
          DC    F'0',F'0',F'0',F'0',F'0',F'0',F'0',F'0'
          DC    F'0',F'0',F'58',F'35',F'64',F'39',F'61',F'34'
          DC    F'0',F'97',F'98',F'99',F'100',F'101',F'102',F'103'
          DC    F'104',F'105',F'0',F'0',F'0',F'0',F'0',F'0'
          DC    F'0',F'106',F'107',F'108',F'109',F'110',F'111',F'112'
          DC    F'113',F'114',F'0',F'0',F'0',F'0',F'0',F'0'
-         DC    F'0',F'0',F'115',F'116',F'117',F'118',F'119',F'120'
-         DC    F'121',F'122',F'0',F'0',F'0',F'0',F'0',F'0'
+* HERCULES DEFAULT INPUT USES X'A1' FOR '~'.
+         DC    F'0',F'126',F'115',F'116',F'117',F'118',F'119',F'120'
+* HERCULES DEFAULT INPUT USES X'AD' FOR '['.
+         DC    F'121',F'122',F'0',F'0',F'0',F'91',F'0',F'0'
+* HERCULES DEFAULT INPUT USES X'BD' FOR ']'.
+         DC    F'0',F'0',F'0',F'0',F'0',F'93',F'0',F'0'
          DC    F'0',F'0',F'0',F'0',F'0',F'0',F'0',F'0'
-         DC    F'0',F'0',F'0',F'0',F'0',F'0',F'0',F'0'
-         DC    F'0',F'65',F'66',F'67',F'68',F'69',F'70',F'71'
+* HERCULES DEFAULT INPUT USES X'C0' FOR '{'.
+         DC    F'123',F'65',F'66',F'67',F'68',F'69',F'70',F'71'
          DC    F'72',F'73',F'0',F'0',F'0',F'0',F'0',F'0'
-         DC    F'0',F'74',F'75',F'76',F'77',F'78',F'79',F'80'
+* HERCULES DEFAULT INPUT USES X'D0' FOR '}'.
+         DC    F'125',F'74',F'75',F'76',F'77',F'78',F'79',F'80'
          DC    F'81',F'82',F'0',F'0',F'0',F'0',F'0',F'0'
-* TK5/HERCULES INPUT USES THE CP037 BACKSLASH AT X'E0'. RETAIN THE
-* HISTORICAL X'62' MAPPING ABOVE AND ACCEPT X'E0' AS AN INPUT ALIAS.
+* HERCULES DEFAULT INPUT USES X'E0' FOR '\'. HISTORICAL X'62' ABOVE
+* REMAINS AS A NON-CONFLICTING ALIAS.
          DC    F'92',F'0',F'83',F'84',F'85',F'86',F'87',F'88'
          DC    F'89',F'90',F'0',F'0',F'0',F'0',F'0',F'0'
          DC    F'48',F'49',F'50',F'51',F'52',F'53',F'54',F'55'
