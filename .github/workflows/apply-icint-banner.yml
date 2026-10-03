@@ -1,0 +1,60 @@
+name: Apply ICINT V17 banner patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-icint-banner.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply exact banner replacements
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('asm/icintv17.asm')
+          text = path.read_text()
+
+          replacements = [
+              (
+                  "ENTERMSG DC    AL1(23),C'INTCODE SYSTEM ENTERED',X'15'",
+                  "ENTERMSG DC    AL1(24),C'INTCODE SYSTEM ENTERED, '",
+              ),
+              (
+                  "SIZEMSG  DC    AL1(19),X'15',C'PROGRAM SIZE = %N',X'15'",
+                  "SIZEMSG  DC    AL1(20),C'PROGRAM SIZE = %N',X'15',X'15',X'15'",
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one occurrence of {old!r}; found {count}')
+              text = text.replace(old, new)
+
+          path.write_text(text)
+          PY
+
+          git diff --check
+          test "$(git diff --numstat -- asm/icintv17.asm)" = $'2\t2\tasm/icintv17.asm'
+
+      - name: Commit patch and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name 'BCPL reconstruction automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm .github/workflows/apply-icint-banner.yml
+          git add asm/icintv17.asm
+          git commit -m 'Format ICINT V17 startup banner'
+          git push origin HEAD:main
