@@ -1,0 +1,92 @@
+// RESUMECO-CHAIN.BCPL
+//
+// Exercise historical RESUMECO parent-transfer semantics using the fixed-stack
+// coroutine mechanism already proven by fixed-stack-producer-consumer.bcpl.
+// No allocator is required; coroutine storage is statically reserved.
+
+GLOBAL $(
+START:1
+CHANGECO:6
+CURRCO:7
+WRITEF:76
+$)
+
+LET CALLCO(CPTR, A) = VALOF
+$( CPTR!1 := CURRCO
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND COWAIT(A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   RESULTIS CHANGECO(A, PARENT)
+$)
+
+AND RESUMECO(CPTR, A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   CPTR!1 := PARENT
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND MAKECO(FN, SIZE, C) = VALOF
+$( C!0 := C
+   C!1 := CURRCO
+   C!2 := FN
+   C!3 := SIZE
+   C!4 := C
+
+   CHANGECO(0, C)
+
+   C := FN(COWAIT(C)) REPEAT
+$)
+
+AND COA(BPTR) = VALOF
+$( LET V = 0
+
+   WRITEF("A START*N")
+   V := RESUMECO(BPTR, 111)
+   WRITEF("A RESUMED WITH %N*N", V)
+   COWAIT(444)
+
+   RESULTIS -1
+$)
+
+AND COB(ARG) = VALOF
+$( LET V = 0
+
+   WRITEF("B START WITH %N*N", ARG)
+   V := COWAIT(222)
+   WRITEF("B RESUMED WITH %N*N", V)
+   COWAIT(666)
+
+   RESULTIS -1
+$)
+
+AND START() BE
+$( LET ROOT = VEC 4
+   AND ASTACK = VEC 100
+   AND BSTACK = VEC 100
+   AND ACO = 0
+   AND BCO = 0
+   AND V = 0
+
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+
+   BCO := MAKECO(COB, 100, BSTACK)
+   ACO := MAKECO(COA, 100, ASTACK)
+
+   V := CALLCO(ACO, BCO)
+   WRITEF("ROOT GOT %N*N", V)
+
+   V := CALLCO(ACO, 333)
+   WRITEF("ROOT GOT %N*N", V)
+
+   V := CALLCO(BCO, 555)
+   WRITEF("ROOT GOT %N*N", V)
+
+   FINISH
+$)
