@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This document records the native BCPL execution conventions recoverable from the surviving IBM/370 compiler source.
+This document records the native BCPL execution conventions recoverable from the surviving IBM/370 compiler source and turns them into the runtime contract for the first reconstructed native compiler.
 
-It is not yet a complete replacement for the missing historical `BCPLMAIN`. It is the minimum ABI baseline the native code generator should preserve.
+It is **not** yet a complete replacement for the missing historical `BCPLMAIN`. It defines what generated native BCPL code may assume, what the reconstructed runtime shim must establish, and which details remain experimental.
 
 Primary evidence:
 
@@ -19,335 +19,432 @@ richards-bcpltape/bcplib/jcl/makelib
 
 ---
 
-## Register assignments
+# 1. Established machine model
 
-The later IBM/370 generator defines these integer-register roles:
+## BCPL word
+
+```text
+word size             32 bits
+bytes per word        4
+native address unit   byte
+BCPL logical indexing word-oriented
+```
+
+Generated workspace/global offsets therefore use:
+
+```text
+BCPL slot n -> byte displacement 4*n
+```
+
+No 24-bit BCPL word model is implied merely because the target is classic System/370; BCPL values are full 32-bit words in the surviving generator.
+
+---
+
+# 2. Register contract
+
+The recovered register assignments are:
 
 ```text
 R1   K4    constant/base helper
 R2   K8    constant/base helper
 R3   K12   constant/base helper
-R4   B     function/code address and section base role
-R5   P     BCPL workspace/frame pointer
-R6   L     link register for BCPL-to-BCPL calls
-R7   A1    first argument / function result
-R8   A2    second argument
-R9   A3    third argument
-R10  A4    fourth argument
-R11  S     runtime/support base / return support register
-R12  G     BCPL global-vector base
-R13        used in generated section entry/save conventions
-R14  A     auxiliary/runtime call link register
-R15  W     new workspace/frame address during calls
+R4   B     code/function address; code-base role
+R5   P     current BCPL workspace/frame pointer
+R6   L     hardware link register for BCPL call
+R7   A1    argument 1 / function result
+R8   A2    argument 2
+R9   A3    argument 3
+R10  A4    argument 4
+R11  S     BCPL runtime/support base and return-support register
+R12  G     BCPL GLOBAL-vector base
+R13        outer/generated-entry save-area interaction
+R14  A     auxiliary/runtime-call link
+R15  W     new workspace address during BCPL calls
 ```
 
-The names above come from the historical generator and should be preserved in implementation notes and reconstructed source where practical.
+### Contract
+
+Generated BCPL-to-BCPL code may rely on these assignments.
+
+The MVS-facing startup shim may use conventional linkage on entry, but it must establish the BCPL register state before entering generated code.
+
+Do not redesign this map to resemble ordinary OS assembler linkage.
 
 ---
 
-## BCPL word and address model
+# 3. Workspace/frame contract
 
-The later compiler assumes:
+R5 (`P`) points to the current BCPL workspace.
 
-```text
-32-bit BCPL words
-4 bytes per word
-```
-
-Workspace and global slot numbers are therefore translated to System/370 byte displacements by multiplying by four.
-
-Examples from the generator include:
+Generated local accesses use:
 
 ```text
-local N  -> 4*N(R5)
-global N -> 4*N(R12)
+P[n] == fullword at 4*n(R5)
 ```
 
-The native ABI therefore uses real byte addresses in System/370 registers while preserving BCPL's logical word indexing in compiler-generated offsets.
+The OCODE/call convention reserves low workspace slots for procedure linkage and argument preservation. The later CG's `SAVE` logic maps incoming argument registers into workspace beginning at the historical local-slot convention used by the compiler.
+
+For the first reconstructed runtime we do **not** need a general MVS stack abstraction. We need a contiguous writable BCPL workspace large enough for the accepted program and runtime frames.
+
+### Root-frame requirement
+
+Before first BCPL procedure entry, the runtime must provide:
+
+- a valid writable root workspace;
+- R5/R15 values consistent with entering the first generated procedure;
+- sufficient storage to prevent accepted test programs from colliding with runtime state;
+- deterministic failure if the provisional workspace is exhausted.
+
+Exact production stack-growth policy is deferred.
 
 ---
 
-## Workspace pointer `P`
+# 4. Procedure call contract
 
-R5 (`R.P`) is the BCPL workspace/frame pointer.
+The surviving `CGAPPLY` provides the baseline.
 
-The OCODE stack model and procedure protocol use numbered workspace words relative to `P`.
-
-The later generator maintains a virtual stack and spills values into slots relative to R5.
-
-A call computes the new workspace pointer from the caller's workspace and the OCODE frame offset `K`:
+For a call with OCODE frame/workspace offset `K`:
 
 ```text
 R15 := R5 + 4*K
+R4  := callee address
+R7  := argument 1, when present
+R8  := argument 2, when present
+R9  := argument 3, when present
+R10 := argument 4, when present
+additional arguments -> new workspace
+BALR R6,R4
 ```
 
-R15 is then available to the called routine as the new frame/workspace address.
+The code generator may have to spill/reload values before this sequence; those are implementation details, not ABI changes.
+
+### Function versus routine
+
+```text
+FNAP  expects result in R7
+RTAP  has no expression result
+```
+
+### Contract
+
+The reconstructed CG370 must preserve the historical `K`-based workspace calculation rather than introduce a new caller-allocated MVS save-area frame.
 
 ---
 
-## Procedure call convention
+# 5. Procedure entry / SAVE contract
 
-The later generator's `CGAPPLY` establishes the historical BCPL call protocol.
+`ENTRY` identifies and labels a generated BCPL procedure.
 
-At a high level:
+`SAVE N` establishes the concrete callee frame.
 
-```text
-caller:
-    place first arguments in R7-R10 when possible
-    place remaining arguments in the new workspace
-    R15 := address of callee workspace
-    R4  := function/routine address
-    BALR R6,R4
-```
-
-The first four arguments map to:
+The later CG shows this sequence in substance:
 
 ```text
-arg1 -> R7
-arg2 -> R8
-arg3 -> R9
-arg4 -> R10
-```
-
-Additional arguments are stored in workspace words.
-
-The code generator specifically avoids allocating R15 for unrelated expression work because `CGAPPLY` depends on it.
-
----
-
-## Function result
-
-For `FNAP`, the later generator treats R7 (`R.A1`) as the returned function value.
-
-`FNRN` moves the expression result into R7 before returning.
-
-Therefore:
-
-```text
-BCPL function result -> R7
-```
-
-A routine call (`RTAP`) has no required expression result.
-
----
-
-## Procedure entry / SAVE
-
-The later generator separates an `ENTRY` marker from `SAVE N`.
-
-`ENTRY` establishes a generated procedure label and associated name/debug information.
-
-`SAVE N` performs the concrete entry-frame setup. Without stack-checking enabled, the relevant behavior is:
-
-```text
-store incoming registers beginning with R4
+store incoming BCPL registers needed by frame
 R5 := R15
-initialize compiler view of workspace size N
-record register arguments into local workspace slots
+materialize register arguments in expected workspace slots
+initialize procedure workspace depth N
 ```
 
-The exact `STM` upper register depends on frame size, capped at R10.
+The exact `STM` range depends on the frame/argument requirement and is capped at the argument-register range.
 
-This confirms that R15 carries the new frame address into the callee and R5 becomes the callee's active BCPL workspace pointer.
+### Contract
+
+For the first native CG, generated procedure entry must remain structurally compatible with the later generator. Optimization may come later.
 
 ---
 
-## Return convention
+# 6. Function result contract
 
-The generator emits procedure return as:
+A BCPL function returns its value in:
 
 ```text
-BCR 15,R11
+R7 (A1)
 ```
 
-where R11 is named `R.S`.
+`FNRN` moves the result expression into R7 before return.
 
-This is important: BCPL-to-BCPL return does **not** simply branch through the `BALR` link in R6.
+The caller's `FNAP` path then treats R7 as the pushed result value.
 
-The missing runtime/startup machinery therefore has some responsibility for establishing the R11 support convention used by generated procedures.
-
-This is one of the highest-priority runtime details to recover experimentally before complex native calls are trusted.
+This is established strongly enough to use in the first call acceptance test.
 
 ---
 
-## Call link R6
+# 7. Return-support contract and unresolved R6/R11 handoff
 
-BCPL calls use:
+Calls use:
 
 ```text
 BALR R6,R4
 ```
 
-R6 receives the hardware return address.
+but generated `FNRN` / `RTRN` returns use:
 
-The generated callee protocol and/or support base reached through R11 transforms this into the historical BCPL return mechanism.
+```text
+BCR 15,R11
+```
 
-The surviving generator is clear that R6 participates in calls, while R11 is used by `RTRN/FNRN` returns. The exact handoff between them is not completely reconstructable from the surviving generator alone because the machine-code runtime source is missing.
+This means R11 is not merely an arbitrary preserved register. It participates in the historical BCPL return/runtime support mechanism.
 
-### Required experiment
-
-The first reconstructed runtime shim should expose this mechanism with the smallest possible two-procedure native program and retain the listing/register reasoning as evidence.
-
----
-
-## Global vector
-
-R12 (`R.G`) is the BCPL global-vector base.
-
-Generated global loads/stores are based on R12.
-
-The later generator emits a global initialization structure containing global numbers and generated addresses. The compiler's in-memory `LOADCODE()` routine independently confirms the model by populating global-vector entries from generated pairs.
+The missing `BCPLMAIN` source prevents a complete static reconstruction of how the R6 hardware return address is transformed into or serviced through R11.
 
 ### Decision
 
-Native modules continue to rendezvous through the BCPL GLOBAL vector. This is the native continuation of the linkage model already used successfully by separately compiled interpreted BCPL modules.
+The first runtime shim must implement **only enough R11 support to make A3 (single BCPL function call) correct and explainable**.
+
+Do not hard-code a guessed full historical support-vector layout before that experiment.
+
+### Required evidence
+
+When A3 first passes, retain:
+
+- generated IFOX source;
+- assembler listing around caller and callee;
+- startup/runtime shim source;
+- a written register trace showing R4/R5/R6/R7/R11/R15 across call and return.
+
+That experiment promotes the return mechanism from “inferred” to “established for reconstruction.”
 
 ---
 
-## Section entry
+# 8. GLOBAL-vector contract
 
-The generated section begins with code structurally like:
+R12 (`G`) is the BCPL GLOBAL-vector base.
+
+Generated operations use:
 
 ```text
-STM 14,12,12(13)
-L   R4,12(R15)
-BCR 15,R4
-<metadata / external address>
+LG n -> load 4*n(R12)
+SG n -> store 4*n(R12)
+LLG n -> address 4*n(R12)
 ```
 
-The surviving `bcplib/asm/program` module shows the same prologue pattern and an external reference to `BCPLMAIN`.
+Generated modules also emit GLOBAL-definition information associating global numbers with generated addresses.
 
-This means a generated BCPL section is not entered like a standalone conventional MVS assembler program. It expects a surrounding BCPL runtime/startup environment.
+The later compiler's `LOADCODE()` independently demonstrates the intended result: initialize the vector, then install addresses from the module's global-definition table.
 
-### Decision
+### Contract
 
-Do not force each generated BCPL section to obey ordinary MVS program-entry linkage internally.
+The reconstructed runtime/startup must provide one GLOBAL vector shared by all linked BCPL modules in the load module.
 
-Construct an MVS-compatible outer shim that establishes the BCPL machine state, then let generated BCPL code use its historical ABI.
+MVS external linkage does not replace this mechanism.
+
+### Initial global-vector policy
+
+For acceptance work:
+
+- allocate a fixed-size vector comfortably above the highest global used by the test;
+- initialize unused entries deterministically, preferably with an unmistakable invalid/sentinel value;
+- install module definitions before invoking `START`;
+- fail loudly on an out-of-range global definition.
+
+Production sizing can be revisited later.
 
 ---
 
-## `BCPLMAIN` external dependency
+# 9. Program entry contract
 
-`CGSTART` creates an external reference named `BCPLMAIN`.
+Generated sections are **not** ordinary standalone MVS main programs.
 
-The historical build JCL states that the missing `BCPLMAIN` assembler source supplied the machine-code library and produced runtime pieces including:
+Surviving generated/handwritten section entry has the characteristic form:
 
 ```text
-BCPLMAIN
-$MAIN$
-$BLOCK$
-$LOAD$
-$TPUT$
+STM   14,12,12(13)
+L     R4,12(R15)
+BCR   15,R4
+... metadata / external address ...
 ```
 
-The generator and application sections therefore assume more than a single entry stub.
+`bcplib/asm/program` also declares `EXTRN BCPLMAIN` and follows this pattern.
 
-### Initial reconstruction policy
+### Contract
 
-The first reconstructed `BCPLMAIN` should be deliberately minimal and should only implement services demonstrated as necessary by native acceptance tests.
-
-Do not claim compatibility with the complete historical runtime until evidence supports it.
-
----
-
-## Global-vector initialization
-
-The later compiler's `LOADCODE()` provides valuable evidence for initialization semantics.
-
-It:
-
-1. establishes a global vector;
-2. initializes otherwise-unset entries with recognizable sentinel values;
-3. walks the generated global-definition table;
-4. installs generated addresses into the corresponding global slots.
-
-A linkable native implementation does not need to copy this exact in-memory loader algorithm, but it must reproduce the same resulting GLOBAL relationships.
-
----
-
-## Base/address conventions
-
-The generator names helper registers R1/R2/R3 as K4/K8/K12 and works within System/370 displacement constraints.
-
-It also tracks per-procedure/section base information and enforces a code-size limit of approximately 4095 words.
-
-### Initial policy
-
-Preserve the historical base-management strategy while reviving the backend.
-
-Do not optimize or redesign addressability until the historical generated code runs reliably.
-
----
-
-## Byte access
-
-The later generator's direct byte operations calculate a byte displacement from BCPL word address plus byte index and use `IC`/`STC`.
-
-This confirms the expected native representation:
+The reconstructed system has two distinct boundaries:
 
 ```text
-BCPL word address -> System/370 byte address
-byte index        -> byte displacement
+MVS entry linkage
+      |
+      v
+minimal BCPL startup/runtime shim
+      |
+      v
+historical BCPL/System-370 procedure ABI
 ```
 
-The exact byte-order convention should continue to be validated against the working interpreted `GETBYTE`/`PUTBYTE` behavior.
+Only the outer shim must look conventional to MVS.
 
 ---
 
-## MVS boundary
+# 10. Minimal reconstructed runtime contract
 
-The reconstructed runtime must bridge two conventions:
+The first runtime shim is intentionally smaller than historical `BCPLMAIN`.
 
-```text
-MVS program linkage
-        |
-        v
-reconstructed BCPL startup/runtime
-        |
-        v
-historical BCPL/System-370 ABI
-```
+For acceptance cases A0-A5 it must provide, at minimum:
 
-The outer MVS-facing code is free to use standard save areas, entry registers, GETMAIN, QSAM, and other services.
+## Startup
 
-Generated BCPL procedures should not be rewritten to look like ordinary MVS assembler subroutines.
+- preserve/restore MVS caller state sufficiently for normal program return;
+- obtain or reserve BCPL workspace storage;
+- reserve GLOBAL-vector storage;
+- initialize R12 to the GLOBAL vector;
+- initialize root BCPL workspace state;
+- install generated GLOBAL definitions;
+- identify global 1 / `START` entry and invoke it using the native BCPL ABI.
+
+## Return support
+
+- establish the R11 convention needed by generated BCPL returns;
+- make nested BCPL calls work by A3/A4;
+- preserve caller workspace and return address according to the recovered ABI.
+
+## Termination
+
+- provide the support path used by generated `FINISH`;
+- return to MVS normally for success;
+- provide a deterministic non-success path for runtime fatal errors.
+
+## Minimal result/output support
+
+For early semantic tests, choose one of these in order of preference:
+
+1. a tiny runtime routine callable through a known GLOBAL slot that writes a deterministic line to `SYSPRINT`;
+2. an even smaller test-only result mailbox inspected by the MVS wrapper, if formatted output would distract from ABI work.
+
+The acceptance corpus should not require full historical `WRITEF` before arithmetic/call/global semantics are proven.
 
 ---
 
-## ABI items considered established
+# 11. Runtime services explicitly not required initially
 
-The surviving generator strongly supports these points:
+A0-A5 do not require the full historical machine-code library.
+
+Defer until demanded by native tests:
 
 ```text
-word size                 32 bits
-workspace pointer         R5
-function/code address     R4 at call
-call link                 BALR R6,R4
-first four arguments      R7-R10
-function result           R7
-new frame/workspace       R15 before call, then R5 in callee
-global-vector base        R12
-BCPL return support       R11
-word displacement scale   4 bytes
+full stream subsystem
+FINDINPUT/FINDOUTPUT
+GETVEC/FREEVEC production integration
+LOADSEG/UNLOADSEG
+coroutines/CHANGECO
+postmortem/debugger services
+stack-check/counting services
+floating point
+TPUT/terminal support
+complete historical system-function dispatcher
 ```
 
 ---
 
-## ABI items still requiring runtime reconstruction
+# 12. Static data and relocation contract
 
-These are not fully determined from surviving source alone:
+Because the initial reconstructed CG emits IFOX assembler, relocation is initially delegated to IFOX/IEWL.
+
+CG370 must emit assembler expressions/symbol references for:
+
+- procedure labels;
+- string/static data labels;
+- global-definition addresses;
+- runtime external symbols where truly required.
+
+This avoids reconstructing object-card relocation simultaneously with code semantics.
+
+The historical relocation/deck machinery remains the compatibility reference for later direct-object emission.
+
+---
+
+# 13. Base/addressability contract
+
+System/370 RX-format displacements are limited to 12 bits.
+
+The later CG explicitly manages bases and limits generated section size to roughly 4095 words.
+
+### Initial decision
+
+Preserve bounded sections and explicit base management.
+
+For IFOX output, generated source must include a clear base-register plan and `USING`/`DROP` directives or equivalent generated address forms sufficient for IFOX to diagnose reachability.
+
+Do not solve arbitrary-size code before the historical section model works.
+
+---
+
+# 14. Byte representation contract
+
+Native BCPL word addresses become System/370 byte addresses. Byte access in the later generator uses `IC` and `STC` after scaling/index calculation.
+
+The exact packed-string/byte ordering must match the already-working interpreted `GETBYTE`/`PUTBYTE` behavior.
+
+### Rule
+
+Do not declare byte semantics established solely from reading the later CG. A6 must compare native results with ICINT for the same string source.
+
+---
+
+# 15. MVS-facing contract
+
+The runtime shim may use ordinary MVS facilities internally:
+
+- standard entry/save-area conventions;
+- GETMAIN/FREEMAIN;
+- QSAM or existing project stream machinery;
+- normal MVS return codes and ABEND handling.
+
+But these choices must terminate at the runtime boundary. Generated BCPL-to-BCPL calls retain the historical ABI.
+
+---
+
+# 16. Established versus provisional ABI
+
+## Established strongly enough to implement
 
 ```text
-exact startup register state supplied by BCPLMAIN
-precise R6 -> R11 return-support mechanism
-layout/ownership of root workspace
-complete system-function dispatch
-termination path
-stack-limit/checking runtime protocol
-exact runtime service table addressed through R11
-MVS save-area interaction at outer boundary
-full cross-module loader/segment conventions
+32-bit word
+4-byte slot scale
+R4  callee/code address
+R5  current P/workspace
+R6  BALR call link
+R7-R10 first four arguments
+R7  function result
+R12 global-vector base
+R15 new frame/workspace address
+P-relative locals
+G-relative globals
+GLOBAL-vector cross-module linkage
 ```
 
-These should be resolved in the acceptance order rather than speculated into existence.
+## Strong evidence, but first native experiment must confirm exact runtime behavior
+
+```text
+R11 return/support mechanism
+root frame layout
+START invocation details
+FINISH support entry
+module GLOBAL-definition installation sequence
+```
+
+## Deferred/unknown
+
+```text
+complete historical BCPLMAIN service table
+full system-function dispatch
+stack-check/counting protocol
+segment loader ABI
+postmortem runtime layout
+complete overlay conventions
+```
+
+---
+
+# 17. Acceptance gates for this contract
+
+The ABI is considered sufficiently established for further compiler expansion when:
+
+```text
+A0 proves startup/FINISH
+A3 proves one nested function call and return
+A4 proves argument registers/workspace overflow arguments
+A5 proves GLOBAL vector initialization and mutation
+A7 proves the same ABI across separately generated modules
+```
+
+Each gate should update this document when experiment reveals a detail more precise than the current source-derived contract.
