@@ -1,0 +1,31 @@
+// REPEAT-FORMS.BCPL
+// Demonstrate REPEAT, REPEATWHILE, and REPEATUNTIL.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET I = 0
+
+   WRITEF("REPEATWHILE:")
+   $( I := I+1
+      WRITEF(" %N", I)
+   $) REPEATWHILE I<3
+   WRITEF("*N")
+
+   I := 0
+   WRITEF("REPEATUNTIL:")
+   $( I := I+1
+      WRITEF(" %N", I)
+   $) REPEATUNTIL I=3
+   WRITEF("*N")
+
+   I := 0
+   WRITEF("REPEAT WITH BREAK:")
+   $( I := I+1
+      WRITEF(" %N", I)
+      IF I=3 BREAK
+   $) REPEAT
+   WRITEF("*N")
+
+   FINISH
+$)
