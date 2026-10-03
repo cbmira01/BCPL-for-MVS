@@ -1,11 +1,11 @@
 // QUICKSORT.BCPL
-// Quicksort a vector, choosing pivots with the shared random module.
+// Quicksort a vector, choosing pivots with the shared random library.
 
 GLOBAL $(
 START:1
 WRITEF:76
-RANDSEED:190
-RANDRANGE:192
+SRAND:96
+RANDRANGE:98
 $)
 
 LET SWAP(V, A, B) BE
@@ -45,7 +45,7 @@ $( LET V = VEC 11
    V!4:=8;  V!5:=41; V!6:=3;  V!7:=27
    V!8:=15; V!9:=6;  V!10:=33; V!11:=11
 
-   RANDSEED(2026)
+   SRAND(2026)
    WRITEF("BEFORE:")
    FOR I = 0 TO 11 DO WRITEF(" %N", V!I)
    WRITEF("*N")
