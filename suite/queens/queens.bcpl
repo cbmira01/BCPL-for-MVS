@@ -12,7 +12,7 @@ LET SAFE(C, R, Q) = VALOF
 $( FOR J = 0 TO C-1 DO
    $( LET D = Q!J - R
       IF D<0 DO D := -D
-      IF Q!J=R \/ D=C-J RESULTIS FALSE
+      IF Q!J=R | D=C-J RESULTIS FALSE
    $)
    RESULTIS TRUE
 $)
