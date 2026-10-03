@@ -57,6 +57,21 @@ run_demo "table-vector" \
     "$ICINT" \
     "$SUITE/table-vector/table-vector.bcpl"
 
+run_demo "manifest-global" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/manifest-global/manifest-global.bcpl"
+
+run_demo "repeat-forms" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/repeat-forms/repeat-forms.bcpl"
+
+run_demo "strings-bytes" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/strings-bytes/strings-bytes.bcpl"
+
 echo
 echo "================================================================"
 echo "LANGUAGE SUITE COMPLETE"
