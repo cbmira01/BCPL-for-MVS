@@ -8,8 +8,39 @@ set -u
 set -o pipefail
 
 COMPILE="tools/compile-and-run"
-ICINT="asm/icintv17.asm"
+ICINT="$(bash tools/current-icint)"
 SUITE="suite"
+
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+        --icint)
+            if [ "$#" -lt 2 ]
+            then
+                echo "run-demo-suite.sh: --icint requires a path" >&2
+                exit 2
+            fi
+            ICINT="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "usage: tools/run-demo-suite.sh [--icint PATH]"
+            exit 0
+            ;;
+        *)
+            echo "run-demo-suite.sh: unknown option: $1" >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ ! -f "$ICINT" ]
+then
+    echo "run-demo-suite.sh: ICINT source not found: $ICINT" >&2
+    exit 2
+fi
+
+echo "ICINT: $ICINT"
 
 FAILURES=0
 
@@ -135,4 +166,3 @@ else
     echo "$FAILURES demo(s) failed."
     exit 1
 fi
-
