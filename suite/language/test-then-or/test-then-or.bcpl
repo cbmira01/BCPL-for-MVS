@@ -1,0 +1,19 @@
+// TEST-THEN-OR.BCPL
+// Demonstrate BCPL's TEST ... THEN ... OR conditional command.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET SIGN(N) BE
+$( TEST N<0
+   THEN WRITEF("%N IS NEGATIVE*N", N)
+   OR TEST N=0
+      THEN WRITEF("%N IS ZERO*N", N)
+      OR WRITEF("%N IS POSITIVE*N", N)
+$)
+
+AND START() BE
+$( SIGN(-7)
+   SIGN(0)
+   SIGN(12)
+   FINISH
+$)
