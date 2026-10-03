@@ -1,44 +1,28 @@
-# Pseudo-random number module
+# Pseudo-random number demonstration
 
-This directory contains a small seedable pseudo-random number generator intended as
-shared infrastructure for the BCPL demonstration suite.
+This directory demonstrates the reusable pseudo-random number implementation now maintained in `library/random.bcpl`.
 
-The implementation uses the Park-Miller "minimal standard" generator with Schrage's
-overflow-avoiding formulation.  This is deliberately chosen so that the sequence does
-not depend on signed 32-bit multiplication overflow semantics.
+The library uses the Park-Miller "minimal standard" generator with Schrage's overflow-avoiding formulation, so the sequence does not depend on signed 32-bit multiplication overflow semantics.
 
-## Interface
+The public interface is:
 
-The module reserves GLOBAL slots 190 through 193:
-
-- `RANDSEED:190` — set the generator state;
-- `RAND:191` — return the next pseudo-random integer;
-- `RANDRANGE:192` — return a pseudo-random integer in `0..N-1`;
-- `RANDSTATE:193` — private persistent generator state.
-
-`RANDSEED(N)` normalizes the seed into the valid Park-Miller state range.  A zero
-seed becomes 1.  `RAND()` returns values in `1..2147483646`.  `RANDRANGE(N)` returns
-0 for non-positive `N`; otherwise it returns `RAND() REM N`.
-
-This is not a cryptographic random-number generator.  It is intended for algorithms,
-demonstrations, reproducible test data, randomized search order, shuffling, and similar
-suite programs.
-
-## Demonstration
-
-`demo.bcpl` seeds the generator, prints five raw values, reseeds it, and prints ten
-values in the range 0 through 99.
+```text
+SRAND(N)
+RAND()
+RANDRANGE(N)
+RANDSEED(N)   compatibility spelling for SRAND
+```
 
 Run the demonstration from the repository root with:
 
 ```sh
 tools/compile-and-run --results \
-    asm/icintv16.asm \
+    "$(tools/current-icint)" \
     suite/random/demo.bcpl \
-    +suite/random/random.bcpl
+    +library/random.bcpl
 ```
 
-For seed 1, the first five raw values should be:
+For seed 1, the first five raw values are expected to be:
 
 ```text
 16807
@@ -48,7 +32,7 @@ For seed 1, the first five raw values should be:
 1144108930
 ```
 
-For seed 12345, the ten `RANDRANGE(100)` results should be:
+For seed 12345, the ten `RANDRANGE(100)` results are expected to be:
 
 ```text
 15
@@ -63,5 +47,4 @@ For seed 12345, the ten `RANDRANGE(100)` results should be:
 19
 ```
 
-These known sequences make the module useful as a regression test as well as a
-shared facility for later demonstrations.
+The corresponding exact-output regression is part of the `standard-library` regression-panel category.
