@@ -4,9 +4,14 @@
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET GCD(A, B) = VALOF
-$( IF A<0 DO A := -A
+$( LET R = 0
+   IF A<0 DO A := -A
    IF B<0 DO B := -B
-   UNTIL B=0 DO A, B := B, A REM B
+   UNTIL B=0 DO
+   $( R := A REM B
+      A := B
+      B := R
+   $)
    RESULTIS A
 $)
 
