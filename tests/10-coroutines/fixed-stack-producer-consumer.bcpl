@@ -1,0 +1,64 @@
+// FIXED-STACK-PRODUCER-CONSUMER.BCPL
+//
+// First executable coroutine experiment for the MR10 reconstruction.
+// Uses statically reserved coroutine storage so CHANGECO/CALLCO/COWAIT can
+// be proved independently of GETVEC/FREEVEC and full CREATECO support.
+
+GLOBAL $(
+START:1
+CHANGECO:6
+CURRCO:7
+WRITEF:76
+$)
+
+LET CALLCO(CPTR, A) = VALOF
+$( CPTR!1 := CURRCO
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND COWAIT(A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   RESULTIS CHANGECO(A, PARENT)
+$)
+
+AND MAKECO(FN, SIZE, C) = VALOF
+$( C!0 := C
+   C!1 := CURRCO
+   C!2 := FN
+   C!3 := SIZE
+   C!4 := C
+
+   CHANGECO(0, C)
+
+   C := FN(COWAIT(C)) REPEAT
+$)
+
+AND PRODUCER(ARG) = VALOF
+$( FOR N = 1 TO 5 DO
+   $( WRITEF("PRODUCER: %N*N", N)
+      COWAIT(N)
+   $)
+   RESULTIS -1
+$)
+
+AND START() BE
+$( LET ROOT = VEC 4
+   AND COSTACK = VEC 100
+   AND CO = 0
+   AND VALUE = 0
+
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+
+   CO := MAKECO(PRODUCER, 100, COSTACK)
+
+   FOR I = 1 TO 5 DO
+   $( VALUE := CALLCO(CO, 0)
+      WRITEF("CONSUMER: %N*N", VALUE)
+   $)
+
+   FINISH
+$)
