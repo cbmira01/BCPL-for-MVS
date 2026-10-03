@@ -2364,7 +2364,9 @@ ETOATAB  DC    F'-1'
          DC    F'72',F'73',F'0',F'0',F'0',F'0',F'0',F'0'
          DC    F'0',F'74',F'75',F'76',F'77',F'78',F'79',F'80'
          DC    F'81',F'82',F'0',F'0',F'0',F'0',F'0',F'0'
-         DC    F'0',F'0',F'83',F'84',F'85',F'86',F'87',F'88'
+* TK5/HERCULES INPUT USES THE CP037 BACKSLASH AT X'E0'. RETAIN THE
+* HISTORICAL X'62' MAPPING ABOVE AND ACCEPT X'E0' AS AN INPUT ALIAS.
+         DC    F'92',F'0',F'83',F'84',F'85',F'86',F'87',F'88'
          DC    F'89',F'90',F'0',F'0',F'0',F'0',F'0',F'0'
          DC    F'48',F'49',F'50',F'51',F'52',F'53',F'54',F'55'
          DC    F'56',F'57',F'0',F'0',F'0',F'0',F'0',F'0'
