@@ -1,0 +1,32 @@
+// Regression: line-oriented library helpers on a named input stream.
+GLOBAL $(
+START:1
+SELECTINPUT:11
+FINDINPUT:42
+ENDREAD:46
+WRITEF:76
+READLINE:126
+WRITELINE:127
+$)
+
+LET START() BE
+$( LET S = FINDINPUT("LINE")
+   AND BUF = VEC 20
+   AND N = 0
+
+   IF S=0 DO
+   $( WRITEF("RP: LINE OPEN FAILED*N")
+      FINISH
+   $)
+
+   SELECTINPUT(S)
+   N := READLINE(BUF, 5)
+   WRITEF("RP: LINE1 %N %S*N", N, BUF)
+   N := READLINE(BUF, 20)
+   WRITEF("RP: LINE2 %N %S*N", N, BUF)
+   N := READLINE(BUF, 20)
+   WRITEF("RP: EOF %N*N", N)
+   ENDREAD()
+   WRITELINE("RP: WRITELINE OK")
+   FINISH
+$)
