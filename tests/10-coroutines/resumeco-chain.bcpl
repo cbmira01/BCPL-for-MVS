@@ -1,47 +1,21 @@
 // RESUMECO-CHAIN.BCPL
 //
-// Exercise historical RESUMECO parent-transfer semantics using the fixed-stack
-// coroutine mechanism already proven by fixed-stack-producer-consumer.bcpl.
-// No allocator is required; coroutine storage is statically reserved.
+// Exercise historical RESUMECO parent-transfer semantics through the packaged
+// coroutine and allocator runtime modules.
 
 GLOBAL $(
 START:1
-CHANGECO:6
 CURRCO:7
+COLIST:8
 WRITEF:76
+HEAPINIT:89
+CREATECO:91
+CALLCO:93
+COWAIT:94
+RESUMECO:95
 $)
 
-LET CALLCO(CPTR, A) = VALOF
-$( CPTR!1 := CURRCO
-   RESULTIS CHANGECO(A, CPTR)
-$)
-
-AND COWAIT(A) = VALOF
-$( LET PARENT = CURRCO!1
-   CURRCO!1 := 0
-   RESULTIS CHANGECO(A, PARENT)
-$)
-
-AND RESUMECO(CPTR, A) = VALOF
-$( LET PARENT = CURRCO!1
-   CURRCO!1 := 0
-   CPTR!1 := PARENT
-   RESULTIS CHANGECO(A, CPTR)
-$)
-
-AND MAKECO(FN, SIZE, C) = VALOF
-$( C!0 := C
-   C!1 := CURRCO
-   C!2 := FN
-   C!3 := SIZE
-   C!4 := C
-
-   CHANGECO(0, C)
-
-   C := FN(COWAIT(C)) REPEAT
-$)
-
-AND COA(BPTR) = VALOF
+LET COA(BPTR) = VALOF
 $( LET V = 0
 
    WRITEF("A START*N")
@@ -64,20 +38,32 @@ $( LET V = 0
 $)
 
 AND START() BE
-$( LET ROOT = VEC 4
-   AND ASTACK = VEC 100
-   AND BSTACK = VEC 100
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
    AND ACO = 0
    AND BCO = 0
    AND V = 0
+
+   HEAPINIT(ARENA, 401)
 
    CURRCO := ROOT
    ROOT!0 := 0
    ROOT!1 := -1
    ROOT!2 := 0
+   COLIST := ROOT
 
-   BCO := MAKECO(COB, 100, BSTACK)
-   ACO := MAKECO(COA, 100, ASTACK)
+   BCO := CREATECO(COB, 100)
+   ACO := CREATECO(COA, 100)
+
+   IF ACO = 0 DO
+   $( WRITEF("CREATE A FAILED*N")
+      FINISH
+   $)
+
+   IF BCO = 0 DO
+   $( WRITEF("CREATE B FAILED*N")
+      FINISH
+   $)
 
    V := CALLCO(ACO, BCO)
    WRITEF("ROOT GOT %N*N", V)
