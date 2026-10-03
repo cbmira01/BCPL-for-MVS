@@ -1,90 +1,18 @@
 // GETVEC-FREEVEC.BCPL
 //
-// First fixed-arena allocator proof for the reconstructed MR10 runtime.
-// The arena is a long-lived local VEC owned by START, so all returned
-// pointers remain inside ICINT's existing BCPL program/stack address space.
-//
-// Block format (all sizes are BCPL words):
-//     B!0 = total block size, including two-word header
-//     B!1 = next free block, or 0
-//
-// GETVEC(N) returns B+2 and provides N+1 payload words, matching BCPL VEC N.
-// FREEVEC(V) recovers B=V-2, reinserts it by address, and coalesces neighbors.
+// Regression for the reusable fixed-arena allocator in
+// library/getvec-freevec.bcpl.  START owns the arena for the duration of
+// the run and supplies it to the runtime with HEAPINIT.
 
 GLOBAL $(
 START:1
 WRITEF:76
-HEAPBASE:300
-FREEHEAD:301
+GETVEC:87
+FREEVEC:88
+HEAPINIT:89
 $)
 
-LET GETVEC(N) = VALOF
-$( LET NEED = N+3
-   AND PREV = 0
-   AND B = FREEHEAD
-
-   UNTIL B = 0 DO
-   $( LET SIZE = B!0
-
-      IF SIZE >= NEED DO
-      $( LET LEFT = SIZE-NEED
-
-         IF LEFT >= 3 DO
-         $( LET REST = B+NEED
-            REST!0 := LEFT
-            REST!1 := B!1
-
-            IF PREV = 0 DO FREEHEAD := REST
-            IF PREV \= 0 DO PREV!1 := REST
-
-            B!0 := NEED
-            B!1 := 0
-            RESULTIS B+2
-         $)
-
-         IF PREV = 0 DO FREEHEAD := B!1
-         IF PREV \= 0 DO PREV!1 := B!1
-
-         B!1 := 0
-         RESULTIS B+2
-      $)
-
-      PREV := B
-      B := B!1
-   $)
-
-   RESULTIS 0
-$)
-
-AND FREEVEC(V) BE
-$( LET B = V-2
-   AND PREV = 0
-   AND NEXT = FREEHEAD
-
-   WHILE NEXT \= 0 & NEXT < B DO
-   $( PREV := NEXT
-      NEXT := NEXT!1
-   $)
-
-   B!1 := NEXT
-
-   IF PREV = 0 DO FREEHEAD := B
-   IF PREV \= 0 DO PREV!1 := B
-
-   IF NEXT \= 0 DO
-      IF B+B!0 = NEXT DO
-      $( B!0 := B!0 + NEXT!0
-         B!1 := NEXT!1
-      $)
-
-   IF PREV \= 0 DO
-      IF PREV+PREV!0 = B DO
-      $( PREV!0 := PREV!0 + B!0
-         PREV!1 := B!1
-      $)
-$)
-
-AND START() BE
+LET START() BE
 $( LET ARENA = VEC 400
    AND A = 0
    AND B = 0
@@ -92,10 +20,7 @@ $( LET ARENA = VEC 400
    AND D = 0
    AND OLDB = 0
 
-   HEAPBASE := ARENA
-   FREEHEAD := ARENA
-   ARENA!0 := 401
-   ARENA!1 := 0
+   HEAPINIT(ARENA, 401)
 
    A := GETVEC(9)
    B := GETVEC(19)
