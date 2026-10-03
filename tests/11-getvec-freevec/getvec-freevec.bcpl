@@ -1,0 +1,155 @@
+// GETVEC-FREEVEC.BCPL
+//
+// First fixed-arena allocator proof for the reconstructed MR10 runtime.
+// The arena is a long-lived local VEC owned by START, so all returned
+// pointers remain inside ICINT's existing BCPL program/stack address space.
+//
+// Block format (all sizes are BCPL words):
+//     B!0 = total block size, including two-word header
+//     B!1 = next free block, or 0
+//
+// GETVEC(N) returns B+2 and provides N+1 payload words, matching BCPL VEC N.
+// FREEVEC(V) recovers B=V-2, reinserts it by address, and coalesces neighbors.
+
+GLOBAL $(
+START:1
+WRITEF:76
+HEAPBASE:300
+FREEHEAD:301
+$)
+
+LET GETVEC(N) = VALOF
+$( LET NEED = N+3
+   AND PREV = 0
+   AND B = FREEHEAD
+
+   UNTIL B = 0 DO
+   $( LET SIZE = B!0
+
+      IF SIZE >= NEED DO
+      $( LET LEFT = SIZE-NEED
+
+         IF LEFT >= 3 DO
+         $( LET REST = B+NEED
+            REST!0 := LEFT
+            REST!1 := B!1
+
+            IF PREV = 0 DO FREEHEAD := REST
+            IF PREV \= 0 DO PREV!1 := REST
+
+            B!0 := NEED
+            B!1 := 0
+            RESULTIS B+2
+         $)
+
+         IF PREV = 0 DO FREEHEAD := B!1
+         IF PREV \= 0 DO PREV!1 := B!1
+
+         B!1 := 0
+         RESULTIS B+2
+      $)
+
+      PREV := B
+      B := B!1
+   $)
+
+   RESULTIS 0
+$)
+
+AND FREEVEC(V) BE
+$( LET B = V-2
+   AND PREV = 0
+   AND NEXT = FREEHEAD
+
+   UNTIL NEXT = 0 DO
+   $( IF NEXT > B BREAK
+      PREV := NEXT
+      NEXT := NEXT!1
+   $)
+
+   B!1 := NEXT
+
+   IF PREV = 0 DO FREEHEAD := B
+   IF PREV \= 0 DO PREV!1 := B
+
+   IF NEXT \= 0 DO
+      IF B+B!0 = NEXT DO
+      $( B!0 := B!0 + NEXT!0
+         B!1 := NEXT!1
+      $)
+
+   IF PREV \= 0 DO
+      IF PREV+PREV!0 = B DO
+      $( PREV!0 := PREV!0 + B!0
+         PREV!1 := B!1
+      $)
+$)
+
+AND START() BE
+$( LET ARENA = VEC 400
+   AND A = 0
+   AND B = 0
+   AND C = 0
+   AND D = 0
+   AND OLDB = 0
+
+   HEAPBASE := ARENA
+   FREEHEAD := ARENA
+   ARENA!0 := 401
+   ARENA!1 := 0
+
+   A := GETVEC(9)
+   B := GETVEC(19)
+   C := GETVEC(29)
+
+   IF A = 0 DO
+   $( WRITEF("ALLOC A FAILED*N")
+      FINISH
+   $)
+   IF B = 0 DO
+   $( WRITEF("ALLOC B FAILED*N")
+      FINISH
+   $)
+   IF C = 0 DO
+   $( WRITEF("ALLOC C FAILED*N")
+      FINISH
+   $)
+
+   A!0 := 101
+   A!9 := 109
+   B!0 := 201
+   B!19 := 219
+   C!0 := 301
+   C!29 := 329
+
+   WRITEF("ALLOCATED A B C*N")
+   WRITEF("A DATA %N %N*N", A!0, A!9)
+   WRITEF("B DATA %N %N*N", B!0, B!19)
+   WRITEF("C DATA %N %N*N", C!0, C!29)
+
+   OLDB := B
+   FREEVEC(B)
+   D := GETVEC(19)
+
+   IF D = OLDB DO WRITEF("REUSED B BLOCK*N")
+   IF D \= OLDB DO WRITEF("B BLOCK NOT REUSED*N")
+
+   FREEVEC(A)
+   FREEVEC(D)
+   FREEVEC(C)
+
+   D := GETVEC(99)
+   IF D = 0 DO
+   $( WRITEF("COALESCE ALLOC FAILED*N")
+      FINISH
+   $)
+
+   D!0 := 777
+   D!99 := 888
+   WRITEF("COALESCED ALLOC %N %N*N", D!0, D!99)
+
+   FREEVEC(D)
+   WRITEF("GETVEC FREEVEC OK*N")
+
+   FINISH
+$)
