@@ -1,20 +1,20 @@
 // DEMO.BCPL
-// Demonstrate deterministic use of suite/random/random.bcpl.
+// Demonstrate deterministic use of library/random.bcpl.
 
 GLOBAL $(
 START:1
 WRITEF:76
-RANDSEED:190
-RAND:191
-RANDRANGE:192
+SRAND:96
+RAND:97
+RANDRANGE:98
 $)
 
 LET START() BE
-$( RANDSEED(1)
+$( SRAND(1)
    WRITEF("FIRST FIVE RAND VALUES:*N")
    FOR I = 1 TO 5 DO WRITEF("%N*N", RAND())
 
-   RANDSEED(12345)
+   SRAND(12345)
    WRITEF("TEN VALUES IN 0..99:*N")
    FOR I = 1 TO 10 DO WRITEF("%N*N", RANDRANGE(100))
 
