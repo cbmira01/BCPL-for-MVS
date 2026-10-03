@@ -5,7 +5,7 @@ coroutines under the preserved MR10 compiler and the reconstructed INTCODE
 runtime.
 
 The tests are organized around reproducible compiler/runtime observations,
-not JES job numbers.  The commands below are the evidence-producing units.
+not JES job numbers. The commands below are the evidence-producing units.
 
 ## 1. CHANGECO call-shape probe
 
@@ -39,8 +39,8 @@ $ 1 LIP2 SP6 LIP3 SP7 LIG6 K4 X4
 ```
 
 This establishes the MR10 two-argument call shape used by
-`CHANGECO(VALUE, CPTR)`.  The call frame uses `K4`; its arguments are in
-`P!2` and `P!3`.  A hand-written CHANGECO entry using
+`CHANGECO(VALUE, CPTR)`. The call frame uses `K4`; its arguments are in
+`P!2` and `P!3`. A hand-written CHANGECO entry using
 
 ```text
 LIP3 LIP2
@@ -53,7 +53,7 @@ A = VALUE
 B = CPTR
 ```
 
-The test program itself deliberately does not execute CHANGECO.  Its expected
+The test program itself deliberately does not execute CHANGECO. Its expected
 runtime output is:
 
 ```text
@@ -103,7 +103,7 @@ P!4 = C
 ```
 
 This is different from the later Cintcode layout often documented for
-`createco`.  The MR10 synthetic coroutine frame must therefore follow the
+`createco`. The MR10 synthetic coroutine frame must therefore follow the
 layout observed here rather than copy later offsets.
 
 The expected runtime output is:
@@ -159,10 +159,50 @@ runtime:
 - genuine producer/consumer coroutine behavior is possible before full
   `CREATECO` / `DELETECO` reconstruction.
 
+## 4. RESUMECO parent-chain regression
+
+Source:
+
+```text
+resumeco-chain.bcpl
+```
+
+This test adds the historical `RESUMECO` operation to the already-proven
+fixed-stack mechanism. `RESUMECO(target, value)` transfers the current
+coroutine's parent link to `target`, clears the current coroutine's parent,
+and then switches directly to `target`.
+
+Run:
+
+```bash
+tools/compile-and-run --results --listing heavy \
+    asm/icintv17.asm \
+    tests/10-coroutines/resumeco-chain.bcpl
+```
+
+Expected program output:
+
+```text
+A START
+B START WITH 111
+ROOT GOT 222
+A RESUMED WITH 333
+ROOT GOT 444
+B RESUMED WITH 555
+ROOT GOT 666
+```
+
+followed by an interpreted completion code of zero.
+
+The key observation is the first return to root: root calls coroutine A, but A
+uses `RESUMECO` to transfer directly to B, and B's `COWAIT(222)` returns to
+root. This proves that the parent relationship itself has moved from A to B,
+rather than merely performing another nested `CALLCO`.
+
 ## Runtime implementation status
 
 The current reference implementation of `CHANGECO` lives in hand-written
-INTCODE in `intcode/iclib.int`.  It is deliberately a proof of the coroutine
+INTCODE in `intcode/iclib.int`. It is deliberately a proof of the coroutine
 runtime contract and uses already-proven INTCODE mechanisms rather than yet
 requiring a new ICINT opcode.
 
@@ -182,7 +222,7 @@ machine-dependent layer:
 ```
 
 For the interpreted bootstrap, CHANGECO may be implemented by INTCODE and/or a
-dedicated ICINT operation.  For the eventual native System/370 compiler and
+dedicated ICINT operation. For the eventual native System/370 compiler and
 runtime, CHANGECO should become a small native routine that saves the current
 BCPL resumable frame, installs the target coroutine frame, preserves the
 transfer value, and continues at the corresponding return continuation.
