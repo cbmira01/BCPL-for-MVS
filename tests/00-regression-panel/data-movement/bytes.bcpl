@@ -1,0 +1,15 @@
+// Regression: GETBYTE and PUTBYTE preserve byte values.
+GLOBAL $( START:1; WRITEF:76; GETBYTE:85; PUTBYTE:86 $)
+
+LET START() BE
+$( LET V = VEC 1
+   V!0 := 0
+   V!1 := 0
+   PUTBYTE(V, 0, 65)
+   PUTBYTE(V, 1, 66)
+   PUTBYTE(V, 2, 67)
+   PUTBYTE(V, 3, 68)
+   WRITEF("RP: BYTES %N %N %N %N*N",
+          GETBYTE(V,0), GETBYTE(V,1), GETBYTE(V,2), GETBYTE(V,3))
+   FINISH
+$)
