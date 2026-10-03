@@ -1,0 +1,42 @@
+// RANDOM.BCPL
+//
+// Portable pseudo-random number support for the reconstructed BCPL library.
+// Park-Miller "minimal standard" generator, using Schrage's method so that
+// the state update does not depend on signed 32-bit multiplication overflow.
+//
+// Public interface:
+//   SRAND(N)      Seed the generator.
+//   RAND()        Return the next value in 1..2147483646.
+//   RANDRANGE(N)  Return a value in 0..N-1, or 0 when N<=0.
+//   RANDSEED(N)   Compatibility spelling for SRAND(N).
+//
+// GLOBAL slots 96..100 are reconstruction-local library assignments.
+
+GLOBAL $(
+SRAND:96
+RAND:97
+RANDRANGE:98
+RANDSTATE:99
+RANDSEED:100
+$)
+
+LET SRAND(N) BE
+$( N := N REM 2147483647
+   IF N<0 DO N := -N
+   IF N=0 DO N := 1
+   RANDSTATE := N
+$)
+
+AND RANDSEED(N) BE SRAND(N)
+
+AND RAND() = VALOF
+$( LET HI = RANDSTATE / 127773
+   AND LO = RANDSTATE REM 127773
+   AND T = 16807*LO - 2836*HI
+
+   IF T<=0 DO T := T + 2147483647
+   RANDSTATE := T
+   RESULTIS T
+$)
+
+AND RANDRANGE(N) = N<=0 -> 0, RAND() REM N
