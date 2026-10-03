@@ -1,0 +1,178 @@
+// CREATE-DELETE-STATIC-POOL.BCPL
+//
+// Exercise CREATECO, DELETECO, and COLIST independently of the eventual
+// MVS allocator.  ALLOCVEC/FREEVEC below are deliberately tiny test-only
+// services backed by two statically reserved coroutine workspaces.
+//
+// MR10 frame evidence for CREATECO(FN,SIZE,C):
+//     P!2 = FN
+//     P!3 = SIZE
+//     P!4 = C
+// so the initial coroutine frame uses words 0..4.  Word 5 is available
+// here as the COLIST link.
+
+GLOBAL $(
+START:1
+CHANGECO:6
+CURRCO:7
+COLIST:8
+WRITEF:76
+POOL1:300
+POOL2:301
+USED1:302
+USED2:303
+$)
+
+LET CALLCO(CPTR, A) = VALOF
+$( IF CPTR!1 \= 0 RESULTIS -999
+   CPTR!1 := CURRCO
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND COWAIT(A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   RESULTIS CHANGECO(A, PARENT)
+$)
+
+AND RESUMECO(CPTR, A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   IF CPTR!1 \= 0 RESULTIS -998
+   CPTR!1 := PARENT
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND ALLOCVEC(N) = VALOF
+$( IF N > 106 RESULTIS 0
+
+   IF USED1 = 0 DO
+   $( USED1 := 1
+      RESULTIS POOL1
+   $)
+
+   IF USED2 = 0 DO
+   $( USED2 := 1
+      RESULTIS POOL2
+   $)
+
+   RESULTIS 0
+$)
+
+AND FREEVEC(V) BE
+$( IF V = POOL1 DO
+   $( USED1 := 0
+      RESULTIS
+   $)
+
+   IF V = POOL2 DO USED2 := 0
+$)
+
+AND CREATECO(FN, SIZE) = VALOF
+$( LET C = ALLOCVEC(SIZE+6)
+   IF C = 0 RESULTIS 0
+
+   C!0 := C
+   C!1 := CURRCO
+   C!2 := FN
+   C!3 := SIZE
+   C!4 := C
+   C!5 := COLIST
+   COLIST := C
+
+   CHANGECO(0, C)
+
+   C := FN(COWAIT(C)) REPEAT
+$)
+
+AND DELETECO(C) = VALOF
+$( LET P = COLIST
+
+   IF C = 0 RESULTIS FALSE
+   IF C = CURRCO RESULTIS FALSE
+   IF C!1 \= 0 RESULTIS FALSE
+
+   IF COLIST = C
+   $( COLIST := C!5 $)
+   ELSE
+   $( UNTIL P = 0 | P!5 = C DO P := P!5
+      IF P = 0 RESULTIS FALSE
+      P!5 := C!5
+   $)
+
+   FREEVEC(C)
+   RESULTIS TRUE
+$)
+
+AND COUNTCO() = VALOF
+$( LET N = 0
+   AND C = COLIST
+
+   UNTIL C = 0 DO
+   $( N := N+1
+      C := C!5
+   $)
+
+   RESULTIS N
+$)
+
+AND WORKER(A) = A+1
+
+AND START() BE
+$( LET ROOT = VEC 5
+   AND ASTORE = VEC 105
+   AND BSTORE = VEC 105
+   AND ACO = 0
+   AND BCO = 0
+   AND CCO = 0
+   AND V = 0
+
+   POOL1 := ASTORE
+   POOL2 := BSTORE
+   USED1 := 0
+   USED2 := 0
+
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!5 := 0
+   COLIST := ROOT
+
+   ACO := CREATECO(WORKER, 100)
+   BCO := CREATECO(WORKER, 100)
+
+   IF ACO = 0 | BCO = 0 DO
+   $( WRITEF("CREATE FAILED*N")
+      FINISH
+   $)
+
+   WRITEF("CREATED 2*N")
+   WRITEF("LIST COUNT %N*N", COUNTCO())
+
+   V := CALLCO(ACO, 10)
+   WRITEF("A RETURNED %N*N", V)
+
+   V := CALLCO(BCO, 20)
+   WRITEF("B RETURNED %N*N", V)
+
+   IF DELETECO(ACO) DO WRITEF("DELETED A*N")
+   WRITEF("LIST COUNT %N*N", COUNTCO())
+
+   IF DELETECO(BCO) DO WRITEF("DELETED B*N")
+   WRITEF("LIST COUNT %N*N", COUNTCO())
+
+   CCO := CREATECO(WORKER, 100)
+   IF CCO = 0 DO
+   $( WRITEF("RECREATE FAILED*N")
+      FINISH
+   $)
+
+   V := CALLCO(CCO, 30)
+   WRITEF("C RETURNED %N*N", V)
+   WRITEF("LIST COUNT %N*N", COUNTCO())
+
+   IF DELETECO(CCO) DO WRITEF("DELETED C*N")
+   WRITEF("FINAL LIST COUNT %N*N", COUNTCO())
+
+   FINISH
+$)
