@@ -1,0 +1,50 @@
+// STRING-UTILS.BCPL
+// Utilities for ordinary packed BCPL strings.
+// Caller supplies writable destination storage large enough for the result.
+// GLOBAL slots 107..111 are reconstruction-local library assignments.
+
+GLOBAL $(
+GETBYTE:85
+PUTBYTE:86
+STRLEN:107
+STRCMP:108
+STRCPY:109
+STRCAT:110
+STRCHR:111
+$)
+
+LET STRLEN(S) = GETBYTE(S, 0)
+
+AND STRCMP(A, B) = VALOF
+$( LET NA = GETBYTE(A, 0)
+   AND NB = GETBYTE(B, 0)
+   AND N = 0
+   N := NA<NB -> NA, NB
+   FOR I = 1 TO N DO
+   $( LET CA = GETBYTE(A, I)
+      AND CB = GETBYTE(B, I)
+      IF CA<CB RESULTIS -1
+      IF CA>CB RESULTIS 1
+   $)
+   RESULTIS NA<NB -> -1, NA>NB -> 1, 0
+$)
+
+AND STRCPY(DST, SRC) = VALOF
+$( LET N = GETBYTE(SRC, 0)
+   FOR I = 0 TO N DO PUTBYTE(DST, I, GETBYTE(SRC, I))
+   RESULTIS DST
+$)
+
+AND STRCAT(DST, SRC) = VALOF
+$( LET ND = GETBYTE(DST, 0)
+   AND NS = GETBYTE(SRC, 0)
+   FOR I = 1 TO NS DO PUTBYTE(DST, ND+I, GETBYTE(SRC, I))
+   PUTBYTE(DST, 0, ND+NS)
+   RESULTIS DST
+$)
+
+AND STRCHR(S, CH) = VALOF
+$( LET N = GETBYTE(S, 0)
+   FOR I = 1 TO N DO IF GETBYTE(S, I)=CH RESULTIS I
+   RESULTIS 0
+$)
