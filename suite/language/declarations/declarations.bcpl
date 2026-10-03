@@ -1,0 +1,20 @@
+// DECLARATIONS.BCPL
+// Demonstrate LET, AND, local variables, and nested declaration scope.
+
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START() BE
+$( LET A = 10
+   AND B = 20
+   AND C = 30
+
+   WRITEF("OUTER A=%N B=%N C=%N*N", A, B, C)
+
+   $( LET B = 200
+      AND D = A+B
+      WRITEF("INNER A=%N B=%N D=%N*N", A, B, D)
+   $)
+
+   WRITEF("OUTER AGAIN A=%N B=%N C=%N*N", A, B, C)
+   FINISH
+$)
