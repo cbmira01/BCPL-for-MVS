@@ -1,0 +1,49 @@
+// MEMORY-UTILS.BCPL
+// Byte and word-vector copy/fill helpers.
+// MEM* routines count bytes; VEC* routines count words.
+// GLOBAL slots 112..116 are reconstruction-local library assignments.
+
+GLOBAL $(
+GETBYTE:85
+PUTBYTE:86
+MEMCPY:112
+MEMSET:113
+MEMCMP:114
+VECCOPY:115
+VECCLEAR:116
+$)
+
+LET MEMCPY(DST, SRC, N) = VALOF
+$( IF N>0 DO
+      FOR I = 0 TO N-1 DO PUTBYTE(DST, I, GETBYTE(SRC, I))
+   RESULTIS DST
+$)
+
+AND MEMSET(DST, VALUE, N) = VALOF
+$( IF N>0 DO
+      FOR I = 0 TO N-1 DO PUTBYTE(DST, I, VALUE&255)
+   RESULTIS DST
+$)
+
+AND MEMCMP(A, B, N) = VALOF
+$( IF N>0 DO
+      FOR I = 0 TO N-1 DO
+      $( LET CA = GETBYTE(A, I)
+         AND CB = GETBYTE(B, I)
+         IF CA<CB RESULTIS -1
+         IF CA>CB RESULTIS 1
+      $)
+   RESULTIS 0
+$)
+
+AND VECCOPY(DST, SRC, N) = VALOF
+$( IF N>0 DO
+      FOR I = 0 TO N-1 DO DST!I := SRC!I
+   RESULTIS DST
+$)
+
+AND VECCLEAR(V, N) = VALOF
+$( IF N>0 DO
+      FOR I = 0 TO N-1 DO V!I := 0
+   RESULTIS V
+$)
