@@ -19,6 +19,7 @@ CONFIG = ROOT / "config" / "dspal.yaml"
 LOCAL_CONFIG = ROOT / "config" / "dspal.local.yaml"
 SUBMIT_JCL = ROOT / "tools" / "submit-jcl"
 JOB_SUMMARY = ROOT / "tools" / "job-summary"
+DUMP_REPORT = ROOT / "tools" / "dump-report-for-job"
 
 
 class DspalError(RuntimeError):
@@ -152,6 +153,22 @@ def full_dsn(config: dict[str, Any], spec: dict[str, Any]) -> str:
     if dsn == hlq or dsn.startswith(hlq + "."):
         return dsn
     return f"{hlq}.{dsn}"
+
+
+def resolve_dsn(config: dict[str, Any], operand: str) -> tuple[str, str | None]:
+    """Resolve a managed logical name or an explicit/relative data-set name."""
+    value = operand.strip().upper()
+    datasets = config["datasets"]
+    if value in datasets:
+        return full_dsn(config, datasets[value]), value
+
+    if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#-]{0,7}(\.[A-Z@$#][A-Z0-9@$#-]{0,7})*", value):
+        raise DspalError(f"invalid MVS data-set name: {operand}")
+
+    hlq = str(config["mvs"]["hlq"]).upper()
+    if "." not in value:
+        value = f"{hlq}.{value}"
+    return value, None
 
 
 def batch_user(config: dict[str, Any]) -> str:
@@ -301,12 +318,106 @@ def submit_and_wait(config: dict[str, Any], deck: str, max_rc: int = 0) -> tuple
             pass
 
 
+def job_report(job: int) -> str:
+    cp = subprocess.run(
+        [str(DUMP_REPORT), str(job)],
+        cwd=ROOT,
+        text=True,
+        encoding="latin-1",
+        errors="replace",
+        capture_output=True,
+        check=False,
+    )
+    if cp.returncode != 0 and not cp.stdout.strip():
+        detail = cp.stderr.strip() or f"cannot extract report for JOB {job}"
+        raise DspalError(detail)
+    return cp.stdout.replace("\r", "")
+
+
 def probe_deck() -> str:
     return (
         "//DSPALCHK JOB (BCPL),'DSPAL STATUS',CLASS=A,MSGCLASS=A,\n"
         "//             MSGLEVEL=(1,1)\n"
         "//STEP1    EXEC PGM=IEFBR14\n"
     )
+
+
+def stat_deck(config: dict[str, Any], dsn: str, redact_password: bool = False) -> str:
+    lines = authenticated_job_card(
+        config, "DSPALST", "DSPAL STAT", redact_password=redact_password
+    )
+    lines.extend(
+        [
+            "//* QUERY DATA-SET ATTRIBUTES WITH TSO LISTDS LABEL",
+            "//STAT     EXEC PGM=IKJEFT01",
+            "//SYSTSPRT DD  SYSOUT=*",
+            "//SYSTSIN  DD  *",
+            f" LISTDS '{dsn}' LABEL",
+            "/*",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def extract_listds_block(report: str, dsn: str) -> list[str]:
+    """Extract the useful LISTDS block from the full JES report."""
+    lines = report.splitlines()
+    start = None
+    upper_dsn = dsn.upper()
+    for index, line in enumerate(lines):
+        if upper_dsn in line.upper():
+            # Prefer the occurrence in SYSTSPRT rather than the echoed input deck.
+            following = "\n".join(lines[index : index + 12]).upper()
+            if "RECFM" in following or "VOLUME" in following or "DSORG" in following:
+                start = index
+                break
+
+    if start is None:
+        # LISTDS may print the name on the line immediately after a command banner.
+        for index, line in enumerate(lines):
+            if line.strip().upper() == upper_dsn:
+                start = index
+                break
+
+    if start is None:
+        return []
+
+    block: list[str] = []
+    for line in lines[start : start + 20]:
+        text = line.rstrip()
+        if block and (
+            text.startswith("IEF")
+            or text.startswith("$HASP")
+            or "JES2 JOB STATISTICS" in text
+        ):
+            break
+        block.append(text)
+    while block and not block[-1].strip():
+        block.pop()
+    return block
+
+
+def parse_listds(block: list[str]) -> dict[str, str]:
+    """Best-effort parser for classic TSO LISTDS LABEL output."""
+    attrs: dict[str, str] = {}
+    for index, line in enumerate(block):
+        upper = line.upper()
+        if all(name in upper for name in ("RECFM", "LRECL", "BLKSIZE", "DSORG")):
+            for candidate in block[index + 1 : index + 5]:
+                tokens = candidate.split()
+                if len(tokens) >= 4 and re.fullmatch(r"\d+", tokens[1]) and re.fullmatch(r"\d+", tokens[2]):
+                    attrs["recfm"] = tokens[0]
+                    attrs["lrecl"] = tokens[1]
+                    attrs["blksize"] = tokens[2]
+                    attrs["dsorg"] = tokens[3]
+                    break
+        if "VOLUME" in upper:
+            for candidate in block[index + 1 : index + 4]:
+                token = candidate.strip().split()
+                if token and re.fullmatch(r"[A-Z0-9]{1,6}", token[0].upper()):
+                    attrs["volume"] = token[0].upper()
+                    break
+    return attrs
 
 
 def allocation_clause(config: dict[str, Any], spec: dict[str, Any]) -> str:
@@ -452,6 +563,51 @@ def cmd_status(
     return 0
 
 
+def cmd_stat(config: dict[str, Any], operand: str, show_jcl: bool, raw: bool) -> int:
+    dsn, logical = resolve_dsn(config, operand)
+    if show_jcl:
+        sys.stdout.write(stat_deck(config, dsn, redact_password=True))
+        return 0
+
+    require_reader_ready(config)
+    deck = stat_deck(config, dsn, redact_password=False)
+    job, _ = submit_and_wait(config, deck, max_rc=8)
+    report = job_report(job)
+    block = extract_listds_block(report, dsn)
+
+    if raw:
+        sys.stdout.write(report)
+        if not report.endswith("\n"):
+            print()
+        return 0
+
+    if not block:
+        raise DspalError(
+            f"JOB {job} completed but LISTDS output for {dsn} could not be located; "
+            f"retry with: dspal stat {operand} --raw"
+        )
+
+    attrs = parse_listds(block)
+    print(f"Dataset:   {dsn}" + (f" ({logical})" if logical else ""))
+    print(f"Job:       {job}")
+    if attrs:
+        if "volume" in attrs:
+            print(f"Volume:    {attrs['volume']}")
+        if "dsorg" in attrs:
+            print(f"DSORG:     {attrs['dsorg']}")
+        if "recfm" in attrs:
+            print(f"RECFM:     {attrs['recfm']}")
+        if "lrecl" in attrs:
+            print(f"LRECL:     {attrs['lrecl']}")
+        if "blksize" in attrs:
+            print(f"BLKSIZE:   {attrs['blksize']}")
+    else:
+        print("LISTDS output:")
+        for line in block:
+            print(line)
+    return 0
+
+
 def cmd_initbcpl(config: dict[str, Any], show_jcl: bool) -> int:
     if show_jcl:
         sys.stdout.write(initbcpl_deck(config, redact_password=True))
@@ -489,6 +645,19 @@ def make_parser() -> argparse.ArgumentParser:
         help="emit the probe JCL without submitting it (requires --probe)",
     )
 
+    stat = sub.add_parser("stat", help="show MVS attributes for one data set")
+    stat.add_argument("dataset", help="managed logical name (ASM, SOURCE, ...) or MVS DSN")
+    stat.add_argument(
+        "--show-jcl",
+        action="store_true",
+        help="emit LISTDS query JCL without submitting it; batch password is redacted",
+    )
+    stat.add_argument(
+        "--raw",
+        action="store_true",
+        help="print the complete JES report instead of normalized attributes",
+    )
+
     init = sub.add_parser(
         "initbcpl", help="create the manifest-defined BCPL PDS layout"
     )
@@ -510,6 +679,8 @@ def main() -> int:
             return cmd_info(config)
         if args.command == "status":
             return cmd_status(config, args.probe, args.quiet, args.show_jcl)
+        if args.command == "stat":
+            return cmd_stat(config, args.dataset, args.show_jcl, args.raw)
         if args.command == "initbcpl":
             return cmd_initbcpl(config, args.show_jcl)
         raise DspalError(f"unimplemented command: {args.command}")
