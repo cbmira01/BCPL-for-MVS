@@ -1,65 +1,95 @@
-# BCPL reconstruction for IBM MVS 3.8
+# BCPL for MVS 3.8J
 
-This project is a reconstruction of a BCPL development environment for IBM MVS 3.8, using the historical BCPL transport tape associated with Martin Richards as its primary source. Development and testing use Hercules and the MVS 3.8J Turnkey/TK5 environment.
+This repository reconstructs a usable BCPL environment for IBM System/370 under MVS 3.8J. Development uses Hercules and the TK5 distribution, but the compiler and runtime work is aimed at ordinary MVS mechanisms: IFOX assembly, the linkage editor, JCL, data sets, and BCPL's historical bootstrap model.
 
-The repository contains historical source material, reconstructed System/370 code, compiler and runtime components, tests, JCL, host-side tools, and a demonstration suite. The long-term deliverable is a native BCPL system that can be installed and used on an existing MVS 3.8 system, ultimately packaged in a form suitable for archival distribution such as virtual tape.
+The primary historical evidence is the Martin Richards BCPL transport-tape material preserved by Ken Yap and Robert Nordier. The project adds an MVS-hosted INTCODE interpreter, host-side build and data-set tools, reconstructed runtime pieces, tests, and demonstrations.
 
-For a contributor-oriented overview of where things live, how development is organized, why the project runs a real MVS instance, and where to find deeper documentation, start with [`docs/project-map.md`](docs/project-map.md).
+## Current state
 
-## Current status
+The interpreted bootstrap path works. The promoted interpreter is selected by `config/CURRENT` and currently resolves to `asm/icintv17.asm`.
 
-The interpreted bootstrap path is working.
+Using `tools/compile-and-run`, the preserved kit compiler can:
 
-The current validated interpreter baseline is `asm/icintv17.asm`. Using ICINT V17 and the host-side `tools/compile-and-run` driver, the project has demonstrated:
+- run `SYNI` and `TRNI` to translate BCPL source to OCODE;
+- run `CGI` to translate OCODE to INTCODE;
+- execute generated INTCODE under the reconstructed System/370 ICINT;
+- compile separate BCPL modules and link them through the `GLOBAL` vector;
+- use named MVS input streams;
+- exercise reconstructed allocation and coroutine support; and
+- preserve OCODE and INTCODE as inspectable intermediate results.
 
-- BCPL source compiled by the preserved `SYNI` and `TRNI` phases into OCODE;
-- OCODE translated by preserved `CGI` into INTCODE;
-- generated INTCODE executed under ICINT with `BLIBI` and `ICLIB`;
-- saved OCODE and INTCODE intermediate files;
-- separate compilation of multiple BCPL source modules;
-- cross-module linkage through the BCPL `GLOBAL` vector;
-- dynamic named MVS stream handling;
-- a reconstructed portable `GETVEC` / `FREEVEC` allocator over BCPL-addressable storage; and
-- a reconstructed coroutine runtime with `CREATECO`, `DELETECO`, `CALLCO`, `COWAIT`, and `RESUMECO`, using the machine-dependent `CHANGECO` primitive supplied by the interpreted runtime.
+The MVS-side project data-set lifecycle is also reproducible. `dspal` can create, inspect, populate, read, update, compress, and purge the managed `HERC02.BCPL.*` libraries. Git is the source of truth; the MVS libraries are deployed/build state.
 
-The Richards factorial example remains a compact compiler/interpreter regression workload. More focused reconstruction tests live under [`tests/`](tests/), and readable BCPL examples live under [`suite/`](suite/), including a coroutine generator demonstration. See [`tests/README.md`](tests/README.md) and [`suite/README.md`](suite/README.md).
+The next compiler step is **not** to invent a new System/370 code generator from scratch. A historical System/370 BCPL code generator has been found in the surviving material. Current work is to host, understand, adapt where necessary, and connect that generator to the kit compiler's OCODE stream so it can emit assembler for the MVS toolchain. Native runtime services, including the surviving `BCPLMAIN` contract, still require reconstruction.
 
-The native compiler and much of its supporting source survive on the transport tape. A major missing native component is `BCPLMAIN`, which supplied runtime and MVS services. Rather than reconstructing that contract in isolation, the project expects to recover more of it experimentally as native code generation and MVS-resident workloads are developed.
+See [`native-compiler/README.md`](native-compiler/README.md) for that work.
 
-## Near-term direction
+## What is in this repository
 
-Current priorities are:
+Three kinds of material are deliberately kept together:
 
-1. consolidate the reconstructed portable runtime and settle its final global-vector interface;
-2. continue exercising ordinary MVS data sets and DASD-resident workflows;
-3. reconstruct a System/370 BCPL code generator capable of translating compiler OCODE into native assembler;
-4. use that code generator to clarify the runtime services and calling conventions required from the eventual `BCPLMAIN` replacement;
-5. bootstrap a native compiler that can compile and maintain itself on MVS; and
-6. keep the regression and demonstration suites aligned with the capabilities established by the reconstruction.
+**Historical material.** `richards-bcpltape/` is preserved third-party source and documentation. Several files in `intcode/` are byte-for-byte working copies of compiler/runtime files from that archive. These files are not relicensed by this project.
 
-A later milestone will be an annotated "compile the compiler and compare the results" job stream that rebuilds the native compiler from BCPL sources and makes the bootstrap reproducible and inspectable.
+**Reconstruction work.** The System/370 ICINT sources in `asm/`, host tools in `tools/`, project runtime modules in `library/`, tests, most demonstrations, Docker integration, and project documentation are reconstruction or support work developed for this repository.
 
-## Repository map
+**Experimental work.** Native code generation, the eventual native MVS runtime, parts of the BCPL library, and some compiler/runtime probes are still under active reconstruction. Passing a probe establishes the behavior tested by that probe; it does not imply that the native compiler is finished.
 
-- [`docs/project-map.md`](docs/project-map.md) — high-level project map, repository layout, development conventions, MVS/Hercules workflow, and links to detailed component documentation
-- [`richards-bcpltape/README.md`](richards-bcpltape/README.md) — introduction to the historical BCPL transport-tape material and its provenance
-- [`asm/README.md`](asm/README.md) — reconstructed System/370 assembler sources, especially ICINT
-- [`intcode/README.md`](intcode/README.md) — preserved INTCODE compiler and runtime components
-- [`library/README.md`](library/README.md) — reconstructed portable BCPL runtime modules
-- [`tests/README.md`](tests/README.md) — interpreter, compiler-pipeline, runtime, and separate-module regression tests
-- [`suite/README.md`](suite/README.md) — readable BCPL demonstration programs
-- [`tools/README.md`](tools/README.md) — host-side build, submission, job-reporting, INTCODE, and BCPL compile/run tools
-- [`jcl/README.md`](jcl/README.md) — retained JCL examples and historical development decks
-- [`docker/README.md`](docker/README.md) — Hercules/TK5 development environment
-- [`docs/README.md`](docs/README.md) — programmer orientation briefings for System/370, MVS 3.8J, Hercules, and the development toolchain
+For detailed provenance and licensing boundaries, read [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The public-release review is recorded in [`PUBLIC-RELEASE-AUDIT.md`](PUBLIC-RELEASE-AUDIT.md).
 
-## BCPL documentation online
+## Quick start for the current interpreted system
 
-Useful historical and modern BCPL references include:
+Start the local TK5/Hercules system, then create and populate the managed MVS libraries:
 
-- [History of BCPL — Software Preservation Group](https://softwarepreservation.computerhistory.org/BCPL/) — an extensive index of historical BCPL documentation, source code, INTCODE material, and implementations.
-- [The BCPL Reference Manual (1967)](https://www.nokia.com/bell-labs/about/dennis-m-ritchie/bcpl.html) — Martin Richards's original Project MAC reference manual, preserved by Dennis Ritchie.
-- [The BCPL Programming Manual (1974)](https://softwarepreservation.computerhistory.org/BCPL/cambridge/richards-manual-1974.pdf) — Martin Richards's Cambridge programming manual, close in date to the BCPL system reconstructed here.
-- [The BCPL Cintsys and Cintpos User Guide](https://www.cl.cam.ac.uk/~mr10/bcplman.pdf) — Martin Richards's modern BCPL manual and system documentation. Modern BCPL includes extensions not necessarily present in the historical compiler.
+```sh
+tools/start-tk5 --detached
+tools/dspal initbcpl
+tools/dspal populate all
+```
 
-The Software Preservation Group's BCPL collection is particularly useful for locating historical documents concerning INTCODE, compiler bootstrapping, runtime conventions, and early BCPL implementations.
+Run a BCPL program through the preserved compiler phases and ICINT:
+
+```sh
+tools/compile-and-run --results \
+    "$(tools/current-icint)" \
+    suite/richards-factorial/richards-factorial.bcpl
+```
+
+Run the durable regression panel:
+
+```sh
+tools/run-regression-panel
+```
+
+Run the demonstration suite:
+
+```sh
+tools/run-demo-suite.sh
+```
+
+## Repository guide
+
+- [`asm/README.md`](asm/README.md) — reconstructed System/370 ICINT and assembler work
+- [`intcode/README.md`](intcode/README.md) — preserved kit compiler/runtime INTCODE and project additions
+- [`native-compiler/README.md`](native-compiler/README.md) — kit compiler and native System/370 code-generation work
+- [`library/README.md`](library/README.md) — portable BCPL runtime/library modules
+- [`tests/README.md`](tests/README.md) — regression cases and reconstruction probes
+- [`suite/README.md`](suite/README.md) — readable BCPL demonstrations
+- [`tools/README.md`](tools/README.md) — host-side build, JES, compiler, regression, and `dspal` tools
+- [`config/README.md`](config/README.md) — checked-in configuration and local overrides
+- [`docker/README.md`](docker/README.md) — Hercules/TK5 container environment
+- [`docs/README.md`](docs/README.md) — System/370, MVS, IFOX, JCL, and BCPL orientation notes
+- [`richards-bcpltape/README.md`](richards-bcpltape/README.md) — historical tape provenance and contents
+
+[`docs/project-map.md`](docs/project-map.md) gives a broader contributor-oriented map of the repository.
+
+## Historical references
+
+Useful external references include:
+
+- [BCPL History Collection](https://softwarepreservation.computerhistory.org/BCPL/) — historical source, manuals, papers, and implementation notes
+- [Martin Richards' BCPL page](https://www.cl.cam.ac.uk/~mr10/BCPL.html) — present-day BCPL distribution and documentation
+- [Robert Nordier's Classic BCPL page](https://www.nordier.com/) — `bcplkit` and the curated `bcpltape` archive used as provenance for this repository
+
+## License
+
+Original project work is MIT licensed unless a file says otherwise. Historical BCPL material and other third-party components retain their own copyright and licensing status. See [`LICENSE.md`](LICENSE.md) and [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).

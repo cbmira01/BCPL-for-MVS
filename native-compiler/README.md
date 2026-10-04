@@ -1,35 +1,42 @@
-# Native BCPL compiler for MVS
+# Native System/370 compiler work
 
-## Change of approach
+The native target is built around the surviving BCPL kit compiler, not around a replacement front end.
 
-The native-compiler effort has been reset.
+The working bootstrap compiler remains the historical MR10-family pipeline:
 
-The project is no longer attempting to use the surviving MR10 bootstrap compiler as a stepping stone to rebuild the much later Cambridge compiler before native code generation can begin. Instead, the surviving MR10 BCPL kit is now the compiler baseline.
+```text
+BCPL source -> SYN/TRN -> OCODE
+```
 
-The immediate goal is:
+The important change in direction is that a historical **System/370 code generator has been found** in the surviving BCPL material. The project therefore does not need to invent a System/370 backend from scratch. The current task is to make the historical generator runnable in the hosted environment, determine exactly which OCODE and runtime conventions it expects, adapt only what the MVS host requires, and use its output with IFOX and the MVS linkage editor.
 
-> Build a native System/370 implementation of the surviving MR10-family BCPL compiler for MVS 3.8J.
+## What remains to be reconstructed
 
-In practical terms, the existing MR10 SYN and TRN phases remain the language front end. A new System/370 code generator will consume their OCODE and emit assembler suitable for the MVS assembler/link-edit toolchain. A native MVS BCPL runtime will support the generated programs.
+Finding the generator does not finish the native port. Work still includes:
 
-This is intentionally an early-BCPL implementation. Later Cambridge language facilities may be added incrementally, but they are no longer prerequisites for a successful compiler.
+- feeding known OCODE workloads to the historical S/370 generator and validating its assembler output;
+- reconciling generator assumptions with the compiler kit that is actually runnable under ICINT;
+- establishing the native BCPL calling convention and `GLOBAL`-vector layout used by generated code;
+- reconstructing the necessary native runtime and MVS services, including the surviving `BCPLMAIN` contract;
+- assembling and link-editing generated code under MVS 3.8J; and
+- eventually compiling enough of the compiler itself to close the native bootstrap loop.
 
-See [`kit-compiler-strategy.md`](kit-compiler-strategy.md) for the historical reasoning, the lessons from the Cambridge bootstrap experiment, the language-scope decision, programmer-documentation plans, and the initial implementation direction.
+## Historical evidence
 
-## Historical sources
-
-The principal surviving compiler baseline is under:
+The executable bootstrap baseline is under:
 
 - `richards-bcpltape/mr10/bcplkit/`
 
-Important contemporary documentation also survives in the tape image, notably:
+Useful contemporary documentation includes:
 
-- `richards-bcpltape/mr10/print/manual` — *The BCPL Programming Manual*, M. Richards, November 1974; includes the language definition, runtime library, and a section specifically titled **Using BCPL on the 370**.
-- `richards-bcpltape/mr10/text/bstrbcpl` — bootstrap material.
+- `richards-bcpltape/mr10/print/manual` — the 1974 BCPL Programming Manual, including "Using BCPL on the 370";
+- `richards-bcpltape/mr10/text/bstrbcpl` — bootstrap material;
 - `richards-bcpltape/mr10/text/intcode` — INTCODE documentation.
 
-The later Cambridge sources remain under `richards-bcpltape/bcplib/` as historical and design evidence. They are not the baseline source language for the new native compiler effort.
+Later Cambridge sources under `richards-bcpltape/bcplib/` remain valuable comparative evidence. They are not a prerequisite front end that must first be rebuilt before native code generation can proceed.
 
-## Working principle
+`kit-compiler-strategy.md` records the earlier investigation and should be read as design history where it conflicts with the current direction described here.
 
-First produce a small, sound, documented native BCPL for MVS from the compiler we actually possess and can execute. Improvements can then be made forward from that known working point.
+## Working rule
+
+Keep the runnable kit compiler as the reference path. Change historical code only when the MVS host, IFOX, or an observed incompatibility requires it, and preserve evidence for each such change.

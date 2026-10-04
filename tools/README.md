@@ -1,470 +1,152 @@
-# BCPL-for-MVS Host Tools
+# Host tools
 
-This directory contains host-side tools used to operate the project's
-Hercules/TK5 MVS system and to support assembler, ICINT, and BCPL compiler
-development.
+The commands in this directory drive Hercules/TK5, submit and inspect MVS jobs, run the reconstructed interpreter, compile BCPL through the preserved kit compiler, exercise regressions, and manage the project's MVS data sets.
 
-These commands run on the host, not under MVS. Unless otherwise noted,
-examples assume they are run from the repository root.
+Unless noted otherwise, run them from the repository root.
 
-## Tool overview
+## Main commands
 
-| Tool | Purpose |
+| Command | Purpose |
 | --- | --- |
-| `start-tk5` | Start the Hercules/TK5 MVS environment. |
-| `shutdown-tk5` | Perform an orderly MVS/Hercules shutdown. |
-| `make-asm-job` | Generate a self-contained IFOX assemble/link/run JCL deck. |
-| `make-cambridge-bootstrap-job` | Generate the first-flight Cambridge native-compiler bootstrap deck. |
-| `submit-jcl` | Submit a JCL deck through the Hercules socket reader and report the JES job number. |
-| `job-summary` | Summarize executed steps and return codes from printer output. |
-| `dump-report-for-job` | Extract the complete printer report for one JES job. |
-| `run-intcode` | Assemble/link ICINT and run one or more already-existing INTCODE modules. |
-| `compile-and-run` | Compile one or more BCPL source modules through the interpreted compiler pipeline and execute the generated INTCODE. |
-| `run-demo-suite.sh` | Run the complete BCPL demonstration suite through the current ICINT/compiler pipeline. |
-
-## Starting and stopping MVS
-
-Start attached to the Hercules/MVS event stream:
-
-```text
-tools/start-tk5
-```
-
-or start detached:
-
-```text
-tools/start-tk5 --detached
-```
-
-For normal shutdown:
-
-```text
-tools/shutdown-tk5
-```
-
-The container and persistent-state layout are documented in
-[`docker/README.md`](../docker/README.md).
-
-## `make-asm-job`
-
-Generates a self-contained MVS JCL deck that assembles an IFOX assembler
-source, link-edits the resulting object module, and executes it.
-
-```text
-tools/make-asm-job asm/program.asm --output-dir jcl
-```
-
-Listing profiles are:
-
-```text
---listing light
---listing medium
---listing heavy
-```
-
-`light` is the default. `medium` adds an assembler listing, short cross
-reference, and linkage map. `heavy` requests the detailed material useful
-when inspecting assembler and linkage-editor behavior.
-
-The program entry point is normally inferred from the assembler `END`
-operand; `--entry` can override it. An MVS EXEC parameter can be supplied
-with `--parm`.
-
-`make-asm-job.py` is the underlying Python implementation and is imported by
-other tools. For normal command-line use, invoke `make-asm-job`.
-
-## `make-cambridge-bootstrap-job`
-
-Generates an inspectable first-flight JCL deck for bootstrapping the preserved
-Cambridge System/370 compiler through the interpreted MR10 compiler.
-
-```text
-tools/make-cambridge-bootstrap-job
-```
-
-The default output is:
-
-```text
-workarea/cambridge-bootstrap.jcl
-```
-
-The generated job assembles and link-edits a capacity-expanded working copy of
-`icintv17.asm`, stages `SYNI`, `TRNI`, `CGI`, `BLIBI`, and `ICLIB`, compiles
-the Cambridge `BCPL`, `SYN`, `TRN`, `CG`, and historical `COMPBLIB` sections to
-INTCODE, runs the resulting integrated compiler on
-`native-compiler/acceptance/a0-finish.bcpl`, captures the native `CODE`
-stream, and attempts to assemble that output with `IFOX00`. The initial
-milestone deliberately stops at successful assembly of CG370 output; native
-link/edit and execution remain a later runtime/BCPLMAIN step.
-
-For this bootstrap experiment the tool expands `GET "LIBHDR"` and
-`GET "HEADERS(...)"` on the host side. Historical MVS BCPL used `HEADERS` as
-a PDS and understood member syntax, while ICINT V17 currently models ordinary
-DDNAME stream discovery rather than that complete native library/member API.
-The historical `COMPBLIB` special case is retained by appending
-`GLOBAL $( ABORT : 112 $)` to its expanded LIBHDR, as documented by the
-original `MAKEOBJ` job.
-
-The Cambridge driver expects `FINDPARM()`. The interpreted MR10 runtime does
-not currently provide global 39, so the generated compiler includes a tiny
-bootstrap-only `MVSHOST` section implementing `FINDPARM()` as
-`FINDINPUT("OPTIONS")`. The final compiler run supplies `//OPTIONS DD *` with
-`/N`: an empty compiler-option field followed by the CG `N` option, which
-keeps the normal in-memory TRN-to-CG handoff while suppressing the historical
-binary object-deck output.
-
-The Cambridge compiler uses globals beyond the original ICINT V17 G400 limit
-and is much larger than normal regression programs. The generator therefore
-patches only its generated working copy of ICINT, defaulting to 1001 globals,
-4001 labels, and 100001 program words; the checked-in `asm/icintv17.asm` is
-not changed. These capacities can be adjusted with `--globals`, `--labels`,
-and `--progwords`.
-
-Useful options include:
-
-```text
---interpreter PATH
---test PATH
---output PATH
---listing light|medium|heavy
---job-name NAME
---globals N
---labels N
---progwords N
-```
-
-The generator does not submit the job. Inspect the deck, then use
-`tools/submit-jcl`, `tools/job-summary`, and `tools/dump-report-for-job` in the
-normal way.
-
-## `submit-jcl`
-
-Submits a deck through the Hercules socket card reader, normally TCP port
-3505:
-
-```text
-tools/submit-jcl jcl/program-light.jcl
-```
-
-The command watches the main printer output for the JES start record and
-prints the assigned job number, for example:
-
-```text
-JOB 42
-```
-
-That number can be passed directly to the reporting tools.
-
-## `job-summary`
-
-Prints a compact summary of an MVS job:
-
-```text
-tools/job-summary 42
-```
-
-Useful options include:
-
-```text
-tools/job-summary 42 --verbose
-tools/job-summary 42 --max-rc 0
-```
-
-The normal printer source is `mvs-state/prt/prt00e.txt`.
-
-## `dump-report-for-job`
-
-Extracts the complete printer report belonging to one JES job:
-
-```text
-tools/dump-report-for-job 42
-```
-
-This is the normal follow-up when a job summary shows a failure or when the
-assembler listing, link map, generated JCL banners, data-set disposition, or
-program output needs close inspection.
-
-## `run-intcode`
-
-`run-intcode` is the direct ICINT/INTCODE driver. Use it when the program or
-component being tested is already INTCODE.
-
-```text
-tools/run-intcode --results \
-    asm/icintv17.asm \
-    tests/01-echo-test/echo-sysin.int \
-    +intcode/blibi.int \
-    +intcode/iclib.int
-```
-
-The first INTCODE path is the primary module. Every additional module is
-written explicitly as `+PATH` and is concatenated to `INTIN` in command-line
-order:
-
-```text
-primary
-+module 1
-+module 2
-...
-```
-
-Runtime components are ordinary modules. Earlier special-purpose runtime,
-library, or wrapper switches are not the current interface.
-
-### SYSIN input
-
-A host text file can be supplied as MVS `SYSIN`:
-
-```text
-tools/run-intcode --results \
-    --sysin tests/01-echo-test/best-of-times.txt \
-    asm/icintv17.asm \
-    tests/01-echo-test/echo-sysin.int \
-    +intcode/blibi.int \
-    +intcode/iclib.int
-```
-
-Each host line becomes one 80-column-or-shorter card-image record. Blank lines
-are preserved. A record longer than 80 characters, or a line consisting
-exactly of `/*`, is rejected rather than silently changed.
-
-If `--sysin` is omitted, the generated execution step has no `SYSIN` DD. This
-is intentionally different from `DD DUMMY`: absence of the DD allows ICINT's
-stream-discovery semantics to distinguish an unavailable stream.
-
-Other useful options include:
-
-```text
---results
---jcl PATH
---job-name NAME
---listing light|medium|heavy
---reader-host HOST
---reader-port PORT
---timeout SECONDS
---poll SECONDS
-```
-
-Use `tools/run-intcode --help` for the complete interface.
-
-## `compile-and-run`
-
-`compile-and-run` is the normal driver for the interpreted BCPL compiler
-pipeline. It deliberately remains separate from `run-intcode` so direct
-INTCODE testing and compiler-phase work do not become entangled.
-
-For one BCPL source module:
-
-```text
-tools/compile-and-run \
-    --results \
-    --save-ocode \
-    --save-intcode \
-    --listing heavy \
-    asm/icintv17.asm \
-    tests/03-compile-richards-factorial/richards-factorial-test.bcpl
-```
-
-The generated MVS job assembles and links ICINT once, stages the preserved
-compiler/runtime components, and runs this pipeline:
-
-```text
-BCPL source
-    |
-    v
-SYNI + TRNI
-    |
-    v
-OCODE
-    |
-    v
-CGI
-    |
-    v
-INTCODE
-    |
-    v
-ICINT + BLIBI + ICLIB
-```
-
-The generated JCL contains a job map and conspicuous phase banners so long
-printer reports can be navigated by eye.
-
-### Saved intermediates
-
-`--save-ocode` recovers each compiler unit's OCODE to:
-
-```text
-workarea/<module>.ocode
-```
-
-`--save-intcode` recovers generated INTCODE to:
-
-```text
-workarea/<module>.intcode
-```
-
-The save steps copy temporary MVS data sets after the compiler phases; they do
-not alter the OCODE/INTCODE streams used by the pipeline itself.
-
-### Separate BCPL compilation units
-
-Additional BCPL sources use the same explicit `+PATH` convention as
-`run-intcode`:
-
-```text
-tools/compile-and-run \
-    --results \
-    --save-ocode \
-    --save-intcode \
-    --job-name MODLTEST \
-    asm/icintv17.asm \
-    tests/04-module-test/module-test-1.bcpl \
-    +tests/04-module-test/module-test-2.bcpl
-```
-
-Each BCPL source is compiled independently through SYN/TRN and CGI. Only the
-generated INTCODE modules are concatenated for the final ICINT load/run, in
-command-line order. The `04-module-test` regression demonstrates cross-module
-BCPL `GLOBAL`-vector linkage.
-
-### Named input DDs
-
-Repeatable `--dd NAME=PATH` options make ASCII host text files available to
-each BCPL compile step under ordinary MVS DDNAMEs:
-
-```text
-tools/compile-and-run \
-    --results \
-    --dd EXTRA=tests/05-named-dd/extra.bcpl \
-    asm/icintv17.asm \
-    tests/05-named-dd/main.bcpl
-```
-
-The example above emits an in-stream `//EXTRA DD *` on the compiler step.
-Historical BCPL code can then obtain that stream through `FINDINPUT("EXTRA")`;
-the compiler's `GET "EXTRA"` facility uses that same path. The
-`05-named-dd` regression test uses `GET` to include a small manifest from the
-host file.
-
-`--dd` may be repeated for multiple names. DDNAMEs are uppercased and must be
-valid one-to-eight-character MVS names. Names already owned by the generated
-compile step, such as `SYSIN`, `OCODE`, `INTIN`, and `SYSPRINT`, are rejected.
-Duplicate names are also rejected.
-
-Named input files use the same conservative card-image rules as other host
-text inputs: ASCII, nonempty, no record longer than 80 characters, and no
-record consisting exactly of `/*`. The named DDs are supplied to every
-separate BCPL compile step; CGI and final RUN steps do not receive them.
-
-Current compiler options include:
-
-```text
---dd NAME=PATH
---results
---save-ocode
---save-intcode
---jcl PATH
---job-name NAME
---listing light|medium|heavy
---reader-host HOST
---reader-port PORT
---timeout SECONDS
---poll SECONDS
-```
-
-Use `tools/compile-and-run --help` for the current interface.
-
-## `run-demo-suite.sh`
-
-`run-demo-suite.sh` is the convenient regression driver for the example
-programs under `suite/`. It runs each demo through `compile-and-run` using the
-current ICINT V17 interpreter and reports each workload as `PASS` or `FAIL`.
-
-Run the complete suite with:
-
-```text
-tools/run-demo-suite.sh
-```
-
-The script determines its own location, changes to the repository root, and
-therefore does not depend on the caller's current working directory.
-
-The current suite contains 16 demonstrations covering recursion, arithmetic,
-iteration, vectors, sorting and searching, linked structures, parsing,
-character and string handling, stream I/O, and the reconstructed coroutine
-runtime. A normal successful run ends with:
-
-```text
-================================================================
-SUITE COMPLETE
-================================================================
-All 16 demos passed.
-```
-
-A `PASS` means the BCPL source compiled through the interpreted compiler
-pipeline, CGI generated INTCODE, the resulting program executed under ICINT,
-and the execution completed with code zero. The demonstrations are also
-intended to have human-readable results so semantic errors remain visible in
-the printed output; the suite runner itself should not be treated as a
-substitute for checking or adding explicit expected-output regressions when a
-specific language or runtime behavior matters.
-
-The suite currently provides a useful broad regression checkpoint for ICINT
-and compiler-host changes. Focused behavior tests remain under `tests/` and
-should be preferred when isolating a particular compiler, interpreter,
-stream, storage, linkage, runtime, or language-semantic issue.
-
-## Typical workflows
-
-Assembler development:
-
-```text
+| `tools/start-tk5` | Start the Hercules/TK5 container. |
+| `tools/shutdown-tk5` | Perform an orderly shutdown. |
+| `tools/submit-jcl` | Submit a JCL deck through the JES socket reader. |
+| `tools/job-summary` | Summarize steps and return codes for a JES job. |
+| `tools/dump-report-for-job` | Extract the complete printer report for one job. |
+| `tools/make-asm-job` | Generate IFOX assemble/link/run JCL from assembler source. |
+| `tools/current-icint` | Print the promoted ICINT source selected by `config/CURRENT`. |
+| `tools/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
+| `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
+| `tools/run-regression-panel` | Run exact-output durable regressions. |
+| `tools/run-demo-suite.sh` | Run the 17 general BCPL demonstrations. |
+| `tools/run-language-demos` | Run the focused BCPL language demonstrations. |
+| `tools/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
+
+The old Cambridge-first bootstrap generator is no longer a current tool or workflow.
+
+## MVS job tools
+
+A typical assembler cycle is:
+
+```sh
 tools/make-asm-job asm/program.asm --output-dir jcl --listing heavy
 tools/submit-jcl jcl/program-heavy.jcl
 tools/job-summary JOB_NUMBER
 tools/dump-report-for-job JOB_NUMBER
 ```
 
-Direct INTCODE execution:
+`submit-jcl` uses the Hercules socket reader, normally port 3505. The reporting tools read the configured printer output under `mvs-state/prt/`.
 
-```text
+## Running INTCODE
+
+Use `run-intcode` when the primary program is already INTCODE:
+
+```sh
 tools/run-intcode --results \
-    asm/icintv17.asm \
-    program.intcode \
+    "$(tools/current-icint)" \
+    tests/01-echo-test/echo-sysin.int \
     +intcode/blibi.int \
     +intcode/iclib.int
 ```
 
-BCPL source compilation and execution:
+Additional modules are written as `+PATH` and are loaded in command-line order. `--sysin PATH` supplies card-image input to `SYSIN`.
 
-```text
+## Compiling BCPL
+
+`compile-and-run` is the normal interpreted compiler driver:
+
+```sh
 tools/compile-and-run --results \
-    asm/icintv17.asm \
-    program.bcpl
+    --save-ocode \
+    --save-intcode \
+    "$(tools/current-icint)" \
+    tests/03-compile-richards-factorial/richards-factorial-test.bcpl
 ```
 
-Cambridge native-compiler first flight:
+The MVS job runs:
 
 ```text
-tools/make-cambridge-bootstrap-job
-tools/submit-jcl workarea/cambridge-bootstrap.jcl
+BCPL source
+   -> SYNI + TRNI
+   -> OCODE
+   -> CGI
+   -> INTCODE
+   -> ICINT + BLIBI + ICLIB
 ```
 
-Complete demo regression suite:
+`--save-ocode` and `--save-intcode` recover the compiler intermediates to `workarea/`.
 
-```text
+Separate compilation units use the same explicit `+PATH` convention:
+
+```sh
+tools/compile-and-run --results \
+    "$(tools/current-icint)" \
+    tests/04-module-test/module-test-1.bcpl \
+    +tests/04-module-test/module-test-2.bcpl
+```
+
+Named host files can be exposed as MVS input DDs with repeated `--dd NAME=PATH` options. Host records that cannot be represented safely as card-image input are rejected rather than silently truncated.
+
+Use each command's `--help` output for the full option set.
+
+## Regression and demonstration runners
+
+The durable regression panel is:
+
+```sh
+tools/run-regression-panel
+```
+
+It compares stable semantic output and completion codes against checked-in expectations. See `tests/00-regression-panel/README.md`.
+
+The broad readable demo suite is:
+
+```sh
 tools/run-demo-suite.sh
 ```
 
-The lower-level tools remain useful whenever generated JCL or complete MVS
-job output needs to be examined directly.
+It currently runs 17 programs. Focused language examples are run with:
+
+```sh
+tools/run-language-demos
+```
+
+## `dspal`
+
+`dspal` treats Git as authoritative source and the MVS project libraries as reproducible deployed/build state.
+
+Useful commands include:
+
+```text
+tools/dspal info
+tools/dspal status [--probe]
+tools/dspal stat [DATASET]
+tools/dspal list
+tools/dspal ls [DATASET]
+tools/dspal cat DATASET MEMBER
+tools/dspal get DATASET MEMBER FILE
+tools/dspal put DATASET MEMBER FILE
+tools/dspal rm DATASET MEMBER
+tools/dspal compress DATASET
+tools/dspal initbcpl
+tools/dspal populate all
+tools/dspal purgebcpl
+```
+
+The normal deployment cycle is:
+
+```sh
+tools/dspal initbcpl
+tools/dspal populate all
+tools/dspal ls
+```
+
+`purgebcpl` deletes only the explicit managed data-set set and requires interactive confirmation unless `--yes` is supplied. The full create/populate/purge/recreate lifecycle has been exercised on TK5.
+
+Batch authentication comes from `config/dspal.local.yaml`, which is gitignored. `--show-jcl` redacts the password.
+
+See `config/README.md` and `packaging/README.md` for the deployment model.
 
 ## Host requirements
 
-The tools assume the repository's Hercules/TK5 environment and directory
-layout. Depending on the command, host requirements include Python 3, Bash,
-Docker with Docker Compose, `nc` (netcat), and standard Unix utilities.
-
-The running system is expected to use the configured socket reader on port
-3505 and printer output under `mvs-state/prt/`.
+The tools assume Python 3, Bash, Docker with Docker Compose, `nc`/netcat, and ordinary Unix utilities. They also assume the repository's Hercules/TK5 directory layout and configured JES reader/printer endpoints.

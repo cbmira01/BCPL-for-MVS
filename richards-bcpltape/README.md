@@ -1,42 +1,52 @@
-# Richards BCPL Tape
+# Richards BCPL transport-tape archive
 
-This directory contains the historical BCPL material that is the primary source for the BCPL-for-MVS reconstruction.
+This directory is preserved historical material used as primary evidence by the reconstruction. It is not original BCPL-for-MVS project code.
 
-The files originate with a BCPL distribution associated with Martin Richards. This copy is Robert Nordier's reconstruction of the archive made available by Ken Yap: character-mapping problems were corrected and the original `f01` through `f75` names were replaced with meaningful Unix paths where the surviving information allowed it.
+## Provenance
 
-Start with [`INDEX`](INDEX). It is the map of the original distribution, showing the historical data-set/member names, their corresponding paths in this tree, and entries for files that did not survive. The index lists 75 original entries; 55 files are present in this recovered collection.
+The surviving provenance chain is unusually good:
 
-The most important areas for this project include:
+1. the files are described as coming from Martin Richards' BCPL "transport" tape;
+2. Ken Yap made a tar archive of the tape files available;
+3. Robert Nordier corrected character-mapping problems, assigned descriptive filenames, and organized the files into directories;
+4. Nordier published the curated result as `bcpltape`;
+5. Martin Richards' archive and the Computer History Museum Software Preservation Group point to the Nordier-curated material.
 
-| Area | Contents |
-| --- | --- |
-| [`bcplib/`](bcplib/) | Source for the native BCPL compiler and libraries, including `SYN`, `TRN`, `CG`, `BLIB`, `IOS`, and related build material. These sources are increasingly important as work moves from the interpreted bootstrap toward native System/370 code generation. |
-| [`mr10/bcplkit/`](mr10/bcplkit/) | The portable BCPL/INTCODE kit: BCPL sources for `SYN`, `TRN`, `CG`, `BLIB`, and `ICINT`, together with preserved INTCODE compilations such as `SYNI`, `TRNI`, `CGI`, and `BLIBI`. This material supplied the working interpreted bootstrap used by the project. |
-| [`mr10/`](mr10/) | Additional BCPL sources, compiler front ends, code generators, documentation, and bootstrap material associated with Martin Richards's files. |
-| [`km10/`](km10/) | Supporting BCPL material, macros, coroutine support, tests, and documentation from the preserved distribution. |
-| [`sys1/`](sys1/) and [`sys3/`](sys3/) | Material whose original organization corresponded to IBM-style system data sets, including procedures and BCPL headers. These areas are particularly relevant as the reconstruction begins exercising DASD-resident workflows. |
-| [`tripos/`](tripos/) | TRIPOS-related documentation and material. |
-| [`info/`](info/) | Historical change information and related notes. |
+The original evidence is retained here:
 
-Two provenance files should also be retained with the archive:
+- `README.orig.Yap` — Yap's note about the transport tape and its character-translation problems;
+- `README.Nordier` — Nordier's note describing his cleanup and renaming;
+- `INDEX` — mapping and comments for the original numbered tape entries.
 
-- [`README.Nordier`](README.Nordier) explains Robert Nordier's recovery, renaming, and character-mapping work.
-- [`README.orig.Yap`](README.orig.Yap) preserves the README distributed with Ken Yap's copy.
+Do not rewrite those three files merely to modernize their prose; they are provenance artifacts.
 
-## How the archive is being used
+Nordier reports 55 surviving files from an original sequence of 75 entries. The missing entries are represented in `INDEX`.
 
-Treat this tree primarily as historical evidence. Project-specific translations, extracted INTCODE files, tests, generated intermediates, and reconstructed MVS code belong elsewhere in the repository rather than being folded back into this archive.
+## Areas used by this project
 
-The current System/370 translation of ICINT is developed under [`../asm/`](../asm/). Working copies of preserved INTCODE compiler/runtime components are kept under [`../intcode/`](../intcode/), and executable regression workloads are organized under [`../tests/`](../tests/).
+`mr10/bcplkit/` contains the portable kit that currently drives the interpreted bootstrap: `syn`, `trn`, `cg`, their INTCODE forms, `blib`/`blibi`, and the historical BCPL `icint` implementation.
 
-The portable `mr10/bcplkit` path has now been demonstrated end-to-end under MVS: reconstructed ICINT hosts `SYNI`/`TRNI`, produces OCODE, `CGI` translates that OCODE to INTCODE, and the generated program runs with `BLIBI` and `ICLIB`. Separate BCPL source modules have also been compiled independently and linked through the common BCPL `GLOBAL` vector.
+`mr10/print/manual`, `mr10/text/bstrbcpl`, and `mr10/text/intcode` provide contemporary documentation for the language, bootstrap, and INTCODE system.
 
-That successful interpreted path makes the archive useful in a second way: surviving native compiler sources and code-generator material can now be compared against a working behavioral reference while a System/370-native generator and runtime are reconstructed.
+`bcplib/` contains later compiler/library source and remains useful comparative evidence.
 
-## Missing material and reconstruction targets
+The archive also contains target-specific material and code generators. A historical System/370 code generator has now been identified as relevant to the native-target work. The project is therefore concentrating on hosting and integrating surviving S/370 code-generation material with the runnable kit compiler rather than designing a new backend without reference to the historical implementation.
 
-The archive is incomplete. The `INDEX` explicitly records missing files, including the original native `BCPLMAIN` assembler source and a number of object modules.
+## Working copies
 
-`BCPLMAIN` remains an important reconstruction target because it represented native runtime and MVS services, but its contract does not need to be guessed all at once. The project expects to recover more of that interface from surviving compiler/runtime clients, historical build material, experiments with MVS data handling, and especially the requirements exposed by native System/370 code generation.
+For convenience the runnable bootstrap keeps byte-for-byte copies of several kit files under `intcode/`:
 
-Preserve the archive as evidence even when a project reconstruction differs from it. The point of this tree is to keep the surviving historical system available for comparison.
+```text
+mr10/bcplkit/blibi -> intcode/blibi.int
+mr10/bcplkit/cgi   -> intcode/cgi.int
+mr10/bcplkit/syni  -> intcode/syni.int
+mr10/bcplkit/trni  -> intcode/trni.int
+```
+
+Those copies remain historical third-party material.
+
+## Copyright and redistribution
+
+The repository's MIT license does not apply to this directory merely because the files are checked in here.
+
+Public archival redistribution of this material is well established through Nordier and Richards' archive, but the October 2026 release audit did not locate a blanket conventional open-source license covering every historical file. See `../THIRD-PARTY-NOTICES.md` and `../PUBLIC-RELEASE-AUDIT.md` before redistributing the archive.

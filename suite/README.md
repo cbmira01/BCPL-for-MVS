@@ -1,128 +1,59 @@
-# BCPL Demonstration Suite
+# BCPL demonstration suite
 
-This directory contains small BCPL programs that demonstrate the language, classic
-algorithms, data structures, mathematical routines, text and data handling, and the
-reconstructed BCPL/MVS runtime environment.
+`suite/` contains readable BCPL programs intended to show the hosted compiler/runtime doing ordinary work. They are broader and more human-facing than the exact-output regression panel under `tests/00-regression-panel/`.
 
-The suite is deliberately broader than a regression-test collection.  The programs
-should be interesting to read as BCPL, small enough to study without much setup, and
-useful as examples of the programming style found in historical BCPL systems.  Where
-practical, each program also exercises a meaningful part of the compiler, INTCODE
-interpreter, runtime library, or MVS host interface.
+Run all 17 general demonstrations with:
 
-Each demonstration directory contains a `README.md` with its `compile-and-run`
-invocation.  The core demonstrations below are initial implementations and should be
-validated on the local MVS/TK5 environment as they are exercised.
+```sh
+tools/run-demo-suite.sh
+```
 
-## Shared modules
+The runner uses the promoted interpreter from `config/CURRENT`. Override it for a candidate interpreter with `--icint PATH`.
 
-Some demonstrations benefit from small reusable BCPL modules rather than embedding
-all support code in each program.
+## General demonstrations
 
-- **[random](random/)** — seedable Park-Miller pseudo-random number generator for
-  reproducible test data, randomized searches, shuffling, randomized sorting choices,
-  and similar demonstrations.  This module has already been exercised successfully
-  through the multi-module `compile-and-run` path.
-- **[`../library/getvec-freevec.bcpl`](../library/getvec-freevec.bcpl)** — reconstructed
-  fixed-arena `GETVEC` / `FREEVEC` runtime support.
-- **[`../library/coroutines.bcpl`](../library/coroutines.bcpl)** — reconstructed portable
-  coroutine interface providing `CREATECO`, `DELETECO`, `CALLCO`, `COWAIT`, and
-  `RESUMECO` over the machine-dependent `CHANGECO` primitive.
+| Directory | What it demonstrates |
+| --- | --- |
+| `richards-factorial` | compact recursive factorial program retained from early bootstrap work |
+| `queens` | recursive eight-queens backtracking |
+| `knight` | 5x5 knight's tour using Warnsdorff's heuristic |
+| `hanoi` | recursive Towers of Hanoi |
+| `sieve` | Sieve of Eratosthenes over a BCPL vector |
+| `gcd` | Euclid's algorithm and LCM |
+| `quicksort` | recursive quicksort using the shared random library |
+| `binary-search` | iterative binary search |
+| `linked-list` | vector-backed linked structures and reversal |
+| `binary-tree` | vector-backed binary search tree and traversal |
+| `hash-table` | chained hash table using vector-backed nodes |
+| `word-count` | named MVS input stream and character/word/line counting |
+| `rpn-calculator` | explicit stack and reverse-Polish evaluation |
+| `expression-parser` | recursive-descent arithmetic parser |
+| `maze` | recursive depth-first maze search |
+| `stream-fanout` | three simultaneously open named MVS input streams |
+| `coroutines` | allocator-backed coroutine generator using the packaged runtime |
 
-Shared modules should have a small documented GLOBAL-vector interface and should be
-usable through the existing multi-module `compile-and-run` mechanism.
+The richer demonstrations that need additional explanation keep their own README files. Routine one-program descriptions are centralized here rather than repeated in every subdirectory.
 
-## Core demonstration programs
+Run a simple individual program with:
 
-The current suite consists of seventeen representative programs:
+```sh
+tools/compile-and-run --results \
+    "$(tools/current-icint)" \
+    suite/PROGRAM/PROGRAM.bcpl
+```
 
-1. **[richards-factorial](richards-factorial/)** — the compact historical recursive
-   factorial program used during the early bootstrap reconstruction; retained here as
-   a readable BCPL demonstration while the original probe remains under `tests/03`.
-2. **[queens](queens/)** — solve the eight-queens problem by recursive backtracking.
-3. **[knight](knight/)** — construct a 5x5 knight's tour with Warnsdorff's heuristic.
-4. **[hanoi](hanoi/)** — solve the Towers of Hanoi recursively.
-5. **[sieve](sieve/)** — generate primes with the Sieve of Eratosthenes.
-6. **[gcd](gcd/)** — demonstrate Euclid's algorithm and derive an LCM.
-7. **[quicksort](quicksort/)** — recursively sort a vector; pivot selection uses the
-   shared `random` module.
-8. **[binary-search](binary-search/)** — search a sorted vector by iterative binary
-   search.
-9. **[linked-list](linked-list/)** — construct, traverse, and reverse a singly linked
-   list represented in vector-backed storage.
-10. **[binary-tree](binary-tree/)** — build, traverse, and search a binary search tree
-    represented in vector-backed storage.
-11. **[hash-table](hash-table/)** — demonstrate hashing and chained collision handling
-    with vector-backed buckets and nodes.
-12. **[word-count](word-count/)** — count characters, words, and lines from a named
-    MVS input DD.
-13. **[rpn-calculator](rpn-calculator/)** — evaluate a reverse-Polish expression with
-    an explicit stack.
-14. **[expression-parser](expression-parser/)** — recursively parse and evaluate a
-    small arithmetic expression language.
-15. **[maze](maze/)** — solve a fixed maze with recursive depth-first search.
-16. **[stream-fanout](stream-fanout/)** — open several named MVS streams
-    simultaneously, read them, and close them explicitly.
-17. **[coroutines](coroutines/)** — dynamically create a generator coroutine, exchange
-    values through `CALLCO` / `COWAIT`, preserve suspended local state, and delete the
-    coroutine through the packaged runtime.
+Some programs need extra modules or DDs; `tools/run-demo-suite.sh` is the executable reference for the exact invocation.
 
-The older data-structure examples deliberately use explicit vector-backed storage so
-their algorithms remain visible.  Dynamic allocation is now also available through
-the reconstructed `GETVEC` / `FREEVEC` runtime and is demonstrated indirectly by the
-coroutine example.
+## Language demonstrations
 
-Collectively these programs exercise recursion, iteration, vectors, `TABLE`
-expressions, packed strings, byte access, arithmetic, searching, sorting, linked data
-structures, parsing, explicit stacks, stream I/O, multiple open streams, dynamic
-allocation, coroutine switching, and the GLOBAL-vector calling model.
+`suite/language/` contains smaller programs focused on one BCPL construct or idiom. Run them with:
 
-## BCPL idioms
+```sh
+tools/run-language-demos
+```
 
-A separate set of small examples demonstrates BCPL itself rather than merely
-implementing familiar algorithms.  Topics include, as suitable examples are developed:
+See `suite/language/README.md` for the list.
 
-- `LET`, `AND`, and simultaneous declarations;
-- `VALOF` and `RESULTIS`;
-- `TEST ... THEN ... OR`;
-- `SWITCHON`, `CASE`, and `DEFAULT`;
-- `REPEAT`, `REPEATWHILE`, and `REPEATUNTIL`;
-- vectors and vector indexing;
-- `TABLE` expressions;
-- `MANIFEST` constants;
-- `GLOBAL` declarations and the global vector;
-- functions used as values;
-- packed strings and byte access;
-- pointer-oriented BCPL programming;
-- explicit input and output stream selection;
-- multiple simultaneously open streams;
-- recursion; and
-- coroutines and non-local control mechanisms where historically appropriate.
+## Regression versus demonstration
 
-The idiom examples may be independent programs or particularly clear programs from
-the core suite.  Their purpose is to make characteristic BCPL constructs easy to
-find and understand.
-
-## Coroutines
-
-Coroutine support is now established in the reconstructed interpreted runtime and
-packaged as portable BCPL code in `library/coroutines.bcpl`, with `CHANGECO` remaining
-the machine-dependent primitive supplied by the INTCODE runtime.
-
-The **[coroutines](coroutines/)** demo presents the mechanism as a small generator:
-the generator retains its `FOR`-loop state across suspensions, yields values with
-`COWAIT`, is resumed with `CALLCO`, and is finally reclaimed with `DELETECO`.
-
-The detailed reconstruction evidence and lower-level regression tests remain under
-[`tests/10-coroutines`](../tests/10-coroutines/).
-
-## Style of the suite
-
-Programs should favor clarity over cleverness.  They should use ordinary BCPL idioms,
-contain enough commentary to explain the algorithm and any unusual language feature,
-and avoid unnecessary dependencies on host-specific facilities.  MVS-specific I/O
-examples are appropriate where the host interface itself is the subject of the demo.
-
-The programs are also useful as progressive integration exercises for the
-BCPL-for-MVS reconstruction, but the principal goal of this directory is to provide
-readable and interesting examples of BCPL programming.
+A demo succeeds when it compiles and executes successfully and its printed result is sensible. Behavior that must never silently change belongs in the exact-output regression panel under `tests/00-regression-panel/`.
