@@ -10,7 +10,7 @@ BCPL INTCODE compiler and runtime components.
 
 ## Current ICINT baseline
 
-[`CURRENT`](CURRENT) is the project-level pointer to the ICINT version that has
+[`../config/CURRENT`](../config/CURRENT) is the project-level pointer to the ICINT version that has
 been promoted as the current validated baseline. It contains only the assembler
 filename, currently:
 
@@ -20,18 +20,17 @@ icintv17.asm
 
 Host-side runners should not infer the current interpreter by choosing the
 numerically highest `icintv*.asm` file. A newer numbered source may exist while
-still being experimental. Instead, shared runners resolve `asm/CURRENT` through
+still being experimental. Instead, shared runners resolve `config/CURRENT` through
 `tools/current-icint`.
 
 A candidate interpreter can be exercised explicitly before promotion. Once it
 has passed the appropriate regression panel, promotion consists of changing
-`asm/CURRENT` to name that validated version.
+`config/CURRENT` to name that validated version.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
-| [`CURRENT`](CURRENT) | Names the current validated ICINT source used by shared runners. |
 | [`hello-world.asm`](hello-world.asm) | Small IFOX/MVS example program. Demonstrates normal MVS entry/exit linkage, a save area, QSAM output through `OPEN`/`PUT`/`CLOSE`, and a simple `SYSPRINT` DCB. Useful as a basic assembler/toolchain smoke test. |
 | [`icintv12.asm`](icintv12.asm) | Validated ICINT V12 milestone. Corrected BCPL pointer representation so BCPL pointers are word-addressed rather than host byte-addressed. Its acceptance target was Richards's factorial program running with `BLIBI` and `ICLIB`, producing the correct factorials and returning code 0. |
 | [`icintv13.asm`](icintv13.asm) | V13 milestone. Added a reconstructed `MAPSTORE` diagnostic while preserving V12 execution semantics. The diagnostic format is project reconstruction, not a claim to reproduce Richards's original `MAPSTORE` exactly. |
