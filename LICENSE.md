@@ -1,8 +1,14 @@
-Unless otherwise attributed, original work in this repository is
-Copyright (c) 2026 Calvin Miracle and is licensed under the MIT License below.
+Original work created for this repository is Copyright (c) 2026 Calvin Miracle and is licensed under the MIT License below unless a file says otherwise.
 
-Third-party materials, including Hercules and MVS TK5, remain subject to their
-respective copyright and license terms.
+The MIT License does **not** apply merely because third-party or historical material is present in this repository. In particular, it does not relicense:
+
+- `richards-bcpltape/` or other preserved historical BCPL material;
+- byte-for-byte historical working copies under `intcode/`;
+- Hercules;
+- MVS Turnkey 5 / TK5 or its contents; or
+- other third-party software used by the build and test environment.
+
+Those materials retain their respective copyright and licensing status. See `THIRD-PARTY-NOTICES.md` and `PUBLIC-RELEASE-AUDIT.md` for provenance and release notes.
 
 # MIT License
 
