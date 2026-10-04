@@ -125,22 +125,8 @@ def prepare_sources() -> list[Path]:
     return paths
 
 
-def gused_clear(globals_count: int) -> str:
-    """Build IFOX XC statements that clear an arbitrary-length GUSED table."""
-    lines = []
-    offset = 0
-    remaining = globals_count
-    while remaining:
-        chunk = min(256, remaining)
-        target = "GUSED" if offset == 0 else f"GUSED+{offset}"
-        lines.append(f"         XC    {target}({chunk}),{target}")
-        offset += chunk
-        remaining -= chunk
-    return "\n".join(lines)
-
-
 def prepare_interpreter(source: Path, globals_count: int, labels: int, progwords: int) -> Path:
-    """Make a bootstrap-only, internally consistent capacity-expanded ICINT."""
+    """Make a bootstrap-only, capacity-expanded ICINT without growing its CSECT."""
     text = read_ascii(source)
     substitutions = (
         (r"^LABVCNT\s+EQU\s+\d+\s*$", f"LABVCNT  EQU   {labels}"),
@@ -152,20 +138,35 @@ def prepare_interpreter(source: Path, globals_count: int, labels: int, progwords
         if count != 1:
             raise RuntimeError(f"could not patch interpreter constant: {pattern}")
 
-    # V17's normal capacities are LABVCNT=501, GLOBCNT=401 and PROGCNT=20001.
-    # Several diagnostic/usage-table bounds are intentionally literal in V17;
-    # a bootstrap-expanded copy must change those along with the vectors.
+    # LABV, G and the program vector are obtained dynamically by GETMAIN, so
+    # their capacities can grow without enlarging the ICINT CSECT.  GUSED is
+    # different: it is a static diagnostic bitmap.  Growing it from 401 bytes
+    # pushed V17 beyond its three 4K USING regions and made the literal pool
+    # unaddressable to IFOX.  Keep GUSED at 401 entries and simply stop marking
+    # diagnostic usage for globals above 400.  The actual global vector still
+    # contains every requested entry, including Cambridge globals through 699.
     text = replace_once(
         text,
-        "         XC    GUSED(256),GUSED\n         XC    GUSED+256(145),GUSED+256",
-        gused_clear(globals_count),
-        "GUSED clearing",
+        "CASEG    BAL   R14,RCH\n"
+        "         BAL   R14,RDN\n"
+        "         LR    R3,R0\n"
+        "         LA    R5,GUSED\n"
+        "         AR    R5,R3\n"
+        "         MVI   0(R5),1\n"
+        "         L     R2,G",
+        "CASEG    BAL   R14,RCH\n"
+        "         BAL   R14,RDN\n"
+        "         LR    R3,R0\n"
+        "         C     R3,=F'400'\n"
+        "         BH    CAGUSKIP\n"
+        "         LA    R5,GUSED\n"
+        "         AR    R5,R3\n"
+        "         MVI   0(R5),1\n"
+        "CAGUSKIP L     R2,G",
+        "CASEG GUSED guard",
     )
-    text = replace_once(text, "GUSED    DS    CL401", f"GUSED    DS    CL{globals_count}", "GUSED size")
     text = replace_once(text, "ACLRTST  C     R4,=F'500'", f"ACLRTST  C     R4,=F'{labels - 1}'", "label clear bound")
     text = replace_once(text, "AZTEST   C     R8,=F'500'", f"AZTEST   C     R8,=F'{labels - 1}'", "label check bound")
-    text = replace_once(text, "         C     R3,=F'400'\n         BH    AUSEDOK", f"         C     R3,=F'{globals_count - 1}'\n         BH    AUSEDOK", "global usage bound")
-    text = replace_once(text, "MSGLOOP C     R6,=F'400'", f"MSGLOOP C     R6,=F'{globals_count - 1}'", "MAPSTORE global bound")
     text = replace_once(text, "         A     R3,=F'20000'", f"         A     R3,=F'{progwords - 1}'", "OP1 program bound")
     text = replace_once(text, "         A     R3,=F'400'\n         CR    R2,R3", f"         A     R3,=F'{globals_count - 1}'\n         CR    R2,R3", "OP1 global bound")
 
