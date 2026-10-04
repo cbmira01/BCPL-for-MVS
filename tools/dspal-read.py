@@ -86,7 +86,7 @@ def extract_data_sysout(report: str) -> str:
     stops = [
         index
         for index, line in enumerate(lines)
-        if re.search(r"^IEF376I\s+JOB\s+/DSPALGET/\s+/\s+STOP\b", line)
+        if re.search(r"^IEF376I\s+JOB\s+/DSPALGET/\s+STOP\b", line)
     ]
     if not stops:
         raise DspalError(
