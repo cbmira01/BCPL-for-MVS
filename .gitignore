@@ -14,6 +14,9 @@ compose.override.yml
 .env.*
 !.env.example
 
+# Local dspal configuration
+config/dspal.local.yaml
+
 # Python cache
 __pycache__/
 *.py[cod]
