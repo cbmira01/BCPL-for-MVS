@@ -1,6 +1,6 @@
 # `dspal` Deployment and Population Policy
 
-This note records the current policy for MVS userid, dataset naming, volume placement, reproducible population of BCPL project datasets, configuration overrides, and host/MVS text conversion.
+This note records the current policy for MVS userid, dataset naming, volume placement, reproducible population of BCPL project datasets, configuration overrides, host/MVS text conversion, and MVS readiness checks.
 
 ## Default userid and HLQ
 
@@ -273,6 +273,88 @@ encoding: binary
 Binary mode means no character-set conversion and no text-line interpretation. Bytes and records are transferred according to the applicable dataset/record semantics without UTF-8 or EBCDIC translation.
 
 Binary mode is distinct from CP037 text mode and must always be explicit where a managed member is not text.
+
+## MVS readiness and status
+
+`dspal` needs a cheap way to determine whether the local TK5/MVS environment is available before attempting dataset operations.
+
+The preferred design is layered rather than relying on a single signal.
+
+### Cheap readiness checks
+
+Normal commands should use inexpensive host-side checks first:
+
+1. verify that the configured Docker container is running;
+2. verify that the configured JES socket reader host/port is reachable, normally `127.0.0.1:3505`;
+3. optionally verify that the Hercules web service is reachable, normally `127.0.0.1:8038`.
+
+The Hercules web service is useful diagnostic evidence, but it is **not authoritative**. A responding Hercules process does not prove that MVS has completed IPL, JES2 is ready, or the socket reader can accept and execute work.
+
+The Docker-container check is similarly useful but insufficient by itself.
+
+### `dspal status`
+
+The normal status command should report the layers clearly, for example:
+
+```text
+Docker container:  up
+Hercules:          reachable
+JES reader 3505:   reachable
+MVS/JES2:          not probed
+```
+
+A normal `dspal status` should remain cheap and should not submit an MVS job merely to answer a routine status query.
+
+### Authoritative end-to-end probe
+
+The definitive readiness test is successful submission and completion of a tiny JES job.
+
+Provide:
+
+```text
+dspal status --probe
+```
+
+The probe should submit a minimal no-op job, conceptually:
+
+```jcl
+//DSPALCHK JOB (BCPL),'DSPAL STATUS',CLASS=A,MSGCLASS=A
+//STEP1    EXEC PGM=IEFBR14
+```
+
+and verify that JES accepts the job and that it completes successfully.
+
+That tests the complete path relevant to `dspal`:
+
+```text
+Docker
+  ↓
+Hercules
+  ↓
+MVS IPL
+  ↓
+JES2
+  ↓
+socket reader
+  ↓
+job execution
+```
+
+A successful JES probe is the authoritative indication that MVS is ready for `dspal` work.
+
+### Quiet/script mode
+
+Provide:
+
+```text
+dspal status --quiet
+```
+
+for scripts and internal readiness checks. Quiet mode should suppress normal descriptive output and communicate success/failure through the process exit status.
+
+Normal mutating commands such as `initbcpl`, `populate`, `put`, `rm`, and `compress` may use the cheap readiness checks automatically and fail early with a useful diagnostic when the container or reader is unavailable. They should not need to submit a separate probe job before every operation, because the operation itself will shortly exercise JES.
+
+The reader host/port, container identity, and optional Hercules web endpoint should come from shared project configuration rather than being duplicated as unrelated hard-coded values inside `dspal`.
 
 ## Managed BCPL dataset set
 
