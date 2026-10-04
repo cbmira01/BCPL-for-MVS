@@ -172,7 +172,7 @@ def patch_final_run(deck: str, test_source: str, options: str) -> str:
     pos = deck.rfind(marker)
     deck = deck[:pos] + deck[pos:].replace(
         marker,
-        "//RUN      EXEC PGM=RUNMOD,REGION=1024K,TIME=(,60),COND=(4,LT)\n",
+        "//RUN      EXEC PGM=RUNMOD,REGION=1024K,TIME=(1,0),COND=(4,LT)\n",
         1,
     )
 
