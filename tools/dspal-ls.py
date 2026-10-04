@@ -3,8 +3,8 @@
 
 A specific DATASET lists only member names.  With no operand, one TSO job
 queries every managed PDS and prints a labelled inventory, including empty
-libraries.  A LISTDS result that lacks a MEMBERS block is treated as an error,
-not as an empty PDS.
+and missing libraries.  A specific DATASET that lacks a MEMBERS block remains
+an error rather than being silently treated as empty.
 """
 
 from __future__ import annotations
@@ -183,11 +183,16 @@ def cmd_ls(
 
         blocks = member_blocks(report, dsns)
         for logical, dsn in selected:
+            print(f"{logical} ({dsn})")
             block = blocks.get(dsn.upper())
             if block is None:
-                block = require_members_block(report, dsn, job, dsns)
+                # Bare `ls` is an inventory of the managed set.  A managed PDS
+                # can legitimately be absent after purgebcpl or before initbcpl,
+                # so report that lifecycle state instead of aborting the whole
+                # inventory.  The specific `ls DATASET` form remains strict.
+                print("    (missing)")
+                continue
             members = parse_members(block)
-            print(f"{logical} ({dsn})")
             if members:
                 for member in members:
                     print(f"    {member}")
