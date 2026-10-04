@@ -32,9 +32,10 @@ allocation_defaults:
   secondary: 5
   directory: 20
 
-# Dataset descriptions are also user-facing text for dspal info/help.
-# Population mappings will be filled out as the repo-to-member policy is
-# finalized; initbcpl already derives allocation policy from this manifest.
+# Explicit repo-to-member mappings are authoritative.  PDS members are not
+# inferred by truncating host filenames.  Datasets without members mappings
+# remain managed/allocatable but are not populated until their flattening
+# policy is explicitly defined.
 datasets:
   SOURCE:
     dsn: BCPL.SOURCE
@@ -55,6 +56,15 @@ datasets:
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      HELLOWLD: asm/hello-world.asm
+      ICINT12: asm/icintv12.asm
+      ICINT13: asm/icintv13.asm
+      IC14TRCE: asm/icintv14-trace.asm
+      ICINT14: asm/icintv14.asm
+      ICINT15: asm/icintv15.asm
+      ICINT16: asm/icintv16.asm
+      ICINT17: asm/icintv17.asm
 
   JCL:
     dsn: BCPL.JCL
@@ -65,6 +75,13 @@ datasets:
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      DUMPJES: jcl/dump-jes2-parameters.jcl
+      HELLOHVY: jcl/hello-world-heavy.jcl
+      IC12HON: jcl/icintv12-honors-thesis.jcl
+      IC13HON: jcl/icintv13-honors-thesis.jcl
+      IC13MAP: jcl/icintv13-mapstore.jcl
+      LSTPARM: jcl/list-parmlib-members.jcl
 
   INTCODE:
     dsn: BCPL.INTCODE
@@ -75,6 +92,12 @@ datasets:
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      BLIBI: intcode/blibi.int
+      CGI: intcode/cgi.int
+      ICLIB: intcode/iclib.int
+      SYNI: intcode/syni.int
+      TRNI: intcode/trni.int
 
   LIBRARY:
     dsn: BCPL.LIBRARY
@@ -85,6 +108,16 @@ datasets:
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      CHARUTIL: library/char-utils.bcpl
+      COROUTIN: library/coroutines.bcpl
+      GETVEC: library/getvec-freevec.bcpl
+      INTUTIL: library/integer-utils.bcpl
+      LINEIO: library/line-io.bcpl
+      MEMUTIL: library/memory-utils.bcpl
+      NUMCONV: library/numeric-conversion.bcpl
+      RANDOM: library/random.bcpl
+      STRUTIL: library/string-utils.bcpl
 
   BCPLDEMO:
     dsn: BCPL.BCPLDEMO
