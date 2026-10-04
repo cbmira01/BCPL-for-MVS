@@ -2,6 +2,8 @@ version: 1
 
 mvs:
   userid: HERC02
+  batch_user: HERC02
+  batch_password: null
   hlq: HERC02
   default_unit: SYSDA
   default_volume: null
