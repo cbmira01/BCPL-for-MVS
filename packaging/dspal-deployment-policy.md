@@ -1,6 +1,6 @@
 # `dspal` Deployment and Population Policy
 
-This note records the current policy for MVS userid, dataset naming, volume placement, and reproducible population of BCPL project datasets.
+This note records the current policy for MVS userid, dataset naming, volume placement, reproducible population of BCPL project datasets, configuration overrides, and host/MVS text conversion.
 
 ## Default userid and HLQ
 
@@ -65,6 +65,59 @@ For the normal project path, the stock `HERC02` identity already provides a suit
 
 `dspal` should nevertheless keep userid and HLQ configurable so a user can choose another installation policy later.
 
+## Configuration files
+
+Checked-in project configuration belongs under `config/`.
+
+The canonical `dspal` manifest/configuration file is:
+
+```text
+config/dspal.yaml
+```
+
+Installation-specific overrides belong in:
+
+```text
+config/dspal.local.yaml
+```
+
+`config/dspal.local.yaml` is intentionally local state and must be excluded from Git.
+
+The effective configuration precedence should be:
+
+```text
+built-in defaults
+    ↓
+config/dspal.yaml
+    ↓
+config/dspal.local.yaml
+    ↓
+command-line overrides
+```
+
+All persistent `dspal` override files should remain under `config/`; do not add a separate repo-root `.dspal.yaml` convention.
+
+## Manifest role
+
+`config/dspal.yaml` is intended to be the single declarative source for the managed BCPL PDS layout.
+
+For each managed PDS it should be able to describe:
+
+- logical dataset name;
+- full or relative DSN;
+- dataset type;
+- allocation attributes such as `DSORG`, `RECFM`, `LRECL`, `BLKSIZE`, space, and directory blocks where applicable;
+- human-readable description used by `dspal info` and help output;
+- whether the PDS participates in Git-driven population;
+- repository path or paths that provide members;
+- filename-to-member mappings or deterministic mapping rules;
+- include/exclude rules where useful;
+- text or binary transfer mode.
+
+For now the manifest covers **PDS datasets and members only**. Sequential datasets remain supported by `dspal` as a tool capability but are not part of this managed BCPL population manifest yet.
+
+`dspal initbcpl` derives the allocation parameters for the managed PDS set from this manifest. Creation policy should not be duplicated in hard-coded command logic except for schema validation and built-in defaults needed to read the manifest safely.
+
 ## Git is the source of truth
 
 The key reproducibility rule is:
@@ -112,9 +165,7 @@ dspal populate TEST
 dspal populate all
 ```
 
-Populates every managed source/data PDS from its corresponding repository content.
-
-The exact repo-directory-to-PDS mapping belongs in project configuration or a checked-in manifest so it is inspectable and reproducible.
+Populates every managed source/data PDS from its corresponding repository content as defined by `config/dspal.yaml`.
 
 ### `populate PDS`
 
@@ -123,25 +174,27 @@ dspal populate ASM
 dspal populate SOURCE
 ```
 
-Populates one managed BCPL PDS from the repo subtree mapped to that PDS.
+Populates one managed BCPL PDS from the repo content mapped to that PDS.
 
 The operand is a managed logical PDS name, not an arbitrary unrestricted dataset name.
 
 ## Population semantics
 
-The initial policy should be conservative:
+Population is intentionally deterministic and authoritative for managed members:
 
-- create missing members;
-- replace members whose managed Git source has changed;
+- create missing managed members;
+- replace managed members **unconditionally** from the current Git-side source, even if an existing MVS member appears unchanged;
 - leave unrelated or unmanaged members alone;
 - do not silently delete MVS members merely because no matching local file exists;
 - fail on ambiguous filename-to-member-name mappings;
 - fail on member-name collisions;
 - fail on record-length violations rather than silently truncating;
-- apply the existing text/EBCDIC conversion policy consistently;
-- report what changed.
+- apply the configured text/EBCDIC conversion policy consistently;
+- report what was populated.
 
 A future explicit pruning option may be added if there is a demonstrated need, but ordinary `populate` should not unexpectedly erase local MVS work.
+
+There is no separate reverse bulk-population command at present. Ordinary `dspal get` is sufficient for retrieving members from MVS. A broader extraction command can be reconsidered later if a real workflow requires it.
 
 ## Dry-run support
 
@@ -155,12 +208,71 @@ and similarly for individual PDSes.
 
 Dry-run mode should report the proposed actions without modifying MVS, including at least:
 
-- members to be added;
-- members to be replaced;
+- members that would be written;
 - files rejected because of naming or record-format issues;
 - source files that do not map to an MVS member.
 
 Where population is implemented by generated jobs, `--show-jcl` remains useful as an independent teaching/debugging facility.
+
+## Text encoding policy
+
+Git-side managed text is UTF-8. MVS text records are encoded as EBCDIC CP037 unless the manifest explicitly selects another supported encoding in the future.
+
+The default text policy is conceptually:
+
+```yaml
+text:
+  host_encoding: utf-8
+  mvs_encoding: cp037
+  conversion_errors: strict
+  output_line_endings: lf
+  strip_trailing_blanks: true
+```
+
+Conversion must be strict. A character that cannot be represented in CP037 is an error. `dspal` must not silently substitute `?`, discard a character, or otherwise corrupt source text.
+
+Encoding policy and record-format policy are distinct:
+
+- UTF-8 / CP037 describes character representation;
+- `RECFM`, `LRECL`, and `BLKSIZE` describe MVS record storage.
+
+### Host to MVS
+
+For text `put` and `populate` operations:
+
+1. read the host file as UTF-8;
+2. treat each host line as one logical MVS record;
+3. reject a line whose encoded record exceeds the target LRECL;
+4. convert the text strictly to CP037;
+5. for fixed-length records, right-pad the record with EBCDIC spaces to the target LRECL.
+
+No source line may be silently truncated.
+
+### MVS to host
+
+For text `get` operations:
+
+1. read each MVS record as a record, not as a byte-stream line;
+2. decode CP037 strictly;
+3. strip trailing padding blanks from the right edge;
+4. preserve leading blanks and all interior spacing;
+5. emit UTF-8 text using LF line endings.
+
+A blank fixed-length MVS record therefore becomes an empty host line.
+
+The trailing-blank rule deliberately favors natural Git/source-file round trips over preserving fixed-record padding that exists only because of MVS `FB` storage.
+
+## Binary transfer mode
+
+The manifest and transfer commands must support a binary mode, represented conceptually as:
+
+```yaml
+encoding: binary
+```
+
+Binary mode means no character-set conversion and no text-line interpretation. Bytes and records are transferred according to the applicable dataset/record semantics without UTF-8 or EBCDIC translation.
+
+Binary mode is distinct from CP037 text mode and must always be explicit where a managed member is not text.
 
 ## Managed BCPL dataset set
 
