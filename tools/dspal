@@ -11,11 +11,13 @@ IO = ROOT / "tools" / "dspal-io.py"
 READ = ROOT / "tools" / "dspal-read.py"
 MAINT = ROOT / "tools" / "dspal-maint.py"
 LS = ROOT / "tools" / "dspal-ls.py"
+POPULATE = ROOT / "tools" / "dspal-populate.py"
 
 CORE_COMMANDS = {"info", "status", "stat", "initbcpl"}
 READ_COMMANDS = {"cat", "get"}
 MAINT_COMMANDS = {"rm", "compress"}
 LS_COMMANDS = {"ls"}
+POPULATE_COMMANDS = {"populate"}
 
 
 def exec_script(path: Path, argv: list[str]) -> None:
@@ -40,6 +42,7 @@ def print_help() -> None:
         ("put DATASET MEMBER FILE", "replace/create a text member; FILE may be -"),
         ("rm DATASET MEMBER", "remove exactly one PDS member"),
         ("compress DATASET", "compress one PDS in place with IEBCOPY"),
+        ("populate TARGET", "populate one managed source PDS or all from Git mappings"),
         ("initbcpl", "create missing managed datasets after attribute preflight"),
     ]
     for name, description in rows:
@@ -58,6 +61,8 @@ def route_help(topic: str) -> None:
         exec_script(MAINT, [topic, "--help"])
     if topic in LS_COMMANDS:
         exec_script(LS, ["--help"])
+    if topic in POPULATE_COMMANDS:
+        exec_script(POPULATE, ["--help"])
     exec_script(IO, ["help", topic])
 
 
@@ -82,6 +87,8 @@ def main() -> int:
         exec_script(MAINT, args)
     if args[0] in LS_COMMANDS:
         exec_script(LS, args[1:])
+    if args[0] in POPULATE_COMMANDS:
+        exec_script(POPULATE, args[1:])
     exec_script(IO, args)
     return 127
 
