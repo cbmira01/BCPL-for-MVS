@@ -1,0 +1,134 @@
+version: 1
+
+mvs:
+  userid: HERC02
+  hlq: HERC02
+  default_volume: null
+  write_boundary: HERC02.**
+
+runtime:
+  docker_container: mvs38j
+  reader_host: 127.0.0.1
+  reader_port: 3505
+  hercules_host: 127.0.0.1
+  hercules_port: 8038
+  printer: mvs-state/prt/prt00e.txt
+  submit_timeout: 120
+  completion_timeout: 120
+
+text:
+  host_encoding: utf-8
+  mvs_encoding: cp037
+  conversion_errors: strict
+  output_line_endings: lf
+  strip_trailing_blanks: true
+
+allocation_defaults:
+  space_unit: TRK
+  primary: 10
+  secondary: 5
+  directory: 20
+
+# Dataset descriptions are also user-facing text for dspal info/help.
+# Population mappings will be filled out as the repo-to-member policy is
+# finalized; initbcpl already derives allocation policy from this manifest.
+datasets:
+  SOURCE:
+    dsn: BCPL.SOURCE
+    description: BCPL compiler and program source library
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  ASM:
+    dsn: BCPL.ASM
+    description: System/370 assembler source library
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  JCL:
+    dsn: BCPL.JCL
+    description: Reusable MVS JCL library
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  INTCODE:
+    dsn: BCPL.INTCODE
+    description: INTCODE programs, compiler phases, and interpreter inputs
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  LIBRARY:
+    dsn: BCPL.LIBRARY
+    description: Reusable BCPL runtime and library source
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  BCPLDEMO:
+    dsn: BCPL.BCPLDEMO
+    description: BCPL demonstration programs
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  LANGDEMO:
+    dsn: BCPL.LANGDEMO
+    description: BCPL language-feature demonstration programs
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  REGRESS:
+    dsn: BCPL.REGRESS
+    description: Permanent BCPL regression programs and fixtures
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  TEST:
+    dsn: BCPL.TEST
+    description: Ad hoc and current BCPL test programs and fixtures
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+
+  LOAD:
+    dsn: BCPL.LOAD
+    description: Link-edited executable load modules
+    type: loadlib
+    dsorg: PO
+    recfm: U
+    lrecl: 0
+    blksize: 6144
+    populate: false
