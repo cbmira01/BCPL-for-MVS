@@ -6,8 +6,9 @@ The deck:
   2. stages the preserved MR10 SYNI/TRNI/CGI/BLIBI/ICLIB components;
   3. compiles the Cambridge BCPL, SYN, TRN, CG and COMPBLIB sections to
      INTCODE with the interpreted MR10 compiler pipeline;
-  4. runs those sections together under ICINT, compiling a small BCPL input
-     with the Cambridge in-memory TRN -> CG370 handoff; and
+  4. runs those Cambridge sections plus COMPBLIB and the low-level ICLIB host
+     services under ICINT, compiling a small BCPL input with the Cambridge
+     in-memory TRN -> CG370 handoff; and
   5. attempts to assemble the emitted CODE stream with IFOX00.
 
 This is intentionally a deck generator, not a submitter.  The generated JCL is
@@ -153,6 +154,19 @@ def patch_final_run(deck: str, test_source: str, options: str) -> str:
     pos = deck.rfind(marker)
     if pos < 0:
         raise RuntimeError("cannot locate final RUN step in generated deck")
+
+    # compile-and-run normally appends BLIBI + ICLIB to every final execution.
+    # Here COMPBLIB is itself one of the generated Cambridge modules, so loading
+    # MR10 BLIBI afterward would overwrite overlapping globals.  Keep ICLIB for
+    # the ICINT X-operation host services, but remove BLIBI from this RUN only.
+    tail = deck[pos:]
+    blibi_dd = "//         DD  DSN=&&BLIBI,DISP=(OLD,DELETE)\n"
+    if blibi_dd not in tail:
+        raise RuntimeError("cannot locate final RUN BLIBI concatenation")
+    tail = tail.replace(blibi_dd, "", 1)
+    deck = deck[:pos] + tail
+
+    pos = deck.rfind(marker)
     deck = deck[:pos] + deck[pos:].replace(
         marker,
         "//RUN      EXEC PGM=RUNMOD,REGION=1024K,TIME=(,60),COND=(4,LT)\n",
