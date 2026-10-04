@@ -4,6 +4,8 @@ This repository reconstructs a usable BCPL environment for IBM System/370 under 
 
 The primary historical evidence is the Martin Richards BCPL transport-tape material preserved by Ken Yap and Robert Nordier. The project adds an MVS-hosted INTCODE interpreter, host-side build and data-set tools, reconstructed runtime pieces, tests, and demonstrations.
 
+This project appears to be one of the few modern efforts to reconstruct a historical BCPL system for IBM System/370 from surviving compiler and bootstrap materials.
+
 ## Current state
 
 The interpreted bootstrap path works. The promoted interpreter is selected by `config/CURRENT` and currently resolves to `asm/icintv17.asm`.
