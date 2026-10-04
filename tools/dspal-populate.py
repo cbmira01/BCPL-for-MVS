@@ -149,6 +149,46 @@ def combined_jcl(config: dict[str, Any], actions: list[dict[str, Any]]) -> str:
     return "".join(decks)
 
 
+def report_says_missing(report: str, dsn: str) -> bool:
+    upper = report.upper()
+    name = re.escape(dsn.upper())
+    patterns = (
+        rf"IKJ58503I\s+DATA\s+SET\s+['\"]?{name}['\"]?\s+NOT\s+IN\s+CATALOG",
+        rf"DATA\s+SET\s+['\"]?{name}['\"]?\s+NOT\s+IN\s+CATALOG",
+        rf"DATASET\s+['\"]?{name}['\"]?\s+NOT\s+IN\s+CATALOG",
+        rf"['\"]?{name}['\"]?\s+NOT\s+FOUND",
+    )
+    return any(re.search(pattern, upper) for pattern in patterns)
+
+
+def require_target_datasets(config: dict[str, Any], actions: list[dict[str, Any]]) -> None:
+    seen: set[str] = set()
+    missing: list[str] = []
+    for action in actions:
+        logical = action["logical"]
+        if logical in seen:
+            continue
+        seen.add(logical)
+        dsn = action["dsn"]
+        job, _ = core.submit_and_wait(config, core.stat_deck(config, [dsn]), max_rc=8)
+        report = core.job_report(job)
+        if report_says_missing(report, dsn):
+            missing.append(f"{logical} ({dsn})")
+            continue
+        block = core.extract_listds_block(report, dsn)
+        attrs = core.parse_listds(block) if block else {}
+        if not attrs:
+            raise DspalError(
+                f"JOB {job}: could not verify populate target {dsn}; "
+                f"run dspal stat {logical} --raw"
+            )
+    if missing:
+        raise DspalError(
+            "populate target dataset(s) are missing; run dspal initbcpl first:\n  "
+            + "\n  ".join(missing)
+        )
+
+
 def cmd_populate(
     config: dict[str, Any], target: str, dry_run: bool, show_jcl: bool
 ) -> int:
@@ -169,6 +209,7 @@ def cmd_populate(
         return 0
 
     core.require_reader_ready(config)
+    require_target_datasets(config, actions)
     completed: list[tuple[int, dict[str, Any]]] = []
     for action in actions:
         deck = io.member_put_deck(
