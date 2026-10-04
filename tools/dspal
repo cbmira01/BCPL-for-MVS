@@ -8,7 +8,9 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "tools" / "dspal-core.py"
 IO = ROOT / "tools" / "dspal-io.py"
+READ = ROOT / "tools" / "dspal-read.py"
 CORE_COMMANDS = {"info", "status", "stat", "initbcpl"}
+READ_COMMANDS = {"cat", "get"}
 
 
 def exec_script(path: Path, argv: list[str]) -> None:
@@ -21,6 +23,8 @@ def main() -> int:
         exec_script(IO, args if args else ["help"])
     if args[0] in CORE_COMMANDS:
         exec_script(CORE, args)
+    if args[0] in READ_COMMANDS:
+        exec_script(READ, args)
     exec_script(IO, args)
     return 127
 
