@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -31,6 +32,39 @@ def managed_dsns(config: dict[str, Any]) -> list[tuple[str, str]]:
         (logical, core.full_dsn(config, spec))
         for logical, spec in config["datasets"].items()
     ]
+
+
+def report_says_missing(report: str, dsn: str) -> bool:
+    """Recognize classic TSO LISTDS missing-catalog responses for one DSN."""
+    upper = report.upper()
+    name = re.escape(dsn.upper())
+    patterns = (
+        rf"IKJ58503I\s+DATA\s+SET\s+['\"]?{name}['\"]?\s+NOT\s+IN\s+CATALOG",
+        rf"DATA\s+SET\s+['\"]?{name}['\"]?\s+NOT\s+IN\s+CATALOG",
+        rf"DATASET\s+['\"]?{name}['\"]?\s+NOT\s+IN\s+CATALOG",
+        rf"['\"]?{name}['\"]?\s+NOT\s+FOUND",
+    )
+    return any(re.search(pattern, upper) for pattern in patterns)
+
+
+def probe_one(config: dict[str, Any], logical: str, dsn: str) -> tuple[int, bool]:
+    """Return (JOB, exists) using an isolated LISTDS LABEL query."""
+    job, _ = core.submit_and_wait(
+        config, core.stat_deck(config, [dsn]), max_rc=8
+    )
+    report = core.job_report(job)
+
+    if report_says_missing(report, dsn):
+        return job, False
+
+    block = core.extract_listds_block(report, dsn)
+    attrs = core.parse_listds(block) if block else {}
+    if not attrs:
+        raise DspalError(
+            f"JOB {job}: could not determine whether {dsn} exists or parse its "
+            f"LISTDS attributes; run dspal stat {logical} --raw"
+        )
+    return job, True
 
 
 def purge_deck(
@@ -81,15 +115,17 @@ def cmd_purgebcpl(config: dict[str, Any], yes: bool, show_jcl: bool) -> int:
         return 0
 
     core.require_reader_ready(config)
-    preflight_job, _, inventory = core.managed_inventory(config)
-    selected = [
-        (logical, dsn)
-        for logical, dsn in all_managed
-        if inventory[logical] is not None
-    ]
+    selected: list[tuple[str, str]] = []
+    probes: list[int] = []
+    for logical, dsn in all_managed:
+        job, exists = probe_one(config, logical, dsn)
+        probes.append(job)
+        if exists:
+            selected.append((logical, dsn))
 
+    probe_text = ",".join(str(job) for job in probes)
     if not selected:
-        print(f"purgebcpl preflight completed as JOB {preflight_job}")
+        print(f"purgebcpl preflight completed as JOB {probe_text}")
         print("No managed datasets exist; nothing to delete.")
         return 0
 
@@ -101,7 +137,7 @@ def cmd_purgebcpl(config: dict[str, Any], yes: bool, show_jcl: bool) -> int:
         purge_deck(config, selected, redact_password=False),
         max_rc=0,
     )
-    print(f"purgebcpl preflight completed as JOB {preflight_job}")
+    print(f"purgebcpl preflight completed as JOB {probe_text}")
     print(f"purgebcpl deletion completed as JOB {job}")
     for logical, dsn in selected:
         print(f"  {logical:<9} deleted {dsn}")
