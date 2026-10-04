@@ -1,13 +1,13 @@
-# `pdspal` BCPL Project-Layout Commands
+# `dspal` BCPL Project-Layout Commands
 
-This note records two deliberately distinctive `pdspal` commands for reproducibly creating and removing the standard BCPL-on-MVS dataset layout.
+This note records two deliberately distinctive `dspal` commands for reproducibly creating and removing the standard BCPL-on-MVS dataset layout.
 
-These commands complement the general PDS-management interface documented in `pdspal-and-mvs-storage.md`.
+The original name for the proposed tool was `pdspal`. The tool has since been broadened to cover sequential as well as partitioned data sets and is now named **`dspal`**. See `dspal-direction.md`.
 
-## `pdspal initbcpl`
+## `dspal initbcpl`
 
 ```text
-pdspal initbcpl
+dspal initbcpl
 ```
 
 Creates the standard managed BCPL PDS datasets beneath the configured MVS high-level qualifier.
@@ -26,8 +26,12 @@ HERC02.BCPL.SOURCE
 HERC02.BCPL.ASM
 HERC02.BCPL.JCL
 HERC02.BCPL.INTCODE
-HERC02.BCPL.LOAD
+HERC02.BCPL.LIBRARY
+HERC02.BCPL.BCPLDEMO
+HERC02.BCPL.LANGDEMO
+HERC02.BCPL.REGRESS
 HERC02.BCPL.TEST
+HERC02.BCPL.LOAD
 ```
 
 The command should be **idempotent**:
@@ -37,20 +41,22 @@ The command should be **idempotent**:
 - report incompatible existing definitions rather than silently replacing them;
 - never remove or recreate an existing dataset merely to make the command succeed.
 
-The exact DCB and allocation attributes for each managed dataset belong to the `pdspal` project-layout definition and should be visible through `pdspal info`, `pdspal stat`, documentation, or generated JCL.
+Most of these are expected to be ordinary 80-column text PDSes, typically `RECFM=FB,LRECL=80`. `HERC02.BCPL.LOAD` is a load-module library and should use appropriate load-library attributes, normally `RECFM=U`.
+
+The exact DCB and allocation attributes for each managed dataset belong to the `dspal` project-layout definition and should be visible through `dspal info`, `dspal stat`, documentation, or generated JCL.
 
 As with other MVS-changing commands:
 
 ```text
-pdspal --show-jcl initbcpl
+dspal --show-jcl initbcpl
 ```
 
 should emit the complete JCL required to establish the missing project layout without submitting it.
 
-## `pdspal purgebcpl`
+## `dspal purgebcpl`
 
 ```text
-pdspal purgebcpl
+dspal purgebcpl
 ```
 
 Removes the standard managed BCPL datasets created by `initbcpl`.
@@ -73,17 +79,17 @@ Interactive use should display the datasets that will be removed and require con
 For noninteractive and reproducible automation:
 
 ```text
-pdspal purgebcpl --yes
+dspal purgebcpl --yes
 ```
 
 should perform the same defined deletion set without prompting.
 
-`purgebcpl` must still obey the configured `pdspal` write boundary. `--yes` means "do not ask for interactive confirmation"; it must **not** mean "bypass safety policy".
+`purgebcpl` must still obey the configured `dspal` write boundary. `--yes` means "do not ask for interactive confirmation"; it must **not** mean "bypass safety policy".
 
 Generated-JCL mode should also work:
 
 ```text
-pdspal --show-jcl purgebcpl
+dspal --show-jcl purgebcpl
 ```
 
 and should emit the exact deletion job without submitting it.
@@ -93,12 +99,12 @@ and should emit the exact deletion job without submitting it.
 Together these commands provide a repeatable lifecycle for the MVS-side BCPL development area:
 
 ```text
-pdspal initbcpl
+dspal initbcpl
     ... populate/build/test ...
-pdspal purgebcpl --yes
-pdspal initbcpl
+dspal purgebcpl --yes
+dspal initbcpl
 ```
 
-This makes it possible to prove that the project's required MVS data structures can be reconstructed from the repository and `pdspal` configuration rather than depending on manually accumulated DASD state.
+This makes it possible to prove that the project's required MVS data structures can be reconstructed from the repository and `dspal` configuration rather than depending on manually accumulated DASD state.
 
-That reproducibility property is one of the reasons these commands should remain first-class `pdspal` operations rather than external shell scripts containing a sequence of `mkpds` and `rmpds` calls.
+That reproducibility property is one of the reasons these commands should remain first-class `dspal` operations rather than external shell scripts containing a sequence of `mkpds` and `rmds` calls.
