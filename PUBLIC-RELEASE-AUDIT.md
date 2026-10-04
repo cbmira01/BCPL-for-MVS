@@ -38,7 +38,7 @@ The provenance chain is well supported:
 4. Nordier publicly redistributes that archive as `bcpltape`;
 5. Martin Richards' archive and the Computer History Museum Software Preservation Group both point to the Nordier-curated historical material.
 
-What this audit did **not** find is a blanket conventional open-source license that clearly grants unrestricted redistribution of every file on the 1984 tape. Martin Richards' current BCPL page describes a present-day machine-independent distribution as free for private and academic use; that statement should not be silently applied to every historical tape file.
+What this audit did **not** find is a blanket conventional open-source license that clearly grants unrestricted redistribution of every file on the 1984 tape. That is not surprising for preserved software of this period. Martin Richards' current BCPL page describes a present-day machine-independent distribution as free for private and academic use; that statement should not be silently applied to every historical tape file.
 
 Accordingly:
 
@@ -47,7 +47,13 @@ Accordingly:
 - public availability upstream is treated as provenance evidence, not as relicensing;
 - anyone redistributing the historical material should make their own assessment of the applicable rights.
 
-The most conservative release option would be to remove the tape payload from this repository and fetch it from the public archival source during setup. Keeping the payload in the repository preserves a useful research snapshot but retains the licensing ambiguity described above. This is the principal unresolved public-release decision.
+### Release decision: preserve first
+
+The project has chosen to keep the historical tape payload in the public repository rather than remove it and replace it with a fetch step.
+
+The reasons are archival and technical: the exact preserved snapshot is primary evidence for the reconstruction, its provenance is documented, and the same material has been intentionally preserved and made publicly available by established BCPL archival sources. The repository therefore publishes the historical material as historical material, with its provenance intact and without claiming that the project's MIT license applies to it.
+
+This preservation-first decision resolves the release-policy question noted during the audit. It does not convert the historical files into MIT-licensed or otherwise newly licensed material.
 
 ## Imported artifacts
 
