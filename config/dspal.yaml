@@ -32,14 +32,14 @@ allocation_defaults:
   secondary: 5
   directory: 20
 
-# Explicit repo-to-member mappings are authoritative.  PDS members are not
-# inferred by truncating host filenames.  Datasets without members mappings
+# Explicit repo-to-member mappings are authoritative. PDS members are not
+# inferred by truncating host filenames. Datasets without members mappings
 # remain managed/allocatable but are not populated until their flattening
 # policy is explicitly defined.
 datasets:
   SOURCE:
     dsn: BCPL.SOURCE
-    description: BCPL compiler and program source library
+    description: Active BCPL compiler/bootstrap source library
     type: pds
     dsorg: PO
     recfm: FB
@@ -121,43 +121,136 @@ datasets:
 
   BCPLDEMO:
     dsn: BCPL.BCPLDEMO
-    description: BCPL demonstration programs
+    description: Complete readable BCPL demonstration programs
     type: pds
     dsorg: PO
     recfm: FB
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      RFACT: suite/richards-factorial/richards-factorial.bcpl
+      QUEENS: suite/queens/queens.bcpl
+      KNIGHT: suite/knight/knight.bcpl
+      HANOI: suite/hanoi/hanoi.bcpl
+      SIEVE: suite/sieve/sieve.bcpl
+      GCD: suite/gcd/gcd.bcpl
+      QUICKSRT: suite/quicksort/quicksort.bcpl
+      BSEARCH: suite/binary-search/binary-search.bcpl
+      LINKLIST: suite/linked-list/linked-list.bcpl
+      BINTREE: suite/binary-tree/binary-tree.bcpl
+      HASHTABL: suite/hash-table/hash-table.bcpl
+      WORDCNT: suite/word-count/word-count.bcpl
+      RPNCALC: suite/rpn-calculator/rpn-calculator.bcpl
+      EXPRPARS: suite/expression-parser/expression-parser.bcpl
+      MAZE: suite/maze/maze.bcpl
+      STRMFANO: suite/stream-fanout/stream-fanout.bcpl
+      COROUTIN: suite/coroutines/coroutines.bcpl
 
   LANGDEMO:
     dsn: BCPL.LANGDEMO
-    description: BCPL language-feature demonstration programs
+    description: Focused BCPL language-feature demonstration programs
     type: pds
     dsorg: PO
     recfm: FB
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      BOOLOPS: suite/language/boolean-operators/boolean-operators.bcpl
+      DECLS: suite/language/declarations/declarations.bcpl
+      FUNCVAL: suite/language/function-values/function-values.bcpl
+      MANIGLOB: suite/language/manifest-global/manifest-global.bcpl
+      PTRIDIOM: suite/language/pointer-idioms/pointer-idioms.bcpl
+      REPEAT: suite/language/repeat-forms/repeat-forms.bcpl
+      STRBYTES: suite/language/strings-bytes/strings-bytes.bcpl
+      SWITCHON: suite/language/switchon/switchon.bcpl
+      TABVECT: suite/language/table-vector/table-vector.bcpl
+      TESTTHEN: suite/language/test-then-or/test-then-or.bcpl
+      VALOFRES: suite/language/valof-resultis/valof-resultis.bcpl
 
   REGRESS:
     dsn: BCPL.REGRESS
-    description: Permanent BCPL regression programs and fixtures
+    description: Permanent BCPL regression panel programs and fixtures
     type: pds
     dsorg: PO
     recfm: FB
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      INTARITH: tests/00-regression-panel/calculation/integer-arithmetic.bcpl
+      INTAREXP: tests/00-regression-panel/calculation/integer-arithmetic.expected
+      NESTREC: tests/00-regression-panel/calls/nested-recursion.bcpl
+      NESTREXP: tests/00-regression-panel/calls/nested-recursion.expected
+      BRANCHES: tests/00-regression-panel/control/branches-loops.bcpl
+      BRANEXP: tests/00-regression-panel/control/branches-loops.expected
+      BASICCO: tests/00-regression-panel/coroutines/basic-coroutine.bcpl
+      BASCOEXP: tests/00-regression-panel/coroutines/basic-coroutine.expected
+      BYTES: tests/00-regression-panel/data-movement/bytes.bcpl
+      BYTESEXP: tests/00-regression-panel/data-movement/bytes.expected
+      SCALVEC: tests/00-regression-panel/data-movement/scalar-vector.bcpl
+      SCAVEXP: tests/00-regression-panel/data-movement/scalar-vector.expected
+      MODHELP: tests/00-regression-panel/modules/helper.bcpl
+      MODMAIN: tests/00-regression-panel/modules/main.bcpl
+      MODEXP: tests/00-regression-panel/modules/separate-module.expected
+      BASLIB: tests/00-regression-panel/standard-library/basic-library.bcpl
+      BASLEXP: tests/00-regression-panel/standard-library/basic-library.expected
+      LINEIO: tests/00-regression-panel/standard-library/line-io.bcpl
+      LINEIN: tests/00-regression-panel/standard-library/line-input.txt
+      LINEEXP: tests/00-regression-panel/standard-library/line-io.expected
+      RANDCHAR: tests/00-regression-panel/standard-library/random-integer-char.bcpl
+      RANDEXP: tests/00-regression-panel/standard-library/random-integer-char.expected
+      STRMEM: tests/00-regression-panel/standard-library/string-memory-conversion.bcpl
+      STRMEXP: tests/00-regression-panel/standard-library/string-memory-conversion.expected
+      GETVEC: tests/00-regression-panel/storage/getvec-reuse.bcpl
+      GETVEXP: tests/00-regression-panel/storage/getvec-reuse.expected
 
   TEST:
     dsn: BCPL.TEST
-    description: Ad hoc and current BCPL test programs and fixtures
+    description: Current reconstruction and acceptance test workloads
     type: pds
     dsorg: PO
     recfm: FB
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      T01ECHO: tests/01-echo-test/echo-sysin.int
+      T01TEXT: tests/01-echo-test/best-of-times.txt
+      T02HON: tests/02-honors-thesis-and-mapstore/intcode-v12-honors-thesis.int
+      T02MAP: tests/02-honors-thesis-and-mapstore/intcode-v13-mapstore.int
+      T03FACT: tests/03-compile-richards-factorial/richards-factorial-test.bcpl
+      T04MOD1: tests/04-module-test/module-test-1.bcpl
+      T04MOD2: tests/04-module-test/module-test-2.bcpl
+      T05MAIN: tests/05-named-dd/main.bcpl
+      T05EXTRA: tests/05-named-dd/extra.bcpl
+      T06MAIN: tests/06-dynamic-streams/main.bcpl
+      T06LVL1: tests/06-dynamic-streams/level1.bcpl
+      T06LVL2: tests/06-dynamic-streams/level2.bcpl
+      T06LVL3: tests/06-dynamic-streams/level3.bcpl
+      T07MAIN: tests/07-many-streams/main.bcpl
+      T07DD01: tests/07-many-streams/dd01.txt
+      T07DD02: tests/07-many-streams/dd02.txt
+      T07DD03: tests/07-many-streams/dd03.txt
+      T07DD04: tests/07-many-streams/dd04.txt
+      T07DD05: tests/07-many-streams/dd05.txt
+      T07DD06: tests/07-many-streams/dd06.txt
+      T07DD07: tests/07-many-streams/dd07.txt
+      T07DD08: tests/07-many-streams/dd08.txt
+      T07DD09: tests/07-many-streams/dd09.txt
+      T07DD10: tests/07-many-streams/dd10.txt
+      T07DD11: tests/07-many-streams/dd11.txt
+      T07DD12: tests/07-many-streams/dd12.txt
+      T08CHAR: tests/08-character-translation/character-translation.bcpl
+      T08PUNCT: tests/08-character-translation/punct.txt
+      T09MULT: tests/09-multiple-assignment/multiple-assignment.bcpl
+      T10CPROB: tests/10-coroutines/compiler-probe.bcpl
+      T10FRAME: tests/10-coroutines/frame-layout-probe.bcpl
+      T10FIXED: tests/10-coroutines/fixed-stack-producer-consumer.bcpl
+      T10CHAIN: tests/10-coroutines/resumeco-chain.bcpl
+      T10CRDEL: tests/10-coroutines/create-delete-static-pool.bcpl
+      T11GVFV: tests/11-getvec-freevec/getvec-freevec.bcpl
 
   LOAD:
     dsn: BCPL.LOAD
