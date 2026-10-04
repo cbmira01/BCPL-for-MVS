@@ -53,7 +53,6 @@ def load_simple_yaml(path: Path) -> dict[str, Any]:
 
     root: dict[str, Any] = {}
     stack: list[tuple[int, dict[str, Any]]] = [(-1, root)]
-
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except OSError as exc:
@@ -64,14 +63,12 @@ def load_simple_yaml(path: Path) -> dict[str, Any]:
             continue
         if "\t" in raw[: len(raw) - len(raw.lstrip())]:
             raise DspalError(f"{path}:{number}: tabs are not allowed for indentation")
-
         indent = len(raw) - len(raw.lstrip(" "))
         body = raw.strip()
         if body.startswith("-"):
             raise DspalError(f"{path}:{number}: YAML lists are not supported yet")
         if ":" not in body:
             raise DspalError(f"{path}:{number}: expected KEY: VALUE")
-
         key, value = body.split(":", 1)
         key = key.strip()
         if not key:
@@ -91,7 +88,6 @@ def load_simple_yaml(path: Path) -> dict[str, Any]:
         else:
             value = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
             parent[key] = scalar(value)
-
     return root
 
 
@@ -115,22 +111,17 @@ def require_mapping(config: dict[str, Any], name: str) -> dict[str, Any]:
 def validate_config(config: dict[str, Any]) -> None:
     if config.get("version") != 1:
         raise DspalError("config version must be 1")
-
     mvs = require_mapping(config, "mvs")
     runtime = require_mapping(config, "runtime")
     datasets = require_mapping(config, "datasets")
-
     for key in ("userid", "batch_user", "hlq", "default_unit", "write_boundary"):
         if not mvs.get(key):
             raise DspalError(f"mvs.{key} is required")
-
     for key in ("docker_container", "reader_host", "reader_port", "printer"):
         if runtime.get(key) in (None, ""):
             raise DspalError(f"runtime.{key} is required")
-
     if not datasets:
         raise DspalError("datasets mapping is empty")
-
     for logical, spec in datasets.items():
         if not isinstance(spec, dict):
             raise DspalError(f"datasets.{logical} must be a mapping")
@@ -156,15 +147,13 @@ def full_dsn(config: dict[str, Any], spec: dict[str, Any]) -> str:
 
 
 def resolve_dsn(config: dict[str, Any], operand: str) -> tuple[str, str | None]:
-    """Resolve a managed logical name or an explicit/relative data-set name."""
     value = operand.strip().upper()
-    datasets = config["datasets"]
-    if value in datasets:
-        return full_dsn(config, datasets[value]), value
-
-    if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#-]{0,7}(\.[A-Z@$#][A-Z0-9@$#-]{0,7})*", value):
+    if value in config["datasets"]:
+        return full_dsn(config, config["datasets"][value]), value
+    if not re.fullmatch(
+        r"[A-Z@$#][A-Z0-9@$#-]{0,7}(\.[A-Z@$#][A-Z0-9@$#-]{0,7})*", value
+    ):
         raise DspalError(f"invalid MVS data-set name: {operand}")
-
     hlq = str(config["mvs"]["hlq"]).upper()
     if "." not in value:
         value = f"{hlq}.{value}"
@@ -194,11 +183,10 @@ def batch_password(config: dict[str, Any]) -> str:
 def authenticated_job_card(
     config: dict[str, Any], jobname: str, description: str, redact_password: bool
 ) -> list[str]:
-    user = batch_user(config)
     password = "REDACTED" if redact_password else batch_password(config)
     lines = [
         f"//{jobname:<8} JOB (BCPL),'{description}',CLASS=A,MSGCLASS=A,",
-        f"//             USER={user},PASSWORD={password},",
+        f"//             USER={batch_user(config)},PASSWORD={password},",
         "//             MSGLEVEL=(1,1)",
     ]
     if redact_password:
@@ -229,7 +217,6 @@ def container_running(name: str) -> tuple[bool, str]:
         return False, "docker command not found"
     except subprocess.TimeoutExpired:
         return False, "docker inspect timed out"
-
     if cp.returncode != 0:
         return False, "container not found"
     return cp.stdout.strip().lower() == "true", cp.stdout.strip()
@@ -259,7 +246,9 @@ def require_reader_ready(config: dict[str, Any]) -> None:
         raise DspalError("JES reader is not reachable at " + status["reader"][1])
 
 
-def submit_and_wait(config: dict[str, Any], deck: str, max_rc: int = 0) -> tuple[int, str]:
+def submit_and_wait(
+    config: dict[str, Any], deck: str, max_rc: int = 0
+) -> tuple[int, str]:
     rt = config["runtime"]
     printer = ROOT / str(rt["printer"])
     if not printer.is_file():
@@ -273,7 +262,12 @@ def submit_and_wait(config: dict[str, Any], deck: str, max_rc: int = 0) -> tuple
 
     try:
         cp = subprocess.run(
-            [str(SUBMIT_JCL), "--timeout", str(rt.get("submit_timeout", 120)), str(tmp)],
+            [
+                str(SUBMIT_JCL),
+                "--timeout",
+                str(rt.get("submit_timeout", 120)),
+                str(tmp),
+            ],
             cwd=ROOT,
             text=True,
             capture_output=True,
@@ -282,7 +276,6 @@ def submit_and_wait(config: dict[str, Any], deck: str, max_rc: int = 0) -> tuple
         if cp.returncode != 0:
             detail = cp.stderr.strip() or cp.stdout.strip()
             raise DspalError(f"JES submission failed: {detail}")
-
         match = re.search(r"JOB\s+(\d+)", cp.stdout)
         if not match:
             raise DspalError(
@@ -307,7 +300,6 @@ def submit_and_wait(config: dict[str, Any], deck: str, max_rc: int = 0) -> tuple
                 if summary.returncode == 1:
                     raise DspalError(f"JOB {job} failed:\n{summary.stdout.strip()}")
             time.sleep(0.5)
-
         raise DspalError(
             f"timed out waiting for JOB {job} to complete; last status: {last}"
         )
@@ -342,7 +334,9 @@ def probe_deck() -> str:
     )
 
 
-def stat_deck(config: dict[str, Any], dsn: str, redact_password: bool = False) -> str:
+def stat_deck(
+    config: dict[str, Any], dsns: list[str], redact_password: bool = False
+) -> str:
     lines = authenticated_job_card(
         config, "DSPALST", "DSPAL STAT", redact_password=redact_password
     )
@@ -352,37 +346,43 @@ def stat_deck(config: dict[str, Any], dsn: str, redact_password: bool = False) -
             "//STAT     EXEC PGM=IKJEFT01",
             "//SYSTSPRT DD  SYSOUT=*",
             "//SYSTSIN  DD  *",
-            f" LISTDS '{dsn}' LABEL",
-            "/*",
         ]
     )
+    for dsn in dsns:
+        lines.append(f" LISTDS '{dsn}' LABEL")
+    lines.append("/*")
     return "\n".join(lines) + "\n"
 
 
+def find_occurrences(report: str, needle: str) -> list[int]:
+    upper = needle.upper()
+    return [
+        index
+        for index, line in enumerate(report.splitlines())
+        if upper in line.upper()
+    ]
+
+
 def extract_listds_block(report: str, dsn: str) -> list[str]:
-    """Extract the useful LISTDS block from the full JES report."""
+    """Extract one LISTDS result block, preferring the SYSTSPRT occurrence."""
     lines = report.splitlines()
-    start = None
     upper_dsn = dsn.upper()
+    candidates: list[int] = []
     for index, line in enumerate(lines):
-        if upper_dsn in line.upper():
-            following = "\n".join(lines[index : index + 12]).upper()
-            if "RECFM" in following or "VOLUME" in following or "DSORG" in following:
-                start = index
-                break
+        if upper_dsn not in line.upper():
+            continue
+        following = "\n".join(lines[index : index + 16]).upper()
+        if any(word in following for word in ("RECFM", "DSORG", "VOLUME")):
+            candidates.append(index)
 
-    if start is None:
-        for index, line in enumerate(lines):
-            if line.strip().upper() == upper_dsn:
-                start = index
-                break
-
-    if start is None:
+    if not candidates:
         return []
-
+    start = candidates[-1]
     block: list[str] = []
-    for line in lines[start : start + 20]:
+    for line in lines[start : start + 24]:
         text = line.rstrip()
+        if block and re.search(r"\bLISTDS\s+'", text.upper()):
+            break
         if block and (
             text.startswith("IEF")
             or text.startswith("$HASP")
@@ -395,27 +395,136 @@ def extract_listds_block(report: str, dsn: str) -> list[str]:
     return block
 
 
+def dataset_missing(report: str, dsn: str) -> bool:
+    upper = report.upper()
+    name = dsn.upper()
+    patterns = (
+        f"{name} NOT IN CATALOG",
+        f"DATA SET {name} NOT IN CATALOG",
+        f"DATASET {name} NOT IN CATALOG",
+        f"{name} NOT FOUND",
+        f"DATA SET {name} NOT FOUND",
+    )
+    return any(pattern in upper for pattern in patterns)
+
+
 def parse_listds(block: list[str]) -> dict[str, str]:
-    """Best-effort parser for classic TSO LISTDS LABEL output."""
+    """Parse classic TSO LISTDS LABEL output, including RECFM=U load libraries."""
     attrs: dict[str, str] = {}
     for index, line in enumerate(block):
         upper = line.upper()
-        if all(name in upper for name in ("RECFM", "LRECL", "BLKSIZE", "DSORG")):
-            for candidate in block[index + 1 : index + 5]:
-                tokens = candidate.split()
-                if len(tokens) >= 4 and re.fullmatch(r"\d+", tokens[1]) and re.fullmatch(r"\d+", tokens[2]):
-                    attrs["recfm"] = tokens[0]
-                    attrs["lrecl"] = tokens[1]
-                    attrs["blksize"] = tokens[2]
-                    attrs["dsorg"] = tokens[3]
-                    break
         if "VOLUME" in upper:
-            for candidate in block[index + 1 : index + 4]:
-                token = candidate.strip().split()
-                if token and re.fullmatch(r"[A-Z0-9]{1,6}", token[0].upper()):
-                    attrs["volume"] = token[0].upper()
+            for candidate in block[index + 1 : index + 5]:
+                tokens = candidate.strip().split()
+                if tokens and re.fullmatch(r"[A-Z0-9]{1,6}", tokens[0].upper()):
+                    attrs["volume"] = tokens[0].upper()
                     break
+
+        if "RECFM" in upper and "DSORG" in upper:
+            for candidate in block[index + 1 : index + 6]:
+                tokens = candidate.split()
+                if len(tokens) < 4:
+                    continue
+                recfm = tokens[0].upper()
+                lrecl = tokens[1]
+                blksize = tokens[2]
+                dsorg = tokens[3].upper()
+                if (
+                    re.fullmatch(r"[A-Z]+", recfm)
+                    and re.fullmatch(r"\d+", lrecl)
+                    and re.fullmatch(r"\d+", blksize)
+                    and re.fullmatch(r"[A-Z]+", dsorg)
+                ):
+                    attrs.update(
+                        recfm=recfm,
+                        lrecl=lrecl,
+                        blksize=blksize,
+                        dsorg=dsorg,
+                    )
+                    break
+
+    if not {"recfm", "lrecl", "blksize", "dsorg"}.issubset(attrs):
+        # Some TK5 LISTDS variants space the header differently.  Fall back to
+        # finding a plausible four-field DCB row anywhere in the result block.
+        for candidate in block:
+            tokens = candidate.split()
+            if len(tokens) < 4:
+                continue
+            if (
+                re.fullmatch(r"[A-Z]+", tokens[0].upper())
+                and re.fullmatch(r"\d+", tokens[1])
+                and re.fullmatch(r"\d+", tokens[2])
+                and re.fullmatch(r"[A-Z]+", tokens[3].upper())
+            ):
+                attrs.update(
+                    recfm=tokens[0].upper(),
+                    lrecl=tokens[1],
+                    blksize=tokens[2],
+                    dsorg=tokens[3].upper(),
+                )
+                break
     return attrs
+
+
+def managed_inventory(
+    config: dict[str, Any], *, raw: bool = False
+) -> tuple[int, str, dict[str, dict[str, str] | None]]:
+    dsns = [full_dsn(config, spec) for spec in config["datasets"].values()]
+    deck = stat_deck(config, dsns, redact_password=False)
+    job, _ = submit_and_wait(config, deck, max_rc=8)
+    report = job_report(job)
+    inventory: dict[str, dict[str, str] | None] = {}
+    for logical, spec in config["datasets"].items():
+        dsn = full_dsn(config, spec)
+        if dataset_missing(report, dsn):
+            inventory[logical] = None
+            continue
+        block = extract_listds_block(report, dsn)
+        attrs = parse_listds(block) if block else {}
+        if not attrs:
+            raise DspalError(
+                f"JOB {job}: could not parse LISTDS attributes for existing data set "
+                f"{dsn}; run dspal stat {logical} --raw"
+            )
+        inventory[logical] = attrs
+    return job, report, inventory
+
+
+def format_stat(dsn: str, logical: str | None, job: int, attrs: dict[str, str]) -> None:
+    print(f"Dataset:   {dsn}" + (f" ({logical})" if logical else ""))
+    fields = [f"Job:{job}"]
+    for key, label in (
+        ("volume", "Volume"),
+        ("dsorg", "DSORG"),
+        ("recfm", "RECFM"),
+        ("lrecl", "LRECL"),
+        ("blksize", "BLKSIZE"),
+    ):
+        if key in attrs:
+            fields.append(f"{label}:{attrs[key]}")
+    print("    " + ",  ".join(fields))
+
+
+def expected_attrs(spec: dict[str, Any]) -> dict[str, str]:
+    result = {
+        "dsorg": str(spec["dsorg"]).upper(),
+        "recfm": str(spec["recfm"]).upper(),
+        "blksize": str(int(spec.get("blksize", 0) or 0)),
+    }
+    # LISTDS reports zero for load libraries.  Text libraries carry explicit LRECL.
+    result["lrecl"] = str(int(spec.get("lrecl", 0) or 0))
+    return result
+
+
+def mismatches(spec: dict[str, Any], actual: dict[str, str]) -> list[str]:
+    expected = expected_attrs(spec)
+    result: list[str] = []
+    for key in ("dsorg", "recfm", "lrecl", "blksize"):
+        if actual.get(key, "").upper() != expected[key].upper():
+            result.append(
+                f"{key.upper()} expected {expected[key]} but found {actual.get(key, '?')}"
+            )
+    return result
 
 
 def allocation_clause(config: dict[str, Any], spec: dict[str, Any]) -> str:
@@ -443,10 +552,15 @@ def dcb_clause(spec: dict[str, Any]) -> str:
     return "DCB=(" + ",".join(parts) + ")"
 
 
-def initbcpl_deck(config: dict[str, Any], redact_password: bool = False) -> str:
+def initbcpl_deck(
+    config: dict[str, Any],
+    logicals: list[str] | None = None,
+    redact_password: bool = False,
+) -> str:
     mvs = config["mvs"]
     default_unit = str(mvs["default_unit"]).upper()
     volume = mvs.get("default_volume")
+    selected = set(logicals or config["datasets"].keys())
 
     lines = authenticated_job_card(
         config, "DSPALINI", "DSPAL INITBCPL", redact_password=redact_password
@@ -454,24 +568,27 @@ def initbcpl_deck(config: dict[str, Any], redact_password: bool = False) -> str:
     lines.extend(
         [
             "//* GENERATED BY DSPAL FROM CONFIG/DSPAL.YAML",
-            "//* DISP=(MOD,CATLG) CREATES MISSING DATASETS AND RETAINS EXISTING ONES.",
+            "//* ONLY MISSING MANAGED DATASETS ARE ALLOCATED AFTER PREFLIGHT.",
             "//ALLOC    EXEC PGM=IEFBR14",
         ]
     )
-
-    for index, (logical, spec) in enumerate(config["datasets"].items(), 1):
+    index = 0
+    for logical, spec in config["datasets"].items():
+        if logical not in selected:
+            continue
+        index += 1
         dd = f"D{index:03d}"
         dsn = full_dsn(config, spec)
         dasd_unit = str(spec.get("unit", default_unit)).upper()
-
         lines.append(f"//* {logical}: {spec['description']}")
-        lines.append(f"//{dd:<8} DD  DSN={dsn},DISP=(MOD,CATLG),")
+        lines.append(f"//{dd:<8} DD  DSN={dsn},DISP=(NEW,CATLG,DELETE),")
         lines.append(f"//             UNIT={dasd_unit},")
         lines.append(f"//             {allocation_clause(config, spec)},")
         if volume:
             lines.append(f"//             VOL=SER={str(volume).upper()},")
         lines.append(f"//             {dcb_clause(spec)}")
-
+    if index == 0:
+        lines.append("//DUMMY    DD  DUMMY")
     return "\n".join(lines) + "\n"
 
 
@@ -479,7 +596,6 @@ def cmd_info(config: dict[str, Any]) -> int:
     mvs = config["mvs"]
     rt = config["runtime"]
     text = config["text"]
-
     print(f"Configuration:   {CONFIG.relative_to(ROOT)}")
     print(
         f"Local override:  {LOCAL_CONFIG.relative_to(ROOT)}"
@@ -489,7 +605,11 @@ def cmd_info(config: dict[str, Any]) -> int:
     print(f"Batch userid:    {batch_user(config)}")
     print(
         "Batch password:  "
-        + ("configured" if mvs.get("batch_password") not in (None, "") else "not configured")
+        + (
+            "configured"
+            if mvs.get("batch_password") not in (None, "")
+            else "not configured"
+        )
     )
     print(f"Default HLQ:     {mvs['hlq']}")
     print(f"Default unit:    {mvs['default_unit']}")
@@ -523,10 +643,8 @@ def cmd_status(
             raise DspalError("status --show-jcl cannot be combined with --quiet")
         sys.stdout.write(probe_deck())
         return 0
-
     status = cheap_status(config)
     cheap_ok = status["container"][0] and status["reader"][0]
-
     if not quiet:
         print(f"Docker container:  {'up' if status['container'][0] else 'down'}")
         print(
@@ -538,86 +656,120 @@ def cmd_status(
             f"{'reachable' if status['reader'][0] else 'unreachable'} "
             f"({status['reader'][1]})"
         )
-
     if not cheap_ok:
         if not quiet:
             print("MVS/JES2:           unavailable")
         return 1
-
     if not probe:
         if not quiet:
             print("MVS/JES2:           not probed")
         return 0
-
     try:
         job, _ = submit_and_wait(config, probe_deck(), max_rc=0)
     except DspalError as exc:
         if not quiet:
             print(f"MVS/JES2:           probe failed ({exc})")
         return 1
-
     if not quiet:
         print(f"MVS/JES2:           ready (JOB {job})")
     return 0
 
 
-def cmd_stat(config: dict[str, Any], operand: str, show_jcl: bool, raw: bool) -> int:
-    dsn, logical = resolve_dsn(config, operand)
-    if show_jcl:
-        sys.stdout.write(stat_deck(config, dsn, redact_password=True))
+def cmd_stat(
+    config: dict[str, Any], operand: str | None, show_jcl: bool, raw: bool
+) -> int:
+    if operand is None:
+        dsns = [full_dsn(config, spec) for spec in config["datasets"].values()]
+        if show_jcl:
+            sys.stdout.write(stat_deck(config, dsns, redact_password=True))
+            return 0
+        require_reader_ready(config)
+        job, report, inventory = managed_inventory(config)
+        if raw:
+            sys.stdout.write(report)
+            if not report.endswith("\n"):
+                print()
+            return 0
+        for logical, spec in config["datasets"].items():
+            dsn = full_dsn(config, spec)
+            attrs = inventory[logical]
+            if attrs is None:
+                print(f"Dataset:   {dsn} ({logical})")
+                print(f"    Job:{job},  Missing")
+            else:
+                format_stat(dsn, logical, job, attrs)
         return 0
 
+    dsn, logical = resolve_dsn(config, operand)
+    if show_jcl:
+        sys.stdout.write(stat_deck(config, [dsn], redact_password=True))
+        return 0
     require_reader_ready(config)
-    deck = stat_deck(config, dsn, redact_password=False)
-    job, _ = submit_and_wait(config, deck, max_rc=8)
+    job, _ = submit_and_wait(config, stat_deck(config, [dsn]), max_rc=8)
     report = job_report(job)
-    block = extract_listds_block(report, dsn)
-
     if raw:
         sys.stdout.write(report)
         if not report.endswith("\n"):
             print()
         return 0
-
-    if not block:
+    if dataset_missing(report, dsn):
+        raise DspalError(f"data set not found: {dsn}")
+    block = extract_listds_block(report, dsn)
+    attrs = parse_listds(block) if block else {}
+    if not attrs:
         raise DspalError(
-            f"JOB {job} completed but LISTDS output for {dsn} could not be located; "
+            f"JOB {job} completed but LISTDS output for {dsn} could not be parsed; "
             f"retry with: dspal stat {operand} --raw"
         )
-
-    attrs = parse_listds(block)
-    print(f"Dataset:   {dsn}" + (f" ({logical})" if logical else ""))
-    if attrs:
-        fields = [f"Job:{job}"]
-        for key, label in (
-            ("volume", "Volume"),
-            ("dsorg", "DSORG"),
-            ("recfm", "RECFM"),
-            ("lrecl", "LRECL"),
-            ("blksize", "BLKSIZE"),
-        ):
-            if key in attrs:
-                fields.append(f"{label}:{attrs[key]}")
-        print("    " + ",  ".join(fields))
-    else:
-        print(f"    Job:{job}")
-        print("    LISTDS output:")
-        for line in block:
-            print("        " + line)
+    format_stat(dsn, logical, job, attrs)
     return 0
 
 
 def cmd_initbcpl(config: dict[str, Any], show_jcl: bool) -> int:
     if show_jcl:
+        # Show the worst-case allocation deck without performing MVS preflight.
         sys.stdout.write(initbcpl_deck(config, redact_password=True))
         return 0
 
     require_reader_ready(config)
-    deck = initbcpl_deck(config, redact_password=False)
-    job, _ = submit_and_wait(config, deck, max_rc=0)
-    print(f"initbcpl completed as JOB {job}")
+    preflight_job, _, inventory = managed_inventory(config)
+    incompatible: list[str] = []
+    missing: list[str] = []
+    existing: list[str] = []
+
     for logical, spec in config["datasets"].items():
-        print(f"  {logical:<9} {full_dsn(config, spec)}")
+        actual = inventory[logical]
+        if actual is None:
+            missing.append(logical)
+            continue
+        problems = mismatches(spec, actual)
+        if problems:
+            incompatible.append(
+                f"{logical} {full_dsn(config, spec)}: " + "; ".join(problems)
+            )
+        else:
+            existing.append(logical)
+
+    if incompatible:
+        detail = "\n  ".join(incompatible)
+        raise DspalError(
+            f"initbcpl preflight JOB {preflight_job} found incompatible managed "
+            f"data sets:\n  {detail}\nNo allocations were attempted."
+        )
+
+    if not missing:
+        print(f"initbcpl preflight completed as JOB {preflight_job}")
+        print("All managed datasets already exist with compatible attributes.")
+        return 0
+
+    deck = initbcpl_deck(config, logicals=missing, redact_password=False)
+    job, _ = submit_and_wait(config, deck, max_rc=0)
+    print(f"initbcpl preflight completed as JOB {preflight_job}")
+    print(f"initbcpl allocation completed as JOB {job}")
+    for logical in existing:
+        print(f"  {logical:<9} existing, compatible")
+    for logical in missing:
+        print(f"  {logical:<9} created {full_dsn(config, config['datasets'][logical])}")
     return 0
 
 
@@ -626,7 +778,6 @@ def make_parser() -> argparse.ArgumentParser:
         description="Manage BCPL project datasets on MVS/TK5."
     )
     sub = parser.add_subparsers(dest="command", required=True)
-
     sub.add_parser("info", help="show effective dspal configuration")
 
     status = sub.add_parser("status", help="check local MVS/TK5 readiness")
@@ -644,8 +795,14 @@ def make_parser() -> argparse.ArgumentParser:
         help="emit the probe JCL without submitting it (requires --probe)",
     )
 
-    stat = sub.add_parser("stat", help="show MVS attributes for one data set")
-    stat.add_argument("dataset", help="managed logical name (ASM, SOURCE, ...) or MVS DSN")
+    stat = sub.add_parser(
+        "stat", help="show MVS attributes; without an operand, show all managed datasets"
+    )
+    stat.add_argument(
+        "dataset",
+        nargs="?",
+        help="managed logical name (ASM, SOURCE, ...) or MVS DSN; omit for all managed datasets",
+    )
     stat.add_argument(
         "--show-jcl",
         action="store_true",
@@ -658,14 +815,13 @@ def make_parser() -> argparse.ArgumentParser:
     )
 
     init = sub.add_parser(
-        "initbcpl", help="create the manifest-defined BCPL PDS layout"
+        "initbcpl", help="create missing managed datasets after attribute preflight"
     )
     init.add_argument(
         "--show-jcl",
         action="store_true",
-        help="emit generated JCL without submitting it; batch password is redacted",
+        help="emit the worst-case allocation JCL without preflight; password is redacted",
     )
-
     return parser
 
 
@@ -673,7 +829,6 @@ def main() -> int:
     try:
         args = make_parser().parse_args()
         config = load_config()
-
         if args.command == "info":
             return cmd_info(config)
         if args.command == "status":
