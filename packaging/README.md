@@ -4,7 +4,8 @@ This directory contains notes and tooling plans for placing BCPL program and dat
 
 Current documentation:
 
-- [`pdspal-and-mvs-storage.md`](pdspal-and-mvs-storage.md) — design for the proposed Linux-side `pdspal` PDS-management tool; command set; JCL transparency; text transfer policy; TK5 userid and safety conventions; recommended BCPL PDS namespace; and dedicated user-DASD/catalog guidance.
-- [`pdspal-bcpl-layout-commands.md`](pdspal-bcpl-layout-commands.md) — reproducible project-layout commands `pdspal initbcpl` and `pdspal purgebcpl`, including idempotence, managed-dataset scope, confirmation, `--yes`, and `--show-jcl` semantics.
+- [`dspal-direction.md`](dspal-direction.md) — current direction for the unified Linux-side `dspal` data-set tool, covering both partitioned and sequential MVS data sets; records the renaming from `pdspal` and the current BCPL managed dataset set.
+- [`pdspal-and-mvs-storage.md`](pdspal-and-mvs-storage.md) — earlier detailed design work for the proposed Linux-side PDS-management tool; still authoritative for the underlying PDS concepts, JCL transparency, text transfer policy, TK5 userid and safety conventions, recommended BCPL namespace, and dedicated user-DASD/catalog guidance. Read `pdspal` there as superseded terminology for `dspal`.
+- [`pdspal-bcpl-layout-commands.md`](pdspal-bcpl-layout-commands.md) — reproducible project-layout commands, now documented as `dspal initbcpl` and `dspal purgebcpl`, including idempotence, managed-dataset scope, confirmation, `--yes`, and `--show-jcl` semantics.
 
 As packaging work develops, this directory is the intended home for installation layouts, MVS-side dataset conventions, transfer tooling, and release/deployment procedures.
