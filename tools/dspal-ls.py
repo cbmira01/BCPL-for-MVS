@@ -61,33 +61,65 @@ def list_members_deck(
     return "\n".join(lines) + "\n"
 
 
-def member_block(report: str, dsn: str) -> list[str] | None:
-    """Return lines following this data set's --MEMBERS-- header through END."""
+def member_blocks(report: str, dsns: list[str]) -> dict[str, list[str]]:
+    """Associate each --MEMBERS-- block with its nearest preceding DSN response.
+
+    LISTDS emits the data-set name before the metadata and --MEMBERS-- heading.
+    In a multi-LISTDS job, using a fixed look-behind window is unsafe because the
+    previous data-set name can remain within that window.  Walk the report in
+    order instead and remember the most recently observed requested DSN.
+    """
     lines = report.replace("\r", "").splitlines()
-    target = dsn.upper()
-    headers: list[int] = []
+    requested = {dsn.upper(): dsn for dsn in dsns}
+    current: str | None = None
+    blocks: dict[str, list[str]] = {}
 
-    for index, line in enumerate(lines):
-        if "--MEMBERS--" not in line.upper():
+    index = 0
+    while index < len(lines):
+        upper = lines[index].upper()
+
+        # LISTDS response contains the fully-qualified DSN on its own output
+        # line.  Match requested names by token boundary so command echoes do
+        # not make an earlier DSN remain current for a later result.
+        for key, original in requested.items():
+            if re.search(rf"(?<![A-Z0-9@$#.-]){re.escape(key)}(?![A-Z0-9@$#.-])", upper):
+                # Ignore SYSTSIN command echoes such as LISTDS 'DSN' MEMBERS;
+                # the response-name line is what should establish ownership.
+                if "LISTDS" not in upper:
+                    current = original
+                break
+
+        if "--MEMBERS--" not in upper:
+            index += 1
             continue
-        prefix = "\n".join(lines[max(0, index - 20) : index]).upper()
-        if target in prefix:
-            headers.append(index)
 
-    if not headers:
-        return None
+        if current is None:
+            index += 1
+            continue
 
-    result: list[str] = []
-    for line in lines[headers[-1] + 1 :]:
-        text = line.strip()
-        if text.upper() == "END":
-            break
-        if re.search(r"\bLISTDS\s+'", text.upper()):
-            break
-        if text.startswith("IEF") or text.startswith("$HASP"):
-            break
-        result.append(line)
-    return result
+        block: list[str] = []
+        index += 1
+        while index < len(lines):
+            text = lines[index].strip()
+            if text.upper() == "END":
+                break
+            if re.search(r"\bLISTDS\s+'", text.upper()):
+                break
+            if text.startswith("IEF") or text.startswith("$HASP"):
+                break
+            block.append(lines[index])
+            index += 1
+        blocks[current.upper()] = block
+        current = None
+        index += 1
+
+    return blocks
+
+
+def member_block(report: str, dsn: str, dsns: list[str] | None = None) -> list[str] | None:
+    """Return this data set's LISTDS --MEMBERS-- block."""
+    requested = dsns if dsns is not None else [dsn]
+    return member_blocks(report, requested).get(dsn.upper())
 
 
 def parse_members(block: list[str]) -> list[str]:
@@ -102,8 +134,10 @@ def parse_members(block: list[str]) -> list[str]:
     return members
 
 
-def require_members_block(report: str, dsn: str, job: int) -> list[str]:
-    block = member_block(report, dsn)
+def require_members_block(
+    report: str, dsn: str, job: int, dsns: list[str] | None = None
+) -> list[str]:
+    block = member_block(report, dsn, dsns)
     if block is not None:
         return block
 
@@ -147,8 +181,11 @@ def cmd_ls(
                 print()
             return 0
 
+        blocks = member_blocks(report, dsns)
         for logical, dsn in selected:
-            block = require_members_block(report, dsn, job)
+            block = blocks.get(dsn.upper())
+            if block is None:
+                block = require_members_block(report, dsn, job, dsns)
             members = parse_members(block)
             print(f"{logical} ({dsn})")
             if members:
@@ -174,7 +211,7 @@ def cmd_ls(
             print()
         return 0
 
-    block = require_members_block(report, dsn, job)
+    block = require_members_block(report, dsn, job, [dsn])
     for member in parse_members(block):
         print(member)
     return 0
