@@ -27,6 +27,7 @@ def load_module(name: str, path: Path):
 core = load_module("dspal_core", CORE_PATH)
 io = load_module("dspal_io", IO_PATH)
 DspalError = core.DspalError
+IODspalError = io.DspalError
 
 
 MEMBER_RE = re.compile(r"[A-Z@$#][A-Z0-9@$#]{0,7}")
@@ -101,8 +102,9 @@ def preflight(config: dict[str, Any], target: str):
             try:
                 text = path.read_text(encoding=str(config["text"].get("host_encoding", "utf-8")))
                 records = io.normalize_input_text(config, text, lrecl)
-            except (OSError, UnicodeError, DspalError) as exc:
-                problems.append(f"{logical}({member}): {exc}")
+            except (OSError, UnicodeError, DspalError, IODspalError) as exc:
+                rel = path.relative_to(ROOT)
+                problems.append(f"{logical}({member}) <- {rel}: {exc}")
                 continue
 
             actions.append(
@@ -209,7 +211,7 @@ def main() -> int:
         args = make_parser().parse_args()
         config = core.load_config()
         return cmd_populate(config, args.target, args.dry_run, args.show_jcl)
-    except (DspalError, OSError, ValueError, UnicodeError) as exc:
+    except (DspalError, IODspalError, OSError, ValueError, UnicodeError) as exc:
         print(f"dspal: {exc}", file=sys.stderr)
         return 2
 
