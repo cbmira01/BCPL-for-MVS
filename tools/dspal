@@ -10,10 +10,12 @@ CORE = ROOT / "tools" / "dspal-core.py"
 IO = ROOT / "tools" / "dspal-io.py"
 READ = ROOT / "tools" / "dspal-read.py"
 MAINT = ROOT / "tools" / "dspal-maint.py"
+LS = ROOT / "tools" / "dspal-ls.py"
 
 CORE_COMMANDS = {"info", "status", "stat", "initbcpl"}
 READ_COMMANDS = {"cat", "get"}
 MAINT_COMMANDS = {"rm", "compress"}
+LS_COMMANDS = {"ls"}
 
 
 def exec_script(path: Path, argv: list[str]) -> None:
@@ -32,7 +34,7 @@ def print_help() -> None:
         ("status", "check local MVS/TK5 readiness"),
         ("stat [DATASET]", "show MVS dataset attributes; no operand means all managed datasets"),
         ("list", "list managed datasets from the manifest"),
-        ("ls DATASET", "list PDS members"),
+        ("ls [DATASET]", "list PDS members; no operand inventories all managed PDSes"),
         ("cat DATASET MEMBER", "write a text member to stdout"),
         ("get DATASET MEMBER FILE", "copy a text member to a host file; FILE may be -"),
         ("put DATASET MEMBER FILE", "replace/create a text member; FILE may be -"),
@@ -54,6 +56,8 @@ def route_help(topic: str) -> None:
         exec_script(READ, [topic, "--help"])
     if topic in MAINT_COMMANDS:
         exec_script(MAINT, [topic, "--help"])
+    if topic in LS_COMMANDS:
+        exec_script(LS, ["--help"])
     exec_script(IO, ["help", topic])
 
 
@@ -76,6 +80,8 @@ def main() -> int:
         exec_script(READ, args)
     if args[0] in MAINT_COMMANDS:
         exec_script(MAINT, args)
+    if args[0] in LS_COMMANDS:
+        exec_script(LS, args[1:])
     exec_script(IO, args)
     return 127
 
