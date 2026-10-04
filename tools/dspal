@@ -1,0 +1,417 @@
+#!/usr/bin/env python3
+"""Linux-side MVS data-set helper for the BCPL-for-MVS project.
+
+Initial vertical slice:
+  * manifest + local override loading
+  * info
+  * status / status --probe / status --quiet
+  * initbcpl / initbcpl --show-jcl
+
+The command intentionally uses ordinary MVS/JES facilities.  It never edits
+CKD images directly.
+"""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import os
+from pathlib import Path
+import re
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFIG = ROOT / "config" / "dspal.yaml"
+LOCAL_CONFIG = ROOT / "config" / "dspal.local.yaml"
+SUBMIT_JCL = ROOT / "tools" / "submit-jcl"
+JOB_SUMMARY = ROOT / "tools" / "job-summary"
+
+
+class DspalError(RuntimeError):
+    pass
+
+
+def scalar(text: str) -> Any:
+    text = text.strip()
+    if not text:
+        return ""
+    low = text.lower()
+    if low in {"null", "~"}:
+        return None
+    if low == "true":
+        return True
+    if low == "false":
+        return False
+    if re.fullmatch(r"-?\d+", text):
+        return int(text)
+    if (text.startswith("'") and text.endswith("'")) or (
+        text.startswith('"') and text.endswith('"')
+    ):
+        return text[1:-1]
+    return text
+
+
+def load_simple_yaml(path: Path) -> dict[str, Any]:
+    """Load the deliberately small mapping-only YAML subset used by dspal.
+
+    Supported: indentation-based mappings, scalar values, comments, integers,
+    booleans, null, and quoted/unquoted strings. Lists are intentionally not
+    accepted yet; adding list-valued manifest fields should coincide with a
+    parser/schema extension or adoption of a YAML library.
+    """
+    if not path.is_file():
+        raise DspalError(f"configuration file not found: {path}")
+
+    root: dict[str, Any] = {}
+    stack: list[tuple[int, dict[str, Any]]] = [(-1, root)]
+
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise DspalError(f"cannot read {path}: {exc}") from exc
+
+    for number, raw in enumerate(lines, 1):
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        if "\t" in raw[: len(raw) - len(raw.lstrip())]:
+            raise DspalError(f"{path}:{number}: tabs are not allowed for indentation")
+        indent = len(raw) - len(raw.lstrip(" "))
+        body = raw.strip()
+        if body.startswith("-"):
+            raise DspalError(f"{path}:{number}: YAML lists are not supported yet")
+        if ":" not in body:
+            raise DspalError(f"{path}:{number}: expected KEY: VALUE")
+        key, value = body.split(":", 1)
+        key = key.strip()
+        if not key:
+            raise DspalError(f"{path}:{number}: empty mapping key")
+
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        if not stack:
+            raise DspalError(f"{path}:{number}: invalid indentation")
+        parent = stack[-1][1]
+
+        value = value.strip()
+        if value == "":
+            node: dict[str, Any] = {}
+            parent[key] = node
+            stack.append((indent, node))
+        else:
+            # Inline comments are accepted only when separated by whitespace.
+            value = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
+            parent[key] = scalar(value)
+
+    return root
+
+
+def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    result = copy.deepcopy(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = deep_merge(result[key], value)
+        else:
+            result[key] = copy.deepcopy(value)
+    return result
+
+
+def load_config() -> dict[str, Any]:
+    config = load_simple_yaml(CONFIG)
+    if LOCAL_CONFIG.exists():
+        config = deep_merge(config, load_simple_yaml(LOCAL_CONFIG))
+    validate_config(config)
+    return config
+
+
+def require_mapping(config: dict[str, Any], name: str) -> dict[str, Any]:
+    value = config.get(name)
+    if not isinstance(value, dict):
+        raise DspalError(f"config section {name!r} must be a mapping")
+    return value
+
+
+def validate_config(config: dict[str, Any]) -> None:
+    if config.get("version") != 1:
+        raise DspalError("config version must be 1")
+    mvs = require_mapping(config, "mvs")
+    runtime = require_mapping(config, "runtime")
+    datasets = require_mapping(config, "datasets")
+    for key in ("userid", "hlq", "write_boundary"):
+        if not mvs.get(key):
+            raise DspalError(f"mvs.{key} is required")
+    for key in ("docker_container", "reader_host", "reader_port", "printer"):
+        if runtime.get(key) in (None, ""):
+            raise DspalError(f"runtime.{key} is required")
+    if not datasets:
+        raise DspalError("datasets mapping is empty")
+    for logical, spec in datasets.items():
+        if not isinstance(spec, dict):
+            raise DspalError(f"datasets.{logical} must be a mapping")
+        for key in ("dsn", "type", "dsorg", "recfm", "blksize", "description"):
+            if spec.get(key) in (None, ""):
+                raise DspalError(f"datasets.{logical}.{key} is required")
+
+
+def full_dsn(config: dict[str, Any], spec: dict[str, Any]) -> str:
+    dsn = str(spec["dsn"]).upper()
+    hlq = str(config["mvs"]["hlq"]).upper()
+    if dsn.startswith(hlq + ".") or dsn == hlq:
+        return dsn
+    return f"{hlq}.{dsn}"
+
+
+def tcp_reachable(host: str, port: int, timeout: float = 0.75) -> bool:
+    try:
+        with socket.create_connection((host, int(port)), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def container_running(name: str) -> tuple[bool, str]:
+    try:
+        cp = subprocess.run(
+            ["docker", "inspect", "-f", "{{.State.Running}}", name],
+            text=True,
+            capture_output=True,
+            timeout=4,
+            check=False,
+        )
+    except FileNotFoundError:
+        return False, "docker command not found"
+    except subprocess.TimeoutExpired:
+        return False, "docker inspect timed out"
+    if cp.returncode != 0:
+        return False, "container not found"
+    return cp.stdout.strip().lower() == "true", cp.stdout.strip()
+
+
+def cheap_status(config: dict[str, Any]) -> dict[str, tuple[bool, str]]:
+    rt = config["runtime"]
+    running, container_detail = container_running(str(rt["docker_container"]))
+    reader = tcp_reachable(str(rt["reader_host"]), int(rt["reader_port"]))
+    hhost = str(rt.get("hercules_host") or rt["reader_host"])
+    hport = int(rt.get("hercules_port") or 8038)
+    hercules = tcp_reachable(hhost, hport)
+    return {
+        "container": (running, container_detail),
+        "reader": (reader, f"{rt['reader_host']}:{rt['reader_port']}"),
+        "hercules": (hercules, f"{hhost}:{hport}"),
+    }
+
+
+def require_reader_ready(config: dict[str, Any]) -> None:
+    status = cheap_status(config)
+    if not status["container"][0]:
+        raise DspalError(
+            f"MVS container {config['runtime']['docker_container']} is not running"
+        )
+    if not status["reader"][0]:
+        raise DspalError(
+            "JES reader is not reachable at " + status["reader"][1]
+        )
+
+
+def submit_and_wait(config: dict[str, Any], deck: str, max_rc: int = 0) -> tuple[int, str]:
+    rt = config["runtime"]
+    printer = ROOT / str(rt["printer"])
+    if not printer.is_file():
+        raise DspalError(f"printer log not found: {printer}")
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="ascii", suffix=".jcl", prefix="dspal-", delete=False
+    ) as handle:
+        handle.write(deck)
+        tmp = Path(handle.name)
+
+    try:
+        cp = subprocess.run(
+            [str(SUBMIT_JCL), "--timeout", str(rt.get("submit_timeout", 120)), str(tmp)],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if cp.returncode != 0:
+            detail = cp.stderr.strip() or cp.stdout.strip()
+            raise DspalError(f"JES submission failed: {detail}")
+        match = re.search(r"JOB\s+(\d+)", cp.stdout)
+        if not match:
+            raise DspalError(f"cannot parse job number from submit-jcl output: {cp.stdout!r}")
+        job = int(match.group(1))
+
+        timeout = int(rt.get("completion_timeout", 120))
+        deadline = time.monotonic() + timeout
+        last = ""
+        while time.monotonic() <= deadline:
+            summary = subprocess.run(
+                [str(JOB_SUMMARY), str(job), "--max-rc", str(max_rc)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            last = summary.stdout.strip() or summary.stderr.strip()
+            if summary.returncode == 0:
+                return job, summary.stdout
+            if "has no END JOB banner" not in last and "was not found" not in last:
+                if summary.returncode == 1:
+                    raise DspalError(f"JOB {job} failed:\n{summary.stdout.strip()}")
+            time.sleep(0.5)
+        raise DspalError(f"timed out waiting for JOB {job} to complete; last status: {last}")
+    finally:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+
+
+def probe_deck() -> str:
+    return (
+        "//DSPALCHK JOB (BCPL),'DSPAL STATUS',CLASS=A,MSGCLASS=A,\n"
+        "//             MSGLEVEL=(1,1)\n"
+        "//STEP1    EXEC PGM=IEFBR14\n"
+    )
+
+
+def allocation_clause(config: dict[str, Any], spec: dict[str, Any]) -> str:
+    defaults = config.get("allocation_defaults", {})
+    unit = str(spec.get("space_unit", defaults.get("space_unit", "TRK"))).upper()
+    primary = int(spec.get("primary", defaults.get("primary", 10)))
+    secondary = int(spec.get("secondary", defaults.get("secondary", 5)))
+    directory = int(spec.get("directory", defaults.get("directory", 20)))
+    if spec["type"] in {"pds", "loadlib"}:
+        return f"SPACE=({unit},({primary},{secondary},{directory}))"
+    return f"SPACE=({unit},({primary},{secondary}))"
+
+
+def dcb_clause(spec: dict[str, Any]) -> str:
+    parts = [f"DSORG={str(spec['dsorg']).upper()}", f"RECFM={str(spec['recfm']).upper()}"]
+    lrecl = int(spec.get("lrecl", 0) or 0)
+    if lrecl > 0:
+        parts.append(f"LRECL={lrecl}")
+    blksize = int(spec.get("blksize", 0) or 0)
+    if blksize > 0:
+        parts.append(f"BLKSIZE={blksize}")
+    return "DCB=(" + ",".join(parts) + ")"
+
+
+def initbcpl_deck(config: dict[str, Any]) -> str:
+    volume = config["mvs"].get("default_volume")
+    lines = [
+        "//DSPALINI JOB (BCPL),'DSPAL INITBCPL',CLASS=A,MSGCLASS=A,",
+        "//             MSGLEVEL=(1,1)",
+        "//* GENERATED BY DSPAL FROM CONFIG/DSPAL.YAML",
+        "//* DISP=(MOD,CATLG) CREATES MISSING DATASETS AND RETAINS EXISTING ONES.",
+        "//ALLOC    EXEC PGM=IEFBR14",
+    ]
+    for index, (logical, spec) in enumerate(config["datasets"].items(), 1):
+        dd = f"D{index:03d}"
+        dsn = full_dsn(config, spec)
+        lines.append(f"//* {logical}: {spec['description']}")
+        lines.append(f"//{dd:<8} DD  DSN={dsn},DISP=(MOD,CATLG),")
+        lines.append(f"//             {allocation_clause(config, spec)},")
+        if volume:
+            lines.append(f"//             VOL=SER={str(volume).upper()},")
+        lines.append(f"//             {dcb_clause(spec)}")
+    return "\n".join(lines) + "\n"
+
+
+def cmd_info(config: dict[str, Any]) -> int:
+    mvs = config["mvs"]
+    rt = config["runtime"]
+    text = config["text"]
+    print(f"Configuration:   {CONFIG.relative_to(ROOT)}")
+    print(f"Local override:  {LOCAL_CONFIG.relative_to(ROOT)}" + (" (loaded)" if LOCAL_CONFIG.exists() else " (not present)"))
+    print(f"MVS userid:      {mvs['userid']}")
+    print(f"Default HLQ:     {mvs['hlq']}")
+    print(f"Default volume:  {mvs.get('default_volume') or 'system allocation'}")
+    print(f"Write boundary:  {mvs['write_boundary']}")
+    print(f"Docker:          {rt['docker_container']}")
+    print(f"JES reader:      {rt['reader_host']}:{rt['reader_port']}")
+    print(f"Hercules web:    {rt.get('hercules_host', rt['reader_host'])}:{rt.get('hercules_port', 8038)}")
+    print(f"Text:            {text['host_encoding']} -> {text['mvs_encoding']} ({text['conversion_errors']})")
+    print("\nManaged datasets:")
+    for logical, spec in config["datasets"].items():
+        print(f"  {logical:<9} {full_dsn(config, spec):<26} {spec['description']}")
+    return 0
+
+
+def cmd_status(config: dict[str, Any], probe: bool, quiet: bool) -> int:
+    status = cheap_status(config)
+    cheap_ok = status["container"][0] and status["reader"][0]
+    if not quiet:
+        print(f"Docker container:  {'up' if status['container'][0] else 'down'}")
+        print(f"Hercules:          {'reachable' if status['hercules'][0] else 'unreachable'}")
+        print(f"JES reader:        {'reachable' if status['reader'][0] else 'unreachable'} ({status['reader'][1]})")
+    if not cheap_ok:
+        if not quiet:
+            print("MVS/JES2:           unavailable")
+        return 1
+    if not probe:
+        if not quiet:
+            print("MVS/JES2:           not probed")
+        return 0
+    try:
+        job, _ = submit_and_wait(config, probe_deck(), max_rc=0)
+    except DspalError as exc:
+        if not quiet:
+            print(f"MVS/JES2:           probe failed ({exc})")
+        return 1
+    if not quiet:
+        print(f"MVS/JES2:           ready (JOB {job})")
+    return 0
+
+
+def cmd_initbcpl(config: dict[str, Any], show_jcl: bool) -> int:
+    deck = initbcpl_deck(config)
+    if show_jcl:
+        sys.stdout.write(deck)
+        return 0
+    require_reader_ready(config)
+    job, summary = submit_and_wait(config, deck, max_rc=0)
+    print(f"initbcpl completed as JOB {job}")
+    for logical, spec in config["datasets"].items():
+        print(f"  {logical:<9} {full_dsn(config, spec)}")
+    return 0
+
+
+def make_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Manage BCPL project datasets on MVS/TK5.")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("info", help="show effective dspal configuration")
+
+    status = sub.add_parser("status", help="check local MVS/TK5 readiness")
+    status.add_argument("--probe", action="store_true", help="submit an IEFBR14 job as an end-to-end JES probe")
+    status.add_argument("--quiet", action="store_true", help="suppress normal output; use exit status only")
+
+    init = sub.add_parser("initbcpl", help="create the manifest-defined BCPL PDS layout")
+    init.add_argument("--show-jcl", action="store_true", help="emit generated JCL without submitting it")
+
+    return parser
+
+
+def main() -> int:
+    try:
+        args = make_parser().parse_args()
+        config = load_config()
+        if args.command == "info":
+            return cmd_info(config)
+        if args.command == "status":
+            return cmd_status(config, args.probe, args.quiet)
+        if args.command == "initbcpl":
+            return cmd_initbcpl(config, args.show_jcl)
+        raise DspalError(f"unimplemented command: {args.command}")
+    except (DspalError, OSError, ValueError) as exc:
+        print(f"dspal: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
