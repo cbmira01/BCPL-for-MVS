@@ -3,6 +3,7 @@ version: 1
 mvs:
   userid: HERC02
   hlq: HERC02
+  default_unit: SYSDA
   default_volume: null
   write_boundary: HERC02.**
 
