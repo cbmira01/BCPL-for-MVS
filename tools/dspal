@@ -13,8 +13,10 @@ MAINT = ROOT / "tools" / "dspal-maint.py"
 LS = ROOT / "tools" / "dspal-ls.py"
 POPULATE = ROOT / "tools" / "dspal-populate.py"
 PURGE = ROOT / "tools" / "dspal-purge.py"
+INIT = ROOT / "tools" / "dspal-init.py"
 
-CORE_COMMANDS = {"info", "status", "stat", "initbcpl"}
+CORE_COMMANDS = {"info", "status", "stat"}
+INIT_COMMANDS = {"initbcpl"}
 READ_COMMANDS = {"cat", "get"}
 MAINT_COMMANDS = {"rm", "compress"}
 LS_COMMANDS = {"ls"}
@@ -58,6 +60,8 @@ def route_help(topic: str) -> None:
     topic = topic.lower()
     if topic in CORE_COMMANDS:
         exec_script(CORE, [topic, "--help"])
+    if topic in INIT_COMMANDS:
+        exec_script(INIT, ["--help"])
     if topic in READ_COMMANDS:
         exec_script(READ, [topic, "--help"])
     if topic in MAINT_COMMANDS:
@@ -86,6 +90,8 @@ def main() -> int:
         route_help(args[1])
     if args[0] in CORE_COMMANDS:
         exec_script(CORE, args)
+    if args[0] in INIT_COMMANDS:
+        exec_script(INIT, args[1:])
     if args[0] in READ_COMMANDS:
         exec_script(READ, args)
     if args[0] in MAINT_COMMANDS:
