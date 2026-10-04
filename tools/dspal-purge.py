@@ -52,11 +52,10 @@ def purge_deck(
         ]
     )
     if selected:
-        for logical, dsn in selected:
-            lines.append(f" /* {logical}")
+        for _, dsn in selected:
             lines.append(f" DELETE '{dsn}'")
     else:
-        lines.append(" /* NO EXISTING MANAGED DATASETS SELECTED")
+        lines.append(" PROFILE NOPREFIX")
     lines.append("/*")
     return "\n".join(lines) + "\n"
 
