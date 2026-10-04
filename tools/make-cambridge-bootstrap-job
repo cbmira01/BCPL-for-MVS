@@ -73,6 +73,12 @@ def normalize_records(text: str, what: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def replace_once(text: str, old: str, new: str, what: str) -> str:
+    if text.count(old) != 1:
+        raise RuntimeError(f"cannot patch {what}: expected one occurrence")
+    return text.replace(old, new, 1)
+
+
 def expand_gets(source: str, *, compblib: bool = False) -> str:
     """Expand the Cambridge GETs on the host side for ICINT bootstrap use.
 
@@ -119,7 +125,22 @@ def prepare_sources() -> list[Path]:
     return paths
 
 
+def gused_clear(globals_count: int) -> str:
+    """Build IFOX XC statements that clear an arbitrary-length GUSED table."""
+    lines = []
+    offset = 0
+    remaining = globals_count
+    while remaining:
+        chunk = min(256, remaining)
+        target = "GUSED" if offset == 0 else f"GUSED+{offset}"
+        lines.append(f"         XC    {target}({chunk}),{target}")
+        offset += chunk
+        remaining -= chunk
+    return "\n".join(lines)
+
+
 def prepare_interpreter(source: Path, globals_count: int, labels: int, progwords: int) -> Path:
+    """Make a bootstrap-only, internally consistent capacity-expanded ICINT."""
     text = read_ascii(source)
     substitutions = (
         (r"^LABVCNT\s+EQU\s+\d+\s*$", f"LABVCNT  EQU   {labels}"),
@@ -130,6 +151,24 @@ def prepare_interpreter(source: Path, globals_count: int, labels: int, progwords
         text, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE)
         if count != 1:
             raise RuntimeError(f"could not patch interpreter constant: {pattern}")
+
+    # V17's normal capacities are LABVCNT=501, GLOBCNT=401 and PROGCNT=20001.
+    # Several diagnostic/usage-table bounds are intentionally literal in V17;
+    # a bootstrap-expanded copy must change those along with the vectors.
+    text = replace_once(
+        text,
+        "         XC    GUSED(256),GUSED\n         XC    GUSED+256(145),GUSED+256",
+        gused_clear(globals_count),
+        "GUSED clearing",
+    )
+    text = replace_once(text, "GUSED    DS    CL401", f"GUSED    DS    CL{globals_count}", "GUSED size")
+    text = replace_once(text, "ACLRTST  C     R4,=F'500'", f"ACLRTST  C     R4,=F'{labels - 1}'", "label clear bound")
+    text = replace_once(text, "AZTEST   C     R8,=F'500'", f"AZTEST   C     R8,=F'{labels - 1}'", "label check bound")
+    text = replace_once(text, "         C     R3,=F'400'\n         BH    AUSEDOK", f"         C     R3,=F'{globals_count - 1}'\n         BH    AUSEDOK", "global usage bound")
+    text = replace_once(text, "MSGLOOP C     R6,=F'400'", f"MSGLOOP C     R6,=F'{globals_count - 1}'", "MAPSTORE global bound")
+    text = replace_once(text, "         A     R3,=F'20000'", f"         A     R3,=F'{progwords - 1}'", "OP1 program bound")
+    text = replace_once(text, "         A     R3,=F'400'\n         CR    R2,R3", f"         A     R3,=F'{globals_count - 1}'\n         CR    R2,R3", "OP1 global bound")
+
     EXPANDED.mkdir(parents=True, exist_ok=True)
     path = EXPANDED / source.name
     path.write_text(text, encoding="ascii")
@@ -152,8 +191,18 @@ def code_output_dd() -> str:
     )
 
 
+def expand_runtime_regions(deck: str) -> str:
+    """Give every interpreted RUNMOD phase room for the expanded ICINT vectors."""
+    old = "EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)"
+    new = "EXEC PGM=RUNMOD,REGION=1024K,TIME=(1,0),COND=(4,LT)"
+    count = deck.count(old)
+    if count < 1:
+        raise RuntimeError("cannot locate RUNMOD execution steps to expand")
+    return deck.replace(old, new)
+
+
 def patch_final_run(deck: str, test_source: str, options: str) -> str:
-    marker = "//RUN      EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)\n"
+    marker = "//RUN      EXEC PGM=RUNMOD,REGION=1024K,TIME=(1,0),COND=(4,LT)\n"
     pos = deck.rfind(marker)
     if pos < 0:
         raise RuntimeError("cannot locate final RUN step in generated deck")
@@ -168,13 +217,6 @@ def patch_final_run(deck: str, test_source: str, options: str) -> str:
         raise RuntimeError("cannot locate final RUN BLIBI concatenation")
     tail = tail.replace(blibi_dd, "", 1)
     deck = deck[:pos] + tail
-
-    pos = deck.rfind(marker)
-    deck = deck[:pos] + deck[pos:].replace(
-        marker,
-        "//RUN      EXEC PGM=RUNMOD,REGION=1024K,TIME=(1,0),COND=(4,LT)\n",
-        1,
-    )
 
     sysudump = "//SYSUDUMP DD  SYSOUT=*\n"
     pos = deck.rfind(sysudump)
@@ -239,6 +281,10 @@ def main() -> int:
         raise RuntimeError(f"invalid MVS job name: {args.job_name}")
     if args.globals < 701:
         raise RuntimeError("--globals must be at least 701 for Cambridge TOPGLOB")
+    if args.labels < 501:
+        raise RuntimeError("--labels must be at least 501")
+    if args.progwords < 20001:
+        raise RuntimeError("--progwords must be at least 20001")
 
     prepared_icint = prepare_interpreter(
         interpreter, args.globals, args.labels, args.progwords
@@ -254,6 +300,7 @@ def main() -> int:
         save_ocode=False,
         save_intcode=False,
     )
+    deck = expand_runtime_regions(deck)
 
     # Empty compiler-option field, then N code-generator option: keep the
     # in-memory OCODE path and suppress the historical binary object deck.
