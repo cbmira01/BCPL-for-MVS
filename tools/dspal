@@ -366,14 +366,12 @@ def extract_listds_block(report: str, dsn: str) -> list[str]:
     upper_dsn = dsn.upper()
     for index, line in enumerate(lines):
         if upper_dsn in line.upper():
-            # Prefer the occurrence in SYSTSPRT rather than the echoed input deck.
             following = "\n".join(lines[index : index + 12]).upper()
             if "RECFM" in following or "VOLUME" in following or "DSORG" in following:
                 start = index
                 break
 
     if start is None:
-        # LISTDS may print the name on the line immediately after a command banner.
         for index, line in enumerate(lines):
             if line.strip().upper() == upper_dsn:
                 start = index
@@ -589,22 +587,23 @@ def cmd_stat(config: dict[str, Any], operand: str, show_jcl: bool, raw: bool) ->
 
     attrs = parse_listds(block)
     print(f"Dataset:   {dsn}" + (f" ({logical})" if logical else ""))
-    print(f"Job:       {job}")
     if attrs:
-        if "volume" in attrs:
-            print(f"Volume:    {attrs['volume']}")
-        if "dsorg" in attrs:
-            print(f"DSORG:     {attrs['dsorg']}")
-        if "recfm" in attrs:
-            print(f"RECFM:     {attrs['recfm']}")
-        if "lrecl" in attrs:
-            print(f"LRECL:     {attrs['lrecl']}")
-        if "blksize" in attrs:
-            print(f"BLKSIZE:   {attrs['blksize']}")
+        fields = [f"Job:{job}"]
+        for key, label in (
+            ("volume", "Volume"),
+            ("dsorg", "DSORG"),
+            ("recfm", "RECFM"),
+            ("lrecl", "LRECL"),
+            ("blksize", "BLKSIZE"),
+        ):
+            if key in attrs:
+                fields.append(f"{label}:{attrs[key]}")
+        print("    " + ",  ".join(fields))
     else:
-        print("LISTDS output:")
+        print(f"    Job:{job}")
+        print("    LISTDS output:")
         for line in block:
-            print(line)
+            print("        " + line)
     return 0
 
 
