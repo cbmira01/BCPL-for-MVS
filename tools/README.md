@@ -14,6 +14,7 @@ examples assume they are run from the repository root.
 | `start-tk5` | Start the Hercules/TK5 MVS environment. |
 | `shutdown-tk5` | Perform an orderly MVS/Hercules shutdown. |
 | `make-asm-job` | Generate a self-contained IFOX assemble/link/run JCL deck. |
+| `make-cambridge-bootstrap-job` | Generate the first-flight Cambridge native-compiler bootstrap deck. |
 | `submit-jcl` | Submit a JCL deck through the Hercules socket reader and report the JES job number. |
 | `job-summary` | Summarize executed steps and return codes from printer output. |
 | `dump-report-for-job` | Extract the complete printer report for one JES job. |
@@ -71,6 +72,70 @@ with `--parm`.
 
 `make-asm-job.py` is the underlying Python implementation and is imported by
 other tools. For normal command-line use, invoke `make-asm-job`.
+
+## `make-cambridge-bootstrap-job`
+
+Generates an inspectable first-flight JCL deck for bootstrapping the preserved
+Cambridge System/370 compiler through the interpreted MR10 compiler.
+
+```text
+tools/make-cambridge-bootstrap-job
+```
+
+The default output is:
+
+```text
+workarea/cambridge-bootstrap.jcl
+```
+
+The generated job assembles and link-edits a capacity-expanded working copy of
+`icintv17.asm`, stages `SYNI`, `TRNI`, `CGI`, `BLIBI`, and `ICLIB`, compiles
+the Cambridge `BCPL`, `SYN`, `TRN`, `CG`, and historical `COMPBLIB` sections to
+INTCODE, runs the resulting integrated compiler on
+`native-compiler/acceptance/a0-finish.bcpl`, captures the native `CODE`
+stream, and attempts to assemble that output with `IFOX00`. The initial
+milestone deliberately stops at successful assembly of CG370 output; native
+link/edit and execution remain a later runtime/BCPLMAIN step.
+
+For this bootstrap experiment the tool expands `GET "LIBHDR"` and
+`GET "HEADERS(...)"` on the host side. Historical MVS BCPL used `HEADERS` as
+a PDS and understood member syntax, while ICINT V17 currently models ordinary
+DDNAME stream discovery rather than that complete native library/member API.
+The historical `COMPBLIB` special case is retained by appending
+`GLOBAL $( ABORT : 112 $)` to its expanded LIBHDR, as documented by the
+original `MAKEOBJ` job.
+
+The Cambridge driver expects `FINDPARM()`. The interpreted MR10 runtime does
+not currently provide global 39, so the generated compiler includes a tiny
+bootstrap-only `MVSHOST` section implementing `FINDPARM()` as
+`FINDINPUT("OPTIONS")`. The final compiler run supplies `//OPTIONS DD *` with
+`/N`: an empty compiler-option field followed by the CG `N` option, which
+keeps the normal in-memory TRN-to-CG handoff while suppressing the historical
+binary object-deck output.
+
+The Cambridge compiler uses globals beyond the original ICINT V17 G400 limit
+and is much larger than normal regression programs. The generator therefore
+patches only its generated working copy of ICINT, defaulting to 1001 globals,
+4001 labels, and 100001 program words; the checked-in `asm/icintv17.asm` is
+not changed. These capacities can be adjusted with `--globals`, `--labels`,
+and `--progwords`.
+
+Useful options include:
+
+```text
+--interpreter PATH
+--test PATH
+--output PATH
+--listing light|medium|heavy
+--job-name NAME
+--globals N
+--labels N
+--progwords N
+```
+
+The generator does not submit the job. Inspect the deck, then use
+`tools/submit-jcl`, `tools/job-summary`, and `tools/dump-report-for-job` in the
+normal way.
 
 ## `submit-jcl`
 
@@ -377,6 +442,13 @@ BCPL source compilation and execution:
 tools/compile-and-run --results \
     asm/icintv17.asm \
     program.bcpl
+```
+
+Cambridge native-compiler first flight:
+
+```text
+tools/make-cambridge-bootstrap-job
+tools/submit-jcl workarea/cambridge-bootstrap.jcl
 ```
 
 Complete demo regression suite:
