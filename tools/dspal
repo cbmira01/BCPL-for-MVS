@@ -12,12 +12,14 @@ READ = ROOT / "tools" / "dspal-read.py"
 MAINT = ROOT / "tools" / "dspal-maint.py"
 LS = ROOT / "tools" / "dspal-ls.py"
 POPULATE = ROOT / "tools" / "dspal-populate.py"
+PURGE = ROOT / "tools" / "dspal-purge.py"
 
 CORE_COMMANDS = {"info", "status", "stat", "initbcpl"}
 READ_COMMANDS = {"cat", "get"}
 MAINT_COMMANDS = {"rm", "compress"}
 LS_COMMANDS = {"ls"}
 POPULATE_COMMANDS = {"populate"}
+PURGE_COMMANDS = {"purgebcpl"}
 
 
 def exec_script(path: Path, argv: list[str]) -> None:
@@ -44,6 +46,7 @@ def print_help() -> None:
         ("compress DATASET", "compress one PDS in place with IEBCOPY"),
         ("populate TARGET", "populate one managed source PDS or all from Git mappings"),
         ("initbcpl", "create missing managed datasets after attribute preflight"),
+        ("purgebcpl", "delete only the explicit managed dataset set"),
     ]
     for name, description in rows:
         print(f"  {name:<27} {description}")
@@ -63,6 +66,8 @@ def route_help(topic: str) -> None:
         exec_script(LS, ["--help"])
     if topic in POPULATE_COMMANDS:
         exec_script(POPULATE, ["--help"])
+    if topic in PURGE_COMMANDS:
+        exec_script(PURGE, ["--help"])
     exec_script(IO, ["help", topic])
 
 
@@ -89,6 +94,8 @@ def main() -> int:
         exec_script(LS, args[1:])
     if args[0] in POPULATE_COMMANDS:
         exec_script(POPULATE, args[1:])
+    if args[0] in PURGE_COMMANDS:
+        exec_script(PURGE, args[1:])
     exec_script(IO, args)
     return 127
 
