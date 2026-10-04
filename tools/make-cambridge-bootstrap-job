@@ -137,7 +137,10 @@ def prepare_interpreter(source: Path, globals_count: int, labels: int, progwords
 
 
 def inline_dd(ddname: str, text: str) -> str:
-    return f"//{ddname:<8} DD  *\n" + normalize_records(text, ddname) + "/*\n"
+    # DD DATA, unlike DD *, permits input records beginning with //.
+    # That matters for ordinary BCPL source because // is its line-comment
+    # syntax.  normalize_records() already rejects a bare /* terminator.
+    return f"//{ddname:<8} DD  DATA\n" + normalize_records(text, ddname) + "/*\n"
 
 
 def code_output_dd() -> str:
