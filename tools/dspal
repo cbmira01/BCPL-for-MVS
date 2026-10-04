@@ -103,7 +103,6 @@ def load_simple_yaml(path: Path) -> dict[str, Any]:
             parent[key] = node
             stack.append((indent, node))
         else:
-            # Inline comments are accepted only when separated by whitespace.
             value = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
             parent[key] = scalar(value)
 
@@ -342,7 +341,15 @@ def cmd_info(config: dict[str, Any]) -> int:
     return 0
 
 
-def cmd_status(config: dict[str, Any], probe: bool, quiet: bool) -> int:
+def cmd_status(config: dict[str, Any], probe: bool, quiet: bool, show_jcl: bool) -> int:
+    if show_jcl:
+        if not probe:
+            raise DspalError("status --show-jcl requires --probe")
+        if quiet:
+            raise DspalError("status --show-jcl cannot be combined with --quiet")
+        sys.stdout.write(probe_deck())
+        return 0
+
     status = cheap_status(config)
     cheap_ok = status["container"][0] and status["reader"][0]
     if not quiet:
@@ -390,6 +397,7 @@ def make_parser() -> argparse.ArgumentParser:
     status = sub.add_parser("status", help="check local MVS/TK5 readiness")
     status.add_argument("--probe", action="store_true", help="submit an IEFBR14 job as an end-to-end JES probe")
     status.add_argument("--quiet", action="store_true", help="suppress normal output; use exit status only")
+    status.add_argument("--show-jcl", action="store_true", help="emit the probe JCL without submitting it (requires --probe)")
 
     init = sub.add_parser("initbcpl", help="create the manifest-defined BCPL PDS layout")
     init.add_argument("--show-jcl", action="store_true", help="emit generated JCL without submitting it")
@@ -404,7 +412,7 @@ def main() -> int:
         if args.command == "info":
             return cmd_info(config)
         if args.command == "status":
-            return cmd_status(config, args.probe, args.quiet)
+            return cmd_status(config, args.probe, args.quiet, args.show_jcl)
         if args.command == "initbcpl":
             return cmd_initbcpl(config, args.show_jcl)
         raise DspalError(f"unimplemented command: {args.command}")
