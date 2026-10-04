@@ -1,6 +1,0 @@
-// A0-FINISH.BCPL
-// Native acceptance: startup, START resolution, and FINISH only.
-
-GLOBAL $( START:1 $)
-
-LET START() BE FINISH
