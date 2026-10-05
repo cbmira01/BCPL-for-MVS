@@ -239,11 +239,11 @@ def main() -> None:
     )
     new_messages = (
         "ENTERMSG DC    AL1(23),C'INTCODE SYSTEM ENTERED',X'15'\n"
-        "RPTPSIZE DC    AL1(33),C'    PROGRAM SIZE      = ' \n"
+        "RPTPSIZE DC    AL1(33),C'    PROGRAM SIZE      = '\n"
         "         DC    C'%N WORDS',X'15'\n"
-        "RPTPCAP  DC    AL1(33),C'    PROGVEC CAPACITY  = ' \n"
+        "RPTPCAP  DC    AL1(33),C'    PROGVEC CAPACITY  = '\n"
         "         DC    C'%N WORDS',X'15'\n"
-        "RPTFREE  DC    AL1(33),C'    FREE STACK/WORK   = ' \n"
+        "RPTFREE  DC    AL1(33),C'    FREE STACK/WORK   = '\n"
         "         DC    C'%N WORDS',X'15'\n"
         "RPTSBAS  DC    AL1(27),C'    STACKBASE         = %N',X'15'\n"
         "RPTSEND  DC    AL1(27),C'    STACKEND          = %N',X'15'\n"
