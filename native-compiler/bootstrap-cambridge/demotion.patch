@@ -1,0 +1,23 @@
+diff --git a/native-compiler/bootstrap-cambridge/source/syn b/native-compiler/bootstrap-cambridge/source/syn
+--- a/native-compiler/bootstrap-cambridge/source/syn
++++ b/native-compiler/bootstrap-cambridge/source/syn
+@@
+-SECTION "SYN"
++|| BOOTSTRAP DEMOTION: historical source begins SECTION "SYN".
++|| MR10 SYN does not recognize SECTION, so omit it during bootstrap.
+@@
+-               GETBYTE(SECTIONNAME, 0) ~= 0 DO
++               GETBYTE(SECTIONNAME, 0) NE 0 DO
+             WRITEF("Section *\"%S*\"*N", SECTIONNAME)
+
+diff --git a/native-compiler/bootstrap-cambridge/source/trn b/native-compiler/bootstrap-cambridge/source/trn
+--- a/native-compiler/bootstrap-cambridge/source/trn
++++ b/native-compiler/bootstrap-cambridge/source/trn
+@@
+-SECTION "TRNA"
++|| BOOTSTRAP DEMOTION: historical source begins SECTION "TRNA".
++|| MR10 SYN does not recognize SECTION, so omit it during bootstrap.
+@@
+-               GETBYTE(SECTIONNAME, 0) ~= 0 DO
++               GETBYTE(SECTIONNAME, 0) NE 0 DO
+             WRITEF("Section *\"%S*\"*N", SECTIONNAME)
