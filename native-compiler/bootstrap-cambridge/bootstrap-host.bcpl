@@ -1,0 +1,18 @@
+GET "LIBHDR"
+
+|| Bootstrap host-compatibility shims for running the Cambridge compiler
+|| resident under the reconstructed MR10/ICINT environment.
+||
+|| Keep this file deliberately small and evidence-driven.  Add only host
+|| services that the resident compiler actually reaches and that are absent
+|| from the current MR10 runtime.
+
+GLOBAL $( WRAPOUTPUT:33 $)
+
+STATIC $( WRAPPING = TRUE $)
+
+LET WRAPOUTPUT(NEWSTATE) = VALOF
+$(  LET OLDSTATE = WRAPPING
+    WRAPPING := NEWSTATE
+    RESULTIS OLDSTATE
+$)
