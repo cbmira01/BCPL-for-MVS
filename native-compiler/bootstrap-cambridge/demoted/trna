@@ -1,7 +1,8 @@
 || BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "TRNA".
 || SECTION wrapper omitted for MR10 source-dialect compilation.
+|| Historical HEADERS(...) GET names mapped to MVS DDNAMEs.
 GET "LIBHDR"
-GET "HEADERS(TRNHDR)"
+GET "TRNHDR"
 
 LET NEXTPARAM() = VALOF
     $( PARAMNUMBER := PARAMNUMBER + 1
