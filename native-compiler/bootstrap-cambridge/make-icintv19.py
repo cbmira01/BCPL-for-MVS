@@ -109,8 +109,8 @@ def main() -> None:
     # literal, which the LTORG below places inside the reachable code area.
     text = replace_once(
         text,
-        "MSGDONE  LA    R2,MSEND",
-        "MSGDONE  L     R2,=A(MSEND)",
+        "MSGDONE LA    R2,MSEND",
+        "MSGDONE L     R2,=A(MSEND)",
         "MSEND address load",
     )
 
