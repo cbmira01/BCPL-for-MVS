@@ -49,6 +49,64 @@ A useful distinction is:
 - the kit is a porting vehicle;
 - the Cambridge native system is a programming system.
 
+## Cambridge SYN/TRN: recognized language versus bootstrap language
+
+A crucial bootstrap distinction is now established: the Cambridge compiler **recognizes** a considerably richer BCPL language than it appears to **use in its own implementation source**.
+
+The Cambridge `SYNHDR` and parser recognize, among other additions relative to the MR10 kit frontend:
+
+- `SECTION` and `NEEDS`;
+- `FIX` and `ABS`;
+- selectors such as `SLCT` and `SLCTAP`;
+- byte application;
+- augmented-assignment support through `BECOMESBIT`;
+- the floating-point family: `FMULT`, `FDIV`, `FPLUS`, `FMINUS`, `FNEG`, `FLOAT`, `FABS`, and floating comparisons.
+
+Those appearances inside `SYN` and `TRN` are largely compiler data and dispatch logic. For example, `SYN` has parser cases for floating operators because it must recognize them in programs being compiled, and `TRN` has translation cases for floating AST operators because it must emit the corresponding OCODE. That does **not** imply that the implementation of `SYN` or `TRN` itself performs floating-point arithmetic.
+
+Current source inspection has found no actual floating-point expressions required to compile the Cambridge `SYN` and `TRN` implementation sources themselves.
+
+The currently identified *source-language* incompatibilities that prevent direct compilation of Cambridge `SYN`/`TRN` by the MR10 kit are much smaller:
+
+1. The files begin with named sections, e.g.:
+
+   ```bcpl
+   SECTION "SYN"
+   SECTION "TRNA"
+   ```
+
+   The MR10 kit frontend has no `SECTION` keyword.
+
+2. Cambridge source uses the later not-equal spelling `~=` in places such as:
+
+   ```bcpl
+   GETBYTE(SECTIONNAME, 0) ~= 0
+   ```
+
+   The MR10 lexer recognizes older forms such as `\=` / `NE`, but has no `~` lexical case.
+
+`NEEDS` is particularly instructive. Cambridge `SYN` recognizes it and Cambridge `TRN` passes `SECTION` and `NEEDS` records into OCODE, but the implementation sources inspected so far do not themselves require a source-level `NEEDS "..."` directive in order to compile. Thus `NEEDS` may be needed in the *compiler being bootstrapped* without being needed in the *bootstrap language subset used to compile that compiler*.
+
+This substantially changes the bootstrap strategy. Do not equate “features supported by Cambridge BCPL” with “features that MR10 must learn before it can compile Cambridge SYN/TRN.” The latter set may be very small.
+
+A plausible first bootstrap experiment is therefore to create minimally adapted Cambridge compiler sources that preserve semantics while changing only unsupported surface syntax, for example:
+
+```text
+Cambridge SYN/TRN source
+        |
+        +-- remove or temporarily neutralize top-level SECTION wrappers
+        +-- rewrite ~= to an MR10-supported not-equal spelling
+        +-- make only proven runtime/header accommodations
+        v
+MR10 SYNI/TRNI
+        v
+OCODE -> CGI -> INTCODE -> ICINT
+```
+
+If successful, the resulting interpreted Cambridge `SYN/TRN` would then recognize the richer production language, including `SECTION` and `NEEDS`, and could emit authentic Cambridge OCODE for CG370.
+
+The next investigation should therefore focus on **runtime/header compatibility rather than presumed language syntax incompatibility**. In particular, inspect dependencies such as `GETBYTE`, `PUTBYTE`, `LEVEL`, `LONGJUMP`, compiler workspace globals, headers, and I/O services. Change the MR10 compiler or source only when an observed incompatibility requires it.
+
 ## CG370 directly consumes OCODE
 
 The surviving `bcplib/bcpl/cg` source explicitly dispatches OCODE operators such as `C.LG`, `C.LP`, `C.LL`, `C.PLUS`, `C.JUMP`, `C.ENTRY`, `C.SAVE`, `C.FNAP`, and `C.RTAP`.
@@ -223,3 +281,6 @@ The strategic goal is to use the bootstrap environment to bring up enough of the
 7. Prefer observable historical behavior over speculative redesign.
 8. Keep the textual/listing and binary/object paths conceptually separate while studying CG370.
 9. Record every host-required divergence from the surviving Cambridge source.
+10. Distinguish rigorously between features the Cambridge compiler recognizes and features required to compile the compiler itself.
+11. Before extending MR10 language support, prove that the Cambridge compiler implementation actually uses the missing feature.
+12. Prefer minimal source-compatible bootstrap adaptations over implementing the entire later Cambridge language in the kit compiler.
