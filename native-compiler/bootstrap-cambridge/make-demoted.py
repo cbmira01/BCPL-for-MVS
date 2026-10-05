@@ -5,7 +5,7 @@ The bootstrap derivative is deliberately mechanical:
 
 - split historical source containers at SECTION boundaries;
 - omit SECTION wrappers from resulting compilation units;
-- rewrite Cambridge '~=' as older 'NE';
+- rewrite Cambridge '~=' as token-separated older 'NE';
 - map historical member-style GET names to MVS-DD-friendly names;
 - split LEX packed reserved-word strings to fit MR10's 255-character limit;
 - replace LEX READFLOAT with an explicit bootstrap-only fatal stub because
@@ -62,7 +62,9 @@ def split_sections(path: Path, names):
 
 
 def demote(text: str) -> str:
-    text = text.replace("~=", "NE")
+    # NE is alphabetic in the MR10 syntax.  Surround it with whitespace so
+    # adjacent Cambridge spelling such as SHIFT~=0 cannot become SHIFTNE0.
+    text = text.replace("~=", " NE ")
     text = text.replace('GET "HEADERS(SYNHDR)"', 'GET "SYNHDR"')
     text = text.replace('GET "HEADERS(TRNHDR)"', 'GET "TRNHDR"')
     text = text.replace('GET "HEADERS(CGHDR)"', 'GET "CGHDR"')
