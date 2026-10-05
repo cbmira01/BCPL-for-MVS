@@ -7,7 +7,7 @@ GET "LIBHDR"
 || services that the resident compiler actually reaches and that are absent
 || from the current MR10 runtime.
 
-GLOBAL $( WRAPOUTPUT:33; FINDPARM:39 $)
+GLOBAL $( DATE:29; WRAPOUTPUT:33; FINDPARM:39 $)
 
 STATIC $( WRAPPING = TRUE $)
 
@@ -22,3 +22,11 @@ $)
 || stream distinct from the MR10 compiler's OPTIONS DD: CAMBPARM belongs to the
 || resident Cambridge compiler only.
 LET FINDPARM() = FINDINPUT("CAMBPARM")
+
+
+|| CG370 calls DATE() while constructing the standard object-module header.
+|| Historical DATEMOD describes that field as an 11-character BCPL string and
+|| recognizes "  *UNDATED*" as the canonical placeholder.  Return that exact
+|| three-word string during bootstrap rather than fabricating a host date.
+|| Native BCPLMAIN will eventually provide the real MVS DATE service.
+LET DATE() = "  *UNDATED*"
