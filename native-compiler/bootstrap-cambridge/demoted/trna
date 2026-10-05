@@ -1,0 +1,569 @@
+|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "TRNA".
+|| SECTION wrapper omitted for MR10 source-dialect compilation.
+GET "LIBHDR"
+GET "HEADERS(TRNHDR)"
+
+LET NEXTPARAM() = VALOF
+    $( PARAMNUMBER := PARAMNUMBER + 1
+       RESULTIS PARAMNUMBER  $)
+
+AND TRNERRWRITE(N, X) BE
+       $(
+          WRITEF("Error near line %N", TRNLINE REM 10000)
+          TEST TRNLINE >= 10000 DO
+              WRITES(" of GET file:  ") OR WRITES(":  ")
+          TRNMESSAGE(N, X)
+
+          IF REPORTCOUNT>=REPORTMAX
+              $(  REPORTCOUNT := REPORTMAX
+                  WRITES("COMPILATION ABORTED*N")  $) $)
+
+
+AND TRANSREPORT(N, X) BE
+$(  REPORTCOUNT := REPORTCOUNT + 1
+
+    SELECTOUTPUT(SYSOPT)
+        IF OCODE & OCODESTREAM=SYSOPT DO $( NEWLINE(); OCOUNT:=0 $)
+        IF QUIET & NOT PRSOURCE & REPORTCOUNT=1 &
+               GETBYTE(SECTIONNAME, 0) NE 0 DO
+            WRITEF("Section *"%S*"*N", SECTIONNAME)
+    TRNERRWRITE(N, X)
+    SELECTOUTPUT(OCODESTREAM)
+    IF REPORTCOUNT>=REPORTMAX DO STOP(8)
+$)
+
+AND TRNMESSAGE(N, X) BE
+$(  LET FATAL, PRNAME, PRCONST = FALSE, FALSE, FALSE
+    LET S = VALOF
+    SWITCHON N INTO
+
+    $( DEFAULT: WRITES("Compiler error  "); WRITEN(N); NEWLINE() ;RETURN
+
+       CASE 141: RESULTIS "Too many cases"
+       CASE 104: RESULTIS "Illegal use of BREAK, LOOP or RESULTIS"
+       CASE 101:
+       CASE 105: RESULTIS "Illegal use of CASE or DEFAULT"
+       CASE 106: PRCONST := TRUE
+                 RESULTIS "Two cases with same constant"
+       CASE 144: FATAL := TRUE
+                 RESULTIS "Too many globals"
+       CASE 142: PRNAME := TRUE
+                  RESULTIS "Name declared twice"
+       CASE 145: FATAL := TRUE
+                RESULTIS "Region too small"
+       CASE 121:
+       CASE 115: PRNAME := TRUE
+                 RESULTIS "Name not declared"
+       CASE 116: PRNAME := TRUE
+                 RESULTIS "Dynamic free variable used"
+       CASE 117:CASE 118:
+                 RESULTIS "Error in constant expression"
+       CASE 119: PRNAME := TRUE
+                RESULTIS "Name not declared manifest"
+       CASE 120:
+                 RESULTIS "Divide by zero in constant"
+       CASE 147: RESULTIS "Error in expression"
+       CASE 110:CASE 112:
+                 RESULTIS "LHS and RHS do not match"
+       CASE 109:CASE 113:
+                 RESULTIS "Ltype expression expected"
+    $)
+
+   WRITES(S)
+   IF PRNAME & H1!X=S.NAME WRITEF(" - %S", X+2)
+   IF PRCONST WRITEF(" - %N", X)
+   NEWLINE()
+   IF FATAL DO REPORTMAX := 0
+                  $)
+
+AND DUMMY() BE RETURN
+
+AND COMPILEAE(X) BE
+$(1 LET D = VEC 100
+    LET K = VEC 256
+    LET L = VEC 256
+
+    DVEC, DVECS, DVECE, DVECP := TREEP, -3, -3, -3
+
+    GLOBDECL, GLOBDECLS, GLOBDECLT := D, 0, 100
+
+    CASEK, CASEL, CASEP, CASET, CASEB := K, L, 0, 256, -1
+    ENDCASELABEL, DEFAULTLABEL := 0, 0
+
+    RESULTLABEL, BREAKLABEL, LOOPLABEL := -1, -1, -1
+    INPROC := FALSE
+
+       TRNUNUSED := DVEC+DVECS-OBUFP
+
+    CURRENTBRANCH := X
+    UNLESS OCODE THEN WRITEOP, WRN, WRC, ENDOCODE :=
+                           PUTBYTES, PUTBYTES, DUMMY, DUMMY
+    IF NUMOCODE THEN WRITEOP := WRN
+
+    OCOUNT := 0
+
+    PARAMNUMBER := 0
+    SSP := SAVESPACESIZE
+    UNLESS X=0 THEN
+    $(  LET T = H1!X
+        UNLESS T=S.SECTION | T=S.NEEDS THEN BREAK
+        OUT1(T)
+        OUTSTRING(H2!X+1)
+        X := H3!X
+    $) REPEAT
+    OUT2(S.STACK, SSP)
+    TRNBLOCKBODY(X)
+    OUT2(S.GLOBAL, GLOBDECLS/2)
+
+ $( LET I = 0
+    UNTIL I=GLOBDECLS DO
+       $( OUTN(GLOBDECL!I)
+          OUTL(GLOBDECL!(I+1))
+          I := I + 2  $)
+
+    ENDOCODE()
+$)1
+
+
+LET TRANS(X) BE
+  $(TR
+NEXT:
+ $( LET SW = FALSE
+    AND H1X, H2X, H3X = 0, 0, 0
+    IF X=0 RETURN
+    CURRENTBRANCH := X
+
+    H1X, H2X, H3X := H1!X, H2!X, H3!X
+    IF (H1X&BECOMESBIT) NE 0 THEN
+    $(  ASSIGN(H2X, H3X, H1X&\BECOMESBIT); RETURN  $)
+
+    SWITCHON H1X INTO
+$(  DEFAULT: TRANSREPORT(100, X); RETURN
+
+    CASE S.LET: CASE S.STATIC:
+    CASE S.MANIFEST: CASE S.GLOBAL:
+    $(  LET A, B, S, V = DVECE, DVECS, SSP, VECSSP
+        TRNBLOCKBODY(X)
+        IF NAMING&INPROC THEN $( OUT1(S.ENDBLOCK); WRITENAMES(B) $)
+        UNLESS SSP=S DO OUT2(S.STACK, S)
+        DVECE, DVECS, SSP, VECSSP := A, B, S, V
+        RETURN
+    $)
+
+    CASE S.ASS:
+       TRNLINE:=H4!X
+       ASSIGN(H2X, H3X, S.STIND)
+       RETURN
+
+    CASE S.RTAP:
+     $( LET S = SSP
+        TRNLINE := H4!X
+        SSP := SSP+SAVESPACESIZE
+        OUT2(S.STACK, SSP)
+        LOADLIST(H3X)
+        LOAD(H2X)
+        OUT2(S.RTAP, S)
+        SSP := S
+        RETURN  $)
+
+    CASE S.GOTO:
+        TRNLINE:=H3X
+        LOAD(H2X)
+        OUT1(S.GOTO)
+        SSP := SSP-1
+        RETURN
+
+    CASE S.COLON:
+        COMPLAB(H4!X)
+        TRANS(H3X)
+        RETURN
+
+    CASE S.UNLESS: SW := TRUE
+    CASE S.IF:
+     $( LET L = NEXTPARAM()
+        TRNLINE:=H4!X
+        JUMPCOND(H2X, SW, L)
+        TRANS(H3X)
+        COMPLAB(L)
+        RETURN   $)
+
+    CASE S.TEST:
+     $( LET L, M = NEXTPARAM(), NEXTPARAM()
+        TRNLINE:=H5!X
+        JUMPCOND(H2X, FALSE, L)
+        TRANS(H3X)
+        COMPJUMP(M)
+        COMPLAB(L)
+        TRANS(H4!X)
+        COMPLAB(M)
+        RETURN   $)
+
+    CASE S.LOOP:
+        IF LOOPLABEL<0 DO TRANSREPORT(104, X)
+        IF LOOPLABEL=0 DO LOOPLABEL := NEXTPARAM()
+        COMPJUMP(LOOPLABEL)
+        RETURN
+
+    CASE S.BREAK:
+        IF BREAKLABEL<0 DO TRANSREPORT(104, X)
+        IF BREAKLABEL=0 DO BREAKLABEL := NEXTPARAM()
+        COMPJUMP(BREAKLABEL)
+        RETURN
+
+    CASE S.RETURN: OUT1(S.RTRN)
+                   RETURN
+
+    CASE S.FINISH: OUT1(S.FINISH)
+                   RETURN
+
+    CASE S.RESULTIS:
+        TRNLINE:=H3X
+        IF RESULTLABEL<0 DO TRANSREPORT(104, X)
+        LOAD(H2X)
+        OUT2P(S.RES, RESULTLABEL)
+        SSP := SSP - 1
+        RETURN
+
+    CASE S.WHILE: SW := TRUE
+    CASE S.UNTIL:
+     $( LET L, M = NEXTPARAM(), NEXTPARAM()
+        LET BL, LL = BREAKLABEL, LOOPLABEL
+        LET SAVELINE = ?
+        TRNLINE:=H4!X
+        BREAKLABEL, LOOPLABEL := 0, M
+        COMPJUMP(M)
+        COMPLAB(L)
+        TRANS(H3X)
+        COMPLAB(M)
+        SAVELINE := TRNLINE
+        TRNLINE := H4!X
+        JUMPCOND(H2X, SW, L)
+        TRNLINE := SAVELINE
+        UNLESS BREAKLABEL=0 DO COMPLAB(BREAKLABEL)
+        BREAKLABEL, LOOPLABEL := BL, LL
+        RETURN   $)
+
+    CASE S.REPEATWHILE: SW := TRUE
+    CASE S.REPEATUNTIL:
+    CASE S.REPEAT:
+     $( LET L, BL, LL = NEXTPARAM(), BREAKLABEL, LOOPLABEL
+        BREAKLABEL, LOOPLABEL := 0, 0
+        COMPLAB(L)
+        TEST H1!X=S.REPEAT
+            THEN $( LOOPLABEL := L
+                    TRNLINE:=H3X
+                    TRANS(H2X)
+                    COMPJUMP(L)  $)
+              OR $( TRNLINE:=H4!X
+                    TRANS(H2X)
+                    UNLESS LOOPLABEL=0 DO COMPLAB(LOOPLABEL)
+                    JUMPCOND(H3X, SW, L)  $)
+        UNLESS BREAKLABEL=0 DO COMPLAB(BREAKLABEL)
+        BREAKLABEL, LOOPLABEL := BL, LL
+        RETURN   $)
+
+    CASE S.CASE:
+     $( LET L, K = NEXTPARAM(), EVALCONST(H2X)
+        IF CASEP>=CASET DO $( TRANSREPORT(141, X)
+                              RETURN  $)
+        IF CASEB<0 DO TRANSREPORT(105, X)
+        FOR I = CASEB TO CASEP-1 DO
+                    IF CASEK!I=K DO TRANSREPORT(106, K)
+        CASEK!CASEP := K
+        CASEL!CASEP := L
+        CASEP := CASEP + 1
+        COMPLAB(L)
+        TRANS(H3X)
+        RETURN   $)
+
+    CASE S.DEFAULT:
+        IF CASEB<0 DO TRANSREPORT(105, X)
+        UNLESS DEFAULTLABEL=0 DO TRANSREPORT(101, X)
+        DEFAULTLABEL := NEXTPARAM()
+        COMPLAB(DEFAULTLABEL)
+        TRANS(H2X)
+        RETURN
+
+    CASE S.ENDCASE: IF CASEB<0 DO TRANSREPORT(105, X)
+                    COMPJUMP(ENDCASELABEL)
+                    RETURN
+
+    CASE S.SWITCHON:
+        TRNLINE:=H4!X
+        TRANSSWITCH(X)
+        RETURN
+
+    CASE S.FOR: TRANSFOR(X)
+                RETURN
+
+    CASE S.SEQ:
+        TRANS(H2X)
+        X := H3X
+        GOTO NEXT        $)TR
+
+AND WRITENAMES(X) BE
+
+$(  LET I, N = X, 0
+    WHILE I>DVECS DO
+    $(  UNLESS DVEC!(I+1)=S.NUMBER THEN N := N+1
+        I := I-3
+    $)
+    OUTN(N)
+    WHILE X>DVECS DO
+    $(  UNLESS DVEC!(X+1)=S.NUMBER THEN
+        $(  OUTSTRING(DVEC!X + 2)
+            OUTN(DVEC!(X+1)-S.MANIFEST)
+            OUTN(DVEC!(X+2))
+        $)
+        X := X-3
+    $)
+$)
+
+AND TRNBLOCKBODY(X) BE
+
+$(1 IF NAMING & INPROC THEN OUT1(S.STARTBLOCK)
+    UNTIL X=0 DO
+    $(2 LET H2X, OP = H2!X, H1!X
+        SWITCHON OP INTO
+
+        $(3 DEFAULT:
+                DECLLABELS(X); TRANS(X); RETURN
+
+            CASE S.LET:
+                $(  LET S, S1, B = SSP, 0, DVECS
+                    TRNLINE := H4!X
+                    DECLNAMES(H2X)
+                    CHECKDISTINCT(B, DVECS)
+                    DVECE := DVECS
+                    VECSSP := SSP
+                    S1 := SSP
+                    SSP := S
+                    TRANSDEF(H2X)
+                    UNLESS SSP=S1 DO TRANSREPORT(110, X)
+                    UNLESS SSP=VECSSP DO $( SSP := VECSSP
+                                            OUT2(S.STACK, SSP)  $)
+                    OUT1(S.STORE)
+                    ENDCASE
+                $)
+
+            CASE S.MANIFEST: OP := S.NUMBER
+            CASE S.STATIC:
+            CASE S.GLOBAL:
+                $(  LET Y = H2X
+                    TRNLINE := H4!X
+                    UNTIL Y=0 DO
+                    $(  TEST OP=S.STATIC THEN
+                        $(  LET M = NEXTPARAM()
+                            ADDNAME(H3!Y, S.LABEL, M)
+                            COMPDATALAB(M)
+                            OUT2(S.ITEMN, EVALCONST(H4!Y))
+                        $)
+                        OR ADDNAME(H3!Y, OP, EVALCONST(H4!Y))
+                        Y := H2!Y
+                        DVECE := DVECS
+                    $)
+
+                $)
+
+        $)3
+        X := H3!X
+    $)2
+$)1
+
+LET DECLNAMES(X) BE
+    $(DN IF X=0 RETURN
+         SWITCHON H1!X INTO
+
+     $(  DEFAULT: TRANSREPORT(102, CURRENTBRANCH)
+                  RETURN
+
+         CASE S.VECDEF: CASE S.VALDEF:
+               DECLDYN(H2!X)
+               RETURN
+
+         CASE S.RTDEF: CASE S.FNDEF:
+               H5!X := NEXTPARAM()
+               DECLSTAT(H2!X, H5!X)
+               RETURN
+
+         CASE S.AND:
+               DECLNAMES(H2!X)
+               DECLNAMES(H3!X)
+               RETURN
+                            $)DN
+
+
+AND DECLDYN(X) BE
+    $( IF X=0 RETURN
+
+       IF H1!X=S.NAME DO
+          $( ADDNAME(X, S.LOCAL, SSP)
+             SSP := SSP + 1
+             RETURN   $)
+
+       IF H1!X=S.COMMA DO
+          $( ADDNAME(H2!X, S.LOCAL, SSP)
+             SSP := SSP + 1
+             DECLDYN(H3!X)
+             RETURN  $)
+
+       TRANSREPORT(103, X)   $)
+
+AND DECLSTAT(X, L) BE
+    $(1 LET T = CELLWITHNAME(X)
+
+        IF DVEC!(T+1)=S.GLOBAL DO
+          $( LET N = DVEC!(T+2)
+             ADDNAME(X, S.GLOBAL, N)
+             IF GLOBDECLS >= GLOBDECLT DO $( TRANSREPORT(144, X)
+                                             RETURN  $)
+             GLOBDECL!GLOBDECLS := N
+             GLOBDECL!(GLOBDECLS+1) := L
+             GLOBDECLS := GLOBDECLS + 2
+             RETURN  $)
+
+
+    $( LET M = NEXTPARAM()
+       ADDNAME(X, S.LABEL, M)
+       COMPDATALAB(M)
+       OUT2P(S.ITEML, L)    $)1
+
+
+AND DECLLABELS(X) BE
+$(  LET B = DVECS
+    SCANLABELS(X)
+    CHECKDISTINCT(B, DVECS)
+    DVECE := DVECS
+$)
+
+
+AND CHECKDISTINCT(E, S) BE UNTIL E=S DO
+          $( LET P = E - 3
+             AND N = DVEC!E
+             WHILE P > S DO
+                $(  IF DVEC!P=N THEN TRANSREPORT(142, N)
+                    P := P - 3  $)
+             E := E - 3  $)
+
+
+AND ADDNAME(N, P, A) BE
+    $( CHECKWORKSPACE()
+       DVEC!DVECS, DVEC!(DVECS+1), DVEC!(DVECS+2) := N, P, A
+       DVECS := DVECS - 3  $)
+
+
+AND CELLWITHNAME(N) = VALOF
+    $( LET X = DVECE
+       X := X + 3 REPEATUNTIL X=0 | DVEC!X=N
+
+       RESULTIS X  $)
+
+
+AND SCANLABELS(X) BE
+    $( IF X=0 RETURN
+
+       SWITCHON H1!X INTO
+    $( DEFAULT: RETURN
+
+       CASE S.COLON:
+            H4!X := NEXTPARAM()
+            DECLSTAT(H2!X, H4!X)
+
+       CASE S.IF: CASE S.UNLESS: CASE S.WHILE: CASE S.UNTIL:
+       CASE S.SWITCHON: CASE S.CASE:
+            SCANLABELS(H3!X)
+            RETURN
+
+       CASE S.SEQ:
+            SCANLABELS(H3!X)
+
+       CASE S.REPEAT:
+       CASE S.REPEATWHILE: CASE S.REPEATUNTIL: CASE S.DEFAULT:
+            SCANLABELS(H2!X)
+            RETURN
+
+       CASE S.TEST:
+            SCANLABELS(H3!X)
+            SCANLABELS(H4!X)
+            RETURN   $)   $)
+
+
+AND TRANSDEF(X) BE UNLESS X=0 DO
+    $(1 LET SAVELINE=TRNLINE
+        TRANSDYNDEFS(X)
+        IF STATDEFS(X) DO
+           $( LET L, S= NEXTPARAM(), SSP
+              COMPJUMP(L)
+              TRNLINE := SAVELINE
+              TRANSSTATDEFS(X)
+              SSP := S
+              OUT2(S.STACK, SSP)
+              COMPLAB(L)  $)1
+
+
+AND TRANSDYNDEFS(X) BE
+        SWITCHON H1!X INTO
+     $( CASE S.AND:
+            TRANSDYNDEFS(H2!X)
+            TRNLINE := H4!X
+            TRANSDYNDEFS(H3!X)
+            RETURN
+
+        CASE S.VECDEF:
+         $( LET N = EVALCONST(H3!X)
+            OUT2(S.LLP, VECSSP + (BACKVEC->N,0))
+            SSP := SSP + 1
+            VECSSP := VECSSP + 1 + N
+            RETURN  $)
+
+        CASE S.VALDEF: LOADLIST(H3!X)
+                       RETURN
+
+        DEFAULT: RETURN  $)
+
+AND TRANSSTATDEFS(X) BE
+    SWITCHON H1!X INTO
+     $( CASE S.AND:
+             TRANSSTATDEFS(H2!X)
+             TRNLINE := H4!X
+             TRANSSTATDEFS(H3!X)
+             RETURN
+
+        CASE S.FNDEF: CASE S.RTDEF:
+         $(2 LET A, B, C = DVECE, DVECS, DVECP
+             AND BL, LL = BREAKLABEL, LOOPLABEL
+             AND RL, CB = RESULTLABEL, CASEB
+             AND IP = INPROC
+             INPROC := TRUE
+             BREAKLABEL, LOOPLABEL := -1, -1
+             RESULTLABEL, CASEB := -1, -1
+
+             COMPENTRY(H2!X, H5!X)
+             SSP := SAVESPACESIZE
+
+             DVECP := DVECS
+             DECLDYN(H3!X)
+             CHECKDISTINCT(B, DVECS)
+             DVECE := DVECS
+             DECLLABELS(H4!X)
+
+             OUT2(S.SAVE, SSP)
+
+             TEST H1!X=S.FNDEF
+                THEN $( LOAD(H4!X); OUT1(S.FNRN)  $)
+                  OR $( TRANS(H4!X); OUT1(S.RTRN)  $)
+
+             OUT1(S.ENDPROC)
+             TEST NAMING THEN WRITENAMES(B) OR OUTN(0)
+
+             INPROC := IP
+             BREAKLABEL, LOOPLABEL := BL, LL
+             RESULTLABEL, CASEB := RL, CB
+             DVECE, DVECS, DVECP := A, B, C   $)2
+
+        DEFAULT: RETURN   $)
+
+AND STATDEFS(X) = H1!X=S.FNDEF | H1!X=S.RTDEF -> TRUE,
+                  H1!X NE S.AND -> FALSE,
+                  STATDEFS(H2!X) -> TRUE,
+                  STATDEFS(H3!X)

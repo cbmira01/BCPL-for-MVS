@@ -1,0 +1,423 @@
+|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "LEX".
+|| SECTION wrapper omitted for MR10 source-dialect compilation.
+GET "LIBHDR"
+GET "HEADERS(SYNHDR)"
+
+LET READCOMMENT(TERM) BE
+    $(  RCH()
+        $(  IF ISCC(CH) THEN LINECOUNT := LINECOUNT + 1
+            IF CH='**' THEN
+            $(  RCH(); UNLESS CH=TERM THEN LOOP
+                RCH(); RETURN
+            $)
+            IF CH=ENDSTREAMCH THEN CAEREPORT(63)
+            RCH()
+        $) REPEAT
+    $)
+
+AND ISCC(CH) = CH='*N' -> TRUE,
+               CH='*P' -> TRUE,
+               CH='*C' -> TRUE,
+                          FALSE
+
+LET NEXTSYMB() BE
+$(1 NLPENDING := FALSE
+NEXT:
+    IF PPTRACE THEN WRCH(CH)
+
+    SWITCHON CH INTO
+
+    $(  CASE '*P':
+        CASE '*N': LINECOUNT := LINECOUNT + 1
+                   NLPENDING := TRUE  || ignorable characters
+        CASE '*T':
+        CASE '*S': RCH() REPEATWHILE CH='*S'
+                   GOTO NEXT
+
+        CASE '0':CASE '1':CASE '2':CASE '3':CASE '4':
+        CASE '5':CASE '6':CASE '7':CASE '8':CASE '9':
+            SYMB := S.NUMBER
+            READNUMBER(10)
+            IF CH='.' | CH='E' | CH='e' THEN READFLOAT()
+            RETURN
+
+        CASE 'a':CASE 'b':CASE 'c':CASE 'd':CASE 'e':
+        CASE 'f':CASE 'g':CASE 'h':CASE 'i':CASE 'j':
+        CASE 'k':CASE 'l':CASE 'm':CASE 'n':CASE 'o':
+        CASE 'p':CASE 'q':CASE 'r':CASE 's':CASE 't':
+        CASE 'u':CASE 'v':CASE 'w':CASE 'x':CASE 'y':
+        CASE 'z':
+        CASE 'A':CASE 'B':CASE 'C':CASE 'D':CASE 'E':
+        CASE 'F':CASE 'G':CASE 'H':CASE 'I':CASE 'J':
+        CASE 'K':CASE 'L':CASE 'M':CASE 'N':CASE 'O':
+        CASE 'P':CASE 'Q':CASE 'R':CASE 'S':CASE 'T':
+        CASE 'U':CASE 'V':CASE 'W':CASE 'X':CASE 'Y':
+        CASE 'Z':
+            RDTAG(CH)
+            SYMB := LOOKUPWORD()
+                SWITCHON SYMB INTO
+                $(  CASE S.GET:
+                        PERFORMGET(); GOTO NEXT
+
+                    CASE S.REM:
+                    CASE S.LOGAND:CASE S.LOGOR:CASE S.EQV:CASE S.NEQV:
+                        GOTO CHECKASSX
+
+                    DEFAULT:
+                        RETURN
+                $)
+
+        CASE '$': RCH()
+             UNLESS CH='(' | CH=')' DO CAEREPORT(91)
+             SYMB := CH='(' -> S.LSECT, S.RSECT
+             RDTAG('$')
+             LOOKUPWORD()
+             RETURN
+
+
+        CASE '[':
+        CASE '(': SYMB := S.LPAREN; GOTO L
+        CASE ']':
+        CASE ')': SYMB := S.RPAREN; GOTO L
+        CASE '#':
+            SYMB := S.NUMBER
+            RCH()
+            IF '0'<=CH<='7' DO $( READNUMBER(8); RETURN  $)
+            CH := UPPERCASE(CH)
+            IF CH='B' DO $( RCH(); READNUMBER(2); RETURN  $)
+            IF CH='O' DO $( RCH(); READNUMBER(8); RETURN  $)
+            IF CH='X' DO $( RCH(); READNUMBER(16); RETURN  $)
+
+            NEXTSYMB()
+            SWITCHON SYMB&(\BECOMESBIT) INTO
+            $(  DEFAULT: CAEREPORT(35)
+                CASE S.PLUS:CASE S.MINUS:CASE S.MULT:
+                CASE S.DIV:CASE S.ABS:CASE S.LS:CASE S.GR:
+                CASE S.GE: CASE S.LE: CASE S.NE: CASE S.EQ:
+                    SYMB := SYMB|FLBIT
+                    RETURN
+            $)
+
+        CASE '?': SYMB := S.QUERY; GOTO L
+        CASE '+': SYMB := S.PLUS; GOTO CHECKASS
+        CASE ',': SYMB := S.COMMA; GOTO L
+        CASE ';': SYMB := S.SEMICOLON; GOTO L
+        CASE '@': SYMB := S.LV; GOTO L
+        CASE '&': SYMB := S.LOGAND; GOTO CHECKASS
+        CASE '=': SYMB := S.EQ; GOTO L
+        CASE '!': SYMB := S.VECAP; GOTO L
+        CASE '%': SYMB := S.BYTEAP; GOTO L
+        CASE '_': SYMB := S.ASS; GOTO L
+        CASE '**':SYMB := S.MULT; GOTO CHECKASS
+        CASE '~': RCH(); GOTO CNOT
+
+        CASE '/': RCH()
+            IF CH='\' DO $( SYMB := S.LOGAND; GOTO CHECKASS $)
+            IF CH='**' THEN $( READCOMMENT('/'); GOTO NEXT $)
+            UNLESS CH='/' THEN $( SYMB := S.DIV; GOTO CHECKASSX $)
+        COMMENT:
+            RCH() REPEATUNTIL ISCC(CH) | CH=ENDSTREAMCH
+            GOTO NEXT
+
+        CASE '|':
+            RCH()
+            IF CH='|' THEN GOTO COMMENT
+            UNLESS CH='**' THEN $( SYMB := S.LOGOR; GOTO CHECKASSX $)
+            READCOMMENT('|')
+            GOTO NEXT
+
+
+        CASE '\': RCH()
+            IF CH='/' DO $( SYMB := S.LOGOR; GOTO CHECKASS  $)
+            IF CH='**' THEN GOTO COMMENT
+        CNOT:
+            IF CH='=' THEN $( SYMB := S.NE; GOTO L  $)
+            SYMB := S.NOT
+            RETURN
+
+        CASE '<': RCH()
+            IF CH='=' DO $( SYMB := S.LE; GOTO L  $)
+            IF CH='<' DO $( SYMB := S.LSHIFT; GOTO L $)
+            IF CH='>' THEN $( SYMB := S.CONT; GOTO L $)
+            SYMB := S.LS
+            RETURN
+
+        CASE '>': RCH()
+                 IF CH='=' DO $( SYMB := S.GE; GOTO L  $)
+                 IF CH='>' DO $( SYMB := S.RSHIFT; GOTO L  $)
+                 SYMB := S.GR
+                 RETURN
+
+        CASE '-': RCH()
+                 IF CH='>' DO $( SYMB := S.COND; GOTO L  $)
+                 SYMB := S.MINUS
+                 GOTO CHECKASSX
+
+        CASE ':': RCH()
+            IF CH='=' THEN $( SYMB := S.ASS; GOTO L $)
+            IF CH=':' THEN $( SYMB := S.SLCTAP; GOTO L $)
+            SYMB := S.COLON
+            RETURN
+
+        CASE '*'':CASE '*"':
+             $(1 LET QUOTE = CH
+                 CHARP := 0
+
+              $( RCH()
+                 IF CH=QUOTE | CHARP=255 DO
+                        $( UNLESS CH=QUOTE DO CAEREPORT(95)
+                           IF CHARP=1 & CH='*'' DO
+                                   $( SYMB := S.NUMBER
+                                      DECVAL := CHARCODE(DECVAL)
+                                      GOTO L  $)
+                           CHARV!0 := CHARP
+                           WORDSIZE := PACKSTRING(CHARV, WORDV)
+                           SYMB := S.STRING
+                           GOTO L   $)
+
+
+                 IF ISCC(CH) THEN CAEREPORT(34)
+
+                 IF CH='**' DO
+                    $( RCH()
+                       IF ISCC(CH) THEN
+                       $(  LINECOUNT := LINECOUNT + 1
+                           RCH() REPEATWHILE CH='*S' | CH='*T'
+                           UNLESS CH='**' THEN CAEREPORT(34)
+                           LOOP
+                       $)
+                       $( LET X = UPPERCASE(CH)
+                          IF X='T' DO CH := '*T'
+                          IF X='S' DO CH := '*S'
+                          IF X='N' DO CH := '*N'
+                          IF X='E' DO CH := '*E'
+                          IF X='C' DO CH := '*C'
+                          IF X='B' DO CH := '*B'
+                          IF X='P' DO CH := '*P'  $)
+                    $)
+
+                 DECVAL, CHARP := CH, CHARP+1
+                 CHARV!CHARP := CH  $) REPEAT  $)1
+
+
+
+       DEFAULT:    SYMB := 0
+                   CAEREPORT(94)
+
+       CASE ENDSTREAMCH:
+       CASE '.':    $( IF GETP=0 DO
+                             $( SYMB := S.END
+                                TEST CH = ENDSTREAMCH DO
+                                $(  ENDREAD()
+                                    SOURCESTREAM := 0
+                                $)
+                                OR
+                                $(  SKIPREC()
+                                    CH := '*N'
+                                    LINECOUNT := LINECOUNT+1
+                                    IF PRSOURCE DO NEWLINE()
+                                $)
+                                RETURN   $)
+
+                       ENDREAD()
+                       GETP := GETP - 3
+                       SOURCESTREAM := GETV!GETP
+                       SELECTINPUT(SOURCESTREAM)
+                       LINECOUNT := GETV!(GETP+1)
+                       CH := GETV!(GETP+2)
+                       GOTO NEXT  $)
+
+
+       CHECKASS:  RCH()
+       CHECKASSX: IF CH=':' DO $( RCH()
+                                  UNLESS CH='=' DO CAEREPORT(57)
+                                  CH := '_'  $)
+                  UNLESS CH='_' RETURN
+                  SYMB := SYMB + BECOMESBIT
+
+       L: RCH()   $)  $)1
+
+STATIC $( CODEP=0  $)
+
+LET D(WORDS) BE
+    $(1 LET I, LENGTH = 1, 0
+
+        $( LET CH = GETBYTE(WORDS, I)
+           TEST CH='/' THEN $( IF LENGTH=0 RETURN
+                               CHARV!0 := LENGTH
+                               WORDSIZE := PACKSTRING(CHARV, WORDV)
+                               LOOKUPWORD()
+                               H1!WORDNODE := !CODEP
+                               CODEP := CODEP + 1
+                               LENGTH := 0  $)
+                       ELSE $( LENGTH := LENGTH + 1
+                               CHARV!LENGTH := CH  $)
+           I := I + 1
+        $) REPEAT
+    $)1
+
+LET DECLSYSWORDS() BE
+   $(1 CODEP := TABLE
+          S.AND,S.ABS,
+          S.BE,S.BREAK,S.BY,
+          S.CASE,
+          S.DO,S.DEFAULT,
+          S.EQ,S.EQV,S.OR,S.ENDCASE,
+          S.FALSE,S.FOR,S.FINISH,S.FLOAT,S.FIX,
+          S.GOTO,S.GE,S.GR,S.GLOBAL,S.GET,
+          S.IF,S.INTO,
+          S.LET,S.LV,S.LE,S.LS,S.LOGOR,S.LOGAND,S.LOOP,S.LSHIFT,
+          S.MANIFEST,
+          S.NE,S.NOT,S.NEQV,S.NEEDS,
+          S.SLCTAP,S.OR,
+          S.RESULTIS,S.RETURN,S.REM,S.RSHIFT,S.RV,
+          S.REPEAT,S.REPEATWHILE,S.REPEATUNTIL,
+          S.SWITCHON,S.STATIC,S.SLCT,S.SECTION,
+          S.TO,S.TEST,S.TRUE,S.DO,S.TABLE,
+          S.UNTIL,S.UNLESS,
+          S.VEC,S.VALOF,
+          S.WHILE,
+          0
+
+       D("AND/ABS/*
+         *BE/BREAK/BY/*
+         *CASE/*
+         *DO/DEFAULT/*
+         *EQ/EQV/ELSE/ENDCASE/*
+         *FALSE/FOR/FINISH/FLOAT/FIX/*
+         *GOTO/GE/GR/GLOBAL/GET/*
+         *IF/INTO/*
+         *LET/LV/LE/LS/LOGOR/LOGAND/LOOP/LSHIFT//")
+
+       D("MANIFEST/*
+         *NE/NOT/NEQV/NEEDS/*
+         *OF/OR/*
+         *RESULTIS/RETURN/REM/RSHIFT/RV/*
+         *REPEAT/REPEATWHILE/REPEATUNTIL/*
+         *SWITCHON/STATIC/SLCT/SECTION/*
+         *TO/TEST/TRUE/THEN/TABLE/*
+         *UNTIL/UNLESS/*
+         *VEC/VALOF/*
+         *WHILE/*
+         *$//")
+
+        NULLTAG := WORDNODE  $)1
+
+AND LOOKUPWORD() = VALOF
+
+$(1     LET HASHVAL = (WORDV!0+WORDV!WORDSIZE >> 1) REM NAMETABLESIZE
+        LET I = 0
+
+        WORDNODE := NAMETABLE!HASHVAL
+
+        UNTIL WORDNODE=0 \/ I>WORDSIZE DO
+              TEST WORDNODE!(I+2)=WORDV!I
+                THEN I := I+1
+                ELSE WORDNODE, I := H2!WORDNODE, 0
+
+        IF WORDNODE=0 DO
+          $( WORDNODE := NEWVEC(WORDSIZE+2)
+             WORDNODE!0, WORDNODE!1 := S.NAME, NAMETABLE!HASHVAL
+             FOR I = 0 TO WORDSIZE DO WORDNODE!(I+2) := WORDV!I
+             NAMETABLE!HASHVAL := WORDNODE  $)
+
+        RESULTIS H1!WORDNODE  $)1
+
+LET RCH() BE
+    $( CH := RDCH()
+
+       IF PRSOURCE DO IF GETP=0 /\ CH NE ENDSTREAMCH DO
+          $( UNLESS LINECOUNT=PRLINE DO $( WRITEF("%I4  ", LINECOUNT)
+                                           PRLINE := LINECOUNT  $)
+             WRCH(CH)  $)
+
+       CHCOUNT := CHCOUNT + 1
+       CHBUF!(CHCOUNT&63) := CH  $)
+
+AND WRCHBUF() BE
+    $( WRITES("*N...")
+       FOR P = CHCOUNT-63 TO CHCOUNT DO
+                $( LET K = CHBUF!(P&63)
+                   UNLESS K=0 \/ K=ENDSTREAMCH DO WRCH(K)  $)
+       NEWLINE()  $)
+
+
+AND RDTAG(X) BE
+    $( CHARP, CHARV!1 := 1, FORCEUPPERCASE -> UPPERCASE(X), X
+
+        $(  RCH()
+            UNLESS 'A' <=CH <='Z' |
+                   '0' <=CH <='9' |
+                   'a' <= CH <= 'z' |
+                    CH='_' |            || underline
+                    CH='.' BREAK
+            CHARP := CHARP+1
+            CHARV!CHARP := FORCEUPPERCASE -> UPPERCASE(CH), CH  $) REPEAT
+
+       CHARV!0 := CHARP
+       WORDSIZE := PACKSTRING(CHARV, WORDV)  $)
+
+
+AND PERFORMGET() BE
+    $( NEXTSYMB()
+       UNLESS SYMB=S.STRING THEN CAEREPORT(89)
+
+       IF NOGET RETURN
+
+       IF GETP+2 > GETT DO CAEREPORT(-87)
+       GETV!GETP := SOURCESTREAM
+       GETV!(GETP+1) := LINECOUNT
+       GETV!(GETP+2) := CH
+       GETP := GETP + 3
+       SOURCESTREAM := FINDINPUT(WORDV)
+       IF SOURCESTREAM=0 THEN CAEREPORT(-88)
+       LINECOUNT := 10001
+       SELECTINPUT(SOURCESTREAM)
+       RCH()   $)
+
+AND READNUMBER(BASE) BE
+
+$( LET D = VALUE(CH)
+   DECVAL := D
+   IF D>=BASE DO CAEREPORT(33)
+
+   $( RCH()
+      D := VALUE(CH)
+      IF D>=BASE RETURN
+      DECVAL := DECVAL*BASE+D  $) REPEAT
+$)
+
+AND VALUE(CHAR) = VALOF
+$(  CHAR := UPPERCASE(CHAR)
+    RESULTIS
+        '0'<=CHAR<='9' -> CHAR-'0',
+            'A'<=CHAR<='Z' -> CHAR-'A'+10,
+               500
+$)
+
+AND READFLOAT() BE
+
+$(  LET EXP, N = 0, 0
+    LET FLTEN = FLOAT 10
+    DECVAL := FLOAT DECVAL; SYMB := S.NUMBER
+    IF CH='.' THEN
+    $(  RCH(); N := VALUE(CH)
+        IF N>=10 THEN BREAK
+        EXP := EXP-1
+        DECVAL := DECVAL #* FLTEN #+ FLOAT N
+    $) REPEAT
+    IF CH='E' | CH='e' THEN
+    $(  LET NEG = FALSE
+        RCH(); IF CH='+' | CH='-' THEN  $( NEG := CH='-'; RCH()  $)
+        N := DECVAL
+        READNUMBER(10)
+        TEST NEG THEN EXP := EXP - DECVAL
+                   OR EXP := EXP + DECVAL
+        DECVAL := N
+    $)
+    WHILE EXP NE 0 DO
+    $(  TEST EXP<0
+        THEN  $(  DECVAL := DECVAL #/ FLTEN; EXP := EXP + 1  $)
+          OR  $(  DECVAL := DECVAL #* FLTEN; EXP := EXP - 1  $)
+    $)
+$)
