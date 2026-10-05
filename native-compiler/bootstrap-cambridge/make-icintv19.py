@@ -21,9 +21,10 @@ the three established 4K USING regions.  Emit the executable-code literal pool
 explicitly at the existing code/data boundary with LTORG.  This preserves the
 V18 register/base architecture; it is an assembler-layout accommodation only.
 
-The enlarged image also places the final MAPSTORE text MSEND at x'300A', just
-beyond the R10 x'2000' USING window.  Load that one full address through the
-reachable literal pool (=A(MSEND)) instead of adding a fourth permanent base.
+The enlarged image also places the final MAPSTORE texts MSGLOB and MSEND just
+beyond the R10 x'2000' USING window.  Load those two full addresses through the
+reachable literal pool (=A(MSGLOB), =A(MSEND)) instead of adding a fourth
+permanent base.
 
 The generated file is asm/icintv19.asm.  The script refuses to overwrite an
 existing V19 candidate.
@@ -74,7 +75,7 @@ def main() -> None:
         "*     GLOBAL-USE TRACKING BOUNDS, AND MAPSTORE GLOBAL SCAN.\n"
         "*   - PLACE THE EXECUTABLE-CODE LITERAL POOL AT THE CODE/DATA\n"
         "*     BOUNDARY SO THE EXISTING THREE USING REGIONS STILL REACH IT.\n"
-        "*   - LOAD THE ONE POST-X'2FFF' MAPSTORE MESSAGE ADDRESS THROUGH\n"
+        "*   - LOAD THE POST-X'2FFF' MAPSTORE MESSAGE ADDRESSES THROUGH\n"
         "*     THAT REACHABLE LITERAL POOL RATHER THAN ADDING A BASE REG.\n"
         "*   - NO INTCODE, STREAM, OR PROGVEC SEMANTICS CHANGE.\n"
         "*\n"
@@ -104,9 +105,15 @@ def main() -> None:
 
     text = replace_once(text, "GUSED    DS    CL401", "GUSED    DS    CL700", "GUSED size")
 
-    # JOB 896 reduced the V19 assembly to one IFO209: MSEND moved to x'300A',
-    # ten bytes past the third USING region.  Load its full address from a
-    # literal, which the LTORG below places inside the reachable code area.
+    # JOB 897 showed the remaining IFO209 at LA R2,MSGLOB.  Both MSGLOB and
+    # MSEND lie just above x'2FFF' after the V19 static growth.  Load their full
+    # addresses from literals, which the LTORG below places in reachable code.
+    text = replace_once(
+        text,
+        "         LA    R2,MSGLOB",
+        "         L     R2,=A(MSGLOB)",
+        "MSGLOB address load",
+    )
     text = replace_once(
         text,
         "MSGDONE LA    R2,MSEND",
@@ -153,7 +160,7 @@ def main() -> None:
     print("  GUSED   : 401 -> 700 bytes")
     print("  tracking/map bounds: 400 -> 699")
     print("  literal pool: LTORG at executable-code/data boundary")
-    print("  MSEND address: loaded through =A(MSEND) literal")
+    print("  MSGLOB/MSEND addresses: loaded through =A(...) literals")
 
 
 if __name__ == "__main__":
