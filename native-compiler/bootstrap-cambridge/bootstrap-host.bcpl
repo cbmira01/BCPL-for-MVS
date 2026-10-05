@@ -7,7 +7,7 @@ GET "LIBHDR"
 || services that the resident compiler actually reaches and that are absent
 || from the current MR10 runtime.
 
-GLOBAL $( WRAPOUTPUT:33 $)
+GLOBAL $( WRAPOUTPUT:33; FINDPARM:39 $)
 
 STATIC $( WRAPPING = TRUE $)
 
@@ -16,3 +16,9 @@ $(  LET OLDSTATE = WRAPPING
     WRAPPING := NEWSTATE
     RESULTIS OLDSTATE
 $)
+
+|| The historical compiler expects FINDPARM() to return an input stream
+|| containing its invocation options.  Under the bootstrap harness, keep that
+|| stream distinct from the MR10 compiler's OPTIONS DD: CAMBPARM belongs to the
+|| resident Cambridge compiler only.
+LET FINDPARM() = FINDINPUT("CAMBPARM")
