@@ -38,11 +38,12 @@ first `.` and never see `LEX` or `TRNB`.
 ```text
 native-compiler/bootstrap-cambridge/
     README.md
+    make-demoted.py
     source/
         syn
         trn
     demotion.patch
-    demoted/                 # next generated derivative
+    demoted/                 # generated derivative
         syn
         lex
         trna
@@ -52,8 +53,8 @@ native-compiler/bootstrap-cambridge/
 `source/syn` and `source/trn` are byte-identical working copies of the
 historical Cambridge tape sources at the time this staging area was created.
 
-The bootstrap derivative should preserve Cambridge section granularity by
-splitting the historical containers into four MR10 compilation units:
+The bootstrap derivative preserves Cambridge section granularity by splitting
+the historical containers into four MR10 compilation units:
 
 ```text
 historical SECTION "SYN"   -> demoted/syn
@@ -75,6 +76,22 @@ Keeping four compilation units preserves the historical module boundaries and
 avoids introducing accidental name-scope or declaration interactions during
 bootstrap.
 
+## Deterministic generation
+
+`make-demoted.py` performs exactly that transformation from the staged source
+copies.  It asserts the expected historical section boundaries and the current
+number of `~=` spellings before writing anything, so unexpected source drift
+fails loudly instead of silently broadening the bootstrap changes.
+
+Run from repository root with:
+
+```sh
+python3 native-compiler/bootstrap-cambridge/make-demoted.py
+```
+
+The generated files are intentionally derivatives.  `source/` remains the
+pristine checkpoint against which every bootstrap source change can be audited.
+
 No header, runtime, stream, word-size, driver, or compiler-semantic changes are
 part of this source demotion. In particular, this step does **not** resolve
 `BYTESPERWORD`, `SKIPREC`, `GET` naming, compiler initialization, or any other
@@ -89,6 +106,7 @@ historical Cambridge tape files
         v
 bootstrap-cambridge/source/{syn,trn}
         |
+        | make-demoted.py
         | split by historical SECTION boundary
         | remove SECTION wrapper
         | ~= -> NE
@@ -106,6 +124,5 @@ source dialect.
 
 ## Current boundary
 
-The staging area now records the correct four-section demotion plan. No
-bootstrap compile has yet been attempted, and no runtime/header accommodation
-has yet been made.
+The deterministic demotion transformation is now recorded. No bootstrap compile
+has yet been attempted, and no runtime/header accommodation has yet been made.
