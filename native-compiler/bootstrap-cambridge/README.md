@@ -39,6 +39,7 @@ first `.` and never see `LEX` or `TRNB`.
 native-compiler/bootstrap-cambridge/
     README.md
     make-demoted.py
+    options-large-tree.txt
     source/
         syn
         trn
@@ -102,11 +103,45 @@ tools/compile-and-run --results --save-ocode \
     native-compiler/bootstrap-cambridge/demoted/syn
 ```
 
-This is a probe, not yet a claim that the resulting unit is runnable by itself.
-The immediate objective is to learn the first genuine MR10 compile incompatibility
-after the known surface and DD-name adaptations. If compilation reaches OCODE,
-that is already useful evidence; a later final RUN failure from the absence of a
-complete compiler driver is not the result being tested here.
+Job 881 reached Cambridge source successfully through both GET files, then the
+MR10 compiler stopped with:
+
+```text
+SYNTAX ERROR NEAR LINE 166: PROGRAM TOO LARGE
+```
+
+This diagnostic is the MR10 compiler's AE-tree workspace limit, not exhaustion
+of ICINT's 20,001-word PROGVEC. The MR10 master driver defaults `TREESIZE` to
+5500 and accepts an `OPTIONS` record `L<number>` to raise it.
+
+`options-large-tree.txt` contains:
+
+```text
+L12000
+```
+
+The next controlled probe therefore doubles the tree workspace without changing
+compiler logic:
+
+```sh
+tools/compile-and-run --results --save-ocode \
+    --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
+    --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
+    --dd SYNHDR=richards-bcpltape/bcplib/bcpl/synhdr \
+    "$(tools/current-icint)" \
+    native-compiler/bootstrap-cambridge/demoted/syn
+```
+
+The MVS step return code for an interpreted compiler failure remains zero; the
+host `compile-and-run` wrapper detects the BCPL execution code afterward. Thus
+CG and RUN may still execute on empty compiler output in a failed probe. Their
+output is not evidence about the Cambridge unit unless the COMP execution code
+is zero and nonempty OCODE was produced.
+
+This remains a probe, not yet a claim that the resulting unit is runnable by
+itself. If compilation reaches OCODE, that is already useful evidence; a later
+final RUN failure from the absence of a complete Cambridge compiler driver is
+not the result being tested here.
 
 No header-content, runtime, word-size, `SKIPREC`, driver-initialization, or
 compiler-semantic accommodation has yet been made.
