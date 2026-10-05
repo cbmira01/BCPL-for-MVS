@@ -164,6 +164,51 @@ def demote_master(text: str) -> str:
     return demote(text[len(prefix):])
 
 
+def demote_cg_target_pack(text: str, section: str) -> str:
+    """Use 4-byte target packing only where CG370 constructs target words.
+
+    The bootstrap executes under the MR10 two-bytes-per-word string runtime,
+    but the historical System/370 code generator expects PACKSTRING to pack
+    four 8-bit characters per 32-bit target word.  Keep that incompatibility
+    local to CGA/CGB rather than changing the host runtime globally.
+    """
+    if section == "CGA":
+        old = "        PACKSTRING(W, N)"
+        new = "        PACKSTRING370(W, N)"
+    elif section == "CGB":
+        old = "        L := PACKSTRING(V, NAMET+2)"
+        new = "        L := PACKSTRING370(V, NAMET+2)"
+    else:
+        return text
+
+    if text.count(old) != 1:
+        raise SystemExit(
+            f"{section}: expected one target PACKSTRING call, found {text.count(old)}"
+        )
+    text = text.replace(old, new, 1)
+
+    helper = r"""
+
+AND PACKSTRING370(V, S) = VALOF
+$(  || BOOTSTRAP ONLY: pack an unpacked character vector using the
+    || System/370 target convention: four 8-bit bytes per 32-bit word.
+    LET N = V!0 & #XFF
+    LET LAST = N/4
+
+    FOR I = 0 TO LAST DO S!I := 0
+
+    FOR I = 0 TO N DO
+    $(  LET J = I/4
+        LET SH = 24 - (I&3)*8
+        S!J := S!J | ((V!I & #XFF) << SH)
+    $)
+
+    RESULTIS LAST
+$)
+"""
+    return text + helper
+
+
 def write_unit(name: str, historical_section: str, text: str, extra_banner=()) -> None:
     text = demote(text)
     if historical_section == "LEX":
@@ -227,7 +272,14 @@ def main() -> None:
         ("cga", "CGA", cga), ("cgb", "CGB", cgb), ("cgc", "CGC", cgc),
         ("cgd", "CGD", cgd), ("cge", "CGE", cge),
     ):
-        write_unit(name, section, body)
+        body = demote_cg_target_pack(body, section)
+        extra_banner = ()
+        if section in ("CGA", "CGB"):
+            extra_banner = (
+                "|| Target PACKSTRING calls use a private 4-byte/word packer;",
+                "|| the MR10 host runtime remains two bytes per word.",
+            )
+        write_unit(name, section, body, extra_banner=extra_banner)
 
     names = ("syn", "lex", "trna", "trnb", "bcpl", "cga", "cgb", "cgc", "cgd", "cge")
     print("generated:")
