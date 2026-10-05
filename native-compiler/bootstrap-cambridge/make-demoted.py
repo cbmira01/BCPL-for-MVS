@@ -11,13 +11,19 @@ The bootstrap derivative is deliberately mechanical:
     HEADERS(TRNHDR) -> TRNHDR
 - split Cambridge LEX's packed reserved-word strings into shorter D(...) calls
   that fit the MR10 compiler's 255-character string-literal limit while
-  preserving the original reserved-word order.
+  preserving the original reserved-word order;
+- replace LEX READFLOAT with an explicit bootstrap-only fatal stub because the
+  MR10 source language cannot parse Cambridge FLOAT/# floating arithmetic.
 
-The GET-name and packed-string rewrites are bootstrap accommodations only. They
-do not change header contents or intended compiler semantics.
+The GET-name and packed-string rewrites preserve intended compiler semantics.
+The READFLOAT replacement is intentionally narrower: floating literals are not
+supported by the demoted bootstrap frontend.  It fails visibly if invoked,
+rather than silently manufacturing an incorrect floating constant.  The
+historical source remains untouched and is intended to regain full floating
+literal support once the richer Cambridge frontend can compile itself.
 
 This script deliberately does not modify header contents, runtime assumptions,
-BYTESPERWORD, SKIPREC, compiler initialization, or compiler semantics.
+BYTESPERWORD, SKIPREC, or compiler initialization.
 """
 
 from pathlib import Path
@@ -109,10 +115,63 @@ def demote_lex_word_table(text: str) -> str:
     return text
 
 
+def demote_lex_readfloat(text: str) -> str:
+    """Remove later floating syntax from the bootstrap implementation of LEX.
+
+    The original READFLOAT body uses Cambridge FLOAT conversion and #+, #*, #/
+    operators, which the MR10 compiler cannot parse.  Do not emulate those
+    operations inaccurately.  During bootstrap, fail fatally if a source being
+    compiled actually contains a floating literal.  This keeps the limitation
+    explicit and lets the compiler-source bootstrap proceed if that feature is
+    not part of the implementation subset.
+    """
+
+    original = '''AND READFLOAT() BE
+
+$(  LET EXP, N = 0, 0
+    LET FLTEN = FLOAT 10
+    DECVAL := FLOAT DECVAL; SYMB := S.NUMBER
+    IF CH='.' THEN
+    $(  RCH(); N := VALUE(CH)
+        IF N>=10 THEN BREAK
+        EXP := EXP-1
+        DECVAL := DECVAL #* FLTEN #+ FLOAT N
+    $) REPEAT
+    IF CH='E' | CH='e' THEN
+    $(  LET NEG = FALSE
+        RCH(); IF CH='+' | CH='-' THEN  $( NEG := CH='-'; RCH()  $)
+        N := DECVAL
+        READNUMBER(10)
+        TEST NEG THEN EXP := EXP - DECVAL
+                   OR EXP := EXP + DECVAL
+        DECVAL := N
+    $)
+    WHILE EXP NE 0 DO
+    $(  TEST EXP<0
+        THEN  $(  DECVAL := DECVAL #/ FLTEN; EXP := EXP + 1  $)
+          OR  $(  DECVAL := DECVAL #* FLTEN; EXP := EXP - 1  $)
+    $)
+$)'''
+
+    replacement = '''AND READFLOAT() BE
+$(  || BOOTSTRAP ONLY: MR10 CANNOT COMPILE CAMBRIDGE FLOAT/# OPERATORS.
+    || FAIL RATHER THAN PRODUCE AN INCORRECT FLOATING CONSTANT.
+    CAEREPORT(-33)
+$)'''
+
+    if text.count(original) != 1:
+        raise SystemExit(
+            f"LEX: expected exactly one Cambridge READFLOAT body, found {text.count(original)}"
+        )
+
+    return text.replace(original, replacement, 1)
+
+
 def write_unit(name: str, historical_section: str, text: str) -> None:
     text = demote(text)
     if historical_section == "LEX":
         text = demote_lex_word_table(text)
+        text = demote_lex_readfloat(text)
 
     banner = (
         f'|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "{historical_section}".\n'
@@ -122,6 +181,7 @@ def write_unit(name: str, historical_section: str, text: str) -> None:
     if historical_section == "LEX":
         banner += (
             '|| Packed reserved-word strings split to fit MR10 literal limits.\n'
+            '|| READFLOAT is a fatal bootstrap stub; floating literals unsupported.\n'
         )
 
     (OUT / name).write_text(banner + text, encoding="utf-8")
