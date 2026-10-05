@@ -167,25 +167,26 @@ def demote_master(text: str) -> str:
 def demote_cg_target_pack(text: str, section: str) -> str:
     """Use 4-byte target packing only where CG370 constructs target words.
 
-    The bootstrap executes under the MR10 two-bytes-per-word string runtime,
-    but the historical System/370 code generator expects PACKSTRING to pack
-    four 8-bit characters per 32-bit target word.  Keep that incompatibility
-    local to CGA/CGB rather than changing the host runtime globally.
+    Both historical target PACKSTRING calls are in section CGA.  The bootstrap
+    executes under the MR10 two-bytes-per-word string runtime, while CG370
+    expects four 8-bit characters per 32-bit target word.
     """
-    if section == "CGA":
-        old = "        PACKSTRING(W, N)"
-        new = "        PACKSTRING370(W, N)"
-    elif section == "CGB":
-        old = "        L := PACKSTRING(V, NAMET+2)"
-        new = "        L := PACKSTRING370(V, NAMET+2)"
-    else:
+    if section != "CGA":
         return text
 
-    if text.count(old) != 1:
-        raise SystemExit(
-            f"{section}: expected one target PACKSTRING call, found {text.count(old)}"
-        )
-    text = text.replace(old, new, 1)
+    replacements = (
+        ("        PACKSTRING(W, N)",
+         "        PACKSTRING370(W, N)"),
+        ("        L := PACKSTRING(V, NAMET+2)",
+         "        L := PACKSTRING370(V, NAMET+2)"),
+    )
+    for old, new in replacements:
+        if text.count(old) != 1:
+            raise SystemExit(
+                f"CGA: expected one target PACKSTRING call {old!r}, "
+                f"found {text.count(old)}"
+            )
+        text = text.replace(old, new, 1)
 
     helper = r"""
 
@@ -274,7 +275,7 @@ def main() -> None:
     ):
         body = demote_cg_target_pack(body, section)
         extra_banner = ()
-        if section in ("CGA", "CGB"):
+        if section == "CGA":
             extra_banner = (
                 "|| Target PACKSTRING calls use a private 4-byte/word packer;",
                 "|| the MR10 host runtime remains two bytes per word.",
