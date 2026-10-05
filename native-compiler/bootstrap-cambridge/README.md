@@ -43,7 +43,7 @@ native-compiler/bootstrap-cambridge/
         syn
         trn
     demotion.patch
-    demoted/                 # generated derivative
+    demoted/
         syn
         lex
         trna
@@ -63,25 +63,20 @@ historical SECTION "TRNA"  -> demoted/trna
 historical SECTION "TRNB"  -> demoted/trnb
 ```
 
-For each derivative unit:
+For each derivative unit the generator:
 
-1. omit the `SECTION "..."` wrapper, which MR10 does not recognize;
-2. omit the inter-section `.` delimiter because the files are now physically
+1. omits the `SECTION "..."` wrapper, which MR10 does not recognize;
+2. omits the inter-section `.` delimiter because the files are now physically
    separate compilation units;
-3. rewrite the Cambridge not-equal spelling `~=` as the older `NE` spelling;
-4. otherwise preserve the Cambridge source text and semantics.
+3. rewrites the Cambridge not-equal spelling `~=` as the older `NE` spelling;
+4. maps historical member-style header names to MVS DD-friendly names:
+   `HEADERS(SYNHDR)` -> `SYNHDR` and `HEADERS(TRNHDR)` -> `TRNHDR`;
+5. otherwise preserves Cambridge source text and semantics.
 
-This is preferable to concatenating `SYN` with `LEX` or `TRNA` with `TRNB`.
-Keeping four compilation units preserves the historical module boundaries and
-avoids introducing accidental name-scope or declaration interactions during
-bootstrap.
+The GET-name mapping is a host accommodation only. It does not alter header
+contents or compiler semantics.
 
 ## Deterministic generation
-
-`make-demoted.py` performs exactly that transformation from the staged source
-copies.  It asserts the expected historical section boundaries and the current
-number of `~=` spellings before writing anything, so unexpected source drift
-fails loudly instead of silently broadening the bootstrap changes.
 
 Run from repository root with:
 
@@ -89,40 +84,29 @@ Run from repository root with:
 python3 native-compiler/bootstrap-cambridge/make-demoted.py
 ```
 
-The generated files are intentionally derivatives.  `source/` remains the
-pristine checkpoint against which every bootstrap source change can be audited.
+The generator asserts the expected historical section boundaries, `~=` counts,
+and header-GET counts before writing anything. Unexpected source drift therefore
+fails loudly rather than silently broadening the bootstrap transformation.
 
-No header, runtime, stream, word-size, driver, or compiler-semantic changes are
-part of this source demotion. In particular, this step does **not** resolve
-`BYTESPERWORD`, `SKIPREC`, `GET` naming, compiler initialization, or any other
-runtime question.
+## First SYN compile probe
 
-The intended lineage is:
+The first experiment is deliberately only `demoted/syn`. The Cambridge System/370
+`LIBHDR` is exposed as DD `LIBHDR`, and Cambridge `synhdr` is exposed as DD
+`SYNHDR`:
 
-```text
-historical Cambridge tape files
-        |
-        | copied unchanged
-        v
-bootstrap-cambridge/source/{syn,trn}
-        |
-        | make-demoted.py
-        | split by historical SECTION boundary
-        | remove SECTION wrapper
-        | ~= -> NE
-        v
-bootstrap-cambridge/demoted/{syn,lex,trna,trnb}
-        |
-        v
-MR10 compilation units
+```sh
+tools/compile-and-run --results --save-ocode \
+    --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
+    --dd SYNHDR=richards-bcpltape/bcplib/bcpl/synhdr \
+    "$(tools/current-icint)" \
+    native-compiler/bootstrap-cambridge/demoted/syn
 ```
 
-The Cambridge compiler logic is not to be simplified or rewritten merely to
-make bootstrap easier. Source adaptations should remain minimal, auditable,
-and removable once the Cambridge frontend is no longer dependent on the MR10
-source dialect.
+This is a probe, not yet a claim that the resulting unit is runnable by itself.
+The immediate objective is to learn the first genuine MR10 compile incompatibility
+after the known surface and DD-name adaptations. If compilation reaches OCODE,
+that is already useful evidence; a later final RUN failure from the absence of a
+complete compiler driver is not the result being tested here.
 
-## Current boundary
-
-The deterministic demotion transformation is now recorded. No bootstrap compile
-has yet been attempted, and no runtime/header accommodation has yet been made.
+No header-content, runtime, word-size, `SKIPREC`, driver-initialization, or
+compiler-semantic accommodation has yet been made.
