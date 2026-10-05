@@ -13,13 +13,15 @@ The bootstrap derivative is deliberately mechanical:
   that fit the MR10 compiler's 255-character string-literal limit while
   preserving the original reserved-word order;
 - replace LEX READFLOAT with an explicit bootstrap-only fatal stub because the
-  MR10 source language cannot parse Cambridge FLOAT/# floating arithmetic.
+  MR10 source language cannot parse Cambridge FLOAT/# floating arithmetic;
+- rewrite TRNB's one later unary ABS source expression as equivalent older BCPL
+  integer logic while preserving S.ABS constant-folding semantics.
 
-The GET-name and packed-string rewrites preserve intended compiler semantics.
-The READFLOAT replacement is intentionally narrower: floating literals are not
-supported by the demoted bootstrap frontend.  It fails visibly if invoked,
-rather than silently manufacturing an incorrect floating constant.  The
-historical source remains untouched and is intended to regain full floating
+The GET-name, packed-string, and TRNB ABS rewrites preserve intended compiler
+semantics. The READFLOAT replacement is intentionally narrower: floating
+literals are not supported by the demoted bootstrap frontend. It fails visibly
+if invoked, rather than silently manufacturing an incorrect floating constant.
+The historical source remains untouched and is intended to regain full floating
 literal support once the richer Cambridge frontend can compile itself.
 
 This script deliberately does not modify header contents, runtime assumptions,
@@ -119,9 +121,9 @@ def demote_lex_readfloat(text: str) -> str:
     """Remove later floating syntax from the bootstrap implementation of LEX.
 
     The original READFLOAT body uses Cambridge FLOAT conversion and #+, #*, #/
-    operators, which the MR10 compiler cannot parse.  Do not emulate those
-    operations inaccurately.  During bootstrap, fail fatally if a source being
-    compiled actually contains a floating literal.  This keeps the limitation
+    operators, which the MR10 compiler cannot parse. Do not emulate those
+    operations inaccurately. During bootstrap, fail fatally if a source being
+    compiled actually contains a floating literal. This keeps the limitation
     explicit and lets the compiler-source bootstrap proceed if that feature is
     not part of the implementation subset.
     """
@@ -167,11 +169,35 @@ $)'''
     return text.replace(original, replacement, 1)
 
 
+def demote_trnb_abs(text: str) -> str:
+    """Rewrite TRNB's later unary ABS syntax using older integer BCPL.
+
+    MR10 treats ABS as an undeclared name. Cambridge TRNB uses it exactly once,
+    while constant-folding an S.ABS syntax node. Evaluate the operand once and
+    return its integer absolute value with ordinary comparison and negation.
+    """
+
+    original = '            CASE S.ABS: RESULTIS ABS EVALCONST(H2X)'
+    replacement = '''            CASE S.ABS:
+            $(  LET E = EVALCONST(H2X)
+                RESULTIS E<0 -> -E, E
+            $)'''
+
+    if text.count(original) != 1:
+        raise SystemExit(
+            f"TRNB: expected exactly one unary ABS expression, found {text.count(original)}"
+        )
+
+    return text.replace(original, replacement, 1)
+
+
 def write_unit(name: str, historical_section: str, text: str) -> None:
     text = demote(text)
     if historical_section == "LEX":
         text = demote_lex_word_table(text)
         text = demote_lex_readfloat(text)
+    if historical_section == "TRNB":
+        text = demote_trnb_abs(text)
 
     banner = (
         f'|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "{historical_section}".\n'
@@ -182,6 +208,10 @@ def write_unit(name: str, historical_section: str, text: str) -> None:
         banner += (
             '|| Packed reserved-word strings split to fit MR10 literal limits.\n'
             '|| READFLOAT is a fatal bootstrap stub; floating literals unsupported.\n'
+        )
+    if historical_section == "TRNB":
+        banner += (
+            '|| Unary ABS implementation spelling demoted for MR10 compatibility.\n'
         )
 
     (OUT / name).write_text(banner + text, encoding="utf-8")
