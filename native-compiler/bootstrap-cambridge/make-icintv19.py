@@ -105,6 +105,39 @@ def main() -> None:
 
     text = replace_once(text, "GUSED    DS    CL401", "GUSED    DS    CL700", "GUSED size")
 
+    # The Cambridge compiler expects LIBHDR globals STACKBASE (G!54) and
+    # STACKEND (G!55) to describe the interpreted stack/workspace region.
+    # STKBASE is the first free BCPL word after the loaded INTCODE image;
+    # PROGWORD+40001 is the first word beyond the V18/V19 PROGVEC.
+    stack_setup = (
+        "         L     R2,P\n"
+        "         ST    R2,STKBASE\n"
+        "         LA    R2,INITCODE\n"
+    )
+    stack_setup_with_globals = (
+        "         L     R2,P\n"
+        "         ST    R2,STKBASE\n"
+        "***********************************************************************\n"
+        "* CAMBRIDGE HOST STACK-BOUND GLOBALS\n"
+        "*   G!54 = STACKBASE, FIRST FREE BCPL WORD AFTER LOADED INTCODE\n"
+        "*   G!55 = STACKEND, FIRST WORD BEYOND THE 40,001-WORD PROGVEC\n"
+        "***********************************************************************\n"
+        "         L     R3,G\n"
+        "         SLL   R3,2\n"
+        "         L     R2,STKBASE\n"
+        "         ST    R2,216(R3)\n"
+        "         L     R2,PROGWORD\n"
+        "         A     R2,=F'40001'\n"
+        "         ST    R2,220(R3)\n"
+        "         LA    R2,INITCODE\n"
+    )
+    text = replace_once(
+        text,
+        stack_setup,
+        stack_setup_with_globals,
+        "Cambridge STACKBASE/STACKEND globals",
+    )
+
     # JOB 897 showed the remaining IFO209 at LA R2,MSGLOB.  Both MSGLOB and
     # MSEND lie just above x'2FFF' after the V19 static growth.  Load their full
     # addresses from literals, which the LTORG below places in reachable code.
@@ -119,6 +152,24 @@ def main() -> None:
         "MSGDONE LA    R2,MSEND",
         "MSGDONE L     R2,=A(MSEND)",
         "MSEND address load",
+    )
+    text = replace_once(
+        text,
+        "MSFBAD  LA    R2,MSBADFR",
+        "MSFBAD  L     R2,=A(MSBADFR)",
+        "MSBADFR address load",
+    )
+    text = replace_once(
+        text,
+        "MSFEND  LA    R2,MSGLOBH",
+        "MSFEND  L     R2,=A(MSGLOBH)",
+        "MSGLOBH address load",
+    )
+    text = replace_once(
+        text,
+        "         LA    R2,MSFRAME3",
+        "         L     R2,=A(MSFRAME3)",
+        "MSFRAME3 address load",
     )
 
     # JOB 895 showed 21 IFO209 addressability errors because the enlarged
