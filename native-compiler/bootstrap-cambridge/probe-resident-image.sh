@@ -25,8 +25,9 @@ fi
 
 # Load order is intentional.  The Cambridge BCPL master is first so its START
 # is the resident image entry; all remaining implementation sections follow and
-# rendezvous through the shared global vector.  BLIBI and ICLIB are appended by
-# compile-and-run after these generated modules.
+# rendezvous through the shared global vector.  bootstrap-host.bcpl supplies
+# only host services proven missing from the current MR10 runtime.  BLIBI and
+# ICLIB are appended by compile-and-run after these generated modules.
 exec tools/compile-and-run --results --timeout 600 \
     --trni "$TRNI" \
     --dd OPTIONS="$BOOT/options-large-tree.txt" \
@@ -44,4 +45,5 @@ exec tools/compile-and-run --results --timeout 600 \
     +"$BOOT/demoted/cgb" \
     +"$BOOT/demoted/cgc" \
     +"$BOOT/demoted/cgd" \
-    +"$BOOT/demoted/cge"
+    +"$BOOT/demoted/cge" \
+    +"$BOOT/bootstrap-host.bcpl"
