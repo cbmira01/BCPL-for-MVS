@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""Generate MR10-source-dialect Cambridge frontend units.
+"""Generate MR10-hostable Cambridge frontend units.
 
-This script performs only the first bootstrap demotion:
+The bootstrap derivative is deliberately mechanical:
 
 - split the historical Cambridge source containers at their SECTION boundaries;
 - omit the SECTION wrapper from each resulting compilation unit;
-- rewrite the Cambridge not-equal spelling '~=' as the older 'NE' spelling.
+- rewrite the Cambridge not-equal spelling '~=' as the older 'NE' spelling;
+- map historical library-member GET names to MVS-DD-friendly names:
+    HEADERS(SYNHDR) -> SYNHDR
+    HEADERS(TRNHDR) -> TRNHDR
 
-It deliberately does not modify headers, runtime assumptions, stream naming,
+The GET-name rewrite is a host accommodation only. It does not change the
+header contents or compiler semantics.
+
+This script deliberately does not modify header contents, runtime assumptions,
 BYTESPERWORD, SKIPREC, compiler initialization, or compiler semantics.
 """
 
@@ -37,13 +43,17 @@ def split_container(path: Path, first_name: str, second_name: str):
 
 
 def demote(text: str) -> str:
-    return text.replace("~=", "NE")
+    text = text.replace("~=", "NE")
+    text = text.replace('GET "HEADERS(SYNHDR)"', 'GET "SYNHDR"')
+    text = text.replace('GET "HEADERS(TRNHDR)"', 'GET "TRNHDR"')
+    return text
 
 
 def write_unit(name: str, historical_section: str, text: str) -> None:
     banner = (
         f'|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "{historical_section}".\n'
         '|| SECTION wrapper omitted for MR10 source-dialect compilation.\n'
+        '|| Historical HEADERS(...) GET names mapped to MVS DDNAMEs.\n'
     )
     (OUT / name).write_text(banner + demote(text), encoding="utf-8")
 
@@ -52,9 +62,8 @@ def main() -> None:
     syn_text = (SOURCE / "syn").read_text(encoding="utf-8")
     trn_text = (SOURCE / "trn").read_text(encoding="utf-8")
 
-    # Current source inspection established one Cambridge '~=' occurrence in
-    # each historical container.  Keep that assumption explicit so unexpected
-    # source drift fails loudly rather than broadening the demotion silently.
+    # Keep all currently known bootstrap rewrites explicit. Unexpected source
+    # drift must fail loudly rather than silently broadening the demotion.
     if syn_text.count("~=") != 1:
         raise SystemExit(
             f"source/syn: expected exactly one '~=', found {syn_text.count('~=')}"
@@ -62,6 +71,14 @@ def main() -> None:
     if trn_text.count("~=") != 1:
         raise SystemExit(
             f"source/trn: expected exactly one '~=', found {trn_text.count('~=')}"
+        )
+    if syn_text.count('GET "HEADERS(SYNHDR)"') != 2:
+        raise SystemExit(
+            "source/syn: expected exactly two GET \"HEADERS(SYNHDR)\" occurrences"
+        )
+    if trn_text.count('GET "HEADERS(TRNHDR)"') != 2:
+        raise SystemExit(
+            "source/trn: expected exactly two GET \"HEADERS(TRNHDR)\" occurrences"
         )
 
     syn, lex = split_container(SOURCE / "syn", "SYN", "LEX")
