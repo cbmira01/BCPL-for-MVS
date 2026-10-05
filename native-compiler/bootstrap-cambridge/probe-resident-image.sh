@@ -31,6 +31,7 @@ fi
 exec tools/compile-and-run --results --timeout 600 \
     --trni "$TRNI" \
     --dd OPTIONS="$BOOT/options-large-tree.txt" \
+    --dd CAMBPARM="$BOOT/cambridge-options.txt" \
     --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
     --dd SYNHDR=richards-bcpltape/bcplib/bcpl/synhdr \
     --dd TRNHDR=richards-bcpltape/bcplib/bcpl/trnhdr \
