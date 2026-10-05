@@ -177,6 +177,23 @@ TRN/CG do not require floating literals, the bootstrap can proceed; the full
 historical `READFLOAT` implementation remains in the untouched Cambridge source
 for later self-hosting.
 
+Job 888 proved the resulting demoted LEX compiles successfully to nonempty
+OCODE. CGI converted that OCODE to an INTCODE unit with loaded program size
+2,495 words. As with SYN, the subsequent standalone RUN error is expected: LEX
+is a compiler section and has no complete START path by itself.
+
+This establishes both historical Cambridge frontend sections across the MR10
+bootstrap boundary:
+
+```text
+Cambridge SYN source -> MR10 compiler -> OCODE -> CGI -> INTCODE
+Cambridge LEX source -> MR10 compiler -> OCODE -> CGI -> INTCODE
+```
+
+The next controlled probe is `demoted/trna` with the Cambridge System/370
+`TRNHDR` exposed as DD `TRNHDR`. The objective remains compilation to nonempty
+OCODE; standalone RUN success is not expected for an isolated compiler section.
+
 The MVS step return code for an interpreted compiler failure remains zero; the
 host `compile-and-run` wrapper detects the BCPL execution code afterward. Thus
 CG and RUN may still execute on empty compiler output in a failed interpreted
