@@ -1,23 +1,42 @@
-diff --git a/native-compiler/bootstrap-cambridge/source/syn b/native-compiler/bootstrap-cambridge/source/syn
---- a/native-compiler/bootstrap-cambridge/source/syn
-+++ b/native-compiler/bootstrap-cambridge/source/syn
-@@
--SECTION "SYN"
-+|| BOOTSTRAP DEMOTION: historical source begins SECTION "SYN".
-+|| MR10 SYN does not recognize SECTION, so omit it during bootstrap.
-@@
--               GETBYTE(SECTIONNAME, 0) ~= 0 DO
-+               GETBYTE(SECTIONNAME, 0) NE 0 DO
-             WRITEF("Section *\"%S*\"*N", SECTIONNAME)
-
-diff --git a/native-compiler/bootstrap-cambridge/source/trn b/native-compiler/bootstrap-cambridge/source/trn
---- a/native-compiler/bootstrap-cambridge/source/trn
-+++ b/native-compiler/bootstrap-cambridge/source/trn
-@@
--SECTION "TRNA"
-+|| BOOTSTRAP DEMOTION: historical source begins SECTION "TRNA".
-+|| MR10 SYN does not recognize SECTION, so omit it during bootstrap.
-@@
--               GETBYTE(SECTIONNAME, 0) ~= 0 DO
-+               GETBYTE(SECTIONNAME, 0) NE 0 DO
-             WRITEF("Section *\"%S*\"*N", SECTIONNAME)
+# Bootstrap demotion specification
+#
+# The historical tape files each contain two Cambridge SECTIONs separated by
+# a standalone '.' end-of-section marker. Do not apply this as a simple
+# in-place patch to source/syn or source/trn. The bootstrap derivative is a
+# four-file split that preserves those section boundaries.
+#
+# Historical source mapping:
+#
+#   source/syn:
+#       SECTION "SYN"  ...  .  SECTION "LEX"  ...
+#         -> demoted/syn
+#         -> demoted/lex
+#
+#   source/trn:
+#       SECTION "TRNA" ...  .  SECTION "TRNB" ...
+#         -> demoted/trna
+#         -> demoted/trnb
+#
+# Transformations allowed in the first derivative:
+#
+#   1. Remove the SECTION "..." wrapper at the start of each split unit.
+#   2. Remove the standalone '.' separator because the units are physically
+#      separate files after splitting.
+#   3. Rewrite source-level '~=' as the MR10-supported 'NE' spelling.
+#   4. Make no other source, header, runtime, driver, or semantic changes.
+#
+# Known ~= occurrences established so far:
+#
+#   SYN:
+#       GETBYTE(SECTIONNAME, 0) ~= 0
+#     becomes
+#       GETBYTE(SECTIONNAME, 0) NE 0
+#
+#   TRNA:
+#       GETBYTE(SECTIONNAME, 0) ~= 0
+#     becomes
+#       GETBYTE(SECTIONNAME, 0) NE 0
+#
+# This file is intentionally a specification rather than an automatically
+# applicable unified diff: the essential first operation is splitting two
+# historical container files into four bootstrap compilation units.
