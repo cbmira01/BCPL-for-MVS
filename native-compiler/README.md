@@ -10,6 +10,11 @@ BCPL source -> SYN/TRN -> OCODE
 
 The important change in direction is that a historical **System/370 code generator has been found** in the surviving BCPL material. The project therefore does not need to invent a System/370 backend from scratch. The current task is to make the historical generator runnable in the hosted environment, determine exactly which OCODE and runtime conventions it expects, adapt only what the MVS host requires, and use its output with IFOX and the MVS linkage editor.
 
+## Architecture notes
+
+- `cg370-architecture-notes.md` records the current understanding of OCODE versus INTCODE, the bootstrap-kit versus native-programming-system distinction, Cambridge `SECTION` handling, CG370's 16-KB section/base-addressing scheme, internal fixups, and object-deck generation.
+- `kit-compiler-strategy.md` records the earlier investigation and should be read as design history where it conflicts with the current direction.
+
 ## What remains to be reconstructed
 
 Finding the generator does not finish the native port. Work still includes:
@@ -34,8 +39,6 @@ Useful contemporary documentation includes:
 - `richards-bcpltape/mr10/text/intcode` — INTCODE documentation.
 
 Later Cambridge sources under `richards-bcpltape/bcplib/` remain valuable comparative evidence. They are not a prerequisite front end that must first be rebuilt before native code generation can proceed.
-
-`kit-compiler-strategy.md` records the earlier investigation and should be read as design history where it conflicts with the current direction described here.
 
 ## Working rule
 
