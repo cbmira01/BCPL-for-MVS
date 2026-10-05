@@ -18,6 +18,8 @@
 *   - SUPPLY CAMBRIDGE STACKBASE/STACKEND GLOBALS G!54/G!55.
 *   - REPORT PROGRAM, STACK/WORK, AND GLOBAL CAPACITY AFTER
 *     ASSEMBLY AND BEFORE EXECUTION.
+*   - EXPAND RECENT-INSTRUCTION TRACE TO 64 ENTRIES, INCLUDE THE
+*     CYCLE COUNT, AND DUMP IT ON GENERIC INTERROR.
 *   - PLACE THE EXECUTABLE-CODE LITERAL POOL AT THE CODE/DATA
 *     BOUNDARY SO THE EXISTING THREE USING REGIONS STILL REACH IT.
 *   - LOAD POST-X'2FFF' MAPSTORE MESSAGE ADDRESSES THROUGH
@@ -154,6 +156,9 @@ PROGCNT  EQU   40001
 LABVLEN  EQU   LABVCNT*4
 GLOBLEN  EQU   GLOBCNT*4
 PROGLEN  EQU   PROGCNT*4
+TRACECNT EQU   64
+TRACESZ  EQU   28
+TRACELEN EQU   TRACECNT*TRACESZ
 ***********************************************************************
 * HOST STREAM DESCRIPTOR
 ***********************************************************************
@@ -210,6 +215,8 @@ DDNAMOFF EQU   40
          SRL   R2,2
          ST    R2,PROGWORD
          ST    R2,P
+         GETMAIN R,LV=TRACELEN
+         ST    R1,TRBASE
          BAL   R14,STRMINIT
          XC    GUSED(256),GUSED
          XC    GUSED+256(256),GUSED+256
@@ -310,7 +317,7 @@ RPTDONE  L     R2,=A(RPTBLNK)
          ST    R2,C
          XC    CYCCNT,CYCCNT
          XC    TRIDX,TRIDX
-         XC    TRBUF(192),TRBUF
+         XC    TRCOUNT,TRCOUNT
          BAL   R14,INTERPRT
          ST    R0,A
          L     R2,SYSPRINT
@@ -324,6 +331,8 @@ RPTDONE  L     R2,=A(RPTBLNK)
          BNM   MAINEND
          BAL   R14,MAPSTORE
 MAINEND  BAL   R14,CLOSEALL
+         L     R1,TRBASE
+         FREEMAIN R,LV=TRACELEN,A=(R1)
          L     R1,PROGBASE
          FREEMAIN R,LV=PROGLEN,A=(R1)
          L     R1,GLOBBASE
@@ -821,6 +830,7 @@ INTERROR L     R2,A
          L     R3,C
          S     R3,PROGWORD
          BAL   R14,WRITEF
+         BAL   R14,TRDUMP
          L     R0,=F'-1'
          B     INTRTN
 OP0      L     R2,A
@@ -2186,12 +2196,14 @@ MSCURP   DS    F
 MSPREVP  DS    F
 MSP2     DS    F
 ***********************************************************************
-* V17 RECENT-INSTRUCTION TRACE
+* V17/V19 RECENT-INSTRUCTION TRACE
 ***********************************************************************
 *
-* EACH OF EIGHT 24-BYTE SLOTS HOLDS:
-*   C-BEFORE, W, D-AFTER-DECODE, A, B, P
+* EACH OF SIXTY-FOUR 28-BYTE SLOTS HOLDS:
+*   CYCCNT, C-BEFORE, W, D-AFTER-DECODE, A, B, P
 * TRIDX NAMES THE NEXT SLOT TO BE WRITTEN.
+* TRCOUNT IS THE NUMBER OF VALID SLOTS, CAPPED AT 64.
+* THE RING ITSELF IS HOST STORAGE FROM GETMAIN, NOT BCPL PROGVEC.
 * INTERPRETER STATE IS UNCHANGED; R1-R5 ARE VOLATILE HERE.
 *
 TRRECORD DS    0H
@@ -2201,8 +2213,13 @@ TRRECORD DS    0H
          LR    R3,R1
          SLL   R3,3
          AR    R2,R3
-         LA    R1,TRBUF
+         LR    R3,R1
+         SLL   R3,2
+         AR    R2,R3
+         L     R1,TRBASE
          AR    R1,R2
+         L     R2,CYCCNT
+         ST    R2,0(R1)
          L     R2,C
          L     R3,W
          LR    R4,R3
@@ -2211,25 +2228,30 @@ TRRECORD DS    0H
          BZ    TRSHORT
          BCTR  R2,0
 TRSHORT  BCTR  R2,0
-         ST    R2,0(R1)
-         ST    R3,4(R1)
+         ST    R2,4(R1)
+         ST    R3,8(R1)
          L     R2,D
-         ST    R2,8(R1)
-         L     R2,A
          ST    R2,12(R1)
-         L     R2,B
+         L     R2,A
          ST    R2,16(R1)
-         L     R2,P
+         L     R2,B
          ST    R2,20(R1)
+         L     R2,P
+         ST    R2,24(R1)
          L     R2,TRIDX
          LA    R2,1(R2)
-         N     R2,=F'7'
+         N     R2,=F'63'
          ST    R2,TRIDX
-         BR    R14
+         L     R1,TRCOUNT
+         C     R1,=F'64'
+         BNL   TRRRET
+         LA    R1,1(R1)
+         ST    R1,TRCOUNT
+TRRRET   BR    R14
 *
-* OP1BAD ENTERS HERE WITH THE OFFENDING D STILL IN MEMORY. PRINT THE
-* CURRENT STATE AND ALL EIGHT RING SLOTS. TRIDX IDENTIFIES THE OLDEST
-* SLOT, SO THE LOOP PRINTS THE FULL RING IN CHRONOLOGICAL ORDER.
+* PRINT CURRENT STATE AND THE VALID RECENT-INSTRUCTION RING ENTRIES.
+* WHEN FULL, TRIDX IDENTIFIES THE OLDEST SLOT. PRINT OLDEST TO NEWEST.
+* USED BY BOTH OP1BAD AND THE GENERIC INTERROR PATH.
 *
 TRDUMP   DS    0H
          ST    R14,TRDRET
@@ -2238,45 +2260,73 @@ TRDUMP   DS    0H
          BAL   R14,SELOUT
          L     R2,=A(TRHEAD)
          BAL   R14,WRITES
-         L     R2,=A(TRBAD1)
+         L     R2,=A(TRCURH)
+         BAL   R14,WRITES
+         L     R3,C
+         LR    R4,R3
+         S     R4,PROGWORD
+         L     R5,CYCCNT
+         L     R2,=A(TRCUR1)
+         BAL   R14,WRITEF
          L     R3,A
          L     R4,B
          L     R5,D
+         L     R2,=A(TRCUR2)
          BAL   R14,WRITEF
-         L     R2,=A(TRBAD2)
-         L     R3,C
-         L     R4,P
-         L     R5,W
+         L     R3,P
+         L     R4,W
+         L     R2,=A(TRCUR3)
          BAL   R14,WRITEF
+         L     R2,=A(TRHIST)
+         BAL   R14,WRITES
          SR    R6,R6
-TRDLOOP  C     R6,=F'8'
+TRDLOOP  L     R7,TRCOUNT
+         CR    R6,R7
          BNL   TRDDONE
+         C     R7,=F'64'
+         BL    TRDSLOT
          L     R7,TRIDX
          AR    R7,R6
-         N     R7,=F'7'
-         LR    R8,R7
+         N     R7,=F'63'
+         B     TRDHAVE
+TRDSLOT  LR    R7,R6
+TRDHAVE  LR    R8,R7
          SLL   R8,4
          LR    R9,R7
          SLL   R9,3
          AR    R8,R9
-         LA    R9,TRBUF
+         LR    R9,R7
+         SLL   R9,2
+         AR    R8,R9
+         L     R9,TRBASE
          AR    R9,R8
-         L     R2,=A(TRLINE1)
+         L     R2,=A(TRLINE0)
          LR    R3,R6
          L     R4,0(R9)
          L     R5,4(R9)
          BAL   R14,WRITEF
+         L     R3,4(R9)
+         S     R3,PROGWORD
+         L     R4,8(R9)
+         L     R5,12(R9)
+         L     R2,=A(TRLINE1)
+         BAL   R14,WRITEF
+         L     R3,16(R9)
+         L     R4,20(R9)
+         L     R5,24(R9)
          L     R2,=A(TRLINE2)
-         L     R3,8(R9)
-         L     R4,12(R9)
-         L     R5,16(R9)
          BAL   R14,WRITEF
-         L     R2,=A(TRLINE3)
-         L     R3,20(R9)
-         BAL   R14,WRITEF
-         LA    R6,1(R6)
+         L     R7,TRCOUNT
+         BCTR  R7,0
+         CR    R6,R7
+         BNE   TRDNEXT
+         L     R2,=A(TRLAST)
+         BAL   R14,WRITES
+TRDNEXT  LA    R6,1(R6)
          B     TRDLOOP
-TRDDONE  LM    R6,R9,TRDSAVE
+TRDDONE  L     R2,=A(TREND)
+         BAL   R14,WRITES
+         LM    R6,R9,TRDSAVE
          L     R14,TRDRET
          BR    R14
 TRDRET   DS    F
@@ -2343,7 +2393,8 @@ MSP      DS    F
 MSW      DS    F
 MSCYC    DS    F
 TRIDX    DS    F
-TRBUF    DS    48F
+TRCOUNT  DS    F
+TRBASE   DS    F
 GUSED    DS    CL700
          DS    0F
 INTINSD  DS    CL32
@@ -2490,12 +2541,17 @@ ALSETMSG DC    AL1(32),C'L%N ALREADY SET TO %N AT P = %N',X'15'
 INTEMSG  DC    AL1(25),X'15',C'INTCODE ERROR AT C = %N',X'15'
 EXECMSG  DC    AL1(35),X'15',X'15'
          DC    C'EXECUTION CYCLES = %N, CODE = %N',X'15'
-TRHEAD   DC    AL1(30),X'15',C'*** V17 OP1 ADDRESS TRAP ***',X'15'
-TRBAD1   DC    AL1(15),C'A=%N B=%N D=%N',X'15'
-TRBAD2   DC    AL1(15),C'C=%N P=%N W=%N',X'15'
-TRLINE1  DC    AL1(19),C'TRACE %N C=%N W=%N',X'15'
-TRLINE2  DC    AL1(17),C'  D=%N A=%N B=%N',X'15'
-TRLINE3  DC    AL1(7),C'  P=%N',X'15'
+TRHEAD   DC    AL1(40),X'15',C'*** ICINT RECENT INSTRUCTION TRACE ***',X'15'
+TRCURH   DC    AL1(14),C'CURRENT STATE',X'15'
+TRCUR1   DC    AL1(31),C'    C=%N C-OFFSET=%N CYCLES=%N',X'15'
+TRCUR2   DC    AL1(19),C'    A=%N B=%N D=%N',X'15'
+TRCUR3   DC    AL1(14),C'    P=%N W=%N',X'15'
+TRHIST   DC    AL1(39),C'RECENT INSTRUCTIONS - OLDEST TO NEWEST',X'15'
+TRLINE0  DC    AL1(22),C'    #%N CYCLE=%N C=%N',X'15'
+TRLINE1  DC    AL1(31),C'         C-OFFSET=%N W=%N D=%N',X'15'
+TRLINE2  DC    AL1(24),C'         A=%N B=%N P=%N',X'15'
+TRLAST   DC    AL1(26),C'         <== LAST DECODED',X'15'
+TREND    DC    AL1(24),C'*** END ICINT TRACE ***',X'15'
 MSHEAD   DC    AL1(24),X'15',C'*** ICINT MAPSTORE ***',X'15'
 MSREG1   DC    AL1(15),C'A=%N B=%N C=%N',X'15'
 MSREG2   DC    AL1(15),C'D=%N P=%N W=%N',X'15'
