@@ -190,7 +190,23 @@ Cambridge SYN source -> MR10 compiler -> OCODE -> CGI -> INTCODE
 Cambridge LEX source -> MR10 compiler -> OCODE -> CGI -> INTCODE
 ```
 
-The next controlled probe is `demoted/trna` with the Cambridge System/370
+## TRN compile probes
+
+Job 889 proved `demoted/trna` also compiles successfully through the MR10
+bootstrap path. The host wrapper saved nonempty `workarea/trna.ocode`, and CGI
+converted it to an INTCODE unit whose loaded program size was 3,065 words. The
+subsequent standalone RUN error is expected for an isolated compiler section and
+is not a compile failure.
+
+The successful section-bootstrap set is now:
+
+```text
+Cambridge SYN  source -> MR10 compiler -> OCODE -> CGI -> INTCODE
+Cambridge LEX  source -> MR10 compiler -> OCODE -> CGI -> INTCODE
+Cambridge TRNA source -> MR10 compiler -> OCODE -> CGI -> INTCODE
+```
+
+The next controlled probe is `demoted/trnb` with the Cambridge System/370
 `TRNHDR` exposed as DD `TRNHDR`. The objective remains compilation to nonempty
 OCODE; standalone RUN success is not expected for an isolated compiler section.
 
