@@ -18,20 +18,51 @@ START programs by themselves.
 Job 892 is the first successful TRNB result after demoting its one later unary
 `ABS` source expression to equivalent older BCPL integer logic.
 
+The Cambridge master also crosses the MR10 bootstrap boundary.  Job 893 saved
+nonempty `bcpl.ocode`; its standalone execution then exposed the historical
+master's larger global-vector requirement (`TOPGLOB:699`).
+
+ICINT V19 was therefore derived from V18 as a capacity/layout-only bootstrap
+candidate:
+
+- enlarge the global vector from 401 to 700 words, supporting G!0..G!699;
+- move all matching OP1/GUSED/MAPSTORE bounds with it;
+- retain the V18 40,001-word PROGVEC;
+- place the executable-code literal pool explicitly at the code/data boundary;
+- load the two MAPSTORE messages that now lie just above x'2FFF' through
+  reachable address literals rather than consuming another permanent base.
+
+Jobs 894-897 isolated and corrected the resulting IFOX layout/addressability
+issues.  Job 898 is the first complete V19 master probe: ICINT assembled and
+linked, the Cambridge master again produced nonempty OCODE, CGI generated a
+2953-word INTCODE image, and the master actually entered execution.
+
+Job 898's standalone execution stopped after 43 cycles because the other
+Cambridge compiler sections were not loaded.  Its MAPSTORE shows the key
+rendezvous globals absent, including `FORMTREE` (G!150), `COMPILEAE` (G!245),
+and `CODEGEN` (G!390).
+
+Do not infer from that result that ICINT should initialize unused globals to a
+negative sentinel.  The historical MR10 ICINT assembler can leave unresolved
+global entries at zero.  The Cambridge master's `CODEGEN < 0` overlay test
+belongs to its original host/linkage environment.  Our bootstrap design avoids
+that path by loading all compiler sections together so these globals are real
+addresses.
+
 ## Phase change
 
-The bootstrap problem is now no longer whether the Cambridge SYN/TRN sources can
-cross the MR10 dialect boundary.  The next objective is to build the complete
+The bootstrap problem is now no longer whether the Cambridge SYN/TRN sources or
+master can cross the MR10 dialect boundary.  The next objective is to bootstrap
+all five native S/370 code-generator sections and then build the complete
 interpreted compiler image.
 
 Historical components still required are:
 
 ```text
-bcplib/bcpl/bcpl       master/START section BCPL
 bcplib/bcpl/cg         native S/370 generator sections CGA..CGE
 ```
 
-`make-demoted.py` now generates:
+`make-demoted.py` generates:
 
 ```text
 demoted/bcpl
@@ -54,7 +85,7 @@ For the master `BCPL` section:
 
 The omitted `NEEDS` directive belongs to the native object/linkage environment.
 The interpreted bootstrap will load all compiler units together.  When
-`CODEGEN` is already populated through the global vector, the historical master
+`CODEGEN` is populated through the global vector by CGA, the historical master
 sets `OVERLAYING` false and the overlay-loading paths remain dormant.
 
 For CGA..CGE:
@@ -68,28 +99,27 @@ No code-generator semantics have otherwise been changed.
 
 ## Next controlled experiment
 
-Compile only the demoted master first:
+Probe CGA next with the V19 interpreter and both headers exposed:
 
 ```sh
 tools/compile-and-run --results --save-ocode \
     --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
     --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
-    asm/icintv18.asm \
-    native-compiler/bootstrap-cambridge/demoted/bcpl
+    --dd CGHDR=richards-bcpltape/bcplib/bcpl/cghdr \
+    asm/icintv19.asm \
+    native-compiler/bootstrap-cambridge/demoted/cga
 ```
 
-The success criterion is nonempty saved OCODE.  A standalone final RUN is not
-expected to work because the master depends on globals supplied by SYN, TRN,
-CG, and runtime support.
+The success criterion is nonempty saved OCODE and a CGI-produced INTCODE image.
+The isolated final RUN is not meaningful for a CG section.
 
-If the master compiles, probe CGA next with both `LIBHDR` and `CGHDR` exposed.
-Continue one section at a time so every additional source-dialect accommodation
-is evidence-driven.
+Continue CGA through CGE one section at a time so every additional
+source-dialect accommodation remains evidence-driven.
 
 ## Intended assembled image
 
-Once BCPL and CGA..CGE also cross the MR10 bootstrap boundary, load these
-INTCODE units together under ICINT v18:
+Once CGA..CGE also cross the MR10 bootstrap boundary, load these INTCODE units
+together under ICINT V19:
 
 ```text
 BCPL
