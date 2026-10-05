@@ -32,6 +32,11 @@ STACKEND, global-vector capacity, count of globals referenced by the assembled
 image, and the highest such global.  GUSED is scanned before execution, so the
 last two values describe the assembled image rather than runtime activity.
 
+V19 also strengthens the V17 recent-instruction diagnostic without changing
+execution semantics: expand the ring from 8 to 64 entries, record CYCCNT with
+each instruction, and dump the ring on the generic INTERROR path as well as the
+OP1 bad-address trap.
+
 The generated file is asm/icintv19.asm.  The script refuses to overwrite an
 existing V19 candidate.
 """
@@ -82,6 +87,8 @@ def main() -> None:
         "*   - SUPPLY CAMBRIDGE STACKBASE/STACKEND GLOBALS G!54/G!55.\n"
         "*   - REPORT PROGRAM, STACK/WORK, AND GLOBAL CAPACITY AFTER\n"
         "*     ASSEMBLY AND BEFORE EXECUTION.\n"
+        "*   - EXPAND RECENT-INSTRUCTION TRACE TO 64 ENTRIES, INCLUDE THE\n"
+        "*     CYCLE COUNT, AND DUMP IT ON GENERIC INTERROR.\n"
         "*   - PLACE THE EXECUTABLE-CODE LITERAL POOL AT THE CODE/DATA\n"
         "*     BOUNDARY SO THE EXISTING THREE USING REGIONS STILL REACH IT.\n"
         "*   - LOAD POST-X'2FFF' MAPSTORE MESSAGE ADDRESSES THROUGH\n"
@@ -112,6 +119,203 @@ def main() -> None:
     text = text.replace(old_bound, "=F'699'")
 
     text = replace_once(text, "GUSED    DS    CL401", "GUSED    DS    CL700", "GUSED size")
+
+    # Make the existing V17 recent-instruction ring useful for deeper failures.
+    # Sixty-four seven-word slots hold CYCCNT plus C/W/D/A/B/P state.
+    old_trace_clear = "         XC    TRIDX,TRIDX\n         XC    TRBUF(192),TRBUF"
+    new_trace_clear = (
+        "         XC    TRIDX,TRIDX\n"
+        "         XC    TRBUF(256),TRBUF\n"
+        "         XC    TRBUF+256(256),TRBUF+256\n"
+        "         XC    TRBUF+512(256),TRBUF+512\n"
+        "         XC    TRBUF+768(256),TRBUF+768\n"
+        "         XC    TRBUF+1024(256),TRBUF+1024\n"
+        "         XC    TRBUF+1280(256),TRBUF+1280\n"
+        "         XC    TRBUF+1536(256),TRBUF+1536"
+    )
+    text = replace_once(text, old_trace_clear, new_trace_clear, "64-entry trace clear")
+
+    old_trace_record = """* EACH OF EIGHT 24-BYTE SLOTS HOLDS:
+*   C-BEFORE, W, D-AFTER-DECODE, A, B, P
+* TRIDX NAMES THE NEXT SLOT TO BE WRITTEN.
+* INTERPRETER STATE IS UNCHANGED; R1-R5 ARE VOLATILE HERE.
+*
+TRRECORD DS    0H
+         L     R1,TRIDX
+         LR    R2,R1
+         SLL   R2,4
+         LR    R3,R1
+         SLL   R3,3
+         AR    R2,R3
+         LA    R1,TRBUF
+         AR    R1,R2
+         L     R2,C
+         L     R3,W
+         LR    R4,R3
+         N     R4,=F'512'
+         LTR   R4,R4
+         BZ    TRSHORT
+         BCTR  R2,0
+TRSHORT  BCTR  R2,0
+         ST    R2,0(R1)
+         ST    R3,4(R1)
+         L     R2,D
+         ST    R2,8(R1)
+         L     R2,A
+         ST    R2,12(R1)
+         L     R2,B
+         ST    R2,16(R1)
+         L     R2,P
+         ST    R2,20(R1)
+         L     R2,TRIDX
+         LA    R2,1(R2)
+         N     R2,=F'7'
+         ST    R2,TRIDX
+         BR    R14
+"""
+    new_trace_record = """* EACH OF SIXTY-FOUR 28-BYTE SLOTS HOLDS:
+*   CYCCNT, C-BEFORE, W, D-AFTER-DECODE, A, B, P
+* TRIDX NAMES THE NEXT SLOT TO BE WRITTEN.
+* INTERPRETER STATE IS UNCHANGED; R1-R5 ARE VOLATILE HERE.
+*
+TRRECORD DS    0H
+         L     R1,TRIDX
+         LR    R2,R1
+         SLL   R2,4
+         LR    R3,R1
+         SLL   R3,3
+         AR    R2,R3
+         LR    R3,R1
+         SLL   R3,2
+         AR    R2,R3
+         LA    R1,TRBUF
+         AR    R1,R2
+         L     R2,CYCCNT
+         ST    R2,0(R1)
+         L     R2,C
+         L     R3,W
+         LR    R4,R3
+         N     R4,=F'512'
+         LTR   R4,R4
+         BZ    TRSHORT
+         BCTR  R2,0
+TRSHORT  BCTR  R2,0
+         ST    R2,4(R1)
+         ST    R3,8(R1)
+         L     R2,D
+         ST    R2,12(R1)
+         L     R2,A
+         ST    R2,16(R1)
+         L     R2,B
+         ST    R2,20(R1)
+         L     R2,P
+         ST    R2,24(R1)
+         L     R2,TRIDX
+         LA    R2,1(R2)
+         N     R2,=F'63'
+         ST    R2,TRIDX
+         BR    R14
+"""
+    text = replace_once(text, old_trace_record, new_trace_record, "64-entry trace recorder")
+
+    old_trace_dump = """* OP1BAD ENTERS HERE WITH THE OFFENDING D STILL IN MEMORY. PRINT THE
+* CURRENT STATE AND ALL EIGHT RING SLOTS. TRIDX IDENTIFIES THE OLDEST
+* SLOT, SO THE LOOP PRINTS THE FULL RING IN CHRONOLOGICAL ORDER.
+*
+TRDUMP   DS    0H
+"""
+    new_trace_dump = """* PRINT CURRENT STATE AND ALL SIXTY-FOUR RING SLOTS. TRIDX IDENTIFIES
+* THE OLDEST SLOT, SO THE LOOP PRINTS THE FULL RING IN CHRONOLOGICAL
+* ORDER. USED BY BOTH OP1BAD AND THE GENERIC INTERROR PATH.
+*
+TRDUMP   DS    0H
+"""
+    text = replace_once(text, old_trace_dump, new_trace_dump, "trace dump comment")
+    text = replace_once(text, "TRDLOOP  C     R6,=F'8'", "TRDLOOP  C     R6,=F'64'", "trace dump count")
+    text = replace_once(text, "         N     R7,=F'7'", "         N     R7,=F'63'", "trace dump ring mask")
+
+    old_trace_offset = """         LR    R8,R7
+         SLL   R8,4
+         LR    R9,R7
+         SLL   R9,3
+         AR    R8,R9
+         LA    R9,TRBUF
+"""
+    new_trace_offset = """         LR    R8,R7
+         SLL   R8,4
+         LR    R9,R7
+         SLL   R9,3
+         AR    R8,R9
+         LR    R9,R7
+         SLL   R9,2
+         AR    R8,R9
+         LA    R9,TRBUF
+"""
+    text = replace_once(text, old_trace_offset, new_trace_offset, "28-byte trace slot offset")
+
+    old_trace_lines = """         L     R2,TRLINE1
+         LR    R3,R6
+         L     R4,0(R9)
+         L     R5,4(R9)
+         BAL   R14,WRITEF
+         L     R2,TRLINE2
+         L     R3,8(R9)
+         L     R4,12(R9)
+         L     R5,16(R9)
+         BAL   R14,WRITEF
+         L     R2,TRLINE3
+         L     R3,20(R9)
+         BAL   R14,WRITEF
+"""
+    new_trace_lines = """         LA    R2,TRLINE0
+         LR    R3,R6
+         L     R4,0(R9)
+         L     R5,4(R9)
+         BAL   R14,WRITEF
+         LA    R2,TRLINE1
+         L     R3,8(R9)
+         L     R4,12(R9)
+         L     R5,16(R9)
+         BAL   R14,WRITEF
+         LA    R2,TRLINE2
+         L     R3,20(R9)
+         L     R4,24(R9)
+         BAL   R14,WRITEF
+"""
+    text = replace_once(text, old_trace_lines, new_trace_lines, "trace dump fields")
+
+    text = replace_once(text, "TRBUF    DS    48F", "TRBUF    DS    448F", "64-entry seven-word trace buffer")
+
+    old_int_error = """         L     R2,=A(INTEMSG)
+         L     R3,C
+         S     R3,PROGWORD
+         BAL   R14,WRITEF
+         L     R0,=F'-1'
+"""
+    new_int_error = """         L     R2,=A(INTEMSG)
+         L     R3,C
+         S     R3,PROGWORD
+         BAL   R14,WRITEF
+         BAL   R14,TRDUMP
+         L     R0,=F'-1'
+"""
+    text = replace_once(text, old_int_error, new_int_error, "generic INTERROR trace dump")
+
+    old_trace_messages = """TRHEAD   DC    AL1(30),X'15',C'*** V17 OP1 ADDRESS TRAP ***',X'15'
+TRBAD1   DC    AL1(18),C'A=%N B=%N D=%N',X'15'
+TRBAD2   DC    AL1(18),C'C=%N P=%N W=%N',X'15'
+TRLINE1  DC    AL1(19),C'TRACE %N C=%N W=%N',X'15'
+TRLINE2  DC    AL1(18),C' D=%N A=%N B=%N',X'15'
+TRLINE3  DC    AL1(7),C' P=%N',X'15'
+"""
+    new_trace_messages = """TRHEAD   DC    AL1(40),X'15',C'*** ICINT RECENT INSTRUCTION TRACE ***',X'15'
+TRBAD1   DC    AL1(18),C'A=%N B=%N D=%N',X'15'
+TRBAD2   DC    AL1(18),C'C=%N P=%N W=%N',X'15'
+TRLINE0  DC    AL1(29),C'TRACE %N CYCLE=%N C=%N',X'15'
+TRLINE1  DC    AL1(18),C' W=%N D=%N A=%N',X'15'
+TRLINE2  DC    AL1(13),C' B=%N P=%N',X'15'
+"""
+    text = replace_once(text, old_trace_messages, new_trace_messages, "trace report messages")
 
     # The old banner was emitted before ASSEMBLE.  V19 emits it with the
     # capacity block after assembly, so every displayed value describes the
@@ -332,6 +536,7 @@ def main() -> None:
     print("  tracking/map bounds: 400 -> 699")
     print("  stack globals: G!54=STACKBASE, G!55=STACKEND")
     print("  post-assembly capacity report: enabled")
+    print("  recent-instruction trace: 64 entries with cycle count; generic INTERROR dumps trace")
     print("  literal pool: LTORG at executable-code/data boundary")
     print("  far diagnostic/trace/MAPSTORE addresses: loaded through =A(...) literals")
 
