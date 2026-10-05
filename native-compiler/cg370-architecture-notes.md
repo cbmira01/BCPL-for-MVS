@@ -105,7 +105,171 @@ OCODE -> CGI -> INTCODE -> ICINT
 
 If successful, the resulting interpreted Cambridge `SYN/TRN` would then recognize the richer production language, including `SECTION` and `NEEDS`, and could emit authentic Cambridge OCODE for CG370.
 
-The next investigation should therefore focus on **runtime/header compatibility rather than presumed language syntax incompatibility**. In particular, inspect dependencies such as `GETBYTE`, `PUTBYTE`, `LEVEL`, `LONGJUMP`, compiler workspace globals, headers, and I/O services. Change the MR10 compiler or source only when an observed incompatibility requires it.
+## Preferred bootstrap strategy: temporarily demote the Cambridge sources
+
+The preferred strategy is **not** to promote the MR10 kit compiler into a full Cambridge compiler. Instead, temporarily demote the Cambridge compiler sources into the older source dialect accepted by the kit.
+
+This distinction matters:
+
+```text
+not preferred:
+    extend kit SYN/TRN until the kit understands all Cambridge syntax
+
+preferred:
+    minimally rewrite Cambridge SYN/TRN so the existing kit can compile them
+```
+
+The adapted sources remain Cambridge `SYN` and Cambridge `TRN`. Their implementation logic, parser tables, operator set, AST representation, and OCODE semantics must remain intact. Only unsupported source spelling and host assumptions should change.
+
+Typical bootstrap adaptations should therefore be of the form:
+
+```text
+SECTION "SYN"   -> temporarily omit/neutralize wrapper
+SECTION "TRNA"  -> temporarily omit/neutralize wrapper
+~=               -> \= or NE
+missing runtime global declarations -> compatible bootstrap declarations/shims
+host-specific stream assumptions -> controlled bootstrap equivalents
+```
+
+The adaptation must be treated as a bootstrap derivative, not as a replacement or modernization of the historical Cambridge sources. Keep the originals untouched and make every semantic or environmental deviation explicit.
+
+The important consequence is that the output of the kit compiler is still an implementation of the **Cambridge** frontend. Once the demoted sources have been compiled through MR10 and converted by CGI to INTCODE, ICINT is running Cambridge `SYN` and `TRN`, not enhanced MR10 phases. Those phases can then recognize the full richer language they were written to recognize.
+
+Conceptually:
+
+```text
+historical Cambridge SYN/TRN
+            |
+            v
+ temporary source demotion
+  (bootstrap dialect only)
+            |
+            v
+       MR10 SYNI/TRNI
+            |
+            v
+          OCODE
+            |
+            v
+            CGI
+            |
+            v
+ Cambridge SYN/TRN in INTCODE
+            |
+            v
+           ICINT
+            |
+            v
+ full Cambridge frontend behavior
+            |
+            v
+     authentic OCODE -> CG370
+```
+
+This is preferable to implementing the later language in MR10 because it minimizes new compiler logic, limits bootstrap changes to source compatibility, and gets the project onto the surviving Cambridge compiler lineage as quickly as possible.
+
+## Runtime/header compatibility for the demoted Cambridge frontend
+
+Source inspection shows that the Cambridge System/370 `LIBHDR` deliberately preserves the important global-vector numbers used by the MR10 kit. Examples include:
+
+```text
+SELECTINPUT   11
+SELECTOUTPUT  12
+RDCH          13
+WRCH          14
+STOP          30
+LEVEL         31
+LONGJUMP      32
+REWIND        35
+APTOVEC       40
+FINDOUTPUT    41
+FINDINPUT     42
+ENDREAD       46
+ENDWRITE      47
+WRITES        60
+WRITEN        62
+NEWLINE       63
+PACKSTRING    66
+UNPACKSTRING  67
+READN         70
+WRITEF        76
+MAPSTORE      78
+GETBYTE       85
+PUTBYTE       86
+```
+
+This is strong evidence of deliberate ABI continuity. The bootstrap problem is therefore not a wholesale global-vector renumbering problem.
+
+### Word geometry
+
+One conspicuous environmental difference is word geometry:
+
+```text
+MR10 kit:       BYTESPERWORD = 2
+Cambridge/370:  BYTESPERWORD = 4, BITSPERWORD = 32
+```
+
+Cambridge `SYN` does not appear to depend directly on `BYTESPERWORD`. Cambridge `TRN` does, notably when packing binary OCODE bytes into its workspace through `WRBYTE`.
+
+For execution under ICINT, do not blindly substitute the native 370 value. `BYTESPERWORD` during bootstrap should describe the semantics of the interpreted machine on which the compiler is running. The correct bootstrap value must be chosen according to ICINT/CGI representation, even though the eventual native target is 32-bit System/370.
+
+### Small missing primitives
+
+Cambridge `SYN` uses `SKIPREC`, global 26 in the Cambridge `LIBHDR`; the reduced kit header does not expose it. This is a real but small runtime gap.
+
+Its use is associated with historical source-record termination/handling. A controlled bootstrap stream may avoid the path initially, but the global still needs to be declared and eventually supplied or shimmed. Missing services of this kind should be treated individually rather than as evidence that a new runtime is required.
+
+### GET and named streams
+
+Cambridge `SYN` implements `GET` by resolving the requested name with `FINDINPUT`, switching with `SELECTINPUT`, and restoring nested inputs through `ENDREAD` and `SELECTINPUT`.
+
+This aligns well with the named-DD stream support already developed for the MVS ICINT host. Therefore header inclusion is likely to be principally a stream provisioning/naming issue. During the earliest bootstrap it is also acceptable to flatten headers if that reduces variables, provided the unmodified `GET` path is subsequently exercised.
+
+### Do not bootstrap the full Cambridge driver first
+
+The full Cambridge `bcpl` driver depends on a much broader runtime surface, including facilities such as parameter streams, output wrapping, logging, stack-limit globals, dynamic segment loading/unloading, code-generator options, and native-system conventions.
+
+Those dependencies are not prerequisites for proving Cambridge `SYN/TRN` under ICINT.
+
+Instead, construct a small bootstrap driver that performs only the initialization actually needed by the frontend:
+
+```text
+establish compiler globals and streams
+allocate workspace
+set WORKBASE / WORKTOP / TREEP
+initialize SECTIONNAME and report state
+call FORMTREE()
+set OBUFP / OBUFB
+call COMPILEAE(tree)
+capture emitted OCODE
+```
+
+The historical compiler driver is evidence for the required initialization sequence; it need not itself be brought up before the frontend.
+
+### Bootstrap proof target
+
+The first decisive proof should be deliberately small. Once demoted Cambridge `SYN/TRN` run under ICINT, compile a source containing at least:
+
+```bcpl
+SECTION "TEST"
+NEEDS "FOO"
+```
+
+and inspect the emitted OCODE. Success demonstrates that the project has crossed from the reduced MR10 bootstrap language into the richer Cambridge frontend without first implementing that richer language in the kit compiler.
+
+The resulting strategy is therefore:
+
+```text
+1. preserve original Cambridge sources
+2. create auditable bootstrap-demoted copies
+3. compile those copies with existing MR10 SYNI/TRNI
+4. lower their OCODE through CGI to INTCODE
+5. run Cambridge SYN/TRN under ICINT with a small bootstrap driver
+6. prove SECTION/NEEDS in emitted OCODE
+7. then bring CG370 into the same hosted path
+```
+
+The key principle is: **demote the source briefly; do not demote the compiler semantics.**
 
 ## CG370 directly consumes OCODE
 
@@ -284,3 +448,7 @@ The strategic goal is to use the bootstrap environment to bring up enough of the
 10. Distinguish rigorously between features the Cambridge compiler recognizes and features required to compile the compiler itself.
 11. Before extending MR10 language support, prove that the Cambridge compiler implementation actually uses the missing feature.
 12. Prefer minimal source-compatible bootstrap adaptations over implementing the entire later Cambridge language in the kit compiler.
+13. Keep historical Cambridge sources pristine; perform bootstrap demotion in separate derivative copies.
+14. Prefer a small bootstrap driver for hosted Cambridge SYN/TRN over reconstructing the full production compiler driver prematurely.
+15. Treat runtime/header gaps as individually provable shims; do not infer a new runtime is required from isolated missing services.
+16. Demote source syntax only as far as necessary; preserve Cambridge compiler semantics exactly.
