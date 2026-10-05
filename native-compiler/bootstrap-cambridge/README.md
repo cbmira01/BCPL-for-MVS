@@ -73,10 +73,13 @@ For each derivative unit the generator:
 3. rewrites the Cambridge not-equal spelling `~=` as the older `NE` spelling;
 4. maps historical member-style header names to MVS DD-friendly names:
    `HEADERS(SYNHDR)` -> `SYNHDR` and `HEADERS(TRNHDR)` -> `TRNHDR`;
-5. otherwise preserves Cambridge source text and semantics.
+5. for LEX only, splits the two large packed reserved-word literals into a
+   sequence of shorter `D("...//")` calls so each literal fits MR10's 255-byte
+   source-string limit while preserving reserved-word order and CODEP mapping;
+6. otherwise preserves Cambridge source text and semantics.
 
-The GET-name mapping is a host accommodation only. It does not alter header
-contents or compiler semantics.
+The GET-name and LEX packed-string rewrites are bootstrap accommodations only.
+They do not alter header contents or intended compiler semantics.
 
 ## Deterministic generation
 
@@ -87,8 +90,9 @@ python3 native-compiler/bootstrap-cambridge/make-demoted.py
 ```
 
 The generator asserts the expected historical section boundaries, `~=` counts,
-and header-GET counts before writing anything. Unexpected source drift therefore
-fails loudly rather than silently broadening the bootstrap transformation.
+header-GET counts, and LEX packed-word-table text before writing anything.
+Unexpected source drift therefore fails loudly rather than silently broadening
+the bootstrap transformation.
 
 ## SYN compile probes
 
@@ -119,43 +123,49 @@ PROGLEN 80004 -> 160004 bytes
 Job 884 exposed one additional capacity dependency in v17: the OP1 store guard
 hard-codes a maximum address of `PROGWORD+20000`. With a 40,001-word PROGVEC,
 that guard falsely trapped a legitimate store at D=194995 and returned -2.
-Accordingly the v18 generator must expand both the allocation and the matching
-OP1 guard:
+Accordingly the v18 generator expands both the allocation and the matching OP1
+guard:
 
 ```text
 PROGCNT                 20001 -> 40001
 OP1 PROGVEC upper bound 20000 -> 40000 words above PROGWORD
 ```
 
-This is still a capacity-only revision. The intended INTCODE, stream, and
-runtime semantics remain those of v17.
+Job 885, using corrected v18 and `L12000`, successfully compiled Cambridge SYN
+to nonempty OCODE. CGI converted that OCODE to an INTCODE unit whose loaded
+program size was 4,040 words. The subsequent standalone RUN error is not a
+compiler failure: SYN is a compiler section, not a complete BCPL START program.
 
-`options-large-tree.txt` is restored to:
+This establishes the first successful Cambridge frontend-section bootstrap:
 
 ```text
-L12000
+Cambridge SYN source -> MR10 compiler -> OCODE -> CGI -> INTCODE
 ```
 
-The controlled v18 SYN probe is:
+## LEX compile probe
 
-```sh
-tools/compile-and-run --results --save-ocode \
-    --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
-    --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
-    --dd SYNHDR=richards-bcpltape/bcplib/bcpl/synhdr \
-    asm/icintv18.asm \
-    native-compiler/bootstrap-cambridge/demoted/syn
+Job 886 reached Cambridge LEX with v18 and `L12000` but failed first with:
+
+```text
+SYNTAX ERROR NEAR LINE 286: STRING TOO LONG
 ```
+
+The source at that point is the first of two packed slash-delimited reserved-word
+strings consumed by `D(WORDS)`. MR10's lexer limits a source string to 255
+characters. Cambridge LEX depends on a later compiler that permits the larger
+literal.
+
+The safe bootstrap demotion is to split each packed string into several shorter
+`D("...//")` calls. `CODEP` is static and advances across D calls, so the exact
+reserved-word sequence and its parallel `S.*` table mapping are preserved. The
+subsequent `ERROR IN COMMAND`, comment-termination, and `$)` diagnostics in job
+886 are treated as parser fallout from the first overlong-string error until a
+rerun proves otherwise.
 
 The MVS step return code for an interpreted compiler failure remains zero; the
 host `compile-and-run` wrapper detects the BCPL execution code afterward. Thus
 CG and RUN may still execute on empty compiler output in a failed interpreted
 probe. A true MVS abend propagates and flushes later steps.
-
-This remains a probe, not yet a claim that the resulting unit is runnable by
-itself. If compilation reaches OCODE, that is already useful evidence; a later
-final RUN failure from the absence of a complete Cambridge compiler driver is
-not the result being tested here.
 
 No header-content, runtime, word-size, `SKIPREC`, driver-initialization, or
 compiler-semantic accommodation has yet been made.
