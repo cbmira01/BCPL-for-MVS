@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""Run the resident Cambridge BCPL compiler under ICINT on MVS/TK5.
+
+This tool deliberately sits beside compile-and-run rather than extending it.
+compile-and-run remains the MR10 bootstrap compiler driver; this command owns
+final-run Cambridge inputs and outputs.
+
+Current bootstrap contract:
+
+  * rebuild demoted Cambridge sources;
+  * ensure the enlarged-name MR10 TRNI image exists;
+  * build/load the resident Cambridge compiler image under ICINT V19;
+  * present the requested BCPL source as final-run SYSIN;
+  * allocate CODE as a temporary FB80 data set and recover it to the host;
+  * allocate SYSGO as DUMMY so the historical default DECK path is exercised
+    without yet pretending that JES SYSOUT is a binary-safe object-deck export.
+
+The recovered CODE stream is written as workarea/<source-stem>.s370.asm.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+CORE_PATH = ROOT / "tools" / "compile-and-run-core.py"
+BOOT = ROOT / "native-compiler" / "bootstrap-cambridge"
+ICINT = ROOT / "asm" / "icintv19.asm"
+TRNI = BOOT / "trni-large-names.int"
+
+RESIDENT_SOURCES = [
+    BOOT / "demoted" / "bcpl",
+    BOOT / "demoted" / "syn",
+    BOOT / "demoted" / "lex",
+    BOOT / "demoted" / "trna",
+    BOOT / "demoted" / "trnb",
+    BOOT / "demoted" / "cga",
+    BOOT / "demoted" / "cgb",
+    BOOT / "demoted" / "cgc",
+    BOOT / "demoted" / "cgd",
+    BOOT / "demoted" / "cge",
+    BOOT / "bootstrap-host.bcpl",
+]
+
+NAMED_INPUTS = [
+    ("OPTIONS", BOOT / "options-large-tree.txt"),
+    ("CAMBPARM", BOOT / "cambridge-options.txt"),
+    ("LIBHDR", ROOT / "richards-bcpltape" / "sys3" / "bcpl" / "libhdr"),
+    ("SYNHDR", ROOT / "richards-bcpltape" / "bcplib" / "bcpl" / "synhdr"),
+    ("TRNHDR", ROOT / "richards-bcpltape" / "bcplib" / "bcpl" / "trnhdr"),
+    ("CGHDR", ROOT / "richards-bcpltape" / "bcplib" / "bcpl" / "cghdr"),
+]
+
+
+def load_core():
+    spec = importlib.util.spec_from_file_location("compile_and_run_core", CORE_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {CORE_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def rebuild_bootstrap() -> None:
+    subprocess.run([sys.executable, str(BOOT / "make-demoted.py")], check=True)
+    if not TRNI.is_file():
+        subprocess.run(["bash", str(BOOT / "build-mr10-trni-large-names.sh")], check=True)
+
+
+def icint_starts(lines: list[str]) -> list[int]:
+    return [
+        index
+        for index, line in enumerate(lines)
+        if line.strip().startswith("INTCODE SYSTEM ENTERED")
+    ]
+
+
+def interpreted_execution_codes(job_report: str) -> list[int | None]:
+    lines = [line.replace("\f", "") for line in job_report.splitlines()]
+    starts = icint_starts(lines)
+    codes: list[int | None] = []
+    pattern = re.compile(r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)")
+    for position, start in enumerate(starts):
+        stop = starts[position + 1] if position + 1 < len(starts) else len(lines)
+        code = None
+        for line in lines[start:stop]:
+            match = pattern.search(line)
+            if match is not None:
+                code = int(match.group(1))
+                break
+        codes.append(code)
+    return codes
+
+
+def extract_final_results(job_report: str, module_count: int) -> str:
+    lines = [line.replace("\f", "") for line in job_report.splitlines()]
+    starts = icint_starts(lines)
+    expected = module_count * 2 + 1
+    if len(starts) < expected:
+        raise RuntimeError(
+            "Cambridge pipeline did not reach final RUN step "
+            f"(found {len(starts)} ICINT execution(s), expected {expected})"
+        )
+
+    start = starts[-1]
+    execution_end = None
+    mapstore_end = None
+    for index in range(start, len(lines)):
+        stripped = lines[index].strip()
+        if stripped.startswith("EXECUTION CYCLES ="):
+            execution_end = index
+        if stripped == "*** END MAPSTORE ***":
+            mapstore_end = index
+            break
+
+    if mapstore_end is not None:
+        end = mapstore_end
+    elif execution_end is not None:
+        end = execution_end
+    else:
+        raise RuntimeError("final Cambridge RUN has no execution-completion record")
+
+    return "\n".join(lines[start:end + 1]).strip("\r\n") + "\n"
+
+
+def make_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="cambridge-compile",
+        description=(
+            "Compile BCPL source with the resident Cambridge compiler under "
+            "ICINT and recover its System/370 CODE stream."
+        ),
+    )
+    parser.add_argument("source", help="BCPL source presented to Cambridge as SYSIN")
+    parser.add_argument(
+        "--listing",
+        choices=("light", "medium", "heavy"),
+        default="medium",
+        help="IFOX/link-editor listing profile for ICINT (default: medium)",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=600.0,
+        metavar="SECONDS",
+        help="maximum wait for JES/result completion (default: 600)",
+    )
+    parser.add_argument(
+        "--reader-host",
+        default="127.0.0.1",
+        metavar="HOST",
+        help="Hercules socket-reader host (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--reader-port",
+        type=int,
+        default=3505,
+        metavar="PORT",
+        help="Hercules socket-reader port (default: 3505)",
+    )
+    parser.add_argument(
+        "--jcl",
+        metavar="PATH",
+        help="generated JCL deck path (default: workarea/cambridge-compile-SOURCE.jcl)",
+    )
+    parser.add_argument(
+        "--job-name",
+        default="CAMBCOMP",
+        metavar="NAME",
+        help="MVS JOB name (default: CAMBCOMP)",
+    )
+    return parser
+
+
+def main(argv=None) -> int:
+    parser = make_parser()
+    args = parser.parse_args(argv)
+
+    try:
+        core = load_core()
+        source = core.resolve_repo_path(args.source)
+        if not source.is_file():
+            raise ValueError(f"BCPL source does not exist: {source}")
+        if not ICINT.is_file():
+            raise ValueError(f"ICINT V19 does not exist: {ICINT}")
+        if not 1 <= args.reader_port <= 65535:
+            raise ValueError("--reader-port must be between 1 and 65535")
+        if args.timeout <= 0:
+            raise ValueError("--timeout must be greater than zero")
+
+        job_name = args.job_name.upper()
+        if not core.MVS_NAME.fullmatch(job_name):
+            raise ValueError("--job-name must be a valid MVS name of at most 8 characters")
+
+        rebuild_bootstrap()
+        core.TRNI = TRNI
+        core.interpreted_execution_codes = interpreted_execution_codes
+
+        for resident in RESIDENT_SOURCES:
+            if not resident.is_file():
+                raise ValueError(f"resident compiler module does not exist: {resident}")
+        for name, path in NAMED_INPUTS:
+            if not path.is_file():
+                raise ValueError(f"Cambridge {name} input does not exist: {path}")
+
+        deck = core.build_deck(
+            interpreter=ICINT,
+            sources=RESIDENT_SOURCES,
+            job_name=job_name,
+            listing=args.listing,
+            named_dds=NAMED_INPUTS,
+            save_ocode=False,
+            save_intcode=False,
+        )
+
+        # Apply the same operational policy as tools/compile-and-run.
+        deck = deck.replace(
+            "EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)",
+            "EXEC PGM=RUNMOD,REGION=256K,TIME=(,30),COND=(4,LT)",
+        )
+        deck = deck.replace("//SYSUDUMP DD  SYSOUT=*\n", "//SYSUDUMP DD  DUMMY\n")
+
+        # Cambridge owns final-run SYSIN.  CODE is textual and safe to recover
+        # through marked SYSOUT.  SYSGO is deliberately DUMMY for now: the
+        # historical DECK path is exercised, but binary object-deck export will
+        # be added only with a byte-preserving MVS/host transfer path.
+        source_text = core.read_ascii_records(source, f"Cambridge source {source.name}")
+        final_dump = deck.rfind("//SYSUDUMP DD  DUMMY\n")
+        if final_dump < 0:
+            raise RuntimeError("cannot locate final RUN SYSUDUMP insertion point")
+        final_dds = (
+            core.inline_dd("SYSIN", source_text)
+            + core.temp_output_dd("CODE", "&&CODE", "PASS")
+            + "//SYSGO    DD  DUMMY\n"
+        )
+        deck = deck[:final_dump] + final_dds + deck[final_dump:]
+
+        if not deck.endswith("//\n"):
+            raise RuntimeError("generated compiler deck has no terminal // record")
+        deck = (
+            deck[:-3]
+            + core.save_step("SVCODE", "code", 1, source, "&&CODE")
+            + "//\n"
+        )
+
+        jcl_path = (
+            core.resolve_repo_path(args.jcl)
+            if args.jcl
+            else core.WORKAREA / f"cambridge-compile-{source.stem}.jcl"
+        )
+        jcl_path.parent.mkdir(parents=True, exist_ok=True)
+        jcl_path.write_text(deck, encoding="ascii", newline="\n")
+
+        output = core.WORKAREA / f"{source.stem}.s370.asm"
+        if output.exists():
+            output.unlink()
+
+        print(
+            f"submitting {jcl_path.relative_to(ROOT)} as {job_name} "
+            f"through reader port {args.reader_port}"
+        )
+        start_offset = core.submit_job(jcl_path, args.reader_host, args.reader_port)
+        job_number = core.wait_for_new_job(
+            job_name,
+            start_offset,
+            args.timeout,
+            core.DEFAULT_POLL,
+        )
+        print(f"JOB {job_number}")
+
+        report = core.wait_for_job_report(job_number, args.timeout, core.DEFAULT_POLL)
+        core.validate_compiler_pipeline(report, len(RESIDENT_SOURCES))
+
+        code = core.extract_saved_stream(report, "code", 1)
+        output.write_text(code, encoding="ascii", newline="\n")
+        print(f"saved Cambridge CODE: {output.relative_to(ROOT)}")
+        sys.stdout.write(extract_final_results(report, len(RESIDENT_SOURCES)))
+        return 0
+
+    except (ValueError, RuntimeError, OSError, TimeoutError, subprocess.CalledProcessError) as exc:
+        print(f"cambridge-compile: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
