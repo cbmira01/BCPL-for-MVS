@@ -7,6 +7,8 @@ MVS execution policy to every RUNMOD step:
   * TIME=(,30) by default.
   * SYSUDUMP is discarded by default.
   * --dump restores SYSUDUMP SYSOUT=* for explicit dump collection.
+  * --trni selects an alternate MR10 translator image without replacing the
+    tracked intcode/trni.int.
   * Both legacy and combined ICINT startup banners are recognized.
 """
 
@@ -47,6 +49,12 @@ def main() -> int:
     original_make_parser = core.make_parser
     original_runtime_step = core.runtime_step
 
+    class TrniAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            path = core.resolve_repo_path(values)
+            core.TRNI = path
+            setattr(namespace, self.dest, values)
+
     def make_parser():
         parser = original_make_parser()
         parser.add_argument(
@@ -54,6 +62,15 @@ def main() -> int:
             action=DumpAction,
             default=False,
             help="enable SYSUDUMP for RUNMOD steps (default: discard dumps)",
+        )
+        parser.add_argument(
+            "--trni",
+            action=TrniAction,
+            metavar="PATH",
+            help=(
+                "use an alternate MR10 TRNI image for BCPL compilation; "
+                "does not modify intcode/trni.int"
+            ),
         )
         return parser
 
