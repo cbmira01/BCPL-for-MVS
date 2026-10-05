@@ -16,6 +16,11 @@ is expanded together:
 - decoded-global GUSED bounds 400 -> 699;
 - MAPSTORE global scan 400 -> 699.
 
+The larger static image also pushes the implicit end-of-CSECT literal pool past
+the three established 4K USING regions.  Emit the executable-code literal pool
+explicitly at the existing code/data boundary with LTORG.  This preserves the
+V18 register/base architecture; it is an assembler-layout accommodation only.
+
 The generated file is asm/icintv19.asm.  The script refuses to overwrite an
 existing V19 candidate.
 """
@@ -63,6 +68,8 @@ def main() -> None:
         "*     COMPILER MASTER AND SYSTEM/370 CGHDR.\n"
         "*   - ENLARGE THE MATCHING OP1 GLOBAL STORE GUARD, GUSED BITMAP,\n"
         "*     GLOBAL-USE TRACKING BOUNDS, AND MAPSTORE GLOBAL SCAN.\n"
+        "*   - PLACE THE EXECUTABLE-CODE LITERAL POOL AT THE CODE/DATA\n"
+        "*     BOUNDARY SO THE EXISTING THREE USING REGIONS STILL REACH IT.\n"
         "*   - NO INTCODE, STREAM, OR PROGVEC SEMANTICS CHANGE.\n"
         "*\n"
         + marker,
@@ -91,6 +98,36 @@ def main() -> None:
 
     text = replace_once(text, "GUSED    DS    CL401", "GUSED    DS    CL700", "GUSED size")
 
+    # JOB 895 showed 21 IFO209 addressability errors because the enlarged
+    # static area pushed part of the implicit final literal pool above x'2FFF'.
+    # Keep the established R12/R11/R10 USING map and emit all literals used by
+    # executable code immediately before the existing data/static area.
+    code_data_boundary = (
+        "SHRINT   L     R0,B\n"
+        "         L     R1,A\n"
+        "         SRL   R0,0(R1)\n"
+        "         BR    R14\n"
+        "***********************************************************************\n"
+        "* GLOBALS / STREAMS / DCB / TABLES\n"
+        "***********************************************************************\n"
+    )
+    code_data_with_ltorg = (
+        "SHRINT   L     R0,B\n"
+        "         L     R1,A\n"
+        "         SRL   R0,0(R1)\n"
+        "         BR    R14\n"
+        "         LTORG\n"
+        "***********************************************************************\n"
+        "* GLOBALS / STREAMS / DCB / TABLES\n"
+        "***********************************************************************\n"
+    )
+    text = replace_once(
+        text,
+        code_data_boundary,
+        code_data_with_ltorg,
+        "code/data LTORG boundary",
+    )
+
     TARGET.write_text(text, encoding="ascii")
 
     print(f"generated {TARGET.relative_to(ROOT)}")
@@ -99,6 +136,7 @@ def main() -> None:
     print("  OP1 guard: G+400 -> G+699")
     print("  GUSED   : 401 -> 700 bytes")
     print("  tracking/map bounds: 400 -> 699")
+    print("  literal pool: LTORG at executable-code/data boundary")
 
 
 if __name__ == "__main__":
