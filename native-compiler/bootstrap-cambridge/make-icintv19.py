@@ -261,9 +261,30 @@ def main() -> None:
     )
     text = replace_once(text, old_messages, new_messages, "startup report messages")
 
-    # V19 static growth pushes these MAPSTORE strings outside direct
-    # addressability.  Use full addresses from the reachable LTORG pool.
+    # V19 static growth, including the startup report strings, pushes several
+    # existing diagnostic/trace/MAPSTORE texts outside direct addressability.
+    # Use full addresses from the reachable LTORG pool rather than consuming
+    # another permanent base register.
     for old, new, label in (
+        ("         LA    R2,EXECMSG", "         L     R2,=A(EXECMSG)", "EXECMSG address load"),
+        ("ADEFAULT LA    R2,BADCHMSG", "ADEFAULT L     R2,=A(BADCHMSG)", "BADCHMSG address load"),
+        ("         LA    R2,BADCDMSG", "         L     R2,=A(BADCDMSG)", "BADCDMSG address load"),
+        ("         LA    R2,UNSETMSG", "         L     R2,=A(UNSETMSG)", "UNSETMSG address load"),
+        ("         LA    R2,ALSETMSG", "         L     R2,=A(ALSETMSG)", "ALSETMSG address load"),
+        ("         LA    R2,INTEMSG", "         L     R2,=A(INTEMSG)", "INTEMSG address load"),
+        ("         LA    R2,MSHEAD", "         L     R2,=A(MSHEAD)", "MSHEAD address load"),
+        ("         LA    R2,MSREG1", "         L     R2,=A(MSREG1)", "MSREG1 address load"),
+        ("         LA    R2,MSREG2", "         L     R2,=A(MSREG2)", "MSREG2 address load"),
+        ("         LA    R2,MSCYCMSG", "         L     R2,=A(MSCYCMSG)", "MSCYCMSG address load"),
+        ("         LA    R2,MSFRMH", "         L     R2,=A(MSFRMH)", "MSFRMH address load"),
+        ("         LA    R2,MSFRAME1", "         L     R2,=A(MSFRAME1)", "MSFRAME1 address load"),
+        ("         LA    R2,MSFRAME2", "         L     R2,=A(MSFRAME2)", "MSFRAME2 address load"),
+        ("         LA    R2,TRHEAD", "         L     R2,=A(TRHEAD)", "TRHEAD address load"),
+        ("         LA    R2,TRBAD1", "         L     R2,=A(TRBAD1)", "TRBAD1 address load"),
+        ("         LA    R2,TRBAD2", "         L     R2,=A(TRBAD2)", "TRBAD2 address load"),
+        ("         LA    R2,TRLINE1", "         L     R2,=A(TRLINE1)", "TRLINE1 address load"),
+        ("         LA    R2,TRLINE2", "         L     R2,=A(TRLINE2)", "TRLINE2 address load"),
+        ("         LA    R2,TRLINE3", "         L     R2,=A(TRLINE3)", "TRLINE3 address load"),
         ("         LA    R2,MSGLOB", "         L     R2,=A(MSGLOB)", "MSGLOB address load"),
         ("MSGDONE LA    R2,MSEND", "MSGDONE L     R2,=A(MSEND)", "MSEND address load"),
         ("MSFBAD  LA    R2,MSBADFR", "MSFBAD  L     R2,=A(MSBADFR)", "MSBADFR address load"),
@@ -312,7 +333,7 @@ def main() -> None:
     print("  stack globals: G!54=STACKBASE, G!55=STACKEND")
     print("  post-assembly capacity report: enabled")
     print("  literal pool: LTORG at executable-code/data boundary")
-    print("  far MAPSTORE addresses: loaded through =A(...) literals")
+    print("  far diagnostic/trace/MAPSTORE addresses: loaded through =A(...) literals")
 
 
 if __name__ == "__main__":
