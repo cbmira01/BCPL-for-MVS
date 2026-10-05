@@ -76,10 +76,17 @@ For each derivative unit the generator:
 5. for LEX only, splits the two large packed reserved-word literals into a
    sequence of shorter `D("...//")` calls so each literal fits MR10's 255-byte
    source-string limit while preserving reserved-word order and CODEP mapping;
-6. otherwise preserves Cambridge source text and semantics.
+6. for LEX only, replaces the Cambridge `READFLOAT` implementation with an
+   explicit fatal bootstrap stub because MR10 cannot parse the later `FLOAT`
+   conversion and `#+`, `#*`, `#/` floating operators;
+7. otherwise preserves Cambridge source text and semantics.
 
-The GET-name and LEX packed-string rewrites are bootstrap accommodations only.
-They do not alter header contents or intended compiler semantics.
+The GET-name and packed-string rewrites preserve intended compiler behavior.
+The `READFLOAT` replacement is deliberately narrower: floating literals are
+unsupported by the demoted bootstrap frontend and fail visibly if encountered.
+The historical source remains untouched and is intended to regain its original
+floating-literal implementation once the richer Cambridge frontend can compile
+itself.
 
 ## Deterministic generation
 
@@ -90,9 +97,9 @@ python3 native-compiler/bootstrap-cambridge/make-demoted.py
 ```
 
 The generator asserts the expected historical section boundaries, `~=` counts,
-header-GET counts, and LEX packed-word-table text before writing anything.
-Unexpected source drift therefore fails loudly rather than silently broadening
-the bootstrap transformation.
+header-GET counts, packed-word-table text, and `READFLOAT` body before writing
+anything. Unexpected source drift therefore fails loudly rather than silently
+broadening the bootstrap transformation.
 
 ## SYN compile probes
 
@@ -142,7 +149,7 @@ This establishes the first successful Cambridge frontend-section bootstrap:
 Cambridge SYN source -> MR10 compiler -> OCODE -> CGI -> INTCODE
 ```
 
-## LEX compile probe
+## LEX compile probes
 
 Job 886 reached Cambridge LEX with v18 and `L12000` but failed first with:
 
@@ -150,22 +157,30 @@ Job 886 reached Cambridge LEX with v18 and `L12000` but failed first with:
 SYNTAX ERROR NEAR LINE 286: STRING TOO LONG
 ```
 
-The source at that point is the first of two packed slash-delimited reserved-word
-strings consumed by `D(WORDS)`. MR10's lexer limits a source string to 255
-characters. Cambridge LEX depends on a later compiler that permits the larger
-literal.
+The source at that point was the first of two packed slash-delimited
+reserved-word strings consumed by `D(WORDS)`. MR10's lexer limits a source
+string to 255 characters. Splitting each packed string into several shorter
+`D("...//")` calls preserves the static `CODEP` sequence and therefore the
+reserved-word mapping.
 
-The safe bootstrap demotion is to split each packed string into several shorter
-`D("...//")` calls. `CODEP` is static and advances across D calls, so the exact
-reserved-word sequence and its parallel `S.*` table mapping are preserved. The
-subsequent `ERROR IN COMMAND`, comment-termination, and `$)` diagnostics in job
-886 are treated as parser fallout from the first overlong-string error until a
-rerun proves otherwise.
+Job 887 proved that rewrite worked: compilation advanced beyond the word table
+and then failed in `READFLOAT`, first at the later `FLOAT` conversion and then
+at the Cambridge floating operators `#*`, `#+`, and `#/`. The tree reached
+7,781 words, so this is not a workspace failure. It is a real source-dialect
+boundary.
+
+For bootstrap purposes `READFLOAT` is now replaced by a fatal `CAEREPORT(-33)`
+stub. This is intentionally not a floating-point emulation. If a compiler
+source used during bootstrap contains a floating literal, the demoted frontend
+must fail explicitly rather than silently generate an incorrect constant. If
+TRN/CG do not require floating literals, the bootstrap can proceed; the full
+historical `READFLOAT` implementation remains in the untouched Cambridge source
+for later self-hosting.
 
 The MVS step return code for an interpreted compiler failure remains zero; the
 host `compile-and-run` wrapper detects the BCPL execution code afterward. Thus
 CG and RUN may still execute on empty compiler output in a failed interpreted
 probe. A true MVS abend propagates and flushes later steps.
 
-No header-content, runtime, word-size, `SKIPREC`, driver-initialization, or
-compiler-semantic accommodation has yet been made.
+No header-content, `BYTESPERWORD`, `SKIPREC`, driver-initialization, or native
+runtime accommodation has yet been made.
