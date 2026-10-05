@@ -1,31 +1,20 @@
 #!/usr/bin/env python3
-"""Generate MR10-hostable Cambridge frontend units.
+"""Generate MR10-hostable Cambridge compiler units.
 
 The bootstrap derivative is deliberately mechanical:
 
-- split the historical Cambridge source containers at their SECTION boundaries;
-- omit the SECTION wrapper from each resulting compilation unit;
-- rewrite the Cambridge not-equal spelling '~=' as the older 'NE' spelling;
-- map historical library-member GET names to MVS-DD-friendly names:
-    HEADERS(SYNHDR) -> SYNHDR
-    HEADERS(TRNHDR) -> TRNHDR
-- split Cambridge LEX's packed reserved-word strings into shorter D(...) calls
-  that fit the MR10 compiler's 255-character string-literal limit while
-  preserving the original reserved-word order;
-- replace LEX READFLOAT with an explicit bootstrap-only fatal stub because the
-  MR10 source language cannot parse Cambridge FLOAT/# floating arithmetic;
-- rewrite TRNB's one later unary ABS source expression as equivalent older BCPL
-  integer logic while preserving S.ABS constant-folding semantics.
+- split historical source containers at SECTION boundaries;
+- omit SECTION wrappers from resulting compilation units;
+- rewrite Cambridge '~=' as older 'NE';
+- map historical member-style GET names to MVS-DD-friendly names;
+- split LEX packed reserved-word strings to fit MR10's 255-character limit;
+- replace LEX READFLOAT with an explicit bootstrap-only fatal stub because
+  MR10 cannot parse Cambridge FLOAT/# floating arithmetic;
+- rewrite TRNB's one unary ABS source expression as equivalent older BCPL;
+- omit the BCPL master's leading NEEDS "$LOAD$" dependency directive for the
+  interpreted all-modules-loaded bootstrap image.
 
-The GET-name, packed-string, and TRNB ABS rewrites preserve intended compiler
-semantics. The READFLOAT replacement is intentionally narrower: floating
-literals are not supported by the demoted bootstrap frontend. It fails visibly
-if invoked, rather than silently manufacturing an incorrect floating constant.
-The historical source remains untouched and is intended to regain full floating
-literal support once the richer Cambridge frontend can compile itself.
-
-This script deliberately does not modify header contents, runtime assumptions,
-BYTESPERWORD, SKIPREC, or compiler initialization.
+Historical sources remain untouched.  Unexpected source drift fails loudly.
 """
 
 from pathlib import Path
@@ -33,14 +22,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "source"
 OUT = ROOT / "demoted"
+HIST = ROOT.parent.parent / "richards-bcpltape" / "bcplib" / "bcpl"
 
 
 def split_container(path: Path, first_name: str, second_name: str):
     text = path.read_text(encoding="utf-8")
-
     first_header = f'SECTION "{first_name}"\n'
     second_marker = f'\n.\nSECTION "{second_name}"\n'
-
     if not text.startswith(first_header):
         raise SystemExit(f"{path}: expected leading {first_header!r}")
     if text.count(second_marker) != 1:
@@ -48,27 +36,40 @@ def split_container(path: Path, first_name: str, second_name: str):
             f"{path}: expected exactly one boundary {second_marker!r}, "
             f"found {text.count(second_marker)}"
         )
-
     first, second = text[len(first_header):].split(second_marker, 1)
     return first, second
+
+
+def split_sections(path: Path, names):
+    """Split a historical multi-SECTION container into named bodies."""
+    text = path.read_text(encoding="utf-8")
+    first_header = f'SECTION "{names[0]}"\n'
+    if not text.startswith(first_header):
+        raise SystemExit(f"{path}: expected leading {first_header!r}")
+    rest = text[len(first_header):]
+    units = []
+    for name in names[1:]:
+        marker = f'\n.\nSECTION "{name}"\n'
+        if rest.count(marker) != 1:
+            raise SystemExit(
+                f"{path}: expected exactly one boundary {marker!r}, "
+                f"found {rest.count(marker)}"
+            )
+        body, rest = rest.split(marker, 1)
+        units.append(body)
+    units.append(rest)
+    return units
 
 
 def demote(text: str) -> str:
     text = text.replace("~=", "NE")
     text = text.replace('GET "HEADERS(SYNHDR)"', 'GET "SYNHDR"')
     text = text.replace('GET "HEADERS(TRNHDR)"', 'GET "TRNHDR"')
+    text = text.replace('GET "HEADERS(CGHDR)"', 'GET "CGHDR"')
     return text
 
 
 def demote_lex_word_table(text: str) -> str:
-    """Split Cambridge LEX packed word lists for MR10 string compatibility.
-
-    Cambridge LEX uses D(WORDS) to scan slash-delimited names and advances the
-    static CODEP across calls. Splitting one long D string into several D calls
-    therefore preserves the exact sequence of reserved words and S.* values.
-    Each replacement string ends in // so D returns cleanly before the next call.
-    """
-
     first = '''       D("AND/ABS/*
          *BE/BREAK/BY/*
          *CASE/*
@@ -78,12 +79,10 @@ def demote_lex_word_table(text: str) -> str:
          *GOTO/GE/GR/GLOBAL/GET/*
          *IF/INTO/*
          *LET/LV/LE/LS/LOGOR/LOGAND/LOOP/LSHIFT//")'''
-
     first_replacement = '''       D("AND/ABS/BE/BREAK/BY/CASE/DO/DEFAULT//")
        D("EQ/EQV/ELSE/ENDCASE/FALSE/FOR/FINISH/FLOAT/FIX//")
        D("GOTO/GE/GR/GLOBAL/GET/IF/INTO//")
        D("LET/LV/LE/LS/LOGOR/LOGAND/LOOP/LSHIFT//")'''
-
     second = '''       D("MANIFEST/*
          *NE/NOT/NEQV/NEEDS/*
          *OF/OR/*
@@ -95,39 +94,20 @@ def demote_lex_word_table(text: str) -> str:
          *VEC/VALOF/*
          *WHILE/*
          *$//")'''
-
     second_replacement = '''       D("MANIFEST/NE/NOT/NEQV/NEEDS/OF/OR//")
        D("RESULTIS/RETURN/REM/RSHIFT/RV//")
        D("REPEAT/REPEATWHILE/REPEATUNTIL//")
        D("SWITCHON/STATIC/SLCT/SECTION//")
        D("TO/TEST/TRUE/THEN/TABLE/UNTIL/UNLESS//")
        D("VEC/VALOF/WHILE/$//")'''
-
     if text.count(first) != 1:
-        raise SystemExit(
-            f"LEX: expected exactly one first packed word table, found {text.count(first)}"
-        )
+        raise SystemExit(f"LEX: expected one first packed word table, found {text.count(first)}")
     if text.count(second) != 1:
-        raise SystemExit(
-            f"LEX: expected exactly one second packed word table, found {text.count(second)}"
-        )
-
-    text = text.replace(first, first_replacement, 1)
-    text = text.replace(second, second_replacement, 1)
-    return text
+        raise SystemExit(f"LEX: expected one second packed word table, found {text.count(second)}")
+    return text.replace(first, first_replacement, 1).replace(second, second_replacement, 1)
 
 
 def demote_lex_readfloat(text: str) -> str:
-    """Remove later floating syntax from the bootstrap implementation of LEX.
-
-    The original READFLOAT body uses Cambridge FLOAT conversion and #+, #*, #/
-    operators, which the MR10 compiler cannot parse. Do not emulate those
-    operations inaccurately. During bootstrap, fail fatally if a source being
-    compiled actually contains a floating literal. This keeps the limitation
-    explicit and lets the compiler-source bootstrap proceed if that feature is
-    not part of the implementation subset.
-    """
-
     original = '''AND READFLOAT() BE
 
 $(  LET EXP, N = 0, 0
@@ -154,44 +134,35 @@ $(  LET EXP, N = 0, 0
           OR  $(  DECVAL := DECVAL #* FLTEN; EXP := EXP - 1  $)
     $)
 $)'''
-
     replacement = '''AND READFLOAT() BE
 $(  || BOOTSTRAP ONLY: MR10 CANNOT COMPILE CAMBRIDGE FLOAT/# OPERATORS.
     || FAIL RATHER THAN PRODUCE AN INCORRECT FLOATING CONSTANT.
     CAEREPORT(-33)
 $)'''
-
     if text.count(original) != 1:
-        raise SystemExit(
-            f"LEX: expected exactly one Cambridge READFLOAT body, found {text.count(original)}"
-        )
-
+        raise SystemExit(f"LEX: expected one READFLOAT body, found {text.count(original)}")
     return text.replace(original, replacement, 1)
 
 
 def demote_trnb_abs(text: str) -> str:
-    """Rewrite TRNB's later unary ABS syntax using older integer BCPL.
-
-    MR10 treats ABS as an undeclared name. Cambridge TRNB uses it exactly once,
-    while constant-folding an S.ABS syntax node. Evaluate the operand once and
-    return its integer absolute value with ordinary comparison and negation.
-    """
-
     original = '            CASE S.ABS: RESULTIS ABS EVALCONST(H2X)'
     replacement = '''            CASE S.ABS:
             $(  LET E = EVALCONST(H2X)
                 RESULTIS E<0 -> -E, E
             $)'''
-
     if text.count(original) != 1:
-        raise SystemExit(
-            f"TRNB: expected exactly one unary ABS expression, found {text.count(original)}"
-        )
-
+        raise SystemExit(f"TRNB: expected one unary ABS expression, found {text.count(original)}")
     return text.replace(original, replacement, 1)
 
 
-def write_unit(name: str, historical_section: str, text: str) -> None:
+def demote_master(text: str) -> str:
+    prefix = 'SECTION "BCPL"\nNEEDS "$LOAD$"\n\n'
+    if not text.startswith(prefix):
+        raise SystemExit("bcpl master: expected SECTION BCPL followed by NEEDS $LOAD$")
+    return demote(text[len(prefix):])
+
+
+def write_unit(name: str, historical_section: str, text: str, extra_banner=()) -> None:
     text = demote(text)
     if historical_section == "LEX":
         text = demote_lex_word_table(text)
@@ -199,49 +170,42 @@ def write_unit(name: str, historical_section: str, text: str) -> None:
     if historical_section == "TRNB":
         text = demote_trnb_abs(text)
 
-    banner = (
-        f'|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "{historical_section}".\n'
-        '|| SECTION wrapper omitted for MR10 source-dialect compilation.\n'
-        '|| Historical HEADERS(...) GET names mapped to MVS DDNAMEs.\n'
-    )
+    banner = [
+        f'|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "{historical_section}".',
+        '|| SECTION wrapper omitted for MR10 source-dialect compilation.',
+        '|| Historical HEADERS(...) GET names mapped to MVS DDNAMEs.',
+    ]
     if historical_section == "LEX":
-        banner += (
-            '|| Packed reserved-word strings split to fit MR10 literal limits.\n'
-            '|| READFLOAT is a fatal bootstrap stub; floating literals unsupported.\n'
-        )
+        banner += [
+            '|| Packed reserved-word strings split to fit MR10 literal limits.',
+            '|| READFLOAT is a fatal bootstrap stub; floating literals unsupported.',
+        ]
     if historical_section == "TRNB":
-        banner += (
-            '|| Unary ABS implementation spelling demoted for MR10 compatibility.\n'
-        )
-
-    (OUT / name).write_text(banner + text, encoding="utf-8")
+        banner += ['|| Unary ABS implementation spelling demoted for MR10 compatibility.']
+    banner += list(extra_banner)
+    (OUT / name).write_text("\n".join(banner) + "\n" + text, encoding="utf-8")
 
 
 def main() -> None:
     syn_text = (SOURCE / "syn").read_text(encoding="utf-8")
     trn_text = (SOURCE / "trn").read_text(encoding="utf-8")
+    master_text = (HIST / "bcpl").read_text(encoding="utf-8")
+    cg_text = (HIST / "cg").read_text(encoding="utf-8")
 
-    # Keep all currently known bootstrap rewrites explicit. Unexpected source
-    # drift must fail loudly rather than silently broadening the demotion.
     if syn_text.count("~=") != 1:
-        raise SystemExit(
-            f"source/syn: expected exactly one '~=', found {syn_text.count('~=')}"
-        )
+        raise SystemExit(f"source/syn: expected one '~=', found {syn_text.count('~=')}")
     if trn_text.count("~=") != 1:
-        raise SystemExit(
-            f"source/trn: expected exactly one '~=', found {trn_text.count('~=')}"
-        )
+        raise SystemExit(f"source/trn: expected one '~=', found {trn_text.count('~=')}")
     if syn_text.count('GET "HEADERS(SYNHDR)"') != 2:
-        raise SystemExit(
-            "source/syn: expected exactly two GET \"HEADERS(SYNHDR)\" occurrences"
-        )
+        raise SystemExit('source/syn: expected exactly two GET "HEADERS(SYNHDR)" occurrences')
     if trn_text.count('GET "HEADERS(TRNHDR)"') != 2:
-        raise SystemExit(
-            "source/trn: expected exactly two GET \"HEADERS(TRNHDR)\" occurrences"
-        )
+        raise SystemExit('source/trn: expected exactly two GET "HEADERS(TRNHDR)" occurrences')
+    if cg_text.count('GET "HEADERS(CGHDR)"') != 5:
+        raise SystemExit('historical cg: expected exactly five GET "HEADERS(CGHDR)" occurrences')
 
     syn, lex = split_container(SOURCE / "syn", "SYN", "LEX")
     trna, trnb = split_container(SOURCE / "trn", "TRNA", "TRNB")
+    cga, cgb, cgc, cgd, cge = split_sections(HIST / "cg", ["CGA", "CGB", "CGC", "CGD", "CGE"])
 
     OUT.mkdir(exist_ok=True)
     write_unit("syn", "SYN", syn)
@@ -249,8 +213,23 @@ def main() -> None:
     write_unit("trna", "TRNA", trna)
     write_unit("trnb", "TRNB", trnb)
 
+    master = demote_master(master_text)
+    master_banner = (
+        '|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "BCPL".',
+        '|| SECTION wrapper omitted for MR10 source-dialect compilation.',
+        '|| NEEDS "$LOAD$" omitted: bootstrap loads all compiler units together.',
+    )
+    (OUT / "bcpl").write_text("\n".join(master_banner) + "\n" + master, encoding="utf-8")
+
+    for name, section, body in (
+        ("cga", "CGA", cga), ("cgb", "CGB", cgb), ("cgc", "CGC", cgc),
+        ("cgd", "CGD", cgd), ("cge", "CGE", cge),
+    ):
+        write_unit(name, section, body)
+
+    names = ("syn", "lex", "trna", "trnb", "bcpl", "cga", "cgb", "cgc", "cgd", "cge")
     print("generated:")
-    for name in ("syn", "lex", "trna", "trnb"):
+    for name in names:
         p = OUT / name
         print(f"  {p.relative_to(ROOT)}  {p.stat().st_size} bytes")
 
