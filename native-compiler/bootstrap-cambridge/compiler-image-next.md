@@ -49,12 +49,57 @@ belongs to its original host/linkage environment.  Our bootstrap design avoids
 that path by loading all compiler sections together so these globals are real
 addresses.
 
+## CGA exposes an MR10 translator-capacity boundary
+
+Job 899 is the first CGA bootstrap probe.  ICINT V19 assembled and linked
+cleanly, but the MR10 compile phase returned code 8 after reaching:
+
+```text
+TREE SIZE 11089
+REPORT:   TOO MANY NAMES DECLARED
+COMMANDS COMPILED 0
+```
+
+The saved OCODE contains only `STACK 2`, and CGI therefore reports program
+length zero.  These are failure artifacts and must not be treated as a partial
+CGA success.
+
+The diagnostic is MR10 TRN report 143.  In the historical translator source,
+`COMPILEAE` allocates `A = VEC 1200` and initializes `DVECT` to 1200.  `ADDNAME`
+stores three words per declaration `(name, class, value)` and reports 143 when
+`DVECS>=DVECT`.  The effective historical capacity is therefore about 400
+simultaneously visible names.  CGA exceeds that limit.
+
+This is a bootstrap-capacity issue, not a Cambridge syntax incompatibility and
+not an ICINT PROGVEC/global-vector issue.
+
+`make-mr10-trn-large-names.py` now creates a source-derived MR10 TRN variant by
+splitting the historical `mr10/bcplkit/trn` container and changing only TRN0:
+
+```text
+VEC 1200 -> VEC 2400
+DVECT 1200 -> DVECT 2400
+```
+
+The historical source remains untouched.  `build-mr10-trni-large-names.sh`
+compiles the generated TRN sections with the proven MR10 compiler/CGI pipeline,
+saves each generated INTCODE section, and concatenates them into:
+
+```text
+native-compiler/bootstrap-cambridge/trni-large-names.int
+```
+
+Do not replace the tracked default `intcode/trni.int` permanently until this
+variant has compiled CGA successfully and ordinary regression tests remain
+stable.
+
 ## Phase change
 
 The bootstrap problem is now no longer whether the Cambridge SYN/TRN sources or
-master can cross the MR10 dialect boundary.  The next objective is to bootstrap
-all five native S/370 code-generator sections and then build the complete
-interpreted compiler image.
+master can cross the MR10 dialect boundary.  The next objective is to provide
+the MR10 translator enough declaration capacity for CGA, then continue through
+all five native S/370 code-generator sections and build the complete interpreted
+compiler image.
 
 Historical components still required are:
 
@@ -99,19 +144,20 @@ No code-generator semantics have otherwise been changed.
 
 ## Next controlled experiment
 
-Probe CGA next with the V19 interpreter and both headers exposed:
+First build the larger-name MR10 translator derivative:
 
 ```sh
-tools/compile-and-run --results --save-ocode \
-    --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
-    --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
-    --dd CGHDR=richards-bcpltape/bcplib/bcpl/cghdr \
-    asm/icintv19.asm \
-    native-compiler/bootstrap-cambridge/demoted/cga
+bash native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh
 ```
 
-The success criterion is nonempty saved OCODE and a CGI-produced INTCODE image.
-The isolated final RUN is not meaningful for a CG section.
+That should produce `native-compiler/bootstrap-cambridge/trni-large-names.int`.
+For the first proof only, substitute it locally for `intcode/trni.int`, run the
+same CGA probe, then restore the tracked file immediately.  Once the variant is
+proven, add a permanent compiler-phase override to the tooling rather than
+continuing to swap files.
+
+The CGA success criterion is nonempty saved OCODE and a CGI-produced INTCODE
+image.  The isolated final RUN is not meaningful for a CG section.
 
 Continue CGA through CGE one section at a time so every additional
 source-dialect accommodation remains evidence-driven.
