@@ -315,7 +315,7 @@ RPTDONE  L     R2,=A(RPTBLNK)
          ST    R0,A
          L     R2,SYSPRINT
          BAL   R14,SELOUT
-         LA    R2,EXECMSG
+         L     R2,=A(EXECMSG)
          L     R3,CYCCNT
          L     R4,A
          BAL   R14,WRITEF
@@ -390,7 +390,7 @@ ASW1     CLI   CH,C'$'
          CLI   CH,C'Z'
          BE    CASEZ
          B     ADEFAULT
-ADEFAULT LA    R2,BADCHMSG
+ADEFAULT L     R2,=A(BADCHMSG)
          SR    R3,R3
          IC    R3,CH
          L     R4,P
@@ -452,7 +452,7 @@ CASEG    BAL   R14,RCH
          ST    R2,A
          CLI   CH,C'L'
          BE    CAGLAB
-         LA    R2,BADCDMSG
+         L     R2,=A(BADCDMSG)
          L     R3,P
          S     R3,PROGWORD
          BAL   R14,WRITEF
@@ -475,7 +475,7 @@ AZTEST   C     R8,=F'500'
          L     R5,0(R3,R2)
          LTR   R5,R5
          BNP   AZNEXT
-         LA    R2,UNSETMSG
+         L     R2,=A(UNSETMSG)
          LR    R3,R8
          BAL   R14,WRITEF
 AZNEXT   LA    R8,1(R8)
@@ -653,7 +653,7 @@ SETLAB   DS    0H
          LTR   R5,R5
          BNM   SETWHIL
          ST    R5,SETK
-         LA    R2,ALSETMSG
+         L     R2,=A(ALSETMSG)
          LR    R3,R8
          LCR   R4,R5
          L     R5,P
@@ -817,7 +817,7 @@ INTERROR L     R2,A
          ST    R2,MSCYC
          L     R2,SYSPRINT
          BAL   R14,SELOUT
-         LA    R2,INTEMSG
+         L     R2,=A(INTEMSG)
          L     R3,C
          S     R3,PROGWORD
          BAL   R14,WRITEF
@@ -2097,22 +2097,22 @@ MAPSTORE DS    0H
          STM   R6,R9,MSSAVE
          L     R2,SYSPRINT
          BAL   R14,SELOUT
-         LA    R2,MSHEAD
+         L     R2,=A(MSHEAD)
          BAL   R14,WRITES
-         LA    R2,MSREG1
+         L     R2,=A(MSREG1)
          L     R3,MSA
          L     R4,MSB
          L     R5,MSC
          BAL   R14,WRITEF
-         LA    R2,MSREG2
+         L     R2,=A(MSREG2)
          L     R3,MSD
          L     R4,MSP
          L     R5,MSW
          BAL   R14,WRITEF
-         LA    R2,MSCYCMSG
+         L     R2,=A(MSCYCMSG)
          L     R3,MSCYC
          BAL   R14,WRITEF
-         LA    R2,MSFRMH
+         L     R2,=A(MSFRMH)
          BAL   R14,WRITES
          L     R6,MSP
          SR    R7,R7
@@ -2136,11 +2136,11 @@ MSFLOOP C     R7,=F'16'
          L     R9,4(R1)
          L     R5,8(R1)
          ST    R5,MSP2
-         LA    R2,MSFRAME1
+         L     R2,=A(MSFRAME1)
          LR    R3,R7
          LR    R4,R6
          BAL   R14,WRITEF
-         LA    R2,MSFRAME2
+         L     R2,=A(MSFRAME2)
          L     R3,MSPREVP
          LR    R4,R9
          BAL   R14,WRITEF
@@ -2236,14 +2236,14 @@ TRDUMP   DS    0H
          STM   R6,R9,TRDSAVE
          L     R2,SYSPRINT
          BAL   R14,SELOUT
-         LA    R2,TRHEAD
+         L     R2,=A(TRHEAD)
          BAL   R14,WRITES
-         LA    R2,TRBAD1
+         L     R2,=A(TRBAD1)
          L     R3,A
          L     R4,B
          L     R5,D
          BAL   R14,WRITEF
-         LA    R2,TRBAD2
+         L     R2,=A(TRBAD2)
          L     R3,C
          L     R4,P
          L     R5,W
@@ -2261,17 +2261,17 @@ TRDLOOP  C     R6,=F'8'
          AR    R8,R9
          LA    R9,TRBUF
          AR    R9,R8
-         LA    R2,TRLINE1
+         L     R2,=A(TRLINE1)
          LR    R3,R6
          L     R4,0(R9)
          L     R5,4(R9)
          BAL   R14,WRITEF
-         LA    R2,TRLINE2
+         L     R2,=A(TRLINE2)
          L     R3,8(R9)
          L     R4,12(R9)
          L     R5,16(R9)
          BAL   R14,WRITEF
-         LA    R2,TRLINE3
+         L     R2,=A(TRLINE3)
          L     R3,20(R9)
          BAL   R14,WRITEF
          LA    R6,1(R6)
