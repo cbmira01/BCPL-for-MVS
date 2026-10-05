@@ -417,7 +417,7 @@ TRLINE1  DC    AL1(19),C'TRACE %N C=%N W=%N',X'15'
 TRLINE2  DC    AL1(17),C'  D=%N A=%N B=%N',X'15'
 TRLINE3  DC    AL1(7),C'  P=%N',X'15'
 """
-    new_trace_messages = """TRHEAD   DC    AL1(40),X'15',C'*** ICINT RECENT INSTRUCTION TRACE ***',X'15'
+    new_trace_messages = """TRHEAD   DC    AL1(40),X'15'\n         DC    C'*** ICINT RECENT INSTRUCTION TRACE ***',X'15'
 TRCURH   DC    AL1(14),C'CURRENT STATE',X'15'
 TRCUR1   DC    AL1(31),C'    C=%N C-OFFSET=%N CYCLES=%N',X'15'
 TRCUR2   DC    AL1(19),C'    A=%N B=%N D=%N',X'15'
