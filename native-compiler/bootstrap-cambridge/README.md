@@ -39,6 +39,7 @@ first `.` and never see `LEX` or `TRNB`.
 native-compiler/bootstrap-cambridge/
     README.md
     make-demoted.py
+    make-icintv18.py
     options-large-tree.txt
     source/
         syn
@@ -89,67 +90,67 @@ The generator asserts the expected historical section boundaries, `~=` counts,
 and header-GET counts before writing anything. Unexpected source drift therefore
 fails loudly rather than silently broadening the bootstrap transformation.
 
-## First SYN compile probes
+## SYN compile probes
 
-The first experiment is deliberately only `demoted/syn`. The Cambridge System/370
-`LIBHDR` is exposed as DD `LIBHDR`, and Cambridge `synhdr` is exposed as DD
-`SYNHDR`:
-
-```sh
-tools/compile-and-run --results --save-ocode \
-    --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
-    --dd SYNHDR=richards-bcpltape/bcplib/bcpl/synhdr \
-    "$(tools/current-icint)" \
-    native-compiler/bootstrap-cambridge/demoted/syn
-```
+The first experiment is deliberately only `demoted/syn`. The Cambridge
+System/370 `LIBHDR` is exposed as DD `LIBHDR`, and Cambridge `synhdr` is exposed
+as DD `SYNHDR`.
 
 Job 881 reached Cambridge source successfully through both GET files, then the
-MR10 compiler stopped with:
+MR10 compiler stopped with `PROGRAM TOO LARGE` near line 166. The MR10 master
+driver defaults `TREESIZE` to 5500 and accepts an `OPTIONS` record `L<number>`
+to raise it.
+
+Job 882 used `L12000` with ICINT v17 and abended S0C4. The loaded compiler image
+is 9,972 words, so a 12,000-word APTOVEC request cannot fit in v17's 20,001-word
+PROGVEC once stack overhead is included.
+
+Job 883 used `L8000`. That fits v17, but Cambridge SYN still exhausted the
+compiler tree near line 447. This is the empirical reason to enlarge PROGVEC
+rather than reduce the tree workspace further.
+
+`make-icintv18.py` therefore generates a capacity-only candidate from v17 with:
 
 ```text
-SYNTAX ERROR NEAR LINE 166: PROGRAM TOO LARGE
+PROGCNT 20001 -> 40001
+PROGLEN 80004 -> 160004 bytes
 ```
 
-This diagnostic is the MR10 compiler's AE-tree workspace limit, not exhaustion
-of ICINT's 20,001-word PROGVEC. The MR10 master driver defaults `TREESIZE` to
-5500 and accepts an `OPTIONS` record `L<number>` to raise it.
-
-A first enlargement to `L12000` in job 882 caused the COMP step to abend S0C4
-immediately after the OPTIONS record was accepted. This is consistent with the
-current ICINT memory geometry rather than a Cambridge syntax failure: the
-loaded compiler image is 9,972 words, so an `APTOVEC` request for 12,000 words
-requires at least 21,973 PROGVEC words before normal call-stack overhead. The
-current PROGVEC capacity is only 20,001 words.
-
-The next probe therefore uses a smaller workspace that should fit while still
-being substantially larger than the MR10 default:
+Job 884 exposed one additional capacity dependency in v17: the OP1 store guard
+hard-codes a maximum address of `PROGWORD+20000`. With a 40,001-word PROGVEC,
+that guard falsely trapped a legitimate store at D=194995 and returned -2.
+Accordingly the v18 generator must expand both the allocation and the matching
+OP1 guard:
 
 ```text
-L8000
+PROGCNT                 20001 -> 40001
+OP1 PROGVEC upper bound 20000 -> 40000 words above PROGWORD
 ```
 
-`options-large-tree.txt` contains that value. The controlled rerun is:
+This is still a capacity-only revision. The intended INTCODE, stream, and
+runtime semantics remain those of v17.
+
+`options-large-tree.txt` is restored to:
+
+```text
+L12000
+```
+
+The controlled v18 SYN probe is:
 
 ```sh
 tools/compile-and-run --results --save-ocode \
     --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
     --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
     --dd SYNHDR=richards-bcpltape/bcplib/bcpl/synhdr \
-    "$(tools/current-icint)" \
+    asm/icintv18.asm \
     native-compiler/bootstrap-cambridge/demoted/syn
 ```
-
-With a 9,972-word loaded image, `L8000` leaves roughly 2,000 PROGVEC words above
-the requested vector for call-stack and execution overhead. If Cambridge SYN
-still reports `PROGRAM TOO LARGE` at this size, that will be direct evidence
-that the present 20,001-word PROGVEC is too small for this bootstrap and should
-then be enlarged deliberately rather than guessed at.
 
 The MVS step return code for an interpreted compiler failure remains zero; the
 host `compile-and-run` wrapper detects the BCPL execution code afterward. Thus
 CG and RUN may still execute on empty compiler output in a failed interpreted
-probe. A true MVS abend such as job 882's S0C4 does propagate and flushes later
-steps.
+probe. A true MVS abend propagates and flushes later steps.
 
 This remains a probe, not yet a claim that the resulting unit is runnable by
 itself. If compilation reaches OCODE, that is already useful evidence; a later
