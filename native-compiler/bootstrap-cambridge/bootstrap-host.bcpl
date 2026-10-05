@@ -26,7 +26,8 @@ LET FINDPARM() = FINDINPUT("CAMBPARM")
 
 || CG370 calls DATE() while constructing the standard object-module header.
 || Historical DATEMOD describes that field as an 11-character BCPL string and
-|| recognizes "  *UNDATED*" as the canonical placeholder.  Return that exact
-|| three-word string during bootstrap rather than fabricating a host date.
+|| recognizes "  *UNDATED*" as the canonical placeholder.  The MR10 bootstrap
+|| compiler cannot accept an 11-character string literal, so return the exact
+|| three packed EBCDIC words through a TABLE expression instead.
 || Native BCPLMAIN will eventually provide the real MVS DATE service.
-LET DATE() = "  *UNDATED*"
+LET DATE() = TABLE #X0B40405C, #XE4D5C4C1, #XE3C5C45C
