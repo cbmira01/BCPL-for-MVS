@@ -336,7 +336,12 @@ considered fully proven.
 
 ### 14-three-argument-linkage
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 992 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms argument 1 in R7, argument 2 in R8, and argument 3
+in R9. The caller loads V, I, and X into those registers before BALR; the
+callee preserves through R9, uses R7/R8 to compute V!I, and stores R9 through
+the resulting address.
 
 START creates a local `VEC 2`, initializes `V!1` to 17, then calls
 `SET(V,1,42)`. The callee uses V and I to compute the target element and
