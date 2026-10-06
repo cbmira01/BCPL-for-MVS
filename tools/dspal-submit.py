@@ -132,10 +132,13 @@ def launcher_deck(
         [
             "//* SUBMIT ONE STORED JCL JOB BODY THROUGH JES INTERNAL READER",
             f"//* PAYLOAD: {dsn}({member})",
-            "//SUBMIT   EXEC PGM=IEBGENER",
+            "//* FIRST STAGE THE COMPLETE PAYLOAD AS EXPLICIT FB/80 CARDS.",
+            "//STAGE    EXEC PGM=IEBGENER",
             "//SYSPRINT DD  SYSOUT=*",
             "//SYSIN    DD  DUMMY",
-            "//SYSUT2   DD  SYSOUT=(A,INTRDR)",
+            "//SYSUT2   DD  DSN=&&PAYLOAD,UNIT=SYSDA,SPACE=(80,(50,20)),",
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800),",
+            "//             DISP=(NEW,PASS)",
             "//SYSUT1   DD  DATA,DLM=ZZ",
         ]
     )
@@ -151,6 +154,13 @@ def launcher_deck(
         [
             "ZZ",
             f"//         DD  DSN={dsn}({member}),DISP=SHR",
+            "//* NOW FEED ONLY THE NORMALIZED FB/80 CARD DECK TO JES.",
+            "//SUBMIT   EXEC PGM=IEBGENER",
+            "//SYSPRINT DD  SYSOUT=*",
+            "//SYSIN    DD  DUMMY",
+            "//SYSUT1   DD  DSN=&&PAYLOAD,DISP=(OLD,DELETE)",
+            "//SYSUT2   DD  SYSOUT=(A,INTRDR),",
+            "//             DCB=(RECFM=F,LRECL=80,BLKSIZE=80)",
         ]
     )
     return "\n".join(lines) + "\n"
