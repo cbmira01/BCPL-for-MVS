@@ -358,3 +358,23 @@ This extends the linkage evidence from two BCPL arguments to three.
 Generated S/370 must establish the register used for argument 3 and show all
 three arguments participating in the callee operation before Test 14 is
 considered fully proven.
+
+### 15-four-argument-linkage
+
+Status: **DEFINED** — not yet run.
+
+START creates a local `VEC 2`, initializes `V!1` to 17, then calls
+`SET4(V,1,40,2)`. The callee uses V and I to compute the destination and
+uses X+Y as the stored value. START then reloads `V!1` and reports it
+through DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This extends the linkage evidence from three BCPL arguments to four.
+Generated S/370 must establish the register used for argument 4 and show all
+four arguments participating in the callee operation before Test 15 is
+considered fully proven.
