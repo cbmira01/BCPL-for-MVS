@@ -92,3 +92,32 @@ Those remain later regression steps.
 ## Status
 
 DEFINED. Not yet run.
+
+
+### Job 976 startup diagnosis
+
+The first native run assembled and link-edited cleanly but GO returned
+RC=0016 before START executed.
+
+The generated module was correct for the intended test:
+
+```asm
+L  7,604(12)
+...
+ST 7,604(12)
+```
+
+G!151 is byte displacement 604 from R12. The generated module trailer also
+advertised 604 as its maximum global displacement.
+
+BCPLMAIN, however, still limited its static bootstrap global vector to
+G!0..G!150 and rejected any module whose maximum global displacement exceeded
+600 bytes. Test 07 therefore took the deliberate GTOOBIG startup exit and
+returned 16.
+
+The regression was not weakened by moving X to a lower global. Instead, the
+bootstrap global-vector allocation was extended to G!0..G!200 so that user
+globals beyond FIRSTFREEGLOBAL can be exercised while dynamic global-vector
+sizing remains unreconstructed.
+
+Test 07's BCPL source remains unchanged.
