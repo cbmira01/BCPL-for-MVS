@@ -542,3 +542,21 @@ This isolates signed unary negation and arithmetic involving a negative
 operand while keeping the final DEBUGINT value positive. Generated S/370
 must show actual runtime negation and subsequent arithmetic before Test 22
 is considered fully proven.
+
+### 23-control-flow
+
+Status: **DEFINED** — not yet run.
+
+Exercises IF, UNLESS, TEST/THEN/ELSE, WHILE, UNTIL, FOR, REPEAT,
+REPEATWHILE, REPEATUNTIL, BREAK, LOOP, and SWITCHON/CASE/DEFAULT/ENDCASE
+in one accumulator-based program.
+
+Expected output:
+
+```text
+42
+```
+
+Incorrect ELSE or DEFAULT selection deliberately drives the accumulator to
+999. Generated S/370 must be inspected across the individual branch and loop
+constructs before Test 23 is considered fully proven.
