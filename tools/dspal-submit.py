@@ -28,6 +28,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE_PATH = ROOT / "tools" / "dspal-core.py"
+LS_PATH = ROOT / "tools" / "dspal-ls.py"
 
 
 def load_core():
@@ -41,6 +42,18 @@ def load_core():
 
 core = load_core()
 DspalError = core.DspalError
+
+
+def load_ls():
+    spec = importlib.util.spec_from_file_location("dspal_ls", LS_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {LS_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+lsmod = load_ls()
 
 
 def validate_member(member: str) -> str:
@@ -67,6 +80,26 @@ def resolve_text_pds(
     if int(spec.get("lrecl", 0) or 0) != 80:
         raise DspalError(f"submit requires LRECL=80: {dsn}")
     return dsn, logical, spec
+
+
+def require_member_exists(
+    config: dict[str, Any], dsn: str, member: str
+) -> None:
+    """Fail locally before launching if the requested PDS member is absent."""
+    core.require_reader_ready(config)
+    job, _ = core.submit_and_wait(
+        config,
+        lsmod.list_members_deck(config, [dsn]),
+        max_rc=8,
+    )
+    report = core.job_report(job)
+    block = lsmod.require_members_block(report, dsn, job, [dsn])
+    members = lsmod.parse_members(block)
+    if member not in members:
+        available = ", ".join(members) if members else "(none)"
+        raise DspalError(
+            f"member not found: {dsn}({member}); available members: {available}"
+        )
 
 
 def payload_job_card(
@@ -236,7 +269,7 @@ def main() -> int:
             )
             return 0
 
-        core.require_reader_ready(config)
+        require_member_exists(config, dsn, member)
         offset = printer_offset(config)
         deck = launcher_deck(config, dsn, member, redact_password=False)
 
