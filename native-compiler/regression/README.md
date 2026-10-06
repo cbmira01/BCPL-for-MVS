@@ -96,6 +96,9 @@ dynamic storage are involved.
 
 ### 01-one-procedure-call
 
+Status: **PASS** — first successful end-to-end native run, JES Job 950,
+2026-10-06.
+
 Adds one ordinary BCPL procedure call and return.
 
 This extends Test 00 by exercising:
