@@ -84,4 +84,76 @@ Its purpose is strictly caller-local scalar lifetime across a call.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 1002 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection shows exactly how CG370 preserves the live caller
+locals across the call.
+
+Before calling ID, START stores A, B, and C into its workspace:
+
+```asm
+LA 7,11(0)
+ST 7,12(5)
+LA 8,13(0)
+ST 8,16(5)
+LA 9,15(0)
+ST 9,20(5)
+```
+
+It then calls ID(3), and saves the returned R7 value as D:
+
+```asm
+LA 7,3(0)
+LA 15,24(5)
+L  4,0+L2-L4(4)
+BALR 6,4
+ST 7,24(5)
+```
+
+After the call, START reloads the pre-call locals from its workspace and
+combines them with the still-live returned value in R7:
+
+```asm
+L  8,16(5)
+A  8,12(5)
+A  8,20(5)
+AR 8,7
+LR 7,8
+```
+
+Thus A, B, and C survive the call through workspace spill/reload, while D is
+returned in R7 and also stored to its local slot.
+
+
+### Contract established
+
+Test 19 establishes caller-local scalar lifetime across an ordinary BCPL
+function call.
+
+Specifically:
+
+- live locals A, B, and C are stored in the caller workspace before the
+  call;
+- the callee uses its own workspace;
+- the caller's R5 workspace remains valid after return;
+- the returned function value arrives in R7;
+- the caller reloads its pre-call locals from workspace and combines them
+  with the returned value correctly.
+
+This strengthens the evidence that machine-coded runtime calls must preserve
+the BCPL workspace/linkage contract so generated callers can safely reload
+live state after return.
