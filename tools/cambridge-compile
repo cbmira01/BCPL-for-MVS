@@ -277,7 +277,11 @@ def main(argv=None) -> int:
         core.validate_compiler_pipeline(report, len(RESIDENT_SOURCES))
 
         code = core.extract_saved_stream(report, "code", 1)
-        output.write_text(code, encoding="ascii", newline="\n")
+        # The marked SYSOUT report is read as Latin-1 so every printer byte
+        # survives round-trip recovery.  Generated CODE can legitimately
+        # contain non-ASCII bytes while bootstrap character translation is
+        # still being reconstructed; do not narrow it back to ASCII here.
+        output.write_text(code, encoding="latin-1", newline="\n")
         print(f"saved Cambridge CODE: {output.relative_to(ROOT)}")
         sys.stdout.write(extract_final_results(report, len(RESIDENT_SOURCES)))
         return 0
