@@ -67,6 +67,34 @@
 *   R14  R.A    compiler scratch/linkage register
 *   R15  R.W    new-workspace pointer
 *
+* LIVE ARGUMENT-LINKAGE EVIDENCE
+* ------------------------------
+* Native regression Tests 11-14 now confirm the generated call-time
+* argument convention, not merely the symbolic register names in CGHDR.
+*
+* Job 986 (Test 11) proved argument 1 is passed in R7.
+* Job 990 (Test 13) proved:
+*
+*          argument 1 -> R7
+*          argument 2 -> R8
+*
+* Job 992 (Test 14) proved:
+*
+*          argument 1 -> R7
+*          argument 2 -> R8
+*          argument 3 -> R9
+*
+* In Test 14 the caller loaded V, I, X into R7, R8, R9 immediately
+* before BALR.  The generated three-argument callee began:
+*
+*          STM 4,9,0(15)
+*          LR  5,15
+*
+* and then used R7/R8 to form V!I while storing R9 through the
+* computed address.  This is direct executable evidence for native
+* machine-code runtime entries such as PUTBYTE(S,I,BYTE): their first
+* three BCPL arguments arrive in R7, R8, and R9 respectively.
+*
 * Generated text also says:
 *
 *          USING 4096,1,2,3
@@ -126,17 +154,18 @@
 * The vector below therefore has executable branch entries at those
 * offsets.  The exact historical bodies are not yet available.
 *
-* PROCEDURE RETURN INFERENCE
-* --------------------------
+* PROCEDURE RETURN CONTRACT
+* -------------------------
 * Generated entry saves R4..R6 (or more) at 0(R15), then sets R5=R15.
-* Calls put the return address in R6.  The proposed return trampoline:
+* Calls put the return address in R6.  The return trampoline:
 *
 *          LM   4,6,0(5)
 *          BCR  15,6
 *
 * restores callee address, previous P, and linkage, then returns.
-* This is strongly implied by CGSAVE/CGAPPLY but is not yet
-* independently validated by a successful native run.
+* Successful native procedure-call regressions, including Tests 01,
+* 11, 12, 13, and 14, have exercised this return path.  It is now
+* treated as PROVEN for ordinary generated BCPL procedure linkage.
 *
 * MACHINE-DEPENDENT GLOBALS KNOWN TO BELONG TO BCPLMAIN
 * -----------------------------------------------------
@@ -729,8 +758,8 @@ SYSSTKC  BC    15,STKCIMP
 ***********************************************************************
 * PROCEDURE RETURN
 *
-* Strong inference from CGSAVE/CGAPPLY, awaiting successful native
-* proof.
+* PROVEN for ordinary generated BCPL procedure linkage by successful
+* native call/return regressions through Test 14.
 ***********************************************************************
 RETIMPL  LM    4,6,0(5)
          BCR   15,6
@@ -811,8 +840,9 @@ WRCHRTN  L     4,0(5)
 ***********************************************************************
 * TEMPORARY WRITEF
 *
-* Factorial-only accommodation.  Arguments arrive in R7 onward under
-* normal BCPL calling convention.  Do not modify R0 or R1-R3.
+* Factorial-only accommodation.  Tests 11-14 prove argument 1 in R7,
+* argument 2 in R8, and argument 3 in R9 for ordinary BCPL calls.
+* Do not modify R0 or R1-R3.
 ***********************************************************************
 WRITEST  L     4,0(5)
          BCR   15,6
