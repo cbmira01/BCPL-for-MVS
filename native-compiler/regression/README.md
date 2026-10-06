@@ -521,3 +521,21 @@ This proves that a BCPL word pointer survives a fullword store/load round
 trip as ordinary data. Generated S/370 must show the pointer store into W,
 reload from W, and later dereference before Test 21 is considered fully
 proven.
+
+### 22-signed-arithmetic
+
+Status: **DEFINED** — not yet run.
+
+START establishes A=17 and B=25, negates A at runtime, then computes
+`B-A`. Since A becomes -17, the expected result is 42.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates signed unary negation and arithmetic involving a negative
+operand while keeping the final DEBUGINT value positive. Generated S/370
+must show actual runtime negation and subsequent arithmetic before Test 22
+is considered fully proven.
