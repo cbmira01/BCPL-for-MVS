@@ -250,18 +250,13 @@ and `!0` word store/load without GETVEC, FREEVEC, BLIB, or heap allocation.
 
 ### 09-vector-nonzero-subscript
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 982 emitted `42`; ASM/LKED/GO all RC=0000.
 
-Creates a local `VEC 2`, stores `42` into `V!1`, then reloads that
-element and passes it to `DEBUGINT`.
+Creates a local `VEC 2`, stores 42 into `V!1`, then reloads that element
+and passes it to DEBUGINT.
 
-Expected output:
+Generated S/370 inspection confirmed `ST 8,4(7,7)` and `L 7,4(7,7)`.
+Compared with Test 08's zero-offset `0(7,7)`, the four-byte displacement
+is exactly one 32-bit BCPL target word.
 
-```text
-42
-```
-
-This extends Test 08 by proving nonzero vector indexing. Generated S/370
-must show the one-word offset contributing to the effective address for
-both the store and the later load before Test 09 is considered fully
-proven.
+This establishes constant nonzero vector indexing for both store and load.
