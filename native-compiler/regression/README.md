@@ -164,3 +164,22 @@ This extends the earlier tests by exercising:
 It deliberately avoids `WRITEF`, string formatting, recursion, dynamic
 storage, and general stream-management machinery.
 
+### 04-string-output
+
+Status: **DEFINED** — not yet run.
+
+Traverses the BCPL string literal `"HELLO"` using the historical
+`WRITES` shape expressed inline with G!85 `GETBYTE` and G!14 `WRCH`.
+
+This adds:
+
+- BCPL string-literal representation;
+- count-byte interpretation;
+- repeated GETBYTE access;
+- FOR-loop control;
+- repeated WRCH calls;
+- visible multi-character output.
+
+It deliberately does not introduce a machine-code `WRITES`.  Real WRITES
+belongs to the BCPL library layer and should arrive through BLIB integration.
+
