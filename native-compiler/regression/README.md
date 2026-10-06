@@ -166,7 +166,7 @@ storage, and general stream-management machinery.
 
 ### 04-string-output
 
-Status: **PARTIAL PASS** — Job 962 emitted `HELLO`; termination still fails.
+Status: **PARTIAL PASS** — Job 962 emitted `HELLO`; GO then ended S322.
 
 Traverses the BCPL string literal `"HELLO"` using the historical
 `WRITES` shape expressed inline with G!85 `GETBYTE` and G!14 `WRCH`.
