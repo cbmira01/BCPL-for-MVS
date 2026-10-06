@@ -94,4 +94,26 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+RUNTIME PASS; GENERATED-CODE INSPECTION PENDING.
+
+Job 988 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+This proves the end-to-end behavior at runtime: the value observed by START
+after SETVALUE returns is 42.
+
+The generated S/370 for Test 12 still must be inspected before the test is
+marked fully proven. In particular, the listing must show the callee-side
+store through the passed vector pointer and the caller-side post-return
+reload described in the acceptance criteria.
