@@ -173,29 +173,42 @@ job=$(awk '/^JOB [0-9]+$/ {print $2}' <<<"$submit" | tail -1)
 echo
 echo "=== Wait for complete job report ==="
 
+expected_output() {
+    case "$test_no" in
+        03) printf '%s\n' "A" ;;
+        04) printf '%s\n' "HELLO" ;;
+        *)  return 1 ;;
+    esac
+}
+
 show_bcpl_output() {
     local expected report emitted
 
-    case "$test_no" in
-        03) expected="A" ;;
-        04) expected="HELLO" ;;
-        *)  return 1 ;;
-    esac
-
+    expected=$(expected_output) || return 1
     report=$(bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null)
     emitted=$(
         printf '%s\n' "$report" |
             grep -a -m1 "^ *$expected *$" || true
     )
 
-    if [[ -n "$emitted" ]]; then
-        echo
-        echo "=== BCPL output ==="
-        printf '%s\n' "$emitted" | sed -e 's/^ *//' -e 's/ *$//'
-        return 0
-    fi
+    [[ -n "$emitted" ]] || return 1
 
-    return 1
+    echo
+    echo "=== BCPL output ==="
+    printf '%s\n' "$emitted" | sed -e 's/^ *//' -e 's/ *$//'
+}
+
+show_result() {
+    local objective=$1
+    local termination=$2
+    local overall=$3
+
+    echo
+    echo "=== Regression result ==="
+    echo "TEST:        $case_name"
+    echo "OBJECTIVE:   $objective"
+    echo "TERMINATION: $termination"
+    echo "RESULT:      $overall"
 }
 
 deadline=$((SECONDS + 30))
@@ -206,13 +219,15 @@ while (( SECONDS <= deadline )); do
     if (( rc == 0 )); then
         echo "$summary"
 
-        if [[ "$test_no" == "03" || "$test_no" == "04" ]]; then
+        if expected_output >/dev/null 2>&1; then
             if ! show_bcpl_output; then
+                show_result "FAIL" "NORMAL" "FAIL"
                 echo "run-test: expected BCPL output not found" >&2
                 exit 1
             fi
         fi
 
+        show_result "PASS" "NORMAL" "PASS"
         exit 0
     fi
 
@@ -221,22 +236,21 @@ while (( SECONDS <= deadline )); do
     if (( rc == 1 )); then
         echo "$summary"
 
-        if [[ "$test_no" == "04" ]]; then
-            report=$(
-                bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
-            )
+        report=$(
+            bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
+        )
 
-            if show_bcpl_output &&
-               grep -a -q 'ABEND S322' <<<"$report"; then
-                echo
-                echo "TEST OBJECTIVE: PASS"
-                echo "TERMINATION: S322 (known runtime defect)"
-                exit 0
-            fi
-        elif [[ "$test_no" == "03" ]]; then
-            show_bcpl_output || true
+        if expected_output >/dev/null 2>&1 &&
+           show_bcpl_output &&
+           grep -a -q 'ABEND S322' <<<"$report"; then
+            show_result \
+                "PASS" \
+                "S322 (known runtime defect)" \
+                "PASS WITH KNOWN RUNTIME DEFECT"
+            exit 0
         fi
 
+        show_result "FAIL" "ABNORMAL" "FAIL"
         exit 1
     fi
 
@@ -244,4 +258,5 @@ while (( SECONDS <= deadline )); do
 done
 
 echo "run-test: timed out waiting for JOB $job to finish" >&2
+show_result "UNKNOWN" "HOST WAIT TIMEOUT" "FAIL"
 exit 75
