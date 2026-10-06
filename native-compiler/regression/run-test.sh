@@ -40,7 +40,7 @@ cp "$source" "$source_copy"
 compiler_job="RG${test_no}COMP"
 
 echo "=== Cambridge compile: $case_name ==="
-python3 "$root/tools/cambridge-compile"     "$source_copy"     --job-name "$compiler_job"     --listing light || exit $?
+python3 "$root/tools/cambridge-compile"     "$source_copy"     --job-name "$compiler_job"     --listing light     --timeout 180 || exit $?
 
 generated_root="$root/workarea/$case_name.s370.asm"
 generated="$work/generated.s370.asm"
@@ -74,6 +74,19 @@ text = raw.decode("latin-1")
 text = "".join(ch if ord(ch) < 128 else "?" for ch in text)
 
 lines = text.splitlines()
+
+# The generated module normally declares BCPLMAIN external.  In this
+# regression deck BCPLMAIN is assembled later in the same source, so
+# remove that external declaration and resolve A(BCPLMAIN) locally.
+extern_indexes = [
+    i for i, line in enumerate(lines)
+    if re.fullmatch(r"\s*EXTRN\s+BCPLMAIN\s*", line)
+]
+if len(extern_indexes) != 1:
+    raise SystemExit(
+        f"expected one EXTRN BCPLMAIN, found {len(extern_indexes)}"
+    )
+del lines[extern_indexes[0]]
 
 csect_indexes = [
     i for i, line in enumerate(lines)
@@ -160,12 +173,17 @@ echo "=== Wait for complete job report ==="
 
 deadline=$((SECONDS + 30))
 while (( SECONDS <= deadline )); do
-    if summary=$("$root/tools/job-summary" "$job" 2>&1); then
+    summary=$("$root/tools/job-summary" "$job" 2>&1)
+    rc=$?
+
+    if (( rc == 0 )); then
         echo "$summary"
         exit 0
     fi
 
-    if grep -a -q "END JOB[[:space:]]\+$job"         "$root/mvs-state/prt/prt00e.txt" 2>/dev/null; then
+    # job-summary uses 1 for a completed failing job and 2 when the
+    # complete report is not available yet.
+    if (( rc == 1 )); then
         echo "$summary"
         echo
         echo "Full report:"
