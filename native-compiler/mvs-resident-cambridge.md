@@ -48,25 +48,31 @@ inspectable.
 
 ## MVS build
 
-The authoritative checked-in build deck is:
+The authoritative checked-in build body is:
 
 ```text
 jcl/build-cambridge-resident.jcl
 HERC02.BCPL.JCL(CAMBBLD)
 ```
 
-Populate the JCL library with:
+It deliberately contains no JOB statement and no credential. Populate it with:
 
 ```sh
 tools/dspal populate JCL
 ```
 
-The checked-in JOB card contains `PASSWORD=XXXXXXXX`; replace that placeholder
-with the local HERC02 password before direct submission. The source-controlled
-deck intentionally contains no credential.
+Submit it with:
 
-For convenience, `tools/build-cambridge-mvs` can still generate and submit an
-equivalent authenticated deck from `config/dspal.local.yaml`.
+```sh
+tools/dspal submit JCL CAMBBLD --wait
+```
+
+`dspal submit` generates a small authenticated launcher job. The launcher
+writes an authenticated CAMBBLD JOB card followed by the stored PDS member to
+the JES internal reader. Passwords come only from the gitignored
+`config/dspal.local.yaml`.
+
+The member never makes a round trip through the host.
 
 The job:
 
