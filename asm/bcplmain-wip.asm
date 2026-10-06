@@ -163,8 +163,9 @@
 *
 *          STM 14,12,12(13)
 *
-* before entering BCPLMAIN.  This WIP leaves R13 unchanged and uses
-* caller save area for final return with LM 14,12,12(13).
+* before entering BCPLMAIN.  BCPLMAIN now chains a private 18F MVS
+* save area before making MVS service calls.  Final return restores the
+* caller R13 first, then reloads the saved R14..R12 image.
 *
 * IMPORTANT UNKNOWN: CGHDR reserves FWSP=96 relative to R13 for
 * FIX/FLOAT workspace.  A standard 72-byte caller save area does not
@@ -524,6 +525,14 @@ BCPLMAIN CSECT
          USING *,10
          ST    3,MODBASE
 *
+* Establish a private MVS save area before any service call.
+* The generated module prefix already saved the caller's R14..R12.
+*
+         LA    1,MSVSAVE
+         ST    13,4(1)
+         ST    1,8(13)
+         LR    13,1
+*
 * Locate L998 = module base + unsigned positive halfword at module+10.
 * CG370 limits a generated section to less than 16K bytes, so LH is
 * safe.
@@ -657,16 +666,19 @@ GIDONE   L     4,4(12)
 * START is expected to terminate through S.FIN.  Returning here is
 * treated as a WIP runtime failure.
 *
-BADRETN  LM    14,12,12(13)
+BADRETN  L     13,4(13)
+         LM    14,12,12(13)
          LA    15,36
          BR    14
 *
 * Bootstrap failures before START.
 *
-GTOOBIG  LM    14,12,12(13)
+GTOOBIG  L     13,4(13)
+         LM    14,12,12(13)
          LA    15,16
          BR    14
-NOSTART  LM    14,12,12(13)
+NOSTART  L     13,4(13)
+         LM    14,12,12(13)
          LA    15,20
          BR    14
 *
@@ -741,7 +753,8 @@ FINIMPL  L     1,OUTPOS
          LTR   1,1
          BZ    FINRETN
          PUT   BCPOUT,OUTBUF
-FINRETN  LM    14,12,12(13)
+FINRETN  L     13,4(13)
+         LM    14,12,12(13)
          SR    15,15
          BR    14
 *
@@ -830,6 +843,10 @@ PUTBYTE  LR    14,7
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
+*
+* Private MVS save area used while BCPLMAIN owns R13.
+*
+MSVSAVE  DS    18F
 *
 * Static global-vector capacity.  SYS3 FIRSTFREEGLOBAL is 150.
 * Whether the historical BCPLMAIN sized G to exactly this value or used
