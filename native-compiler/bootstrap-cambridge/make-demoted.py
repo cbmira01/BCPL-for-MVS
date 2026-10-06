@@ -327,7 +327,7 @@ def main() -> None:
     trna, trnb = split_container(SOURCE / "trn", "TRNA", "TRNB")
     cga, cgb, cgc, cgd, cge = split_sections(HIST / "cg", ["CGA", "CGB", "CGC", "CGD", "CGE"])
 
-    OUT.mkdir(exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True)
     write_unit("syn", "SYN", syn)
     write_unit("lex", "LEX", lex)
     write_unit("trna", "TRNA", trna)
