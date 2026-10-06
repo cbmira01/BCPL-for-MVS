@@ -263,18 +263,14 @@ This establishes constant nonzero vector indexing for both store and load.
 
 ### 10-vector-variable-subscript
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 984 emitted `42`; ASM/LKED/GO all RC=0000.
 
-Creates a local `VEC 2`, initializes local `I = 1`, stores `42` into
-`V!I`, then reloads that element and passes it to `DEBUGINT`.
+Creates a local `VEC 2`, initializes local `I = 1`, stores 42 into
+`V!I`, then reloads that element and passes it to DEBUGINT.
 
-Expected output:
+Generated S/370 inspection confirmed runtime index computation. The store
+forms V+I in a register before converting the BCPL word address to a native
+byte address; the later load independently reloads both I and V and performs
+the same address calculation.
 
-```text
-42
-```
-
-This extends Test 09 by moving the subscript from a compile-time constant to
-a runtime local variable. Generated S/370 must show runtime index/address
-calculation for both the store and the later load before Test 10 is
-considered fully proven.
+This establishes variable vector subscripting for both store and load.
