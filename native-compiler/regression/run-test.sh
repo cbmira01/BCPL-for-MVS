@@ -222,8 +222,12 @@ while (( SECONDS <= deadline )); do
         echo "$summary"
 
         if [[ "$test_no" == "04" ]]; then
+            report=$(
+                bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
+            )
+
             if show_bcpl_output &&
-               grep -q 'ABEND S322' <<<"$summary"; then
+               grep -a -q 'ABEND S322' <<<"$report"; then
                 echo
                 echo "TEST OBJECTIVE: PASS"
                 echo "TERMINATION: S322 (known runtime defect)"
