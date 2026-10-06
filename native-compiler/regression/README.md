@@ -77,6 +77,9 @@ the final job summary.  Generated artifacts remain under
 
 ### 00-most-degenerate-bcpl-program
 
+Status: **PASS** — first successful end-to-end native run, JES Job 948,
+2026-10-06.
+
 Establishes only the minimum native lifecycle:
 
 ```text
