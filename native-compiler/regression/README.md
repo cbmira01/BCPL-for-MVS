@@ -427,3 +427,22 @@ This extends Test 16 from one ordinary function call to nested generated
 calls. Generated S/370 must show DOUBLE creating its own call frame,
 invoking ADD, receiving the R7 result, and returning that result to START
 before Test 17 is considered fully proven.
+
+### 18-recursion
+
+Status: **DEFINED** — not yet run.
+
+Calls non-tail-recursive `DEPTH(5)`. The base case returns 37 and each
+recursive caller adds one after the nested call, producing 42 after five
+levels unwind.
+
+Expected output:
+
+```text
+42
+```
+
+This extends Test 17 from fixed nested calls to repeated recursive calls to
+the same generated function. Generated S/370 must show recursive call-frame
+creation plus post-return result processing before Test 18 is considered
+fully proven.
