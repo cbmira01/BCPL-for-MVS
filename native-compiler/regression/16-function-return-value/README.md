@@ -92,4 +92,62 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 996 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection confirms the function-result convention.
+
+ADD receives A in R7 and B in R8, computes the sum in R8, then explicitly
+moves the function result into R7 before returning:
+
+```asm
+STM 4,8,0(15)
+LR 5,15
+AR 8,7
+LR 7,8
+BCR 15,11
+```
+
+The caller prepares the two arguments, calls ADD, and immediately stores the
+returned R7 value into local X:
+
+```asm
+LA 8,25(0)
+LA 7,17(0)
+LA 15,12(5)
+L  4,0+L2-L4(4)
+BALR 6,4
+ST 7,12(5)
+```
+
+START then passes that saved result to DEBUGINT, which emits 42.
+
+
+### Contract established
+
+Test 16 establishes the function-result side of the native CG370 calling
+convention:
+
+```text
+function result -> R7
+```
+
+Together with Tests 13-15, R7 is now proven to serve both as argument 1 on
+function entry and as the returned BCPL value on function exit.
+
+This is directly relevant to machine-coded BCPLMAIN/runtime functions:
+a native routine returning a BCPL value must place that value in R7 before
+returning through the ordinary BCPL linkage.
