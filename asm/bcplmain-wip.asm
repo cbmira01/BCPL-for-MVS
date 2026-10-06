@@ -102,8 +102,9 @@
 *
 *          X'C7D3F000' + 4*N
 *
-* This WIP allocates globals 0..150 statically and initializes that
-* sentinel convention.  Dynamic sizing/GETMAIN remains to be recovered.
+* This WIP allocates a modest static global-vector extent.
+* It initializes the historical sentinel convention.
+* Dynamic sizing/GETMAIN remains to be recovered.
 *
 * EVIDENCE: SYSTEM VECTOR
 * -----------------------
@@ -566,7 +567,7 @@ GSCAN    AH    8,=H'-8'
 * Reject modules requiring more globals than this static WIP provides.
 *
          L     0,0(8)
-         C     0,=F'600'
+         C     0,=F'800'
          BC    2,GTOOBIG
          ST    8,TRAILER
 *
@@ -578,7 +579,7 @@ GINST    AH    8,=H'-8'
          LTR   9,9
          BC    8,GIDONE
          L     1,0(8)
-         C     1,=F'600'
+         C     1,=F'800'
          BC    2,GTOOBIG
          LR    2,12
          AR    2,1
@@ -902,13 +903,14 @@ TRAILER  DC    F'0'
 *
 MSVSAVE  DS    18F
 *
-* Static global-vector capacity.  SYS3 FIRSTFREEGLOBAL is 150.
-* Whether the historical BCPLMAIN sized G to exactly this value or used
-* a larger installation-dependent vector remains unknown.
+* Static bootstrap global-vector capacity.
+* SYS3 FIRSTFREEGLOBAL is 150.
+* User globals therefore begin beyond that boundary.
+* Reserve modest room while dynamic G allocation is unreconstructed.
 *
-GLOBCNT  EQU   150
-GLOBV    DC    F'150'
-         DS    150F
+GLOBCNT  EQU   200
+GLOBV    DC    F'200'
+         DS    200F
 *
 * Regression 03 output state.  SYSPRINT is supplied by the GO step.
 * Historical stream/DCB support was richer; this is only the first
