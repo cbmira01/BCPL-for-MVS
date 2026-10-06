@@ -49,3 +49,23 @@ SYSPRINT diagnostic path.
 ## Status
 
 DEFINED. Not yet run.
+
+
+### Job 970 assembler diagnosis
+
+The first native build stopped in IFOX with RC=0008 before link-edit or
+execution.  Both flagged statements were IFO209 addressability errors.
+
+The affected operands were late literal references in DEBUGINT:
+
+```asm
+CH    9,=H'1'
+C     4,=F'132'
+```
+
+DEBUGINT is assembled after the startup base has been dropped and executes
+under the SYSV/R11 base region.  The literal pool placed at END was not
+addressable from that region.
+
+The fix removes both literals and performs the comparisons through register
+values loaded with LA.  Test 05's BCPL source remains unchanged.
