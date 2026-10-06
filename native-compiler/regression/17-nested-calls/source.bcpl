@@ -1,0 +1,13 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET ADD(A,B) = A+B
+
+LET DOUBLE(X) = ADD(X,X)
+
+LET START () BE
+$(1
+    LET X = DOUBLE(21)
+
+    DEBUGINT(X)
+    FINISH
+$)1
