@@ -132,6 +132,7 @@ tools/dspal rm DATASET MEMBER
 tools/dspal compress DATASET
 tools/dspal initbcpl
 tools/dspal populate all
+tools/dspal submit JCL CAMBBLD
 tools/dspal purgebcpl
 ```
 
@@ -145,7 +146,29 @@ tools/dspal ls
 
 `purgebcpl` deletes only the explicit managed data-set set and requires interactive confirmation unless `--yes` is supplied. The full create/populate/purge/recreate lifecycle has been exercised on TK5.
 
-Batch authentication comes from `config/dspal.local.yaml`, which is gitignored. `--show-jcl` redacts the password.
+### Submitting stored JCL
+
+Runnable members in the managed JCL PDS are stored as job bodies without a JOB statement. Submit one with:
+
+```sh
+tools/dspal submit JCL CAMBBLD
+```
+
+`dspal` generates a small authenticated `DSPALSUB` launcher. Its `IEBGENER` input is an authenticated payload JOB card followed by the requested PDS member, and its output is `SYSOUT=(A,INTRDR)`. The member therefore stays on MVS; it is not copied back through the host.
+
+To wait for the submitted payload and print its summary:
+
+```sh
+tools/dspal submit JCL CAMBBLD --wait
+```
+
+To inspect the launcher without submitting it:
+
+```sh
+tools/dspal submit JCL CAMBBLD --show-jcl
+```
+
+Batch authentication comes from `config/dspal.local.yaml`, which is gitignored. `--show-jcl` redacts both launcher and payload passwords.
 
 See `config/README.md` and `packaging/README.md` for the deployment model.
 
@@ -192,11 +215,15 @@ tools/dspal populate ASM
 tools/dspal populate INTCODE
 ```
 
-Build the resident compiler from those MVS members with:
+Populate the stored build job and submit it through the internal-reader launcher:
 
 ```sh
-python3 tools/build-cambridge-mvs
+tools/dspal populate JCL
+tools/dspal submit JCL CAMBBLD --wait
 ```
+
+The checked-in `CAMBBLD` member is a job body with no JOB card; `dspal submit`
+supplies the authenticated payload JOB card from the local dspal configuration.
 
 The build leaves:
 
