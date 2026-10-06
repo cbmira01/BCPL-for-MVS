@@ -27,3 +27,31 @@ or the procedure-return service reached through R11.
 
 The exact generated assembler should remain inspectable as part of diagnosis,
 but the regression case itself is the BCPL source program.
+
+
+## Status
+
+PASS.
+
+First successful end-to-end native run: JES Job 950 on 2026-10-06.
+
+Observed result:
+
+```text
+ASM   IFOX00   RC=0000
+LKED  IEWL     RC=0000
+GO              RC=0000
+```
+
+This provides the first native validation of the ordinary generated BCPL
+procedure-call/return path used by this test, including caller/callee
+workspace handling, R6 linkage, and the current R11 return trampoline:
+
+```asm
+RETIMPL  LM    4,6,0(5)
+         BCR   15,6
+```
+
+This is evidence for that minimal call/return contract only; it does not yet
+establish argument passing, recursion, deeper stack behavior, or all generated
+procedure shapes.
