@@ -39,8 +39,10 @@ cp "$source" "$source_copy"
 
 compiler_job="RG${test_no}COMP"
 
+compiler_driver="${CAMBRIDGE_COMPILE:-$root/tools/cambridge-compile}"
+
 echo "=== Cambridge compile: $case_name ==="
-python3 "$root/tools/cambridge-compile"     "$source_copy"     --job-name "$compiler_job"     --listing light     --timeout 180 || exit $?
+python3 "$compiler_driver"     "$source_copy"     --job-name "$compiler_job"     --listing light     --timeout 180 || exit $?
 
 generated_root="$root/workarea/$case_name.s370.asm"
 generated="$work/generated.s370.asm"
