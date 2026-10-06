@@ -185,23 +185,7 @@ while (( SECONDS <= deadline )); do
             )
             emitted=$(
                 printf '%s\n' "$report" |
-                    grep -a -m1 -E '^[[:space:]]*A[[:space:]]*
-    # job-summary uses 1 for a completed failing job and 2 when the
-    # complete report is not available yet.
-    if (( rc == 1 )); then
-        echo "$summary"
-        echo
-        echo "Full report:"
-        bash "$root/tools/dump-report-for-job" "$job"
-        exit 1
-    fi
-
-    sleep 1
-done
-
-echo "run-test: timed out waiting for JOB $job to finish" >&2
-exit 75
- || true
+                    grep -a -m1 -E '^[[:space:]]*A[[:space:]]*$' || true
             )
 
             echo
