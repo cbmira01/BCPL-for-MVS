@@ -214,18 +214,21 @@ global call, workspace reload, and observable value reporting.
 
 ### 07-global-state-visibility
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 978 emitted `42`; ASM/LKED/GO all RC=0000.
 
-Stores `42` into user global `X` in START, calls a separate BCPL
-procedure, and has that procedure read `X` and pass it to `DEBUGINT`.
+START stores 42 into user global `X = G!151`, then calls a separate BCPL
+procedure which reloads X and passes it to DEBUGINT.
 
-Expected output:
+Generated S/370 inspection confirmed:
 
-```text
-42
+```asm
+ST 7,604(12)
+...
+L  7,604(12)
 ```
 
-This test is specifically intended to establish global-vector state and
-cross-procedure visibility. Generated S/370 must show both the store and the
-later load through R12/global-vector addressing before Test 07 is considered
-fully proven.
+This establishes user global-vector state, persistence across an ordinary
+BCPL procedure call, and cross-procedure visibility through R12/G.
+
+The first run, Job 976, also revealed and motivated correction of the WIP
+runtime's former G!0..G!150 static-capacity limit.
