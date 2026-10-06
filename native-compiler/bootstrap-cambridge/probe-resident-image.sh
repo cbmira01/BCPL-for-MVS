@@ -5,7 +5,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 
 BOOT=native-compiler/bootstrap-cambridge
-TRNI="$BOOT/trni-large-names.int"
+TRNI=workarea/bootstrap-cambridge/trni-large-names.int
 ICINT=asm/icintv19.asm
 
 # Rebuild deterministic Cambridge bootstrap source derivatives every time.
@@ -37,14 +37,14 @@ exec tools/compile-and-run --results --timeout 600 \
     --dd TRNHDR=richards-bcpltape/bcplib/bcpl/trnhdr \
     --dd CGHDR=richards-bcpltape/bcplib/bcpl/cghdr \
     "$ICINT" \
-    "$BOOT/demoted/bcpl" \
-    +"$BOOT/demoted/syn" \
-    +"$BOOT/demoted/lex" \
-    +"$BOOT/demoted/trna" \
-    +"$BOOT/demoted/trnb" \
-    +"$BOOT/demoted/cga" \
-    +"$BOOT/demoted/cgb" \
-    +"$BOOT/demoted/cgc" \
-    +"$BOOT/demoted/cgd" \
-    +"$BOOT/demoted/cge" \
+    "workarea/bootstrap-cambridge/demoted/bcpl" \
+    +"workarea/bootstrap-cambridge/demoted/syn" \
+    +"workarea/bootstrap-cambridge/demoted/lex" \
+    +"workarea/bootstrap-cambridge/demoted/trna" \
+    +"workarea/bootstrap-cambridge/demoted/trnb" \
+    +"workarea/bootstrap-cambridge/demoted/cga" \
+    +"workarea/bootstrap-cambridge/demoted/cgb" \
+    +"workarea/bootstrap-cambridge/demoted/cgc" \
+    +"workarea/bootstrap-cambridge/demoted/cgd" \
+    +"workarea/bootstrap-cambridge/demoted/cge" \
     +"$BOOT/bootstrap-host.bcpl"

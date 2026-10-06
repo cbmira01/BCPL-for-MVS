@@ -1,7 +1,9 @@
 # Cambridge frontend bootstrap staging
 
-This directory is the working area for bootstrapping the surviving Cambridge
-BCPL frontend through the MR10 kit compiler.
+This directory contains the durable inputs and generators used to bootstrap the
+surviving Cambridge BCPL frontend through the MR10 kit compiler. Generated
+bootstrap material is deliberately kept out of this source directory and written
+under `workarea/bootstrap-cambridge/`.
 
 The historical sources remain untouched under:
 
@@ -45,11 +47,21 @@ native-compiler/bootstrap-cambridge/
         syn
         trn
     demotion.patch
+
+workarea/bootstrap-cambridge/
     demoted/
         syn
         lex
         trna
         trnb
+        bcpl
+        cga
+        cgb
+        cgc
+        cgd
+        cge
+    mr10-trn-large-names/
+    trni-large-names.int
 ```
 
 `source/syn` and `source/trn` are byte-identical working copies of the
@@ -59,10 +71,10 @@ The bootstrap derivative preserves Cambridge section granularity by splitting
 the historical containers into four MR10 compilation units:
 
 ```text
-historical SECTION "SYN"   -> demoted/syn
-historical SECTION "LEX"   -> demoted/lex
-historical SECTION "TRNA"  -> demoted/trna
-historical SECTION "TRNB"  -> demoted/trnb
+historical SECTION "SYN"   -> workarea/bootstrap-cambridge/demoted/syn
+historical SECTION "LEX"   -> workarea/bootstrap-cambridge/demoted/lex
+historical SECTION "TRNA"  -> workarea/bootstrap-cambridge/demoted/trna
+historical SECTION "TRNB"  -> workarea/bootstrap-cambridge/demoted/trnb
 ```
 
 For each derivative unit the generator:

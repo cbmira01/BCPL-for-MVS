@@ -12,8 +12,8 @@ Current bootstrap contract:
   * build/load the resident Cambridge compiler image under ICINT V19;
   * present the requested BCPL source as final-run SYSIN;
   * allocate CODE as a temporary FB80 data set and recover it to the host;
-  * pass Cambridge options A/N/: translate generated character values to
-    System/370 EBCDIC and suppress the binary DECK path;
+  * use the bootstrap Cambridge target-character translation and suppress
+    the binary DECK path;
   * retain SYSGO as DUMMY until a byte-preserving object-deck export exists.
 
 The recovered CODE stream is written as workarea/<source-stem>.s370.asm.
@@ -32,19 +32,20 @@ ROOT = Path(__file__).resolve().parents[1]
 CORE_PATH = ROOT / "tools" / "compile-and-run-core.py"
 BOOT = ROOT / "native-compiler" / "bootstrap-cambridge"
 ICINT = ROOT / "asm" / "icintv19.asm"
-TRNI = BOOT / "trni-large-names.int"
+BOOT_WORK = ROOT / "workarea" / "bootstrap-cambridge"
+TRNI = BOOT_WORK / "trni-large-names.int"
 
 RESIDENT_SOURCES = [
-    BOOT / "demoted" / "bcpl",
-    BOOT / "demoted" / "syn",
-    BOOT / "demoted" / "lex",
-    BOOT / "demoted" / "trna",
-    BOOT / "demoted" / "trnb",
-    BOOT / "demoted" / "cga",
-    BOOT / "demoted" / "cgb",
-    BOOT / "demoted" / "cgc",
-    BOOT / "demoted" / "cgd",
-    BOOT / "demoted" / "cge",
+    BOOT_WORK / "demoted" / "bcpl",
+    BOOT_WORK / "demoted" / "syn",
+    BOOT_WORK / "demoted" / "lex",
+    BOOT_WORK / "demoted" / "trna",
+    BOOT_WORK / "demoted" / "trnb",
+    BOOT_WORK / "demoted" / "cga",
+    BOOT_WORK / "demoted" / "cgb",
+    BOOT_WORK / "demoted" / "cgc",
+    BOOT_WORK / "demoted" / "cgd",
+    BOOT_WORK / "demoted" / "cge",
     BOOT / "bootstrap-host.bcpl",
 ]
 
@@ -227,9 +228,9 @@ def main(argv=None) -> int:
         deck = deck.replace("//SYSUDUMP DD  SYSOUT=*\n", "//SYSUDUMP DD  DUMMY\n")
 
         # Cambridge owns final-run SYSIN.  CODE is textual and safe to recover
-        # through marked SYSOUT.  CAMBPARM supplies A/N/: A selects target
-        # EBCDIC character codes for this cross compilation and N suppresses
-        # binary DECK emission.  SYSGO remains DUMMY until byte-preserving
+        # through marked SYSOUT.  CAMBPARM suppresses binary DECK emission;
+        # the bootstrap derivative supplies ASCII-to-System/370 translation.
+        # SYSGO remains DUMMY until byte-preserving
         # object-deck export is implemented.
         source_text = core.read_ascii_records(source, f"Cambridge source {source.name}")
         final_dump = deck.rfind("//SYSUDUMP DD  DUMMY\n")

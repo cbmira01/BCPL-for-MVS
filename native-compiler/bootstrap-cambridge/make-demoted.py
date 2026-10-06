@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "source"
-OUT = ROOT / "demoted"
+OUT = ROOT.parent.parent / "workarea" / "bootstrap-cambridge" / "demoted"
 HIST = ROOT.parent.parent / "richards-bcpltape" / "bcplib" / "bcpl"
 
 
@@ -358,7 +358,7 @@ def main() -> None:
     print("generated:")
     for name in names:
         p = OUT / name
-        print(f"  {p.relative_to(ROOT)}  {p.stat().st_size} bytes")
+        print(f"  {p.relative_to(ROOT.parent.parent)}  {p.stat().st_size} bytes")
 
 
 if __name__ == "__main__":

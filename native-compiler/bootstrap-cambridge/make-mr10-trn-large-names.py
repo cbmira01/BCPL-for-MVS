@@ -17,7 +17,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "richards-bcpltape" / "mr10" / "bcplkit" / "trn"
-OUTDIR = ROOT / "native-compiler" / "bootstrap-cambridge" / "mr10-trn-large-names"
+OUTDIR = ROOT / "workarea" / "bootstrap-cambridge" / "mr10-trn-large-names"
 
 OLD_VEC = "LET A = VEC 1200"
 NEW_VEC = "LET A = VEC 2400"

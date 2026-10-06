@@ -6,7 +6,7 @@ cd "$ROOT"
 
 python3 native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py
 
-srcdir=native-compiler/bootstrap-cambridge/mr10-trn-large-names
+srcdir=workarea/bootstrap-cambridge/mr10-trn-large-names
 mapfile -t sections < <(printf '%s\n' "$srcdir"/trn[0-9]* | sort -V)
 if (( ${#sections[@]} == 0 )); then
     echo "no generated TRN sections found" >&2
@@ -25,7 +25,7 @@ tools/compile-and-run --save-intcode \
     asm/icintv19.asm \
     "${modules[@]}"
 
-target=native-compiler/bootstrap-cambridge/trni-large-names.int
+target=workarea/bootstrap-cambridge/trni-large-names.int
 : > "$target"
 for section in "${sections[@]}"; do
     stem=$(basename "$section")

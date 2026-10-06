@@ -1,6 +1,7 @@
 # Build products
 build/
 dist/
+workarea/
 *.o
 *.obj
 *.bin
