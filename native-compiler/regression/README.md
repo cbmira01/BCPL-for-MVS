@@ -166,7 +166,7 @@ storage, and general stream-management machinery.
 
 ### 04-string-output
 
-Status: **DEFINED** — not yet run.
+Status: **PARTIAL PASS** — Job 962 emitted `HELLO`; termination still fails.
 
 Traverses the BCPL string literal `"HELLO"` using the historical
 `WRITES` shape expressed inline with G!85 `GETBYTE` and G!14 `WRCH`.
