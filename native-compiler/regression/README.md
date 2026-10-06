@@ -58,6 +58,21 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
+## Running one native regression test
+
+With the TK5/Hercules container already running, invoke a numbered case from
+the repository root with:
+
+```sh
+bash native-compiler/regression/run-test.sh 00
+```
+
+The runner compiles the case through the Cambridge compiler, recovers CG370
+assembler, combines it with `asm/bcplmain-wip.asm` in `workarea/`, performs
+assembler-source preflight, builds an IFOX/IEWL/GO job, submits it, and prints
+the final job summary.  Generated artifacts remain under
+`workarea/native-regression/<case>/`.
+
 ## Current panel
 
 ### 00-most-degenerate-bcpl-program
