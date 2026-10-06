@@ -141,3 +141,20 @@ recursion, dynamic storage, stream I/O, or other library services.
 
 The remaining tests should be chosen one at a time as the BCPLMAIN contract is
 reconstructed.
+
+### 03-single-character-output
+
+Status: **DEFINED** — not yet expected to pass.
+
+Introduces the first observable native output through `WRCH`.
+
+This extends the earlier tests by exercising:
+
+- installation of G!14 as `WRCH`;
+- one ordinary global runtime call;
+- passing one character argument;
+- native character output through BCPLMAIN.
+
+It deliberately avoids `WRITEF`, string formatting, recursion, dynamic
+storage, and general stream-management machinery.
+
