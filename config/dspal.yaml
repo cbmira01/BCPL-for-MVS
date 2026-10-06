@@ -46,6 +46,24 @@ datasets:
     lrecl: 80
     blksize: 800
     populate: true
+    members:
+      BCPL: workarea/bootstrap-cambridge/demoted/bcpl
+      SYN: workarea/bootstrap-cambridge/demoted/syn
+      LEX: workarea/bootstrap-cambridge/demoted/lex
+      TRNA: workarea/bootstrap-cambridge/demoted/trna
+      TRNB: workarea/bootstrap-cambridge/demoted/trnb
+      CGA: workarea/bootstrap-cambridge/demoted/cga
+      CGB: workarea/bootstrap-cambridge/demoted/cgb
+      CGC: workarea/bootstrap-cambridge/demoted/cgc
+      CGD: workarea/bootstrap-cambridge/demoted/cgd
+      CGE: workarea/bootstrap-cambridge/demoted/cge
+      BOOTHOST: native-compiler/bootstrap-cambridge/bootstrap-host.bcpl
+      OPTIONS: native-compiler/bootstrap-cambridge/options-large-tree.txt
+      CAMBPARM: native-compiler/bootstrap-cambridge/cambridge-options.txt
+      LIBHDR: richards-bcpltape/sys3/bcpl/libhdr
+      SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
+      TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
+      CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
 
   ASM:
     dsn: BCPL.ASM
@@ -99,6 +117,7 @@ datasets:
       ICLIB: intcode/iclib.int
       SYNI: intcode/syni.int
       TRNI: intcode/trni.int
+      TRNILRG: workarea/bootstrap-cambridge/trni-large-names.int
 
   LIBRARY:
     dsn: BCPL.LIBRARY
