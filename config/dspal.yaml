@@ -95,12 +95,6 @@ datasets:
     blksize: 800
     populate: true
     members:
-      DUMPJES: jcl/dump-jes2-parameters.jcl
-      HELLOHVY: jcl/hello-world-heavy.jcl
-      IC12HON: jcl/icintv12-honors-thesis.jcl
-      IC13HON: jcl/icintv13-honors-thesis.jcl
-      IC13MAP: jcl/icintv13-mapstore.jcl
-      LSTPARM: jcl/list-parmlib-members.jcl
       CAMBBLD: jcl/build-cambridge-resident.jcl
 
   INTCODE:
