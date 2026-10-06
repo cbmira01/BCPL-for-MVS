@@ -1,0 +1,14 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET ID(X) = X
+
+LET START () BE
+$(1
+    LET A = 11
+    LET B = 13
+    LET C = 15
+    LET D = ID(3)
+
+    DEBUGINT(A+B+C+D)
+    FINISH
+$)1
