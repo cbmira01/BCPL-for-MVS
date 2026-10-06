@@ -122,6 +122,13 @@ def launcher_deck(
     member: str,
     redact_password: bool = False,
 ) -> str:
+    """Build a three-step internal-reader launcher.
+
+    Do not concatenate an in-stream DD with a PDS member directly.  Classic
+    JES/JCL handling is much more predictable if we first create a real FB/80
+    sequential card deck, append the stored job body to it, and only then feed
+    that data set to INTRDR.
+    """
     lines = core.authenticated_job_card(
         config,
         "DSPALSUB",
@@ -132,8 +139,9 @@ def launcher_deck(
         [
             "//* SUBMIT ONE STORED JCL JOB BODY THROUGH JES INTERNAL READER",
             f"//* PAYLOAD: {dsn}({member})",
-            "//* FIRST STAGE THE COMPLETE PAYLOAD AS EXPLICIT FB/80 CARDS.",
-            "//STAGE    EXEC PGM=IEBGENER",
+            "//*",
+            "//* STEP 1: CREATE FB/80 PAYLOAD WITH ONLY THE GENERATED JOB CARD.",
+            "//MKJOB    EXEC PGM=IEBGENER",
             "//SYSPRINT DD  SYSOUT=*",
             "//SYSIN    DD  DUMMY",
             "//SYSUT2   DD  DSN=&&PAYLOAD,UNIT=SYSDA,SPACE=(80,(50,20)),",
@@ -153,8 +161,15 @@ def launcher_deck(
     lines.extend(
         [
             "ZZ",
-            f"//         DD  DSN={dsn}({member}),DISP=SHR",
-            "//* NOW FEED ONLY THE NORMALIZED FB/80 CARD DECK TO JES.",
+            "//*",
+            "//* STEP 2: APPEND THE STORED JOB BODY TO THE SAME CARD DECK.",
+            "//APPEND   EXEC PGM=IEBGENER",
+            "//SYSPRINT DD  SYSOUT=*",
+            "//SYSIN    DD  DUMMY",
+            f"//SYSUT1   DD  DSN={dsn}({member}),DISP=SHR",
+            "//SYSUT2   DD  DSN=&&PAYLOAD,DISP=(MOD,PASS)",
+            "//*",
+            "//* STEP 3: FEED THE COMPLETE FB/80 CARD DECK TO JES.",
             "//SUBMIT   EXEC PGM=IEBGENER",
             "//SYSPRINT DD  SYSOUT=*",
             "//SYSIN    DD  DUMMY",
