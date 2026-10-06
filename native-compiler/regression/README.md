@@ -313,7 +313,11 @@ proven.
 
 ### 13-two-argument-linkage
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 990 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms argument 1 in R7 and argument 2 in R8. The caller
+loads V into R7 and I into R8 before BALR; the callee preserves through R8
+and combines the two registers to compute V!I before storing 42.
 
 START creates a local `VEC 2`, initializes `V!1` to 17, then calls
 `SET(V,1)`. The callee uses both arguments to compute `V!I` and stores
