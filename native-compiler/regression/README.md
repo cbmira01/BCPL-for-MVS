@@ -289,7 +289,8 @@ of local vector storage without GETVEC, FREEVEC, BLIB, or heap allocation.
 
 ### 12-vector-callee-mutation
 
-Status: **DEFINED** — not yet run.
+Status: **RUNTIME PASS** — Job 988 emitted `42`; ASM/LKED/GO all RC=0000.
+Generated-code inspection remains pending.
 
 START creates a local `VEC 2`, initializes `V!1` to 17, and passes
 `V` to SETVALUE. The callee writes 42 through the received pointer.
