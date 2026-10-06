@@ -60,7 +60,7 @@ The active first-phase options are:
 
 | Option | Effect |
 | --- | --- |
-| `A` | `ASCII := TRUE`; select the cross-compilation character-code path |
+| `A` | `ASCII := TRUE`; install `CODEA`, the historical EBCDIC-to-ASCII cross-target translation |
 | `B` | `BACKVEC := TRUE` |
 | `C` | `FORCEUPPERCASE := FALSE` |
 | `F` | `ABORT := STANDARDABORT` |
@@ -332,19 +332,26 @@ and `tools/cambridge-compile` supplies an FB80 `CAMBPARM` DD.
 The current record begins:
 
 ```text
-A/N/
+/N/
 ```
 
 and is filled through column 80 with slash characters.
 
 This has three deliberate effects:
 
-1. first-phase `A` selects the historical cross-compilation character-code
-   path;
+1. the leading slash ends the first phase without selecting `A`;
 2. second-phase `N` suppresses the binary object-deck path while the bootstrap
    lacks a byte-preserving WRITEREC transport;
 3. slash fill prevents FB80 blank padding from being interpreted as unknown
    code-generator options.
+
+The earlier `A/N/` bootstrap record exposed an important host/target direction
+error.  `CODEA` translates native System/370 EBCDIC character codes to ASCII;
+it is not a generic "cross compilation" conversion.  Under the MR10 bootstrap
+the source character codes are already ASCII and the CG370 target is EBCDIC.
+The generated bootstrap master therefore installs a private `CODE370`
+ASCII-to-EBCDIC inverse of the historical table by default.  The untouched
+historical master and option semantics are not changed.
 
 This is a bootstrap transport substitution only. It should not be mistaken for
 the historical native MVS interface.
