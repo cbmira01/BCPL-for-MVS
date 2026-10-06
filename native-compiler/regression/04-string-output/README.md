@@ -68,3 +68,13 @@ This proves an additional native primitive calling convention: machine-code
 primitives called without a new BCPL workspace must restore the caller's B
 register (R4) from word zero of the current workspace, 0(R5), before
 returning through R6.
+
+
+### Job 962 termination classification
+
+`job-summary --verbose 962` reports S322 for the GO step after the expected
+`HELLO` output was produced.
+
+This places Test 04 in the same termination-failure class already observed
+after Test 03 output.  The string-output objective remains proven; the
+remaining defect is normal native termination after FINISH.
