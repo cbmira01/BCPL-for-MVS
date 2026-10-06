@@ -21,3 +21,31 @@ BCPLMAIN rendezvous, global installation, initial runtime register state,
 FINISH handling, or MVS return linkage.
 
 No library output is expected.
+
+
+## Status
+
+PASS.
+
+First successful end-to-end native run: JES Job 948 on 2026-10-06.
+
+Observed result:
+
+```text
+ASM   IFOX00   RC=0000
+LKED  IEWL     RC=0000
+GO              RC=0000
+```
+
+This establishes the minimum native lifecycle for the current reconstruction:
+
+```text
+compiled module entry
+  -> BCPLMAIN
+  -> installation of G!1 = START
+  -> entry to START
+  -> FINISH through R11
+  -> normal MVS return
+```
+
+No stronger runtime claims should be inferred from this test.
