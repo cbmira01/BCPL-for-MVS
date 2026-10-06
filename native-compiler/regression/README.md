@@ -260,3 +260,21 @@ Compared with Test 08's zero-offset `0(7,7)`, the four-byte displacement
 is exactly one 32-bit BCPL target word.
 
 This establishes constant nonzero vector indexing for both store and load.
+
+### 10-vector-variable-subscript
+
+Status: **DEFINED** — not yet run.
+
+Creates a local `VEC 2`, initializes local `I = 1`, stores `42` into
+`V!I`, then reloads that element and passes it to `DEBUGINT`.
+
+Expected output:
+
+```text
+42
+```
+
+This extends Test 09 by moving the subscript from a compile-time constant to
+a runtime local variable. Generated S/370 must show runtime index/address
+calculation for both the store and the later load before Test 10 is
+considered fully proven.
