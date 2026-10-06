@@ -117,4 +117,81 @@ The immediate purpose is to close the A1-A4 argument-register evidence.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 994 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection confirms the four-argument register convention.
+
+The caller prepares all four arguments immediately before the call:
+
+```asm
+LA 10,2(0)
+LA 9,40(0)
+LA 8,1(0)
+L  7,12(5)
+LA 15,28(5)
+L  4,0+L2-L4(4)
+BALR 6,4
+```
+
+Thus, for `SET4(V,1,40,2)`:
+
+```text
+R7  = V
+R8  = I
+R9  = X
+R10 = Y
+```
+
+The callee entry preserves through R10 and uses all four incoming arguments:
+
+```asm
+STM 4,10,0(15)
+LR 5,15
+AR 10,9
+AR 8,7
+AR 8,8
+ST 10,0(8,8)
+BCR 15,11
+```
+
+R10+R9 computes Y+X = 42.  R8+R7 forms the BCPL word address V+I;
+doubling R8 and using `0(8,8)` converts that word address to the native
+byte address.  The callee stores the computed value from R10 through that
+address.
+
+After return, START independently reloads V!1 and observes 42 through
+DEBUGINT, confirming all four arguments were interpreted correctly.
+
+
+### Contract established
+
+Test 15 completes the basic A1-A4 argument-register evidence for the native
+CG370 calling convention:
+
+```text
+argument 1 -> R7
+argument 2 -> R8
+argument 3 -> R9
+argument 4 -> R10
+```
+
+A generated four-argument callee preserves the incoming argument set with
+`STM 4,10,0(15)` and may use R7-R10 directly on entry.
+
+This is directly relevant to machine-coded BCPLMAIN/runtime primitives:
+a native four-argument primitive must interpret R7-R10 as A1-A4 while
+preserving the surrounding BCPL linkage contract.
