@@ -864,7 +864,8 @@ DBGCVT   CVD   7,DECPACK
          LA    9,15
 DBGSKIP  CLI   0(8),C'0'
          BNE   DBGOUT
-         CH    9,=H'1'
+         LA    4,1
+         CR    9,4
          BE    DBGOUT
          LA    8,1(8)
          BCT   9,DBGSKIP
@@ -879,7 +880,8 @@ DBGOUT   SR    10,10
 * Append one EBCDIC byte from R10.  R14 is local linkage.
 *
 DBGAPND  L     4,OUTPOS
-         C     4,=F'132'
+         LA    7,132
+         CR    4,7
          BNL   DBGARET
          LA    7,OUTBUF
          AR    7,4
