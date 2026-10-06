@@ -33,4 +33,4 @@ For ICINT workloads, use `tools/run-intcode` or `tools/compile-and-run`; they ge
 
 ICINT is the bootstrap host, not the end product. The native compiler work now starts from a surviving historical System/370 BCPL code generator. The assembler work ahead is therefore centered on validating generated S/370 code and reconstructing the native runtime/MVS service layer, not on inventing a backend without historical reference.
 
-See `native-compiler/README.md` for the current compiler direction and `THIRD-PARTY-NOTICES.md` for historical provenance.
+`bcplmain-wip.asm` is the working native-runtime reconstruction. It separates experimentally established CG370/BCPLMAIN contracts from provisional implementations and explicit stubs for unresolved runtime services.\n\nSee `native-compiler/README.md` for the current compiler direction and `THIRD-PARTY-NOTICES.md` for historical provenance.
