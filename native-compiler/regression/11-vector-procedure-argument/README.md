@@ -81,4 +81,72 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 986 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection satisfied the defining pointer-argument criterion.
+
+The caller forms and stores the local BCPL vector word pointer, stores 42 in
+V!1, reloads V into R7, and calls SHOW:
+
+```asm
+LA 7,16(5)
+SRL 7,2(0)
+ST 7,12(5)
+LA 8,42(0)
+AR 7,7
+ST 8,4(7,7)
+L  7,12(5)
+LA 15,28(5)
+L  4,0+L2-L4(4)
+BALR 6,4
+```
+
+SHOW receives V in R7. Its entry saves R4..R7 into the new workspace, then
+dereferences V!1 directly from the received BCPL word pointer:
+
+```asm
+STM 4,7,0(15)
+LR 5,15
+AR 7,7
+L  7,4(7,7)
+LA 15,16(5)
+L  4,600(12)
+BALR 6,4
+BCR 15,11
+```
+
+After doubling R7, `4(7,7)` reconstructs four times the BCPL word pointer
+plus one target word, which is the native byte address of V!1.
+
+This proves that the vector pointer crosses the BCPL call boundary as an
+ordinary argument and remains valid for callee-side dereference.
+
+
+### Contract established
+
+Test 11 directly establishes that generated native BCPL correctly supports:
+
+- passing a BCPL vector word pointer as argument 1 in R7;
+- preserving the argument across procedure entry;
+- dereferencing the received pointer in the callee;
+- reading a nonzero vector element in the callee;
+- passing the loaded value onward to DEBUGINT;
+- returning through the ordinary BCPL procedure-return path.
+
+This extends the vector progression from same-procedure access to
+cross-procedure pointer visibility without introducing GETVEC, FREEVEC, or
+BLIB.
