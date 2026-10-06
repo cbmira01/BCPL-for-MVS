@@ -200,18 +200,14 @@ separately.
 
 ### 06-mutable-local-readback
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 974 emitted `X42`; ASM/LKED/GO all RC=0000.
 
 Initializes `X` to 17, mutates it to 42, calls `WRCH('X')` to consume the
 normal first argument register, then calls `DEBUGINT(X)`.
 
-Expected output is:
+Generated S/370 inspection confirmed an explicit `L 7,12(5)` after the
+WRCH call and before the DEBUGINT call. The printed 42 is therefore a real
+reload of mutable local workspace state rather than a value left live in R7.
 
-```text
-X42
-```
-
-This test is specifically intended to establish mutable local-state readback
-after an intervening call. Generated S/370 must also be inspected to confirm
-that the argument passed to DEBUGINT is obtained after WRCH rather than being
-an old value left live in R7.
+This establishes mutable local assignment, persistence across an intervening
+global call, workspace reload, and observable value reporting.
