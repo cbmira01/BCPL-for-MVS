@@ -113,6 +113,9 @@ storage, and stream I/O.
 
 ### 02-local-zero-test
 
+Status: **PASS** — first successful end-to-end native run, JES Job 952,
+2026-10-06.
+
 Adds one local integer and one comparison with zero.
 
 This extends the earlier tests by exercising:
