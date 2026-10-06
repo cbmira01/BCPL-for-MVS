@@ -586,3 +586,25 @@ Expected output:
 This exercises callable user globals through R12/G. Generated S/370 must
 show ADD exported as G!151 and START loading its callable address from
 `604(R12)` before Test 24 is considered fully proven.
+
+## MVS-resident Cambridge compile path
+
+The ordinary per-test runner retains the full Cambridge bootstrap path:
+
+```sh
+bash native-compiler/regression/run-test.sh NN
+```
+
+After the one-time resident compiler installation, the same regression can
+use the persistent MVS compiler image:
+
+```sh
+bash native-compiler/regression/run-test-mvs.sh NN
+```
+
+The two runners share the same downstream generated-S/370 assembly,
+BCPLMAIN, native assemble/link/run, and output checks.  Only the Cambridge
+compile delivery path changes.  Test 24 is the initial A/B acceptance test
+for this resident workflow.
+
+See `native-compiler/mvs-resident-cambridge.md`.
