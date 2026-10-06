@@ -17,7 +17,7 @@ Unless noted otherwise, run them from the repository root.
 | `tools/current-icint` | Print the promoted ICINT source selected by `config/CURRENT`. |
 | `tools/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
-| `tools/install-cambridge-mvs` | One-time install of the interpreted Cambridge compiler as persistent MVS build state. |
+| `tools/build-cambridge-mvs` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
 | `tools/cambridge-compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
 | `tools/run-regression-panel` | Run exact-output durable regressions. |
 | `tools/run-demo-suite.sh` | Run the 17 general BCPL demonstrations. |
@@ -172,44 +172,66 @@ It checks ASCII-only source, tabs, trailing whitespace, and text beyond column
 
 ## Persistent Cambridge compiler on MVS
 
-The native-code regression work has a faster parallel compile path.  The
+The native-code regression work has a faster parallel compile path. The
 Cambridge compiler is still INTCODE executed by ICINT V19; it is not yet a
-native MVS compiler.  The expensive bootstrap can, however, be performed once
-and left in the managed HERC02 libraries.
+native MVS compiler.
 
-Install or refresh it with:
-
-```sh
-python3 tools/install-cambridge-mvs
-```
-
-To inspect the complete generated installation JCL without submitting it:
+Host-to-MVS positioning is owned by `dspal`. First generate the host-side
+bootstrap derivatives:
 
 ```sh
-python3 tools/install-cambridge-mvs --show-jcl
+python3 native-compiler/bootstrap-cambridge/make-demoted.py
+bash native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh
 ```
 
-The installation leaves:
+Then populate the managed MVS libraries:
+
+```sh
+tools/dspal populate SOURCE
+tools/dspal populate ASM
+tools/dspal populate INTCODE
+```
+
+Build the resident compiler from those MVS members with:
+
+```sh
+python3 tools/build-cambridge-mvs
+```
+
+The build leaves:
 
 ```text
-HERC02.BCPL.ASM(ICINT19)       ICINT V19 source
-HERC02.BCPL.LOAD(ICINT19)      ICINT V19 load module
-HERC02.BCPL.SOURCE(*)          demoted Cambridge sources and headers
-HERC02.BCPL.INTCODE(*)         persistent Cambridge compiler INTCODE units
+HERC02.BCPL.LOAD(ICINT19)
+HERC02.BCPL.INTCODE(BCPL)
+HERC02.BCPL.INTCODE(SYN)
+HERC02.BCPL.INTCODE(LEX)
+HERC02.BCPL.INTCODE(TRNA)
+HERC02.BCPL.INTCODE(TRNB)
+HERC02.BCPL.INTCODE(CGA..CGE)
+HERC02.BCPL.INTCODE(BOOTHOST)
+HERC02.BCPL.INTCODE(CAMBCOMP)
 ```
 
-Compile a source through that resident image with:
+`CAMBCOMP` is the packed ICINT-runnable compiler image. The individual
+members are retained for diagnosis and inspection.
+
+Inspect the complete generated build JCL without submitting it:
+
+```sh
+python3 tools/build-cambridge-mvs --show-jcl
+```
+
+After inspecting the PDSes, compile a source through that resident image with:
 
 ```sh
 python3 tools/cambridge-compile-mvs path/to/program.bcpl
 ```
 
-For the native regression panel, use the parallel runner:
+For the native regression panel, use:
 
 ```sh
 bash native-compiler/regression/run-test-mvs.sh 24
 ```
 
 The original `run-test.sh` remains the bootstrap-from-source path and is
-unchanged by default.  The MVS-resident runner is therefore directly
-comparable against it.
+unchanged by default. `config/CURRENT` remains on ICINT V17.
