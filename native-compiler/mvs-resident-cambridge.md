@@ -48,17 +48,25 @@ inspectable.
 
 ## MVS build
 
-Run:
+The authoritative checked-in build deck is:
 
-```sh
-python3 tools/build-cambridge-mvs
+```text
+jcl/build-cambridge-resident.jcl
+HERC02.BCPL.JCL(CAMBBLD)
 ```
 
-or inspect its authenticated JCL first:
+Populate the JCL library with:
 
 ```sh
-python3 tools/build-cambridge-mvs --show-jcl
+tools/dspal populate JCL
 ```
+
+The checked-in JOB card contains `PASSWORD=XXXXXXXX`; replace that placeholder
+with the local HERC02 password before direct submission. The source-controlled
+deck intentionally contains no credential.
+
+For convenience, `tools/build-cambridge-mvs` can still generate and submit an
+equivalent authenticated deck from `config/dspal.local.yaml`.
 
 The job:
 
