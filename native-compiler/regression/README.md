@@ -166,7 +166,7 @@ storage, and general stream-management machinery.
 
 ### 04-string-output
 
-Status: **PARTIAL PASS** — Job 962 emitted `HELLO`; GO then ended S322.
+Status: **PASS** — Job 968 emitted `HELLO`; ASM/LKED/GO all RC=0000.
 
 Traverses the BCPL string literal `"HELLO"` using the historical
 `WRITES` shape expressed inline with G!85 `GETBYTE` and G!14 `WRCH`.
