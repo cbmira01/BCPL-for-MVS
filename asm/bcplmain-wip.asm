@@ -621,6 +621,7 @@ GIDONE   L     4,4(12)
 * G!14 = first narrow native WRCH implementation for Regression 03.
 * G!76 = temporary no-op WRITEF for the factorial milestone.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
+* G!150 = provisional DEBUGINT bootstrap diagnostic service.
 *
          LA    1,WRCH
          ST    1,56(12)
@@ -630,6 +631,8 @@ GIDONE   L     4,4(12)
          ST    1,340(12)
          LA    1,PUTBYTE
          ST    1,344(12)
+         LA    1,DEBUGINT
+         ST    1,600(12)
 *
 * Regression 03 output is deliberately narrow: one buffered SYSPRINT
 * record.  This borrows the proven QSAM shape used by ICINT V19.
@@ -789,16 +792,18 @@ STKCIMP  LA    14,4(14)
 * generated code may branch relative to R4 immediately after a call.
 * Procedure entry saved the caller B value at 0(R5).
 * Native primitives restore R4 from that slot before returning via R6.
+* R0 and R1-R3 are permanent generated-code registers.
+* Native primitives preserve them.
 ***********************************************************************
-WRCH     L     1,OUTPOS
-         LA    14,132
-         CR    1,14
+WRCH     L     14,OUTPOS
+         LA    4,132
+         CR    14,4
          BNL   WRCHRTN
-         LA    14,OUTBUF
-         AR    14,1
-         STC   7,0(14)
-         LA    1,1(1)
-         ST    1,OUTPOS
+         LA    4,OUTBUF
+         AR    4,14
+         STC   7,0(4)
+         LA    14,1(14)
+         ST    14,OUTPOS
 WRCHRTN  L     4,0(5)
          BCR   15,6
 *
@@ -837,6 +842,53 @@ PUTBYTE  LR    14,7
          BCR   15,6
 *
 ***********************************************************************
+* DEBUGINT -- PROVISIONAL BOOTSTRAP DIAGNOSTIC
+*
+* G150 DEBUGINT receives a signed 32-bit integer in R7.
+* It appends decimal text to the same SYSPRINT record used by WRCH.
+* This is not a recovered historical BCPL library interface.
+* It must not be confused with WRITEN or WRITEF.
+*
+* CVD creates packed decimal and UNPK creates zoned digits.
+* The final zone is normalized after the sign nibble is consumed.
+* Leading zeroes are suppressed.  Zero itself emits one digit.
+***********************************************************************
+DEBUGINT LTR   7,7
+         BNM   DBGCVT
+         LA    10,C'-'
+         BAL   14,DBGAPND
+DBGCVT   CVD   7,DECPACK
+         UNPK  DECZON(15),DECPACK(8)
+         OI    DECZON+14,X'F0'
+         LA    8,DECZON
+         LA    9,15
+DBGSKIP  CLI   0(8),C'0'
+         BNE   DBGOUT
+         CH    9,=H'1'
+         BE    DBGOUT
+         LA    8,1(8)
+         BCT   9,DBGSKIP
+DBGOUT   SR    10,10
+         IC    10,0(8)
+         BAL   14,DBGAPND
+         LA    8,1(8)
+         BCT   9,DBGOUT
+         L     4,0(5)
+         BCR   15,6
+*
+* Append one EBCDIC byte from R10.  R14 is local linkage.
+*
+DBGAPND  L     4,OUTPOS
+         C     4,=F'132'
+         BNL   DBGARET
+         LA    7,OUTBUF
+         AR    7,4
+         STC   10,0(7)
+         LA    4,1(4)
+         ST    4,OUTPOS
+DBGARET  BR    14
+*
+***********************************************************************
 * WIP DATA
 ***********************************************************************
          DS    0F
@@ -861,6 +913,8 @@ GLOBV    DC    F'150'
 * observable character-output rung.  Normal step termination currently
 * owns DCB cleanup; explicit CLOSE remains under reconstruction.
 *
+DECPACK  DS    D
+DECZON   DS    CL15
 OUTPOS   DC    F'0'
 OUTBUF   DS    CL132
 BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
