@@ -383,3 +383,21 @@ This extends the linkage evidence from three BCPL arguments to four.
 Generated S/370 must establish the register used for argument 4 and show all
 four arguments participating in the callee operation before Test 15 is
 considered fully proven.
+
+### 16-function-return-value
+
+Status: **DEFINED** — not yet run.
+
+Calls `ADD(17,25)`, stores the returned value in a local, and passes that
+value to `DEBUGINT`.
+
+Expected output:
+
+```text
+42
+```
+
+This establishes the function-result side of the native BCPL calling
+convention. Generated S/370 must show ADD returning its result in the
+caller-visible result register and START consuming that returned value before
+Test 16 is considered fully proven.
