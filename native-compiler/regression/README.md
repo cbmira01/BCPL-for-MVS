@@ -408,7 +408,11 @@ Test 16 is considered fully proven.
 
 ### 17-nested-calls
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 998 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms that DOUBLE establishes its own workspace, prepares
+a nested call to ADD with a new W at `16(R5)`, receives ADD's R7 result,
+and returns that same result to START through the ordinary BCPL return path.
 
 START calls `DOUBLE(21)`; DOUBLE calls `ADD(X,X)`; ADD returns 42;
 DOUBLE propagates that result; START passes the final value to DEBUGINT.
