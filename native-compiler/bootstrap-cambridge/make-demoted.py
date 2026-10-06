@@ -207,6 +207,17 @@ $(  || BOOTSTRAP ONLY: pack an unpacked character vector using the
     RESULTIS LAST
 $)
 """
+
+    # CGA contains two independent top-level LET/AND declaration groups:
+    # CG370... and SCAN....  Each target PACKSTRING call is in a different
+    # group, so each group needs its own private PK370 declaration.
+    scan_marker = "\nLET SCAN() BE"
+    if text.count(scan_marker) != 1:
+        raise SystemExit(
+            f"CGA: expected one SCAN declaration boundary, "
+            f"found {text.count(scan_marker)}"
+        )
+    text = text.replace(scan_marker, helper + scan_marker, 1)
     return text + helper
 
 
