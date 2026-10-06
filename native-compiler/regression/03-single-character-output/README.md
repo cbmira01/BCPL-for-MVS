@@ -36,7 +36,12 @@ primitive character-output contract to establish first.
 
 ## Status
 
-NOT YET EXPECTED TO PASS.
+IMPLEMENTED, AWAITING NATIVE RUN.
 
-The current `asm/bcplmain-wip.asm` does not yet implement G!14 WRCH or a
-native character-output path.
+`asm/bcplmain-wip.asm` now installs G!14 as a narrow native WRCH path.
+Characters are buffered into one QSAM SYSPRINT record; FINISH writes that
+record and closes the DCB.  This intentionally does not yet implement the
+historical selected-stream, newline, wrapping, or general I/O semantics.
+
+The regression runner also extracts the emitted `A` from the completed JES
+report and displays it under `=== BCPL output ===` in the invoking WSL CLI.
