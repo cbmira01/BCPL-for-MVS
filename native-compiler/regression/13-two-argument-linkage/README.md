@@ -102,4 +102,78 @@ Test 14 is intended to extend the evidence to three arguments.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 990 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection confirms the two-argument register convention.
+
+The caller prepares argument 2 in R8 and argument 1 in R7 immediately before
+the call:
+
+```asm
+LA 8,1(0)
+L  7,12(5)
+LA 15,28(5)
+L  4,0+L2-L4(4)
+BALR 6,4
+```
+
+Thus, for `SET(V,1)`:
+
+```text
+R7 = V
+R8 = I
+```
+
+The callee entry preserves through R8 and immediately combines the two
+incoming arguments:
+
+```asm
+STM 4,8,0(15)
+LR 5,15
+AR 8,7
+LA 9,42(0)
+AR 8,8
+ST 9,0(8,8)
+BCR 15,11
+```
+
+After `AR 8,7`, R8 contains the BCPL word address V+I. Doubling R8 and
+using `0(8,8)` converts that word address to its native byte address, where
+the callee stores 42.
+
+After return, START independently reloads V and reads V!1 before calling
+DEBUGINT, confirming that both arguments were interpreted correctly and the
+callee modified the intended element.
+
+
+### Contract established
+
+Test 13 establishes the first two BCPL argument registers for the native
+CG370 calling convention:
+
+```text
+argument 1 -> R7
+argument 2 -> R8
+```
+
+It also establishes that a generated two-argument callee preserves the
+incoming argument set with `STM 4,8,0(15)` and can use R7 and R8 directly
+on entry.
+
+This is directly relevant to machine-coded BCPLMAIN/runtime primitives:
+a native two-argument primitive must accept its first two BCPL arguments in
+R7 and R8 and preserve the surrounding BCPL register/linkage contract.
