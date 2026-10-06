@@ -567,7 +567,12 @@ constructs before Test 23 is considered fully proven.
 
 ### 24-callable-global-through-g
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 1014 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms that START loads ADD from G!151 with
+`L 4,604(12)` and calls it with `BALR 6,4`. The module trailer exports
+ADD at the corresponding global-vector displacement, proving callable user
+globals through R12/G.
 
 Declares user function `ADD` as global 151, calls `ADD(17,25)` from
 START, and reports the returned value through DEBUGINT.
