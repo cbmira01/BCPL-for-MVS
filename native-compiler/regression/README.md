@@ -58,6 +58,53 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
+## Current panel
+
+### 00-most-degenerate-bcpl-program
+
+Establishes only the minimum native lifecycle:
+
+```text
+compiled module entry
+  -> BCPLMAIN
+  -> install G!1 = START
+  -> enter START
+  -> FINISH through R11
+  -> normal MVS return
+```
+
+No procedure calls, locals, arithmetic, strings, library I/O, recursion, or
+dynamic storage are involved.
+
+### 01-one-procedure-call
+
+Adds one ordinary BCPL procedure call and return.
+
+This extends Test 00 by exercising:
+
+- caller/callee workspace setup;
+- R5/R15 workspace handling;
+- R6 linkage;
+- procedure return through the R11 return path.
+
+It still avoids strings, arithmetic, recursion, global library calls, dynamic
+storage, and stream I/O.
+
+### 02-local-zero-test
+
+Adds one local integer and one comparison with zero.
+
+This extends the earlier tests by exercising:
+
+- local workspace storage and reload;
+- comparison against zero;
+- condition-code and branch generation;
+- the runtime invariant that R0 must remain zero while generated BCPL code
+  executes.
+
+It still avoids procedure arguments, recursion, strings, global library calls,
+dynamic storage, and stream I/O.
+
 ## Test 00
 
 `00-most-degenerate-bcpl-program` is intentionally almost empty.  Its only
