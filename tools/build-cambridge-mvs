@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""Build the MVS-resident interpreted Cambridge compiler from dspal PDS state.
+
+This command performs no host-to-MVS file positioning.  Populate the managed
+PDSes with tools/dspal first.  The generated JCL then:
+
+  * assembles HERC02.BCPL.ASM(ICINT19);
+  * link-edits HERC02.BCPL.LOAD(ICINT19);
+  * compiles the demoted Cambridge sources already in HERC02.BCPL.SOURCE;
+  * writes individual compiler INTCODE units to HERC02.BCPL.INTCODE; and
+  * concatenates them with BLIBI/ICLIB as HERC02.BCPL.INTCODE(CAMBCOMP).
+
+CAMBCOMP is directly runnable as the single INTIN compiler image under ICINT19.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+DSPAL_CORE = ROOT / "tools" / "dspal-core.py"
+
+CAMBRIDGE_UNITS = [
+    ("BCPL", "BCPL"),
+    ("SYN", "SYN"),
+    ("LEX", "LEX"),
+    ("TRNA", "TRNA"),
+    ("TRNB", "TRNB"),
+    ("CGA", "CGA"),
+    ("CGB", "CGB"),
+    ("CGC", "CGC"),
+    ("CGD", "CGD"),
+    ("CGE", "CGE"),
+    ("BOOTHOST", "BOOTHOST"),
+]
+
+
+def load_core():
+    spec = importlib.util.spec_from_file_location("dspal_core", DSPAL_CORE)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {DSPAL_CORE}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+core = load_core()
+
+
+def runtime_step(step: str, load: str) -> list[str]:
+    return [
+        f"//{step:<8} EXEC PGM=ICINT19,REGION=256K,TIME=(,30)",
+        f"//STEPLIB  DD  DSN={load},DISP=SHR",
+        "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)",
+        "//SYSUDUMP DD  DUMMY",
+    ]
+
+
+def build_deck(config, redact_password: bool) -> str:
+    source = core.full_dsn(config, config["datasets"]["SOURCE"])
+    asm = core.full_dsn(config, config["datasets"]["ASM"])
+    intcode = core.full_dsn(config, config["datasets"]["INTCODE"])
+    load = core.full_dsn(config, config["datasets"]["LOAD"])
+
+    lines = core.authenticated_job_card(
+        config,
+        "CAMBBLD",
+        "CAMBRIDGE BUILD",
+        redact_password=redact_password,
+    )
+    lines.extend([
+        "//* BUILD ONLY: ALL INPUT MEMBERS MUST ALREADY BE POPULATED BY DSPAL",
+        "//* CAMBRIDGE REMAINS INTCODE EXECUTED BY ICINT V19",
+        "//*",
+        "//* ASSEMBLE ICINT V19 FROM HERC02.BCPL.ASM",
+        "//ASM      EXEC PGM=IFOX00,",
+        "//             PARM='OBJECT,NODECK,NOLIST,NOXREF',REGION=256K",
+        "//SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR",
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1700,(600,100))",
+        "//SYSUT2   DD  UNIT=SYSDA,SPACE=(1700,(300,50))",
+        "//SYSUT3   DD  UNIT=SYSDA,SPACE=(1700,(300,50))",
+        "//SYSPRINT DD  SYSOUT=*",
+        "//SYSPUNCH DD  DUMMY",
+        "//SYSGO    DD  DSN=&&ICOBJ,UNIT=SYSDA,SPACE=(80,(300,100)),",
+        "//             DISP=(NEW,PASS)",
+        f"//SYSIN    DD  DSN={asm}(ICINT19),DISP=SHR",
+        "//*",
+        "//* LINK ICINT V19 INTO THE PROJECT LOAD LIBRARY",
+        "//LKED     EXEC PGM=IEWL,PARM='LET,NCAL',REGION=256K,",
+        "//             COND=(4,LT,ASM)",
+        "//SYSLIN   DD  DSN=&&ICOBJ,DISP=(OLD,DELETE)",
+        "//         DD  *",
+        "  ENTRY ICINT",
+        "  NAME ICINT19(R)",
+        "/*",
+        f"//SYSLMOD  DD  DSN={load},DISP=SHR",
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))",
+        "//SYSPRINT DD  SYSOUT=*",
+    ])
+
+    for index, (src_member, out_member) in enumerate(CAMBRIDGE_UNITS, 1):
+        oc = f"&&OC{index:02d}"
+        comp = f"C{index:02d}CMP"
+        cg = f"C{index:02d}CG"
+        lines.extend([
+            "//*",
+            f"//* {source}({src_member}) -> {intcode}({out_member})",
+            *runtime_step(comp, load),
+            f"//INTIN    DD  DSN={intcode}(SYNI),DISP=SHR",
+            f"//         DD  DSN={intcode}(TRNILRG),DISP=SHR",
+            f"//         DD  DSN={intcode}(BLIBI),DISP=SHR",
+            f"//         DD  DSN={intcode}(ICLIB),DISP=SHR",
+            f"//SYSIN    DD  DSN={source}({src_member}),DISP=SHR",
+            f"//OPTIONS  DD  DSN={source}(OPTIONS),DISP=SHR",
+            f"//LIBHDR   DD  DSN={source}(LIBHDR),DISP=SHR",
+            f"//SYNHDR   DD  DSN={source}(SYNHDR),DISP=SHR",
+            f"//TRNHDR   DD  DSN={source}(TRNHDR),DISP=SHR",
+            f"//CGHDR    DD  DSN={source}(CGHDR),DISP=SHR",
+            f"//OCODE    DD  DSN={oc},UNIT=SYSDA,",
+            "//             SPACE=(80,(1000,500)),",
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),",
+            "//             DISP=(NEW,PASS)",
+            *runtime_step(cg, load),
+            f"//INTIN    DD  DSN={intcode}(CGI),DISP=SHR",
+            f"//         DD  DSN={intcode}(BLIBI),DISP=SHR",
+            f"//         DD  DSN={intcode}(ICLIB),DISP=SHR",
+            f"//SYSIN    DD  DSN={oc},DISP=(OLD,DELETE)",
+            f"//INTCODE  DD  DSN={intcode}({out_member}),DISP=SHR",
+        ])
+
+    lines.extend([
+        "//*",
+        "//* CREATE ONE ICINT-RUNNABLE CAMBRIDGE COMPILER IMAGE",
+        "//PACKCOMP EXEC PGM=IEBGENER",
+        "//SYSPRINT DD  SYSOUT=*",
+        "//SYSIN    DD  DUMMY",
+        f"//SYSUT2   DD  DSN={intcode}(CAMBCOMP),DISP=SHR",
+    ])
+    first = True
+    for member in [m for _s, m in CAMBRIDGE_UNITS] + ["BLIBI", "ICLIB"]:
+        dd = "SYSUT1" if first else ""
+        first = False
+        lines.append(f"//{dd:<8} DD  DSN={intcode}({member}),DISP=SHR")
+
+    return "\n".join(lines) + "\n"
+
+
+def execution_codes(report: str) -> list[int]:
+    pattern = re.compile(
+        r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)"
+    )
+    return [int(m.group(1)) for m in pattern.finditer(report.replace("\f", ""))]
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="build-cambridge-mvs",
+        description=(
+            "Build ICINT19 and the persistent Cambridge INTCODE image from "
+            "members already positioned by dspal."
+        ),
+    )
+    p.add_argument(
+        "--show-jcl",
+        action="store_true",
+        help="show generated build JCL with the batch password redacted",
+    )
+    return p
+
+
+def main() -> int:
+    args = parser().parse_args()
+    try:
+        config = core.load_config()
+        deck = build_deck(config, redact_password=args.show_jcl)
+
+        if args.show_jcl:
+            sys.stdout.write(deck)
+            return 0
+
+        core.require_reader_ready(config)
+        job, summary = core.submit_and_wait(config, deck, max_rc=4)
+        report = core.job_report(job)
+
+        codes = execution_codes(report)
+        expected = len(CAMBRIDGE_UNITS) * 2
+        if len(codes) != expected:
+            raise RuntimeError(
+                f"JOB {job}: found {len(codes)} ICINT completion codes; "
+                f"expected {expected}"
+            )
+        bad = [(i + 1, code) for i, code in enumerate(codes) if code != 0]
+        if bad:
+            raise RuntimeError(
+                f"JOB {job}: nonzero interpreted completion codes: {bad}"
+            )
+
+        print(summary.rstrip())
+        print(f"Cambridge build completed as JOB {job}")
+        print("  HERC02.BCPL.LOAD(ICINT19)")
+        print("  HERC02.BCPL.INTCODE(CAMBCOMP)")
+        print("No regression was run.")
+        return 0
+    except (core.DspalError, RuntimeError, ValueError, OSError) as exc:
+        print(f"build-cambridge-mvs: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
