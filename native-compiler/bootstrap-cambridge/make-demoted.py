@@ -187,7 +187,38 @@ def demote_master(text: str) -> str:
     prefix = 'SECTION "BCPL"\nNEEDS "$LOAD$"\n\n'
     if not text.startswith(prefix):
         raise SystemExit("bcpl master: expected SECTION BCPL followed by NEEDS $LOAD$")
-    return demote(text[len(prefix):])
+
+    text = demote(text[len(prefix):])
+
+    # Historical CODEA translates native System/370 EBCDIC character codes to
+    # ASCII for cross-compilation away from the 370.  The bootstrap runs the
+    # Cambridge compiler under the MR10 ASCII host while CG370 still targets
+    # System/370, so the required direction is the inverse: ASCII -> EBCDIC.
+    #
+    # The historical table maps both EBCDIC NL (X'15') and LF (X'25') to ASCII
+    # newline.  Choose X'25', matching the target representation expected by
+    # the surviving compiler and the factorial probe.
+    marker = "   IF ASCII THEN CHARCODE := CODEA\n"
+    if text.count(marker) != 1:
+        raise SystemExit(
+            "bcpl master: expected one CHARCODE/CODEA selection point, "
+            f"found {text.count(marker)}"
+        )
+
+    target_charcode = r"""AND CODE370(CH) = VALOF
+$(  IF CH=0 RESULTIS 0
+    IF CH=10 RESULTIS #45
+    FOR I = 0 TO 255 IF CODEA(I)=CH RESULTIS I
+    RESULTIS 0
+$)
+
+   || BOOTSTRAP ONLY: MR10 supplies ASCII source character codes while
+   || historical CG370 emits native System/370 data.
+   CHARCODE := CODE370
+
+"""
+
+    return text.replace(marker, target_charcode + marker, 1)
 
 
 def demote_cg_target_pack(text: str, section: str) -> str:
