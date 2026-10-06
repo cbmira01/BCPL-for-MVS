@@ -1,0 +1,6 @@
+GLOBAL $( START:1 $)
+
+LET START () BE
+$(1
+    FINISH
+$)1
