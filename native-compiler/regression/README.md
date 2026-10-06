@@ -185,12 +185,33 @@ belongs to the BCPL library layer and should arrive through BLIB integration.
 
 ### 05-variable-value-output
 
+Status: **PASS** — Job 972 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Assigns `X = 42` in BCPL and passes that scalar value to provisional G!150
+`DEBUGINT`.
+
+This is the first regression whose purpose is to publish a BCPL value through
+the native diagnostic channel. Decimal conversion is kept out of the BCPL
+test itself and no library WRITEN/WRITEF interface is claimed.
+
+Test 05 does not by itself prove that X was reloaded from mutable local
+storage immediately before the call; Test 06 is designed to establish that
+separately.
+
+### 06-mutable-local-readback
+
 Status: **DEFINED** — not yet run.
 
-Assigns `X = 42` in BCPL and passes that variable to provisional G!150
-`DEBUGINT`. Expected output is `42`.
+Initializes `X` to 17, mutates it to 42, calls `WRCH('X')` to consume the
+normal first argument register, then calls `DEBUGINT(X)`.
 
-This is the first regression whose purpose is to publish a BCPL variable's
-actual value through the native diagnostic channel. Decimal conversion is
-kept out of the BCPL test itself and no library WRITEN/WRITEF interface is
-claimed.
+Expected output is:
+
+```text
+X42
+```
+
+This test is specifically intended to establish mutable local-state readback
+after an intervening call. Generated S/370 must also be inspected to confirm
+that the argument passed to DEBUGINT is obtained after WRCH rather than being
+an old value left live in R7.
