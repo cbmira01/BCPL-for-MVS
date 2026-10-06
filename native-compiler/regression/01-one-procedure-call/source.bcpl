@@ -1,0 +1,9 @@
+GLOBAL $( START:1 $)
+
+LET START () BE
+$(1
+    LET NOP () BE RETURN
+
+    NOP()
+    FINISH
+$)1
