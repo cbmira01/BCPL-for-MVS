@@ -226,3 +226,11 @@ CG370 is recorded in [native-codegen-checkpoint.md](native-codegen-checkpoint.md
 That checkpoint also records the host/target byte-width split, the A/N option
 policy, direct ABI evidence from the generated factorial module, and the
 remaining target-string representation issue.
+
+
+## Compiler options and native MVS parameter transport
+
+The complete surviving compiler/code-generator option grammar, historical
+`EXEC PARM=` transport through `FINDPARM()`, and the present `CAMBPARM`
+bootstrap substitution are documented in
+[compiler-options-and-parm.md](compiler-options-and-parm.md).
