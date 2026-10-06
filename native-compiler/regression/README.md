@@ -361,7 +361,12 @@ considered fully proven.
 
 ### 15-four-argument-linkage
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 994 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms argument 1 in R7, argument 2 in R8, argument 3 in
+R9, and argument 4 in R10. The caller loads V, I, X, and Y into R7-R10
+before BALR; the callee preserves through R10, computes X+Y in R10, uses
+R7/R8 to compute V!I, and stores the result through the resulting address.
 
 START creates a local `VEC 2`, initializes `V!1` to 17, then calls
 `SET4(V,1,40,2)`. The callee uses V and I to compute the destination and
