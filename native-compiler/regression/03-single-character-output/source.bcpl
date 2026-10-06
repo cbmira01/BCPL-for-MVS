@@ -1,0 +1,7 @@
+GLOBAL $( START:1; WRCH:14 $)
+
+LET START () BE
+$(1
+    WRCH('A')
+    FINISH
+$)1
