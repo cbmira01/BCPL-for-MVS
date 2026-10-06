@@ -770,8 +770,12 @@ STKCIMP  LA    14,4(14)
 * Job 956 showed the first WIP CLOSE path looping until S322.
 * Newline and general stream semantics remain future work.
 *
-* No MVS macro I/O occurs inside WRCH, so generated-code permanent
-* registers remain undisturbed while BCPL is executing.
+* No MVS macro I/O occurs inside WRCH.
+*
+* Job 960 established an additional machine-routine return contract:
+* generated code may branch relative to R4 immediately after a call.
+* Procedure entry saved the caller B value at 0(R5).
+* Native primitives restore R4 from that slot before returning via R6.
 ***********************************************************************
 WRCH     L     1,OUTPOS
          LA    14,132
@@ -782,7 +786,8 @@ WRCH     L     1,OUTPOS
          STC   7,0(14)
          LA    1,1(1)
          ST    1,OUTPOS
-WRCHRTN  BCR   15,6
+WRCHRTN  L     4,0(5)
+         BCR   15,6
 *
 ***********************************************************************
 * TEMPORARY WRITEF
@@ -790,7 +795,8 @@ WRCHRTN  BCR   15,6
 * Factorial-only accommodation.  Arguments arrive in R7 onward under
 * normal BCPL calling convention.  Do not modify R0 or R1-R3.
 ***********************************************************************
-WRITEST  BCR   15,6
+WRITEST  L     4,0(5)
+         BCR   15,6
 *
 ***********************************************************************
 * GETBYTE(S,I) -> R7
@@ -802,6 +808,7 @@ GETBYTE  LR    14,7
          AR    14,8
          SR    7,7
          IC    7,0(14)
+         L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
@@ -813,6 +820,7 @@ PUTBYTE  LR    14,7
          SLL   14,2
          AR    14,8
          STC   9,0(14)
+         L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
