@@ -83,4 +83,63 @@ Those remain separate regression targets.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 1010 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection confirms the signed-arithmetic behavior directly.
+
+START establishes A=17 and B=25 as ordinary positive locals:
+
+```asm
+LA 7,17(0)
+ST 7,12(5)
+LA 8,25(0)
+ST 8,16(5)
+```
+
+CG370 then negates A at runtime with the signed two's-complement instruction:
+
+```asm
+LCR 7,7
+ST 7,12(5)
+```
+
+R7 therefore becomes -17.
+
+The subsequent subtraction is:
+
+```asm
+SR 8,7
+LR 7,8
+```
+
+With R8=25 and R7=-17, `SR 8,7` computes 25-(-17)=42.  The result is moved
+to R7 and passed to DEBUGINT.
+
+
+### Contract established
+
+Test 22 establishes basic signed integer arithmetic in generated native code:
+
+- unary negation of a runtime value uses signed two's-complement semantics;
+- the generated code uses `LCR` to form -A;
+- subtraction uses ordinary 32-bit signed register arithmetic;
+- a negative operand participates correctly in later arithmetic;
+- the resulting positive value is returned through the ordinary R7 value
+  path to DEBUGINT.
+
+This test deliberately does not prove negative decimal formatting in
+DEBUGINT; that remains a separate diagnostic-runtime concern.
