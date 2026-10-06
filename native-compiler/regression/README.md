@@ -211,3 +211,21 @@ reload of mutable local workspace state rather than a value left live in R7.
 
 This establishes mutable local assignment, persistence across an intervening
 global call, workspace reload, and observable value reporting.
+
+### 07-global-state-visibility
+
+Status: **DEFINED** — not yet run.
+
+Stores `42` into user global `X` in START, calls a separate BCPL
+procedure, and has that procedure read `X` and pass it to `DEBUGINT`.
+
+Expected output:
+
+```text
+42
+```
+
+This test is specifically intended to establish global-vector state and
+cross-procedure visibility. Generated S/370 must show both the store and the
+later load through R12/global-vector addressing before Test 07 is considered
+fully proven.
