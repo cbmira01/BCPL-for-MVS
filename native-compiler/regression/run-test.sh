@@ -173,11 +173,20 @@ job=$(awk '/^JOB [0-9]+$/ {print $2}' <<<"$submit" | tail -1)
 echo
 echo "=== Wait for complete job report ==="
 
-show_test03_output() {
-    local report emitted
+show_bcpl_output() {
+    local expected report emitted
+
+    case "$test_no" in
+        03) expected="A" ;;
+        04) expected="HELLO" ;;
+        *)  return 1 ;;
+    esac
 
     report=$(bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null)
-    emitted=$(printf '%s\n' "$report" | grep -a -m1 "^ *A *$" || true)
+    emitted=$(
+        printf '%s\n' "$report" |
+            grep -a -m1 "^ *$expected *$" || true
+    )
 
     if [[ -n "$emitted" ]]; then
         echo
@@ -197,9 +206,9 @@ while (( SECONDS <= deadline )); do
     if (( rc == 0 )); then
         echo "$summary"
 
-        if [[ "$test_no" == "03" ]]; then
-            if ! show_test03_output; then
-                echo "run-test: expected WRCH output A not found" >&2
+        if [[ "$test_no" == "03" || "$test_no" == "04" ]]; then
+            if ! show_bcpl_output; then
+                echo "run-test: expected BCPL output not found" >&2
                 exit 1
             fi
         fi
@@ -212,8 +221,8 @@ while (( SECONDS <= deadline )); do
     if (( rc == 1 )); then
         echo "$summary"
 
-        if [[ "$test_no" == "03" ]]; then
-            show_test03_output || true
+        if [[ "$test_no" == "03" || "$test_no" == "04" ]]; then
+            show_bcpl_output || true
         fi
 
         exit 1
