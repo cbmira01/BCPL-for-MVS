@@ -35,10 +35,22 @@ The surviving historical BLIB implements `WRITES` in BCPL above
 
 ## Status
 
-DEFINED.
+PARTIAL PASS: STRING OUTPUT PROVEN; TERMINATION STILL FAILS.
 
-The lower-level primitives required by this test are already present in the
-current BCPLMAIN WIP, but the test has not yet been run.
+Job 962 on 2026-10-06 assembled and link-edited successfully and emitted:
+
+```text
+HELLO
+```
+
+This validates the intended Test 04 surface: BCPL string-literal layout,
+count-byte access, GETBYTE word-pointer handling, generated FOR-loop control,
+repeated GETBYTE calls, repeated WRCH calls, and preservation of the caller
+B register across native primitive returns.
+
+The job subsequently ABENDed after the observable string output completed.
+That termination failure remains separate runtime work and is not yet
+classified here as identical to the Test 03 termination failure.
 
 
 ### Job 960 diagnosis
