@@ -1,11 +1,13 @@
 # Native compiler regression panel
 
-This directory is the durable home for BCPL source programs used to
-regression-test the reconstructed native System/370 compiler/runtime path.
+This directory is the durable regression panel for the reconstructed native
+System/370 BCPL compiler/runtime path.
 
-The panel is driven by BCPL behavior.  Each case should begin as a small BCPL
-program chosen to exercise a specific language or runtime contract.  The
-normal path under test is:
+The panel is driven by BCPL behavior.  Tests are deliberately ordered from the
+smallest possible native BCPL program upward through progressively larger parts
+of the compiler and BCPLMAIN contract.
+
+The normal path under test is:
 
 ```text
 BCPL source
@@ -18,42 +20,59 @@ BCPL source
   -> execution under MVS 3.8J
 ```
 
-Assembler-only probes may still be used to diagnose a failing contract, but
-they are not substitutes for panel cases.
+Assembler-only probes may diagnose a failing contract, but they are not panel
+tests.
 
-## Intended layout
+## Test layout
+
+Each regression test has its own numbered directory:
 
 ```text
 native-compiler/regression/
     README.md
-    cases/
-        <case>.bcpl
-    expected/
-        <case>.txt
+    00-most-degenerate-bcpl-program/
+        source.bcpl
+        README.md
+    01-...
+    02-...
 ```
 
-`cases/` contains the BCPL source inputs.
+The numeric prefix is part of the test identity.  It records the intended
+progression through the native execution contract.
 
-`expected/` is reserved for stable, human-readable expected results when a
-case needs them.  Expected data should describe observable BCPL behavior, not
-incidental JES job numbers, addresses, compiler cycle counts, or other
-run-specific details.
+Generated assembler, JCL, listings, load modules, and printer reports belong
+under `workarea/`, not in the regression directories.
 
-Generated assembler, JCL, listings, load modules, and reports belong under
-`workarea/`, not in this directory.
+## Test design rule
 
-## Case design
+A test should introduce as little new behavior as possible beyond all earlier
+tests.  When a test fails, the difference between it and the preceding passing
+tests should point toward a reasonably narrow compiler/runtime contract.
 
-A regression case should be:
+Tests should therefore be:
 
-- small enough that its generated code can be inspected when it fails;
-- focused enough that a failure points at a reasonably narrow contract;
-- written as BCPL source rather than as an assembler ABI probe;
+- BCPL source programs, not assembler ABI probes;
+- small enough that generated S/370 code can be inspected directly;
 - deterministic under MVS;
-- retained after it passes, so later BCPLMAIN or compiler changes cannot
-  silently break previously established behavior.
+- retained permanently after they pass;
+- ordered so that later tests build on contracts already established by
+  earlier tests.
 
-The panel should grow from the smallest native execution cases toward richer
-runtime behavior.  The exact initial case set is intentionally not fixed here;
-it should be chosen alongside the BCPLMAIN reconstruction so that each new
-case proves a useful piece of the native contract.
+## Test 00
+
+`00-most-degenerate-bcpl-program` is intentionally almost empty.  Its only
+job is to establish the minimum native BCPL lifecycle:
+
+```text
+compiled module entry
+  -> BCPLMAIN
+  -> global 1 / START
+  -> FINISH
+  -> normal MVS return
+```
+
+It should not depend on WRITEF, strings, arithmetic, procedure calls,
+recursion, dynamic storage, stream I/O, or other library services.
+
+The remaining tests should be chosen one at a time as the BCPLMAIN contract is
+reconstructed.
