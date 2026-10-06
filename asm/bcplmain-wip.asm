@@ -134,8 +134,8 @@
 *          BCR  15,6
 *
 * restores callee address, previous P, and linkage, then returns.
-* This is strongly implied by CGSAVE/CGAPPLY but is not yet independently
-* validated by a successful native run.
+* This is strongly implied by CGSAVE/CGAPPLY but is not yet
+* independently validated by a successful native run.
 *
 * MACHINE-DEPENDENT GLOBALS KNOWN TO BELONG TO BCPLMAIN
 * -----------------------------------------------------
@@ -166,8 +166,9 @@
 * before entering BCPLMAIN.  This WIP leaves R13 unchanged and uses that
 * caller save area for final return with LM 14,12,12(13).
 *
-* IMPORTANT UNKNOWN: CGHDR reserves FWSP=96 relative to R13 for FIX/FLOAT
-* workspace.  A standard 72-byte caller save area does not establish that
+* IMPORTANT UNKNOWN: CGHDR reserves FWSP=96 relative to R13 for
+* FIX/FLOAT workspace.  A standard 72-byte caller save area does not
+* establish that
 * historical contract.  Floating-point generated code is therefore NOT
 * supported by this WIP.  A real BCPLMAIN probably establishes its own
 * larger R13 work/save area and chains it according to MVS convention.
@@ -187,7 +188,8 @@
 *   G7  UNLOADALL
 *   G8  LOADFORT
 *   G9  UNLOAD
-*   G10 LOAD               segment/module loader contract still required.
+*   G10 LOAD               segment/module loader contract still
+*                          required.
 *
 *   G11..G26               stream selection and record I/O, including
 *                          RDCH, WRCH, READREC, WRITEREC, SKIPREC.
@@ -202,8 +204,10 @@
 *   G53 ENDPOINT            published provisionally for main module.
 *   G54 STACKBASE          published by this WIP.
 *   G55 STACKEND           published by this WIP.
-*   G56 STACKHWM           BLIB implementation exists; not installed here.
-*   G57 OS/CMS marker      known to exist; exact value convention pending.
+*   G56 STACKHWM           BLIB implementation exists; not installed
+*                          here.
+*   G57 OS/CMS marker      known to exist; exact value convention
+*                          pending.
 *
 *   G58..G84               library helpers, postmortem, FORTRAN bridge,
 *                          break/error support.
@@ -213,9 +217,10 @@
 *   G87..G99               vector allocation, arithmetic, block-file and
 *                          MOVEBYTES services.
 *
-* LOAD/UNLOAD deserves its own reconstruction from historical loader data.
-* BLIB shows SAVEAREA!29 as the head of a load list and tests bit X'80000000'
-* in load-list word 9 for BCPL modules.  That is evidence, not yet enough
+* LOAD/UNLOAD deserves its own reconstruction from historical loader
+* data.  BLIB shows SAVEAREA!29 as the head of a load list and tests bit
+* X'80000000' in load-list word 9 for BCPL modules.  That is evidence,
+* not yet enough
 * to implement the loader contract safely.
 *
 * ----------------------------------------------------------------------
@@ -230,7 +235,8 @@ BCPLMAIN CSECT
          ST    3,MODBASE
 *
 * Locate L998 = module base + unsigned positive halfword at module+10.
-* CG370 limits a generated section to less than 16K bytes, so LH is safe.
+* CG370 limits a generated section to less than 16K bytes, so LH is
+* safe.
 *
          LH    0,10(3)
          LR    2,3
@@ -286,8 +292,8 @@ GIDONE   L     4,4(12)
          C     4,=X'C7D3F004'
          BC    8,NOSTART
 *
-* Publish the subset of runtime globals whose representation is supported
-* strongly enough for this WIP.
+* Publish the subset of runtime globals whose representation is
+* supported strongly enough for this WIP.
 *
 * G!6 = provisional BCPL word pointer for the current MVS save area.
 *
@@ -347,8 +353,8 @@ GIDONE   L     4,4(12)
          SR    0,0
          BCR   15,4
 *
-* START is expected to terminate through S.FIN.  Returning here is treated
-* as a WIP runtime failure.
+* START is expected to terminate through S.FIN.  Returning here is
+* treated as a WIP runtime failure.
 *
 BADRETN  LM    14,12,12(13)
          LA    15,36
@@ -406,7 +412,8 @@ SYSSTKC  BC    15,STKCIMP
 ***********************************************************************
 * PROCEDURE RETURN
 *
-* Strong inference from CGSAVE/CGAPPLY, awaiting successful native proof.
+* Strong inference from CGSAVE/CGAPPLY, awaiting successful native
+* proof.
 ***********************************************************************
 RETIMPL  LM    4,6,0(5)
          BCR   15,6
@@ -425,8 +432,9 @@ CNTIMPL  LA    14,4(14)
 * FINISH
 *
 * Restore the MVS registers saved by the generated module prefix.
-* This is sufficient for the current factorial milestone.  STOP/ABORT and
-* propagation of a BCPL result code remain separate reconstruction work.
+* This is sufficient for the current factorial milestone.  STOP/ABORT
+* and propagation of a BCPL result code remain separate reconstruction
+* work.
 ***********************************************************************
 FINIMPL  LM    14,12,12(13)
          SR    15,15
@@ -488,16 +496,16 @@ MODEND   DC    F'0'
 TRAILER  DC    F'0'
 *
 * Static global-vector capacity.  FIRSTFREEGLOBAL in SYS3 LIBHDR is 150.
-* Whether the historical BCPLMAIN sized G to exactly this value or used a
-* larger installation-dependent vector remains unknown.
+* Whether the historical BCPLMAIN sized G to exactly this value or used
+* a larger installation-dependent vector remains unknown.
 *
 GLOBCNT  EQU   150
 GLOBV    DC    F'150'
          DS    150F
 *
 * Static development workspace.  This is not the historical allocation
-* policy.  Replace with recovered MVS storage management and stack marker
-* initialization when that contract is understood.
+* policy.  Replace with recovered MVS storage management and stack
+* marker initialization when that contract is understood.
 *
 WORK     DS    4096F
 WORKEND  EQU   *
