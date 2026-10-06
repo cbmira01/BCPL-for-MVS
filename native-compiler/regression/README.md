@@ -286,3 +286,22 @@ dereferences `V!1` before calling DEBUGINT.
 Generated S/370 inspection confirms ordinary pointer argument passing and
 callee-side vector dereference. This establishes cross-procedure visibility
 of local vector storage without GETVEC, FREEVEC, BLIB, or heap allocation.
+
+### 12-vector-callee-mutation
+
+Status: **DEFINED** — not yet run.
+
+START creates a local `VEC 2`, initializes `V!1` to 17, and passes
+`V` to SETVALUE. The callee writes 42 through the received pointer.
+After return, START reloads `V!1` and passes it to `DEBUGINT`.
+
+Expected output:
+
+```text
+42
+```
+
+This extends Test 11 from callee-side read access to write-through aliasing.
+Generated S/370 must show the callee store through the passed pointer and the
+caller's independent post-return reload before Test 12 is considered fully
+proven.
