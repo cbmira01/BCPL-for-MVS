@@ -386,7 +386,11 @@ considered fully proven.
 
 ### 16-function-return-value
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 996 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms that ADD receives A/B in R7/R8, computes the sum,
+moves the function result into R7 with `LR 7,8`, and returns. The caller
+immediately consumes the returned R7 value after BALR.
 
 Calls `ADD(17,25)`, stores the returned value in a local, and passes that
 value to `DEBUGINT`.
