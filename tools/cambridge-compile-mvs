@@ -13,12 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DSPAL_CORE = ROOT / "tools" / "dspal-core.py"
 WORKAREA = ROOT / "workarea"
 
-CAMBRIDGE_MEMBERS = [
-    "BCPL", "SYN", "LEX", "TRNA", "TRNB",
-    "CGA", "CGB", "CGC", "CGD", "CGE", "BOOTHOST",
-]
-
-
 def load_core():
     spec = importlib.util.spec_from_file_location("dspal_core", DSPAL_CORE)
     if spec is None or spec.loader is None:
@@ -59,18 +53,14 @@ def build_deck(config, source_path: Path, job_name: str, redact_password: bool) 
     lines.extend([
         "//* COMPILE ONE BCPL SOURCE WITH THE PERSISTENT CAMBRIDGE IMAGE",
         "//* CAMBRIDGE IS INTCODE EXECUTED BY HERC02.BCPL.LOAD(ICINT19)",
+        "//* INTIN IS THE PACKED HERC02.BCPL.INTCODE(CAMBCOMP) IMAGE",
         "//COMP     EXEC PGM=ICINT19,REGION=256K,TIME=(,30)",
         f"//STEPLIB  DD  DSN={load},DISP=SHR",
         "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)",
     ])
 
-    first = True
-    for member in [*CAMBRIDGE_MEMBERS, "BLIBI", "ICLIB"]:
-        dd = "INTIN" if first else ""
-        first = False
-        lines.append(f"//{dd:<8} DD  DSN={intcode}({member}),DISP=SHR")
-
     lines.extend([
+        f"//INTIN    DD  DSN={intcode}(CAMBCOMP),DISP=SHR",
         "//SYSIN    DD  DATA,DLM=Z9",
         *source_records(source_path),
         "Z9",
