@@ -564,3 +564,20 @@ Expected output:
 Incorrect ELSE or DEFAULT selection deliberately drives the accumulator to
 999. Generated S/370 must be inspected across the individual branch and loop
 constructs before Test 23 is considered fully proven.
+
+### 24-callable-global-through-g
+
+Status: **DEFINED** — not yet run.
+
+Declares user function `ADD` as global 151, calls `ADD(17,25)` from
+START, and reports the returned value through DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This exercises callable user globals through R12/G. Generated S/370 must
+show ADD exported as G!151 and START loading its callable address from
+`604(R12)` before Test 24 is considered fully proven.
