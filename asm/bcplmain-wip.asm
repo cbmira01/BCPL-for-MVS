@@ -774,7 +774,8 @@ STKCIMP  LA    14,4(14)
 * registers remain undisturbed while BCPL is executing.
 ***********************************************************************
 WRCH     L     1,OUTPOS
-         C     1,=F'132'
+         LA    14,132
+         CR    1,14
          BNL   WRCHRTN
          LA    14,OUTBUF
          AR    14,1
