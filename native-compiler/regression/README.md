@@ -183,3 +183,14 @@ This adds:
 It deliberately does not introduce a machine-code `WRITES`.  Real WRITES
 belongs to the BCPL library layer and should arrive through BLIB integration.
 
+### 05-variable-value-output
+
+Status: **DEFINED** — not yet run.
+
+Assigns `X = 42` in BCPL and passes that variable to provisional G!150
+`DEBUGINT`. Expected output is `42`.
+
+This is the first regression whose purpose is to publish a BCPL variable's
+actual value through the native diagnostic channel. Decimal conversion is
+kept out of the BCPL test itself and no library WRITEN/WRITEF interface is
+claimed.
