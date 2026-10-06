@@ -451,3 +451,21 @@ This extends Test 17 from fixed nested calls to repeated recursive calls to
 the same generated function. Generated S/370 must show recursive call-frame
 creation plus post-return result processing before Test 18 is considered
 fully proven.
+
+### 19-local-scalars-across-call
+
+Status: **DEFINED** — not yet run.
+
+START establishes three scalar locals, calls `ID(3)`, then uses all three
+pre-call locals plus the returned value after the call to compute 42.
+
+Expected output:
+
+```text
+42
+```
+
+This extends the linkage regressions by proving caller-local scalar lifetime
+across an ordinary function call. Generated S/370 must show how the pre-call
+locals remain available after ID returns before Test 19 is considered fully
+proven.
