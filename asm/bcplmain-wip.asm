@@ -6,7 +6,7 @@
 *
 * STATUS
 * ------
-* This is deliberately a WIP, not a claim to be the historical BCPLMAIN.
+* This is deliberately a WIP, not a claim to be historical BCPLMAIN.
 * Code is present where the project has direct evidence or a narrow,
 * testable inference.  Missing runtime facilities are called out below.
 *
@@ -26,7 +26,7 @@
 *          DC  AL2(L998-L999)
 *          DC  A(BCPLMAIN)
 *
-* Job 940 established experimentally that BCPLMAIN receives control with
+* Job 940 established that BCPLMAIN receives control with
 * R15 still equal to the generated module base.
 *
 * The halfword at module+10 is the byte length from L999 to L998.
@@ -46,7 +46,7 @@
 *
 * The generic backward scan below is a reconstruction proposal.  It
 * relies on the zero address word preceding the exported-global pairs.
-* It has not yet been validated with a module exporting several globals.
+* It is not yet validated with a module exporting several globals.
 *
 * EVIDENCE: GENERATED REGISTER CONTRACT
 * -------------------------------------
@@ -128,7 +128,7 @@
 * PROCEDURE RETURN INFERENCE
 * --------------------------
 * Generated entry saves R4..R6 (or more) at 0(R15), then sets R5=R15.
-* Calls place the return address in R6.  The proposed return trampoline:
+* Calls put the return address in R6.  The proposed return trampoline:
 *
 *          LM   4,6,0(5)
 *          BCR  15,6
@@ -154,7 +154,7 @@
 * ----------------------------
 * WRITEF is a BLIB/library routine, not proven to be part of BCPLMAIN.
 * Until BLIB is linked natively, G!76 is installed as a no-op stub so
-* the factorial control-flow test can execute.  This must not survive as
+* the factorial control-flow test can run.  This must not survive as
 * the final WRITEF implementation.
 *
 * MVS ENTRY/EXIT
@@ -163,7 +163,7 @@
 *
 *          STM 14,12,12(13)
 *
-* before entering BCPLMAIN.  This WIP leaves R13 unchanged and uses that
+* before entering BCPLMAIN.  This WIP leaves R13 unchanged and uses
 * caller save area for final return with LM 14,12,12(13).
 *
 * IMPORTANT UNKNOWN: CGHDR reserves FWSP=96 relative to R13 for
@@ -186,7 +186,7 @@
 *   PROVEN       observed directly in generated code or live probes.
 *   HISTORICAL   stated by surviving BCPL source, macros, or build JCL.
 *   INFERRED     strongly implied by those sources, not yet exercised.
-*   UNKNOWN      facility is known to exist but interface is incomplete.
+*   UNKNOWN      facility exists but its interface is incomplete.
 *
 * BCPLMAIN should eventually satisfy all of these responsibilities.
 *
@@ -260,7 +260,7 @@
 * 5. STACK / WORKSPACE INITIALIZATION
 *    PROVEN/HISTORICAL
 *
-*    R5 is the current BCPL workspace pointer and R15 the next workspace
+*    R5 is the current workspace pointer and R15 the next workspace
 *    pointer.  Generated calls and entries implement this convention.
 *
 *    LIBHDR publishes:
@@ -303,7 +303,7 @@
 *       +60  stack check
 *       +80  stack check plus call count
 *
-*    The current bodies below are proposals or stubs except where noted.
+*    The bodies below are proposals or stubs except where noted.
 *    Their final semantics must match CG370, not merely factorial.
 *
 * 8. START INVOCATION AND NORMAL TERMINATION
@@ -345,7 +345,7 @@
 *    MVS recovery/program-interrupt state into BLIB's ABORT contract.
 *
 *    UNKNOWN:
-*    The exact mapping from STAE/SPIE control blocks and saved registers
+*    The mapping from STAE/SPIE control blocks and saved registers
 *    to CODE, ADDR, OLDSTACK, and DATA is not yet reconstructed.
 *
 *    REQUIRED FUTURE STUB:
@@ -427,16 +427,16 @@
 *
 *    UNKNOWN CONTRACT: $LOAD$
 *       Known to be carved from the BCPLMAIN object and included beside
-*       BCPLMAIN in the compiler root segment.  It is clearly related to
+*       BCPLMAIN in the compiler root.  It is clearly related to
 *       native loading, but its exact public entry contract is pending.
 *
 *    UNKNOWN CONTRACT: $BLOCK$
-*       Known to be carved from the same object.  Its exact relationship
+*       Carved from the same object.  Its exact relationship
 *       to block-file globals G93..G98 remains to be established.
 *
 *    UNKNOWN CONTRACT: $TPUT$
 *       Known to be carved from the same object.  BCPLMAC defines
-*       TPUT/TGET service coding, but the member's callable interface is
+*       TPUT/TGET service coding, but its callable interface is
 *       still unknown.
 *
 * 15. PLATFORM EDITING / INSTALLATION VARIANTS
@@ -456,7 +456,7 @@
 * 16. POSTMORTEM AND RUNTIME STATE PUBLISHED TO BLIB
 *     HISTORICAL
 *
-*    BLIB is explicitly interdependent with BCPLMAIN.  It expects useful
+*    BLIB is interdependent with BCPLMAIN.  It expects useful
 *    values for SAVEAREA, LOADPOINT, ENDPOINT, STACKBASE, STACKEND,
 *    loader state, and program/data extent tests.
 *
@@ -465,12 +465,12 @@
 *
 * OTHER RUNTIME FACILITIES KNOWN TO EXIST BUT NOT YET RECONSTRUCTED
 * -----------------------------------------------------------------
-* SYS3 LIBHDR identifies the following runtime surface.  Their existence
+* SYS3 LIBHDR identifies this runtime surface.  Its existence
 * is known; this file does not pretend their full interfaces are known
 * merely from the global names.
 *
 *   G2  SETPM
-*   G3  ABORT              BLIB supplies high-level reporting; low-level
+*   G3  ABORT              BLIB supplies high-level reporting; low
 *                          program-interrupt capture is still unknown.
 *   G4  BACKTRACE
 *   G5  ERRORMESSAGE
@@ -484,7 +484,7 @@
 *   G11..G26               stream selection and record I/O, including
 *                          RDCH, WRCH, READREC, WRITEREC, SKIPREC.
 *
-*   G27..G39               time/date, STOP, long jump, logging, terminal
+*   G27..G39               time/date, STOP, long jump, logging,
 *                          and parameter services.
 *
 *   G40 APTOVEC            allocation primitive.
@@ -504,16 +504,16 @@
 *
 *   G85 GETBYTE            implemented here.
 *   G86 PUTBYTE            implemented here.
-*   G87..G99               vector allocation, arithmetic, block-file and
+*   G87..G99               vector allocation, arithmetic, block-file
 *                          MOVEBYTES services.
 *
 * LOAD/UNLOAD deserves its own reconstruction from historical loader
-* data.  BLIB shows SAVEAREA!29 as the head of a load list and tests bit
+* data.  BLIB shows SAVEAREA!29 as load-list head and tests bit
 * X'80000000' in load-list word 9 for BCPL modules.  That is evidence,
 * not yet enough
 * to implement the loader contract safely.
 *
-* ----------------------------------------------------------------------
+* ---------------------------------------------------------------------
 *
 BCPLMAIN CSECT
 *
@@ -749,7 +749,7 @@ STKCIMP  LA    14,4(14)
 ***********************************************************************
 * TEMPORARY WRITEF
 *
-* Factorial-only accommodation.  Arguments arrive in R7 onward under the
+* Factorial-only accommodation.  Arguments arrive in R7 onward under
 * normal BCPL calling convention.  Do not modify R0 or R1-R3.
 ***********************************************************************
 WRITEST  BCR   15,6
@@ -785,7 +785,7 @@ MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
 *
-* Static global-vector capacity.  FIRSTFREEGLOBAL in SYS3 LIBHDR is 150.
+* Static global-vector capacity.  SYS3 FIRSTFREEGLOBAL is 150.
 * Whether the historical BCPLMAIN sized G to exactly this value or used
 * a larger installation-dependent vector remains unknown.
 *
