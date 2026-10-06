@@ -430,7 +430,12 @@ before Test 17 is considered fully proven.
 
 ### 18-recursion
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 1000 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms genuine non-tail recursion: DEPTH advances W to
+`16(R5)`, recursively calls itself, then adds one to the returned R7 value
+before returning. This proves repeated frame creation and unwind through the
+ordinary BCPL linkage.
 
 Calls non-tail-recursive `DEPTH(5)`. The base case returns 37 and each
 recursive caller adds one after the nested call, producing 42 after five
