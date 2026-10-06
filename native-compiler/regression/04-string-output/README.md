@@ -35,22 +35,37 @@ The surviving historical BLIB implements `WRITES` in BCPL above
 
 ## Status
 
-PARTIAL PASS: STRING OUTPUT PROVEN; TERMINATION STILL FAILS.
+PASS.
 
-Job 962 on 2026-10-06 assembled and link-edited successfully and emitted:
+Job 968 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
 
 ```text
 HELLO
 ```
 
+The regression runner reported:
+
+```text
+=== Regression result ===
+TEST:        04-string-output
+OBJECTIVE:   PASS
+TERMINATION: NORMAL
+RESULT:      PASS
+```
+
 This validates the intended Test 04 surface: BCPL string-literal layout,
 count-byte access, GETBYTE word-pointer handling, generated FOR-loop control,
-repeated GETBYTE calls, repeated WRCH calls, and preservation of the caller
-B register across native primitive returns.
-
-The job subsequently ABENDed after the observable string output completed.
-That termination failure remains separate runtime work and is not yet
-classified here as identical to the Test 03 termination failure.
+repeated GETBYTE calls, repeated WRCH calls, preservation of the caller
+B register across native primitive returns, and normal return from the
+native runtime to MVS.
 
 
 ### Job 960 diagnosis
@@ -98,3 +113,60 @@ TERMINATION: S322 (known runtime defect)
 
 This does not classify the overall runtime termination path as correct; it
 only keeps Test 04 focused on the contract it was created to validate.
+
+
+### Job 968 final pass
+
+Job 968 is the first fully successful native string-output run for this
+regression.  It completed ASM, LKED, and GO with RC=0000 and emitted the
+expected `HELLO` record.
+
+The termination defect seen in Jobs 962, 964, and 966 was traced to MVS
+save-area discipline in BCPLMAIN.  The generated module prefix had already
+saved the incoming R14..R12 image in the caller's save area, but BCPLMAIN
+continued to use that same R13 while issuing MVS services such as OPEN and
+PUT.  Those services were therefore free to use or overwrite the caller's
+save-area contents before FINISH attempted the final restore.
+
+BCPLMAIN now establishes a private 18-fullword MVS save area before making
+MVS service calls.  On final return it restores the caller's R13 first and
+then reloads the original R14..R12 image saved by the generated module
+prefix.
+
+Job 968 validates that correction for the Test 04 path.
+
+### Contracts established by Test 04
+
+The successful run provides direct evidence for all of the following:
+
+- BCPL string literals use a count byte followed by target character bytes.
+- `"HELLO"` is generated as length 5 followed by EBCDIC H, E, L, L, O.
+- BCPL string values are word pointers for the machine-dependent byte
+  primitives used here.
+- G!85 `GETBYTE` correctly converts the BCPL word pointer back to a byte
+  address and returns the selected byte.
+- Generated FOR-loop control works for this traversal.
+- G!14 `WRCH` can be called repeatedly and preserves the execution state
+  needed by generated code.
+- Native primitives that do not establish a fresh BCPL workspace must
+  restore caller B in R4 from 0(R5) before returning through R6.
+- The QSAM SYSPRINT output path can OPEN, accept buffered native output, and
+  PUT the completed record.
+- BCPLMAIN must own a private MVS save area while invoking MVS services.
+- FINISH can return normally to MVS once that save-area discipline is
+  observed.
+
+### Scope boundaries
+
+This test does not yet prove:
+
+- the historical selected-stream interface;
+- newline or record-boundary semantics of WRCH;
+- a historical WRITES implementation;
+- BLIB linkage;
+- dynamic loading or unloading;
+- general dataset I/O;
+- the full historical BCPLMAIN cleanup and recovery contract.
+
+Test 04 deliberately remains a primitive string-output regression built on
+GETBYTE and WRCH.  Library-level WRITES integration belongs to a later test.
