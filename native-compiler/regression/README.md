@@ -232,3 +232,21 @@ BCPL procedure call, and cross-procedure visibility through R12/G.
 
 The first run, Job 976, also revealed and motivated correction of the WIP
 runtime's former G!0..G!150 static-capacity limit.
+
+### 08-local-vector-store-load
+
+Status: **DEFINED** — not yet run.
+
+Creates a local `VEC 2`, stores `42` into `V!0`, then reloads that
+element and passes it to `DEBUGINT`.
+
+Expected output:
+
+```text
+42
+```
+
+This test introduces local vector representation and indexed word
+store/load while deliberately avoiding GETVEC, FREEVEC, BLIB, and heap
+allocation. Generated S/370 must show real vector address formation plus
+the store and later load before Test 08 is considered fully proven.
