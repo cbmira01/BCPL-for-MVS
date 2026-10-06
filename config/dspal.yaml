@@ -65,6 +65,7 @@ datasets:
       ICINT15: asm/icintv15.asm
       ICINT16: asm/icintv16.asm
       ICINT17: asm/icintv17.asm
+      ICINT19: asm/icintv19.asm
 
   JCL:
     dsn: BCPL.JCL
