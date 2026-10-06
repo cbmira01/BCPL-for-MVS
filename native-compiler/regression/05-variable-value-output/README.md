@@ -48,7 +48,35 @@ SYSPRINT diagnostic path.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 972 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+The regression runner reported:
+
+```text
+=== Regression result ===
+TEST:        05-variable-value-output
+OBJECTIVE:   PASS
+TERMINATION: NORMAL
+RESULT:      PASS
+```
+
+This proves that an ordinary BCPL scalar value can be passed through the
+normal first-argument convention to provisional DEBUGINT and rendered as
+observable decimal text by the native runtime.
 
 
 ### Job 970 assembler diagnosis
@@ -69,3 +97,18 @@ addressable from that region.
 
 The fix removes both literals and performs the comparisons through register
 values loaded with LA.  Test 05's BCPL source remains unchanged.
+
+
+### What Test 05 does not yet prove
+
+Test 05 intentionally does not claim that the value of `X` was reloaded
+from its workspace slot immediately before DEBUGINT.
+
+The generated program stores the value 42 into the local workspace, but the
+same value may still be live in the first argument register when DEBUGINT is
+called.  Therefore Test 05 proves the scalar-to-diagnostic-output path, but
+not mutable local-state readback.
+
+Regression 06 is defined specifically to close that gap by assigning a new
+value to a local, making an intervening call that consumes the first
+argument register, and then reporting the local's value.
