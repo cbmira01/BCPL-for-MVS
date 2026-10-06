@@ -739,10 +739,9 @@ CNTIMPL  LA    14,4(14)
 ***********************************************************************
 FINIMPL  L     1,OUTPOS
          LTR   1,1
-         BZ    FINCLOS
+         BZ    FINRETN
          PUT   BCPOUT,OUTBUF
-FINCLOS  CLOSE (BCPOUT)
-         LM    14,12,12(13)
+FINRETN  LM    14,12,12(13)
          SR    15,15
          BR    14
 *
@@ -767,8 +766,9 @@ STKCIMP  LA    14,4(14)
 *
 * G14 WRCH receives the target EBCDIC character in R7.  For the first
 * output milestone it appends bytes to one 132-byte SYSPRINT record.
-* FINISH writes the buffered record and closes the DCB.  Newline and
-* general stream-selection semantics remain future reconstruction work.
+* FINISH writes the buffered record.  Explicit CLOSE is deferred.
+* Job 956 showed the first WIP CLOSE path looping until S322.
+* Newline and general stream semantics remain future work.
 *
 * No MVS macro I/O occurs inside WRCH, so generated-code permanent
 * registers remain undisturbed while BCPL is executing.
@@ -833,7 +833,8 @@ GLOBV    DC    F'150'
 *
 * Regression 03 output state.  SYSPRINT is supplied by the GO step.
 * Historical stream/DCB support was richer; this is only the first
-* observable character-output rung.
+* observable character-output rung.  Normal step termination currently
+* owns DCB cleanup; explicit CLOSE remains under reconstruction.
 *
 OUTPOS   DC    F'0'
 OUTBUF   DS    CL132
