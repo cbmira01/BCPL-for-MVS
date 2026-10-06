@@ -1,0 +1,69 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET X = 0
+    LET I = 0
+
+    IF X=0 DO X := X+1
+    UNLESS X=0 DO X := X+2
+
+    TEST X=3
+    THEN X := X+4
+    ELSE X := 999
+
+    I := 0
+    WHILE I<2 DO
+    $(1
+        X := X+1
+        I := I+1
+    $)1
+
+    I := 0
+    UNTIL I=2 DO
+    $(1
+        X := X+1
+        I := I+1
+    $)1
+
+    FOR J = 1 TO 3 DO X := X+J
+
+    I := 0
+    $(1
+        I := I+1
+        X := X+1
+    $)1 REPEATWHILE I<2
+
+    I := 0
+    $(1
+        I := I+1
+        X := X+1
+    $)1 REPEATUNTIL I=2
+
+    I := 0
+    $(1
+        I := I+1
+        IF I=2 DO BREAK
+        X := X+1
+    $)1 REPEAT
+
+    FOR J = 1 TO 3 DO
+    $(1
+        IF J=2 DO LOOP
+        X := X+1
+    $)1
+
+    SWITCHON X INTO
+    $(1
+    CASE 24:
+        X := X+18
+        ENDCASE
+
+    DEFAULT:
+        X := 999
+        ENDCASE
+    $)1
+
+    DEBUGINT(X)
+    FINISH
+$)1
