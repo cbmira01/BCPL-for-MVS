@@ -73,7 +73,7 @@ AND CAEREPORT(N) BE
         IF N<0 THEN $( N := -N; REPORTMAX := 0 $)
 
         IF QUIET & NOT PRSOURCE & REPORTCOUNT=1 &
-               GETBYTE(SECTIONNAME, 0) NE 0 DO
+               GETBYTE(SECTIONNAME, 0)  NE  0 DO
             WRITEF("Section *"%S*"*N", SECTIONNAME)
 
         CAERRWRITE(N)
