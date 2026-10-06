@@ -1,122 +1,107 @@
 # MVS-resident Cambridge compiler path
 
 The Cambridge compiler used by the native-code regressions is still an
-INTCODE program executed by ICINT V19.  It is not yet a native System/370
+INTCODE program executed by ICINT V19. It is not yet a native System/370
 compiler load module.
 
-The original bootstrap runner intentionally rebuilds that interpreted image
-from the demoted Cambridge BCPL sources for every regression.  That is useful
-as a bootstrap proof, but it is unnecessarily expensive once the image is
-known to work.
-
-The resident path makes the bootstrap products persistent on MVS.
-
-## Persistent state
-
-The installation uses the managed HERC02 libraries:
+The deployment boundary is deliberately strict:
 
 ```text
-HERC02.BCPL.SOURCE
-    BCPL SYN LEX TRNA TRNB
-    CGA CGB CGC CGD CGE
-    BOOTHOST
-    OPTIONS CAMBPARM
-    LIBHDR SYNHDR TRNHDR CGHDR
-
-HERC02.BCPL.ASM
-    ICINT19
-
-HERC02.BCPL.LOAD
-    ICINT19
-
-HERC02.BCPL.INTCODE
-    SYNI TRNILRG CGI BLIBI ICLIB
-    BCPL SYN LEX TRNA TRNB
-    CGA CGB CGC CGD CGE
-    BOOTHOST
+Git/workarea -> dspal -> HERC02.BCPL.* PDS members
+                         |
+                         v
+                    MVS build JCL
+                         |
+                         v
+          LOAD(ICINT19) + INTCODE(CAMBCOMP)
 ```
 
-The Cambridge members in `INTCODE` are build products.  The corresponding
-demoted BCPL text remains in `SOURCE`.
+The MVS build does not embed or transfer host files. All host-to-MVS
+positioning is performed by `dspal`.
 
-## One-time installation
+## Host-side preparation
+
+The demoted Cambridge sources and enlarged-name MR10 TRNI are generated
+artifacts under `workarea/`:
+
+```sh
+python3 native-compiler/bootstrap-cambridge/make-demoted.py
+bash native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh
+```
+
+## dspal population
+
+`config/dspal.yaml` maps the generated Cambridge sources into
+`HERC02.BCPL.SOURCE`, ICINT V19 into `HERC02.BCPL.ASM`, and the bootstrap
+INTCODE inputs including `TRNILRG` into `HERC02.BCPL.INTCODE`.
+
+After `dspal initbcpl`:
+
+```sh
+tools/dspal populate SOURCE
+tools/dspal populate ASM
+tools/dspal populate INTCODE
+```
+
+At this point the source/input PDS state is complete and independently
+inspectable.
+
+## MVS build
 
 Run:
 
 ```sh
-python3 tools/install-cambridge-mvs
+python3 tools/build-cambridge-mvs
 ```
 
-The tool generates and submits one authenticated JCL job.  That job:
-
-1. copies the demoted Cambridge source, headers, options, ICINT V19 source,
-   and bootstrap INTCODE inputs into the managed HERC02 PDSes;
-2. assembles ICINT V19 with IFOX;
-3. link-edits it as `HERC02.BCPL.LOAD(ICINT19)`;
-4. compiles each Cambridge BCPL unit with the MR10 bootstrap compiler;
-5. converts each OCODE unit with CGI;
-6. writes the resulting Cambridge compiler INTCODE modules permanently to
-   `HERC02.BCPL.INTCODE`.
-
-The installer verifies that every interpreted compile/code-generation
-execution returns BCPL execution code zero.
-
-The complete generated JCL can be inspected without submission:
+or inspect its authenticated JCL first:
 
 ```sh
-python3 tools/install-cambridge-mvs --show-jcl
+python3 tools/build-cambridge-mvs --show-jcl
 ```
 
-The displayed JOB card has the password redacted.  Actual submission obtains
-the HERC02 batch credentials from the gitignored `config/dspal.local.yaml`.
+The job:
 
-## Fast compile path
+1. assembles `HERC02.BCPL.ASM(ICINT19)`;
+2. link-edits `HERC02.BCPL.LOAD(ICINT19)`;
+3. compiles each demoted Cambridge source from `HERC02.BCPL.SOURCE`;
+4. converts each OCODE unit to persistent INTCODE;
+5. retains all individual compiler units in `HERC02.BCPL.INTCODE`;
+6. concatenates the units plus BLIBI/ICLIB into
+   `HERC02.BCPL.INTCODE(CAMBCOMP)`.
 
-After installation:
+`CAMBCOMP` is the single ICINT-runnable Cambridge compiler image used by
+the fast compile path.
+
+## Inspection checkpoint
+
+No regression is run by `build-cambridge-mvs`. After the build, inspect:
 
 ```sh
-python3 tools/cambridge-compile-mvs program.bcpl
+tools/dspal ls SOURCE
+tools/dspal ls ASM
+tools/dspal ls INTCODE
+tools/dspal ls LOAD
 ```
 
-runs only the already-compiled Cambridge image:
-
-```text
-HERC02.BCPL.LOAD(ICINT19)
-        +
-persistent Cambridge INTCODE modules
-        +
-BLIBI + ICLIB
-        |
-        v
-input BCPL source -> System/370 CODE
-```
-
-The resulting textual assembler stream is recovered to
-`workarea/<source>.s370.asm`.
-
-This removes the repeated ICINT assembly/link and the eleven
-MR10-compile-plus-CGI bootstrap pairs from an ordinary native regression.
-
-## Regression comparison
-
-The historical/bootstrap path remains:
+Useful content checks include:
 
 ```sh
-bash native-compiler/regression/run-test.sh 24
+tools/dspal cat SOURCE BCPL
+tools/dspal cat SOURCE CGA
+tools/dspal cat INTCODE CAMBCOMP
 ```
 
-The resident path is:
+The load library is RECFM=U, so `dspal cat` does not apply to LOAD; use
+`dspal ls LOAD` to verify `ICINT19`.
+
+Only after that inspection checkpoint should Test 24 be run through:
 
 ```sh
 bash native-compiler/regression/run-test-mvs.sh 24
 ```
 
-Both feed the same downstream assembler/runtime regression machinery.  Test
-24 is therefore a direct equivalence check for the change in compiler
-delivery method.
-
 ## ICINT promotion policy
 
-This workflow does not change `config/CURRENT`.  ICINT V19 remains the
-specific interpreter required by the Cambridge resident compiler image until
-separate project-wide promotion work says otherwise.
+This workflow does not change `config/CURRENT`. ICINT V19 remains the
+specific interpreter required for the resident Cambridge compiler image.
