@@ -217,3 +217,12 @@ probe. A true MVS abend propagates and flushes later steps.
 
 No header-content, `BYTESPERWORD`, `SKIPREC`, driver-initialization, or native
 runtime accommodation has yet been made.
+
+
+## Native code-generation checkpoint
+
+The first successful end-to-end resident Cambridge compile through historical
+CG370 is recorded in [native-codegen-checkpoint.md](native-codegen-checkpoint.md).
+That checkpoint also records the host/target byte-width split, the A/N option
+policy, direct ABI evidence from the generated factorial module, and the
+remaining target-string representation issue.
