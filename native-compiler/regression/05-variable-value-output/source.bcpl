@@ -1,0 +1,9 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET X = 42
+
+    DEBUGINT(X)
+    FINISH
+$)1
