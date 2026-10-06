@@ -94,7 +94,7 @@ Those remain later regression steps.
 
 ## Status
 
-RUNTIME PASS; GENERATED-CODE INSPECTION PENDING.
+PASS.
 
 Job 988 on 2026-10-06 assembled, link-edited, and executed successfully:
 
@@ -113,7 +113,46 @@ The native program emitted:
 This proves the end-to-end behavior at runtime: the value observed by START
 after SETVALUE returns is 42.
 
-The generated S/370 for Test 12 still must be inspected before the test is
-marked fully proven. In particular, the listing must show the callee-side
-store through the passed vector pointer and the caller-side post-return
-reload described in the acceptance criteria.
+Generated-code inspection also satisfies the defining write-through criterion.
+
+SETVALUE receives V in R7 and stores 42 through the passed pointer:
+
+```asm
+STM 4,7,0(15)
+LR 5,15
+LA 8,42(0)
+AR 7,7
+ST 8,4(7,7)
+BCR 15,11
+```
+
+After SETVALUE returns, START does not rely on a retained element value.
+It independently reloads the saved vector pointer from its own workspace,
+reconstructs the byte address of V!1, and loads the element again:
+
+```asm
+L  7,12(5)
+AR 7,7
+L  7,4(7,7)
+LA 15,28(5)
+L  4,600(12)
+BALR 6,4
+```
+
+The observed 42 therefore comes from the same underlying vector storage that
+the callee modified through the passed BCPL word pointer.
+
+
+### Contract established
+
+Test 12 directly establishes that generated native BCPL correctly supports:
+
+- passing a local vector pointer to a callee;
+- callee-side fullword store through that received pointer;
+- persistence of the mutation after the callee returns;
+- caller-side reload of the vector pointer after the call;
+- caller-side dereference of the mutated element;
+- observation of the new value through DEBUGINT.
+
+Together, Tests 11 and 12 establish read and write aliasing across the
+one-argument BCPL procedure linkage.
