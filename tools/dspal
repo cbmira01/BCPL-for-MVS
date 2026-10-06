@@ -14,6 +14,7 @@ LS = ROOT / "tools" / "dspal-ls.py"
 POPULATE = ROOT / "tools" / "dspal-populate.py"
 PURGE = ROOT / "tools" / "dspal-purge.py"
 INIT = ROOT / "tools" / "dspal-init.py"
+SUBMIT = ROOT / "tools" / "dspal-submit.py"
 
 CORE_COMMANDS = {"info", "status", "stat"}
 INIT_COMMANDS = {"initbcpl"}
@@ -22,6 +23,7 @@ MAINT_COMMANDS = {"rm", "compress"}
 LS_COMMANDS = {"ls"}
 POPULATE_COMMANDS = {"populate"}
 PURGE_COMMANDS = {"purgebcpl"}
+SUBMIT_COMMANDS = {"submit"}
 
 
 def exec_script(path: Path, argv: list[str]) -> None:
@@ -47,6 +49,7 @@ def print_help() -> None:
         ("rm DATASET MEMBER", "remove exactly one PDS member"),
         ("compress DATASET", "compress one PDS in place with IEBCOPY"),
         ("populate TARGET", "populate one managed source PDS or all from Git mappings"),
+        ("submit DATASET MEMBER", "submit a stored JCL job body through JES INTRDR"),
         ("initbcpl", "create missing managed datasets after attribute preflight"),
         ("purgebcpl", "delete only the explicit managed dataset set"),
     ]
@@ -72,6 +75,8 @@ def route_help(topic: str) -> None:
         exec_script(POPULATE, ["--help"])
     if topic in PURGE_COMMANDS:
         exec_script(PURGE, ["--help"])
+    if topic in SUBMIT_COMMANDS:
+        exec_script(SUBMIT, ["--help"])
     exec_script(IO, ["help", topic])
 
 
@@ -102,6 +107,8 @@ def main() -> int:
         exec_script(POPULATE, args[1:])
     if args[0] in PURGE_COMMANDS:
         exec_script(PURGE, args[1:])
+    if args[0] in SUBMIT_COMMANDS:
+        exec_script(SUBMIT, args[1:])
     exec_script(IO, args)
     return 127
 
