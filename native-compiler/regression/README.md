@@ -150,7 +150,7 @@ reconstructed.
 
 ### 03-single-character-output
 
-Status: **IMPLEMENTED, AWAITING RUN** — narrow G!14 WRCH to SYSPRINT.
+Status: **PARTIAL** — G!14 WRCH emitted `A` in Job 954; termination ABENDs.
 
 Introduces the first observable native output through `WRCH`.
 
