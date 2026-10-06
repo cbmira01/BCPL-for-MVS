@@ -310,3 +310,22 @@ This extends Test 11 from callee-side read access to write-through aliasing.
 Generated S/370 must show the callee store through the passed pointer and the
 caller's independent post-return reload before Test 12 is considered fully
 proven.
+
+### 13-two-argument-linkage
+
+Status: **DEFINED** — not yet run.
+
+START creates a local `VEC 2`, initializes `V!1` to 17, then calls
+`SET(V,1)`. The callee uses both arguments to compute `V!I` and stores
+42. START then reloads `V!1` and reports it through DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This extends the linkage evidence from one BCPL argument to two. Generated
+S/370 must establish how arguments 1 and 2 are carried across the call and
+show both participating in the callee-side vector store before Test 13 is
+considered fully proven.
