@@ -76,4 +76,76 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 984 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection satisfied the defining runtime-index criterion:
+
+```asm
+LA 7,16(5)
+SRL 7,2(0)
+ST 7,12(5)
+
+LA 8,1(0)
+ST 8,28(5)
+
+AR 8,7
+LA 9,42(0)
+AR 8,8
+ST 9,0(8,8)
+
+L  7,28(5)
+A  7,12(5)
+AR 7,7
+L  7,0(7,7)
+
+LA 15,32(5)
+L  4,600(12)
+BALR 6,4
+```
+
+The store path keeps I in R8 and adds the BCPL vector word pointer in R7,
+forming the BCPL word address V+I.  It then doubles that value and uses the
+same register as both base and index in `0(8,8)`, yielding four times the
+word address: the native byte address of V!I.
+
+The load path independently reloads I from `28(R5)`, adds V from
+`12(R5)`, and performs the same conversion before loading the fullword.
+This proves runtime subscript evaluation rather than constant folding.
+
+
+### Contract established
+
+Test 10 directly establishes that generated native BCPL correctly supports:
+
+- a vector subscript held in a mutable local variable;
+- runtime addition of that subscript to a BCPL word pointer;
+- conversion of the resulting BCPL word address to a native byte address;
+- fullword store through the computed address;
+- independent reload of both I and V for the later fullword load;
+- observation of the loaded value through DEBUGINT.
+
+The generated-code progression is now:
+
+```text
+Test 08: V!0  -> fixed zero displacement
+Test 09: V!1  -> fixed four-byte displacement
+Test 10: V!I  -> runtime word-address computation
+```
+
+The workspace layout also remains coherent: VEC 2 occupies three target
+words beginning at 16(R5), local I is at 28(R5), and the next workspace
+pointer is 32(R5).
