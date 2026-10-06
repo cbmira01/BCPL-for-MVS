@@ -127,10 +127,23 @@ python3 "$root/tools/make-asm-job"     "$combined"     --output-dir "$work"     
 
 jcl="$work/native-test-heavy.jcl"
 
+python3 - "$jcl" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="ascii")
+old = "//GO       EXEC PGM=*.LKED.SYSLMOD,\n"
+new = "//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),\n"
+if text.count(old) != 1:
+    raise SystemExit("cannot locate final GO EXEC statement")
+path.write_text(text.replace(old, new, 1), encoding="ascii", newline="\n")
+PY
+
 echo
 echo "=== Submit native run ==="
 submit=$(
-    bash "$root/tools/submit-jcl" --timeout 120 "$jcl"
+    bash "$root/tools/submit-jcl" --timeout 30 "$jcl"
 ) || exit $?
 
 echo "$submit"
@@ -145,7 +158,7 @@ job=$(awk '/^JOB [0-9]+$/ {print $2}' <<<"$submit" | tail -1)
 echo
 echo "=== Wait for complete job report ==="
 
-deadline=$((SECONDS + 180))
+deadline=$((SECONDS + 30))
 while (( SECONDS <= deadline )); do
     if summary=$("$root/tools/job-summary" "$job" 2>&1); then
         echo "$summary"
