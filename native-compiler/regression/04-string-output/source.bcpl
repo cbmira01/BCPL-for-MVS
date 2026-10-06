@@ -1,0 +1,11 @@
+GLOBAL $( START:1; WRCH:14; GETBYTE:85 $)
+
+LET START () BE
+$(1
+    LET S = "HELLO"
+
+    FOR I = 1 TO GETBYTE(S,0) DO
+        WRCH(GETBYTE(S,I))
+
+    FINISH
+$)1
