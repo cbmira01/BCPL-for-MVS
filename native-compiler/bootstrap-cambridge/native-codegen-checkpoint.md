@@ -72,14 +72,20 @@ representation with target representation.
 CAMBPARM is one complete 80-byte record beginning with:
 
 ```text
-A/N/
+/N/
 ```
 
 and filled to column 80 with slash characters.
 
-- A selects the Cambridge cross-compilation character-code path.
-- N is a code-generator option that sets DECK := FALSE.
+- the leading slash selects no first-phase compiler option;
+- N is a code-generator option that sets DECK := FALSE;
 - slash fill prevents FB80 blank padding from becoming bogus options.
+
+The earlier `A/N/` record was wrong for this bootstrap direction.  Historical
+`A` installs `CODEA`, an EBCDIC-to-ASCII translation used when the native
+System/370 compiler cross-compiles for an ASCII target.  Our host is already
+ASCII and the target is System/370 EBCDIC, so the bootstrap derivative instead
+installs the inverse translation `CODE370` by default.
 
 DECK suppression is intentional at this checkpoint. Textual CODE is recoverable
 through the present host path, but binary object-deck output via SYSGO/WRITEREC
@@ -225,10 +231,10 @@ which match the intended EBCDIC `"  *UNDATED*"` BCPL string.
 Treat this prefix as part of the historical BCPLMAIN rendezvous until proved
 otherwise; it is not ordinary procedure code.
 
-## Remaining character-representation issue
+## Diagnosed character-representation boundary
 
-Successful code generation does not yet prove all target character data are
-correct.
+The malformed factorial string has been traced to the compiler master's
+historical `A` option, not to CGSTRING packing.
 
 The factorial source contains the format string:
 
@@ -242,7 +248,18 @@ whose expected IBM EBCDIC CP037 bytes are:
 C6 4D 6C D5 5D 6B 40 7E 40 6C D5 25
 ```
 
-The generated string pool currently contains:
+CGSTRING stores a BCPL string, so the target pool also begins with the one-byte
+length 12.  The corrected four target words should therefore be:
+
+```asm
+L995 EQU * STRINGS
+ DC X'0CC64D6C'
+ DC X'D55D6B40'
+ DC X'7E406CD5'
+ DC X'25000000'
+```
+
+The previous run instead produced:
 
 ```asm
 L995 EQU * STRINGS
@@ -252,15 +269,26 @@ L995 EQU * STRINGS
  DC X'00000000'
 ```
 
-That is not the expected target representation.
+Those bytes identify the failure precisely.  After the leading length byte
+`0C`, the values are the results of applying historical `CODEA` to the
+ASCII host character codes.  For example, ASCII `%` maps through CODEA to
+octal `12` (hex `0A`), and ASCII `N` maps to octal `53` (hex `2B`).
+Most other ASCII indices in this string map to zero.  This is exactly what the
+bad pool contains.
 
-Therefore the successful run proves Cambridge parsing, translation, OCODE
-generation, CG370 execution and textual System/370 emission, but it does not yet
-prove target string/character-constant correctness.
+Historical `CODEA` is an EBCDIC-to-ASCII table.  It made sense when the
+compiler itself ran natively on System/370 and option A requested an ASCII
+cross target.  Under the MR10 bootstrap the direction is reversed: source
+characters arrive as ASCII while CG370 is producing native System/370 data.
 
-The A option is active, so the next investigation should locate the remaining
-representation boundary between CHARCODE/OUTC, the in-memory OCODE stream and
-CGSTRING. Do not hide this by post-processing generated assembly.
+The bootstrap derivative now installs a private `CODE370` translation that
+inverts the surviving CODEA table.  ASCII newline is explicitly mapped to
+X'25' because CODEA maps both EBCDIC X'15' and X'25' to ASCII newline and the
+factorial target convention requires X'25'.  Historical source remains
+unchanged.  CAMBPARM no longer selects A.
+
+This diagnosis leaves the host/target byte-width accommodations unchanged and
+does not alter ICINT V19 status.
 
 ## Host recovery encoding
 
@@ -286,12 +314,12 @@ The inherited MAPSTORE frame/program bounds still deserve review. Do not change
 
 ## Next controlled experiments
 
-1. Trace factorial string values from TRN OUTC/CHARCODE into in-memory OCODE.
-2. Confirm the numeric values consumed by CGSTRING.
-3. Correct only the bootstrap boundary responsible for malformed target bytes.
-4. Re-run factorial and verify L995 against the expected EBCDIC byte sequence.
-5. Once textual assembler is representation-correct, assemble it with IFOX.
-6. Use assembler/link-editor evidence to refine the native BCPLMAIN contract.
+1. Regenerate the demoted resident compiler with the CODE370 accommodation.
+2. Re-run factorial and verify L995 is exactly the four expected words above.
+3. Confirm at least one additional string/character probe before treating the
+   translation boundary as generally validated.
+4. Once textual assembler is representation-correct, assemble it with IFOX.
+5. Use assembler/link-editor evidence to refine the native BCPLMAIN contract.
 
 The generated module already provides strong linkage evidence, but native
 runtime reconstruction should proceed from validated target code rather than a
