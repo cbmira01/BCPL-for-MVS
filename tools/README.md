@@ -17,6 +17,8 @@ Unless noted otherwise, run them from the repository root.
 | `tools/current-icint` | Print the promoted ICINT source selected by `config/CURRENT`. |
 | `tools/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
+| `tools/install-cambridge-mvs` | One-time install of the interpreted Cambridge compiler as persistent MVS build state. |
+| `tools/cambridge-compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
 | `tools/run-regression-panel` | Run exact-output durable regressions. |
 | `tools/run-demo-suite.sh` | Run the 17 general BCPL demonstrations. |
 | `tools/run-language-demos` | Run the focused BCPL language demonstrations. |
@@ -166,3 +168,48 @@ python3 tools/checks/check-asm-source.py asm/program.asm
 
 It checks ASCII-only source, tabs, trailing whitespace, and text beyond column
 71.  See `tools/checks/README.md` for the standing convention.
+
+
+## Persistent Cambridge compiler on MVS
+
+The native-code regression work has a faster parallel compile path.  The
+Cambridge compiler is still INTCODE executed by ICINT V19; it is not yet a
+native MVS compiler.  The expensive bootstrap can, however, be performed once
+and left in the managed HERC02 libraries.
+
+Install or refresh it with:
+
+```sh
+python3 tools/install-cambridge-mvs
+```
+
+To inspect the complete generated installation JCL without submitting it:
+
+```sh
+python3 tools/install-cambridge-mvs --show-jcl
+```
+
+The installation leaves:
+
+```text
+HERC02.BCPL.ASM(ICINT19)       ICINT V19 source
+HERC02.BCPL.LOAD(ICINT19)      ICINT V19 load module
+HERC02.BCPL.SOURCE(*)          demoted Cambridge sources and headers
+HERC02.BCPL.INTCODE(*)         persistent Cambridge compiler INTCODE units
+```
+
+Compile a source through that resident image with:
+
+```sh
+python3 tools/cambridge-compile-mvs path/to/program.bcpl
+```
+
+For the native regression panel, use the parallel runner:
+
+```sh
+bash native-compiler/regression/run-test-mvs.sh 24
+```
+
+The original `run-test.sh` remains the bootstrap-from-source path and is
+unchanged by default.  The MVS-resident runner is therefore directly
+comparable against it.
