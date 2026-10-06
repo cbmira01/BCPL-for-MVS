@@ -247,3 +247,21 @@ the fullword store and later load.
 
 This establishes local vector allocation, BCPL word-pointer representation,
 and `!0` word store/load without GETVEC, FREEVEC, BLIB, or heap allocation.
+
+### 09-vector-nonzero-subscript
+
+Status: **DEFINED** — not yet run.
+
+Creates a local `VEC 2`, stores `42` into `V!1`, then reloads that
+element and passes it to `DEBUGINT`.
+
+Expected output:
+
+```text
+42
+```
+
+This extends Test 08 by proving nonzero vector indexing. Generated S/370
+must show the one-word offset contributing to the effective address for
+both the store and the later load before Test 09 is considered fully
+proven.
