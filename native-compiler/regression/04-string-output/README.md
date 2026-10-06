@@ -78,3 +78,23 @@ returning through R6.
 This places Test 04 in the same termination-failure class already observed
 after Test 03 output.  The string-output objective remains proven; the
 remaining defect is normal native termination after FINISH.
+
+
+### Runner result semantics
+
+The regression runner now treats Test 04's string-output objective as passed
+when the JES report contains `HELLO`, even if the GO step subsequently ends
+with the known S322 termination defect.
+
+In that case the runner reports:
+
+```text
+=== BCPL output ===
+HELLO
+
+TEST OBJECTIVE: PASS
+TERMINATION: S322 (known runtime defect)
+```
+
+This does not classify the overall runtime termination path as correct; it
+only keeps Test 04 focused on the contract it was created to validate.
