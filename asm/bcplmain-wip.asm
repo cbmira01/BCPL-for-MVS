@@ -173,6 +173,296 @@
 * supported by this WIP.  A real BCPLMAIN probably establishes its own
 * larger R13 work/save area and chains it according to MVS convention.
 *
+***********************************************************************
+* RECONSTRUCTED FINAL BCPLMAIN RESPONSIBILITY CONTRACT
+***********************************************************************
+*
+* This section collects the broader runtime contract recovered from the
+* surviving System/370 material.  It is intentionally wider than the
+* executable factorial subset below.
+*
+* Evidence classes used here:
+*
+*   PROVEN       observed directly in generated code or live probes.
+*   HISTORICAL   stated by surviving BCPL source, macros, or build JCL.
+*   INFERRED     strongly implied by those sources, not yet exercised.
+*   UNKNOWN      facility is known to exist but interface is incomplete.
+*
+* BCPLMAIN should eventually satisfy all of these responsibilities.
+*
+* 1. INITIAL MVS ENTRY AND SAVE-AREA DISCIPLINE
+*    HISTORICAL/PROVEN
+*
+*    Every standard BCPL module begins by saving R14..R12 in the
+*    caller's MVS save area, loading BCPLMAIN through module+12, and
+*    branching there with R15 still holding the module entry address.
+*
+*    BCPLMAC's MODULE macro explicitly documents this convention.
+*
+*    Final BCPLMAIN must establish any private save/work area required
+*    beyond the caller's ordinary save area and preserve normal MVS
+*    linkage on return.
+*
+* 2. EXECUTION OPTIONS AND JCL PARM STRING
+*    HISTORICAL
+*
+*    BCPLMAC's INITSAVE layout reserves option fields:
+*
+*       HNUM  required heap in bytes
+*       GNUM  size of global vector
+*       KNUM  I/O space to be freed
+*       DFLG  STAE/SPIE and related options
+*       TNUM  tidy-up time in centiseconds
+*       INUM  stack-clearance extent
+*
+*    The user save area also carries a BCPL parameter string.
+*    LIBHDR publishes that string as global G45 PARMS.
+*
+*    UNKNOWN:
+*    The exact textual PARM grammar and defaults still need recovery.
+*    No parser should be invented until the historical source is found
+*    or the grammar is reconstructed from surviving documentation.
+*
+* 3. STORAGE ACQUISITION AND INITIAL MEMORY LAYOUT
+*    HISTORICAL
+*
+*    INITSAVE reserves GETMAIN parameter space specifically for the
+*    allocation containing the global vector and BCPL stack.
+*
+*    The user-save-area layout also records:
+*
+*       a vector-allocation list head for GETVEC/FREEVEC
+*       final storage block information for exit cleanup
+*       an exit save-area address
+*
+*    Final BCPLMAIN must therefore own MVS storage acquisition,
+*    partition the obtained storage into runtime regions, publish the
+*    corresponding BCPL word pointers, and release owned storage.
+*
+*    The static GLOBV and WORK areas below are development substitutes.
+*
+* 4. GLOBAL VECTOR CONSTRUCTION
+*    PROVEN/HISTORICAL
+*
+*    R12 is G.  G!N is addressed at byte displacement 4*N.
+*
+*    BLIB recognizes the uninitialized-global value:
+*
+*       X'C7D3F000' + 4*N
+*
+*    G!0 contains the allocated global-vector extent.
+*
+*    Compiled-module trailers contain exported-global pairs.  BCPLMAIN
+*    must merge those definitions into G before invoking START.
+*
+*    A general loader must perform the same operation for LOAD modules.
+*
+* 5. STACK / WORKSPACE INITIALIZATION
+*    PROVEN/HISTORICAL
+*
+*    R5 is the current BCPL workspace pointer and R15 the next workspace
+*    pointer.  Generated calls and entries implement this convention.
+*
+*    LIBHDR publishes:
+*
+*       G54 STACKBASE
+*       G55 STACKEND
+*       G56 STACKHWM
+*
+*    BLIB knows the historical stack fill patterns:
+*
+*       X'5C40E2E3'  EVENSTACK
+*       X'C3D2405C'  ODDSTACK
+*
+*    Final startup should initialize whatever marker pattern STACKHWM
+*    requires and enforce the stack-clearance policy selected by INUM.
+*
+* 6. BASE AND PERMANENT REGISTER INITIALIZATION
+*    PROVEN
+*
+*    Generated code assigns:
+*
+*       R0   permanent zero
+*       R1   4096
+*       R2   8192
+*       R3   12288
+*       R11  system-vector base
+*       R12  global-vector base
+*
+*    Job 943 showed why R0 matters: leaving it nonzero defeated a
+*    generated comparison against zero and caused runaway recursion.
+*
+* 7. SYSTEM-VECTOR SERVICES
+*    PROVEN/INFERRED
+*
+*    CGHDR defines executable service offsets:
+*
+*       +0   procedure return path, reached by BCR 15,11
+*       +20  call-count service
+*       +40  FINISH
+*       +60  stack check
+*       +80  stack check plus call count
+*
+*    The current bodies below are proposals or stubs except where noted.
+*    Their final semantics must match CG370, not merely factorial.
+*
+* 8. START INVOCATION AND NORMAL TERMINATION
+*    PROVEN/INFERRED
+*
+*    START is global 1.  Once the runtime environment is complete,
+*    BCPLMAIN transfers control to G!1.
+*
+*    FINISH branches through the system vector at R11+40.
+*
+*    LIBHDR also exposes G30 STOP.  The relationship among STOP,
+*    FINISH, MVS completion codes, cleanup, and return to the caller
+*    remains to be reconstructed explicitly.
+*
+* 9. ABNORMAL TERMINATION AND PROGRAM-INTERRUPT RECOVERY
+*    HISTORICAL
+*
+*    This is a first-class BCPLMAIN responsibility, not an optional
+*    diagnostic add-on.
+*
+*    BCPLMAC contains explicit STAE/SPIE state and support:
+*
+*       DFLG / USADFLG hold STAE/SPIE options
+*       STAESW records an outstanding STAE exit
+*       SPIE is identified as SVC 14
+*       an STAE execute list is reserved
+*       STARETRY reconstructs a saved runtime environment
+*       USATCBCC records the task completion-code field
+*
+*    BLIB supplies high-level:
+*
+*       ABORT(CODE, ADDR, OLDSTACK, DATA)
+*
+*    and handles System/360-370 interrupt codes X'C0' through X'CF',
+*    user ABENDs, fatal I/O, stack overflow, computation exhaustion,
+*    BACKTRACE, USERPOSTMORTEM, and MAPSTORE.
+*
+*    Therefore final BCPLMAIN must provide the low-level bridge from
+*    MVS recovery/program-interrupt state into BLIB's ABORT contract.
+*
+*    UNKNOWN:
+*    The exact mapping from STAE/SPIE control blocks and saved registers
+*    to CODE, ADDR, OLDSTACK, and DATA is not yet reconstructed.
+*
+*    REQUIRED FUTURE STUB:
+*       establish recovery environment
+*       capture completion/program-interrupt state
+*       restore or identify the BCPL stack
+*       invoke G!3 ABORT with the historical four arguments
+*       perform final MVS cleanup if ABORT cannot continue
+*
+* 10. MACHINE-DEPENDENT BYTE OPERATIONS
+*     HISTORICAL
+*
+*    BLIB explicitly states that GETBYTE and PUTBYTE are machine-code
+*    routines forming part of BCPLMAIN.  Their contracts are known and
+*    provisional implementations are present below.
+*
+* 11. STREAM, RECORD, DATASET, AND TERMINAL I/O
+*     HISTORICAL / INTERFACES PARTLY UNKNOWN
+*
+*    LIBHDR exposes the native-facing stream surface through G11..G51,
+*    including selection, character I/O, record I/O, rewind, member
+*    access, parameter input, logging, and terminal discovery.
+*
+*    BCPLMAC contains substantial DCB, QSAM, BSAM, BPAM, TSO,
+*    TPUT/TGET, and device-state definitions.  This confirms that the
+*    machine-code library owned real MVS I/O control structures.
+*
+*    These routines should receive explicit stubs as their individual
+*    calling contracts are recovered.  Do not infer their interfaces
+*    merely from their names.
+*
+* 12. GETVEC / FREEVEC AND STORAGE CLEANUP
+*     HISTORICAL
+*
+*    LIBHDR assigns G87 GETVEC and G88 FREEVEC.
+*    BCPLMAC contains a vector-list head specifically for allocations
+*    made by these routines and retains final storage for exit cleanup.
+*
+*    UNKNOWN:
+*    allocation headers, subpool policy, failure return conventions,
+*    and RESULT2 interaction still require reconstruction.
+*
+* 13. DYNAMIC LOAD / UNLOAD
+*     HISTORICAL
+*
+*    LIBHDR exposes:
+*
+*       G7  UNLOADALL
+*       G8  LOADFORT
+*       G9  UNLOAD
+*       G10 LOAD
+*
+*    BLIB's MAPSTORE walks a load list headed through SAVEAREA!29 and
+*    recognizes BCPL modules through a high-bit flag in load-list
+*    word 9.
+*
+*    Loaded BCPL sections must have their exported globals merged
+*    into G.
+*
+*    UNKNOWN:
+*    loader-node layout and LOAD/UNLOAD arguments/results are not yet
+*    complete enough for an implementation.
+*
+* 14. THE MACHINE-CODE LIBRARY WAS MULTI-MEMBER
+*     HISTORICAL
+*
+*    Surviving MAKELIB JCL says BCPLIB.OBJ(BCPLMAIN) was carved up by
+*    the linkage editor to produce:
+*
+*       $BLOCK$
+*       $LOAD$
+*       $TPUT$
+*       BCPLMAIN
+*
+*    The library also contained $IOS$, BLIB, and PM as other members.
+*
+*    This means the final reconstruction should not assume all native
+*    services necessarily remain inside one load-module entry point.
+*
+*    UNKNOWN CONTRACT: $LOAD$
+*       Known to be carved from the BCPLMAIN object and included beside
+*       BCPLMAIN in the compiler root segment.  It is clearly related to
+*       native loading, but its exact public entry contract is pending.
+*
+*    UNKNOWN CONTRACT: $BLOCK$
+*       Known to be carved from the same object.  Its exact relationship
+*       to block-file globals G93..G98 remains to be established.
+*
+*    UNKNOWN CONTRACT: $TPUT$
+*       Known to be carved from the same object.  BCPLMAC defines
+*       TPUT/TGET service coding, but the member's callable interface is
+*       still unknown.
+*
+* 15. PLATFORM EDITING / INSTALLATION VARIANTS
+*     HISTORICAL
+*
+*    EDITMAIN preprocesses the machine-code-library source for:
+*
+*       OS System/360
+*       OS System/370
+*       STANDARD, with no OS control-block reference
+*       CMS, with no OS control-block reference
+*
+*    The final MVS 3.8 reconstruction should preserve the distinction
+*    between architectural S/370 code and MVS-control-block coupling.
+*    Host-specific choices should be documented rather than hidden.
+*
+* 16. POSTMORTEM AND RUNTIME STATE PUBLISHED TO BLIB
+*     HISTORICAL
+*
+*    BLIB is explicitly interdependent with BCPLMAIN.  It expects useful
+*    values for SAVEAREA, LOADPOINT, ENDPOINT, STACKBASE, STACKEND,
+*    loader state, and program/data extent tests.
+*
+*    A runtime that merely reaches START but leaves these globals bogus
+*    is a bootstrap runtime, not a complete BCPLMAIN reconstruction.
+*
 * OTHER RUNTIME FACILITIES KNOWN TO EXIST BUT NOT YET RECONSTRUCTED
 * -----------------------------------------------------------------
 * SYS3 LIBHDR identifies the following runtime surface.  Their existence
