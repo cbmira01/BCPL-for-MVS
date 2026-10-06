@@ -12,8 +12,9 @@ Current bootstrap contract:
   * build/load the resident Cambridge compiler image under ICINT V19;
   * present the requested BCPL source as final-run SYSIN;
   * allocate CODE as a temporary FB80 data set and recover it to the host;
-  * allocate SYSGO as DUMMY so the historical default DECK path is exercised
-    without yet pretending that JES SYSOUT is a binary-safe object-deck export.
+  * pass Cambridge options A/N/: translate generated character values to
+    System/370 EBCDIC and suppress the binary DECK path;
+  * retain SYSGO as DUMMY until a byte-preserving object-deck export exists.
 
 The recovered CODE stream is written as workarea/<source-stem>.s370.asm.
 """
@@ -226,9 +227,10 @@ def main(argv=None) -> int:
         deck = deck.replace("//SYSUDUMP DD  SYSOUT=*\n", "//SYSUDUMP DD  DUMMY\n")
 
         # Cambridge owns final-run SYSIN.  CODE is textual and safe to recover
-        # through marked SYSOUT.  SYSGO is deliberately DUMMY for now: the
-        # historical DECK path is exercised, but binary object-deck export will
-        # be added only with a byte-preserving MVS/host transfer path.
+        # through marked SYSOUT.  CAMBPARM supplies A/N/: A selects target
+        # EBCDIC character codes for this cross compilation and N suppresses
+        # binary DECK emission.  SYSGO remains DUMMY until byte-preserving
+        # object-deck export is implemented.
         source_text = core.read_ascii_records(source, f"Cambridge source {source.name}")
         final_dump = deck.rfind("//SYSUDUMP DD  DUMMY\n")
         if final_dump < 0:
