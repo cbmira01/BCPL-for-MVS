@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+"""Compile BCPL with the persistent Cambridge compiler installed on MVS."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+DSPAL_CORE = ROOT / "tools" / "dspal-core.py"
+WORKAREA = ROOT / "workarea"
+
+CAMBRIDGE_MEMBERS = [
+    "BCPL", "SYN", "LEX", "TRNA", "TRNB",
+    "CGA", "CGB", "CGC", "CGD", "CGE", "BOOTHOST",
+]
+
+
+def load_core():
+    spec = importlib.util.spec_from_file_location("dspal_core", DSPAL_CORE)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {DSPAL_CORE}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+core = load_core()
+
+
+def source_records(path: Path) -> list[str]:
+    text = path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    for number, line in enumerate(lines, 1):
+        line.encode("ascii")
+        if len(line) > 80:
+            raise ValueError(f"{path}:{number}: source record exceeds 80 columns")
+        if line.startswith("Z9"):
+            raise ValueError(f"{path}:{number}: reserved JCL delimiter prefix Z9")
+    return lines
+
+
+def build_deck(config, source_path: Path, job_name: str, redact_password: bool) -> str:
+    source = core.full_dsn(config, config["datasets"]["SOURCE"])
+    intcode = core.full_dsn(config, config["datasets"]["INTCODE"])
+    load = core.full_dsn(config, config["datasets"]["LOAD"])
+
+    lines = core.authenticated_job_card(
+        config,
+        job_name,
+        "CAMBRIDGE COMPILE",
+        redact_password=redact_password,
+    )
+    lines.extend([
+        "//* COMPILE ONE BCPL SOURCE WITH THE PERSISTENT CAMBRIDGE IMAGE",
+        "//* CAMBRIDGE IS INTCODE EXECUTED BY HERC02.BCPL.LOAD(ICINT19)",
+        "//COMP     EXEC PGM=ICINT19,REGION=256K,TIME=(,30)",
+        f"//STEPLIB  DD  DSN={load},DISP=SHR",
+        "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)",
+    ])
+
+    first = True
+    for member in [*CAMBRIDGE_MEMBERS, "BLIBI", "ICLIB"]:
+        dd = "INTIN" if first else ""
+        first = False
+        lines.append(f"//{dd:<8} DD  DSN={intcode}({member}),DISP=SHR")
+
+    lines.extend([
+        "//SYSIN    DD  DATA,DLM=Z9",
+        *source_records(source_path),
+        "Z9",
+        f"//OPTIONS  DD  DSN={source}(OPTIONS),DISP=SHR",
+        f"//CAMBPARM DD  DSN={source}(CAMBPARM),DISP=SHR",
+        f"//LIBHDR   DD  DSN={source}(LIBHDR),DISP=SHR",
+        f"//SYNHDR   DD  DSN={source}(SYNHDR),DISP=SHR",
+        f"//TRNHDR   DD  DSN={source}(TRNHDR),DISP=SHR",
+        f"//CGHDR    DD  DSN={source}(CGHDR),DISP=SHR",
+        "//CODE     DD  DSN=&&CODE,UNIT=SYSDA,",
+        "//             SPACE=(80,(1000,500)),",
+        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),",
+        "//             DISP=(NEW,PASS)",
+        "//SYSGO    DD  DUMMY",
+        "//SYSUDUMP DD  DUMMY",
+        "//* COPY TEXTUAL S/370 CODE TO MARKED SYSOUT FOR HOST RECOVERY",
+        "//SVCODE   EXEC PGM=IEBGENER,COND=(4,LT)",
+        "//SYSPRINT DD  SYSOUT=*",
+        "//SYSIN    DD  DUMMY",
+        "//SYSUT1   DD  DATA,DLM=Z9",
+        "@@BCPL-CODE-BEGIN@@",
+        "Z9",
+        "//         DD  DSN=&&CODE,DISP=(OLD,DELETE)",
+        "//         DD  DATA,DLM=Z9",
+        "@@BCPL-CODE-END@@",
+        "Z9",
+        "//SYSUT2   DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)",
+    ])
+    return "\n".join(lines) + "\n"
+
+
+def extract_code(report: str) -> str:
+    lines = [line.replace("\f", "") for line in report.splitlines()]
+    begin = None
+    for index, line in enumerate(lines):
+        if line.rstrip() == "@@BCPL-CODE-BEGIN@@":
+            begin = index + 1
+    if begin is None:
+        raise RuntimeError("CODE begin marker not found")
+    records: list[str] = []
+    for line in lines[begin:]:
+        if line.rstrip() == "@@BCPL-CODE-END@@":
+            text = "\n".join(record.rstrip() for record in records).rstrip()
+            if not text:
+                raise RuntimeError("recovered CODE stream is empty")
+            return text + "\n"
+        records.append(line)
+    raise RuntimeError("CODE end marker not found")
+
+
+def execution_code(report: str) -> int:
+    pattern = re.compile(r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)")
+    codes = [int(m.group(1)) for m in pattern.finditer(report.replace("\f", ""))]
+    if len(codes) != 1:
+        raise RuntimeError(f"expected one ICINT execution-completion code, found {len(codes)}")
+    return codes[0]
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="cambridge-compile-mvs",
+        description="Compile BCPL with the persistent Cambridge compiler on MVS.",
+    )
+    p.add_argument("source")
+    p.add_argument("--job-name", default="CAMBCOMP")
+    p.add_argument("--listing", choices=("light", "medium", "heavy"), default="light",
+                   help="accepted for interface compatibility; resident compile has no IFOX stage")
+    p.add_argument("--timeout", type=float, default=180.0,
+                   help="accepted for regression-driver compatibility")
+    p.add_argument("--show-jcl", action="store_true")
+    return p
+
+
+def main() -> int:
+    args = parser().parse_args()
+    try:
+        path = Path(args.source)
+        if not path.is_absolute():
+            path = ROOT / path
+        path = path.resolve()
+        if not path.is_file():
+            raise ValueError(f"BCPL source does not exist: {path}")
+
+        job_name = args.job_name.upper()
+        if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}", job_name):
+            raise ValueError("--job-name must be a valid MVS job name")
+
+        config = core.load_config()
+        deck = build_deck(config, path, job_name, redact_password=args.show_jcl)
+        if args.show_jcl:
+            sys.stdout.write(deck)
+            return 0
+
+        core.require_reader_ready(config)
+        job, _summary = core.submit_and_wait(config, deck, max_rc=0)
+        report = core.job_report(job)
+        code = execution_code(report)
+        if code != 0:
+            raise RuntimeError(f"Cambridge compiler returned execution code {code}")
+
+        generated = extract_code(report)
+        output = WORKAREA / f"{path.stem}.s370.asm"
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(generated, encoding="latin-1", newline="\n")
+
+        print(f"JOB {job}")
+        print(f"saved Cambridge CODE: {output.relative_to(ROOT)}")
+        return 0
+    except (core.DspalError, RuntimeError, ValueError, OSError, UnicodeError) as exc:
+        print(f"cambridge-compile-mvs: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
