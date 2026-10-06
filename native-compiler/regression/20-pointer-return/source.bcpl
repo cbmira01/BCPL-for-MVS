@@ -1,0 +1,14 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET IDPTR(V) = V
+
+LET START () BE
+$(1
+    LET V = VEC 2
+    LET P = 0
+
+    V!1 := 42
+    P := IDPTR(V)
+    DEBUGINT(P!1)
+    FINISH
+$)1
