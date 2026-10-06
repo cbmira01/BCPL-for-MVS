@@ -74,4 +74,71 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 982 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection satisfied the defining nonzero-index criterion:
+
+```asm
+LA 7,16(5)
+SRL 7,2(0)
+ST 7,12(5)
+
+LA 8,42(0)
+AR 7,7
+ST 8,4(7,7)
+
+L  7,12(5)
+AR 7,7
+L  7,4(7,7)
+
+LA 15,28(5)
+L  4,600(12)
+BALR 6,4
+```
+
+As in Test 08, the local vector begins at byte address `16(R5)`, and CG370
+stores its BCPL word pointer after shifting the byte address right by two.
+
+For `V!1`, the effective address uses `4(7,7)`. After `AR 7,7`, the
+base-plus-index pair contributes four times the BCPL word pointer, while the
+explicit displacement contributes one target word, four bytes. This is the
+native byte address of vector element 1.
+
+The later load uses the same nonzero displacement, proving both store and
+reload of `V!1`.
+
+
+### Contract established
+
+Test 09 directly establishes that generated native BCPL correctly supports:
+
+- a nonzero constant vector subscript;
+- conversion of that word subscript to the correct byte displacement;
+- fullword store into `V!1`;
+- later fullword load from `V!1`;
+- observation of the loaded value through DEBUGINT.
+
+The generated-code difference from Test 08 is precise:
+
+```text
+V!0  -> 0(7,7)
+V!1  -> 4(7,7)
+```
+
+This is exactly the expected four-byte stride for 32-bit BCPL target words.
+
+Variable subscripts remain deliberately unproven by this test.
