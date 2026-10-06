@@ -146,6 +146,32 @@ $)'''
     return text.replace(original, replacement, 1)
 
 
+def demote_trnb_ocode_host_width(text: str) -> str:
+    """Write bootstrap OCODE using the MR10 host's two-byte word layout.
+
+    The Cambridge LIBHDR correctly says BYTESPERWORD=4 for System/370, but
+    the resident bootstrap executes with the MR10 GETBYTE/PUTBYTE runtime,
+    which stores two bytes per interpreted BCPL word.  WRBYTE must therefore
+    advance OBUFP after two host bytes or adjacent OCODE groups overlap.
+    """
+    old = """AND WRBYTE(N) BE $( PUTBYTE(OBUFP, OBUFB, N)
+                    OBUFB := OBUFB+1
+                    IF OBUFB=BYTESPERWORD THEN
+                         OBUFP, OBUFB := OBUFP+1, 0
+                    CHECKWORKSPACE()
+                 $)"""
+    new = """AND WRBYTE(N) BE $( PUTBYTE(OBUFP, OBUFB, N)
+                    OBUFB := OBUFB+1
+                    || BOOTSTRAP HOST: MR10 STORES TWO BYTES PER WORD.
+                    IF OBUFB=2 THEN
+                         OBUFP, OBUFB := OBUFP+1, 0
+                    CHECKWORKSPACE()
+                 $)"""
+    if text.count(old) != 1:
+        raise SystemExit(f"TRNB: expected one WRBYTE host-width block, found {text.count(old)}")
+    return text.replace(old, new, 1)
+
+
 def demote_trnb_abs(text: str) -> str:
     original = '            CASE S.ABS: RESULTIS ABS EVALCONST(H2X)'
     replacement = '''            CASE S.ABS:
@@ -228,6 +254,7 @@ def write_unit(name: str, historical_section: str, text: str, extra_banner=()) -
         text = demote_lex_readfloat(text)
     if historical_section == "TRNB":
         text = demote_trnb_abs(text)
+        text = demote_trnb_ocode_host_width(text)
 
     banner = [
         f'|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "{historical_section}".',
@@ -240,7 +267,10 @@ def write_unit(name: str, historical_section: str, text: str, extra_banner=()) -
             '|| READFLOAT is a fatal bootstrap stub; floating literals unsupported.',
         ]
     if historical_section == "TRNB":
-        banner += ['|| Unary ABS implementation spelling demoted for MR10 compatibility.']
+        banner += [
+            '|| Unary ABS implementation spelling demoted for MR10 compatibility.',
+            '|| OCODE WRBYTE advances after two MR10 host bytes per word.',
+        ]
     banner += list(extra_banner)
     (OUT / name).write_text("\n".join(banner) + "\n" + text, encoding="utf-8")
 
