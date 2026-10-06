@@ -91,7 +91,44 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 978 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+The regression runner reported:
+
+```text
+=== Regression result ===
+TEST:        07-global-state-visibility
+OBJECTIVE:   PASS
+TERMINATION: NORMAL
+RESULT:      PASS
+```
+
+Generated-code inspection had already established the defining global-vector
+operations for X = G!151:
+
+```asm
+ST 7,604(12)
+...
+L  7,604(12)
+```
+
+The store occurs in START. The load occurs in SHOWX before the DEBUGINT call.
+Therefore the observed 42 is direct evidence of user global-vector state
+remaining visible across an ordinary BCPL procedure call.
 
 
 ### Job 976 startup diagnosis
@@ -121,3 +158,26 @@ globals beyond FIRSTFREEGLOBAL can be exercised while dynamic global-vector
 sizing remains unreconstructed.
 
 Test 07's BCPL source remains unchanged.
+
+
+### Contract established
+
+Test 07 provides direct evidence that generated native BCPL correctly
+supports:
+
+- writing a user-defined global through R12/global-vector addressing;
+- preserving that global state across an ordinary BCPL procedure call;
+- reading the same global from another BCPL procedure;
+- passing the reloaded global value through the ordinary first-argument
+  convention;
+- observing the value through DEBUGINT.
+
+For X = G!151, the expected byte displacement is 4*151 = 604, and the
+generated S/370 uses that exact displacement for both store and load.
+
+The first run, Job 976, also exposed a bootstrap-runtime capacity defect:
+BCPLMAIN still allocated only G!0..G!150 and rejected the module through
+GTOOBIG. Extending the provisional static global vector through G!200 allowed
+the unchanged Test 07 source to execute successfully in Job 978.
+
+Dynamic global-vector sizing remains future BCPLMAIN reconstruction work.
