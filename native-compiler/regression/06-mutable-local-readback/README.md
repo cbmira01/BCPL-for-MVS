@@ -72,4 +72,76 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 974 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+X42
+```
+
+The regression runner reported:
+
+```text
+=== Regression result ===
+TEST:        06-mutable-local-readback
+OBJECTIVE:   PASS
+TERMINATION: NORMAL
+RESULT:      PASS
+```
+
+Generated-code inspection also satisfied the defining acceptance criterion.
+The relevant sequence is:
+
+```asm
+LA 7,17(0)
+ST 7,12(5)
+LA 8,42(0)
+ST 8,12(5)
+LA 7,231(0)
+LA 15,16(5)
+L  4,56(12)
+BALR 6,4
+L  7,12(5)
+LA 15,16(5)
+L  4,600(12)
+BALR 6,4
+```
+
+This establishes the intended state transition:
+
+```text
+initialize X
+    -> mutate X to 42
+    -> call WRCH using R7
+    -> reload X from local workspace
+    -> pass reloaded X to DEBUGINT
+    -> observe X42
+```
+
+The load `L 7,12(5)` occurs after the WRCH call and immediately before the
+DEBUGINT call sequence. Therefore the value printed by DEBUGINT is a real
+readback of mutable local storage, not a stale value left live in R7.
+
+
+### Contract established
+
+Test 06 provides direct evidence that the generated native code correctly
+supports:
+
+- initialization of a BCPL local in the current workspace;
+- assignment of a new value to that local;
+- preservation of the local across an intervening BCPL global call;
+- reloading the local from workspace memory;
+- passing the reloaded value through the normal first-argument convention;
+- reporting that value through the native diagnostic channel.
+
+This closes the specific observability gap left by Test 05.
