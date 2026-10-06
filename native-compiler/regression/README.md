@@ -454,7 +454,12 @@ fully proven.
 
 ### 19-local-scalars-across-call
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 1002 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms that A, B, and C are spilled to the caller workspace
+before ID is called, then reloaded after return and combined with the R7
+function result. This establishes caller-local scalar preservation across an
+ordinary call.
 
 START establishes three scalar locals, calls `ID(3)`, then uses all three
 pre-call locals plus the returned value after the call to compute 42.
