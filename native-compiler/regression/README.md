@@ -497,3 +497,22 @@ This extends the function-result evidence from scalar values to BCPL pointer
 values. Generated S/370 must show the pointer returning through the ordinary
 result convention and being dereferenced by the caller before Test 20 is
 considered fully proven.
+
+### 21-pointer-store-reload
+
+Status: **DEFINED** — not yet run.
+
+START creates vectors V and W, stores 42 in `V!1`, stores pointer V into
+`W!0`, reloads that pointer into P, then dereferences `P!1` and reports
+the value through DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This proves that a BCPL word pointer survives a fullword store/load round
+trip as ordinary data. Generated S/370 must show the pointer store into W,
+reload from W, and later dereference before Test 21 is considered fully
+proven.
