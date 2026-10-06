@@ -1,0 +1,11 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET A = 17
+    LET B = 25
+
+    A := -A
+    DEBUGINT(B-A)
+    FINISH
+$)1
