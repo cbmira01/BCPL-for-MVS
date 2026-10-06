@@ -36,12 +36,19 @@ primitive character-output contract to establish first.
 
 ## Status
 
-IMPLEMENTED, AWAITING NATIVE RUN.
+PARTIAL PASS: CHARACTER OUTPUT PROVEN; TERMINATION STILL FAILS.
 
-`asm/bcplmain-wip.asm` now installs G!14 as a narrow native WRCH path.
-Characters are buffered into one QSAM SYSPRINT record; FINISH writes that
-record and closes the DCB.  This intentionally does not yet implement the
-historical selected-stream, newline, wrapping, or general I/O semantics.
+JES Job 954 on 2026-10-06 assembled and link-edited successfully.  The
+generated BCPL program emitted the expected `A` to SYSPRINT, proving the
+initial G!14 WRCH path through BCPLMAIN.
 
-The regression runner also extracts the emitted `A` from the completed JES
-report and displays it under `=== BCPL output ===` in the invoking WSL CLI.
+The job subsequently ABENDed during or after termination.  Therefore this
+test is not yet a full regression pass.  The remaining failure is downstream
+of character emission and should be investigated in the FINISH output-flush,
+DCB CLOSE, and final MVS return path.
+
+The current implementation intentionally does not yet provide the historical
+selected-stream, newline, wrapping, or general I/O semantics.
+
+The regression runner extracts the emitted `A` from the JES report and
+displays it under `=== BCPL output ===` in the invoking WSL CLI.
