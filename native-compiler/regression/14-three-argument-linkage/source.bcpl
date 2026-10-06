@@ -1,0 +1,16 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET SET(V,I,X) BE
+$(1
+    V!I := X
+$)1
+
+LET START () BE
+$(1
+    LET V = VEC 2
+
+    V!1 := 17
+    SET(V,1,42)
+    DEBUGINT(V!1)
+    FINISH
+$)1
