@@ -474,3 +474,22 @@ This extends the linkage regressions by proving caller-local scalar lifetime
 across an ordinary function call. Generated S/370 must show how the pre-call
 locals remain available after ID returns before Test 19 is considered fully
 proven.
+
+### 20-pointer-return
+
+Status: **DEFINED** — not yet run.
+
+START creates a local vector, stores 42 in `V!1`, calls `IDPTR(V)`,
+stores the returned pointer in P, then dereferences `P!1` and reports the
+value through DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This extends the function-result evidence from scalar values to BCPL pointer
+values. Generated S/370 must show the pointer returning through the ordinary
+result convention and being dereferenced by the caller before Test 20 is
+considered fully proven.
