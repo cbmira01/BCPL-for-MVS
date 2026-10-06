@@ -173,6 +173,22 @@ job=$(awk '/^JOB [0-9]+$/ {print $2}' <<<"$submit" | tail -1)
 echo
 echo "=== Wait for complete job report ==="
 
+show_test03_output() {
+    local report emitted
+
+    report=$(bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null)
+    emitted=$(printf '%s\n' "$report" | grep -a -m1 "^ *A *$" || true)
+
+    if [[ -n "$emitted" ]]; then
+        echo
+        echo "=== BCPL output ==="
+        printf '%s\n' "$emitted" | sed -e 's/^ *//' -e 's/ *$//'
+        return 0
+    fi
+
+    return 1
+}
+
 deadline=$((SECONDS + 30))
 while (( SECONDS <= deadline )); do
     summary=$("$root/tools/job-summary" "$job" 2>&1)
@@ -182,60 +198,24 @@ while (( SECONDS <= deadline )); do
         echo "$summary"
 
         if [[ "$test_no" == "03" ]]; then
-            report=$(
-                bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
-            )
-            emitted=$(
-                printf '%s\n' "$report" |
-                    grep -a -m1 -E '^[[:space:]]*A[[:space:]]*$' || true
-            )
-
-            echo
-            echo "=== BCPL output ==="
-
-            if [[ -z "$emitted" ]]; then
+            if ! show_test03_output; then
                 echo "run-test: expected WRCH output A not found" >&2
                 exit 1
             fi
-
-            printf '%s\n' "$emitted" |
-                sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
         fi
 
         exit 0
     fi
 
-    # job-summary uses 1 for a completed failing job and 2 when the
-    # complete report is not available yet.
+    # job-summary returns 1 for a completed failing job and 2 while the
+    # complete report is not yet available.
     if (( rc == 1 )); then
         echo "$summary"
 
         if [[ "$test_no" == "03" ]]; then
-            report=$(
-                bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
-            )
-            emitted=$(
-                printf '%s\n' "$report" |
-                    grep -a -m1 -E '^[[:space:]]*A[[:space:]]*
-    sleep 1
-done
-
-echo "run-test: timed out waiting for JOB $job to finish" >&2
-exit 75
- || true
-            )
-
-            if [[ -n "$emitted" ]]; then
-                echo
-                echo "=== BCPL output ==="
-                printf '%s\n' "$emitted" |
-                    sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
-            fi
+            show_test03_output || true
         fi
 
-        echo
-        echo "=== Failure diagnostics ==="
-        "$root/tools/job-summary" --verbose "$job" || true
         exit 1
     fi
 
