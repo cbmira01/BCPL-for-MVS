@@ -545,7 +545,11 @@ is considered fully proven.
 
 ### 23-control-flow
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 1012 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms the targeted conditional, loop, BREAK/LOOP, and
+SWITCHON/CASE/DEFAULT/ENDCASE forms using ordinary compare-and-branch
+sequences. No new BCPLMAIN service is required.
 
 Exercises IF, UNLESS, TEST/THEN/ELSE, WHILE, UNTIL, FOR, REPEAT,
 REPEATWHILE, REPEATUNTIL, BREAK, LOOP, and SWITCHON/CASE/DEFAULT/ENDCASE
