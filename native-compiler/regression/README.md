@@ -500,7 +500,12 @@ considered fully proven.
 
 ### 21-pointer-store-reload
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Jobs 1006 and 1008 both emitted `42`; ASM/LKED/GO all
+RC=0000.
+
+Generated S/370 confirms that pointer V is stored as a fullword into W!0,
+reloaded from W!0, saved as local P, and then dereferenced successfully.
+This establishes pointer identity across an ordinary store/load round trip.
 
 START creates vectors V and W, stores 42 in `V!1`, stores pointer V into
 `W!0`, reloads that pointer into P, then dereferences `P!1` and reports
