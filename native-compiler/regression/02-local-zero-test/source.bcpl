@@ -1,0 +1,11 @@
+GLOBAL $( START:1 $)
+
+LET START () BE
+$(1
+    LET N = 0
+
+    IF N = 0 DO
+        FINISH
+
+    FINISH
+$)1
