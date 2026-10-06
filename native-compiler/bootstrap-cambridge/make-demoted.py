@@ -176,9 +176,9 @@ def demote_cg_target_pack(text: str, section: str) -> str:
 
     replacements = (
         ("        PACKSTRING(W, N)",
-         "        PACKSTRING370(W, N)"),
+         "        PK370(W, N)"),
         ("        L := PACKSTRING(V, NAMET+2)",
-         "        L := PACKSTRING370(V, NAMET+2)"),
+         "        L := PK370(V, NAMET+2)"),
     )
     for old, new in replacements:
         if text.count(old) != 1:
@@ -190,7 +190,7 @@ def demote_cg_target_pack(text: str, section: str) -> str:
 
     helper = r"""
 
-AND PACKSTRING370(V, S) = VALOF
+AND PK370(V, S) = VALOF
 $(  || BOOTSTRAP ONLY: pack an unpacked character vector using the
     || System/370 target convention: four 8-bit bytes per 32-bit word.
     LET N = V!0 & #XFF
