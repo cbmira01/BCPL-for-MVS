@@ -52,3 +52,16 @@ selected-stream, newline, wrapping, or general I/O semantics.
 
 The regression runner extracts the emitted `A` from the JES report and
 displays it under `=== BCPL output ===` in the invoking WSL CLI.
+
+
+### Job 956
+
+A second native run with a larger CPU allowance again emitted the expected
+`A` but terminated with S322.  This confirms that the character-output
+path and QSAM PUT complete before the hang.  The common remaining operation
+is the explicit QSAM CLOSE in FINISH.
+
+For the next bootstrap probe, FINISH writes the record but does not issue an
+explicit CLOSE.  Normal MVS step termination owns DCB cleanup temporarily.
+This is a diagnostic/bootstrap accommodation, not the final BCPLMAIN cleanup
+contract.
