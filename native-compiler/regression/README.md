@@ -524,7 +524,10 @@ proven.
 
 ### 22-signed-arithmetic
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 1010 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms runtime signed negation with `LCR 7,7` and
+subsequent subtraction with `SR 8,7`, producing 25-(-17)=42.
 
 START establishes A=17 and B=25, negates A at runtime, then computes
 `B-A`. Since A becomes -17, the expected result is 42.
