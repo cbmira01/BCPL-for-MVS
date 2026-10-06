@@ -77,4 +77,73 @@ through G.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 1014 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection confirms callable linkage through G.
+
+START loads ADD from G!151 at byte displacement 604 from R12:
+
+```asm
+LA 8,25(0)
+LA 7,17(0)
+LA 15,12(5)
+L  4,604(12)
+BALR 6,4
+ST 7,12(5)
+```
+
+This is a true global-vector call. The caller does not use a local
+section-relative address for ADD.
+
+ADD itself receives its two arguments in R7/R8 and returns the sum in R7:
+
+```asm
+STM 4,8,0(15)
+LR 5,15
+AR 8,7
+LR 7,8
+BCR 15,11
+```
+
+The generated trailer also exports ADD as global 151:
+
+```asm
+DC F'604'
+DC F'0'
+DC F'604'
+DC A(0+L1)
+DC F'4'
+DC A(0+L3)
+```
+
+The `604` entry identifies G!151, while the associated address points at
+ADD's generated entry L1.
+
+
+## Contract established
+
+Test 24 establishes the callable-global path through the BCPL global vector:
+
+- a generated user function may be exported in the module trailer;
+- BCPLMAIN installs the exported function address into G;
+- generated callers load the function address through R12/G;
+- the loaded address is called with BALR;
+- ordinary BCPL argument registers and the R7 function-result convention
+  remain unchanged across the G-mediated call.
+
+This directly validates the mechanism that future runtime and library
+routines will use when reached as BCPL globals.
