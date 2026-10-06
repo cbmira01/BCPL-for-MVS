@@ -289,8 +289,12 @@ of local vector storage without GETVEC, FREEVEC, BLIB, or heap allocation.
 
 ### 12-vector-callee-mutation
 
-Status: **RUNTIME PASS** — Job 988 emitted `42`; ASM/LKED/GO all RC=0000.
-Generated-code inspection remains pending.
+Status: **PASS** — Job 988 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms that SETVALUE stores through the received R7 vector
+pointer and that START independently reloads V and dereferences V!1 after the
+call. This establishes write-through aliasing across the one-argument BCPL
+procedure linkage.
 
 START creates a local `VEC 2`, initializes `V!1` to 17, and passes
 `V` to SETVALUE. The callee writes 42 through the received pointer.
