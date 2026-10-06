@@ -277,19 +277,12 @@ This establishes variable vector subscripting for both store and load.
 
 ### 11-vector-procedure-argument
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 986 emitted `42`; ASM/LKED/GO all RC=0000.
 
-Creates a local `VEC 2`, stores `42` into `V!1`, and passes `V` to
-a separate BCPL procedure. The callee dereferences `V!1` and sends the
-value to `DEBUGINT`.
+START creates a local `VEC 2`, stores 42 in `V!1`, reloads the BCPL word
+pointer into R7, and calls SHOW. SHOW receives that pointer in R7 and
+dereferences `V!1` before calling DEBUGINT.
 
-Expected output:
-
-```text
-42
-```
-
-This extends Test 10 by proving that a BCPL vector word pointer can cross an
-ordinary procedure-call boundary and remain dereferenceable in the callee.
-Generated S/370 must show pointer argument passing and callee-side vector
-dereference before Test 11 is considered fully proven.
+Generated S/370 inspection confirms ordinary pointer argument passing and
+callee-side vector dereference. This establishes cross-procedure visibility
+of local vector storage without GETVEC, FREEVEC, BLIB, or heap allocation.
