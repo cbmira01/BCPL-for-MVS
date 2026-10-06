@@ -39,3 +39,20 @@ DEFINED.
 
 The lower-level primitives required by this test are already present in the
 current BCPLMAIN WIP, but the test has not yet been run.
+
+
+### Job 960 diagnosis
+
+The first native run failed immediately with S0C1. The generated module
+contained the expected count-byte/EBCDIC representation of `"HELLO"`, so
+string construction itself was correct.
+
+The dump established that R4 still held the address of the native GETBYTE
+primitive after GETBYTE returned. Generated code then executed a branch
+relative to R4 and landed inside the global vector, where sentinel data was
+executed as instructions.
+
+This proves an additional native primitive calling convention: machine-code
+primitives called without a new BCPL workspace must restore the caller's B
+register (R4) from word zero of the current workspace, 0(R5), before
+returning through R6.
