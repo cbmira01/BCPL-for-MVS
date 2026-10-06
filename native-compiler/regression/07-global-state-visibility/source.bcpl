@@ -1,0 +1,13 @@
+GLOBAL $( START:1; DEBUGINT:150; X:151 $)
+
+LET SHOWX () BE
+$(1
+    DEBUGINT(X)
+$)1
+
+LET START () BE
+$(1
+    X := 42
+    SHOWX()
+    FINISH
+$)1
