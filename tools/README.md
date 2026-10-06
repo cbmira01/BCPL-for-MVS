@@ -150,3 +150,19 @@ See `config/README.md` and `packaging/README.md` for the deployment model.
 ## Host requirements
 
 The tools assume Python 3, Bash, Docker with Docker Compose, `nc`/netcat, and ordinary Unix utilities. They also assume the repository's Hercules/TK5 directory layout and configured JES reader/printer endpoints.
+
+## Durable pre-flight checks
+
+Reusable source validators live under `tools/checks/`.  Before creating an
+ad-hoc checker in a temporary environment, look there first; if a scratch
+validator proves useful more than once, promote it there so later work can
+reuse and improve it.
+
+The current assembler checker is:
+
+```sh
+python3 tools/checks/check-asm-source.py asm/program.asm
+```
+
+It checks ASCII-only source, tabs, trailing whitespace, and text beyond column
+71.  See `tools/checks/README.md` for the standing convention.
