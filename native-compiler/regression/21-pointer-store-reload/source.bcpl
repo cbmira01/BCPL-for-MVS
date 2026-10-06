@@ -1,0 +1,14 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET V = VEC 2
+    LET W = VEC 2
+    LET P = 0
+
+    V!1 := 42
+    W!0 := V
+    P := W!0
+    DEBUGINT(P!1)
+    FINISH
+$)1
