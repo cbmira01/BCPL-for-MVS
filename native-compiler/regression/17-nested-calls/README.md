@@ -89,4 +89,73 @@ Those remain later regression steps.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 998 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection confirms the nested call/return behavior.
+
+DOUBLE receives X in R7, establishes its own workspace, copies X into R8 so
+that ADD receives two equal arguments, advances the new-workspace pointer,
+and performs the nested call:
+
+```asm
+STM 4,7,0(15)
+LR 5,15
+LR 8,7
+LA 15,16(5)
+L  4,0+L2-L4(4)
+BALR 6,4
+BCR 15,11
+```
+
+ADD then receives A/B in R7/R8, computes the sum, places the result in R7,
+and returns through the ordinary BCPL return path:
+
+```asm
+STM 4,8,0(15)
+LR 5,15
+AR 8,7
+LR 7,8
+BCR 15,11
+```
+
+DOUBLE performs no extra result move after the nested BALR; the R7 result
+returned by ADD remains the value returned by DOUBLE. START then stores that
+R7 result and passes it to DEBUGINT.
+
+This proves that nested generated calls preserve the workspace/linkage state
+needed to return correctly through two call boundaries.
+
+
+### Contract established
+
+Test 17 establishes ordinary nested generated-call behavior:
+
+```text
+START -> DOUBLE -> ADD -> DOUBLE -> START
+```
+
+Specifically, it proves:
+
+- each callee establishes its own P from the caller-supplied W;
+- DOUBLE advances W before making its nested call;
+- the nested call uses the same R6 linkage convention;
+- ADD returns its function result in R7;
+- DOUBLE can propagate that R7 result directly to its caller;
+- the ordinary system-vector return path unwinds both generated frames.
+
+This strengthens the evidence for the R5/R6/R15 workspace/linkage contract
+before recursion and library integration.
