@@ -373,9 +373,9 @@
 *    TPUT/TGET, and device-state definitions.  This confirms that the
 *    machine-code library owned real MVS I/O control structures.
 *
-*    These routines should receive explicit stubs as their individual
-*    calling contracts are recovered.  Do not infer their interfaces
-*    merely from their names.
+*    Regression 03 now provides a narrow G14 WRCH path to SYSPRINT.
+*    The full selected-stream interface remains unreconstructed.
+*    Add other stubs only as their contracts are recovered.
 *
 * 12. GETVEC / FREEVEC AND STORAGE CLEANUP
 *     HISTORICAL
@@ -609,15 +609,26 @@ GIDONE   L     4,4(12)
          SRL   1,2
          ST    1,220(12)
 *
+* G!14 = first narrow native WRCH implementation for Regression 03.
 * G!76 = temporary no-op WRITEF for the factorial milestone.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
 *
+         LA    1,WRCH
+         ST    1,56(12)
          LA    1,WRITEST
          ST    1,304(12)
          LA    1,GETBYTE
          ST    1,340(12)
          LA    1,PUTBYTE
          ST    1,344(12)
+*
+* Regression 03 output is deliberately narrow: one buffered SYSPRINT
+* record.  This borrows the proven QSAM shape used by ICINT V19.
+*
+         XC    OUTPOS(4),OUTPOS
+         MVI   OUTBUF,C' '
+         MVC   OUTBUF+1(131),OUTBUF
+         OPEN  (BCPOUT,(OUTPUT))
 *
 * Establish S, initial P/W, and the absolute-base constants required by
 * generated USING 4096,1,2,3 code.
@@ -726,7 +737,12 @@ CNTIMPL  LA    14,4(14)
 * and propagation of a BCPL result code remain separate reconstruction
 * work.
 ***********************************************************************
-FINIMPL  LM    14,12,12(13)
+FINIMPL  L     1,OUTPOS
+         LTR   1,1
+         BZ    FINCLOS
+         PUT   BCPOUT,OUTBUF
+FINCLOS  CLOSE (BCPOUT)
+         LM    14,12,12(13)
          SR    15,15
          BR    14
 *
@@ -745,6 +761,27 @@ STKIMPL  BR    14
 ***********************************************************************
 STKCIMP  LA    14,4(14)
          BR    14
+*
+***********************************************************************
+* WRCH -- FIRST NATIVE CHARACTER OUTPUT
+*
+* G14 WRCH receives the target EBCDIC character in R7.  For the first
+* output milestone it appends bytes to one 132-byte SYSPRINT record.
+* FINISH writes the buffered record and closes the DCB.  Newline and
+* general stream-selection semantics remain future reconstruction work.
+*
+* No MVS macro I/O occurs inside WRCH, so generated-code permanent
+* registers remain undisturbed while BCPL is executing.
+***********************************************************************
+WRCH     L     1,OUTPOS
+         C     1,=F'132'
+         BNL   WRCHRTN
+         LA    14,OUTBUF
+         AR    14,1
+         STC   7,0(14)
+         LA    1,1(1)
+         ST    1,OUTPOS
+WRCHRTN  BCR   15,6
 *
 ***********************************************************************
 * TEMPORARY WRITEF
@@ -792,6 +829,14 @@ TRAILER  DC    F'0'
 GLOBCNT  EQU   150
 GLOBV    DC    F'150'
          DS    150F
+*
+* Regression 03 output state.  SYSPRINT is supplied by the GO step.
+* Historical stream/DCB support was richer; this is only the first
+* observable character-output rung.
+*
+OUTPOS   DC    F'0'
+OUTBUF   DS    CL132
+BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 *
 * Static development workspace.  This is not the historical allocation
 * policy.  Replace with recovered MVS storage management and stack
