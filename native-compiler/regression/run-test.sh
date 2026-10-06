@@ -207,9 +207,33 @@ while (( SECONDS <= deadline )); do
     # complete report is not available yet.
     if (( rc == 1 )); then
         echo "$summary"
+
+        if [[ "$test_no" == "03" ]]; then
+            report=$(
+                bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
+            )
+            emitted=$(
+                printf '%s\n' "$report" |
+                    grep -a -m1 -E '^[[:space:]]*A[[:space:]]*
+    sleep 1
+done
+
+echo "run-test: timed out waiting for JOB $job to finish" >&2
+exit 75
+ || true
+            )
+
+            if [[ -n "$emitted" ]]; then
+                echo
+                echo "=== BCPL output ==="
+                printf '%s\n' "$emitted" |
+                    sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+            fi
+        fi
+
         echo
-        echo "Full report:"
-        bash "$root/tools/dump-report-for-job" "$job"
+        echo "=== Failure diagnostics ==="
+        "$root/tools/job-summary" --verbose "$job" || true
         exit 1
     fi
 
