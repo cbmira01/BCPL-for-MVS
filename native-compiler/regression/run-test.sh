@@ -140,14 +140,16 @@ python3 "$root/tools/make-asm-job"     "$combined"     --output-dir "$work"     
 
 jcl="$work/native-test-heavy.jcl"
 
-python3 - "$jcl" <<'PY'
+python3 - "$jcl" "$test_no" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
+test_no = sys.argv[2]
 text = path.read_text(encoding="ascii")
 old = "//GO       EXEC PGM=*.LKED.SYSLMOD,\n"
-new = "//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),\n"
+seconds = 3 if test_no == "03" else 1
+new = f"//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,{seconds}),\n"
 if text.count(old) != 1:
     raise SystemExit("cannot locate final GO EXEC statement")
 path.write_text(text.replace(old, new, 1), encoding="ascii", newline="\n")
