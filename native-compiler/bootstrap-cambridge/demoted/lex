@@ -1,6 +1,8 @@
 || BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "LEX".
 || SECTION wrapper omitted for MR10 source-dialect compilation.
 || Historical HEADERS(...) GET names mapped to MVS DDNAMEs.
+|| Packed reserved-word strings split to fit MR10 literal limits.
+|| READFLOAT is a fatal bootstrap stub; floating literals unsupported.
 GET "LIBHDR"
 GET "SYNHDR"
 
@@ -280,27 +282,17 @@ LET DECLSYSWORDS() BE
           S.WHILE,
           0
 
-       D("AND/ABS/*
-         *BE/BREAK/BY/*
-         *CASE/*
-         *DO/DEFAULT/*
-         *EQ/EQV/ELSE/ENDCASE/*
-         *FALSE/FOR/FINISH/FLOAT/FIX/*
-         *GOTO/GE/GR/GLOBAL/GET/*
-         *IF/INTO/*
-         *LET/LV/LE/LS/LOGOR/LOGAND/LOOP/LSHIFT//")
+       D("AND/ABS/BE/BREAK/BY/CASE/DO/DEFAULT//")
+       D("EQ/EQV/ELSE/ENDCASE/FALSE/FOR/FINISH/FLOAT/FIX//")
+       D("GOTO/GE/GR/GLOBAL/GET/IF/INTO//")
+       D("LET/LV/LE/LS/LOGOR/LOGAND/LOOP/LSHIFT//")
 
-       D("MANIFEST/*
-         *NE/NOT/NEQV/NEEDS/*
-         *OF/OR/*
-         *RESULTIS/RETURN/REM/RSHIFT/RV/*
-         *REPEAT/REPEATWHILE/REPEATUNTIL/*
-         *SWITCHON/STATIC/SLCT/SECTION/*
-         *TO/TEST/TRUE/THEN/TABLE/*
-         *UNTIL/UNLESS/*
-         *VEC/VALOF/*
-         *WHILE/*
-         *$//")
+       D("MANIFEST/NE/NOT/NEQV/NEEDS/OF/OR//")
+       D("RESULTIS/RETURN/REM/RSHIFT/RV//")
+       D("REPEAT/REPEATWHILE/REPEATUNTIL//")
+       D("SWITCHON/STATIC/SLCT/SECTION//")
+       D("TO/TEST/TRUE/THEN/TABLE/UNTIL/UNLESS//")
+       D("VEC/VALOF/WHILE/$//")
 
         NULLTAG := WORDNODE  $)1
 
@@ -397,28 +389,7 @@ $(  CHAR := UPPERCASE(CHAR)
 $)
 
 AND READFLOAT() BE
-
-$(  LET EXP, N = 0, 0
-    LET FLTEN = FLOAT 10
-    DECVAL := FLOAT DECVAL; SYMB := S.NUMBER
-    IF CH='.' THEN
-    $(  RCH(); N := VALUE(CH)
-        IF N>=10 THEN BREAK
-        EXP := EXP-1
-        DECVAL := DECVAL #* FLTEN #+ FLOAT N
-    $) REPEAT
-    IF CH='E' | CH='e' THEN
-    $(  LET NEG = FALSE
-        RCH(); IF CH='+' | CH='-' THEN  $( NEG := CH='-'; RCH()  $)
-        N := DECVAL
-        READNUMBER(10)
-        TEST NEG THEN EXP := EXP - DECVAL
-                   OR EXP := EXP + DECVAL
-        DECVAL := N
-    $)
-    WHILE EXP NE 0 DO
-    $(  TEST EXP<0
-        THEN  $(  DECVAL := DECVAL #/ FLTEN; EXP := EXP + 1  $)
-          OR  $(  DECVAL := DECVAL #* FLTEN; EXP := EXP - 1  $)
-    $)
+$(  || BOOTSTRAP ONLY: MR10 CANNOT COMPILE CAMBRIDGE FLOAT/# OPERATORS.
+    || FAIL RATHER THAN PRODUCE AN INCORRECT FLOATING CONSTANT.
+    CAEREPORT(-33)
 $)
