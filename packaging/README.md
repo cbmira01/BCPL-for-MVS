@@ -53,7 +53,7 @@ It:
 - refuses ambiguous member mappings; and
 - supports `--dry-run` and redacted `--show-jcl` inspection.
 
-`SOURCE` is intentionally present but currently has no population mapping. `LOAD` is build output and is not populated from Git.
+`SOURCE` has explicit Cambridge bootstrap/compiler member mappings, including generated demoted sources under `workarea/bootstrap-cambridge/`. Those generated host artifacts must exist before `dspal populate SOURCE`. `LOAD` remains build output and is not populated from Git.
 
 ## Local configuration and credentials
 
