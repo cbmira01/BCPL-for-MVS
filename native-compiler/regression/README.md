@@ -477,7 +477,11 @@ proven.
 
 ### 20-pointer-return
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 1004 emitted `42`; ASM/LKED/GO all RC=0000.
+
+Generated S/370 confirms that IDPTR receives V in R7 and returns the same
+BCPL word pointer in R7. START stores the returned pointer in local P and
+then dereferences P!1 successfully.
 
 START creates a local vector, stores 42 in `V!1`, calls `IDPTR(V)`,
 stores the returned pointer in P, then dereferences `P!1` and reports the
