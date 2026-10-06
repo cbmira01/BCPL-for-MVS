@@ -405,3 +405,21 @@ This establishes the function-result side of the native BCPL calling
 convention. Generated S/370 must show ADD returning its result in the
 caller-visible result register and START consuming that returned value before
 Test 16 is considered fully proven.
+
+### 17-nested-calls
+
+Status: **DEFINED** — not yet run.
+
+START calls `DOUBLE(21)`; DOUBLE calls `ADD(X,X)`; ADD returns 42;
+DOUBLE propagates that result; START passes the final value to DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This extends Test 16 from one ordinary function call to nested generated
+calls. Generated S/370 must show DOUBLE creating its own call frame,
+invoking ADD, receiving the R7 result, and returning that result to START
+before Test 17 is considered fully proven.
