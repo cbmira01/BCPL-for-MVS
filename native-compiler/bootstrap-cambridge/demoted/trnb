@@ -1,6 +1,8 @@
 || BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "TRNB".
 || SECTION wrapper omitted for MR10 source-dialect compilation.
 || Historical HEADERS(...) GET names mapped to MVS DDNAMEs.
+|| Unary ABS implementation spelling demoted for MR10 compatibility.
+|| OCODE WRBYTE advances after two MR10 host bytes per word.
 GET "LIBHDR"
 GET "TRNHDR"
 
@@ -281,7 +283,10 @@ $(  IF X=0 THEN RESULTIS 0
 
             CASE S.NEG: RESULTIS -EVALCONST(H2X)
             CASE S.NOT: RESULTIS NOT EVALCONST(H2X)
-            CASE S.ABS: RESULTIS ABS EVALCONST(H2X)
+            CASE S.ABS:
+            $(  LET E = EVALCONST(H2X)
+                RESULTIS E<0 -> -E, E
+            $)
 
             CASE S.NAME:
             $(  LET T = CELLWITHNAME(X)
@@ -577,7 +582,8 @@ $)
 
 AND WRBYTE(N) BE $( PUTBYTE(OBUFP, OBUFB, N)
                     OBUFB := OBUFB+1
-                    IF OBUFB=BYTESPERWORD THEN
+                    || BOOTSTRAP HOST: MR10 STORES TWO BYTES PER WORD.
+                    IF OBUFB=2 THEN
                          OBUFP, OBUFB := OBUFP+1, 0
                     CHECKWORKSPACE()
                  $)
