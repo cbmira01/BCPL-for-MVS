@@ -274,3 +274,22 @@ byte address; the later load independently reloads both I and V and performs
 the same address calculation.
 
 This establishes variable vector subscripting for both store and load.
+
+### 11-vector-procedure-argument
+
+Status: **DEFINED** — not yet run.
+
+Creates a local `VEC 2`, stores `42` into `V!1`, and passes `V` to
+a separate BCPL procedure. The callee dereferences `V!1` and sends the
+value to `DEBUGINT`.
+
+Expected output:
+
+```text
+42
+```
+
+This extends Test 10 by proving that a BCPL vector word pointer can cross an
+ordinary procedure-call boundary and remain dereferenceable in the callee.
+Generated S/370 must show pointer argument passing and callee-side vector
+dereference before Test 11 is considered fully proven.
