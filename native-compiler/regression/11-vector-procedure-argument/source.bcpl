@@ -1,0 +1,15 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET SHOW(V) BE
+$(1
+    DEBUGINT(V!1)
+$)1
+
+LET START () BE
+$(1
+    LET V = VEC 2
+
+    V!1 := 42
+    SHOW(V)
+    FINISH
+$)1
