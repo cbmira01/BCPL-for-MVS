@@ -235,18 +235,15 @@ runtime's former G!0..G!150 static-capacity limit.
 
 ### 08-local-vector-store-load
 
-Status: **DEFINED** — not yet run.
+Status: **PASS** — Job 980 emitted `42`; ASM/LKED/GO all RC=0000.
 
-Creates a local `VEC 2`, stores `42` into `V!0`, then reloads that
-element and passes it to `DEBUGINT`.
+Creates a local `VEC 2`, stores 42 into `V!0`, then reloads that element
+and passes it to DEBUGINT.
 
-Expected output:
+Generated S/370 proves the local-vector representation: the byte address
+`16(R5)` is shifted right two bits to form the BCPL word pointer, and
+`0(7,7)` after doubling R7 reconstructs four times that pointer for both
+the fullword store and later load.
 
-```text
-42
-```
-
-This test introduces local vector representation and indexed word
-store/load while deliberately avoiding GETVEC, FREEVEC, BLIB, and heap
-allocation. Generated S/370 must show real vector address formation plus
-the store and later load before Test 08 is considered fully proven.
+This establishes local vector allocation, BCPL word-pointer representation,
+and `!0` word store/load without GETVEC, FREEVEC, BLIB, or heap allocation.
