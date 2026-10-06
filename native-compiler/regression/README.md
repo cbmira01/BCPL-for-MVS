@@ -150,7 +150,7 @@ reconstructed.
 
 ### 03-single-character-output
 
-Status: **DEFINED** — not yet expected to pass.
+Status: **IMPLEMENTED, AWAITING RUN** — narrow G!14 WRCH to SYSPRINT.
 
 Introduces the first observable native output through `WRCH`.
 
