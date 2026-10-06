@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """PDS member listing for dspal.
 
-A specific DATASET lists only member names.  With no operand, one TSO job
-queries every managed PDS and prints a labelled inventory, including empty
-and missing libraries.  A specific DATASET that lacks a MEMBERS block remains
-an error rather than being silently treated as empty.
+A specific DATASET prints a labelled, indented member inventory.  With no
+operand, one TSO job queries every managed PDS and prints the same labelled
+form for each library, including empty and missing libraries.  A specific
+DATASET that lacks a MEMBERS block remains an error rather than being silently
+treated as empty.
 """
 
 from __future__ import annotations
@@ -217,8 +218,14 @@ def cmd_ls(
         return 0
 
     block = require_members_block(report, dsn, job, [dsn])
-    for member in parse_members(block):
-        print(member)
+    members = parse_members(block)
+
+    print(f"{dsn}:")
+    if members:
+        for member in members:
+            print(f"    {member}")
+    else:
+        print("    (empty)")
     return 0
 
 
