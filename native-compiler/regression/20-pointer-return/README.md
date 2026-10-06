@@ -87,4 +87,65 @@ The pointer returned here refers to caller-owned local vector storage.
 
 ## Status
 
-DEFINED. Not yet run.
+PASS.
+
+Job 1004 on 2026-10-06 assembled, link-edited, and executed successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+Generated-code inspection confirms the pointer-return contract.
+
+IDPTR receives V in R7 and returns immediately without altering R7:
+
+```asm
+STM 4,7,0(15)
+LR 5,15
+BCR 15,11
+```
+
+Because R7 is both argument 1 and the function-result register, the incoming
+BCPL word pointer becomes the returned pointer unchanged.
+
+The caller then stores that returned R7 value in local P:
+
+```asm
+L  7,12(5)
+LA 15,32(5)
+L  4,0+L2-L4(4)
+BALR 6,4
+ST 7,28(5)
+```
+
+It then dereferences the returned pointer directly:
+
+```asm
+AR 7,7
+L  7,4(7,7)
+```
+
+The loaded vector element reaches DEBUGINT and emits 42.
+
+
+### Contract established
+
+Test 20 establishes that BCPL pointer values use the ordinary function-result
+path without translation:
+
+- a BCPL word pointer is passed to a function in R7;
+- the function returns the pointer in R7;
+- the caller stores the returned pointer as an ordinary local scalar;
+- the returned pointer remains valid for later vector dereference;
+- pointer identity and representation survive the call/return boundary.
+
+This is direct groundwork for pointer-returning runtime services such as
+GETVEC.
