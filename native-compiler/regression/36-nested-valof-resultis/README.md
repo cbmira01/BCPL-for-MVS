@@ -56,9 +56,12 @@ A successful run must:
 - show generated S/370 with two distinct continuation labels, one for the inner
   VALOF and one for the outer VALOF.
 
-The first successful run should be inspected once to characterize the exact
-CG370 nested-continuation pattern.
+The first successful run was inspected. CG370 emitted `RESULTIS 17` as an R7
+load followed by an unconditional branch to inner continuation `L4`. At `L4`
+the value is stored as Y, execution continues inside the outer VALOF, adds 25,
+and the outer RESULTIS branches to distinct continuation `L3`. At `L3`, R7 is
+stored as the value of the outer VALOF.
 
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
