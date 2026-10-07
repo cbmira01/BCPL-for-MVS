@@ -58,6 +58,54 @@ A successful run must:
 - show indirect load/store through P; and
 - preserve the established BCPL word-pointer convention.
 
+## Observed generated convention
+
+The first native run passed with output `42`.
+
+CG370 formed the BCPL pointer to local X by first taking its System/370 byte
+address and then converting that byte address to a BCPL word address:
+
+```asm
+ LA 8,12(5)
+ SRL 8,2(0)
+ ST 8,16(5)
+```
+
+Thus local P contains `byte-address(X) / 4`, confirming the established BCPL
+word-pointer representation.
+
+For monadic indirection, CG370 loaded P and converted the BCPL word address back
+to a byte address implicitly by using the same register as both base and index:
+
+```asm
+ AR 8,8
+ L  9,0(8,8)
+ ...
+ ST 9,0(8,8)
+```
+
+After `AR 8,8`, R8 contains twice the word pointer. Address formation
+`0(8,8)` adds R8 to itself again, producing four times the word pointer: the
+original System/370 byte address.
+
+The addition of 25 was emitted through CG370's halfword constant pool:
+
+```asm
+ AH 9,0+L997-L1(4)
+...
+L997 EQU * HALF WORD CONSTANTS
+ DC H'25'
+```
+
+The final direct load of X:
+
+```asm
+ L 7,12(5)
+```
+
+observed the value written through P, proving that address-of and monadic
+indirection designate the same local scalar storage.
+
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
