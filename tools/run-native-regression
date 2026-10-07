@@ -33,7 +33,7 @@ def parse_args() -> argparse.Namespace:
         "start",
         nargs="?",
         type=number,
-        default=0,
+        default=None,
         help="single test number, or first test when END is also supplied",
     )
     parser.add_argument(
@@ -84,13 +84,12 @@ def main() -> int:
         print(f"run-native-regression: {exc}", file=sys.stderr)
         return 65
 
-    if args.end is None:
-        if len(sys.argv) == 1:
-            start = 0
-            end = highest
-        else:
-            start = args.start
-            end = args.start
+    if args.start is None:
+        start = 0
+        end = highest
+    elif args.end is None:
+        start = args.start
+        end = args.start
     else:
         start = args.start
         end = args.end
