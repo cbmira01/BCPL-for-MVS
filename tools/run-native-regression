@@ -13,7 +13,14 @@ ROOT = Path(__file__).resolve().parent.parent
 REGRESSION = ROOT / "native-compiler" / "regression"
 RUNNER = REGRESSION / "run-test-mvs.sh"
 LOG_DIR = ROOT / "workarea" / "native-regression" / "logs"
-CASE_RE = re.compile(r"^(\d\d)-")
+CASE_RE = re.compile(r"^(\\d{2,3})-")
+
+
+def case_id(test_no: int) -> str:
+    if not 0 <= test_no <= 999:
+        raise ValueError(f"test number out of range: {test_no}")
+    width = 2 if test_no <= 52 else 3
+    return f"{test_no:0{width}d}"
 
 
 def number(value: str) -> int:
@@ -61,9 +68,16 @@ def discover() -> tuple[dict[int, str], int]:
         match = CASE_RE.match(path.name)
         if not match:
             continue
-        test_no = int(match.group(1), 10)
+        raw_id = match.group(1)
+        test_no = int(raw_id, 10)
+        expected_id = case_id(test_no)
+        if raw_id != expected_id:
+            raise RuntimeError(
+                f"noncanonical test directory {path.name!r}: "
+                f"test {test_no} must use prefix {expected_id}-"
+            )
         if test_no in cases:
-            raise RuntimeError(f"duplicate test number {test_no:02d}")
+            raise RuntimeError(f"duplicate test number {case_id(test_no)}")
         cases[test_no] = path.name
 
     if not cases:
@@ -112,7 +126,7 @@ def main() -> int:
     if missing:
         for test_no in missing:
             print(
-                f"run-native-regression: missing test {test_no:02d} "
+                f"run-native-regression: missing test {case_id(test_no)} "
                 "in requested range",
                 file=sys.stderr,
             )
@@ -124,10 +138,13 @@ def main() -> int:
     passed = 0
     failed = 0
 
-    print(f"NATIVE REGRESSION  {start:02d}..{end:02d}  ({total} tests)")
+    print(
+        f"NATIVE REGRESSION  {case_id(start)}..{case_id(end)}  "
+        f"({total} tests)"
+    )
 
     for test_no in range(start, end + 1):
-        nn = f"{test_no:02d}"
+        nn = case_id(test_no)
         case_name = cases[test_no]
         log = LOG_DIR / f"{case_name}.log"
 
@@ -139,7 +156,7 @@ def main() -> int:
                 env = os.environ.copy()
                 env["NATIVE_REGRESSION_SHOW_OUTPUT"] = "1"
             proc = subprocess.run(
-                ["bash", str(RUNNER), nn],
+                ["bash", str(RUNNER), str(test_no)],
                 cwd=ROOT,
                 stdout=handle,
                 stderr=subprocess.STDOUT,
