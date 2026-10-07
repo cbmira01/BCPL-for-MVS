@@ -879,6 +879,23 @@ The generated S/370 should show the true and false RESULTIS paths converging on
 the same VALOF continuation while preserving the selected value in the ordinary
 expression/result register.
 
+### 36-nested-valof-resultis
+
+Status: **PENDING** — ready for first native run.
+
+Extends the VALOF/RESULTIS regressions to nested continuations. The inner
+RESULTIS must exit only the inner VALOF and yield 17; execution then resumes in
+the outer VALOF, whose RESULTIS yields 42.
+
+Expected output:
+
+```text
+42
+```
+
+The generated S/370 should show two distinct continuation labels: one for the
+inner VALOF and one for the outer VALOF.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
