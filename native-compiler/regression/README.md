@@ -920,6 +920,22 @@ The first successful run should be inspected to verify that the generated
 trailer contains all user-global export pairs plus START, and that START loads
 the three callable addresses from G at byte displacements 604, 608, and 612.
 
+### 38-putbyte-getbyte-roundtrip
+
+Status: **PENDING** — ready for first native run.
+
+Introduces native G!86 PUTBYTE and verifies the stored byte by reading the same
+location through already-proven G!85 GETBYTE.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates the machine-dependent byte-store path, including BCPL word-pointer
+to byte-address conversion, byte-offset arithmetic, and three-argument linkage.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
