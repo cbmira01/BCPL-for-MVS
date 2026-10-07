@@ -98,4 +98,28 @@ A successful run must:
 
 ## Status
 
-PENDING.
+PASS.
+
+Jobs 1133 and 1134 on 2026-10-07 compiled the application and library as
+separate BCPL compilation units using the resident Cambridge compiler path.
+Job 1135 then assembled, link-edited, and executed the combined native result:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+The successful run establishes the intended narrow contract: ADD was generated
+from the separate library compilation, installed at G!151 by the merged
+trailer, called by the application through the global vector, and returned its
+result through the ordinary R7 convention.
+
+The static combiner remains regression scaffolding. This PASS does not yet
+establish unchanged multi-section native linkage or reconstructed LOAD/UNLOAD.
