@@ -684,7 +684,7 @@ GIDONE   L     4,4(12)
          ST    1,220(12)
 *
 * G!14 = first narrow native WRCH implementation for Regression 03.
-* G!76 = first narrow literal WRITEF implementation for Regression 053.
+* G!76 = bootstrap WRITEF, extended through Regression 055.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
 * G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
@@ -923,7 +923,7 @@ WRCHRTN  L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
-* WRITEF -- LITERAL + %N BOOTSTRAP
+* WRITEF -- LITERAL + %N/%C/%S BOOTSTRAP
 *
 * Regression 053 established literal-string output through G76.
 * Regression 054 adds the historical BLIB %N case: decimal output of
@@ -981,7 +981,7 @@ WFLITCP  LA    14,1(14)
          BAL   10,WFPUTC
          B     WFLITLP
 *
-* Emit signed decimal WFARG1 using the proven CVD/UNPK shape already
+* Emit the current signed integer using the proven CVD/UNPK shape
 * used by DEBUGINT, then copy digits through the common byte appender.
 *
 WFNUM    ST    8,WFREM
