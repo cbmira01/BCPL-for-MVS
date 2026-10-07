@@ -245,41 +245,18 @@ job=$(awk '/^JOB [0-9]+$/ {print $2}' <<<"$submit" | tail -1)
 echo
 echo "=== Wait for complete job report ==="
 
-expected_output() {
-    case "$test_no" in
-        03) printf '%s\n' "A" ;;
-        04) printf '%s\n' "HELLO" ;;
-        05) printf '%s\n' "42" ;;
-        06) printf '%s\n' "X42" ;;
-        07) printf '%s\n' "42" ;;
-        08) printf '%s\n' "42" ;;
-        09) printf '%s\n' "42" ;;
-        10) printf '%s\n' "42" ;;
-        11) printf '%s\n' "42" ;;
-        12) printf '%s\n' "42" ;;
-        13) printf '%s\n' "42" ;;
-        14) printf '%s\n' "42" ;;
-        15) printf '%s\n' "42" ;;
-        16) printf '%s\n' "42" ;;
-        17) printf '%s\n' "42" ;;
-        18) printf '%s\n' "42" ;;
-        19) printf '%s\n' "42" ;;
-        20) printf '%s\n' "42" ;;
-        21) printf '%s\n' "42" ;;
-        22) printf '%s\n' "42" ;;
-        23) printf '%s\n' "42" ;;
-        24) printf '%s\n' "42" ;;
-        25) printf '%s\n' "42" ;;
-        26) printf '%s\n' "42" ;;
-        27) printf '%s\n' "42" ;;
-        28) printf '%s\n' "42" ;;
-        29) printf '%s\n' "424242" ;;
-        30) printf '%s\n' "4242" ;;
-        31) printf '%s\n' "42" ;;
-        32) printf '%s\n' "42" ;;
-        *)  return 1 ;;
-    esac
+expected_file="$case_dir/expected.txt"
+
+[[ -f "$expected_file" ]] || {
+    echo "run-test: missing $expected_file" >&2
+    exit 66
 }
+
+expected_output() {
+    [[ -s "$expected_file" ]] || return 1
+    cat "$expected_file"
+}
+
 
 show_bcpl_output() {
     local expected report emitted
