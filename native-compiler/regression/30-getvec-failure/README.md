@@ -60,9 +60,10 @@ First attempt: Job 1144 compiled the BCPL source successfully. Job 1145
 failed in IFOX with RC=0008 before link-edit or execution. A syntax cleanup
 was tried, but Job 1147 also failed in IFOX with RC=0008.
 
-The underlying issue was then identified: the older OS/360-style GETMAIN
-macro interface used by this toolchain has unconditional register form R,
-but conditional single-area allocation is form EC rather than the later
-register-conditional RC form. The WIP now uses GETMAIN EC with A=GVRADDR
-and tests the completion code returned in R15. The behavioral contract of
-the test is unchanged.
+The underlying GETMAIN interface was then corrected to the historical EC
+form. Job 1149 proved that GETMAIN EC itself expands successfully. The sole
+IFOX diagnostic was IFO209 on the preceding C 7,=F'4194299' instruction:
+the literal had been placed at the end of the CSECT beyond active base
+addressability after DROP 10. The bound is now stored as nearby WIP data
+(GVRMAX), addressable through the active SYSV/R11 base. The behavioral
+contract of the test is unchanged.
