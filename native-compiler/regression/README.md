@@ -622,6 +622,35 @@ It does **not** claim that native LOAD/UNLOAD or unchanged independently
 linked BCPL sections work yet. Removing the static-combiner accommodation is
 a later loader/linkage milestone.
 
+### 26-separately-assembled-native-through-g
+
+Status: **PENDING**.
+
+Compiles a BCPL application that declares NATIVEADD as G!151 but provides no
+BCPL definition. Regression scaffolding extends the generated trailer with an
+external `NATIVEAD` address. The BCPL/runtime source and `native.asm` are
+then assembled in separate IFOX steps, and IEWL resolves NATIVEAD across the
+two object decks.
+
+Expected output:
+
+```text
+42
+```
+
+This test is intended to establish:
+
+- an application-written native routine can be linked separately from the
+  generated BCPL module;
+- G!151 can contain the linkage-editor-resolved native entry address;
+- generated BCPL can call that native routine through R12/G;
+- R7/R8 argument passing survives the BCPL-to-assembler boundary; and
+- a native routine can return a function result in R7 through the ordinary
+  BCPL system-vector return trampoline.
+
+The generated-trailer augmentation remains regression scaffolding; this test
+does not yet define the final mixed-language programmer interface.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
