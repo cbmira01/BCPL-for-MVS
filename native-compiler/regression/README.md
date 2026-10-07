@@ -825,6 +825,26 @@ system-vector procedure-return trampoline: R4 must be reloaded from the restored
 caller frame, not from the callee frame. A later FREEVEC-specific regression may
 also make successful MVS storage release more directly observable.
 
+### 33-caller-base-after-function-return
+
+Status: **PENDING** — ready for first native run.
+
+Calls a trivial function returning 17, then immediately performs caller-side
+conditional control flow and emits 42 on the correct path or 99 on failure.
+
+This is a foundation regression for the corrected procedure-return trampoline.
+Its purpose is to distinguish restoration of R4 from the callee frame from the
+required restoration of R4 from the restored caller frame. On the first run,
+the generated S/370 must be inspected to confirm that the post-call TEST uses an
+R4-relative branch; otherwise the source should be reshaped before the test is
+considered established.
+
+Expected output:
+
+```text
+42
+```
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
