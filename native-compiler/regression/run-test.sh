@@ -328,6 +328,13 @@ while (( SECONDS <= deadline )); do
         report=$(
             bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
         )
+        printf '%s\n' "$report" >"$work/job-report.txt"
+
+        if [[ ${NATIVE_REGRESSION_SHOW_OUTPUT:-0} == 1 ]]; then
+            echo
+            echo "=== Native job report ==="
+            cat "$work/job-report.txt"
+        fi
 
         if expected_output >/dev/null 2>&1 &&
            show_bcpl_output &&
