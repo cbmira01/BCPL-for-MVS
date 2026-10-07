@@ -989,7 +989,7 @@ historical BCPL language documentation.
 
 ### 42-manifest-constant-expression
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Declares `LEFT=17`, `RIGHT=25`, and `ANSWER=LEFT+RIGHT` in a MANIFEST block,
 then emits ANSWER through DEBUGINT.
