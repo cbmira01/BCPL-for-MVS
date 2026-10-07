@@ -589,7 +589,9 @@ show ADD exported as G!151 and START loading its callable address from
 
 ### 25-separately-compiled-bcpl-library
 
-Status: **PENDING**.
+Status: **PASS** — Jobs 1133/1134 compiled the application and library
+separately; Job 1135 assembled, link-edited, and executed the combined native
+result successfully on 2026-10-07, emitting `42`.
 
 Compiles the application and a tiny ADD library as two independent BCPL
 compilation units. The application declares ADD as G!151 but does not define
