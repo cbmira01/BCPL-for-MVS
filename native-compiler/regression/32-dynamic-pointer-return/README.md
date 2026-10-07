@@ -21,8 +21,8 @@ LET MAKE() = GETVEC(2)
 
 The GETVEC result therefore becomes the ordinary BCPL function result directly.
 START stores that returned pointer in local P. If P is zero, the test emits 99.
-Otherwise START stores 42 in `P!1`, reloads and reports that value through
-DEBUGINT, then releases the same allocation with `FREEVEC(P)`.
+Otherwise START stores 42 in `P!1`, then reloads and reports that value through
+DEBUGINT. The test deliberately does not call FREEVEC.
 
 ## Contract under test
 
@@ -37,8 +37,7 @@ The returned pointer must therefore:
 
 - survive function return unchanged;
 - remain writable and readable in the caller;
-- still identify the original dynamic allocation; and
-- remain acceptable to FREEVEC.
+- still identify the original dynamic allocation.
 
 No BCPLMAIN change should be required.
 
@@ -66,8 +65,7 @@ A successful run must:
 - emit exactly `42`;
 - show MAKE returning the GETVEC result through the ordinary R7 result path;
 - show START storing/reloading that returned pointer;
-- show START writing and reading `P!1` after MAKE has returned; and
-- show FREEVEC receiving the same returned dynamic pointer.
+- show START writing and reading `P!1` after MAKE has returned.
 
 ## Scope
 
@@ -75,8 +73,17 @@ This is a composition/stability test. It introduces no new allocator policy,
 loader feature, calling convention, or runtime service.
 
 The current storage policy remains one MVS GETMAIN allocation per GETVEC and
-one matching FREEMAIN per FREEVEC.
+one matching FREEMAIN per FREEVEC, but deallocation is intentionally outside
+this test's acceptance criteria.
 
 ## Status
 
-PENDING — narrowed after the first S0C4 run and ready for retest.
+PENDING — narrowed to isolate dynamic-pointer return and ready for retest.
+
+## FREEVEC note
+
+The preceding version called FREEVEC(P) after proving the returned pointer was
+usable. That mixed the dynamic-pointer-return contract with MVS storage release.
+Recent S0C6 evidence occurs in the FREEMAIN path, so Test 32 now stops after the
+caller successfully dereferences the returned pointer. FREEVEC remains covered
+by Tests 28 and 29 and will receive a stronger dedicated verification test.
