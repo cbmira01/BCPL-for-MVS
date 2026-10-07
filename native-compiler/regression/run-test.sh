@@ -25,6 +25,7 @@ fi
 case_dir=${matches[0]}
 case_name=$(basename "$case_dir")
 source="$case_dir/source.bcpl"
+library="$case_dir/library.bcpl"
 
 [[ -f "$source" ]] || {
     echo "run-test: missing $source" >&2
@@ -54,9 +55,45 @@ generated="$work/generated.s370.asm"
 
 mv -f "$generated_root" "$generated"
 
+library_generated=""
+if [[ -f "$library" ]]; then
+    library_copy="$work/$case_name-library.bcpl"
+    cp "$library" "$library_copy"
+
+    library_job="RG${test_no}LIB"
+
+    echo
+    echo "=== Cambridge library compile: $case_name ==="
+    python3 "$compiler_driver" \
+        "$library_copy" \
+        --job-name "$library_job" \
+        --listing light \
+        --timeout 180 || exit $?
+
+    library_generated_root="$root/workarea/$case_name-library.s370.asm"
+    library_generated="$work/library-generated.s370.asm"
+
+    [[ -f "$library_generated_root" ]] || {
+        echo "run-test: library Cambridge CODE was not recovered: $library_generated_root" >&2
+        exit 66
+    }
+
+    mv -f "$library_generated_root" "$library_generated"
+fi
+
 combined="$work/native-test.asm"
 entry="BCRG00${test_no}"
 
+if [[ -n "$library_generated" ]]; then
+    echo
+    echo "=== Combine separately compiled BCPL units ==="
+    python3 "$script_dir/combine-separate-bcpl.py" \
+        "$generated" \
+        "$library_generated" \
+        "$root/asm/bcplmain-wip.asm" \
+        "$combined" \
+        "$entry" || exit $?
+else
 python3 - "$generated" "$root/asm/bcplmain-wip.asm"     "$combined" "$entry" <<'PY'
 from pathlib import Path
 import re
@@ -131,6 +168,7 @@ for number, line in enumerate(combined.splitlines(), 1):
 
 output_path.write_text(combined, encoding="ascii", newline="\n")
 PY
+fi
 
 echo
 echo "=== Assembler preflight ==="
@@ -199,6 +237,7 @@ expected_output() {
         22) printf '%s\n' "42" ;;
         23) printf '%s\n' "42" ;;
         24) printf '%s\n' "42" ;;
+        25) printf '%s\n' "42" ;;
         *)  return 1 ;;
     esac
 }
