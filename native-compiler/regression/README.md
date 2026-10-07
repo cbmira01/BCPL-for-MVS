@@ -1221,6 +1221,33 @@ code; its successful five-level non-tail-recursive run proves that the checked
 entry contract from Tests 48-50 composes across repeated workspaces and ordinary
 unwind. No WORKEND comparison or overflow behavior is claimed.
 
+### 52-controlled-stack-overflow
+
+Status: **PENDING** — first controlled checked-stack boundary failure.
+
+Uses a non-tail-recursive DEPTH with local `VEC 255`, making each activation
+large enough to cross the current 16 KiB static WORK area after a modest number
+of calls.
+
+The historical checkpoint is recorded in `docs/stack-check-contract.md`.
+BCPLMAC proves the existence of a byte-addressed safe stack limit (`STKLIM`)
+distinct from the byte beyond allocated stack (`STKHIGH`), and BLIB identifies
+system code `X'0D3'` as stack overflow.
+
+Because the original machine-code STKCK body is not present, the WIP rule is:
+
+```text
+W + generated-frame-size <= STKLIM
+```
+
+with WORKEND provisionally serving as STKLIM. Expected bootstrap output is:
+
+```text
+STACK OVERFLOW
+```
+
+The test does not yet claim historical ABORT/STOP(100) integration.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
