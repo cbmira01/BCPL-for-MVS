@@ -347,6 +347,33 @@ new regressions.
    - Test 23 covers structured control flow but does not isolate label/GOTO
      generation.
 
+
+5. **TABLE semantics beyond basic construction**
+   - Test 41 proves that CG370 emits TABLE data as initialized module-resident
+     storage and yields a BCPL word pointer to the first element.
+   - Additional semantic questions remain worth testing because TABLE can appear
+     inside lexical scopes even though its storage is static:
+     - if a procedure containing a TABLE is exited and re-entered, does it
+       observe the same underlying TABLE object?
+     - if TABLE storage is modified through its pointer, is the modification
+       visible on the next activation?
+     - can a TABLE pointer safely escape its lexical scope and remain valid?
+     - do two syntactically distinct TABLE expressions with identical contents
+       receive distinct storage objects, or may the compiler coalesce them?
+     - what initialization forms are accepted: constants only, manifest
+       expressions, addresses, mixed expressions?
+     - how are nested or deeply scoped TABLE expressions laid out relative to
+       procedure/code bases?
+     - is TABLE storage writable in practice on this target, and is that
+       behavior relied upon by historical BCPL code?
+   - A strong follow-up regression is re-entry persistence:
+     mutate one TABLE element on the first call and prove that the second call
+     sees the modified value. Expected observation for shared static storage:
+     18 then 19, not 18 then 18.
+   - This is both corpus-driven and documentation-driven: Cambridge uses TABLE
+     directly, while the historical language definition describes TABLE as an
+     initialized static vector expression.
+
 5. **Address-of and monadic indirection**
    - Core standard BCPL operations.
    - Existing pointer/vector tests prove pointer values and dyadic `!`, but do
@@ -405,14 +432,15 @@ to closing clearly observed compiler-language gaps.
 
 Recommended order, one new thing at a time:
 
-- **40 — STATIC scalar persistence/addressing**
-- **41 — TABLE constant vector**
+- **40 — STATIC scalar persistence/addressing** — PASS
+- **41 — TABLE constant vector** — PASS
 - **42 — MANIFEST constant expression**
 - **43 — label/GOTO**
 - **44 — address-of plus monadic indirection**
 - **45 — shifts and bitwise operators**
 - **46 — multiply/divide/REM**
 - **47 — multiple assignment**
+- **later TABLE semantic probe — re-entry persistence / pointer escape / distinct-object behavior**
 
 The exact numbering after 40 should remain flexible. A failing test or newly
 discovered historical requirement may deserve insertion before later candidates.
