@@ -1067,6 +1067,24 @@ Expected output:
 This isolates the core arithmetic operators without adding runtime dependencies
 or sign/overflow edge cases.
 
+### 47-multiple-assignment
+
+Status: **PENDING** — ready for first native run.
+
+Swaps two locals with `A,B := B,A` and emits the sum plus both post-swap
+values.
+
+Expected output:
+
+```text
+42
+25
+17
+```
+
+This isolates simultaneous multiple-assignment semantics. The swap distinguishes
+correct RHS preservation from an incorrect sequential lowering.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
