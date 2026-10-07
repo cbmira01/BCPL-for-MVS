@@ -973,7 +973,7 @@ this is direct corpus-driven coverage.
 
 ### 41-table-constant-vector
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Uses `TABLE 17,25` and emits `T!0 + T!1` through DEBUGINT.
 
