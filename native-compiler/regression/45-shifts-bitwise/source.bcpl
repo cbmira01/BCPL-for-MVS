@@ -1,0 +1,14 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET A = 3 << 4
+    LET B = A >> 1
+    LET C = B | 2
+    LET D = C & 7
+    LET E = D EQV 5
+    LET F = E NEQV 0
+
+    DEBUGINT((F & 1) + 41)
+    FINISH
+$)1
