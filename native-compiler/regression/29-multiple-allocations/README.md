@@ -72,4 +72,28 @@ the contract.
 
 ## Status
 
-PENDING.
+PASS.
+
+Job 1142 on 2026-10-07 compiled the BCPL test through the resident Cambridge
+compiler path. Job 1143 then assembled, link-edited, and executed the native
+program successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+424242
+```
+
+This establishes executable evidence that several GETVEC allocations can
+remain live simultaneously, VECLIST chaining remains coherent across middle,
+head, and tail removal, and surviving vectors retain their contents after
+other allocations are released. The test also proves that a new allocation
+can be inserted after an interior free and later removed normally.
+
+Exact MVS storage addresses and address reuse remain outside the contract.
