@@ -6,7 +6,7 @@ $(1
     LET V = 0
 
     $(2
-        V := GETVEC(262140)
+        V := GETVEC(252)
         IF V = 0 DO BREAK
         V!0 := HEAD
         HEAD := V
@@ -17,7 +17,7 @@ $(1
     OR
     $(2
         FREEVEC(HEAD)
-        V := GETVEC(262140)
+        V := GETVEC(252)
 
         TEST V = 0
         THEN DEBUGINT(99)
