@@ -59,6 +59,46 @@ A successful run must:
 The first successful run should be inspected to identify the exact CG370 static
 layout/addressing convention.
 
+## Observed generated convention
+
+The first native run passed with output `42`.
+
+CG370 emitted the STATIC cell as module-resident data:
+
+```asm
+L1 EQU *
+ DC F'17'
+```
+
+BUMP addresses that same cell relative to its procedure base in R4:
+
+```asm
+ LA 7,25(0)
+ A  7,0+L1-L2(4)
+ ST 7,0+L1-L2(4)
+```
+
+START later reloads the same static cell relative to its own procedure base:
+
+```asm
+ L  7,0+L1-L5(4)
+```
+
+The assembler therefore resolves the same module label from different generated
+procedure-base values. STATIC storage is persistent module data, not workspace
+storage.
+
+The callable address for BUMP is separately emitted as a fullword address
+constant:
+
+```asm
+L3 EQU *
+ DC A(0+L2)
+```
+
+This is useful evidence about the separation between static data and generated
+procedure-entry constants in the module trailer/data area.
+
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
