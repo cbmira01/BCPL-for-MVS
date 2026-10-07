@@ -624,7 +624,9 @@ a later loader/linkage milestone.
 
 ### 26-separately-assembled-native-through-g
 
-Status: **PENDING**.
+Status: **PASS** — Job 1136 compiled the BCPL application; Job 1137 assembled
+the BCPL/runtime source and native routine separately, linked them with IEWL,
+and executed successfully on 2026-10-07, emitting `42`.
 
 Compiles a BCPL application that declares NATIVEADD as G!151 but provides no
 BCPL definition. Regression scaffolding extends the generated trailer with an
