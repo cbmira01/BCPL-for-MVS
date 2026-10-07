@@ -68,6 +68,56 @@ A successful run must:
 - show native code corresponding to multiply, divide, and REM;
 - require no new BCPLMAIN runtime service.
 
+## Observed generated convention
+
+The first native run passed with output `42`.
+
+CG370 emitted multiplication directly with `MH`:
+
+```asm
+ LA 7,7(0)
+ MH 7,0+L997-L1(4)
+ ST 7,12(5)
+```
+
+with the halfword constant pool containing 6.
+
+For integer division, CG370 loaded the dividend into R6, sign-extended it across
+the even/odd pair R6:R7 with `SRDA 6,32(0)`, then divided by the fullword
+constant 6:
+
+```asm
+ LA 6,43(0)
+ SRDA 6,32(0)
+ D  6,0+L996-L1(4)
+ ST 7,16(5)
+```
+
+After System/370 `D`, the quotient is in the odd register R7 and the remainder
+is in the even register R6. The quotient path therefore stores R7.
+
+REM uses the same divide sequence but stores R6 instead:
+
+```asm
+ LA 6,43(0)
+ SRDA 6,32(0)
+ D  6,0+L996-L1(4)
+ ST 6,20(5)
+```
+
+The final expression reuses the live remainder in R6:
+
+```asm
+ L  7,16(5)
+ A  7,12(5)
+ SR 7,6
+ AH 7,2+L997-L1(4)
+```
+
+where the halfword constant pool contains `-6`.
+
+No BCPLMAIN runtime support was required.
+
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
