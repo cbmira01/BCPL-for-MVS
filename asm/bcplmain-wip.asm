@@ -938,7 +938,8 @@ WRCHRTN  L     4,0(5)
 * This is bootstrap machinery, not a reconstruction of BLIB's BCPL
 * WRITEF body.  R0 and R1-R3 remain permanent generated-code registers.
 ***********************************************************************
-WRITEST  ST    8,WFARG1
+WRITEST  STM   2,6,WFREGSV
+         ST    8,WFARG1
          LR    14,7
          SLL   14,2
          SR    8,8
@@ -969,7 +970,8 @@ WFLITCP  LA    14,1(14)
 WFNUM    L     7,WFARG1
          LTR   7,7
          BNZ   WFNZ
-         LA    7,C'0'
+         SR    7,7
+         IC    7,=C'0'
          BAL   10,WFPUTC
          B     WFLITLP
 WFNZ     SR    6,6
@@ -983,7 +985,7 @@ WFDIV    SR    2,2
          LR    3,7
          D     2,=F'10'
          LR    7,3
-         LA    2,C'0'(2)
+         LA    2,240(2)
          BCTR  4,0
          STC   2,0(4)
          LA    5,1(5)
@@ -991,7 +993,8 @@ WFDIV    SR    2,2
          BNZ   WFDIV
          LTR   6,6
          BZ    WFDCOPY
-         LA    7,C'-'
+         SR    7,7
+         IC    7,=C'-'
          BAL   10,WFPUTC
 WFDCOPY  SR    7,7
          IC    7,0(4)
@@ -1012,9 +1015,11 @@ WFPUTC   LA    4,132
          LA    9,1(9)
 WFPUTRT  BR    10
 WFLITDN  ST    9,OUTPOS
+         LM    2,6,WFREGSV
          L     4,0(5)
          BCR   15,6
 *
+WFREGSV  DS    5F
 WFARG1   DC    F'0'
 WFDIGITS DS    CL12
 WFDIGEND EQU   *
