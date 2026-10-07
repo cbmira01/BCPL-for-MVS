@@ -1,2 +1,1 @@
-^\s*BAL\s+14,60\(11\)\s*$
-^\s*DC\s+A\(L[0-9]+\)\s+STACK FRAME SIZE\s*$
+^\s*BAL\s+14,60\(11\)\s*$\n^\s*DC\s+A\(L[0-9]+\)\s+STACK FRAME SIZE\s*$
