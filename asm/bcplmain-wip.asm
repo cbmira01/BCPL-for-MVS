@@ -432,12 +432,14 @@
 *    FREEVEC walks VECLIST by VECBASE, unlinks the matching record, and
 *    issues FREEMAIN R using the recorded VECLEN and allocation base.
 *
+*    Regression 30 changes GETVEC to conditional GETMAIN RC and maps
+*    allocation failure to BCPL zero.  Negative sizes and arithmetic
+*    overflow are rejected before the MVS service call.
+*
 *    CURRENT LIMITATION:
-*    GETVEC uses unconditional GETMAIN R.  Exhaustion therefore ABENDs
-*    rather than returning a reconstructed historical failure result.
-*    Invalid FREEVEC pointers are currently ignored.  Failure/error
-*    semantics, subpool policy, and RESULT2 interaction remain to be
-*    established by later regressions.
+*    Invalid FREEVEC pointers are currently ignored.  Exact historical
+*    invalid-pointer behavior, subpool policy, and RESULT2 interaction
+*    remain to be established.
 *
 * 13. DYNAMIC LOAD / UNLOAD
 *     HISTORICAL
@@ -906,19 +908,28 @@ PUTBYTE  LR    14,7
 * fullwords.  Twelve private bytes precede the payload and mirror the
 * historical VECAREA fields VECBASE, VECLEN, and VECNEXT.
 *
-* GETMAIN R is intentionally unconditional for this first rung.
-* Allocation failure semantics are deferred to the later edge test.
+* Regression 30 changes allocation to conditional GETMAIN RC.
+* GETVEC returns zero for a negative size, arithmetic overflow, or an
+* MVS allocation failure.
 *
-* GETMAIN uses R0/R1.  Generated BCPL requires R0=0 and R1-R3 to hold
-* permanent constants, so save and restore R0-R3 around the MVS call.
+* GETMAIN RC uses R0/R1/R15.  Generated BCPL requires R0=0 and R1-R3
+* to hold permanent constants, and R15 is W.  Preserve all of them.
 ***********************************************************************
-GETVEC   STM   0,3,GVRSAVE
+GETVEC   LTR   7,7
+         BM    GVFAIL0
+         STM   0,3,GVRSAVE
+         ST    15,GVRWSAVE
          LR    10,7
          LA    10,1(10)
+         BC    1,GVFAIL
          SLL   10,2
+         BC    1,GVFAIL
          LA    10,12(10)
+         BC    1,GVFAIL
          ST    10,GVRLEN
-         GETMAIN R,LV=(10)
+         GETMAIN RC,LV=(10)
+         LTR   15,15
+         BNZ   GVFAIL
 *
 * R1 is the byte address returned by GETMAIN.  Build the WIP VECAREA
 * record in the allocated block and chain it at VECLIST.
@@ -933,10 +944,19 @@ GETVEC   STM   0,3,GVRSAVE
          ST    10,8(14)
          ST    14,VECLIST
 *
-* Restore permanent generated-code registers and the caller's B.
-* R7 deliberately retains the BCPL word pointer result.
+* Restore permanent generated-code registers and W.  R7 deliberately
+* retains the BCPL word pointer result.
 *
+         L     15,GVRWSAVE
          LM    0,3,GVRSAVE
+         L     4,0(5)
+         BCR   15,6
+*
+* Failure after register save.  Return the BCPL failure value zero.
+*
+GVFAIL   L     15,GVRWSAVE
+         LM    0,3,GVRSAVE
+GVFAIL0  SR    7,7
          L     4,0(5)
          BCR   15,6
 *
@@ -1056,6 +1076,7 @@ TRAILER  DC    F'0'
 VECLIST  DC    F'0'
 GVRLEN   DC    F'0'
 GVRSAVE  DS    4F
+GVRWSAVE DC    F'0'
 FVRSAVE  DS    4F
 FVWSAVE  DC    F'0'
 *
