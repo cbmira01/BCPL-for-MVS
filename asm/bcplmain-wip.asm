@@ -157,15 +157,27 @@
 * PROCEDURE RETURN CONTRACT
 * -------------------------
 * Generated entry saves R4..R6 (or more) at 0(R15), then sets R5=R15.
-* Calls put the return address in R6.  The return trampoline:
+* Calls put the return address in R6.
 *
-*          LM   4,6,0(5)
+* Test 32 exposed an important distinction in that saved triple:
+*
+*   0(P)  contains the current procedure's entry/base value in R4
+*   4(P)  contains the previous workspace pointer P
+*   8(P)  contains the caller return linkage
+*
+* On return, restoring R4 directly from 0(current P) leaves R4 naming
+* the callee.  Generated caller code may immediately use R4 as its own
+* base for relative branches.  The correct reconstructed sequence is:
+*
+*          L    6,8(5)      restore return linkage from callee frame
+*          L    5,4(5)      restore caller P
+*          L    4,0(5)      restore caller's R4/base from caller frame
 *          BCR  15,6
 *
-* restores callee address, previous P, and linkage, then returns.
-* Successful native procedure-call regressions, including Tests 01,
-* 11, 12, 13, and 14, have exercised this return path.  It is now
-* treated as PROVEN for ordinary generated BCPL procedure linkage.
+* Earlier regressions exercised return control but did not force an
+* immediate caller-relative branch after a generated function return.
+* Test 32 provides that missing evidence, so the former LM 4,6,0(5)
+* implementation is no longer treated as proven.
 *
 * MACHINE-DEPENDENT GLOBALS KNOWN TO BELONG TO BCPLMAIN
 * -----------------------------------------------------
@@ -785,10 +797,13 @@ SYSSTKC  BC    15,STKCIMP
 ***********************************************************************
 * PROCEDURE RETURN
 *
-* PROVEN for ordinary generated BCPL procedure linkage by successful
-* native call/return regressions through Test 14.
+* Restore linkage from the callee frame, then restore the caller's P
+* before reloading R4 from the caller frame.  Test 32 showed why R4
+* cannot be restored from 0(current P): that word names the callee.
 ***********************************************************************
-RETIMPL  LM    4,6,0(5)
+RETIMPL  L     6,8(5)
+         L     5,4(5)
+         L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
