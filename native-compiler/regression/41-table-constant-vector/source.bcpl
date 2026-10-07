@@ -1,0 +1,9 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET T = TABLE 17,25
+
+    DEBUGINT(T!0 + T!1)
+    FINISH
+$)1
