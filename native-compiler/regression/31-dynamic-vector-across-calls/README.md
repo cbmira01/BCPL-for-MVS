@@ -61,4 +61,4 @@ one matching FREEMAIN per FREEVEC.
 
 ## Status
 
-PENDING — ready for first native run.
+PASS — validated in the full 00..32 native regression panel on 2026-10-07.
