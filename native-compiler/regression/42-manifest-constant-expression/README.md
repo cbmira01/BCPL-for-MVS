@@ -71,6 +71,25 @@ A successful run must:
 - show ANSWER folded to a generated constant value rather than computed by a
   runtime add.
 
+## Observed generated convention
+
+The first native run passed with output `42`.
+
+CG370 emitted the manifest-derived value directly:
+
+```asm
+ LA 7,42(0)
+```
+
+There is no generated module storage for LEFT, RIGHT, or ANSWER, and there is no
+runtime addition corresponding to `LEFT+RIGHT`.
+
+This is direct evidence that the compiler evaluated the MANIFEST expression at
+compile time and substituted the resulting value into generated code.
+
+The result is stronger than proving literal MANIFEST binding alone: ANSWER
+depends on two previously declared MANIFEST names and an arithmetic expression.
+
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
