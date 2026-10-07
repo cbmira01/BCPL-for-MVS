@@ -19,7 +19,7 @@ Unless noted otherwise, run them from the repository root.
 | `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
 | `tools/build-cambridge-mvs` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
 | `tools/cambridge-compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
-| `tools/run-regression-panel` | Run exact-output durable regressions. |
+| `tools/run-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/run-native-regression` | Run the native regression panel from a selected start through the current test. |
 | `tools/run-demo-suite.sh` | Run the 17 general BCPL demonstrations. |
 | `tools/run-language-demos` | Run the focused BCPL language demonstrations. |
 | `tools/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
