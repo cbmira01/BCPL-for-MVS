@@ -923,21 +923,23 @@ WRCHRTN  L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
-* WRITEF -- LITERAL-STRING BOOTSTRAP
+* WRITEF -- LITERAL + %N BOOTSTRAP
 *
-* Regression 053 establishes the first executable G76 WRITEF path.
-* R7 is the BCPL word pointer to the format string.  BCPL strings use
-* a length byte at byte offset zero followed by that many data bytes.
+* Regression 053 established literal-string output through G76.
+* Regression 054 adds the historical BLIB %N case: decimal output of
+* the next argument with no width field.  For the first native step,
+* argument 1 is the format string in R7 and argument 2 is in R8.
 *
-* This first step copies those bytes literally to the existing output
-* buffer.  It deliberately does not interpret formatting directives or
-* newline characters.  Later WRITEF regressions will add those pieces.
+* BCPL strings use a length byte at byte offset zero followed by data
+* bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
+* emits the signed decimal value saved from R8.  Other '%' directives
+* remain unsupported and are copied literally for now.
 *
-* R0 and R1-R3 remain permanent generated-code registers.  R5, R6,
-* R11, R12, and R15 retain their linkage/runtime meanings.  R7-R10 and
-* R14 are scratch across this bootstrap library call.
+* This is bootstrap machinery, not a reconstruction of BLIB's BCPL
+* WRITEF body.  R0 and R1-R3 remain permanent generated-code registers.
 ***********************************************************************
-WRITEST  LR    14,7
+WRITEST  ST    8,WFARG1
+         LR    14,7
          SLL   14,2
          SR    8,8
          IC    8,0(14)
@@ -945,21 +947,77 @@ WRITEST  LR    14,7
          L     9,OUTPOS
 WFLITLP  LTR   8,8
          BZ    WFLITDN
-         LA    10,132
-         CR    9,10
-         BNL   WFLITDN
          SR    7,7
          IC    7,0(14)
-         LA    10,OUTBUF
-         AR    10,9
-         STC   7,0(10)
-         LA    14,1(14)
-         LA    9,1(9)
+         CLI   0(14),C'%'
+         BNE   WFLITCP
+         CH    8,=H'2'
+         BL    WFLITCP
+         CLI   1(14),C'N'
+         BNE   WFLITCP
+         LA    14,2(14)
+         SH    8,=H'2'
+         B     WFNUM
+WFLITCP  LA    14,1(14)
          BCTR  8,0
+         BAL   10,WFPUTC
          B     WFLITLP
+*
+* Emit signed decimal WFARG1.  Digits are built right-to-left in a
+* 12-byte temporary area, then copied through the common byte appender.
+*
+WFNUM    L     7,WFARG1
+         LTR   7,7
+         BNZ   WFNZ
+         LA    7,C'0'
+         BAL   10,WFPUTC
+         B     WFLITLP
+WFNZ     SR    6,6
+         LTR   7,7
+         BNM   WFABS
+         LA    6,1
+         LCR   7,7
+WFABS    LA    4,WFDIGEND
+         SR    5,5
+WFDIV    SR    2,2
+         LR    3,7
+         D     2,=F'10'
+         LR    7,3
+         LA    2,C'0'(2)
+         BCTR  4,0
+         STC   2,0(4)
+         LA    5,1(5)
+         LTR   7,7
+         BNZ   WFDIV
+         LTR   6,6
+         BZ    WFDCOPY
+         LA    7,C'-'
+         BAL   10,WFPUTC
+WFDCOPY  SR    7,7
+         IC    7,0(4)
+         BAL   10,WFPUTC
+         LA    4,1(4)
+         BCT   5,WFDCOPY
+         B     WFLITLP
+*
+* Append R7 low byte to OUTBUF when room remains.  R9 is OUTPOS.
+* Return through R10, which is scratch for this bootstrap WRITEF.
+*
+WFPUTC   LA    4,132
+         CR    9,4
+         BNL   WFPUTRT
+         LA    4,OUTBUF
+         AR    4,9
+         STC   7,0(4)
+         LA    9,1(9)
+WFPUTRT  BR    10
 WFLITDN  ST    9,OUTPOS
          L     4,0(5)
          BCR   15,6
+*
+WFARG1   DC    F'0'
+WFDIGITS DS    CL12
+WFDIGEND EQU   *
 *
 ***********************************************************************
 * GETBYTE(S,I) -> R7
