@@ -7,9 +7,7 @@ undefined.
 Expected output:
 
 ```text
-42
-25
-17
+422517
 ```
 
 ## Source shape
@@ -76,13 +74,7 @@ A,B := 25,17
 has the same result under any permitted evaluation/assignment ordering because
 neither right-hand expression depends on either destination.
 
-The three reported values establish both assignments independently:
-
-```text
-A+B = 42
-A   = 25
-B   = 17
-```
+The three DEBUGINT calls establish both assignments independently. The current bootstrap diagnostic appends decimal text to one buffered SYSPRINT record, so the observable record is `422517`, representing 42, 25, and 17 in sequence.
 
 ## Acceptance criteria
 
@@ -93,9 +85,7 @@ A successful run must:
 - emit exactly:
 
   ```text
-  42
-  25
-  17
+  422517
   ```
 
 - show both destination stores in generated code;
@@ -115,6 +105,10 @@ after the linkage editor's final `AUTHORIZATION CODE IS` marker.
 A full 00-47 rerun under the corrected matcher passed Tests 00-46 and correctly
 reported the original Test 47 swap expectation as a mismatch.
 
+## Latest native evidence
+
+The revised probe generated explicit stores of 25 and 17 into distinct local cells, then reloaded them for output. Its first rerun failed only because `expected.txt` incorrectly required three separate output records; existing multi-DEBUGINT tests establish that DEBUGINT concatenates values into one buffered record.
+
 ## Status
 
-PENDING — revised order-independent multiple-assignment probe is ready to run.
+PENDING — output expectation corrected to `422517`; ready to rerun.
