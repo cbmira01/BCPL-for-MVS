@@ -1290,7 +1290,7 @@ The test does not yet claim historical ABORT/STOP(100) integration.
 
 ### 053-basic-writef
 
-Status: **PENDING** — first native WRITEF literal-output regression.
+Status: **PASS** — emitted `HELLO` on 2026-10-07.
 
 Begins the WRITEF runtime sprint by replacing the former G!76 no-op with the
 smallest executable bootstrap contract. The source calls:
@@ -1313,6 +1313,25 @@ deferred.
 
 Generated-code assertions require the G!76 load at byte displacement 304 and
 ordinary BALR linkage.
+
+### 054-writef-integer
+
+Status: **PENDING** — first formatted native WRITEF conversion.
+
+Calls `WRITEF("%N", 42)`. The surviving BLIB WRITEF maps `%N` directly to
+signed decimal `WRITED(ARG,0)`, so this regression isolates one integer
+argument with no width field.
+
+Expected output:
+
+```text
+42
+```
+
+Generated-code assertions require the second argument in R8, the G!76 load at
+byte displacement 304, and ordinary BALR linkage. The bootstrap runtime now
+handles literal text plus `%N`; additional directives, multiple formatting
+arguments, field widths, and newline semantics remain deferred.
 
 ## MVS-resident Cambridge compile path
 
