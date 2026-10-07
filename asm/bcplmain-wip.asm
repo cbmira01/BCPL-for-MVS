@@ -428,11 +428,16 @@
 *    VECLIST heads those records.  This is shaped deliberately so that
 *    FREEVEC and exit cleanup can be added without replacing GETVEC.
 *
+*    Regression 28 adds the matching WIP FREEVEC success path.
+*    FREEVEC walks VECLIST by VECBASE, unlinks the matching record, and
+*    issues FREEMAIN R using the recorded VECLEN and allocation base.
+*
 *    CURRENT LIMITATION:
-*    the first WIP uses unconditional GETMAIN R.  Exhaustion therefore
-*    ABENDs rather than returning a reconstructed historical failure
-*    result.  Failure semantics, subpool policy, FREEVEC, and RESULT2
-*    interaction remain to be established by later regressions.
+*    GETVEC uses unconditional GETMAIN R.  Exhaustion therefore ABENDs
+*    rather than returning a reconstructed historical failure result.
+*    Invalid FREEVEC pointers are currently ignored.  Failure/error
+*    semantics, subpool policy, and RESULT2 interaction remain to be
+*    established by later regressions.
 *
 * 13. DYNAMIC LOAD / UNLOAD
 *     HISTORICAL
@@ -666,7 +671,7 @@ GIDONE   L     4,4(12)
 * G!14 = first narrow native WRCH implementation for Regression 03.
 * G!76 = temporary no-op WRITEF for the factorial milestone.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
-* G!87 = first WIP GETVEC dynamic-storage service.
+* G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
 *
          LA    1,WRCH
@@ -679,6 +684,8 @@ GIDONE   L     4,4(12)
          ST    1,344(12)
          LA    1,GETVEC
          ST    1,348(12)
+         LA    1,FREEVEC
+         ST    1,352(12)
          LA    1,DEBUGINT
          ST    1,600(12)
 *
@@ -934,6 +941,59 @@ GETVEC   STM   0,3,GVRSAVE
          BCR   15,6
 *
 ***********************************************************************
+* FREEVEC(V) -- WIP DYNAMIC STORAGE RELEASE
+*
+* Regression 28 success-path implementation.
+*
+* V is the BCPL word pointer returned by GETVEC.  Walk VECLIST looking
+* for a control record whose VECBASE field matches V.  Unlink that
+* record, then release exactly the recorded MVS allocation.
+*
+* This first rung treats V=0 or an unknown pointer as a no-op.  The
+* historical error contract for invalid FREEVEC arguments is not yet
+* reconstructed.
+*
+* FREEMAIN R may use R0, R1, R14, and R15.  Preserve R0-R3 because
+* generated code requires them, and preserve R15 because it is W.
+***********************************************************************
+FREEVEC  LTR   7,7
+         BZ    FVRETURN
+         STM   0,3,FVRSAVE
+         ST    15,FVWSAVE
+         LR    9,7
+         SR    8,8
+         L     14,VECLIST
+FVSCAN   LTR   14,14
+         BZ    FVNFOUND
+         C     9,0(14)
+         BE    FVFOUND
+         LR    8,14
+         L     14,8(14)
+         B     FVSCAN
+*
+* R14 = matching allocation record; R8 = previous record or zero.
+*
+FVFOUND  L     10,8(14)
+         LTR   8,8
+         BZ    FVHEAD
+         ST    10,8(8)
+         B     FVUNLNK
+FVHEAD   ST    10,VECLIST
+FVUNLNK  L     10,4(14)
+         LR    1,14
+         FREEMAIN R,LV=(10),A=(1)
+         L     15,FVWSAVE
+         LM    0,3,FVRSAVE
+FVRETURN L     4,0(5)
+         BCR   15,6
+*
+* Unknown nonzero pointer: restore the saved permanent registers.
+*
+FVNFOUND L     15,FVWSAVE
+         LM    0,3,FVRSAVE
+         B     FVRETURN
+*
+***********************************************************************
 * DEBUGINT -- PROVISIONAL BOOTSTRAP DIAGNOSTIC
 *
 * G150 DEBUGINT receives a signed 32-bit integer in R7.
@@ -996,6 +1056,8 @@ TRAILER  DC    F'0'
 VECLIST  DC    F'0'
 GVRLEN   DC    F'0'
 GVRSAVE  DS    4F
+FVRSAVE  DS    4F
+FVWSAVE  DC    F'0'
 *
 * Private MVS save area used while BCPLMAIN owns R13.
 *
