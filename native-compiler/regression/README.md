@@ -37,8 +37,20 @@ native-compiler/regression/
     02-...
 ```
 
-The numeric prefix is part of the test identity.  It records the intended
+The numeric prefix is part of the test identity. It records the intended
 progression through the native execution contract.
+
+Numbering has one deliberate historical width break:
+
+```text
+00..52   existing two-digit test identities, retained unchanged
+053..999 three-digit identities for all new tests
+```
+
+The command-line runners accept natural decimal integers and normalize them
+internally. Thus `tools/run-native-regression 53` resolves `053-*`, while
+`tools/run-native-regression 7` continues to resolve `07-*`. Existing tests
+must not be renamed merely to make their prefixes three digits.
 
 Each numbered test owns its executable output contract in `expected.txt`.
 An empty `expected.txt` means that the test has no BCPL output assertion.
@@ -80,10 +92,19 @@ tools/run-native-regression 27 30
 
 The runner continues after individual failures, records each test's complete
 output under `workarea/native-regression/logs/`, prints a compact PASS/FAIL
-summary, and returns nonzero if any test fails.  A numbering gap inside the
+summary, and returns nonzero if any test fails. A numbering gap inside the
 requested range is treated as an error rather than silently skipped. Add
 `--show-output` to display each test's BCPL output; on an output mismatch the
 runner also exposes the saved native job report for diagnosis.
+
+The numbering boundary itself can be checked without MVS:
+
+```sh
+tools/run-native-regression --check-numbering
+```
+
+That verifies representative directory IDs and the compact MVS job/entry names
+through test 999.
 
 ## Running one native regression test
 
