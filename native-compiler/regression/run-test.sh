@@ -275,6 +275,7 @@ expected_output() {
         28) printf '%s\n' "42" ;;
         29) printf '%s\n' "424242" ;;
         30) printf '%s\n' "4242" ;;
+        31) printf '%s\n' "42" ;;
         *)  return 1 ;;
     esac
 }
