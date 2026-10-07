@@ -700,6 +700,34 @@ reuse; source/listing inspection establishes that FREEMAIN is actually issued.
 Invalid-pointer behavior and allocation-failure behavior remain deferred edge
 cases.
 
+### 29-multiple-allocations
+
+Status: **PENDING**.
+
+Exercises several simultaneously live GETVEC allocations and deliberately
+removes VECLIST records from the middle, head, and tail positions. Surviving
+vectors are read after each release operation.
+
+Expected output:
+
+```text
+424242
+```
+
+The list sequence is intentionally:
+
+```text
+C -> B -> A
+C -> A
+D -> C -> A
+C -> A
+C
+empty
+```
+
+This test should require no BCPLMAIN change if the Test 28 FREEVEC list logic
+is correct. Exact MVS address reuse is not tested.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
