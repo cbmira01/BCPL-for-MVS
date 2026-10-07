@@ -1,0 +1,10 @@
+GLOBAL $( START:1; WRCH:14; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET X = 17
+    X := 42
+    WRCH('X')
+    DEBUGINT(X)
+    FINISH
+$)1
