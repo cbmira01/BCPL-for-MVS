@@ -58,4 +58,19 @@ A successful run must:
 
 ## Status
 
-PENDING native run.
+PASS — native run on 2026-10-07; emitted `42`.
+
+Observed generated checked entry and frame definition:
+
+```asm
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+L994 EQU 172 STACK FRAME SIZE
+```
+
+The 172-byte value was accepted by the runtime's positive/alignment checks,
+R4 was restored from the saved frame, execution resumed after the inline
+fullword, and the local vector produced the expected result. This establishes
+frame-size decoding only; no stack-end comparison or overflow detection is
+claimed.
