@@ -916,9 +916,9 @@ PUTBYTE  LR    14,7
 * to hold permanent constants, and R15 is W.  Preserve all of them.
 ***********************************************************************
 GETVEC   LTR   7,7
-         BM    GVFAIL0
+         BC    4,GVFAIL0
          C     7,=F'4194299'
-         BH    GVFAIL0
+         BC    2,GVFAIL0
          STM   0,3,GVRSAVE
          ST    15,GVRWSAVE
          LR    10,7
@@ -926,7 +926,7 @@ GETVEC   LTR   7,7
          SLL   10,2
          LA    10,12(10)
          ST    10,GVRLEN
-         GETMAIN RC,LV=(10)
+         GETMAIN RC,LV=(10),SP=0
          LTR   15,15
          BNZ   GVFAIL
 *
