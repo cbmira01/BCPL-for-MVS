@@ -803,13 +803,11 @@ runtime feature.
 
 ### 32-dynamic-pointer-return
 
-Status: **PENDING** — ready for first native run.
+Status: **PENDING** — narrowed after an initial S0C4 and ready for retest.
 
-MAKE obtains a vector with GETVEC(2), stores 42 in V!1, and returns the
-dynamic BCPL word pointer through the ordinary function-result convention.
-START stores that returned pointer in P, dereferences P!1 after MAKE has
-returned, reports 42 through DEBUGINT, and finally releases the same
-allocation with FREEVEC(P).
+MAKE is now deliberately only `GETVEC(2)` returned as the function result.
+START stores the returned pointer in P, writes 42 to `P!1`, reloads and
+reports it, then releases the same allocation with FREEVEC(P).
 
 Expected output:
 
@@ -817,9 +815,11 @@ Expected output:
 42
 ```
 
-An unexpected allocation failure emits 99. This extends the pointer-return
-contract from Test 20 to MVS-backed dynamic storage and checks that the
-allocation outlives the callee workspace.
+The first version also used `VALOF/RESULTIS` and callee-side vector access,
+introducing more than one unproven construct. Its native run compiled,
+assembled, and linked successfully but ABENDed S0C4 inside generated MAKE.
+Those semantics have been removed from Test 32 and should be isolated in a
+later regression.
 
 ## MVS-resident Cambridge compile path
 
