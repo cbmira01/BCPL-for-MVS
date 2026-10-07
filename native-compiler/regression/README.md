@@ -1037,7 +1037,7 @@ proven local-scalar, arithmetic, and DEBUGINT behavior.
 
 ### 45-shifts-bitwise
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Exercises left shift, right shift, OR, AND, EQV, and NEQV in one compact
 expression chain and emits the resulting value.
