@@ -898,7 +898,7 @@ inner VALOF and one for the outer VALOF.
 
 ### 37-multiple-exported-globals
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Defines and exports three user functions in one generated module:
 
