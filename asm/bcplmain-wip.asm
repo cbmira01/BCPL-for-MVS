@@ -1000,12 +1000,12 @@ WFDCOPY  SR    7,7
 * Append R7 low byte to OUTBUF when room remains.  R9 is OUTPOS.
 * Return through R10, which is scratch for this bootstrap WRITEF.
 *
-WFPUTC   LA    4,132
-         CR    9,4
+WFPUTC   LA    6,132
+         CR    9,6
          BNL   WFPUTRT
-         LA    4,OUTBUF
-         AR    4,9
-         STC   7,0(4)
+         LA    6,OUTBUF
+         AR    6,9
+         STC   7,0(6)
          LA    9,1(9)
 WFPUTRT  BR    10
 WFLITDN  ST    9,OUTPOS
