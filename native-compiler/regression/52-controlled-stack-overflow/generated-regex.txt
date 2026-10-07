@@ -1,0 +1,4 @@
+^\s*BAL\s+14,60\(11\)\s*\n^\s*DC\s+A\(L[0-9]+\)\s+STACK FRAME SIZE\s*$
+^\s*L[0-9]+\s+EQU\s+[1-9][0-9]{3,}\s+STACK FRAME SIZE\s*$
+^\s*LA\s+15,[1-9][0-9]{2,3}\(5\)\s*$
+^\s*BALR\s+6,4\s*$
