@@ -1316,7 +1316,7 @@ ordinary BALR linkage.
 
 ### 054-writef-integer
 
-Status: **PENDING** — first formatted native WRITEF conversion.
+Status: **PASS** — emitted `42` on 2026-10-08.
 
 Calls `WRITEF("%N", 42)`. The surviving BLIB WRITEF maps `%N` directly to
 signed decimal `WRITED(ARG,0)`, so this regression isolates one integer
