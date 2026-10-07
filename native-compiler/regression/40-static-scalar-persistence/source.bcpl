@@ -1,0 +1,15 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+STATIC $( COUNT = 17 $)
+
+LET BUMP() BE
+$(1
+    COUNT := COUNT + 25
+$)1
+
+LET START () BE
+$(1
+    BUMP()
+    DEBUGINT(COUNT)
+    FINISH
+$)1
