@@ -677,6 +677,28 @@ This first rung uses unconditional MVS GETMAIN. It proves only successful
 allocation and BCPL word-pointer use; allocation failure semantics are
 deliberately deferred.
 
+### 28-freevec
+
+Status: **PENDING**.
+
+Introduces native G!88 FREEVEC using the VECLIST records established by
+GETVEC. The test allocates and uses one vector, releases it, allocates and
+uses a second vector, releases that one, and terminates normally.
+
+Expected output:
+
+```text
+42
+```
+
+FREEVEC matches the incoming BCPL word pointer against VECBASE, unlinks the
+matching record from VECLIST, and issues MVS FREEMAIN with the recorded
+allocation base and byte length. The regression does not require exact address
+reuse; source/listing inspection establishes that FREEMAIN is actually issued.
+
+Invalid-pointer behavior and allocation-failure behavior remain deferred edge
+cases.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
