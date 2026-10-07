@@ -59,6 +59,43 @@ A successful run must:
   executed; and
 - show a concrete generated label target for ADD25.
 
+## Observed generated convention
+
+The first native run passed with output `42`.
+
+CG370 did not emit the GOTO as a direct inline relative branch. Instead it
+materialized the target through a fullword address constant:
+
+```asm
+L4 EQU *
+ DC A(0+L3)
+```
+
+and the GOTO sequence loads that address into R8 and branches through the
+register:
+
+```asm
+ L  8,0+L4-L1(4)
+ BCR 15,8
+```
+
+The source target label is represented by:
+
+```asm
+L3 EQU *
+```
+
+at the beginning of the `ADD25` code.
+
+This proves that explicit source labels participate in CG370's address-constant
+machinery: the generated code computes the location of a module-resident
+fullword containing the target address, loads it, and branches indirectly.
+
+The deliberately intervening `X := 99` source does not appear in the generated
+assembler. The compiler has recognized it as unreachable after the unconditional
+GOTO and omitted it. The observed result therefore proves both correct GOTO
+transfer and dead-code elimination of that immediately unreachable assignment.
+
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
