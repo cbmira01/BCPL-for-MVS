@@ -938,7 +938,7 @@ to byte-address conversion, byte-offset arithmetic, and three-argument linkage.
 
 ### 39-freevec-storage-release
 
-Status: **PENDING** — revised after the first run showed a 1 MiB block was too large for the native GO region.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Repeatedly allocates exact 1 KiB GETVEC blocks until allocation fails, frees one
 known live block, then immediately retries the same 1 KiB allocation.
