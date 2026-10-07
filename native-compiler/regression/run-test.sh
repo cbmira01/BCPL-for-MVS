@@ -263,6 +263,7 @@ show_bcpl_output() {
 
     expected=$(expected_output) || return 1
     report=$(bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null)
+    printf '%s\n' "$report" >"$work/job-report.txt"
     emitted=$(
         printf '%s\n' "$report" |
             grep -a -m1 "^ *$expected *$" || true
@@ -298,8 +299,19 @@ while (( SECONDS <= deadline )); do
 
         if expected_output >/dev/null 2>&1; then
             if ! show_bcpl_output; then
+                echo
+                echo "=== Output mismatch ==="
+                echo "EXPECTED:"
+                sed 's/^/  /' "$expected_file"
+                echo "ACTUAL:"
+                echo "  expected text was not found in the native job report"
+                echo "  full report: ${work#$root/}/job-report.txt"
+                if [[ ${NATIVE_REGRESSION_SHOW_OUTPUT:-0} == 1 ]]; then
+                    echo
+                    echo "=== Native job report ==="
+                    cat "$work/job-report.txt"
+                fi
                 show_result "FAIL" "NORMAL" "FAIL"
-                echo "run-test: expected BCPL output not found" >&2
                 exit 1
             fi
         fi
