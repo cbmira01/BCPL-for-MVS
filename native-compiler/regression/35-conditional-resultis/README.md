@@ -53,9 +53,11 @@ A successful run must:
 - show generated S/370 with distinct true/false RESULTIS paths converging on the
   same VALOF continuation.
 
-The first successful run should be inspected once to characterize the exact
-CG370 branch pattern.
+The first successful run was inspected. CG370 emitted separate true and false
+paths (`LA 7,42` and `LA 7,99`), and both paths branch unconditionally to the
+same `L3` continuation. At `L3`, R7 is stored as the value of the enclosing
+VALOF expression.
 
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
