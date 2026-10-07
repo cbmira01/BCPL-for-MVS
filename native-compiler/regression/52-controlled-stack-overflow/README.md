@@ -55,4 +55,27 @@ A successful Test 52 must:
 
 ## Status
 
-PENDING native run.
+PASS — native run on 2026-10-07; emitted `STACK OVERFLOW`.
+
+Observed DEPTH code:
+
+```asm
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+LA 15,1044(5)
+...
+BALR 6,4
+...
+L994 EQU 1072 STACK FRAME SIZE
+```
+
+This is an important contract distinction: the recursive call advances W by
+1044 bytes, but the checked entry requires 1072 bytes. The runtime therefore
+must use the inline frame-size word for the boundary test rather than assuming
+that the caller's W displacement equals the callee's full storage requirement.
+
+The run crossed the 16 KiB WIP stack boundary through the controlled STKOVFL
+path, emitted `STACK OVERFLOW`, and avoided uncontrolled storage corruption
+or an MVS abend. Historical X'0D3'/ABORT/STOP(100) integration remains
+unreconstructed.
