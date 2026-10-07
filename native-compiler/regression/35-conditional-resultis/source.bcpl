@@ -1,0 +1,14 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET X = VALOF
+    $(2
+        TEST 1 = 1
+        THEN RESULTIS 42
+        OR RESULTIS 99
+    $)2
+
+    DEBUGINT(X)
+    FINISH
+$)1
