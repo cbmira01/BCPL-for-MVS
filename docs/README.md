@@ -17,6 +17,8 @@ The files in this directory are working briefings for people developing or revie
 - `MVS-system-programming-interfaces.md` — useful MVS service interfaces
 - `S370-object-and-load-modules.md` — object modules and linkage-editor/load-module structure
 - `BCPL-history-and-porting.md` — historical compiler/porting context
+- `BCPL-memory-management.md` — GETVEC/FREEVEC, heap allocation, coalescing,
+  compaction research, and the native WIP allocator
 - `project-map.md` — repository and workflow map
 
 ## Source discipline
