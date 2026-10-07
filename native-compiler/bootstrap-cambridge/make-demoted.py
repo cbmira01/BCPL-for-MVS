@@ -287,7 +287,7 @@ def instrument_cg(text: str, section: str) -> str:
     only when CG370 is producing a listing.  No TXTP/BINING state is changed.
     Unexpected source drift fails loudly at every insertion point.
     """
-    if section == "CGB":
+    if section == "CGA":
         replacements = (
             (
                 '     SW: IF CGTRACE DO WRITEF("*NOP = %N  ", OP)\n',
@@ -299,6 +299,17 @@ def instrument_cg(text: str, section: str) -> str:
 ''',
                 "SCAN OCODE dispatch",
             ),
+        )
+        for old, new, label in replacements:
+            if text.count(old) != 1:
+                raise SystemExit(
+                    f"CGA diagnostic: expected one {label}, "
+                    f"found {text.count(old)}"
+                )
+            text = text.replace(old, new, 1)
+
+    if section == "CGB":
+        replacements = (
             (
                 '''AND CGSAVE(N) BE
     $( LET A = R.A1 + N - 4
