@@ -7,7 +7,7 @@ $(1
     LET C = B | 2
     LET D = C & 7
     LET E = D EQV 5
-    LET F = E NEQV 0
+    LET F = E NEQV 1
 
     DEBUGINT((F & 1) + 41)
     FINISH
