@@ -1,0 +1,15 @@
+GLOBAL $( START:1; DEBUGINT:150; LEFT:151; RIGHT:152; ADD:153 $)
+
+LET LEFT() = 17
+LET RIGHT() = 25
+LET ADD(A,B) = A+B
+
+LET START () BE
+$(1
+    LET A = LEFT()
+    LET B = RIGHT()
+    LET X = ADD(A,B)
+
+    DEBUGINT(X)
+    FINISH
+$)1
