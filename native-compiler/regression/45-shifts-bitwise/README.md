@@ -17,7 +17,7 @@ LET B = A >> 1
 LET C = B | 2
 LET D = C & 7
 LET E = D EQV 5
-LET F = E NEQV 0
+LET F = E NEQV 1
 
 DEBUGINT((F & 1) + 41)
 ```
@@ -42,12 +42,13 @@ B = A >> 1      = 24
 C = B | 2       = 26
 D = C & 7       = 2
 E = D EQV 5
-F = E NEQV 0
+F = E NEQV 1
 ```
 
-The final expression masks F with 1 and adds 41 so that the native execution
-result is expected to be 42 if the operators follow the historical BCPL
-truth/bitwise conventions implemented by the Cambridge compiler.
+`EQV` is bitwise equivalence and `NEQV` is bitwise non-equivalence. With
+`D=2`, `E = ~(2 XOR 5)`, whose low bit is 0; `F = E XOR 1` therefore has low
+bit 1. The final expression masks F with 1 and adds 41, yielding 42 without
+assuming Boolean normalization.
 
 ## Historical motivation
 
