@@ -1,0 +1,14 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET VALUE() = 17
+
+LET START () BE
+$(1
+    LET X = VALUE()
+
+    TEST X = 17
+    THEN DEBUGINT(42)
+    OR DEBUGINT(99)
+
+    FINISH
+$)1
