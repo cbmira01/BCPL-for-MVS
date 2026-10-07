@@ -109,6 +109,32 @@ reported the original Test 47 swap expectation as a mismatch.
 
 The revised probe generated explicit stores of 25 and 17 into distinct local cells, then reloaded them for output. Its first rerun failed only because `expected.txt` incorrectly required three separate output records; existing multi-DEBUGINT tests establish that DEBUGINT concatenates values into one buffered record.
 
+## Observed generated convention
+
+The corrected native run passed with output `422517`.
+
+CG370 emitted distinct stores for both members of the multiple assignment:
+
+```asm
+ LA 7,25(0)
+ ST 7,12(5)
+ LA 8,17(0)
+ ST 8,16(5)
+```
+
+It then formed the sum directly from the two live values:
+
+```asm
+ AR 8,7
+ LR 7,8
+```
+
+and later reloaded each destination independently for DEBUGINT.
+
+This proves that Cambridge accepts and correctly generates order-independent
+multiple assignment. The earlier swap probe remains useful only as evidence of
+this implementation's permitted assignment ordering.
+
 ## Status
 
-PENDING — output expectation corrected to `422517`; ready to rerun.
+PASS — emitted `422517` on 2026-10-07.
