@@ -78,12 +78,14 @@ this test's acceptance criteria.
 
 ## Status
 
-PENDING — narrowed to isolate dynamic-pointer return and ready for retest.
+PASS — emitted `42` after correction of the reconstructed procedure-return trampoline; the complete 00..32 panel then passed 33/33 on 2026-10-07.
 
 ## FREEVEC note
 
 The preceding version called FREEVEC(P) after proving the returned pointer was
 usable. That mixed the dynamic-pointer-return contract with MVS storage release.
-Recent S0C6 evidence occurs in the FREEMAIN path, so Test 32 now stops after the
-caller successfully dereferences the returned pointer. FREEVEC remains covered
-by Tests 28 and 29 and will receive a stronger dedicated verification test.
+During diagnosis, one mixed version reached a FREEMAIN failure path, so Test 32
+was narrowed to stop after the caller successfully dereferences the returned
+pointer. The decisive remaining failure then occurred with no FREEVEC call at
+all and exposed the reconstructed procedure-return bug. FREEVEC remains covered
+by Tests 28 and 29 and may receive a stronger dedicated verification test.
