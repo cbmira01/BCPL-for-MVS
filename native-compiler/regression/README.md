@@ -655,7 +655,8 @@ does not yet define the final mixed-language programmer interface.
 
 ### 27-getvec
 
-Status: **PENDING**.
+Status: **PASS** — Job 1138 compiled the BCPL test; Job 1139 assembled,
+link-edited, and executed successfully on 2026-10-07, emitting `42`.
 
 Introduces native G!87 GETVEC and the first MVS-backed dynamic vector. The
 test calls `GETVEC(2)`, writes both V!0 and V!2, and reports V!2 through
