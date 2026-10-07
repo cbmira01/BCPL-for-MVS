@@ -896,6 +896,30 @@ Expected output:
 The generated S/370 should show two distinct continuation labels: one for the
 inner VALOF and one for the outer VALOF.
 
+### 37-multiple-exported-globals
+
+Status: **PENDING** — ready for first native run.
+
+Defines and exports three user functions in one generated module:
+
+```text
+LEFT  -> G!151
+RIGHT -> G!152
+ADD   -> G!153
+```
+
+START calls all three through R12/G and reports 42.
+
+Expected output:
+
+```text
+42
+```
+
+The first successful run should be inspected to verify that the generated
+trailer contains all user-global export pairs plus START, and that START loads
+the three callable addresses from G at byte displacements 604, 608, and 612.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
