@@ -3,22 +3,34 @@ set -u
 set -o pipefail
 
 usage() {
-    echo "Usage: bash native-compiler/regression/run-test.sh NN" >&2
+    echo "Usage: bash native-compiler/regression/run-test.sh N" >&2
     exit 64
 }
 
-[[ $# -eq 1 && $1 =~ ^[0-9][0-9]$ ]] || usage
+[[ $# -eq 1 && $1 =~ ^[0-9]{1,3}$ ]] || usage
 
-test_no=$1
+test_num=$((10#$1))
+(( test_num <= 999 )) || usage
+
+if (( test_num <= 52 )); then
+    printf -v test_id '%02d' "$test_num"
+else
+    printf -v test_id '%03d' "$test_num"
+fi
+
+# Keep MVS names within their eight-character limit independently of the
+# directory ID width. These remain unique for test numbers 0..999.
+printf -v job_base 'RG%03d' "$test_num"
+printf -v entry 'BCRG%04d' "$test_num"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd -- "$script_dir/../.." && pwd)"
 
 shopt -s nullglob
-matches=("$script_dir/${test_no}-"*)
+matches=("$script_dir/${test_id}-"*)
 shopt -u nullglob
 
 if (( ${#matches[@]} != 1 )); then
-    echo "run-test: expected exactly one ${test_no}-* test directory" >&2
+    echo "run-test: expected exactly one ${test_id}-* test directory" >&2
     exit 65
 fi
 
@@ -42,7 +54,7 @@ mkdir -p "$work"
 source_copy="$work/$case_name.bcpl"
 cp "$source" "$source_copy"
 
-compiler_job="RG${test_no}COMP"
+compiler_job="${job_base}C"
 
 compiler_driver="${CAMBRIDGE_COMPILE:-$root/tools/cambridge-compile}"
 
@@ -109,7 +121,7 @@ if [[ -f "$library" ]]; then
     library_copy="$work/$case_name-library.bcpl"
     cp "$library" "$library_copy"
 
-    library_job="RG${test_no}LIB"
+    library_job="${job_base}L"
 
     echo
     echo "=== Cambridge library compile: $case_name ==="
@@ -136,7 +148,7 @@ if [[ -f "$library" ]]; then
 fi
 
 combined="$work/native-test.asm"
-entry="BCRG00${test_no}"
+# entry is precomputed above as an eight-character assembler symbol.
 
 if [[ -f "$native" ]]; then
     echo
@@ -250,13 +262,13 @@ if [[ -f "$native" ]]; then
         "$native" \
         "$jcl" \
         --entry "$entry" \
-        --job-name "RG${test_no}RUN" || exit $?
+        --job-name "${job_base}R" || exit $?
 else
     python3 "$root/tools/make-asm-job" \
         "$combined" \
         --output-dir "$work" \
         --entry "$entry" \
-        --job-name "RG${test_no}RUN" \
+        --job-name "${job_base}R" \
         --listing heavy \
         --force || exit $?
 
@@ -264,7 +276,7 @@ else
 fi
 
 if [[ ! -f "$native" ]]; then
-python3 - "$jcl" "$test_no" <<'PY'
+python3 - "$jcl" "$test_num" <<'PY'
 from pathlib import Path
 import sys
 
@@ -272,7 +284,7 @@ path = Path(sys.argv[1])
 test_no = sys.argv[2]
 text = path.read_text(encoding="ascii")
 old = "//GO       EXEC PGM=*.LKED.SYSLMOD,\n"
-seconds = 3 if test_no == "03" else 1
+seconds = 3 if test_no == "3" else 1
 new = f"//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,{seconds}),\n"
 if text.count(old) != 1:
     raise SystemExit("cannot locate final GO EXEC statement")
