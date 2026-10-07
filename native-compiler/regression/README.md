@@ -40,6 +40,8 @@ native-compiler/regression/
 The numeric prefix is part of the test identity.  It records the intended
 progression through the native execution contract.
 
+Each numbered test owns its executable output contract in `expected.txt`.
+An empty `expected.txt` means that the test has no BCPL output assertion.
 Generated assembler, JCL, listings, load modules, and printer reports belong
 under `workarea/`, not in the regression directories.
 
@@ -79,7 +81,9 @@ tools/run-native-regression 27 30
 The runner continues after individual failures, records each test's complete
 output under `workarea/native-regression/logs/`, prints a compact PASS/FAIL
 summary, and returns nonzero if any test fails.  A numbering gap inside the
-requested range is treated as an error rather than silently skipped.
+requested range is treated as an error rather than silently skipped. Add
+`--show-output` to display each test's BCPL output; on an output mismatch the
+runner also exposes the saved native job report for diagnosis.
 
 ## Running one native regression test
 
