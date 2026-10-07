@@ -922,7 +922,7 @@ the three callable addresses from G at byte displacements 604, 608, and 612.
 
 ### 38-putbyte-getbyte-roundtrip
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Introduces native G!86 PUTBYTE and verifies the stored byte by reading the same
 location through already-proven G!85 GETBYTE.
