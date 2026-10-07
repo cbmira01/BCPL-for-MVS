@@ -1022,7 +1022,7 @@ GOTO heavily, especially in SYN/LEX and CG370.
 
 ### 44-address-indirection
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Forms `P=@X`, updates X through `!P`, then reads X directly.
 
