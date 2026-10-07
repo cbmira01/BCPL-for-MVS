@@ -125,7 +125,7 @@ Every injected assembler record begins:
 
 The commentary exposes:
 
-- symbolic OCODE name, historical numeric opcode, and current SSP;
+- historical numeric OCODE value and current SSP;
 - generated procedure-entry label and source-name length;
 - CGSAVE entry state;
 - explicit FNAP/RTAP call kind, K, workspace displacement, and SSP;
@@ -133,9 +133,11 @@ The commentary exposes:
 - stack-check inline slot location;
 - final stack-frame size in words and bytes.
 
-The numeric OCODE value is retained beside the symbolic name so the diagnostic
-stream remains useful when checking the historical opcode encoding in CGHDR.
-Procedure-name bytes are deliberately not reproduced by the diagnostic layer;
+A diagnostic-only symbolic OCODE-name helper was tried and rejected after it
+compiled successfully but corrupted the resident INTCODE execution path. The
+numeric opcode remains the stable emitted form; symbolic decoding should be
+performed outside the resident generator if desired. Procedure-name bytes are
+deliberately not reproduced by the diagnostic layer;
 the bootstrap host/target character representation remains a separate concern.
 
 The instrumentation writes listing comments only. It does not update TXTP,
