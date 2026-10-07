@@ -1,0 +1,16 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET X = 17
+
+    GOTO ADD25
+
+    X := 99
+
+ADD25:
+    X := X + 25
+
+    DEBUGINT(X)
+    FINISH
+$)1
