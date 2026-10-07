@@ -106,7 +106,7 @@ On 2026-10-07 the entire 00-47 panel was rerun after hardening output matching.
 Tests 00-46 all passed. The original Test 47 swap probe correctly failed under
 the hardened matcher; subsequent standards/source review showed that its
 simultaneous-swap expectation was stronger than historical BCPL guarantees.
-Test 47 has therefore been revised to an order-independent multiple assignment.
+The revised order-independent Test 47 then passed, giving a clean 48/48 panel.
 
 ## Current panel
 
@@ -1077,7 +1077,7 @@ or sign/overflow edge cases.
 
 ### 47-multiple-assignment
 
-Status: **PENDING** — revised order-independent probe ready for native run.
+Status: **PASS** — revised order-independent probe emitted `422517` on 2026-10-07.
 
 Assigns two locals with `A,B := 25,17` and emits their sum plus both values.
 
