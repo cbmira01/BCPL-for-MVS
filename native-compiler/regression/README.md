@@ -847,7 +847,7 @@ Expected output:
 
 ### 34-valof-resultis
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Introduces the minimal `VALOF ... RESULTIS ...` expression form. START assigns
 the value of a VALOF block containing only `RESULTIS 42` to a local, reports
