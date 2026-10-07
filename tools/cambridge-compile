@@ -176,6 +176,11 @@ def make_parser() -> argparse.ArgumentParser:
         metavar="NAME",
         help="MVS JOB name (default: CAMBCOMP)",
     )
+    parser.add_argument(
+        "--cambridge-parm",
+        metavar="PATH",
+        help="override the default CAMBPARM bootstrap parameter file",
+    )
     return parser
 
 
@@ -206,7 +211,17 @@ def main(argv=None) -> int:
         for resident in RESIDENT_SOURCES:
             if not resident.is_file():
                 raise ValueError(f"resident compiler module does not exist: {resident}")
-        for name, path in NAMED_INPUTS:
+        named_inputs = list(NAMED_INPUTS)
+        if args.cambridge_parm:
+            parm_path = core.resolve_repo_path(args.cambridge_parm)
+            if not parm_path.is_file():
+                raise ValueError(f"Cambridge CAMBPARM input does not exist: {parm_path}")
+            named_inputs = [
+                (name, parm_path if name == "CAMBPARM" else path)
+                for name, path in named_inputs
+            ]
+
+        for name, path in named_inputs:
             if not path.is_file():
                 raise ValueError(f"Cambridge {name} input does not exist: {path}")
 
@@ -215,7 +230,7 @@ def main(argv=None) -> int:
             sources=RESIDENT_SOURCES,
             job_name=job_name,
             listing=args.listing,
-            named_dds=NAMED_INPUTS,
+            named_dds=named_inputs,
             save_ocode=False,
             save_intcode=False,
         )
