@@ -81,6 +81,63 @@ A successful run must:
 - show native code corresponding to the shift and bitwise operations;
 - require no new BCPLMAIN runtime service.
 
+## Observed generated convention
+
+The first native run passed with output `42`.
+
+CG370 mapped the operators directly onto System/370 integer/logic
+instructions:
+
+```asm
+ LA 7,3(0)
+ SLL 7,4(0)
+ ...
+ SRL 7,1(0)
+ ...
+ O  7,0+L996-L1(4)
+ ...
+ N  7,4+L996-L1(4)
+```
+
+Thus left shift uses `SLL`, right shift uses `SRL`, OR uses `O`, and AND
+uses `N`.
+
+For `EQV 5`, CG370 emitted XOR with 5 followed by XOR with -1:
+
+```asm
+ X  7,8+L996-L1(4)
+ X  7,12+L996-L1(4)
+```
+
+with the constant pool containing:
+
+```asm
+ DC F'5'
+ DC F'-1'
+```
+
+This implements bitwise equivalence as the complement of XOR.
+
+For `NEQV 1`, CG370 emitted another XOR:
+
+```asm
+ X  7,16+L996-L1(4)
+```
+
+confirming non-equivalence as bitwise XOR.
+
+The final low-bit mask and +41 were generated as:
+
+```asm
+ N  7,16+L996-L1(4)
+ AH 7,0+L997-L1(4)
+```
+
+where the fullword constant pool contains 1 and the halfword constant pool
+contains 41.
+
+No BCPLMAIN runtime support was involved.
+
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
