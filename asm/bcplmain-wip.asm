@@ -192,12 +192,13 @@
 * Implementations below therefore convert S back to a byte address by
 * shifting left two.
 *
-* FACTORIAL-ONLY ACCOMMODATION
-* ----------------------------
+* WRITEF BOOTSTRAP ACCOMMODATION
+* ------------------------------
 * WRITEF is a BLIB/library routine, not proven to be part of BCPLMAIN.
-* Until BLIB is linked natively, G!76 is installed as a no-op stub so
-* the factorial control-flow test can run.  This must not survive as
-* the final WRITEF implementation.
+* Regression 053 begins a narrow bootstrap implementation at G!76.
+* The first step copies an ordinary BCPL format string literally to the
+* existing SYSPRINT buffer.  Format conversions and newline semantics
+* remain future work; this is not claimed as the historical BLIB body.
 *
 * MVS ENTRY/EXIT
 * --------------
@@ -683,7 +684,7 @@ GIDONE   L     4,4(12)
          ST    1,220(12)
 *
 * G!14 = first narrow native WRCH implementation for Regression 03.
-* G!76 = temporary no-op WRITEF for the factorial milestone.
+* G!76 = first narrow literal WRITEF implementation for Regression 053.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
 * G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
@@ -922,13 +923,42 @@ WRCHRTN  L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
-* TEMPORARY WRITEF
+* WRITEF -- LITERAL-STRING BOOTSTRAP
 *
-* Factorial-only accommodation.  Tests 11-14 prove argument 1 in R7,
-* argument 2 in R8, and argument 3 in R9 for ordinary BCPL calls.
-* Do not modify R0 or R1-R3.
+* Regression 053 establishes the first executable G76 WRITEF path.
+* R7 is the BCPL word pointer to the format string.  BCPL strings use
+* a length byte at byte offset zero followed by that many data bytes.
+*
+* This first step copies those bytes literally to the existing output
+* buffer.  It deliberately does not interpret formatting directives or
+* newline characters.  Later WRITEF regressions will add those pieces.
+*
+* R0 and R1-R3 remain permanent generated-code registers.  R5, R6,
+* R11, R12, and R15 retain their linkage/runtime meanings.  R7-R10 and
+* R14 are scratch across this bootstrap library call.
 ***********************************************************************
-WRITEST  L     4,0(5)
+WRITEST  LR    14,7
+         SLL   14,2
+         SR    8,8
+         IC    8,0(14)
+         LA    14,1(14)
+         L     9,OUTPOS
+WFLITLP  LTR   8,8
+         BZ    WFLITDN
+         LA    10,132
+         CR    9,10
+         BNL   WFLITDN
+         SR    7,7
+         IC    7,0(14)
+         LA    10,OUTBUF
+         AR    10,9
+         STC   7,0(10)
+         LA    14,1(14)
+         LA    9,1(9)
+         BCTR  8,0
+         B     WFLITLP
+WFLITDN  ST    9,OUTPOS
+         L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
