@@ -987,6 +987,23 @@ This isolates TABLE representation and module-relative addressing. TABLE is used
 directly by the Cambridge compiler master, TRN, and CG370, and is defined in the
 historical BCPL language documentation.
 
+### 42-manifest-constant-expression
+
+Status: **PENDING** — ready for first native run.
+
+Declares `LEFT=17`, `RIGHT=25`, and `ANSWER=LEFT+RIGHT` in a MANIFEST block,
+then emits ANSWER through DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates compile-time MANIFEST binding and constant-expression folding. The
+Cambridge compiler corpus uses MANIFEST directly, and TRN contains explicit
+MANIFEST translation paths.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
