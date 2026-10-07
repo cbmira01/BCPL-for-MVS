@@ -1,17 +1,6 @@
 GLOBAL $( START:1; GETVEC:87; FREEVEC:88; DEBUGINT:150 $)
 
-LET MAKE() = VALOF
-$(1
-    LET V = GETVEC(2)
-
-    TEST V = 0
-    THEN RESULTIS 0
-    OR
-    $(2
-        V!1 := 42
-        RESULTIS V
-    $)2
-$)1
+LET MAKE() = GETVEC(2)
 
 LET START () BE
 $(1
@@ -21,6 +10,7 @@ $(1
     THEN DEBUGINT(99)
     OR
     $(2
+        P!1 := 42
         DEBUGINT(P!1)
         FREEVEC(P)
     $)2
