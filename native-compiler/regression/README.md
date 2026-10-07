@@ -1084,12 +1084,10 @@ Assigns two locals with `A,B := 25,17` and emits their sum plus both values.
 Expected output:
 
 ```text
-42
-25
-17
+422517
 ```
 
-The original `A,B := B,A` swap probe was invalid as a conformance test:
+The three DEBUGINT calls share the current buffered output record. The original `A,B := B,A` swap probe was invalid as a conformance test:
 historical BCPL explicitly leaves multiple-assignment evaluation/assignment
 order undefined. Cambridge's observed left-to-right lowering is permitted.
 
