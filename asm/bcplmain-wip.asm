@@ -906,12 +906,12 @@ PUTBYTE  LR    14,7
 * permanent constants, so save and restore R0-R3 around the MVS call.
 ***********************************************************************
 GETVEC   STM   0,3,GVRSAVE
-         LR    14,7
-         LA    14,1(14)
-         SLL   14,2
-         LA    14,12(14)
-         ST    14,GVRLEN
-         GETMAIN R,LV=(14)
+         LR    10,7
+         LA    10,1(10)
+         SLL   10,2
+         LA    10,12(10)
+         ST    10,GVRLEN
+         GETMAIN R,LV=(10)
 *
 * R1 is the byte address returned by GETMAIN.  Build the WIP VECAREA
 * record in the allocated block and chain it at VECLIST.
