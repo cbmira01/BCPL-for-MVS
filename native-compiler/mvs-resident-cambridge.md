@@ -87,6 +87,60 @@ The job:
 `CAMBCOMP` is the single ICINT-runnable Cambridge compiler image used by
 the fast compile path.
 
+## Diagnostic CG370 image
+
+The ordinary resident compiler remains:
+
+```text
+HERC02.BCPL.INTCODE(CAMBCOMP)
+```
+
+A separate diagnostic build is available and does not replace it. Generate and
+populate the diagnostic source members with:
+
+```sh
+python3 native-compiler/bootstrap-cambridge/make-demoted.py
+tools/dspal populate SOURCE
+tools/dspal populate JCL
+```
+
+The diagnostic source members are `CGAD`, `CGBD`, `CGCD`, `CGDD`, and
+`CGED`. Build the separate resident image with:
+
+```sh
+tools/dspal submit JCL CG370DB --wait
+```
+
+This compiles those five units to corresponding INTCODE members and packs a
+complete compiler image as:
+
+```text
+HERC02.BCPL.INTCODE(CG370D)
+```
+
+`CAMBCOMP` and the ordinary `CGA`..`CGE` members are left untouched.
+
+`tools/cambridge-compile-mvs` selects the resident image with
+`--compiler-image` (or environment variable `CAMBRIDGE_IMAGE`). It also
+accepts an explicit `--output` path, making an A/B compile straightforward:
+
+```sh
+tools/cambridge-compile-mvs program.bcpl \
+    --compiler-image CAMBCOMP \
+    --output workarea/cg370-baseline.s370.asm
+
+tools/cambridge-compile-mvs program.bcpl \
+    --compiler-image CG370D \
+    --output workarea/cg370-diagnostic.s370.asm
+
+python3 native-compiler/bootstrap-cambridge/check-cg370-diagnostic.py \
+    workarea/cg370-baseline.s370.asm \
+    workarea/cg370-diagnostic.s370.asm
+```
+
+The comparison must pass after removing only lines beginning
+`* CG370-DIAG:`.
+
 ## Inspection checkpoint
 
 No regression is run by `build-cambridge-mvs`. After the build, inspect:
