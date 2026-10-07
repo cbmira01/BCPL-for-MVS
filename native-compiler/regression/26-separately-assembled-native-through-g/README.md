@@ -90,4 +90,31 @@ and ordinary MVS external linkage are sufficient to support such an interface.
 
 ## Status
 
-PENDING.
+PASS.
+
+Job 1136 on 2026-10-07 compiled the BCPL application through the resident
+Cambridge compiler path. Job 1137 then built and ran the mixed-language
+native program with the BCPL/runtime source and native routine assembled in
+separate IFOX steps:
+
+```text
+ASMBCPL  IFOX00  RC=0000
+ASMNAT   IFOX00  RC=0000
+LKED     IEWL    RC=0000
+GO               RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+This establishes executable evidence that ordinary MVS external linkage can
+join a generated BCPL module to a separately assembled native routine, and
+that the generated BCPL calling convention remains valid across that language
+boundary.
+
+The generated-trailer augmentation remains regression scaffolding. This PASS
+does not yet define the final application-facing mixed-language packaging or
+historical LOAD/UNLOAD behavior.
