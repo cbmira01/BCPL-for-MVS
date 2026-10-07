@@ -1,4 +1,4 @@
-GLOBAL $( START:1; GETVEC:87; FREEVEC:88; DEBUGINT:150 $)
+GLOBAL $( START:1; GETVEC:87; DEBUGINT:150 $)
 
 LET MAKE() = GETVEC(2)
 
@@ -12,7 +12,6 @@ $(1
     $(2
         P!1 := 42
         DEBUGINT(P!1)
-        FREEVEC(P)
     $)2
 
     FINISH
