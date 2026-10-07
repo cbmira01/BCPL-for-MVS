@@ -10,10 +10,10 @@ to the existing buffered SYSPRINT record.
 
 ## Source shape
 
-The program calls the Cambridge-dialect spelling below. `*S` is the string escape for a space in this compiler lineage:
+The program calls the already-proven no-space string-literal form:
 
 ```bcpl
-WRITEF("BASIC*SWRITEF")
+WRITEF("HELLO")
 ```
 
 and then executes FINISH.
@@ -43,7 +43,7 @@ A successful Test 053 must:
 
 - compile a direct WRITEF call through G!76;
 - assemble and link with the new literal WRITEF bootstrap;
-- emit exactly `BASIC WRITEF`;
+- emit exactly `HELLO`;
 - terminate normally through FINISH.
 
 ## Status
