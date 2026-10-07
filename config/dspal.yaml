@@ -57,6 +57,11 @@ datasets:
       CGC: workarea/bootstrap-cambridge/demoted/cgc
       CGD: workarea/bootstrap-cambridge/demoted/cgd
       CGE: workarea/bootstrap-cambridge/demoted/cge
+      CGAD: workarea/bootstrap-cambridge/demoted-diag/cga
+      CGBD: workarea/bootstrap-cambridge/demoted-diag/cgb
+      CGCD: workarea/bootstrap-cambridge/demoted-diag/cgc
+      CGDD: workarea/bootstrap-cambridge/demoted-diag/cgd
+      CGED: workarea/bootstrap-cambridge/demoted-diag/cge
       BOOTHOST: native-compiler/bootstrap-cambridge/bootstrap-host.bcpl
       OPTIONS: native-compiler/bootstrap-cambridge/options-large-tree.txt
       CAMBPARM: native-compiler/bootstrap-cambridge/cambridge-options.txt
@@ -96,6 +101,7 @@ datasets:
     populate: true
     members:
       CAMBBLD: jcl/build-cambridge-resident.jcl
+      CG370DB: jcl/build-cg370-diagnostic.jcl
 
   INTCODE:
     dsn: BCPL.INTCODE
