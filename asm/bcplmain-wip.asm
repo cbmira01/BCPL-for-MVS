@@ -834,12 +834,25 @@ FINRETN  L     13,4(13)
          BR    14
 *
 ***********************************************************************
-* STACK CHECK -- STUB
+* STACK CHECK -- MINIMUM CHECKED-ENTRY CONTRACT
 *
-* This currently performs no check.  Historical overflow rules, marker
-* initialization, and ABORT integration must be reconstructed.
+* Test 48 established the CG370 checked-entry sequence:
+*
+*          BAL   14,60(11)
+*          DC    A(Lnnn)       inline required frame size in bytes
+*
+* and showed that this replaces the ordinary generated LR 5,15.
+*
+* This first executable implementation deliberately performs no limit
+* comparison yet.  It establishes the current workspace P from W exactly
+* where unchecked entry would do so, advances R14 past the inline
+* fullword, and resumes generated code.  It does not consume or alter
+* the frame-size value.  Historical overflow rules, marker initialization,
+* and ABORT integration remain to be reconstructed separately.
 ***********************************************************************
-STKIMPL  BR    14
+STKIMPL  LR    5,15
+         LA    14,4(14)
+         BR    14
 *
 ***********************************************************************
 * STACK CHECK + CALL COUNT -- STUB
