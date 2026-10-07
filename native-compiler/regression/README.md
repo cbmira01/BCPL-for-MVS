@@ -827,7 +827,7 @@ also make successful MVS storage release more directly observable.
 
 ### 33-caller-base-after-function-return
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Calls a trivial function returning 17, then immediately performs caller-side
 conditional control flow and emits 42 on the correct path or 99 on failure.
@@ -844,6 +844,23 @@ Expected output:
 ```text
 42
 ```
+
+### 34-valof-resultis
+
+Status: **PENDING** — ready for first native run.
+
+Introduces the minimal `VALOF ... RESULTIS ...` expression form. START assigns
+the value of a VALOF block containing only `RESULTIS 42` to a local, reports
+that local through DEBUGINT, and terminates normally.
+
+Expected output:
+
+```text
+42
+```
+
+This test isolates only the basic VALOF/RESULTIS result-continuation contract.
+Conditional and nested RESULTIS cases are deliberately deferred.
 
 ## MVS-resident Cambridge compile path
 
