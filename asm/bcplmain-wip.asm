@@ -930,8 +930,9 @@ PUTBYTE  LR    14,7
 * GETMAIN EC returns its address through A= and completion in R15.
 * Generated BCPL requires R0=0 and R1-R3 to hold permanent constants,
 * R5 to remain P, R6 to remain L, and R15 to remain W.  Preserve them
-* explicitly across the MVS service.  Test 32 exposed that nested
-* function return cannot tolerate relying on GETMAIN to preserve P/L.
+* explicitly across the MVS service as defensive runtime discipline.
+* Test 32 ultimately identified a separate RETIMPL error, not GETMAIN
+* register corruption.
 ***********************************************************************
 GETVEC   LTR   7,7
          BC    4,GVFAIL0
@@ -998,8 +999,8 @@ GVFAIL0  SR    7,7
 *
 * FREEMAIN R may disturb the machine-service register set.  Preserve
 * R0-R3 because generated code requires them, R5/R6 because they are
-* BCPL P/L, and R15 because it is W.  Test 32 exposed P/L corruption
-* immediately after FREEMAIN on the caller-side FREEVEC path.
+* BCPL P/L, and R15 because it is W.  This is defensive runtime
+* discipline; Test 32 ultimately identified a separate RETIMPL error.
 ***********************************************************************
 FREEVEC  LTR   7,7
          BZ    FVRETURN
