@@ -881,7 +881,7 @@ expression/result register.
 
 ### 36-nested-valof-resultis
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Extends the VALOF/RESULTIS regressions to nested continuations. The inner
 RESULTIS must exit only the inner VALOF and yield 17; execution then resumes in
