@@ -936,6 +936,24 @@ Expected output:
 This isolates the machine-dependent byte-store path, including BCPL word-pointer
 to byte-address conversion, byte-offset arithmetic, and three-argument linkage.
 
+### 39-freevec-storage-release
+
+Status: **PENDING** — ready for first native run.
+
+Repeatedly allocates exact 1 MiB GETVEC blocks until allocation fails, frees one
+known live block, then immediately retries the same 1 MiB allocation.
+
+Expected output:
+
+```text
+42
+```
+
+Output 42 is possible only if at least one allocation succeeded, exhaustion was
+reached, FREEVEC released one live extent, and the same-sized GETVEC then
+succeeded. This strengthens Tests 28/29 by making successful storage release
+behaviorally observable.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
