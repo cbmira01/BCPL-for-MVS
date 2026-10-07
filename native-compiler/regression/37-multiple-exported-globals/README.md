@@ -57,8 +57,10 @@ A successful run must:
   byte displacements; and
 - show all three calls completing through the ordinary native BCPL linkage.
 
-The first successful run should be accompanied by generated-S/370 inspection to
-confirm the trailer and global loads explicitly.
+The first successful run was inspected. START loads LEFT, RIGHT, and ADD from
+`604(R12)`, `608(R12)`, and `612(R12)` respectively, and calls each through
+`BALR 6,4`. The generated trailer contains export pairs for G!151, G!152,
+G!153, and G!1/START, preceded by the trailer sentinel pair.
 
 ## Scope
 
@@ -67,4 +69,4 @@ native module/trailer/global-vector regression.
 
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
