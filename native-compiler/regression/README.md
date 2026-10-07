@@ -956,7 +956,7 @@ behaviorally observable.
 
 ### 40-static-scalar-persistence
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Declares a STATIC scalar initialized to 17, updates it from a separate procedure,
 then reads it from START.
