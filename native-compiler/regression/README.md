@@ -587,6 +587,39 @@ This exercises callable user globals through R12/G. Generated S/370 must
 show ADD exported as G!151 and START loading its callable address from
 `604(R12)` before Test 24 is considered fully proven.
 
+### 25-separately-compiled-bcpl-library
+
+Status: **PENDING**.
+
+Compiles the application and a tiny ADD library as two independent BCPL
+compilation units. The application declares ADD as G!151 but does not define
+it; the library defines and exports ADD as G!151.
+
+Because the current WIP BCPLMAIN only scans the trailer of the one generated
+module that enters it, the regression runner uses a deliberately temporary
+static combiner after both Cambridge compilations. The combiner renames the
+library's generated local labels, incorporates its generated code, and merges
+its exported-global trailer pair into the application module trailer.
+
+Expected output:
+
+```text
+42
+```
+
+This test is intended to establish:
+
+- separate BCPL compilation of application and library source;
+- preservation of generated BCPL calling conventions across that boundary;
+- installation of the library-generated ADD address into G!151;
+- application lookup of ADD through `604(R12)`;
+- invocation through the ordinary global-call `BALR` path; and
+- return of the library function result through R7.
+
+It does **not** claim that native LOAD/UNLOAD or unchanged independently
+linked BCPL sections work yet. Removing the static-combiner accommodation is
+a later loader/linkage milestone.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
