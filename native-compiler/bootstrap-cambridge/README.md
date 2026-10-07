@@ -123,14 +123,20 @@ Every injected assembler record begins:
 * CG370-DIAG:
 ```
 
-The initial commentary exposes:
+The commentary exposes:
 
-- OCODE dispatch number and current SSP;
+- symbolic OCODE name, historical numeric opcode, and current SSP;
+- generated procedure-entry label and source-name length;
 - CGSAVE entry state;
-- CGAPPLY call/workspace displacement;
+- explicit FNAP/RTAP call kind, K, workspace displacement, and SSP;
 - safe-frame correction state;
 - stack-check inline slot location;
 - final stack-frame size in words and bytes.
+
+The numeric OCODE value is retained beside the symbolic name so the diagnostic
+stream remains useful when checking the historical opcode encoding in CGHDR.
+Procedure-name bytes are deliberately not reproduced by the diagnostic layer;
+the bootstrap host/target character representation remains a separate concern.
 
 The instrumentation writes listing comments only. It does not update TXTP,
 binary-output state, labels, or generated instructions/data. Each insertion
