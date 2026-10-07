@@ -39,6 +39,33 @@ Reference:
 This is an important implementation reference, but there is presently no
 evidence that the Cambridge System/370 runtime used this exact algorithm.
 
+## Richards Cintcode allocator
+
+Richards' Cintcode documentation describes a particularly simple allocator
+that is relevant to the remembered "simple BCPL heap allocator":
+
+- blocks are chained in memory order;
+- word zero of each block contains both size and allocation state;
+- the least significant bit is the allocated/free flag;
+- the remaining even value is the block size in words;
+- GETVEC uses first fit;
+- FREEVEC marks a block free; and
+- GETVEC coalesces adjacent free blocks while walking the chain.
+
+The block list lives inside the Cintcode memory itself.  This is not simply
+one host malloc/free operation per BCPL GETVEC/FREEVEC request.
+
+Richards also describes an extra size word before the user vector and guard
+words after the block for detecting common allocation errors.
+
+This algorithm is simple enough that it may be related to the remembered
+allocator.  It still performs coalescing rather than moving live vectors.
+
+Reference:
+
+- Martin Richards, *The BCPL Cintcode System* / later Cintcode and Cintpos
+  manuals, BLIB GETVEC/FREEVEC description.
+
 ## Coalescing versus moving compaction
 
 Keep these concepts distinct:
@@ -69,6 +96,8 @@ simple algorithm.
 
 Possible explanations include:
 
+- the remembered implementation was the Richards Cintcode first-fit block
+  chain, whose simplicity is now documented explicitly;
 - the remembered operation was adjacent-block coalescing;
 - compression meant compacting or rebuilding a free list;
 - objects were referenced through handles, making movement possible;
@@ -131,7 +160,7 @@ Tests 27-29 prove successful allocation, release, multiple live allocations,
 and head/middle/tail VECLIST removal. These tests validate the WIP behavior;
 they do not establish historical identity.
 
-Test 30 changes GETVEC to conditional GETMAIN RC and begins establishing the
+Test 30 changes GETVEC to conditional GETMAIN EC and establishes the
 BCPL failure-to-zero contract.
 
 ## Candidate final architectures
