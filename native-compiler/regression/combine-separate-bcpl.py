@@ -113,7 +113,25 @@ def prepare_library(lines: list[str]) -> tuple[list[str], int, list[tuple[int, s
     if start_label >= trailer_start:
         raise ValueError("library Q999 does not precede its generated trailer")
 
-    body = renamed[start_label + 1 : trailer_start]
+    # A generated BCPL module begins after Q999 with the five-statement
+    # entry wrapper:
+    #
+    #   STM 14,12,12(13)
+    #   L   4,12(15)
+    #   BCR 15,4
+    #   DC  AL2(Q998-Q999)
+    #   DC  A(BCPLMAIN)
+    #
+    # That wrapper is meaningful only when this unit is entered as an
+    # independent BCPL module.  The static regression combiner incorporates
+    # the library into the application's generated section instead, so do not
+    # copy the wrapper or its Q998/Q999 references.  Preserve everything after
+    # it: generated constants/data, procedures, and local labels.
+    body_start = start_label + 6
+    if body_start > trailer_start:
+        raise ValueError("library generated entry wrapper is incomplete")
+
+    body = renamed[body_start:trailer_start]
     if not body:
         raise ValueError("library generated code body is empty")
     if not pairs:
