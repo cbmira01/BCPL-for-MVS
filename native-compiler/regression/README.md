@@ -862,6 +862,23 @@ Expected output:
 This test isolates only the basic VALOF/RESULTIS result-continuation contract.
 Conditional and nested RESULTIS cases are deliberately deferred.
 
+### 35-conditional-resultis
+
+Status: **PENDING** — ready for first native run.
+
+Extends Test 34 from one RESULTIS path to two distinct control-flow paths that
+both exit the same VALOF expression.
+
+Expected output:
+
+```text
+42
+```
+
+The generated S/370 should show the true and false RESULTIS paths converging on
+the same VALOF continuation while preserving the selected value in the ordinary
+expression/result register.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
