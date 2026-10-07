@@ -965,8 +965,8 @@ WFLITCP  LA    14,1(14)
          BAL   10,WFPUTC
          B     WFLITLP
 *
-* Emit signed decimal WFARG1.  Digits are built right-to-left in a
-* 12-byte temporary area, then copied through the common byte appender.
+* Emit signed decimal WFARG1 using the proven CVD/UNPK shape already
+* used by DEBUGINT, then copy digits through the common byte appender.
 *
 WFNUM    ST    8,WFREM
          ST    14,WFFMTP
