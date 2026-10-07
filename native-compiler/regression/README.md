@@ -679,7 +679,8 @@ deliberately deferred.
 
 ### 28-freevec
 
-Status: **PENDING**.
+Status: **PASS** — Job 1140 compiled the BCPL test; Job 1141 assembled,
+link-edited, and executed successfully on 2026-10-07, emitting `42`.
 
 Introduces native G!88 FREEVEC using the VECLIST records established by
 GETVEC. The test allocates and uses one vector, releases it, allocates and
