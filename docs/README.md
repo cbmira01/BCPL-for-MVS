@@ -19,6 +19,8 @@ The files in this directory are working briefings for people developing or revie
 - `BCPL-history-and-porting.md` — historical compiler/porting context
 - `BCPL-memory-management.md` — GETVEC/FREEVEC, heap allocation, coalescing,
   compaction research, and the native WIP allocator
+- `BCPL-corpus-audit.md` — Cambridge compiler and historical BCPL corpus audit,
+  regression coverage map, and evidence-driven feature backlog
 - `project-map.md` — repository and workflow map
 
 ## Source discipline
