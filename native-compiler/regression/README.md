@@ -1158,7 +1158,7 @@ fullword.
 
 ### 50-stack-frame-size
 
-Status: **PENDING** — checked-entry frame-size decoding.
+Status: **PASS** — emitted `42` with a 172-byte checked frame on 2026-10-07.
 
 Uses a local `VEC 31` so CG370 must publish a substantially larger frame than
 Test 49's 44-byte case. Generated-code assertions require both the checked-entry
@@ -1168,12 +1168,24 @@ BCPLMAIN now loads the inline frame size from `0(R14)`, verifies that it is
 positive and word aligned, restores R4 from the just-saved workspace, skips the
 inline word, and resumes generated code.
 
-This does **not** yet compare the required frame against WORKEND and therefore
-does not claim stack-overflow detection. Expected native output is:
+Observed generated frame:
+
+```asm
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+L994 EQU 172 STACK FRAME SIZE
+```
+
+The native run emitted:
 
 ```text
 42
 ```
+
+This proves the inline frame-size word was decoded and structurally accepted.
+The runtime still does **not** compare the required frame against WORKEND, so
+stack-overflow detection is not yet claimed.
 
 ## MVS-resident Cambridge compile path
 
