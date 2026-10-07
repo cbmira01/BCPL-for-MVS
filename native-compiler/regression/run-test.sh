@@ -26,6 +26,7 @@ case_dir=${matches[0]}
 case_name=$(basename "$case_dir")
 source="$case_dir/source.bcpl"
 library="$case_dir/library.bcpl"
+native="$case_dir/native.asm"
 
 [[ -f "$source" ]] || {
     echo "run-test: missing $source" >&2
@@ -84,7 +85,17 @@ fi
 combined="$work/native-test.asm"
 entry="BCRG00${test_no}"
 
-if [[ -n "$library_generated" ]]; then
+if [[ -f "$native" ]]; then
+    echo
+    echo "=== Prepare external native global ==="
+    python3 "$script_dir/prepare-native-global.py" \
+        "$generated" \
+        "$root/asm/bcplmain-wip.asm" \
+        "$combined" \
+        "$entry" \
+        NATIVEAD \
+        151 || exit $?
+elif [[ -n "$library_generated" ]]; then
     echo
     echo "=== Combine separately compiled BCPL units ==="
     python3 "$script_dir/combine-separate-bcpl.py" \
@@ -173,13 +184,33 @@ fi
 echo
 echo "=== Assembler preflight ==="
 python3 "$root/tools/checks/check-asm-source.py" "$combined" || exit $?
+if [[ -f "$native" ]]; then
+    python3 "$root/tools/checks/check-asm-source.py" "$native" || exit $?
+fi
 
 echo
 echo "=== Build native assemble/link/go job ==="
-python3 "$root/tools/make-asm-job"     "$combined"     --output-dir "$work"     --entry "$entry"     --job-name "RG${test_no}RUN"     --listing heavy     --force || exit $?
+if [[ -f "$native" ]]; then
+    jcl="$work/native-test-heavy.jcl"
+    python3 "$script_dir/make-two-object-job.py" \
+        "$combined" \
+        "$native" \
+        "$jcl" \
+        --entry "$entry" \
+        --job-name "RG${test_no}RUN" || exit $?
+else
+    python3 "$root/tools/make-asm-job" \
+        "$combined" \
+        --output-dir "$work" \
+        --entry "$entry" \
+        --job-name "RG${test_no}RUN" \
+        --listing heavy \
+        --force || exit $?
 
-jcl="$work/native-test-heavy.jcl"
+    jcl="$work/native-test-heavy.jcl"
+fi
 
+if [[ ! -f "$native" ]]; then
 python3 - "$jcl" "$test_no" <<'PY'
 from pathlib import Path
 import sys
@@ -194,6 +225,7 @@ if text.count(old) != 1:
     raise SystemExit("cannot locate final GO EXEC statement")
 path.write_text(text.replace(old, new, 1), encoding="ascii", newline="\n")
 PY
+fi
 
 echo
 echo "=== Submit native run ==="
@@ -238,6 +270,7 @@ expected_output() {
         23) printf '%s\n' "42" ;;
         24) printf '%s\n' "42" ;;
         25) printf '%s\n' "42" ;;
+        26) printf '%s\n' "42" ;;
         *)  return 1 ;;
     esac
 }
