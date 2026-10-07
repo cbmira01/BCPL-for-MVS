@@ -42,6 +42,11 @@ def parse_args() -> argparse.Namespace:
         type=number,
         help="last test number for an inclusive range",
     )
+    parser.add_argument(
+        "--show-output",
+        action="store_true",
+        help="show each test's BCPL output; on mismatch also show the native job report",
+    )
     return parser.parse_args()
 
 
@@ -129,13 +134,34 @@ def main() -> int:
 
         print(f"RUN   {nn}  {case_name}", flush=True)
         with log.open("w", encoding="utf-8") as handle:
+            env = None
+            if args.show_output:
+                import os
+                env = os.environ.copy()
+                env["NATIVE_REGRESSION_SHOW_OUTPUT"] = "1"
             proc = subprocess.run(
                 ["bash", str(RUNNER), nn],
                 cwd=ROOT,
                 stdout=handle,
                 stderr=subprocess.STDOUT,
                 text=True,
+                env=env,
             )
+
+        if args.show_output:
+            lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+            for heading in ("=== BCPL output ===", "=== Output mismatch ==="):
+                if heading in lines:
+                    start_index = lines.index(heading)
+                    end_index = len(lines)
+                    for index in range(start_index + 1, len(lines)):
+                        if lines[index].startswith("===") and index > start_index:
+                            end_index = index
+                            break
+                    print(heading)
+                    for line in lines[start_index + 1:end_index]:
+                        print(line)
+                    break
 
         if proc.returncode == 0:
             passed += 1
