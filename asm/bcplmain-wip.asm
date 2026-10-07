@@ -409,15 +409,30 @@
 *    Add other stubs only as their contracts are recovered.
 *
 * 12. GETVEC / FREEVEC AND STORAGE CLEANUP
-*     HISTORICAL
+*     HISTORICAL / WIP
 *
 *    LIBHDR assigns G87 GETVEC and G88 FREEVEC.
 *    BCPLMAC contains a vector-list head specifically for allocations
 *    made by these routines and retains final storage for exit cleanup.
+*    BCPLMAC VECAREA describes VECBASE, VECLEN, and VECNEXT.
 *
-*    UNKNOWN:
-*    allocation headers, subpool policy, failure return conventions,
-*    and RESULT2 interaction still require reconstruction.
+*    Regression 27 adds the first WIP GETVEC success path.  GETVEC(N)
+*    obtains N+1 payload words, matching BCPL VEC N.  The WIP block
+*    carries a three-word control record before the returned payload:
+*
+*       +0  VECBASE   BCPL word pointer returned to the caller
+*       +4  VECLEN    total bytes obtained from MVS
+*       +8  VECNEXT   byte pointer to next allocation record
+*       +12 payload   N+1 BCPL words
+*
+*    VECLIST heads those records.  This is shaped deliberately so that
+*    FREEVEC and exit cleanup can be added without replacing GETVEC.
+*
+*    CURRENT LIMITATION:
+*    the first WIP uses unconditional GETMAIN R.  Exhaustion therefore
+*    ABENDs rather than returning a reconstructed historical failure
+*    result.  Failure semantics, subpool policy, FREEVEC, and RESULT2
+*    interaction remain to be established by later regressions.
 *
 * 13. DYNAMIC LOAD / UNLOAD
 *     HISTORICAL
@@ -651,6 +666,7 @@ GIDONE   L     4,4(12)
 * G!14 = first narrow native WRCH implementation for Regression 03.
 * G!76 = temporary no-op WRITEF for the factorial milestone.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
+* G!87 = first WIP GETVEC dynamic-storage service.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
 *
          LA    1,WRCH
@@ -661,6 +677,8 @@ GIDONE   L     4,4(12)
          ST    1,340(12)
          LA    1,PUTBYTE
          ST    1,344(12)
+         LA    1,GETVEC
+         ST    1,348(12)
          LA    1,DEBUGINT
          ST    1,600(12)
 *
@@ -873,6 +891,49 @@ PUTBYTE  LR    14,7
          BCR   15,6
 *
 ***********************************************************************
+* GETVEC(N) -> R7 -- WIP DYNAMIC STORAGE
+*
+* Regression 27 success-path implementation.
+*
+* BCPL VEC N has indices 0..N, so GETVEC(N) supplies N+1 payload
+* fullwords.  Twelve private bytes precede the payload and mirror the
+* historical VECAREA fields VECBASE, VECLEN, and VECNEXT.
+*
+* GETMAIN R is intentionally unconditional for this first rung.
+* Allocation failure semantics are deferred to the later edge test.
+*
+* GETMAIN uses R0/R1.  Generated BCPL requires R0=0 and R1-R3 to hold
+* permanent constants, so save and restore R0-R3 around the MVS call.
+***********************************************************************
+GETVEC   STM   0,3,GVRSAVE
+         LR    14,7
+         LA    14,4(14)
+         SLL   14,2
+         LA    14,12(14)
+         ST    14,GVRLEN
+         GETMAIN R,LV=(14)
+*
+* R1 is the byte address returned by GETMAIN.  Build the WIP VECAREA
+* record in the allocated block and chain it at VECLIST.
+*
+         LR    14,1
+         LA    7,12(14)
+         SRL   7,2
+         ST    7,0(14)
+         L     10,GVRLEN
+         ST    10,4(14)
+         L     10,VECLIST
+         ST    10,8(14)
+         ST    14,VECLIST
+*
+* Restore permanent generated-code registers and the caller's B.
+* R7 deliberately retains the BCPL word pointer result.
+*
+         LM    0,3,GVRSAVE
+         L     4,0(5)
+         BCR   15,6
+*
+***********************************************************************
 * DEBUGINT -- PROVISIONAL BOOTSTRAP DIAGNOSTIC
 *
 * G150 DEBUGINT receives a signed 32-bit integer in R7.
@@ -928,6 +989,13 @@ DBGARET  BR    14
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
+*
+* GETVEC WIP allocation state.
+* VECLIST is a byte pointer to the first three-word control record.
+*
+VECLIST  DC    F'0'
+GVRLEN   DC    F'0'
+GVRSAVE  DS    4F
 *
 * Private MVS save area used while BCPLMAIN owns R13.
 *
