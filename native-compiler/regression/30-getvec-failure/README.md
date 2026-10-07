@@ -55,3 +55,9 @@ behavior, or any moving compaction scheme.
 ## Status
 
 PENDING.
+
+First attempt: Job 1144 compiled the BCPL source successfully. Job 1145
+failed in IFOX with RC=0008 before link-edit or execution. The conditional
+allocation path was then adjusted to use an explicit SP=0 GETMAIN RC form
+and numeric BC masks for maximum Assembler F compatibility. The behavioral
+contract of the test is unchanged.
