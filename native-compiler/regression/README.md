@@ -1093,7 +1093,7 @@ order undefined. Cambridge's observed left-to-right lowering is permitted.
 
 ### 48-stack-check-emission
 
-Status: **PENDING** — compile-only generated-code contract probe.
+Status: **PASS** — compile-only generated-code contract probe, 2026-10-07.
 
 Reuses the minimal Test 00 source but supplies a private Cambridge bootstrap
 parameter record beginning `/CN`. The second-phase `C` enables CG370 stack
@@ -1108,9 +1108,20 @@ BAL   14,60(11)
 DC    A(Lnnn) STACK FRAME SIZE
 ```
 
-The regression deliberately stops after generated-code assertions. It does not
-assemble or execute the program because BCPLMAIN's current stack-check entry is
-still a stub. Runtime semantics begin with the next regression.
+Observed minimal generated entry:
+
+```asm
+STM 4,6,0(15)
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+BC 15,40(11)
+L994 EQU 12 STACK FRAME SIZE
+```
+
+This establishes a 12-byte minimal frame and confirms that checked entry replaces
+the ordinary `LR 5,15` operation. The regression deliberately stops after
+generated-code assertions because BCPLMAIN's current stack-check entry is still
+a stub. Runtime semantics begin with the next regression.
 
 ## MVS-resident Cambridge compile path
 
