@@ -731,7 +731,8 @@ is correct. Exact MVS address reuse is not tested.
 
 ### 30-getvec-failure
 
-Status: **PENDING**.
+Status: **PASS** — Job 1150 compiled the BCPL test; Job 1151 assembled,
+link-edited, and executed successfully on 2026-10-07, emitting `4242`.
 
 Changes GETVEC from unconditional GETMAIN to conditional GETMAIN EC and
 establishes failure-to-zero behavior. The test first proves that a normal
