@@ -69,8 +69,11 @@ A successful run must:
 - call FREEVEC on a known live 1 KiB allocation;
 - succeed on the immediately following same-sized GETVEC.
 
-Generated S/370 inspection should confirm the loop, G!87/G!88 calls, and
-post-FREEVEC retry.
+Generated S/370 inspection confirms the intended sequence. The loop calls
+GETVEC through G!87 at 348(R12), retains each successful pointer, and repeats
+until GETVEC returns zero. The success path then calls FREEVEC through G!88 at
+352(R12), immediately retries GETVEC(252), and emits 42 only when that retry
+returns nonzero.
 
 ## Scope
 
@@ -90,4 +93,4 @@ then require one same-sized replacement allocation to succeed.
 
 ## Status
 
-PENDING — revised after the first run proved the 1 MiB block size was too large.
+PASS — emitted `42` on 2026-10-07.
