@@ -1035,6 +1035,22 @@ Expected output:
 This isolates BCPL address-of and monadic indirection while reusing already
 proven local-scalar, arithmetic, and DEBUGINT behavior.
 
+### 45-shifts-bitwise
+
+Status: **PENDING** — ready for first native run.
+
+Exercises left shift, right shift, OR, AND, EQV, and NEQV in one compact
+expression chain and emits the resulting value.
+
+Expected output:
+
+```text
+42
+```
+
+This is both corpus-driven and documentation-driven coverage of core BCPL
+bitwise and shift operators.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
