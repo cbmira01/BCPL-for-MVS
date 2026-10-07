@@ -1006,7 +1006,7 @@ MANIFEST translation paths.
 
 ### 43-label-goto
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Initializes `X=17`, executes `GOTO ADD25`, places an unreachable `X := 99`
 between the GOTO and label, then adds 25 and emits the result.
