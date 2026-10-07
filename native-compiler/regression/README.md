@@ -954,6 +954,23 @@ reached, FREEVEC released one live extent, and the same-sized GETVEC then
 succeeded. This strengthens Tests 28/29 by making successful storage release
 behaviorally observable.
 
+### 40-static-scalar-persistence
+
+Status: **PENDING** — ready for first native run.
+
+Declares a STATIC scalar initialized to 17, updates it from a separate procedure,
+then reads it from START.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates persistent module static storage and generated addressing. The
+Cambridge compiler master and historical CG370 both use STATIC declarations, so
+this is direct corpus-driven coverage.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
