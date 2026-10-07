@@ -1223,7 +1223,7 @@ unwind. No WORKEND comparison or overflow behavior is claimed.
 
 ### 52-controlled-stack-overflow
 
-Status: **PENDING** — first controlled checked-stack boundary failure.
+Status: **PASS** — emitted `STACK OVERFLOW` through the controlled checked-stack boundary on 2026-10-07.
 
 Uses a non-tail-recursive DEPTH with local `VEC 255`, making each activation
 large enough to cross the current 16 KiB static WORK area after a modest number
@@ -1246,6 +1246,25 @@ with WORKEND provisionally serving as STKLIM. Expected bootstrap output is:
 STACK OVERFLOW
 ```
 
+Observed DEPTH generation:
+
+```asm
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+LA 15,1044(5)
+...
+BALR 6,4
+...
+L994 EQU 1072 STACK FRAME SIZE
+```
+
+The 1044-byte W advance and 1072-byte required frame are not identical. The
+successful controlled failure therefore strengthens the contract: STKIMPL must
+use the inline frame-size word when testing the boundary, not merely the
+caller's next-W displacement.
+
+The run emitted `STACK OVERFLOW` and avoided uncontrolled storage corruption.
 The test does not yet claim historical ABORT/STOP(100) integration.
 
 ## MVS-resident Cambridge compile path
