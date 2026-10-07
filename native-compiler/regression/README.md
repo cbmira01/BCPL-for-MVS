@@ -1189,7 +1189,7 @@ stack-overflow detection is not yet claimed.
 
 ### 51-checked-recursion
 
-Status: **PENDING** — bounded recursive execution under checked entry.
+Status: **PASS** — emitted `42` through five checked recursive levels on 2026-10-07.
 
 Reuses the proven Test 18 non-tail-recursive DEPTH(5) shape, but compiles with
 second-phase Cambridge option `C`. Generated-code assertions require at least
@@ -1202,9 +1202,24 @@ The expected native result remains:
 42
 ```
 
-This test changes no runtime code. Its purpose is to prove that the checked-entry
-contract from Tests 48-50 composes across repeated recursive workspaces and
-ordinary unwind. No WORKEND comparison or overflow behavior is claimed.
+Observed recursive entry and call sequence:
+
+```asm
+STM 4,7,0(15)
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+LA 15,16(5)
+L  4,0+L2-L1(4)
+BALR 6,4
+...
+L994 EQU 44 STACK FRAME SIZE
+```
+
+START also used checked entry with a 44-byte frame. This test changes no runtime
+code; its successful five-level non-tail-recursive run proves that the checked
+entry contract from Tests 48-50 composes across repeated workspaces and ordinary
+unwind. No WORKEND comparison or overflow behavior is claimed.
 
 ## MVS-resident Cambridge compile path
 
