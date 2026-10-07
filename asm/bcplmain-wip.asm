@@ -834,26 +834,32 @@ FINRETN  L     13,4(13)
          BR    14
 *
 ***********************************************************************
-* STACK CHECK -- MINIMUM CHECKED-ENTRY CONTRACT
+* STACK CHECK -- FRAME-SIZE CONTRACT
 *
-* Test 48 established the CG370 checked-entry sequence:
+* Tests 48-49 established the checked-entry sequence and proved that
+* this path must perform the LR 5,15 omitted by CG370.
 *
-*          BAL   14,60(11)
-*          DC    A(Lnnn)       inline required frame size in bytes
+* R14 addresses an inline fullword containing the generated frame size
+* in bytes.  CG370 has already saved R4-R6 at 0(R15), so R4 is safe as
+* a temporary here and can be restored before returning to generated
+* code.
 *
-* and showed that this replaces the ordinary generated LR 5,15.
-*
-* This first executable implementation deliberately performs no limit
-* comparison yet.  It establishes the current workspace P from W
-* exactly where unchecked entry would do so, advances R14 past the
-* inline fullword, and resumes generated code.  It does not consume
-* or alter the frame-size value.  Historical overflow rules, marker
-* initialization,
-* and ABORT integration remain to be reconstructed separately.
+* Test 50 adds structural validation of the inline value: it must be
+* positive and word aligned.  This is not yet an overflow check; no
+* comparison with WORKEND is performed.  Historical overflow handling
+* remains separate reconstruction work.
 ***********************************************************************
 STKIMPL  LR    5,15
+         L     4,0(14)
+         LTR   4,4
+         BC    12,STKFORM
+         TM    3(14),X'03'
+         BC    7,STKFORM
+         L     4,0(15)
          LA    14,4(14)
          BR    14
+STKFORM  L     4,0(15)
+         BC    15,BADRETN
 *
 ***********************************************************************
 * STACK CHECK + CALL COUNT -- STUB
