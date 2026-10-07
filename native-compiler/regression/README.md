@@ -807,7 +807,7 @@ Status: **PENDING** — narrowed after an initial S0C4 and ready for retest.
 
 MAKE is now deliberately only `GETVEC(2)` returned as the function result.
 START stores the returned pointer in P, writes 42 to `P!1`, reloads and
-reports it, then releases the same allocation with FREEVEC(P).
+reports it. Test 32 deliberately does not call FREEVEC.
 
 Expected output:
 
@@ -819,7 +819,9 @@ The first version also used `VALOF/RESULTIS` and callee-side vector access,
 introducing more than one unproven construct. Its native run compiled,
 assembled, and linked successfully but ABENDed S0C4 inside generated MAKE.
 Those semantics have been removed from Test 32 and should be isolated in a
-later regression.
+later regression. A later FREEVEC-specific regression should also make
+successful MVS storage release observable rather than merely infer it from
+normal execution.
 
 ## MVS-resident Cambridge compile path
 
