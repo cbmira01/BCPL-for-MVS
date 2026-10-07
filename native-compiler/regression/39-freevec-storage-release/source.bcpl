@@ -1,0 +1,28 @@
+GLOBAL $( START:1; GETVEC:87; FREEVEC:88; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET HEAD = 0
+    LET V = 0
+
+    $(2
+        V := GETVEC(262140)
+        IF V = 0 DO BREAK
+        V!0 := HEAD
+        HEAD := V
+    $)2 REPEAT
+
+    TEST HEAD = 0
+    THEN DEBUGINT(98)
+    OR
+    $(2
+        FREEVEC(HEAD)
+        V := GETVEC(262140)
+
+        TEST V = 0
+        THEN DEBUGINT(99)
+        OR DEBUGINT(42)
+    $)2
+
+    FINISH
+$)1
