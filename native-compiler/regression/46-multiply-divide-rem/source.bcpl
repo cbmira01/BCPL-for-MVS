@@ -1,0 +1,11 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET A = 6 * 7
+    LET B = 43 / 6
+    LET C = 43 REM 6
+
+    DEBUGINT(A + B - C - 6)
+    FINISH
+$)1
