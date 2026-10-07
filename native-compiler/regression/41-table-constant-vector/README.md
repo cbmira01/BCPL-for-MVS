@@ -49,6 +49,44 @@ A successful run must:
 - emit exactly `42`; and
 - show both initialized TABLE elements in generated static/module data.
 
+## Observed generated convention
+
+The first native run passed with output `42`.
+
+CG370 emitted the TABLE as contiguous initialized module data:
+
+```asm
+L3 EQU *
+ DC F'17'
+ DC F'25'
+```
+
+START materializes the TABLE value as a BCPL word pointer to that data:
+
+```asm
+ LA 7,0+L3-L1(4)
+ SRL 7,2(0)
+ ST 7,12(5)
+```
+
+This is direct evidence that a TABLE expression denotes statically allocated
+module data and yields its BCPL word address.
+
+The subsequent indexing follows the established BCPL word-pointer convention:
+
+```asm
+ AR 7,7
+ L  8,0(7,7)
+ A  8,4(7,7)
+```
+
+After doubling R7 twice through the effective-address form, the code reads the
+first and second fullwords at byte displacements 0 and 4, producing 17+25=42.
+
+TABLE therefore shares the same broad module-resident storage model seen for
+STATIC in Test 40, but differs in expression semantics: the generated code
+constructs and returns a BCPL pointer to the first table element.
+
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
