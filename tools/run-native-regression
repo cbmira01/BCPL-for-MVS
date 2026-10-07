@@ -149,6 +149,7 @@ def main() -> int:
 
         if args.show_output:
             lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+            shown = False
             for heading in ("=== BCPL output ===", "=== Output mismatch ==="):
                 if heading in lines:
                     start_index = lines.index(heading)
@@ -160,7 +161,13 @@ def main() -> int:
                     print(heading)
                     for line in lines[start_index + 1:end_index]:
                         print(line)
+                    shown = True
                     break
+
+            if not shown and proc.returncode != 0:
+                print("=== Failure log ===")
+                for line in lines:
+                    print(line)
 
         if proc.returncode == 0:
             passed += 1
