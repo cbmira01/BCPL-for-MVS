@@ -50,4 +50,19 @@ No runtime behavior is claimed by this test.
 
 ## Status
 
-PENDING native compile probe.
+PASS — native compile probe on 2026-10-07.
+
+Observed generated entry:
+
+```asm
+STM 4,6,0(15)
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+BC 15,40(11)
+L994 EQU 12 STACK FRAME SIZE
+```
+
+This proves the checked-entry call is emitted immediately after the generated
+register save, that R14 links to the inline fullword, and that the minimal START
+frame requires 12 bytes. It also confirms that the stack-check path replaces the
+ordinary `LR 5,15` workspace-establishment instruction.
