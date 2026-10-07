@@ -1333,6 +1333,26 @@ byte displacement 304, and ordinary BALR linkage. The bootstrap runtime now
 handles literal text plus `%N`; additional directives, multiple formatting
 arguments, field widths, and newline semantics remain deferred.
 
+### 055-writef-character-string
+
+Status: **PENDING** — sequential character/string WRITEF formatting.
+
+Calls `WRITEF("%C%S", 'A', "HELLO")` and expects:
+
+```text
+AHELLO
+```
+
+The surviving BLIB WRITEF maps `%C` to `WRCH` and `%S` to `WRITES`,
+advancing the formatting-argument pointer after each conversion. This
+regression therefore proves two conversions in one call: R8 supplies the
+character and R9 supplies the BCPL string pointer.
+
+Generated-code assertions check the target EBCDIC character value in R8, the
+word-pointer construction in R9, the G!76 load at byte displacement 304, and
+ordinary BALR linkage. The runtime now uses a shared bootstrap argument cursor
+for `%N`, `%C`, and `%S`.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
