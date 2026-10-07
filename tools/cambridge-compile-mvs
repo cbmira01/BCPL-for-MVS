@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 from pathlib import Path
 import re
 import sys
@@ -45,6 +46,7 @@ def build_deck(
     job_name: str,
     redact_password: bool,
     cambridge_parm_path: Path | None = None,
+    compiler_image: str = "CAMBCOMP",
 ) -> str:
     source = core.full_dsn(config, config["datasets"]["SOURCE"])
     intcode = core.full_dsn(config, config["datasets"]["INTCODE"])
@@ -59,14 +61,14 @@ def build_deck(
     lines.extend([
         "//* COMPILE ONE BCPL SOURCE WITH THE PERSISTENT CAMBRIDGE IMAGE",
         "//* CAMBRIDGE IS INTCODE EXECUTED BY HERC02.BCPL.LOAD(ICINT19)",
-        "//* INTIN IS THE PACKED HERC02.BCPL.INTCODE(CAMBCOMP) IMAGE",
+        f"//* INTIN IS THE PACKED {intcode}({compiler_image}) IMAGE",
         "//COMP     EXEC PGM=ICINT19,REGION=256K,TIME=(,30)",
         f"//STEPLIB  DD  DSN={load},DISP=SHR",
         "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)",
     ])
 
     lines.extend([
-        f"//INTIN    DD  DSN={intcode}(CAMBCOMP),DISP=SHR",
+        f"//INTIN    DD  DSN={intcode}({compiler_image}),DISP=SHR",
         "//SYSIN    DD  DATA,DLM=Z9",
         *source_records(source_path),
         "Z9",
@@ -149,6 +151,15 @@ def parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="override the resident CAMBPARM member with records from PATH",
     )
+    p.add_argument(
+        "--compiler-image",
+        default=os.environ.get("CAMBRIDGE_IMAGE", "CAMBCOMP"),
+        metavar="MEMBER",
+        help=(
+            "INTCODE PDS member containing the resident compiler "
+            "(default: CAMBCOMP; env CAMBRIDGE_IMAGE)"
+        ),
+    )
     p.add_argument("--show-jcl", action="store_true")
     return p
 
@@ -166,6 +177,10 @@ def main() -> int:
         job_name = args.job_name.upper()
         if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}", job_name):
             raise ValueError("--job-name must be a valid MVS job name")
+
+        compiler_image = args.compiler_image.upper()
+        if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}", compiler_image):
+            raise ValueError("--compiler-image must be a valid PDS member name")
 
         cambridge_parm_path = None
         if args.cambridge_parm:
@@ -185,6 +200,7 @@ def main() -> int:
             job_name,
             redact_password=args.show_jcl,
             cambridge_parm_path=cambridge_parm_path,
+            compiler_image=compiler_image,
         )
         if args.show_jcl:
             sys.stdout.write(deck)
