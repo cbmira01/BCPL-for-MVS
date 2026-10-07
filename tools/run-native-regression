@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""Run a contiguous range of native BCPL regressions."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+REGRESSION = ROOT / "native-compiler" / "regression"
+RUNNER = REGRESSION / "run-test-mvs.sh"
+LOG_DIR = ROOT / "workarea" / "native-regression" / "logs"
+CASE_RE = re.compile(r"^(\d\d)-")
+
+
+def number(value: str) -> int:
+    if not value.isdigit():
+        raise argparse.ArgumentTypeError("test numbers must be decimal integers")
+    return int(value, 10)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="run-native-regression",
+        description=(
+            "Run native BCPL regressions through the MVS-resident Cambridge compiler."
+        ),
+    )
+    parser.add_argument(
+        "start",
+        nargs="?",
+        type=number,
+        default=0,
+        help="first test number; default 0",
+    )
+    parser.add_argument(
+        "end",
+        nargs="?",
+        type=number,
+        help="last test number; default highest test currently present",
+    )
+    return parser.parse_args()
+
+
+def discover() -> tuple[dict[int, str], int]:
+    cases: dict[int, str] = {}
+    if not REGRESSION.is_dir():
+        raise RuntimeError(f"missing regression directory: {REGRESSION}")
+
+    for path in sorted(REGRESSION.iterdir()):
+        if not path.is_dir():
+            continue
+        match = CASE_RE.match(path.name)
+        if not match:
+            continue
+        test_no = int(match.group(1), 10)
+        if test_no in cases:
+            raise RuntimeError(f"duplicate test number {test_no:02d}")
+        cases[test_no] = path.name
+
+    if not cases:
+        raise RuntimeError("no numbered native regression tests found")
+    return cases, max(cases)
+
+
+def main() -> int:
+    args = parse_args()
+
+    if not RUNNER.is_file():
+        print(f"run-native-regression: missing runner: {RUNNER}", file=sys.stderr)
+        return 66
+
+    try:
+        cases, highest = discover()
+    except (OSError, RuntimeError) as exc:
+        print(f"run-native-regression: {exc}", file=sys.stderr)
+        return 65
+
+    end = highest if args.end is None else args.end
+    start = args.start
+
+    if start < 0 or end < 0 or start > end:
+        print(
+            f"run-native-regression: invalid range {start}..{end}",
+            file=sys.stderr,
+        )
+        return 64
+    if end > highest:
+        print(
+            f"run-native-regression: requested end {end} "
+            f"exceeds current test {highest}",
+            file=sys.stderr,
+        )
+        return 64
+
+    missing = [test_no for test_no in range(start, end + 1) if test_no not in cases]
+    if missing:
+        for test_no in missing:
+            print(
+                f"run-native-regression: missing test {test_no:02d} "
+                "in requested range",
+                file=sys.stderr,
+            )
+        return 65
+
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+    total = end - start + 1
+    passed = 0
+    failed = 0
+
+    print(f"NATIVE REGRESSION  {start:02d}..{end:02d}  ({total} tests)")
+
+    for test_no in range(start, end + 1):
+        nn = f"{test_no:02d}"
+        case_name = cases[test_no]
+        log = LOG_DIR / f"{case_name}.log"
+
+        print(f"RUN   {nn}  {case_name}", flush=True)
+        with log.open("w", encoding="utf-8") as handle:
+            proc = subprocess.run(
+                ["bash", str(RUNNER), nn],
+                cwd=ROOT,
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+        if proc.returncode == 0:
+            passed += 1
+            print(f"PASS  {nn}  {case_name}")
+        else:
+            failed += 1
+            shown_log = log.relative_to(ROOT)
+            print(
+                f"FAIL  {nn}  {case_name} "
+                f"(rc={proc.returncode}; log={shown_log})"
+            )
+
+    print()
+    print("NATIVE REGRESSION COMPLETE")
+    print(f"PASS  {passed}")
+    print(f"FAIL  {failed}")
+    print(f"TOTAL {total}")
+
+    return 0 if failed == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
