@@ -1,0 +1,12 @@
+GLOBAL $( START:1; GETVEC:87; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET V = GETVEC(2)
+
+    V!0 := 17
+    V!2 := 42
+
+    DEBUGINT(V!2)
+    FINISH
+$)1
