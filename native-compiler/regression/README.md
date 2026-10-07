@@ -797,6 +797,26 @@ An unexpected allocation failure emits 99. No BCPLMAIN change should be
 required; this is deliberately a composition/stability test rather than a new
 runtime feature.
 
+### 32-dynamic-pointer-return
+
+Status: **PENDING** — ready for first native run.
+
+MAKE obtains a vector with GETVEC(2), stores 42 in V!1, and returns the
+dynamic BCPL word pointer through the ordinary function-result convention.
+START stores that returned pointer in P, dereferences P!1 after MAKE has
+returned, reports 42 through DEBUGINT, and finally releases the same
+allocation with FREEVEC(P).
+
+Expected output:
+
+```text
+42
+```
+
+An unexpected allocation failure emits 99. This extends the pointer-return
+contract from Test 20 to MVS-backed dynamic storage and checks that the
+allocation outlives the callee workspace.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
