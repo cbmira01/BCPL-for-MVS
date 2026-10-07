@@ -914,13 +914,17 @@ PUTBYTE  LR    14,7
 *
 * GETMAIN EC returns its address through A= and completion in R15.
 * Generated BCPL requires R0=0 and R1-R3 to hold permanent constants,
-* and R15 is W.  Preserve all of them.
+* R5 to remain P, R6 to remain L, and R15 to remain W.  Preserve them
+* explicitly across the MVS service.  Test 32 exposed that nested
+* function return cannot tolerate relying on GETMAIN to preserve P/L.
 ***********************************************************************
 GETVEC   LTR   7,7
          BC    4,GVFAIL0
          C     7,GVRMAX
          BC    2,GVFAIL0
          STM   0,3,GVRSAVE
+         ST    5,GVRPSAVE
+         ST    6,GVRLSAVE
          ST    15,GVRWSAVE
          LR    10,7
          LA    10,1(10)
@@ -949,6 +953,8 @@ GETVEC   LTR   7,7
 *
          L     15,GVRWSAVE
          LM    0,3,GVRSAVE
+         L     5,GVRPSAVE
+         L     6,GVRLSAVE
          L     4,0(5)
          BCR   15,6
 *
@@ -956,6 +962,8 @@ GETVEC   LTR   7,7
 *
 GVFAIL   L     15,GVRWSAVE
          LM    0,3,GVRSAVE
+         L     5,GVRPSAVE
+         L     6,GVRLSAVE
 GVFAIL0  SR    7,7
          L     4,0(5)
          BCR   15,6
@@ -1078,6 +1086,8 @@ GVRMAX   DC    F'4194299'
 GVRLEN   DC    F'0'
 GVRADDR  DC    F'0'
 GVRSAVE  DS    4F
+GVRPSAVE DC    F'0'
+GVRLSAVE DC    F'0'
 GVRWSAVE DC    F'0'
 FVRSAVE  DS    4F
 FVWSAVE  DC    F'0'
