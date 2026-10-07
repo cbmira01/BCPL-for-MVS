@@ -653,6 +653,29 @@ This test is intended to establish:
 The generated-trailer augmentation remains regression scaffolding; this test
 does not yet define the final mixed-language programmer interface.
 
+### 27-getvec
+
+Status: **PENDING**.
+
+Introduces native G!87 GETVEC and the first MVS-backed dynamic vector. The
+test calls `GETVEC(2)`, writes both V!0 and V!2, and reports V!2 through
+DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+The WIP GETVEC obtains N+1 BCPL payload words and prefixes the MVS allocation
+with a three-word control record modeled on the surviving BCPLMAC VECAREA
+fields: VECBASE, VECLEN, and VECNEXT. BCPLMAIN retains a VECLIST head for the
+following FREEVEC and cleanup regressions.
+
+This first rung uses unconditional MVS GETMAIN. It proves only successful
+allocation and BCPL word-pointer use; allocation failure semantics are
+deliberately deferred.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
