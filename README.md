@@ -6,6 +6,14 @@ The primary historical evidence is the Martin Richards BCPL transport-tape mater
 
 This project appears to be one of the few modern efforts to reconstruct a historical BCPL system for IBM System/370 from surviving compiler and bootstrap materials.
 
+## Compatibility scope
+
+The goal is to reconstruct a usable BCPL compiler and runtime for MVS 3.8J from the surviving historical evidence. Success does **not** by itself establish complete compatibility with the original System/370 BCPL implementation.
+
+In particular, even a compiler that successfully compiles itself and passes this project's regression suite is not guaranteed to compile or run every historical BCPL program that worked with the original compiler. Such programs may depend on undocumented or unrecovered runtime conventions, library routines, stream and data-set behavior, host interfaces, implementation-defined semantics, or other properties of the original environment.
+
+The regression suite therefore demonstrates the behavior explicitly tested by the project; it is not a certification of full historical source, binary, or runtime compatibility.
+
 ## Current state
 
 The interpreted bootstrap path works. The promoted interpreter is selected by `config/CURRENT` and currently resolves to `asm/icintv17.asm`.
