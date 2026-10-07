@@ -68,12 +68,12 @@ tools/run-native-regression
 ```
 
 With no arguments, this discovers the highest numbered test and runs every
-contiguous case from 00 through that test.  Inclusive ranges are also accepted:
+contiguous case from 00 through that test.  One number runs one test; two
+numbers run an inclusive range:
 
 ```sh
-tools/run-native-regression 27
+tools/run-native-regression 30
 tools/run-native-regression 27 30
-tools/run-native-regression 30 30
 ```
 
 The runner continues after individual failures, records each test's complete
