@@ -432,7 +432,7 @@
 *    FREEVEC walks VECLIST by VECBASE, unlinks the matching record, and
 *    issues FREEMAIN R using the recorded VECLEN and allocation base.
 *
-*    Regression 30 changes GETVEC to conditional GETMAIN RC and maps
+*    Regression 30 changes GETVEC to conditional GETMAIN EC and maps
 *    allocation failure to BCPL zero.  Negative sizes and arithmetic
 *    overflow are rejected before the MVS service call.
 *
@@ -908,12 +908,13 @@ PUTBYTE  LR    14,7
 * fullwords.  Twelve private bytes precede the payload and mirror the
 * historical VECAREA fields VECBASE, VECLEN, and VECNEXT.
 *
-* Regression 30 changes allocation to conditional GETMAIN RC.
+* Regression 30 changes allocation to conditional GETMAIN EC.
 * GETVEC returns zero for a negative or overlarge size, or an MVS
 * allocation failure.  N<=4194299 keeps the byte count within 24 bits.
 *
-* GETMAIN RC uses R0/R1/R15.  Generated BCPL requires R0=0 and R1-R3
-* to hold permanent constants, and R15 is W.  Preserve all of them.
+* GETMAIN EC returns its address through A= and completion in R15.
+* Generated BCPL requires R0=0 and R1-R3 to hold permanent constants,
+* and R15 is W.  Preserve all of them.
 ***********************************************************************
 GETVEC   LTR   7,7
          BC    4,GVFAIL0
@@ -926,14 +927,14 @@ GETVEC   LTR   7,7
          SLL   10,2
          LA    10,12(10)
          ST    10,GVRLEN
-         GETMAIN RC,LV=(10),SP=0
+         GETMAIN EC,LV=(10),A=GVRADDR,SP=0
          LTR   15,15
          BNZ   GVFAIL
 *
-* R1 is the byte address returned by GETMAIN.  Build the WIP VECAREA
-* record in the allocated block and chain it at VECLIST.
+* EC writes the allocated byte address at GVRADDR.  Build the WIP
+* VECAREA record in the allocated block and chain it at VECLIST.
 *
-         LR    14,1
+         L     14,GVRADDR
          LA    7,12(14)
          SRL   7,2
          ST    7,0(14)
@@ -1074,6 +1075,7 @@ TRAILER  DC    F'0'
 *
 VECLIST  DC    F'0'
 GVRLEN   DC    F'0'
+GVRADDR  DC    F'0'
 GVRSAVE  DS    4F
 GVRWSAVE DC    F'0'
 FVRSAVE  DS    4F
