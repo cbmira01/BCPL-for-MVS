@@ -1,0 +1,3 @@
+GLOBAL $( ADD:151 $)
+
+LET ADD(A,B) = A+B
