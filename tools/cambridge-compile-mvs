@@ -39,7 +39,13 @@ def source_records(path: Path) -> list[str]:
     return lines
 
 
-def build_deck(config, source_path: Path, job_name: str, redact_password: bool) -> str:
+def build_deck(
+    config,
+    source_path: Path,
+    job_name: str,
+    redact_password: bool,
+    cambridge_parm_path: Path | None = None,
+) -> str:
     source = core.full_dsn(config, config["datasets"]["SOURCE"])
     intcode = core.full_dsn(config, config["datasets"]["INTCODE"])
     load = core.full_dsn(config, config["datasets"]["LOAD"])
@@ -65,7 +71,15 @@ def build_deck(config, source_path: Path, job_name: str, redact_password: bool) 
         *source_records(source_path),
         "Z9",
         f"//OPTIONS  DD  DSN={source}(OPTIONS),DISP=SHR",
-        f"//CAMBPARM DD  DSN={source}(CAMBPARM),DISP=SHR",
+        *(
+            [
+                "//CAMBPARM DD  DATA,DLM=Z9",
+                *source_records(cambridge_parm_path),
+                "Z9",
+            ]
+            if cambridge_parm_path is not None
+            else [f"//CAMBPARM DD  DSN={source}(CAMBPARM),DISP=SHR"]
+        ),
         f"//LIBHDR   DD  DSN={source}(LIBHDR),DISP=SHR",
         f"//SYNHDR   DD  DSN={source}(SYNHDR),DISP=SHR",
         f"//TRNHDR   DD  DSN={source}(TRNHDR),DISP=SHR",
@@ -130,6 +144,11 @@ def parser() -> argparse.ArgumentParser:
                    help="accepted for interface compatibility; resident compile has no IFOX stage")
     p.add_argument("--timeout", type=float, default=180.0,
                    help="accepted for regression-driver compatibility")
+    p.add_argument(
+        "--cambridge-parm",
+        metavar="PATH",
+        help="override the resident CAMBPARM member with records from PATH",
+    )
     p.add_argument("--show-jcl", action="store_true")
     return p
 
@@ -148,8 +167,25 @@ def main() -> int:
         if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}", job_name):
             raise ValueError("--job-name must be a valid MVS job name")
 
+        cambridge_parm_path = None
+        if args.cambridge_parm:
+            cambridge_parm_path = Path(args.cambridge_parm)
+            if not cambridge_parm_path.is_absolute():
+                cambridge_parm_path = ROOT / cambridge_parm_path
+            cambridge_parm_path = cambridge_parm_path.resolve()
+            if not cambridge_parm_path.is_file():
+                raise ValueError(
+                    f"Cambridge parameter file does not exist: {cambridge_parm_path}"
+                )
+
         config = core.load_config()
-        deck = build_deck(config, path, job_name, redact_password=args.show_jcl)
+        deck = build_deck(
+            config,
+            path,
+            job_name,
+            redact_password=args.show_jcl,
+            cambridge_parm_path=cambridge_parm_path,
+        )
         if args.show_jcl:
             sys.stdout.write(deck)
             return 0
