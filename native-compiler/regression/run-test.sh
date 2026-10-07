@@ -259,21 +259,45 @@ expected_output() {
 
 
 show_bcpl_output() {
-    local expected report emitted
+    local report emitted
 
-    expected=$(expected_output) || return 1
     report=$(bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null)
     printf '%s\n' "$report" >"$work/job-report.txt"
+
     emitted=$(
-        printf '%s\n' "$report" |
-            grep -a -m1 "^ *$expected *$" || true
-    )
+        python3 - "$expected_file" "$work/job-report.txt" <<'PY'
+from pathlib import Path
+import sys
+
+expected_path = Path(sys.argv[1])
+report_path = Path(sys.argv[2])
+
+expected = [
+    line.strip()
+    for line in expected_path.read_text(encoding="utf-8").splitlines()
+]
+report = report_path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+if not expected:
+    raise SystemExit(1)
+
+trimmed = [line.strip() for line in report]
+width = len(expected)
+
+for start in range(0, len(trimmed) - width + 1):
+    if trimmed[start:start + width] == expected:
+        print("\n".join(expected))
+        raise SystemExit(0)
+
+raise SystemExit(1)
+PY
+    ) || return 1
 
     [[ -n "$emitted" ]] || return 1
 
     echo
     echo "=== BCPL output ==="
-    printf '%s\n' "$emitted" | sed -e 's/^ *//' -e 's/ *$//'
+    printf '%s\n' "$emitted"
 }
 
 show_result() {
