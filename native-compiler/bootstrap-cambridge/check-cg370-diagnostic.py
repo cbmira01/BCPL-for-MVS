@@ -30,6 +30,11 @@ def main() -> int:
     baseline_path = Path(args.baseline)
     diagnostic_path = Path(args.diagnostic)
 
+    for path in (baseline_path, diagnostic_path):
+        if not path.is_file():
+            print(f"{path}: file not found", file=sys.stderr)
+            return 1
+
     baseline = read(baseline_path)
     diagnostic = read(diagnostic_path)
     comments = [line for line in diagnostic if line.startswith(MARKER)]
