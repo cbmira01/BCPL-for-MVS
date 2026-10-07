@@ -55,6 +55,12 @@ A successful run must:
 - confirm by generated/runtime code inspection that the byte store and reload
   use the expected BCPL word-pointer-to-byte-address conversion.
 
+The first successful run was inspected. START forms the local vector BCPL word
+pointer in R7, loads 42 into R9 and byte offset 3 into R8, loads PUTBYTE from
+`344(R12)` (G!86), and calls it with `BALR 6,4`. It then reloads offset 3 and
+the vector pointer, loads GETBYTE from `340(R12)` (G!85), calls it, and passes
+the returned R7 value to DEBUGINT. The program emitted 42.
+
 ## Scope
 
 This test adds no new allocator, loader, stream, or language feature. It is a
@@ -62,4 +68,4 @@ focused machine-primitive regression.
 
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
