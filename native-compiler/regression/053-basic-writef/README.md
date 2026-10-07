@@ -48,4 +48,4 @@ A successful Test 053 must:
 
 ## Status
 
-Pending native run.
+PASS — native run on 2026-10-07; emitted `HELLO`.
