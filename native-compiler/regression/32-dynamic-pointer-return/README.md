@@ -1,7 +1,7 @@
 # 32 - Dynamic pointer return
 
-This regression composes dynamic allocation with the native BCPL function
-result convention.
+This regression composes dynamic allocation with the already-proven native BCPL
+function-result convention.
 
 Expected output:
 
@@ -13,34 +13,49 @@ Expected output:
 
 START calls `MAKE()`.
 
-MAKE:
+MAKE consists only of:
 
-1. obtains `V = GETVEC(2)`;
-2. returns zero immediately if allocation fails;
-3. stores 42 in `V!1`;
-4. returns the BCPL word pointer V through the ordinary function-result path.
+```bcpl
+LET MAKE() = GETVEC(2)
+```
 
-START stores the returned pointer in local P. If P is zero, the test emits 99.
-Otherwise START dereferences `P!1`, reports the value through DEBUGINT, then
-releases the same allocation with `FREEVEC(P)`.
+The GETVEC result therefore becomes the ordinary BCPL function result directly.
+START stores that returned pointer in local P. If P is zero, the test emits 99.
+Otherwise START stores 42 in `P!1`, reloads and reports that value through
+DEBUGINT, then releases the same allocation with `FREEVEC(P)`.
 
 ## Contract under test
 
-Test 20 established pointer return using a local vector. Tests 27-31 established
-MVS-backed dynamic vectors and their behavior across ordinary procedure calls.
+Test 20 established pointer return. Tests 27-31 established MVS-backed dynamic
+vectors and their behavior across ordinary calls.
 
-Test 32 combines those contracts and adds a lifetime property: a vector created
-inside a callee must remain valid after that callee returns, because its storage
-comes from GETVEC rather than the callee workspace.
+Test 32 now isolates exactly one composition question: can a GETVEC result
+created in a callee be returned through the normal function-result path and
+remain valid in the caller after the callee workspace is gone?
 
 The returned pointer must therefore:
 
-- survive the function return unchanged;
-- remain dereferenceable in the caller;
+- survive function return unchanged;
+- remain writable and readable in the caller;
 - still identify the original dynamic allocation; and
 - remain acceptable to FREEVEC.
 
 No BCPLMAIN change should be required.
+
+## Why VALOF/RESULTIS was removed
+
+The first version of Test 32 used `VALOF ... RESULTIS ...` inside MAKE and
+also initialized the dynamic vector before returning it. That introduced an
+additional, previously unisolated language/code-generation construct into a
+test whose intended subject was dynamic-pointer return.
+
+Its first native run compiled, assembled, and linked successfully but ABENDed
+S0C4 in generated MAKE before the caller-side lifetime contract could be
+established.
+
+The narrowed test deliberately removes VALOF/RESULTIS and callee-side vector
+access. Those semantics belong in a separate regression after this pointer
+return contract is settled.
 
 ## Acceptance criteria
 
@@ -49,21 +64,19 @@ A successful run must:
 - compile through the resident Cambridge compiler and historical CG370;
 - assemble, link-edit, and execute normally under MVS;
 - emit exactly `42`;
-- show MAKE returning the GETVEC pointer through the normal result convention;
+- show MAKE returning the GETVEC result through the ordinary R7 result path;
 - show START storing/reloading that returned pointer;
-- show START dereferencing `P!1` after MAKE's frame is gone; and
+- show START writing and reading `P!1` after MAKE has returned; and
 - show FREEVEC receiving the same returned dynamic pointer.
-
-Generated-code inspection should confirm the pointer result path.
 
 ## Scope
 
-This is another composition/stability test. It does not introduce a new
-allocator policy, loader feature, calling convention, or library service.
+This is a composition/stability test. It introduces no new allocator policy,
+loader feature, calling convention, or runtime service.
 
 The current storage policy remains one MVS GETMAIN allocation per GETVEC and
 one matching FREEMAIN per FREEVEC.
 
 ## Status
 
-PENDING — ready for first native run.
+PENDING — narrowed after the first S0C4 run and ready for retest.
