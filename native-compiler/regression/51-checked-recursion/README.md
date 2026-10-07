@@ -64,4 +64,27 @@ No stack-end comparison or overflow behavior is introduced or claimed here.
 
 ## Status
 
-PENDING native run.
+PASS — native run on 2026-10-07; emitted `42`.
+
+Observed DEPTH entry:
+
+```asm
+STM 4,7,0(15)
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+L994 EQU 44 STACK FRAME SIZE
+```
+
+Observed recursive call preparation:
+
+```asm
+LA 15,16(5)
+L  4,0+L2-L1(4)
+BALR 6,4
+```
+
+START also used checked entry with its own 44-byte frame. The successful
+five-level non-tail-recursive run therefore proves that successive W/P
+workspaces pass repeatedly through STKIMPL and unwind normally through the
+system-vector return path.
