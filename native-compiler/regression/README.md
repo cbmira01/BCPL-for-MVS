@@ -1125,7 +1125,7 @@ a stub. Runtime semantics begin with the next regression.
 
 ### 49-checked-procedure-entry
 
-Status: **PENDING** — first execution of CG370 stack-check entry.
+Status: **PASS** — emitted `X42` under checked entry on 2026-10-07.
 
 Runs the already-proven mutable-local/WRCH/reload shape under code-generator
 option `C`. The generated code must contain the checked-entry BAL and inline
@@ -1143,8 +1143,18 @@ LA    14,4(14)
 BR    14
 ```
 
-No stack-limit comparison is claimed yet. This test isolates correct workspace
-establishment and resumption after the inline frame-size fullword.
+Observed generated frame size was 44 bytes:
+
+```asm
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+L994 EQU 44 STACK FRAME SIZE
+```
+
+No stack-limit comparison is claimed yet. The successful `X42` run isolates
+correct workspace establishment and resumption after the inline frame-size
+fullword.
 
 ## MVS-resident Cambridge compile path
 
