@@ -1091,6 +1091,27 @@ The three DEBUGINT calls share the current buffered output record. The original 
 historical BCPL explicitly leaves multiple-assignment evaluation/assignment
 order undefined. Cambridge's observed left-to-right lowering is permitted.
 
+### 48-stack-check-emission
+
+Status: **PENDING** — compile-only generated-code contract probe.
+
+Reuses the minimal Test 00 source but supplies a private Cambridge bootstrap
+parameter record beginning `/CN`. The second-phase `C` enables CG370 stack
+checking; `N` preserves the bootstrap requirement that suppresses binary
+object-deck output.
+
+Acceptance requires the recovered System/370 assembler to contain the
+contiguous checked-entry sequence:
+
+```asm
+BAL   14,60(11)
+DC    A(Lnnn) STACK FRAME SIZE
+```
+
+The regression deliberately stops after generated-code assertions. It does not
+assemble or execute the program because BCPLMAIN's current stack-check entry is
+still a stub. Runtime semantics begin with the next regression.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
