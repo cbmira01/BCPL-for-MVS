@@ -1053,7 +1053,7 @@ bitwise and shift operators.
 
 ### 46-multiply-divide-rem
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Exercises multiplication, integer division, and remainder with small positive
 operands and combines the results to emit 42.
