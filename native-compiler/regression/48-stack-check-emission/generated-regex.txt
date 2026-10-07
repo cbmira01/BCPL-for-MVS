@@ -1,0 +1,2 @@
+^\s*BAL\s+14,60\(11\)\s*$
+^\s*DC\s+A\(L[0-9]+\)\s+STACK FRAME SIZE\s*$
