@@ -25,7 +25,7 @@ def read_source(path: Path) -> str:
 
 
 def asm_step(name: str, obj: str, source: str, cond: str = "") -> str:
-    condition = f",\n//             COND={cond}" if cond else ""
+    condition = f"\n//             COND={cond}," if cond else ""
     return f"""//{name:<8} EXEC PGM=IFOX00,{condition}
 //             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD',REGION=256K
 //SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR
