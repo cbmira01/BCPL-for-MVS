@@ -1187,6 +1187,25 @@ This proves the inline frame-size word was decoded and structurally accepted.
 The runtime still does **not** compare the required frame against WORKEND, so
 stack-overflow detection is not yet claimed.
 
+### 51-checked-recursion
+
+Status: **PENDING** — bounded recursive execution under checked entry.
+
+Reuses the proven Test 18 non-tail-recursive DEPTH(5) shape, but compiles with
+second-phase Cambridge option `C`. Generated-code assertions require at least
+two checked-entry BAL/inline-frame sequences plus ordinary W advancement and
+`BALR 6,4` linkage.
+
+The expected native result remains:
+
+```text
+42
+```
+
+This test changes no runtime code. Its purpose is to prove that the checked-entry
+contract from Tests 48-50 composes across repeated recursive workspaces and
+ordinary unwind. No WORKEND comparison or overflow behavior is claimed.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
