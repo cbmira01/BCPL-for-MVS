@@ -54,7 +54,32 @@ behavior, or any moving compaction scheme.
 
 ## Status
 
-PENDING.
+PASS.
+
+Job 1150 on 2026-10-07 compiled the BCPL test through the resident Cambridge
+compiler path. Job 1151 then assembled, link-edited, and executed the native
+program successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+4242
+```
+
+The first 42 proves that normal GETVEC allocation still works after changing
+the runtime to conditional GETMAIN EC. The second 42 proves that an
+unsatisfied allocation is reported to BCPL as zero rather than causing an
+ABEND.
+
+This establishes the first recoverable native allocation-failure path. It
+does not settle the historical internal heap architecture or invalid
+FREEVEC behavior.
 
 First attempt: Job 1144 compiled the BCPL source successfully. Job 1145
 failed in IFOX with RC=0008 before link-edit or execution. A syntax cleanup
