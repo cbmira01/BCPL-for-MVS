@@ -844,10 +844,11 @@ FINRETN  L     13,4(13)
 * and showed that this replaces the ordinary generated LR 5,15.
 *
 * This first executable implementation deliberately performs no limit
-* comparison yet.  It establishes the current workspace P from W exactly
-* where unchecked entry would do so, advances R14 past the inline
-* fullword, and resumes generated code.  It does not consume or alter
-* the frame-size value.  Historical overflow rules, marker initialization,
+* comparison yet.  It establishes the current workspace P from W
+* exactly where unchecked entry would do so, advances R14 past the
+* inline fullword, and resumes generated code.  It does not consume
+* or alter the frame-size value.  Historical overflow rules, marker
+* initialization,
 * and ABORT integration remain to be reconstructed separately.
 ***********************************************************************
 STKIMPL  LR    5,15
