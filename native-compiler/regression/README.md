@@ -1051,6 +1051,22 @@ Expected output:
 This is both corpus-driven and documentation-driven coverage of core BCPL
 bitwise and shift operators.
 
+### 46-multiply-divide-rem
+
+Status: **PENDING** — ready for first native run.
+
+Exercises multiplication, integer division, and remainder with small positive
+operands and combines the results to emit 42.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates the core arithmetic operators without adding runtime dependencies
+or sign/overflow edge cases.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
