@@ -918,7 +918,7 @@ PUTBYTE  LR    14,7
 ***********************************************************************
 GETVEC   LTR   7,7
          BC    4,GVFAIL0
-         C     7,=F'4194299'
+         C     7,GVRMAX
          BC    2,GVFAIL0
          STM   0,3,GVRSAVE
          ST    15,GVRWSAVE
@@ -1074,6 +1074,7 @@ TRAILER  DC    F'0'
 * VECLIST is a byte pointer to the first three-word control record.
 *
 VECLIST  DC    F'0'
+GVRMAX   DC    F'4194299'
 GVRLEN   DC    F'0'
 GVRADDR  DC    F'0'
 GVRSAVE  DS    4F
