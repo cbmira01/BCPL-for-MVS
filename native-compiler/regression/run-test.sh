@@ -281,7 +281,19 @@ report = report_path.read_text(encoding="utf-8", errors="replace").splitlines()
 if not expected:
     raise SystemExit(1)
 
-trimmed = [line.strip() for line in report]
+# Native program output follows the linkage editor report.  Restrict matching
+# to the suffix after the final linker authorization line so source/JCL,
+# assembler listings, and link-edit listings cannot satisfy an expectation.
+linker_ends = [
+    index
+    for index, line in enumerate(report)
+    if "AUTHORIZATION CODE IS" in line
+]
+if not linker_ends:
+    raise SystemExit(1)
+
+runtime_report = report[linker_ends[-1] + 1:]
+trimmed = [line.strip() for line in runtime_report]
 width = len(expected)
 
 for start in range(0, len(trimmed) - width + 1):
