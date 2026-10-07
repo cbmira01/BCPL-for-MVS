@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "source"
 OUT = ROOT.parent.parent / "workarea" / "bootstrap-cambridge" / "demoted"
+DIAG_OUT = ROOT.parent.parent / "workarea" / "bootstrap-cambridge" / "demoted-diag"
 HIST = ROOT.parent.parent / "richards-bcpltape" / "bcplib" / "bcpl"
 
 
@@ -278,7 +279,135 @@ $)
     return text + helper
 
 
-def write_unit(name: str, historical_section: str, text: str, extra_banner=()) -> None:
+
+def instrument_cg(text: str, section: str) -> str:
+    """Add listing-only diagnostics without changing generated object code.
+
+    Every diagnostic assembler line begins with '* CG370-DIAG:' and is emitted
+    only when CG370 is producing a listing.  No TXTP/BINING state is changed.
+    Unexpected source drift fails loudly at every insertion point.
+    """
+    if section == "CGB":
+        replacements = (
+            (
+                '     SW: IF CGTRACE DO WRITEF("*NOP = %N  ", OP)\n',
+                '''     SW: IF CGTRACE DO WRITEF("*NOP = %N  ", OP)
+         IF LISTING DO
+         $(  WRCH(42)
+             WRITEF(" CG370-DIAG: OCODE OP=%N SSP=%N*N", OP, SSP)
+         $)
+''',
+                "SCAN OCODE dispatch",
+            ),
+            (
+                '''AND CGSAVE(N) BE
+    $( LET A = R.A1 + N - 4
+       IF A > R.A4 DO A := R.A4
+       GENRS(F.STM, R.B, A, R.W, 0)
+''',
+                '''AND CGSAVE(N) BE
+    $( LET A = R.A1 + N - 4
+       IF A > R.A4 DO A := R.A4
+       IF LISTING DO
+       $(  WRCH(42)
+           WRITEF(" CG370-DIAG: SAVE N=%N SSP=%N STKCK=%N*N",
+                  N, SSP, STKCKING)
+       $)
+       GENRS(F.STM, R.B, A, R.W, 0)
+''',
+                "CGSAVE entry",
+            ),
+            (
+                '''    IF RMIN<R.A1 DO RMIN := R.A1
+    IF RMAX>R.A4 DO RMAX := R.A4
+
+    STORE(K+7, SSP-2) || Store args 5,6,... into stack
+''',
+                '''    IF RMIN<R.A1 DO RMIN := R.A1
+    IF RMAX>R.A4 DO RMAX := R.A4
+
+    IF LISTING DO
+    $(  WRCH(42)
+        WRITEF(" CG370-DIAG: APPLY OP=%N K=%N WOFF=%N SSP=%N*N",
+               OP, K, 4*K, SSP)
+    $)
+
+    STORE(K+7, SSP-2) || Store args 5,6,... into stack
+''',
+                "CGAPPLY setup",
+            ),
+            (
+                '''        LET SAFEFRAME = K+7
+        IF BASEFRMSIZE<SAFEFRAME DO BASEFRMSIZE:=SAFEFRAME
+''',
+                '''        LET SAFEFRAME = K+7
+        IF LISTING DO
+        $(  WRCH(42)
+            WRITEF(" CG370-DIAG: CALL SAFEFRAME=%N BASEFRAME=%N*N",
+                   SAFEFRAME, BASEFRMSIZE)
+        $)
+        IF BASEFRMSIZE<SAFEFRAME DO BASEFRMSIZE:=SAFEFRAME
+''',
+                "CGAPPLY safe frame",
+            ),
+        )
+        for old, new, label in replacements:
+            if text.count(old) != 1:
+                raise SystemExit(
+                    f"CGB diagnostic: expected one {label}, "
+                    f"found {text.count(old)}"
+                )
+            text = text.replace(old, new, 1)
+
+    if section == "CGE":
+        replacements = (
+            (
+                '''AND GENSTKCK1() BE
+$(
+    IF LISTING DO WRITEF("*SDC*SA(L%N) STACK FRAME SIZE*N", BASEFRMLAB)
+''',
+                '''AND GENSTKCK1() BE
+$(
+    IF LISTING DO
+    $(  WRCH(42)
+        WRITEF(" CG370-DIAG: STKCK SLOT L%N AT BYTE %N*N",
+               BASEFRMLAB, TXTP)
+        WRITEF("*SDC*SA(L%N) STACK FRAME SIZE*N", BASEFRMLAB)
+    $)
+''',
+                "GENSTKCK1",
+            ),
+            (
+                '''AND GENSTKCK2() BE
+$(
+    IF LISTING DO WRITEF("L%N*SEQU*S%N STACK FRAME SIZE*N",
+                                 BASEFRMLAB, BASEFRMSIZE*4)
+''',
+                '''AND GENSTKCK2() BE
+$(
+    IF LISTING DO
+    $(  WRCH(42)
+        WRITEF(" CG370-DIAG: STKCK FINAL L%N WORDS=%N BYTES=%N*N",
+               BASEFRMLAB, BASEFRMSIZE, BASEFRMSIZE*4)
+        WRITEF("L%N*SEQU*S%N STACK FRAME SIZE*N",
+               BASEFRMLAB, BASEFRMSIZE*4)
+    $)
+''',
+                "GENSTKCK2",
+            ),
+        )
+        for old, new, label in replacements:
+            if text.count(old) != 1:
+                raise SystemExit(
+                    f"CGE diagnostic: expected one {label}, "
+                    f"found {text.count(old)}"
+                )
+            text = text.replace(old, new, 1)
+
+    return text
+
+
+def write_unit(name: str, historical_section: str, text: str, extra_banner=(), out_dir=OUT) -> None:
     text = demote(text)
     if historical_section == "LEX":
         text = demote_lex_word_table(text)
@@ -303,7 +432,7 @@ def write_unit(name: str, historical_section: str, text: str, extra_banner=()) -
             '|| OCODE WRBYTE advances after two MR10 host bytes per word.',
         ]
     banner += list(extra_banner)
-    (OUT / name).write_text("\n".join(banner) + "\n" + text, encoding="utf-8")
+    (out_dir / name).write_text("\n".join(banner) + "\n" + text, encoding="utf-8")
 
 
 def main() -> None:
@@ -328,6 +457,7 @@ def main() -> None:
     cga, cgb, cgc, cgd, cge = split_sections(HIST / "cg", ["CGA", "CGB", "CGC", "CGD", "CGE"])
 
     OUT.mkdir(parents=True, exist_ok=True)
+    DIAG_OUT.mkdir(parents=True, exist_ok=True)
     write_unit("syn", "SYN", syn)
     write_unit("lex", "LEX", lex)
     write_unit("trna", "TRNA", trna)
@@ -354,10 +484,27 @@ def main() -> None:
             )
         write_unit(name, section, body, extra_banner=extra_banner)
 
+        diag = instrument_cg(body, section)
+        diag_banner = extra_banner + (
+            "|| DIAGNOSTIC DERIVATIVE: listing-only CG370 commentary enabled.",
+            "|| Every injected assembler comment begins '* CG370-DIAG:'.",
+            "|| Removing those lines must reproduce ordinary CG370 listing output.",
+        )
+        write_unit(
+            name,
+            section,
+            diag,
+            extra_banner=diag_banner,
+            out_dir=DIAG_OUT,
+        )
+
     names = ("syn", "lex", "trna", "trnb", "bcpl", "cga", "cgb", "cgc", "cgd", "cge")
     print("generated:")
     for name in names:
         p = OUT / name
+        print(f"  {p.relative_to(ROOT.parent.parent)}  {p.stat().st_size} bytes")
+    for name in ("cga", "cgb", "cgc", "cgd", "cge"):
+        p = DIAG_OUT / name
         print(f"  {p.relative_to(ROOT.parent.parent)}  {p.stat().st_size} bytes")
 
 
