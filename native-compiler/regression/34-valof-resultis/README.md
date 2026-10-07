@@ -45,8 +45,9 @@ A successful run must:
 - show generated S/370 in which RESULTIS transfers control to the correct
   VALOF continuation while preserving the result value.
 
-The first successful run should be inspected once to characterize the exact
-CG370 implementation pattern for VALOF/RESULTIS.
+The first successful run was inspected. CG370 evaluated `RESULTIS 42` into R7,
+then emitted an unconditional R4-relative branch to the VALOF continuation; the
+continuation stored R7 as the value of the VALOF expression.
 
 ## Scope
 
