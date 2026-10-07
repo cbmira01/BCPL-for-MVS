@@ -775,6 +775,28 @@ An unexpected successful allocation emits 99.
 GETVEC also rejects negative or overlarge N values before computing the byte
 length, keeping the WIP allocation length within the 24-bit runtime model.
 
+### 31-dynamic-vector-across-calls
+
+Status: **PENDING** — ready for first native run.
+
+Composes the dynamic allocation contract from Tests 27-30 with the pointer
+aliasing and one-argument procedure linkage established earlier.
+
+START obtains `V = GETVEC(2)`, initializes `V!1` to 17, passes V to
+SETVALUE, and the callee stores 42 through the received pointer. START then
+reloads `V!1`, reports it through DEBUGINT, and releases the same vector with
+FREEVEC.
+
+Expected output:
+
+```text
+42
+```
+
+An unexpected allocation failure emits 99. No BCPLMAIN change should be
+required; this is deliberately a composition/stability test rather than a new
+runtime feature.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
