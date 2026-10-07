@@ -1,0 +1,11 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET DEPTH(N) = N=0 -> 37, DEPTH(N-1)+1
+
+LET START () BE
+$(1
+    LET X = DEPTH(5)
+
+    DEBUGINT(X)
+    FINISH
+$)1
