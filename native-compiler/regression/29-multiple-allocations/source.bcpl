@@ -1,0 +1,27 @@
+GLOBAL $( START:1; GETVEC:87; FREEVEC:88; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET A = GETVEC(2)
+    AND B = GETVEC(5)
+    AND C = GETVEC(8)
+    AND D = 0
+
+    A!2 := 10
+    B!5 := 20
+    C!8 := 32
+
+    FREEVEC(B)
+    DEBUGINT(A!2 + C!8)
+
+    D := GETVEC(3)
+    D!3 := 12
+    FREEVEC(D)
+    DEBUGINT(A!2 + C!8)
+
+    FREEVEC(A)
+    DEBUGINT(C!8 + 10)
+
+    FREEVEC(C)
+    FINISH
+$)1
