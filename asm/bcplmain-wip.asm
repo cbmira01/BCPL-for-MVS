@@ -981,12 +981,16 @@ GVFAIL0  SR    7,7
 * historical error contract for invalid FREEVEC arguments is not yet
 * reconstructed.
 *
-* FREEMAIN R may use R0, R1, R14, and R15.  Preserve R0-R3 because
-* generated code requires them, and preserve R15 because it is W.
+* FREEMAIN R may disturb the machine-service register set.  Preserve
+* R0-R3 because generated code requires them, R5/R6 because they are
+* BCPL P/L, and R15 because it is W.  Test 32 exposed P/L corruption
+* immediately after FREEMAIN on the caller-side FREEVEC path.
 ***********************************************************************
 FREEVEC  LTR   7,7
          BZ    FVRETURN
          STM   0,3,FVRSAVE
+         ST    5,FVPSAVE
+         ST    6,FVLSAVE
          ST    15,FVWSAVE
          LR    9,7
          SR    8,8
@@ -1012,6 +1016,8 @@ FVUNLNK  L     10,4(14)
          FREEMAIN R,LV=(10),A=(1)
          L     15,FVWSAVE
          LM    0,3,FVRSAVE
+         L     5,FVPSAVE
+         L     6,FVLSAVE
 FVRETURN L     4,0(5)
          BCR   15,6
 *
@@ -1019,6 +1025,8 @@ FVRETURN L     4,0(5)
 *
 FVNFOUND L     15,FVWSAVE
          LM    0,3,FVRSAVE
+         L     5,FVPSAVE
+         L     6,FVLSAVE
          B     FVRETURN
 *
 ***********************************************************************
@@ -1090,6 +1098,8 @@ GVRPSAVE DC    F'0'
 GVRLSAVE DC    F'0'
 GVRWSAVE DC    F'0'
 FVRSAVE  DS    4F
+FVPSAVE  DC    F'0'
+FVLSAVE  DC    F'0'
 FVWSAVE  DC    F'0'
 *
 * Private MVS save area used while BCPLMAIN owns R13.
