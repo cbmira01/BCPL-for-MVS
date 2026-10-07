@@ -390,9 +390,16 @@ new regressions.
    implementation work. Current tests cover only a subset.
 
 7. **Multiple assignment**
-   - The language defines it explicitly and compiler source uses simultaneous
-     state updates idiomatically.
-   - It deserves a focused register/workspace ordering regression.
+   - The language defines it explicitly.
+   - The 1979 proposed standard leaves evaluation and assignment order
+     undefined and permits assignments before all expressions have been
+     evaluated; a swap such as `A,B := B,A` is therefore not a portable
+     conformance test.
+   - Cambridge TRN recursively translates comma assignments left component
+     first, then right component. The first native swap probe consequently
+     produced the updated left value in both destinations.
+   - Regression coverage should use order-independent right-hand sides and
+     record implementation ordering separately from language conformance.
 
 ### Compiler/runtime integration gaps
 
@@ -434,12 +441,12 @@ Recommended order, one new thing at a time:
 
 - **40 — STATIC scalar persistence/addressing** — PASS
 - **41 — TABLE constant vector** — PASS
-- **42 — MANIFEST constant expression**
-- **43 — label/GOTO**
-- **44 — address-of plus monadic indirection**
-- **45 — shifts and bitwise operators**
-- **46 — multiply/divide/REM**
-- **47 — multiple assignment**
+- **42 — MANIFEST constant expression** — PASS
+- **43 — label/GOTO** — PASS
+- **44 — address-of plus monadic indirection** — PASS
+- **45 — shifts and bitwise operators** — PASS
+- **46 — multiply/divide/REM** — PASS
+- **47 — multiple assignment** — revised order-independent probe pending
 - **later TABLE semantic probe — re-entry persistence / pointer escape / distinct-object behavior**
 
 The exact numbering after 40 should remain flexible. A failing test or newly
