@@ -971,6 +971,22 @@ This isolates persistent module static storage and generated addressing. The
 Cambridge compiler master and historical CG370 both use STATIC declarations, so
 this is direct corpus-driven coverage.
 
+### 41-table-constant-vector
+
+Status: **PENDING** — ready for first native run.
+
+Uses `TABLE 17,25` and emits `T!0 + T!1` through DEBUGINT.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates TABLE representation and module-relative addressing. TABLE is used
+directly by the Cambridge compiler master, TRN, and CG370, and is defined in the
+historical BCPL language documentation.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
