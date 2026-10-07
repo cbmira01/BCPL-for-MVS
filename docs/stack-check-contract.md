@@ -59,3 +59,22 @@ reconstruction.
 On overflow, Test 52 emits `STACK OVERFLOW` through the existing bootstrap
 SYSPRINT buffer and returns normally to MVS. This is intentionally not claimed
 to reproduce historical ABORT/STOP(100); that integration remains future work.
+
+
+## Native Test 52 observation
+
+Test 52 generated a recursive DEPTH procedure with:
+
+```asm
+LA 15,1044(5)
+...
+L994 EQU 1072 STACK FRAME SIZE
+```
+
+and reached the controlled overflow path successfully.
+
+This demonstrates that the caller's next-W displacement and the callee's full
+required frame size can differ. For the observed DEPTH procedure, the difference
+is 28 bytes. Consequently the runtime boundary check must consume the inline
+frame-size value emitted for the callee; using only the call-site W advance
+would understate the storage requirement.
