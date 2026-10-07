@@ -10,10 +10,10 @@ to the existing buffered SYSPRINT record.
 
 ## Source shape
 
-The program calls:
+The program calls the Cambridge-dialect spelling below. `*S` is the string escape for a space in this compiler lineage:
 
 ```bcpl
-WRITEF("BASIC WRITEF")
+WRITEF("BASIC*SWRITEF")
 ```
 
 and then executes FINISH.
