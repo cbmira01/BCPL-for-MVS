@@ -1004,6 +1004,22 @@ This isolates compile-time MANIFEST binding and constant-expression folding. The
 Cambridge compiler corpus uses MANIFEST directly, and TRN contains explicit
 MANIFEST translation paths.
 
+### 43-label-goto
+
+Status: **PENDING** — ready for first native run.
+
+Initializes `X=17`, executes `GOTO ADD25`, places an unreachable `X := 99`
+between the GOTO and label, then adds 25 and emits the result.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates explicit label/GOTO generation. The Cambridge compiler corpus uses
+GOTO heavily, especially in SYN/LEX and CG370.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
