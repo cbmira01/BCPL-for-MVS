@@ -446,7 +446,7 @@ Recommended order, one new thing at a time:
 - **44 — address-of plus monadic indirection** — PASS
 - **45 — shifts and bitwise operators** — PASS
 - **46 — multiply/divide/REM** — PASS
-- **47 — multiple assignment** — revised order-independent probe pending
+- **47 — multiple assignment** — PASS (order-independent probe)
 - **later TABLE semantic probe — re-entry persistence / pointer escape / distinct-object behavior**
 
 The exact numbering after 40 should remain flexible. A failing test or newly
