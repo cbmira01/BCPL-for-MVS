@@ -14,28 +14,28 @@ Expected output:
 The test repeatedly calls:
 
 ```bcpl
-GETVEC(262140)
+GETVEC(252)
 ```
 
 For the current WIP allocator, GETVEC(N) obtains `(N+1)*4 + 12` bytes,
-including the three-word private allocation header. For N=262140 this is
-exactly 1,048,576 bytes (1 MiB).
+including the three-word private allocation header. For N=252 this is
+exactly 1,024 bytes (1 KiB).
 
-Using equal-sized 1 MiB allocations avoids depending on an exact initial free
+Using equal-sized 1 KiB allocations avoids depending on an exact initial free
 storage figure while making the released extent suitable for an immediate
 same-sized replacement request.
 
 ## Sequence
 
-START repeatedly allocates 1 MiB vectors until GETVEC returns zero. Each
+START repeatedly allocates 1 KiB vectors until GETVEC returns zero. Each
 successful vector stores the previous head pointer in `V!0`, creating a
 BCPL-side chain solely so at least one live allocation is retained explicitly.
 
 Once allocation has been exhausted:
 
 1. if no allocation ever succeeded, emit 98;
-2. otherwise FREEVEC the most recently allocated 1 MiB block;
-3. immediately request another 1 MiB block;
+2. otherwise FREEVEC the most recently allocated 1 KiB block;
+3. immediately request another 1 KiB block;
 4. emit 42 if that replacement succeeds;
 5. emit 99 if it still fails.
 
@@ -66,7 +66,7 @@ A successful run must:
 - assemble, link-edit, and execute normally under MVS;
 - emit exactly `42`;
 - reach GETVEC failure before FREEVEC is called;
-- call FREEVEC on a known live 1 MiB allocation;
+- call FREEVEC on a known live 1 KiB allocation;
 - succeed on the immediately following same-sized GETVEC.
 
 Generated S/370 inspection should confirm the loop, G!87/G!88 calls, and
@@ -78,6 +78,16 @@ This does not establish historical invalid-pointer behavior, subpool policy,
 allocator coalescing, or exact address reuse. It tests the current one-GETMAIN
 per GETVEC / one-FREEMAIN per FREEVEC policy.
 
+## First run
+
+The first run used 1 MiB blocks. The GO step completed normally but emitted
+`98`, proving that even the first 1 MiB GETVEC could not be satisfied in the
+small native test region. That did not exercise FREEVEC.
+
+The test therefore now uses exact 1 KiB allocations. The behavioral contract is
+unchanged: allocate equal-sized blocks to exhaustion, free one known live block,
+then require one same-sized replacement allocation to succeed.
+
 ## Status
 
-PENDING — ready for first native run.
+PENDING — revised after the first run proved the 1 MiB block size was too large.
