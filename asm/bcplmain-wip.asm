@@ -927,19 +927,21 @@ WRCHRTN  L     4,0(5)
 *
 * Regression 053 established literal-string output through G76.
 * Regression 054 adds the historical BLIB %N case: decimal output of
-* the next argument with no width field.  For the first native step,
-* argument 1 is the format string in R7 and argument 2 is in R8.
+* the next argument with no width field.  Regression 055 adds %C and
+* %S and proves sequential consumption of R8 then R9.
 *
 * BCPL strings use a length byte at byte offset zero followed by data
 * bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
-* emits the signed decimal value saved from R8.  Other '%' directives
-* remain unsupported and are copied literally for now.
+* emits signed decimal; %C emits one character; %S emits a BCPL
+* string.  Other '%' directives remain unsupported and are literal.
 *
 * This is bootstrap machinery, not a reconstruction of BLIB's BCPL
 * WRITEF body.  R0 and R1-R3 remain permanent generated-code registers.
 ***********************************************************************
 WRITEST  STM   2,6,WFREGSV
-         ST    8,WFARG1
+         ST    8,WFARGS
+         ST    9,WFARGS+4
+         XC    WFARGIX(4),WFARGIX
          LR    14,7
          SLL   14,2
          SR    8,8
@@ -956,10 +958,24 @@ WFLITLP  LTR   8,8
          CR    8,4
          BL    WFLITCP
          CLI   1(14),C'N'
+         BE    WFNSEL
+         CLI   1(14),C'C'
+         BE    WFCSEL
+         CLI   1(14),C'S'
          BNE   WFLITCP
          LA    14,2(14)
          SR    8,4
+         BAL   10,WFNEXT
+         B     WFSTR
+WFNSEL   LA    14,2(14)
+         SR    8,4
+         BAL   10,WFNEXT
          B     WFNUM
+WFCSEL   LA    14,2(14)
+         SR    8,4
+         BAL   10,WFNEXT
+         BAL   10,WFPUTC
+         B     WFLITLP
 WFLITCP  LA    14,1(14)
          BCTR  8,0
          BAL   10,WFPUTC
@@ -970,12 +986,11 @@ WFLITCP  LA    14,1(14)
 *
 WFNUM    ST    8,WFREM
          ST    14,WFFMTP
-         L     7,WFARG1
          LTR   7,7
          BNM   WFCVT
          LA    7,96
          BAL   10,WFPUTC
-         L     7,WFARG1
+         BAL   10,WFLAST
 WFCVT    CVD   7,WFDECPK
          UNPK  WFDECZN(15),WFDECPK(8)
          OI    WFDECZN+14,X'F0'
@@ -997,6 +1012,47 @@ WFDCOPY  SR    7,7
          L     14,WFFMTP
          B     WFLITLP
 *
+* Emit a BCPL string argument in R7.  Preserve the format cursor and
+* remaining format length in R14/R8 while the string bytes are copied.
+*
+WFSTR    LR    4,7
+         SLL   4,2
+         SR    5,5
+         IC    5,0(4)
+         LA    4,1(4)
+WFSTRLP  LTR   5,5
+         BZ    WFLITLP
+         SR    7,7
+         IC    7,0(4)
+         BAL   10,WFPUTC
+         LA    4,1(4)
+         BCTR  5,0
+         B     WFSTRLP
+*
+* Fetch the next saved formatting argument into R7 and advance the
+* bootstrap argument cursor.  Test 055 exercises R8 then R9.
+*
+WFNEXT   L     6,WFARGIX
+         SLL   6,2
+         LA    4,WFARGS
+         AR    4,6
+         L     7,0(4)
+         L     6,WFARGIX
+         LA    6,1(6)
+         ST    6,WFARGIX
+         BR    10
+*
+* Reload the argument most recently returned by WFNEXT.  The negative
+* sign append in WFNUM temporarily consumes R7.
+*
+WFLAST   L     6,WFARGIX
+         BCTR  6,0
+         SLL   6,2
+         LA    4,WFARGS
+         AR    4,6
+         L     7,0(4)
+         BR    10
+*
 * Append R7 low byte to OUTBUF when room remains.  R9 is OUTPOS.
 * Return through R10, which is scratch for this bootstrap WRITEF.
 *
@@ -1014,7 +1070,8 @@ WFLITDN  ST    9,OUTPOS
          BCR   15,6
 *
 WFREGSV  DS    5F
-WFARG1   DC    F'0'
+WFARGS   DS    2F
+WFARGIX  DC    F'0'
 WFREM    DC    F'0'
 WFFMTP   DC    A(0)
 WFDECPK  DS    D
