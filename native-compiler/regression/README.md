@@ -729,6 +729,28 @@ empty
 This test should require no BCPLMAIN change if the Test 28 FREEVEC list logic
 is correct. Exact MVS address reuse is not tested.
 
+### 30-getvec-failure
+
+Status: **PENDING**.
+
+Changes GETVEC from unconditional GETMAIN to conditional GETMAIN RC and
+establishes failure-to-zero behavior. The test first proves that a normal
+small allocation still works, then requests an almost-16-MiB vector that
+cannot fit in the running 24-bit MVS address space.
+
+Expected output:
+
+```text
+4242
+```
+
+The first 42 proves the successful allocation path still works. The second
+42 is emitted only if the large GETVEC returns zero rather than ABENDing.
+An unexpected successful allocation emits 99.
+
+GETVEC also rejects negative or overlarge N values before computing the byte
+length, keeping the WIP allocation length within the 24-bit runtime model.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
