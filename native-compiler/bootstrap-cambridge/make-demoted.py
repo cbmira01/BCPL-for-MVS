@@ -288,13 +288,111 @@ def instrument_cg(text: str, section: str) -> str:
     Unexpected source drift fails loudly at every insertion point.
     """
     if section == "CGA":
+        helper_anchor = "LET SCAN() BE\n"
+        helper = r'''LET DIOPNAME(N) = VALOF SWITCHON N INTO
+$(  CASE C.TRUE: RESULTIS "TRUE"
+    CASE C.FALSE: RESULTIS "FALSE"
+    CASE C.RV: RESULTIS "RV"
+    CASE C.FNAP: RESULTIS "FNAP"
+    CASE C.MULT: RESULTIS "MULT"
+    CASE C.DIV: RESULTIS "DIV"
+    CASE C.REM: RESULTIS "REM"
+    CASE C.PLUS: RESULTIS "PLUS"
+    CASE C.MINUS: RESULTIS "MINUS"
+    CASE C.NEG: RESULTIS "NEG"
+    CASE C.FIX: RESULTIS "FIX"
+    CASE C.ABS: RESULTIS "ABS"
+    CASE C.EQ: RESULTIS "EQ"
+    CASE C.NE: RESULTIS "NE"
+    CASE C.LS: RESULTIS "LS"
+    CASE C.GR: RESULTIS "GR"
+    CASE C.LE: RESULTIS "LE"
+    CASE C.GE: RESULTIS "GE"
+    CASE C.SLCTAP: RESULTIS "SLCTAP"
+    CASE C.NOT: RESULTIS "NOT"
+    CASE C.LSHIFT: RESULTIS "LSHIFT"
+    CASE C.RSHIFT: RESULTIS "RSHIFT"
+    CASE C.LOGAND: RESULTIS "LOGAND"
+    CASE C.LOGOR: RESULTIS "LOGOR"
+    CASE C.EQV: RESULTIS "EQV"
+    CASE C.NEQV: RESULTIS "NEQV"
+    CASE C.LP: RESULTIS "LP"
+    CASE C.LG: RESULTIS "LG"
+    CASE C.LN: RESULTIS "LN"
+    CASE C.LSTR: RESULTIS "LSTR"
+    CASE C.LL: RESULTIS "LL"
+    CASE C.LLP: RESULTIS "LLP"
+    CASE C.LLG: RESULTIS "LLG"
+    CASE C.LLL: RESULTIS "LLL"
+    CASE C.NEEDS: RESULTIS "NEEDS"
+    CASE C.SECTION: RESULTIS "SECTION"
+    CASE C.RTAP: RESULTIS "RTAP"
+    CASE C.GOTO: RESULTIS "GOTO"
+    CASE C.FINISH: RESULTIS "FINISH"
+    CASE C.SWITCHON: RESULTIS "SWITCHON"
+    CASE C.GLOBAL: RESULTIS "GLOBAL"
+    CASE C.SP: RESULTIS "SP"
+    CASE C.SG: RESULTIS "SG"
+    CASE C.SL: RESULTIS "SL"
+    CASE C.STIND: RESULTIS "STIND"
+    CASE C.SLCTST: RESULTIS "SLCTST"
+    CASE C.JUMP: RESULTIS "JUMP"
+    CASE C.JT: RESULTIS "JT"
+    CASE C.JF: RESULTIS "JF"
+    CASE C.LAB: RESULTIS "LAB"
+    CASE C.STACK: RESULTIS "STACK"
+    CASE C.STORE: RESULTIS "STORE"
+    CASE C.RSTACK: RESULTIS "RSTACK"
+    CASE C.ENTRY: RESULTIS "ENTRY"
+    CASE C.SAVE: RESULTIS "SAVE"
+    CASE C.FNRN: RESULTIS "FNRN"
+    CASE C.RTRN: RESULTIS "RTRN"
+    CASE C.RES: RESULTIS "RES"
+    CASE C.DATALAB: RESULTIS "DATALAB"
+    CASE C.ITEML: RESULTIS "ITEML"
+    CASE C.ITEMN: RESULTIS "ITEMN"
+    CASE C.ENDPROC: RESULTIS "ENDPROC"
+    CASE C.END: RESULTIS "END"
+    CASE C.STARTBLOCK: RESULTIS "STARTBLOCK"
+    CASE C.ENDBLOCK: RESULTIS "ENDBLOCK"
+    CASE C.DEBUG: RESULTIS "DEBUG"
+    CASE C.MOD: RESULTIS "MOD"
+    CASE C.MODSLCT: RESULTIS "MODSLCT"
+    CASE C.GETBYTE: RESULTIS "GETBYTE"
+    CASE C.PUTBYTE: RESULTIS "PUTBYTE"
+    CASE C.FMULT: RESULTIS "FMULT"
+    CASE C.FDIV: RESULTIS "FDIV"
+    CASE C.FPLUS: RESULTIS "FPLUS"
+    CASE C.FMINUS: RESULTIS "FMINUS"
+    CASE C.FNEG: RESULTIS "FNEG"
+    CASE C.FLOAT: RESULTIS "FLOAT"
+    CASE C.FABS: RESULTIS "FABS"
+    CASE C.FEQ: RESULTIS "FEQ"
+    CASE C.FNE: RESULTIS "FNE"
+    CASE C.FLS: RESULTIS "FLS"
+    CASE C.FGR: RESULTIS "FGR"
+    CASE C.FLE: RESULTIS "FLE"
+    CASE C.FGE: RESULTIS "FGE"
+    DEFAULT: RESULTIS "?"
+$)
+
+AND SCAN() BE
+'''
+        if text.count(helper_anchor) != 1:
+            raise SystemExit(
+                f"CGA diagnostic: expected one SCAN declaration, "
+                f"found {text.count(helper_anchor)}"
+            )
+        text = text.replace(helper_anchor, helper, 1)
+
         replacements = (
             (
                 '     SW: IF CGTRACE DO WRITEF("*NOP = %N  ", OP)\n',
                 '''     SW: IF CGTRACE DO WRITEF("*NOP = %N  ", OP)
          IF LISTING DO
          $(  WRCH(42)
-             WRITEF(" CG370-DIAG: OCODE OP=%N SSP=%N*N", OP, SSP)
+             WRITEF(" CG370-DIAG: OCODE C.%S OP=%N SSP=%N*N",
+                    DIOPNAME(OP), OP, SSP)
          $)
 ''',
                 "SCAN OCODE dispatch",
@@ -310,6 +408,19 @@ def instrument_cg(text: str, section: str) -> str:
 
     if section == "CGB":
         replacements = (
+            (
+                '''    GENLAB(M, " ENTRY TO ")
+    IF LISTING DO
+''',
+                '''    IF LISTING DO
+    $(  WRCH(42)
+        WRITEF(" CG370-DIAG: ENTRY LABEL=L%N NAMELEN=%N*N", M, N)
+    $)
+    GENLAB(M, " ENTRY TO ")
+    IF LISTING DO
+''',
+                "CGENTRY label",
+            ),
             (
                 '''AND CGSAVE(N) BE
     $( LET A = R.A1 + N - 4
@@ -339,8 +450,11 @@ def instrument_cg(text: str, section: str) -> str:
 
     IF LISTING DO
     $(  WRCH(42)
-        WRITEF(" CG370-DIAG: APPLY OP=%N K=%N WOFF=%N SSP=%N*N",
-               OP, K, 4*K, SSP)
+        TEST OP=C.FNAP
+          THEN WRITEF(" CG370-DIAG: FNAP OP=%N K=%N WOFF=%N SSP=%N*N",
+                      OP, K, 4*K, SSP)
+          OR WRITEF(" CG370-DIAG: RTAP OP=%N K=%N WOFF=%N SSP=%N*N",
+                    OP, K, 4*K, SSP)
     $)
 
     STORE(K+7, SSP-2) || Store args 5,6,... into stack
