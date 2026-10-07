@@ -57,4 +57,19 @@ reloaded after WRCH.
 
 ## Status
 
-PENDING native run.
+PASS — native run on 2026-10-07; emitted `X42`.
+
+Observed checked entry:
+
+```asm
+STM 4,6,0(15)
+BAL 14,60(11)
+DC A(L994) STACK FRAME SIZE
+...
+L994 EQU 44 STACK FRAME SIZE
+```
+
+The run assembled, link-edited, and executed normally. Because WRCH consumes the
+ordinary first-argument register and DEBUGINT subsequently receives X from
+`12(R5)`, the observed `X42` proves that checked entry established R5 from
+R15 and resumed after the inline fullword correctly.
