@@ -160,6 +160,11 @@ def parser() -> argparse.ArgumentParser:
             "(default: CAMBCOMP; env CAMBRIDGE_IMAGE)"
         ),
     )
+    p.add_argument(
+        "--output",
+        metavar="PATH",
+        help="write recovered CODE to PATH instead of workarea/<source>.s370.asm",
+    )
     p.add_argument("--show-jcl", action="store_true")
     return p
 
@@ -214,12 +219,22 @@ def main() -> int:
             raise RuntimeError(f"Cambridge compiler returned execution code {code}")
 
         generated = extract_code(report)
-        output = WORKAREA / f"{path.stem}.s370.asm"
+        if args.output:
+            output = Path(args.output)
+            if not output.is_absolute():
+                output = ROOT / output
+            output = output.resolve()
+        else:
+            output = WORKAREA / f"{path.stem}.s370.asm"
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(generated, encoding="latin-1", newline="\n")
 
         print(f"JOB {job}")
-        print(f"saved Cambridge CODE: {output.relative_to(ROOT)}")
+        try:
+            shown_output = output.relative_to(ROOT)
+        except ValueError:
+            shown_output = output
+        print(f"saved Cambridge CODE: {shown_output}")
         return 0
     except (core.DspalError, RuntimeError, ValueError, OSError, UnicodeError) as exc:
         print(f"cambridge-compile-mvs: {exc}", file=sys.stderr)
