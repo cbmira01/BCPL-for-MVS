@@ -60,6 +60,12 @@ workarea/bootstrap-cambridge/
         cgc
         cgd
         cge
+    demoted-diag/
+        cga
+        cgb
+        cgc
+        cgd
+        cge
     mr10-trn-large-names/
     trni-large-names.int
 ```
@@ -99,6 +105,52 @@ unsupported by the demoted bootstrap frontend and fail visibly if encountered.
 The historical source remains untouched and is intended to regain its original
 floating-literal implementation once the richer Cambridge frontend can compile
 itself.
+
+## Diagnostic CG370 derivative
+
+`make-demoted.py` also produces a complete diagnostic CG source set under
+`workarea/bootstrap-cambridge/demoted-diag/`.
+
+The diagnostic variant is derived from the same already-demoted logical CG
+source used for the ordinary `cga`..`cge` files. It is not a hand-maintained
+fork. The first instrumentation pass modifies only CGB and CGE; the other
+diagnostic units are deliberately identical in executable source apart from
+their provenance banner.
+
+Every injected assembler record begins:
+
+```text
+* CG370-DIAG:
+```
+
+The initial commentary exposes:
+
+- OCODE dispatch number and current SSP;
+- CGSAVE entry state;
+- CGAPPLY call/workspace displacement;
+- safe-frame correction state;
+- stack-check inline slot location;
+- final stack-frame size in words and bytes.
+
+The instrumentation writes listing comments only. It does not update TXTP,
+binary-output state, labels, or generated instructions/data. Each insertion
+point is guarded by an exact source-shape assertion so historical/source drift
+fails loudly.
+
+The required acceptance invariant is stronger than merely compiling: for the
+same BCPL source, stripping only `* CG370-DIAG:` records from diagnostic
+assembler output must reproduce ordinary CG370 output exactly. Check two
+recovered CODE files with:
+
+```sh
+python3 native-compiler/bootstrap-cambridge/check-cg370-diagnostic.py \
+    workarea/cg370-baseline.s370.asm \
+    workarea/cg370-diagnostic.s370.asm
+```
+
+The MVS resident diagnostic image is kept separate as
+`HERC02.BCPL.INTCODE(CG370D)`; the baseline remains
+`HERC02.BCPL.INTCODE(CAMBCOMP)`.
 
 ## Deterministic generation
 
