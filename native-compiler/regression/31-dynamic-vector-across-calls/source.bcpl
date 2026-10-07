@@ -1,0 +1,23 @@
+GLOBAL $( START:1; GETVEC:87; FREEVEC:88; DEBUGINT:150 $)
+
+LET SETVALUE(V) BE
+$(1
+    V!1 := 42
+$)1
+
+LET START () BE
+$(1
+    LET V = GETVEC(2)
+
+    TEST V = 0
+    THEN DEBUGINT(99)
+    OR
+    $(2
+        V!1 := 17
+        SETVALUE(V)
+        DEBUGINT(V!1)
+        FREEVEC(V)
+    $)2
+
+    FINISH
+$)1
