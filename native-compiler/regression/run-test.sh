@@ -27,6 +27,9 @@ case_name=$(basename "$case_dir")
 source="$case_dir/source.bcpl"
 library="$case_dir/library.bcpl"
 native="$case_dir/native.asm"
+cambridge_parm="$case_dir/cambridge-parm.txt"
+generated_regex="$case_dir/generated-regex.txt"
+compile_only="$case_dir/compile-only.txt"
 
 [[ -f "$source" ]] || {
     echo "run-test: missing $source" >&2
@@ -44,7 +47,16 @@ compiler_job="RG${test_no}COMP"
 compiler_driver="${CAMBRIDGE_COMPILE:-$root/tools/cambridge-compile}"
 
 echo "=== Cambridge compile: $case_name ==="
-python3 "$compiler_driver"     "$source_copy"     --job-name "$compiler_job"     --listing light     --timeout 180 || exit $?
+compile_args=(
+    "$source_copy"
+    --job-name "$compiler_job"
+    --listing light
+    --timeout 180
+)
+if [[ -f "$cambridge_parm" ]]; then
+    compile_args+=(--cambridge-parm "$cambridge_parm")
+fi
+python3 "$compiler_driver" "${compile_args[@]}" || exit $?
 
 generated_root="$root/workarea/$case_name.s370.asm"
 generated="$work/generated.s370.asm"
@@ -56,6 +68,42 @@ generated="$work/generated.s370.asm"
 
 mv -f "$generated_root" "$generated"
 
+if [[ -f "$generated_regex" ]]; then
+    echo
+    echo "=== Generated-code assertions ==="
+    python3 - "$generated" "$generated_regex" <<'PY' || exit $?
+from pathlib import Path
+import re
+import sys
+
+generated_path = Path(sys.argv[1])
+patterns_path = Path(sys.argv[2])
+text = generated_path.read_text(encoding="latin-1")
+patterns = [
+    line.strip()
+    for line in patterns_path.read_text(encoding="utf-8").splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
+if not patterns:
+    raise SystemExit(f"{patterns_path}: no regex assertions found")
+for pattern in patterns:
+    if re.search(pattern, text, re.MULTILINE) is None:
+        print(f"missing generated-code pattern: {pattern}", file=sys.stderr)
+        raise SystemExit(1)
+    print(f"MATCH {pattern}")
+PY
+fi
+
+if [[ -f "$compile_only" ]]; then
+    echo
+    echo "=== Regression result ==="
+    echo "TEST:        $case_name"
+    echo "OBJECTIVE:   PASS"
+    echo "TERMINATION: COMPILE-ONLY"
+    echo "RESULT:      PASS"
+    exit 0
+fi
+
 library_generated=""
 if [[ -f "$library" ]]; then
     library_copy="$work/$case_name-library.bcpl"
@@ -65,11 +113,16 @@ if [[ -f "$library" ]]; then
 
     echo
     echo "=== Cambridge library compile: $case_name ==="
-    python3 "$compiler_driver" \
-        "$library_copy" \
-        --job-name "$library_job" \
-        --listing light \
-        --timeout 180 || exit $?
+    library_args=(
+        "$library_copy"
+        --job-name "$library_job"
+        --listing light
+        --timeout 180
+    )
+    if [[ -f "$cambridge_parm" ]]; then
+        library_args+=(--cambridge-parm "$cambridge_parm")
+    fi
+    python3 "$compiler_driver" "${library_args[@]}" || exit $?
 
     library_generated_root="$root/workarea/$case_name-library.s370.asm"
     library_generated="$work/library-generated.s370.asm"
