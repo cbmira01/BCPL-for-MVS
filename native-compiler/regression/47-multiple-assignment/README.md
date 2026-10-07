@@ -1,6 +1,8 @@
 # 47 - multiple assignment
 
-This regression isolates BCPL multiple assignment semantics.
+This regression isolates BCPL multiple assignment without depending on an
+evaluation/assignment ordering that the historical language definition leaves
+undefined.
 
 Expected output:
 
@@ -13,10 +15,10 @@ Expected output:
 ## Source shape
 
 ```bcpl
-LET A = 17
-LET B = 25
+LET A = 0
+LET B = 0
 
-A,B := B,A
+A,B := 25,17
 
 DEBUGINT(A + B)
 DEBUGINT(A)
@@ -25,55 +27,62 @@ DEBUGINT(B)
 
 Earlier regressions already establish local scalar variables, ordinary
 assignment, addition, DEBUGINT, and FINISH. Test 47 adds only multiple
-assignment.
+assignment syntax and generation.
 
-## Why a swap
+## Historical semantics
 
-A swap is the strongest minimal discriminator for simultaneous assignment.
-
-If the compiler incorrectly lowers:
+The original version of this regression used:
 
 ```bcpl
 A,B := B,A
 ```
 
-as sequential stores, then assigning A first would destroy the original value
-needed for B. Correct BCPL semantics require all right-hand-side values to be
-captured before any left-hand-side destination is overwritten.
+as a presumed simultaneous swap. That was too strong.
 
-Starting from:
+The 1979 proposed BCPL definition says that in a multiple assignment the
+left- and right-hand expressions are evaluated and assigned in an undefined
+order, and specifically allows some assignment to occur before all expressions
+have been evaluated. Therefore `A,B := B,A` is not a portable swap idiom.
 
-```text
-A = 17
-B = 25
+The Cambridge translator is consistent with that latitude. Its `ASSIGN`
+routine recursively translates the left comma component and then the right
+comma component:
+
+```bcpl
+ASSIGN(H2!X, H2!Y, N)
+ASSIGN(H3!X, H3!Y, N)
 ```
 
-the correct result is:
+The first native probe consequently generated two stores of the already-updated
+value 25:
 
-```text
-A = 25
-B = 17
+```asm
+ ST 8,12(5)
+ ST 8,16(5)
 ```
 
-The first DEBUGINT emits the invariant sum 42; the following two outputs prove
-that an actual swap occurred rather than merely preserving the sum.
+so the original swap expectation failed. That observation is retained as
+evidence of this Cambridge implementation's ordering; it is not classified as
+a compiler defect.
 
-## Historical motivation
+## Why the revised probe is valid
 
-Multiple assignment is part of the historical BCPL language definition and is
-used in systems-oriented BCPL programming where compact state updates are
-common. This is documentation-driven core-language coverage.
+The revised assignment:
 
-## What to inspect in generated assembler
+```bcpl
+A,B := 25,17
+```
 
-The generated System/370 should reveal how CG370 preserves all source values
-before performing destination stores. Possible strategies include:
+has the same result under any permitted evaluation/assignment ordering because
+neither right-hand expression depends on either destination.
 
-- loading both RHS values into registers before either store;
-- using temporary workspace cells;
-- a mixed register/workspace strategy.
+The three reported values establish both assignments independently:
 
-The key property is semantic simultaneity, not a specific instruction pattern.
+```text
+A+B = 42
+A   = 25
+B   = 17
+```
 
 ## Acceptance criteria
 
@@ -89,9 +98,23 @@ A successful run must:
   17
   ```
 
-- demonstrate that both RHS values are preserved before the swap stores;
+- show both destination stores in generated code;
 - require no new BCPLMAIN runtime service.
+
+## Regression-harness incident
+
+The first run of the original swap probe was incorrectly reported PASS because
+the old output matcher searched the entire JES report and treated a multiline
+expected file as alternative grep patterns. The line `25` matched unrelated
+JCL text containing `REGION=256K`.
+
+The harness was subsequently hardened so multiline expectations must occur as
+one contiguous sequence and output matching is restricted to the report suffix
+after the linkage editor's final `AUTHORIZATION CODE IS` marker.
+
+A full 00-47 rerun under the corrected matcher passed Tests 00-46 and correctly
+reported the original Test 47 swap expectation as a mismatch.
 
 ## Status
 
-PENDING — ready for first native run.
+PENDING — revised order-independent multiple-assignment probe is ready to run.
