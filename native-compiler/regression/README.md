@@ -58,6 +58,29 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
+## Running the native regression panel
+
+With the resident Cambridge compiler installed on MVS, the canonical full-panel
+command is:
+
+```sh
+tools/run-native-regression
+```
+
+With no arguments, this discovers the highest numbered test and runs every
+contiguous case from 00 through that test.  Inclusive ranges are also accepted:
+
+```sh
+tools/run-native-regression 27
+tools/run-native-regression 27 30
+tools/run-native-regression 30 30
+```
+
+The runner continues after individual failures, records each test's complete
+output under `workarea/native-regression/logs/`, prints a compact PASS/FAIL
+summary, and returns nonzero if any test fails.  A numbering gap inside the
+requested range is treated as an error rather than silently skipped.
+
 ## Running one native regression test
 
 With the TK5/Hercules container already running, invoke a numbered case from
