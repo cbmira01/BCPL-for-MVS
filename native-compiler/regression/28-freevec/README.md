@@ -55,4 +55,29 @@ later edge/failure regressions.
 
 ## Status
 
-PENDING.
+PASS.
+
+Job 1140 on 2026-10-07 compiled the BCPL test through the resident Cambridge
+compiler path. Job 1141 then assembled, link-edited, and executed the native
+program successfully:
+
+```text
+ASM   RC=0000
+LKED  RC=0000
+GO    RC=0000
+```
+
+The native program emitted:
+
+```text
+42
+```
+
+This establishes executable evidence that G!88 FREEVEC can locate a matching
+GETVEC allocation through VECLIST, unlink its control record, release the
+recorded MVS allocation through FREEMAIN, and return normally to generated
+BCPL code. A subsequent GETVEC allocation also returned usable storage and
+was itself released successfully.
+
+The test does not require exact address reuse and does not yet define error
+behavior for invalid FREEVEC pointers.
