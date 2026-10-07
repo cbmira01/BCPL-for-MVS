@@ -2,10 +2,10 @@ GLOBAL $( START:1; DEBUGINT:150 $)
 
 LET START () BE
 $(1
-    LET A = 17
-    LET B = 25
+    LET A = 0
+    LET B = 0
 
-    A,B := B,A
+    A,B := 25,17
 
     DEBUGINT(A + B)
     DEBUGINT(A)
