@@ -909,23 +909,22 @@ PUTBYTE  LR    14,7
 * historical VECAREA fields VECBASE, VECLEN, and VECNEXT.
 *
 * Regression 30 changes allocation to conditional GETMAIN RC.
-* GETVEC returns zero for a negative size, arithmetic overflow, or an
-* MVS allocation failure.
+* GETVEC returns zero for a negative or overlarge size, or an MVS
+* allocation failure.  N<=4194299 keeps the byte count within 24 bits.
 *
 * GETMAIN RC uses R0/R1/R15.  Generated BCPL requires R0=0 and R1-R3
 * to hold permanent constants, and R15 is W.  Preserve all of them.
 ***********************************************************************
 GETVEC   LTR   7,7
          BM    GVFAIL0
+         C     7,=F'4194299'
+         BH    GVFAIL0
          STM   0,3,GVRSAVE
          ST    15,GVRWSAVE
          LR    10,7
          LA    10,1(10)
-         BC    1,GVFAIL
          SLL   10,2
-         BC    1,GVFAIL
          LA    10,12(10)
-         BC    1,GVFAIL
          ST    10,GVRLEN
          GETMAIN RC,LV=(10)
          LTR   15,15
