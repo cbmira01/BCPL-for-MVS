@@ -938,10 +938,10 @@ to byte-address conversion, byte-offset arithmetic, and three-argument linkage.
 
 ### 39-freevec-storage-release
 
-Status: **PENDING** — ready for first native run.
+Status: **PENDING** — revised after the first run showed a 1 MiB block was too large for the native GO region.
 
-Repeatedly allocates exact 1 MiB GETVEC blocks until allocation fails, frees one
-known live block, then immediately retries the same 1 MiB allocation.
+Repeatedly allocates exact 1 KiB GETVEC blocks until allocation fails, frees one
+known live block, then immediately retries the same 1 KiB allocation.
 
 Expected output:
 
