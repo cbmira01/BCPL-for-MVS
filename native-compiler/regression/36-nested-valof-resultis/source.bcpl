@@ -1,0 +1,17 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET X = VALOF
+    $(2
+        LET Y = VALOF
+        $(3
+            RESULTIS 17
+        $)3
+
+        RESULTIS Y + 25
+    $)2
+
+    DEBUGINT(X)
+    FINISH
+$)1
