@@ -793,6 +793,16 @@ SYSSTK   BC    15,STKIMPL
 * S.STKCKCOUNT = 80
 *
 SYSSTKC  BC    15,STKCIMP
+         DS    8H
+*
+* Runtime-local byte limit and controlled-overflow message.
+* Historical BCPLMAC distinguishes STKLIM (safe limit) from STKHIGH.
+* This WIP static stack has no clearance area, so WORKEND is its
+* provisional safe limit.
+*
+STKLIM   DC    A(WORKEND)
+STKMSG   DC    CL14'STACK OVERFLOW'
+         DS    0H
 *
 ***********************************************************************
 * PROCEDURE RETURN
@@ -844,10 +854,12 @@ FINRETN  L     13,4(13)
 * a temporary here and can be restored before returning to generated
 * code.
 *
-* Test 50 adds structural validation of the inline value: it must be
-* positive and word aligned.  This is not yet an overflow check; no
-* comparison with WORKEND is performed.  Historical overflow handling
-* remains separate reconstruction work.
+* Test 50 added structural validation of the inline value.  Test 52
+* adds the first WIP limit check: W plus required frame bytes must not
+* exceed STKLIM.  BCPLMAC proves that the historical runtime maintained
+* a safe stack limit distinct from the byte beyond allocated stack.
+* The missing machine-code STKCK body leaves exact clearance semantics
+* unrecovered; WORKEND is therefore the provisional WIP safe limit.
 ***********************************************************************
 STKIMPL  LR    5,15
          L     4,0(14)
@@ -855,9 +867,16 @@ STKIMPL  LR    5,15
          BC    12,STKFORM
          TM    3(14),X'03'
          BC    7,STKFORM
+         AR    4,15
+         C     4,STKLIM
+         BH    STKOVFL
          L     4,0(15)
          LA    14,4(14)
          BR    14
+STKOVFL  MVC   OUTBUF(14),STKMSG
+         LA    4,14
+         ST    4,OUTPOS
+         B     FINIMPL
 STKFORM  L     4,0(15)
          L     13,4(13)
          LM    14,12,12(13)
