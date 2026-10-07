@@ -1156,6 +1156,25 @@ No stack-limit comparison is claimed yet. The successful `X42` run isolates
 correct workspace establishment and resumption after the inline frame-size
 fullword.
 
+### 50-stack-frame-size
+
+Status: **PENDING** — checked-entry frame-size decoding.
+
+Uses a local `VEC 31` so CG370 must publish a substantially larger frame than
+Test 49's 44-byte case. Generated-code assertions require both the checked-entry
+BAL/inline fullword and a three-digit-or-larger `STACK FRAME SIZE` EQU.
+
+BCPLMAIN now loads the inline frame size from `0(R14)`, verifies that it is
+positive and word aligned, restores R4 from the just-saved workspace, skips the
+inline word, and resumes generated code.
+
+This does **not** yet compare the required frame against WORKEND and therefore
+does not claim stack-overflow detection. Expected native output is:
+
+```text
+42
+```
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
