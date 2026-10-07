@@ -1020,6 +1020,21 @@ Expected output:
 This isolates explicit label/GOTO generation. The Cambridge compiler corpus uses
 GOTO heavily, especially in SYN/LEX and CG370.
 
+### 44-address-indirection
+
+Status: **PENDING** — ready for first native run.
+
+Forms `P=@X`, updates X through `!P`, then reads X directly.
+
+Expected output:
+
+```text
+42
+```
+
+This isolates BCPL address-of and monadic indirection while reusing already
+proven local-scalar, arithmetic, and DEBUGINT behavior.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
