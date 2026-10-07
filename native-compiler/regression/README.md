@@ -1288,6 +1288,32 @@ caller's next-W displacement.
 The run emitted `STACK OVERFLOW` and avoided uncontrolled storage corruption.
 The test does not yet claim historical ABORT/STOP(100) integration.
 
+### 053-basic-writef
+
+Status: **PENDING** — first native WRITEF literal-output regression.
+
+Begins the WRITEF runtime sprint by replacing the former G!76 no-op with the
+smallest executable bootstrap contract. The source calls:
+
+```bcpl
+WRITEF("BASIC WRITEF")
+```
+
+Expected output:
+
+```text
+BASIC WRITEF
+```
+
+For this test only, WRITEF treats argument 1 as a BCPL length-prefixed string
+and copies its data bytes literally into the existing SYSPRINT buffer. FINISH
+performs the already-proven buffered PUT. Format conversions, newline handling,
+width controls, additional arguments, and selected-stream behavior remain
+deferred.
+
+Generated-code assertions require the G!76 load at byte displacement 304 and
+ordinary BALR linkage.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
