@@ -1123,6 +1123,29 @@ the ordinary `LR 5,15` operation. The regression deliberately stops after
 generated-code assertions because BCPLMAIN's current stack-check entry is still
 a stub. Runtime semantics begin with the next regression.
 
+### 49-checked-procedure-entry
+
+Status: **PENDING** — first execution of CG370 stack-check entry.
+
+Runs the already-proven mutable-local/WRCH/reload shape under code-generator
+option `C`. The generated code must contain the checked-entry BAL and inline
+frame-size word, and the native run must emit:
+
+```text
+X42
+```
+
+BCPLMAIN's `STKIMPL` now performs only the minimum entry mechanics:
+
+```asm
+LR    5,15
+LA    14,4(14)
+BR    14
+```
+
+No stack-limit comparison is claimed yet. This test isolates correct workspace
+establishment and resumption after the inline frame-size fullword.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
