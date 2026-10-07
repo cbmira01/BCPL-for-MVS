@@ -702,7 +702,8 @@ cases.
 
 ### 29-multiple-allocations
 
-Status: **PENDING**.
+Status: **PASS** — Job 1142 compiled the BCPL test; Job 1143 assembled,
+link-edited, and executed successfully on 2026-10-07, emitting `424242`.
 
 Exercises several simultaneously live GETVEC allocations and deliberately
 removes VECLIST records from the middle, head, and tail positions. Surviving
