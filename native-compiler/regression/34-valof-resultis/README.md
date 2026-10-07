@@ -55,4 +55,4 @@ and nested RESULTIS cases belong in later tests.
 
 ## Status
 
-PENDING — ready for first native run.
+PASS — emitted `42` on 2026-10-07.
