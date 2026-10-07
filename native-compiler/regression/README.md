@@ -781,7 +781,7 @@ length, keeping the WIP allocation length within the 24-bit runtime model.
 
 ### 31-dynamic-vector-across-calls
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — validated in the full 00..32 panel on 2026-10-07.
 
 Composes the dynamic allocation contract from Tests 27-30 with the pointer
 aliasing and one-argument procedure linkage established earlier.
@@ -803,7 +803,8 @@ runtime feature.
 
 ### 32-dynamic-pointer-return
 
-Status: **PENDING** — narrowed after an initial S0C4 and ready for retest.
+Status: **PASS** — emitted `42`; after the RETIMPL correction the complete
+00..32 native panel passed 33/33 on 2026-10-07.
 
 MAKE is now deliberately only `GETVEC(2)` returned as the function result.
 START stores the returned pointer in P, writes 42 to `P!1`, reloads and
@@ -819,9 +820,10 @@ The first version also used `VALOF/RESULTIS` and callee-side vector access,
 introducing more than one unproven construct. Its native run compiled,
 assembled, and linked successfully but ABENDed S0C4 inside generated MAKE.
 Those semantics have been removed from Test 32 and should be isolated in a
-later regression. A later FREEVEC-specific regression should also make
-successful MVS storage release observable rather than merely infer it from
-normal execution.
+later regression. The narrowed test exposed a reconstruction error in the
+system-vector procedure-return trampoline: R4 must be reloaded from the restored
+caller frame, not from the callee frame. A later FREEVEC-specific regression may
+also make successful MVS storage release more directly observable.
 
 ## MVS-resident Cambridge compile path
 
