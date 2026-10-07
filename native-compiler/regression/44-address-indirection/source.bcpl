@@ -1,0 +1,12 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET START () BE
+$(1
+    LET X = 17
+    LET P = @X
+
+    !P := !P + 25
+
+    DEBUGINT(X)
+    FINISH
+$)1
