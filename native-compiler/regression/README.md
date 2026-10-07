@@ -100,6 +100,14 @@ assembler-source preflight, builds an IFOX/IEWL/GO job, submits it, and prints
 the final job summary.  Generated artifacts remain under
 `workarea/native-regression/<case>/`.
 
+## Full-panel verification
+
+On 2026-10-07 the entire 00-47 panel was rerun after hardening output matching.
+Tests 00-46 all passed. The original Test 47 swap probe correctly failed under
+the hardened matcher; subsequent standards/source review showed that its
+simultaneous-swap expectation was stronger than historical BCPL guarantees.
+Test 47 has therefore been revised to an order-independent multiple assignment.
+
 ## Current panel
 
 ### 00-most-degenerate-bcpl-program
@@ -1069,10 +1077,9 @@ or sign/overflow edge cases.
 
 ### 47-multiple-assignment
 
-Status: **PENDING** — ready for first native run.
+Status: **PENDING** — revised order-independent probe ready for native run.
 
-Swaps two locals with `A,B := B,A` and emits the sum plus both post-swap
-values.
+Assigns two locals with `A,B := 25,17` and emits their sum plus both values.
 
 Expected output:
 
@@ -1082,8 +1089,9 @@ Expected output:
 17
 ```
 
-This isolates simultaneous multiple-assignment semantics. The swap distinguishes
-correct RHS preservation from an incorrect sequential lowering.
+The original `A,B := B,A` swap probe was invalid as a conformance test:
+historical BCPL explicitly leaves multiple-assignment evaluation/assignment
+order undefined. Cambridge's observed left-to-right lowering is permitted.
 
 ## MVS-resident Cambridge compile path
 
