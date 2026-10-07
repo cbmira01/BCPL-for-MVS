@@ -733,7 +733,7 @@ is correct. Exact MVS address reuse is not tested.
 
 Status: **PENDING**.
 
-Changes GETVEC from unconditional GETMAIN to conditional GETMAIN RC and
+Changes GETVEC from unconditional GETMAIN to conditional GETMAIN EC and
 establishes failure-to-zero behavior. The test first proves that a normal
 small allocation still works, then requests an almost-16-MiB vector that
 cannot fit in the running 24-bit MVS address space.
