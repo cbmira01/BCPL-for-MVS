@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 REGRESSION = ROOT / "native-compiler" / "regression"
 RUNNER = REGRESSION / "run-test-mvs.sh"
 LOG_DIR = ROOT / "workarea" / "native-regression" / "logs"
-CASE_RE = re.compile(r"^(\\d{2,3})-")
+CASE_RE = re.compile(r"^(\d{2,3})-")
 
 
 def case_id(test_no: int) -> str:
@@ -54,6 +54,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="show each test's BCPL output; on mismatch also show the native job report",
     )
+    parser.add_argument(
+        "--check-numbering",
+        action="store_true",
+        help="check the legacy/two-digit to three-digit numbering boundary and exit",
+    )
     return parser.parse_args()
 
 
@@ -85,8 +90,54 @@ def discover() -> tuple[dict[int, str], int]:
     return cases, max(cases)
 
 
+def check_numbering() -> int:
+    expected = {
+        0: "00",
+        7: "07",
+        52: "52",
+        53: "053",
+        99: "099",
+        100: "100",
+        999: "999",
+    }
+    for test_no, wanted in expected.items():
+        actual = case_id(test_no)
+        if actual != wanted:
+            print(
+                f"numbering check failed: {test_no} -> {actual}, expected {wanted}",
+                file=sys.stderr,
+            )
+            return 1
+
+    print("native regression numbering: OK")
+    for test_no in (52, 53, 99, 100, 999):
+        ident = case_id(test_no)
+        job_base = f"RG{test_no:03d}"
+        entry = f"BCRG{test_no:04d}"
+        if len(job_base + "C") > 8 or len(job_base + "R") > 8:
+            print(f"MVS job-name overflow at test {test_no}", file=sys.stderr)
+            return 1
+        if len(entry) > 8:
+            print(f"assembler entry-name overflow at test {test_no}", file=sys.stderr)
+            return 1
+        print(
+            f"  {test_no:>3} -> dir {ident}-*; "
+            f"jobs {job_base}C/{job_base}R; entry {entry}"
+        )
+    return 0
+
+
 def main() -> int:
     args = parse_args()
+
+    if args.check_numbering:
+        if args.start is not None or args.end is not None:
+            print(
+                "run-native-regression: --check-numbering takes no test range",
+                file=sys.stderr,
+            )
+            return 64
+        return check_numbering()
 
     if not RUNNER.is_file():
         print(f"run-native-regression: missing runner: {RUNNER}", file=sys.stderr)
