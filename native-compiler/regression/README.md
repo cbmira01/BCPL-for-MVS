@@ -864,7 +864,7 @@ Conditional and nested RESULTIS cases are deliberately deferred.
 
 ### 35-conditional-resultis
 
-Status: **PENDING** — ready for first native run.
+Status: **PASS** — emitted `42` on 2026-10-07.
 
 Extends Test 34 from one RESULTIS path to two distinct control-flow paths that
 both exit the same VALOF expression.
