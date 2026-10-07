@@ -952,12 +952,13 @@ WFLITLP  LTR   8,8
          IC    7,0(14)
          CLI   0(14),C'%'
          BNE   WFLITCP
-         CH    8,=H'2'
+         LA    4,2
+         CR    8,4
          BL    WFLITCP
          CLI   1(14),C'N'
          BNE   WFLITCP
          LA    14,2(14)
-         SH    8,=H'2'
+         SR    8,4
          B     WFNUM
 WFLITCP  LA    14,1(14)
          BCTR  8,0
@@ -967,40 +968,33 @@ WFLITCP  LA    14,1(14)
 * Emit signed decimal WFARG1.  Digits are built right-to-left in a
 * 12-byte temporary area, then copied through the common byte appender.
 *
-WFNUM    L     7,WFARG1
+WFNUM    ST    8,WFREM
+         ST    14,WFFMTP
+         L     7,WFARG1
          LTR   7,7
-         BNZ   WFNZ
-         SR    7,7
-         IC    7,=C'0'
+         BNM   WFCVT
+         LA    7,96
          BAL   10,WFPUTC
-         B     WFLITLP
-WFNZ     SR    6,6
-         LTR   7,7
-         BNM   WFABS
+         L     7,WFARG1
+WFCVT    CVD   7,WFDECPK
+         UNPK  WFDECZN(15),WFDECPK(8)
+         OI    WFDECZN+14,X'F0'
+         LA    4,WFDECZN
+         LA    5,15
+WFSKIP   CLI   0(4),C'0'
+         BNE   WFDCOPY
          LA    6,1
-         LCR   7,7
-WFABS    LA    4,WFDIGEND
-         SR    5,5
-WFDIV    SR    2,2
-         LR    3,7
-         D     2,=F'10'
-         LR    7,3
-         LA    2,240(2)
-         BCTR  4,0
-         STC   2,0(4)
-         LA    5,1(5)
-         LTR   7,7
-         BNZ   WFDIV
-         LTR   6,6
-         BZ    WFDCOPY
-         SR    7,7
-         IC    7,=C'-'
-         BAL   10,WFPUTC
+         CR    5,6
+         BE    WFDCOPY
+         LA    4,1(4)
+         BCT   5,WFSKIP
 WFDCOPY  SR    7,7
          IC    7,0(4)
          BAL   10,WFPUTC
          LA    4,1(4)
          BCT   5,WFDCOPY
+         L     8,WFREM
+         L     14,WFFMTP
          B     WFLITLP
 *
 * Append R7 low byte to OUTBUF when room remains.  R9 is OUTPOS.
@@ -1021,8 +1015,10 @@ WFLITDN  ST    9,OUTPOS
 *
 WFREGSV  DS    5F
 WFARG1   DC    F'0'
-WFDIGITS DS    CL12
-WFDIGEND EQU   *
+WFREM    DC    F'0'
+WFFMTP   DC    A(0)
+WFDECPK  DS    D
+WFDECZN  DS    CL15
 *
 ***********************************************************************
 * GETBYTE(S,I) -> R7
