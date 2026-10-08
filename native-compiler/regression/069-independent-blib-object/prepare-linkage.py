@@ -52,9 +52,9 @@ def main() -> None:
     core = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(core)
     config = core.load_config()
-    header = "\\n".join(core.authenticated_job_card(
+    header = "\n".join(core.authenticated_job_card(
         config, "RG069L", "BCPL REGRESSION 069 LINK", redact_password=False
-    )) + "\\n"
+    )) + "\n"
     deck = header + """//* REGRESSION 069 STAGE 1 — NO GO; NO BLIB RECOMPILATION
 //* APPLICATION, BCPLMAIN AND LIBRARY ARE INDEPENDENT CSECTS
 //ASMAP    EXEC PGM=IFOX00,REGION=256K,
@@ -102,7 +102,9 @@ def main() -> None:
     if any(len(line) > 71 for line in deck.splitlines()):
         raise ValueError("JCL card exceeds column 71")
     args.output_jcl.parent.mkdir(parents=True, exist_ok=True)
-    args.output_jcl.write_text(deck, encoding="ascii", newline="\n")
+    fd = os.open(args.output_jcl, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="ascii", newline="\n") as output:
+        output.write(deck)
     print(args.output_jcl)
 
 
