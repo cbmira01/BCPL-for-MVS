@@ -50,7 +50,8 @@ if [[ -f "$library_ref" ]]; then
         echo "run-test: unsupported shared library $library_name" >&2
         exit 65
     fi
-    library="$root/native-compiler/library/blib.bcpl"
+    python3 "$root/native-compiler/bootstrap-cambridge/make-demoted.py" --blib-only || exit $?
+    library="$root/workarea/bootstrap-cambridge/demoted/blib"
 fi
 native="$case_dir/native.asm"
 cambridge_parm="$case_dir/cambridge-parm.txt"

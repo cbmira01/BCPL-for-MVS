@@ -4,18 +4,19 @@
 
 Compile the **entire surviving Cambridge BLIB**, link its generated
 code with the application and current BCPLMAIN, and call two exported
-services. The full library is held once at
-`native-compiler/library/blib.bcpl`; this test points to it through
+services. The historical source is demoted reproducibly into
+`workarea/bootstrap-cambridge/demoted/blib` by the established
+`make-demoted.py` generator. This test references it through
 `library-source.txt`.
 
 ## Fidelity boundary
 
 The canonical historical evidence is
 `richards-bcpltape/bcplib/bcpl/blib`.
-The native copy deletes the leading `SECTION "BLIB"` directive,
-which the MR10 bootstrap compiler cannot parse, and substitutes one
-comment. **Every other source line is preserved in order**, including
-`GET "LIBHDR"`, all definitions, data, and MVS-specific diagnostics.
+The generated derivative removes `SECTION "BLIB"` and rewrites the two
+Cambridge `~=` operators to MR10-compatible `NE`. The `GET "LIBHDR"`,
+all definitions, data, and MVS-specific diagnostics remain intact.
+The generator checks the historical source shape and source-card width.
 
 A whole-module build may expose compiler capacity limits, unsupported
 source syntax, or assembler/static-combiner limitations. The test is

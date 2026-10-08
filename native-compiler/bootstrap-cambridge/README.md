@@ -5,6 +5,18 @@ surviving Cambridge BCPL frontend through the MR10 kit compiler. Generated
 bootstrap material is deliberately kept out of this source directory and written
 under `workarea/bootstrap-cambridge/`.
 
+For whole-library regression 067, the same generator also emits the complete
+`workarea/bootstrap-cambridge/demoted/blib`. Its only substantive
+transformations are omission of the `SECTION "BLIB"` wrapper and replacement
+of exactly two `~=` operators with MR10 `NE`. It preserves `GET "LIBHDR"`
+and all BLIB definitions. Generate it alone with:
+
+```sh
+python3 native-compiler/bootstrap-cambridge/make-demoted.py --blib-only
+```
+
+The regression runner invokes that command before compiling BLIB.
+
 The historical sources remain untouched under:
 
 - `richards-bcpltape/bcplib/bcpl/syn`

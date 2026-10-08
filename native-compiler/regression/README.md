@@ -1527,7 +1527,8 @@ Status: **PENDING** — native MVS execution.
 
 First whole-BLIB integration attempt. It compiles the complete
 historical `blib` as a single Cambridge BCPL compilation unit,
-with only its unsupported `SECTION "BLIB"` directive demoted;
+with its unsupported `SECTION "BLIB"` directive removed and two
+`~=` tokens changed to MR10 `NE` by `make-demoted.py`;
 `GET "LIBHDR"` and every BLIB definition remain intact. The
 application calls BLIB's `WRITES` (G!60) and `WRITEN` (G!62).
 The test uses the existing static combiner, not a reconstructed

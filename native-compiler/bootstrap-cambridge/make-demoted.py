@@ -18,6 +18,7 @@ Historical sources remain untouched.  Unexpected source drift fails loudly.
 """
 
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "source"
@@ -495,7 +496,34 @@ def write_unit(name: str, historical_section: str, text: str, extra_banner=(), o
     (out_dir / name).write_text("\n".join(banner) + "\n" + text, encoding="utf-8")
 
 
+def make_blib() -> None:
+    """Generate the complete historical BLIB for MR10 interpretation."""
+    source = HIST / "blib"
+    text = source.read_text(encoding="utf-8")
+    header = 'SECTION "BLIB"\n'
+    if not text.startswith(header) or text.count(header) != 1:
+        raise SystemExit("historical BLIB SECTION header changed")
+    body = text[len(header):]
+    if body.count('GET "LIBHDR"') != 1 or body.count("~=") != 2:
+        raise SystemExit("historical BLIB header or inequality count changed")
+    # The only source dialect edits: strip SECTION, demote '~='.
+    body = body.replace("~=", " NE ")
+    banner = (
+        '|| BOOTSTRAP DERIVATIVE OF CAMBRIDGE SECTION "BLIB".\n'
+        '|| SECTION wrapper omitted; two ~= tokens rewritten as NE.\n'
+    )
+    content = banner + body
+    for number, line in enumerate(content.splitlines(), 1):
+        if len(line) > 80:
+            raise SystemExit(f"demoted BLIB line {number} exceeds 80 columns")
+    OUT.mkdir(parents=True, exist_ok=True)
+    dest = OUT / "blib"
+    dest.write_text(content, encoding="utf-8")
+    print(f"  {dest.relative_to(ROOT.parent.parent)}  {dest.stat().st_size} bytes")
+
+
 def main() -> None:
+    make_blib()
     syn_text = (SOURCE / "syn").read_text(encoding="utf-8")
     trn_text = (SOURCE / "trn").read_text(encoding="utf-8")
     master_text = (HIST / "bcpl").read_text(encoding="utf-8")
@@ -569,4 +597,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--blib-only"]:
+        make_blib()
+    elif not sys.argv[1:]:
+        main()
+    else:
+        raise SystemExit("usage: make-demoted.py [--blib-only]")
