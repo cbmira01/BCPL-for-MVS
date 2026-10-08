@@ -1484,6 +1484,21 @@ Historical System/370 BLIB WRITEF accepts alphabetic width codes
 with `%OA` (width ten); expected output is `>0000000052<`.
 This extends only the octal width decoder.
 
+## Full-panel milestone checkpoint — 2026-10-08
+
+**PASS: 65 / FAIL: 0 / TOTAL: 65** on the native MVS 3.8J path.
+
+The operator ran `tools/run-native-regression 0 64 --show-output`
+after the WRITEF hexadecimal/octal alphabetic-width additions. Every
+test from 00 through 064 passed, including WRITEF tests 053–064.
+This establishes a verified checkpoint for the current *WRITEF formatting
+subset*, not a claim of complete historical BLIB compatibility.
+
+This full-panel result supersedes the narrower 000–060 checkpoint.
+Future tests are individually validated between milestones; repeat the
+complete panel at the next milestone or if a materially risky change
+warrants it.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
