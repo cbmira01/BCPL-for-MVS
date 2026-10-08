@@ -215,27 +215,27 @@ def main() -> int:
                 env=env,
             )
 
-        if True:  # Always relay captured BCPL output to the WSL console.
-            lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
-            shown = False
-            for heading in ("=== BCPL output ===", "=== Output mismatch ==="):
-                if heading in lines:
-                    start_index = lines.index(heading)
-                    end_index = len(lines)
-                    for index in range(start_index + 1, len(lines)):
-                        if lines[index].startswith("===") and index > start_index:
-                            end_index = index
-                            break
-                    print(heading)
-                    for line in lines[start_index + 1:end_index]:
-                        print(line)
-                    shown = True
-                    break
-
-            if not shown and proc.returncode != 0:
-                print("=== Failure log ===")
-                for line in lines:
+        # Always relay captured BCPL output to the WSL console.
+        lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+        shown = False
+        for heading in ("=== BCPL output ===", "=== Output mismatch ==="):
+            if heading in lines:
+                start_index = lines.index(heading)
+                end_index = len(lines)
+                for index in range(start_index + 1, len(lines)):
+                    if lines[index].startswith("===") and index > start_index:
+                        end_index = index
+                        break
+                print(heading)
+                for line in lines[start_index + 1:end_index]:
                     print(line)
+                shown = True
+                break
+
+        if not shown and proc.returncode != 0:
+            print("=== Failure log ===")
+            for line in lines:
+                print(line)
 
         if proc.returncode == 0:
             passed += 1
