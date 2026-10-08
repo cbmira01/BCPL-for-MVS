@@ -123,10 +123,31 @@ execute BLIB, nor does it contain a GO step. This establishes that the
 persistent `OBJ(BLIB)` installed by the separate resident-build
 **JOB 2413** is accepted by the linkage editor in another job.
 
-**Evidence boundary:** The user has supplied the job summary, but
-not yet the IEWL link map and XREF listing from JOB 2418. The exact
-CSECT lengths, resolved BCPLMAIN relocation and control-card echo
-remain to be explicitly checked from that report. IEWL RC=0 alone is
-not a substitute for recording those details. No independently linked
-BCPL application was executed; Stage B remains open.
+**Complete IEWL map and XREF verified from the user-supplied JOB 2418
+report.** The report echoes `INCLUDE OBJ(BLIB)`, `ENTRY BLIB`, and
+`NAME BLIBCHK(R)` and shows:
+
+```text
+CONTROL SECTION    ORIGIN  LENGTH
+BCPLMAIN           000000  004D18
+BLIB               004D18  001BB0
+
+LOCATION  REFERS TO SYMBOL  IN CONTROL SECTION
+004D24    BCPLMAIN        BCPLMAIN
+
+ENTRY ADDRESS      004D18
+TOTAL LENGTH       0068C8
+```
+
+The BLIB origin plus wrapper relocation offset `X'0C'` is
+`X'4D18' + X'0C' = X'4D24'`. This independently confirms the
+resident-generated persistent `OBJ(BLIB)` can be consumed and resolved
+against `BCPLMAIN` by IEWL in a **subsequent job**. The link editor
+reported `BLIBCHK DOES NOT EXIST BUT HAS BEEN ADDED TO DATA SET` and
+authorization code zero; both ASMRUN and LKED completed at RC=0000.
+The module was **not executed**, and Stage B remains unverified.
+
+This completes the **object packaging, persistent reuse, and separate-job
+linkage milestone**. The pre-existing static assembler combiner and
+regressions 067/068 remain unchanged.
 
