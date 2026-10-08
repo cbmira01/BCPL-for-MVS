@@ -1,4 +1,4 @@
-# BLIB object-library experiment (Stage A, verified)
+# Native BLIB object-library foundation — Stage A and resident build verified
 
 **Stage A is VERIFIED:** user-run JOB 2396 on 2026-10-08 completed ASMBLIB,
 INSTALL, ASMRUN and LKED at RC=0000. IEWL explicitly included
@@ -6,9 +6,10 @@ INSTALL, ASMRUN and LKED at RC=0000. IEWL explicitly included
 See [stage-a-checkpoint.md](stage-a-checkpoint.md) for ESD, RLD,
 link map and exact acceptance evidence. The linked module was not run.
 
-This is an **isolated, non-executing** probe. It does not modify regression
-000–068, canonical `richards-bcpltape/bcplib/bcpl/blib`, the static
-combiner, `config/dspal.yaml`, or `BCPLMAIN-wip`.
+The **Stage A linkage probe** was isolated and non-executing. Subsequent
+packaging work on this experiment branch extends `config/dspal.yaml`, but
+does not modify regression 000–068, canonical historical BLIB, the static
+combiner, or `BCPLMAIN-wip`.
 
 ## Prerequisites
 
@@ -22,8 +23,8 @@ combiner, `config/dspal.yaml`, or `BCPLMAIN-wip`.
    **Only if missing**, generate an authenticated allocation JCL using
    `make-obj-allocation-job.py`; submit it and check RC=0000. Do not replace
    an existing dataset. The proposed DCB is DSORG=PO, RECFM=FB, LRECL=80,
-   BLKSIZE=800, directory blocks=20. These attributes remain to be verified
-   under TK5.
+   BLKSIZE=800, directory blocks=20. These attributes were verified under TK5 by the Stage A allocation
+   and `dspal stat` jobs.
 4. Provide `mvs.batch_password` for `HERC02` through the gitignored
    `config/dspal.local.yaml`, as documented in `config/README.md`.
    Generated JCL files contain a batch password: keep them local, do not
@@ -88,7 +89,7 @@ record them explicitly and repair only in generated transport. Stage A is comple
 inclusion; Stage B execution remains unproven.
 
 
-## Managed BLIB rebuild (MVS-resident pipeline, pending TK5 run)
+## Managed BLIB rebuild (MVS-resident pipeline, verified)
 
 This production-style packaging workflow follows the **same pattern as the
 demoted compiler**: position source, position a stored JCL job body, invoke it.
@@ -148,15 +149,39 @@ COMP, PREPASM and PREPLK each returned RC=0000. FIXASM abended
 linkage editor installed `BLIBPREP` through `NAME BLIBPREP(R)`.
 The JCL now uses `&&PREPLD(BLIBPREP)` so the module requested by
 `EXEC PGM=*.PREPLK.SYSLMOD` matches the IEWL module name. An
-offline regression test requires the names to agree. A rerun on TK5 is
-still required to verify execution and subsequent object installation.
+offline regression test requires the names to agree. A rerun on TK5 was completed successfully as JOB 2413; see the
+next checkpoint below.
 The earlier `OBJ(BLIB)` directory entry was from JOB 2396 and should
 **not** be cited as an outcome of failed JOB 2408.
 
-The original four-step **Stage A object-linkage probe** remains in the earlier
-section of this document. Its success is not evidence that this new six-step
-build has passed. The first run of this stored MVS job must be checked and
-documented; it has **not** yet been executed under TK5.
+### Verified resident build: JOB 2413 (2026-10-08)
+
+After the corrected JCL was positioned in `JCL(BLIBBLD)` by JOB 2410,
+the user submitted it through `dspal submit`. JES launcher JOB 2412
+submitted payload **JOB 2413**. Every step completed at **RC=0000**:
+
+```text
+COMP    ICINT19      RC=0000
+PREPASM IFOX00       RC=0000
+PREPLK  IEWL         RC=0000
+FIXASM  PGM=*.DD     RC=0000
+ASMBLIB IFOX00       RC=0000
+INSTALL IEBGENER     RC=0000
+JOB RESULT: SUCCESS
+HIGHEST RC: 0000
+```
+
+No assembler statements were flagged; highest severity was zero.
+This establishes compilation of positioned `SOURCE(BLIB)` by resident
+Cambridge, execution of the MVS card-fixer, independent IFOX assembly,
+and binary object installation in `OBJ(BLIB)`.
+The original four-step **Stage A object-linkage probe** remains separately
+verified as JOB 2396. See [resident-build-checkpoint.md](resident-build-checkpoint.md)
+for the observed jobs, error/fix chronology, and precise limitations.
+
+The user exercised the stored `dspal` build path directly; the convenience
+wrapper's single-command full execution has not yet been independently
+observed.
 
 To submit the already deployed source/job body without host orchestration:
 
@@ -171,7 +196,9 @@ still deferred. Keep the 69 passing static native regressions unchanged.
 
 ## Next boundary
 
-Once this is verified, design a typed `OBJ` manifest entry and
-binary-preserving install path in `dspal`. That is separate from Stage B:
-loading BLIB's exported globals into the runtime global vector and executing
-multiple independently linked BCPL sections.
+The `OBJ` manifest entry and binary-preserving IFOX/IEBGENER installation
+are now implemented and the resident job verified. The next distinct
+architectural problem is **Stage B**: loading BLIB's exported globals into
+the runtime global vector and executing multiple independently linked BCPL
+sections. Preserve the passing static regression reference path until
+that runtime-linkage behavior is demonstrated.
