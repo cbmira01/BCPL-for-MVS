@@ -1391,6 +1391,24 @@ than the field are zero-filled rather than blank-padded.
 The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
 format transport issue exposed during Test 055.
 
+### 058-writef-octal-width
+
+Status: **PENDING** — first fixed-width octal WRITEF conversion.
+
+Constructs the target format equivalent to `>%O4<`, calls `WRITEF(F, 42)`,
+and expects:
+
+```text
+>0052<
+```
+
+The surviving BLIB WRITEF routes `%O` through `WRITEOCT(ARG,N)`. WRITEOCT
+emits exactly `N` octal digits using 3-bit groups and `0-7`, so values
+narrower than the field are zero-filled.
+
+The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
+format transport issue exposed during Test 055.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
