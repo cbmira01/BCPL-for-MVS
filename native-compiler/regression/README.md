@@ -1523,7 +1523,7 @@ with expected output `42|-17|0`. Static combination follows Test 025.
 
 ### 067-full-historical-blib-link
 
-Status: **PENDING** — native MVS execution.
+Status: **PASS** — native MVS execution on 2026-10-08; output `BLIB 42` (1 PASS, 0 FAIL).
 
 First whole-BLIB integration attempt. It compiles the complete
 historical `blib` as a single Cambridge BCPL compilation unit,
