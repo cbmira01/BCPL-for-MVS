@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -25,6 +26,18 @@ def run(argv: list[str], log: Path) -> None:
     print(f"{' '.join(argv[-5:])}: exit {result.returncode} (log {log})")
     if result.returncode:
         print(result.stdout[-4000:], file=sys.stderr)
+        jobs = re.findall(r"^JOB ([0-9]+)\\s*$", result.stdout, re.MULTILINE)
+        if jobs:
+            job = jobs[-1]
+            report_path = log.with_name(log.stem + ".job-report.txt")
+            report = subprocess.run(
+                ["bash", str(ROOT / "tools/dump-report-for-job"), job],
+                cwd=ROOT, text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, check=False,
+            )
+            report_path.write_text(report.stdout, encoding="utf-8")
+            print(f"Failed compiler JOB {job}: report {report_path} "
+                  f"(report tool exit {report.returncode})", file=sys.stderr)
         raise RuntimeError(f"failed: {' '.join(argv)}")
 
 
