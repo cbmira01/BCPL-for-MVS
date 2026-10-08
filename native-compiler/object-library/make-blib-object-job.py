@@ -9,8 +9,14 @@ import re
 MIN_INT_BAD = "DC F'-./,),(-*,('"
 
 
-def source(path: Path) -> list[str]:
-    lines = path.read_bytes().decode("latin-1").splitlines()
+def source(path: Path, *, recover_printer: bool = False) -> list[str]:
+    text = path.read_bytes().decode("latin-1")
+    if recover_printer:
+        # Match the established static combiner's treatment of recovered
+        # Cambridge printer output. Non-ASCII bytes are transport artifacts,
+        # not binary assembler source, and cannot enter an ASCII JES deck.
+        text = "".join(ch if ord(ch) < 128 else "?" for ch in text)
+    lines = text.splitlines()
     result = []
     for number, raw in enumerate(lines, 1):
         if raw == "/*":
@@ -22,7 +28,7 @@ def source(path: Path) -> list[str]:
 
 
 def blib_cards(path: Path) -> str:
-    lines = source(path)
+    lines = source(path, recover_printer=True)
     sections = [i for i, s in enumerate(lines) if re.fullmatch(r"\s*CSECT\s*", s)]
     if len(sections) != 1:
         raise ValueError(f"expected one unnamed BLIB CSECT, got {len(sections)}")
