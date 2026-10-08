@@ -29,4 +29,4 @@ The assembler implementation remains a provisional runtime service.
 
 ## Status
 
-**PENDING** — native MVS execution not yet performed.
+**PASS** — native MVS execution on 2026-10-08; output `>0000000052<` (1 PASS, 0 FAIL).
