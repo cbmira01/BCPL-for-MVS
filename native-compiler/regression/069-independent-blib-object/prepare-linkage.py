@@ -55,7 +55,8 @@ def main() -> None:
     header = "\n".join(core.authenticated_job_card(
         config, "RG069L", "BCPL 069 LINK", redact_password=False
     )) + "\n"
-    # Keep the JOB accounting description short for classic MVS JCL.\n    deck = header + """//* REGRESSION 069 STAGE 1 - NO GO; NO BLIB RECOMPILATION
+    # Keep the JOB accounting description short for classic MVS JCL.
+    deck = header + """//* REGRESSION 069 STAGE 1 - NO GO; NO BLIB RECOMPILATION
 //* APPLICATION, BCPLMAIN AND LIBRARY ARE INDEPENDENT CSECTS
 //ASMAP    EXEC PGM=IFOX00,REGION=256K,
 //             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'
