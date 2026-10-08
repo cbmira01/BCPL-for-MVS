@@ -36,4 +36,4 @@ loader is finished. No assembler runtime changes are required.
 
 ## Status
 
-**PENDING** — native MVS regression not yet executed.
+**PASS** — native MVS execution on 2026-10-08; output `HELLO` (1 PASS, 0 FAIL).
