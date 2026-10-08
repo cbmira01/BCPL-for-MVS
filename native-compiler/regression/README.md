@@ -1446,7 +1446,7 @@ nor about their shifts beyond `BITSPERWORD`.
 
 ### 061-writef-unknown-conversion
 
-Status: **PENDING** — native MVS execution.
+Status: **PASS** — native MVS execution on 2026-10-08; emitted `AQB` (1 PASS, 0 FAIL).
 
 The historical IBM/370 BLIB WRITEF default conversion branch calls
 `WRCH(TYPE)` when the conversion type is not recognized. A format
