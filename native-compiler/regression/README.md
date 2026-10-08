@@ -1475,6 +1475,15 @@ expected output `>000000002A<`. The test extends only the
 hexadecimal field-width decoder and preserves the existing
 `%I` and `%O` paths.
 
+### 064-writef-octal-alpha-width
+
+Status: **PENDING** — native MVS execution.
+
+Historical System/370 BLIB WRITEF accepts alphabetic width codes
+`A` through `F` for octal output. Test 064 formats decimal 42
+with `%OA` (width ten); expected output is `>0000000052<`.
+This extends only the octal width decoder.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:

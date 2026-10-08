@@ -1044,8 +1044,14 @@ WFOSEL   LA    5,3
          BL    WFLITCP
          SR    6,6
          IC    6,2(14)
-         S     6,WFZERO
-         ST    6,WFWIDTH
+         CLI   2(14),C'A'
+         BL    WFODEC
+         CLI   2(14),C'F'
+         BH    WFODEC
+         S     6,WFHEXAO
+         B     WFOSTOR
+WFODEC   S     6,WFZERO
+WFOSTOR  ST    6,WFWIDTH
          LA    14,3(14)
          SR    8,5
          BAL   10,WFNEXT
