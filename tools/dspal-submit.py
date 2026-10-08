@@ -75,6 +75,8 @@ def resolve_text_pds(
         )
     if str(spec.get("dsorg", "")).upper() != "PO":
         raise DspalError(f"not a partitioned data set: {dsn}")
+    if str(spec.get("content_type", "")).lower() == "object":
+        raise DspalError(f"cannot submit binary object records as JCL: {dsn}")
     if str(spec.get("recfm", "")).upper() != "FB":
         raise DspalError(f"submit requires an FB text PDS: {dsn}")
     if int(spec.get("lrecl", 0) or 0) != 80:
