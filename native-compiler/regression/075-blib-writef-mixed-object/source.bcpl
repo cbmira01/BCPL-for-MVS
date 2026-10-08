@@ -1,0 +1,7 @@
+GLOBAL $( START:1; WRITEF:76 $)
+
+LET START () BE
+$(1
+    WRITEF("C:%C S:%S N:%N", 'Z', "HI", 42)
+    FINISH
+$)1
