@@ -57,6 +57,42 @@ An empty `expected.txt` means that the test has no BCPL output assertion.
 Generated assembler, JCL, listings, load modules, and printer reports belong
 under `workarea/`, not in the regression directories.
 
+
+## WRITEF investigation evidence rule (from regression 082 onward)
+
+All new investigations of the historical BLIB `WRITEF` discrepancy
+(regressions 075/076: the third format data argument reads as 2)
+**must retain and inspect instrumented CG370 assembly output for every
+attempt**. An output-only test is insufficient. For each attempted probe:
+
+1. Capture the instrumented generator output and the ordinary S/370
+   assembler for the **test application** under a uniquely identified
+   `workarea/` path. Preserve the generator trace and any OCODE
+   alongside it when available.
+2. Capture instrumented code generation for the **historical BLIB
+   source / WRITEF body** where the compilation path supports it; if
+   it cannot be produced from the installed resident object, explicitly
+   record that limitation. Do not mistake application assembly for
+   BLIB's generated machine instructions.
+3. Examine the formal-argument home layout, `@A` address computation,
+   `T!N` accesses, indirect function-call argument setup and register
+   restoration, with relevant instruction offsets quoted in the test
+   README.
+4. Save the IFOX listing, IEWL map, GO output, and exact expected-vs-
+   actual comparison. Document the observed diagnostic before modifying
+   the canonical compiler, BCPLMAIN, or historical BLIB.
+
+The resident compile driver supports `--compiler-image MEMBER`
+(or `CAMBRIDGE_IMAGE`), `--output PATH`, and `--cambridge-parm PATH`.
+Use the existing instrumented generator image/configuration appropriate
+for the investigation; verify its identity before making claims about
+instrumentation. The default `CAMBCOMP` alone is not evidence that an
+instrumented run was performed.
+
+Regressions 077–081 demonstrate successive passing controls; the first
+WRITEF-specific failures, 075 and 076, remain uncorrected. Existing
+passing tests do not retroactively claim instrumented artifacts.
+
 ## Test design rule
 
 A test should introduce as little new behavior as possible beyond all earlier
