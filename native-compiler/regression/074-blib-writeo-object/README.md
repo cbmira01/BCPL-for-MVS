@@ -19,4 +19,4 @@ Expected exact output:
 
 ## Status
 
-PENDING first TK5 execution.
+**PASS** — user-executed `tools/run-native-regression 74` on TK5 (2026-10-08), exact output `>00000000052<`; 1 PASS, 0 FAIL. Historical WRITEO executed via persistent BLIB object.
