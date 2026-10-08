@@ -35,4 +35,4 @@ BCPLMAIN remains a provisional native bootstrap runtime.
 
 ## Status
 
-**PENDING** — native execution has not yet been performed.
+**PASS** — native MVS execution on 2026-10-08; emitted `AQB` (1 PASS, 0 FAIL).
