@@ -1335,7 +1335,7 @@ arguments, field widths, and newline semantics remain deferred.
 
 ### 055-writef-character-string
 
-Status: **PENDING** — sequential character/string WRITEF formatting.
+Status: **PASS** — emitted `AHELLO` on 2026-10-08.
 
 Constructs the target-format string as `TABLE #X046CC36C,#XE2000000`, binds
 `S = "HELLO"`, then calls `WRITEF(F, 193, S)` and expects:
