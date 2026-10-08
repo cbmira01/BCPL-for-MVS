@@ -57,6 +57,7 @@ datasets:
       CGC: workarea/bootstrap-cambridge/demoted/cgc
       CGD: workarea/bootstrap-cambridge/demoted/cgd
       CGE: workarea/bootstrap-cambridge/demoted/cge
+      BLIB: workarea/bootstrap-cambridge/demoted/blib
       CGAD: workarea/bootstrap-cambridge/demoted-diag/cga
       CGBD: workarea/bootstrap-cambridge/demoted-diag/cgb
       CGCD: workarea/bootstrap-cambridge/demoted-diag/cgc
@@ -102,6 +103,7 @@ datasets:
     members:
       CAMBBLD: jcl/build-cambridge-resident.jcl
       CG370DB: jcl/build-cg370-diagnostic.jcl
+      BLIBBLD: jcl/build-blib-object.jcl
 
   INTCODE:
     dsn: BCPL.INTCODE
@@ -272,6 +274,17 @@ datasets:
       T10CHAIN: tests/10-coroutines/resumeco-chain.bcpl
       T10CRDEL: tests/10-coroutines/create-delete-static-pool.bcpl
       T11GVFV: tests/11-getvec-freevec/getvec-freevec.bcpl
+
+  OBJ:
+    dsn: BCPL.OBJ
+    description: Native System/370 relocatable FB80 object deck library
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    content_type: object
+    populate: false
 
   LOAD:
     dsn: BCPL.LOAD
