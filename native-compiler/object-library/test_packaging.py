@@ -106,6 +106,21 @@ class ObjectPackagingTests(unittest.TestCase):
         self.assertIn("COND=(0,NE,ASMBLIB)", deck)
         self.assertTrue(all(len(line) <= 71 for line in deck.splitlines()))
 
+    def test_temporary_fixasm_load_member_matches_iewl_name(self):
+        # JOB 2408: S806-4 occurred because SYSLMOD allocated PREP but
+        # the linkage editor installed the load module as BLIBPREP.
+        deck = (ROOT / "jcl/build-blib-object.jcl").read_text(encoding="ascii")
+        link = re.search(r"(?m)^ NAME ([A-Z0-9]+)\(R\)$", deck)
+        library = re.search(
+            r"(?m)^//SYSLMOD\s+DD DSN=&&PREPLD\(([A-Z0-9]+)\),",
+            deck,
+        )
+        self.assertIsNotNone(link)
+        self.assertIsNotNone(library)
+        self.assertEqual(link.group(1), library.group(1))
+        self.assertEqual(link.group(1), "BLIBPREP")
+        self.assertIn("EXEC PGM=*.PREPLK.SYSLMOD", deck)
+
     def test_mvs_card_repair_matches_original_forms(self):
         deck = (ROOT / "jcl/build-blib-object.jcl").read_text(encoding="ascii")
         expected = {
