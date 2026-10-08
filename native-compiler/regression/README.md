@@ -1501,7 +1501,7 @@ warrants it.
 
 ### 065-historical-blib-writes
 
-Status: **PENDING** — native MVS execution.
+Status: **PASS** — native MVS execution on 2026-10-08; output `HELLO` (1 PASS, 0 FAIL).
 
 First historical BLIB integration rung. The independent `library.bcpl`
 compilation uses the original Cambridge `WRITES` body, unchanged, with
