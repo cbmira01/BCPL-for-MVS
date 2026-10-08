@@ -30,10 +30,36 @@ assembly with `INCLUDE OBJ(BLIB)` against the previously installed
 binary object member. **No GO step.** No changes to BCPLMAIN, BLIB,
 CG370, or regression 067/068.
 
-Use the dedicated preparation script in this directory; its generated
-JCL and recovered assembly remain in `workarea/` and never install into
-the persistent OBJ PDS. The standard full regression panel should not
-treat 069 as passing until its behavioral execution gate exists.
+From the repo root after `git pull --ff-only`, run:
+
+```sh
+bash native-compiler/regression/069-independent-blib-object/run-stage1.sh
+```
+
+The script compiles the application using `tools/cambridge-compile-mvs`,
+generates private authenticated JCL via `prepare-linkage.py`, and submits
+the **non-executing** `RG069L` three-CSECT linkage job. The transcript
+will print a `JOB N` number; inspect that job using:
+
+```sh
+tools/job-summary N
+tools/dump-report-for-job N
+```
+
+Gate: `ASMAP`, `ASMRUN`, `LKED` must all complete at RC=0000.
+IEWL must show `BCRG0069`, `BCPLMAIN`, `BLIB` as separate CSECTs,
+`INCLUDE OBJ(BLIB)`, and **both** generated-module external
+references to BCPLMAIN resolved. Report the actual link map before
+attempting execution. No persistent OBJ member is overwritten.
+
+Generated JCL and recovered assembly remain in `workarea/`. The
+ordinary `run-native-regression 69` path **deliberately fails** until
+the new object-linked GO path can be validated; otherwise the existing
+static combiner could incorrectly mark 069 PASS. Thus an entire
+`run-native-regression` sweep currently encounters a planned
+in-development 069 failure. The accepted historical full passing
+baseline remains 000–068. Invoke `tools/run-native-regression 0 68`
+to exercise only the established panel.
 
 ### Architectural concern to resolve
 
