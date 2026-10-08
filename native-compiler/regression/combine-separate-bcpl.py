@@ -143,12 +143,12 @@ def prepare_library(lines: list[str]) -> tuple[list[str], int, list[tuple[int, s
     # F-constant below. Repair only that one verified transport form,
     # restoring the original 0x80000000 bit pattern without changing
     # any historical BCPL source.
-    malformed = "         DC F'-./,),(-*,('"
-    count = body.count(malformed)
-    if count > 1:
+    malformed = re.compile(r"\\s*DC\\s+F'-\\./\\,\\)\\,\\(-\\*\\,\\('\\s*")
+    matches = [i for i, line in enumerate(body) if malformed.fullmatch(line)]
+    if len(matches) > 1:
         raise ValueError("more than one malformed signed-minimum constant")
-    if count == 1:
-        body[body.index(malformed)] = "         DC X'80000000'"
+    if matches:
+        body[matches[0]] = "         DC X'80000000'"
     if not body:
         raise ValueError("library generated code body is empty")
     if not pairs:
