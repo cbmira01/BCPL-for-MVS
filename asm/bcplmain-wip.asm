@@ -972,11 +972,21 @@ WFLITLP  LTR   8,8
          CLI   1(14),C'O'
          BE    WFOSEL
          CLI   1(14),C'S'
-         BNE   WFLITCP
+         BNE   WFUNKNOWN
          LA    14,2(14)
          SR    8,4
          BAL   10,WFNEXT
          B     WFSTR
+*
+* Historical BLIB default emits the unknown conversion character
+* without the '%' and without advancing the argument cursor.
+*
+WFUNKNOWN SR    7,7
+         IC    7,1(14)
+         LA    14,2(14)
+         SR    8,4
+         BAL   10,WFPUTC
+         B     WFLITLP
 WFNSEL   XC    WFWIDTH(4),WFWIDTH
          LA    14,2(14)
          SR    8,4

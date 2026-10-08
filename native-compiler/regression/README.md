@@ -1444,6 +1444,16 @@ Only the `%I` width parser is extended in this implementation step.
 This test makes no claims about `%X` or `%O` width values above nine,
 nor about their shifts beyond `BITSPERWORD`.
 
+### 061-writef-unknown-conversion
+
+Status: **PENDING** — native MVS execution.
+
+The historical IBM/370 BLIB WRITEF default conversion branch calls
+`WRCH(TYPE)` when the conversion type is not recognized. A format
+`"A%QB"` therefore emits `AQB`, suppresses only the percent sign,
+and consumes no formatting argument. This regression isolates the
+unknown-conversion output behavior and does not alter field widths.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
