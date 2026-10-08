@@ -684,7 +684,7 @@ GIDONE   L     4,4(12)
          ST    1,220(12)
 *
 * G!14 = first narrow native WRCH implementation for Regression 03.
-* G!76 = bootstrap WRITEF, extended through Regression 057.
+* G!76 = bootstrap WRITEF, extended through Regression 058.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
 * G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
@@ -923,7 +923,7 @@ WRCHRTN  L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
-* WRITEF -- LITERAL + %N/%C/%S/%I/%X BOOTSTRAP
+* WRITEF -- LITERAL + %N/%C/%S/%I/%X/%O BOOTSTRAP
 *
 * Regression 053 established literal-string output through G76.
 * Regression 054 adds the historical BLIB %N case: decimal output of
@@ -935,8 +935,9 @@ WRCHRTN  L     4,0(5)
 * bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
 * emits signed decimal; %C emits one character; %S emits a BCPL
 * string; %I consumes one width character and emits signed decimal
-* right-justified in that field. %X consumes one width character and
-* emits exactly that many zero-filled hexadecimal digits.
+* right-justified in that field. %X and %O consume one width
+* character and emit exactly that many zero-filled hexadecimal or
+* octal digits respectively.
 *
 * This is bootstrap machinery, not a reconstruction of BLIB's BCPL
 * WRITEF body.  R0 and R1-R3 remain permanent generated-code registers.
@@ -968,6 +969,8 @@ WFLITLP  LTR   8,8
          BE    WFISEL
          CLI   1(14),C'X'
          BE    WFXSEL
+         CLI   1(14),C'O'
+         BE    WFOSEL
          CLI   1(14),C'S'
          BNE   WFLITCP
          LA    14,2(14)
@@ -1001,6 +1004,17 @@ WFXSEL   LA    5,3
          SR    8,5
          BAL   10,WFNEXT
          B     WFHEX
+WFOSEL   LA    5,3
+         CR    8,5
+         BL    WFLITCP
+         SR    6,6
+         IC    6,2(14)
+         S     6,WFZERO
+         ST    6,WFWIDTH
+         LA    14,3(14)
+         SR    8,5
+         BAL   10,WFNEXT
+         B     WFOCT
 WFCSEL   LA    14,2(14)
          SR    8,4
          BAL   10,WFNEXT
@@ -1088,6 +1102,32 @@ WFHEXDN  L     8,WFREM
          L     14,WFFMTP
          B     WFLITLP
 *
+* Emit exactly WFWIDTH octal digits from the current argument.
+* This mirrors historical WRITEOCT: fixed width, zero filled, high
+* 3-bit groups first. Regression 058 establishes width 4.
+*
+WFOCT    ST    8,WFREM
+         ST    14,WFFMTP
+         ST    7,WFOCTVAL
+         L     5,WFWIDTH
+         LTR   5,5
+         BZ    WFOCTDN
+         LR    2,5
+         BCTR  2,0
+         LR    6,2
+         SLL   2,1
+         AR    2,6
+WFOCTLP  L     7,WFOCTVAL
+         SRL   7,0(2)
+         N     7,WFOCTMSK
+         A     7,WFHEXZO
+         BAL   10,WFPUTC
+         SH    2,WFOCTTHR
+         BCT   5,WFOCTLP
+WFOCTDN  L     8,WFREM
+         L     14,WFFMTP
+         B     WFLITLP
+*
 * Emit a BCPL string argument in R7.  Preserve the format cursor and
 * remaining format length in R14/R8 while the string bytes are copied.
 *
@@ -1157,6 +1197,9 @@ WFHEXAO  DC    F'183'
 WFHEXZO  DC    F'240'
 WFHXFOUR DC   H'4'
 WFHEXVAL DC    F'0'
+WFOCTMSK DC    F'7'
+WFOCTTHR DC    H'3'
+WFOCTVAL DC    F'0'
 WFREM    DC    F'0'
 WFFMTP   DC    A(0)
 WFDECPK  DS    D
