@@ -21,4 +21,4 @@ not the static assembler combiner or BCPLMAIN's bootstrap WRITEF.
 
 ## Status
 
-PENDING first TK5 execution.
+**PASS** — user-executed `tools/run-native-regression 72` on TK5 (2026-10-08), exact output `>  42< >   -17<`; 1 PASS, 0 FAIL. Historical WRITED width/sign executed through persistent BLIB object.
