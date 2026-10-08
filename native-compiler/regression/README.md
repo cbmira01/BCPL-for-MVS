@@ -1477,7 +1477,7 @@ hexadecimal field-width decoder and preserves the existing
 
 ### 064-writef-octal-alpha-width
 
-Status: **PENDING** — native MVS execution.
+Status: **PASS** — native MVS execution on 2026-10-08; output `>0000000052<` (1 PASS, 0 FAIL).
 
 Historical System/370 BLIB WRITEF accepts alphabetic width codes
 `A` through `F` for octal output. Test 064 formats decimal 42
