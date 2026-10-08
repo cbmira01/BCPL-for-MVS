@@ -27,4 +27,4 @@ two-section registration; it is not the historical runtime module loader.
 
 ## Status
 
-PENDING execution under TK5. No unverified PASS claim.
+**PASS** — user-executed `tools/run-native-regression 70` on TK5 (2026-10-08), exact BCPL output `HELLO`; 1 PASS, 0 FAIL. This validates historical `UNPACKSTRING` from persistent BLIB with independent application/runtime/object linkage.
