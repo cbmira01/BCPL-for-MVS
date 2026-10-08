@@ -2,11 +2,6 @@ GLOBAL $( START:1; WRITEF:76 $)
 
 LET START () BE
 $(1
-    LET C = 1
-    LET P0 = "C"
-    LET P1 = "S"
-    LET P2 = "%C"
-    LET P3 = "%S"
     LET S = "HELLO"
 
     WRITEF("%C%S", 193, S)
