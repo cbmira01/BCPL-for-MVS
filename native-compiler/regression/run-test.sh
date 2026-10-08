@@ -131,14 +131,15 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
-# 069 must use the separately assembled object-library path. This
-# bypasses the static source combiner without changing any older test.
-if (( test_num == 69 )); then
+# Marked tests use independently assembled application/runtime objects
+# and the persistent BLIB PDS member; legacy tests keep their own paths.
+if [[ -f "$case_dir/object-blib.txt" ]] || (( test_num == 69 )); then
     echo
     echo "=== Build independently linked BLIB object GO job ==="
     jcl="$work/069-object-go.jcl"
     rm -f "$jcl"
-    python3 "$case_dir/prepare-stage2.py" "$generated" "$jcl" || exit $?
+    python3 "$script_dir/069-independent-blib-object/prepare-stage2.py" \
+        "$generated" "$jcl" --test-number "$test_num" || exit $?
     [[ -s "$jcl" ]] || {
         echo "run-test: 069 JCL generator produced no deck" >&2
         exit 66
