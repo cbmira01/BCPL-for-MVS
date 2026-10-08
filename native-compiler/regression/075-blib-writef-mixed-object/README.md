@@ -27,3 +27,7 @@ BCPLMAIN is recompiled or changed.
 ## Status
 
 **FAIL — JOB 2583 (2026-10-09 guest date).** ASMAP, ASMRUN, LKED and GO all RC=0000, but actual output was `C:Z S:HI N:2`, not `C:Z S:HI N:42`. The generated application passes `'Z'` in R8, the packed `"HI"` string pointer in R9, and `42` in R10. The defect therefore occurs after argument setup, possibly in historical WRITEF's variadic argument storage/cursor or nested-call preservation. Do not accept `2` as expected behavior. Diagnostic regression 076 isolates the third argument.
+
+## Validation after G!76 binding correction
+
+**PASS** — user reran `tools/run-native-regression 75 76` after runtime commit `ab1d993`; the two tests passed, 0 failures. The originally observed third-argument truncation originated in BCPLMAIN's provisional `WRITEST` shadowing the imported historical BLIB G!76 binding. The corrected BCPLMAIN preserves BLIB's entry and uses bootstrap WRITEST only when G!76 remains unset. No CG370 or BLIB change was needed.
