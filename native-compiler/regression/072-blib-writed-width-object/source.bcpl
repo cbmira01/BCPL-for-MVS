@@ -1,0 +1,13 @@
+GLOBAL $( START:1; WRITED:68; WRCH:14 $)
+
+LET START () BE
+$(1
+    WRCH('>')
+    WRITED(42, 4)
+    WRCH('<')
+    WRCH(' ')
+    WRCH('>')
+    WRITED(-17, 6)
+    WRCH('<')
+    FINISH
+$)1
