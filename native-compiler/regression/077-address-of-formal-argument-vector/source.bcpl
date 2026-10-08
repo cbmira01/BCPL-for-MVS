@@ -1,0 +1,17 @@
+GLOBAL $( START:1; WRITEN:62; WRCH:14 $)
+
+LET CHECK(A, B, C) BE
+$(1
+    LET T = @A
+    WRITEN(T!0)
+    WRCH(' ')
+    WRITEN(T!1)
+    WRCH(' ')
+    WRITEN(T!2)
+$)1
+
+LET START() BE
+$(1
+    CHECK(11, 22, 33)
+    FINISH
+$)1
