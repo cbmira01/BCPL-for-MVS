@@ -1466,7 +1466,7 @@ skipped and the subsequent `%N` prints the second argument.
 
 ### 063-writef-hex-alpha-width
 
-Status: **PENDING** — native MVS execution.
+Status: **PASS** — native MVS execution on 2026-10-08; output `>000000002A<` (1 PASS, 0 FAIL).
 
 Historical System/370 BLIB WRITEF accepts alphabetic width codes
 `A` through `F` for hexadecimal output. Test 063 formats the
