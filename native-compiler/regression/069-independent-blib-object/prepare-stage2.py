@@ -50,7 +50,10 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("generated_assembly", type=Path)
     p.add_argument("output_jcl", type=Path)
+    p.add_argument("--test-number", type=int, default=69)
     args = p.parse_args()
+    if not 69 <= args.test_number <= 999:
+        raise ValueError("test number must be between 69 and 999")
     stage1_path = HERE / "prepare-linkage.py"
     spec = importlib.util.spec_from_file_location("stage1_069", stage1_path)
     if spec is None or spec.loader is None:
@@ -84,6 +87,12 @@ def main() -> None:
     )
     deck = deck.replace("RG069L", "RG069X")
     deck = deck.replace("BCPL 069 LINK", "BCPL 069 GO")
+    if args.test_number != 69:
+        num = args.test_number
+        deck = deck.replace("BCRG0069", f"BCRG{num:04d}")
+        deck = deck.replace("RG069", f"RG{num:03d}")
+        deck = deck.replace("BCPL 069", f"BCPL {num:03d}")
+        deck = deck.replace("REGRESSION 069", f"REGRESSION {num:03d}")
     if not deck.endswith("//\n"):
         raise ValueError("expected Stage 1 JCL terminator")
     deck = deck[:-3] + """//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,3),
