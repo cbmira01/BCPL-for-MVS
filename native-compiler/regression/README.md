@@ -1499,6 +1499,18 @@ Future tests are individually validated between milestones; repeat the
 complete panel at the next milestone or if a materially risky change
 warrants it.
 
+### 065-historical-blib-writes
+
+Status: **PENDING** — native MVS execution.
+
+First historical BLIB integration rung. The independent `library.bcpl`
+compilation uses the original Cambridge `WRITES` body, unchanged, with
+its LIBHDR global declarations supplied explicitly. It calls the
+BCPLMAIN-provided `GETBYTE` (G!85) and `WRCH` (G!14), exports
+`WRITES` at G!60, and emits `HELLO` through the existing
+Test 25 separate-compilation/static-combiner path. This does not yet
+establish unchanged multi-section linking.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:

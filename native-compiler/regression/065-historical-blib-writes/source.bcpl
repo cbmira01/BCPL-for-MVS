@@ -1,0 +1,7 @@
+GLOBAL $( START:1; WRITES:60 $)
+
+LET START () BE
+$(1
+    WRITES("HELLO")
+    FINISH
+$)1
