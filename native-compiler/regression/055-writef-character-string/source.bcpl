@@ -2,8 +2,9 @@ GLOBAL $( START:1; WRITEF:76 $)
 
 LET START () BE
 $(1
+    LET F = TABLE #X046CC36C, #XE2000000
     LET S = "HELLO"
 
-    WRITEF("%C%S", 193, S)
+    WRITEF(F, 193, S)
     FINISH
 $)1
