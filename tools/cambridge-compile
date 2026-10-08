@@ -248,11 +248,27 @@ def main(argv=None) -> int:
         # SYSGO remains DUMMY until byte-preserving
         # object-deck export is implemented.
         source_text = core.read_ascii_records(source, f"Cambridge source {source.name}")
+
+        # Stage the final BCPL source as a real FB80 data set before RUN.
+        # The resident compiler and its GET/header inputs are record-oriented;
+        # keeping final source on the same MVS boundary avoids depending on
+        # direct DD DATA semantics inside the interpreted compiler.
+        run_step = deck.rfind("//RUN      EXEC ")
+        if run_step < 0:
+            raise RuntimeError("cannot locate final RUN step")
+        staged_source = core.stage_step(
+            "STGSRC",
+            "STAGE FINAL CAMBRIDGE SOURCE",
+            "&&BCSRC",
+            source_text,
+        )
+        deck = deck[:run_step] + staged_source + deck[run_step:]
+
         final_dump = deck.rfind("//SYSUDUMP DD  DUMMY\n")
         if final_dump < 0:
             raise RuntimeError("cannot locate final RUN SYSUDUMP insertion point")
         final_dds = (
-            core.inline_dd("SYSIN", source_text)
+            "//SYSIN    DD  DSN=&&BCSRC,DISP=(OLD,DELETE)\n"
             + core.temp_output_dd("CODE", "&&CODE", "PASS")
             + "//SYSGO    DD  DUMMY\n"
         )
