@@ -1,0 +1,9 @@
+GLOBAL $( START:1; WRITEO:65; WRCH:14 $)
+
+LET START () BE
+$(1
+    WRCH('>')
+    WRITEO(42)
+    WRCH('<')
+    FINISH
+$)1
