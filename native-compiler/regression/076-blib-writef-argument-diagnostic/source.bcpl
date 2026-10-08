@@ -1,0 +1,11 @@
+GLOBAL $( START:1; WRITEF:76; WRCH:14 $)
+
+LET START () BE
+$(1
+    WRITEF("A:%N", 42)
+    WRCH(' ')
+    WRITEF("B:%N,%N,%N", 11, 22, 33)
+    WRCH(' ')
+    WRITEF("C:%S,%N", "HI", 42)
+    FINISH
+$)1
