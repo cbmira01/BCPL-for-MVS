@@ -973,7 +973,10 @@ WFLITLP  LTR   8,8
          BE    WFOSEL
          CLI   1(14),C'S'
          BE    WFSTSEL
-         CLI   1(14),C'
+         CLI   1(14),C'$'
+         BE    WFSKARG
+         B     WFUNK
+WFSTSEL  EQU   *
          LA    14,2(14)
          SR    8,4
          BAL   10,WFNEXT
