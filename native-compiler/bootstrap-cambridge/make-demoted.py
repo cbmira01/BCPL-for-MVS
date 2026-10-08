@@ -72,6 +72,33 @@ def demote(text: str) -> str:
     return text
 
 
+def demote_control_escapes(text: str, section: str) -> str:
+    """Demote Cambridge control escapes missing from the MR10 source lexer.
+
+    The MR10 bootstrap lexer recognizes *T, *S, *N, *B and *P inside
+    character/string literals, but not Cambridge *C (carriage return) or
+    *E (escape).  Without this rewrite, '*C' is compiled as ordinary 'C'
+    and '*E' as ordinary 'E'.
+    """
+    expected = {
+        "SYN": {"'*C'": 1, "'*E'": 0},
+        "LEX": {"'*C'": 3, "'*E'": 1},
+    }
+    if section not in expected:
+        return text
+
+    for token, count in expected[section].items():
+        actual = text.count(token)
+        if actual != count:
+            raise SystemExit(
+                f"{section}: expected {count} {token} control escape(s), "
+                f"found {actual}"
+            )
+
+    # Decimal constants are deliberate: 13 = CR, 27 = ESC.
+    return text.replace("'*C'", "13").replace("'*E'", "27")
+
+
 def demote_lex_word_table(text: str) -> str:
     first = '''       D("AND/ABS/*
          *BE/BREAK/BY/*
@@ -436,6 +463,7 @@ $(
 
 def write_unit(name: str, historical_section: str, text: str, extra_banner=(), out_dir=OUT) -> None:
     text = demote(text)
+    text = demote_control_escapes(text, historical_section)
     if historical_section == "LEX":
         text = demote_lex_word_table(text)
         text = demote_lex_readfloat(text)
@@ -448,6 +476,11 @@ def write_unit(name: str, historical_section: str, text: str, extra_banner=(), o
         '|| SECTION wrapper omitted for MR10 source-dialect compilation.',
         '|| Historical HEADERS(...) GET names mapped to MVS DDNAMEs.',
     ]
+    if historical_section in {"SYN", "LEX"}:
+        banner += [
+            "|| Cambridge *C/*E control escapes are explicit decimal codes;",
+            "|| MR10 source syntax does not recognize those two escapes.",
+        ]
     if historical_section == "LEX":
         banner += [
             '|| Packed reserved-word strings split to fit MR10 literal limits.',
