@@ -86,3 +86,13 @@ migration strategy are recorded in
 [repository-lineage-refactor-proposal.md](repository-lineage-refactor-proposal.md).
 This is **architecture documentation only**: no moves, PDS renames, or
 manifest refactor have been authorized.
+
+## Deferred BCPL file-access and dspal provisioning architecture
+
+Dataset taxonomy (PS/PDS/BDAM/ISAM and VSAM ESDS/KSDS/RRDS),
+proposed per-line support priorities, BCPL stream versus record-file
+interfaces, `dspal` provisioning boundaries, and shared immutable test
+fixtures are documented in
+[access-methods-and-dspal-proposal.md](access-methods-and-dspal-proposal.md).
+This is an **unimplemented proposal**; existing manifests, dataset
+allocations, code and acceptance suites remain unchanged.
