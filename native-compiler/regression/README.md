@@ -1373,6 +1373,24 @@ right-justified signed-decimal width path while preserving the already-proven
 The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
 format transport issue exposed during Test 055.
 
+### 057-writef-hex-width
+
+Status: **PENDING** — first fixed-width hexadecimal WRITEF conversion.
+
+Constructs the target format equivalent to `>%X4<`, calls `WRITEF(F, 42)`,
+and expects:
+
+```text
+>002A<
+```
+
+The surviving BLIB WRITEF routes `%X` through `WRITEHEX(ARG,N)`. WRITEHEX
+emits exactly `N` hexadecimal digits using `0-9,A-F`, so values narrower
+than the field are zero-filled rather than blank-padded.
+
+The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
+format transport issue exposed during Test 055.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
