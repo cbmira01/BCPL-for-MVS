@@ -1356,7 +1356,7 @@ for `%N`, `%C`, and `%S`.
 
 ### 056-writef-field-width
 
-Status: **PENDING** — first WRITEF field-width conversion.
+Status: **PASS** — emitted `>  42<` on 2026-10-08.
 
 Constructs the target format equivalent to `>%I4<`, calls `WRITEF(F, 42)`,
 and expects:
