@@ -1,0 +1,17 @@
+GLOBAL $( START:1; WRITES:60; NEWLINE:63; WRITEX:74
+          ; WRITEF:76; WRITEOCT:77 $)
+
+LET START () BE
+$(1
+    WRITES("HEX ")
+    WRITEX(42)
+    NEWLINE()
+    WRITES("OCT ")
+    WRITEOCT(42, 3)
+    NEWLINE()
+    WRITEF("FORMAT %N", 42)
+    NEWLINE()
+    WRITES("DONE")
+    NEWLINE()
+    FINISH
+$)1

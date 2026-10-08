@@ -1523,6 +1523,12 @@ The test uses the existing static combiner, not a reconstructed
 multi-section loader. Compilation/link limits must be established
 empirically under MVS.
 
+### 068-historical-blib-formatted-output
+
+Status: **PENDING** — combined smoke test against complete demoted
+historical BLIB. Exercises `WRITEX`, `WRITEOCT`, `NEWLINE`, and
+`WRITEF` with exact expected four-record output.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
