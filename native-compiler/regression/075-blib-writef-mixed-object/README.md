@@ -26,4 +26,4 @@ BCPLMAIN is recompiled or changed.
 
 ## Status
 
-PENDING TK5 execution.
+**FAIL — JOB 2583 (2026-10-09 guest date).** ASMAP, ASMRUN, LKED and GO all RC=0000, but actual output was `C:Z S:HI N:2`, not `C:Z S:HI N:42`. The generated application passes `'Z'` in R8, the packed `"HI"` string pointer in R9, and `42` in R10. The defect therefore occurs after argument setup, possibly in historical WRITEF's variadic argument storage/cursor or nested-call preservation. Do not accept `2` as expected behavior. Diagnostic regression 076 isolates the third argument.
