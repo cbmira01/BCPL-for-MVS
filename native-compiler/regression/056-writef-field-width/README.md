@@ -67,4 +67,4 @@ A successful Test 056 must:
 
 ## Status
 
-Pending native run.
+PASS — native run on 2026-10-08; emitted `>  42<`.
