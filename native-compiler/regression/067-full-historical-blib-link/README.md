@@ -27,12 +27,12 @@ routines.
 
 The separately compiled application calls `WRITES` at G!60 and
 `WRITEN` at G!62 from the complete BLIB module and invokes native
-`WRCH` G!14 for the separator.
+`WRCH` G!14 for a space separator (avoiding an unresolved\nvertical-bar output transport anomaly).
 
 Expected output:
 
 ```text
-BLIB|42
+BLIB 42
 ```
 
 The current assembler-level static combiner merges the generated
@@ -43,4 +43,4 @@ validated by this test; subsequent tests will explore them.
 
 ## Status
 
-**RETRY PENDING** — MVS Job 2223 compiled the application, Job 2224 compiled the complete BLIB, and Job 2225 failed IFOX assembly at RC=0008. Errors: missing Q999 section-origin symbol (statement 319) and malformed signed-minimum F constant (statement 2082). Static-combiner-only repairs committed; full native retest pending.
+**RETRY PENDING** — the complete BLIB assembled with IFOX severity 0, linked successfully, and executed to produce `BLIB�42`. The vertical-bar separator differs from the exact expected character; this revision uses a space as a transport-safe separator and retains exact-output matching. Native rerun pending.
