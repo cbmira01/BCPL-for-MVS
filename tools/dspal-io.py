@@ -42,6 +42,8 @@ def resolve_pds(config: dict[str, Any], operand: str, *, text_required: bool = F
     if spec is not None:
         if str(spec.get("dsorg", "")).upper() != "PO":
             raise DspalError(f"not a partitioned data set: {dsn}")
+        if text_required and str(spec.get("content_type", "")).lower() == "object":
+            raise DspalError(f"binary object library {dsn}: text cat/get/put prohibited")
         if text_required and str(spec.get("recfm", "")).upper() == "U":
             raise DspalError(f"text member transfer is not supported for load library {dsn}")
     return dsn, logical, spec
