@@ -684,7 +684,7 @@ GIDONE   L     4,4(12)
          ST    1,220(12)
 *
 * G!14 = first narrow native WRCH implementation for Regression 03.
-* G!76 = bootstrap WRITEF, extended through Regression 056.
+* G!76 = bootstrap WRITEF, extended through Regression 057.
 * G!85/G!86 = machine-dependent byte primitives required by BLIB.
 * G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
@@ -923,7 +923,7 @@ WRCHRTN  L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
-* WRITEF -- LITERAL + %N/%C/%S/%I BOOTSTRAP
+* WRITEF -- LITERAL + %N/%C/%S/%I/%X BOOTSTRAP
 *
 * Regression 053 established literal-string output through G76.
 * Regression 054 adds the historical BLIB %N case: decimal output of
@@ -935,8 +935,8 @@ WRCHRTN  L     4,0(5)
 * bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
 * emits signed decimal; %C emits one character; %S emits a BCPL
 * string; %I consumes one width character and emits signed decimal
-* right-justified in that field. Regression 056 proves decimal width
-* digit 4; historical A-F width digits remain to be added.
+* right-justified in that field. %X consumes one width character and
+* emits exactly that many zero-filled hexadecimal digits.
 *
 * This is bootstrap machinery, not a reconstruction of BLIB's BCPL
 * WRITEF body.  R0 and R1-R3 remain permanent generated-code registers.
@@ -966,6 +966,8 @@ WFLITLP  LTR   8,8
          BE    WFCSEL
          CLI   1(14),C'I'
          BE    WFISEL
+         CLI   1(14),C'X'
+         BE    WFXSEL
          CLI   1(14),C'S'
          BNE   WFLITCP
          LA    14,2(14)
@@ -988,6 +990,17 @@ WFISEL  LA    5,3
          SR    8,5
          BAL   10,WFNEXT
          B     WFNUM
+WFXSEL   LA    5,3
+         CR    8,5
+         BL    WFLITCP
+         SR    6,6
+         IC    6,2(14)
+         S     6,WFZERO
+         ST    6,WFWIDTH
+         LA    14,3(14)
+         SR    8,5
+         BAL   10,WFNEXT
+         B     WFHEX
 WFCSEL   LA    14,2(14)
          SR    8,4
          BAL   10,WFNEXT
@@ -1044,6 +1057,34 @@ WFDCOPY  SR    7,7
          LA    4,1(4)
          BCT   5,WFDCOPY
          L     8,WFREM
+         L     14,WFFMTP
+         B     WFLITLP
+*
+* Emit exactly WFWIDTH hexadecimal digits from the current argument.
+* This mirrors historical WRITEHEX: fixed width, zero filled, high
+* nibbles first. Regression 057 establishes width 4.
+*
+WFHEX    ST    8,WFREM
+         ST    14,WFFMTP
+         ST    7,WFHEXVAL
+         L     5,WFWIDTH
+         LTR   5,5
+         BZ    WFHEXDN
+         LR    2,5
+         BCTR  2,0
+         SLL   2,2
+WFHEXLP  L     7,WFHEXVAL
+         SRL   7,0(2)
+         N     7,WFHEXMSK
+         C     7,WFHEXNIN
+         BL    WFHEXDIG
+         A     7,WFHEXAO
+         B     WFHEXOUT
+WFHEXDIG A     7,WFHEXZO
+WFHEXOUT BAL   10,WFPUTC
+         SH    2,WFHEXFOUR
+         BCT   5,WFHEXLP
+WFHEXDN  L     8,WFREM
          L     14,WFFMTP
          B     WFLITLP
 *
@@ -1110,6 +1151,12 @@ WFARGIX  DC    F'0'
 WFWIDTH  DC    F'0'
 WFSIGN   DC    F'0'
 WFZERO   DC    X'000000F0'
+WFHEXMSK DC    F'15'
+WFHEXNIN DC    F'10'
+WFHEXAO  DC    F'183'
+WFHEXZO  DC    F'240'
+WFHEXFOUR DC   H'4'
+WFHEXVAL DC    F'0'
 WFREM    DC    F'0'
 WFFMTP   DC    A(0)
 WFDECPK  DS    D
