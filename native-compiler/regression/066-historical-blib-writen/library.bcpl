@@ -1,0 +1,16 @@
+// Exact historical WRITED and WRITEN bodies from Cambridge BLIB.
+// Their LIBHDR global declarations are supplied explicitly.
+GLOBAL $( WRITED:68; WRITEN:62; WRCH:14 $)
+
+LET WRITED(N, D) BE
+
+$(1 LET T = VEC 20
+    AND I, K = 0, -N
+    IF N<0 DO D, K := D-1, N
+    T!I, K, I := -(K REM 10), K/10, I+1    REPEATUNTIL K=0
+    FOR J = I+1 TO D DO WRCH('*S')
+    IF N<0 DO WRCH('-')
+    FOR J = I-1 TO 0 BY -1 DO WRCH(T!J+'0')  $)1
+
+
+AND WRITEN(N) BE WRITED(N, 0)

@@ -1511,6 +1511,16 @@ BCPLMAIN-provided `GETBYTE` (G!85) and `WRCH` (G!14), exports
 Test 25 separate-compilation/static-combiner path. This does not yet
 establish unchanged multi-section linking.
 
+### 066-historical-blib-writen
+
+Status: **PENDING** — native MVS execution.
+
+The separately compiled library contains the historical BLIB `WRITED`
+digit-vector algorithm and its `WRITEN` wrapper, without changing their
+procedure bodies. It exports G!68 and G!62 and depends on native G!14
+`WRCH`. The application exercises positive, negative, and zero integers,
+with expected output `42|-17|0`. Static combination follows Test 025.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
