@@ -1,0 +1,16 @@
+GLOBAL $( START:1; PACKSTRING:66; WRITES:60; WRCH:14 $)
+
+LET START () BE
+$(1
+    LET V = VEC 8
+    V!0 := 5
+    V!1 := 'H'
+    V!2 := 'E'
+    V!3 := 'L'
+    V!4 := 'L'
+    V!5 := 'O'
+    TEST PACKSTRING(V, V) = 1
+    THEN WRITES(V)
+    ELSE WRCH('!')
+    FINISH
+$)1
