@@ -14,7 +14,9 @@ argument consumption is part of the contract.
 ## Source shape
 
 ```bcpl
-WRITEF("%C%S", 'A', "HELLO")
+LET S = "HELLO"
+
+WRITEF("%C%S", 193, S)
 ```
 
 Expected output:
@@ -35,8 +37,8 @@ The bootstrap G!76 implementation now recognizes:
 - `%C` one-character output;
 - `%S` BCPL length-prefixed string output.
 
-For this test, R7 carries FORMAT, R8 carries the character argument, and R9
-carries the BCPL word pointer to the string. The runtime saves the formatting
+For this test, R7 carries FORMAT, R8 carries target EBCDIC 193 (`'A'`), and R9
+carries the BCPL word pointer held in local `S`. The runtime saves the formatting
 arguments before repurposing R9 as OUTPOS and consumes them through a small
 argument cursor.
 
@@ -48,7 +50,7 @@ implemented in machine code.
 A successful Test 055 must:
 
 - compile a three-argument WRITEF call;
-- place the target EBCDIC value for `'A'` in R8;
+- place the target EBCDIC value 193 (`'A'`) in R8;
 - construct the third argument as a BCPL word pointer in R9;
 - call G!76 through byte displacement 304;
 - consume R8 for `%C` and then R9 for `%S`;
