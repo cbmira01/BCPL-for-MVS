@@ -1409,6 +1409,24 @@ narrower than the field are zero-filled.
 The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
 format transport issue exposed during Test 055.
 
+### 059-normal-format-string-transport
+
+Status: **PENDING** — ordinary BCPL format-string transport through the
+MVS-resident Cambridge compile path.
+
+Uses the source literal `"%C%S"`, calls `WRITEF("%C%S",193,S)`, and expects:
+
+```text
+AHELLO
+```
+
+The final Cambridge source is now staged through IEBGENER into temporary FB80
+data set `&&BCSRC` and supplied to the resident compiler as SYSIN. This removes
+the direct `DD DATA` dependency that motivated the target-EBCDIC TABLE
+workaround in Tests 055-058.
+
+A PASS here authorizes rewriting Tests 055-058 back to ordinary source literals.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
