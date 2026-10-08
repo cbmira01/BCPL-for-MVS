@@ -929,7 +929,7 @@ WRCHRTN  L     4,0(5)
 * Regression 054 adds the historical BLIB %N case: decimal output of
 * the next argument with no width field.  Regression 055 adds %C and
 * %S and proves sequential consumption of R8 then R9. Regression 056
-* adds the historical %I width path.
+* adds the historical %I width path; Test 060 adds A-F width digits.
 *
 * BCPL strings use a length byte at byte offset zero followed by data
 * bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
@@ -987,8 +987,14 @@ WFISEL  LA    5,3
          BL    WFLITCP
          SR    6,6
          IC    6,2(14)
-         S     6,WFZERO
-         ST    6,WFWIDTH
+         CLI   2(14),C'A'
+         BL    WFIDEC
+         CLI   2(14),C'F'
+         BH    WFIDEC
+         S     6,WFHEXAO
+         B     WFISTOR
+WFIDEC   S     6,WFZERO
+WFISTOR  ST    6,WFWIDTH
          LA    14,3(14)
          SR    8,5
          BAL   10,WFNEXT

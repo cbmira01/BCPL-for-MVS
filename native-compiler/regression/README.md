@@ -1337,7 +1337,7 @@ arguments, field widths, and newline semantics remain deferred.
 
 Status: **PASS** — emitted `AHELLO` on 2026-10-08.
 
-Constructs the target-format string as `TABLE #X046CC36C,#XE2000000`, binds
+Uses the ordinary format string `"%C%S"`, binds
 `S = "HELLO"`, then calls `WRITEF(F, 193, S)` and expects:
 
 ```text
@@ -1358,7 +1358,7 @@ for `%N`, `%C`, and `%S`.
 
 Status: **PASS** — emitted `>  42<` on 2026-10-08.
 
-Constructs the target format equivalent to `>%I4<`, calls `WRITEF(F, 42)`,
+Uses the ordinary source format `">%I4<"`, calls `WRITEF(F, 42)`,
 and expects:
 
 ```text
@@ -1370,14 +1370,14 @@ character after `I` supplies the field width. This regression proves the first
 right-justified signed-decimal width path while preserving the already-proven
 `%N` no-width behavior.
 
-The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
-format transport issue exposed during Test 055.
+The test now uses an ordinary BCPL format literal after the bootstrap
+lexer incompatibility was resolved by Test 059.
 
 ### 057-writef-hex-width
 
 Status: **PASS** — emitted `>002A<` on 2026-10-08.
 
-Constructs the target format equivalent to `>%X4<`, calls `WRITEF(F, 42)`,
+Uses the ordinary source format `">%X4<"`, calls `WRITEF(F, 42)`,
 and expects:
 
 ```text
@@ -1388,14 +1388,14 @@ The surviving BLIB WRITEF routes `%X` through `WRITEHEX(ARG,N)`. WRITEHEX
 emits exactly `N` hexadecimal digits using `0-9,A-F`, so values narrower
 than the field are zero-filled rather than blank-padded.
 
-The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
-format transport issue exposed during Test 055.
+The test now uses an ordinary BCPL format literal after the bootstrap
+lexer incompatibility was resolved by Test 059.
 
 ### 058-writef-octal-width
 
 Status: **PASS** — emitted `>0052<` on 2026-10-08.
 
-Constructs the target format equivalent to `>%O4<`, calls `WRITEF(F, 42)`,
+Uses the ordinary source format `">%O4<"`, calls `WRITEF(F, 42)`,
 and expects:
 
 ```text
@@ -1406,8 +1406,8 @@ The surviving BLIB WRITEF routes `%O` through `WRITEOCT(ARG,N)`. WRITEOCT
 emits exactly `N` octal digits using 3-bit groups and `0-7`, so values
 narrower than the field are zero-filled.
 
-The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
-format transport issue exposed during Test 055.
+The test now uses an ordinary BCPL format literal after the bootstrap
+lexer incompatibility was resolved by Test 059.
 
 ### 059-normal-format-string-transport
 
@@ -1420,12 +1420,29 @@ Uses the source literal `"%C%S"`, calls `WRITEF("%C%S",193,S)`, and expects:
 AHELLO
 ```
 
-The final Cambridge source is now staged through IEBGENER into temporary FB80
-data set `&&BCSRC` and supplied to the resident compiler as SYSIN. This removes
-the direct `DD DATA` dependency that motivated the target-EBCDIC TABLE
-workaround in Tests 055-058.
+The resident Cambridge compiler uses the normal direct `SYSIN DD DATA`
+source path. Test 059 established that the apparent source-transport issue
+was actually caused by the MR10 bootstrap lexer miscompiling Cambridge
+`'*C'` and `'*E'` constants; the demotion layer now rewrites them to
+13 and 27. Tests 055-058 have been restored to ordinary source literals
+and independently passed again on 2026-10-08.
 
-A PASS here authorizes rewriting Tests 055-058 back to ordinary source literals.
+
+### 060-writef-alpha-width
+
+Status: **PENDING** — native execution and regression validation.
+
+Adds the first alphabetic WRITEF field-width character: `%IA`, mapping
+`A` to width 10 as specified by surviving BLIB WRITEF. Uses
+`WRITEF(">%IA<",42)` and expects eight leading spaces before `42`:
+
+```text
+>        42<
+```
+
+Only the `%I` width parser is extended in this implementation step.
+This test makes no claims about `%X` or `%O` width values above nine,
+nor about their shifts beyond `BITSPERWORD`.
 
 ## MVS-resident Cambridge compile path
 
