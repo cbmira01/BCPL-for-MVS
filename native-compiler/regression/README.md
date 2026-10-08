@@ -1393,7 +1393,7 @@ format transport issue exposed during Test 055.
 
 ### 058-writef-octal-width
 
-Status: **PENDING** — first fixed-width octal WRITEF conversion.
+Status: **PASS** — emitted `>0052<` on 2026-10-08.
 
 Constructs the target format equivalent to `>%O4<`, calls `WRITEF(F, 42)`,
 and expects:
