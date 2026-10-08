@@ -1,4 +1,10 @@
-# BLIB object-library experiment (Stage A, unverified)
+# BLIB object-library experiment (Stage A, verified)
+
+**Stage A is VERIFIED:** user-run JOB 2396 on 2026-10-08 completed ASMBLIB,
+INSTALL, ASMRUN and LKED at RC=0000. IEWL explicitly included
+`HERC02.BCPL.OBJ(BLIB)` and resolved its external BCPLMAIN reference.
+See [stage-a-checkpoint.md](stage-a-checkpoint.md) for ESD, RLD,
+link map and exact acceptance evidence. The linked module was not run.
 
 This is an **isolated, non-executing** probe. It does not modify regression
 000–068, canonical `richards-bcpltape/bcplib/bcpl/blib`, the static
@@ -76,11 +82,10 @@ resolved `BCPLMAIN` and included `BLIB` section. Verify the installed
 member through MVS listing/usage; **do not** read it via `dspal get` or
 `cat` as text.
 
-Expected step outcomes are **hypotheses**, not observed results. If the
+The results of JOB 2396 are documented in the verified checkpoint. If the
 historical CG370 output has assembler defects beyond the known constant,
-record them explicitly and repair only in generated transport. Do not claim
-Stage A completed until the MVS job logs prove object-member inclusion and
-successful IEWL completion without unresolved symbols.
+record them explicitly and repair only in generated transport. Stage A is complete for independently assembled object storage and IEWL
+inclusion; Stage B execution remains unproven.
 
 ## Next boundary
 
