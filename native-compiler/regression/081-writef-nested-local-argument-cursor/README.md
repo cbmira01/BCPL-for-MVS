@@ -26,4 +26,4 @@ Persistent BLIB object; no modification of BLIB, CG370 or BCPLMAIN.
 
 ## Status
 
-PENDING TK5 execution.
+**PASS** — user-executed regression 081 on TK5 (2026-10-08 local), exact `11 22 33`; 1 PASS / 0 FAIL. Nested local ARG cursor semantics succeed; WRITEF 075/076 still fail. Future diagnostics must preserve instrumented CG370 assembly.
