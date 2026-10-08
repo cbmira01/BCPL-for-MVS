@@ -3,9 +3,9 @@ GLOBAL $( START:1; WRITEN:62; WRCH:14 $)
 LET START () BE
 $(1
     WRITEN(42)
-    WRCH('|')
+    WRCH(' ')
     WRITEN(-17)
-    WRCH('|')
+    WRCH(' ')
     WRITEN(0)
     FINISH
 $)1

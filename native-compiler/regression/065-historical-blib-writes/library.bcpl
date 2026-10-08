@@ -1,6 +1,0 @@
-// WRITES body transcribed unchanged from Cambridge BLIB.
-// Only the enclosing LIBHDR globals are made explicit here.
-GLOBAL $( WRITES:60; WRCH:14; GETBYTE:85 $)
-
-LET WRITES(S) BE
-       FOR I = 1 TO GETBYTE(S,0) DO WRCH(GETBYTE(S,I))

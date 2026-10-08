@@ -1501,25 +1501,15 @@ warrants it.
 
 ### 065-historical-blib-writes
 
-Status: **PASS** — native MVS execution on 2026-10-08; output `HELLO` (1 PASS, 0 FAIL).
-
-First historical BLIB integration rung. The independent `library.bcpl`
-compilation uses the original Cambridge `WRITES` body, unchanged, with
-its LIBHDR global declarations supplied explicitly. It calls the
-BCPLMAIN-provided `GETBYTE` (G!85) and `WRCH` (G!14), exports
-`WRITES` at G!60, and emits `HELLO` through the existing
-Test 25 separate-compilation/static-combiner path. This does not yet
-establish unchanged multi-section linking.
+Status: **REVALIDATION PENDING** — extracted-body test previously passed;
+now uses the complete generated historical BLIB via `library-source.txt`.
+Expected output `HELLO`; native rerun pending.
 
 ### 066-historical-blib-writen
 
-Status: **PENDING** — native MVS execution.
-
-The separately compiled library contains the historical BLIB `WRITED`
-digit-vector algorithm and its `WRITEN` wrapper, without changing their
-procedure bodies. It exports G!68 and G!62 and depends on native G!14
-`WRCH`. The application exercises positive, negative, and zero integers,
-with expected output `42|-17|0`. Static combination follows Test 025.
+Status: **PENDING** — now uses the complete generated historical BLIB
+instead of extracted `WRITED`/`WRITEN` bodies. Exercises +42, -17,
+and zero; expected output `42 -17 0`; native MVS run pending.
 
 ### 067-full-historical-blib-link
 

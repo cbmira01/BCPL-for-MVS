@@ -1,47 +1,32 @@
-# 066 — Historical Cambridge BLIB WRITEN and WRITED
+# 066 — WRITEN from complete historical Cambridge BLIB
 
 ## Objective
 
-Compile the actual historical BLIB `WRITED` and `WRITEN` procedure
-bodies in an independent BCPL unit, then exercise signed decimal
-formatting natively. The bodies are copied from
-`richards-bcpltape/bcplib/bcpl/blib` without changes.
+Exercise the `WRITEN` (G!62) service and its historical `WRITED`
+(G!68) dependency from the **complete demoted historical BLIB** already
+validated as a whole by regression 067. This regression carries no
+copies of historical BLIB procedure bodies. `library-source.txt`
+selects the generator-produced
+`workarea/bootstrap-cambridge/demoted/blib`.
 
-```bcpl
-LET WRITED(N, D) BE
+The application calls `WRITEN(42)`, `WRITEN(-17)`, and `WRITEN(0)`,
+separated by a space written with native `WRCH` (G!14). A space is
+used instead of the original vertical bar due to the output transport
+anomaly observed in the first 067 run. This does not change BLIB.
 
-$(1 LET T = VEC 20
-    AND I, K = 0, -N
-    IF N<0 DO D, K := D-1, N
-    T!I, K, I := -(K REM 10), K/10, I+1    REPEATUNTIL K=0
-    FOR J = I+1 TO D DO WRCH('*S')
-    IF N<0 DO WRCH('-')
-    FOR J = I-1 TO 0 BY -1 DO WRCH(T!J+'0')  $)1
-
-AND WRITEN(N) BE WRITED(N, 0)
-```
-
-## Linkage and dependencies
-
-- G!62 `WRITEN` — historical BLIB export
-- G!68 `WRITED` — historical BLIB export
-- G!14 `WRCH` — existing machine-dependent native primitive
-- G!1 `START` — application export
-
-The program runs `WRITEN(42)`, `WRITEN(-17)`, and
-`WRITEN(0)`, separated by literal vertical bars using `WRCH`.
-
-Expected output:
+Expected native output:
 
 ```text
-42|-17|0
+42 -17 0
 ```
 
-The existing Test 025 static combiner merges the separately compiled
-application and historical BLIB library exports; this is not yet
-unchanged native multi-section linkage. No BCPLMAIN or CG370 changes
-are required for this test.
+The generated-code assertions verify a G!62 call (offset 248) through
+`BALR 6,4`. A passing run establishes decimal formatting for these
+three values through complete BLIB, not merely an extracted procedure.
+
+The generated library is statically combined at the assembler level.
+Independently loadable BCPL library modules are not yet implemented.
 
 ## Status
 
-**PENDING** — native MVS regression not yet executed.
+**PENDING** — native MVS regression not yet run against complete BLIB.
