@@ -1464,6 +1464,17 @@ formatting argument without emitting output. The regression calls
 `WRITEF("A%$%NB",13,42)` and verifies that the first argument is
 skipped and the subsequent `%N` prints the second argument.
 
+### 063-writef-hex-alpha-width
+
+Status: **PENDING** — native MVS execution.
+
+Historical System/370 BLIB WRITEF accepts alphabetic width codes
+`A` through `F` for hexadecimal output. Test 063 formats the
+integer 42 with `%XA`, which specifies ten hexadecimal digits;
+expected output `>000000002A<`. The test extends only the
+hexadecimal field-width decoder and preserves the existing
+`%I` and `%O` paths.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
