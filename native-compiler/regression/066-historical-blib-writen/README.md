@@ -29,4 +29,4 @@ Independently loadable BCPL library modules are not yet implemented.
 
 ## Status
 
-**PENDING** — native MVS regression not yet run against complete BLIB.
+**PASS** — native MVS execution on 2026-10-08 using complete demoted BLIB; output `42 -17 0` (1 PASS, 0 FAIL).

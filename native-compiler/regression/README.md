@@ -1501,15 +1501,13 @@ warrants it.
 
 ### 065-historical-blib-writes
 
-Status: **REVALIDATION PENDING** — extracted-body test previously passed;
-now uses the complete generated historical BLIB via `library-source.txt`.
-Expected output `HELLO`; native rerun pending.
+Status: **PASS** — revalidated on native MVS 2026-10-08 using complete
+generated BLIB via `library-source.txt`; output `HELLO`.
 
 ### 066-historical-blib-writen
 
-Status: **PENDING** — now uses the complete generated historical BLIB
-instead of extracted `WRITED`/`WRITEN` bodies. Exercises +42, -17,
-and zero; expected output `42 -17 0`; native MVS run pending.
+Status: **PASS** — native MVS 2026-10-08 using complete generated BLIB,
+not extracted `WRITED`/`WRITEN` bodies; output `42 -17 0`.
 
 ### 067-full-historical-blib-link
 

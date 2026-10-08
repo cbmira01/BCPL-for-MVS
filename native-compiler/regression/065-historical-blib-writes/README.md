@@ -17,5 +17,4 @@ reconstructed native loader.
 
 ## Status
 
-**REVALIDATION PENDING** — the prior extracted-body variant passed
-under MVS on 2026-10-08. The full-BLIB variant has not yet been run.
+**PASS** — native MVS revalidation on 2026-10-08 using complete demoted BLIB; output `HELLO` (1 PASS, 0 FAIL).
