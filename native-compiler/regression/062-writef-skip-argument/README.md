@@ -30,4 +30,4 @@ The native WRITEF remains a provisional BCPLMAIN bootstrap service.
 
 ## Status
 
-**PENDING** — requires execution under MVS.
+**PASS** — native MVS regression on 2026-10-08; emitted `A42B` (1 PASS, 0 FAIL).
