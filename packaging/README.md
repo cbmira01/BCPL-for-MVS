@@ -77,3 +77,12 @@ config/dspal.local.yaml
 That file is gitignored and was confirmed during the public-release audit never to have been committed to the repository's reachable history.
 
 See `config/README.md` for configuration details and `tools/README.md` for the command interface.
+## Deferred lineage-based repository/PDS refactor
+
+The future three-line MR10KIT / NATIV / CAMBRG source ownership proposal,
+implementation-neutral SHARED resources, historical-evidence separation,
+per-line regressions/demos and tool ownership, and staged repository-first
+migration strategy are recorded in
+[repository-lineage-refactor-proposal.md](repository-lineage-refactor-proposal.md).
+This is **architecture documentation only**: no moves, PDS renames, or
+manifest refactor have been authorized.
