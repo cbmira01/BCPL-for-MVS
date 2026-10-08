@@ -121,6 +121,26 @@ class ObjectPackagingTests(unittest.TestCase):
         self.assertEqual(link.group(1), "BLIBPREP")
         self.assertIn("EXEC PGM=*.PREPLK.SYSLMOD", deck)
 
+    def test_bliblink_consumes_persistent_object_without_rebuild(self):
+        deck = (ROOT / "jcl/probe-blib-object-consumer.jcl").read_text(
+            encoding="ascii"
+        )
+        self.assertIn("//OBJ      DD DSN=HERC02.BCPL.OBJ,DISP=SHR", deck)
+        self.assertIn(" INCLUDE OBJ(BLIB)", deck)
+        self.assertIn(" ENTRY BLIB", deck)
+        self.assertIn("//SYSIN    DD DSN=HERC02.BCPL.ASM(BCMWIP)", deck)
+        self.assertEqual(deck.count("EXEC PGM=IFOX00"), 1)
+        self.assertIn("//LKED     EXEC PGM=IEWL", deck)
+        self.assertNotIn("EXEC PGM=IEBGENER", deck)
+        self.assertNotIn("//GO ", deck)
+        self.assertNotIn("DSN=HERC02.BCPL.OBJ(BLIB),DISP=MOD", deck)
+        self.assertTrue(all(len(line) <= 71 for line in deck.splitlines()))
+        datasets = self.config["datasets"]
+        self.assertEqual(datasets["ASM"]["members"]["BCMWIP"],
+                         "asm/bcplmain-wip.asm")
+        self.assertEqual(datasets["JCL"]["members"]["BLIBLINK"],
+                         "jcl/probe-blib-object-consumer.jcl")
+
     def test_mvs_card_repair_matches_original_forms(self):
         deck = (ROOT / "jcl/build-blib-object.jcl").read_text(encoding="ascii")
         expected = {
