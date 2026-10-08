@@ -4,6 +4,17 @@ This directory used to contain design notes for `pdspal` and early `dspal` work.
 
 The current deployment interface is `tools/dspal`; the checked-in manifest is `config/dspal.yaml`.
 
+## Native BLIB object-library planning
+
+The completed 2026-10-08 historical BLIB static-integration checkpoint,
+69/69 regression sweep, and proposed next object-library milestone are
+recorded in [`native-compiler/blib-integration-march-checkpoint.md`](../native-compiler/blib-integration-march-checkpoint.md).
+
+`HERC02.BCPL.OBJ(BLIB)` is **proposed**, not currently managed by the
+`dspal` manifest. The `LOAD` dataset is for load modules, not a
+substitute for a relocatable-object library. Object-deck storage and
+installation require separate design and validation.
+
 ## Authority and lifecycle
 
 The basic rule is:
