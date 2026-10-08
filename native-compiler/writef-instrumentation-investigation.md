@@ -71,3 +71,9 @@ No generated assembler or diagnostic log is claimed to have been run by
 this repository documentation. Do not change CG370, BCPLMAIN, canonical
 BLIB, or the object PDS to make failing output pass. Preserve the
 existing expected outputs of regressions 075 and 076.
+
+## Root cause identified, awaiting guest validation
+
+The WIP startup overwrote the imported BLIB G!76 entry with assembler WRITEST. That formatter saved R8 and R9 only; its two-word WFARGS table was immediately followed by WFARGIX. Fetching data argument #3 consequently read cursor value 2 rather than R10. The failures in 075 and 076 therefore originated in the provisional runtime formatter, not historical BLIB WRITEF. Commit ab1d993 makes WRITEST a fallback only when G!76 remains unset. Rerun 075 and 076 on TK5 before claiming the corrected linkage passes.
+
+JOB 2597 separately shows a CG370D source-parse failure (newline-in-string syntax error, execution code 8) despite MVS step RC zero; no valid instrumented comparison was produced. That instrumentation problem remains distinct from the G!76 defect.
