@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Rebuild HERC02.BCPL.OBJ(BLIB) from canonical historical Cambridge BLIB.
+
+Host orchestrates demotion, resident Cambridge compilation, the verified
+assembly-card normalization, dspal text member deployment, and a stored MVS
+IFOX/IEBGENER job. Object records never transit through host text transfer.
+"""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+WORK = ROOT / "workarea" / "blib-object-build"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def execute(*command: str) -> str:
+    print("+ " + " ".join(command), flush=True)
+    completed = subprocess.run(
+        list(command), cwd=ROOT, text=True, capture_output=True, check=False,
+    )
+    if completed.stdout:
+        print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+    if completed.stderr:
+        print(completed.stderr, file=sys.stderr,
+              end="" if completed.stderr.endswith("\n") else "\n")
+    if completed.returncode:
+        raise RuntimeError(
+            f"command exited {completed.returncode}: {' '.join(command)}"
+        )
+    return completed.stdout
+
+
+def require_manifest(core, config) -> dict[str, str]:
+    datasets = config["datasets"]
+    for logical in ("SOURCE", "ASM", "JCL", "OBJ", "INTCODE", "LOAD"):
+        if logical not in datasets:
+            raise RuntimeError(f"dspal manifest missing {logical}")
+    if datasets["SOURCE"].get("members", {}).get("BLIB") != (
+        "workarea/bootstrap-cambridge/demoted/blib"
+    ):
+        raise RuntimeError("dspal SOURCE(BLIB) mapping is missing or unexpected")
+    if datasets["JCL"].get("members", {}).get("BLIBBLD") != (
+        "jcl/build-blib-object.jcl"
+    ):
+        raise RuntimeError("dspal JCL(BLIBBLD) mapping is missing or unexpected")
+    obj = datasets["OBJ"]
+    if not (
+        obj.get("content_type") == "object"
+        and obj.get("populate") is False
+        and core.expected_attrs(obj) == {
+            "dsorg": "PO", "recfm": "FB", "lrecl": "80", "blksize": "800",
+        }
+    ):
+        raise RuntimeError("dspal OBJ library must be binary FB/80 PDS with populate=false")
+    dsns = {key: core.full_dsn(config, datasets[key]) for key in datasets}
+    # JCL is intentionally a job body without an authenticated JOB card.
+    jcl = (ROOT / datasets["JCL"]["members"]["BLIBBLD"]).read_text(encoding="ascii")
+    if re.search(r"^//[A-Z0-9@$#]+\s+JOB\b", jcl, re.M):
+        raise RuntimeError("BLIBBLD must be a job body, not a full job deck")
+    for needle in (
+        f"DSN={dsns['ASM']}(BLIB)",
+        f"DSN={dsns['OBJ']}(BLIB)",
+        "EXEC PGM=IFOX00",
+        "EXEC PGM=IEBGENER",
+    ):
+        if needle not in jcl:
+            raise RuntimeError(f"BLIBBLD JCL missing {needle}")
+    for number, card in enumerate(jcl.splitlines(), 1):
+        if len(card) > 71:
+            raise RuntimeError(f"BLIBBLD JCL line {number} exceeds column 71")
+    return dsns
+
+
+def require_datasets(dsns: dict[str, str]) -> None:
+    for logical in ("SOURCE", "ASM", "JCL", "OBJ", "INTCODE", "LOAD"):
+        output = execute("tools/dspal", "stat", logical)
+        dsn = dsns[logical]
+        if not re.search(rf"Dataset:\s*{re.escape(dsn)}(?:\s|,|$)", output, re.I):
+            raise RuntimeError(f"{dsn} is not cataloged; run tools/dspal initbcpl")
+        if logical in ("SOURCE", "ASM", "JCL", "OBJ"):
+            for attr in ("DSORG:PO", "RECFM:FB", "LRECL:80", "BLKSIZE:800"):
+                if attr not in output.replace(" ", ""):
+                    raise RuntimeError(
+                        f"{dsn} does not match the expected {attr} layout"
+                    )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="check manifest and JCL, describe rebuild without running MVS jobs",
+    )
+    args = parser.parse_args()
+    core = load_module("dspal_core", ROOT / "tools" / "dspal-core.py")
+    lib = load_module(
+        "blib_object_cards",
+        ROOT / "native-compiler" / "object-library" / "make-blib-object-job.py",
+    )
+    dsns = require_manifest(core, core.load_config())
+    if args.dry_run:
+        print("BLIB object build plan (no MVS jobs submitted):")
+        print("  canonical BLIB -> demoted BLIB")
+        print(f"  deploy demoted source to {dsns['SOURCE']}(BLIB)")
+        print("  resident CAMBCOMP -> System/370 assembly; normalize CG370 cards")
+        print(f"  deploy prepared assembly to {dsns['ASM']}(BLIB)")
+        print(f"  deploy JCL body to {dsns['JCL']}(BLIBBLD)")
+        print(f"  submit BLIBBLD; IFOX/IEBGENER -> {dsns['OBJ']}(BLIB)")
+        return 0
+
+    # A destructive overwrite of OBJ(BLIB) must never be attempted without
+    # first verifying the dataset exists with the correct DCB.
+    require_datasets(dsns)
+    WORK.mkdir(parents=True, exist_ok=True)
+    source = ROOT / "workarea/bootstrap-cambridge/demoted/blib"
+    generated = WORK / "blib-generated.s370.asm"
+    prepared = WORK / "blib-prepared.asm"
+
+    execute(
+        sys.executable,
+        "native-compiler/bootstrap-cambridge/make-demoted.py", "--blib-only",
+    )
+    execute("tools/dspal", "put", "SOURCE", "BLIB", str(source))
+    execute(
+        sys.executable, "tools/cambridge-compile-mvs", str(source),
+        "--job-name", "BLIBCMP", "--output", str(generated),
+    )
+
+    prepared.write_text(lib.blib_cards(generated), encoding="ascii", newline="\n")
+    print(f"Prepared BLIB CSECT: {prepared.relative_to(ROOT)}")
+    execute("tools/dspal", "put", "ASM", "BLIB", str(prepared))
+    execute(
+        "tools/dspal", "put", "JCL", "BLIBBLD",
+        "jcl/build-blib-object.jcl",
+    )
+
+    summary = execute("tools/dspal", "submit", "JCL", "BLIBBLD", "--wait")
+    for step in ("ASMBLIB", "INSTALL"):
+        if re.search(rf"^\s*{step}\s+\S+\s+RC=0000\s*$", summary, re.M) is None:
+            raise RuntimeError(f"BLIBBLD {step} did not report RC=0000")
+    inventory = execute("tools/dspal", "ls", "OBJ")
+    if re.search(r"^\s*BLIB\s*$", inventory, re.M) is None:
+        raise RuntimeError(f"BLIB member not found in {dsns['OBJ']}")
+    print(f"SUCCESS: rebuilt {dsns['OBJ']}(BLIB) from historical source")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (RuntimeError, OSError, ValueError, UnicodeError) as exc:
+        print(f"build-blib-object: {exc}", file=sys.stderr)
+        sys.exit(2)
