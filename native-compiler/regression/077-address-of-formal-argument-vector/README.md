@@ -27,4 +27,4 @@ Uses persistent BLIB object and unmodified canonical BCPLMAIN.
 
 ## Status
 
-PENDING TK5 execution; retain 075/076 failures as evidence.
+**PASS** — user-executed `tools/run-native-regression 77` on TK5 (2026-10-08 local), exact output `11 22 33`; 1 PASS, 0 FAIL. This establishes three contiguous formal-argument words under `@A` for this separately compiled CHECK procedure. It does not correct or explain 075/076, which remain failing.
