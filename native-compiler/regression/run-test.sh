@@ -20,6 +20,14 @@ fi
 
 # Keep MVS names within their eight-character limit independently of the
 # directory ID width. These remain unique for test numbers 0..999.
+# 069 is deliberately not allowed to fall back to the static combiner.
+# Its Stage 1 probe is non-executing; normal regression PASS requires GO.
+if (( test_num == 69 )); then
+    echo "069: IN DEVELOPMENT; object-linked GO contract not yet proved" >&2
+    echo "Run bash native-compiler/regression/069-independent-blib-object/run-stage1.sh" >&2
+    exit 1
+fi
+
 printf -v job_base 'RG%03d' "$test_num"
 printf -v entry 'BCRG%04d' "$test_num"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
