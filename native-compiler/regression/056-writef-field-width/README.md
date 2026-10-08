@@ -44,8 +44,8 @@ format-string transport issue encountered during Test 055.
 ## WIP runtime rule
 
 The bootstrap G!76 implementation now recognizes `%I` followed by one width
-character. The width character is interpreted with the historical hexadecimal-
-style digit convention used by BLIB. Test 056 covers the decimal digit `4`.
+character. Test 056 establishes the decimal width digit `4`. The historical
+A-F width-digit extension visible in BLIB is not yet implemented.
 
 The signed decimal representation is right-justified in the requested field.
 A minus sign, when present, counts toward the field width. A width smaller than
