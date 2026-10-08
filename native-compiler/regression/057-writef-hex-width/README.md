@@ -68,4 +68,4 @@ A successful Test 057 must:
 
 ## Status
 
-Pending native run.
+PASS — native run on 2026-10-08; emitted `>002A<`.
