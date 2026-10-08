@@ -1337,7 +1337,8 @@ arguments, field widths, and newline semantics remain deferred.
 
 Status: **PENDING** — sequential character/string WRITEF formatting.
 
-Uses a local `S = "HELLO"`, then calls `WRITEF("%C%S", 193, S)` and expects:
+Constructs the target-format string as `TABLE #X046CC36C,#XE2000000`, binds
+`S = "HELLO"`, then calls `WRITEF(F, 193, S)` and expects:
 
 ```text
 AHELLO
