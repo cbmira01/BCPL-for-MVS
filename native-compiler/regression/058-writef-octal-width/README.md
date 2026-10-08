@@ -22,22 +22,9 @@ Expected output:
 
 ## Source shape
 
-The format is carried as target-resident TABLE data:
-
-```bcpl
-LET F = TABLE #X056E6CD6, #XF44C0000
-WRITEF(F, 42)
-```
-
-The bytes encode a BCPL string of length 5 containing EBCDIC:
-
-```text
-6E 6C D6 F4 4C
- >  %  O  4  <
-```
-
-As in Tests 055-057, this avoids conflating WRITEF behavior with the separate
-inline-SYSIN format-string transport problem.
+The format is now an ordinary BCPL string literal. Its earlier
+TABLE encoding was a temporary source-lexing workaround, resolved by
+the Cambridge bootstrap demotion fix and Test 059.
 
 ## Historical contract
 
@@ -55,7 +42,7 @@ Test 058 therefore expects exactly four zero-filled octal digits.
 
 A successful Test 058 must:
 
-- compile the target-format TABLE and two-argument WRITEF call;
+- compile an ordinary source format string and two-argument WRITEF call;
 - pass 42 in R8;
 - call G!76 through byte displacement 304;
 - interpret `%O4` as exactly four octal digits;

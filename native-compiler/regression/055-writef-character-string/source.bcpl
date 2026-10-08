@@ -2,7 +2,7 @@ GLOBAL $( START:1; WRITEF:76 $)
 
 LET START () BE
 $(1
-    LET F = TABLE #X046CC36C, #XE2000000
+    LET F = "%C%S"
     LET S = "HELLO"
 
     WRITEF(F, 193, S)

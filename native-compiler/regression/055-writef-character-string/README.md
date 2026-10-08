@@ -14,7 +14,7 @@ argument consumption is part of the contract.
 ## Source shape
 
 ```bcpl
-LET F = TABLE #X046CC36C, #XE2000000
+LET F = "%C%S"
 LET S = "HELLO"
 
 WRITEF(F, 193, S)
@@ -26,10 +26,11 @@ Expected output:
 AHELLO
 ```
 
-The format is constructed as module-resident TABLE data rather than written as an
-inline source string. This deliberately bypasses a transport/lexer problem
-observed with an inline `%S` format in SYSIN while preserving the exact target
-BCPL string bytes: length 4 followed by EBCDIC `%C%S` (`6C C3 6C E2`).
+The format is an ordinary BCPL source string. Earlier versions of this
+regression used a target-EBCDIC TABLE workaround while Test 059 isolated
+a bootstrap lexer incompatibility. That incompatibility was fixed by
+mechanical demotion of the Cambridge `*C` and `*E` character constants
+for the MR10 bootstrap compiler; ordinary source transport is now proven.
 
 ## WIP runtime rule
 

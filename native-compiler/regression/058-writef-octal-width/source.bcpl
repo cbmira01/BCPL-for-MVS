@@ -2,7 +2,7 @@ GLOBAL $( START:1; WRITEF:76 $)
 
 LET START () BE
 $(1
-    LET F = TABLE #X056E6CD6, #XF44C0000
+    LET F = ">%O4<"
 
     WRITEF(F, 42)
     FINISH

@@ -24,22 +24,9 @@ Expected output:
 
 ## Source shape
 
-The format is constructed as target-resident TABLE data:
-
-```bcpl
-LET F = TABLE #X056E6CC9, #XF44C0000
-WRITEF(F, 42)
-```
-
-The bytes encode a BCPL string of length 5 containing EBCDIC:
-
-```text
-6E 6C C9 F4 4C
- >  %  I  4  <
-```
-
-This avoids conflating field-width behavior with the separate inline-SYSIN
-format-string transport issue encountered during Test 055.
+The format is now an ordinary BCPL string literal. The earlier
+TABLE encoding was a temporary workaround for the source-lexing problem
+resolved by Test 059 and the Cambridge bootstrap demotion fix.
 
 ## WIP runtime rule
 
@@ -58,7 +45,7 @@ implemented in machine code.
 
 A successful Test 056 must:
 
-- compile the target-format TABLE and a two-argument WRITEF call;
+- compile an ordinary source format string and a two-argument WRITEF call;
 - pass 42 in R8;
 - call G!76 through byte displacement 304;
 - interpret `%I4` as a width-four signed-decimal conversion;
