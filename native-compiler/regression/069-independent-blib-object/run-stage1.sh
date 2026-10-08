@@ -14,8 +14,11 @@ python3 tools/cambridge-compile-mvs \
 recovered="$root/workarea/069-independent-blib-object.s370.asm"
 test -s "$recovered" || { echo "Missing resident compiler output: $recovered" >&2; exit 1; }
 mv "$recovered" "$work/generated.s370.asm"
+rm -f "$work/069-stage1-link.jcl"
+python3 -m py_compile "$case_dir/prepare-linkage.py"
 python3 "$case_dir/prepare-linkage.py" \
     "$work/generated.s370.asm" "$work/069-stage1-link.jcl"
+test -s "$work/069-stage1-link.jcl" || { echo "No generated JCL" >&2; exit 1; }
 echo "=== Submit regression 069, Stage 1 only (no GO) ==="
 bash tools/submit-jcl --timeout 30 "$work/069-stage1-link.jcl"
 echo "Use tools/job-summary JOBNO and tools/dump-report-for-job JOBNO"
