@@ -1430,7 +1430,7 @@ and independently passed again on 2026-10-08.
 
 ### 060-writef-alpha-width
 
-Status: **PENDING** — native execution and regression validation.
+Status: **PASS** — native MVS regression on 2026-10-08; emitted `>        42<` (1 PASS, 0 FAIL).
 
 Adds the first alphabetic WRITEF field-width character: `%IA`, mapping
 `A` to width 10 as specified by surviving BLIB WRITEF. Uses
