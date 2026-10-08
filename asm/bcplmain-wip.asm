@@ -691,8 +691,14 @@ GIDONE   L     4,4(12)
 *
          LA    1,WRCH
          ST    1,56(12)
+* Keep BLIB's G!76 WRITEF when its export has been imported.
+* Install provisional WRITEST only if G!76 retains the unset sentinel.
+         L     1,304(12)
+         C     1,=X'C7D3F130'
+         BNE   WFHAS76
          LA    1,WRITEST
          ST    1,304(12)
+WFHAS76  EQU   *
          LA    1,GETBYTE
          ST    1,340(12)
          LA    1,PUTBYTE
