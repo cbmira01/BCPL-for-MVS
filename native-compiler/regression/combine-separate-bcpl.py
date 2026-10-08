@@ -132,6 +132,23 @@ def prepare_library(lines: list[str]) -> tuple[list[str], int, list[tuple[int, s
         raise ValueError("library generated entry wrapper is incomplete")
 
     body = renamed[body_start:trailer_start]
+    # CG370 occasionally references the section's own entry origin
+    # from code retained in the static body. Keep its symbol available
+    # at the original origin (16 bytes before the first retained byte),
+    # despite dropping the 16-byte standalone entry wrapper.
+    if any(re.search(r"\\bQ999\\b", line) for line in body):
+        body.insert(0, "Q999 EQU *-16")
+    # The historical CG370 decimal printer cannot represent the
+    # minimum signed 32-bit value: its output is the exact malformed
+    # F-constant below. Repair only that one verified transport form,
+    # restoring the original 0x80000000 bit pattern without changing
+    # any historical BCPL source.
+    malformed = "         DC F'-./,),(-*,('"
+    count = body.count(malformed)
+    if count > 1:
+        raise ValueError("more than one malformed signed-minimum constant")
+    if count == 1:
+        body[body.index(malformed)] = "         DC X'80000000'"
     if not body:
         raise ValueError("library generated code body is empty")
     if not pairs:
