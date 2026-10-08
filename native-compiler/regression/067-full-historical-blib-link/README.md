@@ -43,4 +43,4 @@ validated by this test; subsequent tests will explore them.
 
 ## Status
 
-**PENDING** — native MVS compile, assemble, link, and run.
+**RETRY PENDING** — MVS Job 2223 compiled the application, Job 2224 compiled the complete BLIB, and Job 2225 failed IFOX assembly at RC=0008. Errors: missing Q999 section-origin symbol (statement 319) and malformed signed-minimum F constant (statement 2082). Static-combiner-only repairs committed; full native retest pending.
