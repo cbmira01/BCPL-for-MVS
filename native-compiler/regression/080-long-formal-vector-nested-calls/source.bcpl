@@ -1,0 +1,23 @@
+GLOBAL $( START:1; WRITEN:62; WRCH:14; WRITES:60 $)
+
+LET CHECK(FORMAT, A, B, C, D, E, F, G, H, I, J, K) BE
+$(1
+    LET T = @A
+    WRCH('>')
+    WRITES("HI")
+    WRCH('<')
+    WRCH(' ')
+    WRITEN(T!0)
+    WRCH(' ')
+    WRITEN(T!1)
+    WRCH(' ')
+    WRITEN(T!2)
+    WRCH(' ')
+    WRITEN(C)
+$)1
+
+LET START() BE
+$(1
+    CHECK(0, 11, 22, 33)
+    FINISH
+$)1
