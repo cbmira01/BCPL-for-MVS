@@ -27,4 +27,4 @@ Expected exact BCPL output: `HELLO`.
 
 ## Status
 
-PENDING execution under TK5. No pass is claimed until observed.
+**PASS** — user-executed `tools/run-native-regression 71` on TK5 (2026-10-08), exact output `HELLO`; 1 PASS, 0 FAIL. Historical PACKSTRING in-place and WRITES executed through persistent BLIB object.
