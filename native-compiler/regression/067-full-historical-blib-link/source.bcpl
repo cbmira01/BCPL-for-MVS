@@ -1,0 +1,9 @@
+GLOBAL $( START:1; WRITES:60; WRITEN:62; WRCH:14 $)
+
+LET START () BE
+$(1
+    WRITES("BLIB")
+    WRCH('|')
+    WRITEN(42)
+    FINISH
+$)1

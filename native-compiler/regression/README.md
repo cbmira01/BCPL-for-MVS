@@ -1521,6 +1521,19 @@ procedure bodies. It exports G!68 and G!62 and depends on native G!14
 `WRCH`. The application exercises positive, negative, and zero integers,
 with expected output `42|-17|0`. Static combination follows Test 025.
 
+### 067-full-historical-blib-link
+
+Status: **PENDING** — native MVS execution.
+
+First whole-BLIB integration attempt. It compiles the complete
+historical `blib` as a single Cambridge BCPL compilation unit,
+with only its unsupported `SECTION "BLIB"` directive demoted;
+`GET "LIBHDR"` and every BLIB definition remain intact. The
+application calls BLIB's `WRITES` (G!60) and `WRITEN` (G!62).
+The test uses the existing static combiner, not a reconstructed
+multi-section loader. Compilation/link limits must be established
+empirically under MVS.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:

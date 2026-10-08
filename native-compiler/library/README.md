@@ -1,36 +1,15 @@
-# Native compiler library
+# Native Cambridge BLIB
 
-This directory is reserved for native BCPL library material.
+`blib.bcpl` is the complete historical source from
+`richards-bcpltape/bcplib/bcpl/blib` with exactly one bootstrap
+demotion: the initial `SECTION "BLIB"` directive is replaced by a
+comment. Every remaining source record is unchanged; `GET "LIBHDR"`
+continues to use the resident MVS library header.
 
-The intent is to keep library-level BCPL facilities separate from the
-machine/runtime substrate in `asm/bcplmain-wip.asm`.
+The whole-library regression is
+`native-compiler/regression/067-full-historical-blib-link`.
+It references this file instead of carrying yet another copy.
 
-The surviving historical source of truth is:
-
-```text
-richards-bcpltape/bcplib/bcpl/blib
-```
-
-That source shows that routines such as `WRITES` and `WRITEF` are BCPL
-library routines built above lower-level runtime primitives such as `WRCH`,
-`GETBYTE`, and `PUTBYTE`.
-
-Do not move historical source into this directory merely for convenience.
-Bootstrap or transformed derivatives should remain reproducible and should
-not obscure provenance.
-
-Initial policy:
-
-- `BCPLMAIN` owns machine/runtime services and MVS integration.
-- This directory will hold native library integration material when that
-  work begins.
-- Regression tests may temporarily express small historical library
-  algorithms inline when the purpose is to validate lower-level contracts.
-- Test 04 deliberately does this for the historical `WRITES` loop rather
-  than inventing a new machine-code string-output service.
-- The first operational use of this directory should be driven by actual
-  BLIB integration, not by speculative replacements.
-
-The likely next milestone after primitive string traversal is to arrange for
-real historical BLIB code to be compiled and linked with a generated native
-BCPL program.
+Do not edit this derivative to make individual tests pass. Changes
+needed for Cambridge or MVS compatibility must be explained, separately
+tracked, and preferably generated from the historical source.

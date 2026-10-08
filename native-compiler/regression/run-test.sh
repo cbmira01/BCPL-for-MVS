@@ -38,6 +38,20 @@ case_dir=${matches[0]}
 case_name=$(basename "$case_dir")
 source="$case_dir/source.bcpl"
 library="$case_dir/library.bcpl"
+# Whole-library tests may reference the shared canonical native BLIB unit.
+library_ref="$case_dir/library-source.txt"
+if [[ -f "$library_ref" ]]; then
+    [[ ! -f "$library" ]] || {
+        echo "run-test: library.bcpl and library-source.txt conflict" >&2
+        exit 65
+    }
+    library_name="$(tr -d '\r\n' < "$library_ref")"
+    if [[ "$library_name" != "blib" ]]; then
+        echo "run-test: unsupported shared library $library_name" >&2
+        exit 65
+    fi
+    library="$root/native-compiler/library/blib.bcpl"
+fi
 native="$case_dir/native.asm"
 cambridge_parm="$case_dir/cambridge-parm.txt"
 generated_regex="$case_dir/generated-regex.txt"
