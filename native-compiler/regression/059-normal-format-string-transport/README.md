@@ -47,4 +47,11 @@ TABLE format strings to ordinary BCPL source literals.
 
 ## Status
 
-Pending native run.
+Pending rerun after resident Cambridge rebuild.
+
+Diagnosis established on 2026-10-08: the MR10 bootstrap lexer does not
+recognize Cambridge `*C` or `*E` character escapes. The resident Cambridge
+LEX therefore compiled `'*C'` as ordinary `'C'`, causing every literal
+containing C to be treated as containing a control character. The bootstrap
+demotion now rewrites these escapes to explicit decimal control codes before
+building CAMBCOMP.
