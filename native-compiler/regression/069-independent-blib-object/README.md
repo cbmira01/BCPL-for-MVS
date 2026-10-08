@@ -1,6 +1,6 @@
 # 069 — Independently linked BLIB object execution
 
-**Status: DEVELOPMENT — Stage 1 (non-executing linkage) only.** This is
+**Status: DEVELOPMENT — Stage 1 VERIFIED (JOB 2424); GO pending.** This is
 the next native regression identity, but **not yet a passing regression**.
 
 ## Contract
@@ -70,3 +70,43 @@ register both application and library exports, then dispatch G!1 from
 the application. The invocation order, module layout metadata, and
 possible historic support from BCPLMAC/MAKELIB require investigation
 before rewriting the runtime.
+
+## Stage 1 verified: JOB 2424 (2026-10-08)
+
+The resident compilation completed earlier in **JOB 2421** (ICINT19 COMP
+RC=0000 and IEBGENER SVCODE RC=0000). The first valid generated
+three-CSECT link job was **JOB 2424** after resolving host-side JCL
+encoding/syntax and JOB-card length issues in JOBs 2422/2423.
+
+JOB 2424: `ASMAP` IFOX00 RC=0000; `ASMRUN` IFOX00 RC=0000;
+`LKED` IEWL RC=0000. IEWL echoes `INCLUDE OBJ(BLIB)`,
+`ENTRY BCRG0069`, `NAME RG069OBJ(R)`.
+
+```text
+CSECT       ORIGIN   LENGTH
+BCRG0069    000000   000088
+BCPLMAIN    000088   004D18
+BLIB        004DA0   001BB0
+
+XREF location 00000C -> BCPLMAIN in BCPLMAIN
+XREF location 004DAC -> BCPLMAIN in BCPLMAIN
+ENTRY ADDRESS 000000
+TOTAL LENGTH  006950
+AUTHORIZATION CODE IS 0
+```
+
+This verifies an independently assembled application, independent
+BCPLMAIN, and read-only consumption of the persistent BLIB object.
+There is no GO step or global-vector merge evidence. **069 is not
+PASS until the executable contract and exact output have been proved.**
+
+## Stage 2 question
+
+The application's entry trailer exports only G!1=START. The
+persistently linked BLIB section contains additional exported globals
+(e.g. WRITES G!60, WRITEN G!62). The present BCPLMAIN startup scans
+only the entry module. Before changing the runtime, recover the
+historical multi-module registration mechanism (module-entry chain,
+load-module descriptor, link-editor convention, or another evidenced
+mechanism). In particular, do not assume IEWL relocations themselves
+install BCPL global definitions.
