@@ -82,6 +82,7 @@ datasets:
     populate: true
     members:
       HELLOWLD: asm/hello-world.asm
+      BCMWIP: asm/bcplmain-wip.asm
       ICINT12: asm/icintv12.asm
       ICINT13: asm/icintv13.asm
       IC14TRCE: asm/icintv14-trace.asm
@@ -104,6 +105,7 @@ datasets:
       CAMBBLD: jcl/build-cambridge-resident.jcl
       CG370DB: jcl/build-cg370-diagnostic.jcl
       BLIBBLD: jcl/build-blib-object.jcl
+      BLIBLINK: jcl/probe-blib-object-consumer.jcl
 
   INTCODE:
     dsn: BCPL.INTCODE
