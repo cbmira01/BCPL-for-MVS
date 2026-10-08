@@ -934,9 +934,9 @@ WRCHRTN  L     4,0(5)
 * BCPL strings use a length byte at byte offset zero followed by data
 * bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
 * emits signed decimal; %C emits one character; %S emits a BCPL
-* string; %I consumes one hexadecimal-style width digit and emits
-* signed decimal right-justified in that field. Other directives are
-* still unsupported and copied literally.
+* string; %I consumes one width character and emits signed decimal
+* right-justified in that field. Regression 056 proves decimal width
+* digit 4; historical A-F width digits remain to be added.
 *
 * This is bootstrap machinery, not a reconstruction of BLIB's BCPL
 * WRITEF body.  R0 and R1-R3 remain permanent generated-code registers.
@@ -1024,15 +1024,15 @@ WFSKIP   CLI   0(4),C'0'
 * R5 is now the digit count.  Pad on the left to WFWIDTH, counting a
 * minus sign as part of the field.  A width of zero is the %N case.
 *
-WFPAD    L     6,WFWIDTH
-         LTR   6,6
+WFPAD    L     2,WFWIDTH
+         LTR   2,2
          BZ    WFSIGNO
-         SR    6,5
-         S     6,WFSIGN
+         SR    2,5
+         S     2,WFSIGN
          BNP   WFSIGNO
 WFPADLP  LA    7,64
          BAL   10,WFPUTC
-         BCT   6,WFPADLP
+         BCT   2,WFPADLP
 WFSIGNO  L     6,WFSIGN
          LTR   6,6
          BZ    WFDCOPY
