@@ -59,26 +59,16 @@ def build_deck(
         redact_password=redact_password,
     )
     lines.extend([
-        "//* STAGE FINAL BCPL SOURCE AS AN ORDINARY FB80 DATA SET",
-        "//STGSRC   EXEC PGM=IEBGENER",
-        "//SYSPRINT DD  SYSOUT=*",
-        "//SYSIN    DD  DUMMY",
-        "//SYSUT2   DD  DSN=&&BCSRC,UNIT=SYSDA,",
-        "//             SPACE=(80,(100,50)),",
-        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),",
-        "//             DISP=(NEW,PASS)",
-        "//SYSUT1   DD  DATA,DLM=Z9",
-        *source_records(source_path),
-        "Z9",
+        "//* COMPILE ONE BCPL SOURCE WITH THE PERSISTENT CAMBRIDGE IMAGE",
+        "//* CAMBRIDGE IS INTCODE EXECUTED BY HERC02.BCPL.LOAD(ICINT19)",
         f"//* INTIN IS THE PACKED {intcode}({compiler_image}) IMAGE",
-        "//COMP     EXEC PGM=ICINT19,REGION=256K,TIME=(,30),COND=(4,LT)",
+        "//COMP     EXEC PGM=ICINT19,REGION=256K,TIME=(,30)",
         f"//STEPLIB  DD  DSN={load},DISP=SHR",
         "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)",
-    ])
-
-    lines.extend([
         f"//INTIN    DD  DSN={intcode}({compiler_image}),DISP=SHR",
-        "//SYSIN    DD  DSN=&&BCSRC,DISP=(OLD,DELETE)",
+        "//SYSIN    DD  DATA,DLM=Z9",
+        *source_records(source_path),
+        "Z9",
         f"//OPTIONS  DD  DSN={source}(OPTIONS),DISP=SHR",
         *(
             [
