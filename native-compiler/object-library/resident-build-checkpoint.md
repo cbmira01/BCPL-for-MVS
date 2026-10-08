@@ -102,3 +102,31 @@ has passing offline checks and dry-run, but has **not yet been separately
 run to completion** as a single command. A direct member listing after
 JOB 2413 was not included in this report; INSTALL RC=0 is the reported
 object installation evidence.
+
+## Separate-job consumer probe: JOB 2418 (2026-10-08)
+
+**Verified from user-provided `dspal submit --wait` summary:**
+- Offline packaging suite: **7 tests, OK**.
+- **JOB 2414:** deployed `asm/bcplmain-wip.asm` to
+  `HERC02.BCPL.ASM(BCMWIP)`.
+- **JOB 2415:** deployed `jcl/probe-blib-object-consumer.jcl` to
+  `HERC02.BCPL.JCL(BLIBLINK)`.
+- Launcher **JOB 2417** submitted payload **JOB 2418** (`BLIBLINK`).
+- `ASMRUN` IFOX00 **RC=0000**; `LKED` IEWL **RC=0000**.
+- `JOB RESULT: SUCCESS`, highest RC 0000; no flagged assembler
+  statements; highest severity zero.
+
+The stored `BLIBLINK` JCL assembles only BCPLMAIN-wip from the ASM PDS,
+then issues explicit `INCLUDE OBJ(BLIB)` with read-only
+`HERC02.BCPL.OBJ`. It does **not** compile, assemble, reinstall, or
+execute BLIB, nor does it contain a GO step. This establishes that the
+persistent `OBJ(BLIB)` installed by the separate resident-build
+**JOB 2413** is accepted by the linkage editor in another job.
+
+**Evidence boundary:** The user has supplied the job summary, but
+not yet the IEWL link map and XREF listing from JOB 2418. The exact
+CSECT lengths, resolved BCPLMAIN relocation and control-card echo
+remain to be explicitly checked from that report. IEWL RC=0 alone is
+not a substitute for recording those details. No independently linked
+BCPL application was executed; Stage B remains open.
+
