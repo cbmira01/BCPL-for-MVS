@@ -78,6 +78,10 @@ def main() -> None:
     if deck.count(old) != 1:
         raise ValueError("expected one runtime PDS SYSIN DD")
     deck = deck.replace(old, "//SYSIN    DD *\n" + runtime + "/*", 1)
+    deck = deck.replace(
+        "//* REGRESSION 069 STAGE 1 - NO GO; NO BLIB RECOMPILATION",
+        "//* REGRESSION 069 STAGE 2 - OBJECT LINK AND GO",
+    )
     deck = deck.replace("RG069L", "RG069X")
     deck = deck.replace("BCPL 069 LINK", "BCPL 069 GO")
     if not deck.endswith("//\n"):
