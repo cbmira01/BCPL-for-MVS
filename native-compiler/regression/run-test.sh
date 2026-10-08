@@ -20,14 +20,6 @@ fi
 
 # Keep MVS names within their eight-character limit independently of the
 # directory ID width. These remain unique for test numbers 0..999.
-# 069 is deliberately not allowed to fall back to the static combiner.
-# Its Stage 1 probe is non-executing; normal regression PASS requires GO.
-if (( test_num == 69 )); then
-    echo "069: IN DEVELOPMENT; object-linked GO contract not yet proved" >&2
-    echo "Run bash native-compiler/regression/069-independent-blib-object/run-stage1.sh" >&2
-    exit 1
-fi
-
 printf -v job_base 'RG%03d' "$test_num"
 printf -v entry 'BCRG%04d' "$test_num"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -139,6 +131,19 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
+# 069 must use the separately assembled object-library path. This
+# bypasses the static source combiner without changing any older test.
+if (( test_num == 69 )); then
+    echo
+    echo "=== Build independently linked BLIB object GO job ==="
+    jcl="$work/069-object-go.jcl"
+    rm -f "$jcl"
+    python3 "$case_dir/prepare-stage2.py" "$generated" "$jcl" || exit $?
+    [[ -s "$jcl" ]] || {
+        echo "run-test: 069 JCL generator produced no deck" >&2
+        exit 66
+    }
+else
 library_generated=""
 if [[ -f "$library" ]]; then
     library_copy="$work/$case_name-library.bcpl"
@@ -314,6 +319,8 @@ if text.count(old) != 1:
 path.write_text(text.replace(old, new, 1), encoding="ascii", newline="\n")
 PY
 fi
+
+fi # end regular static/native assembly strategy
 
 echo
 echo "=== Submit native run ==="
