@@ -14,9 +14,10 @@ argument consumption is part of the contract.
 ## Source shape
 
 ```bcpl
+LET F = TABLE #X046CC36C, #XE2000000
 LET S = "HELLO"
 
-WRITEF("%C%S", 193, S)
+WRITEF(F, 193, S)
 ```
 
 Expected output:
@@ -25,8 +26,10 @@ Expected output:
 AHELLO
 ```
 
-The format string contains no source blanks, avoiding the unrelated Cambridge
-source-string whitespace syntax already exposed during Test 053.
+The format is constructed as module-resident TABLE data rather than written as an
+inline source string. This deliberately bypasses a transport/lexer problem
+observed with an inline `%S` format in SYSIN while preserving the exact target
+BCPL string bytes: length 4 followed by EBCDIC `%C%S` (`6C C3 6C E2`).
 
 ## WIP runtime rule
 
