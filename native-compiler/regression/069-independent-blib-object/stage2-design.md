@@ -69,3 +69,42 @@ This is intentionally a bootstrap acceptance test, not a declaration
 that the manifest is historically faithful or a general-purpose BCPL
 LOAD/UNLOAD implementation. A production manifest representation and
 duplicate-definition precedence require further evidence.
+
+## Proposed executable deck now available
+
+`prepare-stage2.py` constructs a separate `RG069X` JCL job from the
+resident-compiled 069 assembler. It reuses Stage 1's `ASMAP`, `ASMRUN`,
+and `LKED` steps, replacing only the BCPLMAIN SYSIN with an ephemeral
+test-local variant, and adds a guarded GO step. That variant declares
+`EXTRN BLIB` and imports the resident BLIB module trailer immediately
+after importing the application's G!1 trailer. A relocated literal
+`=A(BLIB)` supplies the manifest member address. The ordinary
+`asm/bcplmain-wip.asm` remains unmodified.
+
+This *two-member manifest hardwired into the test variant* is deliberately
+simpler than a production general-purpose manifest. For the first
+exercise it uses the app module passed by R15 and BLIB's explicit ESD
+symbol. It is an experimental runtime reconstruction only.
+
+From repository root, after `git pull --ff-only`, with the previously
+recovered 069 assembler in `workarea/`:
+
+```sh
+python3 -m py_compile \
+  native-compiler/regression/069-independent-blib-object/prepare-stage2.py
+python3 native-compiler/regression/069-independent-blib-object/prepare-stage2.py \
+  workarea/native-regression/069-independent-blib-object/generated.s370.asm \
+  workarea/native-regression/069-independent-blib-object/069-stage2-go.jcl
+```
+
+First inspect the generated deck to confirm distinct `ASMAP`, `ASMRUN`,
+`LKED`, `GO` and `EXTRN BLIB`. Then submit:
+
+```sh
+tools/submit-jcl \
+  workarea/native-regression/069-independent-blib-object/069-stage2-go.jcl
+```
+
+**Status: JCL generator committed, not yet run on Hercules/MVS.**
+A GO failure is possible and would be diagnostic evidence; neither the
+generator nor the test has an established passing runtime result.
