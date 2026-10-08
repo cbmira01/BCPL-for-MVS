@@ -32,4 +32,4 @@ The assembler implementation is still a provisional bootstrap runtime.
 
 ## Status
 
-**PENDING** — native MVS execution not yet performed.
+**PASS** — native MVS execution on 2026-10-08; output `>000000002A<` (1 PASS, 0 FAIL).
