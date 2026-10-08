@@ -7,6 +7,8 @@ BLIB is retrieved from the persistent OBJ(BLIB) member, never rebuilt.
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import os
 from pathlib import Path
 import re
 
@@ -42,7 +44,18 @@ def main() -> None:
     parser.add_argument("output_jcl", type=Path)
     args = parser.parse_args()
     app = app_cards(args.generated_assembly)
-    deck = """//* REGRESSION 069 STAGE 1 — NO GO; NO BLIB RECOMPILATION
+    root = Path(__file__).resolve().parents[3]
+    core_path = root / "tools/dspal-core.py"
+    spec = importlib.util.spec_from_file_location("dspal_core_069", core_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot import dspal configuration")
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    config = core.load_config()
+    header = "\\n".join(core.authenticated_job_card(
+        config, "RG069L", "BCPL REGRESSION 069 LINK", redact_password=False
+    )) + "\\n"
+    deck = header + """//* REGRESSION 069 STAGE 1 — NO GO; NO BLIB RECOMPILATION
 //* APPLICATION, BCPLMAIN AND LIBRARY ARE INDEPENDENT CSECTS
 //ASMAP    EXEC PGM=IFOX00,REGION=256K,
 //             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'
