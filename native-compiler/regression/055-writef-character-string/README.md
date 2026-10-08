@@ -62,4 +62,4 @@ A successful Test 055 must:
 
 ## Status
 
-Pending native run.
+PASS — native run on 2026-10-08; emitted `AHELLO`.
