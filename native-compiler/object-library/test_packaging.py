@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+from importlib.machinery import SourceFileLoader
 from pathlib import Path
 import tempfile
 import unittest
@@ -13,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def module(name: str, path: str):
     loc = ROOT / path
     spec = importlib.util.spec_from_file_location(name, loc)
+    if spec is None or spec.loader is None:
+        spec = importlib.util.spec_from_loader(name, SourceFileLoader(name, str(loc)))
     assert spec is not None and spec.loader is not None
     result = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(result)
@@ -52,12 +55,11 @@ class ObjectPackagingTests(unittest.TestCase):
         self.assertEqual(dsns["OBJ"], "HERC02.BCPL.OBJ")
 
     def test_binary_guard_for_text_transfers(self):
-        error = self.core.DspalError
-        with self.assertRaises(error):
+        with self.assertRaisesRegex(Exception, "binary object"):
             self.io.resolve_pds(self.config, "OBJ", text_required=True)
-        with self.assertRaises(error):
+        with self.assertRaisesRegex(Exception, "binary object"):
             self.read.resolve_text_pds(self.config, "OBJ")
-        with self.assertRaises(error):
+        with self.assertRaisesRegex(Exception, "binary object"):
             self.submit.resolve_text_pds(self.config, "OBJ")
         # The source library remains a legal managed text destination.
         dsn, _logical, _spec = self.io.resolve_pds(
