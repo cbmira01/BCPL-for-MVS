@@ -1375,7 +1375,7 @@ format transport issue exposed during Test 055.
 
 ### 057-writef-hex-width
 
-Status: **PENDING** — first fixed-width hexadecimal WRITEF conversion.
+Status: **PASS** — emitted `>002A<` on 2026-10-08.
 
 Constructs the target format equivalent to `>%X4<`, calls `WRITEF(F, 42)`,
 and expects:
