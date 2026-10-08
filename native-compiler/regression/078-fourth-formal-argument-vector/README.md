@@ -31,4 +31,4 @@ No correction or historical BLIB modification is made.
 
 ## Status
 
-PENDING TK5 execution. 075 and 076 remain failing evidence.
+**PASS** — user-executed regression 078 on TK5 (2026-10-08 local); actual `11 22 33 33`, 1 PASS / 0 FAIL. Fourth formal R10 and `@A` contiguous access succeed. Regressions 075/076 remain failing evidence.
