@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 import tempfile
@@ -87,13 +88,41 @@ class ObjectPackagingTests(unittest.TestCase):
         self.assertNotIn("DC F'-./,),(-*,('", prepared)
         self.assertEqual(prepared.count("         END"), 1)
 
-    def test_stored_jcl_has_only_assembly_and_install(self):
+    def test_stored_jcl_compiles_and_installs_blib_in_mvs(self):
         deck = (ROOT / "jcl/build-blib-object.jcl").read_text(encoding="ascii")
-        self.assertIn("//ASMBLIB  EXEC PGM=IFOX00", deck)
-        self.assertIn("//INSTALL  EXEC PGM=IEBGENER,COND=(0,NE,ASMBLIB)", deck)
-        self.assertNotIn("EXEC PGM=IEWL", deck)
-        self.assertNotIn("EXEC PGM=*.LKED", deck)
+        for step, program in (
+            ("COMP", "ICINT19"),
+            ("PREPASM", "IFOX00"),
+            ("PREPLK", "IEWL"),
+            ("FIXASM", "*.PREPLK.SYSLMOD"),
+            ("ASMBLIB", "IFOX00"),
+            ("INSTALL", "IEBGENER"),
+        ):
+            self.assertRegex(deck, rf"(?m)^//{step}\s+EXEC PGM={re.escape(program)}")
+        self.assertIn("//SYSIN    DD DSN=HERC02.BCPL.SOURCE(BLIB)", deck)
+        self.assertIn("//SYSUT2   DD DSN=HERC02.BCPL.OBJ(BLIB)", deck)
+        self.assertNotIn("ENTRY BLIB\n", deck)
+        self.assertNotIn("NAME BLIBCHK(R)", deck)
+        self.assertIn("COND=(0,NE,ASMBLIB)", deck)
         self.assertTrue(all(len(line) <= 71 for line in deck.splitlines()))
+
+    def test_mvs_card_repair_matches_original_forms(self):
+        deck = (ROOT / "jcl/build-blib-object.jcl").read_text(encoding="ascii")
+        expected = {
+            "SECT1": " CSECT",
+            "SECT9": "         CSECT",
+            "BAD1": " DC F'-./,),(-*,('",
+            "BAD9": "         DC F'-./,),(-*,('",
+            "NEWSECT": "BLIB     CSECT",
+            "NEWMIN": "         DC X'80000000'",
+        }
+        for name, wanted in expected.items():
+            match = re.search(
+                rf"(?m)^{name}\s+DC\s+CL80'((?:[^']|'')*)'$",
+                deck,
+            )
+            self.assertIsNotNone(match, name)
+            self.assertEqual(match.group(1).replace("''", "'"), wanted)
 
 
 if __name__ == "__main__":
