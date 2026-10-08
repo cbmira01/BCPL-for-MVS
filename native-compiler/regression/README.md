@@ -1411,8 +1411,8 @@ format transport issue exposed during Test 055.
 
 ### 059-normal-format-string-transport
 
-Status: **PENDING** — ordinary BCPL format-string transport through the
-MVS-resident Cambridge compile path.
+Status: **PASS** — ordinary BCPL format-string transport through the
+MVS-resident Cambridge compile path; emitted `AHELLO` on 2026-10-08.
 
 Uses the source literal `"%C%S"`, calls `WRITEF("%C%S",193,S)`, and expects:
 
