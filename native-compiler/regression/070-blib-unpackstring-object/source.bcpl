@@ -1,0 +1,12 @@
+GLOBAL $( START:1; UNPACKSTRING:67; WRCH:14 $)
+
+LET START () BE
+$(1
+    LET V = VEC 8
+    UNPACKSTRING("HELLO", V)
+    TEST V!0 = 5
+    THEN
+    $(2 FOR I = 1 TO V!0 DO WRCH(V!I) $)2
+    ELSE WRCH('!')
+    FINISH
+$)1
