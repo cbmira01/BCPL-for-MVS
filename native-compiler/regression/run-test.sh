@@ -136,12 +136,12 @@ fi
 if [[ -f "$case_dir/object-blib.txt" ]] || (( test_num == 69 )); then
     echo
     echo "=== Build independently linked BLIB object GO job ==="
-    jcl="$work/069-object-go.jcl"
+    jcl="$work/object-go.jcl"
     rm -f "$jcl"
     python3 "$script_dir/069-independent-blib-object/prepare-stage2.py" \
         "$generated" "$jcl" --test-number "$test_num" || exit $?
     [[ -s "$jcl" ]] || {
-        echo "run-test: 069 JCL generator produced no deck" >&2
+        echo "run-test: BLIB object JCL generator produced no deck" >&2
         exit 66
     }
 else
