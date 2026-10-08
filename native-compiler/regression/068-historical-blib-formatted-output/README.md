@@ -46,5 +46,4 @@ establish independently loadable native BCPL sections.
 
 ## Status
 
-**PENDING** — native MVS compilation, assembly, linkage and execution
-have not yet been run for this regression.
+**PASS** — native MVS regression on 2026-10-08; exact output `HEX 0000002A`, `OCT 052`, `FORMAT 42`, and `DONE` on separate records (1 PASS, 0 FAIL).

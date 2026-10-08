@@ -1525,9 +1525,9 @@ empirically under MVS.
 
 ### 068-historical-blib-formatted-output
 
-Status: **PENDING** — combined smoke test against complete demoted
-historical BLIB. Exercises `WRITEX`, `WRITEOCT`, `NEWLINE`, and
-`WRITEF` with exact expected four-record output.
+Status: **PASS** — native MVS regression on 2026-10-08 against complete
+demoted historical BLIB. `WRITEX`, `WRITEOCT`, `NEWLINE`, and
+`WRITEF` produced the exact four-record expected output.
 
 ## MVS-resident Cambridge compile path
 
