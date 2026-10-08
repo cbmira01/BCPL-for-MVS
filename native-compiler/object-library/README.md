@@ -194,6 +194,44 @@ BLIB with an application or execute independently linked BCPL sections.
 Those are separately tested, and Stage B global-vector initialization is
 still deferred. Keep the 69 passing static native regressions unchanged.
 
+## Separate-job object consumer probe — ready, not yet executed
+
+The new **`BLIBLINK`** JCL member is an independent, non-executing
+consumer of the object installed by resident **JOB 2413**. It cannot
+recompile or overwrite BLIB. It performs:
+
+1. `ASMRUN`: IFOX-assemble unmodified `asm/bcplmain-wip.asm` from
+   the managed `HERC02.BCPL.ASM(BCMWIP)` member.
+2. `LKED`: IEWL explicit `INCLUDE OBJ(BLIB)` from read-only
+   `HERC02.BCPL.OBJ`; use `ENTRY BLIB`, `NAME BLIBCHK(R)`,
+   and a temporary `SYSLMOD`; do **not** run the result.
+
+From the experiment branch, run offline packaging tests and position
+the two text members:
+
+```sh
+git pull --ff-only
+python3 native-compiler/object-library/test_packaging.py
+tools/dspal put ASM BCMWIP asm/bcplmain-wip.asm
+tools/dspal put JCL BLIBLINK jcl/probe-blib-object-consumer.jcl
+tools/dspal submit JCL BLIBLINK --wait
+```
+
+The exact acceptance result is `ASMRUN RC=0000` and `LKED RC=0000`,
+plus a control-section map containing separately linked `BCPLMAIN` and
+`BLIB`, `INCLUDE OBJ(BLIB)` in IEWL control-card echo, and the
+`BCPLMAIN` external relocation resolved. Inspect the JES report rather
+than treating IEWL RC alone as complete evidence. Do **not** treat this
+as proof of runtime initialization; there is no `GO` step.
+The earlier Stage A JOB 2396 proved linkage only when source object
+installation was in the same job; this checks **separate-job reuse**
+of persistent `OBJ(BLIB)` built by the resident compiler.
+
+No execution evidence for BLIBLINK is recorded as of this note.
+Regressions 067 and 068 remain unchanged and continue to statically
+combine BLIB. Potential object-linked execution tests 069/070 are
+**future Stage B proposals**, not implemented regressions.
+
 ## Next boundary
 
 The `OBJ` manifest entry and binary-preserving IFOX/IEBGENER installation
