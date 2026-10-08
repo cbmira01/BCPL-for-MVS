@@ -151,3 +151,39 @@ regression runner, including automatic JES report/output validation.
 An incidental stale comment in the generated job says 'STAGE 1 - NO GO';
 it is inaccurate for the actual four-step JOB 2425 and should be fixed
 in the Stage 2 generator before promoting this to the permanent runner.
+
+## Permanent runner integration (awaiting first integrated run)
+
+`tools/run-native-regression 69` now drives the previously proven
+resident-compiler -> independent app IFOX -> experimental BCPLMAIN IFOX
+-> IEWL with `INCLUDE OBJ(BLIB)` -> GO sequence. The runner uses the
+same strict `expected.txt` check and MVS job-summary acceptance as other
+native regressions. It does **not** fall back to static source combining.
+
+`tools/run-native-regression` now **prints the matched BCPL output
+on the WSL console by default**, followed by its verdict. Logs and the
+full captured MVS report remain under `workarea/native-regression/`.
+`--show-output` retains the extra full-report diagnostic on failure.
+
+Run:
+
+```sh
+git pull --ff-only
+tools/run-native-regression 69
+```
+
+Expected console conclusion (after successful resident compilation
+and GO):
+
+```text
+=== BCPL output ===
+BLIB 42
+PASS  069  069-independent-blib-object
+NATIVE REGRESSION COMPLETE
+PASS  1
+FAIL  0
+TOTAL 1
+```
+
+**Note:** This describes the expected integrated-run result, *not a new
+observed JOB*. The already observed successful GO is JOB 2425.
