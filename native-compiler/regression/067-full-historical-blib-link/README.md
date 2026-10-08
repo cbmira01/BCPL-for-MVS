@@ -43,4 +43,4 @@ validated by this test; subsequent tests will explore them.
 
 ## Status
 
-**RETRY PENDING** — the complete BLIB assembled with IFOX severity 0, linked successfully, and executed to produce `BLIB�42`. The vertical-bar separator differs from the exact expected character; this revision uses a space as a transport-safe separator and retains exact-output matching. Native rerun pending.
+**PASS** — user-executed native regression 067 on MVS 3.8 (2026-10-08): `BLIB 42`; 1 PASS, 0 FAIL. Complete demoted historical BLIB compiled with the resident Cambridge compiler/CG370, statically combined with a separately compiled application, assembled by IFOX, linked by IEWL, and executed successfully. This does not establish dynamic section loading. The earlier vertical-bar character transport anomaly remains a separate issue.
