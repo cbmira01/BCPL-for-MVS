@@ -137,6 +137,22 @@ unexpected code-generator change from silently replacing the object member.
 The following assembly/install steps run only if the earlier work completes
 successfully. The canonical BLIB, CG370 compiler, and BCPLMAIN are unchanged.
 
+### First resident build attempt: JOB 2408 (2026-10-08)
+
+This is a **failed** resident-build checkpoint, distinct from the successful
+Stage A JOB 2396 probe. The user reported that the resident compiler printed
+`COMPILATION SUCCESSFUL` and `EXECUTION CYCLES = 9009776, CODE = 0`;
+COMP, PREPASM and PREPLK each returned RC=0000. FIXASM abended
+`S806-4` with `IEA703I ... MODULE ACCESSED PREP`. The original PREPLK
+`SYSLMOD` DD named its temporary PDS member `PREP`, whereas the
+linkage editor installed `BLIBPREP` through `NAME BLIBPREP(R)`.
+The JCL now uses `&&PREPLD(BLIBPREP)` so the module requested by
+`EXEC PGM=*.PREPLK.SYSLMOD` matches the IEWL module name. An
+offline regression test requires the names to agree. A rerun on TK5 is
+still required to verify execution and subsequent object installation.
+The earlier `OBJ(BLIB)` directory entry was from JOB 2396 and should
+**not** be cited as an outcome of failed JOB 2408.
+
 The original four-step **Stage A object-linkage probe** remains in the earlier
 section of this document. Its success is not evidence that this new six-step
 build has passed. The first run of this stored MVS job must be checked and
