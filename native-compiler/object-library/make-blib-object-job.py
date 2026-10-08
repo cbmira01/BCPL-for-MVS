@@ -3,10 +3,35 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import os
 from pathlib import Path
 import re
 
 MIN_INT_BAD = "DC F'-./,),(-*,('"
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def load_dspal_core():
+    path = ROOT / "tools" / "dspal-core.py"
+    spec = importlib.util.spec_from_file_location("dspal_core", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot import {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def private_jcl(path: Path, deck: str) -> None:
+    """JCL contains MVS batch credentials: write as owner-readable only."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        path.chmod(0o600)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="ascii", newline="\n") as out:
+        out.write(deck)
 
 
 def source(path: Path, *, recover_printer: bool = False) -> list[str]:
@@ -69,10 +94,17 @@ def main() -> None:
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Z0-9@$#]+(?:\.[A-Z0-9@$#]+)+", args.dsn):
         parser.error("invalid uppercase object-library DSN")
+    dspal = load_dspal_core()
+    config = dspal.load_config()
+    expected_dsn = dspal.full_dsn(config, {"dsn": "BCPL.OBJ"})
+    if args.dsn != expected_dsn:
+        parser.error(f"only configured BCPL object library {expected_dsn} is supported")
+    job_card = "\n".join(dspal.authenticated_job_card(
+        config, "BLIBOBJ", "BLIB OBJECT PROBE", redact_password=False
+    ))
     blib = blib_cards(args.blib_assembly)
     runtime = runtime_cards(args.runtime_assembly)
-    deck = f"""//BLIBOBJ  JOB (BCPL),'BLIB OBJECT PROBE',CLASS=A,MSGCLASS=A,
-//             MSGLEVEL=(1,1)
+    deck = f"""{job_card}
 //* PRECONDITION: {args.dsn} EXISTS AS RECFM=FB,LRECL=80 PDS
 //* NO PROGRAM EXECUTION; NO CHANGE TO BCPLMAIN
 //ASMBLIB  EXEC PGM=IFOX00,
@@ -123,8 +155,7 @@ def main() -> None:
 //SYSPRINT DD SYSOUT=*
 //
 """
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(deck, encoding="ascii", newline="\n")
+    private_jcl(args.output, deck)
     print(args.output)
 
 
