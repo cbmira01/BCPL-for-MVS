@@ -47,20 +47,19 @@ TABLE format strings to ordinary BCPL source literals.
 
 ## Status
 
-Pending rerun after a clean resident Cambridge rebuild.
+**PASS** — native run on 2026-10-08 emitted:
 
-The first rebuild attempt on 2026-10-08 did not test the fix: the demotion
-generator stopped on an incorrect LEX occurrence-count assertion, then
-SOURCE population hit SE37 while replacing CGA. CAMBBLD subsequently rebuilt
-from the partially/stale SOURCE PDS, so that CAMBCOMP image is not evidence
-for or against the control-escape fix.
+```text
+AHELLO
+```
 
-Before rerunning 059, regenerate successfully, compress SOURCE, repopulate
-SOURCE completely, and rebuild CAMBCOMP.
+The final passing run used the normal direct `SYSIN DD DATA` compile path and
+an ordinary BCPL source literal `"%C%S"`.
 
-Diagnosis established on 2026-10-08: the MR10 bootstrap lexer does not
-recognize Cambridge `*C` or `*E` character escapes. The resident Cambridge
-LEX therefore compiled `'*C'` as ordinary `'C'`, causing every literal
-containing C to be treated as containing a control character. The bootstrap
-demotion now rewrites these escapes to explicit decimal control codes before
-building CAMBCOMP.
+The failure was not an MVS/JES transport problem. The MR10 bootstrap lexer used
+to compile the Cambridge compiler does not recognize Cambridge `*C` or `*E`
+control escapes. As a result, Cambridge LEX's `'*C'` had been compiled as
+ordinary `'C'`, causing literal C characters to be treated as control
+characters. The bootstrap demotion now rewrites `'*C'` to 13 and `'*E'` to
+27 before building CAMBCOMP.
+
