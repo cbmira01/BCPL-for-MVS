@@ -34,4 +34,4 @@ alphabetic width rule is based on the surviving BLIB source.
 
 ## Status
 
-**PENDING** — requires native MVS regression execution.
+**PASS** — native MVS regression on 2026-10-08; emitted `>        42<` with eight leading blanks (1 PASS, 0 FAIL).
