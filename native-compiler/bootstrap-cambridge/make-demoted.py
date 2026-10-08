@@ -82,7 +82,7 @@ def demote_control_escapes(text: str, section: str) -> str:
     """
     expected = {
         "SYN": {"'*C'": 1, "'*E'": 0},
-        "LEX": {"'*C'": 3, "'*E'": 1},
+        "LEX": {"'*C'": 2, "'*E'": 1},
     }
     if section not in expected:
         return text
