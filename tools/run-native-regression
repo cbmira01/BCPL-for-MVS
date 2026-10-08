@@ -215,7 +215,7 @@ def main() -> int:
                 env=env,
             )
 
-        if args.show_output:
+        if True:  # Always relay captured BCPL output to the WSL console.
             lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
             shown = False
             for heading in ("=== BCPL output ===", "=== Output mismatch ==="):
