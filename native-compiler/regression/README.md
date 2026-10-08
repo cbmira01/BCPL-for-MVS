@@ -1354,6 +1354,25 @@ word-pointer construction in R9, the G!76 load at byte displacement 304, and
 ordinary BALR linkage. The runtime now uses a shared bootstrap argument cursor
 for `%N`, `%C`, and `%S`.
 
+### 056-writef-field-width
+
+Status: **PENDING** — first WRITEF field-width conversion.
+
+Constructs the target format equivalent to `>%I4<`, calls `WRITEF(F, 42)`,
+and expects:
+
+```text
+>  42<
+```
+
+The surviving BLIB WRITEF routes `%I` through `WRITED(ARG,N)`, where the
+character after `I` supplies the field width. This regression proves the first
+right-justified signed-decimal width path while preserving the already-proven
+`%N` no-width behavior.
+
+The format is carried as target TABLE bytes to avoid the separate inline-SYSIN
+format transport issue exposed during Test 055.
+
 ## MVS-resident Cambridge compile path
 
 The ordinary per-test runner retains the full Cambridge bootstrap path:
