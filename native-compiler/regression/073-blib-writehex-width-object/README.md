@@ -22,4 +22,4 @@ The test uses the marker-driven independent object-library pathway from
 
 ## Status
 
-PENDING first TK5 execution.
+**PASS** — user-executed `tools/run-native-regression 73` on TK5 (2026-10-08), exact output `>002A< >0000002A<`; 1 PASS, 0 FAIL. Historical WRITEHEX executed through persistent BLIB object.
