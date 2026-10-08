@@ -1,6 +1,6 @@
 # 069 — Independently linked BLIB object execution
 
-**Status: DEVELOPMENT — Stage 1 VERIFIED (JOB 2424); GO pending.** This is
+**Status: STAGE 2 GO VERIFIED (JOB 2425); test-local runtime variant.** This is
 the next native regression identity, but **not yet a passing regression**.
 
 ## Contract
@@ -110,3 +110,44 @@ historical multi-module registration mechanism (module-entry chain,
 load-module descriptor, link-editor convention, or another evidenced
 mechanism). In particular, do not assume IEWL relocations themselves
 install BCPL global definitions.
+
+## Stage 2 verified: JOB 2425 (2026-10-08)
+
+The experimental `prepare-stage2.py` generated a temporary BCPLMAIN
+variant containing an explicit `EXTRN BLIB` registration and a backward
+scan of BLIB's relocated CG370 global-export trailer. Neither the
+canonical BCPLMAIN source nor persistent PDS `OBJ(BLIB)` was modified.
+
+JOB 2425 `RG069X` executed successfully:
+
+```text
+ASMAP   IFOX00  RC=0000
+ASMRUN  IFOX00  RC=0000
+LKED    IEWL    RC=0000
+GO      linked  RC=0000
+
+CSECT      ORIGIN  LENGTH
+BCRG0069   000000  000088
+BCPLMAIN   000088  004D50
+BLIB       004DD8  001BB0
+
+XREF 00000C -> BCPLMAIN
+XREF 00023C -> BLIB
+XREF 004DE4 -> BCPLMAIN
+ENTRY 000000
+TOTAL 006988
+
+SYSPRINT: BLIB 42
+```
+
+The first executable independent three-section BLIB/object-library
+regression is thus **behaviorally proven**. This is a *test-local
+experimental two-module registration mechanism*, not yet a production
+BCPLMAIN contract or a recovered historical Cambridge implementation.
+The default `run-native-regression 69` path intentionally remains
+non-PASS until the object-link execution is integrated into the normal
+regression runner, including automatic JES report/output validation.
+
+An incidental stale comment in the generated job says 'STAGE 1 - NO GO';
+it is inaccurate for the actual four-step JOB 2425 and should be fixed
+in the Stage 2 generator before promoting this to the permanent runner.
