@@ -48,6 +48,8 @@ def resolve_text_pds(config: dict[str, Any], operand: str):
         )
     if str(spec.get("dsorg", "")).upper() != "PO":
         raise DspalError(f"not a partitioned data set: {dsn}")
+    if str(spec.get("content_type", "")).lower() == "object":
+        raise DspalError(f"binary object library {dsn}: text cat/get prohibited")
     if str(spec.get("recfm", "")).upper() != "FB":
         raise DspalError(f"text transfer currently requires RECFM=FB: {dsn}")
     if int(spec.get("lrecl", 0) or 0) != 80:
