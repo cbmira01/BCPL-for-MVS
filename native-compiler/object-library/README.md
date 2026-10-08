@@ -12,15 +12,29 @@ combiner, `config/dspal.yaml`, or `BCPLMAIN-wip`.
    obtain its `library-generated.s370.asm` artifact. The currently established
    path is `workarea/native-regression/067-full-historical-blib-link/library-generated.s370.asm`
    (verify the file exists; do not substitute combined application assembly).
-3. Inspect `HERC02.BCPL.OBJ` using existing MVS tools. Submit
-   `allocate-blib-obj.jcl` **only if the DSN is missing**. Do not replace
+3. Inspect `HERC02.BCPL.OBJ` using `tools/dspal stat HERC02.BCPL.OBJ --raw`.
+   **Only if missing**, generate an authenticated allocation JCL using
+   `make-obj-allocation-job.py`; submit it and check RC=0000. Do not replace
    an existing dataset. The proposed DCB is DSORG=PO, RECFM=FB, LRECL=80,
    BLKSIZE=800, directory blocks=20. These attributes remain to be verified
    under TK5.
+4. Provide `mvs.batch_password` for `HERC02` through the gitignored
+   `config/dspal.local.yaml`, as documented in `config/README.md`.
+   Generated JCL files contain a batch password: keep them local, do not
+   display or commit their contents, and delete them after use.
 
 ## Generate and submit
 
-From repository root:
+From repository root, allocate the object PDS **only if it does not exist**:
+
+```sh
+python3 native-compiler/object-library/make-obj-allocation-job.py \
+  workarea/blib-object-allocate.jcl
+tools/submit-jcl workarea/blib-object-allocate.jcl
+# Check allocation job summary before proceeding.
+```
+
+Then generate and submit the probe:
 
 ```sh
 python3 native-compiler/object-library/make-blib-object-job.py \
@@ -29,6 +43,8 @@ python3 native-compiler/object-library/make-blib-object-job.py \
   workarea/blib-object-probe.jcl
 
 tools/submit-jcl workarea/blib-object-probe.jcl
+# Inspect both jobs, then remove generated credential-bearing JCL:
+# rm -f workarea/blib-object-allocate.jcl workarea/blib-object-probe.jcl
 ```
 
 The generator checks the standalone unnamed generated CSECT and EXTRN
@@ -46,8 +62,9 @@ The job:
 4. Runs IEWL with `INCLUDE OBJ(BLIB)` and `ENTRY BLIB`, writing a
    temporary load module but **never running it**.
 
-The experiment does not use `dspal put` or `populate`, since those operate
-on text. It does not assume BCPLMAIN can initialize independently linked
+Both jobs authenticate with the same `dspal` batch credentials used by
+other managed dataset operations. The experiment does not use `dspal put`
+or `populate`, since those operate on text. It does not assume BCPLMAIN can initialize independently linked
 sections. The object member may be overwritten on later experimental runs;
 use a dedicated library and inspect its existing contents first.
 
