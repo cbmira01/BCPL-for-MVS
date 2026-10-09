@@ -188,3 +188,36 @@ The literal sizes are an interim, auditable capacity rung; later
 work should centralize capacity arithmetic rather than silently
 introduce further unrelated magic numbers. APTOVEC's stack layout
 must be designed and tested separately after this rung passes.
+
+## First APTOVEC implementation checkpoint — 2026-10-09
+
+Regression 090 passed under the operator's TK5 run: **1 PASS, 0
+FAIL**, output `42`. This validates high-global indexing in its
+focused case; the expanded runtime still awaits a complete panel.
+
+The first G40 APTOVEC implementation is now in
+`asm/bcplmain-wip.asm`, and focused regression
+`091-aptovec-nested-call` has been added. The adapter saves its
+own BCPL linkage at W, constructs a temporary stack VEC N starting
+at W+16, locates the nested function workspace after N+1 words,
+checks clearance against STKLIM, invokes F(V,N), and returns F's
+R7 result through normal linkage restoration.
+
+The selected first-rung upper bound N<=16380 is a conservative
+guard against offset overflow, not a claimed historical limit.
+Negative N and overflow are sent to the existing controlled stack
+overflow path. The reserved clearance, exact compiler workspace,
+and a nested/large-vector validation remain future refinements.
+
+**Preflight**: a local standalone assembler-card candidate was
+checked for <=71-column width and frame arithmetic before source
+promotion. The full updated source also passed a line-width
+check on the staged content. Neither check is a replacement for
+IFOX or actual GO execution, and neither constitutes a local
+execution of the project's full checking scripts.
+
+**Next TK5 acceptance:**
+`tools/run-native-regression 91 --show-output`, expected output
+`42`; then `tools/run-native-regression --show-output` for
+the complete panel 000..091. The APTOVEC service remains
+**provisional pending guest acceptance**.
