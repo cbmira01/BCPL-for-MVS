@@ -89,3 +89,22 @@ semantics and GO DD setup.
   identical rewind/close semantics.
 - Closure requires focused and complete native regression acceptance;
   retain the FINISH/STOP cleanup guarantees for any newly opened DCB.
+
+## Dependency-audit handoff — 2026-10-09
+
+The source-traced inventory at
+`native-compiler/runtime-dependency-audit.md` identifies selected
+stream I/O as a **native compiler bootstrap blocker**, not merely
+general-purpose library enhancement. The compiler master itself
+uses FINDPARM, FINDINPUT/FINDOUTPUT, SELECTINPUT/SELECTOUTPUT,
+RDCH, UNRDCH, INPUT/OUTPUT, ENDREAD/ENDWRITE and WRAPOUTPUT;
+LEX reads GET files through named input streams. Compiler listing
+and generated CODE require multiple logical output streams rather
+than a single SYSPRINT buffer.
+
+The audit also highlights independent blockers: current G!0..200
+capacity versus larger resident compiler global slots, and the
+master's APTOVEC(COMP, size) workspace contract. Resolve these in
+parallel with stream design, not by extending the MR10-oriented
+native extension-library candidates. Historical records and
+binary SYSGO output remain separate phases.
