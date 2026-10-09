@@ -68,3 +68,27 @@ and complete native panel (currently 000–083 plus new tests) PASS.
   before committing any executable assembler change; focused and full
   TK5 execution remain separate.
 - Instrumentation must be test-local, not installed in production code.
+
+## FINISH/CLOSE promotion checkpoint — 2026-10-09
+
+Regression 084's test-local CLOSE experiment passed on TK5 with
+expected output `A` and normal GO completion. This confirms that
+`CLOSE (BCPOUT)` can follow the pending-record PUT and precede
+RELMEM on the tested path.
+
+`asm/bcplmain-wip.asm` now executes the tested CLOSE in canonical
+FINRETN. Regression 084 has been converted to a normal runtime test
+(no longer injects CLOSE). New regression 085 covers FINISH with an
+opened output DCB and no pending record: no PUT, then CLOSE, then
+RELMEM. Its expected output file is intentionally empty; the
+acceptance condition is normal ASM/LKED/GO completion.
+
+The test-only instrumentation for regression 083 emits output *after*
+RELMEM. Therefore its temporary assembler copy now omits canonical
+CLOSE; this preserves its narrowly scoped storage-release counters
+without attempting PUT against a closed DCB. Regression 083 does not
+test production CLOSE; 084/085 do.
+
+**Pending guest acceptance:** focused regressions 083–085, followed by
+a full panel sweep if they pass. This march remains open. No STOP
+semantics have been implemented or assumed.
