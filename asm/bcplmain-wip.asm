@@ -622,6 +622,7 @@ BCPLMAIN CSECT
          A     1,=F'16384'
          ST    1,DYNEND
          ST    1,STKLIM
+         LA    11,SYSV
 *
 * Initialize the dynamic global vector with the historical sentinel.
 *
@@ -873,6 +874,20 @@ FINRETN  BAL   14,RELMEM
          L     13,4(13)
          LM    14,12,12(13)
          SR    15,15
+         BR    14
+*
+* Release the one combined global-vector/workspace allocation.
+* Save our BAL return across the MVS service, which may modify R14.
+* R13 still identifies MSVSAVE at each invocation.
+***********************************************************************
+RELMEM   ST    14,RELRET
+         L     1,DYNBASE
+         LTR   1,1
+         BZ    RELDONE
+         L     10,DYNLEN
+         FREEMAIN R,LV=(10),A=(1)
+         XC    DYNBASE(4),DYNBASE
+RELDONE  L     14,RELRET
          BR    14
 *
 ***********************************************************************
@@ -1483,20 +1498,6 @@ DBGAPND  L     4,OUTPOS
 DBGARET  BR    14
 *
 ***********************************************************************
-* Release the one combined global-vector/workspace allocation.
-* Save our BAL return across the MVS service, which may modify R14.
-* R13 still identifies MSVSAVE at each invocation.
-***********************************************************************
-RELMEM   ST    14,RELRET
-         L     1,DYNBASE
-         LTR   1,1
-         BZ    RELDONE
-         L     10,DYNLEN
-         FREEMAIN R,LV=(10),A=(1)
-         XC    DYNBASE(4),DYNBASE
-RELDONE  L     14,RELRET
-         BR    14
-*
 ***********************************************************************
 * WIP DATA
 ***********************************************************************
