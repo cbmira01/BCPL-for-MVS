@@ -728,6 +728,8 @@ WFHAS76  EQU   *
          ST    1,352(12)
          LA    1,DEBUGINT
          ST    1,600(12)
+         LA    1,APTOVEC
+         ST    1,160(12)
          LA    1,STOPENT
          ST    1,120(12)
 *
@@ -954,6 +956,42 @@ STKFORM  L     4,0(15)
 ***********************************************************************
 STKCIMP  LA    14,4(14)
          BR    14
+*
+***********************************************************************
+* APTOVEC -- TEMPORARY STACK VECTOR AND NESTED BCPL CALL
+*
+* G40 receives F in R7 and N in R8. Supply F(V,N), where V points
+* to N+1 BCPL words immediately above APTOVEC's saved linkage.
+* Allocate the callee frame above the vector, leaving room for its
+* four-register entry save; normal generated stack checks still apply.
+* This first rung rejects excessive N and reports stack overflow.
+***********************************************************************
+APTOVEC  STM   4,6,0(15)
+         LR    5,15
+         LTR   8,8
+         BM    STKOVFL
+         C     8,APMAXN
+         BH    STKOVFL
+         LR    14,8
+         SLL   14,2
+         LA    14,20(14)
+         LR    4,15
+         AR    4,14
+         LR    14,4
+         LA    14,16(14)
+         C     14,STKLIM
+         BH    STKOVFL
+         LR    14,7
+         LA    7,16(15)
+         SRL   7,2
+         LR    15,4
+         BALR  6,14
+* RETIMPL has restored R5 to our frame; R7 holds F's result.
+         L     6,8(5)
+         L     5,4(5)
+         L     4,0(5)
+         BCR   15,6
+APMAXN   DC    F'16380'
 *
 ***********************************************************************
 * WRCH -- FIRST NATIVE CHARACTER OUTPUT
