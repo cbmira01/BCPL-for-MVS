@@ -481,7 +481,8 @@ while (( SECONDS <= deadline )); do
             cat "$work/job-report.txt"
         fi
 
-        if expected_output >/dev/null 2>&1 &&
+        if (( test_num != 84 )) &&
+           expected_output >/dev/null 2>&1 &&
            show_bcpl_output &&
            grep -a -q 'ABEND S322' <<<"$report"; then
             show_result \
