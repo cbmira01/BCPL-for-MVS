@@ -879,12 +879,21 @@ FINRETN  BAL   14,RELMEM
          SR    15,15
          BR    14
 *
-* Release the one combined global-vector/workspace allocation.
-* Save our BAL return across the MVS service, which may modify R14.
-* R13 still identifies MSVSAVE at each invocation.
+* Drain live GETVEC allocations before freeing global/stack memory.
+* Each record holds its own byte length and next record address.
+* Detach the head before FREEMAIN; never read a released record.
+* Save the BAL return across MVS services that may modify R14.
 ***********************************************************************
 RELMEM   ST    14,RELRET
-         L     1,DYNBASE
+RELLOOP  L     1,VECLIST
+         LTR   1,1
+         BZ    RELMAIN
+         L     10,4(1)
+         L     9,8(1)
+         ST    9,VECLIST
+         FREEMAIN R,LV=(10),A=(1)
+         B     RELLOOP
+RELMAIN  L     1,DYNBASE
          LTR   1,1
          BZ    RELDONE
          L     10,DYNLEN
