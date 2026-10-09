@@ -873,7 +873,8 @@ FINIMPL  L     1,OUTPOS
          LTR   1,1
          BZ    FINRETN
          PUT   BCPOUT,OUTBUF
-FINRETN  BAL   14,RELMEM
+FINRETN  CLOSE (BCPOUT)
+         BAL   14,RELMEM
          L     13,4(13)
          LM    14,12,12(13)
          SR    15,15
