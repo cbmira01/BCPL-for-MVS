@@ -607,7 +607,7 @@ BCPLMAIN CSECT
          AR    2,0
          ST    2,MODEND
 *
-* Acquire one MVS allocation for G!0..G!200, 4096 usable workspace
+* Acquire one MVS allocation for G!0..G!699, 16384 usable stack
 * words and a provisional 256-byte stack clearance. Preserve the
 * tested safe limit while retaining physical headroom above it.
 * GETMAIN EC reports failure through R15.
@@ -620,7 +620,7 @@ BCPLMAIN CSECT
          L     12,DYNBASE
          LA    1,GVBYTES(12)
          ST    1,DYNWORK
-         A     1,=F'16384'
+         A     1,=F'65536'
          ST    1,STKLIM
          A     1,=F'256'
          ST    1,DYNEND
@@ -649,7 +649,7 @@ GSCAN    AH    8,=H'-8'
 * Reject modules requiring more globals than this static WIP provides.
 *
          L     0,0(8)
-         C     0,=F'800'
+         C     0,=F'2796'
          BC    2,GTOOBIG
          ST    8,TRAILER
 *
@@ -661,7 +661,7 @@ GINST    AH    8,=H'-8'
          LTR   9,9
          BC    8,GIDONE
          L     1,0(8)
-         C     1,=F'800'
+         C     1,=F'2796'
          BC    2,GTOOBIG
          LR    2,12
          AR    2,1
@@ -1543,14 +1543,14 @@ FVWSAVE  DC    F'0'
 *
 MSVSAVE  DS    18F
 *
-* Contiguous GETMAIN layout: 201 global fullwords, 4096 usable stack
+* Contiguous GETMAIN layout: 700 global fullwords, 16384 stack
 * fullwords, and 256 bytes of provisional clearance.  Dynamic backing
 * addresses are saved in static controls.
 * The GETMAIN block is released as a unit during FINISH/error exit.
 *
-GLOBCNT  EQU   200
+GLOBCNT  EQU   699
 GVBYTES  EQU   (GLOBCNT+1)*4
-DYNLEN   DC    F'17444'
+DYNLEN   DC    F'68592'
 DYNBASE  DC    F'0'
 DYNWORK  DC    F'0'
 DYNEND   DC    F'0'
