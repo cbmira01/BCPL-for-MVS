@@ -111,3 +111,45 @@ test-only instrumentation remains isolated from canonical CLOSE.
 semantics march remains open pending historical STOP (G!30) and
 completion-code contract research and validation. This checkpoint
 establishes the new 86/86 regression baseline.
+
+## STOP historical evidence checkpoint — 2026-10-09
+
+Surviving source establishes more than STOP's slot number:
+
+- `richards-bcpltape/sys3/bcpl/libhdr` defines `STOP:30`.
+  The MR10 kit's `blib` also identifies STOP as global 30.
+- `richards-bcpltape/bcplib/bcpl/blib`, in
+  `ABORT(CODE, ADDR, OLDSTACK, DATA)`, ends with `STOP(100)`.
+  ABORT emits diagnostic/postmortem material first. This is direct
+  evidence of **one positional argument** and a nonzero code (100).
+  It strongly suggests STOP handles termination with a requested
+  completion status; the exact MVS mapping is still not proven.
+- `richards-bcpltape/km10/bcplmac` reserves `USATCBCC` for a task
+  completion-code field and `TNUM/USATNUM` for tidy-up time, but
+  neither gives the executable STOP entry or its return contract.
+
+### Working hypotheses requiring TK5 probes
+
+H1: `STOP(N)` terminates execution without returning to the caller.
+H2: `STOP(0)` requests normal completion while `STOP(100)`
+requests distinguishable nonzero MVS step completion.
+H3: STOP shares FINISH's flush/CLOSE/RELMEM lifecycle, then chooses
+the final completion code; normal FINISH keeps its established zero.
+
+### Proposed next regression rungs
+
+086: Test-only global G!30 adapter for `STOP(0)`, mirroring the
+verified FINISH path; assert GO RC=0000.
+
+087: Test-only global G!30 adapter for `STOP(100)`, isolate the
+resulting MVS step condition code; because the ordinary native
+runner treats nonzero GO RC as failure, this needs a dedicated
+test driver or explicit expected-completion-code support. Do not
+weaken the normal regression acceptance rules.
+
+After these diagnostics, decide whether the MVS return-code mapping
+matches the historical contract closely enough to promote G!30 to
+canonical BCPLMAIN. The ABORT call supplies a valuable semantic
+constraint but is not sufficient to prove a specific numeric mapping.
+
+**No executable STOP change has been made in this checkpoint.**
