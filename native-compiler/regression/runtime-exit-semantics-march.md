@@ -175,3 +175,20 @@ argument-to-RC mapping. Historical source supports `STOP(100)` from
 BLIB ABORT, not an exact MVS return-code implementation.
 
 Status: **PENDING TK5**. Full panel deferred pending focused 086–087.
+
+## STOP adapter focused acceptance — 2026-10-09
+
+Operator executed `python3 tools/checks/check-native-runtime.py`:
+**OK (source and BLIB injection)**. Focused `tools/run-native-regression
+86 87 --show-output`: **2 PASS, 0 FAIL**. Both emitted `S`.
+
+Regression 086's test-only STOP(0) adapter completed normally with
+GO RC=0000. Regression 087's test-only STOP(100) adapter was accepted
+by the narrow GO RC=0100 rule. This validates the proposed test
+adapter's calling convention and MVS return-code feasibility, not
+the unknown historical numeric-mapping contract.
+
+**Next gate:** decide whether to promote STOP to canonical BCPLMAIN,
+retaining its tested FINISH/CLOSE/RELMEM path, and convert these
+regressions from adapter tests to production tests. Run focused tests
+before the full panel. No canonical STOP implementation yet.
