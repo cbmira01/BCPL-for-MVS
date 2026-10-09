@@ -77,3 +77,7 @@ existing expected outputs of regressions 075 and 076.
 The WIP startup overwrote the imported BLIB G!76 entry with assembler WRITEST. That formatter saved R8 and R9 only; its two-word WFARGS table was immediately followed by WFARGIX. Fetching data argument #3 consequently read cursor value 2 rather than R10. The failures in 075 and 076 therefore originated in the provisional runtime formatter, not historical BLIB WRITEF. Commit ab1d993 makes WRITEST a fallback only when G!76 remains unset. Rerun 075 and 076 on TK5 before claiming the corrected linkage passes.
 
 JOB 2597 separately shows a CG370D source-parse failure (newline-in-string syntax error, execution code 8) despite MVS step RC zero; no valid instrumented comparison was produced. That instrumentation problem remains distinct from the G!76 defect.
+
+## Milestone closeout — full panel green
+
+User ran `tools/run-native-regression` on branch `experiment/blib-object-pds` after the G!76 binding fix, covering all 82 native cases (00–081). Final result: **PASS 82, FAIL 0, TOTAL 82**. Specifically, regression 075 emitted `C:Z S:HI N:42`, and 076 emitted `A:42 B:11,22,33 C:HI,42`. Historical BLIB and CG370 were unchanged. This closes the BLIB object-linkage and WRITEF integration milestone at the present regression coverage. The separate CG370D diagnostic-image code-8 / newline-in-string failure from JOB 2597 remains open and does not block the milestone.
