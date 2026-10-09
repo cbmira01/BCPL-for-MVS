@@ -1,6 +1,6 @@
 # BCPLMAIN termination and storage reclamation march
 
-Status: **TEARDOWN IMPLEMENTED; TK5 VALIDATION PENDING**
+Status: **CLOSED — 84/84 full native regression pass (2026-10-09)**
 
 Baseline at opening: `main`, 82/82 native regressions PASS (00–081);
 BCPLMAIN source and BLIB injection preflight pass.
@@ -70,3 +70,26 @@ No executable runtime code has been changed in this audit checkpoint.
 ## Implementation checkpoint
 
 Commit ad71616 changes RELMEM to detach and release each outstanding GETVEC block before freeing DYNBASE. Source width and injection anchors were checked; guest execution and independent reclamation evidence remain pending.
+
+## Closure checkpoint — 2026-10-09
+
+The operator ran the complete native regression panel `00..083` on
+TK5/MVS 3.8J after the test-only 083 addressability correction
+(commit `47103f8`): **84 PASS, 0 FAIL, TOTAL 84**.
+
+Regression 082 passed with `42` while leaving two vectors outstanding.
+Regression 083 passed with two separate output records, `42` and
+`V=2 M=1`: two vector FREEMAIN call sites returned within teardown,
+followed by the main allocation's FREEMAIN return site. An earlier
+083 IFOX RC=0008 resulted from an unreachable end-of-CSECT literal;
+the test-only instrumenter now uses the addressable `TRTXT83` data
+constant. Canonical BCPLMAIN was not altered by that repair.
+
+These results establish tested cleanup control flow and compatibility;
+they do not independently prove successful storage-manager reclamation
+or analyze FREEMAIN service return codes. Explicit CLOSE, STOP/ABORT
+completion semantics, abnormal recovery, and historical INUM remain
+outside this milestone.
+
+**March closed.** Any further runtime lifecycle work starts in a new
+march rather than extending regression 083.
