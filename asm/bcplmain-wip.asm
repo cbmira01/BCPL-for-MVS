@@ -607,9 +607,9 @@ BCPLMAIN CSECT
          AR    2,0
          ST    2,MODEND
 *
-* Acquire one MVS allocation for G!0..G!200 followed by 4096
-* workspace words.  Keep the established extents unchanged while
-* replacing their static backing store.  GETMAIN EC reports failure
+* Acquire one MVS allocation for G!0..G!200, 4096 usable workspace
+* words and a provisional 256-byte stack clearance. Preserve the
+* tested safe limit while retaining physical headroom above it.  GETMAIN EC reports failure
 * through R15.  Store base and length for subsequent FREEMAIN R.
 *
          L     9,DYNLEN
@@ -620,8 +620,9 @@ BCPLMAIN CSECT
          LA    1,GVBYTES(12)
          ST    1,DYNWORK
          A     1,=F'16384'
-         ST    1,DYNEND
          ST    1,STKLIM
+         A     1,=F'256'
+         ST    1,DYNEND
          LA    11,SYSV
 *
 * Initialize the dynamic global vector with the historical sentinel.
@@ -690,7 +691,8 @@ GIDONE   L     4,4(12)
          SRL   1,2
          ST    1,212(12)
 *
-* G!54/G!55 = BCPL word pointers delimiting the dynamic workspace.
+* G!54/G!55 = BCPL word pointers for the allocated stack extent.
+* G!55 includes the reserved clearance; STKLIM is the safe limit.
 *
          L     1,DYNWORK
          SRL   1,2
@@ -829,8 +831,8 @@ SYSSTKC  BC    15,STKCIMP
 *
 * Runtime-local byte limit and controlled-overflow message.
 * Historical BCPLMAC distinguishes STKLIM (safe limit) from STKHIGH.
-* This WIP static stack has no clearance area, so WORKEND is its
-* provisional safe limit.
+* This WIP reserves 256 extra bytes above the tested 16KB safe
+* limit.  The exact historical INUM interpretation remains unknown.
 *
 STKLIM   DC    F'0'
 STKMSG   DC    CL14'STACK OVERFLOW'
@@ -906,7 +908,7 @@ RELDONE  L     14,RELRET
 * exceed STKLIM.  BCPLMAC proves that the historical runtime maintained
 * a safe stack limit distinct from the byte beyond allocated stack.
 * The missing machine-code STKCK body leaves exact clearance semantics
-* unrecovered; WORKEND is therefore the provisional WIP safe limit.
+* unrecovered. The provisional boundary remains 16KB from stack base.
 ***********************************************************************
 STKIMPL  LR    5,15
          L     4,0(14)
@@ -1526,13 +1528,14 @@ FVWSAVE  DC    F'0'
 *
 MSVSAVE  DS    18F
 *
-* Contiguous GETMAIN layout: 201 global fullwords then 4096 stack
-* fullwords.  Dynamic backing addresses are saved in static controls.
+* Contiguous GETMAIN layout: 201 global fullwords, 4096 usable stack
+* fullwords, and 256 bytes of provisional clearance.  Dynamic backing
+* addresses are saved in static controls.
 * The GETMAIN block is released as a unit during FINISH/error exit.
 *
 GLOBCNT  EQU   200
 GVBYTES  EQU   (GLOBCNT+1)*4
-DYNLEN   DC    F'17188'
+DYNLEN   DC    F'17444'
 DYNBASE  DC    F'0'
 DYNWORK  DC    F'0'
 DYNEND   DC    F'0'
