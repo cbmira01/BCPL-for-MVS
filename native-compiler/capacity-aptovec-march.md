@@ -152,3 +152,39 @@ inventory; **G!699 is not yet an approved hard capacity**.
 
 Do not confuse this source-derived requirement with the previously
 measured ICINT V19 700-word global *capacity* (G!0..G!699).
+
+## Capacity implementation checkpoint — 2026-10-09
+
+**Pending TK5 acceptance.** The first implementation rung has changed
+canonical `asm/bcplmain-wip.asm` capacity only. G40 APTOVEC remains
+unimplemented.
+
+- `GLOBCNT`: 200 -> **699**; global vector now 700 words,
+  G!0 through G!699 = **2800 bytes**.
+- Both module-trailer byte-displacement comparisons:
+  800 -> **2796** (699*4), consistent with the global vector.
+- Usable stack/workspace provision:
+  16,384 bytes (4096 words) -> **65,536 bytes (16,384 words)**.
+- Reserved physical clearance remains **256 bytes (64 words)**.
+- Combined MVS allocation `DYNLEN`:
+  17,444 -> **68,592 bytes** (2800 + 65536 + 256).
+- G!54 and G!55 continue to publish the allocated work extent;
+  the historical distinction between safe stack limit and clearance
+  remains open. The generator's stack checks continue to use
+  `STKLIM` (the safe bound).
+
+Added regression **090-high-global-capacity**:
+exports `HIGHMARK:699`, invokes it through G and prints `42`.
+It is intended to exercise both expanded global initialization
+and the raised module-trailer limit.
+
+Repository-source preflight confirmed all changed constants and
+71-column assembler hygiene. No IFOX/LKED/GO execution has yet
+been claimed for this change. **Focused test 090 and full legacy
+panel 000–089 are acceptance gates.** The last guest-verified
+baseline remains 90/90 on the preceding runtime revision.
+
+The literal sizes are an interim, auditable capacity rung; later
+work should centralize capacity arithmetic rather than silently
+introduce further unrelated magic numbers. APTOVEC's stack layout
+must be designed and tested separately after this rung passes.
