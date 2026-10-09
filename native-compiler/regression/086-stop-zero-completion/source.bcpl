@@ -1,0 +1,7 @@
+GLOBAL $( START:1; STOP:30; WRCH:14 $)
+
+LET START () BE
+$(1
+    WRCH('S')
+    STOP(0)
+$)1
