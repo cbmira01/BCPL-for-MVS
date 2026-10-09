@@ -262,3 +262,26 @@ STOP.** Next validation: `tools/run-native-regression 86 87
 Scope: mapping is documented by Richards (1974) for representable
 step condition codes. Validation/handling of negative and oversized
 BCPL integers is deferred explicitly, not characterized as historical.
+
+## Production STOP focused acceptance and expanded regressions
+
+Operator ran `tools/checks/check-native-runtime.py` successfully, then
+`tools/run-native-regression 86 87 --show-output` on canonical STOP
+(G!30, no adapter): **2 PASS, 0 FAIL**. STOP(0) and STOP(100)
+both printed `S`, and their respective GO completion codes met
+the regression acceptance rules. This is the first TK5 acceptance
+of production STOP, following the earlier adapter experiments.
+
+New regression **088** leaves two GETVEC allocations outstanding
+and executes STOP(0), expecting `42` and GO RC=0000. It exercises
+the common teardown path but does not instrument FREEMAIN counts.
+
+New regression **089** executes WRCH('E'), then STOP(8), expecting
+`E` and GO RC=0008. The runner accepts this nonzero GO code only
+for case 089, with matching output and successful ASM/LKED. Existing
+case 087 alone continues to accept GO RC=0100.
+
+**Next acceptance:** `tools/run-native-regression 88 89 --show-output`.
+Only after those pass should the full 000–089 panel run. The last
+full-panel baseline remains 86/86; additional tests are not yet
+counted as full-panel acceptance.
