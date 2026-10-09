@@ -43,3 +43,23 @@ source or make semantic changes.
 
 One-off diagnostics still belong in `workarea/` or a temporary environment.
 Only reusable checks should graduate here.
+
+## BCPLMAIN commit gate
+
+Run this before committing a change to `asm/bcplmain-wip.asm`:
+
+```sh
+python3 tools/checks/check-native-runtime.py
+```
+
+This reuses `check-asm-source.py` on the complete runtime and invokes the
+actual `inject_runtime` transformation from regression 069's Stage 2
+preparer. It rejects overlong assembler lines, tabs, non-ASCII bytes,
+trailing whitespace, and rejected BLIB-injection anchors. It is cheap and
+does not start Hercules or submit jobs. It complements, not replaces,
+`check-asm-source.py` for other assembler files and the broader generated
+JCL/regression preflight.
+
+For a shared runtime modification, run this check before committing;
+after it passes and the source is committed, use focused TK5 regressions
+before the expensive full 82-test panel.
