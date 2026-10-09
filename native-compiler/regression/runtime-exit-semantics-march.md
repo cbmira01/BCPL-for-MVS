@@ -192,3 +192,48 @@ the unknown historical numeric-mapping contract.
 retaining its tested FINISH/CLOSE/RELMEM path, and convert these
 regressions from adapter tests to production tests. Run focused tests
 before the full panel. No canonical STOP implementation yet.
+
+## Primary-source resolution: STOP(N) completion-code contract
+
+**Evidence status: HISTORICALLY DOCUMENTED (not merely inferred).**
+Martin Richards, *The BCPL Programming Manual*, University of
+Cambridge Computer Laboratory, **November 1974**, section **2.8.2**
+("Other useful subroutines"), printed **page 19** (PDF page index 22),
+states:
+
+> STOP(N) will terminate the job step, returning a completion code N.
+
+Primary-source facsimile:
+https://www.softwarepreservation.org/projects/BCPL/cambridge/richards-manual-1974.pdf
+
+The same manual's section 3 ("Using BCPL on the 370") describes the
+Cambridge System/370 environment, and its library-global list assigns
+`STOP:30` (section 3.1.1). This is a direct contemporary specification
+of the intended **BCPL job-step completion-code contract**:
+
+`STOP(N)` terminates the job step with completion code `N`.
+
+This **supersedes the historical-contract uncertainty** stated above
+under "Working hypotheses", "STOP historical evidence checkpoint",
+and "STOP adapter focused acceptance". That uncertainty was justified
+before consulting this manual but is now resolved for ordinary,
+representable completion-code values.
+
+Independent evidence already in the repository:
+- `richards-bcpltape/bcplib/bcpl/blib` calls `STOP(100)` at the
+  conclusion of `ABORT`.
+- TK5 isolated regressions 086 and 087 (2 PASS / 0 FAIL) show that
+  our *test-local* adapter can terminate with MVS step RC=0000 for
+  `STOP(0)` and RC=0100 for `STOP(100)`, respectively.
+
+**Limits:** The manual does not specify how to handle negative
+arguments, integers outside the MVS completion-code range, or the
+implementation's underlying register/cleanup mechanics. Test-local
+regression success does not mean STOP has been installed in canonical
+`asm/bcplmain-wip.asm`; production promotion and full-panel validation
+are still pending. FINISH retains the validated RC=0 behavior.
+
+**Engineering decision:** Use the manual's direct `N` mapping for the
+canonical STOP interface, subject to a separately documented decision
+on out-of-range values. Do not treat the mapping as a discretionary
+installation convention.
