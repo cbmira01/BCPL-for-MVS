@@ -127,3 +127,28 @@ capacity blockers established. **No executable BCPLMAIN changes
 or new native regression tests yet.** Existing 90/90 acceptance
 remains the entry baseline, not a claim that a larger compiler
 image or APTOVEC has passed.
+
+## First-pass native compiler GLOBAL declaration survey
+
+A lexical scan of historical source and headers for explicit
+`NAME:number` declarations (not yet of generated trailers) found:
+
+| Source | Highest explicit declaration |
+| --- | ---: |
+| BCPL master | 699 |
+| SYNHDR | 352 |
+| TRNHDR | 570 |
+| CGHDR | 692 |
+| LIBHDR | 99 |
+| BLIB file | 0 (additional globals imported from LIBHDR) |
+
+SYN/LEX, TRNA/TRNB and CGA–CGE obtain most of their named globals
+through the headers, so their absence of local numeric assignments
+does not imply low global usage. These figures strengthen the
+**at least G!699** working requirement for the unmodified historical
+source set. The complete linked native module-export maximum and
+additional startup/runtime globals still need a build-derived
+inventory; **G!699 is not yet an approved hard capacity**.
+
+Do not confuse this source-derived requirement with the previously
+measured ICINT V19 700-word global *capacity* (G!0..G!699).
