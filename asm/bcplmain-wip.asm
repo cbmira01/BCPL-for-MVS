@@ -607,9 +607,24 @@ BCPLMAIN CSECT
          AR    2,0
          ST    2,MODEND
 *
-* Initialize a static global vector with the historical unset sentinel.
+* Acquire one MVS allocation for G!0..G!200 followed by 4096
+* workspace words.  Keep the established extents unchanged while
+* replacing their static backing store.  GETMAIN EC reports failure
+* through R15.  Store base and length for subsequent FREEMAIN R.
 *
-         LA    12,GLOBV
+         L     10,DYNLEN
+         GETMAIN EC,LV=(10),A=DYNBASE,SP=0
+         LTR   15,15
+         BNZ   GNOCORE
+         L     12,DYNBASE
+         LA    1,GVBYTES(12)
+         ST    1,DYNWORK
+         A     1,=F'16384'
+         ST    1,DYNEND
+         ST    1,STKLIM
+*
+* Initialize the dynamic global vector with the historical sentinel.
+*
          LA    1,GLOBCNT
          ST    1,0(12)
          LA    2,4(12)
@@ -674,12 +689,12 @@ GIDONE   L     4,4(12)
          SRL   1,2
          ST    1,212(12)
 *
-* G!54/G!55 = BCPL word pointers delimiting static WIP stack/workspace.
+* G!54/G!55 = BCPL word pointers delimiting the dynamic workspace.
 *
-         LA    1,WORK
+         L     1,DYNWORK
          SRL   1,2
          ST    1,216(12)
-         L     1,=A(WORKEND)
+         L     1,DYNEND
          SRL   1,2
          ST    1,220(12)
 *
@@ -722,7 +737,7 @@ WFHAS76  EQU   *
 * generated USING 4096,1,2,3 code.
 *
          LA    11,SYSV
-         LA    15,WORK
+         L     15,DYNWORK
          LR    5,15
          L     1,=F'4096'
          L     2,=F'8192'
@@ -745,20 +760,29 @@ WFHAS76  EQU   *
 * START is expected to terminate through S.FIN.  Returning here is
 * treated as a WIP runtime failure.
 *
-BADRETN  L     13,4(13)
+BADRETN  BAL   14,RELMEM
+         L     13,4(13)
          LM    14,12,12(13)
          LA    15,36
          BR    14
 *
 * Bootstrap failures before START.
 *
-GTOOBIG  L     13,4(13)
+GTOOBIG  BAL   14,RELMEM
+         L     13,4(13)
          LM    14,12,12(13)
          LA    15,16
          BR    14
-NOSTART  L     13,4(13)
+NOSTART  BAL   14,RELMEM
+         L     13,4(13)
          LM    14,12,12(13)
          LA    15,20
+         BR    14
+*
+* Failure before allocation: no storage to release.
+GNOCORE  L     13,4(13)
+         LM    14,12,12(13)
+         LA    15,24
          BR    14
 *
 * Put literals used by startup inside the startup base-register region.
@@ -807,7 +831,7 @@ SYSSTKC  BC    15,STKCIMP
 * This WIP static stack has no clearance area, so WORKEND is its
 * provisional safe limit.
 *
-STKLIM   DC    A(WORKEND)
+STKLIM   DC    F'0'
 STKMSG   DC    CL14'STACK OVERFLOW'
          DS    0H
 *
@@ -845,7 +869,8 @@ FINIMPL  L     1,OUTPOS
          LTR   1,1
          BZ    FINRETN
          PUT   BCPOUT,OUTBUF
-FINRETN  L     13,4(13)
+FINRETN  BAL   14,RELMEM
+         L     13,4(13)
          LM    14,12,12(13)
          SR    15,15
          BR    14
@@ -1458,6 +1483,21 @@ DBGAPND  L     4,OUTPOS
 DBGARET  BR    14
 *
 ***********************************************************************
+* Release the one combined global-vector/workspace allocation.
+* Save our BAL return across the MVS service, which may modify R14.
+* R13 still identifies MSVSAVE at each invocation.
+***********************************************************************
+RELMEM   ST    14,RELRET
+         L     1,DYNBASE
+         LTR   1,1
+         BZ    RELDONE
+         L     10,DYNLEN
+         FREEMAIN R,LV=(10),A=(1)
+         XC    DYNBASE(4),DYNBASE
+RELDONE  L     14,RELRET
+         BR    14
+*
+***********************************************************************
 * WIP DATA
 ***********************************************************************
          DS    0F
@@ -1485,14 +1525,17 @@ FVWSAVE  DC    F'0'
 *
 MSVSAVE  DS    18F
 *
-* Static bootstrap global-vector capacity.
-* SYS3 FIRSTFREEGLOBAL is 150.
-* User globals therefore begin beyond that boundary.
-* Reserve modest room while dynamic G allocation is unreconstructed.
+* Contiguous GETMAIN layout: 201 global fullwords then 4096 stack
+* fullwords.  Dynamic backing addresses are saved in static controls.
+* The GETMAIN block is released as a unit during FINISH/error exit.
 *
 GLOBCNT  EQU   200
-GLOBV    DC    F'200'
-         DS    200F
+GVBYTES  EQU   (GLOBCNT+1)*4
+DYNLEN   DC    F'17188'
+DYNBASE  DC    F'0'
+DYNWORK  DC    F'0'
+DYNEND   DC    F'0'
+RELRET   DC    F'0'
 *
 * Regression 03 output state.  SYSPRINT is supplied by the GO step.
 * Historical stream/DCB support was richer; this is only the first
@@ -1505,11 +1548,7 @@ OUTPOS   DC    F'0'
 OUTBUF   DS    CL132
 BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 *
-* Static development workspace.  This is not the historical allocation
-* policy.  Replace with recovered MVS storage management and stack
-* marker initialization when that contract is understood.
-*
-WORK     DS    4096F
-WORKEND  EQU   *
+* Stack marker initialization and historical clearance remain separate
+* work.  No static workspace is reserved in this CSECT.
 *
          END   BCPLMAIN
