@@ -1,6 +1,6 @@
 # BCPLMAIN runtime exit semantics march
 
-Status: **OPEN — contract audit and test plan**
+Status: **CLOSED — FINISH/STOP runtime-exit milestone** (2026-10-09)
 
 Starting baseline: **84/84 PASS** (regressions 000–083), confirmed on
 TK5/MVS 3.8J 2026-10-09. The preceding storage reclamation march is closed.
@@ -302,3 +302,43 @@ cleanup path. They do not independently audit MVS storage accounting.
 **Full native panel 000–089 (90 tests) remains pending.** The latest
 completed full panel was 000–085 (86/86) before canonical STOP
 promotion. Do not mark this march closed before the full sweep.
+
+## March closure — 2026-10-09
+
+**Operator-reported final acceptance:** complete native regression
+panel **000–089: 90 PASS, 0 FAIL, TOTAL 90** under TK5/MVS 3.8J.
+The complete panel transcript has not been reproduced in this record;
+this closure uses the operator's explicit confirmation of 90 PASS.
+Earlier captured evidence includes full 000–085 (86/86) and focused
+production STOP tests 086–087 and 088–089 (2/2 each).
+
+### Accepted runtime contract
+
+- Normal FINISH flushes any pending output, explicitly
+  `CLOSE (BCPOUT)`, releases outstanding GETVEC blocks, frees
+  combined global/stack storage and returns MVS RC=0.
+- STOP installed at G!30 takes N, shares the verified output-close and
+  storage-teardown path, and returns MVS step completion code N.
+  STOP(0), STOP(8), and STOP(100) are covered in regressions.
+- Historical authority: Martin Richards, *The BCPL Programming
+  Manual* (November 1974), section 2.8.2, printed p. 19:
+  "STOP(N) will terminate the job step, returning a completion code N."
+  Facsimile:
+  https://www.softwarepreservation.org/projects/BCPL/cambridge/richards-manual-1974.pdf
+- Test-only adapter material remains for evidence but is not invoked
+  for regressions 086–089. Canonical BCPLMAIN supplies STOP.
+
+### Explicitly deferred, not part of this acceptance
+
+- Negative or out-of-range STOP argument handling, including values
+  outside MVS step completion-code representation.
+- ABORT's broader historical error reporting, program-interrupt,
+  user-postmortem and exceptional completion mechanisms.
+- Independent verification of storage-manager accounting beyond the
+  successful FREEMAIN-return instrumentation already recorded.
+- Multi-DCB/general-purpose BCPL stream closure and abnormal-exit
+  recovery beyond the current SYSPRINT output DCB.
+
+**Disposition:** The FINISH/STOP runtime-exit march is closed.
+Further lifecycle work should use a separately scoped march; do not
+reopen this milestone solely for the deferred cases.
