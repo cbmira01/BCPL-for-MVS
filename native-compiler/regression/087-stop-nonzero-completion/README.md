@@ -1,18 +1,23 @@
-# 087 — Test-only STOP(100) completion probe
+# 87 — Canonical STOP(100) termination
 
-Status: **PENDING TK5**. Verified baseline: 86/86.
+Status: **PENDING TK5 production rerun**.
 
-START writes S and invokes global G!30 as STOP(100), with no
-subsequent FINISH. Test-only `../instrument-stop-probe.py` installs
-a STOP adapter into the combined assembler copy. It verifies the
-BCPL argument, routes to canonical FINIMPL (flush, CLOSE, RELMEM),
-and selects MVS return code 100.
+START writes `S` and executes `STOP(100)` via G!30.
+The canonical `asm/bcplmain-wip.asm` now installs G!30 as STOPENT.
+No test-only STOP assembler insertion is used.
 
-Expected BCPL output: S. Expected IFOX and IEWL RC=0000,
-GO RC=0100. Nonzero RC is accepted
-only for case 087; all other nonzero GO results remain failures.
+STOP stores its requested step completion code in static STOPRC, then
+shares FINISH's buffered-output PUT, QSAM CLOSE, RELMEM, MVS register
+restore and return sequence.
 
-**Important:** This does not prove historical STOP maps argument to
-MVS return code; the adapter deliberately implements that hypothesis.
-The run tests feasibility and the native invocation/lifecycle shape,
-not the missing historical STOP entry. No canonical runtime changes.
+Expected BCPL output: `S`; expected GO RC=0100.
+Regression 087 uses the runner's narrowly-scoped expected nonzero
+completion rule, which requires normal ASM/LKED and matching output.
+
+The historical return-code contract is documented in Richards'
+*The BCPL Programming Manual* (November 1974), section 2.8.2:
+STOP(N) terminates the job step returning completion code N.
+
+The earlier test-local version of 87 passed under TK5; this is NOT
+evidence that the newly promoted production version has passed.
+Negative or out-of-range N remains outside the tested scope.
