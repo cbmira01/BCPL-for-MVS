@@ -20,7 +20,7 @@ MAIN_NEW = """         FREEMAIN R,LV=(10),A=(1)
          XC    DYNBASE(4),DYNBASE"""
 RETURN = """RELDONE  L     14,RELRET
          BR    14"""
-RETURN_NEW = """RELDONE  MVC   OUTBUF(7),=C'V=0 M=0'
+RETURN_NEW = """RELDONE  MVC   OUTBUF(7),TRTXT83
          L     2,TRV083
          LA    2,240(2)
          STC   2,OUTBUF+2
@@ -33,7 +33,8 @@ RETURN_NEW = """RELDONE  MVC   OUTBUF(7),=C'V=0 M=0'
 DATA = """RELRET   DC    F'0'"""
 DATA_NEW = """RELRET   DC    F'0'
 TRV083   DC    F'0'
-TRM083   DC    F'0'"""
+TRM083   DC    F'0'
+TRTXT83  DC    CL7'V=0 M=0'"""
 
 
 def instrument(text: str) -> str:
@@ -45,7 +46,8 @@ def instrument(text: str) -> str:
     for n, line in enumerate(text.splitlines(), 1):
         if len(line) > 71 or "\t" in line or line.rstrip() != line:
             raise ValueError(f"line {n}: assembler source hygiene failure")
-    if text.count("TRV083   DC") != 1 or text.count("TRM083   DC") != 1:
+    if any(text.count(label) != 1 for label in
+           ("TRV083   DC", "TRM083   DC", "TRTXT83  DC")):
         raise ValueError("instrumentation state invalid")
     return text
 
