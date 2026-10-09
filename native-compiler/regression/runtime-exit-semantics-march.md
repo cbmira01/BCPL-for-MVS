@@ -153,3 +153,25 @@ canonical BCPLMAIN. The ABORT call supplies a valuable semantic
 constraint but is not sufficient to prove a specific numeric mapping.
 
 **No executable STOP change has been made in this checkpoint.**
+
+## STOP test-adapter probes ready — 2026-10-09
+
+Regressions 086 and 087 implement **test-local** G!30 STOP adapters.
+The adapter is added to the generated combined assembler only; it
+checks R7 against the intended argument, installs its entry at G!30,
+and shares the verified FINIMPL flush/CLOSE/RELMEM path. The normal
+FINISH return remains unchanged. For 087 the temporary assembler
+selects MVS return code 100 after the normal MVS register restoration.
+
+- 086 STOP(0): expected output `S` and GO RC=0000.
+- 087 STOP(100): expected output `S` and GO RC=0100.
+  The runner accepts that RC **only** for regression 087, with
+  successful ASM/LKED and an exact output assertion.
+
+**Critical evidence distinction:** These probes establish whether the
+proposed STOP calling/lifecycle/return-code adapter runs on TK5.
+They do not prove that the lost historical STOP used an identical
+argument-to-RC mapping. Historical source supports `STOP(100)` from
+BLIB ABORT, not an exact MVS return-code implementation.
+
+Status: **PENDING TK5**. Full panel deferred pending focused 086–087.
