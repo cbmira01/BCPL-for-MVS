@@ -237,3 +237,28 @@ are still pending. FINISH retains the validated RC=0 behavior.
 canonical STOP interface, subject to a separately documented decision
 on out-of-range values. Do not treat the mapping as a discretionary
 installation convention.
+
+## Canonical STOP promotion — pending TK5 acceptance
+
+Canonical `asm/bcplmain-wip.asm` now installs `STOPENT` in G!30
+(offset +120 of the global vector). `STOPENT` saves the BCPL
+first argument from R7 to static `STOPRC` and joins the common
+termination sequence. `FINIMPL` clears `STOPRC` first, preserving
+FINISH's RC=0 contract. On return to MVS, the runtime loads R15 from
+`STOPRC` after QSAM CLOSE, RELMEM and register restoration, preventing
+MVS macro register clobbering of the requested code.
+
+Regressions 086 and 087 now exercise canonical STOP directly; their
+previous test-only adapter is no longer called by `run-test.sh`.
+The adapter script remains retained as diagnostic history. The
+special GO RC=0100 acceptance applies only to 087.
+
+Source/anchor checks succeeded against committed repository text,
+including 71-column assembler limits, presence of G!30, and removal
+of test injection. **No TK5 acceptance is claimed yet for canonical
+STOP.** Next validation: `tools/run-native-regression 86 87
+--show-output`, then full panel if both pass.
+
+Scope: mapping is documented by Richards (1974) for representable
+step condition codes. Validation/handling of negative and oversized
+BCPL integers is deferred explicitly, not characterized as historical.
