@@ -609,7 +609,8 @@ BCPLMAIN CSECT
 *
 * Acquire one MVS allocation for G!0..G!200, 4096 usable workspace
 * words and a provisional 256-byte stack clearance. Preserve the
-* tested safe limit while retaining physical headroom above it.  GETMAIN EC reports failure
+* tested safe limit while retaining physical headroom above it.
+* GETMAIN EC reports failure through R15.
 * through R15.  Store base and length for subsequent FREEMAIN R.
 *
          L     9,DYNLEN
