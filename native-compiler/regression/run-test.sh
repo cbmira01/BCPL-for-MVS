@@ -282,6 +282,11 @@ if (( test_num == 83 )); then
     echo "=== Instrument termination storage reclamation ==="
     python3 "$case_dir/instrument-reclaim.py" "$combined" || exit $?
 fi
+if (( test_num == 84 )); then
+    echo
+    echo "=== Probe FINISH explicit QSAM CLOSE ==="
+    python3 "$case_dir/instrument-close.py" "$combined" || exit $?
+fi
 
 echo
 echo "=== Assembler preflight ==="
