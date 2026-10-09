@@ -1,6 +1,6 @@
 # BCPLMAIN termination and storage reclamation march
 
-Status: **OPEN — audit completed, implementation pending**
+Status: **TEARDOWN IMPLEMENTED; TK5 VALIDATION PENDING**
 
 Baseline at opening: `main`, 82/82 native regressions PASS (00–081);
 BCPLMAIN source and BLIB injection preflight pass.
@@ -66,3 +66,7 @@ behavior. Do not change historical BLIB or CG370 to accomplish this.
 - Historical `INUM`, stack high-water markers and configuration.
 
 No executable runtime code has been changed in this audit checkpoint.
+
+## Implementation checkpoint
+
+Commit ad71616 changes RELMEM to detach and release each outstanding GETVEC block before freeing DYNBASE. Source width and injection anchors were checked; guest execution and independent reclamation evidence remain pending.
