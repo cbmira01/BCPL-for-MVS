@@ -10,6 +10,5 @@ $(1
 
     DEBUGINT(A!2 + B!5)
 
-    // No explicit releases: runtime exit must reclaim both.
     FINISH
 $)1
