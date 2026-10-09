@@ -282,6 +282,14 @@ if (( test_num == 83 )); then
     echo "=== Instrument termination storage reclamation ==="
     python3 "$case_dir/instrument-reclaim.py" "$combined" || exit $?
 fi
+if (( test_num == 86 || test_num == 87 )); then
+    echo
+    echo "=== Install test-only STOP adapter ==="
+    code=0
+    (( test_num == 87 )) && code=100
+    python3 "$script_dir/instrument-stop-probe.py" \
+        "$combined" --code "$code" || exit $?
+fi
 
 echo
 echo "=== Assembler preflight ==="
@@ -474,6 +482,17 @@ while (( SECONDS <= deadline )); do
             echo
             echo "=== Native job report ==="
             cat "$work/job-report.txt"
+        fi
+
+        # A controlled nonzero completion is the objective of 087.
+        # Require explicit GO RC=0100 and matching runtime output.
+        if (( test_num == 87 )) &&
+           grep -Eq '^[[:space:]]*ASM[[:space:]]+.*RC=0000' <<<"$summary" &&
+           grep -Eq '^[[:space:]]*LKED[[:space:]]+.*RC=0000' <<<"$summary" &&
+           grep -Eq '^[[:space:]]*GO[[:space:]]+.*RC=0100' <<<"$summary" &&
+           show_bcpl_output; then
+            show_result "PASS" "GO RC=0100 (expected)" "PASS"
+            exit 0
         fi
 
         if (( test_num != 84 )) &&
