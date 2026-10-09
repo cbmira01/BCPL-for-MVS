@@ -15,7 +15,9 @@ def instrument(source: str, code: int) -> str:
           "         SR    15,15\n")
          + "         BR    14\n*\n"
          "STOPENT  C     7,STOPWNT\n"
-         "         BNE   GTOOBIG\n"
+         "         BNE   STOPBAD\n"
+         "         B     FINIMPL\n"
+         "STOPBAD  MVI   OUTBUF,C'X'\n"
          "         B     FINIMPL\n*\n"
          "* Drain live GETVEC"),
         ("RELRET   DC    F'0'\n",
