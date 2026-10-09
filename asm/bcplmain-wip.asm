@@ -612,8 +612,8 @@ BCPLMAIN CSECT
 * replacing their static backing store.  GETMAIN EC reports failure
 * through R15.  Store base and length for subsequent FREEMAIN R.
 *
-         L     10,DYNLEN
-         GETMAIN EC,LV=(10),A=DYNBASE,SP=0
+         L     9,DYNLEN
+         GETMAIN EC,LV=(9),A=DYNBASE,SP=0
          LTR   15,15
          BNZ   GNOCORE
          L     12,DYNBASE
