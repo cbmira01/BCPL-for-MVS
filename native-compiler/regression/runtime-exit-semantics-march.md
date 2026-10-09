@@ -285,3 +285,20 @@ case 087 alone continues to accept GO RC=0100.
 Only after those pass should the full 000–089 panel run. The last
 full-panel baseline remains 86/86; additional tests are not yet
 counted as full-panel acceptance.
+
+## STOP 088–089 focused acceptance — 2026-10-09
+
+Operator executed `tools/run-native-regression 88 89 --show-output`
+under TK5/MVS 3.8J: **2 PASS, 0 FAIL, TOTAL 2**.
+Regression 088 emitted `42` with two GETVEC vectors outstanding
+at `STOP(0)`; regression 089 emitted `E` through a buffered
+`WRCH` before `STOP(8)`, with the runner's expected nonzero
+GO-completion rule satisfied.
+
+The results support common STOP output flush, CLOSE and termination
+behavior and demonstrate compatibility with the outstanding-vector
+cleanup path. They do not independently audit MVS storage accounting.
+
+**Full native panel 000–089 (90 tests) remains pending.** The latest
+completed full panel was 000–085 (86/86) before canonical STOP
+promotion. Do not mark this march closed before the full sweep.
