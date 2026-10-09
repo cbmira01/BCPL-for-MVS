@@ -221,3 +221,25 @@ execution of the project's full checking scripts.
 `42`; then `tools/run-native-regression --show-output` for
 the complete panel 000..091. The APTOVEC service remains
 **provisional pending guest acceptance**.
+
+## Regression 091 first TK5 run and R4 repair
+
+Operator's TK5 run for JOB 3686: Cambridge compile completed;
+IFOX ASM **RC=0000**, IEWL LKED **RC=0000**, GO **ABEND S0C1**.
+The SYSUDUMP reports PSW **078D2000 000A6F8E**, with R4 and R15
+both **000A6F38** at the interrupt: control branched into dynamic
+workspace rather than the generated procedure's code.
+
+Root cause: the APTOVEC adapter computed the nested workspace in
+R4, then invoked F using `BALR 6,14`. CG370-generated procedures
+require **R4=callee entry/base** to address procedure-relative
+branches. The adapter now copies F's address from R14 into R4 after
+moving the computed workspace to R15 and calls `BALR 6,4`.
+
+The proposed three-instruction call sequence was checked in a local
+scratch file (instruction order, source-card width, N=3 vector/frame
+geometry) before promotion. This is a targeted local preflight,
+**not** a successful MVS runtime test or the complete repository
+checker. Repeat **focused 091** under TK5; **do not claim PASS**
+until guest execution establishes the result. No changes to the
+090 global capacity test.
