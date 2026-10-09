@@ -476,14 +476,20 @@ while (( SECONDS <= deadline )); do
             cat "$work/job-report.txt"
         fi
 
-        # A controlled nonzero completion is the objective of 087.
-        # Require explicit GO RC=0100 and matching runtime output.
-        if (( test_num == 87 )) &&
+        # Controlled nonzero completion for the two STOP regressions.
+        # Keep all other failing GO steps in the ordinary failure path.
+        expected_go_rc=""
+        if (( test_num == 87 )); then
+            expected_go_rc="0100"
+        elif (( test_num == 89 )); then
+            expected_go_rc="0008"
+        fi
+        if [[ -n "$expected_go_rc" ]] &&
            grep -Eq '^[[:space:]]*ASM[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq '^[[:space:]]*LKED[[:space:]]+.*RC=0000' <<<"$summary" &&
-           grep -Eq '^[[:space:]]*GO[[:space:]]+.*RC=0100' <<<"$summary" &&
+           grep -Eq "^[[:space:]]*GO[[:space:]]+.*RC=$expected_go_rc" <<<"$summary" &&
            show_bcpl_output; then
-            show_result "PASS" "GO RC=0100 (expected)" "PASS"
+            show_result "PASS" "GO RC=$expected_go_rc (expected)" "PASS"
             exit 0
         fi
 
