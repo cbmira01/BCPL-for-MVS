@@ -728,6 +728,8 @@ WFHAS76  EQU   *
          ST    1,352(12)
          LA    1,DEBUGINT
          ST    1,600(12)
+         LA    1,STOPENT
+         ST    1,120(12)
 *
 * Regression 03 output is deliberately narrow: one buffered SYSPRINT
 * record.  This borrows the proven QSAM shape used by ICINT V19.
@@ -865,11 +867,13 @@ CNTIMPL  LA    14,4(14)
 * FINISH
 *
 * Restore the MVS registers saved by the generated module prefix.
-* This is sufficient for the current factorial milestone.  STOP/ABORT
-* and propagation of a BCPL result code remain separate reconstruction
-* work.
+* FINISH selects RC=0; STOP(N) selects the requested step code.
+* Both share the output and storage reclamation path.
 ***********************************************************************
-FINIMPL  L     1,OUTPOS
+FINIMPL  XC    STOPRC(4),STOPRC
+         B     FINEXIT
+STOPENT  ST    7,STOPRC
+FINEXIT  L     1,OUTPOS
          LTR   1,1
          BZ    FINRETN
          PUT   BCPOUT,OUTBUF
@@ -877,7 +881,7 @@ FINRETN  CLOSE (BCPOUT)
          BAL   14,RELMEM
          L     13,4(13)
          LM    14,12,12(13)
-         SR    15,15
+         L     15,STOPRC
          BR    14
 *
 * Drain live GETVEC allocations before freeing global/stack memory.
@@ -1551,6 +1555,7 @@ DYNBASE  DC    F'0'
 DYNWORK  DC    F'0'
 DYNEND   DC    F'0'
 RELRET   DC    F'0'
+STOPRC   DC    F'0'
 *
 * Regression 03 output state.  SYSPRINT is supplied by the GO step.
 * Historical stream/DCB support was richer; this is only the first
