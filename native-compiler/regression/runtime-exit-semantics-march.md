@@ -92,3 +92,22 @@ test production CLOSE; 084/085 do.
 **Pending guest acceptance:** focused regressions 083–085, followed by
 a full panel sweep if they pass. This march remains open. No STOP
 semantics have been implemented or assumed.
+
+## FINISH/CLOSE full-panel acceptance — 2026-10-09
+
+The operator reran the entire TK5 native regression panel after the
+canonical `CLOSE (BCPOUT)` promotion. Results: **86 PASS, 0 FAIL,
+TOTAL 86**, cases 000–085 inclusive. Focused tests 083–085 had
+also passed (3/3), and `tools/checks/check-native-runtime.py`
+reported OK (source and BLIB injection).
+
+The production FINISH path now flushes pending output, closes BCPOUT,
+releases outstanding vector allocations, frees combined global/stack
+storage, and returns normally to MVS. Regression 084 confirms the
+pending-output path and 085 the zero-pending-output path; 083's
+test-only instrumentation remains isolated from canonical CLOSE.
+
+**FINISH/CLOSE submilestone complete.** The overall runtime-exit
+semantics march remains open pending historical STOP (G!30) and
+completion-code contract research and validation. This checkpoint
+establishes the new 86/86 regression baseline.
