@@ -985,7 +985,8 @@ APTOVEC  STM   4,6,0(15)
          LA    7,16(15)
          SRL   7,2
          LR    15,4
-         BALR  6,14
+         LR    4,14
+         BALR  6,4
 * RETIMPL has restored R5 to our frame; R7 holds F's result.
          L     6,8(5)
          L     5,4(5)
