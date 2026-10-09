@@ -1,6 +1,6 @@
 # BCPLMAIN contiguous startup storage — validation checkpoint
 
-Status: **IMPLEMENTED IN SOURCE; NOT YET TESTED UNDER TK5**.
+Status: **VALIDATED UNDER TK5 — 82 PASS / 0 FAIL (00–081)**.
 
 The former static `GLOBV` (201 fullwords, including G!0) and `WORK` (4096 fullwords) have been replaced in `asm/bcplmain-wip.asm` with one 17,188-byte GETMAIN EC allocation. The first 804 bytes hold the global vector; the following 16,384 bytes hold the BCPL workspace. These sizes deliberately match the former static extents.
 
@@ -18,3 +18,18 @@ The prior observed baseline remains **82 PASS, 0 FAIL (00–081)**, *before* thi
 ## Deliberate limitations
 
 This remains a single-instance, non-reentrant WIP runtime with static control words and a private MVS save area. The requested block is fixed size; no historical stack clearance area has been introduced. Separately acquired vector blocks have their own lifecycle and are not implicitly released here. Normal termination still relies on existing output handling; explicit DCB CLOSE is separate work.
+
+## Validation closeout — 2026-10-09
+
+Operator ran the complete native regression suite on `main` after the GETMAIN register correction `f58b9d0`:
+
+```text
+NATIVE REGRESSION COMPLETE
+PASS  82
+FAIL  0
+TOTAL 82
+```
+
+Earlier smoke checks: regression 000 PASS; 027–030 PASS (4/4); 048–052 PASS (5/5); 069 PASS; 075–076 PASS (2/2). The first smoke run abended S0C7 because startup temporarily overwrote R10, its active assembler base, with the GETMAIN length. Commit `f58b9d0` moved the length to R9. The second smoke and subsequent full panel passed. No BLIB or CG370 source changes were required.
+
+**Validation scope:** This establishes compatibility with all 82 native regressions. The tests do not independently instrument MVS storage reclamation or establish the historical INITSAVE configuration/stack-clearance behavior. Those are future lifecycle tasks.
