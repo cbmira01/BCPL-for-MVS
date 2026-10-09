@@ -275,6 +275,14 @@ output_path.write_text(combined, encoding="ascii", newline="\n")
 PY
 fi
 
+# Regression 083 instruments only its generated runtime copy.
+# All other cases and the canonical BCPLMAIN remain unchanged.
+if (( test_num == 83 )); then
+    echo
+    echo "=== Instrument termination storage reclamation ==="
+    python3 "$case_dir/instrument-reclaim.py" "$combined" || exit $?
+fi
+
 echo
 echo "=== Assembler preflight ==="
 python3 "$root/tools/checks/check-asm-source.py" "$combined" || exit $?
