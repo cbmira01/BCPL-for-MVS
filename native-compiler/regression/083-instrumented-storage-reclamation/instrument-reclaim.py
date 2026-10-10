@@ -40,10 +40,13 @@ TRTXT83  DC    CL7'V=0 M=0'"""
 def instrument(text: str) -> str:
     # This probe PUTs its counters after RELMEM. Keep its private DCB
     # open; canonical FINISH/CLOSE is exercised by regressions 084+.
-    close = "FINRETN  CLOSE (BCPOUT)\n         BAL   14,RELMEM"
+    # Only suppress BCPOUT's CLOSE: the final instrumented PUT runs
+    # after RELMEM. Retain BCPIN's conditional CLOSE and all other
+    # canonical termination actions introduced by the stream-I/O march.
+    close = "FINRETN  CLOSE (BCPOUT)"
     if text.count(close) != 1:
-        raise ValueError("expected canonical FINISH CLOSE anchor")
-    text = text.replace(close, "FINRETN  BAL   14,RELMEM", 1)
+        raise ValueError("expected unique BCPOUT CLOSE anchor")
+    text = text.replace(close, "FINRETN  EQU   *", 1)
     for old, new in [(VEC, VEC_NEW), (MAIN, MAIN_NEW),
                      (RETURN, RETURN_NEW), (DATA, DATA_NEW)]:
         if text.count(old) != 1:
