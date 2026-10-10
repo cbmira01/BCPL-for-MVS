@@ -140,3 +140,50 @@ Operator generated the isolated AT114R deck from regression 114, retaining the e
 The appended class Z printer image begins with `****Z START JOB 5512 AT114R ... PRINTER2`, contains successive standalone logical output records `1`, `2`, and closes with the class Z END banner. The appended class A printer image begins with `****A START JOB 5512 AT114R ... PRINTER1` and contains standalone `AB` and `C` records in the GO output suffix (along with the ASM/LKED/job listing). Its JES job log confirms three separately allocated GO SYSOUT DDs (SYSPRINT, BCPALT, SYSUDUMP) and three SO spool identifiers. After the run the A file measured 474,819,465 bytes; the Z file 172,176 bytes. The two printer outputs are independent files verified in the active Hercules config: device 00E to `prt00e.txt`, device 00F to `prt00f.txt`. JES2 `$D U,PRTS` independently established Q=A for PRINTER1 and Q=Z for PRINTER2.
 
 **Conclusion:** positive experimental proof of DD/class-to-writer-to-distinct-host-printer-file attribution for this dedicated, class-separated GO job. The GO-level output records appear at the expected respective destinations. This does **not** make the original combined-class-A regression harness DD-attributed, and printer images alone still do **not** prove exact 132-byte physical FB132 records (trailing padding, carriage control). No JES2, Hercules, BCPLMAIN, or regression fixture changes were made. Historical 120/120 PASS baseline remains intact. Next optional engineering work: automate bounded per-job A/Z printer extraction and run fail-closed positive/negative record/destination tests; separate path for byte-accurate 132-byte dataset verification.
+
+## Reusable class-separated checker — 2026-10-10
+
+Added `tools/checks/check-dd-attribution.py` and offline self-test
+`tools/checks/test-dd-attribution.py`. This is an independent, opt-in
+acceptance path for class-separated probe jobs: the ordinary
+`tools/run-native-regression` runner remains unchanged.
+
+The checker requires separate A and Z host printer files, pre-submit
+byte offsets, the exact job number and job name, complete START/END
+banners attributing the A and Z files to PRINTER1 and PRINTER2,
+respectively, a contiguous occurrence of expected logical records in
+each stream, and absence of each stream's expected records in the
+opposite printer section. It fails closed for missing/incorrect job
+identity, wrong destination, incomplete sections, invalid offsets and
+foreign job banners. It does not interpret print carriage controls or
+claim proof of 132-byte unmodified QSAM records.
+
+First run the offline self-tests:
+
+```sh
+python3 tools/checks/test-dd-attribution.py
+```
+
+A new real TK5 experiment, if desired, uses the previously accepted
+regression 114 generated GO job deck:
+
+```sh
+python3 tools/checks/prepare-dd-attribution-probe.py
+wc -c mvs-state/prt/prt00e.txt mvs-state/prt/prt00f.txt
+bash tools/submit-jcl workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl
+tools/job-summary JOBNUMBER
+python3 tools/checks/check-dd-attribution.py JOBNUMBER \
+  --a-offset A_BYTES_BEFORE_SUBMISSION \
+  --z-offset Z_BYTES_BEFORE_SUBMISSION
+```
+
+The operator must substitute the real returned job number and
+pre-submission sizes and **must** verify job-summary shows ASM/LKED/GO
+RC=0000 separately. The checker is a spool-output attribution check,
+not a substitute for validating GO completion. Do not reuse prior
+offsets for a new job, and do not run the whole regression suite to
+exercise this isolated mechanism.
+
+**Validation status:** New automated checker and its offline tests
+are committed, but no new TK5 run against this checker has been
+reported. JOB 5512 previously demonstrated routing manually.
