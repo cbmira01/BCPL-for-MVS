@@ -327,7 +327,7 @@ if text.count(old) != 1:
     raise SystemExit("cannot locate final GO EXEC statement")
 text = text.replace(old, new, 1)
 # Resolve the actual case directory from the test identity, not JCL path.
-root = path.parents[2]
+root = path.parents[3]
 cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):03d}-*"))
 if not cases and int(test_no) < 53:
     cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):02d}-*"))
