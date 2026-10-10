@@ -257,3 +257,25 @@ The selected-stream I/O march remains **OPEN**. Regression 095 should
 establish record-boundary/newline behavior; later tests must cover EOF,
 UNRDCH, ENDREAD, multiple selected handles, and output streams.
 A full native panel after the input changes has not yet been reported.
+
+## Regression 095 candidate — two physical records
+
+The BCPLMAIN RDCH adapter now trims trailing EBCDIC blanks from each
+physical 80-byte fixed-length BCPIN record; interior blanks are
+preserved. It returns BCPL character value 10 exactly once at each
+physical record boundary, then fetches the next QSAM record. The
+per-record position and pending-newline flag (`INNL`) are maintained
+within the first one-stream adapter.
+
+Test `095-selected-input-record-boundary` passes fixture records
+`A` and `B` and displays the newline as `|`: expected `A|B`.
+The trim/newline convention is provisional implementation policy, not
+proof of the original Cambridge MVS treatment of blanks.
+
+**Status: PENDING TK5.** Repository-fetched full-source static checks
+confirmed no overlong source cards, tab/trailing whitespace, or
+over-eight-character label definitions, and both stage-2 injection
+anchors remain uniquely present. The actual local Python
+`check-native-runtime.py` command could not be run because the GitHub
+checkout was not available in the execution container. Do not claim
+IFOX or GO success. First test 095, then repeat 094.
