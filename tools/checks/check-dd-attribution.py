@@ -45,7 +45,7 @@ def parse_segment(path, offset, job, name, printer, queue):
             raise ValueError(f"{name}: foreign JES job banner in section")
     # TK5 printer starts a printed page with form feed (0x0c).
     # Remove only that control prefix; preserve leading BCPL blanks.
-    payload = [line.removeprefix(b"\\x0c").rstrip(b" \\t")
+    payload = [line.removeprefix(b"\x0c").rstrip(b" \t")
                for line in lines[max(starts)+1:min(ends)]]
     return payload
 
