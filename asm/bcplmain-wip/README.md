@@ -220,3 +220,42 @@ build or considering G85/G86 extraction complete.
 ## Checkpoint 6 accepted — JOB 5519 BY038R (2026-10-10)
 
 Operator ran standard native regression 38 (PASS), generated and submitted the opt-in external BCPLBYTE roundtrip job, then supplied the complete `dump-report-for-job 5519` listing. Four steps ASMBCPL, ASMNAT, LKED and GO all returned **RC=0000**. Crucially, GO SYSOUT contained **`42`**, the expected result of BCPL `PUTBYTE(V,3,42); DEBUGINT(GETBYTE(V,3))`. IEWL cross-reference explicitly resolved both external addresses into BCPLBYTE: BCPLBYTE origin X'1560'; GETBYTE X'1560'; PUTBYTE X'1574'; referring relocation positions X'2FC' and X'300' in BCPLMAIN. Independent IFOX assembly reported zero flagged statements. **Behavioral extraction gate passed.** This establishes cross-object G85/G86 operation for the tested native BCPL program, not yet a default runner switch, persistent PDS object-library installation, or full 120-test regression retest. `dump-report-for-job` also emitted an awk locale warning over the printer spool, without impacting the job/result.
+
+## Checkpoint 7 — opt-in normal-regression object linkage (pending MVS)
+
+The standard `native-compiler/regression/run-test.sh` now supports
+`BCPLBYTE_OBJECT=1`. It prepares the usual native regression as before,
+then strictly externalizes BCPLMAIN's two G85/G86 installation sites
+to `EXTRN GETBYTE,PUTBYTE`, removes those original routine bodies,
+and links the independent `asm/bcplbyte.asm` object. The resulting
+source is written in the test workarea, never over the canonical runtime.
+
+Ordinary BCPL regressions use two IFOX objects. Regressions that
+already include `native.asm` use three separate IFOX objects
+(`ASMBCPL`, `ASMNAT`, `ASMBYTE`). The existing
+`make-two-object-job.py` supports the optional `--third-source`
+operand while retaining its old default. Existing fixture DD insertion
+remains in the runner for ordinary cases.
+
+The default is still `BCPLBYTE_OBJECT=0`: existing one-object or
+two-object builds remain unchanged. The optional
+`BCPLMAIN_MODULAR_SOURCE=1` source-staging gate remains independent.
+
+Initial validation, on the operator's TK5 environment:
+
+```sh
+git pull --ff-only
+bash -n native-compiler/regression/run-test.sh
+python3 -m py_compile \
+  native-compiler/regression/make-two-object-job.py \
+  tools/checks/externalize-bcplbyte.py
+BCPLBYTE_OBJECT=1 tools/run-native-regression 38 --show-output
+BCPLBYTE_OBJECT=1 tools/run-native-regression 75 --show-output
+```
+
+Use 38 for the actual G85/G86 BCPL roundtrip, and 75 for the
+pre-existing two-object BLIB-linked path. Only on successful targeted
+runs should the operator execute the full regression panel under
+`BCPLBYTE_OBJECT=1`. This checkpoint is **not** yet accepted:
+the modified runner/JCL requires live MVS testing. No object-PDS
+installation or permanent default switch has occurred.
