@@ -714,6 +714,10 @@ GIDONE   L     4,4(12)
          ST    1,64(12)
          LA    1,OUTENT
          ST    1,68(12)
+         LA    1,PARMENT
+         ST    1,156(12)
+         LA    1,WRAPENT
+         ST    1,132(12)
          LA    1,RDCHENT
          ST    1,52(12)
          LA    1,UNRDCHEN
@@ -1069,6 +1073,11 @@ FRET     ST    7,IORESULT
          L     4,0(5)
          BCR   15,6
 *
+PARMENT  LA    7,INCTRL
+         SRL   7,2
+         L     4,0(5)
+         BCR   15,6
+*
 INPENT   L     7,INCURR
          L     4,0(5)
          BCR   15,6
@@ -1235,6 +1244,21 @@ FONOTFD  SR    7,7
 FORET    ST    7,OUTRES
          LM    0,15,OUTSVREG
          L     7,OUTRES
+         L     4,0(5)
+         BCR   15,6
+*
+* Bootstrap WRAPOUTPUT: finish selected alternate logical record.
+WRAPENT  STM   0,15,OUTSVREG
+         L     14,OUTCURR
+         LA    4,OUT2CTL
+         SRL   4,2
+         CR    14,4
+         BNE   WRAPRET
+         PUT   BCPOUT2,OUT2BUF
+         XC    OUT2POS(4),OUT2POS
+         MVI   OUT2BUF,C' '
+         MVC   OUT2BUF+1(131),OUT2BUF
+WRAPRET  LM    0,15,OUTSVREG
          L     4,0(5)
          BCR   15,6
 *
