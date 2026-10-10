@@ -65,7 +65,10 @@ def verify(a_path, z_path, a_offset, z_offset, job, jobname, expected_a, expecte
     if not matched_positions(a,ea):
         if diagnose:
             print(f"DEBUG class A payload: {len(a)} lines; wanted {ea!r}", file=sys.stderr)
-            candidates = [(i,line[:160]) for i,line in enumerate(a)\n                          if line in ea or b"AUTHORIZATION CODE IS" in line]\n            print(f"DEBUG class A candidate lines (last 12): {candidates[-12:]!r}", file=sys.stderr)\n            print(f"DEBUG class A final 12 lines: {a[-12:]!r}", file=sys.stderr)
+            candidates = [(i, line[:160]) for i, line in enumerate(a)
+                          if line in ea or b"AUTHORIZATION CODE IS" in line]
+            print(f"DEBUG class A candidate lines (last 12): {candidates[-12:]!r}", file=sys.stderr)
+            print(f"DEBUG class A final 12 lines: {a[-12:]!r}", file=sys.stderr)
         raise ValueError("class A missing contiguous GO SYSPRINT records")
     if not matched_positions(z,ez):
         raise ValueError("class Z missing contiguous GO BCPALT records")
