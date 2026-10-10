@@ -348,6 +348,15 @@ if fixture.exists():
     stream = "//BCPIN    DD  DATA,DLM=ZZ\n"
     stream += "\n".join(records) + "\nZZ\n"
     text = text.replace(anchor, stream + anchor, 1)
+# Output regression fixtures request a separately allocated QSAM destination.
+alt = cases[0] / "expected-alt.txt"
+if alt.exists():
+    anchor = "//SYSUDUMP DD  SYSOUT=*\n"
+    if text.count(anchor) != 1:
+        raise SystemExit("expected one GO SYSUDUMP anchor for BCPALT")
+    text = text.replace(anchor,
+        "//BCPALT   DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
+        + anchor, 1)
 path.write_text(text, encoding="ascii", newline="\n")
 PY
 fi
@@ -439,6 +448,28 @@ PY
     printf '%s\n' "$emitted"
 }
 
+# Alternate-output expectation must be found in the post-link GO output,
+# never in the source/assembler listing printed earlier in the job.
+show_alt_output() {
+    local alt_file="$case_dir/expected-alt.txt"
+    [[ -f "$alt_file" ]] || return 0
+    python3 - "$alt_file" "$work/job-report.txt" <<'PYALT'
+from pathlib import Path
+import sys
+expected = [x.rstrip() for x in Path(sys.argv[1]).read_text().splitlines()]
+report = Path(sys.argv[2]).read_text(errors="replace").splitlines()
+link = [i for i, x in enumerate(report) if "AUTHORIZATION CODE IS" in x]
+if not expected or not link:
+    raise SystemExit("missing expected alternate output or linker boundary")
+lines = [x.strip() for x in report[link[-1]+1:]]
+if not any(lines[i:i+len(expected)] == expected
+           for i in range(len(lines)-len(expected)+1)):
+    raise SystemExit("BCPALT output records not found after link-edit")
+print("=== Alternate BCPALT output ===")
+print("\\n".join(expected))
+PYALT
+}
+
 show_result() {
     local objective=$1
     local termination=$2
@@ -479,6 +510,11 @@ while (( SECONDS <= deadline )); do
             fi
         fi
 
+        if ! show_alt_output; then
+            echo "run-test: alternate output mismatch" >&2
+            show_result "FAIL" "NORMAL" "FAIL"
+            exit 1
+        fi
         show_result "PASS" "NORMAL" "PASS"
         exit 0
     fi
