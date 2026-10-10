@@ -1,0 +1,463 @@
+BCPLMAIN CSECT
+*
+* Preserve the compiled-module base before R3 is repurposed as R.K12.
+*
+         LR    3,15
+         BALR  10,0
+         USING *,10
+*
+* Establish a private MVS save area before any service call.
+* The generated module prefix already saved the caller's R14..R12.
+*
+         L     1,=A(MSVSAVE)
+         ST    13,4(1)
+         ST    1,8(13)
+         LR    13,1
+         USING MSVSAVE,13
+         ST    3,MODBASE
+*
+* Locate L998 = module base + unsigned positive halfword at module+10.
+* CG370 limits a generated section to less than 16K bytes, so LH is
+* safe.
+*
+         LH    0,10(3)
+         LR    2,3
+         AR    2,0
+         ST    2,MODEND
+*
+* Acquire one MVS allocation for G!0..G!699, 16384 usable stack
+* words and a provisional 256-byte stack clearance. Preserve the
+* tested safe limit while retaining physical headroom above it.
+* GETMAIN EC reports failure through R15.
+* through R15.  Store base and length for subsequent FREEMAIN R.
+*
+         L     9,DYNLEN
+         GETMAIN EC,LV=(9),A=DYNBASE,SP=0
+         LTR   15,15
+         BNZ   GNOCORE
+         L     12,DYNBASE
+         LA    1,GVBYTES(12)
+         ST    1,DYNWORK
+         A     1,=F'65536'
+         ST    1,STKLIM
+         A     1,=F'256'
+         ST    1,DYNEND
+         LA    11,SYSV
+*
+* Initialize the dynamic global vector with the historical sentinel.
+*
+         LA    1,GLOBCNT
+         ST    1,0(12)
+         LA    2,4(12)
+         L     3,=X'C7D3F004'
+GINIT    ST    3,0(2)
+         A     3,=F'4'
+         LA    2,4(2)
+         BCT   1,GINIT
+*
+* Find the trailer sentinel by scanning backward in two-word units.
+* A pair whose second word is zero is treated as [4*MAXGN,0].
+*
+         L     8,MODEND
+GSCAN    AH    8,=H'-8'
+         L     9,4(8)
+         LTR   9,9
+         BC    7,GSCAN
+*
+* Reject modules requiring more globals than this static WIP provides.
+*
+         L     0,0(8)
+         C     0,=F'2796'
+         BC    2,GTOOBIG
+         ST    8,TRAILER
+*
+* Re-scan from the module end and install each exported global.
+*
+         L     8,MODEND
+GINST    AH    8,=H'-8'
+         L     9,4(8)
+         LTR   9,9
+         BC    8,GIDONE
+         L     1,0(8)
+         C     1,=F'2796'
+         BC    2,GTOOBIG
+         LR    2,12
+         AR    2,1
+         ST    9,0(2)
+         BC    15,GINST
+*
+* G!1 must now contain START rather than the unset sentinel.
+*
+GIDONE   L     4,4(12)
+         C     4,=X'C7D3F004'
+         BC    8,NOSTART
+*
+* Publish the subset of runtime globals whose representation is
+* supported strongly enough for this WIP.
+*
+* G!6 = provisional BCPL word pointer for the current MVS save area.
+*
+         LR    1,13
+         SRL   1,2
+         ST    1,24(12)
+*
+* G!52/G!53 = provisional main-program word-address extent.
+*
+         L     1,MODBASE
+         SRL   1,2
+         ST    1,208(12)
+         L     1,MODEND
+         SRL   1,2
+         ST    1,212(12)
+*
+* G!54/G!55 = BCPL word pointers for the allocated stack extent.
+* G!55 includes the reserved clearance; STKLIM is the safe limit.
+*
+         L     1,DYNWORK
+         SRL   1,2
+         ST    1,216(12)
+         L     1,DYNEND
+         SRL   1,2
+         ST    1,220(12)
+*
+* G!14 = first narrow native WRCH implementation for Regression 03.
+* G!76 = bootstrap WRITEF, extended through Regression 058.
+* G!85/G!86 = machine-dependent byte primitives required by BLIB.
+* G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
+* G!150 = provisional DEBUGINT bootstrap diagnostic service.
+*
+         LA    1,SELINP
+         ST    1,44(12)
+         LA    1,INPENT
+         ST    1,64(12)
+         LA    1,OUTENT
+         ST    1,68(12)
+         LA    1,PARMENT
+         ST    1,156(12)
+         LA    1,WRAPENT
+         ST    1,132(12)
+         LA    1,RDCHENT
+         ST    1,52(12)
+         LA    1,UNRDCHEN
+         ST    1,60(12)
+         LA    1,FINDINP
+         ST    1,168(12)
+         LA    1,FINDOUT
+         ST    1,164(12)
+         LA    1,SELOUT
+         ST    1,48(12)
+         LA    1,ENDWENT
+         ST    1,188(12)
+         LA    1,ENDRDENT
+         ST    1,184(12)
+         LA    1,WRCH
+         ST    1,56(12)
+* Keep BLIB's G!76 WRITEF when its export has been imported.
+* Install provisional WRITEST only if G!76 retains the unset sentinel.
+         L     1,304(12)
+         C     1,=X'C7D3F130'
+         BNE   WFHAS76
+         LA    1,WRITEST
+         ST    1,304(12)
+WFHAS76  EQU   *
+         LA    1,GETBYTE
+         ST    1,340(12)
+         LA    1,PUTBYTE
+         ST    1,344(12)
+         LA    1,GETVEC
+         ST    1,348(12)
+         LA    1,FREEVEC
+         ST    1,352(12)
+         LA    1,DEBUGINT
+         ST    1,600(12)
+         LA    1,APTOVEC
+         ST    1,160(12)
+         LA    1,STOPENT
+         ST    1,120(12)
+*
+* Regression 03 output is deliberately narrow: one buffered SYSPRINT
+* record.  This borrows the proven QSAM shape used by ICINT V19.
+*
+         XC    OUTPOS(4),OUTPOS
+         MVI   OUTBUF,C' '
+         MVC   OUTBUF+1(131),OUTBUF
+         OPEN  (BCPOUT,(OUTPUT))
+         LA    1,OUT1CTL
+         SRL   1,2
+         ST    1,OUTCURR
+*
+* Establish S, initial P/W, and the absolute-base constants required by
+* generated USING 4096,1,2,3 code.
+*
+         LA    11,SYSV
+         L     15,DYNWORK
+         LR    5,15
+         L     1,=F'4096'
+         L     2,=F'8192'
+         L     3,=F'12288'
+*
+* START receives no arguments.  Clear argument registers and linkage.
+* R10 has served as our assembler base and must cease being one now.
+*
+         SR    6,6
+         SR    7,7
+         SR    8,8
+         SR    9,9
+         SR    10,10
+*
+* Job 943 makes this initialization a required runtime invariant.
+*
+         SR    0,0
+         BCR   15,4
+*
+* START is expected to terminate through S.FIN.  Returning here is
+* treated as a WIP runtime failure.
+*
+BADRETN  BAL   14,RELMEM
+         L     13,4(13)
+         LM    14,12,12(13)
+         LA    15,36
+         BR    14
+*
+* Bootstrap failures before START.
+*
+GTOOBIG  BAL   14,RELMEM
+         L     13,4(13)
+         LM    14,12,12(13)
+         LA    15,16
+         BR    14
+NOSTART  BAL   14,RELMEM
+         L     13,4(13)
+         LM    14,12,12(13)
+         LA    15,20
+         BR    14
+*
+* Failure before allocation: no storage to release.
+GNOCORE  L     13,4(13)
+         LM    14,12,12(13)
+         LA    15,24
+         BR    14
+*
+* Put literals used by startup inside the startup base-register region.
+*
+         LTORG
+*
+* From here on R10 is not a runtime base.  Executable system-vector
+* services use R11, whose value is SYSV in generated BCPL code.
+*
+         DROP  10
+*
+***********************************************************************
+* SYSTEM VECTOR
+*
+* Each public offset is a four-byte branch followed by padding to the
+* next 20-byte slot.  This layout is a reconstruction proposal matching
+* the offsets in CGHDR; the historical instruction sequence is unknown.
+***********************************************************************
+SYSV     EQU   *
+         USING SYSV,11
+         BC    15,RETIMPL
+         DS    8H
+*
+* S.COUNT = 20
+*
+SYSCOUNT BC    15,CNTIMPL
+         DS    8H
+*
+* S.FIN = 40
+*
+SYSFIN   BC    15,FINIMPL
+         DS    8H
+*
+* S.STKCK = 60
+*
+SYSSTK   BC    15,STKIMPL
+         DS    8H
+*
+* S.STKCKCOUNT = 80
+*
+SYSSTKC  BC    15,STKCIMP
+         DS    8H
+*
+* Runtime-local byte limit and controlled-overflow message.
+* Historical BCPLMAC distinguishes STKLIM (safe limit) from STKHIGH.
+* This WIP reserves 256 extra bytes above the tested 16KB safe
+* limit.  The exact historical INUM interpretation remains unknown.
+*
+STKLIM   DC    F'0'
+STKMSG   DC    CL14'STACK OVERFLOW'
+         DS    0H
+*
+***********************************************************************
+* PROCEDURE RETURN
+*
+* Restore linkage from the callee frame, then restore the caller's P
+* before reloading R4 from the caller frame.  Test 32 showed why R4
+* cannot be restored from 0(current P): that word names the callee.
+***********************************************************************
+RETIMPL  L     6,8(5)
+         L     5,4(5)
+         L     4,0(5)
+         BCR   15,6
+*
+***********************************************************************
+* CALL-COUNT SERVICE -- STUB
+*
+* CG370 emits BAL R14,S.COUNT(R11) followed by an inline fullword.
+* A minimally non-destructive stub must skip that word on return.
+* Actual counter semantics remain to be reconstructed.
+***********************************************************************
+CNTIMPL  LA    14,4(14)
+         BR    14
+*
+***********************************************************************
+* FINISH
+*
+* Restore the MVS registers saved by the generated module prefix.
+* FINISH selects RC=0; STOP(N) selects the requested step code.
+* Both share the output and storage reclamation path.
+***********************************************************************
+FINIMPL  XC    STOPRC(4),STOPRC
+         B     FINEXIT
+STOPENT  ST    7,STOPRC
+FINEXIT  L     1,OUTPOS
+         LTR   1,1
+         BZ    FINRETN
+         PUT   BCPOUT,OUTBUF
+FINRETN  CLOSE (BCPOUT)
+         CLI   OUT2OPEN,X'01'
+         BNE   FINNOO2
+         L     1,OUT2POS
+         LTR   1,1
+         BZ    FINO2CL
+         PUT   BCPOUT2,OUT2BUF
+FINO2CL  CLOSE (BCPOUT2)
+         MVI   OUT2OPEN,X'00'
+FINNOO2  EQU   *
+* BCPIN is lazily opened by FINDINPUT; close before task exit.
+         CLI   INOPEN,X'01'
+         BNE   FINNOIN
+         CLOSE (BCPIN)
+         MVI   INOPEN,X'00'
+FINNOIN  EQU   *
+         CLI   IN2OPEN,X'01'
+         BNE   FINNOI2
+         CLOSE (BCPIN2)
+         MVI   IN2OPEN,X'00'
+FINNOI2  EQU   *
+         BAL   14,RELMEM
+         L     15,STOPRC
+         L     13,4(13)
+         LM    14,14,12(13)
+         LM    0,12,20(13)
+         BR    14
+*
+* Drain live GETVEC allocations before freeing global/stack memory.
+* Each record holds its own byte length and next record address.
+* Detach the head before FREEMAIN; never read a released record.
+* Save the BAL return across MVS services that may modify R14.
+***********************************************************************
+RELMEM   ST    14,RELRET
+RELLOOP  L     1,VECLIST
+         LTR   1,1
+         BZ    RELMAIN
+         L     10,4(1)
+         L     9,8(1)
+         ST    9,VECLIST
+         FREEMAIN R,LV=(10),A=(1)
+         B     RELLOOP
+RELMAIN  L     1,DYNBASE
+         LTR   1,1
+         BZ    RELDONE
+         L     10,DYNLEN
+         FREEMAIN R,LV=(10),A=(1)
+         XC    DYNBASE(4),DYNBASE
+RELDONE  L     14,RELRET
+         BR    14
+*
+***********************************************************************
+* STACK CHECK -- FRAME-SIZE CONTRACT
+*
+* Tests 48-49 established the checked-entry sequence and proved that
+* this path must perform the LR 5,15 omitted by CG370.
+*
+* R14 addresses an inline fullword containing the generated frame size
+* in bytes.  CG370 has already saved R4-R6 at 0(R15), so R4 is safe as
+* a temporary here and can be restored before returning to generated
+* code.
+*
+* Test 50 added structural validation of the inline value.  Test 52
+* adds the first WIP limit check: W plus required frame bytes must not
+* exceed STKLIM.  BCPLMAC proves that the historical runtime maintained
+* a safe stack limit distinct from the byte beyond allocated stack.
+* The missing machine-code STKCK body leaves exact clearance semantics
+* unrecovered. The provisional boundary remains 16KB from stack base.
+***********************************************************************
+STKIMPL  LR    5,15
+         L     4,0(14)
+         LTR   4,4
+         BC    12,STKFORM
+         TM    3(14),X'03'
+         BC    7,STKFORM
+         AR    4,15
+         C     4,STKLIM
+         BH    STKOVFL
+         L     4,0(15)
+         LA    14,4(14)
+         BR    14
+STKOVFL  MVC   OUTBUF(14),STKMSG
+         LA    4,14
+         ST    4,OUTPOS
+         B     FINIMPL
+STKFORM  L     4,0(15)
+         L     13,4(13)
+         LM    14,12,12(13)
+         LA    15,36
+         BR    14
+*
+***********************************************************************
+* STACK CHECK + CALL COUNT -- STUB
+*
+* CG370 places an inline fullword after this BAL form, so skip it.
+***********************************************************************
+STKCIMP  LA    14,4(14)
+         BR    14
+*
+***********************************************************************
+* APTOVEC -- TEMPORARY STACK VECTOR AND NESTED BCPL CALL
+*
+* G40 receives F in R7 and N in R8. Supply F(V,N), where V points
+* to N+1 BCPL words immediately above APTOVEC's saved linkage.
+* Allocate the callee frame above the vector, leaving room for its
+* four-register entry save; normal generated stack checks still apply.
+* This first rung rejects excessive N and reports stack overflow.
+***********************************************************************
+APTOVEC  STM   4,6,0(15)
+         LR    5,15
+         LTR   8,8
+         BM    STKOVFL
+         C     8,APMAXN
+         BH    STKOVFL
+         LR    14,8
+         SLL   14,2
+         LA    14,20(14)
+         LR    4,15
+         AR    4,14
+         LR    14,4
+         LA    14,16(14)
+         C     14,STKLIM
+         BH    STKOVFL
+         LR    14,7
+         LA    7,16(15)
+         SRL   7,2
+         LR    15,4
+         LR    4,14
+         BALR  6,4
+* RETIMPL has restored R5 to our frame; R7 holds F's result.
+         L     6,8(5)
+         L     5,4(5)
+         L     4,0(5)
+         BCR   15,6
+APMAXN   DC    F'16380'
+*
+***********************************************************************
