@@ -359,20 +359,22 @@ else
     jcl="$work/native-test-heavy.jcl"
 fi
 
-if [[ ! -f "$native" ]]; then
-python3 - "$jcl" "$test_num" <<'PY'
+# Every JCL strategy needs the same GO DD fixtures and time limit.
+# Abort on preparation failure; never submit an incomplete deck.
+python3 - "$jcl" "$test_num" <<'PY' || exit $?
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
 test_no = sys.argv[2]
 text = path.read_text(encoding="ascii")
-old = "//GO       EXEC PGM=*.LKED.SYSLMOD,\n"
+plain = "//GO       EXEC PGM=*.LKED.SYSLMOD,\n"
+timed = "//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),\n"
 seconds = 3 if test_no == "3" else 1
 new = f"//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,{seconds}),\n"
-if text.count(old) != 1:
-    raise SystemExit("cannot locate final GO EXEC statement")
-text = text.replace(old, new, 1)
+if text.count(plain) + text.count(timed) != 1:
+    raise SystemExit("expected one recognized final GO EXEC statement")
+text = text.replace(plain if plain in text else timed, new, 1)
 # Resolve the actual case directory from the test identity, not JCL path.
 root = path.parents[3]
 cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):03d}-*"))
@@ -422,7 +424,6 @@ if alt.exists():
         + anchor, 1)
 path.write_text(text, encoding="ascii", newline="\n")
 PY
-fi
 
 fi # end regular static/native assembly strategy
 
