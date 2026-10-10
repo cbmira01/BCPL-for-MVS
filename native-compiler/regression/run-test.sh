@@ -554,6 +554,14 @@ while (( SECONDS <= deadline )); do
         # Controlled nonzero completion for the two STOP regressions.
         # Keep all other failing GO steps in the ordinary failure path.
         expected_go_rc=""
+        rc_fixture="$case_dir/expected-go-rc.txt"
+        if [[ -f "$rc_fixture" ]]; then
+            expected_go_rc=$(tr -d '\r\n' < "$rc_fixture")
+            if ! [[ "$expected_go_rc" =~ ^[0-9]{4}$ ]]; then
+                echo "run-test: expected-go-rc must contain 4 digits" >&2
+                exit 66
+            fi
+        fi
         if (( test_num == 87 )); then
             expected_go_rc="0100"
         elif (( test_num == 89 )); then
@@ -563,7 +571,7 @@ while (( SECONDS <= deadline )); do
            grep -Eq '^[[:space:]]*ASM[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq '^[[:space:]]*LKED[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq "^[[:space:]]*GO[[:space:]]+.*RC=$expected_go_rc" <<<"$summary" &&
-           show_bcpl_output; then
+           { [[ -f "$rc_fixture" && ! -s "$expected_file" ]] || show_bcpl_output; }; then
             show_result "PASS" "GO RC=$expected_go_rc (expected)" "PASS"
             exit 0
         fi
