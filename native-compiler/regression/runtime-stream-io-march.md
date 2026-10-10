@@ -496,3 +496,42 @@ Operator pulled `7374c24` and ran `tools/run-native-regression 98 --show-output`
 ## Full 000–098 suite accepted — 2026-10-10
 
 Operator pulled `965a57e` and ran `tools/run-native-regression` without a test-number filter. The harness executed regressions 000–098, including 083 storage-reclamation instrumentation, 084–089 FINISH/STOP, and 094–098 selected-input stream I/O. All passed: **PASS 99 / FAIL 0 / TOTAL 99**. Output for 098 was `AEA/`. This establishes an accepted full-suite 99/99 TK5 / MVS 3.8J baseline after the G!46 ENDREAD implementation. This does not imply broader multistream or production-QSAM coverage beyond the exercised regressions.
+
+## Batch candidate 099–103 — awaiting sequential TK5 execution
+
+User approved staging five regressions together, with **sequential**
+operator acceptance. Compatibility target: historical Cambridge BCPL
+API where known, explicitly provisional TK5 FB80 text conventions
+elsewhere. Output must support at least two simultaneously OPEN DDs.
+
+The candidates are:
+
+- 099: push back immediately after EOF, then verify stable repeated EOF.
+  Deterministic BCPIN input; expected `A/EEE`.
+- 100: a zero-content text fixture record transported as blank-padded
+  FB80, contributing one logical newline; expected `A//B`.
+- 101: open both SYSPRINT and BCPALT, select alternately, confirm
+  independent output destinations; default `AC`, alternate `B`.
+- 102: while both DDs remain OPEN, newline-delimited output records
+  in BCPALT; default `Z`, alternate lines `A` and `B`.
+- 103: ENDWRITE flushes pending BCPALT text, CLOSEs its DCB, and
+  subsequent WRCH uses default SYSPRINT; default `Z`, alternate `Q`.
+
+Runtime candidate installs G!41 FINDOUTPUT, G!12 SELECTOUTPUT, G!47
+ENDWRITE and a BCPALT descriptor/DCB separate from SYSPRINT. For
+limited bootstrap compatibility, default SYSPRINT retains existing
+output-buffer semantics; the new BCPALT path treats character 10 as
+a logical record boundary. Unsupported overflow currently stops
+appending to its 132-byte buffer; this is a **known limitation**,
+not an accepted no-truncation contract. A future independent error
+policy must be established before calling output production-ready.
+The runner conditionally injects a BCPALT SYSOUT DD when a test has
+`expected-alt.txt`, and checks its content in post-link job output.
+The post-link search is not yet a strict JES DD identity check;
+that evidence limitation must be evaluated during 101 acceptance.
+
+Source width and unique-label checks were applied to the assembled
+runtime source text, and fixture/run-script anchors were checked.
+**No IFOX, IEWL or GO execution has been performed** for these
+candidates; all 099–103 are PENDING. The last complete accepted
+suite remains 000–098 with **99 PASS / 0 FAIL**.
