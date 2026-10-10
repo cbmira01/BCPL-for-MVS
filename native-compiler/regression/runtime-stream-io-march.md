@@ -390,3 +390,23 @@ Individual native regressions 094–097 are now accepted. A full 000–097
 panel following the 097 runtime change has not yet been executed.
 Next proposed milestone: ENDREAD lifecycle and explicit CLOSE, subject
 to inspection of historical interface and existing handle semantics.
+
+## Full 000–097 panel: one tooling failure, repaired pending retest
+
+Operator ran `tools/run-native-regression` after accepting 097.
+Result was **97 PASS / 1 FAIL / 98 TOTAL**. The only failure was
+083-instrumented-storage-reclamation, where its Python test-local
+instrumenter rejected the prior strict source anchor
+`FINRETN  CLOSE (BCPOUT)\n         BAL   14,RELMEM`.
+The stream-I/O work had inserted the conditional BCPIN CLOSE between
+those two statements; 083 therefore failed before assemble/link/GO.
+All 094–097 tests PASS in the full panel.
+
+Commit `08773ea` changes 083's instrumenter to match and replace
+just `FINRETN  CLOSE (BCPOUT)` with `FINRETN  EQU   *` in the generated
+copy, preserving conditional BCPIN closure while leaving BCPOUT open
+for its post-RELMEM diagnostic PUT. An independent in-memory
+simulation of the five transformations against current BCPLMAIN found
+unique anchors, no source-card width/label/whitespace violations and
+retained BCPIN CLOSE. **083 pending TK5 retest; a clean full panel is
+not yet confirmed.**
