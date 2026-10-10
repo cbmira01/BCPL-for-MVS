@@ -187,3 +187,7 @@ exercise this isolated mechanism.
 **Validation status:** New automated checker and its offline tests
 are committed, but no new TK5 run against this checker has been
 reported. JOB 5512 previously demonstrated routing manually.
+
+## JOB 5512 reusable-checker diagnostic and correction — 2026-10-10
+
+Operator ran `test-dd-attribution.py`: 7/8 tests passed; the cross-contamination negative test failed only because its expected exception text differed from the correctly rejected record. Corrected that assertion; no check relaxed. Real JOB 5512 validation initially failed class A despite class Z matching. `--diagnose` captured the exact cause at the GO output boundary: printer record `b'\x0cAB'` followed by `b'C'`. The ASCII form feed (0x0C) is the JES printer page-eject prefix, not a BCPL output byte. The matcher now removes **only one leading form-feed byte** from each printer image line and trims printer right padding as before; significant leading spaces remain untouched. Added two unit tests: a form-feed-prefixed primary record must pass; form feed followed by a significant leading space must fail. Diagnostic mode now limits candidate output instead of printing thousands of listing lines. New code is awaiting the operator's ten-unit-test run and rerun of JOB 5512, so do not yet claim automated acceptance.
