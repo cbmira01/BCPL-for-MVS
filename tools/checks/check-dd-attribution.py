@@ -43,7 +43,10 @@ def parse_segment(path, offset, job, name, printer, queue):
     for line in lines[first:last+1]:
         if foreign.match(line) and not ident.match(line):
             raise ValueError(f"{name}: foreign JES job banner in section")
-    # TK5 printer places an ASCII FF at start of a new printed page.\n    # Strip only this printer-control prefix; preserve BCPL leading blanks.\n    payload = [line.removeprefix(b"\\x0c").rstrip(b" \\t")\n               for line in lines[max(starts)+1:min(ends)]]
+    # TK5 printer starts a printed page with form feed (0x0c).
+    # Remove only that control prefix; preserve leading BCPL blanks.
+    payload = [line.removeprefix(b"\\x0c").rstrip(b" \\t")
+               for line in lines[max(starts)+1:min(ends)]]
     return payload
 
 def matched_positions(payload, expected):
