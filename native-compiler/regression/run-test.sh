@@ -561,7 +561,7 @@ while (( SECONDS <= deadline )); do
             expected_go_rc="0008"
         fi
         if [[ -n "$expected_go_rc" ]] &&
-           grep -Eq '^[[:space:]]*ASM[[:space:]]+.*RC=0000' <<<"$summary" &&
+           grep -Eq '^[[:space:]]*(ASM|ASMBCPL)[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq '^[[:space:]]*LKED[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq "^[[:space:]]*GO[[:space:]]+.*RC=$expected_go_rc" <<<"$summary" &&
            { [[ -f "$rc_fixture" && ! -s "$expected_file" ]] || show_bcpl_output; }; then
