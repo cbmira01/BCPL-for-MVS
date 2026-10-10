@@ -22,7 +22,8 @@ hand-written and generated IBM assembler in this project:
 - ASCII-only source;
 - no tab characters;
 - no trailing whitespace;
-- no source text past column 71.
+- no source text past column 71;
+- no IFOX/Assembler F label definitions longer than eight characters.
 
 Examples:
 
@@ -63,3 +64,13 @@ JCL/regression preflight.
 For a shared runtime modification, run this check before committing;
 after it passes and the source is committed, use focused TK5 regressions
 before the expensive full 82-test panel.
+
+## Checker self-tests
+
+Run `python3 -m unittest discover -s tools/checks -p 'test_*.py' -v`
+before committing checker changes. The symbol checker examines the
+assembler name field (column-one labels) without interpreting operands,
+quoted strings, or continuation cards as definitions. It is a preflight
+constraint check, not a complete Assembler F parser and does not replace
+IFOX. `check-native-runtime.py` invokes the same checker and therefore
+inherits this guard on the complete BCPLMAIN source.
