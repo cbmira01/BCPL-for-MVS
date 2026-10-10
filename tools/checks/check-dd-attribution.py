@@ -52,7 +52,7 @@ def matched_positions(payload, expected):
     return [i for i in range(len(payload)-len(expected)+1)
             if payload[i:i+len(expected)] == expected]
 
-def verify(a_path, z_path, a_offset, z_offset, job, jobname, expected_a, expected_z):
+def verify(a_path, z_path, a_offset, z_offset, job, jobname, expected_a, expected_z, diagnose=False):
     if a_path.resolve() == z_path.resolve():
         raise ValueError("A and Z printer files must be different")
     a = parse_segment(a_path,a_offset,job,jobname,"PRINTER1","A")
@@ -60,6 +60,12 @@ def verify(a_path, z_path, a_offset, z_offset, job, jobname, expected_a, expecte
     ea = [x.encode("ascii") for x in expected_a.read_text(encoding="ascii").splitlines()]
     ez = [x.encode("ascii") for x in expected_z.read_text(encoding="ascii").splitlines()]
     if not matched_positions(a,ea):
+        if diagnose:
+            print(f"DEBUG class A payload: {len(a)} lines; wanted {ea!r}", file=sys.stderr)
+            for i, line in enumerate(a):
+                if any(token in line for token in ea) or b"AUTHORIZATION CODE IS" in line:
+                    print(f"DEBUG class A line {i}: {line[:160]!r}", file=sys.stderr)
+            print(f"DEBUG class A final 12 lines: {a[-12:]!r}", file=sys.stderr)
         raise ValueError("class A missing contiguous GO SYSPRINT records")
     if not matched_positions(z,ez):
         raise ValueError("class Z missing contiguous GO BCPALT records")
@@ -86,10 +92,11 @@ def main():
         "native-compiler/regression/114-interleaved-stream-records/expected.txt"))
     p.add_argument("--expected-z",type=Path,default=Path(
         "native-compiler/regression/114-interleaved-stream-records/expected-alt.txt"))
+    p.add_argument("--diagnose",action="store_true",help="show candidate raw printer lines on failure")
     args=p.parse_args()
     try:
         verify(args.a_file,args.z_file,args.a_offset,args.z_offset,
-               args.job,args.jobname,args.expected_a,args.expected_z)
+               args.job,args.jobname,args.expected_a,args.expected_z,args.diagnose)
     except (ValueError,OSError,UnicodeError) as error:
         p.exit(1,f"dd-attribution: FAIL: {error}\n")
 
