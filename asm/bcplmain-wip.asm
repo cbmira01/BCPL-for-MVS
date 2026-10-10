@@ -886,6 +886,12 @@ FINEXIT  L     1,OUTPOS
          BZ    FINRETN
          PUT   BCPOUT,OUTBUF
 FINRETN  CLOSE (BCPOUT)
+* BCPIN is lazily opened by FINDINPUT; close before task exit.
+         CLI   INOPEN,X'01'
+         BNE   FINNOIN
+         CLOSE (BCPIN)
+         MVI   INOPEN,X'00'
+FINNOIN  EQU   *
          BAL   14,RELMEM
          L     13,4(13)
          LM    14,12,12(13)
