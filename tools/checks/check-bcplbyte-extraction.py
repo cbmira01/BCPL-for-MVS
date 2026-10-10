@@ -12,7 +12,7 @@ def instructions(text, begin, stop):
     start = next(i for i, line in enumerate(lines)
                  if re.match(r"^" + begin + r"\s+", line))
     end = next(i for i in range(start+1, len(lines))
-               if re.match(r"^" + stop + r"\s+", lines[i]))
+               if re.match(r"^\s*" + stop + r"\s+", lines[i]))
     return [re.sub(r"\s+", " ", line.strip())
             for line in lines[start:end]
             if line.strip() and not line.startswith("*")]
