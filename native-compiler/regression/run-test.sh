@@ -411,79 +411,25 @@ expected_output() {
 
 
 show_bcpl_output() {
-    local report emitted
-
+    local report
     report=$(bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null)
     printf '%s\n' "$report" >"$work/job-report.txt"
-
-    emitted=$(
-        python3 - "$expected_file" "$work/job-report.txt" <<'PY'
-from pathlib import Path
-import sys
-
-expected_path = Path(sys.argv[1])
-report_path = Path(sys.argv[2])
-
-expected = [
-    line.strip()
-    for line in expected_path.read_text(encoding="utf-8").splitlines()
-]
-report = report_path.read_text(encoding="utf-8", errors="replace").splitlines()
-
-if not expected:
-    raise SystemExit(1)
-
-# Native program output follows the linkage editor report.  Restrict matching
-# to the suffix after the final linker authorization line so source/JCL,
-# assembler listings, and link-edit listings cannot satisfy an expectation.
-linker_ends = [
-    index
-    for index, line in enumerate(report)
-    if "AUTHORIZATION CODE IS" in line
-]
-if not linker_ends:
-    raise SystemExit(1)
-
-runtime_report = report[linker_ends[-1] + 1:]
-trimmed = [line.strip() for line in runtime_report]
-width = len(expected)
-
-for start in range(0, len(trimmed) - width + 1):
-    if trimmed[start:start + width] == expected:
-        print("\n".join(expected))
-        raise SystemExit(0)
-
-raise SystemExit(1)
-PY
-    ) || return 1
-
-    [[ -n "$emitted" ]] || return 1
-
+    python3 "$root/tools/checks/check-combined-jes-records.py" \
+        "$expected_file" "$work/job-report.txt" \
+        --destination SYSPRINT || return 1
     echo
-    echo "=== BCPL output ==="
-    printf '%s\n' "$emitted"
+    echo "=== BCPL output (expected logical records) ==="
+    cat "$expected_file"
 }
 
-# Alternate-output expectation must be found in the post-link GO output,
-# never in the source/assembler listing printed earlier in the job.
+# This checks an ordered record sequence in the combined post-link JES
+# report. It does NOT prove physical BCPALT DD attribution.
 show_alt_output() {
     local alt_file="$case_dir/expected-alt.txt"
     [[ -f "$alt_file" ]] || return 0
-    python3 - "$alt_file" "$work/job-report.txt" <<'PYALT'
-from pathlib import Path
-import sys
-expected = [x.rstrip() for x in Path(sys.argv[1]).read_text().splitlines()]
-report = Path(sys.argv[2]).read_text(errors="replace").splitlines()
-link = [i for i, x in enumerate(report) if "AUTHORIZATION CODE IS" in x]
-if not expected or not link:
-    raise SystemExit("missing expected alternate output or linker boundary")
-lines = [x.strip() for x in report[link[-1]+1:]]
-if not any(lines[i:i+len(expected)] == expected
-           for i in range(len(lines)-len(expected)+1)):
-    raise SystemExit("BCPALT output records not found after link-edit")
-print("=== Alternate BCPALT output ===")
-print("\\n".join(expected))
-PYALT
+    python3 "$root/tools/checks/check-combined-jes-records.py" \
+        "$alt_file" "$work/job-report.txt" \
+        --destination BCPALT
 }
 
 show_result() {
