@@ -49,7 +49,7 @@ class AttributionTests(unittest.TestCase):
             self.check()
     def test_cross_contamination(self):
         self.write("AB\nC\n1\n","1\n2\n")
-        with self.assertRaisesRegex(ValueError,"contamination"):
+        with self.assertRaisesRegex(ValueError,"class A includes a BCPALT record"):
             self.check()
     def test_wrong_job(self):
         with self.assertRaisesRegex(ValueError,"section absent"):
