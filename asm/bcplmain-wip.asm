@@ -1432,6 +1432,7 @@ WO2PUT   PUT   BCPOUT2,OUT2BUF
          XC    OUT2POS(4),OUT2POS
          MVI   OUT2BUF,C' '
          MVC   OUT2BUF+1(131),OUT2BUF
+         B     WO2RET
 WROVFL2 LM    0,15,OUTSVREG
          LA    7,12
          B     STOPENT
