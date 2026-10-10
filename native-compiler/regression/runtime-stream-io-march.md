@@ -338,3 +338,15 @@ before attempting another GET. **096 status: PENDING TK5.**
 If 096 passes, the next step should focus on the historical
 UNRDCH/ENDREAD semantics with explicit tests, not assume that
 this one-input-stream implementation is production-complete.
+
+## Regression 096 accepted under TK5
+
+Operator pulled commit `c20a6ce` and ran
+`tools/run-native-regression 96 --show-output`. Observed BCPL output
+`A/EE`; harness reported PASS 1, FAIL 0, TOTAL 1. **096 ACCEPTED.**
+This verifies the one-record sequence 'A', logical newline 10, first
+EOF -1, and repeated EOF -1, with the existing EODAD/INEOF logic.
+No new BCPLMAIN change was required for regression 096.
+Next planned regression is 097, UNRDCH one-character pushback; confirm
+its actual interface from project sources before implementing.
+Full 000–096 native suite has not been rerun.
