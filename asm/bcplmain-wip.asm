@@ -1224,9 +1224,9 @@ FOGOT    LA    7,OUT2CTL
          SRL   7,2
          B     FORET
 FONOTFD  SR    7,7
-FORET    ST    7,OUTRESULT
+FORET    ST    7,OUTRES
          LM    0,15,OUTSVREG
-         L     7,OUTRESULT
+         L     7,OUTRES
          L     4,0(5)
          BCR   15,6
 *
@@ -1882,7 +1882,7 @@ BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 OUT1CTL  DC    F'1'
 OUT2CTL  DC    F'2'
 OUTCURR  DC    F'0'
-OUTRESULT DC   F'0'
+OUTRES DC   F'0'
 OUT2POS  DC    F'0'
 OUTMAX   DC    F'132'
 OUTLF    DC    F'10'
