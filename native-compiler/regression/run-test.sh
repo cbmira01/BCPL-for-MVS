@@ -297,20 +297,53 @@ if (( test_num == 83 )); then
     python3 "$case_dir/instrument-reclaim.py" "$combined" || exit $?
 fi
 
+# New link architecture is opt-in until the full suite is accepted.
+byte_object=${BCPLBYTE_OBJECT:-0}
+if [[ $byte_object != 0 && $byte_object != 1 ]]; then
+    echo "run-test: BCPLBYTE_OBJECT must be 0 or 1" >&2
+    exit 64
+fi
+if [[ $byte_object == 1 ]]; then
+    echo
+    echo "=== Externalize G85/G86 into BCPLBYTE object ==="
+    externalized="$work/native-external-byte.asm"
+    python3 "$root/tools/checks/check-bcplbyte-extraction.py" || exit $?
+    python3 "$root/tools/checks/externalize-bcplbyte.py" \
+        "$combined" "$externalized" || exit $?
+    combined="$externalized"
+fi
+
 echo
 echo "=== Assembler preflight ==="
 python3 "$root/tools/checks/check-asm-source.py" "$combined" || exit $?
 if [[ -f "$native" ]]; then
     python3 "$root/tools/checks/check-asm-source.py" "$native" || exit $?
 fi
+if [[ $byte_object == 1 ]]; then
+    python3 "$root/tools/checks/check-asm-source.py" \
+        "$root/asm/bcplbyte.asm" || exit $?
+fi
 
 echo
 echo "=== Build native assemble/link/go job ==="
 if [[ -f "$native" ]]; then
     jcl="$work/native-test-heavy.jcl"
+    extra_object=()
+    if [[ $byte_object == 1 ]]; then
+        extra_object=(--third-source "$root/asm/bcplbyte.asm")
+    fi
     python3 "$script_dir/make-two-object-job.py" \
         "$combined" \
         "$native" \
+        "$jcl" \
+        --entry "$entry" \
+        --job-name "${job_base}R" \
+        "${extra_object[@]}" || exit $?
+elif [[ $byte_object == 1 ]]; then
+    jcl="$work/native-test-heavy.jcl"
+    python3 "$script_dir/make-two-object-job.py" \
+        "$combined" \
+        "$root/asm/bcplbyte.asm" \
         "$jcl" \
         --entry "$entry" \
         --job-name "${job_base}R" || exit $?
