@@ -426,3 +426,20 @@ in the test-local RELDONE instrumentation. BCPIN conditional closure
 in the canonical exit path remains undisturbed. This is a focused
 **hypothesis**, not yet TK5-confirmed. Regression 083 and the fully
 green 000–097 suite remain pending that retest.
+
+## 083 third retest: register restore ordering defect isolated
+
+Operator job 4104 produced both `42` and `V=2 M=1`, ASM/LKED
+RC=0000, but GO RC=0153 (previously 0155 without test-local BCPOUT
+CLOSE). The IFOX listing revealed canonical FINEXIT executes
+`LM 14,12,12(13)` and only then `L 15,STOPRC`. The restore changes
+R11, which is the assembler base used to address STOPRC. This causes
+the completion-code load to use a stale caller R11 and explains the
+unreliable GO RC even after successful cleanup.
+
+Commit `9e9cccb` moves `L 15,STOPRC` ahead of caller-register restore
+and replaces the wraparound load-multiple with separate `LM 14,14`
+and `LM 0,12`, skipping R15 so it retains the chosen return code.
+This corrects canonical native FINISH/STOP exit linkage rather than
+loosening regression 083. **Pending TK5 retest of 083, then full
+000–097 panel** because canonical BCPLMAIN changed.
