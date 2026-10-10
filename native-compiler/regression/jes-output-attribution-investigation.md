@@ -1,0 +1,116 @@
+# JES SYSOUT/DD attribution investigation (2026-10-10)
+
+## Question
+
+Can the BCPL native regression runner determine whether a physical FB132
+record came from GO step `SYSPRINT` or `BCPALT`, rather than merely
+locating its text in a flattened Hercules/JES printer report?
+
+## Evidence presently established
+
+- The user ran the native panel 000–119 successfully (120/120) under
+  `check-combined-jes-records.py`. That checker preserves *logical*
+  line order and leading/interior spaces, but it has no DD provenance.
+- In the actual RG114R job log supplied on 2026-10-10 (JOB 4989), the
+  GO-step allocation messages show separate `SYSPRINT` and `BCPALT`
+  allocations. IEF285I reported separate JES spool identifiers
+  `JES2.JOB04989.SO0105`, `SO0106`, and `SO0107` for the GO step.
+  Those are **separate SYSOUT spool datasets**, but the combined report
+  does not explicitly assign each application's output record to one
+  identifier. Do not assume the suffix number is the DD name.
+- `tools/dump-report-for-job` reads `mvs-state/prt/prt00e.txt`, strips
+  the Hercules per-job start/end banners, and returns a flattened report.
+  This is a printer image, not an IBM QSAM DD-by-DD read interface.
+- Hercules/TK5 has multiple emulated printers available in its
+  historical configuration (000E, 000F, 0002); the actual active JES
+  writer routes and output classes must be inspected before use.
+
+## Source corroboration
+
+Jay Moseley's *MVS FAQ: JES2* describes JES2 spool datasets being queued
+and then selected by output-class-specific printer writers; the
+physical Hercules printer file only receives the processed output.
+It documents `$D U,PRTS`, `$S PRTn`, and `$T PRTn,Q=...` for
+inspecting and controlling writer queues:
+https://www.jaymoseley.com/hercules/faq/mvsfaq02.htm
+
+The *MVS FAQ: Application/User Tasks* describes TSO `OUTPUT` and
+`QUEUE` as ways to retrieve or save spooled SYSOUT datasets, usually
+with carriage-control attributes:
+https://www.jaymoseley.com/hercules/faq/mvsfaq04.htm
+
+Tim Pinkawa's discussion of a Hercules printer pipe explicitly
+describes the ordinary printer file as a combined stream and a
+`prtspool` helper as primarily splitting *jobs*, not identifying
+an individual GO-step DD:
+https://timpinkawa.net/hercules/prtspool.html
+
+## Candidate approaches
+
+**A. Separate SYSOUT classes routed to distinct Hercules printers**
+(recommended for a first isolated experiment). Route GO SYSPRINT to
+one SYSOUT class and BCPALT to another; configure JES2 printer queues
+so each class prints exclusively to a distinct emulated printer,
+each with a different host-side output file. This establishes *routing
+provenance* only if the queue membership is known, there are no other
+writers consuming those classes, and no unrelated jobs use them.
+The printer output format still may not preserve 132 physical bytes
+or explicit record-count semantics, so this is an intermediate result.
+
+**B. Extract individual JES2 spool datasets under MVS before printing.**
+Use TK5's TSO OUTPUT/QUEUE facilities (or appropriate system spool
+reader) on held jobs. This may preserve which SOxxxx object is saved,
+but the saved print dataset is typically carriage-control-formatted
+and may not be identical to the original FB132 application records.
+The mapping from SOxxxx to the original DD must be established with a
+controlled two-DD experiment rather than by guessing suffixes.
+
+**C. Direct data-set output.** For byte-accurate FB132 testing, allocate
+separate ordinary sequential datasets on user DASD for the two GO
+output DDs instead of SYSOUT, and inspect via a supported in-guest copy
+or host-side DASD transfer. This gives explicit DSNs and DCB geometry
+but tests an alternate allocation path rather than the default
+SYSOUT printer route. Requires a repeatable transfer tool, so is not
+yet implemented.
+
+## Read-only next-step probe
+
+`tools/checks/inspect-jes-attribution.py` reads the raw Hercules
+printer file, locates one job using existing `****A START/END`
+markers, prints JES SO spool identifiers and allocation-related
+messages, and displays the raw post-link records with byte lengths.
+It changes no runtime source, JES writer configuration, or spool
+datasets. Example (use a completed native GO job number, **not**
+the Cambridge compiler job number):
+
+```bash
+python3 tools/checks/inspect-jes-attribution.py 4989 --sample 10
+```
+
+The example number is historical; use a recent job present in your
+local printer file. Check actual active Hercules config and queue
+before attempting option A:
+
+```bash
+grep -nE '^(0002|000E|000F)[[:space:]]' mvs-state/conf/tk5.cnf
+```
+
+Issue `$D U,PRTS` at the MVS console to discover the writers and
+their queues (this does not change any configuration). **Do not**
+reconfigure writers or output classes in the production-running TK5
+instance before documenting the current assignments and a safe
+reversal procedure.
+
+## Outcome / decision
+
+**Investigated, not resolved.** Separate JES2 SO identifiers and
+independent DD allocations have been observed. The existing combined
+report is insufficient to attribute physical application records to
+their DDs or prove exact FB132 bytes. Do not retrofit a fictitious
+DD identity into the existing text checker. Next controlled TK5 gate
+should establish class-to-printer routing or a true spool-dataset
+retrieval using the read-only evidence first.
+
+The 120/120 functional regression baseline and
+`native-stream-contract.md` remain valid and untouched. Neither
+stream behavior nor regression fixture expectations were changed.
