@@ -348,6 +348,22 @@ if fixture.exists():
     stream = "//BCPIN    DD  DATA,DLM=ZZ\n"
     stream += "\n".join(records) + "\nZZ\n"
     text = text.replace(anchor, stream + anchor, 1)
+# Optional second input DD, with independent FB80 GET state in BCPLMAIN.
+fixture_b = cases[0] / "input-b.records"
+if fixture_b.exists():
+    rows = fixture_b.read_text(encoding="ascii").splitlines()
+    if not rows or any(
+        len(line) > 80 or not line.isascii() or
+        line.startswith("//") or line.startswith("/*") or
+        line.startswith("ZY") for line in rows
+    ):
+        raise SystemExit(f"invalid BCPINB fixture: {fixture_b}")
+    anchor_b = "//SYSUDUMP DD  SYSOUT=*\n"
+    if text.count(anchor_b) != 1:
+        raise SystemExit("expected one SYSUDUMP anchor for BCPINB")
+    segment = "//BCPINB   DD  DATA,DLM=ZY\n"
+    segment += "\n".join(rows) + "\nZY\n"
+    text = text.replace(anchor_b, segment + anchor_b, 1)
 # Output regression fixtures request a separately allocated QSAM destination.
 alt = cases[0] / "expected-alt.txt"
 if alt.exists():
