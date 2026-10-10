@@ -827,6 +827,117 @@ GNOCORE  L     13,4(13)
 * From here on R10 is not a runtime base.  Executable system-vector
 * services use R11, whose value is SYSV in generated BCPL code.
 *
+***********************************************************************
+* WIP DATA
+***********************************************************************
+         DS    0F
+MODBASE  DC    F'0'
+MODEND   DC    F'0'
+TRAILER  DC    F'0'
+*
+* GETVEC WIP allocation state.
+* VECLIST is a byte pointer to the first three-word control record.
+*
+VECLIST  DC    F'0'
+GVRMAX   DC    F'4194299'
+GVRLEN   DC    F'0'
+GVRADDR  DC    F'0'
+GVRSAVE  DS    4F
+GVRPSAVE DC    F'0'
+GVRLSAVE DC    F'0'
+GVRWSAVE DC    F'0'
+FVRSAVE  DS    4F
+FVPSAVE  DC    F'0'
+FVLSAVE  DC    F'0'
+FVWSAVE  DC    F'0'
+*
+* Private MVS save area used while BCPLMAIN owns R13.
+*
+MSVSAVE  DS    18F
+*
+* Contiguous GETMAIN layout: 700 global fullwords, 16384 stack
+* fullwords, and 256 bytes of provisional clearance.  Dynamic backing
+* addresses are saved in static controls.
+* The GETMAIN block is released as a unit during FINISH/error exit.
+*
+GLOBCNT  EQU   699
+GVBYTES  EQU   (GLOBCNT+1)*4
+DYNLEN   DC    F'68592'
+DYNBASE  DC    F'0'
+DYNWORK  DC    F'0'
+DYNEND   DC    F'0'
+RELRET   DC    F'0'
+STOPRC   DC    F'0'
+*
+* Regression 03 output state.  SYSPRINT is supplied by the GO step.
+* Historical stream/DCB support was richer; this is only the first
+* observable character-output rung.  Normal step termination currently
+* owns DCB cleanup; explicit CLOSE remains under reconstruction.
+*
+DECPACK  DS    D
+DECZON   DS    CL15
+OUTPOS   DC    F'0'
+OUTBUF   DS    CL132
+BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
+*
+*
+* Two simultaneously open logical output destinations (SYSPRINT,
+* BCPALT). The second DCB is explicitly supplied by regression JCL.
+         DS    0F
+OUT1CTL  DC    F'1'
+OUT2CTL  DC    F'2'
+OUTCURR  DC    F'0'
+OUTRES DC   F'0'
+OUT2POS  DC    F'0'
+OUTMAX   DC    F'132'
+OUTLF    DC    F'10'
+OUT1NAME DC    CL8'SYSPRINT'
+OUT2NAME DC    CL6'BCPALT'
+OUT2OPEN DC    X'00'
+         DS    0F
+OUTSVREG DS    16F
+OUT2BUF  DS    CL132
+BCPOUT2  DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
+*
+* One-stream bootstrap input controls for native regression 094.
+         DS    0F
+IN2CTRL  DC    F'2'
+IN2NAME  DC    CL6'BCPINB'
+IN2OPEN  DC    X'00'
+IN2EOF   DC    X'00'
+IN2NL    DC    X'00'
+IN2PUSH  DC    X'00'
+IN2SEEN  DC    X'00'
+         DS    0F
+IN2POS   DC    F'80'
+IN2LEN   DC    F'80'
+IN2LAST  DC    F'0'
+IN2BUF   DS    CL80
+BCPIN2   DCB   DDNAME=BCPINB,DSORG=PS,MACRF=GM,EODAD=IN2ATEND
+INCTRL   DC    F'1'
+INCURR DC   F'0'
+INRECLEN DC    F'80'
+INNL     DC    X'00'
+INPUSH   DC    X'00'
+INSEEN   DC    X'00'
+         DS    0F
+INLAST   DC    F'0'
+INENDVAL DC    F'-1'
+INPOS    DC    F'80'
+ININIT   DC    F'80'
+INNAME   DC    CL5'BCPIN'
+INOPEN   DC    X'00'
+INEOF    DC    X'00'
+         DS    0F
+IORESULT DC    F'0'
+IOSAVE   DS    16F
+INBUF    DS    CL80
+BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,EODAD=INATEND
+
+*
+* Stack marker initialization and historical clearance remain separate
+* work.  No static workspace is reserved in this CSECT.
+*
          DROP  10
 *
 ***********************************************************************
@@ -1976,115 +2087,4 @@ DBGAPND  L     4,OUTPOS
 DBGARET  BR    14
 *
 ***********************************************************************
-***********************************************************************
-* WIP DATA
-***********************************************************************
-         DS    0F
-MODBASE  DC    F'0'
-MODEND   DC    F'0'
-TRAILER  DC    F'0'
-*
-* GETVEC WIP allocation state.
-* VECLIST is a byte pointer to the first three-word control record.
-*
-VECLIST  DC    F'0'
-GVRMAX   DC    F'4194299'
-GVRLEN   DC    F'0'
-GVRADDR  DC    F'0'
-GVRSAVE  DS    4F
-GVRPSAVE DC    F'0'
-GVRLSAVE DC    F'0'
-GVRWSAVE DC    F'0'
-FVRSAVE  DS    4F
-FVPSAVE  DC    F'0'
-FVLSAVE  DC    F'0'
-FVWSAVE  DC    F'0'
-*
-* Private MVS save area used while BCPLMAIN owns R13.
-*
-MSVSAVE  DS    18F
-*
-* Contiguous GETMAIN layout: 700 global fullwords, 16384 stack
-* fullwords, and 256 bytes of provisional clearance.  Dynamic backing
-* addresses are saved in static controls.
-* The GETMAIN block is released as a unit during FINISH/error exit.
-*
-GLOBCNT  EQU   699
-GVBYTES  EQU   (GLOBCNT+1)*4
-DYNLEN   DC    F'68592'
-DYNBASE  DC    F'0'
-DYNWORK  DC    F'0'
-DYNEND   DC    F'0'
-RELRET   DC    F'0'
-STOPRC   DC    F'0'
-*
-* Regression 03 output state.  SYSPRINT is supplied by the GO step.
-* Historical stream/DCB support was richer; this is only the first
-* observable character-output rung.  Normal step termination currently
-* owns DCB cleanup; explicit CLOSE remains under reconstruction.
-*
-DECPACK  DS    D
-DECZON   DS    CL15
-OUTPOS   DC    F'0'
-OUTBUF   DS    CL132
-BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
-*
-*
-* Two simultaneously open logical output destinations (SYSPRINT,
-* BCPALT). The second DCB is explicitly supplied by regression JCL.
-         DS    0F
-OUT1CTL  DC    F'1'
-OUT2CTL  DC    F'2'
-OUTCURR  DC    F'0'
-OUTRES DC   F'0'
-OUT2POS  DC    F'0'
-OUTMAX   DC    F'132'
-OUTLF    DC    F'10'
-OUT1NAME DC    CL8'SYSPRINT'
-OUT2NAME DC    CL6'BCPALT'
-OUT2OPEN DC    X'00'
-         DS    0F
-OUTSVREG DS    16F
-OUT2BUF  DS    CL132
-BCPOUT2  DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
-*
-* One-stream bootstrap input controls for native regression 094.
-         DS    0F
-IN2CTRL  DC    F'2'
-IN2NAME  DC    CL6'BCPINB'
-IN2OPEN  DC    X'00'
-IN2EOF   DC    X'00'
-IN2NL    DC    X'00'
-IN2PUSH  DC    X'00'
-IN2SEEN  DC    X'00'
-         DS    0F
-IN2POS   DC    F'80'
-IN2LEN   DC    F'80'
-IN2LAST  DC    F'0'
-IN2BUF   DS    CL80
-BCPIN2   DCB   DDNAME=BCPINB,DSORG=PS,MACRF=GM,EODAD=IN2ATEND
-INCTRL   DC    F'1'
-INCURR DC   F'0'
-INRECLEN DC    F'80'
-INNL     DC    X'00'
-INPUSH   DC    X'00'
-INSEEN   DC    X'00'
-         DS    0F
-INLAST   DC    F'0'
-INENDVAL DC    F'-1'
-INPOS    DC    F'80'
-ININIT   DC    F'80'
-INNAME   DC    CL5'BCPIN'
-INOPEN   DC    X'00'
-INEOF    DC    X'00'
-         DS    0F
-IORESULT DC    F'0'
-IOSAVE   DS    16F
-INBUF    DS    CL80
-BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,EODAD=INATEND
-
-*
-* Stack marker initialization and historical clearance remain separate
-* work.  No static workspace is reserved in this CSECT.
-*
          END   BCPLMAIN
