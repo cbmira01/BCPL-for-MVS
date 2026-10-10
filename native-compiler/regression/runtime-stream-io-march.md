@@ -350,3 +350,30 @@ No new BCPLMAIN change was required for regression 096.
 Next planned regression is 097, UNRDCH one-character pushback; confirm
 its actual interface from project sources before implementing.
 Full 000–096 native suite has not been rerun.
+
+## Regression 097 candidate — one-character UNRDCH
+
+The 1974 Cambridge IBM System/370 BCPL manual, section 2.8.1,
+specifies zero-argument `UNRDCH()`: the following `RDCH()`
+returns the same character as the preceding read on the currently
+selected input stream.
+
+The WIP runtime now publishes G!15 and retains the latest RDCH
+result, a valid-result flag, and a single pending pushback flag.
+Pending pushback is examined before INEOF so a previous result
+can be repeated without repositioning the underlying QSAM DCB.
+Only one selected stream is supported.
+
+Regression `097-selected-input-unrdch` reads physical records A
+and B; it pushes back A, the logical newline, and B. The expected
+single buffered SYSPRINT output is `AA//BB`.
+
+Status: **PENDING TK5**. Direct source checks against the complete
+modified assembler verified ASCII-safe content, no lines beyond
+71 columns, no tabs/trailing whitespace, no labels longer than
+8 characters, and unique existing BCPLMAIN CSECT and GIDONE BLIB
+injection anchors. The executable Python
+`tools/checks/check-native-runtime.py` was not run: the tool
+environment cannot clone the GitHub repository. These source-level
+checks are not represented as completion of that executable gate.
+No runtime execution or regression panel pass is claimed.
