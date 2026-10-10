@@ -488,3 +488,7 @@ restart without relying solely on a one-record EOF transition.
 result. The source-level assembler-card width/whitespace checks
 passed; no TK5 assemble/link/GO run has yet occurred. Baseline
 000–097 is independently accepted with 98/98 PASS.
+
+## Regression 098 accepted under TK5
+
+Operator pulled `7374c24` and ran `tools/run-native-regression 98 --show-output`. The observed output was `AEA/`, with harness **PASS 1 / FAIL 0 / TOTAL 1**. **098 ACCEPTED.** The test establishes G!46 ENDREAD closing the selected BCPIN stream, provisional no-selection RDCH EOF (-1), and successful reopening from the first record with newline handling. The last full native panel remains 000–097 at 98/98 PASS; a complete 000–098 panel has not yet been rerun after ENDREAD was added.
