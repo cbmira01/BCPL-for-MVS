@@ -28,6 +28,7 @@ RETURN_NEW = """RELDONE  MVC   OUTBUF(7),TRTXT83
          LA    2,240(2)
          STC   2,OUTBUF+6
          PUT   BCPOUT,OUTBUF
+         CLOSE (BCPOUT)
          L     14,RELRET
          BR    14"""
 DATA = """RELRET   DC    F'0'"""
@@ -39,10 +40,9 @@ TRTXT83  DC    CL7'V=0 M=0'"""
 
 def instrument(text: str) -> str:
     # This probe PUTs its counters after RELMEM. Keep its private DCB
-    # open; canonical FINISH/CLOSE is exercised by regressions 084+.
-    # Only suppress BCPOUT's CLOSE: the final instrumented PUT runs
-    # after RELMEM. Retain BCPIN's conditional CLOSE and all other
-    # canonical termination actions introduced by the stream-I/O march.
+    # open until the final diagnostic PUT, then CLOSE it explicitly.
+    # Relocate BCPOUT CLOSE to RELDONE after the final instrumented PUT.
+    # Preserve BCPIN's conditional CLOSE and every other exit action.
     close = "FINRETN  CLOSE (BCPOUT)"
     if text.count(close) != 1:
         raise ValueError("expected unique BCPOUT CLOSE anchor")
