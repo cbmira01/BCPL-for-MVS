@@ -177,6 +177,20 @@ if [[ -f "$library" ]]; then
 fi
 
 combined="$work/native-test.asm"
+# Opt-in only: the standard native regression runtime remains the baseline.
+runtime_source="$root/asm/bcplmain-wip.asm"
+if [[ ${BCPLMAIN_MODULAR_SOURCE:-0} == 1 ]]; then
+    runtime_source="$work/bcplmain-modular.asm"
+    python3 "$root/tools/checks/check-bcplmain-modules.py" \
+        --output "$runtime_source" || exit $?
+    cmp -s "$root/asm/bcplmain-wip.asm" "$runtime_source" || {
+        echo "run-test: modular BCPLMAIN differs from baseline" >&2
+        exit 66
+    }
+elif [[ ${BCPLMAIN_MODULAR_SOURCE:-0} != 0 ]]; then
+    echo "run-test: BCPLMAIN_MODULAR_SOURCE must be 0 or 1" >&2
+    exit 64
+fi
 # entry is precomputed above as an eight-character assembler symbol.
 
 if [[ -f "$native" ]]; then
@@ -184,7 +198,7 @@ if [[ -f "$native" ]]; then
     echo "=== Prepare external native global ==="
     python3 "$script_dir/prepare-native-global.py" \
         "$generated" \
-        "$root/asm/bcplmain-wip.asm" \
+        "$runtime_source" \
         "$combined" \
         "$entry" \
         NATIVEAD \
@@ -195,11 +209,11 @@ elif [[ -n "$library_generated" ]]; then
     python3 "$script_dir/combine-separate-bcpl.py" \
         "$generated" \
         "$library_generated" \
-        "$root/asm/bcplmain-wip.asm" \
+        "$runtime_source" \
         "$combined" \
         "$entry" || exit $?
 else
-python3 - "$generated" "$root/asm/bcplmain-wip.asm"     "$combined" "$entry" <<'PY'
+python3 - "$generated" "$runtime_source"     "$combined" "$entry" <<'PY'
 from pathlib import Path
 import re
 import sys
