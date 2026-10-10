@@ -467,3 +467,24 @@ PASSED; selected-input cases 094–097 PASSED with their expected output.
 **Accepted 000–097 baseline on TK5 / MVS 3.8J.** This acceptance
 covers the present regression contracts, not untested production I/O
 semantics. March remains open for 098 (ENDREAD/explicit input close).
+
+## Regression 098 candidate — ENDREAD and reopen
+
+The historical 1974 System/370 manual states that zero-argument
+`ENDREAD()`, G!46, closes the currently selected input stream.
+The current WIP publishes G!46 and closes the single selected
+`BCPIN` DCB, clears the selection, resets EOF/newline/pushback,
+and resets the next-read position. A subsequent `FINDINPUT("BCPIN")`
+opens that DD again with fresh read state. All QSAM CLOSE paths save
+the BCPL machine registers.
+
+The regression reads A, closes the selected input, checks the
+bootstrap no-selected-stream RDCH policy (-1), reopens BCPIN,
+reads A again and then its logical newline. Expected output `AEA/`.
+Its fixture has two physical input records A and B; this proves
+restart without relying solely on a one-record EOF transition.
+
+**PENDING TK5**: this commits a test candidate, not an accepted
+result. The source-level assembler-card width/whitespace checks
+passed; no TK5 assemble/link/GO run has yet occurred. Baseline
+000–097 is independently accepted with 98/98 PASS.
