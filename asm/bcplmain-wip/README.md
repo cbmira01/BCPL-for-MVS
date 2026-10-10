@@ -216,3 +216,7 @@ confirm the GO output contains the expected BCPL value `42`.
 The basic step summary alone does not validate the value. This
 behavioral gate must pass before changing the normal runtime
 build or considering G85/G86 extraction complete.
+
+## Checkpoint 6 accepted — JOB 5519 BY038R (2026-10-10)
+
+Operator ran standard native regression 38 (PASS), generated and submitted the opt-in external BCPLBYTE roundtrip job, then supplied the complete `dump-report-for-job 5519` listing. Four steps ASMBCPL, ASMNAT, LKED and GO all returned **RC=0000**. Crucially, GO SYSOUT contained **`42`**, the expected result of BCPL `PUTBYTE(V,3,42); DEBUGINT(GETBYTE(V,3))`. IEWL cross-reference explicitly resolved both external addresses into BCPLBYTE: BCPLBYTE origin X'1560'; GETBYTE X'1560'; PUTBYTE X'1574'; referring relocation positions X'2FC' and X'300' in BCPLMAIN. Independent IFOX assembly reported zero flagged statements. **Behavioral extraction gate passed.** This establishes cross-object G85/G86 operation for the tested native BCPL program, not yet a default runner switch, persistent PDS object-library installation, or full 120-test regression retest. `dump-report-for-job` also emitted an awk locale warning over the printer spool, without impacting the job/result.
