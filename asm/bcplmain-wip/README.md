@@ -56,3 +56,26 @@ members or change MVS PDS linkage, subject to module ABI evidence.
 
 The historically described library division is a goal to investigate,
 not grounds for inventing new calling conventions.
+
+## Checkpoint 2 — opt-in native regression build source
+
+`native-compiler/regression/run-test.sh` now supports `BCPLMAIN_MODULAR_SOURCE=1`.
+It reconstructs the assembler into the individual regression work directory,
+checks the fragments against the monolith byte-for-byte, then supplies the
+reconstructed file to **all three** existing runtime assembly preparation
+paths: ordinary regression, external native-global regression, and separately
+compiled BCPL library regression. No assembler, linker, or JCL semantics
+are otherwise changed. Default `BCPLMAIN_MODULAR_SOURCE=0` retains the
+original monolithic file. Invalid values fail closed.
+
+Targeted validation to perform on the running TK5 host:
+
+```sh
+bash -n native-compiler/regression/run-test.sh
+BCPLMAIN_MODULAR_SOURCE=1 tools/run-native-regression 114 --show-output
+cmp asm/bcplmain-wip.asm workarea/native-regression/114-interleaved-stream-records/bcplmain-modular.asm
+```
+
+If this passes, test a linked-BLIB regression with the opt-in mode
+before proposing any default switch or full-panel rerun. **Checkpoint 2
+is committed but not yet validated under MVS.**
