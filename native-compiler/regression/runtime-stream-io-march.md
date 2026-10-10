@@ -377,3 +377,16 @@ injection anchors. The executable Python
 environment cannot clone the GitHub repository. These source-level
 checks are not represented as completion of that executable gate.
 No runtime execution or regression panel pass is claimed.
+
+## Regression 097 accepted under TK5
+
+Operator pulled `2284bfd` and ran `tools/run-native-regression 97 --show-output`.
+Observed BCPL output `AA//BB` and harness PASS 1 / FAIL 0 / TOTAL 1.
+**097 ACCEPTED.** The test exercises one-character UNRDCH pushback of
+an ordinary character, the logical newline separating two input records,
+and the first character of the second record.
+
+Individual native regressions 094–097 are now accepted. A full 000–097
+panel following the 097 runtime change has not yet been executed.
+Next proposed milestone: ENDREAD lifecycle and explicit CLOSE, subject
+to inspection of historical interface and existing handle semantics.
