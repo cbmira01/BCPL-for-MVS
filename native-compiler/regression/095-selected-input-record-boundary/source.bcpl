@@ -9,8 +9,8 @@ $(1
        FINISH
     $)
     SELECTINPUT(S)
-    IF RDCH()='A' THEN WRCH('A') ELSE WRCH('?')
-    IF RDCH()=10 THEN WRCH('|') ELSE WRCH('?')
-    IF RDCH()='B' THEN WRCH('B') ELSE WRCH('?')
+    TEST RDCH()='A' THEN WRCH('A') ELSE WRCH('?')
+    TEST RDCH()=10 THEN WRCH('|') ELSE WRCH('?')
+    TEST RDCH()='B' THEN WRCH('B') ELSE WRCH('?')
     FINISH
 $)1
