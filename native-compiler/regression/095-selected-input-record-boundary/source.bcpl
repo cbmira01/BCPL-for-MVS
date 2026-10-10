@@ -10,7 +10,7 @@ $(1
     $)
     SELECTINPUT(S)
     TEST RDCH()='A' THEN WRCH('A') ELSE WRCH('?')
-    TEST RDCH()=10 THEN WRCH('|') ELSE WRCH('?')
+    TEST RDCH()=10 THEN WRCH('/') ELSE WRCH('?')
     TEST RDCH()='B' THEN WRCH('B') ELSE WRCH('?')
     FINISH
 $)1
