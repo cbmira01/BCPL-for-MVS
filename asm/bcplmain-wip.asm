@@ -716,6 +716,12 @@ GIDONE   L     4,4(12)
          ST    1,60(12)
          LA    1,FINDINP
          ST    1,168(12)
+         LA    1,FINDOUT
+         ST    1,164(12)
+         LA    1,SELOUT
+         ST    1,48(12)
+         LA    1,ENDWENT
+         ST    1,188(12)
          LA    1,ENDRDENT
          ST    1,184(12)
          LA    1,WRCH
@@ -750,6 +756,9 @@ WFHAS76  EQU   *
          MVI   OUTBUF,C' '
          MVC   OUTBUF+1(131),OUTBUF
          OPEN  (BCPOUT,(OUTPUT))
+         LA    1,OUT1CTL
+         SRL   1,2
+         ST    1,OUTCURR
 *
 * Establish S, initial P/W, and the absolute-base constants required by
 * generated USING 4096,1,2,3 code.
@@ -890,6 +899,15 @@ FINEXIT  L     1,OUTPOS
          BZ    FINRETN
          PUT   BCPOUT,OUTBUF
 FINRETN  CLOSE (BCPOUT)
+         CLI   OUT2OPEN,X'01'
+         BNE   FINNOO2
+         L     1,OUT2POS
+         LTR   1,1
+         BZ    FINO2CL
+         PUT   BCPOUT2,OUT2BUF
+FINO2CL  CLOSE (BCPOUT2)
+         MVI   OUT2OPEN,X'00'
+FINNOO2  EQU   *
 * BCPIN is lazily opened by FINDINPUT; close before task exit.
          CLI   INOPEN,X'01'
          BNE   FINNOIN
@@ -1159,7 +1177,12 @@ INATEND  MVI   INEOF,X'01'
 * R0 and R1-R3 are permanent generated-code registers.
 * Native primitives preserve them.
 ***********************************************************************
-WRCH     L     14,OUTPOS
+WRCH     L     14,OUTCURR
+         LA    4,OUT2CTL
+         SRL   4,2
+         CR    14,4
+         BE    WROUT2
+         L     14,OUTPOS
          LA    4,132
          CR    14,4
          BNL   WRCHRTN
@@ -1172,6 +1195,91 @@ WRCHRTN  L     4,0(5)
          BCR   15,6
 *
 ***********************************************************************
+*
+* Separate named output DCB, simultaneous with default SYSPRINT.
+* This first implementation uses one static BCPL descriptor per DD.
+* Preserve R0-R3, R5, R6, R15 across QSAM services.
+FINDOUT  STM   0,15,OUTSVREG
+         LR    14,7
+         SLL   14,2
+         CLI   0(14),X'06'
+         BNE   FONOTFD
+         CLC   1(6,14),OUT2NAME
+         BNE   FONOTFD
+         CLI   OUT2OPEN,X'01'
+         BE    FOGOT
+         OPEN  (BCPOUT2,(OUTPUT))
+         MVI   OUT2OPEN,X'01'
+         XC    OUT2POS(4),OUT2POS
+         MVI   OUT2BUF,C' '
+         MVC   OUT2BUF+1(131),OUT2BUF
+FOGOT    LA    7,OUT2CTL
+         SRL   7,2
+         B     FORET
+FONOTFD  SR    7,7
+FORET    ST    7,OUTRESULT
+         LM    0,15,OUTSVREG
+         L     7,OUTRESULT
+         L     4,0(5)
+         BCR   15,6
+*
+SELOUT   LA    14,OUT2CTL
+         SRL   14,2
+         CR    7,14
+         BE    SO2
+         LA    14,OUT1CTL
+         SRL   14,2
+         CR    7,14
+         BNE   SOR
+SO2      ST    7,OUTCURR
+SOR      L     4,0(5)
+         BCR   15,6
+*
+* Selected BCPALT path. A BCPL newline ends one QSAM record.
+* The 132-byte buffer is reset to blank after each PUT.
+WROUT2   STM   0,15,OUTSVREG
+         C     7,OUTLF
+         BE    WO2PUT
+         L     14,OUT2POS
+         C     14,OUTMAX
+         BNL   WO2RET
+         LA    4,OUT2BUF
+         AR    4,14
+         STC   7,0(4)
+         LA    14,1(14)
+         ST    14,OUT2POS
+         B     WO2RET
+WO2PUT   PUT   BCPOUT2,OUT2BUF
+         XC    OUT2POS(4),OUT2POS
+         MVI   OUT2BUF,C' '
+         MVC   OUT2BUF+1(131),OUT2BUF
+WO2RET   LM    0,15,OUTSVREG
+         L     4,0(5)
+         BCR   15,6
+*
+* Explicit close of selected named output. Default SYSPRINT continues
+* through the existing FINISH-owned path.
+ENDWENT  STM   0,15,OUTSVREG
+         L     14,OUTCURR
+         LA    4,OUT2CTL
+         SRL   4,2
+         CR    14,4
+         BNE   EWRETURN
+         CLI   OUT2OPEN,X'01'
+         BNE   EWCLEAR
+         L     1,OUT2POS
+         LTR   1,1
+         BZ    EWCLOSE
+         PUT   BCPOUT2,OUT2BUF
+EWCLOSE  CLOSE (BCPOUT2)
+         MVI   OUT2OPEN,X'00'
+EWCLEAR  LA    14,OUT1CTL
+         SRL   14,2
+         ST    14,OUTCURR
+EWRETURN LM    0,15,OUTSVREG
+         L     4,0(5)
+         BCR   15,6
+*
 * WRITEF -- LITERAL + %N/%C/%S/%I/%X/%O BOOTSTRAP
 *
 * Regression 053 established literal-string output through G76.
@@ -1753,6 +1861,24 @@ DECZON   DS    CL15
 OUTPOS   DC    F'0'
 OUTBUF   DS    CL132
 BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
+*
+*
+* Two simultaneously open logical output destinations (SYSPRINT,
+* BCPALT). The second DCB is explicitly supplied by regression JCL.
+         DS    0F
+OUT1CTL  DC    F'1'
+OUT2CTL  DC    F'2'
+OUTCURR  DC    F'0'
+OUTRESULT DC   F'0'
+OUT2POS  DC    F'0'
+OUTMAX   DC    F'132'
+OUTLF    DC    F'10'
+OUT2NAME DC    CL6'BCPALT'
+OUT2OPEN DC    X'00'
+         DS    0F
+OUTSVREG DS    16F
+OUT2BUF  DS    CL132
+BCPOUT2  DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
 *
 * One-stream bootstrap input controls for native regression 094.
          DS    0F
