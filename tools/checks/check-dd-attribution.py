@@ -43,7 +43,7 @@ def parse_segment(path, offset, job, name, printer, queue):
     for line in lines[first:last+1]:
         if foreign.match(line) and not ident.match(line):
             raise ValueError(f"{name}: foreign JES job banner in section")
-    payload = [line.rstrip(b" \t\f") for line in lines[max(starts)+1:min(ends)]]
+    # TK5 printer places an ASCII FF at start of a new printed page.\n    # Strip only this printer-control prefix; preserve BCPL leading blanks.\n    payload = [line.removeprefix(b"\\x0c").rstrip(b" \\t")\n               for line in lines[max(starts)+1:min(ends)]]
     return payload
 
 def matched_positions(payload, expected):
@@ -62,10 +62,7 @@ def verify(a_path, z_path, a_offset, z_offset, job, jobname, expected_a, expecte
     if not matched_positions(a,ea):
         if diagnose:
             print(f"DEBUG class A payload: {len(a)} lines; wanted {ea!r}", file=sys.stderr)
-            for i, line in enumerate(a):
-                if any(token in line for token in ea) or b"AUTHORIZATION CODE IS" in line:
-                    print(f"DEBUG class A line {i}: {line[:160]!r}", file=sys.stderr)
-            print(f"DEBUG class A final 12 lines: {a[-12:]!r}", file=sys.stderr)
+            candidates = [(i,line[:160]) for i,line in enumerate(a)\n                          if line in ea or b"AUTHORIZATION CODE IS" in line]\n            print(f"DEBUG class A candidate lines (last 12): {candidates[-12:]!r}", file=sys.stderr)\n            print(f"DEBUG class A final 12 lines: {a[-12:]!r}", file=sys.stderr)
         raise ValueError("class A missing contiguous GO SYSPRINT records")
     if not matched_positions(z,ez):
         raise ValueError("class Z missing contiguous GO BCPALT records")
