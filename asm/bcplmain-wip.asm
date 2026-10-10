@@ -922,6 +922,11 @@ FINNOO2  EQU   *
          CLOSE (BCPIN)
          MVI   INOPEN,X'00'
 FINNOIN  EQU   *
+         CLI   IN2OPEN,X'01'
+         BNE   FINNOI2
+         CLOSE (BCPIN2)
+         MVI   IN2OPEN,X'00'
+FINNOI2  EQU   *
          BAL   14,RELMEM
          L     15,STOPRC
          L     13,4(13)
@@ -1050,6 +1055,25 @@ APMAXN   DC    F'16380'
 FINDINP  STM   0,15,IOSAVE
          LR    14,7
          SLL   14,2
+         CLI   0(14),X'06'
+         BNE   FTRYIN1
+         CLC   1(6,14),IN2NAME
+         BNE   FTRYIN1
+         CLI   IN2OPEN,X'01'
+         BE    FIN2OK
+         OPEN  (BCPIN2,(INPUT))
+         MVI   IN2OPEN,X'01'
+         MVI   IN2EOF,X'00'
+         MVI   IN2NL,X'00'
+         MVI   IN2PUSH,X'00'
+         MVI   IN2SEEN,X'00'
+         MVC   IN2POS(4),ININIT
+FIN2OK   LA    7,IN2CTRL
+         SRL   7,2
+         B     FRET
+FTRYIN1  EQU   *
+         LR    14,7
+         SLL   14,2
          CLI   0(14),X'05'
          BNE   FNOTFND
          CLC   1(5,14),INNAME
@@ -1082,11 +1106,17 @@ INPENT   L     7,INCURR
          L     4,0(5)
          BCR   15,6
 *
-SELINP   LA    14,INCTRL
+SELINP   LA    14,IN2CTRL
+         SRL   14,2
+         CR    7,14
+         BE    SEL2IN
+         LA    14,INCTRL
          SRL   14,2
          CR    7,14
          BNE   SELIRET
          ST    7,INCURR
+         B     SELIRET
+SEL2IN   ST    7,INCURR
 SELIRET  L     4,0(5)
          BCR   15,6
 *
@@ -1094,6 +1124,10 @@ RDCHENT  STM   0,15,IOSAVE
          L     14,INCURR
          LTR   14,14
          BZ    RDEND
+         LA    10,IN2CTRL
+         SRL   10,2
+         CR    14,10
+         BE    RD2START
          CLI   INPUSH,X'01'
          BE    RDPUSH
          CLI   INEOF,X'01'
@@ -1145,15 +1179,80 @@ RDRETURN ST    7,IORESULT
          L     4,0(5)
          BCR   15,6
 *
+* Second input DCB has independent record, pushback, and EOF state.
+RD2START CLI   IN2PUSH,X'01'
+         BE    RD2PUSH
+         CLI   IN2EOF,X'01'
+         BE    RD2END
+         L     14,IN2POS
+         C     14,IN2LEN
+         BL    RD2CHAR
+         CLI   IN2NL,X'01'
+         BE    RD2NL
+         GET   BCPIN2,IN2BUF
+         LA    14,80
+         LA    10,IN2BUF+79
+RD2TRIM  LTR   14,14
+         BZ    RD2TDONE
+         CLI   0(10),C' '
+         BNE   RD2TDONE
+         BCTR  14,0
+         BCTR  10,0
+         B     RD2TRIM
+RD2TDONE ST    14,IN2LEN
+         XC    IN2POS(4),IN2POS
+         MVI   IN2NL,X'01'
+         LTR   14,14
+         BZ    RD2NL
+         SR    14,14
+         B     RD2CHAR
+RD2NL    MVI   IN2NL,X'00'
+         L     14,IN2LEN
+         ST    14,IN2POS
+         LA    7,10
+         B     RD2RET
+RD2CHAR  LA    10,IN2BUF
+         AR    10,14
+         SR    7,7
+         IC    7,0(10)
+         LA    14,1(14)
+         ST    14,IN2POS
+         B     RD2RET
+RD2PUSH  MVI   IN2PUSH,X'00'
+         L     7,IN2LAST
+         B     RD2RET
+RD2END   L     7,INENDVAL
+RD2RET   ST    7,IORESULT
+         ST    7,IN2LAST
+         MVI   IN2SEEN,X'01'
+         LM    0,15,IOSAVE
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+*
 * UNRDCH repeats the last RDCH result once for this selected stream.
-UNRDCHEN CLI   INSEEN,X'01'
+UNRDCHEN L     14,INCURR
+         LA    10,IN2CTRL
+         SRL   10,2
+         CR    14,10
+         BE    UNRD2
+         CLI   INSEEN,X'01'
          BNE   UNRDRET
          MVI   INPUSH,X'01'
+         B     UNRDRET
+UNRD2    CLI   IN2SEEN,X'01'
+         BNE   UNRDRET
+         MVI   IN2PUSH,X'01'
 UNRDRET  L     4,0(5)
          BCR   15,6
 *
 * ENDREAD closes the selected BCPIN input stream and clears state.
 ENDRDENT STM   0,15,IOSAVE
+         L     14,INCURR
+         LA    10,IN2CTRL
+         SRL   10,2
+         CR    14,10
+         BE    ENDR2
          L     14,INCURR
          LTR   14,14
          BZ    ENDRDONE
@@ -1167,12 +1266,23 @@ ENDRCLR  XC    INCURR(4),INCURR
          MVI   INPUSH,X'00'
          MVI   INSEEN,X'00'
          MVC   INPOS(4),ININIT
+         B     ENDRDONE
+ENDR2    CLI   IN2OPEN,X'01'
+         BNE   ENDR2CLR
+         CLOSE (BCPIN2)
+         MVI   IN2OPEN,X'00'
+ENDR2CLR XC    INCURR(4),INCURR
+         MVI   IN2EOF,X'00'
+         MVI   IN2PUSH,X'00'
+         MVI   IN2SEEN,X'00'
 ENDRDONE EQU   *
          LM    0,15,IOSAVE
          L     4,0(5)
          BCR   15,6
 *
 * EODAD receives control from the QSAM GET access method.
+IN2ATEND MVI   IN2EOF,X'01'
+         B     RD2END
 INATEND  MVI   INEOF,X'01'
          B     RDEND
 *
@@ -1932,6 +2042,20 @@ BCPOUT2  DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
 *
 * One-stream bootstrap input controls for native regression 094.
          DS    0F
+IN2CTRL  DC    F'2'
+IN2NAME  DC    CL6'BCPINB'
+IN2OPEN  DC    X'00'
+IN2EOF   DC    X'00'
+IN2NL    DC    X'00'
+IN2PUSH  DC    X'00'
+IN2SEEN  DC    X'00'
+         DS    0F
+IN2POS   DC    F'80'
+IN2LEN   DC    F'80'
+IN2LAST  DC    F'0'
+IN2BUF   DS    CL80
+BCPIN2   DCB   DDNAME=BCPINB,DSORG=PS,MACRF=GM,
+               EODAD=IN2ATEND
 INCTRL   DC    F'1'
 INCURR DC   F'0'
 INRECLEN DC    F'80'
