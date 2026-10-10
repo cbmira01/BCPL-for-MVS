@@ -279,3 +279,20 @@ anchors remain uniquely present. The actual local Python
 `check-native-runtime.py` command could not be run because the GitHub
 checkout was not available in the execution container. Do not claim
 IFOX or GO success. First test 095, then repeat 094.
+
+## Regression 095 TK5 attempt — character transport mismatch
+
+Operator JOB 3893 completed Cambridge compile, IFOX assemble,
+IEWL link-edit, and GO successfully (GO RC=0000). The output
+comparison failed: the native GO SYSPRINT record appeared in
+host-recovered text as `A�B` instead of expected `A|B`.
+
+The BCPL test compares the boundary's RDCH value to 10 and
+prints the display marker only on equality. Thus the observed
+middle glyph suggests a host text-transport rendering problem
+with EBCDIC `|`, rather than an incorrect boundary return,
+although successful comparison must still be demonstrated.
+
+Regression 095's display marker is changed to slash (`/`),
+with expected `A/B`; runtime assembler is unchanged. Status
+remains **PENDING TK5** and 094 remains the accepted baseline.
