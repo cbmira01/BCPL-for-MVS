@@ -46,6 +46,7 @@ def main() -> int:
     p.add_argument("bcpl_source", type=Path)
     p.add_argument("native_source", type=Path)
     p.add_argument("output", type=Path)
+    p.add_argument("--third-source", type=Path, help="additional object (e.g., BCPLBYTE)")
     p.add_argument("--entry", required=True)
     p.add_argument("--job-name", required=True)
     args = p.parse_args()
@@ -53,16 +54,21 @@ def main() -> int:
     bcpl = read_source(args.bcpl_source)
     native = read_source(args.native_source)
 
+    third = read_source(args.third_source) if args.third_source else ""
+    third_step = asm_step("ASMBYTE", "OBJBYTE", third, "(4,LT,ASMNAT)") if third else ""
+    third_cond = ",(4,LT,ASMBYTE)" if third else ""
+    third_dd = "//         DD  DSN=&&OBJBYTE,DISP=(OLD,DELETE)\\n" if third else ""
+
     deck = f"""//{args.job_name:<8} JOB (MVS),'ASM LINK GO',CLASS=A,MSGCLASS=A,
 //             MSGLEVEL=(1,1)
 //* REGRESSION: BCPL AND NATIVE ROUTINE ASSEMBLED SEPARATELY
 {asm_step("ASMBCPL", "OBJBCPL", bcpl)}
 {asm_step("ASMNAT", "OBJNAT", native, "(4,LT,ASMBCPL)")}
-//LKED     EXEC PGM=IEWL,PARM='LET,NCAL,LIST,XREF',REGION=256K,
-//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT))
+{third_step}//LKED     EXEC PGM=IEWL,PARM='LET,NCAL,LIST,XREF',REGION=256K,
+//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT){third_cond})
 //SYSLIN   DD  DSN=&&OBJBCPL,DISP=(OLD,DELETE)
 //         DD  DSN=&&OBJNAT,DISP=(OLD,DELETE)
-//         DD  *
+{third_dd}//         DD  *
   ENTRY {args.entry}
   NAME RUNMOD(R)
 /*
@@ -71,7 +77,7 @@ def main() -> int:
 //SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))
 //SYSPRINT DD  SYSOUT=*
 //GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),
-//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),(4,LT,LKED))
+//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT){third_cond},(4,LT,LKED))
 //SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)
 //SYSUDUMP DD  SYSOUT=*
 //
