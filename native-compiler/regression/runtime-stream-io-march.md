@@ -180,3 +180,26 @@ particular, no 094 regression has yet passed.
 The documentation preserves the operator-confirmed 94/94 entry
 baseline but does not claim those cases were rerun after this
 runner-only change.
+
+## First executable rung submitted — regression 094
+
+Current candidate installs G11 `SELECTINPUT`, G13 `RDCH`, and G42
+`FINDINPUT` in `asm/bcplmain-wip.asm`. It recognizes only the
+length-prefixed EBCDIC BCPL string `"BCPIN"`, lazily opens a QSAM
+input DCB named BCPIN, and returns a word-address stream handle.
+`SELECTINPUT` installs the selected handle; `RDCH` retrieves bytes
+from a fixed 80-byte record and eventually returns ENDSTREAMCH=-1
+via its EODAD path. This is a **single-input bootstrap adapter**,
+not yet a general historical stream implementation.
+
+Regression `094-selected-input-first-character` transports the
+`input.records` fixture via the GO BCPIN DD, requests the stream,
+selects it, and prints its first character via WRCH. Expected: `A`.
+Successful source-level width/anchor review is **not** IFOX or GO
+acceptance. **094 remains pending TK5**. Its execution will also
+test the JCL in-stream fixture and QSAM DCB assumptions together.
+
+The first fixture implementation uses a JCL DD DATA delimiter `ZZ`;
+the reader injects it only for tests with `input.records`.
+No ENDREAD or multi-stream cleanup is yet provided. The rest of the
+94-test baseline must be rerun after 094 is accepted.
