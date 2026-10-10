@@ -320,3 +320,21 @@ TOTAL 1. Therefore **094 remains green against the 095 runtime**.
 Together 094 and 095 are independently accepted. Next proposed
 milestone is 096, repeated RDCH EOF after final record. Full panel
 still not verified against this runtime.
+
+## Regression 096 candidate — EOF after final input record
+
+The operator has confirmed 094 remained PASS 1/1 after 095 was
+accepted. Regression 096 is added with one BCPIN record (`A`).
+It expects four RDCH results in order: `'A'`, `10` (logical
+newline), `-1` (EOF), and `-1` again (persistent EOF). It
+renders these as `A/EE` using slash to avoid the problematic
+host rendering of the pipe character.
+
+No BCPLMAIN change is required in this first attempt: the existing
+QSAM EODAD branch marks INEOF, and the RDCH entry tests INEOF
+before attempting another GET. **096 status: PENDING TK5.**
+095 and 094 are the independently accepted baselines.
+
+If 096 passes, the next step should focus on the historical
+UNRDCH/ENDREAD semantics with explicit tests, not assume that
+this one-input-stream implementation is production-complete.
