@@ -5,7 +5,8 @@ Checks:
 - ASCII-only text;
 - no tab characters;
 - no trailing spaces or tabs;
-- no source text beyond column 71.
+- no source text beyond column 71;
+- no defined IFOX/Assembler F symbol longer than eight characters.
 
 Exit status is zero when all inputs pass and nonzero when any violation is
 found.  Diagnostics are stable and intended for both humans and automation.
@@ -14,11 +15,31 @@ found.  Diagnostics are stable and intended for both humans and automation.
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 import sys
 
 
 MAX_SOURCE_COLUMN = 71
+MAX_SYMBOL_LENGTH = 8
+SYMBOL = re.compile(r"^[A-Za-z@$#_][A-Za-z0-9@$#_]*$")
+
+
+def check_symbol_definitions(path: Path, text: str) -> list[str]:
+    """Check the Assembler F name field; not operands or continuation cards."""
+    issues: list[str] = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if not line or line[0].isspace() or line.startswith(("*", ".*")):
+            continue
+        label = line.split(None, 1)[0]
+        if label.startswith("//"):
+            continue
+        if len(label) > MAX_SYMBOL_LENGTH and SYMBOL.fullmatch(label):
+            issues.append(
+                f"{path}:{lineno}: IFOX symbol '{label}' exceeds "
+                f"{MAX_SYMBOL_LENGTH} characters (length {len(label)})"
+            )
+    return issues
 
 
 def iter_files(paths: list[Path]):
@@ -62,6 +83,7 @@ def check_file(path: Path) -> list[str]:
                 f"{MAX_SOURCE_COLUMN} (length {len(line)}; tail={tail!r})"
             )
 
+    problems.extend(check_symbol_definitions(path, text))
     return problems
 
 
