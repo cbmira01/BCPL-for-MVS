@@ -145,3 +145,40 @@ installation, or any regression. **Pending actual operator MVS run.**
 ## Checkpoint 4 accepted — JOB 5515 (2026-10-10)
 
 Operator submitted the isolated `BCBYTE1` two-object test, returned as **JOB 5515**. `tools/job-summary 5515` reports ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, overall SUCCESS, and no flagged assembler statements. The external caller checks original GETBYTE, PUTBYTE modification, and GETBYTE readback. This **accepts independent BCPLBYTE assembly/link/execution**; it does not yet validate installing G85/G86 via external object addresses in BCPLMAIN. Next change must be opt-in and preserve the default 120-test baseline.
+
+## Checkpoint 5 — opt-in BCPLMAIN-to-BCPLBYTE object integration
+
+Added `tools/checks/prepare-bcplbyte-runtime-probe.py` to create a
+**separate**, two-object MVS job from the existing generated native
+regression 114 assembler. The preparation script:
+
+- Requires exactly one BCPLMAIN CSECT, and exactly one G85/G86
+  installation site each; fails closed if the expected source differs.
+- Declares `EXTRN GETBYTE,PUTBYTE` in the BCPLMAIN assembler unit,
+  replaces the internal `LA` address installations with
+  `L 1,=A(GETBYTE)` / `L 1,=A(PUTBYTE)` (external relocations).
+- Removes the two internal routine definitions from the copied source;
+  leaves all other BCPLMAIN code in the independent assembler unit.
+- Uses the established two-object IFOX/IEWL JCL generator to assemble
+  `asm/bcplbyte.asm` independently and include it in the same load
+  module; restores regression 114's alternate output DD.
+- **Never edits** `asm/bcplmain-wip.asm`, existing regression 114
+  source, or the standard regression runner.
+
+On a host with the regression 114 generated source already present:
+
+```sh
+python3 tools/checks/prepare-bcplbyte-runtime-probe.py
+bash tools/submit-jcl \
+  workarea/native-regression/114-interleaved-stream-records/byte-object-probe/byte-object-probe.jcl
+tools/job-summary JOBNUMBER
+```
+
+Accept only `ASMBCPL`, `ASMNAT`, `LKED`, and `GO` all RC=0000,
+then verify the GO stream output remains SYSPRINT `AB`, `C` and
+BCPALT `1`, `2`. A successful GO RC alone does not prove G85/G86
+were exercised; regression 114 primarily exercises output streams.
+A subsequent targeted native BCPL GETBYTE/PUTBYTE regression must be
+tested against this externalized runtime before generalization.
+
+**Status:** preparation committed; TK5 integration job not yet run.
