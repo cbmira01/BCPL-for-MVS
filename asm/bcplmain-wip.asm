@@ -895,9 +895,10 @@ FINRETN  CLOSE (BCPOUT)
          MVI   INOPEN,X'00'
 FINNOIN  EQU   *
          BAL   14,RELMEM
-         L     13,4(13)
-         LM    14,12,12(13)
          L     15,STOPRC
+         L     13,4(13)
+         LM    14,14,12(13)
+         LM    0,12,20(13)
          BR    14
 *
 * Drain live GETVEC allocations before freeing global/stack memory.
