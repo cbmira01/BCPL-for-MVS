@@ -182,3 +182,7 @@ A subsequent targeted native BCPL GETBYTE/PUTBYTE regression must be
 tested against this externalized runtime before generalization.
 
 **Status:** preparation committed; TK5 integration job not yet run.
+
+## Checkpoint 5 MVS job result — JOB 5516 (2026-10-10)
+
+Operator ran the opt-in `BY114R` two-object integration probe as **JOB 5516**. `tools/job-summary 5516` returned ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, and GO RC=0000; no flagged assembler statements. This accepts assembling and linking the externalized BCPLMAIN G85/G86 installation against the independently assembled BCPLBYTE object, and successful execution of regression 114's program. Because regression 114 does not actually call G85/G86, **behavioral acceptance is still pending**: use a real byte-operation BCPL regression with this externalized runtime. SYSOUT contents were not independently rechecked in this run. Default build remains unchanged.
