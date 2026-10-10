@@ -294,3 +294,7 @@ BCPLBYTE_OBJECT=1 tools/run-native-regression
 ```
 
 Full 120-test acceptance is still pending a fresh run.
+
+## Checkpoint 7 targeted fixture repair accepted (2026-10-10)
+
+After the JCL preparation correction in commit `243cceb`, operator ran `bash -n native-compiler/regression/run-test.sh` successfully and re-ran `BCPLBYTE_OBJECT=1` native regression **094** (selected input) and **114** (interleaved stream records), both **PASS 1/1**. These verify restoration of the BCPIN and BCPALT fixture paths in the two-object strategy. Full 120-regression run with the corrected harness remains pending and is required before accepting a default architecture switch.
