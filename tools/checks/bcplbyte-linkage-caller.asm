@@ -41,11 +41,13 @@ BCBYTEST CSECT
          BALR  6,15
          C     7,=F'233'
          BNE   BAD
-         SR    15,15
-         B     EXIT
-BAD      LA    15,8
-EXIT     L     13,4(13)
+GOOD     L     13,4(13)
          LM    14,12,12(13)
+         SR    15,15
+         BR    14
+BAD      L     13,4(13)
+         LM    14,12,12(13)
+         LA    15,8
          BR    14
          LTORG
          DS    0F
