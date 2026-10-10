@@ -141,3 +141,7 @@ report is examined. Assembly or link-edit failure is not acceptance.
 
 This probe does not alter the current BCPLMAIN, its G85/G86
 installation, or any regression. **Pending actual operator MVS run.**
+
+## Checkpoint 4 accepted — JOB 5515 (2026-10-10)
+
+Operator submitted the isolated `BCBYTE1` two-object test, returned as **JOB 5515**. `tools/job-summary 5515` reports ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, overall SUCCESS, and no flagged assembler statements. The external caller checks original GETBYTE, PUTBYTE modification, and GETBYTE readback. This **accepts independent BCPLBYTE assembly/link/execution**; it does not yet validate installing G85/G86 via external object addresses in BCPLMAIN. Next change must be opt-in and preserve the default 120-test baseline.
