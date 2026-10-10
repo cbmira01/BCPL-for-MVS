@@ -708,6 +708,12 @@ GIDONE   L     4,4(12)
 * G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
 *
+         LA    1,SELINP
+         ST    1,44(12)
+         LA    1,RDCHENT
+         ST    1,52(12)
+         LA    1,FINDINP
+         ST    1,168(12)
          LA    1,WRCH
          ST    1,56(12)
 * Keep BLIB's G!76 WRITEF when its export has been imported.
@@ -993,6 +999,75 @@ APTOVEC  STM   4,6,0(15)
          L     4,0(5)
          BCR   15,6
 APMAXN   DC    F'16380'
+*
+***********************************************************************
+***********************************************************************
+* INPUT STREAM RUNG 094 -- SINGLE NAMED QSAM STREAM BCPIN
+*
+* FINDINPUT accepts the EBCDIC BCPL string "BCPIN", lazily opens
+* its DCB and returns a word-address stream handle. Other DDs fail
+* with zero. SELECTINPUT retains that handle. RDCH reads characters
+* from an 80-byte fixed QSAM record; end-of-data yields -1.
+* This is a bootstrap subset, not multi-stream historical BCPL I/O.
+***********************************************************************
+FINDINP  STM   0,15,IOSAVE
+         LR    14,7
+         SLL   14,2
+         CLI   0(14),X'05'
+         BNE   FNOTFND
+         CLC   1(5,14),INNAME
+         BNE   FNOTFND
+         CLI   INOPEN,X'01'
+         BE    FFOUND
+         OPEN  (BCPIN,(INPUT))
+         MVI   INOPEN,X'01'
+FFOUND   LA    7,INCTRL
+         SRL   7,2
+         B     FRET
+FNOTFND  SR    7,7
+FRET     ST    7,IORESULT
+         LM    0,15,IOSAVE
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+*
+SELINP   LA    14,INCTRL
+         SRL   14,2
+         CR    7,14
+         BNE   SELIRET
+         ST    7,INCURRENT
+SELIRET  L     4,0(5)
+         BCR   15,6
+*
+RDCHENT  STM   0,15,IOSAVE
+         L     14,INCURRENT
+         LTR   14,14
+         BZ    RDEND
+         CLI   INEOF,X'01'
+         BE    RDEND
+         L     14,INPOS
+         C     14,INRECLEN
+         BL    RDGETCH
+         GET   BCPIN,INBUF
+         XC    INPOS(4),INPOS
+         SR    14,14
+RDGETCH  LA    10,INBUF
+         AR    10,14
+         SR    7,7
+         IC    7,0(10)
+         LA    14,1(14)
+         ST    14,INPOS
+         B     RDRETURN
+RDEND    LA    7,-1
+RDRETURN ST    7,IORESULT
+         LM    0,15,IOSAVE
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+*
+* EODAD receives control from the QSAM GET access method.
+INATEND  MVI   INEOF,X'01'
+         B     RDEND
 *
 ***********************************************************************
 * WRCH -- FIRST NATIVE CHARACTER OUTPUT
@@ -1606,6 +1681,23 @@ DECZON   DS    CL15
 OUTPOS   DC    F'0'
 OUTBUF   DS    CL132
 BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
+*
+* One-stream bootstrap input controls for native regression 094.
+         DS    0F
+INCTRL   DC    F'1'
+INCURRENT DC   F'0'
+INRECLEN DC    F'80'
+INPOS    DC    F'80'
+INNAME   DC    CL5'BCPIN'
+INOPEN   DC    X'00'
+INEOF    DC    X'00'
+         DS    0F
+IORESULT DC    F'0'
+IOSAVE   DS    16F
+INBUF    DS    CL80
+BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,                  X
+               EODAD=INATEND,RECFM=FB,LRECL=80,BLKSIZE=80
+
 *
 * Stack marker initialization and historical clearance remain separate
 * work.  No static workspace is reserved in this CSECT.
