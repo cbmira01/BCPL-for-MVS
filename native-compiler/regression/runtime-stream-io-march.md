@@ -161,3 +161,22 @@ staged source (not merely isolated snippets), then TK5 focused test
 094, and finally a full 000–094 panel. Do not report any of these as
 passing until run. No I/O implementation code was changed by this
 planning checkpoint.
+
+### Fixture transport checkpoint
+
+Native regression runner `run-test.sh` now conditionally injects
+`//BCPIN DD DATA,DLM=ZZ` when the test has an `input.records`
+fixture. This is an **opt-in JCL transport facility**, not an
+implementation of FINDINPUT or RDCH. It rejects empty fixture sets,
+over-80-column records and JCL/delimiter-looking record prefixes.
+Tests without `input.records` retain their former GO deck shape.
+
+Local synthetic fixture-transport unit tests passed for: absent
+fixture/no changes, two input records and invalid record rejection.
+The runner change itself remains **pending TK5 acceptance** and
+BCPLMAIN has not yet gained a selected-input primitive. In
+particular, no 094 regression has yet passed.
+
+The documentation preserves the operator-confirmed 94/94 entry
+baseline but does not claim those cases were rerun after this
+runner-only change.
