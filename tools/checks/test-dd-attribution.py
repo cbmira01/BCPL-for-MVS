@@ -39,6 +39,13 @@ class AttributionTests(unittest.TestCase):
         return checker.verify(**fields)
     def test_positive(self):
         self.check()
+    def test_ff_before_primary_record(self):
+        self.write("\\x0cAB\\nC\\n","1\\n2\\n")
+        self.check()
+    def test_ff_does_not_mask_leading_space(self):
+        self.write("\\x0c AB\\nC\\n","1\\n2\\n")
+        with self.assertRaisesRegex(ValueError,"class A missing"):
+            self.check()
     def test_missing_alt_record(self):
         self.write("AB\nC\n","1\n")
         with self.assertRaisesRegex(ValueError,"class Z missing"):
