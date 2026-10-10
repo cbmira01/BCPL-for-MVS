@@ -111,3 +111,33 @@ caller module that actually calls both entry points. Only then replace
 the internal runtime routines with external addresses under an opt-in
 build and run targeted GETBYTE/PUTBYTE regressions followed by the
 full suite.
+
+## Checkpoint 4 — isolated two-object MVS linkage job prepared
+
+The standalone `tools/checks/bcplbyte-linkage-caller.asm` provides
+**BCBYTEST**: an independent MVS entry program that declares
+`EXTRN GETBYTE,PUTBYTE` and calls both external symbols through IFOX/IEWL.
+It verifies GETBYTE returns EBCDIC B (194), PUTBYTE changes the same
+buffer byte to EBCDIC Z (233), and GETBYTE returns the changed byte.
+GO exits RC=0000 for success and RC=0008 for a mismatch.
+
+Reuse the existing proven two-object JCL generator; no changes to
+the regression runner are necessary:
+
+```sh
+python3 native-compiler/regression/make-two-object-job.py \
+  tools/checks/bcplbyte-linkage-caller.asm \
+  asm/bcplbyte.asm \
+  workarea/bcplbyte-linkage.jcl \
+  --entry BCBYTEST --job-name BCBYTE1
+bash tools/submit-jcl workarea/bcplbyte-linkage.jcl
+tools/job-summary JOBNUMBER
+```
+
+Expected: `ASMBCPL=0000`, `ASMNAT=0000`, `LKED=0000`,
+`GO=0000`. The independent ASM object and linking of both external
+entry symbols must be confirmed from the link-edit listing if the
+report is examined. Assembly or link-edit failure is not acceptance.
+
+This probe does not alter the current BCPLMAIN, its G85/G86
+installation, or any regression. **Pending actual operator MVS run.**
