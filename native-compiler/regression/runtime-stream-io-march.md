@@ -539,3 +539,7 @@ suite remains 000–098 with **99 PASS / 0 FAIL**.
 ## 099 first TK5 attempt — assembler-card preflight failure
 
 Operator attempted 099 on 2026-10-10. Cambridge compiler JOB 4517 passed; native deck preflight rejected `OUTRESULT` (nine-character IFOX label) at combined-source line 2020. Native ASM/LKED/GO were not run; this is **not** an EOF/UNRDCH behavior result. Commit `f7bc1ab` renames all three occurrences to `OUTRES`. An audit of canonical BCPLMAIN's instruction-column symbol definitions found no further labels longer than eight characters. Focused 099 TK5 retest remains pending; 000–098 stays the last verified 99/99 full-suite baseline.
+
+## Focused 099–103 TK5 results — 2026-10-10
+
+Operator ran each regression sequentially following the IFOX-label fix: 099 output `A/EEE` PASS; 100 output `A//B` PASS; 101 SYSPRINT output `AC` PASS; 102 SYSPRINT output `Z` PASS; 103 SYSPRINT output `Z` PASS. Each wrapper summary reported PASS 1 / FAIL 0 / TOTAL 1. Review of committed `run-test.sh` confirms that successful normal-return runs invoke `show_alt_output` for tests carrying `expected-alt.txt`, requiring expected alternate records in the post-link report (101 B; 102 A then B; 103 Q). Wrapper transcript exposes only primary BCPL output, and DD-specific SYSOUT identity has not been independently verified. Thus 101–103 satisfy current runner assertions, not yet independent DD isolation proof. Full 000–103 acceptance still pending; most recent full panel remains 000–098 at 99/99. The alternate 132-byte output buffer's overflow policy remains provisional.
