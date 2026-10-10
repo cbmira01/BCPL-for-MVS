@@ -588,15 +588,16 @@ BCPLMAIN CSECT
          LR    3,15
          BALR  10,0
          USING *,10
-         ST    3,MODBASE
 *
 * Establish a private MVS save area before any service call.
 * The generated module prefix already saved the caller's R14..R12.
 *
-         LA    1,MSVSAVE
+         L     1,=A(MSVSAVE)
          ST    13,4(1)
          ST    1,8(13)
          LR    13,1
+         USING MSVSAVE,13
+         ST    3,MODBASE
 *
 * Locate L998 = module base + unsigned positive halfword at module+10.
 * CG370 limits a generated section to less than 16K bytes, so LH is
@@ -1980,6 +1981,7 @@ DBGARET  BR    14
 * WIP DATA
 ***********************************************************************
          DS    0F
+MSVSAVE  DS    18F
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
@@ -2000,9 +2002,7 @@ FVPSAVE  DC    F'0'
 FVLSAVE  DC    F'0'
 FVWSAVE  DC    F'0'
 *
-* Private MVS save area used while BCPLMAIN owns R13.
-*
-MSVSAVE  DS    18F
+* R13 save area precedes the data controls.
 *
 * Contiguous GETMAIN layout: 700 global fullwords, 16384 stack
 * fullwords, and 256 bytes of provisional clearance.  Dynamic backing
