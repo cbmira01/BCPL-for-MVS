@@ -114,3 +114,21 @@ retrieval using the read-only evidence first.
 The 120/120 functional regression baseline and
 `native-stream-contract.md` remain valid and untouched. Neither
 stream behavior nor regression fixture expectations were changed.
+
+## Live TK5 printer topology confirmed — 2026-10-10
+
+Operator inspected `$D U,PRTS`: PRINTER1 / 00E / Q=A; PRINTER2 / 00F / Q=Z; PRINTER3 / 002 / Q=X. All showed `INACTIVE` (idle, not evidence of being drained). Operator separately verified the **running container's** `/tk5/conf/tk5.cnf`: `0002 3211 prt/prt002.txt`, `000E 1403 prt/prt00e.txt`, `000F 1403 prt/prt00f.txt`. The host-side `mvs-state/conf/tk5.cnf` is not mounted/present, so earlier advice to grep it was incorrect. Class A and class Z are already mapped to distinct printer writers and host files; no system configuration change is required for the candidate experiment.
+
+Added `tools/checks/prepare-dd-attribution-probe.py`: starting with the generated native GO deck for accepted regression 114, it creates a separate job AT114R with **only GO SYSPRINT class A and GO BCPALT class Z**. It fails closed on missing or ambiguous GO DD definitions. It never submits a job or modifies the original deck. Operator protocol:
+
+```sh
+python3 tools/checks/prepare-dd-attribution-probe.py
+# Inspect GO DD cards in generated output.
+grep -nE '^//(GO|SYSPRINT|BCPALT)' workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl | tail -12
+# Optional: snapshot sizes; submission may print additional unrelated work.
+wc -c mvs-state/prt/prt00e.txt mvs-state/prt/prt00f.txt
+bash tools/submit-jcl workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl
+# Use resulting JOB number; inspect both printer files and job-summary.
+```
+
+Expected logical data from regression 114 is SYSPRINT records `AB` then `C`, and BCPALT records `1` then `2`. The job's JES log and IFOX/linker report may be in the A file; Z file should contain BCPALT spool section bracketed by JES printer metadata. **Do not claim this establishes byte-for-byte FB132 evidence** until printer carriage control and FF/text transformations are analyzed. Do not run the full 120-panel merely to execute this isolated output attribution experiment.
