@@ -1,9 +1,9 @@
 # Native BCPL stream and character-I/O march
 
-Status: **OPEN — evidence and interface design** (2026-10-09)
+Status: **OPEN — selected-stream I/O implementation planning** (2026-10-09)
 
-Entry baseline: operator-confirmed **90 PASS / 0 FAIL** for native
-regressions 000–089 under TK5/MVS 3.8J. The FINISH/STOP runtime-exit
+Entry baseline: operator-confirmed **94 PASS / 0 FAIL** for native
+regressions 000–093 under TK5/MVS 3.8J. The FINISH/STOP runtime-exit
 march is **CLOSED**; do not modify its proven termination semantics
 without a specific regression need.
 
@@ -79,7 +79,7 @@ semantics and GO DD setup.
 
 ## Acceptance and boundaries
 
-- Preserve 90/90 baseline while investigating.
+- Preserve 94/94 baseline while investigating.
 - Add one or two tightly scoped input regressions and obtain TK5
   evidence **before** promoting a more general stream abstraction.
 - Keep BCPLMAIN source-card constraints and preflight scripts
@@ -108,3 +108,56 @@ master's APTOVEC(COMP, size) workspace contract. Resolve these in
 parallel with stream design, not by extending the MR10-oriented
 native extension-library candidates. Historical records and
 binary SYSGO output remain separate phases.
+
+## Restart after APTOVEC closure (2026-10-09)
+
+The Capacity/APTOVEC march closed after **94/94** native regressions
+passed. The older provisional 090–093 list above is historical planning
+only: those numbers are now assigned to capacity/APTOVEC. Selected-stream
+I/O regression identities start at **094**.
+
+### Runtime interface and data-contract boundaries
+
+Historical Cambridge LIBHDR assigns `SELECTINPUT:11`, `RDCH:13`,
+`UNRDCH:15`, `INPUT:16`, `FINDINPUT:42`, `ENDREAD:46`, and
+`ENDSTREAMCH=-1`. A name/slot assignment is not a complete statement
+of stream-handle representation or call-time error behavior. In
+particular, a direct RDCH connection to SYSIN is insufficient to claim
+selected-stream I/O is implemented. The eventual design needs a stream
+handle usable by FINDINPUT/SELECTINPUT/INPUT/ENDREAD, with a cursor,
+record metadata, EOF state and unreading state per input stream.
+
+Inspection of `native-compiler/regression/run-test.sh` confirms that
+the regression job-generator currently alters GO EXEC TIME but does
+not provide a general per-test GO-step input-DD facility. This should
+be addressed **before** putting QSAM reads in canonical BCPLMAIN.
+Never assume an existing JES in-stream DD can be rewound; reopening
+must be tested separately with a suitable dataset type.
+
+### First executable implementation rung: 094
+
+**094 — deterministic named input DD and selected RDCH:**
+
+- Add an opt-in regression fixture file, for example `input.records`,
+  explicitly attached as a GO-step DD named `BCPIN`; use FB/80 or an
+  explicitly specified record format. The runner must reject unsafe
+  fixture/JCL delimiters and avoid changing jobs without a fixture.
+- Implement the minimal stream handle needed to obtain the stream from
+  `FINDINPUT("BCPIN")`, select it via `SELECTINPUT`, and retrieve the
+  first EBCDIC character via `RDCH`. Preserve permanent S/370 BCPL
+  registers, R4 caller-base restoration and MVS DCB ownership.
+- For the first positive test use a known leading character and call
+  existing WRCH to report it. Do **not** yet require newline/EOF
+  semantics for record transitions; document those as the next tests.
+- Keep `FINISH`/`STOP` close/cleanup contracts intact. Record the
+  choice of lazy OPEN versus eager OPEN before implementing it.
+
+**095 onward:** deterministic record-boundary/newline and EOF behavior;
+UNRDCH and repeated EOF; explicit ENDREAD and handle switching; then
+output streams and compiler-facing `FINDPARM`/WRAPOUTPUT support.
+
+**Validation gate:** first run local repository checks on the complete
+staged source (not merely isolated snippets), then TK5 focused test
+094, and finally a full 000–094 panel. Do not report any of these as
+passing until run. No I/O implementation code was changed by this
+planning checkpoint.
