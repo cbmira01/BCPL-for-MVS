@@ -263,3 +263,34 @@ installation or permanent default switch has occurred.
 ## Checkpoint 7 targeted validation accepted (2026-10-10)
 
 Operator ran `bash -n native-compiler/regression/run-test.sh`, Python byte-compilation of `make-two-object-job.py` and `externalize-bcplbyte.py`, and two opt-in live TK5 regressions: `BCPLBYTE_OBJECT=1 tools/run-native-regression 38 --show-output` **PASS 1/1**, and similarly regression **075 PASS 1/1**. Thus both the direct BCPL G85/G86 byte-operation path and the BLIB-linked path pass with separate BCPLBYTE object linkage. The full native regression suite under the opt-in flag remains the final acceptance gate before considering a default switch. Baseline path unchanged.
+
+## Checkpoint 7 full-suite trial — fixture/JCL failure (2026-10-10)
+
+The first `BCPLBYTE_OBJECT=1 tools/run-native-regression` returned
+**99 PASS / 21 FAIL / 120 TOTAL**. Failures clustered in input and
+alternate-output tests, beginning at regression 094. The failure log
+reported `cannot locate final GO EXEC statement` before it submitted
+each affected deck. This was a **test-harness regression**, not evidence
+that BCPLBYTE byte operations malfunctioned: the two-object JCL generator
+already writes `TIME=(,1)` on GO, while the fixture-processing block
+required the earlier untimed GO statement. As a result, the block
+terminated before adding BCPIN/BCPINB/BCPALT DDs, and the runner continued
+to submit the incomplete JCL.
+
+`run-test.sh` now accepts exactly one timed or untimed GO header,
+normalizes the time limit, applies input/output DD fixtures for *all*
+JCL assembly strategies, and **aborts immediately** if fixture
+preparation fails. This corrects the visible common failure mechanism.
+No BCPLBYTE machine instructions or service interfaces changed.
+
+Validation requested before repeating the full panel:
+
+```sh
+git pull --ff-only
+bash -n native-compiler/regression/run-test.sh
+BCPLBYTE_OBJECT=1 tools/run-native-regression 94 --show-output
+BCPLBYTE_OBJECT=1 tools/run-native-regression 114 --show-output
+BCPLBYTE_OBJECT=1 tools/run-native-regression
+```
+
+Full 120-test acceptance is still pending a fresh run.
