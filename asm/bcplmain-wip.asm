@@ -1202,7 +1202,14 @@ WRCHRTN  L     4,0(5)
 FINDOUT  STM   0,15,OUTSVREG
          LR    14,7
          SLL   14,2
-         CLI   0(14),X'06'
+         CLI   0(14),X'08'
+         BNE   FOTRY2
+         CLC   1(8,14),OUT1NAME
+         BNE   FOTRY2
+         LA    7,OUT1CTL
+         SRL   7,2
+         B     FORET
+FOTRY2   CLI   0(14),X'06'
          BNE   FONOTFD
          CLC   1(6,14),OUT2NAME
          BNE   FONOTFD
@@ -1231,7 +1238,13 @@ SELOUT   LA    14,OUT2CTL
          SRL   14,2
          CR    7,14
          BNE   SOR
-SO2      ST    7,OUTCURR
+SO2      LA    14,OUT2CTL
+         SRL   14,2
+         CR    7,14
+         BNE   SOSET
+         CLI   OUT2OPEN,X'01'
+         BNE   SOR
+SOSET    ST    7,OUTCURR
 SOR      L     4,0(5)
          BCR   15,6
 *
@@ -1873,6 +1886,7 @@ OUTRESULT DC   F'0'
 OUT2POS  DC    F'0'
 OUTMAX   DC    F'132'
 OUTLF    DC    F'10'
+OUT1NAME DC    CL8'SYSPRINT'
 OUT2NAME DC    CL6'BCPALT'
 OUT2OPEN DC    X'00'
          DS    0F
