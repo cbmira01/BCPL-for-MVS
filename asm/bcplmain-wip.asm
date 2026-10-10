@@ -1318,10 +1318,12 @@ WRCH     L     14,OUTCURR
          SRL   4,2
          CR    14,4
          BE    WROUT2
+         C     7,OUTLF
+         BE    WROUT1
          L     14,OUTPOS
          LA    4,132
          CR    14,4
-         BNL   WRCHRTN
+         BNL   WROVFL1
          LA    4,OUTBUF
          AR    4,14
          STC   7,0(4)
@@ -1329,6 +1331,15 @@ WRCH     L     14,OUTCURR
          ST    14,OUTPOS
 WRCHRTN  L     4,0(5)
          BCR   15,6
+WROUT1   STM   0,15,OUTSVREG
+         PUT   BCPOUT,OUTBUF
+         XC    OUTPOS(4),OUTPOS
+         MVI   OUTBUF,C' '
+         MVC   OUTBUF+1(131),OUTBUF
+         LM    0,15,OUTSVREG
+         B     WRCHRTN
+WROVFL1  LA    7,12
+         B     STOPENT
 *
 ***********************************************************************
 *
@@ -1410,7 +1421,7 @@ WROUT2   STM   0,15,OUTSVREG
          BE    WO2PUT
          L     14,OUT2POS
          C     14,OUTMAX
-         BNL   WO2RET
+         BNL   WROVFL2
          LA    4,OUT2BUF
          AR    4,14
          STC   7,0(4)
@@ -1421,6 +1432,9 @@ WO2PUT   PUT   BCPOUT2,OUT2BUF
          XC    OUT2POS(4),OUT2POS
          MVI   OUT2BUF,C' '
          MVC   OUT2BUF+1(131),OUT2BUF
+WROVFL2 LM    0,15,OUTSVREG
+         LA    7,12
+         B     STOPENT
 WO2RET   LM    0,15,OUTSVREG
          L     4,0(5)
          BCR   15,6
