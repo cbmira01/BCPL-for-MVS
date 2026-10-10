@@ -203,3 +203,27 @@ The first fixture implementation uses a JCL DD DATA delimiter `ZZ`;
 the reader injects it only for tests with `input.records`.
 No ENDREAD or multi-stream cleanup is yet provided. The rest of the
 94-test baseline must be rerun after 094 is accepted.
+
+## Regression 094 — first GO attempt, termination correction
+
+Operator's TK5 JOB 3888: IFOX **RC=0000**, IEWL **RC=0000**,
+the BCPL output was `A`, but GO reported an abnormal/nonzero
+completion (regression wrapper RC=1; job summary GO RC=0155,
+raw IEF142I condition code 5915). Therefore **094 FAILED**.
+
+This establishes that named FINDINPUT, SELECTINPUT, first QSAM GET,
+RDCH and WRCH reached their expected functional output path; it does
+**not** establish correct termination or complete stream semantics.
+
+First repair candidate: FINDINPUT lazily OPENs BCPIN but FINISH/STOP
+only CLOSED BCPOUT. Termination now conditionally CLOSEs BCPIN
+if INOPEN is set, before RELMEM and MVS return. This is a
+lifetime/cleanup repair consistent with the existing runtime contract,
+but **causation of the nonzero completion remains unproven** until TK5
+retest. The code was checked in the execution environment for
+71-column source width, labels <=8 characters, and stable BLIB
+injection anchors; the actual Python check-native-runtime.py was
+not executed in that environment.
+
+Next: focused `tools/run-native-regression 94 --show-output`.
+Do not advance to 095 unless output and GO completion both pass.
