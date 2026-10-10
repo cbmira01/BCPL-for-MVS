@@ -410,3 +410,19 @@ simulation of the five transformations against current BCPLMAIN found
 unique anchors, no source-card width/label/whitespace violations and
 retained BCPIN CLOSE. **083 pending TK5 retest; a clean full panel is
 not yet confirmed.**
+
+## Regression 083 second retest — GO completion RC=0155
+
+Operator's retest after the instrumentation anchor repair successfully
+compiled and linked (IFOX and IEWL RC=0000), emitted both expected
+records `42` and `V=2 M=1`, but ended GO with RC=0155. Job 4102's
+assembler listing shows the instrumented `FINRETN EQU *` suppressing
+BCPOUT CLOSE while `RELDONE` issues a final PUT without subsequent
+CLOSE. This differs from canonical normal termination and resembles
+the unclosed-DCB symptom previously encountered in regression 094.
+
+Commit `1454e1a` moves `CLOSE (BCPOUT)` after `PUT BCPOUT,OUTBUF`
+in the test-local RELDONE instrumentation. BCPIN conditional closure
+in the canonical exit path remains undisturbed. This is a focused
+**hypothesis**, not yet TK5-confirmed. Regression 083 and the fully
+green 000–097 suite remain pending that retest.
