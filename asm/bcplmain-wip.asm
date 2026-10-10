@@ -1054,9 +1054,31 @@ RDCHENT  STM   0,15,IOSAVE
          L     14,INPOS
          C     14,INRECLEN
          BL    RDGETCH
+         CLI   INNL,X'01'
+         BE    RDNEWLN
          GET   BCPIN,INBUF
+* Trim fixed-record padding; blanks inside records remain data.
+         LA    14,80
+         LA    10,INBUF+79
+RDTRIM   LTR   14,14
+         BZ    RDTRMDN
+         CLI   0(10),C' '
+         BNE   RDTRMDN
+         BCTR  14,0
+         BCTR  10,0
+         B     RDTRIM
+RDTRMDN ST    14,INRECLEN
          XC    INPOS(4),INPOS
+         MVI   INNL,X'01'
+         LTR   14,14
+         BZ    RDNEWLN
          SR    14,14
+         B     RDGETCH
+RDNEWLN  MVI   INNL,X'00'
+         L     14,INRECLEN
+         ST    14,INPOS
+         LA    7,10
+         B     RDRETURN
 RDGETCH  LA    10,INBUF
          AR    10,14
          SR    7,7
@@ -1693,6 +1715,7 @@ BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 INCTRL   DC    F'1'
 INCURR DC   F'0'
 INRECLEN DC    F'80'
+INNL     DC    X'00'
 INENDVAL DC    F'-1'
 INPOS    DC    F'80'
 INNAME   DC    CL5'BCPIN'
