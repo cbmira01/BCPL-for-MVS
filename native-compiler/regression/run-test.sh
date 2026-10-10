@@ -325,7 +325,30 @@ seconds = 3 if test_no == "3" else 1
 new = f"//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,{seconds}),\n"
 if text.count(old) != 1:
     raise SystemExit("cannot locate final GO EXEC statement")
-path.write_text(text.replace(old, new, 1), encoding="ascii", newline="\n")
+text = text.replace(old, new, 1)
+# Resolve the actual case directory from the test identity, not JCL path.
+root = path.parents[2]
+cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):03d}-*"))
+if not cases and int(test_no) < 53:
+    cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):02d}-*"))
+if len(cases) != 1:
+    raise SystemExit(f"fixture lookup: expected one test {test_no}")
+fixture = cases[0] / "input.records"
+if fixture.exists():
+    records = fixture.read_text(encoding="ascii").splitlines()
+    if not records or any(
+        len(line) > 80 or not line.isascii() or
+        line.startswith("//") or line.startswith("/*") or
+        line.startswith("ZZ") for line in records
+    ):
+        raise SystemExit(f"invalid BCPIN input fixture: {fixture}")
+    anchor = "//SYSUDUMP DD  SYSOUT=*\n"
+    if text.count(anchor) != 1:
+        raise SystemExit("expected one GO SYSUDUMP anchor")
+    stream = "//BCPIN    DD  DATA,DLM=ZZ\n"
+    stream += "\n".join(records) + "\nZZ\n"
+    text = text.replace(anchor, stream + anchor, 1)
+path.write_text(text, encoding="ascii", newline="\n")
 PY
 fi
 
