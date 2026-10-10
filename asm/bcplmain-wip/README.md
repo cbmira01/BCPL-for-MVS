@@ -259,3 +259,7 @@ runs should the operator execute the full regression panel under
 `BCPLBYTE_OBJECT=1`. This checkpoint is **not** yet accepted:
 the modified runner/JCL requires live MVS testing. No object-PDS
 installation or permanent default switch has occurred.
+
+## Checkpoint 7 targeted validation accepted (2026-10-10)
+
+Operator ran `bash -n native-compiler/regression/run-test.sh`, Python byte-compilation of `make-two-object-job.py` and `externalize-bcplbyte.py`, and two opt-in live TK5 regressions: `BCPLBYTE_OBJECT=1 tools/run-native-regression 38 --show-output` **PASS 1/1**, and similarly regression **075 PASS 1/1**. Thus both the direct BCPL G85/G86 byte-operation path and the BLIB-linked path pass with separate BCPLBYTE object linkage. The full native regression suite under the opt-in flag remains the final acceptance gate before considering a default switch. Baseline path unchanged.
