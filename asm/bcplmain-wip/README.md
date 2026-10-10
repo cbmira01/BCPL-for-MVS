@@ -79,3 +79,35 @@ cmp asm/bcplmain-wip.asm workarea/native-regression/114-interleaved-stream-recor
 If this passes, test a linked-BLIB regression with the opt-in mode
 before proposing any default switch or full-panel rerun. **Checkpoint 2
 is committed but not yet validated under MVS.**
+
+## Checkpoint 3 — first independent assembler CSECT (candidate)
+
+`asm/bcplbyte.asm` defines **BCPLBYTE CSECT**, exporting entry
+symbols **GETBYTE** and **PUTBYTE**. These are the original seven-
+and six-instruction machine-service implementations from the current
+BCPLMAIN, without changes. They have no internal static-state references
+or external macros. Their BCPL caller linkage is preserved (R5 frame,
+R6 return, R7/R8/R9 args, R4 restored from workspace).
+
+`tools/checks/check-bcplbyte-extraction.py` compares both extracted
+instruction sequences against the monolithic implementation and verifies
+the CSECT/ENTRY/END declarations. Run:
+
+```sh
+python3 tools/checks/check-bcplbyte-extraction.py
+```
+
+**Status:** independently assemblable candidate source created; not yet
+assembled on TK5, resolved from a second object by the linkage editor,
+or installed in the native runtime global vector as an external entry.
+In particular, BCPLMAIN still contains its original copies of these
+routines, and **the standard 120 native regression tests continue using
+only those copies**. We do not substitute exported entry addresses or
+edit runtime globals until two-object assembler/linkage acceptance.
+
+Next gated experiment: assemble BCPLBYTE as its own object; check IFOX
+external symbol visibility for GETBYTE/PUTBYTE; link with a small
+caller module that actually calls both entry points. Only then replace
+the internal runtime routines with external addresses under an opt-in
+build and run targeted GETBYTE/PUTBYTE regressions followed by the
+full suite.
