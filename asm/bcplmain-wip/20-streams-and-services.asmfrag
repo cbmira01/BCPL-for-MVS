@@ -1,0 +1,946 @@
+***********************************************************************
+* INPUT STREAM RUNG 094 -- SINGLE NAMED QSAM STREAM BCPIN
+*
+* FINDINPUT accepts the EBCDIC BCPL string "BCPIN", lazily opens
+* its DCB and returns a word-address stream handle. Other DDs fail
+* with zero. SELECTINPUT retains that handle. RDCH reads characters
+* from an 80-byte fixed QSAM record; end-of-data yields -1.
+* This is a bootstrap subset, not multi-stream historical BCPL I/O.
+***********************************************************************
+FINDINP  STM   0,15,IOSAVE
+         LR    14,7
+         SLL   14,2
+         CLI   0(14),X'06'
+         BNE   FTRYIN1
+         CLC   1(6,14),IN2NAME
+         BNE   FTRYIN1
+         CLI   IN2OPEN,X'01'
+         BE    FIN2OK
+         OPEN  (BCPIN2,(INPUT))
+         MVI   IN2OPEN,X'01'
+         MVI   IN2EOF,X'00'
+         MVI   IN2NL,X'00'
+         MVI   IN2PUSH,X'00'
+         MVI   IN2SEEN,X'00'
+         MVC   IN2POS(4),ININIT
+FIN2OK   LA    7,IN2CTRL
+         SRL   7,2
+         B     FRET
+FTRYIN1  EQU   *
+         LR    14,7
+         SLL   14,2
+         CLI   0(14),X'05'
+         BNE   FNOTFND
+         CLC   1(5,14),INNAME
+         BNE   FNOTFND
+         CLI   INOPEN,X'01'
+         BE    FFOUND
+         OPEN  (BCPIN,(INPUT))
+         MVI   INOPEN,X'01'
+         MVI   INEOF,X'00'
+         MVI   INNL,X'00'
+         MVI   INPUSH,X'00'
+         MVI   INSEEN,X'00'
+         MVC   INPOS(4),ININIT
+FFOUND   LA    7,INCTRL
+         SRL   7,2
+         B     FRET
+FNOTFND  SR    7,7
+FRET     ST    7,IORESULT
+         LM    0,15,IOSAVE
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+*
+PARMENT  STM   0,15,IOSAVE
+         CLI   INOPEN,X'01'
+         BE    PARMOPEN
+         OPEN  (BCPIN,(INPUT))
+         MVI   INOPEN,X'01'
+         MVI   INEOF,X'00'
+         MVC   INPOS(4),ININIT
+PARMOPEN LM    0,15,IOSAVE
+         LA    7,INCTRL
+         SRL   7,2
+         L     4,0(5)
+         BCR   15,6
+*
+INPENT   L     7,INCURR
+         L     4,0(5)
+         BCR   15,6
+*
+SELINP   LA    14,IN2CTRL
+         SRL   14,2
+         CR    7,14
+         BE    SEL2IN
+         LA    14,INCTRL
+         SRL   14,2
+         CR    7,14
+         BNE   SELIRET
+         ST    7,INCURR
+         B     SELIRET
+SEL2IN   ST    7,INCURR
+SELIRET  L     4,0(5)
+         BCR   15,6
+*
+RDCHENT  STM   0,15,IOSAVE
+         L     14,INCURR
+         LTR   14,14
+         BZ    RDEND
+         LA    10,IN2CTRL
+         SRL   10,2
+         CR    14,10
+         BE    RD2START
+         CLI   INPUSH,X'01'
+         BE    RDPUSH
+         CLI   INEOF,X'01'
+         BE    RDEND
+         L     14,INPOS
+         C     14,INRECLEN
+         BL    RDGETCH
+         CLI   INNL,X'01'
+         BE    RDNEWLN
+         GET   BCPIN,INBUF
+* Trim fixed-record padding; blanks inside records remain data.
+         LA    14,80
+         LA    10,INBUF+79
+RDTRIM   LTR   14,14
+         BZ    RDTRMDN
+         CLI   0(10),C' '
+         BNE   RDTRMDN
+         BCTR  14,0
+         BCTR  10,0
+         B     RDTRIM
+RDTRMDN ST    14,INRECLEN
+         XC    INPOS(4),INPOS
+         MVI   INNL,X'01'
+         LTR   14,14
+         BZ    RDNEWLN
+         SR    14,14
+         B     RDGETCH
+RDNEWLN  MVI   INNL,X'00'
+         L     14,INRECLEN
+         ST    14,INPOS
+         LA    7,10
+         B     RDRETURN
+RDGETCH  LA    10,INBUF
+         AR    10,14
+         SR    7,7
+         IC    7,0(10)
+         LA    14,1(14)
+         ST    14,INPOS
+         B     RDRETURN
+RDPUSH   MVI   INPUSH,X'00'
+         L     7,INLAST
+         B     RDRETURN
+RDEND    L     7,INENDVAL
+RDRETURN ST    7,IORESULT
+         ST    7,INLAST
+         MVI   INSEEN,X'01'
+         LM    0,15,IOSAVE
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+*
+* Second input DCB has independent record, pushback, and EOF state.
+RD2START CLI   IN2PUSH,X'01'
+         BE    RD2PUSH
+         CLI   IN2EOF,X'01'
+         BE    RD2END
+         L     14,IN2POS
+         C     14,IN2LEN
+         BL    RD2CHAR
+         CLI   IN2NL,X'01'
+         BE    RD2NL
+         GET   BCPIN2,IN2BUF
+         LA    14,80
+         LA    10,IN2BUF+79
+RD2TRIM  LTR   14,14
+         BZ    RD2TDONE
+         CLI   0(10),C' '
+         BNE   RD2TDONE
+         BCTR  14,0
+         BCTR  10,0
+         B     RD2TRIM
+RD2TDONE ST    14,IN2LEN
+         XC    IN2POS(4),IN2POS
+         MVI   IN2NL,X'01'
+         LTR   14,14
+         BZ    RD2NL
+         SR    14,14
+         B     RD2CHAR
+RD2NL    MVI   IN2NL,X'00'
+         L     14,IN2LEN
+         ST    14,IN2POS
+         LA    7,10
+         B     RD2RET
+RD2CHAR  LA    10,IN2BUF
+         AR    10,14
+         SR    7,7
+         IC    7,0(10)
+         LA    14,1(14)
+         ST    14,IN2POS
+         B     RD2RET
+RD2PUSH  MVI   IN2PUSH,X'00'
+         L     7,IN2LAST
+         B     RD2RET
+RD2END   L     7,INENDVAL
+RD2RET   ST    7,IORESULT
+         ST    7,IN2LAST
+         MVI   IN2SEEN,X'01'
+         LM    0,15,IOSAVE
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+*
+* UNRDCH repeats the last RDCH result once for this selected stream.
+UNRDCHEN L     14,INCURR
+         LA    10,IN2CTRL
+         SRL   10,2
+         CR    14,10
+         BE    UNRD2
+         CLI   INSEEN,X'01'
+         BNE   UNRDRET
+         MVI   INPUSH,X'01'
+         B     UNRDRET
+UNRD2    CLI   IN2SEEN,X'01'
+         BNE   UNRDRET
+         MVI   IN2PUSH,X'01'
+UNRDRET  L     4,0(5)
+         BCR   15,6
+*
+* ENDREAD closes the selected BCPIN input stream and clears state.
+ENDRDENT STM   0,15,IOSAVE
+         L     14,INCURR
+         LA    10,IN2CTRL
+         SRL   10,2
+         CR    14,10
+         BE    ENDR2
+         L     14,INCURR
+         LTR   14,14
+         BZ    ENDRDONE
+         CLI   INOPEN,X'01'
+         BNE   ENDRCLR
+         CLOSE (BCPIN)
+         MVI   INOPEN,X'00'
+ENDRCLR  XC    INCURR(4),INCURR
+         MVI   INEOF,X'00'
+         MVI   INNL,X'00'
+         MVI   INPUSH,X'00'
+         MVI   INSEEN,X'00'
+         MVC   INPOS(4),ININIT
+         B     ENDRDONE
+ENDR2    CLI   IN2OPEN,X'01'
+         BNE   ENDR2CLR
+         CLOSE (BCPIN2)
+         MVI   IN2OPEN,X'00'
+ENDR2CLR XC    INCURR(4),INCURR
+         MVI   IN2EOF,X'00'
+         MVI   IN2PUSH,X'00'
+         MVI   IN2SEEN,X'00'
+ENDRDONE EQU   *
+         LM    0,15,IOSAVE
+         L     4,0(5)
+         BCR   15,6
+*
+* EODAD receives control from the QSAM GET access method.
+IN2ATEND MVI   IN2EOF,X'01'
+         B     RD2END
+INATEND  MVI   INEOF,X'01'
+         B     RDEND
+*
+***********************************************************************
+* WRCH -- FIRST NATIVE CHARACTER OUTPUT
+*
+* G14 WRCH receives the target EBCDIC character in R7.  For the first
+* output milestone it appends bytes to one 132-byte SYSPRINT record.
+* FINISH writes the buffered record.  Explicit CLOSE is deferred.
+* Job 956 showed the first WIP CLOSE path looping until S322.
+* Newline and general stream semantics remain future work.
+*
+* No MVS macro I/O occurs inside WRCH.
+*
+* Job 960 established an additional machine-routine return contract:
+* generated code may branch relative to R4 immediately after a call.
+* Procedure entry saved the caller B value at 0(R5).
+* Native primitives restore R4 from that slot before returning via R6.
+* R0 and R1-R3 are permanent generated-code registers.
+* Native primitives preserve them.
+***********************************************************************
+WRCH     L     14,OUTCURR
+         LA    4,OUT2CTL
+         SRL   4,2
+         CR    14,4
+         BE    WROUT2
+         C     7,OUTLF
+         BE    WROUT1
+         L     14,OUTPOS
+         LA    4,132
+         CR    14,4
+         BNL   WROVFL1
+         LA    4,OUTBUF
+         AR    4,14
+         STC   7,0(4)
+         LA    14,1(14)
+         ST    14,OUTPOS
+WRCHRTN  L     4,0(5)
+         BCR   15,6
+WROUT1   STM   0,15,OUTSVREG
+         PUT   BCPOUT,OUTBUF
+         XC    OUTPOS(4),OUTPOS
+         MVI   OUTBUF,C' '
+         MVC   OUTBUF+1(131),OUTBUF
+         LM    0,15,OUTSVREG
+         B     WRCHRTN
+WROVFL1  LA    7,12
+         B     STOPENT
+*
+***********************************************************************
+*
+* Separate named output DCB, simultaneous with default SYSPRINT.
+* This first implementation uses one static BCPL descriptor per DD.
+* Preserve R0-R3, R5, R6, R15 across QSAM services.
+FINDOUT  STM   0,15,OUTSVREG
+         LR    14,7
+         SLL   14,2
+         CLI   0(14),X'08'
+         BNE   FOTRY2
+         CLC   1(8,14),OUT1NAME
+         BNE   FOTRY2
+         LA    7,OUT1CTL
+         SRL   7,2
+         B     FORET
+FOTRY2   CLI   0(14),X'06'
+         BNE   FONOTFD
+         CLC   1(6,14),OUT2NAME
+         BNE   FONOTFD
+         CLI   OUT2OPEN,X'01'
+         BE    FOGOT
+         OPEN  (BCPOUT2,(OUTPUT))
+         MVI   OUT2OPEN,X'01'
+         XC    OUT2POS(4),OUT2POS
+         MVI   OUT2BUF,C' '
+         MVC   OUT2BUF+1(131),OUT2BUF
+FOGOT    LA    7,OUT2CTL
+         SRL   7,2
+         B     FORET
+FONOTFD  SR    7,7
+FORET    ST    7,OUTRES
+         LM    0,15,OUTSVREG
+         L     7,OUTRES
+         L     4,0(5)
+         BCR   15,6
+*
+* Bootstrap WRAPOUTPUT: finish selected alternate logical record.
+WRAPENT  STM   0,15,OUTSVREG
+         L     14,OUTCURR
+         LA    4,OUT2CTL
+         SRL   4,2
+         CR    14,4
+         BNE   WRAPRET
+         PUT   BCPOUT2,OUT2BUF
+         XC    OUT2POS(4),OUT2POS
+         MVI   OUT2BUF,C' '
+         MVC   OUT2BUF+1(131),OUT2BUF
+WRAPRET  LM    0,15,OUTSVREG
+         L     4,0(5)
+         BCR   15,6
+*
+OUTENT   L     7,OUTCURR
+         L     4,0(5)
+         BCR   15,6
+*
+SELOUT   LA    14,OUT2CTL
+         SRL   14,2
+         CR    7,14
+         BE    SO2
+         LA    14,OUT1CTL
+         SRL   14,2
+         CR    7,14
+         BNE   SOR
+SO2      LA    14,OUT2CTL
+         SRL   14,2
+         CR    7,14
+         BNE   SOSET
+         CLI   OUT2OPEN,X'01'
+         BNE   SOR
+SOSET    ST    7,OUTCURR
+SOR      L     4,0(5)
+         BCR   15,6
+*
+* Selected BCPALT path. A BCPL newline ends one QSAM record.
+* The 132-byte buffer is reset to blank after each PUT.
+WROUT2   STM   0,15,OUTSVREG
+         C     7,OUTLF
+         BE    WO2PUT
+         L     14,OUT2POS
+         C     14,OUTMAX
+         BNL   WROVFL2
+         LA    4,OUT2BUF
+         AR    4,14
+         STC   7,0(4)
+         LA    14,1(14)
+         ST    14,OUT2POS
+         B     WO2RET
+WO2PUT   PUT   BCPOUT2,OUT2BUF
+         XC    OUT2POS(4),OUT2POS
+         MVI   OUT2BUF,C' '
+         MVC   OUT2BUF+1(131),OUT2BUF
+         B     WO2RET
+WROVFL2 LM    0,15,OUTSVREG
+         LA    7,12
+         B     STOPENT
+WO2RET   LM    0,15,OUTSVREG
+         L     4,0(5)
+         BCR   15,6
+*
+* Explicit close of selected named output. Default SYSPRINT continues
+* through the existing FINISH-owned path.
+ENDWENT  STM   0,15,OUTSVREG
+         L     14,OUTCURR
+         LA    4,OUT2CTL
+         SRL   4,2
+         CR    14,4
+         BNE   EWRETURN
+         CLI   OUT2OPEN,X'01'
+         BNE   EWCLEAR
+         L     1,OUT2POS
+         LTR   1,1
+         BZ    EWCLOSE
+         PUT   BCPOUT2,OUT2BUF
+EWCLOSE  CLOSE (BCPOUT2)
+         MVI   OUT2OPEN,X'00'
+EWCLEAR  LA    14,OUT1CTL
+         SRL   14,2
+         ST    14,OUTCURR
+EWRETURN LM    0,15,OUTSVREG
+         L     4,0(5)
+         BCR   15,6
+*
+* WRITEF -- LITERAL + %N/%C/%S/%I/%X/%O BOOTSTRAP
+*
+* Regression 053 established literal-string output through G76.
+* Regression 054 adds the historical BLIB %N case: decimal output of
+* the next argument with no width field.  Regression 055 adds %C and
+* %S and proves sequential consumption of R8 then R9. Regression 056
+* adds the historical %I width path; Test 060 adds A-F width digits.
+*
+* BCPL strings use a length byte at byte offset zero followed by data
+* bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
+* emits signed decimal; %C emits one character; %S emits a BCPL
+* string; %I consumes one width character and emits signed decimal
+* right-justified in that field. %X and %O consume one width
+* character and emit exactly that many zero-filled hexadecimal or
+* octal digits respectively.
+*
+* This is bootstrap machinery, not a reconstruction of BLIB's BCPL
+* WRITEF body.  R0 and R1-R3 remain permanent generated-code registers.
+***********************************************************************
+WRITEST  STM   2,6,WFREGSV
+         ST    8,WFARGS
+         ST    9,WFARGS+4
+         XC    WFARGIX(4),WFARGIX
+         LR    14,7
+         SLL   14,2
+         SR    8,8
+         IC    8,0(14)
+         LA    14,1(14)
+         L     9,OUTPOS
+WFLITLP  LTR   8,8
+         BZ    WFLITDN
+         SR    7,7
+         IC    7,0(14)
+         CLI   0(14),C'%'
+         BNE   WFLITCP
+         LA    4,2
+         CR    8,4
+         BL    WFLITCP
+         CLI   1(14),C'N'
+         BE    WFNSEL
+         CLI   1(14),C'C'
+         BE    WFCSEL
+         CLI   1(14),C'I'
+         BE    WFISEL
+         CLI   1(14),C'X'
+         BE    WFXSEL
+         CLI   1(14),C'O'
+         BE    WFOSEL
+         CLI   1(14),C'S'
+         BE    WFSTSEL
+         CLI   1(14),C'$'
+         BE    WFSKARG
+         B     WFUNK
+WFSTSEL  EQU   *
+         LA    14,2(14)
+         SR    8,4
+         BAL   10,WFNEXT
+         B     WFSTR
+*
+* Historical BLIB default emits the unknown conversion character
+* without the '%' and without advancing the argument cursor.
+*
+*
+* Historical BLIB percent-dollar skips one argument; emits nothing.
+*
+WFSKARG  L     6,WFARGIX
+         LA    6,1(6)
+         ST    6,WFARGIX
+         LA    14,2(14)
+         SR    8,4
+         B     WFLITLP
+WFUNK    SR    7,7
+         IC    7,1(14)
+         LA    14,2(14)
+         SR    8,4
+         BAL   10,WFPUTC
+         B     WFLITLP
+WFNSEL   XC    WFWIDTH(4),WFWIDTH
+         LA    14,2(14)
+         SR    8,4
+         BAL   10,WFNEXT
+         B     WFNUM
+WFISEL  LA    5,3
+         CR    8,5
+         BL    WFLITCP
+         SR    6,6
+         IC    6,2(14)
+         CLI   2(14),C'A'
+         BL    WFIDEC
+         CLI   2(14),C'F'
+         BH    WFIDEC
+         S     6,WFHEXAO
+         B     WFISTOR
+WFIDEC   S     6,WFZERO
+WFISTOR  ST    6,WFWIDTH
+         LA    14,3(14)
+         SR    8,5
+         BAL   10,WFNEXT
+         B     WFNUM
+WFXSEL   LA    5,3
+         CR    8,5
+         BL    WFLITCP
+         SR    6,6
+         IC    6,2(14)
+         CLI   2(14),C'A'
+         BL    WFXDEC
+         CLI   2(14),C'F'
+         BH    WFXDEC
+         S     6,WFHEXAO
+         B     WFXSTOR
+WFXDEC   S     6,WFZERO
+WFXSTOR  ST    6,WFWIDTH
+         LA    14,3(14)
+         SR    8,5
+         BAL   10,WFNEXT
+         B     WFHEX
+WFOSEL   LA    5,3
+         CR    8,5
+         BL    WFLITCP
+         SR    6,6
+         IC    6,2(14)
+         CLI   2(14),C'A'
+         BL    WFODEC
+         CLI   2(14),C'F'
+         BH    WFODEC
+         S     6,WFHEXAO
+         B     WFOSTOR
+WFODEC   S     6,WFZERO
+WFOSTOR  ST    6,WFWIDTH
+         LA    14,3(14)
+         SR    8,5
+         BAL   10,WFNEXT
+         B     WFOCT
+WFCSEL   LA    14,2(14)
+         SR    8,4
+         BAL   10,WFNEXT
+         BAL   10,WFPUTC
+         B     WFLITLP
+WFLITCP  LA    14,1(14)
+         BCTR  8,0
+         BAL   10,WFPUTC
+         B     WFLITLP
+*
+* Emit the current signed integer using the proven CVD/UNPK shape
+* used by DEBUGINT, then copy digits through the common byte appender.
+*
+WFNUM    ST    8,WFREM
+         ST    14,WFFMTP
+         XC    WFSIGN(4),WFSIGN
+         LTR   7,7
+         BNM   WFCVT
+         LA    6,1
+         ST    6,WFSIGN
+WFCVT    CVD   7,WFDECPK
+         UNPK  WFDECZN(15),WFDECPK(8)
+         OI    WFDECZN+14,X'F0'
+         LA    4,WFDECZN
+         LA    5,15
+WFSKIP   CLI   0(4),C'0'
+         BNE   WFPAD
+         LA    6,1
+         CR    5,6
+         BE    WFPAD
+         LA    4,1(4)
+         BCT   5,WFSKIP
+*
+* R5 is now the digit count.  Pad on the left to WFWIDTH, counting a
+* minus sign as part of the field.  A width of zero is the %N case.
+*
+WFPAD    L     2,WFWIDTH
+         LTR   2,2
+         BZ    WFSIGNO
+         SR    2,5
+         S     2,WFSIGN
+         BNP   WFSIGNO
+WFPADLP  LA    7,64
+         BAL   10,WFPUTC
+         BCT   2,WFPADLP
+WFSIGNO  L     6,WFSIGN
+         LTR   6,6
+         BZ    WFDCOPY
+         LA    7,96
+         BAL   10,WFPUTC
+WFDCOPY  SR    7,7
+         IC    7,0(4)
+         BAL   10,WFPUTC
+         LA    4,1(4)
+         BCT   5,WFDCOPY
+         L     8,WFREM
+         L     14,WFFMTP
+         B     WFLITLP
+*
+* Emit exactly WFWIDTH hexadecimal digits from the current argument.
+* This mirrors historical WRITEHEX: fixed width, zero filled, high
+* nibbles first. Regression 057 establishes width 4.
+*
+WFHEX    ST    8,WFREM
+         ST    14,WFFMTP
+         ST    7,WFHEXVAL
+         L     5,WFWIDTH
+         LTR   5,5
+         BZ    WFHEXDN
+         LR    2,5
+         BCTR  2,0
+         SLL   2,2
+WFHEXLP  L     7,WFHEXVAL
+         SRL   7,0(2)
+         N     7,WFHEXMSK
+         C     7,WFHEXNIN
+         BL    WFHEXDIG
+         A     7,WFHEXAO
+         B     WFHEXOUT
+WFHEXDIG A     7,WFHEXZO
+WFHEXOUT BAL   10,WFPUTC
+         SH    2,WFHXFOUR
+         BCT   5,WFHEXLP
+WFHEXDN  L     8,WFREM
+         L     14,WFFMTP
+         B     WFLITLP
+*
+* Emit exactly WFWIDTH octal digits from the current argument.
+* This mirrors historical WRITEOCT: fixed width, zero filled, high
+* 3-bit groups first. Regression 058 establishes width 4.
+*
+WFOCT    ST    8,WFREM
+         ST    14,WFFMTP
+         ST    7,WFOCTVAL
+         L     5,WFWIDTH
+         LTR   5,5
+         BZ    WFOCTDN
+         LR    2,5
+         BCTR  2,0
+         LR    6,2
+         SLL   2,1
+         AR    2,6
+WFOCTLP  L     7,WFOCTVAL
+         SRL   7,0(2)
+         N     7,WFOCTMSK
+         A     7,WFHEXZO
+         BAL   10,WFPUTC
+         SH    2,WFOCTTHR
+         BCT   5,WFOCTLP
+WFOCTDN  L     8,WFREM
+         L     14,WFFMTP
+         B     WFLITLP
+*
+* Emit a BCPL string argument in R7.  Preserve the format cursor and
+* remaining format length in R14/R8 while the string bytes are copied.
+*
+WFSTR    LR    4,7
+         SLL   4,2
+         SR    5,5
+         IC    5,0(4)
+         LA    4,1(4)
+WFSTRLP  LTR   5,5
+         BZ    WFLITLP
+         SR    7,7
+         IC    7,0(4)
+         BAL   10,WFPUTC
+         LA    4,1(4)
+         BCTR  5,0
+         B     WFSTRLP
+*
+* Fetch the next saved formatting argument into R7 and advance the
+* bootstrap argument cursor.  Test 055 exercises R8 then R9.
+*
+WFNEXT   L     6,WFARGIX
+         SLL   6,2
+         LA    4,WFARGS
+         AR    4,6
+         L     7,0(4)
+         L     6,WFARGIX
+         LA    6,1(6)
+         ST    6,WFARGIX
+         BR    10
+*
+* Reload the argument most recently returned by WFNEXT.  The negative
+* sign append in WFNUM temporarily consumes R7.
+*
+WFLAST   L     6,WFARGIX
+         BCTR  6,0
+         SLL   6,2
+         LA    4,WFARGS
+         AR    4,6
+         L     7,0(4)
+         BR    10
+*
+* Append R7 low byte to OUTBUF when room remains.  R9 is OUTPOS.
+* Return through R10, which is scratch for this bootstrap WRITEF.
+*
+WFPUTC   LA    6,132
+         CR    9,6
+         BNL   WFPUTRT
+         LA    6,OUTBUF
+         AR    6,9
+         STC   7,0(6)
+         LA    9,1(9)
+WFPUTRT  BR    10
+WFLITDN  ST    9,OUTPOS
+         LM    2,6,WFREGSV
+         L     4,0(5)
+         BCR   15,6
+*
+WFREGSV  DS    5F
+WFARGS   DS    2F
+WFARGIX  DC    F'0'
+WFWIDTH  DC    F'0'
+WFSIGN   DC    F'0'
+WFZERO   DC    X'000000F0'
+WFHEXMSK DC    F'15'
+WFHEXNIN DC    F'10'
+WFHEXAO  DC    F'183'
+WFHEXZO  DC    F'240'
+WFHXFOUR DC   H'4'
+WFHEXVAL DC    F'0'
+WFOCTMSK DC    F'7'
+WFOCTTHR DC    H'3'
+WFOCTVAL DC    F'0'
+WFREM    DC    F'0'
+WFFMTP   DC    A(0)
+WFDECPK  DS    D
+WFDECZN  DS    CL15
+*
+***********************************************************************
+* GETBYTE(S,I) -> R7
+*
+* S is a BCPL word pointer.  I is an unrestricted byte offset.
+***********************************************************************
+GETBYTE  LR    14,7
+         SLL   14,2
+         AR    14,8
+         SR    7,7
+         IC    7,0(14)
+         L     4,0(5)
+         BCR   15,6
+*
+***********************************************************************
+* PUTBYTE(S,I,BYTE)
+*
+* S in R7, I in R8, BYTE in R9.  Store the low eight bits.
+***********************************************************************
+PUTBYTE  LR    14,7
+         SLL   14,2
+         AR    14,8
+         STC   9,0(14)
+         L     4,0(5)
+         BCR   15,6
+*
+***********************************************************************
+* GETVEC(N) -> R7 -- WIP DYNAMIC STORAGE
+*
+* Regression 27 success-path implementation.
+*
+* BCPL VEC N has indices 0..N, so GETVEC(N) supplies N+1 payload
+* fullwords.  Twelve private bytes precede the payload and mirror the
+* historical VECAREA fields VECBASE, VECLEN, and VECNEXT.
+*
+* Regression 30 changes allocation to conditional GETMAIN EC.
+* GETVEC returns zero for a negative or overlarge size, or an MVS
+* allocation failure.  N<=4194299 keeps the byte count within 24 bits.
+*
+* GETMAIN EC returns its address through A= and completion in R15.
+* Generated BCPL requires R0=0 and R1-R3 to hold permanent constants,
+* R5 to remain P, R6 to remain L, and R15 to remain W.  Preserve them
+* explicitly across the MVS service as defensive runtime discipline.
+* Test 32 ultimately identified a separate RETIMPL error, not GETMAIN
+* register corruption.
+***********************************************************************
+GETVEC   LTR   7,7
+         BC    4,GVFAIL0
+         C     7,GVRMAX
+         BC    2,GVFAIL0
+         STM   0,3,GVRSAVE
+         ST    5,GVRPSAVE
+         ST    6,GVRLSAVE
+         ST    15,GVRWSAVE
+         LR    10,7
+         LA    10,1(10)
+         SLL   10,2
+         LA    10,12(10)
+         ST    10,GVRLEN
+         GETMAIN EC,LV=(10),A=GVRADDR,SP=0
+         LTR   15,15
+         BNZ   GVFAIL
+*
+* EC writes the allocated byte address at GVRADDR.  Build the WIP
+* VECAREA record in the allocated block and chain it at VECLIST.
+*
+         L     14,GVRADDR
+         LA    7,12(14)
+         SRL   7,2
+         ST    7,0(14)
+         L     10,GVRLEN
+         ST    10,4(14)
+         L     10,VECLIST
+         ST    10,8(14)
+         ST    14,VECLIST
+*
+* Restore permanent generated-code registers and W.  R7 deliberately
+* retains the BCPL word pointer result.
+*
+         L     15,GVRWSAVE
+         LM    0,3,GVRSAVE
+         L     5,GVRPSAVE
+         L     6,GVRLSAVE
+         L     4,0(5)
+         BCR   15,6
+*
+* Failure after register save.  Return the BCPL failure value zero.
+*
+GVFAIL   L     15,GVRWSAVE
+         LM    0,3,GVRSAVE
+         L     5,GVRPSAVE
+         L     6,GVRLSAVE
+GVFAIL0  SR    7,7
+         L     4,0(5)
+         BCR   15,6
+*
+***********************************************************************
+* FREEVEC(V) -- WIP DYNAMIC STORAGE RELEASE
+*
+* Regression 28 success-path implementation.
+*
+* V is the BCPL word pointer returned by GETVEC.  Walk VECLIST looking
+* for a control record whose VECBASE field matches V.  Unlink that
+* record, then release exactly the recorded MVS allocation.
+*
+* This first rung treats V=0 or an unknown pointer as a no-op.  The
+* historical error contract for invalid FREEVEC arguments is not yet
+* reconstructed.
+*
+* FREEMAIN R may disturb the machine-service register set.  Preserve
+* R0-R3 because generated code requires them, R5/R6 because they are
+* BCPL P/L, and R15 because it is W.  This is defensive runtime
+* discipline; Test 32 ultimately identified a separate RETIMPL error.
+***********************************************************************
+FREEVEC  LTR   7,7
+         BZ    FVRETURN
+         STM   0,3,FVRSAVE
+         ST    5,FVPSAVE
+         ST    6,FVLSAVE
+         ST    15,FVWSAVE
+         LR    9,7
+         SR    8,8
+         L     14,VECLIST
+FVSCAN   LTR   14,14
+         BZ    FVNFOUND
+         C     9,0(14)
+         BE    FVFOUND
+         LR    8,14
+         L     14,8(14)
+         B     FVSCAN
+*
+* R14 = matching allocation record; R8 = previous record or zero.
+*
+FVFOUND  L     10,8(14)
+         LTR   8,8
+         BZ    FVHEAD
+         ST    10,8(8)
+         B     FVUNLNK
+FVHEAD   ST    10,VECLIST
+FVUNLNK  L     10,4(14)
+         LR    1,14
+         FREEMAIN R,LV=(10),A=(1)
+         L     15,FVWSAVE
+         LM    0,3,FVRSAVE
+         L     5,FVPSAVE
+         L     6,FVLSAVE
+FVRETURN L     4,0(5)
+         BCR   15,6
+*
+* Unknown nonzero pointer: restore the saved permanent registers.
+*
+FVNFOUND L     15,FVWSAVE
+         LM    0,3,FVRSAVE
+         L     5,FVPSAVE
+         L     6,FVLSAVE
+         B     FVRETURN
+*
+***********************************************************************
+* DEBUGINT -- PROVISIONAL BOOTSTRAP DIAGNOSTIC
+*
+* G150 DEBUGINT receives a signed 32-bit integer in R7.
+* It appends decimal text to the same SYSPRINT record used by WRCH.
+* This is not a recovered historical BCPL library interface.
+* It must not be confused with WRITEN or WRITEF.
+*
+* CVD creates packed decimal and UNPK creates zoned digits.
+* The final zone is normalized after the sign nibble is consumed.
+* Leading zeroes are suppressed.  Zero itself emits one digit.
+***********************************************************************
+DEBUGINT LTR   7,7
+         BNM   DBGCVT
+         LA    10,C'-'
+         BAL   14,DBGAPND
+DBGCVT   CVD   7,DECPACK
+         UNPK  DECZON(15),DECPACK(8)
+         OI    DECZON+14,X'F0'
+         LA    8,DECZON
+         LA    9,15
+DBGSKIP  CLI   0(8),C'0'
+         BNE   DBGOUT
+         LA    4,1
+         CR    9,4
+         BE    DBGOUT
+         LA    8,1(8)
+         BCT   9,DBGSKIP
+DBGOUT   SR    10,10
+         IC    10,0(8)
+         BAL   14,DBGAPND
+         LA    8,1(8)
+         BCT   9,DBGOUT
+         L     4,0(5)
+         BCR   15,6
+*
+* Append one EBCDIC byte from R10.  R14 is local linkage.
+*
+DBGAPND  L     4,OUTPOS
+         LA    7,132
+         CR    4,7
+         BNL   DBGARET
+         LA    7,OUTBUF
+         AR    7,4
+         STC   10,0(7)
+         LA    4,1(4)
+         ST    4,OUTPOS
+DBGARET  BR    14
