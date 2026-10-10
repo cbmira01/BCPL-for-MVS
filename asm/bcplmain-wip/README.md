@@ -186,3 +186,33 @@ tested against this externalized runtime before generalization.
 ## Checkpoint 5 MVS job result — JOB 5516 (2026-10-10)
 
 Operator ran the opt-in `BY114R` two-object integration probe as **JOB 5516**. `tools/job-summary 5516` returned ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, and GO RC=0000; no flagged assembler statements. This accepts assembling and linking the externalized BCPLMAIN G85/G86 installation against the independently assembled BCPLBYTE object, and successful execution of regression 114's program. Because regression 114 does not actually call G85/G86, **behavioral acceptance is still pending**: use a real byte-operation BCPL regression with this externalized runtime. SYSOUT contents were not independently rechecked in this run. Default build remains unchanged.
+
+## Checkpoint 6 — actual BCPL byte-operation behavior (pending TK5)
+
+Use existing regression `38-putbyte-getbyte-roundtrip`, rather than
+regression 114. Its BCPL source declares GETBYTE at G85 and PUTBYTE
+at G86, executes `PUTBYTE(V,3,42)`, then prints
+`GETBYTE(V,3)` through DEBUGINT. Expected result: `42`.
+
+The opt-in `tools/checks/prepare-bcplbyte-roundtrip-probe.py`
+requires the normal regression 38 generated `native-test.asm`
+and prepares an independent `BY038R` JCL with two assembler steps.
+BCPLMAIN's internal byte implementations are removed from the
+copied source; G85/G86 are installed from externally resolved
+BCPLBYTE object symbols. The baseline and regression runner are
+left unchanged.
+
+```sh
+tools/run-native-regression 38 --show-output
+python3 tools/checks/prepare-bcplbyte-roundtrip-probe.py
+bash tools/submit-jcl \
+  workarea/native-regression/38-putbyte-getbyte-roundtrip/byte-object-probe/byte-object-probe.jcl
+tools/job-summary JOBNUMBER
+tools/dump-report-for-job JOBNUMBER
+```
+
+Accept all assembly/link/run steps RC=0000 **and** independently
+confirm the GO output contains the expected BCPL value `42`.
+The basic step summary alone does not validate the value. This
+behavioral gate must pass before changing the normal runtime
+build or considering G85/G86 extraction complete.
