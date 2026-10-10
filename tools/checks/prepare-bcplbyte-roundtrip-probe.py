@@ -46,12 +46,6 @@ def main():
          str(modified),"asm/bcplbyte.asm",str(job),
          "--entry","BCRG0038","--job-name","BY038R"]
     subprocess.run(cmd,check=True)
-    deck=job.read_text(encoding="ascii")
-    anchor="//SYSUDUMP DD  SYSOUT=*\n"
-    if deck.count(anchor)!=1:raise ValueError("SYSUDUMP anchor is ambiguous")
-    deck=deck.replace(anchor,
-        "//BCPALT   DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"+anchor)
-    job.write_text(deck,encoding="ascii",newline="\n")
     print(f"Prepared: {job}")
     print("Two separately assembled objects; BCPLMAIN G85/G86 external.")
     print("Expected BCPL byte-service result for regression 38: 42")
