@@ -311,3 +311,12 @@ provisional convention rather than a verified general historical rule.
 Next checkpoint: repeat 094 to establish no regression in the earlier
 single-character path; then progress to explicit EOF behavior in 096.
 The complete 000–095 panel has not yet been rerun.
+
+## Regression 094 compatibility retest after 095
+
+Operator ran `tools/run-native-regression 94 --show-output` after
+accepting 095. Output was `A`; harness reported PASS 1, FAIL 0,
+TOTAL 1. Therefore **094 remains green against the 095 runtime**.
+Together 094 and 095 are independently accepted. Next proposed
+milestone is 096, repeated RDCH EOF after final record. Full panel
+still not verified against this runtime.
