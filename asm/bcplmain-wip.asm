@@ -1058,7 +1058,7 @@ RDGETCH  LA    10,INBUF
          LA    14,1(14)
          ST    14,INPOS
          B     RDRETURN
-RDEND    LA    7,-1
+RDEND    L     7,INENDVAL
 RDRETURN ST    7,IORESULT
          LM    0,15,IOSAVE
          L     7,IORESULT
@@ -1687,6 +1687,7 @@ BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 INCTRL   DC    F'1'
 INCURRENT DC   F'0'
 INRECLEN DC    F'80'
+INENDVAL DC    F'-1'
 INPOS    DC    F'80'
 INNAME   DC    CL5'BCPIN'
 INOPEN   DC    X'00'
@@ -1695,8 +1696,7 @@ INEOF    DC    X'00'
 IORESULT DC    F'0'
 IOSAVE   DS    16F
 INBUF    DS    CL80
-BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,                  X
-               EODAD=INATEND,RECFM=FB,LRECL=80,BLKSIZE=80
+BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,EODAD=INATEND
 
 *
 * Stack marker initialization and historical clearance remain separate
