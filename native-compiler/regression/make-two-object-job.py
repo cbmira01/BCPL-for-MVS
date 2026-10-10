@@ -58,6 +58,9 @@ def main() -> int:
     third_step = asm_step("ASMBYTE", "OBJBYTE", third, "(4,LT,ASMNAT)") if third else ""
     third_cond = ",(4,LT,ASMBYTE)" if third else ""
     third_dd = "//         DD  DSN=&&OBJBYTE,DISP=(OLD,DELETE)\\n" if third else ""
+    go_cond = ("//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),\\n"
+               "//             (4,LT,ASMBYTE),(4,LT,LKED))" if third else
+               "//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),(4,LT,LKED))")
 
     deck = f"""//{args.job_name:<8} JOB (MVS),'ASM LINK GO',CLASS=A,MSGCLASS=A,
 //             MSGLEVEL=(1,1)
@@ -77,7 +80,7 @@ def main() -> int:
 //SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))
 //SYSPRINT DD  SYSOUT=*
 //GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),
-//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT){third_cond},(4,LT,LKED))
+{go_cond}
 //SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)
 //SYSUDUMP DD  SYSOUT=*
 //
