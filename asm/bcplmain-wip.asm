@@ -712,6 +712,8 @@ GIDONE   L     4,4(12)
          ST    1,44(12)
          LA    1,RDCHENT
          ST    1,52(12)
+         LA    1,UNRDCHEN
+         ST    1,60(12)
          LA    1,FINDINP
          ST    1,168(12)
          LA    1,WRCH
@@ -1049,6 +1051,8 @@ RDCHENT  STM   0,15,IOSAVE
          L     14,INCURR
          LTR   14,14
          BZ    RDEND
+         CLI   INPUSH,X'01'
+         BE    RDPUSH
          CLI   INEOF,X'01'
          BE    RDEND
          L     14,INPOS
@@ -1086,11 +1090,23 @@ RDGETCH  LA    10,INBUF
          LA    14,1(14)
          ST    14,INPOS
          B     RDRETURN
+RDPUSH   MVI   INPUSH,X'00'
+         L     7,INLAST
+         B     RDRETURN
 RDEND    L     7,INENDVAL
 RDRETURN ST    7,IORESULT
+         ST    7,INLAST
+         MVI   INSEEN,X'01'
          LM    0,15,IOSAVE
          L     7,IORESULT
          L     4,0(5)
+         BCR   15,6
+*
+* UNRDCH repeats the last RDCH result once for this selected stream.
+UNRDCHEN CLI   INSEEN,X'01'
+         BNE   UNRDRET
+         MVI   INPUSH,X'01'
+UNRDRET  L     4,0(5)
          BCR   15,6
 *
 * EODAD receives control from the QSAM GET access method.
@@ -1716,6 +1732,10 @@ INCTRL   DC    F'1'
 INCURR DC   F'0'
 INRECLEN DC    F'80'
 INNL     DC    X'00'
+INPUSH   DC    X'00'
+INSEEN   DC    X'00'
+         DS    0F
+INLAST   DC    F'0'
 INENDVAL DC    F'-1'
 INPOS    DC    F'80'
 INNAME   DC    CL5'BCPIN'
