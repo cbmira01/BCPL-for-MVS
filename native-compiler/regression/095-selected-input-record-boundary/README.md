@@ -5,8 +5,8 @@ Status: **PENDING TK5**.
 A named BCPIN DD supplies two physical records with leading A and B.
 After the first record, RDCH should return BCPL newline character 10,
 not the remaining EBCDIC blank padding. The test renders the newline
-as `|` so existing narrow WRCH can show the result in one SYSPRINT
-record. Expected `A|B`; any mismatch prints `?` at its position.
+as `/` so existing narrow WRCH can show the result in one SYSPRINT
+record. Expected `A/B`; any mismatch prints `?` at its position.
 
 Chosen initial compatibility rule: RDCH trims trailing EBCDIC blanks
 from each fixed 80-byte record and returns one logical newline (10)
