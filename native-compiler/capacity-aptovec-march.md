@@ -1,6 +1,6 @@
 # BCPLMAIN capacity and APTOVEC march
 
-Status: **OPEN — historical contract established; baseline preserved**
+Status: **CLOSED — accepted under TK5, 94/94 native regressions PASS**
 Date: 2026-10-09. Starting native regression baseline: **90/90 PASS**.
 
 ## Purpose
@@ -243,3 +243,30 @@ geometry) before promotion. This is a targeted local preflight,
 checker. Repeat **focused 091** under TK5; **do not claim PASS**
 until guest execution establishes the result. No changes to the
 090 global capacity test.
+
+## Closure — full native panel acceptance (2026-10-09)
+
+Operator ran `tools/run-native-regression` against the repository state
+through regression 093 and reported:
+
+```text
+NATIVE REGRESSION COMPLETE
+PASS  94
+FAIL  0
+TOTAL 94
+```
+
+Focused cases are also individually accepted: 090 (G699), 091
+(APTOVEC F(V,N) calling convention and return), 092 (9,001-word
+vector, 36,004 bytes, first/middle/last access), and 093 (controlled
+`STACK OVERFLOW` instead of ABEND). The 091 first-run S0C1 and its
+R4-callee-base correction remain preserved above as diagnostic evidence.
+
+**March decision: CLOSED.** This is the acceptance result for the
+implemented capacity/APTOVEC scope, not a claim of complete historical
+BCPLMAIN compatibility. In particular, the larger compiler's real
+workspace demands, full source-stream I/O, and additional runtime
+contracts still require their own milestones.
+
+Earlier sections record the original plan and provisional evidence at
+the time; this closure supersedes their pending acceptance language.
