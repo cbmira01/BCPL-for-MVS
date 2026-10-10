@@ -443,3 +443,15 @@ and `LM 0,12`, skipping R15 so it retains the chosen return code.
 This corrects canonical native FINISH/STOP exit linkage rather than
 loosening regression 083. **Pending TK5 retest of 083, then full
 000–097 panel** because canonical BCPLMAIN changed.
+
+## Regression 083 accepted after FINEXIT repair
+
+Operator pulled `ee37a34` and ran
+`tools/run-native-regression 83 --show-output`. The observed BCPL
+output was `42` followed by `V=2 M=1`. The harness reported
+**PASS 1 / FAIL 0 / TOTAL 1**. This accepts the focused 083 repair:
+test-local output CLOSE after final diagnostic PUT and canonical
+FINEXIT completion-code retrieval before caller register restore.
+The preceding complete 000–097 suite had 97 passes and only 083
+failed; **fresh 000–097 full-panel verification against the latest
+canonical FINEXIT change is still pending**.
