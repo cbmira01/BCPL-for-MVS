@@ -492,3 +492,7 @@ passed; no TK5 assemble/link/GO run has yet occurred. Baseline
 ## Regression 098 accepted under TK5
 
 Operator pulled `7374c24` and ran `tools/run-native-regression 98 --show-output`. The observed output was `AEA/`, with harness **PASS 1 / FAIL 0 / TOTAL 1**. **098 ACCEPTED.** The test establishes G!46 ENDREAD closing the selected BCPIN stream, provisional no-selection RDCH EOF (-1), and successful reopening from the first record with newline handling. The last full native panel remains 000–097 at 98/98 PASS; a complete 000–098 panel has not yet been rerun after ENDREAD was added.
+
+## Full 000–098 suite accepted — 2026-10-10
+
+Operator pulled `965a57e` and ran `tools/run-native-regression` without a test-number filter. The harness executed regressions 000–098, including 083 storage-reclamation instrumentation, 084–089 FINISH/STOP, and 094–098 selected-input stream I/O. All passed: **PASS 99 / FAIL 0 / TOTAL 99**. Output for 098 was `AEA/`. This establishes an accepted full-suite 99/99 TK5 / MVS 3.8J baseline after the G!46 ENDREAD implementation. This does not imply broader multistream or production-QSAM coverage beyond the exercised regressions.
