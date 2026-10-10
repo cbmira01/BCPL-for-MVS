@@ -57,8 +57,8 @@ def main() -> int:
     third = read_source(args.third_source) if args.third_source else ""
     third_step = asm_step("ASMBYTE", "OBJBYTE", third, "(4,LT,ASMNAT)") if third else ""
     third_cond = ",(4,LT,ASMBYTE)" if third else ""
-    third_dd = "//         DD  DSN=&&OBJBYTE,DISP=(OLD,DELETE)\\n" if third else ""
-    go_cond = ("//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),\\n"
+    third_dd = "//         DD  DSN=&&OBJBYTE,DISP=(OLD,DELETE)\n" if third else ""
+    go_cond = ("//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),\n"
                "//             (4,LT,ASMBYTE),(4,LT,LKED))" if third else
                "//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),(4,LT,LKED))")
 
