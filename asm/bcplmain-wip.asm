@@ -716,6 +716,8 @@ GIDONE   L     4,4(12)
          ST    1,60(12)
          LA    1,FINDINP
          ST    1,168(12)
+         LA    1,ENDRDENT
+         ST    1,184(12)
          LA    1,WRCH
          ST    1,56(12)
 * Keep BLIB's G!76 WRITEF when its export has been imported.
@@ -1030,6 +1032,11 @@ FINDINP  STM   0,15,IOSAVE
          BE    FFOUND
          OPEN  (BCPIN,(INPUT))
          MVI   INOPEN,X'01'
+         MVI   INEOF,X'00'
+         MVI   INNL,X'00'
+         MVI   INPUSH,X'00'
+         MVI   INSEEN,X'00'
+         MVC   INPOS(4),ININIT
 FFOUND   LA    7,INCTRL
          SRL   7,2
          B     FRET
@@ -1108,6 +1115,26 @@ UNRDCHEN CLI   INSEEN,X'01'
          BNE   UNRDRET
          MVI   INPUSH,X'01'
 UNRDRET  L     4,0(5)
+         BCR   15,6
+*
+* ENDREAD closes the selected BCPIN input stream and clears state.
+ENDRDENT STM   0,15,IOSAVE
+         L     14,INCURR
+         LTR   14,14
+         BZ    ENDRDONE
+         CLI   INOPEN,X'01'
+         BNE   ENDRCLR
+         CLOSE (BCPIN)
+         MVI   INOPEN,X'00'
+ENDRCLR  XC    INCURR(4),INCURR
+         MVI   INEOF,X'00'
+         MVI   INNL,X'00'
+         MVI   INPUSH,X'00'
+         MVI   INSEEN,X'00'
+         MVC   INPOS(4),ININIT
+ENDRDONE EQU   *
+         LM    0,15,IOSAVE
+         L     4,0(5)
          BCR   15,6
 *
 * EODAD receives control from the QSAM GET access method.
@@ -1739,6 +1766,7 @@ INSEEN   DC    X'00'
 INLAST   DC    F'0'
 INENDVAL DC    F'-1'
 INPOS    DC    F'80'
+ININIT   DC    F'80'
 INNAME   DC    CL5'BCPIN'
 INOPEN   DC    X'00'
 INEOF    DC    X'00'
