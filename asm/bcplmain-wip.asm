@@ -1035,12 +1035,12 @@ SELINP   LA    14,INCTRL
          SRL   14,2
          CR    7,14
          BNE   SELIRET
-         ST    7,INCURRENT
+         ST    7,INCURR
 SELIRET  L     4,0(5)
          BCR   15,6
 *
 RDCHENT  STM   0,15,IOSAVE
-         L     14,INCURRENT
+         L     14,INCURR
          LTR   14,14
          BZ    RDEND
          CLI   INEOF,X'01'
@@ -1685,7 +1685,7 @@ BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 * One-stream bootstrap input controls for native regression 094.
          DS    0F
 INCTRL   DC    F'1'
-INCURRENT DC   F'0'
+INCURR DC   F'0'
 INRECLEN DC    F'80'
 INENDVAL DC    F'-1'
 INPOS    DC    F'80'
