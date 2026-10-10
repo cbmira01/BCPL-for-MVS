@@ -710,6 +710,10 @@ GIDONE   L     4,4(12)
 *
          LA    1,SELINP
          ST    1,44(12)
+         LA    1,INPENT
+         ST    1,64(12)
+         LA    1,OUTENT
+         ST    1,68(12)
          LA    1,RDCHENT
          ST    1,52(12)
          LA    1,UNRDCHEN
@@ -1065,6 +1069,10 @@ FRET     ST    7,IORESULT
          L     4,0(5)
          BCR   15,6
 *
+INPENT   L     7,INCURR
+         L     4,0(5)
+         BCR   15,6
+*
 SELINP   LA    14,INCTRL
          SRL   14,2
          CR    7,14
@@ -1227,6 +1235,10 @@ FONOTFD  SR    7,7
 FORET    ST    7,OUTRES
          LM    0,15,OUTSVREG
          L     7,OUTRES
+         L     4,0(5)
+         BCR   15,6
+*
+OUTENT   L     7,OUTCURR
          L     4,0(5)
          BCR   15,6
 *
