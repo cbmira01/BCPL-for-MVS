@@ -535,3 +535,7 @@ runtime source text, and fixture/run-script anchors were checked.
 **No IFOX, IEWL or GO execution has been performed** for these
 candidates; all 099–103 are PENDING. The last complete accepted
 suite remains 000–098 with **99 PASS / 0 FAIL**.
+
+## 099 first TK5 attempt — assembler-card preflight failure
+
+Operator attempted 099 on 2026-10-10. Cambridge compiler JOB 4517 passed; native deck preflight rejected `OUTRESULT` (nine-character IFOX label) at combined-source line 2020. Native ASM/LKED/GO were not run; this is **not** an EOF/UNRDCH behavior result. Commit `f7bc1ab` renames all three occurrences to `OUTRES`. An audit of canonical BCPLMAIN's instruction-column symbol definitions found no further labels longer than eight characters. Focused 099 TK5 retest remains pending; 000–098 stays the last verified 99/99 full-suite baseline.
