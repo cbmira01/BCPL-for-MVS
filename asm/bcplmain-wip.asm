@@ -1097,7 +1097,15 @@ FRET     ST    7,IORESULT
          L     4,0(5)
          BCR   15,6
 *
-PARMENT  LA    7,INCTRL
+PARMENT  STM   0,15,IOSAVE
+         CLI   INOPEN,X'01'
+         BE    PARMOPEN
+         OPEN  (BCPIN,(INPUT))
+         MVI   INOPEN,X'01'
+         MVI   INEOF,X'00'
+         MVC   INPOS(4),ININIT
+PARMOPEN LM    0,15,IOSAVE
+         LA    7,INCTRL
          SRL   7,2
          L     4,0(5)
          BCR   15,6
@@ -2054,8 +2062,7 @@ IN2POS   DC    F'80'
 IN2LEN   DC    F'80'
 IN2LAST  DC    F'0'
 IN2BUF   DS    CL80
-BCPIN2   DCB   DDNAME=BCPINB,DSORG=PS,MACRF=GM,
-               EODAD=IN2ATEND
+BCPIN2   DCB   DDNAME=BCPINB,DSORG=PS,MACRF=GM,EODAD=IN2ATEND
 INCTRL   DC    F'1'
 INCURR DC   F'0'
 INRECLEN DC    F'80'
