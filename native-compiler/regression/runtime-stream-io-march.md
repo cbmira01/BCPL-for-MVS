@@ -296,3 +296,18 @@ although successful comparison must still be demonstrated.
 Regression 095's display marker is changed to slash (`/`),
 with expected `A/B`; runtime assembler is unchanged. Status
 remains **PENDING TK5** and 094 remains the accepted baseline.
+
+## Regression 095 accepted under TK5
+
+After changing the test-only newline display marker from pipe to slash,
+the operator pulled commit `87ee8e5` and ran
+`tools/run-native-regression 95 --show-output`.
+The BCPL output was `A/B`; the harness reported `PASS 1`, `FAIL 0`,
+`TOTAL 1`. **095 ACCEPTED.** This establishes the first two-record
+character stream with an inserted logical newline (value 10) for this
+FB80 input fixture. The input adapter's trailing-blank trim remains a
+provisional convention rather than a verified general historical rule.
+
+Next checkpoint: repeat 094 to establish no regression in the earlier
+single-character path; then progress to explicit EOF behavior in 096.
+The complete 000–095 panel has not yet been rerun.
