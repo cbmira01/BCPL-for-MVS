@@ -227,3 +227,33 @@ not executed in that environment.
 
 Next: focused `tools/run-native-regression 94 --show-output`.
 Do not advance to 095 unless output and GO completion both pass.
+
+## Regression 094 accepted under TK5
+
+Operator retested after the conditional BCPIN CLOSE repair at commit
+`f9130df`:
+
+```text
+NATIVE REGRESSION  094..094  (1 tests)
+RUN   094  094-selected-input-first-character
+=== BCPL output ===
+A
+
+PASS  094  094-selected-input-first-character
+NATIVE REGRESSION COMPLETE
+PASS  1
+FAIL  0
+TOTAL 1
+```
+
+**094 is ACCEPTED.** The test verifies `FINDINPUT("BCPIN")`,
+`SELECTINPUT`, one `RDCH` from a JES-supplied input DD, output
+via WRCH, and normal termination. The first run produced correct output
+but a nonzero GO completion; closing the lazily opened BCPIN DCB on
+FINISH/STOP was followed by the passing retest. This is evidence of
+successful cleanup for this case, not proof of general stream semantics.
+
+The selected-stream I/O march remains **OPEN**. Regression 095 should
+establish record-boundary/newline behavior; later tests must cover EOF,
+UNRDCH, ENDREAD, multiple selected handles, and output streams.
+A full native panel after the input changes has not yet been reported.
