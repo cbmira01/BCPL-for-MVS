@@ -455,3 +455,15 @@ FINEXIT completion-code retrieval before caller register restore.
 The preceding complete 000–097 suite had 97 passes and only 083
 failed; **fresh 000–097 full-panel verification against the latest
 canonical FINEXIT change is still pending**.
+
+## Complete 000–097 panel accepted — 2026-10-10
+
+Operator pulled repository commit `3ba85f9` and ran the unqualified
+`tools/run-native-regression` command, thereby rerunning the entire
+native suite after canonical FINEXIT was corrected. The displayed
+harness summary was **PASS 98 / FAIL 0 / TOTAL 98**. Regression 083
+produced `42` and `V=2 M=1` and PASSED; FINISH/STOP cases 084–089
+PASSED; selected-input cases 094–097 PASSED with their expected output.
+**Accepted 000–097 baseline on TK5 / MVS 3.8J.** This acceptance
+covers the present regression contracts, not untested production I/O
+semantics. March remains open for 098 (ENDREAD/explicit input close).
