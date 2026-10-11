@@ -71,28 +71,21 @@ def main() -> int:
         extra_dds.append(f"//         DD  DSN=&&{obj},DISP=(OLD,DELETE)\\n")
         previous = name
     asm_names = ["ASMBCPL", "ASMNAT"] + names[:len(extra_steps)]
-    lked_conditions = ",".join(f"(4,LT,{name})" for name in asm_names)
-    go_conditions = ",".join(f"(4,LT,{name})" for name in asm_names + ["LKED"])
-    lked_cond = f"//             COND=({lked_conditions})"
-    go_cond = f"//             COND=({go_conditions})"
-    # Split long COND operands at a subparameter boundary, not inside one.
-    def wrap_cond(s):
-        if len(s) <= 71:
-            return s
-        tokens = s.split("COND=(", 1)[1].removesuffix(")")
-        parts = tokens.split(",")
-        out = "//             COND=("
+    def conditions(items):
+        clauses = [f"(4,LT,{item})" for item in items]
         lines = []
-        for part in parts:
-            fragment = part + ("," if part != parts[-1] else ")")
-            if len(out + fragment) > 71:
-                lines.append(out.rstrip())
-                out = "//             " + fragment
+        line = "//             COND=("
+        for i, clause in enumerate(clauses):
+            term = clause + ("," if i < len(clauses)-1 else ")")
+            if len(line + term) > 71:
+                lines.append(line)
+                line = "//             " + term
             else:
-                out += fragment
-        return "\\n".join(lines)
-    lked_cond = wrap_cond(lked_cond)
-    go_cond = wrap_cond(go_cond)
+                line += term
+        lines.append(line)
+        return "\n".join(lines)
+    lked_cond = conditions(asm_names)
+    go_cond = conditions(asm_names + ["LKED"])
     extra_step_text = "".join(extra_steps)
     extra_dd_text = "".join(extra_dds)
     deck = f"""//{args.job_name:<8} JOB (MVS),'ASM LINK GO',CLASS=A,MSGCLASS=A,
