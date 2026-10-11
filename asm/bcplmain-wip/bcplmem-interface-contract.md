@@ -176,3 +176,21 @@ Operator evidence: canonical regression 082 PASS 1/1; isolated MM082R JOB 6289, 
 ## Checkpoint 2h: JOB 6292 — STOP with outstanding vectors
 
 Operator evidence (11 October 2026): canonical regression 088 PASS 1/1; MM088R JOB 6292 assembled both objects (IFOX00 RC=0000 each), linked (IEWL RC=0000), and executed (GO RC=0000), printing 42. IEWL shows independent BCPLMEM at X'1438', exporting GETVEC at X'1438', FREEVEC at X'14D8', and MEMDRAIN at X'155E'. Both GETVEC-created vectors remained outstanding when STOP(0) was invoked. The listing shows STOPENT enters FINEXIT, followed by RELMEM calling external MEMDRAIN and BCPLMAIN freeing its own allocation. This is successful execution-path evidence, not direct FREEMAIN instrumentation. This closes the isolated functional 088 gate. Next: adapt regression 083 with module-aware reclamation counts, then consider opt-in runner integration. Canonical runtime and normal runner remain unchanged.
+
+## Checkpoint 2i: external regression 083 instrumented deck staged
+
+Experimental preparer: `tools/checks/prepare-bcplmem-083-probe.py`. It reads regression 083's generated `native-test.asm` only after the normal regression has been run. The normal regression deliberately instruments the *monolithic* RELLOOP; this preparer strictly reverses those five test-local changes **in a disposable copy**, invokes the existing BCPLMEM externalizer, and instruments the independent objects separately. It deletes older derived assembler sources and decks **before** attempting a new preparation; it does not edit `asm/bcplmain-wip.asm`, regression 083, or the normal runner.
+
+The test-only `BCPLMEM` CSECT exports `MEMDCNT` and increments it **only after each FREEMAIN in MEMDRAIN returns**, not for the earlier explicit FREEVEC(B). The BCPLMAIN copy imports this counter, increments its own private `TRM083` after the global/stack FREEMAIN returns, and emits `V=2 M=1` after its normal `42` output. BCPOUT is kept open through the final record. This distinction protects separate CSECT ownership of the list and prevents conflation with explicit FREEVEC or main storage.
+
+Execution gate (operator's TK5 environment):
+
+```sh
+git pull --ff-only
+tools/run-native-regression 83 --show-output
+python3 tools/checks/prepare-bcplmem-083-probe.py &&
+bash tools/submit-jcl \
+  workarea/native-regression/083-instrumented-storage-reclamation/bcplmem-object-probe/bcplmem-083-object-probe.jcl
+```
+
+Inspect job-summary and complete report. Expected: ASMBCPL, ASMNAT, LKED and GO each RC=0000; IEWL resolves GETVEC/FREEVEC/MEMDRAIN/MEMDCNT into the separately assembled BCPLMEM CSECT; GO writes **42** then **V=2 M=1**. Test evidence counts *returns from* FREEMAIN, not independent MVS storage manager validation. **Not yet executed** as of this preparation commit; do not claim acceptance before seeing job evidence.
