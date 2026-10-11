@@ -139,16 +139,20 @@ fi
 # Marked tests use independently assembled application/runtime objects
 # and the persistent BLIB PDS member; legacy tests keep their own paths.
 if [[ -f "$case_dir/object-blib.txt" ]] || (( test_num == 69 )); then
+    object_flags=()
     if [[ $apt_object == 1 ]]; then
-        echo "run-test: BCPLAPT object not supported yet in BLIB PDS jobs" >&2
-        exit 66
+        object_flags+=(--external-apt)
+    fi
+    if [[ ${BCPLBYTE_OBJECT:-0} == 1 ]]; then
+        object_flags+=(--external-byte)
     fi
     echo
     echo "=== Build independently linked BLIB object GO job ==="
     jcl="$work/object-go.jcl"
     rm -f "$jcl"
     python3 "$script_dir/069-independent-blib-object/prepare-stage2.py" \
-        "$generated" "$jcl" --test-number "$test_num" || exit $?
+        "$generated" "$jcl" --test-number "$test_num" \
+        "${object_flags[@]}" || exit $?
     [[ -s "$jcl" ]] || {
         echo "run-test: BLIB object JCL generator produced no deck" >&2
         exit 66
