@@ -141,19 +141,43 @@ if [[ $runtime_pds == 1 ]]; then
         echo "run-test: BCPL_RUNTIME_PDS cannot be combined with source-object flags" >&2
         exit 64
     fi
-    if (( test_num == 83 )) || [[ -f "$native" || -f "$library" ||
-       -f "$library_ref" || -f "$case_dir/input.records" ||
-       -f "$case_dir/input-b.records" || -f "$case_dir/expected-alt.txt" ]]; then
-        echo "run-test: BCPL_RUNTIME_PDS does not yet support this case's" >&2
-        echo "run-test: extra objects, instrumentation or I/O fixtures" >&2
+    if (( test_num == 83 )); then
+        echo "run-test: BCPL_RUNTIME_PDS regression 083 needs" >&2
+        echo "run-test: test-only installed-library counter instrumentation" >&2
         exit 65
+    fi
+    if [[ -f "$library_ref" ]]; then
+        echo "run-test: shared library-source PDS staging not supported" >&2
+        exit 65
+    fi
+    pds_args=(--case-dir "$case_dir")
+    if [[ -f "$native" ]]; then
+        pds_args+=(--native "$native")
+    fi
+    if [[ -f "$library" ]]; then
+        library_copy="$work/$case_name-library.bcpl"
+        cp "$library" "$library_copy"
+        library_job="${job_base}L"
+        echo "=== Cambridge library compile: $case_name ==="
+        library_args=("$library_copy" --job-name "$library_job"
+                      --listing light --timeout 180)
+        if [[ -f "$cambridge_parm" ]]; then
+            library_args+=(--cambridge-parm "$cambridge_parm")
+        fi
+        python3 "$compiler_driver" "${library_args[@]}" || exit $?
+        library_generated_root="$root/workarea/$case_name-library.s370.asm"
+        library_generated="$work/library-generated.s370.asm"
+        [[ -f "$library_generated_root" ]] || exit 66
+        mv -f "$library_generated_root" "$library_generated"
+        pds_args+=(--library-generated "$library_generated")
     fi
     echo
     echo "=== Build installed-runtime object-PDS regression job ==="
     jcl="$work/runtime-pds-go.jcl"
     rm -f "$jcl"
     python3 "$root/tools/checks/prepare-runtime-pds-regression.py" \
-        "$generated" "$jcl" --test-number "$test_num" || exit $?
+        "$generated" "$jcl" --test-number "$test_num" \
+        "${pds_args[@]}" || exit $?
     [[ -s "$jcl" ]] || exit 66
 else
 mem_object=${BCPLMEM_OBJECT:-0}
