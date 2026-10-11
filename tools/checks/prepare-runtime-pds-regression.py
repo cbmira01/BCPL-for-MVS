@@ -59,14 +59,14 @@ def main():
                         f"BCRG{n:04d}"]
             subprocess.run([sys.executable, str(script), *argv], check=True)
             combined = output.read_text(encoding="ascii")
-        divider = "*\\n* BCPLMAIN WIP FOLLOWS\\n*\\n"
+        divider = "*\n* BCPLMAIN WIP FOLLOWS\n*\n"
         if combined.count(divider) != 1:
             raise ValueError("cannot identify combined runtime divider")
         prefix, runtime = combined.split(divider)
         if not runtime.startswith("BCPLMAIN CSECT"):
             raise ValueError("unexpected combined BCPLMAIN section")
-        lines = prefix.rstrip("\\n").splitlines()
-        if any(re.fullmatch(r"\\s*EXTRN\\s+BCPLMAIN\\s*", row)
+        lines = prefix.rstrip("\n").splitlines()
+        if any(re.fullmatch(r"\s*EXTRN\s+BCPLMAIN\s*", row)
                for row in lines):
             raise ValueError("already external BCPLMAIN")
         # Generated CSECT retains the existing entry wrapper reference.
@@ -75,7 +75,7 @@ def main():
             raise ValueError("invalid transformed application CSECT")
         lines.insert(sect[0] + 1, "         EXTRN BCPLMAIN")
         lines.append(f"         END   BCRG{n:04d}")
-        original = "\\n".join(lines) + "\\n"
+        original = "\n".join(lines) + "\n"
     csects = [i for i, row in enumerate(lines)
               if re.fullmatch(r"\s*CSECT\s*", row)]
     externs = [row for row in lines
