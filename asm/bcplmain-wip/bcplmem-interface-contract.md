@@ -160,3 +160,11 @@ On 11 Oct 2026, the operator reported canonical regression **029-multiple-alloca
 Test 029 demonstrates a list containing several live vectors and both allocation and explicit release, with successful payload reads/writes. It is **not** yet a count of actual FREEMAIN calls at STOP/FINISH: that requires additional instrumentation (existing regression 083 is currently monolith-specific). This experimental object-only acceptance leaves canonical BCPLMAIN and standard runner unchanged.
 
 Next gates: **039** (storage release), **082** (outstanding allocations at FINISH), **088** (STOP with outstanding allocations). Inspect each job before promoting runner integration.
+
+## Checkpoint 2f: JOB 6286 accepted — storage-release regression 039
+
+Operator report from 11 Oct 2026: canonical `tools/run-native-regression 39 --show-output` gave **PASS 1/1**. Preparation of the isolated two-object BCPLMEM experiment passed both assembler preflights, and `MM039R` **JOB 6286** completed **ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000**. IFOX flagged no assembler statements. IEWL cross-reference: **BCPLMEM X'1470'**, `GETVEC X'1470'`, `FREEVEC X'1510'`, `MEMDRAIN X'1596'`; external references from BCPLMAIN resolve at X'364', X'368', and X'4D8'. GO output: **42**. These are operator-supplied real-TK5 results.
+
+Regression 039 validates free/reallocate behavior in the external BCPLMEM arrangement, including a 252-word vector, **but does not instrument or count actual MVS FREEMAIN calls**. This limitation is intentionally retained until a module-aware adaptation of regression 083.
+
+Next focus: **082** (outstanding vectors at FINISH), followed by **088** (STOP with outstanding vectors). Do not enable BCPLMEM in the full runner until these gates and the instrumentation contract are addressed.
