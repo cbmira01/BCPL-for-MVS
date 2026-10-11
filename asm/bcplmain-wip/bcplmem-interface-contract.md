@@ -223,3 +223,7 @@ BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
   tools/run-native-regression 29 --show-output
 ```
 Capture job-summary, assembler steps, IEWL externals, output checks. At this stage **no runner-level MVS execution has been reported**; no 120/120 opt-in suite result is claimed. Full-suite acceptance requires adding appropriate BLIB-object staging and native regression 083 module-aware instrumentation, and verifying them under TK5. The all-default baseline remains unchanged.
+
+## Checkpoint 3b: BCPLMEM_OBJECT runner acceptance — operator report
+
+On 11 October 2026, after pulling main through `7b2d8ec`, the operator executed `BCPLMEM_OBJECT=1 tools/run-native-regression 27 --show-output` and `... 29 --show-output`. **Both reported PASS 1/1.** The operator then ran `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 tools/run-native-regression 29 --show-output`, also **PASS 1/1**. These are end-to-end regression-runner pass results, including its normal output checks. The abbreviated console report does not contain individual IFOX, IEWL cross-reference, or JOB numbers, so separate object resolution in these three specific jobs is supported by the selected build path and prior isolated tests rather than fresh displayed IEWL evidence. Normal mode remains unchanged. Next: broaden runner coverage, integrate the special 083 case and BLIB-object path before claiming full opt-in suite acceptance.
