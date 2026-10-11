@@ -247,3 +247,7 @@ BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
 tools/run-native-regression 83 --show-output
 ```
 Each must pass 1/1 and emit the two exact output records. The preexisting isolated JOB 6295 establishes the module-aware instrumentation, not yet the automated runner path or its three-object coexistence. BLIB-object staging remains separately excluded.
+
+## Checkpoint 3e: automated regression 083 triple acceptance
+
+Operator report, 11 October 2026, after pulling main through `668c11c`: three independent `tools/run-native-regression 83 --show-output` invocations all reported **PASS 1/1**, FAIL 0: (1) `BCPLMEM_OBJECT=1`; (2) `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`; (3) default mode with no object switches. The expected regression fixture is exactly two records, `42` and `V=2 M=1`, verified through the ordinary runner's JES output checker. The abbreviated console report does not individually display output records or IEWL symbols. These results close the runner-level module-aware 083 acceptance gate and confirm default regression compatibility. Remaining integration boundary: BLIB-object staging with BCPLMEM_OBJECT, before full three-object 120-test suite.
