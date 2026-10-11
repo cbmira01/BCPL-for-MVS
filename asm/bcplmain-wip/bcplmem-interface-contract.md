@@ -107,3 +107,25 @@ the standalone BCPLMEM assembler object, or the normal regression runner.
 Next gate: repeat 027 prepare/submit on TK5 and require four zero
 return codes, correct runtime output and external-reference resolution.
 Do not claim a pass until the operator supplies execution evidence.
+
+## Checkpoint 2b: JOB 6276 was stale after failed preparation
+
+Operator pulled through `2c48ca2`, then
+`prepare-bcplmem-runtime-probe.py 27` **failed**:
+`externalize-bcplmem: expected one anchor 'RELDONE ... \\n ...'; got 0`.
+The previous patch mistakenly used escaped `\\n` characters in a Python
+string-match expression instead of linefeed escapes. Nevertheless the
+operator manually submitted the preexisting `bcplmem-object-probe.jcl`,
+producing **MM027R JOB 6276**, whose ASMBCPL RC=0008 and
+unchanged `L 1,=A(MEMDRAIN)` IFOX addressability failure are **the
+old deck again**, not a fresh assessment of the proposed LTORG remedy.
+
+Commits `6e5bd20` and `41d7f28` correct both match and emitted
+newlines. Commit `8bece33` invalidates any old JCL and transformed
+assembler **before** regenerating; a failed preparation can no longer
+leave those stale outputs as eligible submission artifacts.
+
+Repeat after `git pull --ff-only`; only submit if the generator prints
+`Prepared:` successfully. No BCPLMEM IFOX/IEWL/GO success has yet
+been demonstrated. Maintain the accepted default and combined-object
+120/120 baseline.
