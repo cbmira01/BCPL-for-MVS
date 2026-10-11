@@ -288,3 +288,15 @@ including BLIB object/PDS regressions and all stream fixture tests;
 do not promote either flag to default before that evidence. Also
 check whether JCL assembler/link reports show all intended external
 object steps and resolved `APTOVEC/APLIMIT/STKOVFL`.
+
+## Checkpoint 6: combined external-object runner — full-suite acceptance
+
+Operator report (2026-10-10 local): after pulling through commit `5e69214`, `bash -n native-compiler/regression/run-test.sh` and `python3 -m py_compile` for the APTOVEC externalizer and both JCL generators completed without errors. The opt-in **combined** invocation
+
+```sh
+BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/run-native-regression
+```
+
+completed **PASS 120 / FAIL 0 / TOTAL 120** across regressions 00–119. Both focused combined runs, 091 and 093, separately reported PASS 1/1 each. The full run also includes large APTOVEC 092; independently assembled native call 026; BCPLBYTE round-trip 038; BLIB PDS object paths 069–076; reclamation 082–083; and stream/termination tests 094–119. This meets the full-suite acceptance criterion for the **opt-in combined runner configuration** and supersedes Checkpoint 5's pending-test status.
+
+**Scope of acceptance:** based on the operator-supplied native-regression summary, not a fresh inspection of each IEWL ESD or JCL listing. Existing JOB 6018/6021/6024 reports separately demonstrated APTOVEC cross-object symbol resolution and execution. Neither canonical `asm/bcplmain-wip.asm` nor the default runner mode needs to change; the opt-in build is now a validated alternative. It does **not** establish a resident BCPLAPT object PDS member or reentrant runtime implementation.
