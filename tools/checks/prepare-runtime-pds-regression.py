@@ -161,7 +161,7 @@ def main():
             "//SYSGO    DD DSN=&&NATOBJ,UNIT=SYSDA,",
             "//             SPACE=(80,(300,100)),DISP=(NEW,PASS),",
             "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
-            "//SYSIN    DD *", *source.rstrip("\\n").splitlines(), "/*",
+            "//SYSIN    DD *", *source.rstrip("\n").splitlines(), "/*",
         ]
         at = cards.index("//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',")
         cards[at:at] = insertion
