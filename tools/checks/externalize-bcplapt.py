@@ -33,10 +33,10 @@ def main():
     end=text.index(marker,start)+len(marker)
     section=text[start:end]
     for sym in ("APTOVEC","APMAXN"):
-        if len(re.findall(rf"(?m)^{sym}\\s+",section))!=1:
+        if len(re.findall(rf"(?m)^{sym}\s+",section))!=1:
             raise ValueError(f"missing unique {sym} in original APTOVEC")
     text=text[:start]+"* APTOVEC supplied by independent BCPLAPT object.\n"+text[end:]
-    if re.search(r"(?m)^APTOVEC\\s+",text):
+    if re.search(r"(?m)^APTOVEC\s+",text):
         raise ValueError("internal APTOVEC definition survived")
     for no,line in enumerate(text.splitlines(),1):
         if len(line)>71:
