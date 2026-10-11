@@ -146,15 +146,17 @@ if [[ $runtime_pds == 1 ]]; then
         echo "run-test: test-only installed-library counter instrumentation" >&2
         exit 65
     fi
-    if [[ -f "$library_ref" ]]; then
-        echo "run-test: shared library-source PDS staging not supported" >&2
+    # Shared historical BLIB sources are represented by the already
+    # installed OBJ(BLIB) member in this opt-in link strategy.
+    if [[ -f "$library_ref" && "$library_name" != "blib" ]]; then
+        echo "run-test: unsupported shared PDS library" >&2
         exit 65
     fi
     pds_args=(--case-dir "$case_dir")
     if [[ -f "$native" ]]; then
         pds_args+=(--native "$native")
     fi
-    if [[ -f "$library" ]]; then
+    if [[ -f "$library" && ! -f "$library_ref" ]]; then
         library_copy="$work/$case_name-library.bcpl"
         cp "$library" "$library_copy"
         library_job="${job_base}L"
@@ -674,7 +676,7 @@ while (( SECONDS <= deadline )); do
             expected_go_rc="0008"
         fi
         if [[ -n "$expected_go_rc" ]] &&
-           grep -Eq '^[[:space:]]*(ASM|ASMBCPL)[[:space:]]+.*RC=0000' <<<"$summary" &&
+           grep -Eq '^[[:space:]]*(ASM|ASMBCPL|ASMAP)[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq '^[[:space:]]*LKED[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq "^[[:space:]]*GO[[:space:]]+.*RC=$expected_go_rc" <<<"$summary" &&
            { [[ -f "$rc_fixture" && ! -s "$expected_file" ]] || show_bcpl_output; }; then
