@@ -129,3 +129,20 @@ Repeat after `git pull --ff-only`; only submit if the generator prints
 `Prepared:` successfully. No BCPLMEM IFOX/IEWL/GO success has yet
 been demonstrated. Maintain the accepted default and combined-object
 120/120 baseline.
+
+## Checkpoint 2c: JOB 6277 accepted — first independent BCPLMEM execution
+
+Operator evidence from **MM027R JOB 6277** on TK5 (11 Oct 2026, machine-local job date), after pulling through `e849d5d`. Python source compilation and both assembler source preflights succeeded; standalone preparation reported a newly written deck (so this run does not reuse the stale JOB 6275/6276 JCL).
+
+| Step | Program | Result |
+|---|---|---|
+| ASMBCPL | IFOX00 | RC=0000 |
+| ASMNAT | IFOX00 | RC=0000 |
+| LKED | IEWL | RC=0000 |
+| GO | load module | RC=0000 |
+
+The operator-supplied complete IEWL cross-reference shows **BCPLMAIN at X'0090'**, **BCPLMEM at X'1410'**, exports `GETVEC=X'1410'`, `FREEVEC=X'14B0'`, `MEMDRAIN=X'1536'`; the imported addresses at the application/runtime's X'0304', X'0308' and X'0478' are resolved to those BCPLMEM exports. Both assembler outputs report zero flagged statements and IFOX severity zero. GO writes `42` and returns RC=0000.
+
+**Acceptance scope:** first separately assembled/link-edited BCPLMEM GETVEC and private cleanup invocation with one live vector remaining at FINISH (regression 027), including BCPLMAIN's retained DYNBASE teardown. This is strong linkage and smoke-test evidence, but not yet proof of explicit FREEVEC operation, multi-node allocation-list manipulation, or STOP/FINISH cleanup with several live nodes. Canonical BCPLMAIN and runner unchanged.
+
+Next isolated sequence: 028 (FREEVEC), 029 (multiple allocations), 039 (storage release), 082 (outstanding allocations), 088 (STOP with outstanding allocations), with per-job ASMs/LKED/GO evidence before integration. Regression 083's instrumentation requires special module-aware adaptation.
