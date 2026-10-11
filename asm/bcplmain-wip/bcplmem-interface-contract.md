@@ -343,3 +343,7 @@ BCPL_RUNTIME_PDS=1 tools/run-native-regression 27 --show-output
 BCPL_RUNTIME_PDS=1 tools/run-native-regression 38 --show-output
 ```
 These check installed BLIB registration, allocation and byte operations. They must pass through application-only IFOX, installed-object IEWL and GO with matching output. Do **not** run the full 120-test suite with this mode until its special paths are implemented.
+
+## Installed-object PDS runner: initial three regressions accepted
+
+Operator report, 11 October 2026, after pulling main through `6e8731b`: `BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output` **PASS 1/1**, regression 027 **PASS 1/1**, and regression 038 **PASS 1/1**. All three produced FAIL 0 under the ordinary runner's output checks. These establish the opt-in installed five-member runtime library path across BLIB global registration, GETVEC and byte services. The concise console output does not include separate IEWL cross-reference detail. Special cases remain excluded as documented; do not claim 120/120 installed-object coverage yet.
