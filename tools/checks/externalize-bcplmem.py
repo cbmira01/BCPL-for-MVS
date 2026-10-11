@@ -55,8 +55,8 @@ RELMAIN  L     1,DYNBASE"""
     # the final END literal pool lies outside its displacement range.
     # Emit MEMDRAIN's address literal immediately after RELMEM returns.
     text=replace_one(text,
-        "RELDONE  L     14,RELRET\\n         BR    14\\n",
-        "RELDONE  L     14,RELRET\\n         BR    14\\n"
+        "RELDONE  L     14,RELRET\n         BR    14\n",
+        "RELDONE  L     14,RELRET\n         BR    14\n"
         "         LTORG\\n")
     for name in ("GETVEC","FREEVEC","VECLIST"):
         if re.search(rf"(?m)^{name}\s+",text):
