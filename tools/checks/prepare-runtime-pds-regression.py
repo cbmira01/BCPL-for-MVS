@@ -27,6 +27,9 @@ def main():
     parser.add_argument("generated", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--test-number", type=int, required=True)
+    parser.add_argument("--native", type=Path)
+    parser.add_argument("--library-generated", type=Path)
+    parser.add_argument("--case-dir", type=Path)
     args = parser.parse_args()
     args.output.unlink(missing_ok=True)
     n = args.test_number
@@ -35,6 +38,44 @@ def main():
     original = args.generated.read_bytes().decode("latin-1")
     original = "".join(c if ord(c) < 128 else "?" for c in original)
     lines = original.splitlines()
+    if args.native and args.library_generated:
+        raise ValueError("native and separately compiled BCPL library conflict")
+    if args.native or args.library_generated:
+        # Reuse the exact existing regression combiners for globals and
+        # generated-code label renaming; discard only the appended WIP runtime.
+        import tempfile
+        import subprocess
+        import sys
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "combined.asm"
+            if args.native:
+                script = ROOT / "native-compiler/regression/prepare-native-global.py"
+                argv = [str(args.generated), str(ROOT / "asm/bcplmain-wip.asm"),
+                        str(output), f"BCRG{n:04d}", "NATIVEAD", "151"]
+            else:
+                script = ROOT / "native-compiler/regression/combine-separate-bcpl.py"
+                argv = [str(args.generated), str(args.library_generated),
+                        str(ROOT / "asm/bcplmain-wip.asm"), str(output),
+                        f"BCRG{n:04d}"]
+            subprocess.run([sys.executable, str(script), *argv], check=True)
+            combined = output.read_text(encoding="ascii")
+        divider = "*\\n* BCPLMAIN WIP FOLLOWS\\n*\\n"
+        if combined.count(divider) != 1:
+            raise ValueError("cannot identify combined runtime divider")
+        prefix, runtime = combined.split(divider)
+        if not runtime.startswith("BCPLMAIN CSECT"):
+            raise ValueError("unexpected combined BCPLMAIN section")
+        lines = prefix.rstrip("\\n").splitlines()
+        if any(re.fullmatch(r"\\s*EXTRN\\s+BCPLMAIN\\s*", row)
+               for row in lines):
+            raise ValueError("already external BCPLMAIN")
+        # Generated CSECT retains the existing entry wrapper reference.
+        sect = [i for i, row in enumerate(lines) if row == f"BCRG{n:04d} CSECT"]
+        if len(sect) != 1:
+            raise ValueError("invalid transformed application CSECT")
+        lines.insert(sect[0] + 1, "         EXTRN BCPLMAIN")
+        lines.append(f"         END   BCRG{n:04d}")
+        original = "\\n".join(lines) + "\\n"
     csects = [i for i, row in enumerate(lines)
               if re.fullmatch(r"\s*CSECT\s*", row)]
     externs = [row for row in lines
@@ -101,6 +142,58 @@ def main():
         "//SYSUDUMP DD SYSOUT=*",
         "//",
     ]
+    if args.native:
+        source = args.native.read_text(encoding="ascii")
+        if any(len(row) > 71 or row.startswith("//") or row == "/*"
+               for row in source.splitlines()):
+            raise ValueError("invalid native external module cards")
+        insertion = [
+            "//ASMNAT   EXEC PGM=IFOX00,REGION=256K,COND=(0,NE,ASMAP),",
+            "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'",
+            "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR",
+            "//SYSUT1   DD UNIT=SYSDA,SPACE=(1700,(600,100))",
+            "//SYSUT2   DD UNIT=SYSDA,SPACE=(1700,(300,50))",
+            "//SYSUT3   DD UNIT=SYSDA,SPACE=(1700,(300,50))",
+            "//SYSPRINT DD SYSOUT=*",
+            "//SYSPUNCH DD DUMMY",
+            "//SYSGO    DD DSN=&&NATOBJ,UNIT=SYSDA,",
+            "//             SPACE=(80,(300,100)),DISP=(NEW,PASS),",
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
+            "//SYSIN    DD *", *source.rstrip("\\n").splitlines(), "/*",
+        ]
+        at = cards.index("//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',")
+        cards[at:at] = insertion
+        link_cond = cards.index("//             COND=(0,NE,ASMAP)", at + len(insertion))
+        cards[link_cond] = "//             COND=((0,NE,ASMAP),(0,NE,ASMNAT))"
+        syspass = cards.index("//         DD *", link_cond)
+        cards.insert(syspass, "//         DD DSN=&&NATOBJ,DISP=(OLD,DELETE)")
+        go_cond = cards.index("//             COND=((0,NE,ASMAP),(0,NE,LKED))")
+        cards[go_cond] = (
+            "//             COND=((0,NE,ASMAP),(0,NE,ASMNAT),(0,NE,LKED))"
+        )
+    if args.case_dir:
+        case = args.case_dir
+        anchor = cards.index("//SYSUDUMP DD SYSOUT=*")
+        for name, dd, dlm in (("input.records", "BCPIN", "ZZ"),
+                              ("input-b.records", "BCPINB", "ZY")):
+            path = case / name
+            if path.is_file():
+                rows = path.read_text(encoding="ascii").splitlines()
+                if not rows or any(len(row) > 80 or row.startswith("//")
+                    or row.startswith("/*") or row.startswith(dlm)
+                    for row in rows):
+                    raise ValueError(f"unsafe fixture {path}")
+                cards[anchor:anchor] = [
+                    f"//{dd:<8} DD DATA,DLM={dlm}", *rows, dlm,
+                ]
+                anchor += len(rows) + 2
+        if (case / "expected-alt.txt").is_file():
+            cards.insert(anchor,
+                "//BCPALT   DD SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)")
+        if n == 3:
+            cards[cards.index("//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),")] = (
+                "//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,3),"
+            )
     for index, card in enumerate(cards, 1):
         if len(card) > 71 or not card.isascii():
             raise ValueError(f"invalid JCL card {index}: {card!r}")
