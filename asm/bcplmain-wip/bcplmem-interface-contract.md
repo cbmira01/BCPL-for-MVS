@@ -172,3 +172,7 @@ Next focus: **082** (outstanding vectors at FINISH), followed by **088** (STOP w
 ## Checkpoint 2g: JOB 6289 — FINISH with outstanding vectors
 
 Operator evidence: canonical regression 082 PASS 1/1; isolated MM082R JOB 6289, ASMBCPL/ASMNAT/LKED/GO all RC=0000, output 42. IEWL placed BCPLMEM at X'1430', with GETVEC X'1430', FREEVEC X'14D0', MEMDRAIN X'1556'; references from BCPLMAIN were resolved. Two vectors remained live on FINISH. This validates successful termination through the external cleanup interface, but does not directly count FREEMAIN invocations or prove leak freedom. Next gate: test 088, STOP with outstanding allocations. Canonical source and runner remain unchanged.
+
+## Checkpoint 2h: JOB 6292 — STOP with outstanding vectors
+
+Operator evidence (11 October 2026): canonical regression 088 PASS 1/1; MM088R JOB 6292 assembled both objects (IFOX00 RC=0000 each), linked (IEWL RC=0000), and executed (GO RC=0000), printing 42. IEWL shows independent BCPLMEM at X'1438', exporting GETVEC at X'1438', FREEVEC at X'14D8', and MEMDRAIN at X'155E'. Both GETVEC-created vectors remained outstanding when STOP(0) was invoked. The listing shows STOPENT enters FINEXIT, followed by RELMEM calling external MEMDRAIN and BCPLMAIN freeing its own allocation. This is successful execution-path evidence, not direct FREEMAIN instrumentation. This closes the isolated functional 088 gate. Next: adapt regression 083 with module-aware reclamation counts, then consider opt-in runner integration. Canonical runtime and normal runner remain unchanged.
