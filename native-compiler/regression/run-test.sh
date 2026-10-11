@@ -136,10 +136,6 @@ if [[ $mem_object != 0 && $mem_object != 1 ]]; then
     echo "run-test: BCPLMEM_OBJECT must be 0 or 1" >&2
     exit 64
 fi
-if [[ $mem_object == 1 && ( -f "$case_dir/object-blib.txt" || $test_num == 69 ) ]]; then
-    echo "run-test: BCPLMEM_OBJECT with BLIB-object staging not integrated" >&2
-    exit 65
-fi
 apt_object=${BCPLAPT_OBJECT:-0}
 if [[ $apt_object != 0 && $apt_object != 1 ]]; then
     echo "run-test: BCPLAPT_OBJECT must be 0 or 1" >&2
@@ -154,6 +150,9 @@ if [[ -f "$case_dir/object-blib.txt" ]] || (( test_num == 69 )); then
     fi
     if [[ ${BCPLBYTE_OBJECT:-0} == 1 ]]; then
         object_flags+=(--external-byte)
+    fi
+    if [[ $mem_object == 1 ]]; then
+        object_flags+=(--external-mem)
     fi
     echo
     echo "=== Build independently linked BLIB object GO job ==="
