@@ -82,10 +82,12 @@ def main():
                if re.fullmatch(r"\s*EXTRN\s+BCPLMAIN\s*", row)]
     ends = [i for i, row in enumerate(lines)
             if re.fullmatch(r"\s*END(?:\s+.*)?", row)]
-    if len(csects) != 1 or len(externs) != 1 or len(ends) != 1:
+    if (len(csects) != (0 if (args.native or args.library_generated) else 1)
+            or len(externs) != 1 or len(ends) != 1):
         raise ValueError("application requires one CSECT, EXTRN BCPLMAIN, END")
     entry = f"BCRG{n:04d}"
-    lines[csects[0]] = f"{entry} CSECT"
+    if csects:
+        lines[csects[0]] = f"{entry} CSECT"
     # Match the proven BLIB consumer's handling of malformed signed-minimum
     # constants emitted by this historical CG370 printer transport.
     bad = [i for i, row in enumerate(lines)
