@@ -209,3 +209,17 @@ The independent IEWL CSECT is **BCPLMEM X'14B0'**, length X'01D4', exporting `GE
 **Qualification:** this confirms returned control from the expected MVS FREEMAIN service sites, not an independent accounting of MVS memory-manager success or absence of all leaks. Instrumentation and its extra exported `MEMDCNT` remain test-only; they are not part of the production BCPLMEM public contract. This completes isolated functional and reclamation gates (027, 028, 029, 039, 082, 088, 083), without modifying canonical runtime or normal regression runner.
 
 **Next architectural checkpoint:** integrate an explicitly opt-in `BCPLMEM_OBJECT=1` mode, retain baseline default, then exercise combination with BCPLBYTE and BCPLAPT objects and finally the full 120-test suite. No such combined regression result is claimed yet.
+
+## Checkpoint 3a: staged BCPLMEM_OBJECT opt-in runner integration
+
+Commit `52e3ff8` adds an explicit `BCPLMEM_OBJECT=1` switch to `native-compiler/regression/run-test.sh` for the **ordinary assembled-runtime regression path**. Default `0` follows the original combined-runtime behavior. For `1`, the runner externalizes G87/G88 and MEMDRAIN from a **disposable generated source**, assembles `tools/checks/bcplmem-linkage-probe.asm` as a separate object, and appends it to the established object list after any case-specific assembler, BCPLBYTE, and BCPLAPT objects. The five-object builder already supports `--fifth-source` and generates separate IFOX/IEWL steps for the selected sources; this change exposes that capacity. The object source is the previously validated **experimental BCPLMEM** implementation, not yet a stabilized production module or installed PDS member.
+
+Fail-closed boundaries: nonbinary `BCPLMEM_OBJECT` values are rejected; test 083 requires its dedicated `tools/checks/prepare-bcplmem-083-probe.py` because canonical 083 instruments a monolithic runtime; and BLIB-object-staged cases are explicitly refused while their separate prepare-stage2 linkage is not updated. These restrictions prevent a partially externalized pass being mistaken for validated object-mode integration. The intended initial **operator validation** is:
+```sh
+git pull --ff-only
+BCPLMEM_OBJECT=1 tools/run-native-regression 27 --show-output
+BCPLMEM_OBJECT=1 tools/run-native-regression 29 --show-output
+BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
+  tools/run-native-regression 29 --show-output
+```
+Capture job-summary, assembler steps, IEWL externals, output checks. At this stage **no runner-level MVS execution has been reported**; no 120/120 opt-in suite result is claimed. Full-suite acceptance requires adding appropriate BLIB-object staging and native regression 083 module-aware instrumentation, and verifying them under TK5. The all-default baseline remains unchanged.
