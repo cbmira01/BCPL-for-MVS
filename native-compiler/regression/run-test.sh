@@ -131,6 +131,20 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
+mem_object=${BCPLMEM_OBJECT:-0}
+if [[ $mem_object != 0 && $mem_object != 1 ]]; then
+    echo "run-test: BCPLMEM_OBJECT must be 0 or 1" >&2
+    exit 64
+fi
+if [[ $mem_object == 1 && $test_num == 83 ]]; then
+    echo "run-test: BCPLMEM_OBJECT regression 083 requires dedicated module-aware instrumentation" >&2
+    echo "run-test: use tools/checks/prepare-bcplmem-083-probe.py" >&2
+    exit 65
+fi
+if [[ $mem_object == 1 && ( -f "$case_dir/object-blib.txt" || $test_num == 69 ) ]]; then
+    echo "run-test: BCPLMEM_OBJECT with BLIB-object staging not integrated" >&2
+    exit 65
+fi
 apt_object=${BCPLAPT_OBJECT:-0}
 if [[ $apt_object != 0 && $apt_object != 1 ]]; then
     echo "run-test: BCPLAPT_OBJECT must be 0 or 1" >&2
@@ -336,6 +350,16 @@ if [[ $apt_object == 1 ]]; then
     combined="$externalized"
 fi
 
+if [[ $mem_object == 1 ]]; then
+    echo
+    echo "=== Externalize G87/G88 and MEMDRAIN into BCPLMEM object ==="
+    externalized="$work/native-external-mem.asm"
+    rm -f "$externalized"
+    python3 "$root/tools/checks/externalize-bcplmem.py" \
+        "$combined" "$externalized" || exit $?
+    combined="$externalized"
+fi
+
 echo "=== Assembler preflight ==="
 python3 "$root/tools/checks/check-asm-source.py" "$combined" || exit $?
 if [[ -f "$native" ]]; then
@@ -348,6 +372,10 @@ fi
 if [[ $byte_object == 1 ]]; then
     python3 "$root/tools/checks/check-asm-source.py" \
         "$root/asm/bcplbyte.asm" || exit $?
+fi
+if [[ $mem_object == 1 ]]; then
+    python3 "$root/tools/checks/check-asm-source.py" \
+        "$root/tools/checks/bcplmem-linkage-probe.asm" || exit $?
 fi
 
 echo
@@ -363,6 +391,9 @@ fi
 if [[ $apt_object == 1 ]]; then
     objects+=("$root/tools/checks/bcplapt-linkage-probe.asm")
 fi
+if [[ $mem_object == 1 ]]; then
+    objects+=("$root/tools/checks/bcplmem-linkage-probe.asm")
+fi
 if (( ${#objects[@]} > 0 )); then
     extra_args=()
     if (( ${#objects[@]} >= 2 )); then
@@ -371,6 +402,10 @@ if (( ${#objects[@]} > 0 )); then
     if (( ${#objects[@]} >= 3 )); then
         extra_args+=(--fourth-source "${objects[2]}")
     fi
+    if (( ${#objects[@]} >= 4 )); then
+        extra_args+=(--fifth-source "${objects[3]}")
+    fi
+    rm -f "$jcl"
     python3 "$script_dir/make-two-object-job.py" \
         "$combined" "${objects[0]}" "$jcl" \
         --entry "$entry" --job-name "${job_base}R" \
