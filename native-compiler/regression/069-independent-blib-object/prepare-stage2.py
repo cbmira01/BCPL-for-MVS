@@ -162,10 +162,6 @@ def main() -> None:
         if deck.count(old_link) != 1:
             raise ValueError("missing unique original LKED conditions")
         deck = deck.replace(old_link, cond(names), 1)
-        old_go = "//             COND=((0,NE,ASMAP),(0,NE,ASMRUN),(0,NE,LKED))"
-        if deck.count(old_go) != 1:
-            raise ValueError("missing unique original GO conditions")
-        deck = deck.replace(old_go, cond(names + ["LKED"]), 1)
     if not deck.endswith("//\n"):
         raise ValueError("expected Stage 1 JCL terminator")
     deck = deck[:-3] + """//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,3),
@@ -174,6 +170,11 @@ def main() -> None:
 //SYSUDUMP DD SYSOUT=*
 //
 """
+    if extra:
+        old_go = "//             COND=((0,NE,ASMAP),(0,NE,ASMRUN),(0,NE,LKED))"
+        if deck.count(old_go) != 1:
+            raise ValueError("missing original GO conditions")
+        deck = deck.replace(old_go, cond(names + ["LKED"]), 1)
     for number, line in enumerate(deck.splitlines(), 1):
         if len(line) > 71:
             raise ValueError(f"JCL line {number} exceeds column 71")
