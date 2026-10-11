@@ -62,3 +62,27 @@ FINISH / STOP / selected bootstrap error
 * Distinguish the proven normal FREEMAIN path from invalid-pointer and MVS-service-failure behaviors, which remain provisional.
 
 **Decision for this checkpoint:** approve the interface as a *testable proposal*, not implementation proof. Leave all executable code and the default and opt-in regression runners unchanged pending a separate, reviewed BCPLMEM proof.
+
+## Checkpoint 2: isolated two-object experiment staged (not yet validated)
+
+Added experimental sources under `tools/checks/`:
+
+* `bcplmem-linkage-probe.asm`: independent `BCPLMEM` CSECT exporting `GETVEC`, `FREEVEC` and `MEMDRAIN`. Owns all private `GVR*/FVR*` fields and `VECLIST`. The allocator is still intentionally singleton/non-reentrant.
+* `externalize-bcplmem.py`: guarded transformation of a *disposable* generated/runtime assembler copy. Installs external G87/G88 routine addresses, replaces RELMEM's vector-list loop with a private MEMDRAIN call, and leaves BCPLMAIN's `DYNBASE` teardown intact.
+* `prepare-bcplmem-runtime-probe.py`: generates independent IFOX assembly and IEWL JCL from an already generated `workarea/native-regression/<case>/native-test.asm` for cases 027–032, 039, 082 and 088.
+
+The current experiment intentionally excludes regression **083**, whose existing runtime instrumentation directly edits the `RELMEM` vector-loop and counts FREEMAIN operations. That instrumentation will need a module-aware interface before it can become an external-BCPLMEM acceptance test. The opt-in full runner has not been modified.
+
+**Next live gate (operator TK5):**
+
+```sh
+git pull --ff-only
+tools/run-native-regression 27 --show-output
+python3 tools/checks/prepare-bcplmem-runtime-probe.py 27
+bash tools/submit-jcl \
+  workarea/native-regression/27-getvec/bcplmem-object-probe/bcplmem-object-probe.jcl
+```
+
+Inspect with `tools/job-summary JOBNUMBER` and `tools/dump-report-for-job JOBNUMBER`. Expect `ASMBCPL`, `ASMNAT`, `LKED`, `GO` each RC=0000 and the same BCPL output as canonical regression 027. **This expectation is unverified** until the real IFOX/IEWL/SYSOUT report is examined. Stop and diagnose any failure; do not run other extracted-object cases automatically.
+
+This checkpoint is a *staged experiment*, not confirmation of BCPLMEM linkage or completed extraction. The prior combined 120/120 suite remains the accepted baseline.
