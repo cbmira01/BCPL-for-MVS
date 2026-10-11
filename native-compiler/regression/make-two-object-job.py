@@ -68,7 +68,7 @@ def main() -> int:
         if path is None:
             break
         extra_steps.append(asm_step(name, obj, read_source(path), f"(4,LT,{previous})"))
-        extra_dds.append(f"//         DD  DSN=&&{obj},DISP=(OLD,DELETE)\\n")
+        extra_dds.append(f"//         DD  DSN=&&{obj},DISP=(OLD,DELETE)\n")
         previous = name
     asm_names = ["ASMBCPL", "ASMNAT"] + names[:len(extra_steps)]
     def conditions(items):
