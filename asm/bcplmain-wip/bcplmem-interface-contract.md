@@ -194,3 +194,18 @@ bash tools/submit-jcl \
 ```
 
 Inspect job-summary and complete report. Expected: ASMBCPL, ASMNAT, LKED and GO each RC=0000; IEWL resolves GETVEC/FREEVEC/MEMDRAIN/MEMDCNT into the separately assembled BCPLMEM CSECT; GO writes **42** then **V=2 M=1**. Test evidence counts *returns from* FREEMAIN, not independent MVS storage manager validation. **Not yet executed** as of this preparation commit; do not claim acceptance before seeing job evidence.
+
+## Checkpoint 2j: JOB 6295 accepted — module-aware FREEMAIN counts
+
+Operator report, **11 October 2026**: canonical regression **083-instrumented-storage-reclamation** PASS 1/1. The dedicated external `prepare-bcplmem-083-probe.py` completed both assembler-source preflights and prepared a fresh `MM083R` JCL deck. **JOB 6295** completed `ASMBCPL` IFOX00 RC=0000, `ASMNAT` IFOX00 RC=0000, `LKED` IEWL RC=0000, and `GO` RC=0000, with zero assembler diagnostics. The two output records were exactly:
+
+```text
+42
+V=2 M=1
+```
+
+The independent IEWL CSECT is **BCPLMEM X'14B0'**, length X'01D4', exporting `GETVEC X'14B0'`, `FREEVEC X'1550'`, `MEMDRAIN X'15D6'`, and test-only `MEMDCNT X'1680'`; all four external references from the BCPLMAIN copy resolve into that object. The test calls GETVEC three times, explicitly FREEVECs the middle allocation, then FINISHes with two live vector-list entries. `MEMDCNT` counts two *returned* FREEMAIN calls in MEMDRAIN; BCPLMAIN's private `TRM083` counts one *returned* main global/stack FREEMAIN. Thus the private cleanup ownership and test-specific returned-call counts are directly demonstrated on TK5.
+
+**Qualification:** this confirms returned control from the expected MVS FREEMAIN service sites, not an independent accounting of MVS memory-manager success or absence of all leaks. Instrumentation and its extra exported `MEMDCNT` remain test-only; they are not part of the production BCPLMEM public contract. This completes isolated functional and reclamation gates (027, 028, 029, 039, 082, 088, 083), without modifying canonical runtime or normal regression runner.
+
+**Next architectural checkpoint:** integrate an explicitly opt-in `BCPLMEM_OBJECT=1` mode, retain baseline default, then exercise combination with BCPLBYTE and BCPLAPT objects and finally the full 120-test suite. No such combined regression result is claimed yet.
