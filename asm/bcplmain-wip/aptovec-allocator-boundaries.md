@@ -188,3 +188,56 @@ fragments. The private entry names and context proposal are
 not a formal liveness, instruction-addressability, or control-flow
 proof. It does not certify behavior under negative-size integer
 overflow, reentrant invocation, or all MVS allocation failures.
+
+## Opt-in APTOVEC two-object experiment prepared
+
+This design is now implemented as an **isolated test fixture**, not a
+production module: `tools/checks/bcplapt-linkage-probe.asm` contains
+independently assembled `BCPLAPT CSECT`, and
+`tools/checks/prepare-bcplapt-runtime-probe.py` prepares regressions
+091, 092, or 093 from their existing generated `native-test.asm`.
+Original source, canonical BCPLMAIN, and the standard runner are untouched.
+
+The experiment deliberately uses *two private relocatable data/control
+edges*, without claiming they are historical interfaces:
+
+- BCPLMAIN exports `STKOVFL`; BCPLAPT branches to it on error.
+  Thus the existing runtime still formats and terminates on overflow.
+- BCPLAPT exports writable `APLIMIT`; BCPLMAIN copies its already
+  computed `STKLIM` absolute-byte-address value into that word
+  before running START. BCPLAPT tests against its local word.
+- BCPLMAIN places externally resolved `APTOVEC` in G!40.
+- BCPLAPT uses R10 as an independent assembler base, saving/restoring
+  its incoming value through unused temporary workspace slot 12(R15)
+  before invoking the nested BCPL function. This behavior is to be
+  tested, not inferred from link-edit success alone.
+
+The probe is intentionally **not** combined with the separate
+BCPLBYTE-object option: each builds the ordinary monolithic byte
+services plus external BCPLAPT, holding the variable under test to
+APTOVEC. Production extraction must revisit the private edge design
+and final assembler-source packaging.
+
+Run one case at a time on TK5:
+
+```sh
+git pull --ff-only
+python3 -m py_compile tools/checks/prepare-bcplapt-runtime-probe.py
+tools/run-native-regression 91 --show-output
+python3 tools/checks/prepare-bcplapt-runtime-probe.py 91
+bash tools/submit-jcl \
+  workarea/native-regression/091-aptovec-nested-call/aptovec-object-probe/aptovec-object-probe.jcl
+tools/job-summary JOBNUMBER
+tools/dump-report-for-job JOBNUMBER
+```
+
+Repeat for 092 and 093 using their corresponding workarea directory.
+Expected output for 091 and 092: `42`. For 093:
+`STACK OVERFLOW` and **no `999`**. All four steps
+ASMBCPL/ASMNAT/LKED/GO must complete RC=0000, including the
+intentional controlled overflow case. Confirm the external symbol
+resolution in IEWL, not only GO RC.
+
+**Status: untested on TK5.** No guest execution, linker acceptance, or
+full 120-test acceptance is claimed. Continue with focused jobs before
+any runner integration.
