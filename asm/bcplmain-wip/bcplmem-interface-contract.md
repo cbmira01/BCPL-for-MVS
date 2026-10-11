@@ -231,3 +231,19 @@ On 11 October 2026, after pulling main through `7b2d8ec`, the operator executed 
 ## Checkpoint 3c: six additional three-object runner regressions pass
 
 Operator report, 11 October 2026, following pull through `f89ef01`: with `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`, `tools/run-native-regression 30 32 --show-output` passed **3/3** (030 GETVEC failure, 031 vectors across calls, 032 returned vector pointer). Separate invocations passed **039 FREEVEC release/reallocation 1/1**, **082 FINISH with outstanding vectors 1/1**, and **088 STOP with outstanding vectors 1/1**. Total for this checkpoint **6/6 PASS**, zero failures; with prior checkpoint 3b **9/9 opt-in executions**. Console output supplies runner acceptance, not individual IEWL symbol listings or per-step RC details. The opt-in runner still intentionally refuses monolithic-instrumented 083 and BLIB-object staging. Address these boundaries before claiming 120/120 object-mode support. Default runner stays unchanged.
+
+## Checkpoint 3d: module-aware 083 integrated into the opt-in runner
+
+The native runner now admits `BCPLMEM_OBJECT=1` for regression **083**. After the ordinary 083 test-local monolithic instrumentation, it invokes the **previously exercised** `tools/checks/prepare-bcplmem-083-probe.py` to create the independent BCPLMAIN and test-only instrumented BCPLMEM assembler sources from a disposable copy. The runner then uses the resulting *main source* as its current combined input, optionally externalizes BCPLBYTE and BCPLAPT as in all other regressions, and selects the test-only `bcplmem-083-instrumented.asm` instead of the standard BCPLMEM object. The ordinary two-to-five-object JCL builder and GO submission/report-validation code are reused. Existing `expected.txt` already contains `42` and `V=2 M=1`, so both records are verified by the standard runner output checker.
+
+Regression 083 without BCPLMEM_OBJECT remains on its original monolithic instrumentation path; all other BCPLMEM_OBJECT regressions still use the ordinary BCPLMEM CSECT. The standalone preparer's own independent JCL is merely a derived artifact in the workarea; the runner prepares and submits its own `native-test-heavy.jcl`. The test counter export `MEMDCNT` remains exclusively test-local.
+
+**Validation required, not yet claimed**:
+```sh
+git pull --ff-only
+BCPLMEM_OBJECT=1 tools/run-native-regression 83 --show-output
+BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
+  tools/run-native-regression 83 --show-output
+tools/run-native-regression 83 --show-output
+```
+Each must pass 1/1 and emit the two exact output records. The preexisting isolated JOB 6295 establishes the module-aware instrumentation, not yet the automated runner path or its three-object coexistence. BLIB-object staging remains separately excluded.
