@@ -58,6 +58,8 @@ def main() -> None:
     args = p.parse_args()
     if not 69 <= args.test_number <= 999:
         raise ValueError("test number must be between 69 and 999")
+    # Fail closed: never submit an old deck after a failed preparation.
+    args.output_jcl.unlink(missing_ok=True)
     stage1_path = HERE / "prepare-linkage.py"
     spec = importlib.util.spec_from_file_location("stage1_069", stage1_path)
     if spec is None or spec.loader is None:
