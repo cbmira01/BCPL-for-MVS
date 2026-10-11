@@ -106,3 +106,27 @@ be a normal `tools/run-native-regression 25` followed by
 `tools/run-native-regression 83`, and then a complete ordinary
 120-test run. Its count would be a **mixed-mode 120/120** result, not
 a 120/120 installed-object result.
+
+
+## Default-linkage final validation — 120/120 mixed-mode PASS
+
+On 2026-10-11, after pulling through commit `ddbe77f`, the operator
+executed `tools/run-native-regression` without environment overrides.
+All 120 numbered regressions, 000–119, passed:
+
+```text
+NATIVE REGRESSION COMPLETE
+PASS  120
+FAIL  0
+TOTAL 120
+```
+
+Tests other than 083 selected the installed production runtime PDS by
+default (119 cases). Test 083 selected the legacy source-runtime
+instrumentation path and passed its own reclamation assertions. This is
+**mixed-mode 120/120**, not installed-production-object 120/120.
+
+Together with the independently accepted installed-object 119/119 run,
+this completes the default-linkage migration milestone. Preserve the
+explicit `BCPL_RUNTIME_PDS=0` source-development override and the
+fail-closed explicit `BCPL_RUNTIME_PDS=1` test 083 restriction.
