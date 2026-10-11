@@ -253,3 +253,38 @@ On 2026-10-11, operator confirmed canonical regression 092 PASS (1/1), then exec
 ## Checkpoint 4: separate-object overflow path validated (TK5 JOB 6024)
 
 On 2026-10-11 the operator ran baseline regression **093 PASS 1/1** and then independent two-object **JOB 6024 AP093R**. All four steps completed `ASMBCPL=0000`, `ASMNAT=0000`, `LKED=0000`, `GO=0000`, with zero flagged IFOX statements. GO SYSPRINT printed **`STACK OVERFLOW`**; the application-side post-call `999` marker did not execute. The assembler ESD declared `STKOVFL` (BCPLMAIN) and imported `APTOVEC` and `APLIMIT`; the IEWL cross-reference resolved external APTOVEC/APLIMIT and the back-reference to STKOVFL. This validates the **nonreturning cross-object exceptional transfer** in addition to normal (091) and large (092) calls. The three isolated targeted experiments are **3/3 passed**. This does **not** constitute a 120-test regression of the external APTOVEC build: the opt-in transformation remains restricted to a separate experiment, canonical BCPLMAIN and default runner are unchanged. Next milestone, if approved: integrate an opt-in `BCPLAPT_OBJECT=1` transformation into the native regression runner and run the complete suite, including combination with `BCPLBYTE_OBJECT=1` (three object modules). Do not promote to default before that gate.
+
+## Checkpoint 5: opt-in native runner integration staged (not yet accepted)
+
+The native regression runner now recognizes `BCPLAPT_OBJECT=1` and
+`BCPLBYTE_OBJECT=1` independently or together. For normal tests it
+creates disposable BCPLMAIN assembler by applying the fail-closed
+`tools/checks/externalize-bcplapt.py` transformation and assembling
+`tools/checks/bcplapt-linkage-probe.asm` as an additional object. The
+JCL generator supports the application, optional native routine,
+BCPLBYTE, and BCPLAPT as separate IFOX inputs, with IEWL resolution.
+The BLIB PDS regression path also assembles selected service objects
+and continues to INCLUDE the existing resident BLIB member. Canonical
+`asm/bcplmain-wip.asm` is never rewritten; defaults remain monolithic.
+
+**Status: committed but unverified by new TK5 execution.** Prior
+JOB 6018/6021/6024 evidence proves isolated two-object APTOVEC linkage;
+it does not validate combined BCPLBYTE/BCPLAPT/BLIB object builds or the
+120-test suite through this new runner path. First gate:
+
+```sh
+git pull --ff-only
+bash -n native-compiler/regression/run-test.sh
+python3 -m py_compile tools/checks/externalize-bcplapt.py \
+    native-compiler/regression/make-two-object-job.py \
+    native-compiler/regression/069-independent-blib-object/prepare-stage2.py
+BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/run-native-regression 91 --show-output
+BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/run-native-regression 93 --show-output
+```
+
+If both pass, run `BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1
+tools/run-native-regression`. Acceptance requires **120/120 PASS**,
+including BLIB object/PDS regressions and all stream fixture tests;
+do not promote either flag to default before that evidence. Also
+check whether JCL assembler/link reports show all intended external
+object steps and resolved `APTOVEC/APLIMIT/STKOVFL`.
