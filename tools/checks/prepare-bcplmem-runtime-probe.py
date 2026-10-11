@@ -27,12 +27,15 @@ def main():
     root=Path(__file__).resolve().parents[2]
     work=root/"workarea/native-regression"/CASES[args.test]
     source=work/"native-test.asm"
-    if not source.is_file():
-        raise ValueError(f"run normal regression {args.test} first: {source}")
     out=work/"bcplmem-object-probe"
     out.mkdir(parents=True,exist_ok=True)
     modified=out/"native-external-bcplmem.asm"
     deck=out/"bcplmem-object-probe.jcl"
+    # Never allow a failed preparation to leave a previously usable deck.
+    deck.unlink(missing_ok=True)
+    modified.unlink(missing_ok=True)
+    if not source.is_file():
+        raise ValueError(f"run normal regression {args.test} first: {source}")
     subprocess.run(["python3",str(root/"tools/checks/externalize-bcplmem.py"),
                     str(source),str(modified)],check=True)
     checker=root/"tools/checks/check-asm-source.py"
