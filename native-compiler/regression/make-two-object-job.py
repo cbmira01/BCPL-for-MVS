@@ -47,6 +47,8 @@ def main() -> int:
     p.add_argument("native_source", type=Path)
     p.add_argument("output", type=Path)
     p.add_argument("--third-source", type=Path, help="additional object (e.g., BCPLBYTE)")
+    p.add_argument("--fourth-source", type=Path, help="another object (e.g., BCPLAPT)")
+    p.add_argument("--fifth-source", type=Path, help="another object (e.g., BCPLBYTE)")
     p.add_argument("--entry", required=True)
     p.add_argument("--job-name", required=True)
     args = p.parse_args()
@@ -54,24 +56,55 @@ def main() -> int:
     bcpl = read_source(args.bcpl_source)
     native = read_source(args.native_source)
 
-    third = read_source(args.third_source) if args.third_source else ""
-    third_step = asm_step("ASMBYTE", "OBJBYTE", third, "(4,LT,ASMNAT)") if third else ""
-    third_cond = ",(4,LT,ASMBYTE)" if third else ""
-    third_dd = "//         DD  DSN=&&OBJBYTE,DISP=(OLD,DELETE)\n" if third else ""
-    go_cond = ("//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),\n"
-               "//             (4,LT,ASMBYTE),(4,LT,LKED))" if third else
-               "//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT),(4,LT,LKED))")
-
+    extras = [args.third_source, args.fourth_source, args.fifth_source]
+    if any(item is not None for item in extras[extras.index(None)+1:]) if None in extras else False:
+        raise ValueError("extra sources must be consecutive")
+    extra_steps = []
+    extra_dds = []
+    names = ["ASMOBJ3", "ASMOBJ4", "ASMOBJ5"]
+    objs = ["OBJ3", "OBJ4", "OBJ5"]
+    previous = "ASMNAT"
+    for path, name, obj in zip(extras, names, objs):
+        if path is None:
+            break
+        extra_steps.append(asm_step(name, obj, read_source(path), f"(4,LT,{previous})"))
+        extra_dds.append(f"//         DD  DSN=&&{obj},DISP=(OLD,DELETE)\\n")
+        previous = name
+    asm_names = ["ASMBCPL", "ASMNAT"] + names[:len(extra_steps)]
+    lked_conditions = ",".join(f"(4,LT,{name})" for name in asm_names)
+    go_conditions = ",".join(f"(4,LT,{name})" for name in asm_names + ["LKED"])
+    lked_cond = f"//             COND=({lked_conditions})"
+    go_cond = f"//             COND=({go_conditions})"
+    # Split long COND operands at a subparameter boundary, not inside one.
+    def wrap_cond(s):
+        if len(s) <= 71:
+            return s
+        tokens = s.split("COND=(", 1)[1].removesuffix(")")
+        parts = tokens.split(",")
+        out = "//             COND=("
+        lines = []
+        for part in parts:
+            fragment = part + ("," if part != parts[-1] else ")")
+            if len(out + fragment) > 71:
+                lines.append(out.rstrip())
+                out = "//             " + fragment
+            else:
+                out += fragment
+        return "\\n".join(lines)
+    lked_cond = wrap_cond(lked_cond)
+    go_cond = wrap_cond(go_cond)
+    extra_step_text = "".join(extra_steps)
+    extra_dd_text = "".join(extra_dds)
     deck = f"""//{args.job_name:<8} JOB (MVS),'ASM LINK GO',CLASS=A,MSGCLASS=A,
 //             MSGLEVEL=(1,1)
 //* REGRESSION: BCPL AND NATIVE ROUTINE ASSEMBLED SEPARATELY
 {asm_step("ASMBCPL", "OBJBCPL", bcpl)}
 {asm_step("ASMNAT", "OBJNAT", native, "(4,LT,ASMBCPL)")}
-{third_step}//LKED     EXEC PGM=IEWL,PARM='LET,NCAL,LIST,XREF',REGION=256K,
-//             COND=((4,LT,ASMBCPL),(4,LT,ASMNAT){third_cond})
+{extra_step_text}//LKED     EXEC PGM=IEWL,PARM='LET,NCAL,LIST,XREF',REGION=256K,
+{lked_cond}
 //SYSLIN   DD  DSN=&&OBJBCPL,DISP=(OLD,DELETE)
 //         DD  DSN=&&OBJNAT,DISP=(OLD,DELETE)
-{third_dd}//         DD  *
+{extra_dd_text}//         DD  *
   ENTRY {args.entry}
   NAME RUNMOD(R)
 /*
