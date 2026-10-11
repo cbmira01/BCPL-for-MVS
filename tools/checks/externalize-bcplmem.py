@@ -32,7 +32,7 @@ def main():
         raise ValueError("missing DEBUGINT section divider")
     block=text[start:header]
     for name in ("GETVEC","FREEVEC"):
-        if len(re.findall(rf"(?m)^{name}\\s+",block))!=1:
+        if len(re.findall(rf"(?m)^{name}\s+",block))!=1:
             raise ValueError(f"missing one {name} body")
     text=text[:start]+"* BCPLMEM external allocator routines.\n*\n"+text[header:]
     start=text.index("VECLIST  DC    F'0'")
@@ -52,7 +52,7 @@ RELMAIN  L     1,DYNBASE"""
 RELMAIN  L     1,DYNBASE"""
     text=replace_one(text,old,new)
     for name in ("GETVEC","FREEVEC","VECLIST"):
-        if re.search(rf"(?m)^{name}\\s+",text):
+        if re.search(rf"(?m)^{name}\s+",text):
             raise ValueError(f"duplicate private definition {name}")
     for i,line in enumerate(text.splitlines(),1):
         if len(line)>71 or "\t" in line or line.rstrip()!=line:
