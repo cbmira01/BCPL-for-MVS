@@ -131,7 +131,14 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
-runtime_pds=${BCPL_RUNTIME_PDS:-0}
+# Accepted production runtime objects are the default. 083 requires private
+# FREEMAIN counters and therefore retains the source-instrumented mode when
+# no explicit runtime selection was supplied.
+runtime_pds=${BCPL_RUNTIME_PDS:-1}
+if (( test_num == 83 )) && [[ ! ${BCPL_RUNTIME_PDS+x} ]]; then
+    runtime_pds=0
+    echo "run-test: 083 uses source-runtime instrumentation (PDS counters unavailable)"
+fi
 if [[ $runtime_pds != 0 && $runtime_pds != 1 ]]; then
     echo "run-test: BCPL_RUNTIME_PDS must be 0 or 1" >&2
     exit 64
