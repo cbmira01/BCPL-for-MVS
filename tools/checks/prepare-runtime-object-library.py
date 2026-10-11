@@ -42,6 +42,19 @@ def main() -> None:
         dest.unlink(missing_ok=True)
         run(CHECKS / script, source, dest)
         source = dest
+    # The installed BCPLMAIN object registers BLIB's globals on startup.
+    # Reuse the proven source transformation from regression 069.
+    stage2 = ROOT / "native-compiler/regression/069-independent-blib-object/prepare-stage2.py"
+    spec2 = importlib.util.spec_from_file_location("blib_stage2_obj", stage2)
+    if spec2 is None or spec2.loader is None:
+        raise RuntimeError("unable to load BLIB registration implementation")
+    module2 = importlib.util.module_from_spec(spec2)
+    spec2.loader.exec_module(module2)
+    registered = out / "bcplmain-object.asm"
+    registered.unlink(missing_ok=True)
+    registered.write_text(module2.inject_runtime(source.read_text(encoding="ascii")),
+                          encoding="ascii", newline="\n")
+    source = registered
     sources = [
         ("BCPLMAIN", source),
         ("BCPLBYTE", ROOT / "asm/bcplbyte.asm"),
@@ -109,6 +122,7 @@ def main() -> None:
     deck.write_text("\n".join(lines) + "\n", encoding="ascii", newline="\n")
     print(f"Staged: {deck}")
     print("Four object members: BCPLMAIN BCPLBYTE BCPLAPT BCPLMEM")
+    print("BCPLMAIN depends on resident OBJ(BLIB) at linkage.")
     print("NOT submitted. Inspect and submit only after approving non-atomic PDS changes.")
     print("Run 'tools/dspal stat OBJ' first; preserve the prior object library.")
 
