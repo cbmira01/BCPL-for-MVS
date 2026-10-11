@@ -51,6 +51,13 @@ RELMAIN  L     1,DYNBASE"""
          BALR  14,1
 RELMAIN  L     1,DYNBASE"""
     text=replace_one(text,old,new)
+    # R11 addresses the system-vector region including RELMEM, whereas
+    # the final END literal pool lies outside its displacement range.
+    # Emit MEMDRAIN's address literal immediately after RELMEM returns.
+    text=replace_one(text,
+        "RELDONE  L     14,RELRET\\n         BR    14\\n",
+        "RELDONE  L     14,RELRET\\n         BR    14\\n"
+        "         LTORG\\n")
     for name in ("GETVEC","FREEVEC","VECLIST"):
         if re.search(rf"(?m)^{name}\s+",text):
             raise ValueError(f"duplicate private definition {name}")
