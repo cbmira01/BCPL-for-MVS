@@ -72,3 +72,37 @@ instrumentation or report a production-object 120/120 result.
 
 Evidence source: operator console transcript supplied 2026-10-11,
 after pull from `fc04863` to `143df46`.
+
+
+## Subsequent default-linkage decision (commit b215128)
+
+Following the accepted 119/119 production-object integration run, the
+native regression runner now defaults to `BCPL_RUNTIME_PDS=1` for ordinary
+cases. This means an application-only assembly step followed by IEWL
+linkage against the five installed `HERC02.BCPL.OBJ` members, rather
+than reconstructing/assembling the runtime on every invocation.
+
+* `tools/run-native-regression 25` uses installed production objects
+  by default (provided TK5 already has the accepted object library).
+* `BCPL_RUNTIME_PDS=0 tools/run-native-regression 25` explicitly
+  selects the development/source-runtime path.
+* Regression 083, **when no `BCPL_RUNTIME_PDS` setting is supplied**,
+  retains its monolithic source-runtime instrumentation path and must
+  still prove `V=2 M=1`. It is not counted as an installed-object test.
+* An explicit `BCPL_RUNTIME_PDS=1 tools/run-native-regression 83`
+  remains rejected; no unmeasured 083 production-object PASS is fabricated.
+* `tools/checks/run-runtime-pds-acceptance.py` continues to require
+  119/119 production-object passes, expressly excluding 083.
+
+This is a change of **runner default**, not a claim that the installed
+object dataset was regenerated or that TK5 operator validation of the
+new default has occurred. The previous 119/119 acceptance result remains
+the source of truth. The source-mode flags `BCPLMEM_OBJECT`,
+`BCPLBYTE_OBJECT`, and `BCPLAPT_OBJECT` require explicitly choosing
+`BCPL_RUNTIME_PDS=0`.
+
+After pulling this default change, the first operator checks should
+be a normal `tools/run-native-regression 25` followed by
+`tools/run-native-regression 83`, and then a complete ordinary
+120-test run. Its count would be a **mixed-mode 120/120** result, not
+a 120/120 installed-object result.
