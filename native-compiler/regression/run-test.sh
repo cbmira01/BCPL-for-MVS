@@ -136,11 +136,6 @@ if [[ $mem_object != 0 && $mem_object != 1 ]]; then
     echo "run-test: BCPLMEM_OBJECT must be 0 or 1" >&2
     exit 64
 fi
-if [[ $mem_object == 1 && $test_num == 83 ]]; then
-    echo "run-test: BCPLMEM_OBJECT regression 083 requires dedicated module-aware instrumentation" >&2
-    echo "run-test: use tools/checks/prepare-bcplmem-083-probe.py" >&2
-    exit 65
-fi
 if [[ $mem_object == 1 && ( -f "$case_dir/object-blib.txt" || $test_num == 69 ) ]]; then
     echo "run-test: BCPLMEM_OBJECT with BLIB-object staging not integrated" >&2
     exit 65
@@ -322,6 +317,12 @@ if (( test_num == 83 )); then
     echo
     echo "=== Instrument termination storage reclamation ==="
     python3 "$case_dir/instrument-reclaim.py" "$combined" || exit $?
+    if [[ $mem_object == 1 ]]; then
+        echo "=== Adapt 083 counters for independently linked BCPLMEM ==="
+        python3 "$root/tools/checks/prepare-bcplmem-083-probe.py" || exit $?
+        combined="$work/bcplmem-object-probe/native-external-bcplmem.asm"
+        [[ -s "$combined" ]] || exit 66
+    fi
 fi
 
 # New link architecture is opt-in until the full suite is accepted.
@@ -350,7 +351,7 @@ if [[ $apt_object == 1 ]]; then
     combined="$externalized"
 fi
 
-if [[ $mem_object == 1 ]]; then
+if [[ $mem_object == 1 && $test_num != 83 ]]; then
     echo
     echo "=== Externalize G87/G88 and MEMDRAIN into BCPLMEM object ==="
     externalized="$work/native-external-mem.asm"
@@ -373,9 +374,13 @@ if [[ $byte_object == 1 ]]; then
     python3 "$root/tools/checks/check-asm-source.py" \
         "$root/asm/bcplbyte.asm" || exit $?
 fi
+mem_source="$root/tools/checks/bcplmem-linkage-probe.asm"
+if [[ $mem_object == 1 && $test_num == 83 ]]; then
+    mem_source="$work/bcplmem-object-probe/bcplmem-083-instrumented.asm"
+fi
 if [[ $mem_object == 1 ]]; then
     python3 "$root/tools/checks/check-asm-source.py" \
-        "$root/tools/checks/bcplmem-linkage-probe.asm" || exit $?
+        "$mem_source" || exit $?
 fi
 
 echo
@@ -392,7 +397,7 @@ if [[ $apt_object == 1 ]]; then
     objects+=("$root/tools/checks/bcplapt-linkage-probe.asm")
 fi
 if [[ $mem_object == 1 ]]; then
-    objects+=("$root/tools/checks/bcplmem-linkage-probe.asm")
+    objects+=("$mem_source")
 fi
 if (( ${#objects[@]} > 0 )); then
     extra_args=()
