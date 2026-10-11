@@ -328,3 +328,18 @@ Operator report 11 October 2026: `tools/submit-jcl --timeout 30 workarea/runtime
 ## Installed-object consumer functional acceptance: JOB 6575
 
 Operator subsequently ran `tools/dump-report-for-job 6575 | grep -F 'BLIB 42'` and obtained the exact expected functional record **`BLIB 42`**. Together with JOB 6575 ASMAP/LKED/GO RC=0000 and JOB 6573's eight successful assembly/installation steps, this **closes the first installed five-member object-library end-to-end acceptance gate**. The host AWK reported a locale-dependent invalid-multibyte warning while reading the printer stream; the expected record was nevertheless recovered. No full-suite installed-object run is yet claimed. Next: an opt-in 120-test regression path linking installed `OBJ(BCPLMAIN/BCPLBYTE/BCPLAPT/BCPLMEM/BLIB)`, with the original source-object path preserved.
+
+## Checkpoint: opt-in installed runtime PDS regression runner (first scope)
+
+`BCPL_RUNTIME_PDS=1 tools/run-native-regression N` now has a distinct, **application-only** assembly/link-edit/GO preparation path for single-source tests. `tools/checks/prepare-runtime-pds-regression.py` transforms the recovered compiler assembler by naming its CSECT `BCRGnnnn`, retaining `EXTRN BCPLMAIN`, and emits IEWL `INCLUDE OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)`. The generated deck uses the same installed library validated with JOB 6575 and the existing runner's JES output/termination verifier. No runtime service is reassembled or installed by this path.
+
+This checkpoint deliberately refuses `BCPL_RUNTIME_PDS=1` combined with any of `BCPLMEM_OBJECT`, `BCPLBYTE_OBJECT`, `BCPLAPT_OBJECT`. It also refuses cases with a separate native or BCPL library source, regression 083's special local instrumentation, input fixture decks and alternate output fixture decks. These need their own installed-library adaptations. Compile-only cases keep their canonical behavior. The original runner and all prior opt-in object-source modes remain intact. **This is not yet a full-suite implementation**, and no TK5 validation has been reported for the new runner mode.
+
+First operator gate:
+```sh
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 27 --show-output
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 38 --show-output
+```
+These check installed BLIB registration, allocation and byte operations. They must pass through application-only IFOX, installed-object IEWL and GO with matching output. Do **not** run the full 120-test suite with this mode until its special paths are implemented.
