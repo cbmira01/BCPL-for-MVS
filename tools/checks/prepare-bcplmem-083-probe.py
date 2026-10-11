@@ -55,14 +55,14 @@ def main():
     # after both MEMDRAIN and BCPLMAIN's own FREEMAIN have returned.
     text = once(text,"FINRETN  CLOSE (BCPOUT)","FINRETN  EQU   *")
     text = once(text,"         EXTRN GETVEC,FREEVEC,MEMDRAIN",
-                "         EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMDCOUNT")
+                "         EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMDCNT")
     text = once(text,module.MAIN,module.MAIN_NEW)
     # Count *only* FREEMAIN calls made in MEMDRAIN, not explicit FREEVEC.
     # Fetch externally owned counter by address through the local literal.
     ret = """RELDONE  L     14,RELRET
          BR    14"""
     diag = """RELDONE  MVC   OUTBUF(7),TRTXT83
-         L     1,=A(MEMDCOUNT)
+         L     1,=A(MEMDCNT)
          L     2,0(1)
          LA    2,240(2)
          STC   2,OUTBUF+2
@@ -79,15 +79,15 @@ def main():
     mainasm.write_text(check(text),encoding="ascii",newline="\n")
     mem = (root/"tools/checks/bcplmem-linkage-probe.asm").read_text(encoding="ascii")
     mem = once(mem,"         ENTRY GETVEC,FREEVEC,MEMDRAIN",
-               "         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMDCOUNT")
+               "         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMDCNT")
     mem = once(mem,"         FREEMAIN R,LV=(4),A=(1)\n         B     MEMLOOP",
                """         FREEMAIN R,LV=(4),A=(1)
-         L     9,MEMDCOUNT
+         L     9,MEMDCNT
          LA    9,1(9)
-         ST    9,MEMDCOUNT
+         ST    9,MEMDCNT
          B     MEMLOOP""")
     mem = once(mem,"MEMWSAV  DC    F'0'",
-               "MEMWSAV  DC    F'0'\nMEMDCOUNT DC   F'0'")
+               "MEMWSAV  DC    F'0'\nMEMDCNT DC   F'0'")
     memasm.write_text(check(mem),encoding="ascii",newline="\n")
     checker=root/"tools/checks/check-asm-source.py"
     for path in (mainasm,memasm):
