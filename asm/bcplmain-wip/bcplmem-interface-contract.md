@@ -168,3 +168,7 @@ Operator report from 11 Oct 2026: canonical `tools/run-native-regression 39 --sh
 Regression 039 validates free/reallocate behavior in the external BCPLMEM arrangement, including a 252-word vector, **but does not instrument or count actual MVS FREEMAIN calls**. This limitation is intentionally retained until a module-aware adaptation of regression 083.
 
 Next focus: **082** (outstanding vectors at FINISH), followed by **088** (STOP with outstanding vectors). Do not enable BCPLMEM in the full runner until these gates and the instrumentation contract are addressed.
+
+## Checkpoint 2g: JOB 6289 — FINISH with outstanding vectors
+
+Operator evidence: canonical regression 082 PASS 1/1; isolated MM082R JOB 6289, ASMBCPL/ASMNAT/LKED/GO all RC=0000, output 42. IEWL placed BCPLMEM at X'1430', with GETVEC X'1430', FREEVEC X'14D0', MEMDRAIN X'1556'; references from BCPLMAIN were resolved. Two vectors remained live on FINISH. This validates successful termination through the external cleanup interface, but does not directly count FREEMAIN invocations or prove leak freedom. Next gate: test 088, STOP with outstanding allocations. Canonical source and runner remain unchanged.
