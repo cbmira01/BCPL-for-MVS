@@ -131,9 +131,18 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
+apt_object=${BCPLAPT_OBJECT:-0}
+if [[ $apt_object != 0 && $apt_object != 1 ]]; then
+    echo "run-test: BCPLAPT_OBJECT must be 0 or 1" >&2
+    exit 64
+fi
 # Marked tests use independently assembled application/runtime objects
 # and the persistent BLIB PDS member; legacy tests keep their own paths.
 if [[ -f "$case_dir/object-blib.txt" ]] || (( test_num == 69 )); then
+    if [[ $apt_object == 1 ]]; then
+        echo "run-test: BCPLAPT object not supported yet in BLIB PDS jobs" >&2
+        exit 66
+    fi
     echo
     echo "=== Build independently linked BLIB object GO job ==="
     jcl="$work/object-go.jcl"
@@ -314,10 +323,23 @@ if [[ $byte_object == 1 ]]; then
 fi
 
 echo
+if [[ $apt_object == 1 ]]; then
+    echo
+    echo "=== Externalize G40 into BCPLAPT object ==="
+    externalized="$work/native-external-apt.asm"
+    python3 "$root/tools/checks/externalize-bcplapt.py" \
+        "$combined" "$externalized" || exit $?
+    combined="$externalized"
+fi
+
 echo "=== Assembler preflight ==="
 python3 "$root/tools/checks/check-asm-source.py" "$combined" || exit $?
 if [[ -f "$native" ]]; then
     python3 "$root/tools/checks/check-asm-source.py" "$native" || exit $?
+fi
+if [[ $apt_object == 1 ]]; then
+    python3 "$root/tools/checks/check-asm-source.py" \
+        "$root/tools/checks/bcplapt-linkage-probe.asm" || exit $?
 fi
 if [[ $byte_object == 1 ]]; then
     python3 "$root/tools/checks/check-asm-source.py" \
@@ -326,37 +348,34 @@ fi
 
 echo
 echo "=== Build native assemble/link/go job ==="
+jcl="$work/native-test-heavy.jcl"
+objects=()
 if [[ -f "$native" ]]; then
-    jcl="$work/native-test-heavy.jcl"
-    extra_object=()
-    if [[ $byte_object == 1 ]]; then
-        extra_object=(--third-source "$root/asm/bcplbyte.asm")
+    objects+=("$native")
+fi
+if [[ $byte_object == 1 ]]; then
+    objects+=("$root/asm/bcplbyte.asm")
+fi
+if [[ $apt_object == 1 ]]; then
+    objects+=("$root/tools/checks/bcplapt-linkage-probe.asm")
+fi
+if (( ${#objects[@]} > 0 )); then
+    extra_args=()
+    if (( ${#objects[@]} >= 2 )); then
+        extra_args+=(--third-source "${objects[1]}")
+    fi
+    if (( ${#objects[@]} >= 3 )); then
+        extra_args+=(--fourth-source "${objects[2]}")
     fi
     python3 "$script_dir/make-two-object-job.py" \
-        "$combined" \
-        "$native" \
-        "$jcl" \
-        --entry "$entry" \
-        --job-name "${job_base}R" \
-        "${extra_object[@]}" || exit $?
-elif [[ $byte_object == 1 ]]; then
-    jcl="$work/native-test-heavy.jcl"
-    python3 "$script_dir/make-two-object-job.py" \
-        "$combined" \
-        "$root/asm/bcplbyte.asm" \
-        "$jcl" \
-        --entry "$entry" \
-        --job-name "${job_base}R" || exit $?
+        "$combined" "${objects[0]}" "$jcl" \
+        --entry "$entry" --job-name "${job_base}R" \
+        "${extra_args[@]}" || exit $?
 else
     python3 "$root/tools/make-asm-job" \
-        "$combined" \
-        --output-dir "$work" \
-        --entry "$entry" \
-        --job-name "${job_base}R" \
-        --listing heavy \
-        --force || exit $?
-
-    jcl="$work/native-test-heavy.jcl"
+        "$combined" --output-dir "$work" \
+        --entry "$entry" --job-name "${job_base}R" \
+        --listing heavy --force || exit $?
 fi
 
 # Every JCL strategy needs the same GO DD fixtures and time limit.
