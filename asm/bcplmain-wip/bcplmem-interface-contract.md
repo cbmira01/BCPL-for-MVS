@@ -310,3 +310,9 @@ grep -n 'INCLUDE OBJ' workarea/runtime-object-library/installed-consumer-069.jcl
 tools/dspal ls OBJ
 ```
 The prior application assembler should exist from the operator's successful 069 regression; regenerate test 069 normally if missing. Inspect both generated JCL decks for valid job steps, external references, and any site-specific JCL adjustments. **Neither tool submits jobs.** The installation remains non-atomic, requires a recoverable backup, and should not run until reviewed. No freshly installed object-member execution is claimed.
+
+## Installer hardening after consumer preflight
+
+Operator report 11 October 2026: four-module preparer passed all four source checks and generated its JCL; the 069 installed-object consumer generated a deck with the exact five INCLUDE statements in order, and `dspal ls OBJ` still showed only `BLIB`. No MVS installation has occurred.
+
+To reduce partial-update risk, installer staging now generates **all four IFOX assembly steps before any IEBGENER installation**, and each installation is guarded against *every assembly failure and preceding installation failure*. A later IEBGENER failure may still leave some new PDS members; the job is not transactional. The operator should regenerate the deck after pulling this change. Given only BLIB exists, the four additions do not overwrite existing runtime members on first installation, and BLIB is never targeted; nonetheless member-level recovery and JCL review remain important. Installed-object assembly and GO have not yet been tested.
