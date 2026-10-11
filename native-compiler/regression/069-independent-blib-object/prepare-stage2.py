@@ -54,6 +54,7 @@ def main() -> None:
     p.add_argument("--test-number", type=int, default=69)
     p.add_argument("--external-apt", action="store_true")
     p.add_argument("--external-byte", action="store_true")
+    p.add_argument("--external-mem", action="store_true")
     args = p.parse_args()
     if not 69 <= args.test_number <= 999:
         raise ValueError("test number must be between 69 and 999")
@@ -83,6 +84,7 @@ def main() -> None:
     for opt, helper in (
         (args.external_byte, "externalize-bcplbyte.py"),
         (args.external_apt, "externalize-bcplapt.py"),
+        (args.external_mem, "externalize-bcplmem.py"),
     ):
         if opt:
             out = args.output_jcl.with_name("special-" + helper + ".asm")
@@ -115,6 +117,9 @@ def main() -> None:
     if args.external_apt:
         extra.append(("ASMAPT", "APTOBJ",
                       ROOT / "tools/checks/bcplapt-linkage-probe.asm"))
+    if args.external_mem:
+        extra.append(("ASMMEM", "MEMOBJ",
+                      ROOT / "tools/checks/bcplmem-linkage-probe.asm"))
     previous = "ASMRUN"
     for step, obj, source in extra:
         cards = source.read_text(encoding="ascii").rstrip("\n")
