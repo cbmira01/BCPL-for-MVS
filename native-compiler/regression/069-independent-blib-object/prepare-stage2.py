@@ -119,29 +119,29 @@ def main() -> None:
     for step, obj, source in extra:
         cards = source.read_text(encoding="ascii").rstrip("\n")
         addition = (
-            f"//{step:<8} EXEC PGM=IFOX00,REGION=256K,\\n"
-            f"//             COND=(0,NE,{previous}),\\n"
-            "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'\\n"
-            "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR\\n"
-            "//SYSUT1   DD UNIT=SYSDA,SPACE=(1700,(600,100))\\n"
-            "//SYSUT2   DD UNIT=SYSDA,SPACE=(1700,(300,50))\\n"
-            "//SYSUT3   DD UNIT=SYSDA,SPACE=(1700,(300,50))\\n"
-            "//SYSPRINT DD SYSOUT=*\\n"
-            "//SYSPUNCH DD DUMMY\\n"
-            f"//SYSGO    DD DSN=&&{obj},UNIT=SYSDA,\\n"
-            "//             SPACE=(80,(300,100)),DISP=(NEW,PASS),\\n"
-            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)\\n"
-            "//SYSIN    DD *\\n" + cards + "\\n/*\\n"
+            f"//{step:<8} EXEC PGM=IFOX00,REGION=256K,\n"
+            f"//             COND=(0,NE,{previous}),\n"
+            "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'\n"
+            "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR\n"
+            "//SYSUT1   DD UNIT=SYSDA,SPACE=(1700,(600,100))\n"
+            "//SYSUT2   DD UNIT=SYSDA,SPACE=(1700,(300,50))\n"
+            "//SYSUT3   DD UNIT=SYSDA,SPACE=(1700,(300,50))\n"
+            "//SYSPRINT DD SYSOUT=*\n"
+            "//SYSPUNCH DD DUMMY\n"
+            f"//SYSGO    DD DSN=&&{obj},UNIT=SYSDA,\n"
+            "//             SPACE=(80,(300,100)),DISP=(NEW,PASS),\n"
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)\n"
+            "//SYSIN    DD *\n" + cards + "\n/*\n"
         )
         place = "//LKED     EXEC PGM=IEWL"
         if deck.count(place) != 1:
             raise ValueError("missing unique LKED step")
         deck = deck.replace(place, addition + place, 1)
-        syspass = "//         DD DSN=&&RUNOBJ,DISP=(OLD,DELETE)\\n"
+        syspass = "//         DD DSN=&&RUNOBJ,DISP=(OLD,DELETE)\n"
         if deck.count(syspass) != 1:
             raise ValueError("missing RUNOBJ link-edit DD")
         deck = deck.replace(syspass, syspass +
-            f"//         DD DSN=&&{obj},DISP=(OLD,DELETE)\\n", 1)
+            f"//         DD DSN=&&{obj},DISP=(OLD,DELETE)\n", 1)
         previous = step
     if extra:
         names = ["ASMAP", "ASMRUN"] + [item[0] for item in extra]
@@ -157,7 +157,7 @@ def main() -> None:
                 else:
                     line += part
             lines.append(line)
-            return "\\n".join(lines)
+            return "\n".join(lines)
         old_link = "//             COND=((0,NE,ASMAP),(0,NE,ASMRUN))"
         if deck.count(old_link) != 1:
             raise ValueError("missing unique original LKED conditions")
