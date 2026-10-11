@@ -292,3 +292,21 @@ Canonical source candidates are `asm/bcplbyte.asm`, `asm/bcplapt.asm` (copied fr
 Operator report 11 October 2026: `python3 tools/checks/prepare-runtime-object-library.py` completed all three strict extraction passes and all four assembler-source preflights, generating `workarea/runtime-object-library/build-runtime-objects.jcl` without submission. `tools/dspal stat OBJ` confirmed `HERC02.BCPL.OBJ` on volume `TSO003`, DSORG PO, RECFM FB, LRECL 80, BLKSIZE 800. `tools/dspal ls OBJ` enumerated only the existing `BLIB` member. No four-module installation job was submitted and no new library members have been installed.
 
 **Important integration constraint:** existing BLIB-object staging injects `EXTRN BLIB` and the `GIDONE` BLIB-global registration code into a *test-local BCPLMAIN assembler copy*. The generated canonical BCPLMAIN object candidate does not contain that injection. Installed-object BLIB tests cannot simply swap to `INCLUDE OBJ(BCPLMAIN)` without first resolving the conditional BLIB-global registration contract. Preserve the 120/120 source-object baseline; establish this interface and an independent installed-object consumer before submitting the installer.
+
+## Installed runtime library: registration resolution and consumer probe
+
+The preparer `tools/checks/prepare-runtime-object-library.py` now derives `bcplmain-object.asm` by applying the **same exact BLIB registration injection** as the accepted independent-BLIB regression 069, *after* strict BCPLBYTE/BCPLAPT/BCPLMEM externalization. The installed BCPLMAIN object therefore imports `BLIB` and installs its exported globals during startup. In this first fixed-library architecture, **OBJ(BLIB) is a required fifth member in every link-edit**; optional BLIB loading and a generic module-registration ABI are explicitly deferred. No default regression paths were changed.
+
+New `tools/checks/prepare-installed-runtime-consumer.py` takes a recovered **regression-069 Cambridge application assembler source** and generates a standalone **non-installing** IFOX/IEWL/GO job. The linker explicitly `INCLUDE`s `OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)`. This job is a linkage acceptance probe only; it is **not yet integrated into the 120-regression runner**.
+
+Host preflight, before any MVS changes:
+```sh
+git pull --ff-only
+python3 tools/checks/prepare-runtime-object-library.py
+python3 tools/checks/prepare-installed-runtime-consumer.py \
+  workarea/native-regression/069-independent-blib-object/generated.s370.asm \
+  workarea/runtime-object-library/installed-consumer-069.jcl
+grep -n 'INCLUDE OBJ' workarea/runtime-object-library/installed-consumer-069.jcl
+tools/dspal ls OBJ
+```
+The prior application assembler should exist from the operator's successful 069 regression; regenerate test 069 normally if missing. Inspect both generated JCL decks for valid job steps, external references, and any site-specific JCL adjustments. **Neither tool submits jobs.** The installation remains non-atomic, requires a recoverable backup, and should not run until reviewed. No freshly installed object-member execution is claimed.
