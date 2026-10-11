@@ -266,3 +266,7 @@ tools/run-native-regression 69 --show-output
 ```
 
 Confirm that each reports PASS, the IEWL report contains the BLIB PDS INCLUDE and resolves exported GETVEC, FREEVEC, MEMDRAIN, and that every selected IFOX step completed normally. As usual, there are no local TK5 results at commit time, and this is not full-suite acceptance.
+
+## Checkpoint 4b: BLIB-object regression 069 accepted in three modes
+
+Operator report, 11 October 2026, after pull through `9254acf`: regression **069-independent-blib-object** passed 1/1 with `BCPLMEM_OBJECT=1`, passed 1/1 with `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`, and passed 1/1 with default options. All reported FAIL 0. This is runner-level end-to-end evidence that the BLIB PDS object staging continues to work with the new independent BCPLMEM service and alongside BCPLBYTE and BCPLAPT; the console summaries do not provide per-step IEWL listings. Normal mode remains functional. The targeted external-service and BLIB-object integration gates are now accepted. The remaining planned validation is a full 120-test opt-in regression sweep; no 120/120 result is claimed at this checkpoint.
