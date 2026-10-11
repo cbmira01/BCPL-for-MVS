@@ -241,3 +241,7 @@ resolution in IEWL, not only GO RC.
 **Status: untested on TK5.** No guest execution, linker acceptance, or
 full 120-test acceptance is claimed. Continue with focused jobs before
 any runner integration.
+
+## Checkpoint 2: independent APTOVEC regression 091 accepted
+
+Operator performed canonical native regression 091 (PASS 1/1), generated the isolated two-object APTOVEC job, and executed **JOB 6018 AP091R** on TK5. Step results: `ASMBCPL=0000`, `ASMNAT=0000`, `LKED=0000`, `GO=0000`; IFOX reported zero flagged statements and highest severity zero. GO SYSPRINT output was `42` as expected. IEWL cross-reference: `BCPLMAIN` origin `X'00E0'`, `BCPLAPT` origin `X'15A0'`, public `APTOVEC` at `X'15A0'`, `APLIMIT` at `X'1608'`, and `STKOVFL` at `BCPLMAIN` offset `X'051C'`; external references were bound in both directions. This accepts **nested-call linkage only**; the large-vector and overflow paths have not yet been guest-tested with this separate object. Next gate: isolated probe 092 and then 093, before any runner integration or full-panel acceptance.
