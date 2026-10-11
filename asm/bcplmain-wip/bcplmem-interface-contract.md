@@ -251,3 +251,18 @@ Each must pass 1/1 and emit the two exact output records. The preexisting isolat
 ## Checkpoint 3e: automated regression 083 triple acceptance
 
 Operator report, 11 October 2026, after pulling main through `668c11c`: three independent `tools/run-native-regression 83 --show-output` invocations all reported **PASS 1/1**, FAIL 0: (1) `BCPLMEM_OBJECT=1`; (2) `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`; (3) default mode with no object switches. The expected regression fixture is exactly two records, `42` and `V=2 M=1`, verified through the ordinary runner's JES output checker. The abbreviated console report does not individually display output records or IEWL symbols. These results close the runner-level module-aware 083 acceptance gate and confirm default regression compatibility. Remaining integration boundary: BLIB-object staging with BCPLMEM_OBJECT, before full three-object 120-test suite.
+
+## Checkpoint 4a: BLIB-object staging supports opt-in BCPLMEM (pending TK5)
+
+The `069-independent-blib-object/prepare-stage2.py` now accepts `--external-mem`, externalizes the *disposable runtime source* through the existing strict BCPLMEM extractor, assembles `bcplmem-linkage-probe.asm` in a separate `ASMMEM` step, and passes `&&MEMOBJ` to IEWL while preserving `INCLUDE OBJ(BLIB)` from `HERC02.BCPL.OBJ`. The native `run-test.sh` forwards `BCPLMEM_OBJECT=1` on the BLIB-object path. Extra object order: BCPLBYTE, BCPLAPT, BCPLMEM when selected. Legacy BLIB staging remains the default. Preparer removes any older output JCL before starting, preventing stale-deck reuse after failure.
+
+**Operator acceptance gates (not yet executed):**
+```sh
+git pull --ff-only
+BCPLMEM_OBJECT=1 tools/run-native-regression 69 --show-output
+BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
+  tools/run-native-regression 69 --show-output
+tools/run-native-regression 69 --show-output
+```
+
+Confirm that each reports PASS, the IEWL report contains the BLIB PDS INCLUDE and resolves exported GETVEC, FREEVEC, MEMDRAIN, and that every selected IFOX step completed normally. As usual, there are no local TK5 results at commit time, and this is not full-suite acceptance.
