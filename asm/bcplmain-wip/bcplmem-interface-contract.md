@@ -86,3 +86,24 @@ bash tools/submit-jcl \
 Inspect with `tools/job-summary JOBNUMBER` and `tools/dump-report-for-job JOBNUMBER`. Expect `ASMBCPL`, `ASMNAT`, `LKED`, `GO` each RC=0000 and the same BCPL output as canonical regression 027. **This expectation is unverified** until the real IFOX/IEWL/SYSOUT report is examined. Stop and diagnose any failure; do not run other extracted-object cases automatically.
 
 This checkpoint is a *staged experiment*, not confirmation of BCPLMEM linkage or completed extraction. The prior combined 120/120 suite remains the accepted baseline.
+
+## Checkpoint 2a: JOB 6275 first assembler failure and narrow correction
+
+Operator ran canonical regression 027 (PASS 1/1), prepared the isolated
+BCPLMEM object job, and submitted **MM027R JOB 6275**. ASMBCPL returned
+**RC=0008** (IFOX flagged exactly one error, statement 1049 `IFO209
+ADDRESSABILITY ERROR` at `L 1,=A(MEMDRAIN)`). JES bypassed ASMNAT,
+LKED and GO; consequently no BCPLMEM object execution has yet been
+validated. The ESD did report imported `GETVEC`, `FREEVEC`, and
+`MEMDRAIN`, so this is not evidence of a missing EXTRN declaration.
+
+The assembler placed `=A(MEMDRAIN)` at the *final* literal pool,
+unreachable by R11's system-vector base when `RELMEM` executes.
+Commit `bc0f3aa` changes **only the disposable extraction generator**:
+insert `LTORG` immediately after the `RELDONE` return so the literal
+is addressable from RELMEM, without modifying canonical BCPLMAIN,
+the standalone BCPLMEM assembler object, or the normal regression runner.
+
+Next gate: repeat 027 prepare/submit on TK5 and require four zero
+return codes, correct runtime output and external-reference resolution.
+Do not claim a pass until the operator supplies execution evidence.
