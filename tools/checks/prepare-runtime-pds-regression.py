@@ -63,7 +63,8 @@ def main():
         if combined.count(divider) != 1:
             raise ValueError("cannot identify combined runtime divider")
         prefix, runtime = combined.split(divider)
-        if not runtime.startswith("BCPLMAIN CSECT"):
+        if sum(bool(re.fullmatch(r"BCPLMAIN\s+CSECT\s*", row))
+               for row in runtime.splitlines()) != 1:
             raise ValueError("unexpected combined BCPLMAIN section")
         lines = prefix.rstrip("\n").splitlines()
         if any(re.fullmatch(r"\s*EXTRN\s+BCPLMAIN\s*", row)
