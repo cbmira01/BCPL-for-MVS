@@ -9,6 +9,7 @@ import argparse
 import importlib.util
 from pathlib import Path
 import os
+import subprocess
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -51,6 +52,8 @@ def main() -> None:
     p.add_argument("generated_assembly", type=Path)
     p.add_argument("output_jcl", type=Path)
     p.add_argument("--test-number", type=int, default=69)
+    p.add_argument("--external-apt", action="store_true")
+    p.add_argument("--external-byte", action="store_true")
     args = p.parse_args()
     if not 69 <= args.test_number <= 999:
         raise ValueError("test number must be between 69 and 999")
@@ -75,7 +78,18 @@ def main() -> None:
         deck = intermediate.read_text(encoding="ascii")
     finally:
         intermediate.unlink(missing_ok=True)
-    runtime = (ROOT / "asm/bcplmain-wip.asm").read_text(encoding="ascii")
+    runtime_source = ROOT / "asm/bcplmain-wip.asm"
+    # Test-only, fail-closed transformation; never modify canonical source.
+    for opt, helper in (
+        (args.external_byte, "externalize-bcplbyte.py"),
+        (args.external_apt, "externalize-bcplapt.py"),
+    ):
+        if opt:
+            out = args.output_jcl.with_name("special-" + helper + ".asm")
+            subprocess.run(["python3", str(ROOT / "tools/checks" / helper),
+                            str(runtime_source), str(out)], check=True)
+            runtime_source = out
+    runtime = runtime_source.read_text(encoding="ascii")
     runtime = inject_runtime(runtime).rstrip("\n") + "\n"
     old = "//SYSIN    DD DSN=HERC02.BCPL.ASM(BCMWIP),DISP=SHR"
     if deck.count(old) != 1:
@@ -93,6 +107,65 @@ def main() -> None:
         deck = deck.replace("RG069", f"RG{num:03d}")
         deck = deck.replace("BCPL 069", f"BCPL {num:03d}")
         deck = deck.replace("REGRESSION 069", f"REGRESSION {num:03d}")
+    # Assemble any extracted machine services beside application and
+    # BCPLMAIN, while retaining the resident BLIB object PDS INCLUDE.
+    extra = []
+    if args.external_byte:
+        extra.append(("ASMBYTE", "BYTOBJ", ROOT / "asm/bcplbyte.asm"))
+    if args.external_apt:
+        extra.append(("ASMAPT", "APTOBJ",
+                      ROOT / "tools/checks/bcplapt-linkage-probe.asm"))
+    previous = "ASMRUN"
+    for step, obj, source in extra:
+        cards = source.read_text(encoding="ascii").rstrip("\n")
+        addition = (
+            f"//{step:<8} EXEC PGM=IFOX00,REGION=256K,\\n"
+            f"//             COND=(0,NE,{previous}),\\n"
+            "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'\\n"
+            "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR\\n"
+            "//SYSUT1   DD UNIT=SYSDA,SPACE=(1700,(600,100))\\n"
+            "//SYSUT2   DD UNIT=SYSDA,SPACE=(1700,(300,50))\\n"
+            "//SYSUT3   DD UNIT=SYSDA,SPACE=(1700,(300,50))\\n"
+            "//SYSPRINT DD SYSOUT=*\\n"
+            "//SYSPUNCH DD DUMMY\\n"
+            f"//SYSGO    DD DSN=&&{obj},UNIT=SYSDA,\\n"
+            "//             SPACE=(80,(300,100)),DISP=(NEW,PASS),\\n"
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)\\n"
+            "//SYSIN    DD *\\n" + cards + "\\n/*\\n"
+        )
+        place = "//LKED     EXEC PGM=IEWL"
+        if deck.count(place) != 1:
+            raise ValueError("missing unique LKED step")
+        deck = deck.replace(place, addition + place, 1)
+        syspass = "//         DD DSN=&&RUNOBJ,DISP=(OLD,DELETE)\\n"
+        if deck.count(syspass) != 1:
+            raise ValueError("missing RUNOBJ link-edit DD")
+        deck = deck.replace(syspass, syspass +
+            f"//         DD DSN=&&{obj},DISP=(OLD,DELETE)\\n", 1)
+        previous = step
+    if extra:
+        names = ["ASMAP", "ASMRUN"] + [item[0] for item in extra]
+        # Break at complete subparameter boundaries for 71-column JCL.
+        def cond(steps):
+            lines = []
+            line = "//             COND=("
+            for i, name in enumerate(steps):
+                part = f"(0,NE,{name})" + ("," if i < len(steps)-1 else ")")
+                if len(line + part) > 71:
+                    lines.append(line)
+                    line = "//             " + part
+                else:
+                    line += part
+            lines.append(line)
+            return "\\n".join(lines)
+        old_link = "//             COND=((0,NE,ASMAP),(0,NE,ASMRUN))"
+        if deck.count(old_link) != 1:
+            raise ValueError("missing unique original LKED conditions")
+        deck = deck.replace(old_link, cond(names), 1)
+        old_go = "//             COND=((0,NE,ASMAP),(0,NE,ASMRUN),(0,NE,LKED))"
+        if deck.count(old_go) != 1:
+            raise ValueError("missing unique original GO conditions")
+        deck = deck.replace(old_go, cond(names + ["LKED"]), 1)
     if not deck.endswith("//\n"):
         raise ValueError("expected Stage 1 JCL terminator")
     deck = deck[:-3] + """//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,3),
