@@ -131,6 +131,31 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
+runtime_pds=${BCPL_RUNTIME_PDS:-0}
+if [[ $runtime_pds != 0 && $runtime_pds != 1 ]]; then
+    echo "run-test: BCPL_RUNTIME_PDS must be 0 or 1" >&2
+    exit 64
+fi
+if [[ $runtime_pds == 1 ]]; then
+    if [[ ${BCPLMEM_OBJECT:-0} != 0 || ${BCPLBYTE_OBJECT:-0} != 0 || ${BCPLAPT_OBJECT:-0} != 0 ]]; then
+        echo "run-test: BCPL_RUNTIME_PDS cannot be combined with source-object flags" >&2
+        exit 64
+    fi
+    if (( test_num == 83 )) || [[ -f "$native" || -f "$library" ||
+       -f "$library_ref" || -f "$case_dir/input.records" ||
+       -f "$case_dir/input-b.records" || -f "$case_dir/expected-alt.txt" ]]; then
+        echo "run-test: BCPL_RUNTIME_PDS does not yet support this case's" >&2
+        echo "run-test: extra objects, instrumentation or I/O fixtures" >&2
+        exit 65
+    fi
+    echo
+    echo "=== Build installed-runtime object-PDS regression job ==="
+    jcl="$work/runtime-pds-go.jcl"
+    rm -f "$jcl"
+    python3 "$root/tools/checks/prepare-runtime-pds-regression.py" \
+        "$generated" "$jcl" --test-number "$test_num" || exit $?
+    [[ -s "$jcl" ]] || exit 66
+else
 mem_object=${BCPLMEM_OBJECT:-0}
 if [[ $mem_object != 0 && $mem_object != 1 ]]; then
     echo "run-test: BCPLMEM_OBJECT must be 0 or 1" >&2
@@ -488,6 +513,7 @@ path.write_text(text, encoding="ascii", newline="\n")
 PY
 
 fi # end regular static/native assembly strategy
+fi # end source-object strategy vs installed-runtime PDS
 
 echo
 echo "=== Submit native run ==="
