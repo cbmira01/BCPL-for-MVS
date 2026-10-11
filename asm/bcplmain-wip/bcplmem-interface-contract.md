@@ -146,3 +146,9 @@ The operator-supplied complete IEWL cross-reference shows **BCPLMAIN at X'0090'*
 **Acceptance scope:** first separately assembled/link-edited BCPLMEM GETVEC and private cleanup invocation with one live vector remaining at FINISH (regression 027), including BCPLMAIN's retained DYNBASE teardown. This is strong linkage and smoke-test evidence, but not yet proof of explicit FREEVEC operation, multi-node allocation-list manipulation, or STOP/FINISH cleanup with several live nodes. Canonical BCPLMAIN and runner unchanged.
 
 Next isolated sequence: 028 (FREEVEC), 029 (multiple allocations), 039 (storage release), 082 (outstanding allocations), 088 (STOP with outstanding allocations), with per-job ASMs/LKED/GO evidence before integration. Regression 083's instrumentation requires special module-aware adaptation.
+
+## Checkpoint 2d: JOB 6280 accepted — independent FREEVEC
+
+Operator tested canonical regression **028-freevec** (PASS 1/1), generated a fresh isolated BCPLMEM two-object job, and executed **MM028R JOB 6280** (11 Oct 2026). Preflight checks each reported OK. ASMBCPL IFOX00, ASMNAT IFOX00, LKED IEWL and GO each returned **RC=0000**; both assembler steps reported no errors. The application printed **42**. The IEWL cross-reference identifies **BCPLMEM X'1458'**, with `GETVEC X'1458'`, `FREEVEC X'14F8'`, and `MEMDRAIN X'157E'`; the three BCPLMAIN external references resolve to this independent CSECT. Regression 028 calls GETVEC, FREEVEC, then GETVEC and FREEVEC again: this proves the external module's basic explicit release/reallocation behavior, not arbitrary linked-list stress or measured MVS storage reclamation.
+
+**Next gate:** isolated regression 029 multiple allocations, then 039 storage release, 082 outstanding allocations at exit, and 088 STOP with outstanding allocations. Continue to defer 083's instrumentation adaptation. This entry records operator-supplied TK5 results; canonical runtime and runner remain unchanged.
