@@ -57,7 +57,7 @@ RELMAIN  L     1,DYNBASE"""
     text=replace_one(text,
         "RELDONE  L     14,RELRET\n         BR    14\n",
         "RELDONE  L     14,RELRET\n         BR    14\n"
-        "         LTORG\\n")
+        "         LTORG\n")
     for name in ("GETVEC","FREEVEC","VECLIST"):
         if re.search(rf"(?m)^{name}\s+",text):
             raise ValueError(f"duplicate private definition {name}")
