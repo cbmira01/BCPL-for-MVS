@@ -82,6 +82,7 @@ def main() -> None:
         "//* NOT ATOMIC: FAILURE MAY LEAVE A PARTLY UPDATED OBJECT LIBRARY.",
         "//* PRESERVE EXISTING OBJ(BLIB); NO BLIB COMPILATION HERE.",
     ])
+    install_steps = []
     for name, source_path in sources:
         step = "A" + name[4:] if name != "BCPLMAIN" else "AMAIN"
         # Step names: AMAIN, ABYTE, AAPT, AMEM.
@@ -108,13 +109,37 @@ def main() -> None:
             "//SYSIN    DD *",
             *cards,
             "/*",
-            f"//I{step[1:]:<7} EXEC PGM=IEBGENER,COND=(0,NE,{step})",
+            "//*",
+        ])
+        install_steps.append((name, step, tmp))
+    # Do not change the PDS until *all* independent assemblies succeeded.
+    # Four preceding IFOX steps require RC=0000; otherwise all installs skip.
+    # An I/O failure during a subsequent install is still non-atomic.
+    prior = [step for _, step, _ in install_steps]
+    for name, step, tmp in install_steps:
+        cond = "COND=(" + ",".join(f"(0,NE,{item})" for item in prior) + ")"
+        # JCL continuation at whole tuple boundaries.
+        tuples = [f"(0,NE,{item})" for item in prior]
+        chunks = []
+        line = "//             COND=("
+        for i, item in enumerate(tuples):
+            token = item + ("," if i != len(tuples) - 1 else ")")
+            if len(line + token) > 71:
+                chunks.append(line)
+                line = "//             " + token
+            else:
+                line += token
+        chunks.append(line)
+        lines.extend([
+            f"//I{step[1:]:<7} EXEC PGM=IEBGENER,",
+            *chunks,
             "//SYSPRINT DD SYSOUT=*",
             "//SYSIN    DD DUMMY",
             f"//SYSUT1   DD DSN=&&{tmp},DISP=(OLD,DELETE)",
             f"//SYSUT2   DD DSN={objdsn}({name}),DISP=SHR",
             "//*",
         ])
+        prior.append("I" + step[1:])
     lines.append("//")
     for i, line in enumerate(lines, 1):
         if len(line) > 71:
