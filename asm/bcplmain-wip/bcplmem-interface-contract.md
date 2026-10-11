@@ -347,3 +347,23 @@ These check installed BLIB registration, allocation and byte operations. They mu
 ## Installed-object PDS runner: initial three regressions accepted
 
 Operator report, 11 October 2026, after pulling main through `6e8731b`: `BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output` **PASS 1/1**, regression 027 **PASS 1/1**, and regression 038 **PASS 1/1**. All three produced FAIL 0 under the ordinary runner's output checks. These establish the opt-in installed five-member runtime library path across BLIB global registration, GETVEC and byte services. The concise console output does not include separate IEWL cross-reference detail. Special cases remain excluded as documented; do not claim 120/120 installed-object coverage yet.
+
+## Checkpoint: installed PDS mode accepts additional regression shapes (not yet TK5-validated)
+
+Following the accepted installed-PDS regressions 069, 027 and 038, the opt-in `BCPL_RUNTIME_PDS=1` runner path was extended to support:
+
+- An extra native source object (`native.asm`, e.g. 026), independently assembled at job time and linked with the five installed runtime objects. Existing strict `prepare-native-global.py` trailer modification is reused; its appended combined BCPLMAIN body is dropped and `EXTRN BCPLMAIN` restored.
+- A separately compiled BCPL library (`library.bcpl`, e.g. 025), compiled by the existing Cambridge compiler and combined at the generated-assembly level using the established `combine-separate-bcpl.py` label-renaming and global-trailer merge. No separate native library object is produced by this compatibility bridge.
+- I/O fixtures `input.records`, `input-b.records`, and `expected-alt.txt`, emitted as the same GO DD channels as the existing source-object runner. The established JES output and expected termination checks still apply.
+
+**Still deliberately unsupported:** special instrumented reclamation regression 083 and `library-source.txt` (demoted whole-BLIB source) regression staging. Both must be implemented before full 120-case PDS acceptance. The installed library is never modified by a regression run. Source-object flags may not be combined with PDS mode. The additions have been committed but are **not yet proven by a new TK5 operator run**. Start with focused gates:
+
+```sh
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 26 --show-output
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 25 --show-output
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 94 --show-output
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 102 --show-output
+```
+
+Stop at the first failure and inspect its JES report before broadening.
