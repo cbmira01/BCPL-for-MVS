@@ -35,3 +35,37 @@ longer than assembler column 71. The normal native regression source
 checker still runs on the instrumented result.
 
 Status: **PENDING TK5**, no assembly, link, or GO result yet.
+
+
+## Installed runtime PDS acceptance boundary (11 October 2026)
+
+The isolated two-object instrumented BCPLMEM probe has already executed
+successfully on TK5 (JOB 6295): its output was exactly `42` followed by
+`V=2 M=1`, and ASMBCPL/ASMNAT/LKED/GO returned RC=0000.
+This is evidence for the instrumented *test copies*, not instrumentation
+of installed `HERC02.BCPL.OBJ(BCPLMAIN)` or `(BCPLMEM)`.
+
+The production installed objects do not export `MEMDCNT` or `TRM083`.
+Their FREEMAIN macros were assembled into machine instructions. The
+regression harness cannot inspect how many times those internal call
+sites returned merely by linking an application against the unchanged
+object members. The other installed-runtime-PDS tests establish behavioral
+compatibility; they do not turn 083 into a call-count test.
+
+**Preserve the fail-closed block for `BCPL_RUNTIME_PDS=1` test 083.**
+Do not mark it PASS on successful execution/output alone, substitute a
+probe using different BCPLMAIN/BCPLMEM objects without reporting that
+substitution, or install instrumented production OBJ members.
+
+A defensible two-tier acceptance report is:
+
+1. **Installed production objects:** run tests 000–119 except 083; require
+   119/119 PASS, and explicitly label 083 not measurable in this mode.
+2. **Separate instrumentation evidence:** retain JOB 6295's successful
+   test-only two-object `V=2 M=1` result and revalidate that probe after
+   any BCPLMAIN/BCPLMEM source changes.
+
+A future true 120/120 *installed-object* instrumentation gate requires an
+explicit observation mechanism designed into and validated for the installed
+runtime (for example, an opt-in diagnostic ABI or system-level traced service
+calls). Both alternatives are architectural changes, not harness fixes.
