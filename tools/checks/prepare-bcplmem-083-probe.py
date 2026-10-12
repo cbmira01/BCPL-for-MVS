@@ -54,8 +54,8 @@ def main():
     # Keep BCPOUT open for a final diagnostic emitted at RELDONE,
     # after both MEMDRAIN and BCPLMAIN's own FREEMAIN have returned.
     text = once(text,"FINRETN  CLOSE (BCPOUT)","FINRETN  EQU   *")
-    text = once(text,"         EXTRN GETVEC,FREEVEC,MEMDRAIN",
-                "         EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMDCNT")
+    text = once(text,"         EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMBIND",
+                "         EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMDCNT")
     text = once(text,module.MAIN,module.MAIN_NEW)
     # Count *only* FREEMAIN calls made in MEMDRAIN, not explicit FREEVEC.
     # Fetch externally owned counter by address through the local literal.
@@ -77,9 +77,9 @@ def main():
     text = once(text,"RELRET   DC    F'0'",
                 "RELRET   DC    F'0'\nTRM083   DC    F'0'\nTRTXT83  DC    CL7'V=0 M=0'")
     mainasm.write_text(check(text),encoding="ascii",newline="\n")
-    mem = (root/"tools/checks/bcplmem-linkage-probe.asm").read_text(encoding="ascii")
-    mem = once(mem,"         ENTRY GETVEC,FREEVEC,MEMDRAIN",
-               "         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMDCNT")
+    mem = (root/"asm/bcplmem.asm").read_text(encoding="ascii")
+    mem = once(mem,"         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND",
+               "         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMDCNT")
     mem = once(mem,"         FREEMAIN R,LV=(4),A=(1)\n         B     MEMLOOP",
                """         FREEMAIN R,LV=(4),A=(1)
          L     9,MEMDCNT
