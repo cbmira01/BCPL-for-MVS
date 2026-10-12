@@ -502,6 +502,16 @@ if not cases and int(test_no) < 53:
     cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):02d}-*"))
 if len(cases) != 1:
     raise SystemExit(f"fixture lookup: expected one test {test_no}")
+exec_parm = cases[0] / "exec-parm.txt"
+if exec_parm.is_file():
+    value = exec_parm.read_text(encoding="ascii").rstrip("\r\n")
+    if not value or len(value) > 100 or not value.isascii() or any(
+        ch in value for ch in ("'", "\n", "\r")
+    ):
+        raise SystemExit(f"invalid EXEC PARM fixture: {exec_parm}")
+    if text.count(new) != 1:
+        raise SystemExit("expected single GO EXEC for PARM")
+    text = text.replace(new, new + f"//             PARM='{value}',\n", 1)
 fixture = cases[0] / "input.records"
 if fixture.exists():
     records = fixture.read_text(encoding="ascii").splitlines()
