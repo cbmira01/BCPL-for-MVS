@@ -3,9 +3,9 @@ BCPLMAIN CSECT
 * Preserve the compiled-module base before R3 is repurposed as R.K12.
 *
          LR    3,15
-         ST    1,PARMLIST
          BALR  10,0
          USING *,10
+         ST    1,PARMLIST
 *
 * Establish a private MVS save area before any service call.
 * The generated module prefix already saved the caller's R14..R12.
