@@ -627,6 +627,31 @@ BCPLMAIN CSECT
          ST    1,STKLIM
          A     1,=F'256'
          ST    1,DYNEND
+*
+* G56 STACKHWM in historical BLIB scans alternating word markers.
+* Paint the safe 16384-word stack before the first BCPL frame.
+* The final 256-byte clearance stays outside the working stack.
+*
+         L     2,DYNWORK
+         L     3,=X'5C40E2E3'
+         L     4,=X'C3D2405C'
+         L     0,=F'8192'
+STKPAINT ST    3,0(2)
+         ST    4,4(2)
+         LA    2,8(2)
+         BCT   0,STKPAINT
+*
+* STACKEND-2 is the guard; STACKEND-1 records the highest
+* initialized even-marker word as a BCPL word pointer.
+* These two fullwords reside in the reserved clearance.
+*
+         L     2,DYNEND
+         AH    2,=H'-8'
+         ST    3,0(2)
+         L     1,STKLIM
+         AH    1,=H'-8'
+         SRL   1,2
+         ST    1,4(2)
          LA    11,SYSV
 *
 * Initialize the dynamic global vector with the historical sentinel.
