@@ -19,7 +19,7 @@ def main():
         raise ValueError("source must not be overwritten")
     text=args.source.read_text(encoding="ascii")
     text=replace_one(text,"BCPLMAIN CSECT\n",
-        "BCPLMAIN CSECT\n         EXTRN GETVEC,FREEVEC,MEMDRAIN\n")
+        "BCPLMAIN CSECT\n         EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMBIND\n")
     for label,offset in (("GETVEC",348),("FREEVEC",352)):
         # The monolithic source may already use the IFOX-safe address
         # literal. Require precisely one recognized installation pattern.
@@ -30,6 +30,19 @@ def main():
             raise ValueError(f"expected one {label} G{offset//4} anchor; got {matches}")
         if old_la in text:
             text = text.replace(old_la, old_literal, 1)
+    # Source-only production candidate: bind G6!48 to the allocator list.
+    text=replace_one(text,
+        "         L     1,=A(DEBUGINT)\\n",
+        "         ST    10,MBRT10\\n"
+        "         LA    1,MSVFREE\\n"
+        "         L     14,=A(MEMBIND)\\n"
+        "         BALR  14,14\\n"
+        "         L     10,MBRT10\\n"
+        "         L     1,=A(DEBUGINT)\\n")
+    text=replace_one(text,
+        "MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head\\n",
+        "MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head\\n"
+        "MBRT10   DC    F'0'\\n")
     start=text.index("GETVEC   LTR   7,7")
     end=text.index("DEBUGINT LTR   7,7",start)
     # Keep DEBUGINT comment header, discard the allocator implementation.
@@ -55,6 +68,9 @@ def main():
 RELMAIN  L     1,DYNBASE"""
     new="""         L     1,=A(MEMDRAIN)
          BALR  14,1
+         SR    1,1
+         L     14,=A(MEMBIND)
+         BALR  14,14
 RELMAIN  L     1,DYNBASE"""
     text=replace_one(text,old,new)
     # R11 addresses the system-vector region including RELMEM, whereas
