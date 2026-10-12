@@ -588,6 +588,7 @@ BCPLMAIN CSECT
          LR    3,15
          BALR  10,0
          USING *,10
+         ST    1,PARMLIST
 *
 * Establish a private MVS save area before any service call.
 * The generated module prefix already saved the caller's R14..R12.
@@ -1098,15 +1099,36 @@ FRET     ST    7,IORESULT
          L     4,0(5)
          BCR   15,6
 *
+* G39 opens a dedicated memory stream over the MVS EXEC PARM field.
+* R1 on entry to the load module points to the parameter-list word;
+* that word addresses the halfword length and following EBCDIC bytes.
+* Capture that original pointer before the BCPL startup reuses R1.
 PARMENT  STM   0,15,IOSAVE
-         CLI   INOPEN,X'01'
-         BE    PARMOPEN
-         OPEN  (BCPIN,(INPUT))
-         MVI   INOPEN,X'01'
-         MVI   INEOF,X'00'
-         MVC   INPOS(4),ININIT
-PARMOPEN LM    0,15,IOSAVE
-         LA    7,INCTRL
+         CLI   PMINIT,X'01'
+         BE    PMREADY
+         MVI   PMINIT,X'01'
+         XC    PMPOS(4),PMPOS
+         XC    PMLEN(4),PMLEN
+         XC    PMADDR(4),PMADDR
+         L     14,PARMLIST
+         LTR   14,14
+         BZ    PMREADY
+         L     14,0(14)
+         N     14,=X'7FFFFFFF'
+         LTR   14,14
+         BZ    PMREADY
+         LH    10,0(14)
+         LTR   10,10
+         BNP   PMREADY
+* MVS EXEC PARM length is limited to 100 bytes.
+         C     10,=F'100'
+         BNH   PMSET
+         LA    10,100
+PMSET    ST    10,PMLEN
+         LA    14,2(14)
+         ST    14,PMADDR
+PMREADY  LM    0,15,IOSAVE
+         LA    7,PMCTRL
          SRL   7,2
          L     4,0(5)
          BCR   15,6
@@ -1115,7 +1137,11 @@ INPENT   L     7,INCURR
          L     4,0(5)
          BCR   15,6
 *
-SELINP   LA    14,IN2CTRL
+SELINP   LA    14,PMCTRL
+         SRL   14,2
+         CR    7,14
+         BE    SELPM
+         LA    14,IN2CTRL
          SRL   14,2
          CR    7,14
          BE    SEL2IN
@@ -1125,6 +1151,8 @@ SELINP   LA    14,IN2CTRL
          BNE   SELIRET
          ST    7,INCURR
          B     SELIRET
+SELPM    ST    7,INCURR
+         B     SELIRET
 SEL2IN   ST    7,INCURR
 SELIRET  L     4,0(5)
          BCR   15,6
@@ -1133,6 +1161,10 @@ RDCHENT  STM   0,15,IOSAVE
          L     14,INCURR
          LTR   14,14
          BZ    RDEND
+         LA    10,PMCTRL
+         SRL   10,2
+         CR    14,10
+         BE    RDPM
          LA    10,IN2CTRL
          SRL   10,2
          CR    14,10
@@ -1183,6 +1215,37 @@ RDEND    L     7,INENDVAL
 RDRETURN ST    7,IORESULT
          ST    7,INLAST
          MVI   INSEEN,X'01'
+         LM    0,15,IOSAVE
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+*
+* EXEC PARM stream: bytes, one newline, EOF. A private pushback slot
+* prevents UNRDCH on the PARM stream altering either QSAM stream.
+RDPM     CLI   PMPUSH,X'01'
+         BE    RDPMPUSH
+         L     14,PMPOS
+         C     14,PMLEN
+         BL    RDPMCHAR
+         CLI   PMNL,X'01'
+         BE    RDPMEOF
+         MVI   PMNL,X'01'
+         LA    7,10
+         B     RDPMRET
+RDPMCHAR L     10,PMADDR
+         AR    10,14
+         SR    7,7
+         IC    7,0(10)
+         LA    14,1(14)
+         ST    14,PMPOS
+         B     RDPMRET
+RDPMPUSH MVI   PMPUSH,X'00'
+         L     7,PMLAST
+         B     RDPMRET
+RDPMEOF  L     7,INENDVAL
+RDPMRET  ST    7,IORESULT
+         ST    7,PMLAST
+         MVI   PMSEEN,X'01'
          LM    0,15,IOSAVE
          L     7,IORESULT
          L     4,0(5)
@@ -1241,6 +1304,10 @@ RD2RET   ST    7,IORESULT
 *
 * UNRDCH repeats the last RDCH result once for this selected stream.
 UNRDCHEN L     14,INCURR
+         LA    10,PMCTRL
+         SRL   10,2
+         CR    14,10
+         BE    UNRDPM
          LA    10,IN2CTRL
          SRL   10,2
          CR    14,10
@@ -1248,6 +1315,10 @@ UNRDCHEN L     14,INCURR
          CLI   INSEEN,X'01'
          BNE   UNRDRET
          MVI   INPUSH,X'01'
+         B     UNRDRET
+UNRDPM   CLI   PMSEEN,X'01'
+         BNE   UNRDRET
+         MVI   PMPUSH,X'01'
          B     UNRDRET
 UNRD2    CLI   IN2SEEN,X'01'
          BNE   UNRDRET
@@ -1258,6 +1329,10 @@ UNRDRET  L     4,0(5)
 * ENDREAD closes the selected BCPIN input stream and clears state.
 ENDRDENT STM   0,15,IOSAVE
          L     14,INCURR
+         LA    10,PMCTRL
+         SRL   10,2
+         CR    14,10
+         BE    ENDRPM
          LA    10,IN2CTRL
          SRL   10,2
          CR    14,10
@@ -1275,6 +1350,12 @@ ENDRCLR  XC    INCURR(4),INCURR
          MVI   INPUSH,X'00'
          MVI   INSEEN,X'00'
          MVC   INPOS(4),ININIT
+         B     ENDRDONE
+ENDRPM   XC    INCURR(4),INCURR
+         XC    PMPOS(4),PMPOS
+         MVI   PMNL,X'00'
+         MVI   PMPUSH,X'00'
+         MVI   PMSEEN,X'00'
          B     ENDRDONE
 ENDR2    CLI   IN2OPEN,X'01'
          BNE   ENDR2CLR
@@ -1997,6 +2078,8 @@ DBGARET  BR    14
 ***********************************************************************
          DS    0F
 MSVSAVE  DS    18F
+* Original MVS EXEC parameter list (R1), retained at entry.
+PARMLIST DC    F'0'
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
@@ -2062,6 +2145,19 @@ OUT2OPEN DC    X'00'
 OUTSVREG DS    16F
 OUT2BUF  DS    CL132
 BCPOUT2  DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
+*
+* MVS EXEC PARM pseudo-stream: independently selectable via FINDPARM.
+* No DCB/GET: PARM bytes are held by MVS for this task step.
+         DS    0F
+PMCTRL   DC    F'3'
+PMINIT   DC    X'00'
+PMNL     DC    X'00'
+PMPUSH   DC    X'00'
+PMSEEN   DC    X'00'
+PMPOS    DC    F'0'
+PMLEN    DC    F'0'
+PMADDR   DC    F'0'
+PMLAST   DC    F'0'
 *
 * One-stream bootstrap input controls for native regression 094.
          DS    0F
