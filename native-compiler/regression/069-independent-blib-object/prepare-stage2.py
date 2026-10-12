@@ -121,7 +121,7 @@ def main() -> None:
                       ROOT / "tools/checks/bcplapt-linkage-probe.asm"))
     if args.external_mem:
         extra.append(("ASMMEM", "MEMOBJ",
-                      ROOT / "tools/checks/bcplmem-linkage-probe.asm"))
+                      ROOT / "asm/bcplmem.asm"))
     previous = "ASMRUN"
     for step, obj, source in extra:
         cards = source.read_text(encoding="ascii").rstrip("\n")
