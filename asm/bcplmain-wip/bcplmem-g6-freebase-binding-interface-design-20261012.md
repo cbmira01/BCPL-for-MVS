@@ -62,3 +62,9 @@ No redesign of GETMAIN/FREEMAIN, no heap FREEBASE/NEXTFREE/LASTFREE manager, no 
 ## Design disposition
 
 **Ready for a separate source-only implementation march.** The interface is intentionally minimal and fully testable. Production promotion requires a separate acceptance decision.
+
+## Implementation staging note (2026-10-12)
+
+Candidate implementation is staged in `asm/bcplmem.asm` and the production-object extraction `tools/checks/externalize-bcplmem.py`, plus regression `123-freebase-auto-publication`. The independent-object regression stage now assembles canonical `asm/bcplmem.asm`, and the installer supports `--main-and-mem` for a coordinated two-member deck. **No TK5 execution or installed-PDS acceptance has yet been observed for this candidate.**
+
+ABI implementation refinement: `MEMBIND` uses R10 as a private assembler base and therefore **clobbers R10**. This supersedes the earlier proposed preservation of R4–R12 for this one private entry. The BCPLMAIN startup binding call explicitly saves and restores its R10 base in a private `MBRT10` fullword. The final unbind is performed in the teardown path, where R10 is not subsequently used by BCPL generated code. All other registers are preserved by MEMBIND, except R1 is an input whose numeric value remains unchanged. This refinement does not affect G87/G88's established register contracts. Do not treat the original draft's R10-preservation language as the implemented ABI.
