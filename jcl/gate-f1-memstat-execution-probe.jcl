@@ -269,7 +269,7 @@ F1PROBE  CSECT
          CLC   SNAP(16),TWO
          BNE   FAILURE
 * Bad negative size must not affect the snapshot.
-         LA    7,-1
+         L     7,=F'-1'
          L     15,=A(GETVEC)
          BALR  6,15
          LTR   7,7
