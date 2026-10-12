@@ -21,9 +21,15 @@ def main():
     text=replace_one(text,"BCPLMAIN CSECT\n",
         "BCPLMAIN CSECT\n         EXTRN GETVEC,FREEVEC,MEMDRAIN\n")
     for label,offset in (("GETVEC",348),("FREEVEC",352)):
-        text=replace_one(text,
-            f"         LA    1,{label}\n         ST    1,{offset}(12)\n",
-            f"         L     1,=A({label})\n         ST    1,{offset}(12)\n")
+        # The monolithic source may already use the IFOX-safe address
+        # literal. Require precisely one recognized installation pattern.
+        old_la = f"         LA    1,{label}\n         ST    1,{offset}(12)\n"
+        old_literal = f"         L     1,=A({label})\n         ST    1,{offset}(12)\n"
+        matches = text.count(old_la) + text.count(old_literal)
+        if matches != 1:
+            raise ValueError(f"expected one {label} G{offset//4} anchor; got {matches}")
+        if old_la in text:
+            text = text.replace(old_la, old_literal, 1)
     start=text.index("GETVEC   LTR   7,7")
     end=text.index("DEBUGINT LTR   7,7",start)
     # Keep DEBUGINT comment header, discard the allocator implementation.
