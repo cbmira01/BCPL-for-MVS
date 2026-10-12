@@ -305,8 +305,11 @@ F1PROBE  CSECT
          SR    15,15
          B     EXIT
 FAILURE  LR    15,9
-EXIT     L     13,4(13)
+EXIT     ST    15,RETCODE
+         LA    1,RETCODE
+         L     13,4(13)
          LM    14,12,12(13)
+         L     15,0(1)
          BR    14
 * R14 calls snapshot; preserve it across MEMSTAT's R14 call.
 SNAPSHOT ST    14,RET
@@ -319,6 +322,7 @@ SNAPSHOT ST    14,RET
 SAVE     DS    18F
 FRAME    DC    F'0'
 RET      DC    F'0'
+RETCODE  DC    F'0'
 V1       DC    F'0'
 V2       DC    F'0'
 SNAP     DS    4F
