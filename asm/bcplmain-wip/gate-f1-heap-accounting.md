@@ -1,6 +1,6 @@
 # Gate F1 — BCPLMEM heap accounting candidate
 
-Status: **Gate F1 SOURCE-CANDIDATE ACCEPTED; NOT INSTALLED** (12 October 2026).
+Status: **Gate F1 SOURCE-CANDIDATE ACCEPTED; PRODUCTION OBJECT INSTALLED; INSTALLED REGRESSION PENDING** (13 October 2026).
 Gate E installed OBJ baseline remains accepted and untouched.
 
 ## Scope and ownership
@@ -150,3 +150,9 @@ remains open pending that evidence; production PDS remains unchanged.
 Operator ran `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/run-native-regression` against the candidate; the full 00–123 range returned **PASS 124, FAIL 0, SKIP 0, TOTAL 124**. Earlier targeted 039, 082, 083, 088, 122 and 123 also each passed under this configuration. Together with non-installing IFOX assembly JOB 9638 and nine-checkpoint execution JOB 9642, this closes the **Gate F1 source-candidate validation**.
 
 Gate E installed production object library `HERC02.BCPL.OBJ` remains unchanged. This acceptance does not constitute installation or production-PDS regression approval. Any subsequent promotion must be separately authorized and followed by installed-runtime acceptance testing. The historical staging instructions and unexecuted notes above describe the state at their original recording dates; this section is the controlling current acceptance status.
+
+## Production object installation — JOB 9919 (13 October 2026)
+
+Resident `SOURCE(BCPLMEM)` updated via JOBs 9910–9913; readback matched the canonical source. Resident `JCL(BLDGFMEM)` written/read back via JOBs 9915–9916 (only trailing newline differed). Unauthenticated direct JOB 9914 successfully assembled but PUTMEM abended S913-38 as PROD; **no object was installed by that job**. Authenticated `dspal submit JCL BLDGFMEM --wait` used launcher JOB 9918 and payload **JOB 9919**, with ASMMEM IFOX00 RC=0000, PUTMEM IEBGENER RC=0000, zero assembler statements flagged, highest severity 0 and job SUCCESS. Subsequent `tools/dspal ls OBJ` listed BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB. The one-member installation changed `OBJ(BCPLMEM)` only; no BCPLMAIN/other runtime-object replacement was requested. **Production installation accepted; installed full regression not yet reported.**
+
+Next (single end-of-march installed-object panel): `BCPL_RUNTIME_PDS=1 tools/run-native-regression`; expect 123 PASS, 0 FAIL, 1 SKIP (083 source-only). Do not mark Gate F1 complete until actual result is received.
