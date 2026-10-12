@@ -97,6 +97,12 @@ def main():
     if cards.count(name) != 1:
         raise ValueError("unexpected IEWL NAME")
     cards[cards.index(name)] = " NAME BCOEX28(R)"
+    load_dd = "//SYSLMOD  DD DSN=&&GOSET(RG028OBJ),UNIT=SYSDA,"
+    if cards.count(load_dd) != 1:
+        raise ValueError("unexpected SYSLMOD member naming")
+    cards[cards.index(load_dd)] = (
+        "//SYSLMOD  DD DSN=&&GOSET(BCOEX28),UNIT=SYSDA,"
+    )
     if any(len(row)>71 or not row.isascii() for row in cards):
         raise ValueError("generated job contains bad JCL cards")
     dest.write_text("\n".join(cards) + "\n", encoding="ascii", newline="\n")
