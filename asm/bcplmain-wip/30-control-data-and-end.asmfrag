@@ -5,6 +5,8 @@
 ***********************************************************************
          DS    0F
 MSVSAVE  DS    18F
+* Original MVS EXEC parameter list (R1), retained at entry.
+PARMLIST DC    F'0'
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
@@ -70,6 +72,19 @@ OUT2OPEN DC    X'00'
 OUTSVREG DS    16F
 OUT2BUF  DS    CL132
 BCPOUT2  DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
+*
+* MVS EXEC PARM pseudo-stream: independently selectable via FINDPARM.
+* No DCB/GET: PARM bytes are held by MVS for this task step.
+         DS    0F
+PMCTRL   DC    F'3'
+PMINIT   DC    X'00'
+PMNL     DC    X'00'
+PMPUSH   DC    X'00'
+PMSEEN   DC    X'00'
+PMPOS    DC    F'0'
+PMLEN    DC    F'0'
+PMADDR   DC    F'0'
+PMLAST   DC    F'0'
 *
 * One-stream bootstrap input controls for native regression 094.
          DS    0F
