@@ -1,6 +1,6 @@
 # BCPLMAIN / BCPLMEM paired object promotion
 
-Status: **candidate assembly staged, not installed**, 12 October 2026.
+Status: **Gate A accepted on TK5 (JOB 9337), not installed**, 12 October 2026.
 
 ## Accepted basis and scope
 
@@ -27,7 +27,7 @@ tools/dump-report-for-job JOBNUMBER
 
 The candidate job assembles BCPLMAIN and BCPLMEM in independent IFOX steps. It creates **only temporary sequential FB80 decks** and has **no OBJ PDS DD**. Require zero assembler severity, zero flagged cards and expected ESD export/import declarations. A zero return code here does **not** prove that the pair links with applications or that a PDS member can be restored.
 
-**Important:** Verify IFOX/JCL behavior on TK5 before trusting this tool for further gates. Generated deck is non-installing by design.
+**Gate A evidence — JOB 9337 (12 October 2026):** Operator ran the generated BCOBCAND job on TK5. ASMMMAIN IFOX00 RC=0000; ASMMMEM IFOX00 RC=0000; VERIFY IEFBR14 RC=0000; highest RC=0000; 0 flagged assembler statements and highest severity 0. Both independently assembled candidate sources passed. The temporary FB80 object datasets were not installed in OBJ. This is **assembly acceptance**, not external-symbol resolution or execution acceptance.
 
 ## Gate B: preservation and restore proof (NOT YET IMPLEMENTED)
 
