@@ -1,7 +1,7 @@
 * BCPLMEM runtime service: G87/G88 plus private teardown MEMDRAIN.
 * Static singleton allocator; intentionally not reentrant.
 BCPLMEM  CSECT
-         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND
+         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMSTAT
 *
 * GETVEC(N): R7=N. R10 is our private addressing base.
 GETVEC   BALR  10,0
@@ -31,7 +31,20 @@ GETVEC   BALR  10,0
          L     8,VECLIST
          ST    8,8(14)
          ST    14,VECLIST
-         L     8,VECPUB
+* Account only successfully linked allocations.
+         L     8,MEMCURN
+         LA    8,1(8)
+         ST    8,MEMCURN
+         C     8,MEMPEAKN
+         BNH   GVNCPEAK
+         ST    8,MEMPEAKN
+GVNCPEAK L     8,MEMCURB
+         A     8,GVRLEN
+         ST    8,MEMCURB
+         C     8,MEMPEAKB
+         BNH   GVNBPEAK
+         ST    8,MEMPEAKB
+GVNBPEAK L     8,VECPUB
          LTR   8,8
          BZ    GVNPUB
          ST    14,0(8)
@@ -80,6 +93,12 @@ FVHEAD   ST    4,VECLIST
          BZ    FVUNLNK
          ST    4,0(8)
 FVUNLNK  L     4,4(14)
+         L     8,MEMCURN
+         BCTR  8,0
+         ST    8,MEMCURN
+         L     8,MEMCURB
+         SR    8,4
+         ST    8,MEMCURB
          LR    1,14
          FREEMAIN R,LV=(4),A=(1)
          L     15,FVWSAVE
@@ -112,7 +131,13 @@ MEMLOOP  L     1,VECLIST
          LTR   8,8
          BZ    MEMFREE
          ST    9,0(8)
-MEMFREE  FREEMAIN R,LV=(4),A=(1)
+MEMFREE  L     8,MEMCURN
+         BCTR  8,0
+         ST    8,MEMCURN
+         L     8,MEMCURB
+         SR    8,4
+         ST    8,MEMCURB
+         FREEMAIN R,LV=(4),A=(1)
          B     MEMLOOP
 MEMDONE  LM    0,3,MEMSAV
          L     15,MEMWSAV
@@ -134,9 +159,32 @@ MEMBIND  BALR  10,0
 MBNRET   BR    14
          DROP  10
 *
+* Private snapshot: R1 addresses four fullwords (16 bytes).
+* Return R14 intact. R10 is clobbered, as in MEMBIND.
+* Call only in quiescent singleton allocator context.
+MEMSTAT  BALR  10,0
+         USING *,10
+         ST    14,MSRET
+         L     14,MEMCURN
+         ST    14,0(1)
+         L     14,MEMPEAKN
+         ST    14,4(1)
+         L     14,MEMCURB
+         ST    14,8(1)
+         L     14,MEMPEAKB
+         ST    14,12(1)
+         L     14,MSRET
+         BR    14
+         DROP  10
+*
 * BCPLMEM owns all allocator storage.
          DS    0F
 VECLIST  DC    F'0'
+MEMCURN  DC    F'0'
+MEMPEAKN DC    F'0'
+MEMCURB  DC    F'0'
+MEMPEAKB DC    F'0'
+MSRET    DC    F'0'
 VECPUB   DC    F'0'
 MBRET    DC    F'0'
 GVRMAX   DC    F'4194299'
