@@ -43,6 +43,7 @@ def main():
       "//             COND=((0,NE,ASMMMAIN),(0,NE,ASMMMEM),",
       "//             (0,NE,ASMPROBE))",
       "//SYSLIB   DD DSN=HERC02.BCPL.OBJ,DISP=SHR",
+      "//OBJ      DD DSN=HERC02.BCPL.OBJ,DISP=SHR",
       "//SYSLIN   DD DSN=&&PROBOBJ,DISP=(OLD,DELETE)",
       "//         DD DSN=&&MAINOBJ,DISP=(OLD,DELETE)",
       "//         DD DSN=&&MEMOBJ,DISP=(OLD,DELETE)",
