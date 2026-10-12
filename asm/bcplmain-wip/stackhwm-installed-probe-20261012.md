@@ -60,3 +60,20 @@ STACKHWM 0
 **Evidence evaluation:** The program invokes G56 and completes RC=0000, establishing that the installed runtime/global registration resolves to executable STACKHWM behavior. A fully independent export-trailer dump remains outstanding, but the runtime call succeeds with the actual installed BLIB. The zero result is `OVERFLOW` according to historical BLIB's contract; the current runtime has not initialized the required marker words. It must **not** be interpreted as proof that a real stack overflow occurred (there was no abnormal termination). Nor does this isolated observation establish the exact reason for failing the historical checks until marker values are examined.
 
 **Next gate:** Propose a bounded, regression-first initialization of the historical stack alternating patterns and two top metadata words, respecting the WIP's safe stack limit. Preserve current OBJ members until source-mode plus installed-mode evidence is obtained.
+
+## Follow-on G56 implementation candidate — pending source-mode verification
+
+BCPLMAIN startup in `10-bootstrap-and-system.asmfrag` and synchronized `asm/bcplmain-wip.asm` now paints the 16,384-word safe stack before invoking the BCPL START routine: 8,192 consecutive pairs of `#X5C40E2E3` and `#XC3D2405C`. It stores `EVENSTACK` at `STACKEND-2` and stores `(STKLIM-8)/4` as the BCPL-word Q at `STACKEND-1`. The top two metadata words remain inside the 256-byte clearance, not the checked working stack. No changes to G54/G55 values, STKLIM, or BLIB itself.
+
+`native-compiler/regression/120-stackhwm-initialized` tests that BLIB's G56 returns an in-range word address rather than the 0/1 historical diagnostic result. It does not assert an absolute address or claim accurate usage under every path.
+
+**Source-mode verification gate (before promotion):**
+
+```sh
+ git pull --ff-only
+ python3 tools/checks/check-bcplmain-modules.py
+ python3 tools/checks/check-asm-source.py asm/bcplmain-wip.asm
+ BCPL_RUNTIME_PDS=0 tools/run-native-regression 120 --show-output
+```
+
+The source runtime regression uses installed `OBJ(BLIB)` but assembles the newly staged BCPLMAIN; existing `OBJ(BCPLMAIN)` is unchanged. Inspect the test's ASMRUN and GO return codes if failure occurs. **Do not yet invoke `--only-main` installation.** The existing JOB 7815 result (`STACKHWM 0`) remains the observed production baseline until a new installed-runtime probe is explicitly run and accepted.
