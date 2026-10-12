@@ -191,7 +191,7 @@ WFHAS76  EQU   *
          ST    1,340(12)
          LA    1,PUTBYTE
          ST    1,344(12)
-         LA    1,GETVEC
+         L     1,=A(GETVEC)
          ST    1,348(12)
          L     1,=A(FREEVEC)
          ST    1,352(12)
