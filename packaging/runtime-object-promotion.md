@@ -239,3 +239,28 @@ and BLIB trailer registration), host Cambridge compiler/CG370 and
 regression orchestration still originate outside MVS; moving *all*
 development to MVS requires porting these, not merely storing runtime
 object modules in a PDS.
+
+### Gate F1 JOB 9914 — security denial; authenticated retry required
+
+Operator synchronized accepted `asm/bcplmem.asm` to resident
+`HERC02.BCPL.SOURCE(BCPLMEM)` with RM JOB 9910, COMPRESS JOB 9911,
+PUT JOB 9912 and GET readback JOB 9913 (no diff).
+Direct reader JOB **9914** `BCF1MEM`: ASMMEM IFOX00 RC=0000,
+zero flagged statements, severity 0, BCPLMEM X'2AC' and LD MEMSTAT
+X'204'. PUTMEM IEBGENER **ABEND S913-38** opening
+`HERC02.BCPL.OBJ` for output. RACF/RAKF diagnostics identify
+`PROD,BCF1MEM,DATASET,HERC02.BCPL.OBJ`: the unauthenticated direct
+job inherited PROD rather than HERC02. No object data was copied
+(SYSUT1 zero records). Gate F1 **not installed or accepted** by 9914.
+
+Corrected method: `jcl/build-gate-f1-bcplmem.jcl` is a **job body**
+(no top-level JOB card), mapped to `JCL(BLDGFMEM)`. Stage with
+`tools/dspal put JCL BLDGFMEM jcl/build-gate-f1-bcplmem.jcl`,
+read back and compare, then run
+`tools/dspal submit JCL BLDGFMEM --wait`. dspal's authenticated
+launcher derives USER/PASSWORD from private local config and injects
+the HERC02 job card for the resident payload. Never commit or echo
+that password or grant broader DATASET access. Check ASMMEM and
+PUTMEM RC=0000 and the installed regression panel before acceptance.
+The prior instructions to use `bash tools/submit-jcl` for this
+production write are **superseded**.
