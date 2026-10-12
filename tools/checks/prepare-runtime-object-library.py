@@ -27,7 +27,11 @@ def main() -> None:
                     default=ROOT / "workarea/runtime-object-library")
     ap.add_argument("--only-main", action="store_true",
                     help="assemble/install only BCPLMAIN; preserve all other OBJ members")
+    ap.add_argument("--main-and-mem", action="store_true",
+                    help="install BCPLMAIN and BCPLMEM as a coordinated pair")
     args = ap.parse_args()
+    if args.only_main and args.main_and_mem:
+        ap.error("--only-main and --main-and-mem are mutually exclusive")
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     deck = out / "build-runtime-objects.jcl"
@@ -65,6 +69,8 @@ def main() -> None:
     ]
     if args.only_main:
         sources = sources[:1]
+    elif args.main_and_mem:
+        sources = [sources[0], sources[3]]
     for _, file in sources:
         run(CHECKS / "check-asm-source.py", file)
     core_path = ROOT / "tools/dspal-core.py"
@@ -82,6 +88,7 @@ def main() -> None:
     lines = list(header)
     lines.extend([
         ("//* BCPLMAIN ONLY: PRESERVE ALL OTHER OBJ MEMBERS" if args.only_main
+         else "//* BCPLMAIN+BCPLMEM: PRESERVE OTHER OBJ MEMBERS" if args.main_and_mem
          else "//* BCPL NATIVE RUNTIME: FOUR INDEPENDENT FB80 OBJECT MEMBERS"),
         "//* REVIEW BEFORE SUBMISSION: INSTALL STEPS REPLACE OBJ MEMBERS.",
         "//* NOT ATOMIC: FAILURE MAY LEAVE A PARTLY UPDATED OBJECT LIBRARY.",
