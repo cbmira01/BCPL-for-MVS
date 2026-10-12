@@ -233,7 +233,7 @@ MEMWSAV  DC    F'0'
 //SYSIN    DD *
 F1PROBE  CSECT
          ENTRY F1PROBE
-         EXTRN GETVEC,FREEVEC,MEMSTAT
+         EXTRN GETVEC,FREEVEC,MEMSTAT,MEMDRAIN
          STM   14,12,12(13)
          BALR  12,0
          USING *,12
@@ -299,6 +299,27 @@ F1PROBE  CSECT
          L     15,=A(FREEVEC)
          BALR  6,15
          LA    9,7
+         BAL   14,SNAPSHOT
+         CLC   SNAP(16),DONE
+         BNE   FAILURE
+* Reallocate two vectors and let MEMDRAIN reclaim both.
+         LA    7,2
+         L     15,=A(GETVEC)
+         BALR  6,15
+         LTR   7,7
+         BZ    FAILURE
+         LA    7,4
+         L     15,=A(GETVEC)
+         BALR  6,15
+         LTR   7,7
+         BZ    FAILURE
+         LA    9,8
+         BAL   14,SNAPSHOT
+         CLC   SNAP(16),TWO
+         BNE   FAILURE
+         L     15,=A(MEMDRAIN)
+         BALR  14,15
+         LA    9,9
          BAL   14,SNAPSHOT
          CLC   SNAP(16),DONE
          BNE   FAILURE
