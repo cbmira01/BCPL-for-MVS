@@ -164,3 +164,25 @@ After correcting JOB 9366's malformed JCL separator, operator used explicit dspa
 ### Gate E initial installed-PDS smoke: JOB 9382 failure (12 October 2026)
 
 Operator ran BCPL_RUNTIME_PDS=1 for 00,27,28,069: first three PASS. Regression 069 compilation JOB 9381, execution JOB 9382: ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, GO ABEND S0C1. IEWL included separately installed BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT, BLIB and resolved their external symbols; linker total X'3498'. At failure R4=X'C7D3F0F0' (uninitialized global G!60 sentinel), following generated application's L 4,240(12), BALR 6,4. Root cause: installed BCPLMAIN scans only application global-export trailer; it does not register independent linked BLIB globals. The test-local `native-compiler/regression/069-independent-blib-object/prepare-stage2.py` injects EXTRN BLIB and scans BLIB trailer, proven in JOB 2425 (GO RC=0000, BLIB 42). That experimental logic was never promoted into the installed canonical main. **Gate E pending; not a Gate D object-installation failure.** Next design task is controlled promotion of explicit BLIB global registration while retaining interface/relocation contract and identifying that this is operational reconstruction, not yet historical proof.
+
+### Gate E remediation prepared: promote BLIB registration into installed runtime
+
+Commit 4155565 updates `tools/checks/stage-bldbmain.py` so that its reproducible `workarea/runtime-object-candidates/bcplmain-pds.asm` incorporates the operationally proven `prepare-stage2.py:inject_runtime` BLIB-trailer registration, **after** BCPLMEM externalization and **before** adding `ENTRY STKOVFL`. This adds `EXTRN BLIB` plus the BLIB export-trailer scan and global-vector merge before START dispatch. The canonical monolithic `asm/bcplmain-wip.asm` is intentionally retained unchanged because source-mode regressions may omit `OBJ(BLIB)` and an unconditional BLIB external would break their linkage. The production BCPLMAIN source is the fully staged MVS `SOURCE(BCPLMAIN)` deck; the stage-2 routine is reused rather than maintaining two diverging copies. Stage generator remains deterministic and checks anchors. The injection is known to have worked in the 069 experimental job 2425, but **its interaction with the externalized installed runtime remains untested** pending the operator's next IFOX/link/run evidence.
+
+Use operator-visible explicit dspal invocations, not hidden synchronization:
+
+```sh
+git pull --ff-only
+python3 tools/checks/stage-bldbmain.py
+# inspect staged file and manifest; update the SOURCE member only
+tools/dspal rm SOURCE BCPLMAIN
+tools/dspal compress SOURCE
+tools/dspal put SOURCE BCPLMAIN workarea/runtime-object-candidates/bcplmain-pds.asm
+tools/dspal get SOURCE BCPLMAIN workarea/runtime-object-candidates/readback-bcplmain.asm
+diff -u workarea/runtime-object-candidates/bcplmain-pds.asm workarea/runtime-object-candidates/readback-bcplmain.asm
+# BLDBMAIN Gate D job already resident; writes OBJ(BCPLMAIN), OBJ(BCPLMEM)
+tools/dspal submit JCL BLDBMAIN --wait
+BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output
+```
+
+Do not accept the remediation until BLDBMAIN IFOX/IEBGENER all RC=0000 and regression 069 executes with `BLIB 42`. Then repeat 00,27,28 and installed-PDS regression expansion. In case of assembly error, **do not submit BLDBMAIN again until repaired**. Note re-running BLDBMAIN replaces *both* runtime OBJ members by design.
