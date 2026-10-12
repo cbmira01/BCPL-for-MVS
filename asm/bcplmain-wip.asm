@@ -586,6 +586,7 @@ BCPLMAIN CSECT
 * Preserve the compiled-module base before R3 is repurposed as R.K12.
 *
          LR    3,15
+         LR    9,1
          BALR  10,0
          USING *,10
          ST    1,PARMLIST
@@ -598,6 +599,7 @@ BCPLMAIN CSECT
          ST    1,8(13)
          LR    13,1
          USING MSVSAVE,13
+         ST    9,PARMLIST
          ST    3,MODBASE
 *
 * Locate L998 = module base + unsigned positive halfword at module+10.
@@ -750,9 +752,9 @@ WFHAS76  EQU   *
          ST    1,344(12)
          LA    1,GETVEC
          ST    1,348(12)
-         LA    1,FREEVEC
+         L     1,=A(FREEVEC)
          ST    1,352(12)
-         LA    1,DEBUGINT
+         L     1,=A(DEBUGINT)
          ST    1,600(12)
          LA    1,APTOVEC
          ST    1,160(12)
@@ -1114,14 +1116,14 @@ PARMENT  STM   0,15,IOSAVE
          LTR   14,14
          BZ    PMREADY
          L     14,0(14)
-         N     14,=X'7FFFFFFF'
+         N     14,PMMASK
          LTR   14,14
          BZ    PMREADY
          LH    10,0(14)
          LTR   10,10
          BNP   PMREADY
 * MVS EXEC PARM length is limited to 100 bytes.
-         C     10,=F'100'
+         C     10,PMMAX
          BNH   PMSET
          LA    10,100
 PMSET    ST    10,PMLEN
@@ -2080,6 +2082,8 @@ DBGARET  BR    14
 MSVSAVE  DS    18F
 * Original MVS EXEC parameter list (R1), retained at entry.
 PARMLIST DC    F'0'
+PMMASK   DC    X'7FFFFFFF'
+PMMAX    DC    F'100'
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
