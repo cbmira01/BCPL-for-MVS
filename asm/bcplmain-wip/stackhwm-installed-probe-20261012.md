@@ -77,3 +77,7 @@ BCPLMAIN startup in `10-bootstrap-and-system.asmfrag` and synchronized `asm/bcpl
 ```
 
 The source runtime regression uses installed `OBJ(BLIB)` but assembles the newly staged BCPLMAIN; existing `OBJ(BCPLMAIN)` is unchanged. Inspect the test's ASMRUN and GO return codes if failure occurs. **Do not yet invoke `--only-main` installation.** The existing JOB 7815 result (`STACKHWM 0`) remains the observed production baseline until a new installed-runtime probe is explicitly run and accepted.
+
+## Initial source-mode regression — JOB 7817, assembler addressability
+
+Operator ran regression 120 source mode. Cambridge compile JOB 7816 succeeded; application ASMAP RC=0000. Runtime ASMRUN RC=0008 and LKED/GO were bypassed. IFOX listed one failing instruction, startup `LA 1,GETVEC`, displaced beyond the available base-addressing range by the additional marker-initialization code. The fix replaces that startup instruction with `L 1,=A(GETVEC)`, in both the staged fragment and the canonical assembler; this is an address-loading correction, **not** evidence that STACKHWM now works. Repeat `BCPL_RUNTIME_PDS=0 tools/run-native-regression 120 --show-output`; production OBJ remains unchanged.
