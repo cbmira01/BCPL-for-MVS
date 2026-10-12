@@ -113,3 +113,21 @@ Next acceptance steps: execute the extended temporary-object probe,
 then execute the source-mode independent-object regression panel and
 only subsequently consider an explicit, controlled installation gate.
 No object-PDS installation has occurred during F1.
+
+## JOB 9642 — extended isolated execution acceptance
+
+On 12 October 2026, JOB **9642** (BCF1RUN) completed ASMMEM IFOX00
+RC=0000, ASMDRV IFOX00 RC=0000, LKED IEWL RC=0000, and GO RC=0000.
+Both assembler listings reported no flagged statements and severity 0.
+The IEWL map resolved GETVEC, FREEVEC, MEMSTAT and MEMDRAIN against
+the freshly assembled BCPLMEM candidate.
+
+Nine assertions passed. Checkpoints 8 and 9 repeat two outstanding
+GETVEC allocations and verify that a subsequent MEMDRAIN returns
+current allocation count and allocated bytes to zero while preserving
+peak count and peak bytes. This fulfills the isolated MEMDRAIN behavior
+gate; it does not establish independent MVS FREEMAIN return-code checks.
+
+**Next gate:** BCPL runtime source-mode / independent-object regressions.
+No production PDS object installation or installed-regression acceptance
+has been carried out for Gate F1.
