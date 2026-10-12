@@ -3,7 +3,7 @@ GLOBAL $( START:1; SAVEAREA:6; WRCH:14
 
 LET START() BE
 $(1
-    LET OK = TRUE
+    LET ERR = 0
     LET A = GETVEC(7)
     LET B = 0
     IF A=0 DO
@@ -13,34 +13,34 @@ $(1
     $)2
 
     // First prove this address is not already accepted as stack/code.
-    IF VALIDPOINTER(A) DO OK := FALSE
+    IF VALIDPOINTER(A) DO IF ERR=0 DO ERR := '1'
 
     // The BCPLMEM header is three fullwords before its payload.
     // G6!48 contains a native BYTE address to that header.
     SAVEAREA!48 := (A<<2)-12
-    UNLESS VALIDPOINTER(A) DO OK := FALSE
-    UNLESS VALIDPOINTER(A+3) DO OK := FALSE
+    UNLESS VALIDPOINTER(A) DO IF ERR=0 DO ERR := '2'
+    UNLESS VALIDPOINTER(A+3) DO IF ERR=0 DO ERR := '3'
 
     B := GETVEC(7)
-    IF B=0 DO OK := FALSE
+    IF B=0 DO IF ERR=0 DO ERR := '4'
     IF B~=0 DO
     $(3
        // B is now the head, whose header links to A.
        SAVEAREA!48 := (B<<2)-12
-       UNLESS VALIDPOINTER(B) DO OK := FALSE
-       UNLESS VALIDPOINTER(A) DO OK := FALSE
+       UNLESS VALIDPOINTER(B) DO IF ERR=0 DO ERR := '5'
+       UNLESS VALIDPOINTER(A) DO IF ERR=0 DO ERR := '6'
 
        // After freeing B, its link/header must not be dereferenced.
        FREEVEC(B)
        SAVEAREA!48 := (A<<2)-12
-       IF VALIDPOINTER(B) DO OK := FALSE
-       UNLESS VALIDPOINTER(A) DO OK := FALSE
+       IF VALIDPOINTER(B) DO IF ERR=0 DO ERR := '7'
+       UNLESS VALIDPOINTER(A) DO IF ERR=0 DO ERR := '8'
     $)3
 
     FREEVEC(A)
     SAVEAREA!48 := 0
-    IF VALIDPOINTER(A) DO OK := FALSE
+    IF VALIDPOINTER(A) DO IF ERR=0 DO ERR := '9'
 
-    TEST OK THEN WRCH('V') ELSE WRCH('?')
+    TEST ERR=0 THEN WRCH('V') ELSE WRCH(ERR)
     FINISH
 $)1
