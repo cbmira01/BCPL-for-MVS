@@ -2104,6 +2104,13 @@ DBGARET  BR    14
 ***********************************************************************
          DS    0F
 MSVSAVE  DS    18F
+* Historical USERSAVE-compatible G6 list-head positions.
+* The leading 18 words remain the ordinary MVS save area (R13).
+* Unimplemented intervening fields are reserved, not emulated.
+         DS    11F
+MSVLOAD  DC    F'0'              G6!29, byte-pointer load-list head
+         DS    18F
+MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head
 * Original MVS EXEC parameter list (R1), retained at entry.
 PARMLIST DC    F'0'
 PMMASK   DC    X'7FFFFFFF'
