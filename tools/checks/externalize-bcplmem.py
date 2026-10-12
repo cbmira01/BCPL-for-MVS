@@ -30,13 +30,18 @@ def main():
             raise ValueError(f"expected one {label} G{offset//4} anchor; got {matches}")
         if old_la in text:
             text = text.replace(old_la, old_literal, 1)
+    # The new startup call shifts PUTBYTE outside the LA 12-bit base range.
+    # Load its relocated full address rather than using LA.
+    text=replace_one(text,
+        "         LA    1,PUTBYTE\n         ST    1,344(12)\n",
+        "         L     1,=A(PUTBYTE)\n         ST    1,344(12)\n")
     # Source-only production candidate: bind G6!48 to the allocator list.
     text=replace_one(text,
         "         L     1,=A(DEBUGINT)\n",
         "         ST    10,MBRT10\n"
         "         L     1,=A(MSVFREE)\n"
-        "         L     14,=A(MEMBIND)\n"
-        "         BALR  14,14\n"
+        "         L     1,=A(MEMBIND)\n"
+        "         BALR  14,1\n"
         "         L     10,MBRT10\n"
         "         L     1,=A(DEBUGINT)\n")
     text=replace_one(text,
@@ -69,8 +74,8 @@ RELMAIN  L     1,DYNBASE"""
     new="""         L     1,=A(MEMDRAIN)
          BALR  14,1
          SR    1,1
-         L     14,=A(MEMBIND)
-         BALR  14,14
+         L     1,=A(MEMBIND)
+         BALR  14,1
 RELMAIN  L     1,DYNBASE"""
     text=replace_one(text,old,new)
     # R11 addresses the system-vector region including RELMEM, whereas
