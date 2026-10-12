@@ -114,3 +114,19 @@ Operator submitted BCOEX28 JOB 9342 from corrected non-installing execution prob
 Operator's `tools/dspal stat OBJ` ran as JOB 9343: `HERC02.BCPL.OBJ` on volume `TSO003`, `DSORG=PO`, `RECFM=FB`, `LRECL=80`, `BLKSIZE=800`. `tools/dspal ls OBJ` listed exactly `BCPLAPT`, `BCPLBYTE`, `BCPLMAIN`, `BCPLMEM`, `BLIB`. **Inventory accepted; incumbent BCPLMAIN/BCPLMEM Git provenance remains unproven.** The operator deliberately selected Git-based rebuild/redeploy, rather than IEBCOPY backup.
 
 The new `tools/checks/prepare-runtime-object-install.py` **stages, but never submits**, `workarea/runtime-object-candidates/install-runtime-objects.jcl` and a Git SHA256 source manifest. It regenerates the externalized BCPLMAIN from canonical source and adds `ENTRY STKOVFL` to the disposable installation source; its two IFOX object decks feed sequential conditional IEBGENER writes to `OBJ(BCPLMAIN)` and `OBJ(BCPLMEM)`. The JCL uses the established `build-blib-object.jcl` FB80 copying pattern, but **the installation JCL has not been tested or submitted**. Do not submit until operator has reviewed the JCL/manifest, accepted lack of exact incumbent rollback, and captured commit/source hashes. **The member pair is not atomic.** Verify both writes and installed-PDS regressions after submission.
+
+### Revised Gate B: resident-source recovery infrastructure (staged 12 October 2026)
+
+The chosen recovery architecture is Git -> dspal text PDS -> resident `BLDBMAIN` -> MVS IFOX object decks -> controlled Gate D OBJ deployment. Two actual modules exist: `SOURCE(BCPLMAIN)` and `SOURCE(BCPLMEM)`; no `BCPLIOS` source/object is invented before its implementation. The SOURCE/JCL dataset names are **HERC02.BCPL.SOURCE** and **HERC02.BCPL.JCL**, not HERC02..SOURCE. `config/dspal.yaml` maps `SOURCE(BCPLMAIN)` to a reproducibly transformed, STKOVFL-exporting assembler source, `SOURCE(BCPLMEM)` to `asm/bcplmem.asm`, and `JCL(BLDBMAIN)` to `jcl/build-bcplmain-objects.jcl`.
+
+Stage and synchronize with:
+
+```sh
+bash tools/checks/sync-bldbmain-gate-b.sh
+```
+
+This stages from Git sources, records hashes, inventories members, deletes **all present target SOURCE members**, calls **one `dspal compress SOURCE`**, and PUTs both source members; it similarly removes `JCL(BLDBMAIN)`, compresses JCL once, then PUTs JCL. It performs `dspal get` readback and record comparison (ignoring FB80 trailing blanks). Avoid `dspal populate SOURCE` until staged dynamic member dependencies are available; it is not needed for this targeted update. If an rm or compress fails, the script aborts before PUT. If a PUT fails, synchronize the *whole* source set again before running BLDBMAIN. Repeated execution is intended. **These operations modify SOURCE and JCL PDS text members only, never OBJ.**
+
+Then, if readback is accepted, explicitly submit `tools/dspal submit JCL BLDBMAIN --wait` and review ASMMMAIN/ASMMMEM/VERIFY codes and ESD. This Gate B job reads assembler cards from resident SOURCE members (not inline JCL); it produces temporary FB80 decks and does **not** install them. This tests resident-source reproducibility. Gate D will extend/reuse its conditional two-assembly structure for object-member installation after separate approval. No successful MVS synchronization or job result is claimed until operator evidence arrives.
+
+**Supersession:** The earlier `tools/checks/prepare-runtime-object-install.py` inline-source write job is superseded by the MVS-resident source/JCL architecture. Do not submit that older generated installation deck. This revised architecture takes precedence over the earlier Gate D sketch until resident-build acceptance.
