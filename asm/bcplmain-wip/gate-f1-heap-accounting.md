@@ -1,6 +1,6 @@
 # Gate F1 — BCPLMEM heap accounting candidate
 
-Status: **source staged; NOT assembled, linked, executed or installed** (12 October 2026).
+Status: **Gate F1 SOURCE-CANDIDATE ACCEPTED; NOT INSTALLED** (12 October 2026).
 Gate E installed OBJ baseline remains accepted and untouched.
 
 ## Scope and ownership
@@ -144,3 +144,9 @@ conflated with an installed-production-object run.
 
 The full source-mode regression sweep has not yet been reported. Gate F1
 remains open pending that evidence; production PDS remains unchanged.
+
+## Gate F1 source-candidate acceptance — 12 October 2026
+
+Operator ran `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/run-native-regression` against the candidate; the full 00–123 range returned **PASS 124, FAIL 0, SKIP 0, TOTAL 124**. Earlier targeted 039, 082, 083, 088, 122 and 123 also each passed under this configuration. Together with non-installing IFOX assembly JOB 9638 and nine-checkpoint execution JOB 9642, this closes the **Gate F1 source-candidate validation**.
+
+Gate E installed production object library `HERC02.BCPL.OBJ` remains unchanged. This acceptance does not constitute installation or production-PDS regression approval. Any subsequent promotion must be separately authorized and followed by installed-runtime acceptance testing. The historical staging instructions and unexecuted notes above describe the state at their original recording dates; this section is the controlling current acceptance status.
