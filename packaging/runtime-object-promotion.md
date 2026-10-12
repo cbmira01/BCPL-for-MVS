@@ -1,6 +1,6 @@
 # BCPLMAIN / BCPLMEM paired object promotion
 
-Status: **Gate A accepted on TK5 (JOB 9337), not installed**, 12 October 2026.
+Status: **Gates A (9337), A2 (9340), C (9342) accepted; not installed**, 12 October 2026.
 
 ## Accepted basis and scope
 
@@ -29,28 +29,44 @@ The candidate job assembles BCPLMAIN and BCPLMEM in independent IFOX steps. It c
 
 **Gate A evidence — JOB 9337 (12 October 2026):** Operator ran the generated BCOBCAND job on TK5. ASMMMAIN IFOX00 RC=0000; ASMMMEM IFOX00 RC=0000; VERIFY IEFBR14 RC=0000; highest RC=0000; 0 flagged assembler statements and highest severity 0. Both independently assembled candidate sources passed. The temporary FB80 object datasets were not installed in OBJ. This is **assembly acceptance**, not external-symbol resolution or execution acceptance.
 
-## Gate A2: non-installing cross-object link check (staged, awaiting TK5)\n\nAfter Gate A, run `python3 tools/checks/prepare-runtime-object-link-probe.py`, inspect `workarea/runtime-object-candidates/link-candidates.jcl`, and submit it. This job assembles a minimal external BCPLMAIN reference, the freshly transformed BCPLMAIN and canonical BCPLMEM in three separate IFOX steps, then link-edits with the existing installed OBJ(BCPLBYTE), OBJ(BCPLAPT) and OBJ(BLIB). The production OBJ is opened `DISP=SHR` for reading only. Require all assembler steps and LKED RC=0000, verify that MEMBIND and other external references resolve from the *new* BCPLMEM CSECT, and inspect ESD/XREF. There is **no GO** and this test cannot establish functional runtime behavior; a representative running probe is still required before installation.\n\n## Gate B: preservation and restore proof (NOT YET IMPLEMENTED)
+## Gate A2: non-installing cross-object link check (staged, awaiting TK5)\n\nAfter Gate A, run `python3 tools/checks/prepare-runtime-object-link-probe.py`, inspect `workarea/runtime-object-candidates/link-candidates.jcl`, and submit it. This job assembles a minimal external BCPLMAIN reference, the freshly transformed BCPLMAIN and canonical BCPLMEM in three separate IFOX steps, then link-edits with the existing installed OBJ(BCPLBYTE), OBJ(BCPLAPT) and OBJ(BLIB). The production OBJ is opened `DISP=SHR` for reading only. Require all assembler steps and LKED RC=0000, verify that MEMBIND and other external references resolve from the *new* BCPLMEM CSECT, and inspect ESD/XREF. There is **no GO** and this test cannot establish functional runtime behavior; a representative running probe is still required before installation.\n\n## Gate B: lightweight reproducibility and recovery check (NOT YET ACCEPTED)
 
-Before any replacement, inventory the effective manifest and member existence:
+**Policy decision (12 October 2026):** A separate binary backup PDS, IEBCOPY procedure, and rehearsal of an object-member restoration are **not** prerequisites. Git-tracked source/build tooling is the authority; the MVS OBJ PDS is a derived deployment artifact. This choice deliberately accepts a longer recovery interval if deployment fails.
+
+**Before writing anything**, record the Git commit used, clean/dirty working-tree status, generated candidate hashes, and effective PDS inventory:
 
 ```sh
+git rev-parse HEAD
+git status --short
+sha256sum asm/bcplmain-wip.asm asm/bcplmem.asm \
+  tools/checks/externalize-bcplmem.py \
+  tools/checks/prepare-runtime-object-candidates.py \
+  tools/checks/prepare-runtime-object-execution-probe.py \
+  workarea/runtime-object-candidates/bcplmain-link-export.asm
 tools/dspal stat OBJ
 tools/dspal ls OBJ
 ```
 
-Use a dedicated **binary-preserving MVS utility** (e.g. IEBCOPY to a separate, preallocated backup object PDS with validated attributes) to preserve `OBJ(BCPLMAIN)` and `OBJ(BCPLMEM)` with member identities, then confirm backup member inventory and readback/restore on a disposable library. Do not use `dspal get`, `dspal put`, ordinary host text conversion, or an unverified copy mechanism for object decks. Retain existing `BCPLBYTE`, `BCPLAPT`, `BLIB` untouched. A backup is not validated solely because a copy job returns zero; test linking/restoring from its members on a *non-production* target.
+Inspect the generated candidate and make its provenance explicit:
 
-Record source commit IDs, member inventory, MVS job numbers, IFOX results, linker map and restore steps in an acceptance report. A host-side backup of the DASD volume is an additional possible safeguard, not a substitute for validated member restoration.
+- **BCPLMAIN source for installation must be the externalized candidate with `ENTRY STKOVFL`**, exactly as accepted by JOB 9342. The Gate A `bcplmain-external-mem.asm` by itself lacks that extra export; installing that unmodified would regress separate BCPLAPT linkage.
+- **BCPLMEM source for installation is `asm/bcplmem.asm`**. Both members must be assembled and deployed from the *same recorded candidate build*, without intervening source or transform changes. The disposable job streams assembled in previous jobs are not available for installation; the installer must assemble fresh FB80 object streams.
+- The current *incumbent* `OBJ(BCPLMAIN)` and `OBJ(BCPLMEM)` must not be described as reproducible until their originating Git revision and original assembly/deployment recipe have been identified. If provenance cannot be established, record that explicitly. Recovery by *rebuilding the last known-good source revision* is a policy choice, **not proof that incumbent object bytes can be recovered**.
+- Keep the source-mode baseline `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1` (124/124 PASS), plus JOBs 9337, 9340 and 9342, as known-good candidate evidence; these do not identify the prior installed object revision.
 
-## Gate C: pre-installation linkage (NOT YET IMPLEMENTED)
+**Recovery plan (no dedicated binary archive):** Freeze further PDS member updates if either install step or installed-mode acceptance fails. Determine the last known-good reproducible revision from the recorded provenance; check out that revision in a separate worktree, build **both** runtime members through the same validated assembler/installation path, reinstall both, then rerun selected installed-mode tests. Avoid mixing members from different revisions. If the incumbent provenance is unavailable, this is a forward-repair/redeployment strategy and exact rollback is **not guaranteed**. Rebuild/reinstallation is a deliberate operator action, not automatic restoration.
 
-Build a *non-installing* application+candidate-runtime link probe, with both freshly assembled candidate objects and the existing supporting member dependencies. Confirm EXTRN GETVEC/FREEVEC/MEMDRAIN/MEMBIND resolve to candidate BCPLMEM, linkage succeeds without unresolved externals, and representative application/BLIB execution matches expected output. The Gate A job does not link; **do not skip Gate C**.
+The outcome of this checklist, and the decision to accept any missing incumbent provenance, must be recorded **before** the Gate D write job is submitted.
+
+## Gate C: pre-installation executable integration (ACCEPTED, JOB 9342)
+
+The non-installing candidate pair successfully assembled, link-edited with BCPLBYTE/BCPLAPT/BLIB from the installed OBJ PDS, and executed native regression 28 with output `42` and all five steps RC=0000. The ESD/XREF showed candidate BCPLMAIN and BCPLMEM, GETVEC/FREEVEC/MEMDRAIN/MEMBIND, and STKOVFL resolution. Detailed evidence is retained below. This does **not** prove installed PDS behavior.
 
 ## Gate D: paired replacement (NOT YET IMPLEMENTED)
 
-Only after gates A, B and C have succeeded: controlled copy of the two accepted binary FB80 object decks into `HERC02.BCPL.OBJ(BCPLMAIN)` and `(BCPLMEM)`, with fail-closed return codes, post-write member verification and a ready-to-run validated restore job. Both modules are one logical release even if the underlying PDS operations are sequential. No broad `purgebcpl` and no recreation of unrelated members.
+Only after Gates A, A2, C and the lightweight Gate B **readiness check**: assemble both approved sources into temporary FB80 object decks; conditionally use the binary-safe IEBGENER pattern already established by `jcl/build-blib-object.jcl` to replace exactly `HERC02.BCPL.OBJ(BCPLMAIN)` and `(BCPLMEM)`. Verify the two objects have the expected ESD interface, including the explicit `STKOVFL` export in BCPLMAIN. Record both write step codes and post-install library inventory. Neither writing step is atomic with the other; do not claim transactional deployment. No changes to BCPLBYTE, BCPLAPT, BLIB, or unrelated PDSs.
 
-Do not claim this is atomic: mid-copy failures require explicit restoration of both old members. Keep the source/PDS authority model intact.
+On any failure, stop and follow the Gate B rebuild/redeploy recovery plan or repair the candidate and reinstall both; do not assume a preserved binary backup exists.
 
 ## Gate E: installed-runtime acceptance (NOT YET IMPLEMENTED)
 
@@ -63,7 +79,7 @@ BCPL_RUNTIME_PDS=1 tools/run-native-regression 122 --show-output
 BCPL_RUNTIME_PDS=1 tools/run-native-regression 123 --show-output
 ```
 
-`BCPL_RUNTIME_PDS=1` explicitly **excludes 083**: compiled object members lack its private FREEMAIN counters. The other 123 regressions are eligible; the normal whole-panel command encounters an intentional 083 failure rather than silently skipping it. Use a recorded explicit 083 exclusion in the installed-mode validation report (or improve the runner with a clear opt-in skip facility after review). Preserve separate 083 source-only 124/124 evidence. If any installed-object acceptance fails, restore the preserved BCPLMAIN/BCPLMEM pair and retest.
+`BCPL_RUNTIME_PDS=1` explicitly **excludes 083**: compiled object members lack its private FREEMAIN counters. The other 123 regressions are eligible; the normal whole-panel command encounters an intentional 083 failure rather than silently skipping it. Use a recorded explicit 083 exclusion in the installed-mode validation report (or improve the runner with a clear opt-in skip facility after review). Preserve separate 083 source-only 124/124 evidence. If installed-object acceptance fails, stop promotion and follow Gate B's documented rebuild/redeploy or forward-repair recovery path; then retest. Exact incumbent binary restoration is not guaranteed.
 
 ## Non-goals of this checkpoint
 
@@ -79,7 +95,7 @@ JOB 9339: ASMMMAIN, ASMMMEM, ASMPROBE RC=0000; LKED RC=0008. The ESD now confirm
 
 ### Gate A2 accepted — JOB 9340 (12 October 2026)
 
-Operator-submitted corrected non-installing `BCOLINK` job 9340 completed: ASMMMAIN IFOX00 RC=0000, ASMMMEM IFOX00 RC=0000, ASMPROBE IFOX00 RC=0000, LKED IEWL RC=0000. IEWL cross-reference includes candidate BCPLMAIN length X'15B0', candidate BCPLMEM X'214', BCPLBYTE X'26', BCPLAPT X'6C', BLIB X'1BB0', plus four-byte BCOLINK caller. GETVEC/FREEVEC/MEMDRAIN/MEMBIND are resolved to BCPLMEM; STKOVFL is exported from disposable candidate BCPLMAIN and resolves for BCPLAPT. Total linked image X'3418'. Source is the operator's 9340 report. `HERC02.BCPL.OBJ` was read with DISP=SHR; no member was installed or replaced. **Assembly and cross-object linkage accepted. Execution and backup/restore remain outstanding.** The production object installer must retain the STKOVFL export used in this successful probe.
+Operator-submitted corrected non-installing `BCOLINK` job 9340 completed: ASMMMAIN IFOX00 RC=0000, ASMMMEM IFOX00 RC=0000, ASMPROBE IFOX00 RC=0000, LKED IEWL RC=0000. IEWL cross-reference includes candidate BCPLMAIN length X'15B0', candidate BCPLMEM X'214', BCPLBYTE X'26', BCPLAPT X'6C', BLIB X'1BB0', plus four-byte BCOLINK caller. GETVEC/FREEVEC/MEMDRAIN/MEMBIND are resolved to BCPLMEM; STKOVFL is exported from disposable candidate BCPLMAIN and resolves for BCPLAPT. Total linked image X'3418'. Source is the operator's 9340 report. `HERC02.BCPL.OBJ` was read with DISP=SHR; no member was installed or replaced. **Assembly and cross-object linkage accepted. Execution was subsequently accepted by JOB 9342; the lightweight deployment-readiness check remains outstanding.** The production object installer must retain the STKOVFL export used in this successful probe.
 
 ### Gate C executable candidate probe (staged; awaiting TK5 execution)
 
@@ -91,4 +107,4 @@ Operator ran BCOEX28 job 9341: ASMAP, ASMMMAIN, ASMMMEM IFOX RC=0000, LKED IEWL 
 
 ### Gate C accepted — JOB 9342 (12 October 2026)
 
-Operator submitted BCOEX28 JOB 9342 from corrected non-installing execution probe. ASMAP IFOX00 RC=0000, ASMMMAIN IFOX00 RC=0000, ASMMMEM IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; BCPL SYSPRINT output is exactly `42`. IEWL cross-reference: BCRG0028 X'0000'/X'00D8', **candidate** BCPLMAIN X'00D8'/X'15B0', **candidate** BCPLMEM X'1688'/X'0214', installed BCPLBYTE X'18A0'/X'0026', installed BCPLAPT X'18C8'/X'006C', installed BLIB X'1938'/X'1BB0'; total X'34E8'. References: BCPLMAIN to GETVEC/FREEVEC/MEMDRAIN/MEMBIND resolve in BCPLMEM, and BCPLAPT to STKOVFL resolves in BCPLMAIN. The 28-freevec program exercises two allocations with explicit release and emits `42`. No object PDS members were modified. **Gate C executable acceptance achieved**. Binary-safe preservation/restoration and controlled paired promotion are the remaining gates; this is not yet installed-PDS acceptance.
+Operator submitted BCOEX28 JOB 9342 from corrected non-installing execution probe. ASMAP IFOX00 RC=0000, ASMMMAIN IFOX00 RC=0000, ASMMMEM IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; BCPL SYSPRINT output is exactly `42`. IEWL cross-reference: BCRG0028 X'0000'/X'00D8', **candidate** BCPLMAIN X'00D8'/X'15B0', **candidate** BCPLMEM X'1688'/X'0214', installed BCPLBYTE X'18A0'/X'0026', installed BCPLAPT X'18C8'/X'006C', installed BLIB X'1938'/X'1BB0'; total X'34E8'. References: BCPLMAIN to GETVEC/FREEVEC/MEMDRAIN/MEMBIND resolve in BCPLMEM, and BCPLAPT to STKOVFL resolves in BCPLMAIN. The 28-freevec program exercises two allocations with explicit release and emits `42`. No object PDS members were modified. **Gate C executable acceptance achieved**. Lightweight reproducibility/recovery readiness and controlled paired promotion are the remaining gates; this is not yet installed-PDS acceptance.
