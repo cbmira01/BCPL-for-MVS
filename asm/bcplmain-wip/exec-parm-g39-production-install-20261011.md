@@ -1,10 +1,10 @@
 # EXEC PARM G39 — BCPLMAIN-only production-object promotion
 
-**State:** Generator change committed; no TK5 installation performed by ChatGPT. Source-runtime regression 108 passed in user report after commit `57ec6e1`. Production runtime remains unverified until operator-run steps below.
+**State: ACCEPTED / MARCH CLOSED (operator evidence, 12 October 2026 TK5 job date).** Source-runtime regression 108 passed after commit `57ec6e1`. BCPLMAIN-only installed-object replacement succeeded in JOB 7333 (`BCOBJBLD`): `AMAIN` IFOX00 RC=0000, `IMAIN` IEBGENER RC=0000, with no assembler errors. Installed-object regression 108 PASS. Installed production-object suite PASS 119/119 (083 intentionally excluded). Final mixed-mode suite PASS 120/120, including instrumented 083. No additional PDS members were replaced by this job. These observations were supplied by the TK5 operator; ChatGPT did not execute the TK5 jobs.
 
 The `--only-main` mode of `tools/checks/prepare-runtime-object-library.py` performs the existing BCPLBYTE, BCPLAPT, and BCPLMEM externalization transforms and existing BLIB registration transform **to produce BCPLMAIN source only**. It then emits a JCL deck containing **AMAIN IFOX00** and **IMAIN IEBGENER** steps exclusively. It never installs/rebuilds BCPLBYTE, BCPLAPT, BCPLMEM, or BLIB. The IMAIN step is conditioned on AMAIN RC=0000. Failure during IEBGENER replacement remains non-atomic; protect the current member according to the site's backup practices.
 
-## Gate A — prepare (no MVS changes)
+## Reproducibility — Gate A: prepare (no MVS changes)
 
 From repo root:
 
