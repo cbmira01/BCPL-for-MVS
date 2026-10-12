@@ -67,14 +67,14 @@ PARMENT  STM   0,15,IOSAVE
          LTR   14,14
          BZ    PMREADY
          L     14,0(14)
-         N     14,=X'7FFFFFFF'
+         N     14,PMMASK
          LTR   14,14
          BZ    PMREADY
          LH    10,0(14)
          LTR   10,10
          BNP   PMREADY
 * MVS EXEC PARM length is limited to 100 bytes.
-         C     10,=F'100'
+         C     10,PMMAX
          BNH   PMSET
          LA    10,100
 PMSET    ST    10,PMLEN
