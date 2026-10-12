@@ -21,7 +21,7 @@ def main():
     if not mainasm.is_file():
         raise ValueError("first run prepare-runtime-object-candidates.py")
     # Probe does not execute; external BCPLMAIN reference forces its inclusion.
-    caller = OUT / "runtime-link-caller.asm"
+    linked_main = OUT / "bcplmain-link-export.asm"\n    source = mainasm.read_text(encoding="ascii")\n    anchor = "BCPLMAIN CSECT\\n"\n    if source.count(anchor) != 1 or "STKOVFL" not in source:\n        raise ValueError("candidate BCPLMAIN STKOVFL anchor missing")\n    linked_main.write_text(source.replace(anchor, anchor + "         ENTRY STKOVFL\\n", 1), encoding="ascii")\n    caller = OUT / "runtime-link-caller.asm"
     caller.write_text("BCOLINK  CSECT\n"
                       "         EXTRN BCPLMAIN\n"
                       "         DC    A(BCPLMAIN)\n"
@@ -30,13 +30,13 @@ def main():
       "//BCOLINK  JOB (MVS),'BCPL LINK',CLASS=A,MSGCLASS=A,",
       "//             MSGLEVEL=(1,1)",
       "//* NON-INSTALLING LINK CHECK; NO GO OR PRODUCTION PDS WRITES.",
-      *mod.asm("ASMMMAIN","MAINOBJ",mainasm),
+      *mod.asm("ASMMMAIN","MAINOBJ",linked_main),
       *mod.asm("ASMMMEM","MEMOBJ",memasm,"ASMMMAIN"),
       *mod.asm("ASMPROBE","PROBOBJ",caller,"ASMMMEM"),
       "//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',",
       "//             COND=((0,NE,ASMMMAIN),(0,NE,ASMMMEM),",
       "//             (0,NE,ASMPROBE))",
-      "//OBJ      DD DSN=HERC02.BCPL.OBJ,DISP=SHR",
+      "//SYSLIB   DD DSN=HERC02.BCPL.OBJ,DISP=SHR",
       "//SYSLIN   DD DSN=&&PROBOBJ,DISP=(OLD,DELETE)",
       "//         DD DSN=&&MAINOBJ,DISP=(OLD,DELETE)",
       "//         DD DSN=&&MEMOBJ,DISP=(OLD,DELETE)",
