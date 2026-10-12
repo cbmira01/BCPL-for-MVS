@@ -40,7 +40,7 @@ def main():
         "         L     1,=A(DEBUGINT)\n",
         "         ST    10,MBRT10\n"
         "         L     1,=A(MSVFREE)\n"
-        "         L     1,=A(MEMBIND)\n"
+        "         L     9,=A(MEMBIND)\n"
         "         BALR  14,1\n"
         "         L     10,MBRT10\n"
         "         L     1,=A(DEBUGINT)\n")
@@ -74,7 +74,7 @@ RELMAIN  L     1,DYNBASE"""
     new="""         L     1,=A(MEMDRAIN)
          BALR  14,1
          SR    1,1
-         L     1,=A(MEMBIND)
+         L     9,=A(MEMBIND)
          BALR  14,1
 RELMAIN  L     1,DYNBASE"""
     text=replace_one(text,old,new)
