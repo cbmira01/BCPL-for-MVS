@@ -70,6 +70,8 @@ datasets:
       SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
       TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
       CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
+      BCPLMAIN: workarea/runtime-object-candidates/bcplmain-pds.asm
+      BCPLMEM: asm/bcplmem.asm
 
   ASM:
     dsn: BCPL.ASM
@@ -106,6 +108,7 @@ datasets:
       CG370DB: jcl/build-cg370-diagnostic.jcl
       BLIBBLD: jcl/build-blib-object.jcl
       BLIBLINK: jcl/probe-blib-object-consumer.jcl
+      BLDBMAIN: jcl/build-bcplmain-objects.jcl
 
   INTCODE:
     dsn: BCPL.INTCODE
