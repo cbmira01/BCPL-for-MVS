@@ -200,3 +200,42 @@ Do not accept the remediation until BLDBMAIN IFOX/IEBGENER all RC=0000 and regre
 **Runner maintenance:** Commit `d6979ff` now treats 083 as **SKIP (source-only instrumentation)** only when `BCPL_RUNTIME_PDS=1`, reports a separate SKIP count, and retains ordinary execution of test 083 in source-mode. This behavior was implemented after the acceptance run and **has not yet been re-executed**. A subsequent installed-PDS full run should report PASS 123 / FAIL 0 / SKIP 1 / TOTAL 124, but this is an expectation, not measured evidence.
 
 **Disposition:** **Gate E CLOSED / ACCEPTED.** Production installed-object runtime is a regression-proven baseline, not yet a packaged release. Next march: **Gate F — Runtime Observability**, beginning with inventory and categorization of existing stack high-water mark, heap/allocator state, termination/failure reporting, and runtime diagnostics across BCPLMAIN/BCPLMEM and relevant regressions. Preserve the explicit operator-visible dspal workflow; use `tools/checks/` for assistant-owned nontrivial tooling. Do not reopen suspended V5.
+
+## Gate F1 — BCPLMEM-only promotion (authorized, awaiting MVS execution)
+
+On 12 October 2026 the operator explicitly authorized promotion of the
+Gate F1 BCPLMEM candidate, accepted by standalone IFOX JOB 9638,
+nine-checkpoint executable JOB 9642, six focused source/object regressions,
+and the complete `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1` run
+(**PASS 124, FAIL 0, SKIP 0**).
+
+The new `jcl/build-gate-f1-bcplmem.jcl` assembles resident
+`HERC02.BCPL.SOURCE(BCPLMEM)` to temporary binary FB80 object data and
+conditionally replaces only `HERC02.BCPL.OBJ(BCPLMEM)` via IEBGENER.
+It **does not** assemble or replace BCPLMAIN, BCPLBYTE, BCPLAPT, or BLIB.
+It does not change the existing paired BLDBMAIN job.
+
+Preconditions: synchronize SOURCE(BCPLMEM) from accepted Git candidate
+`asm/bcplmem.asm`, read back and compare it, then submit the new standalone
+JCL using `bash tools/submit-jcl jcl/build-gate-f1-bcplmem.jcl`.
+Require ASMMEM IFOX00 RC=0000 and PUTMEM IEBGENER RC=0000. The latter
+**writes production OBJ(BCPLMEM)**. The source PDS update is operator-visible,
+not hidden in a generator. Preserve a provenance note with Git HEAD and
+both object-promotion job number and post-promotion regression summary.
+
+After promotion, run `BCPL_RUNTIME_PDS=1 tools/run-native-regression`.
+Expected 124 discovered, PASS 123, FAIL 0, SKIP 1 (083 is source-only).
+This is **not yet measured** for the new F1 object. On any write or
+installed-regression failure, freeze further OBJ edits and follow the
+established Git-backed rebuild/redeployment recovery plan.
+
+Longer-term development model: Git remains authoritative source; staged
+MVS SOURCE and JCL are reproducible mirrors; OBJ is derived/installed.
+Move the routine runtime build, link, run and acceptance loop to resident
+PDS object members and temp scratch libraries. Do not bypass controlled
+production installation for experimental changes. Test-only source
+instrumentation (083), source transformations (BCPLMAIN externalization
+and BLIB trailer registration), host Cambridge compiler/CG370 and
+regression orchestration still originate outside MVS; moving *all*
+development to MVS requires porting these, not merely storing runtime
+object modules in a PDS.
