@@ -36,3 +36,27 @@ Provide the job summary and relevant IEWL map/global evidence plus the GO output
 4. Only after observing results, derive and implement historical markers in a separately scoped march, with focused tests first.
 
 No changes to G45 or G57, no modifications to BCPLMAIN or BLIB, no PDS member replacements.
+
+## TK5 operator result — JOB 7815 (12 October 2026)
+
+The operator prepared with `prepare-stackhwm-pds-probe.py` (Cambridge compile JOB **7814**) and submitted the generated application-only JCL as JOB **7815** (`RG120R`).
+
+| Step | Program | RC |
+| --- | --- | --- |
+| ASMAP | IFOX00 | 0000 |
+| LKED | IEWL | 0000 |
+| GO | temporary linked BCPL load module | 0000 |
+
+Assembler flagged **0** statements. IEWL listed `INCLUDE OBJ(BLIB)` and mapped BLIB as a resident linked control section (origin `17D8`, length `1BB0`). The production OBJ PDS was read as `DISP=SHR`; no installation took place.
+
+Observed SYSPRINT:
+
+```text
+STACKBASE 174016
+STACKEND 190464
+STACKHWM 0
+```
+
+**Evidence evaluation:** The program invokes G56 and completes RC=0000, establishing that the installed runtime/global registration resolves to executable STACKHWM behavior. A fully independent export-trailer dump remains outstanding, but the runtime call succeeds with the actual installed BLIB. The zero result is `OVERFLOW` according to historical BLIB's contract; the current runtime has not initialized the required marker words. It must **not** be interpreted as proof that a real stack overflow occurred (there was no abnormal termination). Nor does this isolated observation establish the exact reason for failing the historical checks until marker values are examined.
+
+**Next gate:** Propose a bounded, regression-first initialization of the historical stack alternating patterns and two top metadata words, respecting the WIP's safe stack limit. Preserve current OBJ members until source-mode plus installed-mode evidence is obtained.
