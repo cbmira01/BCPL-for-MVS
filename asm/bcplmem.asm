@@ -1,7 +1,7 @@
 * BCPLMEM runtime service: G87/G88 plus private teardown MEMDRAIN.
 * Static singleton allocator; intentionally not reentrant.
 BCPLMEM  CSECT
-         ENTRY GETVEC,FREEVEC,MEMDRAIN
+         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND
 *
 * GETVEC(N): R7=N. R10 is our private addressing base.
 GETVEC   BALR  10,0
@@ -31,7 +31,11 @@ GETVEC   BALR  10,0
          L     8,VECLIST
          ST    8,8(14)
          ST    14,VECLIST
-         L     15,GVRWSAVE
+         L     8,VECPUB
+         LTR   8,8
+         BZ    GVNPUB
+         ST    14,0(8)
+GVNPUB   L     15,GVRWSAVE
          LM    0,3,GVRSAVE
          L     5,GVRPSAVE
          L     6,GVRLSAVE
@@ -71,6 +75,10 @@ FVFOUND  L     4,8(14)
          ST    4,8(8)
          B     FVUNLNK
 FVHEAD   ST    4,VECLIST
+         L     8,VECPUB
+         LTR   8,8
+         BZ    FVUNLNK
+         ST    4,0(8)
 FVUNLNK  L     4,4(14)
          LR    1,14
          FREEMAIN R,LV=(4),A=(1)
@@ -100,7 +108,11 @@ MEMLOOP  L     1,VECLIST
          L     4,4(1)
          L     9,8(1)
          ST    9,VECLIST
-         FREEMAIN R,LV=(4),A=(1)
+         L     8,VECPUB
+         LTR   8,8
+         BZ    MEMFREE
+         ST    9,0(8)
+MEMFREE  FREEMAIN R,LV=(4),A=(1)
          B     MEMLOOP
 MEMDONE  LM    0,3,MEMSAV
          L     15,MEMWSAV
@@ -108,9 +120,25 @@ MEMDONE  LM    0,3,MEMSAV
          BR    14
          DROP  10
 *
+* MEMBIND: R1=address of writable G6!48 slot, or zero to unbind.
+* R14 linkage. Preserve R0-R3, R4-R12, R15 and R1 itself.
+MEMBIND  BALR  10,0
+         USING *,10
+         ST    1,VECPUB
+         LTR   1,1
+         BZ    MBNRET
+         ST    14,MBRET
+         L     14,VECLIST
+         ST    14,0(1)
+         L     14,MBRET
+MBNRET   BR    14
+         DROP  10
+*
 * BCPLMEM owns all allocator storage.
          DS    0F
 VECLIST  DC    F'0'
+VECPUB   DC    F'0'
+MBRET    DC    F'0'
 GVRMAX   DC    F'4194299'
 GVRLEN   DC    F'0'
 GVRADDR  DC    F'0'
