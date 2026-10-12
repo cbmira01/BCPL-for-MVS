@@ -152,3 +152,7 @@ tools/dspal submit JCL BLDBMAIN --wait
 Require ASMMMAIN, ASMMMEM, VERIFY, PUTMAIN, PUTMEM all RC=0000; inspect both IEBGENER SYSOUTs and run `tools/dspal ls OBJ`. Then proceed to Gate E installed-PDS regressions. If either PUT fails, stop: old/new runtime pair may be mixed and rebuilding/reinstalling both is required. No `dspal put OBJ`.
 
 **Note:** `tools/checks/stage-bldbmain.py` and the earlier `sync-bldbmain-gate-b.sh` are Gate B staging/synchronization aids; Gate D uses explicit `tools/dspal` commands as requested.
+
+### Gate D JOB 9366 JCL rejection (12 October 2026)
+
+Operator updated JCL(BLDBMAIN) with RM JOB 9360, COMPRESS JOB 9361, PUT JOB 9362 and verified exact GET readback JOB 9363. `dspal submit JCL BLDBMAIN --wait` launched payload JOB 9366; JES reported **JCL ERROR**, no executed steps. OBJ inventory afterwards still lists BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB; inventory does not verify object bytes. Repository inspection identified an invalid `////*` card between VERIFY and PUTMAIN (accidental concatenation of previous terminator with a comment). Corrected to `//*`; this is a *likely* JCL failure cause pending JES diagnostic confirmation. **No Gate D acceptance; assembly/install did not execute.** To retry: `git pull --ff-only`, `tools/dspal rm JCL BLDBMAIN`, `tools/dspal compress JCL`, `tools/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl`, perform GET/diff readback, then explicit operator submission. Record the next payload job and inspect all five step results.
