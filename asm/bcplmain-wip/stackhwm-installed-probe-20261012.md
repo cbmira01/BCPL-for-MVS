@@ -81,3 +81,13 @@ The source runtime regression uses installed `OBJ(BLIB)` but assembles the newly
 ## Initial source-mode regression — JOB 7817, assembler addressability
 
 Operator ran regression 120 source mode. Cambridge compile JOB 7816 succeeded; application ASMAP RC=0000. Runtime ASMRUN RC=0008 and LKED/GO were bypassed. IFOX listed one failing instruction, startup `LA 1,GETVEC`, displaced beyond the available base-addressing range by the additional marker-initialization code. The fix replaces that startup instruction with `L 1,=A(GETVEC)`, in both the staged fragment and the canonical assembler; this is an address-loading correction, **not** evidence that STACKHWM now works. Repeat `BCPL_RUNTIME_PDS=0 tools/run-native-regression 120 --show-output`; production OBJ remains unchanged.
+
+## Accepted operator evidence — JOB 7820, 12 October 2026
+
+**Source-runtime gate:** after fixing startup `LA 1,GETVEC` to `L 1,=A(GETVEC)`, `check-bcplmain-modules.py` passed (four fragments, 66,578 bytes identical) and `BCPL_RUNTIME_PDS=0 tools/run-native-regression 120 --show-output` passed 1/1.
+
+**BCPLMAIN-only production promotion:** operator ran `prepare-runtime-object-library.py --only-main`, whose output identified only member BCPLMAIN and reported source checks OK. Generated job `BCOBJBLD` ran as **JOB 7820**. `AMAIN` IFOX00 **RC=0000**, `IMAIN` IEBGENER **RC=0000**; zero flagged statements, highest severity zero. The run's intended destination is `HERC02.BCPL.OBJ(BCPLMAIN)`. Operator did not provide a full JCL deck in this evidence, but the preparer is designed for main-only replacement.
+
+**Installed-object evidence:** `BCPL_RUNTIME_PDS=1 tools/run-native-regression 120 --show-output` passed **1/1**. `python3 tools/checks/run-runtime-pds-acceptance.py` passed **119/119**, zero failures (83 tests 000–082 and 36 tests 084–119). Instrumented 083 remains intentionally excluded. This confirms G56 is callable and returns an in-range high-water word address under regression 120; it does not prove exact peak-usage reporting for all workloads.
+
+**Pending:** Run `tools/run-native-regression` as the **121-test mixed-mode panel** (000–120, with 083 using its test-local source instrumentation) and record totals. Do not mark the march fully closed until this panel passes.
