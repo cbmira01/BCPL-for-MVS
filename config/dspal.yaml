@@ -109,6 +109,7 @@ datasets:
       BLIBBLD: jcl/build-blib-object.jcl
       BLIBLINK: jcl/probe-blib-object-consumer.jcl
       BLDBMAIN: jcl/build-bcplmain-objects.jcl
+      BLDGFMEM: jcl/build-gate-f1-bcplmem.jcl
 
   INTCODE:
     dsn: BCPL.INTCODE
