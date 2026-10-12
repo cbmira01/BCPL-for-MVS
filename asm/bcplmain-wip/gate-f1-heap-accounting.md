@@ -131,3 +131,16 @@ gate; it does not establish independent MVS FREEMAIN return-code checks.
 **Next gate:** BCPL runtime source-mode / independent-object regressions.
 No production PDS object installation or installed-regression acceptance
 has been carried out for Gate F1.
+
+## Targeted independent-object regression evidence (12 October 2026)
+
+With `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1`, all six targeted
+integration regressions passed: 039 freevec-storage-release, 082
+outstanding-vectors-at-termination, 083 instrumented-storage-reclamation,
+088 stop-outstanding-vectors, 122 freebase-vector-list-experiment, and
+123 freebase-auto-publication. Each reported PASS=1, FAIL=0, SKIP=0.
+Regression 083 is source-only instrumentation; this evidence must not be
+conflated with an installed-production-object run.
+
+The full source-mode regression sweep has not yet been reported. Gate F1
+remains open pending that evidence; production PDS remains unchanged.
