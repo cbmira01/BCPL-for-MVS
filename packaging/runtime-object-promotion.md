@@ -130,3 +130,25 @@ This stages from Git sources, records hashes, inventories members, deletes **all
 Then, if readback is accepted, explicitly submit `tools/dspal submit JCL BLDBMAIN --wait` and review ASMMMAIN/ASMMMEM/VERIFY codes and ESD. This Gate B job reads assembler cards from resident SOURCE members (not inline JCL); it produces temporary FB80 decks and does **not** install them. This tests resident-source reproducibility. Gate D will extend/reuse its conditional two-assembly structure for object-member installation after separate approval. No successful MVS synchronization or job result is claimed until operator evidence arrives.
 
 **Supersession:** The earlier `tools/checks/prepare-runtime-object-install.py` inline-source write job is superseded by the MVS-resident source/JCL architecture. Do not submit that older generated installation deck. This revised architecture takes precedence over the earlier Gate D sketch until resident-build acceptance.
+
+### Gate D resident installation job staged (12 October 2026; not executed)
+
+`jcl/build-bcplmain-objects.jcl` now extends the JOB 9359 accepted resident-source assembly path with conditional `PUTMAIN` and `PUTMEM` IEBGENER steps. Both IFOX steps must return RC=0000 before `PUTMAIN`; `PUTMEM` additionally requires `PUTMAIN` RC=0000. These perform binary FB80 copies directly from temporary IFOX object datasets to `HERC02.BCPL.OBJ(BCPLMAIN)` and `(BCPLMEM)`. They are sequential, **not atomic**. Retain BCPLBYTE/BCPLAPT/BLIB unchanged. This JCL has **not** been run; do not claim Gate D accepted before examining job evidence.
+
+Operator-visible deployment of the **JCL member only** (do not remove or re-PUT SOURCE, already accepted):
+
+```sh
+git pull --ff-only
+# Review jcl/build-bcplmain-objects.jcl before installation.
+tools/dspal rm JCL BLDBMAIN
+tools/dspal compress JCL
+tools/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl
+tools/dspal get JCL BLDBMAIN workarea/runtime-object-candidates/readback-bldbmain-gated.jcl
+diff -u jcl/build-bcplmain-objects.jcl workarea/runtime-object-candidates/readback-bldbmain-gated.jcl
+# This next action writes production OBJ members:
+tools/dspal submit JCL BLDBMAIN --wait
+```
+
+Require ASMMMAIN, ASMMMEM, VERIFY, PUTMAIN, PUTMEM all RC=0000; inspect both IEBGENER SYSOUTs and run `tools/dspal ls OBJ`. Then proceed to Gate E installed-PDS regressions. If either PUT fails, stop: old/new runtime pair may be mixed and rebuilding/reinstalling both is required. No `dspal put OBJ`.
+
+**Note:** `tools/checks/stage-bldbmain.py` and the earlier `sync-bldbmain-gate-b.sh` are Gate B staging/synchronization aids; Gate D uses explicit `tools/dspal` commands as requested.
