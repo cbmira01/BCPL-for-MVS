@@ -61,7 +61,7 @@ def main():
                         str(source)], check=True)
     main_text = mainasm.read_text(encoding="ascii")
     mem_text = memasm.read_text(encoding="ascii")
-    for symbol in ("GETVEC","FREEVEC","MEMDRAIN","MEMBIND"):
+    for symbol in ("GETVEC","FREEVEC","MEMDRAIN","MEMBIND","MEMSTAT"):
         if symbol not in main_text or symbol not in mem_text:
             raise ValueError(f"missing boundary symbol {symbol}")
     lines = [
@@ -80,6 +80,7 @@ def main():
     deck.write_text("\n".join(lines)+"\n", encoding="ascii", newline="\n")
     print(f"Prepared non-installing candidate assembler: {deck}")
     print("Expect ASMMMAIN and ASMMMEM IFOX RC=0000; no PDS write.")
+    print("For Gate F1 inspect BCPLMEM ESD for LD MEMSTAT.")
     print("This is NOT installation or cross-object link acceptance.")
 
 if __name__ == "__main__":
