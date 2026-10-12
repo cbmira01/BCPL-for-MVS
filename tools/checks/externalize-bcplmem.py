@@ -41,7 +41,7 @@ def main():
         "         ST    10,MBRT10\n"
         "         L     1,=A(MSVFREE)\n"
         "         L     9,=A(MEMBIND)\n"
-        "         BALR  14,1\n"
+        "         BALR  14,9\n"
         "         L     10,MBRT10\n"
         "         L     1,=A(DEBUGINT)\n")
     text=replace_one(text,
@@ -75,7 +75,7 @@ RELMAIN  L     1,DYNBASE"""
          BALR  14,1
          SR    1,1
          L     9,=A(MEMBIND)
-         BALR  14,1
+         BALR  14,9
 RELMAIN  L     1,DYNBASE"""
     text=replace_one(text,old,new)
     # R11 addresses the system-vector region including RELMEM, whereas
