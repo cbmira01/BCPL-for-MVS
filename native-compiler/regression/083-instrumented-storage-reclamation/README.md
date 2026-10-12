@@ -69,3 +69,19 @@ A future true 120/120 *installed-object* instrumentation gate requires an
 explicit observation mechanism designed into and validated for the installed
 runtime (for example, an opt-in diagnostic ABI or system-level traced service
 calls). Both alternatives are architectural changes, not harness fixes.
+
+## MEMBIND-compatible probe update (12 October 2026)
+
+`tools/checks/prepare-bcplmem-083-probe.py` now starts from canonical
+`asm/bcplmem.asm` (including `MEMBIND` and G6!48 publication). The
+instrumented temporary copy additionally exports `MEMDCNT` and counts
+successful returns from the `MEMDRAIN` FREEMAIN macro only. The
+externalized BCPLMAIN copy imports both `MEMBIND` and `MEMDCNT`;
+its own `TRM083` counter still counts its final combined-storage
+FREEMAIN. Neither production source nor the installed object PDS is
+instrumented.
+
+The expected two output records remain `42` and `V=2 M=1`.
+**TK5 rerun is pending for this revised probe**. The older JOB 6295
+result predates this MEMBIND-compatible update and is not acceptance
+of the new probe. Installed-PDS mode remains deliberately excluded.
