@@ -72,3 +72,7 @@ No deployment to OBJ, no change to `dspal populate`, no source alteration in BCP
 ### Gate A2 JOB 9338 diagnostic (12 October 2026)
 
 JOB 9338: ASMMMAIN, ASMMMEM, ASMPROBE each IFOX RC=0000; LKED IEWL RC=0008. Complete user-supplied listing diagnoses `IEC130I SYSLIB DD STATEMENT MISSING`, `IEW0432 SYSLIB`, and `IEW0132 STKOVFL` unresolved external. Generator previously used `//OBJ DD` rather than IEWL's `//SYSLIB DD`, and candidate BCPLMAIN did not publish local STKOVFL needed by separately assembled BCPLAPT. Revised link probe uses `//SYSLIB DD DSN=HERC02.BCPL.OBJ,DISP=SHR` and inserts `ENTRY STKOVFL` into a **disposable copy** of the candidate BCPLMAIN for the probe. Neither canonical source nor installed members were modified. Re-run A2; **no A2 acceptance yet**. For eventual production promotion, confirm the installed BCPLMAIN also exports STKOVFL or handle its dependency explicitly.
+
+### Gate A2 JOB 9339 diagnostic (12 October 2026)
+
+JOB 9339: ASMMMAIN, ASMMMEM, ASMPROBE RC=0000; LKED RC=0008. The ESD now confirms `STKOVFL` exported as LD, so that amendment assembles. The linker attempted `INCLUDE OBJ(BCPLBYTE)`, `INCLUDE OBJ(BCPLAPT)`, `INCLUDE OBJ(BLIB)` but generated JCL provided only `SYSLIB`, yielding three `IEC130I OBJ DD STATEMENT MISSING` and `IEW0432 OBJ` errors. The link-probe generator now allocates **both** `//SYSLIB` and `//OBJ` to the same existing object PDS using `DISP=SHR`. This preserves explicit INCLUDE DD semantics and does not modify OBJ. Gate A2 awaits another live link run; no link or executable acceptance is claimed.
