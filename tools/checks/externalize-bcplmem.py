@@ -30,6 +30,10 @@ def main():
             raise ValueError(f"expected one {label} G{offset//4} anchor; got {matches}")
         if old_la in text:
             text = text.replace(old_la, old_literal, 1)
+    # Instrumented 083's larger startup also exceeds LA range for GETBYTE.
+    text=replace_one(text,
+        "         LA    1,GETBYTE\n         ST    1,340(12)\n",
+        "         L     1,=A(GETBYTE)\n         ST    1,340(12)\n")
     # The new startup call shifts PUTBYTE outside the LA 12-bit base range.
     # Load its relocated full address rather than using LA.
     text=replace_one(text,
