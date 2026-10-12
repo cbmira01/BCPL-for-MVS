@@ -431,7 +431,7 @@ if [[ $byte_object == 1 ]]; then
     python3 "$root/tools/checks/check-asm-source.py" \
         "$root/asm/bcplbyte.asm" || exit $?
 fi
-mem_source="$root/tools/checks/bcplmem-linkage-probe.asm"
+mem_source="$root/asm/bcplmem.asm"
 if [[ $mem_object == 1 && $test_num == 83 ]]; then
     mem_source="$work/bcplmem-object-probe/bcplmem-083-instrumented.asm"
 fi
