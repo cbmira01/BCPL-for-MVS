@@ -3,6 +3,7 @@ BCPLMAIN CSECT
 * Preserve the compiled-module base before R3 is repurposed as R.K12.
 *
          LR    3,15
+         ST    1,PARMLIST
          BALR  10,0
          USING *,10
 *
