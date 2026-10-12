@@ -7,6 +7,8 @@
 MSVSAVE  DS    18F
 * Original MVS EXEC parameter list (R1), retained at entry.
 PARMLIST DC    F'0'
+PMMASK   DC    X'7FFFFFFF'
+PMMAX    DC    F'100'
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
