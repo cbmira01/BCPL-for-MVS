@@ -82,3 +82,34 @@ The existing 083 source-only instrumentation remains separately relevant.
 - Physical assembler-addressability, listing, linkage and runtime checks
   are **pending MVS operator evidence**. No installation is authorized by
   this staging commit alone.
+
+## Observed MVS execution evidence (12 October 2026)
+
+- **JOB 9638** (`BCF1ASM`): candidate BCPLMEM assembled with IFOX00
+  RC=0000; VERIFY IEFBR14 RC=0000; zero flagged statements, severity 0.
+  ESD contains `MEMSTAT` as LD at X'204', BCPLMEM length X'2AC'.
+- **JOB 9639**: ASMMEM, ASMDRV, LKED RC=0000; GO returned RC=3408.
+  The probe's exit incorrectly restored R15, so this is not an
+  interpretable accounting result.
+- **JOB 9640**: same three build/link steps RC=0000; GO RC=0478.
+  A further test-driver exit bug restored R1 before retrieving the
+  completion code. Again not an interpretable accounting result.
+- **JOB 9641**: ASMMEM, ASMDRV, LKED, GO **all RC=0000**. The temporary
+  driver asserts snapshots for initial zero, GETVEC(2) = 24 bytes,
+  GETVEC(4) = 32 bytes (56 total), rejected negative size, unknown
+  FREEVEC, non-head FREEVEC, and head FREEVEC. Both assembler passes
+  report no flagged statements and severity zero. The link map resolves
+  `GETVEC`, `FREEVEC`, and `MEMSTAT` against freshly linked BCPLMEM.
+  **This is isolated candidate execution acceptance, not production PDS
+  acceptance.** The probe does not independently verify FREEMAIN return
+  accounting.
+
+After JOB 9641, the standalone JCL was extended to verify
+`MEMDRAIN` using two outstanding allocations (checkpoints 8 and 9).
+This revision has **not** yet been executed; do not credit JOB 9641
+with checking drain behavior.
+
+Next acceptance steps: execute the extended temporary-object probe,
+then execute the source-mode independent-object regression panel and
+only subsequently consider an explicit, controlled installation gate.
+No object-PDS installation has occurred during F1.
