@@ -19,8 +19,24 @@ def main():
     needle = "BCPLMAIN CSECT\n"
     if src.count(needle) != 1 or "STKOVFL" not in src:
         raise RuntimeError("unexpected BCPLMAIN source")
-    main.write_text(src.replace(needle, needle + "         ENTRY STKOVFL\n", 1),
-                    encoding="ascii", newline="\n")
+    # Promote the previously proven 069 stage-2 BLIB trailer registration
+    # into the *installed runtime source*, not monolithic regression WIP.
+    # The WIP remains untouched because many source-mode link jobs do not
+    # INCLUDE BLIB and cannot resolve an unconditional EXTRN BLIB.
+    marker = "GIDONE   L     4,4(12)"
+    if src.count(marker) != 1:
+        raise RuntimeError("unexpected global trailer insertion point")
+    from importlib.util import spec_from_file_location, module_from_spec
+    injector_path = (ROOT / "native-compiler/regression/"
+                     "069-independent-blib-object/prepare-stage2.py")
+    spec = spec_from_file_location("blib_stage2", injector_path)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    src = module.inject_runtime(src)
+    src = src.replace(needle, needle + "         ENTRY STKOVFL\n", 1)
+    if src.count("EXTRN BLIB") != 1:
+        raise RuntimeError("BLIB registration is missing")
+    main.write_text(src, encoding="ascii", newline="\n")
     files = [main, ROOT / "asm/bcplmem.asm",
              ROOT / "jcl/build-bcplmain-objects.jcl"]
     for path in files[:2]:
