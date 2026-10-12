@@ -74,3 +74,7 @@ Carefully distinguish **attempt**, **service returned**, **return code indicates
 ## Near-term sequencing
 
 Do not interrupt the current full `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1` 124-test acceptance panel. The observer is a **subsequent architectural investigation**, not a prerequisite to accepting the current independently linked allocator source-mode milestone. Installed PDS promotion remains governed by the existing gates.
+
+## Source-mode external BCPLMEM full-panel acceptance (12 October 2026)
+
+Operator-reported run of `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/run-native-regression` completed **124 PASS, 0 FAIL, 124 TOTAL**, covering regressions 00 through 123 inclusive. This includes 083's independent-instrumentation path and 122/123's G6!48 compatibility and automatic publication. This is the completed source-mode external-allocator milestone, **not** evidence that newly built BCPLMAIN/BCPLMEM members have been installed and exercised from `HERC02.BCPL.OBJ`. The installed-object 083 observation exception remains. No new PDS promotion is authorized solely by this result.
