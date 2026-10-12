@@ -25,6 +25,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output-dir", type=Path,
                     default=ROOT / "workarea/runtime-object-library")
+    ap.add_argument("--only-main", action="store_true",
+                    help="assemble/install only BCPLMAIN; preserve all other OBJ members")
     args = ap.parse_args()
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -61,6 +63,8 @@ def main() -> None:
         ("BCPLAPT", ROOT / "asm/bcplapt.asm"),
         ("BCPLMEM", ROOT / "asm/bcplmem.asm"),
     ]
+    if args.only_main:
+        sources = sources[:1]
     for _, file in sources:
         run(CHECKS / "check-asm-source.py", file)
     core_path = ROOT / "tools/dspal-core.py"
@@ -77,7 +81,8 @@ def main() -> None:
                                          redact_password=False)
     lines = list(header)
     lines.extend([
-        "//* BCPL NATIVE RUNTIME: FOUR INDEPENDENT FB80 OBJECT MEMBERS",
+        ("//* BCPLMAIN ONLY: PRESERVE ALL OTHER OBJ MEMBERS" if args.only_main
+         else "//* BCPL NATIVE RUNTIME: FOUR INDEPENDENT FB80 OBJECT MEMBERS"),
         "//* REVIEW BEFORE SUBMISSION: INSTALL STEPS REPLACE OBJ MEMBERS.",
         "//* NOT ATOMIC: FAILURE MAY LEAVE A PARTLY UPDATED OBJECT LIBRARY.",
         "//* PRESERVE EXISTING OBJ(BLIB); NO BLIB COMPILATION HERE.",
@@ -112,8 +117,8 @@ def main() -> None:
             "//*",
         ])
         install_steps.append((name, step, tmp))
-    # Do not change the PDS until *all* independent assemblies succeeded.
-    # Four preceding IFOX steps require RC=0000; otherwise all installs skip.
+    # Do not change the PDS until every selected assembly succeeded.
+    # Installation is gated on assembler RC=0000.
     # An I/O failure during a subsequent install is still non-atomic.
     prior = [step for _, step, _ in install_steps]
     for name, step, tmp in install_steps:
@@ -146,9 +151,9 @@ def main() -> None:
             raise ValueError(f"JCL card {i} exceeds column 71: {line!r}")
     deck.write_text("\n".join(lines) + "\n", encoding="ascii", newline="\n")
     print(f"Staged: {deck}")
-    print("Four object members: BCPLMAIN BCPLBYTE BCPLAPT BCPLMEM")
+    print("Selected object members: " + " ".join(name for name, _ in sources))
     print("BCPLMAIN depends on resident OBJ(BLIB) at linkage.")
-    print("NOT submitted. Inspect and submit only after approving non-atomic PDS changes.")
+    print("NOT submitted. Inspect the deck before replacing any OBJ member.")
     print("Run 'tools/dspal stat OBJ' first; preserve the prior object library.")
 
 
