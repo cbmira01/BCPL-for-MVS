@@ -176,6 +176,15 @@ def main():
         )
     if args.case_dir:
         case = args.case_dir
+        parm_fixture = case / "exec-parm.txt"
+        if parm_fixture.is_file():
+            value = parm_fixture.read_text(encoding="ascii").rstrip("\r\n")
+            if not value or len(value) > 100 or not value.isascii() or any(
+                ch in value for ch in ("'", "\n", "\r")
+            ):
+                raise ValueError(f"invalid EXEC PARM fixture {parm_fixture}")
+            go = cards.index("//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),")
+            cards.insert(go + 1, f"//             PARM='{value}',")
         anchor = cards.index("//SYSUDUMP DD SYSOUT=*")
         for name, dd, dlm in (("input.records", "BCPIN", "ZZ"),
                               ("input-b.records", "BCPINB", "ZY")):
