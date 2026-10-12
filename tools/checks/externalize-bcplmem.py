@@ -32,17 +32,17 @@ def main():
             text = text.replace(old_la, old_literal, 1)
     # Source-only production candidate: bind G6!48 to the allocator list.
     text=replace_one(text,
-        "         L     1,=A(DEBUGINT)\\n",
-        "         ST    10,MBRT10\\n"
-        "         L     1,=A(MSVFREE)\\n"
-        "         L     14,=A(MEMBIND)\\n"
-        "         BALR  14,14\\n"
-        "         L     10,MBRT10\\n"
-        "         L     1,=A(DEBUGINT)\\n")
+        "         L     1,=A(DEBUGINT)\n",
+        "         ST    10,MBRT10\n"
+        "         L     1,=A(MSVFREE)\n"
+        "         L     14,=A(MEMBIND)\n"
+        "         BALR  14,14\n"
+        "         L     10,MBRT10\n"
+        "         L     1,=A(DEBUGINT)\n")
     text=replace_one(text,
-        "MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head\\n",
-        "MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head\\n"
-        "MBRT10   DC    F'0'\\n")
+        "MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head\n",
+        "MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head\n"
+        "MBRT10   DC    F'0'\n")
     start=text.index("GETVEC   LTR   7,7")
     end=text.index("DEBUGINT LTR   7,7",start)
     # Keep DEBUGINT comment header, discard the allocator implementation.
