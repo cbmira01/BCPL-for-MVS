@@ -21,7 +21,13 @@ def main():
     if not mainasm.is_file():
         raise ValueError("first run prepare-runtime-object-candidates.py")
     # Probe does not execute; external BCPLMAIN reference forces its inclusion.
-    linked_main = OUT / "bcplmain-link-export.asm"\n    source = mainasm.read_text(encoding="ascii")\n    anchor = "BCPLMAIN CSECT\\n"\n    if source.count(anchor) != 1 or "STKOVFL" not in source:\n        raise ValueError("candidate BCPLMAIN STKOVFL anchor missing")\n    linked_main.write_text(source.replace(anchor, anchor + "         ENTRY STKOVFL\\n", 1), encoding="ascii")\n    caller = OUT / "runtime-link-caller.asm"
+    linked_main = OUT / "bcplmain-link-export.asm"
+    source = mainasm.read_text(encoding="ascii")
+    anchor = "BCPLMAIN CSECT\\n"
+    if source.count(anchor) != 1 or "STKOVFL" not in source:
+        raise ValueError("candidate BCPLMAIN STKOVFL anchor missing")
+    linked_main.write_text(source.replace(anchor, anchor + "         ENTRY STKOVFL\\n", 1), encoding="ascii")
+    caller = OUT / "runtime-link-caller.asm"
     caller.write_text("BCOLINK  CSECT\n"
                       "         EXTRN BCPLMAIN\n"
                       "         DC    A(BCPLMAIN)\n"
