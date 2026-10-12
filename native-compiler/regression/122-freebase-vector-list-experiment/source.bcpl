@@ -1,4 +1,4 @@
-GLOBAL $( START:1; SAVEAREA:6; WRCH:14
+GLOBAL $( START:1; SAVEAREA:6; WRCH:14; STACKEND:55
           ; VALIDPOINTER:59; GETVEC:87; FREEVEC:88 $)
 
 LET START() BE
@@ -6,13 +6,15 @@ $(1
     LET ERR = 0
     LET A = GETVEC(7)
     LET B = 0
+    LET OLDEND = STACKEND
     IF A=0 DO
     $(2
        WRCH('?')
        FINISH
     $)2
 
-    // First prove this address is not already accepted as stack/code.
+    // Exclude the broad SAVEAREA..STACKEND shortcut during this probe.
+    STACKEND := SAVEAREA
     IF VALIDPOINTER(A) DO IF ERR=0 DO ERR := '1'
 
     // The BCPLMEM header is three fullwords before its payload.
@@ -41,6 +43,7 @@ $(1
     SAVEAREA!48 := 0
     IF VALIDPOINTER(A) DO IF ERR=0 DO ERR := '9'
 
+    STACKEND := OLDEND
     TEST ERR=0 THEN WRCH('V') ELSE WRCH(ERR)
     FINISH
 $)1
