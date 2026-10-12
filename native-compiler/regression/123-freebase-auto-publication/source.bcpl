@@ -1,0 +1,40 @@
+GLOBAL $( START:1; SAVEAREA:6; WRCH:14; STACKEND:55
+          ; VALIDPOINTER:59; GETVEC:87; FREEVEC:88 $)
+LET START() BE
+$(1
+    LET ERR = 0
+    LET OLDEND = STACKEND
+    LET A = 0
+    LET B = 0
+    // Isolate allocation-descriptor traversal from BLIB's broad range.
+    STACKEND := SAVEAREA
+    IF SAVEAREA!48 ~= 0 DO ERR := '1'
+    A := GETVEC(7)
+    IF A=0 DO
+    $(2
+       STACKEND := OLDEND
+       WRCH('?')
+       FINISH
+    $)2
+    IF SAVEAREA!48 = 0 DO IF ERR=0 DO ERR := '2'
+    UNLESS VALIDPOINTER(A) DO IF ERR=0 DO ERR := '3'
+    UNLESS VALIDPOINTER(A+3) DO IF ERR=0 DO ERR := '4'
+    B := GETVEC(7)
+    IF B=0 DO IF ERR=0 DO ERR := '5'
+    IF B~=0 DO
+    $(3
+       UNLESS SAVEAREA!48 = (B<<2)-12 DO IF ERR=0 DO ERR := '6'
+       UNLESS VALIDPOINTER(B) DO IF ERR=0 DO ERR := '7'
+       UNLESS VALIDPOINTER(A) DO IF ERR=0 DO ERR := '8'
+       FREEVEC(B)
+       UNLESS SAVEAREA!48 = (A<<2)-12 DO IF ERR=0 DO ERR := '9'
+       IF VALIDPOINTER(B) DO IF ERR=0 DO ERR := 'A'
+       UNLESS VALIDPOINTER(A) DO IF ERR=0 DO ERR := 'B'
+    $)3
+    FREEVEC(A)
+    IF SAVEAREA!48 ~= 0 DO IF ERR=0 DO ERR := 'C'
+    IF VALIDPOINTER(A) DO IF ERR=0 DO ERR := 'D'
+    STACKEND := OLDEND
+    TEST ERR=0 THEN WRCH('V') ELSE WRCH(ERR)
+    FINISH
+$)1
