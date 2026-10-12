@@ -15,7 +15,7 @@ $(1
 
     // Exclude the broad SAVEAREA..STACKEND shortcut during this probe.
     STACKEND := SAVEAREA
-    IF VALIDPOINTER(A) DO IF ERR=0 DO ERR := '1'
+    UNLESS VALIDPOINTER(A) DO IF ERR=0 DO ERR := '1'
 
     // The BCPLMEM header is three fullwords before its payload.
     // G6!48 contains a native BYTE address to that header.
