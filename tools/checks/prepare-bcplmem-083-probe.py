@@ -80,8 +80,8 @@ def main():
     mem = (root/"asm/bcplmem.asm").read_text(encoding="ascii")
     mem = once(mem,"         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND",
                "         ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMDCNT")
-    mem = once(mem,"         FREEMAIN R,LV=(4),A=(1)\n         B     MEMLOOP",
-               """         FREEMAIN R,LV=(4),A=(1)
+    mem = once(mem,"MEMFREE  FREEMAIN R,LV=(4),A=(1)\n         B     MEMLOOP",
+               """MEMFREE  FREEMAIN R,LV=(4),A=(1)
          L     9,MEMDCNT
          LA    9,1(9)
          ST    9,MEMDCNT
