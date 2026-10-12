@@ -6,7 +6,6 @@ BCPLMAIN CSECT
          LR    9,1
          BALR  10,0
          USING *,10
-         ST    1,PARMLIST
 *
 * Establish a private MVS save area before any service call.
 * The generated module prefix already saved the caller's R14..R12.
