@@ -186,3 +186,17 @@ BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output
 ```
 
 Do not accept the remediation until BLDBMAIN IFOX/IEBGENER all RC=0000 and regression 069 executes with `BLIB 42`. Then repeat 00,27,28 and installed-PDS regression expansion. In case of assembly error, **do not submit BLDBMAIN again until repaired**. Note re-running BLDBMAIN replaces *both* runtime OBJ members by design.
+
+## Gate E — ACCEPTED (12 October 2026)
+
+**Result:** Production installed-object runtime accepted against the full eligible native regression panel.
+
+**Runtime provenance:** Gate D initial resident object installation JOB 9374 (all five steps RC=0000). After diagnosing installed-PDS regression 069, production BCPLMAIN staging gained explicit BLIB global-export registration (source-stage update at commits `4155565` and `cf0266b`). Operator staged via `python3 tools/checks/stage-bldbmain.py`, replaced `HERC02.BCPL.SOURCE(BCPLMAIN)` using explicit dspal RM JOB 9383, COMPRESS JOB 9384, PUT JOB 9385, and submitted resident `JCL(BLDBMAIN)` with launcher JOB 9387 and payload **JOB 9388**.
+
+**JOB 9388:** ASMMMAIN IFOX00 RC=0000; ASMMMEM IFOX00 RC=0000; VERIFY IEFBR14 RC=0000; PUTMAIN IEBGENER RC=0000; PUTMEM IEBGENER RC=0000. Job SUCCESS, highest RC=0000, zero assembler statements flagged and zero severity. This rebuilt and installed `HERC02.BCPL.OBJ(BCPLMAIN)` and `HERC02.BCPL.OBJ(BCPLMEM)` using the independent runtime components. Other installed OBJ members `BCPLAPT`, `BCPLBYTE`, `BLIB` were retained.
+
+**Functional evidence:** Following JOB 9388, `BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output` passed 1/1. Subsequently operator ran `BCPL_RUNTIME_PDS=1 tools/run-native-regression` over numbered tests 000..123 (124 discovered cases). Actual reported summary: **PASS 123, FAIL 1, TOTAL 124**. The sole reported failure, **083-instrumented-storage-reclamation**, exited RC=65 expressly because installed-library counter instrumentation is not provided; it is a deliberate **source-only** test, not a failed execution against the installed runtime. **All 123 installed-object-eligible tests passed**, including 069 and 120..123. No unexpected eligible failure is present. Gate E acceptance is based on the observed 123 passes plus the documented 083 exclusion; do not misquote the original runner output as zero failures.
+
+**Runner maintenance:** Commit `d6979ff` now treats 083 as **SKIP (source-only instrumentation)** only when `BCPL_RUNTIME_PDS=1`, reports a separate SKIP count, and retains ordinary execution of test 083 in source-mode. This behavior was implemented after the acceptance run and **has not yet been re-executed**. A subsequent installed-PDS full run should report PASS 123 / FAIL 0 / SKIP 1 / TOTAL 124, but this is an expectation, not measured evidence.
+
+**Disposition:** **Gate E CLOSED / ACCEPTED.** Production installed-object runtime is a regression-proven baseline, not yet a packaged release. Next march: **Gate F — Runtime Observability**, beginning with inventory and categorization of existing stack high-water mark, heap/allocator state, termination/failure reporting, and runtime diagnostics across BCPLMAIN/BCPLMEM and relevant regressions. Preserve the explicit operator-visible dspal workflow; use `tools/checks/` for assistant-owned nontrivial tooling. Do not reopen suspended V5.
