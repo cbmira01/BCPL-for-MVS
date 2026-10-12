@@ -91,3 +91,9 @@ Operator ran regression 120 source mode. Cambridge compile JOB 7816 succeeded; a
 **Installed-object evidence:** `BCPL_RUNTIME_PDS=1 tools/run-native-regression 120 --show-output` passed **1/1**. `python3 tools/checks/run-runtime-pds-acceptance.py` passed **119/119**, zero failures (83 tests 000–082 and 36 tests 084–119). Instrumented 083 remains intentionally excluded. This confirms G56 is callable and returns an in-range high-water word address under regression 120; it does not prove exact peak-usage reporting for all workloads.
 
 **Pending:** Run `tools/run-native-regression` as the **121-test mixed-mode panel** (000–120, with 083 using its test-local source instrumentation) and record totals. Do not mark the march fully closed until this panel passes.
+
+## Final acceptance — G56 march closed (operator report, 12 October 2026)
+
+After JOB 7820 installed BCPLMAIN only and the 119/119 installed-object acceptance passed, the operator ran `tools/run-native-regression` with default mixed-mode selection. The full contiguous panel **000–120 passed 121/121, FAIL 0**, including test **083** using its test-local storage instrumentation and **120** exercising BLIB G56. There are no remaining acceptance gates for this bounded stack-marker initialization milestone. Historical precision of STACKHWM peak-usage measurement under deeper/varied workloads remains a separately bounded future test and is not claimed proven here.
+
+**State: ACCEPTED / MARCH CLOSED.** Production BCPLMAIN installed, resident BLIB and other OBJ members unchanged. Next recommended historical-contract audit target: G6 SAVEAREA, focusing on layout and dependent BLIB consumers before implementing changes.
