@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -188,6 +189,8 @@ def main() -> int:
     total = end - start + 1
     passed = 0
     failed = 0
+    skipped = 0
+    installed_pds = os.environ.get("BCPL_RUNTIME_PDS") == "1"
 
     print(
         f"NATIVE REGRESSION  {case_id(start)}..{case_id(end)}  "
@@ -199,11 +202,15 @@ def main() -> int:
         case_name = cases[test_no]
         log = LOG_DIR / f"{case_name}.log"
 
+        if installed_pds and test_no == 83:
+            skipped += 1
+            print(f"SKIP  {nn}  {case_name} (source-only instrumentation)", flush=True)
+            continue
+
         print(f"RUN   {nn}  {case_name}", flush=True)
         with log.open("w", encoding="utf-8") as handle:
             env = None
             if args.show_output:
-                import os
                 env = os.environ.copy()
                 env["NATIVE_REGRESSION_SHOW_OUTPUT"] = "1"
             proc = subprocess.run(
@@ -252,6 +259,7 @@ def main() -> int:
     print("NATIVE REGRESSION COMPLETE")
     print(f"PASS  {passed}")
     print(f"FAIL  {failed}")
+    print(f"SKIP  {skipped}")
     print(f"TOTAL {total}")
 
     return 0 if failed == 0 else 1
