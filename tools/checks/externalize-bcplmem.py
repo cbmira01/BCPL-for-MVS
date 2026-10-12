@@ -34,7 +34,7 @@ def main():
     text=replace_one(text,
         "         L     1,=A(DEBUGINT)\\n",
         "         ST    10,MBRT10\\n"
-        "         LA    1,MSVFREE\\n"
+        "         L     1,=A(MSVFREE)\\n"
         "         L     14,=A(MEMBIND)\\n"
         "         BALR  14,14\\n"
         "         L     10,MBRT10\\n"
