@@ -146,6 +146,45 @@ the actual generated sources/INTCODE under controlled staging,
 including the ignored workarea files, and identify any undeclared
 runtime or utility requirements revealed by execution.
 
+## Gate B — bootstrap preparation driver staged
+
+Git now tracks `tools/prepare-bootstrap`, a single orchestrator of
+existing historical transformations. It requires only the checked-in
+source paths for a `--check-inputs` preflight. The default run executes
+`make-demoted.py` and `make-mr10-trn-large-names.py`, rebuilding
+the disposable demoted Cambridge files and MR10 TRN source derivatives
+under ignored `workarea/bootstrap-cambridge/`. It emits a SHA-256
+inventory at `workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json`
+for the 18 checked input paths and 24 generated source files.
+The manifest is diagnostic evidence, not a signed release or an
+MVS-resident equality check.
+
+Usage:
+
+```sh
+python3 tools/prepare-bootstrap --check-inputs
+python3 tools/prepare-bootstrap
+```
+
+Full translator INTCODE generation is **opt-in** because it launches
+the existing MVS-backed `tools/compile-and-run` workflow:
+
+```sh
+python3 tools/prepare-bootstrap --with-trnilrg
+```
+
+That optional mode runs the existing
+`build-mr10-trni-large-names.sh` and additionally inventories
+`trni-large-names.int`. No mode runs `dspal put`, submits CAMBBLD,
+or writes OBJ/DEVOBJ. The default source-generation mode **does**
+replace generated files in ignored `workarea/`; it must not be
+mistaken for a read-only command. Use `--check-inputs` for a
+strictly read-only check.
+
+Gate B is **not accepted yet**: driver is staged in Git, but a real
+operator generation run and digest/output review are needed. No
+claim of resident member equality or clean-checkout MVS run yet.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
