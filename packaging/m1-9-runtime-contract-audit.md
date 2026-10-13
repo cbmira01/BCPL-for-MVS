@@ -589,3 +589,68 @@ paths individually rather than generalizing cleanup behavior.
 **Gate B next:** inspect the actual regression-linker selection
 and APLIMIT setup; map outcomes and refine the storage/stack
 contract with explicit tested versus source-observed evidence.
+
+## Gate B — resolved DEVOBJ APTOVEC linkage ambiguity (13 October 2026)
+
+The actual installed-object regression construction is now traced
+through `tools/run-native-regression` →
+`native-compiler/regression/run-test-mvs.sh` →
+`run-test.sh` →
+`tools/checks/prepare-runtime-pds-regression.py`.
+
+For `BCPL_RUNTIME_PDS=1`, the runner **rejects**
+`BCPLAPT_OBJECT`, `BCPLBYTE_OBJECT` and `BCPLMEM_OBJECT` source
+externalization flags, and instead link-edits the assembled application
+with explicit `INCLUDE OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`,
+`OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, `OBJ(BLIB)` cards, using
+`BCPL_RUNTIME_LIBRARY=DEVOBJ` to set the **single object library
+DD**. Therefore regression 091–093 did include independent
+DEVOBJ(BCPLAPT), but **inclusion alone does not establish call-path
+selection**.
+
+The canonical `asm/bcplmain.asm` explicitly publishes
+`LA 1,APTOVEC; ST 1,160(12)` at G40, and defines its *own*
+local APTOVEC label, local `APMAXN` and comparison against STKLIM.
+It does **not** declare `EXTRN APTOVEC,APLIMIT`, nor reference
+or initialize APLIMIT. Conversely, `asm/bcplapt.asm` independently
+exports APTOVEC and APLIMIT and compares a temporary-vector
+upper address to **APLIMIT initially F'0'**.
+On the observed runtime registration path, G40 therefore points
+to **BCPLMAIN's local APTOVEC**, not the standalone BCPLAPT entry,
+even when BCPLAPT is linked into the MVS executable. The independent
+module's execution and limit initialization are **not** established
+by M1.8's installed-runtime regression passes.
+
+The older test-only source externalization utility
+`tools/checks/externalize-bcplapt.py` rewrites the global publisher
+to `L 1,=A(APTOVEC)`, adds `EXTRN APTOVEC,APLIMIT`, and explicitly
+initializes `APLIMIT` from BCPLMAIN's STKLIM. **That adapted source
+is not used in the installed-object PDS path**. It explains why
+earlier standalone BCPLAPT tests may have worked while the
+canonical independently built BCPLAPT object is not wired into
+ordinary G40 calls.
+
+**Gate B finding B-APT-01 (verified source wiring discrepancy):**
+the five-member DEVOBJ packaging includes BCPLAPT, but canonical
+G40 is still supplied by BCPLMAIN's in-module implementation.
+Do not describe DEVOBJ regression 091–093 as proving the standalone
+BCPLAPT ABI. APLIMIT initialized to zero makes direct independent
+APTOVEC calls unsafe before a correct limit setup. This is a
+**contract/integration gap**, not a regression failure and not
+grounds to overwrite production OBJ during this audit.
+
+### Suggested disposition
+
+Record B-APT-01 as a Gate B discrepancy, then either (a) formally
+document in-module APTOVEC as the current selected service and
+separately defer BCPLAPT activation, or (b) authorize a focused,
+testable later integration change that publishes the external entry
+and initializes APLIMIT. Choose deliberately; no silent
+runtime edit is warranted in audit-only Gates A–E.
+
+Evidence anchors: `asm/bcplmain.asm` G40 publisher around
+lines 807–808 and local APTOVEC at 1067–1093;
+`asm/bcplapt.asm` APTOVEC/APLIMIT and its limit test;
+`tools/checks/prepare-runtime-pds-regression.py` lines 119–155;
+`run-test.sh` lines 137–189;
+`tools/checks/externalize-bcplapt.py` function `main`.
