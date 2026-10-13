@@ -69,7 +69,7 @@ MEMSTAT is **private native assembler ABI**, not a callable BCPL global: R1 poin
 
 | BCPL interface | Current MVS behavior |
 | --- | --- |
-| FINDINPUT | Recognizes BCPIN and BCPIN2 fixed 80-byte QSAM DDs; lazy OPEN; unknown name returns 0 |
+| FINDINPUT | Recognizes BCPIN and BCPINB fixed 80-byte QSAM DDs; lazy OPEN; unknown name returns 0 |
 | RDCH | Returns EBCDIC input characters, a synthetic newline (10) after each record, and -1 at EOF |
 | UNRDCH | Per-source one-character replay of most recent read result |
 | FINDPARM | Separate stream of up to 100 MVS EXEC PARM bytes, then newline and EOF |
