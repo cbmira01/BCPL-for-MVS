@@ -1,6 +1,6 @@
 # M1.9 — Runtime Contract and Observability Audit
 
-Status: **ACTIVE — Gates A, B and C accepted; Gate D observability audit in progress.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+Status: **ACTIVE — Gates A through D accepted with explicit limitations; Gate E historical compatibility next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
 
 ## Objective
 
@@ -928,3 +928,87 @@ selected historical I/O fallbacks are usable. Record each
 feature's trigger, destination, result/return code and
 failure behavior before Gate D acceptance. Keep the audit
 read-only and preserve M1.8's accepted object libraries.
+
+## Gate D — provider reconciliation and acceptance (13 October 2026)
+
+**Gate D accepted as a source-grounded observability/exposure audit,
+with unresolved runtime features explicitly excluded from the
+supported interface.** No new MVS execution or semantic changes
+were performed.
+
+### Actual provider and invocation findings
+
+1. **G150 DEBUGINT — actual native publisher exists.** Canonical
+   BCPLMAIN installs `DEBUGINT` into G150 (offset 600).
+   Its implementation accepts an integer in R7, formats a
+   decimal representation through CVD/UNPK, and appends it
+   directly into the default `SYSPRINT` 132-byte buffer.
+   The append helper checks the record capacity but silently
+   ignores bytes beyond it. It restores R4 and returns via R6,
+   satisfying the ordinary native-primitive return pattern.
+   This establishes **call-path wiring**, not dedicated
+   regression coverage or a stable public API. G150 is at
+   `FIRSTFREEGLOBAL=150` in historical LIBHDR and is **not**
+   named DEBUGINT there. Treat it as a provisional extension.
+2. **G31 LEVEL — no canonical native publisher identified.**
+   BLIB `BACKTRACE` calls `LEVEL()` immediately, yet
+   canonical BCPLMAIN's explicit installation block does not
+   assign G31. Every global is initially painted with the
+   historical unset sentinel before generated module and BLIB
+   trailer registration. Neither the 21 BLIB exports nor the
+   explicit native register contains LEVEL; therefore the
+   ordinary five-object runtime has **no evidenced G31
+   implementation**, unless a separately linked application
+   deliberately supplies that global. A direct G4 BACKTRACE
+   call is not a supported diagnostic contract.
+3. **Historical log fallback — no canonical native provider
+   identified.** BLIB ABORT and ERRORMESSAGE reference G36
+   FINDLOG and G37 WRITETOLOG when SYSPRINT is unavailable.
+   These are declared in LIBHDR, but have no observed
+   canonical BCPLMAIN installation and no corresponding BLIB
+   top-level definition. The fallback is **not verified**.
+   Normal availability of G41 FINDOUTPUT("SYSPRINT") does not
+   prove the fallback branch works.
+4. **ABORT is not an automatic exception dispatcher.** BLIB
+   G3 defines the historical formatter and can conditionally
+   request BACKTRACE, USERPOSTMORTEM, and MAPSTORE. The native
+   STKOVFL code instead writes its own 14-byte message and
+   follows FINIMPL. No current evidence establishes automatic
+   invocation of G3 on an MVS program interrupt.
+5. **G79 USERPOSTMORTEM is an optional slot, not a routine
+   provided by BLIB.** BLIB ABORT compares G79 with the
+   historical global sentinel and only calls a replacement
+   value. This path remains dependent on a working ABORT
+   invocation and the application's own callback; it is not
+   a universally installed observability function.
+6. **G56 STACKHWM and G78 MAPSTORE differ sharply.** G56 is
+   source-defined in BLIB and test 120 provides focused
+   operational evidence for an in-range word-address result.
+   G78 is source-defined, but its full output depends on
+   compiled-program recognition, global sentinels,
+   SAVEAREA!29 module-list shape, and formatting facilities.
+   Its comprehensive map is not demonstrated by the general
+   regression baseline.
+
+### Gate D disposition
+
+| Identifier | Exposure classification and disposition |
+| --- | --- |
+| D-OBS-01 | MEMSTAT: implemented assembler-private snapshot; **not** public BCPL or operator statistics; future exposure decision |
+| D-OBS-02 | STKOVFL: implemented operator-visible SYSPRINT diagnostic but RC=0; do not use completion code as sole indicator |
+| D-OBS-03 | G150 DEBUGINT: native BCPL call path wired; provisional/undocumented extension; 132-byte silent truncation risk |
+| D-OBS-04 | G4 BACKTRACE: defined historically but dependent LEVEL G31 provider absent from documented standard runtime; **not advertised operational** |
+| D-OBS-05 | G3 ABORT/G5 ERRORMESSAGE: historical call definitions; automatic recovery and G36/G37 log fallback **not established** |
+| D-OBS-06 | G78 MAPSTORE: present historical BLIB global, full native output and module-list interpretation **unverified** |
+| D-OBS-07 | G79 USERPOSTMORTEM: application callback slot conditional on ABORT invocation, **not automatically dispatched** |
+| D-OBS-08 | G56 STACKHWM: callable BLIB measurement, in-range observed in regression 120; exact high-water precision unverified |
+
+**Acceptance is for the documented present observability
+contract, not acceptance of all historical postmortem APIs.**
+No gate requires inventing a runtime provider for missing
+globals. A future implementation decision may prioritize
+MEMSTAT publication and meaningful nonzero overflow status;
+both require separate authorization and focused tests.
+
+**Gate D: ACCEPTED with deferred implementation/test gaps.**
+Proceed to Gate E, historical compatibility classification.
