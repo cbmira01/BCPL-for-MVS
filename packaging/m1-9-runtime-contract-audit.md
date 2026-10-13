@@ -63,3 +63,84 @@ M1.8 Gate F: `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-re
 ## Non-goals and controls
 
 No broad regression replay, change to resident MVS datasets, production library promotion, historical capability claims based solely on source presence, or speculative implementation while gates A–E are gathering evidence. Gate F may authorize focused new probes only with a clearly identified evidence gap.
+
+## Gate A — source-entry and allocator ABI detail (13 October 2026)
+
+This pass read the entire four canonical assembler modules and historical
+`richards-bcpltape/bcplib/bcpl/blib` directly from Git. Assertions below are
+**source observations**, not claims about the register behavior of every
+linked application. The generated BLIB source's full export trailer and
+resident LIBHDR have not yet been extracted; Gate A remains open.
+
+### Externally linkable assembler symbols and their audiences
+
+| Source | `ENTRY` symbols | Intended audience | Observed contract |
+| --- | --- | --- | --- |
+| `asm/bcplmain.asm` | `STKOVFL` (plus BCPLMAIN CSECT entry) | Native startup, shared abnormal-stack path | Receives generated module base via R15; `STKOVFL` moves message to buffered output and branches to termination. |
+| `asm/bcplmem.asm` | `GETVEC`, `FREEVEC` | BCPL G87/G88 | GETVEC N in R7, returns BCPL word pointer in R7 or 0 on failure. FREEVEC accepts word pointer R7; zero or unknown pointer is no-op. |
+| `asm/bcplmem.asm` | `MEMDRAIN`, `MEMBIND`, `MEMSTAT` | **Private assembler API**, not automatically BCPL callable | MEMDRAIN uses R14 linkage and frees outstanding allocations; MEMBIND accepts R1=address of published G6!48 list-head slot (zero to unbind); MEMSTAT writes four fullwords to R1 target; R10 clobbered. |
+| `asm/bcplbyte.asm` | `GETBYTE`, `PUTBYTE` | BCPL G85/G86 | R7 word pointer, R8 byte offset, R9 byte value for PUTBYTE; GETBYTE returns R7 low-byte value; restores R4 via current frame at R5 and returns through R6. |
+| `asm/bcplapt.asm` | `APTOVEC`, `APLIMIT` | G40 service; APLIMIT native linker symbol | R7 function, R8 vector size; temporary vector is passed to the function. APLIMIT is an exported data symbol used by the bounds check, **not proof of a BCPL function**. Shared failure path via external `STKOVFL`. |
+
+`BCPLMEM` source explicitly labels itself a static singleton allocator
+and non-reentrant. Its GETVEC allocation stores a private 12-byte control
+header (BCPL word pointer, allocated byte length, next record byte
+pointer) and keeps the list head in `VECLIST`, published through
+`MEMBIND` to the G6!48 slot. The requested payload is `N+1`
+words, and the byte allocation additionally includes 12 header bytes.
+`MEMDRAIN` detaches the list head before `FREEMAIN` and decrements
+current allocation counters. Peak counters are not reset on drain.
+
+### Private observability: MEMSTAT is *not* yet a BCPL service
+
+`MEMSTAT` has a concrete native snapshot ABI: on entry **R1** is the
+address of four writable fullwords; on return they contain, in order,
+`MEMCURN` (currently live vector count), `MEMPEAKN` (peak live
+vector count), `MEMCURB` (current allocated bytes, including private
+headers), and `MEMPEAKB` (peak allocated bytes). It preserves the
+R14 return address, overwrites R14 temporarily, and clobbers R10 on
+entry. It is explicitly intended for a quiescent singleton context.
+
+There is **no demonstrated direct global-vector publication of
+MEMSTAT** in `BCPLMAIN`'s explicit installation block (which
+publishes GETVEC and FREEVEC). Do not document it as a callable
+BCPL-language service or an operator command until an exposure
+mechanism is established. This is a concrete Gate D exposure gap,
+not an implementation absence.
+
+### BLIB historical entry names versus actual export registration
+
+The historical BLIB source contains procedure definitions including
+WRITES, UNPACKSTRING, PACKSTRING, WRITEF, ABORT, ERRORMESSAGE,
+PRINTWIDTH, STACKHWM, MAPSTORE, INPROGRAM, VALIDPOINTER, BACKTRACE,
+WRITEARG, WRITED, WRITEN, NEWLINE, NEWPAGE, READN, WRITEOCT,
+WRITEHEX, WRITEO and WRITEX. Those names establish source-level
+definitions but **do not alone establish the current exported
+global slots, executable code paths or compatibility**. The installed
+object is made by compiling the mechanically demoted derivative;
+its actual compiler-generated registration trailer and LIBHDR
+mapping still need to be correlated.
+
+### Audit cautions found in source headers
+
+`asm/bcplbyte.asm` still says it is not used in normal regression
+linkage, and `asm/bcplapt.asm` calls object-library acceptance
+pending. The completed M1.8 DEVOBJ rebuild and regression show
+both components are in the five-member accepted candidate library.
+Treat those historical header comments as **stale wording requiring
+documentation cleanup**, not as stronger evidence than the tested
+linkage. No semantic source edit is justified by this observation.
+
+### Outstanding Gate A evidence
+
+1. Locate the **tracked authoritative LIBHDR input** or its
+   generator and record full G-number/name mappings; do not infer
+   absent assignments from historical BLIB names alone.
+2. Enumerate actual exported BLIB globals and distinguish imported
+   module trailer records from installed native service entries.
+3. Cross-check assembler calling conventions (including register
+   preservation, error paths and inter-module storage assumptions)
+   with focused regression coverage before closing Gate A.
+4. Identify which of MEMSTAT, STACKHWM, DEBUGINT and post-mortem
+   routines have verified BCPL/operator invocation paths. Full
+   exposure evaluation is Gate D.
