@@ -1,6 +1,6 @@
 # M1.9 — Runtime Contract and Observability Audit
 
-Status: **ACTIVE — Gates A through E accepted with documented limitations; Gate F verification next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+Status: **CLOSED — Gates A–F accepted with documented limitations (13 October 2026).** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
 
 ## Objective
 
@@ -1078,3 +1078,47 @@ records, and decide which targeted evidence checks (if any)
 are necessary to accept M1.9. Do not silently enlarge M1.9
 into a runtime implementation milestone or modify production
 OBJ. No MVS workload was submitted for Gate E.
+
+## Gate F — verification and M1.9 acceptance (13 October 2026)
+
+**Deliverable:** [Runtime Contract Specification v1.0](runtime-contract-v1.md), tracked independently from this chronological audit.
+
+### Review checklist
+
+| Acceptance item | Result |
+| --- | --- |
+| Five runtime components and entry audiences included | PASS — BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT and BLIB |
+| Historical LIBHDR mapping and native registrations distinguished | PASS — supported subset; compiled BLIB trailer's exact binary inventory remains explicitly unverified |
+| Storage and safe-stack bound specified numerically | PASS — 68,592-byte main allocation and separate 65,536-byte working-stack limit |
+| Allocator accounting and ABI specified without fictional BCPL exposure | PASS — private MEMSTAT four-word snapshot correctly separated |
+| Current G40 implementation and independent BCPLAPT gap recorded | PASS — B-APT-01 remains open engineering disposition |
+| QSAM/EXEC PARM streams and record characteristics identified | PASS — restrictions and EOF/overflow behavior included |
+| FINISH, STOP and abnormal exit codes distinguished | PASS — including stack-overflow RC=0 and bypassed cleanup paths |
+| Observability inventory separates instrumentation and programmer/operator exposure | PASS — G56, G150, MEMSTAT, G3/G4/G78/G79 documented with limitations |
+| Historical compatibility classes explicitly bounded | PASS — matches, adaptations, omissions, uncertainty and known divergence |
+| Existing M1.8 regression evidence preserved without inventing new tests | PASS — 123 PASS / 0 FAIL / 1 expected SKIP; no new MVS job was run |
+| Production library change or promotion | NONE — not authorized, not performed |
+
+### Evidence and acceptance limits
+
+Gate F reviewed canonical tracked sources, historical LIBHDR/BLIB,
+the M1.8 acceptance evidence, native runner wiring and cumulative
+Gate A–E findings. It did not inspect every individual expected.txt
+fixture anew or decode the complete compiled BLIB binary registration
+trailer. Those are **documented verification limitations**, not
+unstated proofs. No new MVS execution is required solely for an
+audit milestone whose known gaps have explicit dispositions.
+
+Outstanding B-/C-/D- issues remain **future engineering decisions**.
+Their existence is not a reason to misrepresent current behavior
+or to prevent delivery of a bounded runtime contract. A future
+change to those contracts must update the versioned specification,
+add focused tests and follow the separate DEVOBJ validation and
+explicit production OBJ promotion discipline.
+
+**Gate F: ACCEPTED. M1.9: CLOSED — Runtime Contract and
+Observability Audit accepted with the documented scope and gaps.**
+
+The milestone made **documentation changes only** in Git.
+No modifications to BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT, BLIB,
+DEVOBJ or OBJ; no resident source/JCL synchronization or MVS jobs.
