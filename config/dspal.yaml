@@ -111,6 +111,7 @@ datasets:
       BLDBMAIN: jcl/build-bcplmain-objects.jcl
       BLDGFMEM: jcl/build-gate-f1-bcplmem.jcl
       BLDDEVM: jcl/build-dev-bcplmem.jcl
+      BLDDEVN: jcl/build-dev-bcplmain.jcl
       SEEDDEV: jcl/seed-devobj.jcl
 
   INTCODE:
