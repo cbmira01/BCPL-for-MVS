@@ -292,6 +292,17 @@ datasets:
     content_type: object
     populate: false
 
+  DEVOBJ:
+    dsn: BCPL.DEVOBJ
+    description: Candidate native System/370 relocatable FB80 object deck library
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    content_type: object
+    populate: false
+
   LOAD:
     dsn: BCPL.LOAD
     description: Link-edited executable load modules
