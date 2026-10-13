@@ -166,6 +166,28 @@ exact incumbent object rollback is not guaranteed without saved artifacts.
 Preserve Git commit, source hashes, MVS job numbers, assembler severity,
 IEBCOPY/IEBGENER return codes, link-editor report, and regression totals.
 
+## March acceptance — CLOSED (13 October 2026)
+
+The operator ran the sole full panel for this development march with
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression`
+after pulling commit 6529fcb. All numbered cases 00–123 were evaluated:
+**123 PASS, 0 FAIL, 1 expected SKIP, TOTAL 124**. Case 083 was skipped
+because it requires source-only FREEMAIN instrumentation. The operator's
+console transcript confirms the result; no additional production-mode or
+source-mode full panel is required for this march.
+
+Accepted evidence chain: DEVOBJ creation JOB 366, metadata JOB 367;
+seeding COPYOBJ IEBCOPY JOB 372 RC=0000; isolated BCPLMEM candidate
+assembly and installation JOB 379 (ASMMEM IFOX00 RC=0000, PUTMEM
+IEBGENER RC=0000, no flagged statements or severity); focused
+DEVOBJ regressions 27 and 122 PASS; full DEVOBJ panel 123/0/1.
+Production OBJ was not an installation target in the new jobs.
+
+This closes the **development-object foundation** milestone, not the
+entire component canonicalization effort: independently assembling
+BCPLMAIN and the other three component/library members requires later
+bounded work. The production promotion policy remains unchanged.
+
 ## Remaining work
 
 The first working candidate installer targets BCPLMEM only. Extend the same
