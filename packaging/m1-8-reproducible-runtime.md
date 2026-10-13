@@ -1,6 +1,6 @@
 # M1.8 — Reproducible Runtime Builds and MVS Synchronization
 
-Status: **ACTIVE — Gates A–C accepted; Gate D next. No OBJ promotion authorized.**
+Status: **ACTIVE — Gates A–D accepted; Gate E optional and not authorized; Gate F pending.**
 
 Governing policy: [Git and MVS authority](git-mvs-authority.md).
 Git defines the implementation; resident MVS provides the target
@@ -400,6 +400,27 @@ five-member DEVOBJ runtime. No production OBJ write was involved.
 Gate D now requires focused application linkage and execution
 using that newly rebuilt DEVOBJ runtime; do not run the full
 panel until final Gate F.
+
+## Gate D — focused rebuilt DEVOBJ execution accepted (13 October 2026)
+
+After pulling Git through `e216ac4`, the operator ran
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ
+tools/run-native-regression <test> --show-output` separately for
+04 (string output), 25 (separately compiled BCPL library),
+26 (separately assembled native through G), 27 (GETVEC),
+069 (independent BLIB object), 091 (nested APTOVEC),
+and 123 (FREEBASE auto-publication).
+
+Each invocation reported **PASS 1, FAIL 0, SKIP 0,
+TOTAL 1**, for an aggregate **7 PASS, 0 FAIL, 0 SKIP**.
+This supplies focused application execution evidence for
+the independently rebuilt five-member DEVOBJ runtime.
+No full panel was run as part of Gate D.
+
+**Gate D accepted.** Gate E production alignment remains
+optional and requires separate explicit operator authorization.
+Gate F is the single final full regression panel, with the
+object-library target to be identified explicitly.
 
 ## Constraints and acceptance evidence
 
