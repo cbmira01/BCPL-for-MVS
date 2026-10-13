@@ -303,6 +303,31 @@ inspect their assembler/compile/install step codes. This is
 part of Gate C's integrated build proof and feeds Gate D's
 focused regression execution. Production OBJ remains unchanged.
 
+## Gate C — SOURCE/JCL replacement and inventory evidence (13 October 2026)
+
+The operator pulled Git through `9789399`, passed the
+`prepare-bootstrap --check-inputs` preflight (18 inputs), and
+verified the ten mapped host files existed. Original SOURCE and
+JCL inventories included all five intended members in each.
+
+**SOURCE:** exact member deletions BCPLMAIN, BCPLMEM, BCPLBYTE,
+BCPLAPT, BLIB succeeded in JOBs **939–943**; IEBCOPY compression
+JOB **944** succeeded; explicit host-file transfers completed
+in JOBs **945–949**, and the final SOURCE inventory contained
+all five names and the other existing source members.
+
+**JCL:** exact member deletions BLDDEVN, BLDDEVM, BLDDEVB,
+BLDDEVA, BLDDEVL succeeded in JOBs **951–955**; compression
+JOB **956** succeeded; Git-mapped job bodies were installed
+in JOBs **957–961**. Final JCL inventory contained all five
+names and the other previously present job members.
+
+**Gate C subsection accepted: controlled ten-member text staging
+and restored inventories.** Byte/semantic readback and the five
+independent DEVOBJ builds remain outstanding, so the *whole* Gate C
+is not yet closed. Production OBJ, LOAD(ICINT19), CAMBCOMP and
+TRNILRG were outside the operation's scope.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
