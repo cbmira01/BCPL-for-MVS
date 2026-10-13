@@ -60,6 +60,23 @@ Require IEBCOPY RC=0000 and exactly the five expected object members.
 The seeding job does **not** assemble any source and does not alter OBJ.
 Save the payload JES report and the five-member inventory as evidence.
 
+## Initial allocation and seed evidence — accepted (13 October 2026)
+
+Operator evidence: `dspal initbcpl` preflight JOBs 354–365;
+allocation JOB 366 created `HERC02.BCPL.DEVOBJ`, with all prior
+datasets reported existing and compatible. JOB 367 verified volume
+TSO002, DSORG=PO, RECFM=FB, LRECL=80, BLKSIZE=800, with an empty
+member directory.
+
+The operator staged `JCL(SEEDDEV)` in JOB 369. Authenticated launcher
+JOB 371 submitted payload JOB 372, whose COPYOBJ IEBCOPY step completed
+RC=0000 (highest RC=0000). Subsequent `dspal ls` inventories showed
+the same five member names in DEVOBJ and production OBJ: BCPLAPT,
+BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB. This establishes successful
+initial binary seeding and member inventory; bytewise equality has not
+been independently checked. No candidate reassembly or regression
+execution is yet accepted.
+
 ## Focused component development and verification
 
 An individual BCPLMEM candidate build is:
