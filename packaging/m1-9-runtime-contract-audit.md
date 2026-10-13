@@ -1,6 +1,6 @@
 # M1.9 — Runtime Contract and Observability Audit
 
-Status: **ACTIVE — Gates A through D accepted with explicit limitations; Gate E historical compatibility next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+Status: **ACTIVE — Gates A through E accepted with documented limitations; Gate F verification next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
 
 ## Objective
 
@@ -1012,3 +1012,69 @@ both require separate authorization and focused tests.
 
 **Gate D: ACCEPTED with deferred implementation/test gaps.**
 Proceed to Gate E, historical compatibility classification.
+
+## Gate E — historical compatibility classification (13 October 2026)
+
+**Audit basis:** surviving `richards-bcpltape/sys3/bcpl/libhdr`,
+`richards-bcpltape/bcplib/bcpl/blib`, canonical four assembler
+sources, the compiler's module trailer convention and the
+M1.8 DEVOBJ accepted regression evidence. This is a comparison
+to **recoverable interfaces**, not proof that all historical
+BCPLMAIN machine code has been recovered.
+
+| ID | Historical evidence / expectation | Current reconstructed behavior | Classification |
+| --- | --- | --- | --- |
+| E-01 | LIBHDR assigns numbered system and BLIB globals | Canonical BCPLMAIN publishes tested subset; compiled BLIB exports source-defined globals by registration trailer | **Partial match**; undeployed historical entries must not be advertised |
+| E-02 | BCPL machine-dependent GETBYTE/PUTBYTE are required by BLIB | Independent BCPLBYTE supplies G85/G86, four bytes per word, BCPL word pointers | **Interface match / MVS implementation** |
+| E-03 | Historical BLIB supplies WRITEF/WRITES and numeric/string formatters | Separately compiled BLIB linked; G76 fallback native only if BLIB export unset; representative regressions pass | **Match on tested subset** |
+| E-04 | BLIB STACKHWM scans alternating marker words and reserved end metadata | BCPLMAIN paints expected markers; publishes extent; regression 120 returns in-range address | **Partial match**, precision and overwrite cases not verified |
+| E-05 | BLIB VALIDPOINTER and INPROGRAM inspect SAVEAREA load/vector lists | G6 modeled; allocator list head published at G6!48; tests 121–123 cover specific empty/nonempty scenarios | **MVS adaptation / partial match**, original allocation/layout fidelity not established |
+| E-06 | Historical APTOVEC expected as global 40 | Current canonical G40 selects in-BCPLMAIN implementation; separate BCPLAPT linked but not activated | **Functional subset / integration omission** (B-APT-01) |
+| E-07 | Rich historical I/O globals include record, block, library and terminal/log facilities | Current named 80-byte QSAM input, 132-byte QSAM output, EXEC PARM stream; unsupported entries remain unset | **Intentional narrow MVS bootstrap subset / omitted features** |
+| E-08 | Historical BLIB ABORT orchestrates fault diagnosis, BACKTRACE, optional USERPOSTMORTEM and MAPSTORE | BLIB routines exist; STKOVFL bypasses ABORT; LEVEL G31 and logging fallbacks not provided in canonical native installer | **Historical recovery/postmortem omitted**, not equivalently operational |
+| E-09 | Historical SAVEAREA, LOADPOINT/ENDPOINT, STACKBASE/END support BLIB introspection | Provisional G6 save area and module/stack bounds published; G55 includes 256-byte clearance beyond safe limit | **MVS adaptation / incomplete equivalence** |
+| E-10 | CG370 system-vector checked entry and call-count conventions | S.STKCK implemented with 64-KiB working stack; S.COUNT and S.STKCKCOUNT are inline-skip stubs | **Partial match with explicit omissions** |
+| E-11 | Historical program and runtime diagnostics distinguish faults and completion | Current overflow prints STACK OVERFLOW but exits RC=0; some error paths bypass FINEXIT | **Known behavioral divergence**; Gates C/D document operator implications |
+| E-12 | Historical global naming/slot allocation includes FIRSTFREEGLOBAL=150 | Reconstructed DEBUGINT installed at G150 without historical LIBHDR declaration | **Project-specific provisional extension**, not historical contract |
+| E-13 | Historical BLIB relies on output/error/log fallback behavior | Normal SYSPRINT formatting works in selected paths; FINDLOG/WRITETOLOG not verified | **Omitted / unsupported fallback** |
+| E-14 | Historical LIBHDR lists OPENBLOCKFILE:94 and UPDATEBLOCKFILE:94 | Same tracked header retains duplicate assignment, neither service is a supported native implementation | **Historical source anomaly**, not a reconstructed runtime defect |
+
+### Interpretation
+
+- **Matched** means a particular interface/property is supported
+  by both historical source and current implementation, with actual
+  tested scope stated.
+- **MVS adaptation** means the recreated program provides an
+  intentional MVS/370-specific implementation, not necessarily
+  identical internal representation or allocation policy.
+- **Omitted** means no current supported provider was established;
+  a historical LIBHDR name alone is not executable functionality.
+- **Uncertain** means historical source describes an interface but
+  actual operational equivalence is not demonstrated by tracked
+  evidence and focused tests.
+- **Known divergence** means source evidence establishes a
+  meaningful behavioral difference worth preserving for future
+  engineering disposition.
+
+The historical material does **not** supply a complete executable
+original BCPLMAIN for direct machine-code differential testing.
+Accordingly, no claim of byte-for-byte reconstruction, exact
+exception semantics, or complete original runtime compatibility
+is made.
+
+### Gate E disposition and carry-forward
+
+Gate E is **ACCEPTED as a bounded historical compatibility
+comparison**. The unresolved matters remain traceable:
+B-APT-01 (standalone BCPLAPT not activated), B-MEM-01 / D-OBS-01
+(private MEMSTAT), C-EXIT-01 / D-OBS-02 (overflow RC=0),
+C-EXIT-02 (uneven abnormal cleanup), D-OBS-04 (LEVEL/BACKTRACE),
+D-OBS-06 (MAPSTORE), and unimplemented historical stream/log
+services.
+
+**Gate F next:** consolidate the versioned Runtime Contract
+Specification, validate document consistency against these
+records, and decide which targeted evidence checks (if any)
+are necessary to accept M1.9. Do not silently enlarge M1.9
+into a runtime implementation milestone or modify production
+OBJ. No MVS workload was submitted for Gate E.
