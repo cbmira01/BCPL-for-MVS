@@ -50,6 +50,17 @@ The build still requires explicit re-generation and SOURCE(BLIB)
 synchronization: a successful resident object does not prove its
 source matched a particular Git revision.
 
+## Independent Gate A source preflight
+
+The tracked historical `richards-bcpltape/bcplib/bcpl/blib`
+was fetched directly from Git. Its `SECTION "BLIB"` header
+occurs in the expected position, it contains exactly two `~=`
+operators and exactly one `GET "LIBHDR"` directive. These are the
+three structural checks required by `make-demoted.py --blib-only`.
+They passed in an independent check. This is **not** evidence that the
+generator has already been executed on the operator workstation, or
+that resident SOURCE(BLIB) currently equals its regenerated output.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
