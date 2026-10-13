@@ -221,3 +221,83 @@ all compiler-emitted BLIB trailer registrations, comprehensive
 MVS/BCPL register preservation for each native entry, or executable
 coverage for each LIBHDR slot. Those remain explicit Gate A tasks;
 they are not grounds for broad runtime changes.
+
+## Gate A — BLIB definition-to-global crosswalk and regression trace (13 October 2026)
+
+The tracked historical `richards-bcpltape/bcplib/bcpl/blib` was
+compared to the tracked compiler header
+`richards-bcpltape/sys3/bcpl/libhdr` and the six-stage resident
+`jcl/build-dev-blib.jcl` pipeline. The latter compiles
+`SOURCE(BLIB)` under `SOURCE(LIBHDR)`, repairs the two known
+CG370 cards, assembles its independent CSECT and installs
+`DEVOBJ(BLIB)`. All steps were RC=0000 during M1.8 Gate C.
+**The source-level mapping below is not a decoded object trailer**;
+it enumerates the named top-level definitions and their LIBHDR
+slots, to be checked against generated trailer evidence if needed.
+
+| BLIB top-level definition | LIBHDR slot | Existing executable evidence (scope) |
+| --- | --- | --- |
+| ABORT | G3 | Historical reporting path only; no direct post-mortem execution proof |
+| BACKTRACE | G4 | No native call-chain validation identified |
+| ERRORMESSAGE | G5 | No dedicated fault-stream validation identified |
+| STACKHWM | G56 | 120 tests initialized-stack in-range high-water return |
+| INPROGRAM, VALIDPOINTER | G58, G59 | 121 empty lists; 122 descriptor/list traversal; 123 automatic G6!48 allocator-list publication |
+| WRITES | G60 | 065 historical WRITES; 067/069 separately linked BLIB |
+| WRITEN | G62 | 066 historical WRITEN; 067/069 separately linked BLIB |
+| NEWLINE, NEWPAGE | G63, G64 | BLIB formatting/link paths; dedicated NEWPAGE semantic proof not yet mapped |
+| WRITEO | G65 | 074 independent BLIB object |
+| PACKSTRING, UNPACKSTRING | G66, G67 | 071 in-place pack; 070 unpack |
+| WRITED | G68 | 072 field-width behavior |
+| WRITEARG | G69 | Used by historical reporting; independent format/pointer classification proof not mapped |
+| READN | G70 | No direct focused input parsing evidence identified yet |
+| WRITEX, WRITEHEX | G74, G75 | 073 width path; further coverage mapping needed |
+| WRITEF | G76 | 068 formatted output, 075 mixed arguments, 076 diagnostics, 081 nested argument cursor |
+| WRITEOCT | G77 | 058 and 064 format cases; independent direct-entry coverage to check |
+| MAPSTORE | G78 | No complete native post-mortem map validation identified |
+| PRINTWIDTH | **No LIBHDR global slot** | Top-level helper name does not establish a public BCPL global |
+
+The name `PRINTWIDTH` appears as a top-level BLIB procedure but
+not in the tracked LIBHDR; an actual compiler export cannot be
+inferred from procedure visibility alone. Likewise, the header's
+G79 USERPOSTMORTEM is **not defined by this BLIB source**.
+Its slot must not be equated with an implemented callback.
+
+### Why this is a meaningful exposure distinction
+
+- **Named public slot:** LIBHDR assigns a global number and compiled
+  code may reference it; runtime installation still requires an actual
+  registered module or explicit native publisher.
+- **Defined historical routine:** BLIB source has an implementation,
+  but its successful translation and link do not establish the
+  correctness of all control/data prerequisites.
+- **Proven focused behavior:** individual regressions exercise only
+  the specifically asserted path. For example, test 120 confirms
+  `STACKHWM` returns an in-range word address, *not* precise
+  usage accounting, and test 121 establishes only empty-list
+  behavior for pointer predicates.
+- **Private native entry:** `MEMSTAT` is exported through a native
+  assembler symbol with a defined R1 snapshot ABI but has no
+  LIBHDR assignment or direct published global slot.
+
+### Traceability caveat — historical README status text
+
+Some regression READMEs retain older staging instructions (e.g.
+069 describes an earlier planned failure; 121–123 warn that installed
+PDS mode cannot yet work; 082 says TK5 execution pending).
+These are **historical checkpoint narratives**, not a current status
+override: M1.8's 13 October 2026 full DEVOBJ panel reported
+123 PASS / 0 FAIL / 1 expected SKIP, including cases
+069, 082, 120, 121, 122 and 123. Use dated actual execution
+evidence rather than assuming the first paragraph of an older
+test README represents the current runtime.
+
+### Remaining Gate A verification
+
+The current inventory identifies header slots, historical BLIB
+definitions and most representative tests. To treat the crosswalk
+as a complete *actual exports* ledger, recover the compiler-produced
+global-registration trailer (from retained CG370 assembly, a
+non-mutating linkage report, or a deliberately isolated probe).
+Also reconcile assembler-private register clobbers and callback
+boundaries. No MVS deployment or production OBJ operation is
+authorized by this audit.
