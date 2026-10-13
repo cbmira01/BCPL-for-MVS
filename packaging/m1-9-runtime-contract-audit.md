@@ -301,3 +301,61 @@ non-mutating linkage report, or a deliberately isolated probe).
 Also reconcile assembler-private register clobbers and callback
 boundaries. No MVS deployment or production OBJ operation is
 authorized by this audit.
+
+## Gate A — linkage reconstruction and remaining evidence boundary (13 October 2026)
+
+Further source inspection confirmed that the canonical BCPLMAIN
+`GIDONE/BLIMP` sequence locates the BLIB module end using the
+halfword offset at BLIB+10, then walks backward through eight-byte
+(global byte offset, relocated entry address) pairs until a zero
+entry address. Each nonzero pair is installed into the global
+vector after validating its offset. The application uses the same
+general trailer-registration mechanism. This proves **how**
+compiled BLIB exports become callable in the current runtime, without
+decoding every individual export pair in the specific assembled deck.
+
+Evidence from regression 069's recorded historical three-CSECT
+linker map and successful `BLIB 42` GO validates the independent
+BLIB registration model. The later authoritative M1.8 DEVOBJ
+full-suite acceptance includes 069, 067–081 and 120–123.
+Older README statuses described intermediate developmental checkpoints
+and must not be mistaken for 13 October 2026 acceptance status.
+
+### Register / linkage boundary matrix (source observed)
+
+| Interface | Linkage / input | Return and controls | Scope |
+| --- | --- | --- | --- |
+| Generated module → BCPLMAIN | R15 contains compiled-module base; entry prefix transfers to BCPLMAIN | BCPLMAIN builds MVS R13 save area, G vector, BCPL stack and system vector; dispatches START | Native startup, not an ordinary BCPL callable function |
+| BCPL call to GETVEC / FREEVEC | R5 current frame, R6 return, R7 first argument; R10 used as BCPLMEM local base | GETVEC returns R7 pointer or 0; FREEVEC returns through R6 and restores R4 from caller frame | G87/G88 |
+| BCPL call to GETBYTE / PUTBYTE | R7 pointer, R8 byte offset, R9 byte argument for PUTBYTE | GETBYTE returns byte in R7; both restore R4 from 0(R5) and branch via R6 | G85/G86 |
+| BCPL call to APTOVEC | R7 target function, R8 number of words; R15 next frame, R5 current frame | Constructs temporary vector and invokes R7 function; uses R6 for nested BCPL return; overflow branches STKOVFL | G40; separate APLIMIT symbol is data |
+| BCPLMAIN → MEMBIND | R1 points at writable G6!48 slot, R14 supplies native return | Registers live-list publication; R1=0 unbinds | Private assembler ABI |
+| BCPLMAIN → MEMDRAIN | R14 native return | Frees outstanding vector records and refreshes published head | Private assembler ABI |
+| Native private → MEMSTAT | R1 points to 16 writable bytes, R14 native return | Four snapshot fullwords written, R10 clobbered; no BCPL global exposure established | Private assembler ABI |
+| BCPL generated code → system vector | R11 supplies SYSV base; branch slots at relative offsets 0,20,40,60,80 | Return, count, finish, checked-entry and checked-count hooks. COUNT and checked-count are labeled stubs in current source | Machine-code system interface, not LIBHDR globals |
+
+**Important limits:** these rows summarize source-visible conventions,
+not a complete exhaustive clobber audit for every BCPLMAIN stream
+service. The byte service's source header saying it is not used in
+normal regression linkage and BCPLAPT's pending-acceptance comment
+are stale relative to M1.8 build/test evidence.
+
+### Gate A decision / evidence not yet possessed
+
+- **Proven:** authoritative LIBHDR location, native entry symbols,
+  native explicit global publishers, BLIB source-defined global names,
+  compiler trailer import mechanism, and focused acceptance of
+  representative actual BLIB object services.
+- **Still not proven by an explicit artifact:** complete set of
+  assembled BLIB trailer entries and their individual addresses,
+  and exhaustive per-entry clobber matrices for all native services.
+  No retained generated BLIB assembler listing was identified in
+  the inspected tracked sources. A new resident compilation solely
+  to extract it is **not** being triggered during this source-only
+  audit.
+
+Keep Gate A **open** until the complete actual BLIB export-trailer
+ledger can be reconciled, or explicitly adopt the narrower
+source/header/registration-and-regression proof as its acceptance
+criterion. Do not silently equate names found in a historical
+source file with directly observed object exports.
