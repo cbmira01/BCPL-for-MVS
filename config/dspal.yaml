@@ -70,7 +70,7 @@ datasets:
       SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
       TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
       CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
-      BCPLMAIN: workarea/runtime-object-candidates/bcplmain-pds.asm
+      BCPLMAIN: asm/bcplmain.asm
       BCPLMEM: asm/bcplmem.asm
 
   ASM:
