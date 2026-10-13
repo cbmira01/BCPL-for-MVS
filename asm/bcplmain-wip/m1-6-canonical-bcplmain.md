@@ -46,6 +46,24 @@ member with IFOX00 and installs its FB80 relocatable object into
   123 PASS, 0 FAIL, 1 expected source-only SKIP (083). Close only
   after actual operator evidence is received.
 
+## Gate evidence — 13 October 2026
+
+**Gate A accepted:** independently reconstructed the accepted externalization,
+BLIB export registration and STKOVFL staging transformations from committed
+`asm/bcplmain-wip.asm`; the output matched the committed
+`asm/bcplmain.asm` exactly (63,734 characters). This was a direct source
+comparison and not MVS execution.
+
+**Gate B accepted:** operator pulled commit 8bed14e and PUT canonical
+`asm/bcplmain.asm` to `SOURCE(BCPLMAIN)` in JOB 631, then PUT
+`jcl/build-dev-bcplmain.jcl` to `JCL(BLDDEVN)` in JOB 632.
+Authenticated launcher JOB 634 submitted payload **JOB 635**.
+ASMMMAIN IFOX00 RC=0000; PUTMAIN IEBGENER RC=0000;
+highest job RC=0000, assembler flagged statements 0, highest
+assembler severity 0. The installation DD targets only
+`HERC02.BCPL.DEVOBJ(BCPLMAIN)`; production OBJ is not a write target.
+Focused DEVOBJ linkage and runtime behavior remain Gate C.
+
 ## Operator sequence for Gates A and B
 
 ```sh
