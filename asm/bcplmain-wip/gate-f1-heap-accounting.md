@@ -1,6 +1,6 @@
 # Gate F1 — BCPLMEM heap accounting candidate
 
-Status: **Gate F1 SOURCE-CANDIDATE ACCEPTED; PRODUCTION OBJECT INSTALLED; INSTALLED REGRESSION PENDING** (13 October 2026).
+Status: **GATE F1 CLOSED / ACCEPTED — production BCPLMEM installed and regression-verified** (13 October 2026).
 Gate E installed OBJ baseline remains accepted and untouched.
 
 ## Scope and ownership
@@ -173,3 +173,26 @@ select the **latest** START JOB banner and require its matching END,
 without accepting stale completed jobs while the current job runs.
 The installed OBJ library is not modified by this tooling repair.
 A new complete installed regression result is required to close F1.
+
+## Gate F1 final installed-runtime acceptance — 13 October 2026
+
+After repairing JES job-number rollover lookup in `tools/job-summary` and
+`tools/dump-report-for-job`, the operator repeated the complete installed
+runtime panel: `BCPL_RUNTIME_PDS=1 tools/run-native-regression`.
+The observed results were **PASS 123, FAIL 0, SKIP 1, TOTAL 124**.
+The sole SKIP is regression 083, whose FREEMAIN instrumentation is expressly
+source-only. Every eligible installed-object regression, including 057–123,
+passed. This closes Gate F1 acceptance following authenticated production
+installation JOB 9919 (ASMMEM and PUTMEM both RC=0000).
+
+**Disposition: Gate F1 CLOSED / ACCEPTED.** Production member
+`HERC02.BCPL.OBJ(BCPLMEM)` is the accepted heap-accounting build.
+No additional runtime object changes are authorized by this acceptance.
+
+**Development workflow decision for subsequent marches:** edit canonical
+assembler sources in WSL/Git; synchronize them to MVS SOURCE PDS; assemble
+and link independent objects on MVS; use targeted compile/link/execute checks
+while developing; run the complete authoritative object-based regression
+panel **once at the conclusion of each march**, avoiding duplicated
+source-mode and installed-mode full passes. Keep accepted production OBJ
+separate from work-in-progress objects when implementing this workflow.
