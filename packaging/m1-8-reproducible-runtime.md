@@ -185,6 +185,28 @@ Gate B is **not accepted yet**: driver is staged in Git, but a real
 operator generation run and digest/output review are needed. No
 claim of resident member equality or clean-checkout MVS run yet.
 
+## Gate B — host generator execution evidence (13 October 2026)
+
+After pulling Git through `54c6930`, the operator ran
+`python3 tools/prepare-bootstrap --check-inputs`, reporting
+**18/18 required paths present** without file writes. The default
+`python3 tools/prepare-bootstrap` then successfully executed the
+tracked `make-demoted.py` and `make-mr10-trn-large-names.py`
+generators, reporting **24 generated outputs** and a SHA-256
+inventory at
+`workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json`.
+
+Reported output sizes agree with the earlier operator directory
+listing for the generated source files (including BLIB 14,134
+bytes and MR10 TRN0 2,400 bytes). This establishes working
+regeneration and file presence; it does **not** prove matching SHA-256
+digests against the previous contents or resident MVS members.
+`--with-trnilrg` was not executed. All operations remained on
+the host and did not modify MVS datasets.
+
+**Gate B status: source-preparation subsection accepted; full
+TRNILRG generation/equivalence still pending.**
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
