@@ -107,6 +107,20 @@ against the chosen DD dataset. It accepts only `OBJ` or `DEVOBJ`.
 The command above is a **focused** test only, not a march acceptance panel.
 Job-link reports should confirm member resolution from DEVOBJ.
 
+## Independent BCPLMEM candidate build — accepted (13 October 2026)
+
+Operator synchronized `JCL(BLDDEVM)` in JOB 375 and canonical
+`SOURCE(BCPLMEM)` from `asm/bcplmem.asm` in JOB 376.
+Authenticated launcher JOB 378 submitted payload JOB 379.
+JOB 379 completed: ASMMEM (IFOX00) RC=0000 and PUTMEM
+(IEBGENER) RC=0000; highest job RC=0000, zero flagged
+assembler statements, and highest assembler severity zero.
+
+This accepts independent source synchronization, MVS assembly and
+binary-safe candidate installation to DEVOBJ(BCPLMEM). Runtime linkage
+and execution remain to be verified; no full regression has run in
+this march.
+
 ## One authoritative full panel at march conclusion
 
 After assembly, installation, source synchronization, linkage, and focused
