@@ -113,6 +113,23 @@ until focused installed-object regression cases prove native and
 separately compiled BCPL module assembly/link/GO behavior. No full
 regression panel at this point.
 
+## Gate D — focused acceptance (13 October 2026)
+
+Operator pulled commit fced635 and ran installed-object DEVOBJ focused
+regressions **25** (separately compiled BCPL library) and **26**
+(separately assembled native routine through G). Both reported
+PASS 1, FAIL 0, SKIP 0, TOTAL 1.
+
+Code audit confirms `run-test.sh` takes the installed-runtime
+branch when `BCPL_RUNTIME_PDS=1` and does not execute its subsequent
+source-runtime combination branch. In this mode,
+`tools/checks/prepare-runtime-pds-regression.py` now prepares
+both special application code forms directly, without referring to
+`asm/bcplmain-wip.asm`. **Gate D accepted for the normal
+installed-object DEVOBJ workflow.** Explicit source-runtime
+compatibility and regression 083 remain separate Gate E concerns.
+The historical source is retained at this checkpoint.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
