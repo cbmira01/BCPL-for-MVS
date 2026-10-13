@@ -729,7 +729,7 @@ implemented**, such as READREC, WRITEREC and library/member operations.
 
 ### Input record conversion
 
-`FINDINPUT` recognizes `BCPIN` and `BCPIN2`; both are lazily
+`FINDINPUT` recognizes `BCPIN` and `BCPINB`; both are lazily
 OPENed QSAM input DCBs, with separate record positions, EOF flags,
 newline and pushback state. Fixed 80-byte records have **trailing
 EBCDIC blanks trimmed**, retaining interior blanks; RDCH emits
@@ -804,7 +804,7 @@ claim of complete historical I/O compatibility.**
   G11–G17, G33, G39, G41–G42 and G46–G47. Source inspection of
   BCPLMAIN lines 1097–1593 establishes the named QSAM and PARM
   stream behaviors recorded above.
-- `BCPIN` and `BCPIN2` have separate 80-byte fixed-record
+- `BCPIN` and `BCPINB` have separate 80-byte fixed-record
   buffers, per-source EOF/newline/pushback state and lazy OPEN.
   Trailing blanks are discarded; newline is generated at each
   logical record boundary. FINEXIT closes opened input DCBs.
