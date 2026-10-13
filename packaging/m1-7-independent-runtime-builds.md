@@ -176,6 +176,20 @@ this isolated reclamation test and fresh MVS validation.
 **Gate E status:** diagnostic distinction and test scope defined;
 MVS revalidation pending.
 
+## Gate E — focused MVS diagnostic acceptance (13 October 2026)
+
+Operator ran `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1
+tools/run-native-regression 83 --show-output`. The runner reported
+`PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1` for
+`083-instrumented-storage-reclamation`. This accepts the distinct,
+test-only reclamation probe after the MEMBIND-compatible update.
+
+The supplied runner summary does not include raw GO output or individual
+step return codes; acceptance here is based on the regression harness
+PASS, not an independently inspected `V=2 M=1` JES record.
+Historical WIP remains an isolated source-only test fixture;
+normal DEVOBJ execution does not need it. Gate F remains outstanding.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
