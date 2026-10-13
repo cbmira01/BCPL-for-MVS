@@ -92,6 +92,32 @@ INTCODE members, so it should **not** be rerun casually as a
 read-only provenance check. Its MVS execution is a separately
 controlled rebuild operation.
 
+## Gate A — TRNILRG derivation traced (13 October 2026)
+
+Operator reported the local generated file
+`workarea/bootstrap-cambridge/trni-large-names.int` at 20,885 bytes,
+with eight `mr10-trn-large-names` source files (TRNHDR and TRN0–TRN6).
+Generated Cambridge demoted and diagnostic source directories were
+also present. This is file-presence evidence, not regenerated equivalence.
+
+The tracked producer
+`native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh`
+first runs
+`native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py`.
+The Python generator splits tracked historical
+`richards-bcpltape/mr10/bcplkit/trn`, increasing the TRN0
+declaration-vector capacity from 1200 to 2400 words with strict
+anchors. The shell script compiles its generated TRN units under
+`asm/icintv19.asm` with `tools/compile-and-run --save-intcode`,
+using the tracked large-tree options and LIBHDR, then concatenates
+the resulting INTCODE into the configured `TRNILRG` file.
+
+The source-generation graph for TRNILRG is thus documented in Git.
+The independent `TRNILRG` bootstrap build has **not** been
+re-executed in this march and its output has not been compared to
+the resident MVS member or the current local file. A fresh
+reconstruction/equivalence claim requires that comparison.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
