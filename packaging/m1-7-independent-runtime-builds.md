@@ -67,6 +67,22 @@ Four modules now have demonstrated individual DEVOBJ builds across
 this and preceding marches: BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT.
 **BLIB remains outstanding** for Gate B.
 
+## Gate B — BLIB acceptance and complete inventory (13 October 2026)
+
+Operator PUT JCL(BLDDEVL) in JOB 664, launcher JOB 666,
+payload **JOB 667**. COMP ICINT19 RC=0000;
+PREPASM IFOX00 RC=0000; PREPLK IEWL RC=0000;
+FIXASM card-fix RC=0000; ASMBLIB IFOX00 RC=0000;
+INSTALL IEBGENER RC=0000. Highest RC=0000,
+zero flagged assembler statements, assembler severity zero.
+The FIXASM program returns RC=0000 only if both required
+CG370 substitutions occur exactly once.
+
+`tools/dspal ls DEVOBJ` subsequently listed five members:
+BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB.
+**Gate B accepted** for all five independent development builds.
+No production OBJ write was requested.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
