@@ -83,6 +83,20 @@ BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB.
 **Gate B accepted** for all five independent development builds.
 No production OBJ write was requested.
 
+## Gate C — focused independent object regression evidence (13 October 2026)
+
+Operator pulled commit 00eb6cf and ran five individual regressions with
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ`:
+
+- 04 — string output: PASS 1/1
+- 27 — GETVEC: PASS 1/1
+- 069 — independent BLIB object: PASS 1/1
+- 091 — nested APTOVEC: PASS 1/1
+- 123 — automatic FREEBASE publication: PASS 1/1
+
+Each run reported FAIL 0 and SKIP 0. **Gate C accepted.**
+No complete 124-case panel was run as part of this gate.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
