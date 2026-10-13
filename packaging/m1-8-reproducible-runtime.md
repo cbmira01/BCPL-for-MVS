@@ -1,6 +1,6 @@
 # M1.8 — Reproducible Runtime Builds and MVS Synchronization
 
-Status: **ACTIVE — Gate A inventory, 13 October 2026. No OBJ promotion authorized.**
+Status: **ACTIVE — Gate A provenance inventory accepted; Gate B next. No OBJ promotion authorized.**
 
 Governing policy: [Git and MVS authority](git-mvs-authority.md).
 Git defines the implementation; resident MVS provides the target
@@ -117,6 +117,34 @@ The independent `TRNILRG` bootstrap build has **not** been
 re-executed in this march and its output has not been compared to
 the resident MVS member or the current local file. A fresh
 reconstruction/equivalence claim requires that comparison.
+
+## Gate A — initial MR10 bootstrap closure
+
+GitHub inspection confirmed tracked files for the initial compiler
+chain: `intcode/syni.int`, `intcode/cgi.int`,
+`intcode/blibi.int`, `intcode/iclib.int`,
+`asm/icintv19.asm`, historical MR10 translator source
+`richards-bcpltape/mr10/bcplkit/trn`, target LIBHDR
+`richards-bcpltape/sys3/bcpl/libhdr`, and the
+`native-compiler/bootstrap-cambridge/options-large-tree.txt`
+option file. The Cambridge demotion inputs
+`native-compiler/bootstrap-cambridge/source/syn`,
+`source/trn`, historical `bcplib/bcpl/bcpl` and `cg`,
+plus `bootstrap-host.bcpl` and `cambridge-options.txt`
+are tracked as well.
+
+Combined with the previously inspected `make-demoted.py`,
+`make-mr10-trn-large-names.py`,
+`build-mr10-trni-large-names.sh` and
+`jcl/build-cambridge-resident.jcl`, this identifies a
+**Git-governed source and build graph** for all known initial
+MR10/Cambridge inputs consumed by the BLIB compiler.
+
+**Gate A accepted as a provenance inventory**, not as a successful
+clean-checkout rebuild or bytewise comparison. Gate B must validate
+the actual generated sources/INTCODE under controlled staging,
+including the ignored workarea files, and identify any undeclared
+runtime or utility requirements revealed by execution.
 
 ## Constraints and acceptance evidence
 
