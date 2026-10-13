@@ -1,6 +1,6 @@
 # M1.7 — Independent runtime component builds
 
-Status: **Gate A inventory complete; Gate B build jobs staged, not MVS accepted**.
+Status: **ACCEPTED AND CLOSED — 13 October 2026 (Gates A–F)**.
 
 ## Gate A — component inventory
 
@@ -189,6 +189,27 @@ step return codes; acceptance here is based on the regression harness
 PASS, not an independently inspected `V=2 M=1` JES record.
 Historical WIP remains an isolated source-only test fixture;
 normal DEVOBJ execution does not need it. Gate F remains outstanding.
+
+## Gate F — authoritative DEVOBJ panel (13 October 2026)
+
+The operator pulled commit `8454442` and executed exactly one
+complete `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ
+tools/run-native-regression` panel covering 00–123 (124 cases).
+Results: **123 PASS, 0 FAIL, 1 SKIP, TOTAL 124**.
+The sole skip was **083-instrumented-storage-reclamation**
+(source-only instrumentation), separately passed under Gate E.
+All 123 executable installed-object regressions passed.
+
+**M1.7 ACCEPTED AND CLOSED** — Gates A through F met.
+Five independent runtime components have resident, controlled
+DEVOBJ build routes and integrated execution evidence. Production
+`HERC02.BCPL.OBJ` was not modified. Normal installed-object
+regressions no longer depend on the monolithic BCPLMAIN WIP source.
+The intentionally isolated source-only diagnostic 083 still relies
+on the historical WIP fixture, so **do not delete WIP yet**.
+Retirement requires an explicit separate diagnostic-source migration
+and subsequent proof. No production promotion is authorized by
+this gate.
 
 ## Acceptance gates
 
