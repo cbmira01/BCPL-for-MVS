@@ -1,6 +1,6 @@
 # M1.9 — Runtime Contract and Observability Audit
 
-Status: **ACTIVE — Gate A accepted with explicitly bounded object-level evidence; Gate B in progress.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+Status: **ACTIVE — Gates A and B accepted with documented limitations; Gate C next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
 
 ## Objective
 
@@ -654,3 +654,52 @@ lines 807–808 and local APTOVEC at 1067–1093;
 `tools/checks/prepare-runtime-pds-regression.py` lines 119–155;
 `run-test.sh` lines 137–189;
 `tools/checks/externalize-bcplapt.py` function `main`.
+
+## Gate B acceptance and handoff to Gate C (13 October 2026)
+
+**Accepted as an implementation/evidence audit; no source changes.**
+
+The canonical main allocation is 68,592 bytes: 2,800 bytes
+for 700 global words, 65,536 bytes for 16,384 stack words,
+and 256 bytes of clearance. The STKIMPL comment referring to
+16KB is stale; actual safe stack size is 64 KiB. G55 denotes
+the larger physical extent, while STKLIM enforces the smaller
+working-stack bound.
+
+BCPLMEM's GETVEC uses a 12-byte header and N+1 word payload.
+FREEVEC and MEMDRAIN unlink before releasing storage.
+MEMSTAT's live/peak counts and bytes are private native statistics.
+BLIB STACKHWM returns a word address or status, not a byte count.
+Regression 120 verifies an in-range result, not exact usage.
+
+**Disposition register:**
+
+- B-APT-01: canonical G40 selects BCPLMAIN's internal APTOVEC;
+  independent BCPLAPT is linked but not selected, and its
+  APLIMIT data starts at zero. Defer activation/integration;
+  installed regression 091–093 proves the selected G40 path only.
+- B-STK-01: G55 exceeds the safe-frame bound by 256 bytes.
+  Document both bounds, not a single interchangeable limit.
+- B-STK-02: source comment says 16KB despite actual 64 KiB;
+  defer nonsemantic comment correction.
+- B-STK-03: STACKHWM exact high-water precision remains untested;
+  carry to observability Gate D.
+- B-EXIT-01: STKOVFL emits a diagnostic but branches to
+  FINIMPL, which clears the completion code. Carry to Gate C.
+- B-EXIT-02: malformed-frame STKFORM returns R15=36 directly,
+  bypassing ordinary FINEXIT cleanup. Carry to Gate C.
+- B-MEM-01: MEMSTAT has no proven BCPL global publication;
+  carry to Gate D.
+- B-MEM-02: regression 082's successful termination with
+  outstanding vectors is not an independent accounting of
+  FREEMAIN amounts. Preserve as a verification limitation.
+
+Evidence includes canonical BCPLMAIN/BCPLMEM/BCPLAPT,
+historical BLIB, the installed-object linker recipe, and
+regressions 27–32, 39, 48–52, 82, 91–93 and 120–123.
+M1.8's 123-pass full DEVOBJ panel remains the acceptance
+baseline; it does not prove every exceptional branch.
+
+**Gate B: ACCEPTED with documented deviations. Gate C next:
+I/O and termination.** No MVS datasets or object libraries
+were changed.
