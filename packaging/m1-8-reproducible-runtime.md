@@ -1,6 +1,6 @@
 # M1.8 — Reproducible Runtime Builds and MVS Synchronization
 
-Status: **ACTIVE — Gates A and B accepted; Gate C next. No OBJ promotion authorized.**
+Status: **ACTIVE — Gates A–C accepted; Gate D next. No OBJ promotion authorized.**
 
 Governing policy: [Git and MVS authority](git-mvs-authority.md).
 Git defines the implementation; resident MVS provides the target
@@ -374,6 +374,32 @@ not raw EBCDIC FB80 byte equivalence.
 The next Gate C action is independently building all five DEVOBJ
 components from these installed SOURCE/JCL members. No production
 OBJ mutation is authorized.
+
+## Gate C — independent DEVOBJ rebuild accepted (13 October 2026)
+
+After pulling Git through `48d3e5a`, the operator submitted
+all five previously synchronized resident build-job bodies.
+Each job completed successfully:
+
+| Member | Payload job | Compiler/assembler | Install |
+| --- | --- | --- | --- |
+| BCPLMAIN | 982 | ASMMMAIN IFOX00 RC=0000 | PUTMAIN IEBGENER RC=0000 |
+| BCPLMEM | 985 | ASMMEM IFOX00 RC=0000 | PUTMEM IEBGENER RC=0000 |
+| BCPLBYTE | 988 | ASMCOMP IFOX00 RC=0000 | PUTCOMP IEBGENER RC=0000 |
+| BCPLAPT | 991 | ASMCOMP IFOX00 RC=0000 | PUTCOMP IEBGENER RC=0000 |
+| BLIB | 994 | COMP ICINT19, PREPASM IFOX00, PREPLK IEWL, FIXASM, ASMBLIB IFOX00, all RC=0000 | INSTALL IEBGENER RC=0000 |
+
+All five jobs reported highest RC=0000, zero flagged
+assembler statements and highest assembler severity zero.
+The operator's `tools/dspal ls DEVOBJ` inventory showed exactly
+BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB.
+
+**Gate C accepted:** the ten synchronized and text-verified
+resident SOURCE/JCL inputs independently produced the complete
+five-member DEVOBJ runtime. No production OBJ write was involved.
+Gate D now requires focused application linkage and execution
+using that newly rebuilt DEVOBJ runtime; do not run the full
+panel until final Gate F.
 
 ## Constraints and acceptance evidence
 
