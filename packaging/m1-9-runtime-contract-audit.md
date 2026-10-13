@@ -359,3 +359,55 @@ ledger can be reconciled, or explicitly adopt the narrower
 source/header/registration-and-regression proof as its acceptance
 criterion. Do not silently equate names found in a historical
 source file with directly observed object exports.
+
+## Gate A — complete source-level BLIB export candidate ledger (13 October 2026)
+
+A direct, systematic comparison of the tracked historical
+`richards-bcpltape/bcplib/bcpl/blib` with the actual configured
+`SOURCE(LIBHDR)` input
+(`richards-bcpltape/sys3/bcpl/libhdr`) identified **22 top-level
+BLIB definitions**: **21 named globals** and **one top-level
+unmapped helper, PRINTWIDTH**. Local nested functions such as
+MAPSTORE's MAPOUT are not top-level candidates.
+
+The resulting ordered list is:
+
+| Name | LIBHDR global | Name | LIBHDR global |
+| --- | --- | --- | --- |
+| WRITES | 60 | UNPACKSTRING | 67 |
+| PACKSTRING | 66 | WRITEF | 76 |
+| ABORT | 3 | ERRORMESSAGE | 5 |
+| PRINTWIDTH | *none* | STACKHWM | 56 |
+| MAPSTORE | 78 | INPROGRAM | 58 |
+| VALIDPOINTER | 59 | BACKTRACE | 4 |
+| WRITEARG | 69 | WRITED | 68 |
+| WRITEN | 62 | NEWLINE | 63 |
+| NEWPAGE | 64 | READN | 70 |
+| WRITEOCT | 77 | WRITEHEX | 75 |
+| WRITEO | 65 | WRITEX | 74 |
+
+This reconciles **all 22 source-level definitions** against the
+selected LIBHDR, without silently promoting PRINTWIDTH to a public
+global. No duplicate G number appears among the 21 named BLIB
+definitions. The historical LIBHDR's unrelated G94 duplicate
+remains a distinct header issue.
+
+### Strength and limitation of this ledger
+
+This is the **complete source/header candidate-export ledger**,
+not a byte-for-byte dump of the generated module's relocation or
+global-registration trailer. The M1.8 six-step resident BLIB build
+completed at RC=0000; BCPLMAIN's actual import code scans the BLIB
+trailer; and the M1.8 full DEVOBJ regression passed all executable
+cases, including representative independent BLIB linkage and
+observability services. This is substantial *behavioral corroboration*,
+but neither compiler success nor sampled execution proves that
+**every** one of the 21 candidate trailer pairs exists, carries
+the correct relocated address, and can be called correctly.
+
+**Disposition:** retain that explicit object-trailer verification
+as an open evidence item, without requiring a fresh build or changing
+MVS data during source-only Gate A. A full generated-assembly listing
+or object-level registration dump, obtained read-only from an
+existing artifact or from a deliberately isolated probe, could
+resolve it. Gate A is not yet closed by this source-level enumeration.
