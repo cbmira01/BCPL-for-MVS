@@ -110,6 +110,8 @@ datasets:
       BLIBLINK: jcl/probe-blib-object-consumer.jcl
       BLDBMAIN: jcl/build-bcplmain-objects.jcl
       BLDGFMEM: jcl/build-gate-f1-bcplmem.jcl
+      BLDDEVM: jcl/build-dev-bcplmem.jcl
+      SEEDDEV: jcl/seed-devobj.jcl
 
   INTCODE:
     dsn: BCPL.INTCODE
