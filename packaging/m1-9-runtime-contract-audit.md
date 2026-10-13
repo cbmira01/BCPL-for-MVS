@@ -465,3 +465,127 @@ Examine concrete source/behavior in this order:
 Distinguish implemented behavior, separately tested behavior,
 and remaining historical-equivalence gaps. Avoid changing
 runtime source during the audit.
+
+## Gate B — storage ownership and stack implementation audit (13 October 2026)
+
+**Source inspection completed for core allocator, frame limit,
+stack markers and termination reclaim. Gate B remains OPEN** pending
+validation of independent APTOVEC limit initialization and detailed
+semantic/observability checks.
+
+### Main storage allocation
+
+Canonical `asm/bcplmain.asm` defines one static
+`DYNLEN=68592` byte MVS GETMAIN allocation: 700 global-vector
+fullwords (2,800 bytes), 16,384 working-stack fullwords
+(65,536 bytes), and 256 reserved bytes. `DYNWORK` begins at
+the end of the globals; `STKLIM = DYNWORK+65536`; and
+`DYNEND = STKLIM+256`. G54 (STACKBASE) publishes
+`DYNWORK>>2`, while G55 (STACKEND) publishes
+`DYNEND>>2` — **the exposed extent includes clearance beyond the
+operational frame limit**. A check that merely verifies a pointer
+is below G55 is therefore not a proof the pointer is within the
+safe working-stack region.
+
+### GETVEC / FREEVEC and allocator accounting
+
+Canonical `asm/bcplmem.asm` is a static, non-reentrant singleton.
+GETVEC accepts N in R7, rejects negative N and values above
+4,194,299, then asks MVS for **4(N+1)+12 bytes**. On success,
+its 12-byte prefix records the returned BCPL word pointer,
+total byte extent, and the previous allocation-list head.
+The returned word pointer is the base byte address plus 12,
+shifted right two bits. Failure returns R7=0. Linked successful
+allocations increment current/peak live-object count and
+current/peak allocated bytes; the byte statistics include
+the 12-byte header, not just usable vector data.
+
+FREEVEC accepts the BCPL word pointer R7. Zero or a pointer not
+found by **exact head-record pointer comparison** is a no-op.
+A found allocation is unlinked and freed using its stored size
+and byte base. It decrements live-count/byte counters and, when
+the head changes, publishes the new head through MEMBIND.
+
+MEMBIND accepts R1 pointing to writable G6!48, publishing the
+allocator byte-pointer list head (or R1=0 to unbind).
+MEMDRAIN walks live records, unlinks before FREEMAIN, decrements
+current statistics, and refreshes the published head. MEMSTAT
+writes current count, peak count, current allocated bytes and
+peak allocated bytes to four successive fullwords at R1.
+MEMSTAT is assembler-private and not a demonstrated BCPL global.
+
+**Evidence:** GETVEC/FREEVEC regressions 27–32, release/termination
+39 and 82, manually traversed live descriptors in 122, and
+automatic G6!48 publication in 123. Test 82 explicitly does not
+prove exact MVS FREEMAIN quantities; the implementation and
+contract must not claim instrumentation beyond the observed test.
+
+### Stack initialization and high-water calculation
+
+BCPLMAIN writes 8,192 pairs of historical EBCDIC marker fullwords,
+`X'5C40E2E3'` (EVENSTACK) then `X'C3D2405C'` (ODDSTACK),
+over the 16,384-word working area. It writes the EVENSTACK guard
+at `DYNEND-8` (G55-2), and stores at `DYNEND-4` (G55-1)
+the word address `(STKLIM-8)>>2`.
+
+Historical BLIB STACKHWM first checks the guard at
+`STACKEND-2`, checks the saved scan starting word address
+against STACKBASE..STACKEND, and requires EVENSTACK at that
+starting word. It then walks backward in steps of two words
+until a marker mismatch; its outputs are a BCPL word address
+of high-water usage, UNSET=1, or OVERFLOW=0. **A measurement
+is not a byte or word count.** Test 120 validates that the
+installed service returned an address in range, not the precise
+highest used address or full postmortem semantics.
+
+### Checked entries and overflow
+
+The system vector referenced through R11 implements S.STKCK
+at displacement 60; the checked-entry call supplies an inline
+frame-size fullword, and STKIMPL validates the size/alignment,
+calculates `next-frame+size`, and compares against STKLIM,
+which is *stricter than G55*. Its success return skips the
+inline fullword. The malformed-frame path exits with R15=36.
+The overflow route STKOVFL buffers `STACK OVERFLOW`
+and takes the FINIMPL termination path, which currently clears
+the normal completion code to zero. **Flag for Gates C/D:**
+this may produce an abnormal-looking diagnostic with a normal
+completion code; do not advertise reliable nonzero overflow
+status without independent execution evidence.
+
+S.COUNT (displacement 20) and S.STKCKCOUNT (80) are explicit
+return-over-inline-word stubs, not actual call counters.
+
+### APTOVEC discrepancy requiring directed investigation
+
+The canonical BCPLMAIN source still includes a local
+`APTOVEC` implementation checking its own STKLIM, while
+the separately built `asm/bcplapt.asm` exports
+`APTOVEC` and an `APLIMIT` data symbol, initialized to
+zero in that source. BCPLMAIN's explicit G40 installation
+uses local `LA 1,APTOVEC`; no `APLIMIT` reference or
+initialization appears in the inspected canonical BCPLMAIN
+assembler source. This raises a **linkage-selection and
+initialization question**, not a proven runtime defect:
+the native regression/link setup may externalize G40 or
+initialize the independent APLIMIT in a build-specific path.
+Regressions 091–093 passed in the M1.8 DEVOBJ panel, but
+their link/edit inputs must be examined before asserting
+that the independent APTOVEC and its limit are exercised in
+the default runtime. Gate B will trace the actual selection.
+
+### Termination ownership boundary
+
+FINISH clears STOPRC; STOP saves R7 into STOPRC. Both use
+FINEXIT to flush and close buffered streams, then RELMEM
+invokes private MEMDRAIN and MEMBIND(0), and FREEMAIN releases
+the global/stack allocation before returning to MVS. The
+storage cleanup is source-observable on these normal and
+explicit STOP paths. Not every early exit follows FINEXIT:
+for example, the malformed checked-frame path returns 36
+via an independent branch. Gate C must classify all error
+paths individually rather than generalizing cleanup behavior.
+
+**Gate B next:** inspect the actual regression-linker selection
+and APLIMIT setup; map outcomes and refine the storage/stack
+contract with explicit tested versus source-observed evidence.
