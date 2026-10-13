@@ -41,42 +41,55 @@ def main():
     if args.native and args.library_generated:
         raise ValueError("native and separately compiled BCPL library conflict")
     if args.native or args.library_generated:
-        # Reuse the exact existing regression combiners for globals and
-        # generated-code label renaming; discard only the appended WIP runtime.
-        import tempfile
-        import subprocess
-        import sys
-        with tempfile.TemporaryDirectory() as temp:
-            output = Path(temp) / "combined.asm"
-            if args.native:
-                script = ROOT / "native-compiler/regression/prepare-native-global.py"
-                argv = [str(args.generated), str(ROOT / "asm/bcplmain-wip.asm"),
-                        str(output), f"BCRG{n:04d}", "NATIVEAD", "151"]
-            else:
-                script = ROOT / "native-compiler/regression/combine-separate-bcpl.py"
-                argv = [str(args.generated), str(args.library_generated),
-                        str(ROOT / "asm/bcplmain-wip.asm"), str(output),
-                        f"BCRG{n:04d}"]
-            subprocess.run([sys.executable, str(script), *argv], check=True)
-            combined = output.read_text(encoding="ascii")
-        divider = "*\n* BCPLMAIN WIP FOLLOWS\n*\n"
-        if combined.count(divider) != 1:
-            raise ValueError("cannot identify combined runtime divider")
-        prefix, runtime = combined.split(divider)
-        if sum(bool(re.fullmatch(r"BCPLMAIN\s+CSECT\s*", row))
-               for row in runtime.splitlines()) != 1:
-            raise ValueError("unexpected combined BCPLMAIN section")
-        lines = prefix.rstrip("\n").splitlines()
-        if any(re.fullmatch(r"\s*EXTRN\s+BCPLMAIN\s*", row)
+        # Transform only the application.  The historical combiners append
+        # WIP runtime text for source-mode jobs; installed-object linkage
+        # must not read or manufacture that runtime text at all.
+        if args.native:
+            helper = load(
+                ROOT / "native-compiler/regression/prepare-native-global.py",
+                "runtime_pds_native_global")
+            csect = helper.one_index(lines, helper.CSECT, "generated CSECT")
+            extrn = helper.one_index(
+                lines, helper.EXTRN_MAIN, "EXTRN BCPLMAIN")
+            end_stmt = helper.one_index(
+                lines, helper.END_STMT, "generated END statement")
+            lines[csect] = f"BCRG{n:04d} CSECT"
+            lines.insert(csect + 1, "         EXTRN NATIVEAD")
+            for index in sorted((extrn + 1, end_stmt + 1), reverse=True):
+                del lines[index]
+            start, maximum, pairs = helper.find_trailer(lines)
+            offset = 151 * 4
+            if any(slot == offset for slot, _ in pairs):
+                raise ValueError("generated module already exports G!151")
+            last = helper.one_index(lines, helper.L998, "L998")
+            values = [
+                f"         DC F'{max(maximum, offset)}'",
+                "         DC F'0'",
+            ]
+            for slot, address in pairs:
+                values.extend((f"         DC F'{slot}'",
+                               f"         DC A({address})"))
+            values.extend((f"         DC F'{offset}'",
+                           "         DC A(NATIVEAD)"))
+            lines[start:last] = values
+        else:
+            helper = load(
+                ROOT / "native-compiler/regression/combine-separate-bcpl.py",
+                "runtime_pds_separate_bcpl")
+            app = helper.prepare_main(lines, f"BCRG{n:04d}")
+            library = helper.read_generated(args.library_generated)
+            lines = helper.merge_units(app, library)
+
+        if any(re.fullmatch(r"\s*EXTRN\\s+BCPLMAIN\\s*", row)
                for row in lines):
-            raise ValueError("already external BCPLMAIN")
-        # Generated CSECT retains the existing entry wrapper reference.
-        sect = [i for i, row in enumerate(lines) if row == f"BCRG{n:04d} CSECT"]
-        if len(sect) != 1:
+            raise ValueError("unexpected BCPLMAIN external declaration")
+        section = [i for i, row in enumerate(lines)
+                   if row == f"BCRG{n:04d} CSECT"]
+        if len(section) != 1:
             raise ValueError("invalid transformed application CSECT")
-        lines.insert(sect[0] + 1, "         EXTRN BCPLMAIN")
+        lines.insert(section[0] + 1, "         EXTRN BCPLMAIN")
         lines.append(f"         END   BCRG{n:04d}")
-        original = "\n".join(lines) + "\n"
+        original = "\\n".join(lines) + "\\n"
     csects = [i for i, row in enumerate(lines)
               if re.fullmatch(r"\s*CSECT\s*", row)]
     externs = [row for row in lines
