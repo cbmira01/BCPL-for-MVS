@@ -61,6 +61,37 @@ They passed in an independent check. This is **not** evidence that the
 generator has already been executed on the operator workstation, or
 that resident SOURCE(BLIB) currently equals its regenerated output.
 
+## Gate A — resident compiler construction traced
+
+The Git-tracked `jcl/build-cambridge-resident.jcl` (`JCL(CAMBBLD)`)
+provides an explicit three-stage reconstruction recipe:
+
+1. IFOX00 assembles `ASM(ICINT19)` and IEWL links it as
+   `LOAD(ICINT19)`.
+2. Running under that interpreter, the established MR10
+   `SYNI + TRNILRG + BLIBI + ICLIB` compiler chain translates
+   the demoted Cambridge BCPL, SYN, LEX, TRNA, TRNB, CGA–CGE and
+   BOOTHOST sources to individual resident INTCODE members. The
+   OCODE-to-INTCODE phase uses `CGI + BLIBI + ICLIB`.
+3. IEBGENER concatenates the eleven compiler/host members with
+   `BLIBI` and `ICLIB` into `INTCODE(CAMBCOMP)`.
+
+Thus `LOAD(ICINT19)` and `INTCODE(CAMBCOMP)` are **build products
+with a versioned JCL recipe**, not unexplained original inputs.
+The chain still assumes that `INTCODE(TRNILRG)` and other MR10
+bootstrap members have been prepared. `config/dspal.yaml` maps
+`TRNILRG` to the ignored generated
+`workarea/bootstrap-cambridge/trni-large-names.int`.
+Reconstruction of that generated member, its producer, and the
+initial bootstrap inputs must be independently verified before
+declaring a clean-checkout bootstrap. No claim is made here that
+CAMBBLD has been freshly rerun for M1.8.
+
+This job also writes `LOAD(ICINT19)` and the CAMBCOMP/constituent
+INTCODE members, so it should **not** be rerun casually as a
+read-only provenance check. Its MVS execution is a separately
+controlled rebuild operation.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
