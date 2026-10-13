@@ -80,7 +80,7 @@ def main():
             library = helper.read_generated(args.library_generated)
             lines = helper.merge_units(app, library)
 
-        if any(re.fullmatch(r"\s*EXTRN\\s+BCPLMAIN\\s*", row)
+        if any(re.fullmatch(r"\s*EXTRN\s+BCPLMAIN\s*", row)
                for row in lines):
             raise ValueError("unexpected BCPLMAIN external declaration")
         section = [i for i, row in enumerate(lines)
@@ -89,7 +89,7 @@ def main():
             raise ValueError("invalid transformed application CSECT")
         lines.insert(section[0] + 1, "         EXTRN BCPLMAIN")
         lines.append(f"         END   BCRG{n:04d}")
-        original = "\\n".join(lines) + "\\n"
+        original = "\n".join(lines) + "\n"
     csects = [i for i, row in enumerate(lines)
               if re.fullmatch(r"\s*CSECT\s*", row)]
     externs = [row for row in lines
