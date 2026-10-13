@@ -130,6 +130,52 @@ installed-object DEVOBJ workflow.** Explicit source-runtime
 compatibility and regression 083 remain separate Gate E concerns.
 The historical source is retained at this checkpoint.
 
+## Gate E — reclamation diagnostic contract and isolation
+
+**Not equivalent:** production BCPLMEM `MEMSTAT` exposes live allocation
+count, peak allocation count, current allocated bytes and peak bytes.
+It can establish accounting invariants, but does not count returned
+MVS FREEMAIN macro call sites. Regression 083 asserts something
+stronger/different: after three GETVECs and one explicit FREEVEC,
+FINISH must return from **two** `MEMDRAIN` vector FREEMAIN calls
+and **one** BCPLMAIN final combined-storage FREEMAIN call.
+Expected records are `42` and `V=2 M=1`. Even this proves
+return from the macros, not independent success of MVS deallocation.
+
+The maintained test-only check
+`tools/checks/prepare-bcplmem-083-probe.py` instruments a temporary
+copy of canonical `asm/bcplmem.asm` with private `MEMDCNT`, and a
+corresponding temporary externalized BCPLMAIN copy with `TRM083`.
+It does **not** write DEVOBJ or production OBJ. The source-only
+regression runner selects this isolated probe using
+`BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1`. Its existing generated
+combined program still uses the archived WIP source as a **test
+fixture**, which is outside the normal DEVOBJ run path accepted in
+Gate D. Do not assert complete deletion of every historical WIP
+consumer while this deliberate source-only probe remains.
+
+The probe was updated for MEMBIND on 12 October; its regression
+README explicitly says the previously accepted JOB 6295 predates
+that change. Gate E therefore **requires a new focused MVS probe
+run** rather than inferring acceptance from historical execution.
+Run:
+
+```sh
+BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 \
+  tools/run-native-regression 83 --show-output
+```
+
+Accept only an actual PASS with both output records and verified
+return-code results. Keep the explicit installed-object 083 exclusion:
+`BCPL_RUNTIME_PDS=1` cannot observe internal call-site returns
+without a new production diagnostic ABI. Gate F should continue to
+expect 123 PASS, 0 FAIL, 1 justified SKIP out of 124. Any future
+removal of the WIP fixture requires migration or replacement of
+this isolated reclamation test and fresh MVS validation.
+
+**Gate E status:** diagnostic distinction and test scope defined;
+MVS revalidation pending.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
