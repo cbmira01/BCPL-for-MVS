@@ -703,3 +703,92 @@ baseline; it does not prove every exceptional branch.
 **Gate B: ACCEPTED with documented deviations. Gate C next:
 I/O and termination.** No MVS datasets or object libraries
 were changed.
+
+## Gate C — I/O and termination source audit (13 October 2026)
+
+**Gate C in progress.** This audit reads canonical `asm/bcplmain.asm`,
+including the actual input/output and exit implementations. Do not infer
+the full historical MVS/Cambridge stream system from LIBHDR entries.
+
+### Implemented BCPL-facing stream globals
+
+| G number | LIBHDR name | Implemented source behavior |
+| --- | --- | --- |
+| 11,12 | SELECTINPUT, SELECTOUTPUT | Select recognized static stream handles; an unrecognized handle is not selected |
+| 13,15 | RDCH, UNRDCH | Reads selected stream; independent one-character pushback per input source |
+| 14 | WRCH | Buffers character in selected output record; newline emits one QSAM record |
+| 16,17 | INPUT, OUTPUT | Return current word-address stream handle |
+| 33 | WRAPOUTPUT | On alternate output stream, sends the current 132-byte record and resets buffer |
+| 39 | FINDPARM | Memory stream over MVS EXEC PARM, up to 100 bytes plus newline and EOF |
+| 41,42 | FINDOUTPUT, FINDINPUT | Recognize configured DDNAMEs and return opaque BCPL word handles; otherwise 0 |
+| 46,47 | ENDREAD, ENDWRITE | Release/reset selected named stream; alternate output flushes pending buffer before close |
+
+G11–17 etc. are explicitly installed in BCPLMAIN's global vector;
+historical LIBHDR declares many further I/O globals **not thereby
+implemented**, such as READREC, WRITEREC and library/member operations.
+
+### Input record conversion
+
+`FINDINPUT` recognizes `BCPIN` and `BCPIN2`; both are lazily
+OPENed QSAM input DCBs, with separate record positions, EOF flags,
+newline and pushback state. Fixed 80-byte records have **trailing
+EBCDIC blanks trimmed**, retaining interior blanks; RDCH emits
+one logical newline (10) per record, including an entirely blank
+record. After EODAD the selected stream returns -1; UNRDCH can
+repeat the last RDCH result once for its selected source, including
+the EOF result. `FINDPARM` provides a distinct memory stream for
+the parameter bytes and then newline/EOF. The configured EXEC PARM
+length is clamped at 100.
+
+**Contract limitation:** fixed-record trailing blanks are
+indistinguishable from padding under this interface. No claim
+is made of binary-preserving or arbitrary-length input.
+
+### Output record conversion
+
+Default `SYSPRINT` and alternate `BCPALT` each have a
+132-byte output buffer. WRCH appends EBCDIC bytes, and the
+newline character flushes a record. Default SYSPRINT is OPENed
+at BCPLMAIN startup; alternate BCPALT is OPENed lazily by
+FINDOUTPUT. A non-newline character arriving at an already-full
+132-byte buffer triggers STOP(12) rather than continuing or
+silently truncating. ENDWRITE flushes and CLOSEs selected
+BCPALT, restoring selection to SYSPRINT. FINEXIT flushes a
+nonempty final record on each open output and closes those
+DCBs. The source implements static named streams; arbitrary
+DDNAMEs and full historical dynamic stream management are
+not established.
+
+### Termination and completion-path classification
+
+| Path | MVS completion / visible output | Cleanup in source | Audit status |
+| --- | --- | --- | --- |
+| `S.FIN` / FINIMPL | STOPRC is explicitly zeroed | FINEXIT flushes/closes streams, MEMDRAIN, MEMBIND(0), FREEMAIN main block | Implemented normal return |
+| `STOP(N)` / STOPENT | R7 saved as STOPRC, returned in R15 | Same FINEXIT cleanup | Explicit completion-code path |
+| Output capacity overflow | Loads R7=12, branches to STOPENT | Normal FINEXIT cleanup | Explicit STOP(12); actual MVS report must be checked before claiming exact operator presentation |
+| STKOVFL | Buffers `STACK OVERFLOW`, then branches to FINIMPL (R15=0) | FINEXIT cleanup | Controlled diagnostic with success completion code; observability concern |
+| Invalid checked-frame metadata / STKFORM | R15=36 direct return | Bypasses FINEXIT, MEMDRAIN and explicit DCB closure | Exceptional exit path, not normal cleanup |
+| Startup no-storage / GNOCORE | R15=24 direct return | No dynamic allocation yet; no FINEXIT | Independent bootstrap failure |
+| Missing START / NOSTART | R15=20 direct return | Calls RELMEM for storage release, but not FINEXIT stream closure | Partial explicit cleanup |
+| Oversize global export / GTOOBIG | R15=16 direct return | Calls RELMEM, not FINEXIT | Partial explicit cleanup |
+| Unexpected return from START / BADRETN | R15=36 direct return | Calls RELMEM, not FINEXIT | Partial explicit cleanup |
+
+The direct-return branches are intentionally documented
+separately. MVS task termination might reclaim process resources,
+but that is **not equivalent** to demonstrating application-level
+buffer flush or explicit CLOSE/FREEMAIN on every branch.
+
+### Evidence and follow-up
+
+Representative M1.8 DEVOBJ passing regressions:
+084–089 for FINISH/STOP, 094–100 for input/EOF/unread and blank
+records, 101–119 for multiple output/input streams, close/reopen,
+record boundaries, wrapping and termination flush; 052 and 093
+for controlled stack-overflow output. The suite's PASS result
+supports these **specific selected paths**, not every recovery
+condition or unsupported historical LIBHDR interface.
+
+**Gate C remains OPEN** until source-derived paths are cross-referenced
+to exact test assertions and any unimplemented historical I/O entry
+is explicitly marked absent or unresolved. Gate D will address how
+diagnostics and codes are actually exposed to programmers/operators.
