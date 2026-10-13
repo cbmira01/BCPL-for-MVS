@@ -228,6 +228,30 @@ this acceptance does not claim independently verified step codes
 or bytewise resident equivalence. Gate C will address controlled
 resident source/JCL synchronization separately.
 
+## Gate C — explicit member replacement verification policy
+
+The operator suggested a controlled **delete–compress–rebuild–list**
+test for Git-to-MVS synchronization:
+
+```sh
+tools/dspal rm SOURCE <explicit-approved-member>
+tools/dspal compress SOURCE
+# Stage replacement from the corresponding Git mapping, e.g.
+tools/dspal put SOURCE <member> <mapped-host-file>
+tools/dspal ls SOURCE
+```
+
+Use exact member names and the mapped source filenames; do **not**
+delete all members or indiscriminately delete resident bootstrap
+prerequisites. Inventory proves that expected names were restored,
+not that source bytes were equivalent. Follow with readback or
+appropriate normalized text comparison where feasible. For binary
+libraries, use MVS-native operations and binary-safe verification;
+never use `dspal put` on OBJ/DEVOBJ. Apply a destructive replacement
+only after documenting the affected members and confirming all host
+replacement files exist. Production OBJ remains out of scope without
+separate operator authorization.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
