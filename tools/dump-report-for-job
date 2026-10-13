@@ -17,36 +17,40 @@ if [[ ! -f "$REPORT" ]]; then
     exit 1
 fi
 
-awk -v job="$JOB_NUMBER" '
+LC_ALL=C awk -v job="$JOB_NUMBER" '
 BEGIN {
     pattern = sprintf("JOB %4d", job)
     in_job = 0
     found = 0
+    completed = 0
+    n = 0
 }
-
-# START banner for the requested job.
+# Every START resets the buffer: JES numbers can wrap and be reused.
 index($0, "****A  START") && index($0, pattern) {
     in_job = 1
     found = 1
+    completed = 0
+    n = 0
     next
 }
-
-# END banner for the requested job.
 in_job && index($0, "****A   END") && index($0, pattern) {
-    exit
+    in_job = 0
+    completed = 1
+    next
 }
-
 in_job {
-    # Translate printer form feed to CRLF.
     gsub(/\f/, "\r\n")
-    print
+    buffer[++n] = $0
 }
-
 END {
     if (!found) {
         print "Job " job " not found in printer output." > "/dev/stderr"
         exit 1
     }
+    if (!completed) {
+        print "Job " job " has no END JOB banner." > "/dev/stderr"
+        exit 1
+    }
+    for (i = 1; i <= n; i++) print buffer[i]
 }
 ' "$REPORT"
-
