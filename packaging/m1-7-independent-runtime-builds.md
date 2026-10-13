@@ -37,6 +37,20 @@ source-mode assembly paths. Do not delete the WIP file prematurely.
 Regression 083's FREEMAIN instrumentation remains specialized and
 is addressed in Gate E.
 
+## Initial Gate B JCL failure and repair (13 October 2026)
+
+The operator submitted BLDDEVB payload JOB 652 and BLDDEVA payload
+JOB 655. Both were rejected as JCL errors before any steps executed.
+Review of the committed decks revealed the common defect: the
+`PUTCOMP EXEC` statement lacked its required leading `//`.
+This is the likely cause; the complete JES messages were not supplied,
+so the exact JES diagnostic is not independently confirmed.
+
+Both JCL bodies have been corrected to `//PUTCOMP EXEC` and checked
+locally for card length and statement prefixes. Re-stage only these
+two corrected JCL members; the already staged assembler SOURCE
+members do not require another PUT. No successful install is claimed.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
