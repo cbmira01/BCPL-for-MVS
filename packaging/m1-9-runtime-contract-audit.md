@@ -133,9 +133,7 @@ linkage. No semantic source edit is justified by this observation.
 
 ### Outstanding Gate A evidence
 
-1. Locate the **tracked authoritative LIBHDR input** or its
-   generator and record full G-number/name mappings; do not infer
-   absent assignments from historical BLIB names alone.
+1. **Resolved:** the tracked authoritative input is `richards-bcpltape/sys3/bcpl/libhdr`, mapped to SOURCE(LIBHDR) in `config/dspal.yaml`. Reconcile its full G-number/name table with installed native and BLIB services.
 2. Enumerate actual exported BLIB globals and distinguish imported
    module trailer records from installed native service entries.
 3. Cross-check assembler calling conventions (including register
@@ -144,3 +142,82 @@ linkage. No semantic source edit is justified by this observation.
 4. Identify which of MEMSTAT, STACKHWM, DEBUGINT and post-mortem
    routines have verified BCPL/operator invocation paths. Full
    exposure evaluation is Gate D.
+
+## Gate A — authoritative LIBHDR and runtime registration crosswalk (13 October 2026)
+
+The mapping has been resolved in Git without MVS operation:
+`config/dspal.yaml` maps `SOURCE(LIBHDR)` directly to
+`richards-bcpltape/sys3/bcpl/libhdr`. The tracked file contains a
+single GLOBAL declaration for G1–G99 (with gaps) and defines
+`FIRSTFREEGLOBAL=150`. This is the **compiler-visible name/slot
+contract**, not evidence that each named facility has been installed.
+
+### Runtime-owned or runtime-installed slots
+
+The table below is derived by matching LIBHDR name:global declarations
+to the explicit `BCPLMAIN` installation code (source lines 704–810).
+A slot's presence in LIBHDR alone is **not** marked implemented.
+
+| G slot(s) | LIBHDR name | Publication evidence | Status |
+| --- | --- | --- | --- |
+| 1 | START | Generated application trailer is imported; G1 checked for sentinel | Registered by application; not hardwired runtime routine |
+| 6 | SAVEAREA | `ST 1,24(12)` | Published BCPL word pointer to save-area-compatible area |
+| 11,12 | SELECTINPUT, SELECTOUTPUT | BCPLMAIN writes offsets 44,48 | Explicit native service entries |
+| 13–17 | RDCH, WRCH, UNRDCH, INPUT, OUTPUT | Offsets 52,56,60,64,68 | Explicit native service entries |
+| 30 | STOP | Offset 120 | Explicit native service entry |
+| 33 | WRAPOUTPUT | Offset 132 | Explicit native service entry |
+| 39 | FINDPARM | Offset 156 | Explicit native service entry |
+| 40 | APTOVEC | Offset 160 | Explicit native service entry; separately linkable BCPLAPT also exists; distinguish call sites |
+| 41–42 | FINDOUTPUT, FINDINPUT | Offsets 164,168 | Explicit native service entries |
+| 46–47 | ENDREAD, ENDWRITE | Offsets 184,188 | Explicit native service entries |
+| 52–53 | LOADPOINT, ENDPOINT | Offsets 208,212 | Published program extent data, not functions |
+| 54–55 | STACKBASE, STACKEND | Offsets 216,220 | Published stack extent data, not functions |
+| 76 | WRITEF | BLIB trailer import preferred; native fallback at 304 only if unset | Conditional fallback; ownership may be BLIB |
+| 85–86 | GETBYTE, PUTBYTE | Offsets 340,344 | Native assembler symbols from BCPLBYTE |
+| 87–88 | GETVEC, FREEVEC | Offsets 348,352 | Native assembler symbols from BCPLMEM |
+| 150 | Not named in historical LIBHDR; first free global | Offset 600 | Native provisional DEBUGINT, an extension |
+
+BCPLMAIN additionally imports all recognized exported entries from
+the compiled **BLIB registration trailer**, so the table is **not**
+an exhaustive installed-global table. In particular, a historical
+BLIB procedure with a LIBHDR name (e.g. STACKHWM G56) can be present
+through trailer import even without an explicit `ST` in this table.
+The precise compiler-emitted trailer and coverage evidence remain
+necessary for complete Gate A acceptance.
+
+### LIBHDR observability interfaces and classifications to verify
+
+| G slot | Name | Audit classification |
+| --- | --- | --- |
+| 2 | SETPM | Historical interface; check whether available to native applications |
+| 3 | ABORT | Historical BLIB source definition; operational post-mortem unverified |
+| 4 | BACKTRACE | Historical BLIB source definition; native frame-walk compatibility unverified |
+| 5 | ERRORMESSAGE | Historical BLIB source definition; stream fallback compatibility unverified |
+| 31 | LEVEL | Historical service needed by BACKTRACE; verify native provider |
+| 52–55 | LOADPOINT, ENDPOINT, STACKBASE, STACKEND | Explicitly published runtime data |
+| 56 | STACKHWM | Historical BLIB definition; compare to native stack marker layout |
+| 58–59 | INPROGRAM, VALIDPOINTER | Historical BLIB definitions; assess savearea/load-list prerequisites |
+| 69 | WRITEARG | Historical BLIB formatter; pointer / function-tag interpretation unverified |
+| 78 | MAPSTORE | Historical BLIB definition; structural compatibility unverified |
+| 79 | USERPOSTMORTEM | Historical extension hook; verify initialization and invocation |
+| 82–84 | SETBREAK, ISBREAK, ERRORRESET | Historical interface only, until native implementation evidence |
+| 150 | DEBUGINT (extension) | Explicit native installation; BCPL caller usability and output contract unverified |
+| — | MEMSTAT | Assembler-private snapshot ABI, **no LIBHDR slot or explicit native global publication** |
+
+### Historical LIBHDR anomaly — do not silently amend
+
+The checked-in historical LIBHDR assigns both
+`OPENBLOCKFILE:94` and `UPDATEBLOCKFILE:94`. This duplicate is
+present in **the source itself**; audit the historical semantics and
+whether both names intentionally alias the same service before
+changing any compiler-facing header. Other gaps such as G50 and
+G57 are not automatically evidence of implementation defects.
+
+### Gate A verification boundary
+
+We now have the correct tracked LIBHDR mapping and precise **explicit
+native-publication** evidence. This does **not yet establish**:
+all compiler-emitted BLIB trailer registrations, comprehensive
+MVS/BCPL register preservation for each native entry, or executable
+coverage for each LIBHDR slot. Those remain explicit Gate A tasks;
+they are not grounds for broad runtime changes.
