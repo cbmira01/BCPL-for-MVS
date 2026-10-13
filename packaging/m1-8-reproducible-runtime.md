@@ -355,6 +355,26 @@ comparison did not execute for BLIB, and the five JCL
 comparisons were not reached. No SOURCE member was
 modified by this readback.
 
+## Gate C — all ten text readbacks verified (13 October 2026)
+
+The operator first compared the canonical SOURCE assembler members,
+all four matching. The first BLIB comparison detected only two
+additional trailing blank lines in the generated host file, and
+the fail-fast script stopped before the JCL cases.
+
+The operator then used a shell `dspal cat` + `diff -u` check with
+normalization removing trailing spaces on each line and terminal
+blank lines. **SOURCE(BLIB) and JCL(BLDDEVN), JCL(BLDDEVM),
+JCL(BLDDEVB), JCL(BLDDEVA), JCL(BLDDEVL) all passed.**
+Combined with the prior four assembler SOURCE matches, this
+establishes **10/10 normalized text-member equality** against
+the Git-controlled mappings. This is logical record equivalence,
+not raw EBCDIC FB80 byte equivalence.
+
+The next Gate C action is independently building all five DEVOBJ
+components from these installed SOURCE/JCL members. No production
+OBJ mutation is authorized.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
