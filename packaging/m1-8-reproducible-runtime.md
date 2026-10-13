@@ -252,6 +252,57 @@ only after documenting the affected members and confirming all host
 replacement files exist. Production OBJ remains out of scope without
 separate operator authorization.
 
+## Gate C — controlled resident synchronization: operator plan
+
+**Boundary:** only the specified text members in
+`HERC02.BCPL.SOURCE` and `HERC02.BCPL.JCL`.
+Do not delete or replace `LOAD(ICINT19)`,
+`INTCODE(CAMBCOMP)`, or any OBJ/DEVOBJ member in this
+synchronization step. The independently rebuilt
+`trni-large-names.int` can be staged in a subsequent, explicitly
+identified bootstrap-input step; rebuilding CAMBCOMP is not needed
+to validate the five existing runtime build jobs.
+
+**Preflight:** `git pull --ff-only`; then
+`python3 tools/prepare-bootstrap --check-inputs`. All mapped host
+files below must exist before *any* resident deletion.
+
+| PDS | Member | Authoritative host input |
+| --- | --- | --- |
+| SOURCE | BCPLMAIN | asm/bcplmain.asm |
+| SOURCE | BCPLMEM | asm/bcplmem.asm |
+| SOURCE | BCPLBYTE | asm/bcplbyte.asm |
+| SOURCE | BCPLAPT | asm/bcplapt.asm |
+| SOURCE | BLIB | workarea/bootstrap-cambridge/demoted/blib |
+| JCL | BLDDEVN | jcl/build-dev-bcplmain.jcl |
+| JCL | BLDDEVM | jcl/build-dev-bcplmem.jcl |
+| JCL | BLDDEVB | jcl/build-dev-bcplbyte.jcl |
+| JCL | BLDDEVA | jcl/build-dev-bcplapt.jcl |
+| JCL | BLDDEVL | jcl/build-dev-blib.jcl |
+
+Begin with `tools/dspal ls SOURCE` and `tools/dspal ls JCL`
+for the original inventories. For each selected PDS use explicit
+`dspal rm` for **only** the mapped members above, followed by
+one `dspal compress` for that PDS, then explicit
+`dspal put PDS MEMBER HOSTFILE` for each replacement.
+Check each command's completion and stop immediately on any
+nonzero exit or unanticipated inventory.
+
+Finish with `tools/dspal ls SOURCE` and
+`tools/dspal ls JCL`, and verify the ten selected names all
+reappear. Before claiming content equivalence, independently
+read each text member back using `dspal get` and compare under
+the configured UTF-8 ↔ CP037 FB80 round-trip normalization;
+raw host bytes and resident FB80 records are not necessarily
+identical. Readback can be scoped to a focused subset first;
+an inventory alone proves names, not contents.
+
+**Then**, only after the ten-member text sync is accepted,
+submit the five independent `BLDDEV*` jobs to DEVOBJ and
+inspect their assembler/compile/install step codes. This is
+part of Gate C's integrated build proof and feeds Gate D's
+focused regression execution. Production OBJ remains unchanged.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
