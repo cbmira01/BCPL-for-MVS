@@ -1,6 +1,6 @@
 # M1.9 — Runtime Contract and Observability Audit
 
-Status: **ACTIVE — Gates A and B accepted with documented limitations; Gate C next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+Status: **ACTIVE — Gates A, B and C accepted with limitations; Gate D next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
 
 ## Objective
 
@@ -792,3 +792,71 @@ condition or unsupported historical LIBHDR interface.
 to exact test assertions and any unimplemented historical I/O entry
 is explicitly marked absent or unresolved. Gate D will address how
 diagnostics and codes are actually exposed to programmers/operators.
+
+## Gate C — evidence reconciliation and acceptance (13 October 2026)
+
+**Gate C accepted as a canonical-source contract audit, not a
+claim of complete historical I/O compatibility.**
+
+### Confirmed source paths
+
+- The installed runtime directly publishes stream-related globals
+  G11–G17, G33, G39, G41–G42 and G46–G47. Source inspection of
+  BCPLMAIN lines 1097–1593 establishes the named QSAM and PARM
+  stream behaviors recorded above.
+- `BCPIN` and `BCPIN2` have separate 80-byte fixed-record
+  buffers, per-source EOF/newline/pushback state and lazy OPEN.
+  Trailing blanks are discarded; newline is generated at each
+  logical record boundary. FINEXIT closes opened input DCBs.
+- Output uses 132-byte records for default SYSPRINT and alternate
+  BCPALT; newline issues a PUT, and non-newline output beyond
+  the record limit calls STOP(12). FINEXIT flushes nonempty
+  trailing buffers.
+- `S.FIN` takes FINIMPL, clears STOPRC and calls FINEXIT.
+  `STOP(N)` enters STOPENT, saves R7 and also calls FINEXIT.
+  FINEXIT closes streams and invokes RELMEM before returning.
+- `STKOVFL` emits a diagnostic through FINIMPL and thus returns
+  success code 0. STKFORM (36), GTOOBIG (16), NOSTART (20),
+  GNOCORE (24), and BADRETN (36) follow separate early-exit
+  paths, with cleanup distinctions recorded above.
+
+### Test scope / limitations
+
+The previously accepted M1.8 full DEVOBJ panel
+(123 PASS, 0 FAIL, one source-instrumentation SKIP) includes
+focused normal-I/O and exit scenarios; e.g. regression 093
+specifically describes `STACK OVERFLOW` with GO RC=0000.
+The runner in `native-compiler/regression/run-test.sh`
+compares against each case's `expected.txt` (at line 579),
+but the **individual expected fixtures for the ranges
+previously cited have not been exhaustively re-read in this
+Gate C pass**. Consequently, range labels such as 094–119
+are **traceability pointers, not a verified per-case coverage
+matrix**. Do not assert that every individual stream capability
+or exceptional path has a dedicated successful probe without
+reviewing that case's own fixture and output record.
+
+Current exclusions: arbitrary DDNAME dispatch, general dynamic
+stream tables, binary-faithful transport of fixed-record trailing
+spaces, historical READREC/WRITEREC/member I/O, and reliable
+nonzero termination status for stack exhaustion. The source
+contains legacy comments about deferred stream work that predate
+later implementations; executable instructions, not such
+comments, govern this contract.
+
+### Disposition register
+
+| ID | Decision |
+| --- | --- |
+| C-IO-01 | Accepted: implemented named static QSAM and PARM streams, 80-byte read and 132-byte write models; broader historical I/O not claimed |
+| C-IO-02 | Accepted limitation: input trailing blanks are trimmed; not byte-faithful for arbitrary records |
+| C-IO-03 | Accepted limitation: output exceeding 132 bytes without newline returns STOP(12) |
+| C-EXIT-01 | Accepted observed behavior: controlled stack overflow diagnostic with RC=0; issue carried to Gate D |
+| C-EXIT-02 | Accepted observed behavior: early-return error paths do not uniformly perform FINEXIT, flush/close and RELMEM; exact resource implications require dedicated probes |
+| C-TEST-01 | Deferred: comprehensive expected-fixture-to-contract coverage matrix; include under Gate F if needed for overall acceptance |
+
+**Gate C: ACCEPTED with explicitly scoped limitations.**
+Proceed to Gate D: implementation and *exposure* of observability
+mechanisms, output destinations, usable BCPL call paths and
+operator interpretation. No runtime or MVS library mutation
+was needed to establish the current contract.
