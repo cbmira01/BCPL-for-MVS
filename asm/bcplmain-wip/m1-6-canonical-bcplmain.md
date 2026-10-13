@@ -64,6 +64,22 @@ assembler severity 0. The installation DD targets only
 `HERC02.BCPL.DEVOBJ(BCPLMAIN)`; production OBJ is not a write target.
 Focused DEVOBJ linkage and runtime behavior remain Gate C.
 
+## Gate C — focused DEVOBJ acceptance (13 October 2026)
+
+Operator pulled commit a2a641d and ran five independent focused checks
+with `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ` and
+`--show-output`. Each produced PASS 1, FAIL 0, SKIP 0, TOTAL 1:
+
+- 000 — most-degenerate-bcpl-program (startup)
+- 069 — independent-blib-object (BLIB)
+- 091 — aptovec-nested-call (argument pointers)
+- 120 — stackhwm-initialized (stack markers)
+- 123 — freebase-auto-publication (allocator publication)
+
+**Gate C accepted.** All five application-level regressions passed
+using the explicit development object-library configuration. Gate D
+remains the one full DEVOBJ panel; production OBJ is not a write target.
+
 ## Operator sequence for Gates A and B
 
 ```sh
