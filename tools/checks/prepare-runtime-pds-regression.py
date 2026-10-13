@@ -102,14 +102,22 @@ def main():
         raise ValueError("invalid application assembler card")
     core = load(ROOT / "tools/dspal-core.py", "runtime_pds_dspal")
     config = core.load_config()
-    dsn, _ = core.resolve_dsn(config, "OBJ")
-    if dsn.upper() != "HERC02.BCPL.OBJ":
-        raise ValueError(f"unexpected OBJ dataset {dsn}")
+    import os
+    library = os.environ.get("BCPL_RUNTIME_LIBRARY", "OBJ").upper()
+    if library not in ("OBJ", "DEVOBJ"):
+        raise ValueError("BCPL_RUNTIME_LIBRARY must be OBJ or DEVOBJ")
+    dsn, logical = core.resolve_dsn(config, library)
+    if logical != library:
+        raise ValueError("runtime library must be a managed PDS")
+    spec = config["datasets"][logical]
+    if (spec.get("content_type") != "object" or spec.get("recfm") != "FB"
+            or int(spec.get("lrecl", 0)) != 80 or spec.get("dsorg") != "PO"):
+        raise ValueError(f"{library} must be a binary FB80 object PDS")
     job = f"RG{n:03d}R"
     cards = [
         *core.authenticated_job_card(config, job, "BCPL PDS REG",
                                     redact_password=False),
-        "//* OPT-IN INSTALLED RUNTIME; APP ASSEMBLY ONLY",
+        f"//* RUNTIME LIBRARY: {library}; APP ASSEMBLY ONLY",
         "//ASMAP    EXEC PGM=IFOX00,REGION=256K,",
         "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'",
         "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR",
@@ -211,7 +219,7 @@ def main():
             raise ValueError(f"invalid JCL card {index}: {card!r}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("\n".join(cards) + "\n", encoding="ascii", newline="\n")
-    print(f"Prepared installed-runtime PDS regression: {args.output}")
+    print(f"Prepared {library} runtime PDS regression: {args.output}")
 
 
 if __name__ == "__main__":
