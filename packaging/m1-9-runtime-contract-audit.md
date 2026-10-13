@@ -1,6 +1,6 @@
 # M1.9 — Runtime Contract and Observability Audit
 
-Status: **ACTIVE — Gate A in progress.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+Status: **ACTIVE — Gate A accepted with explicitly bounded object-level evidence; Gate B in progress.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
 
 ## Objective
 
@@ -411,3 +411,57 @@ MVS data during source-only Gate A. A full generated-assembly listing
 or object-level registration dump, obtained read-only from an
 existing artifact or from a deliberately isolated probe, could
 resolve it. Gate A is not yet closed by this source-level enumeration.
+
+## Gate A — acceptance decision (13 October 2026)
+
+**Accepted for runtime interface inventory, with an explicit
+object-evidence limitation.** The ledger accounts for all 22
+top-level BLIB procedures (21 LIBHDR-numbered candidates, one
+unnumbered PRINTWIDTH helper), all explicit assembler ENTRY
+symbols of the four canonical native modules, canonical LIBHDR
+mapping, native global installers, application/BLIB registration
+mechanism, representative calling conventions, and available
+regression evidence. The current M1.8 full DEVOBJ panel supplies
+123 passing executable regressions and an expected source-only
+skip, without claiming each global has its own test.
+
+**Non-closure item / deferred verification:** There is no retained
+complete decoded export trailer for installed DEVOBJ(BLIB) in the
+inspected Git inputs. The exact compiled trailer pair count and
+individual relocations are **not verified**. Do not report them
+as byte-level proven or conflate source-to-LIBHDR mapping with
+an ESD/RLD inspection. If future work needs an exact binary
+inventory, collect a read-only object-deck listing or decode a
+binary-safe copy under a separately controlled evidence task.
+
+`tools/dspal cat/get` deliberately rejects object libraries for
+text transfer; using it on DEVOBJ(BLIB) would be incorrect. This
+does not prevent Gate A acceptance because the contract inventory
+records uncertainty rather than inventing operational proof.
+
+**Gate A disposition: ACCEPTED, qualified as above.** No resident
+MVS dataset or runtime implementation was changed.
+
+## Gate B — storage and stack audit opened
+
+Examine concrete source/behavior in this order:
+
+1. **Heap ownership:** BCPLMEM's GETMAIN size, the 12-byte record
+   header and linked list, G87/G88 return/error contracts,
+   pointer handling, counters, G6!48 publication and MEMDRAIN.
+2. **Frame layout and checked entry:** generated CG370 call
+   convention; STKIMPL frame-size check, STKLIM safe boundary,
+   STKCIMP call-count stub and return path.
+3. **Stack high-water:** physical GETMAIN bounds versus the
+   published G54/G55 extent, alternating marker initialization,
+   BLIB STACKHWM predicate and what regression 120 proves.
+4. **Temporary vectors:** BCPLAPT's APTOVEC and APLIMIT contract,
+   nested calls and stack-limit failures.
+5. **Exit ownership:** which allocations are drained on
+   FINISH/STOP/abnormal paths, and whether failure paths report
+   appropriate completion codes. Gate C covers full termination
+   semantics; Gate B records storage-specific prerequisites.
+
+Distinguish implemented behavior, separately tested behavior,
+and remaining historical-equivalence gaps. Avoid changing
+runtime source during the audit.
