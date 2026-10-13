@@ -156,3 +156,20 @@ Gate E installed production object library `HERC02.BCPL.OBJ` remains unchanged. 
 Resident `SOURCE(BCPLMEM)` updated via JOBs 9910–9913; readback matched the canonical source. Resident `JCL(BLDGFMEM)` written/read back via JOBs 9915–9916 (only trailing newline differed). Unauthenticated direct JOB 9914 successfully assembled but PUTMEM abended S913-38 as PROD; **no object was installed by that job**. Authenticated `dspal submit JCL BLDGFMEM --wait` used launcher JOB 9918 and payload **JOB 9919**, with ASMMEM IFOX00 RC=0000, PUTMEM IEBGENER RC=0000, zero assembler statements flagged, highest severity 0 and job SUCCESS. Subsequent `tools/dspal ls OBJ` listed BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB. The one-member installation changed `OBJ(BCPLMEM)` only; no BCPLMAIN/other runtime-object replacement was requested. **Production installation accepted; installed full regression not yet reported.**
 
 Next (single end-of-march installed-object panel): `BCPL_RUNTIME_PDS=1 tools/run-native-regression`; expect 123 PASS, 0 FAIL, 1 SKIP (083 source-only). Do not mark Gate F1 complete until actual result is received.
+
+## Installed panel diagnostic — JES number rollover (13 October 2026)
+
+The first installed panel after JOB 9919 returned **PASS 57, FAIL 66,
+SKIP 1, TOTAL 124**, but regression 057 and subsequent failures began
+extracting old October 1–2 spool reports after JES job-number rollover.
+Example: freshly submitted regression 057 got JOB 37, while the extracted
+report was an old October 1 `ICINTTRI` JOB 37. This is not valid evidence
+of 66 BCPL runtime defects and cannot be used for Gate F1 acceptance.
+
+The root cause was first-incarnation lookup in both
+`tools/job-summary` and `tools/dump-report-for-job`: the persistent
+printer file contains earlier jobs using the recycled number. Fixes
+select the **latest** START JOB banner and require its matching END,
+without accepting stale completed jobs while the current job runs.
+The installed OBJ library is not modified by this tooling repair.
+A new complete installed regression result is required to close F1.
