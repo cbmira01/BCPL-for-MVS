@@ -29,6 +29,11 @@ Using `tools/compile-and-run`, the preserved kit compiler can:
 - preserve OCODE and INTCODE as inspectable intermediate results.
 
 The MVS-side project data-set lifecycle is also reproducible. `dspal` can create, inspect, populate, read, update, compress, and purge the managed `HERC02.BCPL.*` libraries. Git is the source of truth; the MVS libraries are deployed/build state.
+The governing distinction is documented in
+[`packaging/git-mvs-authority.md`](packaging/git-mvs-authority.md): Git
+owns the reconstructed implementation; resident MVS supplies assembly,
+linkage, execution, and acceptance evidence. MVS datasets are not a
+second source-control authority.
 
 The next compiler step is **not** to invent a new System/370 code generator from scratch. A historical System/370 BCPL code generator has been found in the surviving material. Current work is to host, understand, adapt where necessary, and connect that generator to the kit compiler's OCODE stream so it can emit assembler for the MVS toolchain. Native runtime services, including the surviving `BCPLMAIN` contract, still require reconstruction.
 
