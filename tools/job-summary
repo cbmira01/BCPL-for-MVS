@@ -58,7 +58,7 @@ ASM_SEVERITY_RE = re.compile(
 # Only operational MVS diagnostics establish an ABEND. A copied source
 # member can itself contain text such as "STEP ABEND USER CODE".
 ABEND_RE = re.compile(
-    r"\\b(?:IEF450I|IEF472I|IEA995I)\\b[^\\n]*"
+    r"\b(?:IEF450I|IEF472I|IEA995I)\b[^\n]*"
     r"(?:ABEND|SYSTEM COMPLETION CODE|USER COMPLETION CODE|SYSTEM=|USER=)",
     re.IGNORECASE,
 )
