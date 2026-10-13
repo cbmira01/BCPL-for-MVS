@@ -1,6 +1,6 @@
 # M1.8 — Reproducible Runtime Builds and MVS Synchronization
 
-Status: **ACTIVE — Gates A–D accepted; Gate E optional and not authorized; Gate F pending.**
+Status: **CLOSED — Gates A–D and F accepted; optional Gate E deferred, not authorized.**
 
 Governing policy: [Git and MVS authority](git-mvs-authority.md).
 Git defines the implementation; resident MVS provides the target
@@ -434,3 +434,30 @@ Next: verify the tracked BLIB generator and source provenance,
 trace ICINT19/CAMBCOMP resident bootstrap provenance, then implement
 safe, explicit staging and build instructions. No new operator MVS
 commands are yet required for the provenance audit.
+
+## Gate F — full rebuilt DEVOBJ panel accepted (13 October 2026)
+
+After pulling Git through `b71e81c`, the operator ran:
+
+```sh
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression
+```
+
+The single full native regression panel enumerated cases 00 through 123
+(124 total): **123 PASS, 0 FAIL, 1 expected SKIP**. Case 083 is the
+source-only instrumentation experiment, not an executable regression.
+The panel exercised the independently rebuilt DEVOBJ set, with the
+same runtime library selection used for Gate D. All executable cases
+passed. The operator's output explicitly reported `NATIVE REGRESSION
+COMPLETE / PASS 123 / FAIL 0 / SKIP 1 / TOTAL 124`.
+
+**Gate F accepted. M1.8 closed.** The Git-controlled reconstruction,
+resident SOURCE/JCL synchronization and readback, independent DEVOBJ
+builds, focused checks and the final panel are accepted as a complete
+reproducible candidate-runtime workflow. Optional Gate E (production
+OBJ alignment) is intentionally **deferred and not authorized**; this
+closure does not claim that production OBJ was changed or is identical
+to DEVOBJ. DEVOBJ remains the development candidate library, OBJ the
+stable ordinary-application linkage library. Any future promotion must
+be separately authorized and recorded with Git revision, member
+inventory and acceptance evidence.
