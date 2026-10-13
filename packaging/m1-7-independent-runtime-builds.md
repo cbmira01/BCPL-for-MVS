@@ -97,6 +97,22 @@ Operator pulled commit 00eb6cf and ran five individual regressions with
 Each run reported FAIL 0 and SKIP 0. **Gate C accepted.**
 No complete 124-case panel was run as part of this gate.
 
+## Gate D — installed-object regression preparation (candidate)
+
+`tools/checks/prepare-runtime-pds-regression.py` now calls pure
+application transformations from
+`native-compiler/regression/prepare-native-global.py` and
+`native-compiler/regression/combine-separate-bcpl.py`, rather than
+executing those legacy scripts and discarding an appended
+`asm/bcplmain-wip.asm` body. It inserts EXTRN BCPLMAIN and END on
+the resulting application section and retains existing assembler card
+validation. The legacy source-mode workflow is deliberately unchanged.
+
+This source change is **not yet MVS-verified**. Gate D remains open
+until focused installed-object regression cases prove native and
+separately compiled BCPL module assembly/link/GO behavior. No full
+regression panel at this point.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
