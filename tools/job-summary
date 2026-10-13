@@ -158,32 +158,27 @@ def default_printer_file() -> Path:
 
 
 def extract_job(lines: list[str], job_number: int) -> list[str]:
-    """Extract one complete job using TK5 START JOB / END JOB banners."""
-    result: list[str] = []
-    inside = False
+    """Use the latest START banner when JES reuses a job number.
 
-    for line in lines:
-        start_match = START_JOB_RE.search(line)
+    If that occurrence has not yet ended, report it as incomplete rather
+    than silently returning a previous, completed incarnation.
+    """
+    starts = [
+        index for index, line in enumerate(lines)
+        if (match := START_JOB_RE.search(line))
+        and int(match.group(1)) == job_number
+    ]
+    if not starts:
+        raise RuntimeError(f"JOB {job_number} was not found in the printer file.")
 
-        if not inside and start_match:
-            if int(start_match.group(1)) == job_number:
-                inside = True
-                result.append(line)
-            continue
-
-        if inside:
-            result.append(line)
-
-            end_match = END_JOB_RE.search(line)
-            if end_match and int(end_match.group(1)) == job_number:
-                return result
-
-    if inside:
-        raise RuntimeError(
-            f"JOB {job_number} starts in the printer file but has no END JOB banner."
-        )
-
-    raise RuntimeError(f"JOB {job_number} was not found in the printer file.")
+    latest = starts[-1]
+    for index in range(latest + 1, len(lines)):
+        match = END_JOB_RE.search(lines[index])
+        if match and int(match.group(1)) == job_number:
+            return lines[latest:index + 1]
+    raise RuntimeError(
+        f"JOB {job_number} starts in the printer file but has no END JOB banner."
+    )
 
 
 def parse_job(job_number: int, lines: list[str]) -> tuple[Job, list[str]]:
