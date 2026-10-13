@@ -121,6 +121,21 @@ binary-safe candidate installation to DEVOBJ(BCPLMEM). Runtime linkage
 and execution remain to be verified; no full regression has run in
 this march.
 
+## Focused DEVOBJ execution — accepted (13 October 2026)
+
+After pulling commit d3c5947, operator invoked
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ` on native
+regression 27 (`27-getvec`) and regression 122
+(`122-freebase-vector-list-experiment`), each with
+`--show-output`. Both individually completed PASS 1, FAIL 0,
+SKIP 0, TOTAL 1. This validates the selected candidate-linkage
+path and successful application behavior for these tests; these
+console summaries do not independently document the complete
+IEWL map or prove object-byte identity with production.
+
+The one full DEVOBJ panel is now the remaining acceptance step.
+Do not run a second full source-mode or production-object panel.
+
 ## One authoritative full panel at march conclusion
 
 After assembly, installation, source synchronization, linkage, and focused
