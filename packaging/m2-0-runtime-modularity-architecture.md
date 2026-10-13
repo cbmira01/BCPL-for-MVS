@@ -90,3 +90,40 @@ This is a **proposed** gate plan, not acceptance of M2.0 nor authorization to im
 ## Design outcome
 
 The intended long-term result is **a small BCPLMAIN that bootstraps and connects a collection of coherent, separately understandable runtime CSECTs**. The reason is as much the longevity and interpretability of this historical reconstruction as the addressing constraints of System/370.
+
+## Observability policy — programmer-centric, historical and minimal
+
+**Decision (13 October 2026):** The reconstruction's observability is primarily **for the BCPL programmer and the people reconstructing the compiler**, not a new MVS operator monitoring subsystem. The project targets an obsolete language on an obsolete operating system; its aim is a coherent, working historical reconstruction and a clear foundation for future Cambridge work by others, **not** a production-grade diagnostics platform.
+
+A diagnostic facility belongs in the immediate project only when it offers:
+
+1. **Historical continuity:** favor the conventions already present in Cambridge BCPL/BLIB over newly invented frameworks.
+2. **Concrete reconstruction value:** it should help locate an actual compiler, code-generator, storage, linkage or runtime defect, or verify a documented contract.
+3. **Low complexity:** use narrow routines, direct output and focused test probes; avoid large permanent infrastructures.
+4. **Teaching value:** implementation and usage should be legible as an example future contributors can understand, copy, improve or replace.
+
+Small nonhistorical aids are allowed when useful, but **must be labeled as reconstruction tooling or provisional extensions**, never presented as recovered Cambridge behavior. Instrumentation for developers does not automatically require a public BCPL global, permanent stable ABI or operator interface.
+
+### Immediate disposition of existing facilities
+
+| Facility | Current direction |
+| --- | --- |
+| STACKHWM | Retain historical G56 interface; useful for understanding stack consumption. Do not promise unverified exactness. |
+| MAPSTORE | Investigate or exercise narrowly if it helps diagnose compiler reconstruction; no mandate to implement every historical mapping behavior now. |
+| BACKTRACE | Defer native LEVEL/frame-walk integration until a concrete need justifies it. |
+| ABORT | Preserve historical BLIB source and existing behavior; do not undertake comprehensive MVS recovery/postmortem machinery as part of modularization. |
+| MEMSTAT | Keep assembler-private by default; use focused allocator experiments if needed. No automatic new BCPL global allocation. |
+| DEBUGINT | Keep as a clearly provisional, simple bootstrap diagnostic; no claim of historical public API. |
+| Stack overflow diagnostic | Preserve a straightforward message; more elaborate operator-oriented reporting is deferred. |
+
+### Scope boundary
+
+**Not goals of M2.0:** generalized monitoring, telemetry, logging levels, event frameworks, extensive operator dashboards/reports, comprehensive automatic postmortem processing, or diagnostics designed for speculative future consumers. In particular, do **not** turn M1.9's observability gap register into an implicit to-do list requiring every gap to be implemented.
+
+The normal priority is to **reconstruct the compiler and keep the runtime small, understandable and testable**. Favor targeted checks under `tools/checks/` over permanent mechanisms where appropriate. A programmer-visible diagnostic is worthwhile when historical, immediately helpful and modest; otherwise document and defer it to future Cambridge versions or work led by other contributors.
+
+If an MVS completion code or failure message needs adjustment for a specific, demonstrated reconstruction problem, evaluate that as a tightly scoped engineering change—not as authorization to design an operator-centric observability layer.
+
+**Architecture consequence:** Modularization should retain the existing useful diagnostics and leave comprehensible service boundaries where future contributors may extend them. It must not introduce abstraction or instrumentation purely to anticipate later diagnostics.
+
+**Acceptance consequence:** M2.0 reviews simplicity, programmer usefulness and historical clarity; it does **not** demand completion of historical BACKTRACE/ABORT/MAPSTORE or publication of MEMSTAT.
