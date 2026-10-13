@@ -1,6 +1,6 @@
 # M1.8 — Reproducible Runtime Builds and MVS Synchronization
 
-Status: **ACTIVE — Gate A provenance inventory accepted; Gate B next. No OBJ promotion authorized.**
+Status: **ACTIVE — Gates A and B accepted; Gate C next. No OBJ promotion authorized.**
 
 Governing policy: [Git and MVS authority](git-mvs-authority.md).
 Git defines the implementation; resident MVS provides the target
@@ -206,6 +206,27 @@ the host and did not modify MVS datasets.
 
 **Gate B status: source-preparation subsection accepted; full
 TRNILRG generation/equivalence still pending.**
+
+## Gate B — full bootstrap preparation accepted (13 October 2026)
+
+The operator pulled commit `544ce37` and ran
+`python3 tools/prepare-bootstrap --with-trnilrg`.
+Both tracked source generators completed, followed by the opt-in
+`build-mr10-trni-large-names.sh`. The MVS-backed
+`tools/compile-and-run` submitted **JOB 936** and reported saved
+INTCODE files for TRN0–TRN6. The concatenated
+`workarea/bootstrap-cambridge/trni-large-names.int` was
+**20,885 bytes**, agreeing with the previously reported file size.
+The bootstrap driver inventoried **25 generated outputs** in its
+SHA-256 manifest and reported no MVS dataset changes.
+
+**Gate B accepted:** the preparation chain has been executed end
+to end from tracked historical and transformation inputs through
+the MVS-backed INTCODE generator. Neither raw JOB 936 return codes
+nor a before/after SHA-256 equality comparison were supplied, so
+this acceptance does not claim independently verified step codes
+or bytewise resident equivalence. Gate C will address controlled
+resident source/JCL synchronization separately.
 
 ## Constraints and acceptance evidence
 
