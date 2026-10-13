@@ -328,6 +328,33 @@ independent DEVOBJ builds remain outstanding, so the *whole* Gate C
 is not yet closed. Production OBJ, LOAD(ICINT19), CAMBCOMP and
 TRNILRG were outside the operation's scope.
 
+## Gate C — BLIB readback blocked by false job-summary ABEND
+
+The operator's ten-member normalized readback check passed
+SOURCE(BCPLMAIN), SOURCE(BCPLMEM), SOURCE(BCPLBYTE),
+SOURCE(BCPLAPT), JOBs **963–966**. The fifth `dspal get`
+of SOURCE(BLIB), JOB **967**, exited nonzero because
+`tools/job-summary` reported `ABEND: detected`
+despite IEBGENER COPY RC=0000.
+
+The operator supplied JOB 967's complete JES report:
+`IEF142I` confirmed COND CODE 0000, `IEF404I` ended
+the job and `$HASP395` confirmed normal completion.
+The job's SYSOUT included BLIB source lines
+`STEP ABEND USER CODE` and `STEP ABEND SYSTEM CODE`.
+Audit of `tools/job-summary` found its previous generic
+`ABEND_RE` scanning all SYSOUT lines, explaining the
+false-positive classification. The detector has been
+constrained to genuine IEF/IEA diagnostic message IDs,
+and a targeted check was added at
+`tools/checks/check-job-summary-abend.py`.
+
+**Not yet retested on the host.** JOB 967 is correctly
+understood as a successful IEBGENER copy, but the content
+comparison did not execute for BLIB, and the five JCL
+comparisons were not reached. No SOURCE member was
+modified by this readback.
+
 ## Constraints and acceptance evidence
 
 The M1.7 DEVOBJ 00–123 panel passed 123, failed 0 and skipped 083;
