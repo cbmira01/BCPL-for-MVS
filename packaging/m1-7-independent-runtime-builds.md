@@ -51,6 +51,22 @@ locally for card length and statement prefixes. Re-stage only these
 two corrected JCL members; the already staged assembler SOURCE
 members do not require another PUT. No successful install is claimed.
 
+## Gate B — corrected component build evidence (13 October 2026)
+
+After the corrected JCL was staged as JOB 656 (BLDDEVB) and JOB 657
+(BLDDEVA), authenticated launcher JOB 659 submitted **JOB 660**:
+BCPLBYTE ASMCOMP IFOX00 RC=0000, PUTCOMP IEBGENER RC=0000,
+zero flagged statements and assembler severity zero. Authenticated
+launcher JOB 662 submitted **JOB 663**: BCPLAPT ASMCOMP IFOX00
+RC=0000, PUTCOMP IEBGENER RC=0000, zero flagged statements and
+assembler severity zero. Both jobs returned highest RC=0000.
+Both jobs targeted DEVOBJ only. The previous JCL errors (JOBS 652
+and 655) were resolved.
+
+Four modules now have demonstrated individual DEVOBJ builds across
+this and preceding marches: BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT.
+**BLIB remains outstanding** for Gate B.
+
 ## Acceptance gates
 
 * A: inventory and contracts (documented).
