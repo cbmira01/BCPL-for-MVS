@@ -72,6 +72,8 @@ datasets:
       CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
       BCPLMAIN: asm/bcplmain.asm
       BCPLMEM: asm/bcplmem.asm
+      BCPLBYTE: asm/bcplbyte.asm
+      BCPLAPT: asm/bcplapt.asm
 
   ASM:
     dsn: BCPL.ASM
@@ -112,6 +114,9 @@ datasets:
       BLDGFMEM: jcl/build-gate-f1-bcplmem.jcl
       BLDDEVM: jcl/build-dev-bcplmem.jcl
       BLDDEVN: jcl/build-dev-bcplmain.jcl
+      BLDDEVB: jcl/build-dev-bcplbyte.jcl
+      BLDDEVA: jcl/build-dev-bcplapt.jcl
+      BLDDEVL: jcl/build-dev-blib.jcl
       SEEDDEV: jcl/seed-devobj.jcl
 
   INTCODE:
