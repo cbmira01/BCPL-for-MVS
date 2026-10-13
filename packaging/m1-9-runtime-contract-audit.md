@@ -1,6 +1,6 @@
 # M1.9 — Runtime Contract and Observability Audit
 
-Status: **ACTIVE — Gates A, B and C accepted with limitations; Gate D next.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+Status: **ACTIVE — Gates A, B and C accepted; Gate D observability audit in progress.** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
 
 ## Objective
 
@@ -860,3 +860,71 @@ Proceed to Gate D: implementation and *exposure* of observability
 mechanisms, output destinations, usable BCPL call paths and
 operator interpretation. No runtime or MVS library mutation
 was needed to establish the current contract.
+
+## Gate D — observability mechanisms and actual exposure (13 October 2026)
+
+**Status: OPEN — D1 mechanism inventory completed; D2 interface
+validation and D3 focused coverage remain.** Distinguish an
+implementation from a callable, supported diagnostic facility.
+
+| Mechanism / owner | Trigger and captured data | Exposure/output | Verification and limits |
+| --- | --- | --- | --- |
+| Stack bounds, BCPLMAIN | Startup creates G54/G55 and 64-KiB marker-painted stack; checked entries compare frame end against STKLIM | BCPL-visible extent globals; STKLIM itself is native-only | Checked-entry regressions 48–52; G55 includes 256-byte clearance and is *not* the safe limit |
+| STACKHWM, historical BLIB | G56 scans EVENSTACK/ODDSTACK sentinels and top metadata | BCPL-callable G56 from linked BLIB; returns **word address**, or 0 OVERFLOW / 1 UNSET | Test 120 accepts in-range result, not precise usage accounting |
+| STACK OVERFLOW, BCPLMAIN | STKOVFL overwrites default output buffer with 14-byte diagnostic | SYSPRINT record via FINIMPL/FINEXIT, current GO RC=0 | Test 093 specifies diagnostic and normal completion; discards previously buffered default output |
+| Heap live/peak counts, BCPLMEM | GETVEC/FREEVEC/MEMDRAIN maintain four fullword counters; MEMSTAT snapshots them | **Assembler-private MEMSTAT**, R1 points to 16-byte result; no LIBHDR global or operator report | Current snapshots cover allocations + 12-byte descriptors, not entire process memory; no direct BCPL call established |
+| Live vector list, BCPLMEM and G6!48 | MEMBIND publishes descriptor byte-address list head into save-area slot | BCPL can inspect memory indirectly via SAVEAREA / historical G59 VALIDPOINTER | Tests 122–123 exercise controlled list predicates, not general heap diagnostics or safe public traversal API |
+| DEBUGINT, BCPLMAIN | G150 accepts signed integer in R7, converts to decimal | BCPL-callable **provisional extension** appending bytes to default SYSPRINT buffer | No historical LIBHDR name; no clearly identified direct focused regression. Appender drops digits once 132-byte buffer is full, with no explicit error |
+| ABORT, historical BLIB | G3 formats user/system/interrupt faults, optionally dispatches BACKTRACE and MAPSTORE | Historical BLIB global, outputs to SYSPRINT when available; otherwise tries FINDLOG/WRITETOLOG; ends with STOP(100) | **Not** automatically wired to MVS program interrupts or the STKOVFL path; historical fallback globals lack verified native providers |
+| BACKTRACE, historical BLIB | G4 uses LEVEL(), inferred frame links and program predicates | Historical BCPL-callable routine, prints through WRITES/WRITEF | Native LEVEL G31 provider and current frame walk are unverified; source presence is not execution proof |
+| MAPSTORE, historical BLIB | G78 reports stack high water, global assignments, program headers, and SAVEAREA!29 load-list descriptors | Historical BCPL-callable procedure using output/formatting globals | No complete current native-map proof; load-list population is provisional and output needs source/runtime prerequisites |
+| USERPOSTMORTEM, historical LIBHDR | G79 is conditionally invoked inside BLIB ABORT when changed from unset sentinel | Potential application callback, **not** a BLIB-defined function or native interrupt hook | No verified operational registration or invocation path |
+| ERRORMESSAGE, historical BLIB | G5 formats selected fault/stream details | Historical callable reporting helper | Fallback I/O behavior and failure recursion not yet exercised |
+
+### Operator/programmer exposure distinction
+
+- **Programmer:** documented global-vector slots are candidate
+  callable services where an actual runtime/BLIB provider is
+  installed. Stack bounds are data; G56 is a function; G150 is an
+  undocumented historical extension that the reconstructed runtime
+  publishes. A native symbol named MEMSTAT does not make it a
+  normal BCPL procedure.
+- **MVS operator:** application-generated diagnostics currently
+  surface through QSAM SYSPRINT and associated JES job output.
+  Exact report retrieval and completion-code interpretation are
+  workflow matters, not independent automatic backtrace or
+  allocation-statistics services.
+- **Automatic failures:** STKOVFL writes a diagnostic and exits
+  through FINISH, but does not call historical ABORT, BACKTRACE,
+  MAPSTORE or USERPOSTMORTEM. The corresponding historical
+  procedures must not be described as installed MVS recovery
+  interceptors.
+
+### Open Gate D findings
+
+**D-OBS-01:** No supported BCPL-facing heap-statistics service yet:
+MEMSTAT is private.
+
+**D-OBS-02:** Controlled overflow has a recognizable message but
+GO RC=0; exit status alone does not signal a stack failure.
+
+**D-OBS-03:** DEBUGINT is published at G150 but has provisional
+semantics and silently stops appending when the output record is full.
+
+**D-OBS-04:** Historical ABORT/BACKTRACE/MAPSTORE and
+USERPOSTMORTEM are *not* established as automatic postmortem
+facilities. In particular BACKTRACE requires LEVEL (G31),
+whose current provider has not been verified.
+
+**D-OBS-05:** STACKHWM return meaning is established, while
+measurement precision and marker corruption cases are not
+independently validated.
+
+### Next Gate D evidence
+
+Verify individual tests/callability for G150 and historical
+diagnostics, including which provider supplies LEVEL and whether
+selected historical I/O fallbacks are usable. Record each
+feature's trigger, destination, result/return code and
+failure behavior before Gate D acceptance. Keep the audit
+read-only and preserve M1.8's accepted object libraries.
