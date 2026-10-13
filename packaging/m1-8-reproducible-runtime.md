@@ -30,7 +30,7 @@ evidence; production alignment then remains pending.
 | BCPLMEM | `SOURCE(BCPLMEM) ← asm/bcplmem.asm` | BLDDEVM | Git-tracked canonical assembler |
 | BCPLBYTE | `SOURCE(BCPLBYTE) ← asm/bcplbyte.asm` | BLDDEVB | Git-tracked canonical assembler |
 | BCPLAPT | `SOURCE(BCPLAPT) ← asm/bcplapt.asm` | BLDDEVA | Git-tracked canonical assembler |
-| BLIB | `SOURCE(BLIB) ← workarea/bootstrap-cambridge/demoted/blib` | BLDDEVL | **Ignored workarea path: not presently Git-authoritative** |
+| BLIB | `SOURCE(BLIB) ← workarea/bootstrap-cambridge/demoted/blib` | BLDDEVL | **Generated (not tracked): deterministic Git-tracked `make-demoted.py --blib-only` derivative of `richards-bcpltape/bcplib/bcpl/blib`; resident sync must be verified** |
 
 The BLIB job also reads resident `LOAD(ICINT19)`,
 `INTCODE(CAMBCOMP)`, and `SOURCE(OPTIONS,CAMBPARM,LIBHDR,SYNHDR,
@@ -40,11 +40,15 @@ of these support records are specified by `config/dspal.yaml`, but
 the exact resident binaries and their construction must be traced
 before claiming clean-checkout rebuildability.
 
-**Gate A finding:** the four assembler modules are source-referenced
-from Git. BLIB's current demoted source is in gitignored `workarea/`.
-It is incorrect to claim all five runtime sources are present in
-Git solely because their development objects were successfully
-assembled in M1.7.
+**Gate A finding (refined):** the four assembler modules are tracked
+in Git. BLIB is *derivable* from Git: run
+`python3 native-compiler/bootstrap-cambridge/make-demoted.py --blib-only`.
+Its input is tracked historical `richards-bcpltape/bcplib/bcpl/blib`;
+the generator validates the SECTION header, two inequality tokens,
+LIBHDR use and an 80-column limit before creating the ignored output.
+The build still requires explicit re-generation and SOURCE(BLIB)
+synchronization: a successful resident object does not prove its
+source matched a particular Git revision.
 
 ## Constraints and acceptance evidence
 
@@ -54,8 +58,7 @@ reconstruction proof. Do not use `dspal put` on binary OBJ or DEVOBJ:
 it performs text conversion. The existing IFOX and IEBGENER jobs
 produce binary FB80 objects on MVS. Do not overwrite production OBJ.
 
-Next: establish a versioned, reproducible BLIB input preparation
-rather than relying indefinitely on an opaque, ignored generated file;
-trace ICINT19/CAMBCOMP resident bootstrap provenance; then implement
+Next: verify the tracked BLIB generator and source provenance,
+trace ICINT19/CAMBCOMP resident bootstrap provenance, then implement
 safe, explicit staging and build instructions. No new operator MVS
 commands are yet required for the provenance audit.
