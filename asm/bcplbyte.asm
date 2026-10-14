@@ -1,5 +1,5 @@
 ***********************************************************************
-* BCPLBYTE -- PROPOSED INDEPENDENT MACHINE-DEPENDENT BCPL SERVICE
+* BCPLBYTE -- INDEPENDENT MACHINE-DEPENDENT BCPL SERVICE
 *
 * First object-module extraction from BCPLMAIN-WIP.
 * Public entry symbols: GETBYTE and PUTBYTE (LIBHDR G85 and G86).
@@ -11,7 +11,7 @@
 * R8 byte offset, R9 byte to write
 * R4 restored from 0(R5), R0 and R1-R3 retained unchanged.
 *
-* This file is NOT yet used by normal regression linkage.
+* G85/G86 link to this independent CSECT (M2.0 Gate C accepted).
 ***********************************************************************
 BCPLBYTE CSECT
          ENTRY GETBYTE,PUTBYTE
