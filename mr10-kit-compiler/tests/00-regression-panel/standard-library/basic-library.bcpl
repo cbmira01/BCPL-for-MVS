@@ -1,6 +1,11 @@
+// ======================================================================
+// BASIC LIBRARY: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: stable library surface used by ordinary programs.
+// --- Global slots ---
 GLOBAL $( START:1; WRITES:60; WRITEN:62; NEWLINE:63; WRITEF:76 $)
 
+// --- Test entry and result ---
 LET START() BE
 $(
    WRITEF("TEST: WRITES WRITEN and NEWLINE library calls*N")
