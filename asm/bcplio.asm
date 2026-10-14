@@ -25,6 +25,7 @@
 ***********************************************************************
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
+         ENTRY IOFOUT,IOSOUT,IOOUT,IOWRAP,IOENDW
 *
 IOINIT   BALR  10,0
          USING *,10
@@ -36,6 +37,9 @@ IOINIT   BALR  10,0
          XC    IOPOS(4),IOPOS
          XC    IO2POS(4),IO2POS
          MVI   IOSELCT,X'01'
+         LA    1,IOCTL1
+         SRL   1,2
+         ST    1,IOCURH
          MVI   IO2ACTV,X'00'
          XC    IOSTATUS(4),IOSTATUS
          MVI   IOBUF,C' '
@@ -152,8 +156,14 @@ IOSEL    BALR  10,0
          OPEN  (IO2DCB,(OUTPUT))
          MVI   IO2ACTV,X'01'
 IOSETWO  MVI   IOSELCT,X'02'
+         LA    1,IOCTL2
+         SRL   1,2
+         ST    1,IOCURH
          B     IOSEOK
 IOSEONE  MVI   IOSELCT,X'01'
+         LA    1,IOCTL1
+         SRL   1,2
+         ST    1,IOCURH
 IOSEOK   SR    15,15
          B     IOSERET
 IOSEBAD  LA    15,8
@@ -162,8 +172,132 @@ IOSERET  LM    0,9,IOESAVE
          BR    14
          DROP  10
 *
+*
+* BCPL output-stream ABI. These five entries use R6 linkage, R7
+* argument/result, restore R4 from 0(R5), clobber R10.
+* Handles are the word addresses of private IOCTL1/IOCTL2.
+*
+IOFOUT   BALR  10,0
+         USING *,10
+         STM   0,9,IOOSAVE
+         STM   11,15,IOOSAVE+44
+         LR    14,7
+         SLL   14,2
+         CLI   0(14),X'08'
+         BNE   IOFALT
+         CLC   1(8,14),IONAME1
+         BNE   IOFALT
+         LA    7,IOCTL1
+         SRL   7,2
+         B     IOFRET
+IOFALT   CLI   0(14),X'06'
+         BNE   IOFBAD
+         CLC   1(6,14),IONAME2
+         BNE   IOFBAD
+         CLI   IO2ACTV,X'01'
+         BE    IOFOK2
+         XC    IO2POS(4),IO2POS
+         MVI   IO2BUF,C' '
+         MVC   IO2BUF+1(131),IO2BUF
+         OPEN  (IO2DCB,(OUTPUT))
+         MVI   IO2ACTV,X'01'
+IOFOK2   LA    7,IOCTL2
+         SRL   7,2
+         B     IOFRET
+IOFBAD   SR    7,7
+IOFRET   ST    7,IORESULT
+         LM    0,9,IOOSAVE
+         LM    11,15,IOOSAVE+44
+         L     7,IORESULT
+         L     4,0(5)
+         BCR   15,6
+         DROP  10
+*
+IOOUT    BALR  10,0
+         USING *,10
+         L     7,IOCURH
+         L     4,0(5)
+         BCR   15,6
+         DROP  10
+*
+IOSOUT   BALR  10,0
+         USING *,10
+         STM   0,9,IOOSAVE
+         STM   11,15,IOOSAVE+44
+         LA    14,IOCTL1
+         SRL   14,2
+         CR    7,14
+         BE    IOSPRI
+         LA    14,IOCTL2
+         SRL   14,2
+         CR    7,14
+         BNE   IOSRET
+         CLI   IO2ACTV,X'01'
+         BNE   IOSRET
+         MVI   IOSELCT,X'02'
+         ST    7,IOCURH
+         B     IOSRET
+IOSPRI   MVI   IOSELCT,X'01'
+         ST    7,IOCURH
+IOSRET   LM    0,9,IOOSAVE
+         LM    11,15,IOOSAVE+44
+         L     4,0(5)
+         BCR   15,6
+         DROP  10
+*
+* WRAPOUTPUT: only alternate stream emits an empty record on wrap.
+IOWRAP   BALR  10,0
+         USING *,10
+         STM   0,9,IOOSAVE
+         STM   11,15,IOOSAVE+44
+         CLI   IOSELCT,X'02'
+         BNE   IOWRRET
+         CLI   IO2ACTV,X'01'
+         BNE   IOWRRET
+         PUT   IO2DCB,IO2BUF
+         XC    IO2POS(4),IO2POS
+         MVI   IO2BUF,C' '
+         MVC   IO2BUF+1(131),IO2BUF
+IOWRRET  LM    0,9,IOOSAVE
+         LM    11,15,IOOSAVE+44
+         L     4,0(5)
+         BCR   15,6
+         DROP  10
+*
+* ENDWRITE: only alternate; flush/close and revert selection.
+IOENDW   BALR  10,0
+         USING *,10
+         STM   0,9,IOOSAVE
+         STM   11,15,IOOSAVE+44
+         CLI   IOSELCT,X'02'
+         BNE   IOEWRET
+         CLI   IO2ACTV,X'01'
+         BNE   IOEWDONE
+         L     1,IO2POS
+         LTR   1,1
+         BZ    IOEWCLOS
+         PUT   IO2DCB,IO2BUF
+IOEWCLOS CLOSE (IO2DCB)
+         MVI   IO2ACTV,X'00'
+         XC    IO2POS(4),IO2POS
+IOEWDONE MVI   IOSELCT,X'01'
+         LA    1,IOCTL1
+         SRL   1,2
+         ST    1,IOCURH
+IOEWRET  LM    0,9,IOOSAVE
+         LM    11,15,IOOSAVE+44
+         L     4,0(5)
+         BCR   15,6
+         DROP  10
+*
          DS    0F
 IOPARM   DC    F'0'
+IOCTL1   DC    F'1'
+IOCTL2   DC    F'2'
+IOCURH   DC    F'0'
+IORESULT DC    F'0'
+IONAME1  DC    CL8'SYSPRINT'
+IONAME2  DC    CL6'BCPALT'
 IOONE    DC    F'1'
 IOTWO    DC    F'2'
 IO2POS   DC    F'0'
@@ -180,6 +314,7 @@ IOSAVE   DS    16F
 IOISAVE  DS    16F
 IOFSAVE  DS    16F
 IOESAVE  DS    16F
+IOOSAVE  DS    16F
 IOBUF    DS    CL132
 IODCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 IO2BUF   DS    CL132
