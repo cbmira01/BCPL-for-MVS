@@ -1,3 +1,7 @@
+***********************************************************************
+* ICINTV13.ASM - HISTORICAL INTCODE INTERPRETER
+* Saved for comparison with later versions.
+***********************************************************************
          TITLE 'ICINT - RICHARDS INTCODE ASSEMBLER/INTERPRETER'
          PRINT NOGEN
 *
@@ -72,6 +76,7 @@
 *
 ***********************************************************************
 
+* --- MAIN CONTROL SECTION ---
 ICINT    CSECT
          ENTRY ICINT
 
