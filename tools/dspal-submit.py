@@ -307,7 +307,16 @@ def main() -> int:
         print(f"Launcher: JOB {launcher_job}")
         print(f"Payload:  JOB {payload_job}")
 
-        # A successfully submitted job is not necessarily a successful job.\n        # Completion and the existing job-summary report are unconditional;\n        # --wait remains accepted for old callers.\n        sys.stdout.flush()\n        rc, summary = wait_for_payload_completion(config, payload_job)\n        if summary:\n            print()\n            sys.stdout.write(summary)\n            if not summary.endswith("\n"):\n                print()\n        return 0 if rc == 0 else 1
+        # Submission alone does not establish execution success.
+        # Always await the payload's job-summary; --wait is compatible.
+        sys.stdout.flush()
+        rc, summary = wait_for_payload_completion(config, payload_job)
+        if summary:
+            print()
+            sys.stdout.write(summary)
+            if not summary.endswith("\n"):
+                print()
+        return 0 if rc == 0 else 1
 
     except (DspalError, OSError, ValueError) as exc:
         print(f"dspal: {exc}", file=sys.stderr)
