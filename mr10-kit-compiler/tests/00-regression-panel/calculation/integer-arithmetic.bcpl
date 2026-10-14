@@ -1,6 +1,11 @@
+// ======================================================================
+// INTEGER-ARITHMETIC: BCPL TEST
+// ======================================================================
 // Regression: integer arithmetic and remainder.
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Test entry ---
 LET START() BE
 $(
  LET A = 17
