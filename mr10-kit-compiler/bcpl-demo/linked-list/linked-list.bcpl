@@ -29,6 +29,7 @@ $( LET VALUE = VEC 7
    AND NEXT = VEC 7
    LET HEAD = -1
 
+   WRITEF("DEMO: Linked list traversal and reversal*N")
    FOR I = 0 TO 7 DO
    $( VALUE!I := (I+1)*10
       NEXT!I := HEAD
