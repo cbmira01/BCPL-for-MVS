@@ -1,6 +1,11 @@
+// ======================================================================
+// GETVEC REUSE: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: GETVEC/FREEVEC basic allocation and exact reuse.
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76; GETVEC:87; FREEVEC:88; HEAPINIT:89 $)
 
+// --- Test entry and result ---
 LET START() BE
 $(
  LET ARENA = VEC 100
