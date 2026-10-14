@@ -1,8 +1,13 @@
+// ======================================================================
+// DECLARATIONS: LANGUAGE EXAMPLE
+// ======================================================================
 // DECLARATIONS.BCPL
 // Demonstrate LET, AND, local variables, and nested declaration scope.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET A = 10
    AND B = 20
