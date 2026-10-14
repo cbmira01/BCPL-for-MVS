@@ -2,11 +2,12 @@
 * BCIOPRB - D2.2 DIRECT BCPLIO OUTPUT PROBE (NO BCPLMAIN)
 * Native MVS entry: R14 caller return, R13 MVS savearea.
 * BCPL simulation: R5 frame, R6 per-call return, R7 character.
-* Writes 'BCPLIO D2 PROBE' and newline to SYSPRINT, then ends.
+* Writes D2 marker and newline, then 133 X bytes; verifies overflow
+* reports 12 via native IOSTAT; IOFIN flushes 132-byte record.
 ***********************************************************************
 BCIOPRB  CSECT
          ENTRY BCIOPRB
-         EXTRN IOINIT,IOWRCH,IOFIN
+         EXTRN IOINIT,IOWRCH,IOFIN,IOSTAT
          STM   14,12,12(13)
          LR    12,15
          USING BCIOPRB,12
@@ -29,18 +30,33 @@ NEXTCH   SR    7,7
          LA    7,10
          L     15,=A(IOWRCH)
          BALR  6,15
+* Fill exactly 132 bytes; the 133rd must latch overflow 12.
+         LA    9,133
+OVLOOP   LA    7,231
+         L     15,=A(IOWRCH)
+         BALR  6,15
+         BCT   9,OVLOOP
+         L     15,=A(IOSTAT)
+         BALR  14,15
+         ST    15,OVRESULT
 * IOFIN flushes/closes output stream via R14.
          L     15,=A(IOFIN)
          BALR  14,15
          L     13,OLDSAVE+4
          LM    14,12,12(13)
-         SR    15,15
+         L     15,OVRESULT
+         C     15,=F'12'
+         BE    OKRET
+         LA    15,8
+         BR    14
+OKRET    SR    15,15
          BR    14
          LTORG
 MSG      DC    C'BCPLIO D2 PROBE'
 MSGEND   EQU   *
          DS    0F
 FRAME    DC    F'0'
+OVRESULT DC    F'0'
 OLDSAVE  DS    18F
 NEWSAVE  DS    18F
          END   BCIOPRB
