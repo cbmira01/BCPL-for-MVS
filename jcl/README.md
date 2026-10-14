@@ -6,9 +6,9 @@ Current files include:
 
 - `hello-world-heavy.jcl` — detailed IFOX assemble/link/run example;
 - `dump-jes2-parameters.jcl` and `list-parmlib-members.jcl` — MVS/JES inspection jobs;
-- `icintv12-honors-thesis.jcl`, `icintv13-honors-thesis.jcl`, and `icintv13-mapstore.jcl` — retained milestone decks from ICINT development.
+- `mr10-kit-compiler/jcl/` — relocated ICINT V12/V13 milestone decks (outside this directory).
 
-The ICINT milestone decks are evidence of earlier reconstruction stages. They should not be treated as the current way to build the promoted interpreter; use `tools/current-icint`, `tools/run-intcode`, or `tools/compile-and-run` instead.
+The relocated ICINT milestone decks are evidence of earlier reconstruction stages. They should not be treated as the current way to build the promoted interpreter; use `tools/current-icint`, `tools/run-intcode`, or `tools/compile-and-run` instead.
 
 For new assembler work, generate JCL with:
 
