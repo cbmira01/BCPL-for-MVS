@@ -11,7 +11,7 @@ GLOBAL $( START:1; WRITEF:76 $)
 LET START() BE
 $( LET COMPOSITE = VEC 100
    WRITEF("DEMO: Find primes with the Sieve of Eratosthenes*N")
- COMPOSITE!I := FALSE
+   FOR I = 0 TO 100 DO COMPOSITE!I := FALSE
 
    FOR P = 2 TO 10 DO
       UNLESS COMPOSITE!P DO
