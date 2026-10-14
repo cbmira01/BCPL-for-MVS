@@ -66,6 +66,25 @@ run_demo()
     fi
 }
 
+# Check the parser's arithmetic results, not just ICINT's exit status.
+run_parser_checked()
+{
+    local output rc count
+    output=$("$@" 2>&1)
+    rc=$?
+    printf '%s\n' "$output"
+    if [ "$rc" -ne 0 ]; then return "$rc"; fi
+    if printf '%s\n' "$output" | grep -q 'PARSER FAIL:'; then
+        echo "expression-parser: arithmetic check failed" >&2
+        return 1
+    fi
+    count=$(printf '%s\n' "$output" | grep -c 'CHECK:' || :)
+    if [ "$count" -ne 7 ]; then
+        echo "expression-parser: expected 7 check results; got $count" >&2
+        return 1
+    fi
+}
+
 run_demo "richards-factorial" \
     "$COMPILE" --results \
     "$ICINT" \
@@ -134,7 +153,7 @@ run_demo "rpn-calculator" \
     "$SUITE/rpn-calculator/rpn-calculator.bcpl"
 
 run_demo "expression-parser" \
-    "$COMPILE" --results \
+    run_parser_checked "$COMPILE" --results \
     "$ICINT" \
     "$SUITE/expression-parser/expression-parser.bcpl"
 
