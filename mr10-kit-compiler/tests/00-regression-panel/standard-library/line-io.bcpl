@@ -1,4 +1,8 @@
+// ======================================================================
+// LINE IO: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: line-oriented library helpers on a named input stream.
+// --- Global slots ---
 GLOBAL $(
 START:1
 SELECTINPUT:11
@@ -9,6 +13,7 @@ READLINE:126
 WRITELINE:127
 $)
 
+// --- Test entry and result ---
 LET START() BE
 $(
  LET S = FINDINPUT("LINE")
