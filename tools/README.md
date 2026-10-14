@@ -46,9 +46,9 @@ Use `run-intcode` when the primary program is already INTCODE:
 ```sh
 tools/run-intcode --results \
     "$(tools/current-icint)" \
-    tests/01-echo-test/echo-sysin.int \
-    +intcode/blibi.int \
-    +intcode/iclib.int
+    mr10-kit-compiler/tests/01-echo-test/echo-sysin.int \
+    +mr10-kit-compiler/intcode/blibi.int \
+    +mr10-kit-compiler/intcode/iclib.int
 ```
 
 Additional modules are written as `+PATH` and are loaded in command-line order. `--sysin PATH` supplies card-image input to `SYSIN`.
@@ -62,7 +62,7 @@ tools/compile-and-run --results \
     --save-ocode \
     --save-intcode \
     "$(tools/current-icint)" \
-    tests/03-compile-richards-factorial/richards-factorial-test.bcpl
+    mr10-kit-compiler/tests/03-compile-richards-factorial/richards-factorial-test.bcpl
 ```
 
 The MVS job runs:
@@ -83,8 +83,8 @@ Separate compilation units use the same explicit `+PATH` convention:
 ```sh
 tools/compile-and-run --results \
     "$(tools/current-icint)" \
-    tests/04-module-test/module-test-1.bcpl \
-    +tests/04-module-test/module-test-2.bcpl
+    mr10-kit-compiler/tests/04-module-test/module-test-1.bcpl \
+    +mr10-kit-compiler/tests/04-module-test/module-test-2.bcpl
 ```
 
 Named host files can be exposed as MVS input DDs with repeated `--dd NAME=PATH` options. Host records that cannot be represented safely as card-image input are rejected rather than silently truncated.
@@ -99,7 +99,7 @@ The durable regression panel is:
 tools/run-regression-panel
 ```
 
-It compares stable semantic output and completion codes against checked-in expectations. See `tests/00-regression-panel/README.md`.
+It compares stable semantic output and completion codes against checked-in expectations. See `mr10-kit-compiler/tests/00-regression-panel/README.md`.
 
 The broad readable demo suite is:
 
