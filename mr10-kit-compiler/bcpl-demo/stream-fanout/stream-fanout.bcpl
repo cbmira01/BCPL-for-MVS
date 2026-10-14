@@ -15,6 +15,7 @@ MANIFEST $( ENDSTREAMCH=-1 $)
 
 LET START() BE
 $( LET S = VEC 2
+   WRITEF("DEMO: Read three named input streams*N")
    S!0 := FINDINPUT("AIN")
    S!1 := FINDINPUT("BIN")
    S!2 := FINDINPUT("CIN")
