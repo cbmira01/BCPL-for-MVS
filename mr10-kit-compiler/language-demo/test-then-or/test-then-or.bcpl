@@ -1,6 +1,10 @@
+// ======================================================================
+// TEST THEN OR: LANGUAGE EXAMPLE
+// ======================================================================
 // TEST-THEN-OR.BCPL
 // Demonstrate BCPL's TEST ... THEN ... OR conditional command.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET SIGN(N) BE
@@ -11,6 +15,7 @@ $( TEST N<0
       OR WRITEF("%N IS POSITIVE*N", N)
 $)
 
+// --- Program entry and output ---
 AND START() BE
 $( WRITEF("DEMO: TEST THEN OR conditional selection*N")
    SIGN(-7)
