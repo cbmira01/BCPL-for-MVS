@@ -54,6 +54,6 @@ The existing diagnostic surface is adequate for the accepted runtime subset and 
 - [x] Separate historically demonstrable functions from provisional or unsupported extensions.
 - [x] Map test evidence and uncertainty without claiming comprehensive coverage.
 - [x] Determine no evidence-backed code change is necessary.
-- [ ] Obtain owner acceptance and formally close Gate D.
+- [x] Owner directed progression to Gate E on 14 October 2026; accepts the bounded no-code Gate D audit.
 
-**Gate D: source audit complete; READY FOR OWNER ACCEPTANCE.** DEVOBJ(BCPLM7) remains unchanged. Production OBJ remains unchanged.
+**Gate D ACCEPTED AND CLOSED — 14 October 2026.** Owner authorized Gate E. DEVOBJ(BCPLM7) and production OBJ remain unchanged.
