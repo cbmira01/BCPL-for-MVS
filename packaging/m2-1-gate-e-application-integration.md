@@ -72,3 +72,19 @@ Test 069 link map and exact GO results are separately important; if the runner p
 Owner synchronized Git through commit 34de425 and ran the eight prescribed focused regressions, each with all four candidate selectors (PDS=1, LIBRARY=DEVOBJ, CANDIDATE=1, MEMBER=BCPLM7). Individual console results: **025 PASS, 026 PASS, 069 PASS, 075 PASS, 091 PASS, 101 PASS, 119 PASS, 121 PASS**. Each one-test panel reported 1 PASS / 0 FAIL / 0 SKIP. Total **8/8 focused PASS**; no source, linker or runtime changes made.
 
 This is post-charter Gate E MVS execution evidence. The console transcript does not contain the IEWL map or exact JES step codes for case 069; retain that as an explicit pending verification, despite the behavioral PASS. Also pending: post-focused complete 00–123 D7 panel. Neither requirement is silently inferred from eight PASS labels.
+
+
+## Final post-focused D7 run and regression 069 job proof — 14 October 2026
+
+Owner synchronized Git through 9546317 and ran the **entire installed DEVOBJ(BCPLM7) native regression 00–123**, with four explicit candidate selectors. **123 PASS, 0 FAIL, 1 expected SKIP (083), 124 total.** This is a new Gate E panel after the eight successful focused checks, not reused earlier Gate B evidence.
+
+The supplied regression 069 log shows compiler **JOB 3645**, native payload **JOB 3646 RG069R**:
+- ASMAP IFOX00 **RC=0000** (zero flagged statements, highest severity 0);
+- LKED IEWL **RC=0000**;
+- GO **RC=0000**; job result SUCCESS;
+- output record logical sequence matched expected `BLIB 42`; regression PASS;
+- JES DD attribution not independently verified by the record-check tool.
+
+**Remaining formal linkage map check:** console and per-test log do not include IEWL MAP/XREF CSECT listing. Before formal Gate E closure obtain `tools/dump-report-for-job 3646` and inspect actual link-edit inclusions/CSECTs and resolution; do not fabricate a map from a successful GO. The expected outcome is separate application CSECT, BCPLMAIN and linked runtime/BLIB sections, as shown in the available listing. If only partial map information is present, identify its limits rather than claiming all objects listed.
+
+No candidate source, assembler, DEVOBJ object, or production OBJ changes were made for these Gate E executions. **Gate E ready for final map inspection, not yet formally closed.**
