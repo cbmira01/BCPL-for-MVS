@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
-MANIFEST = ROOT / "tests" / "00-regression-panel" / "manifest.tsv"
+MANIFEST = ROOT / "mr10-kit-compiler" / "tests" / "00-regression-panel" / "manifest.tsv"
 COMPILE = ROOT / "tools" / "compile-and-run"
 CURRENT = ROOT / "tools" / "current-icint"
 CODE_RE = re.compile(r"EXECUTION CYCLES\s*=.*?,\s*CODE\s*=\s*(-?\d+)")
