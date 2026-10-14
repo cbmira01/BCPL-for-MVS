@@ -1,4 +1,8 @@
+// ======================================================================
+// RANDOM INTEGER CHAR: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: random, integer, and character utility modules.
+// --- Global slots ---
 GLOBAL $(
 START:1
 WRITEF:76
@@ -9,6 +13,7 @@ $)
 
 LET B(N) = N -> 1, 0
 
+// --- Test entry and result ---
 AND START() BE
 $(
    WRITEF("TEST: Random integer and character utilities*N")
