@@ -1,7 +1,11 @@
+// ======================================================================
+// INTEGER UTILS: REUSABLE BCPL ROUTINES
+// ======================================================================
 // INTEGER-UTILS.BCPL
 // Small, portable integer helpers.
 // GLOBAL slots 101..106 are reconstruction-local library assignments.
 
+// --- Public global slots ---
 GLOBAL $(
 ABS:101
 MIN:102
@@ -11,6 +15,7 @@ GCD:105
 IPOW:106
 $)
 
+// --- Implementation ---
 LET ABS(N) = N<0 -> -N, N
 
 AND MIN(A, B) = A<B -> A, B
