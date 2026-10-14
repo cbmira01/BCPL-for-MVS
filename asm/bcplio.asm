@@ -20,12 +20,14 @@
 *
 * Not reentrant: singleton DCB, buffer and register save area.
 * Overflow latches IOSTATUS=12; character is not written. STOP(12)
-* routing is NOT yet installed. G14 MUST NOT be redirected until then.
+* routing needs caller-owned nonreturning callback via IOBIND.
+* G14 MUST NOT be redirected until BCPLMAIN integration is tested.
 * Provisional MVS adaptation, not claimed historical Cambridge code.
 ***********************************************************************
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
          ENTRY IOFOUT,IOSOUT,IOOUT,IOWRAP,IOENDW
+         ENTRY IOBIND
 *
 IOINIT   BALR  10,0
          USING *,10
@@ -42,6 +44,7 @@ IOINIT   BALR  10,0
          ST    1,IOCURH
          MVI   IO2ACTV,X'00'
          XC    IOSTATUS(4),IOSTATUS
+         XC    IOOVHAND(4),IOOVHAND
          MVI   IOBUF,C' '
          MVC   IOBUF+1(131),IOBUF
          OPEN  (IODCB,(OUTPUT))
@@ -104,7 +107,16 @@ IOWPUT   PUT   IODCB,IOBUF
          MVC   IOBUF+1(131),IOBUF
          B     IOWRET
 IOWFULL  MVC   IOSTATUS(4),IOOVCODE
-         B     IOWRET
+         L     14,IOOVHAND
+         LTR   14,14
+         BZ    IOWRET
+* Transfer once, never return. Undo IOWRCH's register save before
+* invoking caller-owned termination; restore the BCPL frame B.
+         LM    0,9,IOSAVE
+         LM    11,15,IOSAVE+44
+         L     4,0(5)
+         LA    7,12
+         BCR   15,14
 IOW2     C     7,IOLF
          BE    IOW2PUT
          L     14,IO2POS
@@ -290,6 +302,16 @@ IOEWRET  LM    0,9,IOOSAVE
          BCR   15,6
          DROP  10
 *
+*
+* Install a caller-owned NONRETURNING overflow exit. R1=entry or 0
+* (disable). This is a native R14-linked private setup API.
+* Caller must route to STOP(12) and cleanup without returning.
+IOBIND   BALR  10,0
+         USING *,10
+         ST    1,IOOVHAND
+         BR    14
+         DROP  10
+*
          DS    0F
 IOPARM   DC    F'0'
 IOCTL1   DC    F'1'
@@ -307,6 +329,7 @@ IOPOS    DC    F'0'
 IOMAX    DC    F'132'
 IOLF     DC    F'10'
 IOSTATUS DC    F'0'
+IOOVHAND DC    F'0'
 IOOVCODE DC    F'12'
 IOACTIVE DC    X'00'
          DS    0F
