@@ -1,8 +1,12 @@
+// ======================================================================
+// NUMERIC CONVERSION: REUSABLE BCPL ROUTINES
+// ======================================================================
 // NUMERIC-CONVERSION.BCPL
 // Integer/string conversions for packed BCPL strings.
 // Caller supplies writable destination storage for ITOA/ITOHEX.
 // GLOBAL slots 117..120 are reconstruction-local library assignments.
 
+// --- Public global slots ---
 GLOBAL $(
 GETBYTE:85
 PUTBYTE:86
@@ -12,6 +16,7 @@ HEXTOI:119
 ITOHEX:120
 $)
 
+// --- Implementation ---
 LET ATOI(S) = VALOF
 $( LET N = GETBYTE(S, 0)
    AND I = 1
