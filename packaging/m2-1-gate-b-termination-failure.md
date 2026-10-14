@@ -134,3 +134,16 @@ Cause: `tools/checks/prepare-runtime-pds-regression.py` contained the outdated c
 ## D7 focused execution acceptance — 14 October 2026
 
 Owner synchronized commit 124e9d7 and ran native regression 093 with `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7`. Report: `PASS 093 093-aptovec-stack-overflow`, panel 1 PASS / 0 FAIL / 0 SKIP. Current test fixture `expected-go-rc.txt` requires `0012` and `expected.txt` requires `STACK OVERFLOW`; the passing harness therefore demonstrates both via its recorded test criteria (though no step-by-step job summary was supplied in this run). The earlier D7 assembly/install payload JOB 2989 and link payload JOB 2992 were RC=0000. **Focused D7 behavior accepted as evidenced.** Gate B remains open pending ordinary STOP/FINISH checks, full candidate regression, and owner gate closure.
+
+
+## Full D7 panel — first pass; expected-contract discrepancy in test 52
+
+The owner ran the full 00–123 panel with DEVOBJ(BCPLM7). Results: **122 PASS, 1 FAIL (052), 1 expected SKIP (083)**, 124 total. Normal FINISH and STOP regressions 084–089 **all passed**, as did regression 093's newly required RC=0012.
+
+The single failing case, **052 controlled stack overflow**, demonstrated a *correct D7 runtime result*: payload JOB **3101 RG052R**, ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, **GO RC=0012**; the `STACK OVERFLOW` output matched. It was classified FAIL because fixture 052 had not yet acquired `expected-go-rc.txt` and its README described the older D6 success-completion contract. Test 093 already verifies the same new policy via the fixture mechanism.
+
+Git-only remedy:
+- `native-compiler/regression/52-controlled-stack-overflow/expected-go-rc.txt`: `0012`.
+- Test 052 README updated to distinguish D6 RC=0000 from D7 RC=0012 and record JOB 3101.
+
+**This is a regression acceptance-contract update, not a new runtime code correction.** The first full D7 panel cannot be reported as 123 PASS; rerun 052 first and the full panel afterward before formal Gate B acceptance. D6 may no longer pass the updated 052 and 093 fixtures without an explicit baseline-specific fixture mechanism, which has not been introduced. Production OBJ and D6 remain unchanged.
