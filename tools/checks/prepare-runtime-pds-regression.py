@@ -121,8 +121,8 @@ def main():
         raise ValueError("BCPL_RUNTIME_CANDIDATE must be 0 or 1")
     library = os.environ.get("BCPL_RUNTIME_LIBRARY", "OBJ").upper()
     candidate_member = os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER", "BCPLM3").upper()
-    if candidate_member not in ("BCPLM3", "BCPLM4"):
-        raise ValueError("candidate member must be BCPLM3 or BCPLM4")
+    if candidate_member not in ("BCPLM3", "BCPLM4", "BCPLM5"):
+        raise ValueError("candidate member must be BCPLM3, BCPLM4 or BCPLM5")
     if candidate != "1" and "BCPL_RUNTIME_CANDIDATE_MEMBER" in os.environ:
         raise ValueError("candidate member selection requires candidate mode")
     if candidate == "1" and library != "DEVOBJ":
