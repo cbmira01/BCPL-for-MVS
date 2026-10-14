@@ -360,3 +360,7 @@ Operator's `tools/dspal put SOURCE BCPLM6 asm/bcplmain-d6-candidate.asm` **refus
 ### D6 assembly JOB 2385 RC=0004 — one fixed-column comment; corrected
 
 Operator re-staged SOURCE(BCPLM6) successfully as JOB 2382. BLDD6MN payload JOB **2385** assembled with IFOX00 RC=0004; PUTMAIN bypassed. Sole diagnostic **IFO026 statement 1578**, characters in continuation columns of the fixed-format comment `* Provisional DEBUGINT state remains local; stream QSAM state is BCPLIO-owned.`. Shortened comment and checked all D6 source records for lengths >71 columns; **none remain** (commit 0738f8a). No object installed in DEVOBJ(BCPLM6), no D6 link attempted yet. Re-stage corrected source, resubmit BLDD6MN; require RC=0000 before further steps. Production OBJ untouched.
+
+### D6 independent assembly/install accepted — JOB 2389
+
+Operator staged corrected SOURCE(BCPLM6) via JOB **2386** and executed BLDD6MN payload **JOB 2389** on 14 October 2026. ASMMMAIN IFOX00 **RC=0000**, PUTMAIN IEBGENER **RC=0000**, zero assembler statements flagged and severity zero. **DEVOBJ(BCPLM6) assembly/install ACCEPTED.** D6 integration link, cross-reference and regression remain pending; D5 accepted baseline and production OBJ unchanged.
