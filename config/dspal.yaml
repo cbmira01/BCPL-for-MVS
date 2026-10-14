@@ -89,6 +89,9 @@ datasets:
       ICINT13: mr10-kit-compiler/jcl/icintv13-honors-thesis.jcl
       IC13MAP: mr10-kit-compiler/jcl/icintv13-mapstore.jcl
       IC19BLD: mr10-kit-compiler/jcl/build-icintv19.jcl
+      MRBCDEMO: mr10-kit-compiler/jcl/run-bcpl-demos.jcl
+      MRLANGDM: mr10-kit-compiler/jcl/run-language-demos.jcl
+      MRREGRES: mr10-kit-compiler/jcl/run-regression-tests.jcl
 
   MR10_LIBRARY:
     dsn: BCPL.MR10KIT.LIBRARY
@@ -137,6 +140,10 @@ datasets:
       MAZE: mr10-kit-compiler/bcpl-demo/maze/maze.bcpl
       STRMFANO: mr10-kit-compiler/bcpl-demo/stream-fanout/stream-fanout.bcpl
       COROUTIN: mr10-kit-compiler/bcpl-demo/coroutines/coroutines.bcpl
+      WORDIN: mr10-kit-compiler/bcpl-demo/word-count/input.txt
+      FANAIN: mr10-kit-compiler/bcpl-demo/stream-fanout/ain.txt
+      FANBIN: mr10-kit-compiler/bcpl-demo/stream-fanout/bin.txt
+      FANCIN: mr10-kit-compiler/bcpl-demo/stream-fanout/cin.txt
 
   MR10_LANGDEMO:
     dsn: BCPL.MR10KIT.LANGDEMO
