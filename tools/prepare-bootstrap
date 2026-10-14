@@ -33,12 +33,12 @@ INPUTS = (
     "richards-bcpltape/mr10/bcplkit/trn",
     "richards-bcpltape/sys3/bcpl/libhdr",
     "native-compiler/bootstrap-cambridge/options-large-tree.txt",
-    "asm/icintv19.asm",
+    "mr10-kit-compiler/asm/icintv19.asm",
     "tools/compile-and-run",
-    "intcode/syni.int",
-    "intcode/cgi.int",
-    "intcode/blibi.int",
-    "intcode/iclib.int",
+    "mr10-kit-compiler/intcode/syni.int",
+    "mr10-kit-compiler/intcode/cgi.int",
+    "mr10-kit-compiler/intcode/blibi.int",
+    "mr10-kit-compiler/intcode/iclib.int",
 )
 
 
