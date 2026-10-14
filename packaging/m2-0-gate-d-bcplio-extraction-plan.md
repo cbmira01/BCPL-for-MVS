@@ -102,3 +102,26 @@ Commit `6489da421564e5b3e81758360c0caef6f048ccdf` extends the standalone BCIOPRB
 ### D2.3 independent register-sentinel acceptance — JOB 1370
 
 Operator restaged SOURCE(BCIOPRB) by JOB 1365 (remove), 1366 (compress), 1367 (put). Launcher JOB 1369; payload **JOB 1370** executed ASMPROB IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, JOB RESULT SUCCESS, highest RC=0000, submit exit 0. The probe snapshots registers around every IOWRCH call and checks promised unchanged registers, R4 frame restoration, and overflow status 12; any detected mismatch exits RC=8. Thus the **D2.3 isolated-interface hardening checkpoint is ACCEPTED** for all exercised paths: character write, newline PUT, full buffer, overflow. Acceptance remains limited to the tested linkage and does not demonstrate STOP(12) routing, complete BCPLMAIN integration, or the future full I/O service set. No production OBJ changes.
+
+## D3 — BCPLMAIN lifecycle and diagnostics coupling: implementation contract
+
+**Status: architectural inspection performed; runtime integration not yet implemented.** D3 is a *portion of Gate D* within milestone M2.0, not a milestone of its own. Source inspected: current `asm/bcplmain.asm` and independently proven `asm/bcplio.asm` (D2.3 JOB 1370).
+
+### Verified dependencies and retained semantics
+
+- Startup: BCPLMAIN lines ~821–827 zero `OUTPOS`, blank `OUTBUF`, OPEN `BCPOUT` on `SYSPRINT`, and select `OUT1CTL`. BCPLIO's IOINIT independently OPENs its own `IODCB` also on `SYSPRINT`. **Never activate both as simultaneous owners**. The eventual integrated candidate must OPEN primary output exactly once.
+- G14: installed at ~784–785 from local `WRCH`. At ~1416 onward, WRCH selects `OUTCURR`; secondary output `OUT2CTL` dispatches to `WROUT2` and DCB `BCPOUT2` for DD `BCPALT`. Candidate IOWRCH writes only SYSPRINT; indiscriminate G14 replacement breaks selected-stream behavior. Move ownership and stream selection together or provide a BCPLIO dispatch entry covering both.
+- Normal FINISH and STOP: `FINIMPL` zeros STOPRC; `STOPENT` copies R7 into STOPRC; `FINEXIT` at ~963–987 flushes and CLOSEs primary, secondary, and conditional input DCBs before `RELMEM` (MEMDRAIN / FREEMAIN), restores MVS caller registers and returns STOPRC. IOFIN must preserve the selected result and run before memory release. Never close a DCB twice; retain selective close of lazily opened inputs.
+- Stack overflow: `STKOVFL` at ~1046 directly copies `STACK OVERFLOW` into `OUTBUF`, sets OUTPOS, and branches to `FINIMPL`. **Notably this branch selects the FINISH RC path (0), rather than STOPENT(12)**. Preserve existing observed behavior until a deliberate, separately tested policy decision; do not silently relabel it STOP(12). By contrast, normal primary WRCH overflow branches to `STOPENT` with R7=12 (~1441). Both cases need explicit tests.
+- Formatter and diagnostics: `WRITEST` uses OUTPOS/OUTBUF from ~1594/~1853; `DEBUGINT` uses them from ~1941. A simple G14 rewrite leaves these direct buffer writers behind. Provide one narrow internal append/record interface owned by BCPLIO and migrate both callers together (or migrate the complete formatting/diagnostic code).
+- BCPLIO current IOSTAT is diagnostic-only and its 133rd-character path latches 12 without terminating. This cannot replace the current G14 overflow/STOP semantics. The D2.3 sentinel probe proves its isolated contract, not integrated STOP routing.
+- Input and PARM remain owned by BCPLMAIN: BCPIN and BCPINB input state and EODAD, PARMLIST and G11/G13/G15/G39/G41/G42/G46/G47 still require a separately verified ownership transfer in Gate D. An output-only integration is not evidence that all BCPLIO extraction is done.
+
+### Controlled D3 implementation order
+
+1. **D3.a Interface definition**: Write BCPLIO module ABI for lifecycle (IOINIT/IOFIN), primary and secondary stream selection, overflow/STOP handoff, and a single internal formatter/diagnostic append API. Keep private DCB/data labels private. Decide and document preservation for R10 across calls in a context where BCPLMAIN itself uses R10 as base.
+2. **D3.b Ownership preparation**: Introduce a separate DEVOBJ-only integrated candidate linkage path; do not modify production OBJ or activate a second SYSPRINT OPEN. Verify that STOPRC remains live through IOFIN and register preservation across MVS macros. Distinguish intentional final lifecycle events from premature termination.
+3. **D3.c Functional wiring**: Migrate G14 stream-aware dispatch and both output DCBs/buffers; adapt WRITEST/DEBUGINT/stack-overflow diagnostics to the single interface; migrate conditional input cleanup and PARM handling with matching ownership. Update BCPLMAIN source and DEVOBJ assembly only once all references have an actual owner.
+4. **D3.d Targeted proof**: IEWL MAP/XREF must resolve BCPLIO services independently. Focused tests: SYSPRINT primary, BCPALT secondary, newline/132-byte boundary, overflow RC=12, STOP(N) preserved after flush, FINISH RC=0, stack-overflow marker/legacy RC, formatter and DEBUGINT output, BCPIN/BCPINB EOF, and PARM. Run D4-focused native regressions after all of these pass.
+
+**Safety:** D3 inspection/design is not an acceptance checkpoint. No BCPLMAIN or BCPLIO code changes, no resident MVS writes, and no production OBJ changes in this portion. Gate D remains open.
