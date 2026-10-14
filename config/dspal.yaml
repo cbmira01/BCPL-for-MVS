@@ -32,14 +32,13 @@ allocation_defaults:
   secondary: 5
   directory: 20
 
-# Explicit repo-to-member mappings are authoritative. PDS members are not
-# inferred by truncating host filenames. Datasets without members mappings
-# remain managed/allocatable but are not populated until their flattening
-# policy is explicitly defined.
+# M3 namespace migration: previous HERC02.BCPL.* datasets are not deleted.
+# Generated workarea inputs are omitted until staged; they are not Git-backed.
+# MR10 objects, native accepted objects and loadlibs must be migrated separately.
 datasets:
-  SOURCE:
-    dsn: BCPL.SOURCE
-    description: Active BCPL compiler/bootstrap source library
+  MR10_SOURCE:
+    dsn: BCPL.MR10KIT.SOURCE
+    description: MR10 INTCODE compiler phases and interpreter input
     type: pds
     dsorg: PO
     recfm: FB
@@ -47,37 +46,15 @@ datasets:
     blksize: 800
     populate: true
     members:
-      BCPL: workarea/bootstrap-cambridge/demoted/bcpl
-      SYN: workarea/bootstrap-cambridge/demoted/syn
-      LEX: workarea/bootstrap-cambridge/demoted/lex
-      TRNA: workarea/bootstrap-cambridge/demoted/trna
-      TRNB: workarea/bootstrap-cambridge/demoted/trnb
-      CGA: workarea/bootstrap-cambridge/demoted/cga
-      CGB: workarea/bootstrap-cambridge/demoted/cgb
-      CGC: workarea/bootstrap-cambridge/demoted/cgc
-      CGD: workarea/bootstrap-cambridge/demoted/cgd
-      CGE: workarea/bootstrap-cambridge/demoted/cge
-      BLIB: workarea/bootstrap-cambridge/demoted/blib
-      CGAD: workarea/bootstrap-cambridge/demoted-diag/cga
-      CGBD: workarea/bootstrap-cambridge/demoted-diag/cgb
-      CGCD: workarea/bootstrap-cambridge/demoted-diag/cgc
-      CGDD: workarea/bootstrap-cambridge/demoted-diag/cgd
-      CGED: workarea/bootstrap-cambridge/demoted-diag/cge
-      BOOTHOST: native-compiler/bootstrap-cambridge/bootstrap-host.bcpl
-      OPTIONS: native-compiler/bootstrap-cambridge/options-large-tree.txt
-      CAMBPARM: native-compiler/bootstrap-cambridge/cambridge-options.txt
-      LIBHDR: richards-bcpltape/sys3/bcpl/libhdr
-      SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
-      TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
-      CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
-      BCPLMAIN: asm/bcplmain.asm
-      BCPLMEM: asm/bcplmem.asm
-      BCPLBYTE: asm/bcplbyte.asm
-      BCPLAPT: asm/bcplapt.asm
+      BLIBI: mr10-kit-compiler/source/blibi.int
+      CGI: mr10-kit-compiler/source/cgi.int
+      ICLIB: mr10-kit-compiler/source/iclib.int
+      SYNI: mr10-kit-compiler/source/syni.int
+      TRNI: mr10-kit-compiler/source/trni.int
 
-  ASM:
-    dsn: BCPL.ASM
-    description: System/370 assembler source library
+  MR10_ASM:
+    dsn: BCPL.MR10KIT.ASM
+    description: MR10 ICINT assembler/interpreter milestones
     type: pds
     dsorg: PO
     recfm: FB
@@ -85,20 +62,20 @@ datasets:
     blksize: 800
     populate: true
     members:
-      HELLOWLD: asm/hello-world.asm
-      BCMWIP: asm/bcplmain-wip.asm
-      ICINT12: asm/icintv12.asm
-      ICINT13: asm/icintv13.asm
-      IC14TRCE: asm/icintv14-trace.asm
-      ICINT14: asm/icintv14.asm
-      ICINT15: asm/icintv15.asm
-      ICINT16: asm/icintv16.asm
-      ICINT17: asm/icintv17.asm
-      ICINT19: asm/icintv19.asm
+      HELLOWLD: mr10-kit-compiler/asm/hello-world.asm
+      ICINT12: mr10-kit-compiler/asm/icintv12.asm
+      ICINT13: mr10-kit-compiler/asm/icintv13.asm
+      IC14TRCE: mr10-kit-compiler/asm/icintv14-trace.asm
+      ICINT14: mr10-kit-compiler/asm/icintv14.asm
+      ICINT15: mr10-kit-compiler/asm/icintv15.asm
+      ICINT16: mr10-kit-compiler/asm/icintv16.asm
+      ICINT17: mr10-kit-compiler/asm/icintv17.asm
+      ICINT19: mr10-kit-compiler/asm/icintv19.asm
+      ICINT18: mr10-kit-compiler/asm/icintv18.asm
 
-  JCL:
-    dsn: BCPL.JCL
-    description: Reusable MVS JCL library
+  MR10_JCL:
+    dsn: BCPL.MR10KIT.JCL
+    description: MR10 interpreter JCL and demonstration jobs
     type: pds
     dsorg: PO
     recfm: FB
@@ -106,22 +83,15 @@ datasets:
     blksize: 800
     populate: true
     members:
-      CAMBBLD: jcl/build-cambridge-resident.jcl
-      CG370DB: jcl/build-cg370-diagnostic.jcl
-      BLIBBLD: jcl/build-blib-object.jcl
-      BLIBLINK: jcl/probe-blib-object-consumer.jcl
-      BLDBMAIN: jcl/build-bcplmain-objects.jcl
-      BLDGFMEM: jcl/build-gate-f1-bcplmem.jcl
-      BLDDEVM: jcl/build-dev-bcplmem.jcl
-      BLDDEVN: jcl/build-dev-bcplmain.jcl
-      BLDDEVB: jcl/build-dev-bcplbyte.jcl
-      BLDDEVA: jcl/build-dev-bcplapt.jcl
-      BLDDEVL: jcl/build-dev-blib.jcl
-      SEEDDEV: jcl/seed-devobj.jcl
+      HELLOHV: mr10-kit-compiler/jcl/hello-world-heavy.jcl
+      DUMPJES: mr10-kit-compiler/jcl/dump-jes2-parameters.jcl
+      ICINT12: mr10-kit-compiler/jcl/icintv12-honors-thesis.jcl
+      ICINT13: mr10-kit-compiler/jcl/icintv13-honors-thesis.jcl
+      IC13MAP: mr10-kit-compiler/jcl/icintv13-mapstore.jcl
 
-  INTCODE:
-    dsn: BCPL.INTCODE
-    description: INTCODE programs, compiler phases, and interpreter inputs
+  MR10_LIBRARY:
+    dsn: BCPL.MR10KIT.LIBRARY
+    description: MR10 BCPL support library
     type: pds
     dsorg: PO
     recfm: FB
@@ -129,16 +99,19 @@ datasets:
     blksize: 800
     populate: true
     members:
-      BLIBI: intcode/blibi.int
-      CGI: intcode/cgi.int
-      ICLIB: intcode/iclib.int
-      SYNI: intcode/syni.int
-      TRNI: intcode/trni.int
-      TRNILRG: workarea/bootstrap-cambridge/trni-large-names.int
+      CHARUTIL: mr10-kit-compiler/library/char-utils.bcpl
+      COROUTIN: mr10-kit-compiler/library/coroutines.bcpl
+      GETVEC: mr10-kit-compiler/library/getvec-freevec.bcpl
+      INTUTIL: mr10-kit-compiler/library/integer-utils.bcpl
+      LINEIO: mr10-kit-compiler/library/line-io.bcpl
+      MEMUTIL: mr10-kit-compiler/library/memory-utils.bcpl
+      NUMCONV: mr10-kit-compiler/library/numeric-conversion.bcpl
+      RANDOM: mr10-kit-compiler/library/random.bcpl
+      STRUTIL: mr10-kit-compiler/library/string-utils.bcpl
 
-  LIBRARY:
-    dsn: BCPL.LIBRARY
-    description: Reusable BCPL runtime and library source
+  MR10_BCPLDEMO:
+    dsn: BCPL.MR10KIT.BCPLDEMO
+    description: MR10 complete BCPL demonstration programs
     type: pds
     dsorg: PO
     recfm: FB
@@ -146,19 +119,27 @@ datasets:
     blksize: 800
     populate: true
     members:
-      CHARUTIL: library/char-utils.bcpl
-      COROUTIN: library/coroutines.bcpl
-      GETVEC: library/getvec-freevec.bcpl
-      INTUTIL: library/integer-utils.bcpl
-      LINEIO: library/line-io.bcpl
-      MEMUTIL: library/memory-utils.bcpl
-      NUMCONV: library/numeric-conversion.bcpl
-      RANDOM: library/random.bcpl
-      STRUTIL: library/string-utils.bcpl
+      RFACT: mr10-kit-compiler/bcpl-demo/richards-factorial/richards-factorial.bcpl
+      QUEENS: mr10-kit-compiler/bcpl-demo/queens/queens.bcpl
+      KNIGHT: mr10-kit-compiler/bcpl-demo/knight/knight.bcpl
+      HANOI: mr10-kit-compiler/bcpl-demo/hanoi/hanoi.bcpl
+      SIEVE: mr10-kit-compiler/bcpl-demo/sieve/sieve.bcpl
+      GCD: mr10-kit-compiler/bcpl-demo/gcd/gcd.bcpl
+      QUICKSRT: mr10-kit-compiler/bcpl-demo/quicksort/quicksort.bcpl
+      BSEARCH: mr10-kit-compiler/bcpl-demo/binary-search/binary-search.bcpl
+      LINKLIST: mr10-kit-compiler/bcpl-demo/linked-list/linked-list.bcpl
+      BINTREE: mr10-kit-compiler/bcpl-demo/binary-tree/binary-tree.bcpl
+      HASHTABL: mr10-kit-compiler/bcpl-demo/hash-table/hash-table.bcpl
+      WORDCNT: mr10-kit-compiler/bcpl-demo/word-count/word-count.bcpl
+      RPNCALC: mr10-kit-compiler/bcpl-demo/rpn-calculator/rpn-calculator.bcpl
+      EXPRPARS: mr10-kit-compiler/bcpl-demo/expression-parser/expression-parser.bcpl
+      MAZE: mr10-kit-compiler/bcpl-demo/maze/maze.bcpl
+      STRMFANO: mr10-kit-compiler/bcpl-demo/stream-fanout/stream-fanout.bcpl
+      COROUTIN: mr10-kit-compiler/bcpl-demo/coroutines/coroutines.bcpl
 
-  BCPLDEMO:
-    dsn: BCPL.BCPLDEMO
-    description: Complete readable BCPL demonstration programs
+  MR10_LANGDEMO:
+    dsn: BCPL.MR10KIT.LANGDEMO
+    description: MR10 BCPL language examples
     type: pds
     dsorg: PO
     recfm: FB
@@ -166,27 +147,21 @@ datasets:
     blksize: 800
     populate: true
     members:
-      RFACT: suite/richards-factorial/richards-factorial.bcpl
-      QUEENS: suite/queens/queens.bcpl
-      KNIGHT: suite/knight/knight.bcpl
-      HANOI: suite/hanoi/hanoi.bcpl
-      SIEVE: suite/sieve/sieve.bcpl
-      GCD: suite/gcd/gcd.bcpl
-      QUICKSRT: suite/quicksort/quicksort.bcpl
-      BSEARCH: suite/binary-search/binary-search.bcpl
-      LINKLIST: suite/linked-list/linked-list.bcpl
-      BINTREE: suite/binary-tree/binary-tree.bcpl
-      HASHTABL: suite/hash-table/hash-table.bcpl
-      WORDCNT: suite/word-count/word-count.bcpl
-      RPNCALC: suite/rpn-calculator/rpn-calculator.bcpl
-      EXPRPARS: suite/expression-parser/expression-parser.bcpl
-      MAZE: suite/maze/maze.bcpl
-      STRMFANO: suite/stream-fanout/stream-fanout.bcpl
-      COROUTIN: suite/coroutines/coroutines.bcpl
+      BOOLOPS: mr10-kit-compiler/language-demo/boolean-operators/boolean-operators.bcpl
+      DECLS: mr10-kit-compiler/language-demo/declarations/declarations.bcpl
+      FUNCVAL: mr10-kit-compiler/language-demo/function-values/function-values.bcpl
+      MANIGLOB: mr10-kit-compiler/language-demo/manifest-global/manifest-global.bcpl
+      PTRIDIOM: mr10-kit-compiler/language-demo/pointer-idioms/pointer-idioms.bcpl
+      REPEAT: mr10-kit-compiler/language-demo/repeat-forms/repeat-forms.bcpl
+      STRBYTES: mr10-kit-compiler/language-demo/strings-bytes/strings-bytes.bcpl
+      SWITCHON: mr10-kit-compiler/language-demo/switchon/switchon.bcpl
+      TABVECT: mr10-kit-compiler/language-demo/table-vector/table-vector.bcpl
+      TESTTHEN: mr10-kit-compiler/language-demo/test-then-or/test-then-or.bcpl
+      VALOFRES: mr10-kit-compiler/language-demo/valof-resultis/valof-resultis.bcpl
 
-  LANGDEMO:
-    dsn: BCPL.LANGDEMO
-    description: Focused BCPL language-feature demonstration programs
+  MR10_TESTS:
+    dsn: BCPL.MR10KIT.TESTS
+    description: MR10 regression cases, expected output and fixtures
     type: pds
     dsorg: PO
     recfm: FB
@@ -194,104 +169,71 @@ datasets:
     blksize: 800
     populate: true
     members:
-      BOOLOPS: suite/language/boolean-operators/boolean-operators.bcpl
-      DECLS: suite/language/declarations/declarations.bcpl
-      FUNCVAL: suite/language/function-values/function-values.bcpl
-      MANIGLOB: suite/language/manifest-global/manifest-global.bcpl
-      PTRIDIOM: suite/language/pointer-idioms/pointer-idioms.bcpl
-      REPEAT: suite/language/repeat-forms/repeat-forms.bcpl
-      STRBYTES: suite/language/strings-bytes/strings-bytes.bcpl
-      SWITCHON: suite/language/switchon/switchon.bcpl
-      TABVECT: suite/language/table-vector/table-vector.bcpl
-      TESTTHEN: suite/language/test-then-or/test-then-or.bcpl
-      VALOFRES: suite/language/valof-resultis/valof-resultis.bcpl
+      INTARITH: mr10-kit-compiler/tests/00-regression-panel/calculation/integer-arithmetic.bcpl
+      INTAREXP: mr10-kit-compiler/tests/00-regression-panel/calculation/integer-arithmetic.expected
+      NESTREC: mr10-kit-compiler/tests/00-regression-panel/calls/nested-recursion.bcpl
+      NESTREXP: mr10-kit-compiler/tests/00-regression-panel/calls/nested-recursion.expected
+      BRANCHES: mr10-kit-compiler/tests/00-regression-panel/control/branches-loops.bcpl
+      BRANEXP: mr10-kit-compiler/tests/00-regression-panel/control/branches-loops.expected
+      BASICCO: mr10-kit-compiler/tests/00-regression-panel/coroutines/basic-coroutine.bcpl
+      BASCOEXP: mr10-kit-compiler/tests/00-regression-panel/coroutines/basic-coroutine.expected
+      BYTES: mr10-kit-compiler/tests/00-regression-panel/data-movement/bytes.bcpl
+      BYTESEXP: mr10-kit-compiler/tests/00-regression-panel/data-movement/bytes.expected
+      SCALVEC: mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.bcpl
+      SCAVEXP: mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.expected
+      MODHELP: mr10-kit-compiler/tests/00-regression-panel/modules/helper.bcpl
+      MODMAIN: mr10-kit-compiler/tests/00-regression-panel/modules/main.bcpl
+      MODEXP: mr10-kit-compiler/tests/00-regression-panel/modules/separate-module.expected
+      BASLIB: mr10-kit-compiler/tests/00-regression-panel/standard-library/basic-library.bcpl
+      BASLEXP: mr10-kit-compiler/tests/00-regression-panel/standard-library/basic-library.expected
+      LINEIO: mr10-kit-compiler/tests/00-regression-panel/standard-library/line-io.bcpl
+      LINEIN: mr10-kit-compiler/tests/00-regression-panel/standard-library/line-input.txt
+      LINEEXP: mr10-kit-compiler/tests/00-regression-panel/standard-library/line-io.expected
+      RANDCHAR: mr10-kit-compiler/tests/00-regression-panel/standard-library/random-integer-char.bcpl
+      RANDEXP: mr10-kit-compiler/tests/00-regression-panel/standard-library/random-integer-char.expected
+      STRMEM: mr10-kit-compiler/tests/00-regression-panel/standard-library/string-memory-conversion.bcpl
+      STRMEXP: mr10-kit-compiler/tests/00-regression-panel/standard-library/string-memory-conversion.expected
+      GETVEC: mr10-kit-compiler/tests/00-regression-panel/storage/getvec-reuse.bcpl
+      GETVEXP: mr10-kit-compiler/tests/00-regression-panel/storage/getvec-reuse.expected
+      T01ECHO: mr10-kit-compiler/tests/01-echo-test/echo-sysin.int
+      T01TEXT: mr10-kit-compiler/tests/01-echo-test/best-of-times.txt
+      T02HON: mr10-kit-compiler/tests/02-honors-thesis-and-mapstore/intcode-v12-honors-thesis.int
+      T02MAP: mr10-kit-compiler/tests/02-honors-thesis-and-mapstore/intcode-v13-mapstore.int
+      T03FACT: mr10-kit-compiler/tests/03-compile-richards-factorial/richards-factorial-test.bcpl
+      T04MOD1: mr10-kit-compiler/tests/04-module-test/module-test-1.bcpl
+      T04MOD2: mr10-kit-compiler/tests/04-module-test/module-test-2.bcpl
+      T05MAIN: mr10-kit-compiler/tests/05-named-dd/main.bcpl
+      T05EXTRA: mr10-kit-compiler/tests/05-named-dd/extra.bcpl
+      T06MAIN: mr10-kit-compiler/tests/06-dynamic-streams/main.bcpl
+      T06LVL1: mr10-kit-compiler/tests/06-dynamic-streams/level1.bcpl
+      T06LVL2: mr10-kit-compiler/tests/06-dynamic-streams/level2.bcpl
+      T06LVL3: mr10-kit-compiler/tests/06-dynamic-streams/level3.bcpl
+      T07MAIN: mr10-kit-compiler/tests/07-many-streams/main.bcpl
+      T07DD01: mr10-kit-compiler/tests/07-many-streams/dd01.txt
+      T07DD02: mr10-kit-compiler/tests/07-many-streams/dd02.txt
+      T07DD03: mr10-kit-compiler/tests/07-many-streams/dd03.txt
+      T07DD04: mr10-kit-compiler/tests/07-many-streams/dd04.txt
+      T07DD05: mr10-kit-compiler/tests/07-many-streams/dd05.txt
+      T07DD06: mr10-kit-compiler/tests/07-many-streams/dd06.txt
+      T07DD07: mr10-kit-compiler/tests/07-many-streams/dd07.txt
+      T07DD08: mr10-kit-compiler/tests/07-many-streams/dd08.txt
+      T07DD09: mr10-kit-compiler/tests/07-many-streams/dd09.txt
+      T07DD10: mr10-kit-compiler/tests/07-many-streams/dd10.txt
+      T07DD11: mr10-kit-compiler/tests/07-many-streams/dd11.txt
+      T07DD12: mr10-kit-compiler/tests/07-many-streams/dd12.txt
+      T08CHAR: mr10-kit-compiler/tests/08-character-translation/character-translation.bcpl
+      T08PUNCT: mr10-kit-compiler/tests/08-character-translation/punct.txt
+      T09MULT: mr10-kit-compiler/tests/09-multiple-assignment/multiple-assignment.bcpl
+      T10CPROB: mr10-kit-compiler/tests/10-coroutines/compiler-probe.bcpl
+      T10FRAME: mr10-kit-compiler/tests/10-coroutines/frame-layout-probe.bcpl
+      T10FIXED: mr10-kit-compiler/tests/10-coroutines/fixed-stack-producer-consumer.bcpl
+      T10CHAIN: mr10-kit-compiler/tests/10-coroutines/resumeco-chain.bcpl
+      T10CRDEL: mr10-kit-compiler/tests/10-coroutines/create-delete-static-pool.bcpl
+      T11GVFV: mr10-kit-compiler/tests/11-getvec-freevec/getvec-freevec.bcpl
 
-  REGRESS:
-    dsn: BCPL.REGRESS
-    description: Permanent BCPL regression panel programs and fixtures
-    type: pds
-    dsorg: PO
-    recfm: FB
-    lrecl: 80
-    blksize: 800
-    populate: true
-    members:
-      INTARITH: tests/00-regression-panel/calculation/integer-arithmetic.bcpl
-      INTAREXP: tests/00-regression-panel/calculation/integer-arithmetic.expected
-      NESTREC: tests/00-regression-panel/calls/nested-recursion.bcpl
-      NESTREXP: tests/00-regression-panel/calls/nested-recursion.expected
-      BRANCHES: tests/00-regression-panel/control/branches-loops.bcpl
-      BRANEXP: tests/00-regression-panel/control/branches-loops.expected
-      BASICCO: tests/00-regression-panel/coroutines/basic-coroutine.bcpl
-      BASCOEXP: tests/00-regression-panel/coroutines/basic-coroutine.expected
-      BYTES: tests/00-regression-panel/data-movement/bytes.bcpl
-      BYTESEXP: tests/00-regression-panel/data-movement/bytes.expected
-      SCALVEC: tests/00-regression-panel/data-movement/scalar-vector.bcpl
-      SCAVEXP: tests/00-regression-panel/data-movement/scalar-vector.expected
-      MODHELP: tests/00-regression-panel/modules/helper.bcpl
-      MODMAIN: tests/00-regression-panel/modules/main.bcpl
-      MODEXP: tests/00-regression-panel/modules/separate-module.expected
-      BASLIB: tests/00-regression-panel/standard-library/basic-library.bcpl
-      BASLEXP: tests/00-regression-panel/standard-library/basic-library.expected
-      LINEIO: tests/00-regression-panel/standard-library/line-io.bcpl
-      LINEIN: tests/00-regression-panel/standard-library/line-input.txt
-      LINEEXP: tests/00-regression-panel/standard-library/line-io.expected
-      RANDCHAR: tests/00-regression-panel/standard-library/random-integer-char.bcpl
-      RANDEXP: tests/00-regression-panel/standard-library/random-integer-char.expected
-      STRMEM: tests/00-regression-panel/standard-library/string-memory-conversion.bcpl
-      STRMEXP: tests/00-regression-panel/standard-library/string-memory-conversion.expected
-      GETVEC: tests/00-regression-panel/storage/getvec-reuse.bcpl
-      GETVEXP: tests/00-regression-panel/storage/getvec-reuse.expected
-
-  TEST:
-    dsn: BCPL.TEST
-    description: Current reconstruction and acceptance test workloads
-    type: pds
-    dsorg: PO
-    recfm: FB
-    lrecl: 80
-    blksize: 800
-    populate: true
-    members:
-      T01ECHO: tests/01-echo-test/echo-sysin.int
-      T01TEXT: tests/01-echo-test/best-of-times.txt
-      T02HON: tests/02-honors-thesis-and-mapstore/intcode-v12-honors-thesis.int
-      T02MAP: tests/02-honors-thesis-and-mapstore/intcode-v13-mapstore.int
-      T03FACT: tests/03-compile-richards-factorial/richards-factorial-test.bcpl
-      T04MOD1: tests/04-module-test/module-test-1.bcpl
-      T04MOD2: tests/04-module-test/module-test-2.bcpl
-      T05MAIN: tests/05-named-dd/main.bcpl
-      T05EXTRA: tests/05-named-dd/extra.bcpl
-      T06MAIN: tests/06-dynamic-streams/main.bcpl
-      T06LVL1: tests/06-dynamic-streams/level1.bcpl
-      T06LVL2: tests/06-dynamic-streams/level2.bcpl
-      T06LVL3: tests/06-dynamic-streams/level3.bcpl
-      T07MAIN: tests/07-many-streams/main.bcpl
-      T07DD01: tests/07-many-streams/dd01.txt
-      T07DD02: tests/07-many-streams/dd02.txt
-      T07DD03: tests/07-many-streams/dd03.txt
-      T07DD04: tests/07-many-streams/dd04.txt
-      T07DD05: tests/07-many-streams/dd05.txt
-      T07DD06: tests/07-many-streams/dd06.txt
-      T07DD07: tests/07-many-streams/dd07.txt
-      T07DD08: tests/07-many-streams/dd08.txt
-      T07DD09: tests/07-many-streams/dd09.txt
-      T07DD10: tests/07-many-streams/dd10.txt
-      T07DD11: tests/07-many-streams/dd11.txt
-      T07DD12: tests/07-many-streams/dd12.txt
-      T08CHAR: tests/08-character-translation/character-translation.bcpl
-      T08PUNCT: tests/08-character-translation/punct.txt
-      T09MULT: tests/09-multiple-assignment/multiple-assignment.bcpl
-      T10CPROB: tests/10-coroutines/compiler-probe.bcpl
-      T10FRAME: tests/10-coroutines/frame-layout-probe.bcpl
-      T10FIXED: tests/10-coroutines/fixed-stack-producer-consumer.bcpl
-      T10CHAIN: tests/10-coroutines/resumeco-chain.bcpl
-      T10CRDEL: tests/10-coroutines/create-delete-static-pool.bcpl
-      T11GVFV: tests/11-getvec-freevec/getvec-freevec.bcpl
-
-  OBJ:
-    dsn: BCPL.OBJ
-    description: Native System/370 relocatable FB80 object deck library
+  MR10_OBJ:
+    dsn: BCPL.MR10KIT.OBJ
+    description: MR10 relocatable object library
     type: pds
     dsorg: PO
     recfm: FB
@@ -300,23 +242,184 @@ datasets:
     content_type: object
     populate: false
 
-  DEVOBJ:
-    dsn: BCPL.DEVOBJ
-    description: Candidate native System/370 relocatable FB80 object deck library
-    type: pds
-    dsorg: PO
-    recfm: FB
-    lrecl: 80
-    blksize: 800
-    content_type: object
-    populate: false
-
-  LOAD:
-    dsn: BCPL.LOAD
-    description: Link-edited executable load modules
+  MR10_LOAD:
+    dsn: BCPL.MR10KIT.LOAD
+    description: MR10 executable load library
     type: loadlib
     dsorg: PO
     recfm: U
     lrecl: 0
     blksize: 6144
     populate: false
+
+  CAMB_SOURCE:
+    dsn: BCPL.CAMBRIDG.SOURCE
+    description: Cambridge reconstructed and historical compiler sources
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      LIBHDR: richards-bcpltape/sys3/bcpl/libhdr
+      SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
+      TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
+      CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
+
+  CAMB_ASM:
+    dsn: BCPL.CAMBRIDG.ASM
+    description: Cambridge compiler-specific assembler sources (pending selection)
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: false
+
+  CAMB_JCL:
+    dsn: BCPL.CAMBRIDG.JCL
+    description: Cambridge bootstrap and code-generation jobs
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      CAMBBLD: native-compiler/jcl/build-cambridge-resident.jcl
+      CG370DB: native-compiler/jcl/build-cg370-diagnostic.jcl
+
+  CAMB_LIBRARY:
+    dsn: BCPL.CAMBRIDG.LIBRARY
+    description: Cambridge BCPL source library (pending)
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: false
+
+  CAMB_BCPLDEMO:
+    dsn: BCPL.CAMBRIDG.BCPLDEMO
+    description: Cambridge BCPL demonstration sources (pending)
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: false
+
+  CAMB_LANGDEMO:
+    dsn: BCPL.CAMBRIDG.LANGDEMO
+    description: Cambridge language examples (pending)
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: false
+
+  CAMB_TESTS:
+    dsn: BCPL.CAMBRIDG.TESTS
+    description: Cambridge compiler tests (pending)
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: false
+
+  CAMB_OBJ:
+    dsn: BCPL.CAMBRIDG.OBJ
+    description: Cambridge relocatable object library
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    content_type: object
+    populate: false
+
+  CAMB_LOAD:
+    dsn: BCPL.CAMBRIDG.LOAD
+    description: Cambridge executable load library
+    type: loadlib
+    dsorg: PO
+    recfm: U
+    lrecl: 0
+    blksize: 6144
+    populate: false
+
+  NATIVE_SOURCE:
+    dsn: BCPL.NATIVE.SOURCE
+    description: Native compiler/runtime BCPL source (pending)
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: false
+
+  NATIVE_ASM:
+    dsn: BCPL.NATIVE.ASM
+    description: Native System/370 runtime assembler sources
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      BCPLMAIN: native-compiler/asm/bcplmain.asm
+      BCPLMEM: native-compiler/asm/bcplmem.asm
+      BCPLBYTE: native-compiler/asm/bcplbyte.asm
+      BCPLAPT: native-compiler/asm/bcplapt.asm
+      BCMWIP: native-compiler/asm/bcplmain-wip.asm
+      BCPLM7: native-compiler/asm/bcplmain-d7-candidate.asm
+      BCPLM6: native-compiler/asm/bcplmain-d6-candidate.asm
+      BCPLIO: native-compiler/asm/bcplio.asm
+
+  NATIVE_JCL:
+    dsn: BCPL.NATIVE.JCL
+    description: Native runtime assembler/link and acceptance jobs
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      BLIBBLD: native-compiler/jcl/build-blib-object.jcl
+      BLIBLINK: native-compiler/jcl/probe-blib-object-consumer.jcl
+      BLDBMAIN: native-compiler/jcl/build-bcplmain-objects.jcl
+      BLDGFMEM: native-compiler/jcl/build-gate-f1-bcplmem.jcl
+      BLDDEVM: native-compiler/jcl/build-dev-bcplmem.jcl
+      BLDDEVN: native-compiler/jcl/build-dev-bcplmain.jcl
+      BLDDEVB: native-compiler/jcl/build-dev-bcplbyte.jcl
+      BLDDEVA: native-compiler/jcl/build-dev-bcplapt.jcl
+      BLDDEVL: native-compiler/jcl/build-dev-blib.jcl
+      SEEDDEV: native-compiler/jcl/seed-devobj.jcl
+
+  NATIVE_OBJ:
+    dsn: BCPL.NATIVE.OBJ
+    description: Accepted native relocatable object modules
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    content_type: object
+    populate: false
+
+  NATIVE_DEVOBJ:
+    dsn: BCPL.NATIVE.DEVOBJ
+    description: Unaccepted native development candidates
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    content_type: object
+    populate: false
+
