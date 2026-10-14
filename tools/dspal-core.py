@@ -404,6 +404,8 @@ def dataset_missing(report: str, dsn: str) -> bool:
     upper = report.upper()
     name = dsn.upper()
     patterns = (
+        f"\x27{name}\x27 NOT IN CATALOG",
+        f"\x22{name}\x22 NOT IN CATALOG",
         f"{name} NOT IN CATALOG",
         f"DATA SET {name} NOT IN CATALOG",
         f"DATASET {name} NOT IN CATALOG",
@@ -595,7 +597,8 @@ def initbcpl_deck(
         dsn = full_dsn(config, spec)
         dasd_unit = str(spec.get("unit", default_unit)).upper()
         lines.append(f"//* {logical}: {spec['description']}")
-        lines.append(f"//{dd:<8} DD  DSN={dsn},DISP=(NEW,CATLG,DELETE),")
+        lines.append(f"//{dd:<8} DD  DSN={dsn},")
+        lines.append("//             DISP=(NEW,CATLG,DELETE),")
         lines.append(f"//             UNIT={dasd_unit},")
         lines.append(f"//             {allocation_clause(config, spec)},")
         if volume:
