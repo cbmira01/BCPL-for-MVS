@@ -21,6 +21,7 @@ $( LET S = FINDINPUT("TEXT")
    AND LINES = 0
    AND INWORD = FALSE
 
+   WRITEF("DEMO: Count characters, words, and lines from TEXT*N")
    IF S=0 DO
    $( WRITEF("TEXT DD NOT FOUND*N")
       FINISH
