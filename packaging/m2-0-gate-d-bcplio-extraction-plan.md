@@ -94,3 +94,7 @@ Updated SOURCE(BCIOPRB) staged by JOB 1353 (remove), 1354 (compress), 1355 (put)
 ### D2.3 overflow-status probe accepted — JOB 1364
 
 Operator replaced SOURCE(BCIOPRB) through JOB 1359 rm, JOB 1360 compress, JOB 1361 put. Launcher JOB 1363, payload **JOB 1364**: ASMPROB IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; job success, highest RC=0000, submit exit 0. Probe specifically selects RC=0 only for native IOSTAT=12 after 133 character writes to 132-byte buffer, so this accepts overflow-status verification with the corrected R12/R15 epilogue. Previous JOB 1352/1358 reports show real marker and full 132-X record. **D2.3 remains open** for explicit register-sentinel proof; STOP(12) and BCPLMAIN lifecycle coordination remain subsequent integration work. Production OBJ unmodified.
+
+### D2.3 register-sentinel validation candidate
+
+Commit `6489da421564e5b3e81758360c0caef6f048ccdf` extends the standalone BCIOPRB probe with a `CHECKWR` wrapper around *every* IOWRCH call (regular characters, LF-triggered PUT, 132-byte boundary, 133rd overflow). It saves register images immediately before/after calls, compares R0-R3, R5, R7-R9, R11-R12, R15, and checks R4 restored from the BCPL frame. R6 is the BCPL return register, R10 private BCPLIO base; R13/R14 are separately used for MVS savearea/probe wrapper linkage, not sentinel-checked. Nonzero BADFLAG returns GO RC=8, as does an incorrect IOSTAT (must be 12). **Not yet MVS tested.** No changes to BCPLIO, BCPLMAIN, or production OBJ; only restage SOURCE(BCIOPRB), then submit existing JCL(BCIOPRB).
