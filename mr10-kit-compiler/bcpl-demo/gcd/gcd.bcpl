@@ -20,6 +20,7 @@ AND LCM(A, B) = A=0 \/ B=0 -> 0, (A/GCD(A,B))*B
 AND START() BE
 $( LET A = 1071
    AND B = 462
+   WRITEF("DEMO: Euclidean GCD and least common multiple*N")
    WRITEF("A = %N, B = %N*N", A, B)
    WRITEF("GCD = %N*N", GCD(A, B))
    WRITEF("LCM = %N*N", LCM(A, B))
