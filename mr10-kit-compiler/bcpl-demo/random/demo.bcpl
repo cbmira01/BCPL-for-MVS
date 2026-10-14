@@ -1,6 +1,10 @@
+// ======================================================================
+// RANDOM: BCPL DEMONSTRATION
+// ======================================================================
 // DEMO.BCPL
 // Demonstrate deterministic use of library/random.bcpl.
 
+// --- Shared global slots ---
 GLOBAL $(
 START:1
 WRITEF:76
@@ -9,6 +13,7 @@ RAND:97
 RANDRANGE:98
 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( SRAND(1)
    WRITEF("FIRST FIVE RAND VALUES:*N")
