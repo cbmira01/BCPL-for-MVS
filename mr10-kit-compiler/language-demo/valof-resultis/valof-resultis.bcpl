@@ -17,6 +17,7 @@ AND START() BE
 $( LET X = -37
    AND Y = 12
 
+   WRITEF("DEMO: VALOF and RESULTIS return expression values*N")
    WRITEF("ABS(%N) = %N*N", X, ABS(X))
    WRITEF("MAX(%N,%N) = %N*N", X, Y, MAX(X,Y))
    WRITEF("MAX(ABS(%N),%N) = %N*N", X, Y, MAX(ABS(X),Y))
