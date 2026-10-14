@@ -12,7 +12,8 @@ $( TEST N<0
 $)
 
 AND START() BE
-$( SIGN(-7)
+$( WRITEF("DEMO: TEST THEN OR conditional selection*N")
+   SIGN(-7)
    SIGN(0)
    SIGN(12)
    FINISH
