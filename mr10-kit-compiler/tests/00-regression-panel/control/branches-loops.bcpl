@@ -1,4 +1,8 @@
+// ======================================================================
+// BRANCHES LOOPS: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: IF, FOR, SWITCHON, and CASE dispatch.
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET CLASS(N) = VALOF
@@ -9,6 +13,7 @@ $( SWITCHON N INTO
    $)
 $)
 
+// --- Test entry and result ---
 AND START() BE
 $(
  LET S = 0
