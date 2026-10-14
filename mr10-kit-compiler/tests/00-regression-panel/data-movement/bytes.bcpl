@@ -2,7 +2,8 @@
 GLOBAL $( START:1; WRITEF:76; GETBYTE:85; PUTBYTE:86 $)
 
 LET START() BE
-$( LET V = VEC 1
+$(
+   WRITEF("TEST: GETBYTE and PUTBYTE preserve byte values*N") LET V = VEC 1
    V!0 := 0
    V!1 := 0
    PUTBYTE(V, 0, 65)
