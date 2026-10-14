@@ -1,6 +1,6 @@
 # M2.0 — Runtime Modularity and Maintainability Architecture
 
-**Status:** Architecture principles recorded; M2.0 implementation **not yet authorized**.  
+**Status (14 October 2026):** Gates A-D accepted and closed; Gate E maintainability review OPEN; Gate F candidate acceptance pending. The original gate plan and historical decisions below remain the governing charter.  
 **Date:** 13 October 2026  
 **Predecessors:** M1.8 reproducible five-member runtime builds (closed); M1.9 runtime contract and observability audit (closed).  
 **Reference contract:** [Runtime Contract Specification v1.0](runtime-contract-v1.md).
