@@ -25,7 +25,8 @@ $( SWITCHON N INTO
 $)
 
 AND START() BE
-$( CLASSIFY(0)
+$( WRITEF("DEMO: SWITCHON selects among CASE alternatives*N")
+   CLASSIFY(0)$( CLASSIFY(0)
    CLASSIFY(2)
    CLASSIFY(10)
    CLASSIFY(27)
