@@ -1,3 +1,7 @@
+***********************************************************************
+* ICINTV14-TRACE.ASM - HISTORICAL INTCODE INTERPRETER
+* Saved for comparison with later versions.
+***********************************************************************
          TITLE 'ICINT V14 TRACE - RICHARDS INTCODE INTERPRETER'
          PRINT NOGEN
 *
@@ -67,6 +71,7 @@
 *
 ***********************************************************************
 
+* --- MAIN CONTROL SECTION ---
 ICINT    CSECT
          ENTRY ICINT
 
