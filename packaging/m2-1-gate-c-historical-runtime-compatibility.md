@@ -81,9 +81,9 @@ Runtime **compatibility audit is complete at the declared subset boundary**, not
 - [x] Recorded implemented, limited, intentional MVS adaptations, unknown and deferred historical services.
 - [x] Recorded source-grounded contracts for G29, G31/G32 and compiler DD-name mismatches without invented ABI.
 - [x] Determined that no evidence-backed Gate C assembler correction is presently required.
-- [ ] Owner accepts the declared compatibility boundary and formally closes Gate C.
+- [x] Owner accepted the bounded runtime-only compatibility audit by directing progression to Gate D on 14 October 2026.
 
-**Gate C: source audit and bounded no-code recommendation complete; READY FOR OWNER ACCEPTANCE.**
+**Gate C ACCEPTED AND CLOSED — 14 October 2026.** Owner directed progression to Gate D; no code changes were required. Historical gaps remain explicitly unsupported/deferred.
 
 ## Explicit exclusions
 
