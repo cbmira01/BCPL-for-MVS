@@ -1,8 +1,13 @@
+// ======================================================================
+// SIEVE: BCPL DEMONSTRATION
+// ======================================================================
 // SIEVE.BCPL
 // Generate primes through 100 with the Sieve of Eratosthenes.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET COMPOSITE = VEC 100
    WRITEF("DEMO: Find primes with the Sieve of Eratosthenes*N")
