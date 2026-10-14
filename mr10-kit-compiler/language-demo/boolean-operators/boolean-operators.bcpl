@@ -1,8 +1,13 @@
+// ======================================================================
+// BOOLEAN OPERATORS: LANGUAGE EXAMPLE
+// ======================================================================
 // BOOLEAN-OPERATORS.BCPL
 // Demonstrate BCPL truth values and logical/relational operators.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET A = 7
    AND B = 12
