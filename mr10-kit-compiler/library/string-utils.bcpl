@@ -1,8 +1,12 @@
+// ======================================================================
+// STRING-UTILS: BCPL LIBRARY
+// ======================================================================
 // STRING-UTILS.BCPL
 // Utilities for ordinary packed BCPL strings.
 // Caller supplies writable destination storage large enough for the result.
 // GLOBAL slots 107..111 are reconstruction-local library assignments.
 
+// --- Global slots ---
 GLOBAL $(
 GETBYTE:85
 PUTBYTE:86
