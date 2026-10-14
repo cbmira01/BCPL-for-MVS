@@ -36,7 +36,7 @@ IOINIT   BALR  10,0
          XC    IOPOS(4),IOPOS
          XC    IO2POS(4),IO2POS
          MVI   IOSELCT,X'01'
-         MVI   IO2ACTIVE,X'00'
+         MVI   IO2ACTV,X'00'
          XC    IOSTATUS(4),IOSTATUS
          MVI   IOBUF,C' '
          MVC   IOBUF+1(131),IOBUF
@@ -60,14 +60,14 @@ IOFIN    BALR  10,0
 IOFCLOSE CLOSE (IODCB)
          MVI   IOACTIVE,X'00'
          XC    IOPOS(4),IOPOS
-         CLI   IO2ACTIVE,X'01'
+         CLI   IO2ACTV,X'01'
          BNE   IOFDONE
          L     1,IO2POS
          LTR   1,1
          BZ    IO2CLOS
          PUT   IO2DCB,IO2BUF
 IO2CLOS  CLOSE (IO2DCB)
-         MVI   IO2ACTIVE,X'00'
+         MVI   IO2ACTV,X'00'
          XC    IO2POS(4),IO2POS
 IOFDONE  XC    IOPARM(4),IOPARM
          LM    0,9,IOFSAVE
@@ -144,13 +144,13 @@ IOSEL    BALR  10,0
          BE    IOSEONE
          C     15,IOTWO
          BNE   IOSEBAD
-         CLI   IO2ACTIVE,X'01'
+         CLI   IO2ACTV,X'01'
          BE    IOSETWO
          XC    IO2POS(4),IO2POS
          MVI   IO2BUF,C' '
          MVC   IO2BUF+1(131),IO2BUF
          OPEN  (IO2DCB,(OUTPUT))
-         MVI   IO2ACTIVE,X'01'
+         MVI   IO2ACTV,X'01'
 IOSETWO  MVI   IOSELCT,X'02'
          B     IOSEOK
 IOSEONE  MVI   IOSELCT,X'01'
@@ -167,7 +167,7 @@ IOPARM   DC    F'0'
 IOONE    DC    F'1'
 IOTWO    DC    F'2'
 IO2POS   DC    F'0'
-IO2ACTIVE DC   X'00'
+IO2ACTV DC   X'00'
 IOSELCT  DC    X'01'
 IOPOS    DC    F'0'
 IOMAX    DC    F'132'
