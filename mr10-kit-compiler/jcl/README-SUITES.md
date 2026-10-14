@@ -37,3 +37,11 @@ Prefer starting with **MRLANGDM**, the simplest suite, and examining its JES pay
 - The jobs cover the **12 cases in the current regression panel**, not all other exploratory `mr10-kit-compiler/tests/` directories. Expansion can follow after the first MVS acceptance run.
 
 The host JCL and PDS members are the same FB80 job body, installed with `dspal put`. Run with `dspal submit` rather than `tools/submit-jcl`, which expects a leading JOB card.
+
+## 14 October 2026 — JOB 4028 diagnosis and light-report revision
+
+JOB **4028** (MRLANGDM) compiled DECLS in C01A RC=0000 and ran CGI in G01A RC=0000, both with interpreted CODE=0, but first execution R01 failed **ABEND S001-4**, `IEC020I` against the concatenated `MR10KIT.SOURCE` member stream. Later steps were flushed; runtime acceptance **NOT PASSED**.
+
+The three jobs now begin with five `IEBGENER` stages copying SYNI/TRNI/CGI/BLIBI/ICLIB from their PDS members into temporary **sequential FB80** datasets, following the staging convention used in the previously proven host-generated workflow. All repeated INTIN concatenations use those sequential copies, not direct PDS members. Each staging step has `SYSPRINT DD DUMMY`. The compiler and CGI `SYSPRINT` remains visible so their interpreted completion codes and diagnostics are not hidden. Each interpreter step now uses `SYSUDUMP DD DUMMY` to prevent a routine incident from producing thousands of dump lines; when investigating failures, switch the affected step back to `SYSOUT=*` or use dedicated diagnostic JCL.
+
+These changes are **not yet tested on Hercules**. Repopulate/reinstall the three JCL bodies via `tools/dspal put MR10_JCL ...` before retesting. First re-run MRLANGDM, inspect interpreter `CODE=` and R01/other step results, then the remaining suites. Do not infer a correct semantic result from MVS RC=0 alone.
