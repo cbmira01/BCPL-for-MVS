@@ -42,14 +42,15 @@ OVLOOP   LA    7,231
 * IOFIN flushes/closes output stream via R14.
          L     15,=A(IOFIN)
          BALR  14,15
-         L     13,OLDSAVE+4
-         LM    14,12,12(13)
+* Evaluate before restoring R12, the probe's assembler base.
          L     15,OVRESULT
          C     15,=F'12'
          BE    OKRET
          LA    15,8
-         BR    14
+         B     EXIT
 OKRET    SR    15,15
+EXIT     L     13,OLDSAVE+4
+         LM    14,12,12(13)
          BR    14
          LTORG
 MSG      DC    C'BCPLIO D2 PROBE'
