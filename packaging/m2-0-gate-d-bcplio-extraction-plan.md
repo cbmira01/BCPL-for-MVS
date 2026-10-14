@@ -364,3 +364,7 @@ Operator re-staged SOURCE(BCPLM6) successfully as JOB 2382. BLDD6MN payload JOB 
 ### D6 independent assembly/install accepted — JOB 2389
 
 Operator staged corrected SOURCE(BCPLM6) via JOB **2386** and executed BLDD6MN payload **JOB 2389** on 14 October 2026. ASMMMAIN IFOX00 **RC=0000**, PUTMAIN IEBGENER **RC=0000**, zero assembler statements flagged and severity zero. **DEVOBJ(BCPLM6) assembly/install ACCEPTED.** D6 integration link, cross-reference and regression remain pending; D5 accepted baseline and production OBJ unchanged.
+
+### D6 integration link and partial focused regression — JOB 2393
+
+Operator submitted D6LINK payload JOB **2393**, IEWL **RC=0000**. MAP: BCPLMAIN X'000000' length X'0C00' (D5 X'1070'; reduction X'470' = 1136 bytes); BCPLIO origin X'0C00' length X'0FF8' unchanged. IEWL XREF lists all seven input services and six output services supplied by BCPLIO, no unresolved messages in extracted lines. Explicit DEVOBJ(BCPLM6) regression **00 PASS**. Operator supplied partial 084–119 run output showing **084–110 PASS**; transcript ends at PASS 110, so **111–119 and panel summary are not yet evidenced**. No final D6 or Gate D acceptance claimed until complete 084–119 summary and full 00–123 suite (target 123 PASS, 0 FAIL, one expected SKIP). Production OBJ untouched.
