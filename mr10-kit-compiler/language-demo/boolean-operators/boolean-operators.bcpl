@@ -7,6 +7,7 @@ LET START() BE
 $( LET A = 7
    AND B = 12
 
+   WRITEF("DEMO: Boolean and relational operators*N")
    WRITEF("A<B       = %N*N", A<B)
    WRITEF("A=B       = %N*N", A=B)
    WRITEF("A\=B      = %N*N", A\=B)
