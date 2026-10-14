@@ -58,3 +58,24 @@ Evaluate `STKFORM` separately. Jumping from its corrupted-frame context into ord
 - [ ] Record owner acceptance and close Gate B; defer unrelated historical compiler features to Gate C.
 
 **No assembler code, regression fixture or resident MVS dataset has been changed by opening Gate B.**
+
+
+## Baseline executable evidence — JOB 2983 (14 October 2026)
+
+Owner executed with `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`:
+
+```text
+NATIVE REGRESSION 093..093: PASS 1, FAIL 0, SKIP 0
+JOB 2983 RG093R
+ASMAP IFOX00 RC=0000
+LKED IEWL   RC=0000
+GO   PGM=*.DD RC=0000
+JOB RESULT: SUCCESS
+Assembler: 0 statements flagged, highest severity 0
+```
+
+This **confirms actual GO RC=0000** on the accepted installed D6 stack-overflow path. The regression's `expected.txt` is `STACK OVERFLOW`; its passing result establishes that the diagnostic assertion succeeded and did not reach its `DEBUGINT(999)` callee. Do not call this a successful *application* termination: it is a successfully recognized failure condition masked as MVS success.
+
+**Proposed Gate B policy for owner decision:** preserve message and orderly IOFIN/MEMDRAIN/FREEMAIN, but route STKOVFL through STOPENT with R7=12 rather than FINIMPL (which zeroes STOPRC). Recheck BCPLAPT and checked-frame callers and how their register context arrives at STKOVFL before making an instruction-level patch. Update regression 093 to assert `GO RC=0012` using supported `expected-go-rc.txt` fixture; make no speculative change to `run-test.sh`. This is a recommendation pending explicit semantic acceptance, not a committed assembler change.
+
+**Status:** focused baseline evidence accepted; **Gate B OPEN**, completion code policy and changed-object execution still pending.
