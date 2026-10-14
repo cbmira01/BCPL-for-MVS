@@ -25,8 +25,7 @@ OVLOOP   LA    7,231
          BALR  6,15
          BCT   9,OVLOOP
 * A return from the 133rd write is a test failure.
-         LA    15,8
-         B     RETMVS
+         B     RETBAD
 * Callback sees R7=12; it owns IOFIN/STOP and does not return.
 OVEXIT   C     7,=F'12'
          BNE   FAILED
@@ -36,19 +35,19 @@ OVEXIT   C     7,=F'12'
          BNE   FAILED
          L     15,=A(IOFIN)
          BALR  14,15
-         LA    15,12
-         B     RETMVS
+         B     RETGOOD
 FAILED   L     15,=A(IOFIN)
          BALR  14,15
-         LA    15,8
-RETMVS   ST    15,RCVALUE
-         L     13,OLDSAVE+4
+RETBAD   L     13,OLDSAVE+4
          LM    14,12,12(13)
-         L     15,RCVALUE
+         LA    15,8
+         BR    14
+RETGOOD  L     13,OLDSAVE+4
+         LM    14,12,12(13)
+         LA    15,12
          BR    14
          LTORG
          DS    0F
-RCVALUE  DC    F'0'
 FRAME    DC    F'0'
 OLDSAVE  DS    18F
 NEWSAVE  DS    18F
