@@ -79,3 +79,36 @@ This **confirms actual GO RC=0000** on the accepted installed D6 stack-overflow 
 **Proposed Gate B policy for owner decision:** preserve message and orderly IOFIN/MEMDRAIN/FREEMAIN, but route STKOVFL through STOPENT with R7=12 rather than FINIMPL (which zeroes STOPRC). Recheck BCPLAPT and checked-frame callers and how their register context arrives at STKOVFL before making an instruction-level patch. Update regression 093 to assert `GO RC=0012` using supported `expected-go-rc.txt` fixture; make no speculative change to `run-test.sh`. This is a recommendation pending explicit semantic acceptance, not a committed assembler change.
 
 **Status:** focused baseline evidence accepted; **Gate B OPEN**, completion code policy and changed-object execution still pending.
+
+
+## Authorized D7 candidate — stack overflow RC=12 (14 October 2026)
+
+The owner explicitly **approved RC=12 as the stack-overflow completion code**. The change has been implemented in a new Git-only **D7** candidate, not the accepted D6 source:
+
+- `asm/bcplmain-d7-candidate.asm`: after `IOREPL` and restoring R10, `STKOVFL` now sets R7=12 and branches to existing `STOPENT`. This preserves `FINEXIT` IOFIN / MEMDRAIN / MEMBIND(0) / FREEMAIN and bypasses `FINIMPL`'s RC=0 reset. Shared checked-entry and BCPLAPT failures still converge on STKOVFL.
+- `jcl/build-dev-bcplmain-d7.jcl`: assemble SOURCE(BCPLM7), binary-safe install DEVOBJ(BCPLM7) only.
+- `jcl/bcplio-d7-integration-link.jcl`: D7 candidate linker MAP/XREF, without GO or production OBJ.
+- `native-compiler/regression/093-aptovec-stack-overflow/expected-go-rc.txt`: now asserts GO RC=0012 using the existing run-test.sh fixture machinery, in addition to `expected.txt` diagnostic. **This deliberately makes test 093 fail against the old D6 RC=0000 until D7 is selected.**
+
+**Pending execution:** these Git edits do not constitute assembled, linked or executed proof. Run this sequence after `git pull --ff-only` while MVS is available:
+
+```sh
+tools/dspal put SOURCE BCPLM7 asm/bcplmain-d7-candidate.asm
+tools/dspal put JCL BLDD7MN jcl/build-dev-bcplmain-d7.jcl
+tools/dspal put JCL D7LINK jcl/bcplio-d7-integration-link.jcl
+tools/dspal submit JCL BLDD7MN
+# Verify payload assembler and IEBGENER steps, both RC=0000.
+tools/dspal submit JCL D7LINK
+# Verify payload IEWL RC=0000 and distinct BCPLM7 object.
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 \
+tools/run-native-regression 93 --show-output
+```
+
+Then exercise normal STOP/FINISH and a checked-frame overflow (where independently testable), and rerun full 00–123 against selected DEVOBJ(BCPLM7). **No MVS jobs or tests are claimed executed by this commit.** A documented focused pass and full panel are acceptance requirements.
+
+## M2.1 return-code registry decision
+
+Maintain a versioned **completion and failure code register** as part of the native runtime contract, consolidating all runtime-generated R15 completion values and deliberate `STOP(N)` user codes, with ownership, triggering condition, message, cleanup path, evidence level and historical/MVS provenance. **Do not confuse** an MVS step RC with system/user ABEND codes or assembler/link-editor return codes. Begin with this Gate B table; stabilize the consolidated registry no later than M2.1 Gate F. The register is documentary, not a claim that every possible `STOP(N)` value is reserved.
+
+**Gate B remains OPEN pending MVS candidate evidence and acceptance.**
