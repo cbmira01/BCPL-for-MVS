@@ -9,7 +9,9 @@ ATOI:117; ITOA:118; HEXTOI:119; ITOHEX:120
 $)
 
 LET START() BE
-$( LET S = VEC 10
+$(
+   WRITEF("TEST: String memory and number conversion helpers*N")
+ LET S = VEC 10
    AND T = VEC 10
    AND U = VEC 10
    AND A = VEC 3
