@@ -1,10 +1,15 @@
+// ======================================================================
+// RPN CALCULATOR: BCPL DEMONSTRATION
+// ======================================================================
 // RPN-CALCULATOR.BCPL
 // Evaluate a small reverse-Polish expression with an explicit stack.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; GETBYTE:85; WRITEF:76 $)
 
 LET DIGIT(CH) = '0'<=CH & CH<='9'
 
+// --- Program entry and output ---
 AND START() BE
 $( LET EXPR = "12 3 4 + ** 6 -"
    LET STACK = VEC 19
