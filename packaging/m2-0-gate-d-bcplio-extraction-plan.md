@@ -372,3 +372,15 @@ Operator submitted D6LINK payload JOB **2393**, IEWL **RC=0000**. MAP: BCPLMAIN 
 ### D6 focused 084–119 complete — ACCEPTED
 
 Operator supplied continuation of explicit DEVOBJ(BCPLM6) tests **111–119: 9 PASS / 0 FAIL / 0 SKIP**. Combined with earlier operator output showing PASS 084–110, this establishes **36/36 focused cases PASS** for 084–119. D6 assembly JOB 2389 IFOX/IEBGENER RC=0000, link JOB 2393 IEWL RC=0000, regression 00 PASS, and BCPLIO independent input/output ownership in MAP/XREF already recorded. **Focused D6 checkpoint accepted.** Full native regression 00–123 (expected 123 PASS / 0 FAIL / 1 expected SKIP at 083) still needed before formal Gate D closure. Production OBJ untouched.
+
+### Gate D — FORMALLY CLOSED, 14 October 2026
+
+**Decision: ACCEPTED AND CLOSED.** The operator executed the final, explicitly isolated D6 runtime regression with `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 tools/run-native-regression --show-output`. Complete range **00–123**: **123 PASS, 0 FAIL, 1 expected SKIP, 124 TOTAL**. SKIP 083 is the established source-only instrumentation test; no executable regressions failed.
+
+The cumulative acceptance evidence is:
+- **D5 baseline:** BCPLM5 assembly/install JOB 2065 RC=0000; BCPLIO independent assembly/install JOB 2073 RC=0000; IEWL integrated link JOB 2077 RC=0000; input/output focused 094–119 26 PASS; full candidate panel 123 PASS/0 FAIL/1 SKIP.
+- **D6 ownership cleanup:** BCPLM6 assembly/install JOB **2389** (IFOX00 RC=0000; IEBGENER RC=0000, 0 flagged); D6 link JOB **2393** (IEWL RC=0000). IEWL map BCPLMAIN length X'0C00' versus D5 X'1070' (minus X'0470', 1,136 bytes); BCPLIO X'0FF8' unchanged. IEWL XREF resolves seven input services and six named output-service entries to BCPLIO. Smoke regression 00 PASS, focused 084–119 36 PASS, complete 00–123 123 PASS/0 FAIL/1 expected SKIP.
+- **Source ownership:** BCPLIO owns input and output QSAM DCBs, buffers, stream cursors, handlers, EOF/unread state, PARM pseudo-stream and cleanup. BCPLMAIN no longer contains its superseded stream I/O implementation or local input/output DCBs. It retains only its runtime bootstrap forwarding of MVS PARMLIST to IOINIT, plus provisional WRITEST formatting and DEBUGINT reporting for now.
+- **Isolation:** Accepted D5 `DEVOBJ(BCPLM5)` and D6 `DEVOBJ(BCPLM6)` are development objects. **Do not install into or modify `HERC02.BCPL.OBJ` without a distinct promotion decision.** No production OBJ mutation was performed during Gate D.
+
+**Gate D is closed.** Further runtime modularity work belongs to separately named gates/marches; do not silently extend Gate D or equate closure to completion of every historical BCPL I/O capability.
