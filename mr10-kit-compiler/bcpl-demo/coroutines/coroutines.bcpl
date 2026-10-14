@@ -33,6 +33,7 @@ $( LET ROOT = VEC 2
    AND VALUE = 0
    AND DONE = FALSE
 
+   WRITEF("DEMO: Coroutine generator with COWAIT and CALLCO*N")
    HEAPINIT(ARENA, 401)
 
    CURRCO := ROOT
