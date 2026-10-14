@@ -1,8 +1,12 @@
+// ======================================================================
+// CHAR UTILS: REUSABLE BCPL ROUTINES
+// ======================================================================
 // CHAR-UTILS.BCPL
 // Character classification and ASCII-case conversion helpers.
 // BCPL source character values follow the bootstrap's ASCII character model.
 // GLOBAL slots 121..125 are reconstruction-local library assignments.
 
+// --- Public global slots ---
 GLOBAL $(
 ISDIGIT:121
 ISALPHA:122
@@ -11,6 +15,7 @@ TOUPPER:124
 TOLOWER:125
 $)
 
+// --- Implementation ---
 LET ISDIGIT(CH) = '0'<=CH<='9'
 
 AND ISALPHA(CH) = 'A'<=CH<='Z' \/ 'a'<=CH<='z'
