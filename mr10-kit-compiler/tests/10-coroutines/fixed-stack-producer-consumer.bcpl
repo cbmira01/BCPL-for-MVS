@@ -1,9 +1,13 @@
+// ======================================================================
+// FIXED STACK PRODUCER CONSUMER: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // FIXED-STACK-PRODUCER-CONSUMER.BCPL
 //
 // First executable coroutine experiment for the MR10 reconstruction.
 // Uses statically reserved coroutine storage so CHANGECO/CALLCO/COWAIT can
 // be proved independently of GETVEC/FREEVEC and full CREATECO support.
 
+// --- Global slots ---
 GLOBAL $(
 START:1
 CHANGECO:6
@@ -42,6 +46,7 @@ $( FOR N = 1 TO 5 DO
    RESULTIS -1
 $)
 
+// --- Probe entry and output ---
 AND START() BE
 $( LET ROOT = VEC 4
    AND COSTACK = VEC 100
