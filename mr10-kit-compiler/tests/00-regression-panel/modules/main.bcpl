@@ -2,6 +2,8 @@
 GLOBAL $( START:1; WRITEF:76; HELPER:180 $)
 
 LET START() BE
-$( WRITEF("RP: MODULE %N*N", HELPER(14))
+$(
+   WRITEF("TEST: Separate compilation and GLOBAL linkage*N")
+ WRITEF("RP: MODULE %N*N", HELPER(14))
    FINISH
 $)
