@@ -1,3 +1,6 @@
+// ======================================================================
+// CREATE DELETE STATIC POOL: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // CREATE-DELETE-STATIC-POOL.BCPL
 //
 // Regression for the packaged coroutine runtime.  Coroutine operations come
@@ -5,6 +8,7 @@
 // library/getvec-freevec.bcpl.  This source contains only test setup and
 // observations.
 
+// --- Global slots ---
 GLOBAL $(
 START:1
 CURRCO:7
@@ -30,6 +34,7 @@ $)
 
 AND WORKER(A) = A+1
 
+// --- Probe entry and output ---
 AND START() BE
 $( LET ROOT = VEC 2
    AND ARENA = VEC 400
