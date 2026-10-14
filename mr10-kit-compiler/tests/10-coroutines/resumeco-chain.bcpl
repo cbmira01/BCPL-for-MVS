@@ -1,8 +1,12 @@
+// ======================================================================
+// RESUMECO CHAIN: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // RESUMECO-CHAIN.BCPL
 //
 // Exercise historical RESUMECO parent-transfer semantics through the packaged
 // coroutine and allocator runtime modules.
 
+// --- Global slots ---
 GLOBAL $(
 START:1
 CURRCO:7
@@ -37,6 +41,7 @@ $( LET V = 0
    RESULTIS -1
 $)
 
+// --- Probe entry and output ---
 AND START() BE
 $( LET ROOT = VEC 2
    AND ARENA = VEC 400
