@@ -22,7 +22,8 @@ $( LET BOARD = VEC 24
    LET X = 0
    AND Y = 0
 
-   DX!0:=2;  DY!0:=1
+   WRITEF("DEMO: Find a knight tour with Warnsdorff heuristic*N")
+  DY!0:=1
    DX!1:=1;  DY!1:=2
    DX!2:=-1; DY!2:=2
    DX!3:=-2; DY!3:=1
