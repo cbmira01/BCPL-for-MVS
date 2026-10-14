@@ -1,6 +1,6 @@
 # M2.0 Gate B — Independent BCPLAPT G40 Integration
 
-**Status: IMPLEMENTED IN GIT; MVS acceptance PENDING** (13 October 2026).
+**Status: ACCEPTED — Gate B closed** (MVS execution evidence 14 October 2026).
 
 ## Scope and source change
 
@@ -27,9 +27,10 @@ These checks validate nested APTOVEC calls and overflow against the installed ca
 
 After targeted acceptance, Gate C reviews BCPLMEM and BCPLBYTE; full 124-test DEVOBJ panel remains Gate F acceptance.
 
-## Disposition
+## Acceptance evidence — 14 October 2026
 
-- Source integration: **committed**, `c8de75de98dd615823223decfff382a7f03e148b`.
-- No new MVS execution or new regression results were observed here.
-- Gate B: **PENDING acceptance**, until readback, DEVOBJ assembly, independent-dispatch proof and regressions 091–093 pass.
-- No production OBJ promotion is authorized.
+- Operator synchronized only `SOURCE(BCPLMAIN)`: removal JOB 1259, compression JOB 1260, put JOB 1261, readback JOB 1263. Readback inspection confirmed `EXTRN APTOVEC,APLIMIT` and `=A(APLIMIT)` / `=A(APTOVEC)` references. Byte-for-byte normalized readback equivalence was not separately reported; this evidence establishes required symbols in resident input.
+- Rebuilt `DEVOBJ(BCPLMAIN)` with `JCL(BLDDEVN)` launcher JOB 1265 and payload **JOB 1266**: ASMMMAIN IFOX00 RC=0000, PUTMAIN IEBGENER RC=0000, zero flagged assembler statements/severity. BCPLMAIN assembly ESD shows independent ER entries `APTOVEC` and `APLIMIT`; BCPLMAIN SD length X'15A8'. DEVOBJ inventory retains BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB.
+- Focused installed DEVOBJ regressions **091, 092, 093: 3 PASS, 0 FAIL, 0 SKIP**; run reports JOBs **1269, 1271, 1273**, all with ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000.
+- All three link-edit maps explicitly `INCLUDE OBJ(BCPLAPT)` and show a **separate BCPLAPT CSECT of X'6C' bytes**. Their ENTRY table locates APTOVEC and APLIMIT within BCPLAPT, not BCPLMAIN: JOB 1269 APTOVEC X'16B0', APLIMIT X'1718'; JOB 1271 X'16C8'/X'1730'; JOB 1273 X'1670'/X'16D8'. Cross-reference entries associate both referenced symbols with BCPLAPT. `STKOVFL` is resolved from BCPLMAIN. This establishes the independently linked G40 service and overflow linkage. The code sequence initializing APLIMIT from STKLIM is present in the assembled listing (L APLIMIT; L STKLIM; ST limit; L APTOVEC; ST G40) and tests 091–093 exercise its behavior. There was no direct storage dump of APLIMIT; it is not required beyond the combination of assembled instructions, linkage map, and executable overflow regression.
+- **Gate B ACCEPTED**: separately assembled BCPLAPT provides G40 and shares the canonical stack limit; old local implementation is gone. Gate C is next. Full regression panel remains reserved for Gate F. **No production OBJ promotion is authorized or claimed.**
