@@ -1,4 +1,8 @@
+// ======================================================================
+// BASIC COROUTINE: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: CREATECO/CALLCO/COWAIT/DELETECO basic contract.
+// --- Global slots ---
 GLOBAL $(
 START:1
 CURRCO:7
@@ -16,6 +20,7 @@ $( COWAIT(ARG+7)
    RESULTIS 0
 $)
 
+// --- Test entry and result ---
 AND START() BE
 $(
  LET ROOT = VEC 2
