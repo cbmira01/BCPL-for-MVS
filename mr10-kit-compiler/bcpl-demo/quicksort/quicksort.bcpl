@@ -1,6 +1,10 @@
+// ======================================================================
+// QUICKSORT: BCPL DEMONSTRATION
+// ======================================================================
 // QUICKSORT.BCPL
 // Quicksort a vector, choosing pivots with the shared random library.
 
+// --- Shared global slots ---
 GLOBAL $(
 START:1
 WRITEF:76
@@ -39,6 +43,7 @@ $( LET P = 0
    IF I<HI DO QSORT(V, I, HI)
 $)
 
+// --- Program entry and output ---
 AND START() BE
 $( LET V = VEC 11
    WRITEF("DEMO: Quicksort using random pivot selection*N")
