@@ -1,9 +1,13 @@
+// ======================================================================
+// COROUTINES: BCPL DEMONSTRATION
+// ======================================================================
 // COROUTINES.BCPL
 //
 // Demonstrate the reconstructed BCPL coroutine runtime as a simple generator.
 // A coroutine preserves its local FOR-loop state while repeatedly yielding
 // values to the root coroutine with COWAIT.
 
+// --- Shared global slots ---
 GLOBAL $(
 START:1
 CURRCO:7
@@ -26,6 +30,7 @@ $( FOR N = 1 TO 5 DO
    RESULTIS 0
 $)
 
+// --- Program entry and expected output ---
 AND START() BE
 $( LET ROOT = VEC 2
    AND ARENA = VEC 400
