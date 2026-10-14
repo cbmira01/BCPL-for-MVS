@@ -1,8 +1,13 @@
+// ======================================================================
+// REPEAT FORMS: LANGUAGE EXAMPLE
+// ======================================================================
 // REPEAT-FORMS.BCPL
 // Demonstrate REPEAT, REPEATWHILE, and REPEATUNTIL.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET I = 0
 
