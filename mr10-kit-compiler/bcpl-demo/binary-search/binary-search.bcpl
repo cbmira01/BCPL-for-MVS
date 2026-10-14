@@ -18,6 +18,7 @@ $)
 
 AND START() BE
 $( LET V = VEC 15
+   WRITEF("DEMO: Binary search in a sorted vector*N")
    FOR I = 0 TO 15 DO V!I := I*I
 
    FOR K = 0 TO 4 DO
