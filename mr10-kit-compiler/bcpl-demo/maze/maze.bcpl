@@ -30,6 +30,7 @@ $( LET ROW = VEC 6
    AND WALL = VEC 48
    AND MARK = VEC 48
 
+   WRITEF("DEMO: Find a maze path by depth first search*N")
    ROW!0 := "#######"
    ROW!1 := "#.....#"
    ROW!2 := "#.###.#"
