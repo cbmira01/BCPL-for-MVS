@@ -1,6 +1,10 @@
+// ======================================================================
+// LINKED LIST: BCPL DEMONSTRATION
+// ======================================================================
 // LINKED-LIST.BCPL
 // Represent a singly linked list with parallel vectors and integer links.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET PRINTLIST(HEAD, VALUE, NEXT) BE
@@ -24,6 +28,7 @@ $( LET PREV = -1
    RESULTIS PREV
 $)
 
+// --- Program entry and output ---
 AND START() BE
 $( LET VALUE = VEC 7
    AND NEXT = VEC 7
