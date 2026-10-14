@@ -29,6 +29,7 @@ $( LET BUCKET = VEC 6
    AND NEXT = VEC 15
    AND COUNT = VEC 0
 
+   WRITEF("DEMO: Chained hash table insertion and lookup*N")
    FOR I = 0 TO 6 DO BUCKET!I := -1
    COUNT!0 := 0
 
