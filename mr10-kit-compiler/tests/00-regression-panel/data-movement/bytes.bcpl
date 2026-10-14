@@ -1,6 +1,11 @@
+// ======================================================================
+// BYTES: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: GETBYTE and PUTBYTE preserve byte values.
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76; GETBYTE:85; PUTBYTE:86 $)
 
+// --- Test entry and result ---
 LET START() BE
 $(
  LET V = VEC 1
