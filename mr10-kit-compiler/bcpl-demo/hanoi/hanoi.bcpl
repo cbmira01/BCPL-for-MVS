@@ -11,7 +11,8 @@ $( IF N=0 RETURN
 $)
 
 AND START() BE
-$( WRITEF("TOWERS OF HANOI - FOUR DISKS*N")
+$( WRITEF("DEMO: Recursive Towers of Hanoi*N")
+   WRITEF("TOWERS OF HANOI - FOUR DISKS*N")
    MOVE(4, 'A', 'C', 'B')
    FINISH
 $)
