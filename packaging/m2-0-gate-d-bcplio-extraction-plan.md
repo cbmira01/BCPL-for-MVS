@@ -191,3 +191,7 @@ New isolated `asm/bcplio-diagnostic-probe.asm` and `jcl/bcplio-diagnostic-probe.
 ### D3 diagnostic append isolated build/run checkpoint — JOBS 1427 and 1432
 
 Operator staged SOURCE(BCPLIO) via JOB 1422 remove, 1423 compress, 1424 put; BLDDEVI launcher JOB 1426, payload **JOB 1427**: ASMIO IFOX00 RC=0000, PUTIO IEBGENER RC=0000, zero flagged statements. Staged SOURCE(BCDIPRB) JOB 1428 and JCL(BCDIPRB) JOB 1429; launcher JOB 1431, payload **JOB 1432**: ASMPROB IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, zero flagged statements. Probe's successful return supports its IODIAG full/overflow status assertions. **Independent assembly/link/run checkpoint PASSED**, pending actual GO SYSPRINT record inspection and IEWL IODIAG resolution before recording complete acceptance. BCPLMAIN and production OBJ unchanged; D3 remains open.
+
+### D3 IODIAG independent checkpoint ACCEPTED — JOB 1432
+
+Operator inspected the complete JOB 1432 report. GO output record at line 345 begins `BCPLIO DIAG PRIMARY`. IEWL map lists BCPLIO origin X'1D8', length X'7FC', IODIAG entry X'5C2'; cross-reference maps probe offset X'A0' to IODIAG in BCPLIO. Combined with JOB 1427 ASMIO/PUTIO RC=0000 and JOB 1432 ASMPROB/LKED/GO RC=0000, the probe's boundary-132 and IOSTAT=12 assertions, **D3 independent primary diagnostic append checkpoint ACCEPTED**. No WRITEST, DEBUGINT or STKOVFL integration has yet been proved; output stream DD provenance is inferred from selected-stream test and the primary-only append implementation. D3 and Gate D remain open; BCPLMAIN and production OBJ unchanged.
