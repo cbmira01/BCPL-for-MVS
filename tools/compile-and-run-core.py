@@ -37,11 +37,11 @@ MAKE_ASM = ROOT / "tools" / "make-asm-job.py"
 PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
 WORKAREA = ROOT / "workarea"
 
-SYNI = ROOT / "intcode" / "syni.int"
-TRNI = ROOT / "intcode" / "trni.int"
-CGI = ROOT / "intcode" / "cgi.int"
-BLIBI = ROOT / "intcode" / "blibi.int"
-ICLIB = ROOT / "intcode" / "iclib.int"
+SYNI = ROOT / "mr10-kit-compiler" / "intcode" / "syni.int"
+TRNI = ROOT / "mr10-kit-compiler" / "intcode" / "trni.int"
+CGI = ROOT / "mr10-kit-compiler" / "intcode" / "cgi.int"
+BLIBI = ROOT / "mr10-kit-compiler" / "intcode" / "blibi.int"
+ICLIB = ROOT / "mr10-kit-compiler" / "intcode" / "iclib.int"
 
 DEFAULT_READER_HOST = "127.0.0.1"
 DEFAULT_READER_PORT = 3505
@@ -712,13 +712,13 @@ def make_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Example: tools/compile-and-run --results --save-ocode "
-            "--save-intcode --dd EXTRA=extra.bcpl asm/icintv15.asm "
+            "--save-intcode --dd EXTRA=extra.bcpl mr10-kit-compiler/asm/icintv15.asm "
             "main.bcpl +module2.bcpl"
         ),
     )
     parser.add_argument(
         "interpreter",
-        help="IFOX ICINT assembler source (normally under asm/)",
+        help="IFOX ICINT assembler source (normally under mr10-kit-compiler/asm/)",
     )
     parser.add_argument("source", help="primary BCPL source module")
     parser.add_argument(
