@@ -8,6 +8,7 @@ $( LET S = "BCPL"
    LET N = GETBYTE(S, 0)
    LET I = 1
 
+   WRITEF("DEMO: Packed strings, length, and byte access*N")
    WRITEF("STRING = %S*N", S)
    WRITEF("LENGTH = %N*N", N)
    WRITEF("BYTES:")
