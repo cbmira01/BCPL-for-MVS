@@ -29,7 +29,8 @@ $)
 
 AND START() BE
 $( LET Q = VEC 7
-   UNLESS PLACE(0, Q) DO
+   WRITEF("DEMO: Solve eight queens by backtracking*N")
+
    $( WRITEF("NO SOLUTION*N")
       FINISH
    $)
