@@ -100,7 +100,7 @@ run_demo "quicksort" \
     "$COMPILE" --results \
     "$ICINT" \
     "$SUITE/quicksort/quicksort.bcpl" \
-    +library/random.bcpl
+    +mr10-kit-compiler/library/random.bcpl
 
 run_demo "binary-search" \
     "$COMPILE" --results \
@@ -155,8 +155,8 @@ run_demo "coroutines" \
     "$COMPILE" --results \
     "$ICINT" \
     "$SUITE/coroutines/coroutines.bcpl" \
-    +library/getvec-freevec.bcpl \
-    +library/coroutines.bcpl
+    +mr10-kit-compiler/library/getvec-freevec.bcpl \
+    +mr10-kit-compiler/library/coroutines.bcpl
 
 echo
 echo "================================================================"
