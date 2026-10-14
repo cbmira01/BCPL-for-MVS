@@ -265,3 +265,7 @@ Operator executed `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_C
 ### D3 integrated candidate regressions 15–24 PASS
 
 Operator ran `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 tools/run-native-regression 15 24 --show-output`; all ten tests 15–24 PASS, FAIL 0, SKIP 0. Coverage: 4-argument linkage, function return, nested calls, recursion, locals across calls, pointer return/store/reload, signed arithmetic, control flow, callable global dispatch. Cumulative candidate results **00–24: 25 PASS, 0 FAIL, 0 SKIP**. Runner-level evidence only; JES step summaries not supplied. D3 remains open pending focused I/O, formatting, stream, STOP and IOREPL validation. Production OBJ untouched.
+
+### D3 integrated candidate regressions 25–34 PASS
+
+Operator repeated 15–24 (10 PASS) and executed `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 tools/run-native-regression 25 34 --show-output`: all ten cases 25–34 PASS, FAIL 0, SKIP 0. Includes separately compiled BCPL/native modules, GETVEC/FREEVEC and allocator error paths, dynamic vectors/pointers, caller base after return, VALOF/RESULTIS. Cumulative candidate sequence **00–34: 35 PASS, 0 FAIL, 0 SKIP**. Console runner summary only; underlying JES summaries remain in local logs. Gate D/D3 open. Production OBJ untouched.
