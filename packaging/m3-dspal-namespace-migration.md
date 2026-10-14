@@ -76,3 +76,7 @@ The project owner clarified that the four historical/bootstrap header members `L
 The manifest now assigns these four headers to `NATIVE_SOURCE` and the two jobs to `NATIVE_JCL`; all nine `CAMB_*` datasets have `populate: false` and no member mappings. The four source paths still reference retained `richards-bcpltape` evidence files; this is a PDS ownership correction, not a move of evidence in Git.
 
 **Host follow-through required:** populate `NATIVE_SOURCE` and `NATIVE_JCL`, then explicitly delete only `CAMB_SOURCE` members `LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR` and `CAMB_JCL` members `CAMBBLD`, `CG370DB` using `dspal rm`. A manifest edit or a normal `populate` does **not** automatically delete existing PDS members. Verify with `tools/dspal ls`. This supersedes the earlier inventory-gate statement that Cambridge's populated members were correct; that claim was premature.
+
+### PDS maintenance convention
+
+After any series of `tools/dspal rm` member removals, execute `tools/dspal compress <DATASET>` once for **each affected PDS**, after the last removal. In this migration, run `tools/dspal compress CAMB_SOURCE` and `tools/dspal compress CAMB_JCL` after removing the six misplaced members, then verify with `tools/dspal ls`. Do not compress before the deletion series is complete.
