@@ -3,11 +3,11 @@ GLOBAL $( START:1; WRITEF:76; GETVEC:87; FREEVEC:88; HEAPINIT:89 $)
 
 LET START() BE
 $(
-   WRITEF("TEST: GETVEC FREEVEC and reuse of freed storage*N")
  LET ARENA = VEC 100
    AND A = 0
    AND B = 0
 
+   WRITEF("TEST: GETVEC FREEVEC and reuse of freed storage*N")
    HEAPINIT(ARENA, 101)
 
    A := GETVEC(5)
