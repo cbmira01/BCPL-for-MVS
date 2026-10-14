@@ -1,6 +1,6 @@
 # M2.0 Gate F — Final DEVOBJ Candidate Acceptance
 
-**Status: OPEN — post-Gate-E execution validation pending, 14 October 2026.**
+**Status: ACCEPTED AND CLOSED — 14 October 2026. March M2.0 formally CLOSED.**
 **Candidate:** Git `asm/bcplmain-d6-candidate.asm` assembled to `HERC02.BCPL.DEVOBJ(BCPLM6)`, linked with independent DEVOBJ(BCPLIO), DEVOBJ(BCPLAPT), DEVOBJ(BCPLBYTE), DEVOBJ(BCPLMEM), and DEVOBJ(BLIB).
 **Predecessors:** Gates A–D accepted; Gate E source/maintainability review accepted, with runtime re-execution expressly transferred here.
 
@@ -44,8 +44,20 @@ Require exactly **123 PASS, 0 FAIL, 1 SKIP, 124 TOTAL** (083 is expected source-
 - [x] DEVOBJ(BCPLM6) assembled and integrated; separate modules verified.
 - [x] Source/ownership/XREF and M1.9 behavioral scope compared.
 - [x] Gate E comment-only rebuild and IEWL success recorded.
-- [ ] Post-Gate-E DEVOBJ(BCPLM6) smoke test 00 PASS.
-- [ ] Post-Gate-E DEVOBJ(BCPLM6) complete 00–123 panel: 123 PASS / 0 FAIL / 1 expected SKIP.
-- [ ] Record explicit Gate F and March M2.0 closure decisions with final operator evidence.
+- [x] Post-Gate-E DEVOBJ(BCPLM6) smoke test 00 PASS.
+- [x] Post-Gate-E DEVOBJ(BCPLM6) complete 00–123 panel: 123 PASS / 0 FAIL / 1 expected SKIP.
+- [x] Record explicit Gate F and March M2.0 closure decisions with final operator evidence.
 
-**Do not close Gate F or M2.0 until final post-rebuild execution confirms these checks.**
+**Superseded by the verified final execution and closure decision below.**
+
+## Final operator execution and formal acceptance — 14 October 2026
+
+The operator updated their Git checkout through commit `2401259` and ran both commands with **all four candidate selectors**: `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, and `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`.
+
+- Post-Gate-E smoke regression **00 PASS**, standalone summary **1 PASS / 0 FAIL / 0 SKIP / 1 TOTAL**.
+- Post-Gate-E full installed DEVOBJ regression **00..123**: **123 PASS / 0 FAIL / 1 SKIP / 124 TOTAL**. Exactly regression **083** skipped with stated reason `source-only instrumentation`. All remaining tests were individually listed PASS, including 120–123.
+- This is **new post-rebuild execution evidence**, not the earlier D6 full-panel run. The three independent rebuilt DEVOBJ modules (JOBs 2722, 2725, 2728) and IEWL integrated linkage (JOB 2731) had already completed RC=0000, all assembler statements unflagged.
+
+### Acceptance decision
+
+**Gate F ACCEPTED AND CLOSED. March M2.0 — Runtime Modularity and Maintainability — ACCEPTED AND CLOSED, 14 October 2026.** All six charter gates A–F are closed; independent BCPLAPT, BCPLBYTE, BCPLMEM and BCPLIO ownership has been demonstrated at the tested ABI boundary. BCPLMAIN D6 (DEVOBJ member BCPLM6) remains the accepted development candidate. MVS system-level historical completeness, reentrancy, full Cambridge compatibility and additional stack/diagnostic extraction were not included in this march and are neither accepted nor required for closure. The production binary object PDS `HERC02.BCPL.OBJ` was **not promoted or modified** by Gate F.
