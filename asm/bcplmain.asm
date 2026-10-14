@@ -585,6 +585,7 @@ BCPLMAIN CSECT
          ENTRY STKOVFL
          EXTRN BLIB
          EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMBIND
+         EXTRN APTOVEC,APLIMIT
 *
 * Preserve the compiled-module base before R3 is repurposed as R.K12.
 *
@@ -804,7 +805,11 @@ WFHAS76  EQU   *
          L     10,MBRT10
          L     1,=A(DEBUGINT)
          ST    1,600(12)
-         LA    1,APTOVEC
+* Install independent BCPLAPT G40 entry and its safe stack limit.
+         L     1,=A(APLIMIT)
+         L     2,STKLIM
+         ST    2,0(1)
+         L     1,=A(APTOVEC)
          ST    1,160(12)
          LA    1,STOPENT
          ST    1,120(12)
@@ -1056,43 +1061,8 @@ STKCIMP  LA    14,4(14)
          BR    14
 *
 ***********************************************************************
-* APTOVEC -- TEMPORARY STACK VECTOR AND NESTED BCPL CALL
+* Independent BCPLAPT supplies G40; bootstrap sets APLIMIT.
 *
-* G40 receives F in R7 and N in R8. Supply F(V,N), where V points
-* to N+1 BCPL words immediately above APTOVEC's saved linkage.
-* Allocate the callee frame above the vector, leaving room for its
-* four-register entry save; normal generated stack checks still apply.
-* This first rung rejects excessive N and reports stack overflow.
-***********************************************************************
-APTOVEC  STM   4,6,0(15)
-         LR    5,15
-         LTR   8,8
-         BM    STKOVFL
-         C     8,APMAXN
-         BH    STKOVFL
-         LR    14,8
-         SLL   14,2
-         LA    14,20(14)
-         LR    4,15
-         AR    4,14
-         LR    14,4
-         LA    14,16(14)
-         C     14,STKLIM
-         BH    STKOVFL
-         LR    14,7
-         LA    7,16(15)
-         SRL   7,2
-         LR    15,4
-         LR    4,14
-         BALR  6,4
-* RETIMPL has restored R5 to our frame; R7 holds F's result.
-         L     6,8(5)
-         L     5,4(5)
-         L     4,0(5)
-         BCR   15,6
-APMAXN   DC    F'16380'
-*
-***********************************************************************
 ***********************************************************************
 * INPUT STREAM RUNG 094 -- SINGLE NAMED QSAM STREAM BCPIN
 *
