@@ -1,6 +1,10 @@
+// ======================================================================
+// HANOI: BCPL DEMONSTRATION
+// ======================================================================
 // HANOI.BCPL
 // Solve the Towers of Hanoi recursively.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET MOVE(N, SRC, DST, AUX) BE
@@ -10,6 +14,7 @@ $( IF N=0 RETURN
    MOVE(N-1, AUX, DST, SRC)
 $)
 
+// --- Program entry and expected output ---
 AND START() BE
 $( WRITEF("DEMO: Recursive Towers of Hanoi*N")
    WRITEF("TOWERS OF HANOI - FOUR DISKS*N")
