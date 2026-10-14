@@ -1,50 +1,14 @@
-# Pseudo-random number demonstration
+# Random-number demo
 
-This directory demonstrates the reusable pseudo-random number implementation now maintained in `library/random.bcpl`.
+The reusable implementation is in `mr10-kit-compiler/library/random.bcpl`.
 
-The library uses the Park-Miller "minimal standard" generator with Schrage's overflow-avoiding formulation, so the sequence does not depend on signed 32-bit multiplication overflow semantics.
+| Call | Use |
+| --- | --- |
+| `SRAND(N)` | Set the seed |
+| `RAND()` | Next random number |
+| `RANDRANGE(N)` | Number from 0 through N-1 |
+| `RANDSEED(N)` | Alias for SRAND |
 
-The public interface is:
+This is a repeatable Park-Miller sequence, not a security-grade generator. With seed 1 the first five raw values are `16807`, `282475249`, `1622650073`, `984943658`, and `1144108930`.
 
-```text
-SRAND(N)
-RAND()
-RANDRANGE(N)
-RANDSEED(N)   compatibility spelling for SRAND
-```
-
-Run the demonstration from the repository root with:
-
-```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
-    suite/random/demo.bcpl \
-    +library/random.bcpl
-```
-
-For seed 1, the first five raw values are expected to be:
-
-```text
-16807
-282475249
-1622650073
-984943658
-1144108930
-```
-
-For seed 12345, the ten `RANDRANGE(100)` results are expected to be:
-
-```text
-15
-24
-16
-96
-31
-99
-20
-50
-40
-19
-```
-
-The corresponding exact-output regression is part of the `standard-library` regression-panel category.
+The `standard-library` regression tests check these results.
