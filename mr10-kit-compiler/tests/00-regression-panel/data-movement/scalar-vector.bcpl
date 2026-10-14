@@ -1,6 +1,11 @@
+// ======================================================================
+// SCALAR VECTOR: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: scalar assignment and vector load/store.
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Test entry and result ---
 LET START() BE
 $(
  LET A = 17
