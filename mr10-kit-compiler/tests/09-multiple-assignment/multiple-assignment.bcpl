@@ -1,9 +1,14 @@
+// ======================================================================
+// MULTIPLE ASSIGNMENT: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // MULTIPLE-ASSIGNMENT.BCPL
 // Verify the historical MR10 translator's sequential
 // multiple-assignment behavior.
 
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Probe entry and output ---
 LET START() BE
 $( LET A = 1
    AND B = 2
