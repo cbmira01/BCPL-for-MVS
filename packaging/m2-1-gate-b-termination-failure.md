@@ -111,7 +111,7 @@ Then exercise normal STOP/FINISH and a checked-frame overflow (where independent
 
 Maintain a versioned **completion and failure code register** as part of the native runtime contract, consolidating all runtime-generated R15 completion values and deliberate `STOP(N)` user codes, with ownership, triggering condition, message, cleanup path, evidence level and historical/MVS provenance. **Do not confuse** an MVS step RC with system/user ABEND codes or assembler/link-editor return codes. Begin with this Gate B table; stabilize the consolidated registry no later than M2.1 Gate F. The register is documentary, not a claim that every possible `STOP(N)` value is reserved.
 
-**Gate B remains OPEN pending MVS candidate evidence and acceptance.**
+**Historical note:** this statement describes the pre-test state; see final Gate B acceptance below.
 
 
 ## D7 resident build and linkage evidence — 14 October 2026
@@ -158,3 +158,12 @@ Owner executed `tools/run-native-regression` with `BCPL_RUNTIME_PDS=1`, `BCPL_RU
 Earlier build/link evidence remains payload JOB 2989 (IF​OX00 and IEBGENER RC=0000) and JOB 2992 (IEWL RC=0000); earlier checked-frame overflow payload JOB 3101 demonstrated GO RC=0012 and expected STACK OVERFLOW before its test fixture was corrected. No D7 assembler change was required after these jobs.
 
 **Gate B engineering exit criteria satisfied:** focused failure diagnostics/completion code, both overflow entry paths, ordinary STOP/FINISH, and full native candidate panel are validated. Owner has not explicitly directed formal Gate B closure in this message; status remains **READY FOR OWNER ACCEPTANCE**, not automatically closed. No production promotion authorized.
+
+
+## Formal Gate B closure — 14 October 2026
+
+The owner subsequently directed **“Proceed Gate C”** following the reported final D7 full native regression. This constitutes acceptance of Gate B's bounded delivery and authorization to transition.
+
+**ACCEPTED AND CLOSED:** D7 DEVOBJ(BCPLM7), stack exhaustion completion GO RC=0012 via STOPENT; IFOX/IEBGENER build JOB 2989 RC=0000; IEWL LINK JOB 2992 RC=0000; checked-frame 052 and APTOVEC 093 PASS with RC=0012; ordinary STOP/FINISH 084–089 PASS; full 00–123 panel **123 PASS, 0 FAIL, 1 expected SKIP (083)**. Earlier source-only audit qualifications for exceptional pre-init exits and historical language services are **not** claims of complete compatibility. No production OBJ promotion or rewrite of accepted D6 performed.
+
+Gate C may now perform its separate historical compiler-runtime contract inquiry. Gate B is not reopened merely because Gate C identifies unsupported historical services.
