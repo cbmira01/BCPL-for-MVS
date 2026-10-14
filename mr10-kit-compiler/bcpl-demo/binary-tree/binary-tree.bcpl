@@ -45,6 +45,7 @@ $( LET KEYS = VEC 15
    AND NEXTNODE = VEC 0
    AND ROOT = -1
 
+   WRITEF("DEMO: Binary search tree insertion and lookup*N")
    NEXTNODE!0 := 0
    FOR I = 0 TO 8 DO
    $( LET K = I!TABLE 50, 25, 75, 10, 30, 60, 90, 27, 65
