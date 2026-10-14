@@ -4,24 +4,24 @@ Assemble ICINT, run an INTCODE program, and optionally print its results.
 
 Typical use:
 
-    tools/run-intcode asm/icintv13.asm intcode/factorial.int
+    tools/run-intcode mr10-kit-compiler/asm/icintv13.asm mr10-kit-compiler/intcode/factorial.int
 
 Append additional INTCODE modules explicitly, in load order:
 
-    tools/run-intcode asm/icintv13.asm intcode/syni.int \
-        +intcode/trni.int +intcode/blibi.int +intcode/iclib.int
+    tools/run-intcode mr10-kit-compiler/asm/icintv13.asm mr10-kit-compiler/intcode/syni.int \
+        +mr10-kit-compiler/intcode/trni.int +mr10-kit-compiler/intcode/blibi.int +mr10-kit-compiler/intcode/iclib.int
 
 Supply runtime standard input from a host text file:
 
-    tools/run-intcode --sysin tests/input.txt \
-        asm/icintv13.asm intcode/program.int \
-        +intcode/blibi.int +intcode/iclib.int
+    tools/run-intcode --sysin mr10-kit-compiler/tests/input.txt \
+        mr10-kit-compiler/asm/icintv13.asm mr10-kit-compiler/intcode/program.int \
+        +mr10-kit-compiler/intcode/blibi.int +mr10-kit-compiler/intcode/iclib.int
 
 Also wait for completion and print the ICINT run results:
 
     tools/run-intcode --results \
-        asm/icintv13.asm intcode/factorial.int \
-        +intcode/blibi.int +intcode/iclib.int
+        mr10-kit-compiler/asm/icintv13.asm mr10-kit-compiler/intcode/factorial.int \
+        +mr10-kit-compiler/intcode/blibi.int +mr10-kit-compiler/intcode/iclib.int
 
 The generated JCL contains IFOX assemble, IEWL link-edit, and GO steps.
 INTIN contains the primary program followed by every +module in the exact
@@ -316,15 +316,15 @@ def make_parser():
             "+modules, and optionally print its runtime results."
         ),
         epilog=(
-            "Example: tools/run-intcode --results asm/icintv13.asm "
-            "intcode/syni.int +intcode/trni.int +intcode/blibi.int +intcode/iclib.int"
+            "Example: tools/run-intcode --results mr10-kit-compiler/asm/icintv13.asm "
+            "mr10-kit-compiler/intcode/syni.int +mr10-kit-compiler/intcode/trni.int +mr10-kit-compiler/intcode/blibi.int +mr10-kit-compiler/intcode/iclib.int"
         ),
     )
     parser.add_argument(
-        "interpreter", help="IFOX ICINT assembler source (normally under asm/)"
+        "interpreter", help="IFOX ICINT assembler source (normally under mr10-kit-compiler/asm/)"
     )
     parser.add_argument(
-        "program", help="primary INTCODE program (normally under intcode/)"
+        "program", help="primary INTCODE program (normally under mr10-kit-compiler/intcode/)"
     )
     parser.add_argument(
         "modules",
