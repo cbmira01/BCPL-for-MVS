@@ -139,6 +139,7 @@ IOW2PUT  PUT   IO2DCB,IO2BUF
 IOWRET   LM    0,9,IOSAVE
          LM    11,15,IOSAVE+44
          L     4,0(5)
+         L     10,IOSAVE+40
          BCR   15,6
          DROP  10
 *
@@ -193,8 +194,10 @@ IOSERET  LM    0,9,IOESAVE
 * argument/result, restore R4 from 0(R5), clobber R10.
 * Handles are the word addresses of private IOCTL1/IOCTL2.
 *
-IOFOUT   BALR  10,0
+IOFOUT   LR    4,10
+         BALR  10,0
          USING *,10
+         ST    4,IOOSAVE+40
          STM   0,9,IOOSAVE
          STM   11,15,IOOSAVE+44
          LR    14,7
@@ -226,18 +229,24 @@ IOFRET   ST    7,IORESULT
          LM    11,15,IOOSAVE+44
          L     7,IORESULT
          L     4,0(5)
+         L     10,IOOSAVE+40
          BCR   15,6
          DROP  10
 *
-IOOUT    BALR  10,0
+IOOUT    LR    4,10
+         BALR  10,0
          USING *,10
+         ST    4,IOOBASE
          L     7,IOCURH
          L     4,0(5)
+         L     10,IOOBASE
          BCR   15,6
          DROP  10
 *
-IOSOUT   BALR  10,0
+IOSOUT   LR    4,10
+         BALR  10,0
          USING *,10
+         ST    4,IOOSAVE+40
          STM   0,9,IOOSAVE
          STM   11,15,IOOSAVE+44
          LA    14,IOCTL1
@@ -258,12 +267,15 @@ IOSPRI   MVI   IOSELCT,X'01'
 IOSRET   LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
          L     4,0(5)
+         L     10,IOOSAVE+40
          BCR   15,6
          DROP  10
 *
 * WRAPOUTPUT: only alternate stream emits an empty record on wrap.
-IOWRAP   BALR  10,0
+IOWRAP   LR    4,10
+         BALR  10,0
          USING *,10
+         ST    4,IOOSAVE+40
          STM   0,9,IOOSAVE
          STM   11,15,IOOSAVE+44
          CLI   IOSELCT,X'02'
@@ -277,12 +289,15 @@ IOWRAP   BALR  10,0
 IOWRRET  LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
          L     4,0(5)
+         L     10,IOOSAVE+40
          BCR   15,6
          DROP  10
 *
 * ENDWRITE: only alternate; flush/close and revert selection.
-IOENDW   BALR  10,0
+IOENDW   LR    4,10
+         BALR  10,0
          USING *,10
+         ST    4,IOOSAVE+40
          STM   0,9,IOOSAVE
          STM   11,15,IOOSAVE+44
          CLI   IOSELCT,X'02'
@@ -303,6 +318,7 @@ IOEWDONE MVI   IOSELCT,X'01'
 IOEWRET  LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
          L     4,0(5)
+         L     10,IOOSAVE+40
          BCR   15,6
          DROP  10
 *
@@ -395,6 +411,7 @@ IORBAD   LA    15,8
 *
          DS    0F
 IOPARM   DC    F'0'
+IOOBASE  DC    F'0'
 IODRC    DC    F'0'
 IOCTL1   DC    F'1'
 IOCTL2   DC    F'2'
