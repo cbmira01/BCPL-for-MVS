@@ -20,7 +20,7 @@ CODE_RE = re.compile(r"EXECUTION CYCLES\s*=.*?,\s*CODE\s*=\s*(-?\d+)")
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="run-regression-panel",
+        prog="run-mr10kit-regression-panel",
         description="Run manifest-defined focused BCPL regression tests.",
     )
     parser.add_argument(
@@ -206,11 +206,11 @@ def main() -> int:
         icint = resolve_icint(args.icint)
         rows = selected(load_manifest(), args)
     except (OSError, RuntimeError, ValueError) as exc:
-        print(f"run-regression-panel: {exc}", file=sys.stderr)
+        print(f"run-mr10kit-regression-panel: {exc}", file=sys.stderr)
         return 2
 
     if not rows:
-        print("run-regression-panel: no tests selected", file=sys.stderr)
+        print("run-mr10kit-regression-panel: no tests selected", file=sys.stderr)
         return 2
 
     if args.list:

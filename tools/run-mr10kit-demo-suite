@@ -17,18 +17,18 @@ do
         --icint)
             if [ "$#" -lt 2 ]
             then
-                echo "run-demo-suite.sh: --icint requires a path" >&2
+                echo "run-mr10kit-demo-suite: --icint requires a path" >&2
                 exit 2
             fi
             ICINT="$2"
             shift 2
             ;;
         --help|-h)
-            echo "usage: tools/run-demo-suite.sh [--icint PATH]"
+            echo "usage: tools/run-mr10kit-demo-suite [--icint PATH]"
             exit 0
             ;;
         *)
-            echo "run-demo-suite.sh: unknown option: $1" >&2
+            echo "run-mr10kit-demo-suite: unknown option: $1" >&2
             exit 2
             ;;
     esac
@@ -36,7 +36,7 @@ done
 
 if [ ! -f "$ICINT" ]
 then
-    echo "run-demo-suite.sh: ICINT source not found: $ICINT" >&2
+    echo "run-mr10kit-demo-suite: ICINT source not found: $ICINT" >&2
     exit 2
 fi
 
