@@ -1,6 +1,10 @@
+// ======================================================================
+// EXPRESSION PARSER: BCPL DEMONSTRATION
+// ======================================================================
 // EXPRESSION-PARSER.BCPL
 // Recursive-descent parser for +, -, *, /, parentheses, and integers.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; GETBYTE:85; WRITEF:76 $)
 
 LET DIGIT(CH) = '0'<=CH & CH<='9'
@@ -47,6 +51,7 @@ $( LET V = TERM(S, P)
    RESULTIS V
 $)
 
+// --- Program entry and expected output ---
 AND START() BE
 $( LET S = "(2+3)**(4+5)-6"
    LET P = VEC 0
