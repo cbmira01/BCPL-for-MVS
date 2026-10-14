@@ -35,3 +35,9 @@ Current canonical BCPLMAIN source (post Gate C) is 2,078 lines. The main runtime
 ## Disposition
 
 **BCPLIO selected.** No assembler implementation change and no resident MVS dataset write in this planning step. Gate D **remains open**. BCPLSTACK is deferred until I/O extraction stabilizes. Do not treat the plan as evidence of a runnable independent BCPLIO.
+
+## D1 implementation checkpoint
+
+Added asm/bcplio.asm: independent CSECT with native-only IOINIT and IOFIN. IOINIT stores original EXEC parameter address from R1; IOFIN clears private state. R10 is clobbered as an independent base register; other general registers are preserved. This is a static nonreentrant skeleton, not yet a working stream service.
+
+Added jcl/build-dev-bcplio.jcl: IFOX00 assembler and conditional IEBGENER installation targeting DEVOBJ(BCPLIO) exclusively. BCPLMAIN and runtime dispatch remain unchanged. Operator assembly verification is pending; the full Gate D remains open.
