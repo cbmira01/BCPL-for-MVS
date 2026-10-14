@@ -10,7 +10,8 @@ $( SWITCHON N INTO
 $)
 
 AND START() BE
-$( LET S = 0
+$(
+   WRITEF("TEST: IF FOR SWITCHON and CASE control flow*N") LET S = 0
    AND F = 0
 
    FOR I = 1 TO 4 DO S := S+I
