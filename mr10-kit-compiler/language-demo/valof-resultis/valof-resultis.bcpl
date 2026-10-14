@@ -1,6 +1,10 @@
+// ======================================================================
+// VALOF RESULTIS: LANGUAGE EXAMPLE
+// ======================================================================
 // VALOF-RESULTIS.BCPL
 // Demonstrate expression-valued blocks using VALOF and RESULTIS.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET ABS(N) = VALOF
@@ -13,6 +17,7 @@ $( IF A>B RESULTIS A
    RESULTIS B
 $)
 
+// --- Program entry and output ---
 AND START() BE
 $( LET X = -37
    AND Y = 12
