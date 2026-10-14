@@ -125,3 +125,7 @@ Operator restaged SOURCE(BCIOPRB) by JOB 1365 (remove), 1366 (compress), 1367 (p
 4. **D3.d Targeted proof**: IEWL MAP/XREF must resolve BCPLIO services independently. Focused tests: SYSPRINT primary, BCPALT secondary, newline/132-byte boundary, overflow RC=12, STOP(N) preserved after flush, FINISH RC=0, stack-overflow marker/legacy RC, formatter and DEBUGINT output, BCPIN/BCPINB EOF, and PARM. Run D4-focused native regressions after all of these pass.
 
 **Safety:** D3 inspection/design is not an acceptance checkpoint. No BCPLMAIN or BCPLIO code changes, no resident MVS writes, and no production OBJ changes in this portion. Gate D remains open.
+
+### D3 first implementation slice — lifecycle ABI candidate
+
+Contract documented in `packaging/m2-0-d3-bcplio-linkage-contract.md` (commit `5c3843b`). BCPLIO `IOINIT` and `IOFIN` now preserve R0-R9 and R11-R15 across OPEN/PUT/CLOSE, with R10 explicitly clobbered; IOINIT avoids reopening while active; IOFIN retains conditional close (commit `ba71439`). Independent BCIOPRB now invokes IOINIT twice and IOFIN twice to exercise idempotency while retaining character/newline, overflow, and register-sentinel checks (commit `1e348fb`). **Candidate not yet assembled/validated on MVS; D3 remains open.** BCPLMAIN and production OBJ unchanged. No G14 redirection or duplicate SYSPRINT OPEN in integrated execution.
