@@ -1,3 +1,6 @@
+// ======================================================================
+// FRAME LAYOUT PROBE: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // FRAME-LAYOUT-PROBE.BCPL
 //
 // Compiler-observation source for the MR10 coroutine reconstruction.
@@ -6,6 +9,7 @@
 // CHANGECO call, so that a synthetic coroutine frame can be initialized
 // without borrowing offsets from later Cintcode implementations.
 
+// --- Global slots ---
 GLOBAL $(
 START:1
 CHANGECO:6
@@ -21,6 +25,7 @@ $( C!0 := C
    RESULTIS C
 $)
 
+// --- Probe entry and output ---
 AND START() BE
 $( WRITEF("COROUTINE FRAME PROBE COMPILED*N")
    FINISH
