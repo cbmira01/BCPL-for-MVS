@@ -20,6 +20,9 @@ BCIOPRB  CSECT
 * IOINIT uses native R14 return. Original EXEC PARM pointer in R1.
          L     15,=A(IOINIT)
          BALR  14,15
+* D3 repeat-open guard: should not OPEN the DCB a second time.
+         L     15,=A(IOINIT)
+         BALR  14,15
 * Distinct register sentinels through the entire character sequence.
          LA    0,17
          LA    1,34
@@ -45,6 +48,9 @@ OVLOOP   LA    7,231
          BALR  14,15
          ST    15,OVRESULT
 * IOFIN flushes/closes output stream via R14.
+         L     15,=A(IOFIN)
+         BALR  14,15
+* D3 repeat-close guard: should not PUT or CLOSE again.
          L     15,=A(IOFIN)
          BALR  14,15
 * Select return path while R12 is still our assembler base.
