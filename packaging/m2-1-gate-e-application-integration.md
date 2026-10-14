@@ -64,7 +64,7 @@ Test 069 link map and exact GO results are separately important; if the runner p
 - [ ] Correct any reproducible application/linkage regression with separate evidence and permission; no speculative runtime refactoring.
 - [ ] Owner accepts and closes Gate E. Transition to Gate F versioned contract, RC register and regression coverage matrix.
 
-**Gate E remains OPEN pending operator MVS execution and explicit acceptance.** No resident DEVOBJ or production objects were changed by this plan.
+**Historical Gate E launch status:** superseded by final acceptance at end of document. No resident DEVOBJ or production objects were changed by this plan.
 
 
 ## Focused D7 Gate E execution — 14 October 2026
@@ -88,3 +88,25 @@ The supplied regression 069 log shows compiler **JOB 3645**, native payload **JO
 **Remaining formal linkage map check:** console and per-test log do not include IEWL MAP/XREF CSECT listing. Before formal Gate E closure obtain `tools/dump-report-for-job 3646` and inspect actual link-edit inclusions/CSECTs and resolution; do not fabricate a map from a successful GO. The expected outcome is separate application CSECT, BCPLMAIN and linked runtime/BLIB sections, as shown in the available listing. If only partial map information is present, identify its limits rather than claiming all objects listed.
 
 No candidate source, assembler, DEVOBJ object, or production OBJ changes were made for these Gate E executions. **Gate E ready for final map inspection, not yet formally closed.**
+
+
+## Final independent-object IEWL evidence and closure — 14 October 2026
+
+Owner supplied the complete `tools/dump-report-for-job 3646` JES/IFOX/IEWL/GO report. **JOB 3646 RG069R**: ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; program printed **`BLIB 42`**.
+
+The IEWL `LIST,XREF,MAP` report explicitly includes `OBJ(BCPLM7)`, `OBJ(BCPLIO)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)` from `HERC02.BCPL.DEVOBJ`, with `ENTRY BCRG0069`.
+
+| CSECT | Origin (hex) | Length (hex) |
+| --- | --- | --- |
+| BCRG0069 application | 000000 | 000088 |
+| BCPLMAIN | 000088 | 000C00 |
+| BCPLIO | 000C88 | 000FF8 |
+| BCPLBYTE | 001C80 | 000026 |
+| BCPLAPT | 001CA8 | 00006C |
+| BCPLMEM | 001D18 | 0002AC |
+| BLIB | 001FC8 | 001BB0 |
+| **Total** | | **003B78** |
+
+The IEWL XREF explicitly identifies application location 00000C referring to BCPLMAIN and resident BCPLMAIN references to GETVEC/FREEVEC in BCPLMEM, GETBYTE/PUTBYTE in BCPLBYTE, APTOVEC/APLIMIT in BCPLAPT, and multiple BCPLIO entries, plus BLIB references to BCPLMAIN. This establishes genuine separate control sections and external linkage, not source-text combination. Source report notes `RG069OBJ DOES NOT EXIST BUT HAS BEEN ADDED TO DATA SET`; link was RC=0000 and GO succeeded, so this is informational, not an unresolved error.
+
+**Gate E ACCEPTED AND CLOSED — 14 October 2026.** Acceptance rests on the eight focused applications passing, the post-focused full D7 panel **123 PASS, 0 FAIL, one expected SKIP 083**, and the independent-object LINK/GO proof in JOB 3646. Owner's provision of requested final map completes the final evidence request; no runtime source or resident object changes were necessary. M2.1 continues to Gate F for consolidated runtime contract, RC registry, coverage matrix and final candidate acceptance. Production OBJ remains unchanged.
