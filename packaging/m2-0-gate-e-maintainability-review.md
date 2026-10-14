@@ -71,7 +71,7 @@ historical functionality or to promote production OBJ.
       staging; no unapproved production OBJ mutation.
 - [x] Re-stage and assemble comment-only updated BCPLIO/BCPLAPT/
       BCPLBYTE to DEVOBJ; verify RCs and integrated IEWL linkage.
-- [ ] Formally record Gate E acceptance or remaining bounded deferrals.
+- [x] Formally record Gate E acceptance with bounded post-rebuild execution deferral to Gate F.
 
 ## Next gate
 
@@ -80,7 +80,7 @@ contract and complete installed DEVOBJ regression panel. Existing D6
 full-panel evidence is valid and should be reused where nothing has
 changed; any new source/object build must be identified explicitly.
 
-**Gate E remains OPEN; M2.0 remains OPEN.**
+**Superseded by Gate E closure decision at the end of this document; M2.0 remains OPEN.**
 
 ## Gate E contract and navigation audit complete — MVS refresh pending
 
@@ -120,3 +120,7 @@ Operator synchronized updated source prologues to SOURCE(BCPLAPT), SOURCE(BCPLBY
 - **JOB 2731 D6LINK**: integrated IEWL LKED RC=0000 using existing D6 control.
 
 The committed assembler changes were comments only. These jobs establish updated SOURCE and DEVOBJ object builds and successful integration, not a newly observed post-rebuild GO. No evidence of production OBJ write. To close Gate E, run DEVOBJ(BCPLM6) native regression 00 as smoke and record result; Gate F owns final full 00–123 acceptance.
+
+## Gate E closure / transition to Gate F — 14 October 2026
+
+**Gate E ACCEPTED AND CLOSED for the architectural and maintainability scope.** The source/interface/provenance/navigation audit is complete; all three comment-only changed modules were re-staged and rebuilt independently with IFOX00 and IEBGENER RC=0000, zero flagged statements (JOBs 2722, 2725, 2728); integrated IEWL passed RC=0000 (JOB 2731). **Bounded deferral:** no post-rebuild GO result was supplied. Rather than represent this as verified, transfer runtime smoke and final complete DEVOBJ(BCPLM6) panel to Gate F, whose charter expressly governs candidate execution acceptance. A final execution failure will reopen the implementation issue and prevent Gate F/M2.0 closure. No production OBJ promotion.
