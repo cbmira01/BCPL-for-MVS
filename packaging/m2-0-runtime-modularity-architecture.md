@@ -1,6 +1,6 @@
 # M2.0 — Runtime Modularity and Maintainability Architecture
 
-**Status (14 October 2026):** Gates A-D accepted and closed; Gate E maintainability review OPEN; Gate F candidate acceptance pending. The original gate plan and historical decisions below remain the governing charter.  
+**Status (14 October 2026):** M2.0 ACCEPTED AND CLOSED; Gates A–F all closed. Final evidence: Gate E independent DEVOBJ builds JOBs 2722/2725/2728 RC=0000, integrated IEWL JOB 2731 RC=0000, post-rebuild native regression 00–123 123 PASS / 0 FAIL / 1 expected SKIP. Accepted development runtime uses DEVOBJ(BCPLM6) and independent BCPLIO; production OBJ remains unchanged. See m2-0-gate-f-final-candidate-acceptance.md. The original gate plan and historical decisions below remain the governing charter.  
 **Date:** 13 October 2026  
 **Predecessors:** M1.8 reproducible five-member runtime builds (closed); M1.9 runtime contract and observability audit (closed).  
 **Reference contract:** [Runtime Contract Specification v1.0](runtime-contract-v1.md).
