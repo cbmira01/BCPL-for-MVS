@@ -1,3 +1,6 @@
+// ======================================================================
+// COROUTINES: REUSABLE BCPL ROUTINES
+// ======================================================================
 // COROUTINES.BCPL
 //
 // Portable coroutine layer for the reconstructed MR10 runtime.
@@ -34,6 +37,7 @@
 //     P!3 = SIZE
 //     P!4 = C
 
+// --- Public global slots ---
 GLOBAL $(
 CHANGECO:6
 CURRCO:7
@@ -47,6 +51,7 @@ COWAIT:94
 RESUMECO:95
 $)
 
+// --- Implementation ---
 LET CALLCO(CPTR, A) = VALOF
 $( IF CPTR!1 \= 0 RESULTIS -999
    CPTR!1 := CURRCO
