@@ -1,6 +1,10 @@
+// ======================================================================
+// HASH TABLE: BCPL DEMONSTRATION
+// ======================================================================
 // HASH-TABLE.BCPL
 // Small chained hash table using vector-backed buckets and nodes.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET HASH(KEY) = KEY REM 7
@@ -23,6 +27,7 @@ $( LET P = BUCKET!HASH(KEY)
    RESULTIS FALSE
 $)
 
+// --- Program entry and expected output ---
 AND START() BE
 $( LET BUCKET = VEC 6
    AND KEYS = VEC 15
