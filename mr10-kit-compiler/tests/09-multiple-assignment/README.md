@@ -1,40 +1,12 @@
-# Multiple-assignment regression test
+# Multiple assignment in MR10 BCPL
 
-This test records the multiple-assignment behavior of the historical MR10 compiler used by this reconstruction.
+This test records a historical compiler behavior: assignments with comma-separated destinations happen **in order**, not all at once.
 
-The source performs two assignments:
+| Starting values | Command | Result |
+| --- | --- | --- |
+| A=1, B=2 | `A, B := B, A` | A=2, B=2 |
+| A=1071, B=462 | `A, B := B, A REM B` | A=462, B=0 |
 
-```text
-A, B := B, A
-```
+Run `tools/compile-and-run --results "$(tools/current-icint)" mr10-kit-compiler/tests/09-multiple-assignment/multiple-assignment.bcpl`.
 
-starting from `A=1, B=2`, followed by:
-
-```text
-A, B := B, A REM B
-```
-
-starting from `A=1071, B=462`.
-
-The MR10 translator implements these assignments sequentially. Its `ASSIGN` routine recursively processes comma-separated left- and right-hand-side lists, and for each scalar pair it loads the right-hand expression and stores the left-hand destination before proceeding to the next pair.
-
-Accordingly, the expected output for this compiler is:
-
-```text
-SWAP BEFORE A=1 B=2
-SWAP AFTER  A=2 B=2
-EUCLID BEFORE A=1071 B=462
-EUCLID AFTER  A=462 B=0
-```
-
-Run from the repository root with:
-
-```bash
-tools/compile-and-run --results --listing heavy \
-    asm/icintv17.asm \
-    tests/09-multiple-assignment/multiple-assignment.bcpl
-```
-
-A run producing the expected output above records the historical MR10 behavior directly and reproducibly. The test is retained so that later compiler reconstruction work does not accidentally change that behavior without an explicit decision.
-
-Programs that require simultaneous assignment semantics must use explicit temporaries when compiled by this MR10 translator.
+Programs needing a true swap must use temporary variables. Keep this test: it records what the MR10 compiler actually does.
