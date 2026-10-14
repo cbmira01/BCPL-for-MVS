@@ -116,7 +116,12 @@ def main():
     core = load(ROOT / "tools/dspal-core.py", "runtime_pds_dspal")
     config = core.load_config()
     import os
+    candidate = os.environ.get("BCPL_RUNTIME_CANDIDATE", "0")
+    if candidate not in ("0", "1"):
+        raise ValueError("BCPL_RUNTIME_CANDIDATE must be 0 or 1")
     library = os.environ.get("BCPL_RUNTIME_LIBRARY", "OBJ").upper()
+    if candidate == "1" and library != "DEVOBJ":
+        raise ValueError("BCPL_RUNTIME_CANDIDATE=1 requires BCPL_RUNTIME_LIBRARY=DEVOBJ")
     if library not in ("OBJ", "DEVOBJ"):
         raise ValueError("BCPL_RUNTIME_LIBRARY must be OBJ or DEVOBJ")
     dsn, logical = core.resolve_dsn(config, library)
@@ -131,6 +136,7 @@ def main():
         *core.authenticated_job_card(config, job, "BCPL PDS REG",
                                     redact_password=False),
         f"//* RUNTIME LIBRARY: {library}; APP ASSEMBLY ONLY",
+        f"//* D3 BCPLMAIN+BCPLIO CANDIDATE: {candidate}",
         "//ASMAP    EXEC PGM=IFOX00,REGION=256K,",
         "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'",
         "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR",
@@ -148,7 +154,8 @@ def main():
         f"//OBJ      DD DSN={dsn},DISP=SHR",
         "//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)",
         "//         DD *",
-        " INCLUDE OBJ(BCPLMAIN)",
+        " INCLUDE OBJ(BCPLM3)" if candidate == "1" else " INCLUDE OBJ(BCPLMAIN)",
+        *([" INCLUDE OBJ(BCPLIO)"] if candidate == "1" else []),
         " INCLUDE OBJ(BCPLBYTE)",
         " INCLUDE OBJ(BCPLAPT)",
         " INCLUDE OBJ(BCPLMEM)",
