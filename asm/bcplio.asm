@@ -110,13 +110,14 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
          L     14,IOOVHAND
          LTR   14,14
          BZ    IOWRET
-* Transfer once, never return. Undo IOWRCH's register save before
-* invoking caller-owned termination; restore the BCPL frame B.
+* Transfer once, never return. Restore caller R14 with LM, then
+* load callback into scratch R10 just before leaving module.
          LM    0,9,IOSAVE
          LM    11,15,IOSAVE+44
          L     4,0(5)
          LA    7,12
-         BCR   15,14
+         L     10,IOOVHAND
+         BCR   15,10
 IOW2     C     7,IOLF
          BE    IOW2PUT
          L     14,IO2POS
