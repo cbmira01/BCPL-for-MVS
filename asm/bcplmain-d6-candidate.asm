@@ -1083,7 +1083,7 @@ STKCIMP  LA    14,4(14)
 * adds the historical %I width path; Test 060 adds A-F width digits.
 *
 * BCPL strings use a length byte at byte offset zero followed by data
-* bytes.  Literal bytes are sent through the BCPL output service.  A '%' followed by 'N'
+* Literal bytes use the BCPL output service. '%' followed by 'N'
 * emits signed decimal; %C emits one character; %S emits a BCPL
 * string; %I consumes one width character and emits signed decimal
 * right-justified in that field. %X and %O consume one width
