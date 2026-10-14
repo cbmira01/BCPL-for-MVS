@@ -260,12 +260,7 @@ datasets:
     recfm: FB
     lrecl: 80
     blksize: 800
-    populate: true
-    members:
-      LIBHDR: richards-bcpltape/sys3/bcpl/libhdr
-      SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
-      TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
-      CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
+    populate: false
 
   CAMB_ASM:
     dsn: BCPL.CAMBRIDG.ASM
@@ -285,10 +280,7 @@ datasets:
     recfm: FB
     lrecl: 80
     blksize: 800
-    populate: true
-    members:
-      CAMBBLD: native-compiler/jcl/build-cambridge-resident.jcl
-      CG370DB: native-compiler/jcl/build-cg370-diagnostic.jcl
+    populate: false
 
   CAMB_LIBRARY:
     dsn: BCPL.CAMBRIDG.LIBRARY
@@ -353,13 +345,18 @@ datasets:
 
   NATIVE_SOURCE:
     dsn: BCPL.NATIVE.SOURCE
-    description: Native compiler/runtime BCPL source (pending)
+    description: Native compiler/bootstrap BCPL headers
     type: pds
     dsorg: PO
     recfm: FB
     lrecl: 80
     blksize: 800
-    populate: false
+    populate: true
+    members:
+      LIBHDR: richards-bcpltape/sys3/bcpl/libhdr
+      SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
+      TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
+      CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
 
   NATIVE_ASM:
     dsn: BCPL.NATIVE.ASM
@@ -400,6 +397,8 @@ datasets:
       BLDDEVA: native-compiler/jcl/build-dev-bcplapt.jcl
       BLDDEVL: native-compiler/jcl/build-dev-blib.jcl
       SEEDDEV: native-compiler/jcl/seed-devobj.jcl
+      CAMBBLD: native-compiler/jcl/build-cambridge-resident.jcl
+      CG370DB: native-compiler/jcl/build-cg370-diagnostic.jcl
 
   NATIVE_OBJ:
     dsn: BCPL.NATIVE.OBJ
