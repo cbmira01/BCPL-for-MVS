@@ -9,7 +9,7 @@ set -o pipefail
 
 COMPILE="tools/compile-and-run"
 ICINT="$(bash tools/current-icint)"
-SUITE="mr10-kit-compiler/suite"
+SUITE="mr10-kit-compiler/bcpl-demo"
 
 while [ "$#" -gt 0 ]
 do
