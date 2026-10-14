@@ -27,7 +27,7 @@
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
          ENTRY IOFOUT,IOSOUT,IOOUT,IOWRAP,IOENDW
-         ENTRY IOBIND,IODIAG
+         ENTRY IOBIND,IODIAG,IOREPL
 *
 IOINIT   BALR  10,0
          USING *,10
@@ -116,8 +116,9 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
          LM    11,15,IOSAVE+44
          L     4,0(5)
          LA    7,12
-         L     10,IOOVHAND
-         BCR   15,10
+         L     14,IOOVHAND
+         L     10,IOSAVE+40
+         BCR   15,14
 IOW2     C     7,IOLF
          BE    IOW2PUT
          L     14,IO2POS
@@ -356,6 +357,38 @@ IODRET   ST    15,IODRC
 IODBAD   LA    15,8
          B     IODRET
 IODMOVE  MVC   0(1,5),0(4)
+         DROP  10
+*
+*
+* Private primary record replacement for stack diagnostics.
+* R1=source bytes, R2=length (0..132); R15=0 or 8.
+* Discards pending primary record, does not PUT or invoke STOP.
+* This must not change BCPALT selection or contents.
+IOREPL   BALR  10,0
+         USING *,10
+         STM   0,9,IODSAVE
+         STM   11,14,IODSAVE+44
+         LTR   2,2
+         BM    IORBAD
+         C     2,IOMAX
+         BH    IORBAD
+         CLI   IOACTIVE,X'01'
+         BNE   IORBAD
+         XC    IOPOS(4),IOPOS
+         MVI   IOBUF,C' '
+         MVC   IOBUF+1(131),IOBUF
+         LTR   2,2
+         BZ    IORGOOD
+         LA    5,IOBUF
+         LR    4,1
+         LR    6,2
+         BCTR  6,0
+         EX    6,IODMOVE
+         ST    2,IOPOS
+IORGOOD  SR    15,15
+         B     IODRET
+IORBAD   LA    15,8
+         B     IODRET
          DROP  10
 *
          DS    0F
