@@ -585,6 +585,7 @@ BCPLMAIN CSECT
          ENTRY STKOVFL
          EXTRN BLIB
          EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMBIND
+         EXTRN GETBYTE,PUTBYTE
          EXTRN APTOVEC,APLIMIT
 *
 * Preserve the compiled-module base before R3 is repurposed as R.K12.
@@ -1886,29 +1887,7 @@ WFDECPK  DS    D
 WFDECZN  DS    CL15
 *
 ***********************************************************************
-* GETBYTE(S,I) -> R7
-*
-* S is a BCPL word pointer.  I is an unrestricted byte offset.
-***********************************************************************
-GETBYTE  LR    14,7
-         SLL   14,2
-         AR    14,8
-         SR    7,7
-         IC    7,0(14)
-         L     4,0(5)
-         BCR   15,6
-*
-***********************************************************************
-* PUTBYTE(S,I,BYTE)
-*
-* S in R7, I in R8, BYTE in R9.  Store the low eight bits.
-***********************************************************************
-PUTBYTE  LR    14,7
-         SLL   14,2
-         AR    14,8
-         STC   9,0(14)
-         L     4,0(5)
-         BCR   15,6
+* G85/G86 are supplied by separate BCPLBYTE CSECT.
 *
 ***********************************************************************
 * GETVEC(N) -> R7 -- WIP DYNAMIC STORAGE
