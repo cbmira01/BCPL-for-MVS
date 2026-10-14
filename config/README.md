@@ -8,7 +8,8 @@ Configuration belongs here when it is part of the reproducible project definitio
 
 | File | Purpose |
 | --- | --- |
-| [`mr10-kit-compiler/asm/CURRENT`](../mr10-kit-compiler/asm/CURRENT) | Current validated ICINT source filename, read by `tools/current-icint`. |\n| [`dspal.yaml`](dspal.yaml) | Canonical checked-in `dspal` manifest: MVS namespace defaults, runtime endpoints, text conversion policy, allocation defaults, and the managed BCPL PDS set. |
+| [`mr10-kit-compiler/asm/CURRENT`](../mr10-kit-compiler/asm/CURRENT) | Current validated ICINT source filename, read by `tools/current-icint`. |
+| [`dspal.yaml`](dspal.yaml) | Canonical checked-in `dspal` manifest: MVS namespace defaults, runtime endpoints, text conversion policy, allocation defaults, and the managed BCPL PDS set. |
 | `dspal.local.yaml` | Optional machine-local overrides for `dspal`. This file is gitignored and is not part of the shared project definition. |
 
 `CURRENT` contains only an assembler filename, currently:
