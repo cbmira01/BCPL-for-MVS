@@ -41,6 +41,7 @@ $)
 
 AND START() BE
 $( LET V = VEC 11
+   WRITEF("DEMO: Quicksort using random pivot selection*N")
    V!0:=37; V!1:=4;  V!2:=19; V!3:=52
    V!4:=8;  V!5:=41; V!6:=3;  V!7:=27
    V!8:=15; V!9:=6;  V!10:=33; V!11:=11
