@@ -1,3 +1,6 @@
+//* ============================================================
+//* RUN-REGRESSION-TESTS: MVS JOB OR STORED JOB BODY
+//* ============================================================
 //* MRREGRES - 12 regression-panel cases
 //* STORED JCL BODY; DSPAL SUBMIT SUPPLIES AUTHENTICATED JOB CARD.
 //* INSTALLED ICINT19; NO ASSEMBLY OR LINK-EDIT IN THIS JOB.
