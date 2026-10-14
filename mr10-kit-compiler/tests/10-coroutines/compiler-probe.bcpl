@@ -1,3 +1,6 @@
+// ======================================================================
+// COMPILER PROBE: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // COMPILER-PROBE.BCPL
 //
 // Observe how the MR10 compiler represents a two-argument CHANGECO call.
@@ -5,6 +8,7 @@
 // source can be compiled and run with ICINT V17 before coroutine support is
 // added to the interpreter.
 
+// --- Global slots ---
 GLOBAL $(
 START:1
 CHANGECO:6
@@ -16,6 +20,7 @@ LET CALLCHANGE(VALUE, CPTR) = CHANGECO(VALUE, CPTR)
 AND WAITCHANGE(VALUE, PARENT) = VALOF
 $( RESULTIS CHANGECO(VALUE, PARENT) $)
 
+// --- Probe entry and output ---
 AND START() BE
 $( WRITEF("COROUTINE COMPILER PROBE COMPILED*N")
    FINISH
