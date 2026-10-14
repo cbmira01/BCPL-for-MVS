@@ -1,6 +1,10 @@
+// ======================================================================
+// STREAM FANOUT: BCPL DEMONSTRATION
+// ======================================================================
 // STREAM-FANOUT.BCPL
 // Open several named MVS input streams at once, then read each one.
 
+// --- Shared global slots ---
 GLOBAL $(
 START:1
 SELECTINPUT:11
@@ -13,6 +17,7 @@ $)
 
 MANIFEST $( ENDSTREAMCH=-1 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET S = VEC 2
    WRITEF("DEMO: Read three named input streams*N")
