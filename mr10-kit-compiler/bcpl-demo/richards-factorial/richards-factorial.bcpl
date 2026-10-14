@@ -8,6 +8,6 @@
  LET F(N) = N=0 -> 1, N*F(N-1)
 
  WRITEF("DEMO: Recursive factorials from 1 to 10*N")
- WRITEF("F(%N), = %N*N", I, F(I))
+ FOR I = 1 TO 10 DO WRITEF("F(%N), = %N*N", I, F(I))
 
  FINISH $)1
