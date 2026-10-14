@@ -1,3 +1,7 @@
+***********************************************************************
+* ICINTV12 - SYSTEM/370 INTCODE INTERPRETER
+* This version is kept to show the interpreter's development.
+***********************************************************************
          TITLE 'ICINT - RICHARDS INTCODE ASSEMBLER/INTERPRETER'
          PRINT NOGEN
 *
@@ -67,6 +71,7 @@
 *
 ***********************************************************************
 
+* --- MAIN CONTROL SECTION ---
 ICINT    CSECT
          ENTRY ICINT
 
