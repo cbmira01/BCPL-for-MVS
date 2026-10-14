@@ -1,8 +1,10 @@
 // Regression: stable library surface used by ordinary programs.
-GLOBAL $( START:1; WRITES:60; WRITEN:62; NEWLINE:63 $)
+GLOBAL $( START:1; WRITES:60; WRITEN:62; NEWLINE:63; WRITEF:76 $)
 
 LET START() BE
-$( WRITES("RP: LIB ")
+$(
+   WRITEF("TEST: WRITES WRITEN and NEWLINE library calls*N")
+ WRITES("RP: LIB ")
    WRITEN(12345)
    NEWLINE()
    FINISH
