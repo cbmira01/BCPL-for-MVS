@@ -47,8 +47,8 @@ Use `run-intcode` when the primary program is already INTCODE:
 tools/run-intcode --results \
     "$(tools/current-icint)" \
     mr10-kit-compiler/tests/01-echo-test/echo-sysin.int \
-    +mr10-kit-compiler/intcode/blibi.int \
-    +mr10-kit-compiler/intcode/iclib.int
+    +mr10-kit-compiler/source/blibi.int \
+    +mr10-kit-compiler/source/iclib.int
 ```
 
 Additional modules are written as `+PATH` and are loaded in command-line order. `--sysin PATH` supplies card-image input to `SYSIN`.
