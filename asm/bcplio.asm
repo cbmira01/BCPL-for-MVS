@@ -34,7 +34,6 @@ IOFIN    BALR  10,0
          USING *,10
          MVI   IOACTIVE,X'00'
          XC    IOPARM(4),IOPARM
-         L     10,IOSR10
          BR    14
          DROP  10
 *
