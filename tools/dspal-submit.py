@@ -3,7 +3,7 @@
 
 Usage:
     tools/dspal submit JCL CAMBBLD
-    tools/dspal submit JCL CAMBBLD --wait
+    tools/dspal submit JCL CAMBBLD --wait  (compatibility alias)
     tools/dspal submit JCL CAMBBLD --show-jcl
 
 The PDS member is never copied back to the host.  dspal submits a small
@@ -278,7 +278,7 @@ def make_parser() -> argparse.ArgumentParser:
     mode.add_argument(
         "--wait",
         action="store_true",
-        help="wait for the payload job to complete and print its job summary",
+        help="compatibility option; waiting and summary are now the default",
     )
     return p
 
@@ -307,16 +307,7 @@ def main() -> int:
         print(f"Launcher: JOB {launcher_job}")
         print(f"Payload:  JOB {payload_job}")
 
-        if args.wait:
-            rc, summary = wait_for_payload_completion(config, payload_job)
-            if summary:
-                print()
-                sys.stdout.write(summary)
-                if not summary.endswith("\n"):
-                    print()
-            return 0 if rc == 0 else 1
-
-        return 0
+        # A successfully submitted job is not necessarily a successful job.\n        # Completion and the existing job-summary report are unconditional;\n        # --wait remains accepted for old callers.\n        sys.stdout.flush()\n        rc, summary = wait_for_payload_completion(config, payload_job)\n        if summary:\n            print()\n            sys.stdout.write(summary)\n            if not summary.endswith("\n"):\n                print()\n        return 0 if rc == 0 else 1
 
     except (DspalError, OSError, ValueError) as exc:
         print(f"dspal: {exc}", file=sys.stderr)
