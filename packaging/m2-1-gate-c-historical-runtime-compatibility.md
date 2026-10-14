@@ -36,31 +36,55 @@ Identify **precisely which** surviving Cambridge compiler runtime contracts must
 
 **Important:** This is a call-site and native-publication crosswalk, not complete whole-program static analysis. In particular, lack of a detected G29/G31/G32 publisher in D7 must be resolved against potential BLIB/object providers and selected build variants before claiming absolute absence.
 
-## Gate C execution strategy — smallest defensible slice
+## Revised Gate C boundary — runtime completion only
 
-**First decision:** choose the next intended **native compiler component** and test it in isolation rather than promising execution of the full `SECTION "BCPL"` driver. The first slice might be one compiler phase with a deliberately constrained input/driver stub, but its contract and build route must be explicitly selected.
+**Owner direction (14 October 2026):** finish runtime compatibility, diagnostics, integration and acceptance **before** beginning the native compilation or execution of Cambridge compiler phases. The original execution-strategy section in the initial Gate C charter is therefore **superseded**. This gate assesses the runtime as an independently deliverable MVS development facility. Compiler source call sites are historical evidence for documenting unsupported facilities; they are **not** a directive to attempt a compiler component during M2.1.
 
-Recommended ordered investigation:
+## Runtime compatibility audit — release disposition
 
-1. Determine what actual currently demoted Cambridge and resident compiler variants require, as distinct from the preserved `bcplib/bcpl` sources. Locate entry exports and dependencies in the generated INTCODE/OCODE/native compiler pipeline.
-2. Determine exact historical DATE triple format, calling/return ownership and initialization. Obtain implementation evidence if available; otherwise explicitly identify an MVS adaptation.
-3. Determine LEVEL/LONGJUMP frame and saved-program-state semantics, including register/BCPL W restoration and interaction with checked stack entry; identify negative-path test (recoverable syntax error) and positive-path tests.
-4. Map compiler's logical SYSIN/SYSPRINT/OCODE/CODE/SYSGO roles onto BCPLIO/MVS DD statements, paying attention to record, character, and stream close semantics. Avoid treating alias additions as the complete solution.
-5. Decide which loader/overlay/postmortem features can remain unsupported for a **nonoverlay, no-load-and-go** initial native compiler configuration.
-6. Recommend at most one small code change at a time, with an executable regression that discriminates the exact historical behavior.
+Evidence codes: **S** = verified by currently tracked source; **T** = directly exercised by named regression; **A** = covered by the full D7 00–123 panel at tested scope; **U** = no established provider/contract; **D** = deliberately deferred; **M** = intentional MVS implementation adaptation. These codes do not imply measured statement/branch coverage.
 
-## Gate C acceptance criteria
+| Runtime contract | D7 disposition | Evidence and qualification |
+| --- | --- | --- |
+| MVS entry, global registration, START, linkage | **Implemented S/T/A** | D7 BCPLMAIN, generated application/BLIB global-registration trailers; tests 00–26, 037, 067–069 and independently assembled linkage. Not a claim about every BLIB trailer pair. |
+| Procedure frames, recursion, stack checking | **Implemented S/T/A** | Tests 013–019, 048–052; malformed metadata exit has source-known RC=36 but is not a tested safe recovery. |
+| Stack exhaustion | **Implemented S/T/A** | D7 STKOVFL emits STACK OVERFLOW and routes via STOPENT/FINEXIT with **MVS RC=12**; tests 052 and 093 assert RC=0012. Historical ABORT system code X'0D3' is not reconstructed. |
+| FINISH and STOP(N) | **Implemented S/T/A** | D7 FINEXIT, IOFIN, RELMEM; tests 082, 084–089 and 119; STOP(N) is application-chosen and must not be described as a reserved runtime RC. |
+| GETVEC/FREEVEC and cleanup | **Implemented S/T/A; M** | BCPLMEM independently owns descriptors and MEMDRAIN; 027–032, 039, 082, 122–123. Exhaustive invalid-pointer behavior, MVS GETMAIN exhaustion and quantitative FREEMAIN balance are not proven. |
+| GETBYTE/PUTBYTE | **Implemented S/T/A** | Independent BCPLBYTE, tests 038 and 070–071 (BLIB string consumers). |
+| APTOVEC | **Implemented S/T/A** | Independent BCPLAPT is installed at G40; tests 091–093. Prior M1.9 internal-G40 limitation is resolved; not a general historical stack-size guarantee. |
+| Historical BLIB surface | **Partially implemented S/T/A** | Linked BLIB object; tests 053–081, 120–123 selected helper functionality. Complete byte-by-byte export mapping and full postmortem routine behavior unverified. |
+| QSAM character/record streams | **Implemented subset S/T/A; M** | Independent BCPLIO with BCPIN, BCPINB FB80 and SYSPRINT, BCPALT FB132; tests 094–119. Padding trim, synthesized newline, limited aliases and 132-byte output capacity are intentional MVS-specific contract, not universal LIBHDR I/O. |
+| PARM and output wrapping | **Implemented subset S/T/A; M** | BCPLIO memory PARM stream/WRAPOUTPUT; tests 108,109. Compiler-specific option syntax is outside runtime contract. |
+| STACKBASE, STACKEND, STACKHWM | **Implemented limited S/T/A** | D7 initial stack publication and BLIB STACKHWM test 120. High-water exactness in pathological patterns unverified; G55 is allocated end, not STKLIM. |
+| MEMSTAT | **Private S; deferred public D** | BCPLMEM native R1 four-fullword snapshot, not a public BCPL global. No universal memory-statistics requirement. |
+| DEBUGINT and WRITEST | **Provisional S/T limited** | G150 is reconstruction-specific; WRITEST G76 fallback only if BLIB's G76 is not imported. Keep minimal programmer-oriented diagnostic surface. |
+| Exceptional startup/frame error exits | **Source-described S; narrow U** | NOSTART RC20, GTOOBIG RC16, GNOCORE RC24, STKFORM/BADRETN RC36; do not falsely claim tested cleanup across corrupted-frame and pre-IOINIT paths. No automatic rewrite judged necessary from currently recorded evidence. |
+| DATE G29 | **U/D** | Historical CG source dereferences a three-word result. Native D7 G29 service and exact data layout are not established. **Excluded from completed runtime subset** pending historical ABI recovery. |
+| LEVEL G31 / LONGJUMP G32 | **U/D** | Historical SYN parser uses both for nonlocal recovery. No verified D7 native provider or trustworthy reconstructed frame-restoration contract. **Excluded**, not silently stubbed. |
+| Full historical compiler DD names | **U/D/M** | Current native stream names do not include driver SYSIN, OCODE, CODE, SYSGO. Historical compiler integration will need a separate I/O contract decision, not unreviewed alias additions. |
+| LOAD/UNLOAD/overlay and load-and-go | **U/D** | Historical driver uses NEEDS "$LOAD$" and conditional LOADSEG/UNLOAD/LOADCODE. General loader absent/unproven; omitted from runtime release. |
+| Full ABORT, BACKTRACE, MAPSTORE, logging, block-file, terminal/window, FORTRAN bridges, TIME/DATE | **U/D except individually confirmed BLIB portions** | Historical LIBHDR names are not proof of executable native interfaces. Neither automatic postmortem nor corresponding OS hooks promised. |
+| CALL COUNT and stack-check counts | **U/D** | Source-documented system-vector counter entries remain stubs; do not advertise counters. |
+| Reentrancy and concurrency | **Not supported** | BCPLIO and BCPLMEM are stateful static singletons; accepted runtime is single-application-instance oriented. |
 
-- [x] Gate B formally accepted; D7 source/build/full regression evidence preserved.
-- [x] Initial source-grounded compiler compatibility matrix recorded.
-- [ ] Identify and formally choose the first bounded native compiler component/execution mode.
-- [ ] Verify exact ABI/provider semantics of interfaces required for that component, or record them as unresolved with a reproducible evidence task.
-- [ ] Define targeted executable tests for each *selected* contract; make code changes only upon a justified and explicit decision.
-- [ ] Run impacted focused tests and the full D7 candidate suite after any runtime implementation.
-- [ ] Record owner acceptance and close Gate C.
+### Corrective action determination
+
+**No further assembler code is justified by the evidence available in Gate C.** M2.0 resolved independence, Gate B fixed the demonstrated stack-overflow success RC, and the remaining genuine gaps either require missing historical ABI evidence or belong to compiler-stage-specific integration. Creating plausible but speculative G29/G31/G32 entries would degrade historical fidelity. Likewise, renaming BCPLIO DDs without proving source/record semantics would be an untested compatibility claim.
+
+Runtime **compatibility audit is complete at the declared subset boundary**, not a claim of full Cambridge BCPLMAIN equivalence. Gate D should finalize programmer-facing diagnostics; Gate E should independently link/run representative applications; Gate F should publish the completion-code registry, versioned current contract and regression interface-coverage matrix. M2.1 closes after those gates, before any compiler phase is compiled natively.
+
+## Gate C acceptance and closure criteria
+
+- [x] Runtime completion (rather than native compiler-phase execution) established as Gate C scope.
+- [x] Compared currently accepted D7 modules with M1.9 v1 and accepted M2.0/B changes.
+- [x] Recorded implemented, limited, intentional MVS adaptations, unknown and deferred historical services.
+- [x] Recorded source-grounded contracts for G29, G31/G32 and compiler DD-name mismatches without invented ABI.
+- [x] Determined that no evidence-backed Gate C assembler correction is presently required.
+- [ ] Owner accepts the declared compatibility boundary and formally closes Gate C.
+
+**Gate C: source audit and bounded no-code recommendation complete; READY FOR OWNER ACCEPTANCE.**
 
 ## Explicit exclusions
 
-No arbitrary publication of historical globals, speculative date representation, full exception/postmortem facility, general-purpose MVS DD manager, comprehensive overlay loader, compiler-generator replacement, production OBJ promotion, or silently reusing the D6 runtime. Gate C may conclude with a documented **no-code** result if the selected next native compiler slice does not yet require new services.
-
-**Gate C remains OPEN.** No assembler code, MVS source members, or native objects were changed to initiate this review.
+No compiler-phase compilation, no native compiler driver integration, no arbitrary publication of historical globals, speculative DATE triple, full exception/postmortem facility, general-purpose MVS DD manager, comprehensive loader, replacement compiler/code generator, production OBJ promotion, or silent D6 substitution. The first native compiler component will be chosen in a later compiler-focused milestone, *after* runtime M2.1 closure.
