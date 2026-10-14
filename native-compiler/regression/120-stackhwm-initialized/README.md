@@ -7,12 +7,10 @@ The program accepts a stack high-water **word address** within
 codes 0/1 or an out-of-range value.
 
 No exact stack address is asserted because GETMAIN placement varies.
-The regression uses the existing installed-PDS suite runner by default;
-for the first gate run `BCPL_RUNTIME_PDS=0 tools/run-native-regression 120
---show-output` so the staged new BCPLMAIN is assembled into the test
-without changing HERC02.BCPL.OBJ. The source-mode object strategy must
-include resident BLIB via the existing `object-blib.txt` fixture.
+The accepted M2.1 candidate is DEVOBJ(BCPLM7). Run with the explicit
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7`
+selectors. This test passed within the accepted 00–123 panel. It does not
+authorize any promotion to production HERC02.BCPL.OBJ.
 
-Only after source mode passes should BCPLMAIN alone be promoted to OBJ.
 Do not interpret an in-range high-water address as comprehensive proof
 of historical stack usage semantics.
