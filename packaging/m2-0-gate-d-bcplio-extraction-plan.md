@@ -249,3 +249,7 @@ BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 tools/ru
 ```
 
 Expected: Cambridge compile succeeds; native ASMAP/LKED/GO all RC=0000; case 00 has no BCPL output. The GO job report and map should independently identify CSECT BCPLMAIN from DEVOBJ(BCPLM3) plus BCPLIO. **This test has not yet run.** Preserve D3 open until actual MVS evidence, and expand to output/STOP cases only after case 00 passes.
+
+### D3 first integrated candidate BCPL regression PASS — test 00
+
+Operator ran `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 tools/run-native-regression 0 --show-output` after syncing commit `999fdcd`. Native regression **00-most-degenerate-bcpl-program PASS**; summary PASS 1, FAIL 0, SKIP 0. This first actual integrated execution uses the explicitly selected DEVOBJ(BCPLM3) + DEVOBJ(BCPLIO) candidate, together with supporting runtime objects. Case 00 exercises startup/START/FINISH/return without BCPL output. The supplied console summary does not include the underlying JES job number or step-level RCs, which remain in the per-case regression log if needed. **First integrated candidate GO smoke checkpoint ACCEPTED on runner-level evidence**. D3 remains open pending output, diagnostics, STOP and stack behavior; production OBJ untouched.
