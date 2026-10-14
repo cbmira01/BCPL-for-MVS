@@ -7,6 +7,7 @@ LET START() BE
 $( LET V = VEC 4
    LET P = V
 
+   WRITEF("DEMO: Word pointers and vector aliasing*N")
    FOR I = 0 TO 4 DO V!I := (I+1)*10
 
    WRITEF("VECTOR:")
