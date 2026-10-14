@@ -1,6 +1,6 @@
 # M2.1 Gate F — Final D7 Native Runtime Acceptance
 
-**Status: READY FOR OWNER ACCEPTANCE — 14 October 2026.** Gates A–E have been formally accepted and closed. This Gate F packet documents the current independent native runtime deliverable; it does **not** begin Cambridge compiler-phase compilation.
+**Status: ACCEPTED AND CLOSED — 14 October 2026. M2.1 formally CLOSED.** Gates A–E have been formally accepted and closed. This Gate F packet documents the current independent native runtime deliverable; it does **not** begin Cambridge compiler-phase compilation.
 
 ## Candidate identity and release boundary
 
@@ -48,6 +48,15 @@ Historical test READMEs for regressions 120 and 121 contained obsolete productio
 - [x] Regression coverage matrix and v2 runtime contract created.
 - [x] Obsolete production promotion instructions corrected in 120 and 121 READMEs.
 - [x] Final D7 installed-object assembler/link/GO and native full panel accepted from operator evidence; no binary changes since.
-- [ ] **Owner explicitly accepts Gate F and closes M2.1**, with no production promotion.
+- [x] **Owner accepted Gate F and closed M2.1** by directing “Proceed” after the acceptance recommendation; no production promotion.
 
 **Recommendation:** accept Gate F and formally close the M2.1 native runtime reconstruction march. Preserve D7 as current stable development baseline for *subsequent* compiler-focused work. No MVS task remains required by Gate F at the present unchanged binary boundary.
+
+
+## Formal owner acceptance — 14 October 2026
+
+The owner responded **“Proceed”** to the recommendation to accept Gate F and formally close M2.1. Accordingly, **Gate F ACCEPTED AND CLOSED; M2.1 Native Runtime Reconstruction ACCEPTED AND CLOSED.** Gates A through F are all closed. Final candidate is D7, `asm/bcplmain-d7-candidate.asm` / DEVOBJ(BCPLM7), together with independently assembled BCPLIO, BCPLMEM, BCPLBYTE, BCPLAPT and independently compiled BLIB.
+
+This is a bounded native **application runtime** acceptance, not historical runtime equivalence or native Cambridge compiler execution. Regression evidence: 123 PASS, 0 FAIL, one expected SKIP 083; independent-object JOB 3646 IFOX/IEWL/GO all RC=0000 with `BLIB 42`. No new source/object build was needed for this documentary closure, and production `HERC02.BCPL.OBJ` remains unchanged.
+
+The next work, when authorized, belongs to a separately scoped compiler reconstruction milestone. No Gate F residual runtime coding task or implicit production promotion is authorized.
