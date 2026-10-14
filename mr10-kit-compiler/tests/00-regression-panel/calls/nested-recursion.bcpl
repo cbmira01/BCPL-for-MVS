@@ -6,6 +6,8 @@ LET ADD3(A,B,C) = A+B+C
 AND FACT(N) = N=0 -> 1, N*FACT(N-1)
 
 AND START() BE
-$( WRITEF("RP: CALLS %N %N*N", ADD3(2,3,4), FACT(5))
+$(
+   WRITEF("TEST: Arguments nested calls and recursive factorial*N")
+ WRITEF("RP: CALLS %N %N*N", ADD3(2,3,4), FACT(5))
    FINISH
 $)
