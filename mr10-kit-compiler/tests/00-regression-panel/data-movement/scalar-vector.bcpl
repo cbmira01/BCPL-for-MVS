@@ -3,7 +3,8 @@ GLOBAL $( START:1; WRITEF:76 $)
 
 LET START() BE
 $(
-   WRITEF("TEST: Scalar assignments and vector load/store*N") LET A = 17
+   WRITEF("TEST: Scalar assignments and vector load/store*N")
+ LET A = 17
    AND B = 42
    AND V = VEC 3
 
