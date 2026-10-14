@@ -1,9 +1,13 @@
+// ======================================================================
+// GETVEC FREEVEC: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // GETVEC-FREEVEC.BCPL
 //
 // Regression for the reusable fixed-arena allocator in
 // library/getvec-freevec.bcpl.  START owns the arena for the duration of
 // the run and supplies it to the runtime with HEAPINIT.
 
+// --- Global slots ---
 GLOBAL $(
 START:1
 WRITEF:76
@@ -12,6 +16,7 @@ FREEVEC:88
 HEAPINIT:89
 $)
 
+// --- Probe entry and output ---
 LET START() BE
 $( LET ARENA = VEC 400
    AND A = 0
