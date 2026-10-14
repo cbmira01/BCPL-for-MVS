@@ -12,6 +12,7 @@ $( LET EXPR = "12 3 4 + ** 6 -"
    LET P = 1
    LET NCH = GETBYTE(EXPR, 0)
 
+   WRITEF("DEMO: Evaluate reverse Polish notation with a stack*N")
    WHILE P<=NCH DO
    $( LET CH = GETBYTE(EXPR, P)
       AND B = 0
