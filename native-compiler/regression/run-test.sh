@@ -139,6 +139,14 @@ if (( test_num == 83 )) && [[ ! ${BCPL_RUNTIME_PDS+x} ]]; then
     runtime_pds=0
     echo "run-test: 083 uses source-runtime instrumentation (PDS counters unavailable)"
 fi
+# The D3 combined candidate must use the installed object-PDS route only.
+# No silent fallback to accepted production runtime.
+if [[ ${BCPL_RUNTIME_CANDIDATE:-0} == 1 ]]; then
+    if [[ $runtime_pds != 1 || ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ]]; then
+        echo "run-test: D3 candidate requires BCPL_RUNTIME_PDS=1 and BCPL_RUNTIME_LIBRARY=DEVOBJ" >&2
+        exit 64
+    fi
+fi
 if [[ $runtime_pds != 0 && $runtime_pds != 1 ]]; then
     echo "run-test: BCPL_RUNTIME_PDS must be 0 or 1" >&2
     exit 64
