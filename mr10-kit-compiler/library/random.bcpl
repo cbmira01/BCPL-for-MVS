@@ -1,3 +1,6 @@
+// ======================================================================
+// RANDOM: BCPL LIBRARY
+// ======================================================================
 // RANDOM.BCPL
 //
 // Portable pseudo-random number support for the reconstructed BCPL library.
@@ -12,6 +15,7 @@
 //
 // GLOBAL slots 96..100 are reconstruction-local library assignments.
 
+// --- Global slots ---
 GLOBAL $(
 SRAND:96
 RAND:97
