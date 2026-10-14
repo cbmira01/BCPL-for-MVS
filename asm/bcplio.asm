@@ -84,8 +84,10 @@ IOFDONE  XC    IOPARM(4),IOPARM
 *
 * BCPL-facing candidate: R7 holds a character code.
 * Save caller registers before all output paths, including PUT.
-IOWRCH   BALR  10,0
+IOWRCH   LR    4,10
+         BALR  10,0
          USING *,10
+         ST    4,IOSAVE+40
          STM   0,9,IOSAVE
          STM   11,15,IOSAVE+44
          CLI   IOSELCT,X'02'
