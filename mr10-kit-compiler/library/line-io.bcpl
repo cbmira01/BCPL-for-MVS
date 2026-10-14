@@ -1,3 +1,6 @@
+// ======================================================================
+// LINE IO: REUSABLE BCPL ROUTINES
+// ======================================================================
 // LINE-IO.BCPL
 // Line-oriented helpers built on the selected BCPL character streams.
 // READLINE stores at most MAX characters in S and consumes through newline.
@@ -5,6 +8,7 @@
 // character count.  WRITELINE writes a packed string followed by newline.
 // GLOBAL slots 126..127 are reconstruction-local library assignments.
 
+// --- Public global slots ---
 GLOBAL $(
 RDCH:13
 WRCH:14
@@ -16,6 +20,7 @@ $)
 
 MANIFEST $( ENDSTREAMCH=-1 $)
 
+// --- Implementation ---
 LET READLINE(S, MAX) = VALOF
 $( LET N = 0
    AND SAW = FALSE
