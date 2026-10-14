@@ -51,3 +51,14 @@ The native regression configuration still points to old `HERC02.BCPL.DEVOBJ` unt
 - `tools/submit-jcl` was modified to report `IEF452I ... JOB NOT RUN` immediately rather than waiting for `$HASP373` until timeout.
 - The correct population invocation is `tools/dspal populate all --dry-run` and then `tools/dspal populate all`; the target argument is mandatory.
 - These fixes are **committed but not yet tested against the user's Hercules instance**. Repeat the operator preflight and allocation checks before population. Preserve the original acceptance status as pending.
+
+## 14 October 2026 — allocation gate accepted
+
+Operator report following the corrected generator:
+
+- Preflight jobs 3781–3803 completed; all 23 datasets were initially absent.
+- JOB **3804** allocated all 23 newly managed data sets. `dspal initbcpl` reported creation of each one.
+- JOB **3805** (`dspal stat`) verified all 23 cataloged libraries with the expected attributes: 21 FB80 PDSes (`DSORG=PO,RECFM=FB,LRECL=80,BLKSIZE=800`), and the two loadlibs (`DSORG=PO,RECFM=U,LRECL=0,BLKSIZE=6144`).
+- **Allocation gate PASS.** Content population, member inspection and binary object migration remain pending. Older datasets are preserved.
+
+Next operator commands: `tools/dspal populate all --dry-run` and, if clean, `tools/dspal populate all`. Save population job evidence before accepting the population gate.
