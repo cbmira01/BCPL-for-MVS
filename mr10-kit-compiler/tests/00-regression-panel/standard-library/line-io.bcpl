@@ -11,11 +11,11 @@ $)
 
 LET START() BE
 $(
-   WRITEF("TEST: Named input streams and line I/O helpers*N")
  LET S = FINDINPUT("LINE")
    AND BUF = VEC 20
    AND N = 0
 
+   WRITEF("TEST: Named input streams and line I/O helpers*N")
    IF S=0 DO
    $( WRITEF("RP: LINE OPEN FAILED*N")
       FINISH
