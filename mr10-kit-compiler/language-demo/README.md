@@ -1,27 +1,27 @@
-# BCPL language demonstrations
+# BCPL language examples
 
-These small programs isolate language constructs accepted by the historical MR10 compiler used by the hosted bootstrap.
+Each small program tests one language feature and prints a short `DEMO:` line.
 
-Current examples cover:
+| Program | Feature |
+| --- | --- |
+| declarations | Local declarations and scope |
+| valof-resultis | Returning a value with VALOF/RESULTIS |
+| switchon | SWITCHON, CASE, DEFAULT |
+| table-vector | TABLE, vectors, and word indexing |
+| manifest-global | MANIFEST constants and GLOBAL slots |
+| repeat-forms | REPEAT loop forms |
+| strings-bytes | Strings and byte access |
+| test-then-or | TEST/THEN/OR |
+| boolean-operators | Comparisons and Boolean operations |
+| pointer-idioms | Pointers and aliases |
+| function-values | Functions passed or called through values |
 
-- `declarations` — `LET`, `AND`, local variables, and declaration scope;
-- `valof-resultis` — `VALOF` and `RESULTIS`;
-- `switchon` — `SWITCHON`, `CASE`, `DEFAULT`, and `ENDCASE`;
-- `table-vector` — `TABLE`, vectors, and `!` indexing;
-- `manifest-global` — `MANIFEST` and explicit `GLOBAL` slots;
-- `repeat-forms` — `REPEAT`, `REPEATWHILE`, `REPEATUNTIL`, and `BREAK`;
-- `strings-bytes` — packed strings, the length byte, and byte access;
-- `test-then-or` — BCPL's `TEST ... THEN ... OR` command;
-- `boolean-operators` — relations and logical operators;
-- `pointer-idioms` — vector addresses and aliases;
-- `function-values` — routine values and indirect invocation through `APPLY`.
-
-Run the complete set with:
+## Run
 
 ```sh
 tools/run-language-demos
 ```
 
-The runner uses the promoted interpreter from `config/CURRENT` and reports each example as `PASS` or `FAIL`.
+On MVS, install `MR10_LANGDEMO` members and submit `MR10_JCL(MRLANGDM)`. See [suite jobs](../jcl/README-SUITES.md).
 
-These examples intentionally follow the declaration discipline accepted by the historical compiler: declarations precede executable commands in their enclosing block. If a valid-looking historical construct fails, treat that as evidence to investigate before rewriting the example into a different idiom.
+**BCPL rule:** Inside a block, local `LET` declarations must come before executable statements.
