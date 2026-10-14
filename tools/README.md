@@ -14,7 +14,7 @@ Unless noted otherwise, run them from the repository root.
 | `tools/job-summary` | Summarize steps and return codes for a JES job. |
 | `tools/dump-report-for-job` | Extract the complete printer report for one job. |
 | `tools/make-asm-job` | Generate IFOX assemble/link/run JCL from assembler source. |
-| `tools/current-icint` | Print the promoted ICINT source selected by `config/CURRENT`. |
+| `tools/current-icint` | Print the promoted ICINT source selected by `mr10-kit-compiler/asm/CURRENT`. |
 | `tools/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
 | `tools/build-cambridge-mvs` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
@@ -261,4 +261,4 @@ bash native-compiler/regression/run-test-mvs.sh 24
 ```
 
 The original `run-test.sh` remains the bootstrap-from-source path and is
-unchanged by default. `config/CURRENT` remains on ICINT V17.
+unchanged by default. `mr10-kit-compiler/asm/CURRENT` remains on ICINT V17.
