@@ -112,3 +112,15 @@ Then exercise normal STOP/FINISH and a checked-frame overflow (where independent
 Maintain a versioned **completion and failure code register** as part of the native runtime contract, consolidating all runtime-generated R15 completion values and deliberate `STOP(N)` user codes, with ownership, triggering condition, message, cleanup path, evidence level and historical/MVS provenance. **Do not confuse** an MVS step RC with system/user ABEND codes or assembler/link-editor return codes. Begin with this Gate B table; stabilize the consolidated registry no later than M2.1 Gate F. The register is documentary, not a claim that every possible `STOP(N)` value is reserved.
 
 **Gate B remains OPEN pending MVS candidate evidence and acceptance.**
+
+
+## D7 resident build and linkage evidence — 14 October 2026
+
+Operator synchronized Git through a4e4ee8 and staged:
+- JOB 2984: SOURCE(BCPLM7) from asm/bcplmain-d7-candidate.asm — successful.
+- JOB 2985: JCL(BLDD7MN) — successful.
+- JOB 2986: JCL(D7LINK) — successful.
+- Payload JOB **2989 BLDD7MN**: ASMMMAIN IFOX00 RC=0000; PUTMAIN IEBGENER RC=0000; zero flagged assembler statements, severity 0.
+- Payload JOB **2992 D7LINK**: LKED IEWL RC=0000.
+
+These prove assembled/installed DEVOBJ(BCPLM7) and successful integration link-edit. No D7 GO has yet been reported. Proceed to focused regression 093 against BCPLM7 (expect STACK OVERFLOW and GO RC=0012), followed by normal FINISH/STOP cases and full panel before Gate B closure. Stable BCPLM6 and production OBJ remain outside the write targets.
