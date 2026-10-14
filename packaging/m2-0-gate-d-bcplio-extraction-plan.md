@@ -237,3 +237,15 @@ Operator inspected complete JOB 1453 report. All explicit INCLUDE directives fro
 ### D3 five-probe independent regression PASS — JOBS 1456–1468
 
 Operator reran all five isolated probes against rebuilt DEVOBJ(BCPLIO): BCIOPRB JOB **1456** ASMPROB/LKED/GO RC=0000; BC2SPRB JOB **1459** all RC=0000; BCSTRPB JOB **1462** all RC=0000; BCDIPRB JOB **1465** all RC=0000; BCOVPRB JOB **1468** ASMPROB/LKED RC=0000, GO **RC=0012 expected**. All IFOX flagged statement counts zero. **Existing isolated BCPLIO regression checkpoint ACCEPTED** on code containing the D3 R10 return/overflow changes. No direct test of new IOREPL is included among these five, and integrated BCPLMAIN/BCPLM3 GO is still untested. D3 and Gate D remain open; production OBJ untouched.
+
+### D3 candidate-only first integrated GO harness prepared — PENDING JES
+
+Native regression 00 will compile normally through Cambridge on MVS and assemble the generated application only, then link exclusively from HERC02.BCPL.DEVOBJ with **BCPLM3** (exports BCPLMAIN), **BCPLIO**, BCPLBYTE, BCPLAPT, BCPLMEM and BLIB. Implementation: `tools/checks/prepare-runtime-pds-regression.py` now accepts opt-in `BCPL_RUNTIME_CANDIDATE=1`, which requires `BCPL_RUNTIME_LIBRARY=DEVOBJ` and selects INCLUDE OBJ(BCPLM3), INCLUDE OBJ(BCPLIO) in that order instead of OBJ(BCPLMAIN). `native-compiler/regression/run-test.sh` rejects candidate use unless `BCPL_RUNTIME_PDS=1` and `BCPL_RUNTIME_LIBRARY=DEVOBJ`. Normal production regression configuration is unchanged. No production OBJ writes, and regression-generated JCL uses temporary SYSDA objects.
+
+Operator command (individual invocation, no shell &&):
+
+```bash
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 tools/run-native-regression 0 --show-output
+```
+
+Expected: Cambridge compile succeeds; native ASMAP/LKED/GO all RC=0000; case 00 has no BCPL output. The GO job report and map should independently identify CSECT BCPLMAIN from DEVOBJ(BCPLM3) plus BCPLIO. **This test has not yet run.** Preserve D3 open until actual MVS evidence, and expand to output/STOP cases only after case 00 passes.
