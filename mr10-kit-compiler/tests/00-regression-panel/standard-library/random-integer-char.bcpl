@@ -10,7 +10,9 @@ $)
 LET B(N) = N -> 1, 0
 
 AND START() BE
-$( SRAND(1)
+$(
+   WRITEF("TEST: Random integer and character utilities*N")
+ SRAND(1)
    WRITEF("RP: RAND %N %N %N*N", RAND(), RAND(), RANDRANGE(100))
    WRITEF("RP: INT %N %N %N %N %N %N*N",
           ABS(-17), MIN(9,4), MAX(9,4), SIGN(-22), GCD(1071,462), IPOW(3,5))
