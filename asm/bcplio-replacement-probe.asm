@@ -60,7 +60,6 @@ BCRPPRB  CSECT
          BALR  14,15
          L     15,=A(IOOUT)
          BALR  6,15
-         CR    7,7
          LTR   7,7
          BZ    BAD
          C     7,ALTH
