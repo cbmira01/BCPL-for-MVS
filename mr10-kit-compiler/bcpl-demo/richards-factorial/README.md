@@ -7,4 +7,4 @@ A small recursive example from the early compiler work. It prints factorials fro
 | `bcpl-demo/richards-factorial/richards-factorial.bcpl` | Readable demo |
 | `tests/03-compile-richards-factorial/richards-factorial-test.bcpl` | Historical compiler probe |
 
-Run all demos with `tools/run-demo-suite.sh` from the repository root.
+Run all demos with `tools/run-mr10kit-demo-suite` from the repository root.

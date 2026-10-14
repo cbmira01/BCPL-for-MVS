@@ -72,13 +72,13 @@ tools/compile-and-run --results \
 Run the durable regression panel:
 
 ```sh
-tools/run-regression-panel
+tools/run-mr10kit-regression-panel
 ```
 
 Run the demonstration suite:
 
 ```sh
-tools/run-demo-suite.sh
+tools/run-mr10kit-demo-suite
 ```
 
 ## Repository guide

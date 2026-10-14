@@ -19,9 +19,9 @@ Unless noted otherwise, run them from the repository root.
 | `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
 | `tools/build-cambridge-mvs` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
 | `tools/cambridge-compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
-| `tools/run-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/run-native-regression` | Run the native regression panel from a selected start through the current test. |
-| `tools/run-demo-suite.sh` | Run the 17 general BCPL demonstrations. |
-| `tools/run-language-demos` | Run the focused BCPL language demonstrations. |
+| `tools/run-mr10kit-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/run-native-regression` | Run the native regression panel from a selected start through the current test. |
+| `tools/run-mr10kit-demo-suite` | Run the 17 general BCPL demonstrations. |
+| `tools/run-mr10kit-language-demos` | Run the focused BCPL language demonstrations. |
 | `tools/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
 
 The old Cambridge-first bootstrap generator is no longer a current tool or workflow.
@@ -96,7 +96,7 @@ Use each command's `--help` output for the full option set.
 The durable regression panel is:
 
 ```sh
-tools/run-regression-panel
+tools/run-mr10kit-regression-panel
 ```
 
 It compares stable semantic output and completion codes against checked-in expectations. See `mr10-kit-compiler/tests/00-regression-panel/README.md`.
@@ -104,13 +104,13 @@ It compares stable semantic output and completion codes against checked-in expec
 The broad readable demo suite is:
 
 ```sh
-tools/run-demo-suite.sh
+tools/run-mr10kit-demo-suite
 ```
 
 It currently runs 17 programs. Focused language examples are run with:
 
 ```sh
-tools/run-language-demos
+tools/run-mr10kit-language-demos
 ```
 
 ## `dspal`

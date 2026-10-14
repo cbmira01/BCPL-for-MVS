@@ -15,7 +15,7 @@ The manifest also names each test and its category.
 ## Run on the host
 
 ```sh
-tools/run-regression-panel
+tools/run-mr10kit-regression-panel
 ```
 
 Use `--list` to show cases, `--test NAME` for one test, or `--icint PATH` for another interpreter. The host runner compares `RP:` lines with golden files and checks the interpreted completion code.

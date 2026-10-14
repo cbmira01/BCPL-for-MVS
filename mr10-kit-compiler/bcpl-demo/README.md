@@ -27,7 +27,7 @@ These 17 programs show what BCPL can do. Each prints a short `DEMO:` line when r
 From the repository root:
 
 ```sh
-tools/run-demo-suite.sh
+tools/run-mr10kit-demo-suite
 ```
 
 On MVS, first install the mapped BCPLDEMO and LIBRARY members. Then submit stored `MR10_JCL(MRBCDEMO)` with `tools/dspal submit MR10_JCL MRBCDEMO`. See [suite jobs](../jcl/README-SUITES.md).

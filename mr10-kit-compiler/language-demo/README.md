@@ -19,7 +19,7 @@ Each small program tests one language feature and prints a short `DEMO:` line.
 ## Run
 
 ```sh
-tools/run-language-demos
+tools/run-mr10kit-language-demos
 ```
 
 On MVS, install `MR10_LANGDEMO` members and submit `MR10_JCL(MRLANGDM)`. See [suite jobs](../jcl/README-SUITES.md).

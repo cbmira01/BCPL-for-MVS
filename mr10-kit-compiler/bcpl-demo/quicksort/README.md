@@ -9,4 +9,4 @@ tools/compile-and-run --results \
   +mr10-kit-compiler/library/random.bcpl
 ```
 
-The full demo suite is `tools/run-demo-suite.sh`.
+The full demo suite is `tools/run-mr10kit-demo-suite`.

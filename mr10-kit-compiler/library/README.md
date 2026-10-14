@@ -37,4 +37,4 @@ tools/compile-and-run --results \
 
 The historical global slots run through 86. Reconstructed runtime services use 87–95; other project library functions use 96–159. See `GLOBALS.md` before assigning a new slot.
 
-Run library tests with `tools/run-regression-panel --category standard-library`; the allocator and coroutine tests are in the storage and coroutines categories.
+Run library tests with `tools/run-mr10kit-regression-panel --category standard-library`; the allocator and coroutine tests are in the storage and coroutines categories.

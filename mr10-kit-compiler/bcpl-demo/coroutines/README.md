@@ -10,4 +10,4 @@ The program makes a coroutine that yields values 1 through 5. Its local loop sta
 | `COWAIT` | Yield to the caller |
 | `DELETECO` | Free its storage |
 
-The demo uses `library/getvec-freevec.bcpl` and `library/coroutines.bcpl`. Run it through `tools/run-demo-suite.sh` or the MVS `MRBCDEMO` suite.
+The demo uses `library/getvec-freevec.bcpl` and `library/coroutines.bcpl`. Run it through `tools/run-mr10kit-demo-suite` or the MVS `MRBCDEMO` suite.

@@ -49,7 +49,7 @@ tools/dspal submit MR10_JCL MRREGRES
 | `CODE=0` | Successful interpreted completion |
 | `SYNTAX ERROR`, `INTCODE ERROR`, `MAPSTORE` | Investigate even if JES says success |
 
-**JES RC=0000 is not enough.** ICINT19 may still print a nonzero interpreted `CODE`. The MVS regression JCL does not yet compare results with `.expected` files. The host `tools/run-regression-panel` does.
+**JES RC=0000 is not enough.** ICINT19 may still print a nonzero interpreted `CODE`. The MVS regression JCL does not yet compare results with `.expected` files. The host `tools/run-mr10kit-regression-panel` does.
 
 A prior regression run exposed invalid placement of `TEST:` statements before local `LET` declarations. Those source lines were moved below the declarations, and a later MVS run showed zero interpreted codes and the expected result records. Do not use JES job numbers as unique historical proof; they wrap.
 
