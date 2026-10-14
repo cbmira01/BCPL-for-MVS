@@ -4,7 +4,7 @@ This directory contains native MVS 3.8J assembler and runtime development source
 
 ## Relocated ICINT line (historical notes)
 
-The current promoted interpreter is selected by `config/CURRENT`; `tools/current-icint` resolves that selection for scripts and users. At the time of this README the promoted source is `mr10-kit-compiler/asm/icintv17.asm`.
+The current promoted interpreter is selected by `mr10-kit-compiler/asm/CURRENT`; `tools/current-icint` resolves that selection for scripts and users. At the time of this README the promoted source is `mr10-kit-compiler/asm/icintv17.asm`.
 
 The numbered ICINT files are retained because each is a useful reconstruction milestone rather than an arbitrary backup:
 
