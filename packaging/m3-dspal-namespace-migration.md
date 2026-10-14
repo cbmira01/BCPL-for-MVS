@@ -68,3 +68,11 @@ Next operator commands: `tools/dspal populate all --dry-run` and, if clean, `too
 Operator ran `tools/dspal ls` after population. The member inventory matches all **142** explicit manifest mappings across **11** populated PDSes: MR10KIT 118 members in 7 PDSes; CAMBRIDG 6 members in 2 PDSes; NATIVE 18 members in 2 PDSes. All other 12 datasets correctly show `(empty)`, including object and load libraries.
 
 **Population inventory gate: PASS.** This is member-name/availability evidence only; full contents have not been independently round-trip compared to Git. New native OBJ/DEVOBJ remain empty, while the old runtime object libraries must be retained until migration and regression acceptance. Do not infer complete M3 closure or delete historical datasets.
+
+## 14 October 2026 — correction of premature Cambridge ownership
+
+The project owner clarified that the four historical/bootstrap header members `LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR`, and the two bootstrap JCL members `CAMBBLD`, `CG370DB` belong to the **native-compiler** phase of the project, not the as-yet-unbuilt Cambridge compiler.
+
+The manifest now assigns these four headers to `NATIVE_SOURCE` and the two jobs to `NATIVE_JCL`; all nine `CAMB_*` datasets have `populate: false` and no member mappings. The four source paths still reference retained `richards-bcpltape` evidence files; this is a PDS ownership correction, not a move of evidence in Git.
+
+**Host follow-through required:** populate `NATIVE_SOURCE` and `NATIVE_JCL`, then explicitly delete only `CAMB_SOURCE` members `LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR` and `CAMB_JCL` members `CAMBBLD`, `CG370DB` using `dspal rm`. A manifest edit or a normal `populate` does **not** automatically delete existing PDS members. Verify with `tools/dspal ls`. This supersedes the earlier inventory-gate statement that Cambridge's populated members were correct; that claim was premature.
