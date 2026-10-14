@@ -1,12 +1,17 @@
+// ======================================================================
+// MANIFEST GLOBAL: LANGUAGE EXAMPLE
+// ======================================================================
 // MANIFEST-GLOBAL.BCPL
 // Demonstrate compile-time MANIFEST constants and GLOBAL-vector linkage.
 
 MANIFEST $( ANSWER = 42; SCALE = 3 $)
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76; TIMESCALE:180 $)
 
 LET TIMESCALE(N) = N*SCALE
 
+// --- Program entry and output ---
 AND START() BE
 $( LET X = ANSWER
    WRITEF("DEMO: MANIFEST constants and GLOBAL linkage*N")
