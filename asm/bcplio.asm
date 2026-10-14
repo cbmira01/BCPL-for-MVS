@@ -27,7 +27,7 @@
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
          ENTRY IOFOUT,IOSOUT,IOOUT,IOWRAP,IOENDW
-         ENTRY IOBIND,IODIAG,IOREPL
+         ENTRY IOBIND,IODIAG,IOREPL,IOPMGET
 *
 IOINIT   BALR  10,0
          USING *,10
@@ -413,6 +413,15 @@ IORRET   ST    15,IODRC
          L     15,IODRC
          BR    14
 IORMOVE  MVC   0(1,5),0(4)
+         DROP  10
+*
+* D4 private native accessor for original EXEC parameter list.
+* IOINIT captured R1 once; R15 returns that pointer (possibly zero).
+* R14-linked; preserve all registers except R10 and result R15.
+IOPMGET  BALR  10,0
+         USING *,10
+         L     15,IOPARM
+         BR    14
          DROP  10
 *
          DS    0F
