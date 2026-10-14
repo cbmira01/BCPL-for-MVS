@@ -1,6 +1,10 @@
+// ======================================================================
+// BINARY TREE: BCPL DEMONSTRATION
+// ======================================================================
 // BINARY-TREE.BCPL
 // Build and traverse a binary search tree using vector-backed nodes.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET INSERT(ROOT, KEY, KEYS, LEFT, RIGHT, NEXTNODE) = VALOF
@@ -38,6 +42,7 @@ $( UNTIL P<0 DO
    RESULTIS FALSE
 $)
 
+// --- Program entry and expected output ---
 AND START() BE
 $( LET KEYS = VEC 15
    AND LEFT = VEC 15
