@@ -23,3 +23,7 @@ Inspect the payload build-job report and verify ASM/LKED/SAVEOBJ RC=0000 before 
 Do not change `mr10-kit-compiler/asm/CURRENT` (still ICINTv17). Installing V19 does not promote its runtime/semantic baseline. The old `HERC02.BCPL.LOAD` library is preserved.
 
 This procedure is committed in Git. Executing `dspal put` and `dspal submit` requires the user's Hercules host; it has not been run through the repository connection.
+
+## 14 October 2026 — installation acceptance
+
+Operator evidence: `dspal put` installed `MR10_JCL(IC19BLD)` as JOB **3994**; `dspal submit MR10_JCL IC19BLD` launched via JOB **3996** with payload JOB **3997**. Payload steps **ASM IFOX00 RC=0000**, **LKED IEWL RC=0000**, **SAVEOBJ IEBGENER RC=0000**; assembler flagged zero statements and highest severity zero. `dspal ls MR10_LOAD` confirmed `ICINT19`. **Persistent build/install gate PASS.** A separate `dspal ls MR10_OBJ` and interpreter runtime smoke test are still needed for independent inventory/execution acceptance. The original `HERC02.BCPL.LOAD(ICINT19)` was also observed intact.
