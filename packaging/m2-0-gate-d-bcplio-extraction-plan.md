@@ -368,3 +368,7 @@ Operator staged corrected SOURCE(BCPLM6) via JOB **2386** and executed BLDD6MN p
 ### D6 integration link and partial focused regression — JOB 2393
 
 Operator submitted D6LINK payload JOB **2393**, IEWL **RC=0000**. MAP: BCPLMAIN X'000000' length X'0C00' (D5 X'1070'; reduction X'470' = 1136 bytes); BCPLIO origin X'0C00' length X'0FF8' unchanged. IEWL XREF lists all seven input services and six output services supplied by BCPLIO, no unresolved messages in extracted lines. Explicit DEVOBJ(BCPLM6) regression **00 PASS**. Operator supplied partial 084–119 run output showing **084–110 PASS**; transcript ends at PASS 110, so **111–119 and panel summary are not yet evidenced**. No final D6 or Gate D acceptance claimed until complete 084–119 summary and full 00–123 suite (target 123 PASS, 0 FAIL, one expected SKIP). Production OBJ untouched.
+
+### D6 focused 084–119 complete — ACCEPTED
+
+Operator supplied continuation of explicit DEVOBJ(BCPLM6) tests **111–119: 9 PASS / 0 FAIL / 0 SKIP**. Combined with earlier operator output showing PASS 084–110, this establishes **36/36 focused cases PASS** for 084–119. D6 assembly JOB 2389 IFOX/IEBGENER RC=0000, link JOB 2393 IEWL RC=0000, regression 00 PASS, and BCPLIO independent input/output ownership in MAP/XREF already recorded. **Focused D6 checkpoint accepted.** Full native regression 00–123 (expected 123 PASS / 0 FAIL / 1 expected SKIP at 083) still needed before formal Gate D closure. Production OBJ untouched.
