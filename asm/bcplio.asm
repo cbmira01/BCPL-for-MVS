@@ -609,7 +609,7 @@ RDTRMDN ST    14,INRECLEN
 RDNEWLN  MVI   INNL,X'00'
          L     14,INRECLEN
          ST    14,INPOS
-         LA    7,3
+         LA    7,10
          B     RDRETURN
 RDGETCH  LA    3,INBUF
          AR    3,14
@@ -641,7 +641,7 @@ RDPM     CLI   PMPUSH,X'01'
          CLI   PMNL,X'01'
          BE    RDPMEOF
          MVI   PMNL,X'01'
-         LA    7,3
+         LA    7,10
          B     RDPMRET
 RDPMCHAR L     3,PMADDR
          AR    3,14
@@ -693,7 +693,7 @@ RD2TDONE ST    14,IN2LEN
 RD2NL    MVI   IN2NL,X'00'
          L     14,IN2LEN
          ST    14,IN2POS
-         LA    7,3
+         LA    7,10
          B     RD2RET
 RD2CHAR  LA    3,IN2BUF
          AR    3,14
@@ -795,11 +795,16 @@ ENDRDONE EQU   *
          L     4,0(5)
          BCR   15,6
 *
-* EODAD receives control from the QSAM GET access method.
+* EODAD receives control from QSAM GET during IORDCH.
+* Runtime R10 still addresses the IORDCH-local base after GET;
+* use that explicit USING rather than IOENDRD's later base.
+         DROP  10
+         USING IORDCH+4,10
 IN2ATEND MVI   IN2EOF,X'01'
          B     RD2END
 INATEND  MVI   INEOF,X'01'
          B     RDEND
+         DROP  10
 *
          DS    0F
 IINBASE  DC    F'0'
