@@ -1,3 +1,7 @@
+***********************************************************************
+* ICINTV19.ASM - SYSTEM/370 INTCODE INTERPRETER
+* Read the version notes below before changing interpreter behavior.
+***********************************************************************
          TITLE 'ICINT V19 - RICHARDS INTCODE ASSEMBLER/INTERPRETER'
          PRINT NOGEN
 *
@@ -115,6 +119,7 @@
 *   R15  EXTERNAL ENTRY ADDRESS
 *
 ***********************************************************************
+* --- MAIN CONTROL SECTION ---
 ICINT    CSECT
          ENTRY ICINT
 R0       EQU   0
