@@ -41,3 +41,10 @@ Current canonical BCPLMAIN source (post Gate C) is 2,078 lines. The main runtime
 Added asm/bcplio.asm: independent CSECT with native-only IOINIT and IOFIN. IOINIT stores original EXEC parameter address from R1; IOFIN clears private state. R10 is clobbered as an independent base register; other general registers are preserved. This is a static nonreentrant skeleton, not yet a working stream service.
 
 Added jcl/build-dev-bcplio.jcl: IFOX00 assembler and conditional IEBGENER installation targeting DEVOBJ(BCPLIO) exclusively. BCPLMAIN and runtime dispatch remain unchanged. Operator assembly verification is pending; the full Gate D remains open.
+
+## D1 independent MVS assembly acceptance — 14 October 2026
+
+- Initial source BUILD JOB 1301 failed: ASMIO IFOX00 RC=0008, IFO188 undefined IOSR10 after R10 register contract was deliberately changed to clobbered. PUTIO correctly did not execute. Corrected in Git commit `c00101f2b4da1f65f65ba422b5d68952cf95efe4` by removing stale `L 10,IOSR10`.
+- Operator synchronized `HERC02.BCPL.SOURCE(BCPLIO)`: removal JOB 1303, compression JOB 1304, put JOB 1305, source readback JOB 1306. Readback confirmed BCPLIO CSECT, ENTRY IOINIT/IOFIN and no IOSR10 references.
+- Submitted resident `JCL(BLDDEVI)` launcher JOB 1308, payload **JOB 1309**. `ASMIO` IFOX00 RC=0000, `PUTIO` IEBGENER RC=0000; no flagged assembler statements and highest severity zero. ESD: BCPLIO SD length **X'21' (33 bytes)**, IOINIT LD offset X'00', IOFIN LD offset X'0C'. Binary FB80 object installed to DEVOBJ(BCPLIO), not production OBJ.
+- **D1 assembly checkpoint ACCEPTED.** This is not independent application linkage or functional I/O proof: BCPLMAIN has not yet been rewired and the skeleton does not handle streams. D2/D3 remain required; Gate D remains open.
