@@ -1,6 +1,10 @@
+// ======================================================================
+// SWITCHON: LANGUAGE EXAMPLE
+// ======================================================================
 // SWITCHON.BCPL
 // Demonstrate SWITCHON, CASE, DEFAULT, and ENDCASE.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET CLASSIFY(N) BE
@@ -24,6 +28,7 @@ $( SWITCHON N INTO
    $)
 $)
 
+// --- Program entry and output ---
 AND START() BE
 $( WRITEF("DEMO: SWITCHON selects among CASE alternatives*N")
    CLASSIFY(0)
