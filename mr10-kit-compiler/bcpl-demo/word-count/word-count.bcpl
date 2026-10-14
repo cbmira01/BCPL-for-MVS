@@ -1,6 +1,10 @@
+// ======================================================================
+// WORD COUNT: BCPL DEMONSTRATION
+// ======================================================================
 // WORD-COUNT.BCPL
 // Count characters, words, and lines from named input stream TEXT.
 
+// --- Shared global slots ---
 GLOBAL $(
 START:1
 SELECTINPUT:11
@@ -14,6 +18,7 @@ MANIFEST $( ENDSTREAMCH=-1 $)
 
 LET SPACE(CH) = CH='*S' \/ CH='*T' \/ CH='*N'
 
+// --- Program entry and output ---
 AND START() BE
 $( LET S = FINDINPUT("TEXT")
    LET CHARS = 0
