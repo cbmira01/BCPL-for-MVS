@@ -481,9 +481,9 @@ FFOUND   LA    7,INCTRL
          SRL   7,2
          B     FRET
 FNOTFND  SR    7,7
-FRET     ST    7,IINRESULT
+FRET     ST    7,IINRES
          LM    0,15,IINSAVE
-         L     7,IINRESULT
+         L     7,IINRES
          L     10,IINBASE
          L     4,0(5)
          BCR   15,6
@@ -621,11 +621,11 @@ RDPUSH   MVI   INPUSH,X'00'
          L     7,INLAST
          B     RDRETURN
 RDEND    L     7,INENDVAL
-RDRETURN ST    7,IINRESULT
+RDRETURN ST    7,IINRES
          ST    7,INLAST
          MVI   INSEEN,X'01'
          LM    0,15,IINSAVE
-         L     7,IINRESULT
+         L     7,IINRES
          L     10,IINBASE
          L     4,0(5)
          BCR   15,6
@@ -653,11 +653,11 @@ RDPMPUSH MVI   PMPUSH,X'00'
          L     7,PMLAST
          B     RDPMRET
 RDPMEOF  L     7,INENDVAL
-RDPMRET  ST    7,IINRESULT
+RDPMRET  ST    7,IINRES
          ST    7,PMLAST
          MVI   PMSEEN,X'01'
          LM    0,15,IINSAVE
-         L     7,IINRESULT
+         L     7,IINRES
          L     10,IINBASE
          L     4,0(5)
          BCR   15,6
@@ -705,11 +705,11 @@ RD2PUSH  MVI   IN2PUSH,X'00'
          L     7,IN2LAST
          B     RD2RET
 RD2END   L     7,INENDVAL
-RD2RET   ST    7,IINRESULT
+RD2RET   ST    7,IINRES
          ST    7,IN2LAST
          MVI   IN2SEEN,X'01'
          LM    0,15,IINSAVE
-         L     7,IINRESULT
+         L     7,IINRES
          L     10,IINBASE
          L     4,0(5)
          BCR   15,6
@@ -841,7 +841,7 @@ INNAME   DC    CL5'BCPIN'
 INOPEN   DC    X'00'
 INEOF    DC    X'00'
          DS    0F
-IINRESULT DC    F'0'
+IINRES DC    F'0'
 IINSAVE   DS    16F
 INBUF    DS    CL80
 BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,EODAD=INATEND
