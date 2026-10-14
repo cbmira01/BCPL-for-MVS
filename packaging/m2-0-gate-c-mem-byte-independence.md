@@ -1,6 +1,6 @@
 # M2.0 Gate C — BCPLMEM / BCPLBYTE Independence
 
-**Status: canonical BCPLBYTE integration committed; MVS candidate acceptance pending.**
+**Status: ACCEPTED — Gate C closed (14 October 2026).**
 Date: 14 October 2026.
 
 ## Source audit
@@ -19,4 +19,13 @@ Date: 14 October 2026.
 4. Inspect IEWL `MAP,XREF` from at least one relevant installed DEVOBJ application, verifying GETBYTE/PUTBYTE resolve to distinct BCPLBYTE CSECT and GETVEC/FREEVEC/MEMBIND/MEMDRAIN to BCPLMEM; no unresolved symbols or accidental BCPLMAIN local definitions.
 5. No production OBJ promotion. Full 124-case panel is reserved for Gate F.
 
-**Disposition:** source-boundary correction committed; independent MVS verification pending. Gate C cannot be closed solely on source audit or historic M1.8 tests.
+## Execution and linkage evidence — accepted 14 October 2026
+
+- Operator synchronized only `SOURCE(BCPLMAIN)`: remove JOB 1274, compress JOB 1275, put JOB 1276, readback JOB 1277. The readback shows `EXTRN GETBYTE,PUTBYTE`; no BCPLMAIN local GETBYTE/PUTBYTE definitions survived.
+- Resident `BLDDEVN` launcher JOB 1279 / payload **JOB 1280** rebuilt `DEVOBJ(BCPLMAIN)`. IFOX00 ASMMMAIN RC=0000, IEBGENER PUTMAIN RC=0000; zero flagged assembler statements and zero highest severity. Assembler External Symbol Dictionary contains `GETBYTE ER 0007`, `PUTBYTE ER 0008`.
+- Focused installed DEVOBJ execution: 04 (JOB 1283), 27 (1285), 28 (1287), 29 (1289), 30 (1291), 069 (1293), 123 (1295). **7 PASS, 0 FAIL, 0 SKIP**. For all seven JES jobs: ASMAP IFOX00 RC=0000, LKED IEWL RC=0000 and GO RC=0000.
+- Each of the seven IEWL maps explicitly includes `OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, `OBJ(BLIB)` as independent members. Their cross-reference tables demonstrate that `GETBYTE` and `PUTBYTE` resolve **only to BCPLBYTE**, and `GETVEC`, `FREEVEC`, `MEMDRAIN`, `MEMBIND` resolve **to BCPLMEM**, with BCPLMAIN references.
+- Representative JOB 1283 link-edit map: `BCPLBYTE` starts X'1638', length **X'26'**; GETBYTE X'1638', PUTBYTE X'164C'. `BCPLMEM` starts X'16D0', length **X'2AC'**; GETVEC X'16D0', FREEVEC X'17AE', MEMDRAIN X'1856', MEMBIND X'18B6'. The cross-reference row assigns GETBYTE/PUTBYTE to BCPLBYTE and allocation/lifecycle symbols to BCPLMEM. In all other jobs the addresses differ by relocation but the resolution pattern is identical.
+- Independent BCPLMEM/BCPLBYTE source state and historical M1.8 rebuild provenance are unchanged. No production `HERC02.BCPL.OBJ` write is requested or claimed.
+
+**Gate C ACCEPTED**. Both service families are independently linked and operational in DEVOBJ. Gate D is next: assess and select first substantial extraction (BCPLIO versus BCPLSTACK), retaining narrow implementation scope. M2.0 as a whole remains open and the full native regression panel is reserved for Gate F.
