@@ -233,3 +233,7 @@ Operator installed JCL(D3LINK) via JOB 1450 and submitted launcher JOB 1452, pay
 ### D3 integrated candidate MAP/XREF ACCEPTED — JOB 1453
 
 Operator inspected complete JOB 1453 report. All explicit INCLUDE directives from DEVOBJ reported IEW0000; IEWL RC=0000, no displayed unresolved warnings. Map CSECTs: BCPLMAIN (DEVOBJ member BCPLM3) X'0000' length X'1730'; BCPLIO X'1730' length X'08AC'; BCPLMEM X'1FE0' length X'2AC'; BCPLBYTE X'2290' length X'26'; BCPLAPT X'22B8' length X'6C'; BLIB X'2328' length X'1BB0'. XREF resolves IOINIT, IOFIN, IOWRCH, IOBIND, IODIAG, IOREPL, IOFOUT, IOSOUT, IOOUT, IOWRAP and IOENDW all to BCPLIO, and STKOVFL to BCPLMAIN. **D3 integrated link MAP/XREF checkpoint ACCEPTED**; no GO execution or BCPL behavior acceptance yet. Production OBJ untouched.
+
+### D3 five-probe independent regression PASS — JOBS 1456–1468
+
+Operator reran all five isolated probes against rebuilt DEVOBJ(BCPLIO): BCIOPRB JOB **1456** ASMPROB/LKED/GO RC=0000; BC2SPRB JOB **1459** all RC=0000; BCSTRPB JOB **1462** all RC=0000; BCDIPRB JOB **1465** all RC=0000; BCOVPRB JOB **1468** ASMPROB/LKED RC=0000, GO **RC=0012 expected**. All IFOX flagged statement counts zero. **Existing isolated BCPLIO regression checkpoint ACCEPTED** on code containing the D3 R10 return/overflow changes. No direct test of new IOREPL is included among these five, and integrated BCPLMAIN/BCPLM3 GO is still untested. D3 and Gate D remain open; production OBJ untouched.
