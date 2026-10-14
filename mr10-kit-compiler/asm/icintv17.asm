@@ -1,3 +1,7 @@
+***********************************************************************
+* ICINTV17.ASM - HISTORICAL INTCODE INTERPRETER
+* Saved for comparison with later versions.
+***********************************************************************
          TITLE 'ICINT V17 - RICHARDS INTCODE ASSEMBLER/INTERPRETER'
          PRINT NOGEN
 *
@@ -82,6 +86,7 @@
 *   R15  EXTERNAL ENTRY ADDRESS
 *
 ***********************************************************************
+* --- MAIN CONTROL SECTION ---
 ICINT    CSECT
          ENTRY ICINT
 R0       EQU   0
