@@ -1,3 +1,8 @@
+***********************************************************************
+* HELLO-WORLD - SYSTEM/370 ASSEMBLER SOURCE
+* Historical interpreter version; retain for comparison and tests.
+***********************************************************************
+* --- PROGRAM CONTROL SECTION ---
 HELLO    CSECT
          STM   14,12,12(13)       SAVE CALLER REGISTERS
          BALR  12,0               ESTABLISH BASE REGISTER
