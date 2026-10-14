@@ -1,6 +1,11 @@
+// ======================================================================
+// MAIN: BCPL REGRESSION TEST
+// ======================================================================
 // Regression: separate compilation and GLOBAL-vector linkage.
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76; HELPER:180 $)
 
+// --- Test entry and result ---
 LET START() BE
 $(
    WRITEF("TEST: Separate compilation and GLOBAL linkage*N")
