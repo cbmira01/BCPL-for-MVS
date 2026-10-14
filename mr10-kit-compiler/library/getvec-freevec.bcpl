@@ -1,3 +1,6 @@
+// ======================================================================
+// GETVEC FREEVEC: REUSABLE BCPL ROUTINES
+// ======================================================================
 // GETVEC-FREEVEC.BCPL
 //
 // Reconstructed fixed-arena BCPL allocator for the MR10 bootstrap runtime.
@@ -23,6 +26,7 @@
 // GETVEC(N) returns B+2 and supplies N+1 payload words, matching VEC N.
 // FREEVEC(V) reinserts by address and coalesces adjacent free blocks.
 
+// --- Public global slots ---
 GLOBAL $(
 GETVEC:87
 FREEVEC:88
@@ -30,6 +34,7 @@ HEAPINIT:89
 FREEHEAD:90
 $)
 
+// --- Implementation ---
 LET HEAPINIT(BASE, WORDS) BE
 $( FREEHEAD := 0
 
