@@ -62,12 +62,12 @@ historical functionality or to promote production OBJ.
 
 - [x] Review Gate A-D module ownership and candidate IEWL evidence.
 - [x] Correct the three obsolete module-level acceptance headers.
-- [ ] Verify remaining module prologues and developer navigation
+- [x] Verify remaining module prologues and developer navigation
       identify authoritative accepted candidate versus baseline.
-- [ ] Review and explicitly document inter-CSECT linkage/register,
+- [x] Review and explicitly document inter-CSECT linkage/register,
       reentrancy and exceptional-exit assumptions; distinguish
       proven MVS evidence from inference.
-- [ ] Ensure documentation clearly records Git authority and DEVOBJ
+- [x] Ensure documentation clearly records Git authority and DEVOBJ
       staging; no unapproved production OBJ mutation.
 - [ ] Re-stage and assemble comment-only updated BCPLIO/BCPLAPT/
       BCPLBYTE to DEVOBJ if accepting their updated resident sources,
@@ -82,3 +82,31 @@ full-panel evidence is valid and should be reused where nothing has
 changed; any new source/object build must be identified explicitly.
 
 **Gate E remains OPEN; M2.0 remains OPEN.**
+
+## Gate E contract and navigation audit complete — MVS refresh pending
+
+- BCPLMAIN candidate source is asm/bcplmain-d6-candidate.asm; object member is DEVOBJ(BCPLM6). asm/bcplmain.asm and bcplmain-wip.asm are not interchangeable with it.
+- BCPLMAIN owns MVS entry, G/SYSV, global/stack allocation, START invocation, STOP code and teardown. IOINIT receives the MVS PARM pointer; IOFIN precedes MEMDRAIN, MEMBIND(0) and FREEMAIN.
+- BCPLIO is a static nonreentrant owner of input/output QSAM DCBs, private buffers, cursors, EODAD, PARM pseudo-stream and stream cleanup. Its BCPL-facing services use R5 frame/R6 return; native-private IOINIT/IOFIN/IOBIND/IODIAG/IOREPL/IOPMGET use their separately documented R14 native contracts. R10 is a private base and is clobbered.
+- BCPLAPT owns G40 APTOVEC with exported APLIMIT data initialized by BCPLMAIN from STKLIM; its failure transfer branches to BCPLMAIN STKOVFL. BCPLBYTE owns G85/G86, preserves generated permanent registers and restores R4. BCPLMEM owns G87/G88, static allocation state and private MEMBIND/MEMDRAIN/MEMSTAT; publication passes a G6!48 slot address.
+- BLIB is a compiled BCPL object whose exported G76 WRITEF takes priority over bootstrap WRITEST. DEBUGINT and WRITEST remain provisional local BCPLMAIN code.
+- Gate B/C and D6 JOB 2393 link maps plus successful native execution support these ownership claims. They do not prove recursive reentrancy, every untested error path, or complete original Cambridge compatibility.
+- asm/README.md now directs contributors to the accepted D6 candidate and its link-edit workflow. Git is the source authority; SOURCE and DEVOBJ are MVS build state. Production OBJ is not to be changed without explicit separate authorization.
+
+## Operator verification needed before Gate E acceptance
+
+Comment-only updated BCPLAPT, BCPLBYTE and BCPLIO files require synchronization and independent DEVOBJ reassembly to verify reproducibility. From the repository root after git pull --ff-only:
+
+```sh
+tools/dspal put SOURCE BCPLAPT asm/bcplapt.asm
+tools/dspal put SOURCE BCPLBYTE asm/bcplbyte.asm
+tools/dspal put SOURCE BCPLIO asm/bcplio.asm
+tools/dspal put JCL BLDDEVA jcl/build-dev-bcplapt.jcl
+tools/dspal put JCL BLDDEVB jcl/build-dev-bcplbyte.jcl
+tools/dspal put JCL BLDDEVI jcl/build-dev-bcplio.jcl
+tools/dspal submit JCL BLDDEVA
+tools/dspal submit JCL BLDDEVB
+tools/dspal submit JCL BLDDEVI
+```
+
+Require each assembler and binary-safe object installation step RC=0000, zero flagged source statements. Then submit existing JCL(D6LINK) and require IEWL RC=0000 and unchanged object boundaries. A smoke run against DEVOBJ(BCPLM6) should follow, then Gate F full-panel candidate acceptance. No production OBJ promotion. Gate E remains OPEN pending MVS evidence.
