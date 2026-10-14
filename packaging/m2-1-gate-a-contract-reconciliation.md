@@ -44,6 +44,17 @@ Evidence notation: **S** = inspected current D6 source; **E** = accepted M2.0 li
 
 **Evidence task still required for Gate A acceptance:** assemble a source-level crosswalk from the next compiler stage's tracked source and headers to current published runtime globals and system-vector hooks; distinguish executed dependencies from merely referenced/anticipated facilities. Do not claim completion of this crosswalk from the regression panel alone.
 
+### Preliminary historical compiler-source call-site inspection (not an executable dependency proof)
+
+Directly inspected tracked `richards-bcpltape/bcplib/bcpl/syn`, `trn`, `cg`, and `richards-bcpltape/sys3/bcpl/libhdr`. These sources have a mixture of actual calls, local definitions and code-generation text; a name match by itself is **not** a runtime-provider dependency.
+
+- `syn` directly calls `LONGJUMP(REC.P,REC.L)` in syntax-error recovery, `FINDINPUT(...)`, `SELECTINPUT(...)`, `ENDREAD(...)`, `GETBYTE(...)`, `PUTBYTE(...)`, `RDCH(...)`, `WRCH(...)`, `WRITEF(...)`, and `STOP(8)`, among other library services. The tracked LIBHDR assigns **LONGJUMP G32**, for which M1.9 did not establish an installed native provider. This is a **credible potential compiler blocker**, not proof the relevant historical phase is presently executing native under D6.
+- `trn` calls `SELECTOUTPUT`, `GETBYTE`, `PUTBYTE`, `WRITEF`, `STOP`, and historical BLIB string/packing functions. Not every textual `LOAD(...)` is LIBHDR G10 LOAD: translator source contains its own internal names and expressions. Resolve symbols before claiming a module-loader dependency.
+- `cg` directly calls `DATE()` in the module-prefix generation path, plus `GETBYTE`, `SELECTOUTPUT`, `WRITEF` and output operations. LIBHDR assigns **DATE G29**, with no established native runtime publisher in the inspected D6 installation block. This is another **credible potential blocker** for direct native compiler execution. `READN(...)` and `LOAD(...)` textual matches require symbol-resolution scrutiny because generator internals can have identically named procedures.
+- Existing tests validate much of the character, vector, byte and BLIB foundation; they do **not** establish G29 DATE or G32 LONGJUMP compatibility. Before adding runtime code, determine the exact compiler source variant and intended next execution stage, whether native execution really traverses these paths, and whether existing compiler-local or bootstrap providers supply them.
+
+**Revised Gate A priority:** resolve DATE and LONGJUMP provider/usage contracts alongside termination semantics. Do not silently treat either historical name as implemented and do not presume an absent D6 native publication is automatically an implementation mandate.
+
 ## Candidate work and priority
 
 1. **Gate B — termination/failure:** first establish historical and MVS completion-code policy for STKOVFL; develop a focused test that asserts diagnostic **and** RC on the installed D6 candidate. Confirm whether bypass paths leak observable buffered output or skip indispensable cleanup. Make a minimal correction only if the test/contract decision warrants it.
