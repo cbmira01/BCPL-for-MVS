@@ -1,8 +1,13 @@
+// ======================================================================
+// TABLE VECTOR: LANGUAGE EXAMPLE
+// ======================================================================
 // TABLE-VECTOR.BCPL
 // Demonstrate TABLE expressions, vectors, ! indexing, and copying values.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET V = VEC 4
 
