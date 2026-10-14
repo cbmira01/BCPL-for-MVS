@@ -138,6 +138,17 @@ while (( SECONDS <= deadline )); do
         exit 65
     fi
 
+    # JES may reject invalid JCL before emitting $HASP373.
+    rejected=$(
+        tail -n "+$((start_line + 1))" "$printer" 2>/dev/null |
+            grep -m1 -E "IEF452I[[:space:]]+${jobname}[[:space:]]+JOB NOT RUN" || true
+    )
+    if [[ -n "$rejected" ]]; then
+        echo >&2 "JES rejected the submitted job before execution:"
+        echo >&2 "$rejected"
+        exit 76
+    fi
+
     sleep 0.5
 done
 
