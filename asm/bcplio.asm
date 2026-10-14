@@ -1,28 +1,24 @@
 ***********************************************************************
-* BCPLIO - M2.0 D2 FIRST OUTPUT-SERVICE EXTRACTION CANDIDATE
+* BCPLIO -- INDEPENDENT BCPL STREAM I/O (M2.0 GATE D, D6)
 *
-* PURPOSE: Independent SYSPRINT/BCPALT QSAM output service.
-* This is a candidate isolated from BCPLMAIN dispatch until tested.
-* Exports: IOINIT, IOFIN, IOSTAT (R14 native); IOWRCH (BCPL R6).
-* EXTRN: none. No private BCPLMAIN storage references.
+* Owns SYSPRINT/BCPALT output and BCPIN/BCPINB input QSAM DCBs,
+* buffers, selected handles, PARM pseudo-stream and I/O cleanup.
+* G11-17/G33/G39/G41-42/G46-47 services enter this CSECT.
+* Private native entry points: IOINIT, IOFIN, IOBIND, IOSTAT,
+* IODIAG, IOREPL and IOPMGET. No BCPLMAIN private-data refs.
 *
-* IOINIT: R1=original MVS EXEC PARM list; open SYSPRINT for output,
-*         initialize one 132-byte record and stream state.
-* IOFIN:  write any nonempty record, CLOSE SYSPRINT, clear state.
-* IOWRCH: R7 EBCDIC byte; 10 ends a QSAM record; returns via R6,
-*         restoring R4 from 0(R5); 132-byte buffer capacity.
-*         R0-R3, R5-R9, R11-R12, R15 preserved by IOWRCH.
-*         R10 is private module base and is clobbered.
-* IOSTAT: R15=0 normal, 12 output overflow; native R14 return.
-*         Does not clear the sticky result.
-* IOINIT/IOFIN preserve R0-R9 and R11-R15, including R14 return;
-* R10 clobbered. R13 remains the caller MVS savearea pointer.
+* BCPL entries use R6 return, R7 argument/result and R5 frame;
+* R4 is restored from 0(R5). R10 is a private scratch base.
+* Native entry contracts and exceptional results are documented in
+* packaging/m2-0-d3-bcplio-linkage-contract.md; that document
+* includes early candidate history and must be read with Gate D
+* closure evidence in m2-0-gate-d-bcplio-extraction-plan.md.
 *
-* Not reentrant: singleton DCB, buffer and register save area.
-* Overflow latches IOSTATUS=12; character is not written. STOP(12)
-* routing needs caller-owned nonreturning callback via IOBIND.
-* G14 MUST NOT be redirected until BCPLMAIN integration is tested.
-* Provisional MVS adaptation, not claimed historical Cambridge code.
+* Not reentrant: QSAM and saved registers use static module state.
+* Historical-facing behavior is a tested MVS reconstruction,
+* not a claim of recovered original Cambridge machine code.
+* Accepted independently in DEVOBJ, including D6 regression 00-123:
+* 123 PASS, 0 FAIL, 1 expected source-only SKIP (083).
 ***********************************************************************
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
