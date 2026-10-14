@@ -66,6 +66,7 @@ $)
 // --- Program entry and output ---
 AND START() BE
 $( WRITEF("DEMO: Recursive descent arithmetic expression parsing*N")
+   WRITEF("EXPRESSION: %S*N", "(2+3)**(4+5)-6")
    CHECK("2+3", 5)
    CHECK("4+5", 9)
    CHECK("2**3", 6)
