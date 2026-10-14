@@ -50,6 +50,7 @@ $)
 AND START() BE
 $( LET S = "(2+3)**(4+5)-6"
    LET P = VEC 0
+   WRITEF("DEMO: Recursive descent arithmetic expression parsing*N")
    P!0 := 1
    WRITEF("EXPRESSION: %S*N", S)
    WRITEF("VALUE: %N*N", EXPR(S, P))
