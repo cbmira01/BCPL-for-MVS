@@ -6,6 +6,7 @@ GLOBAL $( START:1; WRITEF:76 $)
 LET START() BE
 $( LET V = VEC 4
 
+   WRITEF("DEMO: Copy TABLE values into a vector*N")
    FOR I = 0 TO 4 DO
       V!I := I!TABLE 11, 22, 33, 44, 55
 
