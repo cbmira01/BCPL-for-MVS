@@ -15,6 +15,8 @@
 *         R10 is private module base and is clobbered.
 * IOSTAT: R15=0 normal, 12 output overflow; native R14 return.
 *         Does not clear the sticky result.
+* IOINIT/IOFIN preserve R0-R9 and R11-R15, including R14 return;
+* R10 clobbered. R13 remains the caller MVS savearea pointer.
 *
 * Not reentrant: singleton DCB, buffer and register save area.
 * Overflow latches IOSTATUS=12; character is not written. STOP(12)
@@ -26,7 +28,10 @@ BCPLIO   CSECT
 *
 IOINIT   BALR  10,0
          USING *,10
-         ST    14,IORET
+         STM   0,9,IOISAVE
+         STM   11,15,IOISAVE+44
+         CLI   IOACTIVE,X'01'
+         BE    IOIDONE
          ST    1,IOPARM
          XC    IOPOS(4),IOPOS
          XC    IOSTATUS(4),IOSTATUS
@@ -34,13 +39,15 @@ IOINIT   BALR  10,0
          MVC   IOBUF+1(131),IOBUF
          OPEN  (IODCB,(OUTPUT))
          MVI   IOACTIVE,X'01'
-         L     14,IORET
+IOIDONE  LM    0,9,IOISAVE
+         LM    11,15,IOISAVE+44
          BR    14
          DROP  10
 *
 IOFIN    BALR  10,0
          USING *,10
-         ST    14,IORET
+         STM   0,9,IOFSAVE
+         STM   11,15,IOFSAVE+44
          CLI   IOACTIVE,X'01'
          BNE   IOFDONE
          L     1,IOPOS
@@ -51,7 +58,8 @@ IOFCLOSE CLOSE (IODCB)
          MVI   IOACTIVE,X'00'
          XC    IOPOS(4),IOPOS
 IOFDONE  XC    IOPARM(4),IOPARM
-         L     14,IORET
+         LM    0,9,IOFSAVE
+         LM    11,15,IOFSAVE+44
          BR    14
          DROP  10
 *
@@ -92,7 +100,6 @@ IOSTAT   BALR  10,0
          DROP  10
 *
          DS    0F
-IORET    DC    F'0'
 IOPARM   DC    F'0'
 IOPOS    DC    F'0'
 IOMAX    DC    F'132'
@@ -102,6 +109,8 @@ IOOVCODE DC    F'12'
 IOACTIVE DC    X'00'
          DS    0F
 IOSAVE   DS    16F
+IOISAVE  DS    16F
+IOFSAVE  DS    16F
 IOBUF    DS    CL132
 IODCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
          END   BCPLIO
