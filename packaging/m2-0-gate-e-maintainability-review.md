@@ -69,9 +69,8 @@ historical functionality or to promote production OBJ.
       proven MVS evidence from inference.
 - [x] Ensure documentation clearly records Git authority and DEVOBJ
       staging; no unapproved production OBJ mutation.
-- [ ] Re-stage and assemble comment-only updated BCPLIO/BCPLAPT/
-      BCPLBYTE to DEVOBJ if accepting their updated resident sources,
-      inspect RCs and linkage before final Gate F acceptance.
+- [x] Re-stage and assemble comment-only updated BCPLIO/BCPLAPT/
+      BCPLBYTE to DEVOBJ; verify RCs and integrated IEWL linkage.
 - [ ] Formally record Gate E acceptance or remaining bounded deferrals.
 
 ## Next gate
@@ -110,3 +109,14 @@ tools/dspal submit JCL BLDDEVI
 ```
 
 Require each assembler and binary-safe object installation step RC=0000, zero flagged source statements. Then submit existing JCL(D6LINK) and require IEWL RC=0000 and unchanged object boundaries. A smoke run against DEVOBJ(BCPLM6) should follow, then Gate F full-panel candidate acceptance. No production OBJ promotion. Gate E remains OPEN pending MVS evidence.
+
+## Resident MVS rebuild and linkage acceptance — 14 October 2026
+
+Operator synchronized updated source prologues to SOURCE(BCPLAPT), SOURCE(BCPLBYTE), SOURCE(BCPLIO) through staging JOBs **2714, 2715, 2716**; refreshed resident JCL in JOBs **2717–2719**. Independent DEVOBJ builds:
+
+- **JOB 2722 BLDDEVA**: ASMCOMP IFOX00 RC=0000, PUTCOMP IEBGENER RC=0000; zero flagged statements/severity.
+- **JOB 2725 BLDDEVB**: ASMCOMP IFOX00 RC=0000, PUTCOMP IEBGENER RC=0000; zero flagged statements/severity.
+- **JOB 2728 BLDDEVI**: ASMIO IFOX00 RC=0000, PUTIO IEBGENER RC=0000; zero flagged statements/severity.
+- **JOB 2731 D6LINK**: integrated IEWL LKED RC=0000 using existing D6 control.
+
+The committed assembler changes were comments only. These jobs establish updated SOURCE and DEVOBJ object builds and successful integration, not a newly observed post-rebuild GO. No evidence of production OBJ write. To close Gate E, run DEVOBJ(BCPLM6) native regression 00 as smoke and record result; Gate F owns final full 00–123 acceptance.
