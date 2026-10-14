@@ -320,3 +320,7 @@ Building upon accepted BCPLM4 full-panel baseline (123 PASS/0 FAIL/1 expected SK
 - **MVS tests pending:** rebuild DEVOBJ(BCPLIO) from current source, assemble DEVOBJ(BCPLM5); inspect IFOX diagnostics and IEWL MAP/XREF (no unresolved); run native regressions 00, 094–100, 104, 107–108, 117–118 and 119; then full 124-case panel, expected 123 PASS/0 FAIL/1 source-only instrumentation skip. Any failure requires stopping and diagnosing before accepting D5. No runtime verification claimed by repository commits.
 
 **Do not close Gate D or promote D5 to production pending MVS evidence.**
+
+### D5 first build — BCPLIO assembly failure JOB 2060; BCPLM5 PASS JOB 2065
+
+Operator staged revised SOURCE(BCPLIO) JOB 2057 and ran BLDDEVI payload **JOB 2060**: ASMIO IFOX00 **RC=0008**, highest severity 8; PUTIO bypassed. **Do not claim new BCPLIO installed**: existing DEVOBJ(BCPLIO) remains previous D4 version. Independently, SOURCE(BCPLM5) staged JOB 2061, BLDD5MN staged JOB 2062, payload **JOB 2065** ASMMMAIN RC=0000, PUTMAIN RC=0000, zero flags; DEVOBJ(BCPLM5) installed. D5 link/regression intentionally **blocked pending exact assembler diagnostics from JOB 2060**; root cause not established from summary alone. Production OBJ untouched.
