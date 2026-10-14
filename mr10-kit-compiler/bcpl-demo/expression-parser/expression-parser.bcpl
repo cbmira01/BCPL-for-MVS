@@ -34,7 +34,7 @@ $( LET V = FACTOR(S, P)
       UNLESS CH='**' \/ CH='/' BREAK
       P!0 := P!0+1
       R := FACTOR(S, P)
-      V := CH='**' -> V*R, V/R
+      TEST CH='**' THEN V := V*R OR V := V/R
    $) REPEAT
    RESULTIS V
 $)
@@ -46,18 +46,32 @@ $( LET V = TERM(S, P)
       UNLESS CH='+' \/ CH='-' BREAK
       P!0 := P!0+1
       R := TERM(S, P)
-      V := CH='+' -> V+R, V-R
+      TEST CH='+' THEN V := V+R OR V := V-R
    $) REPEAT
    RESULTIS V
 $)
 
-// --- Program entry and expected output ---
-AND START() BE
-$( LET S = "(2+3)**(4+5)-6"
-   LET P = VEC 0
-   WRITEF("DEMO: Recursive descent arithmetic expression parsing*N")
+// --- Small arithmetic checks ---
+// Each case starts at byte 1, after the BCPL string length byte.
+AND CHECK(S, WANT) BE
+$( LET P = VEC 0
+   AND GOT = 0
    P!0 := 1
-   WRITEF("EXPRESSION: %S*N", S)
-   WRITEF("VALUE: %N*N", EXPR(S, P))
+   GOT := EXPR(S, P)
+   WRITEF("CHECK: %S EXPECT %N GOT %N POS %N*N",
+          S, WANT, GOT, P!0)
+   UNLESS GOT=WANT DO WRITEF("PARSER FAIL: %S*N", S)
+$)
+
+// --- Program entry and output ---
+AND START() BE
+$( WRITEF("DEMO: Recursive descent arithmetic expression parsing*N")
+   CHECK("2+3", 5)
+   CHECK("4+5", 9)
+   CHECK("2**3", 6)
+   CHECK("2+3**4", 14)
+   CHECK("(2+3)", 5)
+   CHECK("(2+3)**(4+5)", 45)
+   CHECK("(2+3)**(4+5)-6", 39)
    FINISH
 $)
