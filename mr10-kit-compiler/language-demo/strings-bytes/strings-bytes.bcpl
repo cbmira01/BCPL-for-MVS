@@ -1,8 +1,13 @@
+// ======================================================================
+// STRINGS BYTES: LANGUAGE EXAMPLE
+// ======================================================================
 // STRINGS-BYTES.BCPL
 // Demonstrate packed BCPL strings and GETBYTE access.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; GETBYTE:85; WRITEF:76 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET S = "BCPL"
    LET N = GETBYTE(S, 0)
