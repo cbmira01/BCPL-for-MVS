@@ -1,10 +1,15 @@
+// ======================================================================
+// NESTED-RECURSION: BCPL TEST
+// ======================================================================
 // Regression: argument passing, nested calls, and recursion.
+// --- Global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET ADD3(A,B,C) = A+B+C
 
 AND FACT(N) = N=0 -> 1, N*FACT(N-1)
 
+// --- Test entry ---
 AND START() BE
 $(
    WRITEF("TEST: Arguments nested calls and recursive factorial*N")
