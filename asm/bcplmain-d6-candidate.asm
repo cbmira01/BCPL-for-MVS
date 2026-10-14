@@ -1521,7 +1521,7 @@ DYNEND   DC    F'0'
 RELRET   DC    F'0'
 STOPRC   DC    F'0'
 *
-* Provisional DEBUGINT state remains local; stream QSAM state is BCPLIO-owned.
+* DEBUGINT state remains local; QSAM stream state belongs to BCPLIO.
 *
 DBGSV    DS    16F
 DBGPOS   DC    F'0'
