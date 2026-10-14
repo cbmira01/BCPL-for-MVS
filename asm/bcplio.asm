@@ -27,7 +27,7 @@
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
          ENTRY IOFOUT,IOSOUT,IOOUT,IOWRAP,IOENDW
-         ENTRY IOBIND
+         ENTRY IOBIND,IODIAG
 *
 IOINIT   BALR  10,0
          USING *,10
@@ -313,8 +313,54 @@ IOBIND   BALR  10,0
          BR    14
          DROP  10
 *
+*
+* Private diagnostic append: R1=EBCDIC byte address, R2=length.
+* Appends to PRIMARY buffer regardless of selected output stream.
+* No PUT or callback here; R15=0 success, 12 if truncated/full.
+* Preserve R0-R9, R11-R14. R10 clobbered, R15 is result.
+* Source must not overlap IOBUF, and length must be nonnegative.
+IODIAG   BALR  10,0
+         USING *,10
+         STM   0,9,IODSAVE
+         STM   11,14,IODSAVE+44
+         LTR   2,2
+         BM    IODBAD
+         CLI   IOACTIVE,X'01'
+         BNE   IODBAD
+         L     3,IOPOS
+         LA    4,132
+         SR    4,3
+         CR    2,4
+         BNH   IODCOPY
+         MVC   IOSTATUS(4),IOOVCODE
+         LR    2,4
+         LA    15,12
+         B     IODWORK
+IODCOPY  SR    15,15
+IODWORK  LTR   2,2
+         BZ    IODRET
+* MVC is limited to 256 bytes; primary free space <=132.
+         LR    4,1
+         LA    5,IOBUF
+         AR    5,3
+         LR    6,2
+         BCTR  6,0
+         EX    6,IODMOVE
+         AR    3,2
+         ST    3,IOPOS
+IODRET   ST    15,IODRC
+         LM    0,9,IODSAVE
+         LM    11,14,IODSAVE+44
+         L     15,IODRC
+         BR    14
+IODBAD   LA    15,8
+         B     IODRET
+IODMOVE  MVC   0(1,5),0(4)
+         DROP  10
+*
          DS    0F
 IOPARM   DC    F'0'
+IODRC    DC    F'0'
 IOCTL1   DC    F'1'
 IOCTL2   DC    F'2'
 IOCURH   DC    F'0'
@@ -339,6 +385,7 @@ IOISAVE  DS    16F
 IOFSAVE  DS    16F
 IOESAVE  DS    16F
 IOOSAVE  DS    16F
+IODSAVE  DS    16F
 IOBUF    DS    CL132
 IODCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 IO2BUF   DS    CL132
