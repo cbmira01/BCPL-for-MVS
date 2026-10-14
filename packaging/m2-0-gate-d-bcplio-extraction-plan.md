@@ -229,3 +229,7 @@ Operator staged SOURCE(BCPLM3) JOB 1445 and JCL(BLDD3MN) JOB 1446. Launcher JOB 
 ### D3 combined candidate integrated link-edit — JOB 1453 PASSED
 
 Operator installed JCL(D3LINK) via JOB 1450 and submitted launcher JOB 1452, payload **JOB 1453**. LKED IEWL RC=0000; job SUCCESS, highest RC=0000. Link-only JCL explicitly includes DEVOBJ(BCPLM3), DEVOBJ(BCPLIO), DEVOBJ(BCPLMEM), DEVOBJ(BCPLBYTE), DEVOBJ(BCPLAPT) and DEVOBJ(BLIB), without a GO step or production OBJ. **Integrated link-edit checkpoint PASSED.** IEWL MAP/XREF and potential LET-tolerated unresolved references still require inspection before claiming complete symbol-resolution acceptance; no integrated runtime execution yet. D3 and Gate D remain open.
+
+### D3 integrated candidate MAP/XREF ACCEPTED — JOB 1453
+
+Operator inspected complete JOB 1453 report. All explicit INCLUDE directives from DEVOBJ reported IEW0000; IEWL RC=0000, no displayed unresolved warnings. Map CSECTs: BCPLMAIN (DEVOBJ member BCPLM3) X'0000' length X'1730'; BCPLIO X'1730' length X'08AC'; BCPLMEM X'1FE0' length X'2AC'; BCPLBYTE X'2290' length X'26'; BCPLAPT X'22B8' length X'6C'; BLIB X'2328' length X'1BB0'. XREF resolves IOINIT, IOFIN, IOWRCH, IOBIND, IODIAG, IOREPL, IOFOUT, IOSOUT, IOOUT, IOWRAP and IOENDW all to BCPLIO, and STKOVFL to BCPLMAIN. **D3 integrated link MAP/XREF checkpoint ACCEPTED**; no GO execution or BCPL behavior acceptance yet. Production OBJ untouched.
