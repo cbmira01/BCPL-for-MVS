@@ -147,3 +147,14 @@ Git-only remedy:
 - Test 052 README updated to distinguish D6 RC=0000 from D7 RC=0012 and record JOB 3101.
 
 **This is a regression acceptance-contract update, not a new runtime code correction.** The first full D7 panel cannot be reported as 123 PASS; rerun 052 first and the full panel afterward before formal Gate B acceptance. D6 may no longer pass the updated 052 and 093 fixtures without an explicit baseline-specific fixture mechanism, which has not been introduced. Production OBJ and D6 remain unchanged.
+
+
+## Final full D7 candidate regression — 14 October 2026
+
+Owner executed `tools/run-native-regression` with `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, and `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7`, following the regression 052 fixture correction.
+
+**Recorded result:** native regression 00–123, **123 PASS / 0 FAIL / 1 expected SKIP / 124 total**. SKIP 083 remains the planned source-instrumentation-only case. Both independent stack-overflow paths, **052 checked-frame** and **093 APTOVEC**, passed under the explicit GO RC=0012 fixture. Termination regressions **084–089** (FINISH and STOP, including nonzero and buffered exits) all passed. Regression 119, termination flushing both destinations, also passed. This matches the M2.0 aggregate baseline while enforcing the new RC=12 failure semantics.
+
+Earlier build/link evidence remains payload JOB 2989 (IF​OX00 and IEBGENER RC=0000) and JOB 2992 (IEWL RC=0000); earlier checked-frame overflow payload JOB 3101 demonstrated GO RC=0012 and expected STACK OVERFLOW before its test fixture was corrected. No D7 assembler change was required after these jobs.
+
+**Gate B engineering exit criteria satisfied:** focused failure diagnostics/completion code, both overflow entry paths, ordinary STOP/FINISH, and full native candidate panel are validated. Owner has not explicitly directed formal Gate B closure in this message; status remains **READY FOR OWNER ACCEPTANCE**, not automatically closed. No production promotion authorized.
