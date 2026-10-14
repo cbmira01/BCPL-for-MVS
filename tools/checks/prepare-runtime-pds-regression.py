@@ -120,6 +120,11 @@ def main():
     if candidate not in ("0", "1"):
         raise ValueError("BCPL_RUNTIME_CANDIDATE must be 0 or 1")
     library = os.environ.get("BCPL_RUNTIME_LIBRARY", "OBJ").upper()
+    candidate_member = os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER", "BCPLM3").upper()
+    if candidate_member not in ("BCPLM3", "BCPLM4"):
+        raise ValueError("candidate member must be BCPLM3 or BCPLM4")
+    if candidate != "1" and "BCPL_RUNTIME_CANDIDATE_MEMBER" in os.environ:
+        raise ValueError("candidate member selection requires candidate mode")
     if candidate == "1" and library != "DEVOBJ":
         raise ValueError("BCPL_RUNTIME_CANDIDATE=1 requires BCPL_RUNTIME_LIBRARY=DEVOBJ")
     if library not in ("OBJ", "DEVOBJ"):
@@ -154,7 +159,7 @@ def main():
         f"//OBJ      DD DSN={dsn},DISP=SHR",
         "//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)",
         "//         DD *",
-        " INCLUDE OBJ(BCPLM3)" if candidate == "1" else " INCLUDE OBJ(BCPLMAIN)",
+        f" INCLUDE OBJ({candidate_member})" if candidate == "1" else " INCLUDE OBJ(BCPLMAIN)",
         *([" INCLUDE OBJ(BCPLIO)"] if candidate == "1" else []),
         " INCLUDE OBJ(BCPLBYTE)",
         " INCLUDE OBJ(BCPLAPT)",
