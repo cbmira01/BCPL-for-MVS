@@ -559,7 +559,8 @@ IOSELIN    LR    4,10
 SELPM    ST    7,INCURR
          B     SELIRET
 SEL2IN   ST    7,INCURR
-SELIRET  L     4,0(5)
+SELIRET  L     10,IINBASE
+         L     4,0(5)
          BCR   15,6
 *
 IORDCH    LR    4,10
@@ -719,6 +720,7 @@ IOUNRD   LR    4,10
          BALR  10,0
          USING *,10
          ST    4,IINBASE
+         ST    3,IINR3
          L     14,INCURR
          LA    3,PMCTRL
          SRL   3,2
@@ -739,7 +741,9 @@ UNRDPM   CLI   PMSEEN,X'01'
 UNRD2    CLI   IN2SEEN,X'01'
          BNE   UNRDRET
          MVI   IN2PUSH,X'01'
-UNRDRET  L     4,0(5)
+UNRDRET  L     3,IINR3
+         L     10,IINBASE
+         L     4,0(5)
          BCR   15,6
 *
 * ENDREAD closes the selected BCPIN input stream and clears state.
@@ -799,6 +803,7 @@ INATEND  MVI   INEOF,X'01'
 *
          DS    0F
 IINBASE  DC    F'0'
+IINR3    DC    F'0'
 PMMASK   DC    X'7FFFFFFF'
 PMMAX    DC    F'100'
 PMCTRL   DC    F'3'
