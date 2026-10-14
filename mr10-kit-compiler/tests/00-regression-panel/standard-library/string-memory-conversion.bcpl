@@ -10,13 +10,13 @@ $)
 
 LET START() BE
 $(
-   WRITEF("TEST: String memory and number conversion helpers*N")
  LET S = VEC 10
    AND T = VEC 10
    AND U = VEC 10
    AND A = VEC 3
    AND B = VEC 3
 
+   WRITEF("TEST: String memory and number conversion helpers*N")
    STRCPY(S, "HELLO")
    STRCAT(S, " BCPL")
    STRCPY(T, S)
