@@ -401,12 +401,18 @@ IOREPL   BALR  10,0
          LR    4,1
          LR    6,2
          BCTR  6,0
-         EX    6,IODMOVE
+         EX    6,IORMOVE
          ST    2,IOPOS
 IORGOOD  SR    15,15
-         B     IODRET
+         B     IORRET
 IORBAD   LA    15,8
-         B     IODRET
+         B     IORRET
+IORRET   ST    15,IODRC
+         LM    0,9,IODSAVE
+         LM    11,14,IODSAVE+44
+         L     15,IODRC
+         BR    14
+IORMOVE  MVC   0(1,5),0(4)
          DROP  10
 *
          DS    0F
