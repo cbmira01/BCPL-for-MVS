@@ -65,3 +65,10 @@ Test 069 link map and exact GO results are separately important; if the runner p
 - [ ] Owner accepts and closes Gate E. Transition to Gate F versioned contract, RC register and regression coverage matrix.
 
 **Gate E remains OPEN pending operator MVS execution and explicit acceptance.** No resident DEVOBJ or production objects were changed by this plan.
+
+
+## Focused D7 Gate E execution — 14 October 2026
+
+Owner synchronized Git through commit 34de425 and ran the eight prescribed focused regressions, each with all four candidate selectors (PDS=1, LIBRARY=DEVOBJ, CANDIDATE=1, MEMBER=BCPLM7). Individual console results: **025 PASS, 026 PASS, 069 PASS, 075 PASS, 091 PASS, 101 PASS, 119 PASS, 121 PASS**. Each one-test panel reported 1 PASS / 0 FAIL / 0 SKIP. Total **8/8 focused PASS**; no source, linker or runtime changes made.
+
+This is post-charter Gate E MVS execution evidence. The console transcript does not contain the IEWL map or exact JES step codes for case 069; retain that as an explicit pending verification, despite the behavioral PASS. Also pending: post-focused complete 00–123 D7 panel. Neither requirement is silently inferred from eight PASS labels.
