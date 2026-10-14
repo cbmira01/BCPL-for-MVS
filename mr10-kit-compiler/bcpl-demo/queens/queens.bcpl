@@ -1,6 +1,10 @@
+// ======================================================================
+// QUEENS: BCPL DEMONSTRATION
+// ======================================================================
 // QUEENS.BCPL
 // Solve the eight-queens problem by recursive backtracking.
 
+// --- Shared global slots ---
 GLOBAL $(
 START:1
 WRCH:14
@@ -27,6 +31,7 @@ $( IF C=8 RESULTIS TRUE
    RESULTIS FALSE
 $)
 
+// --- Program entry and output ---
 AND START() BE
 $( LET Q = VEC 7
    WRITEF("DEMO: Solve eight queens by backtracking*N")
