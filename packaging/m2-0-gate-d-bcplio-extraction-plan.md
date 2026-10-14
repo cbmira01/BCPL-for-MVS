@@ -221,3 +221,7 @@ Operator staged SOURCE(BCPLIO) JOB 1433/1434/1435; BLDDEVI launcher JOB 1437 pay
 ### D3 combined candidate BCPLIO assembly recovered — JOB 1444
 
 Operator synchronized corrected SOURCE(BCPLIO) using JOB 1439 remove, 1440 compress, 1441 put. BLDDEVI launcher JOB 1443, payload **JOB 1444**: ASMIO IFOX00 RC=0000; PUTIO IEBGENER RC=0000; zero assembler statements flagged, highest severity 0, job SUCCESS. This verifies commit `dd69c65` fixed JOB 1438's three IFO209 addressability errors; corrected independent BCPLIO object installed in DEVOBJ(BCPLIO), production OBJ untouched. **BCPLIO assembly checkpoint ACCEPTED**, but independent runtime regression of changed R10 handling/IOREPL and integrated BCPLMAIN candidate not yet tested. Proceed to isolated BCPLM3 assembly next. D3/Gate D remain open.
+
+### D3 combined BCPLMAIN candidate assembly ACCEPTED — JOB 1449
+
+Operator staged SOURCE(BCPLM3) JOB 1445 and JCL(BLDD3MN) JOB 1446. Launcher JOB 1448, payload **JOB 1449**: ASMMMAIN IFOX00 RC=0000, PUTMAIN IEBGENER RC=0000; assembler flagged statements 0, severity 0. Combined with JOB 1444 successful BCPLIO ASMIO/PUTIO, both modules now independently assemble and reside in DEVOBJ as BCPLM3 and BCPLIO, leaving canonical BCPLMAIN DEVOBJ and production OBJ unchanged. **Combined D3 assembler/installation checkpoint accepted.** The candidate has not yet been linked with the other runtime modules or executed. Next verify JCL(D3LINK) against DEVOBJ-only and inspect IEWL map and unresolved references. Gate D/D3 open.
