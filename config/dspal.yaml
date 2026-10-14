@@ -88,6 +88,7 @@ datasets:
       ICINT12: mr10-kit-compiler/jcl/icintv12-honors-thesis.jcl
       ICINT13: mr10-kit-compiler/jcl/icintv13-honors-thesis.jcl
       IC13MAP: mr10-kit-compiler/jcl/icintv13-mapstore.jcl
+      IC19BLD: mr10-kit-compiler/jcl/build-icintv19.jcl
 
   MR10_LIBRARY:
     dsn: BCPL.MR10KIT.LIBRARY
