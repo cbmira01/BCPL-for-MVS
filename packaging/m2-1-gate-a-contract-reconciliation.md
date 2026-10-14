@@ -1,6 +1,6 @@
 # M2.1 Gate A — Native Runtime Contract Reconciliation
 
-**Status:** OPEN — initial source reconciliation recorded 14 October 2026; **not accepted or closed**.
+**Status:** ACCEPTED AND CLOSED — 14 October 2026; owner directed progression to Gate B.
 **Predecessor:** M2.0 Gate F and march accepted/closed 14 October 2026.
 **Purpose:** decide the smallest justified runtime contract work needed for Cambridge BCPL compiler reconstruction, without treating every M1.9 deferred feature as an implementation order.
 
@@ -103,6 +103,6 @@ No re-modularization of the accepted service components, no BCPLSTACK extraction
 - [x] Reconciled principal M1.9 gaps with D6 source and M2.0 accepted execution; separated resolved, open, uncertain, intentional adaptations, deferred historical facilities and documentation drift.
 - [x] Completed bounded candidate crosswalk for historical SYN/TRN/CG and BCPL driver, explicitly distinguishing current ICINT compiler from prospective native compiler; exact ABI/provider validation transferred to Gate C.
 - [x] Proposed bounded B–E scope and focused acceptance probes; code changes remain conditional on separate gate decisions.
-- [ ] Record project-owner Gate A acceptance decision; **do not** infer acceptance from existence of this document.
+- [x] Owner authorized progression to Gate B on 14 October 2026; Gate A accepted as a bounded source/contract audit, not as proof of native compiler execution.
 
-**Gate A remains OPEN.** This document is an initial source-grounded planning record, not an authorization to implement assembler changes.
+**Gate A ACCEPTED AND CLOSED — 14 October 2026.** The owner's direction to proceed Gate B accepts the source-grounded reconciliation and limited gate scope. Remaining historical ABI questions are expressly transferred to Gate C. No assembler implementation was authorized by Gate A.
