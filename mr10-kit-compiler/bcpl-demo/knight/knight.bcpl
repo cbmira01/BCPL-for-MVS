@@ -1,6 +1,10 @@
+// ======================================================================
+// KNIGHT: BCPL DEMONSTRATION
+// ======================================================================
 // KNIGHT.BCPL
 // Construct a 5x5 knight's tour with Warnsdorff's heuristic.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET INSIDE(X, Y) = 0<=X & X<5 & 0<=Y & Y<5
@@ -15,6 +19,7 @@ $( LET N = 0
    RESULTIS N
 $)
 
+// --- Program entry and expected output ---
 AND START() BE
 $( LET BOARD = VEC 24
    AND DX = VEC 7
