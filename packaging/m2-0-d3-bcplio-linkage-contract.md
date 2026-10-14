@@ -26,3 +26,9 @@ Static save areas mean nonreentrant/nonrecursive service calls. An overflow dire
 ## First D3 implementation slice
 
 Commit ba71439439a767714ac9d5ab543bbd52f3baffbf changes only asm/bcplio.asm: IOINIT/IOFIN now save and restore caller machine registers across OPEN/PUT/CLOSE, IOINIT guarded against repeated OPEN, IOFIN still guards repeated CLOSE. This is a **candidate**, not MVS-tested. Existing BCPLMAIN startup, G14, and FINISH remain untouched. No production OBJ changes.
+
+## D3 nonreturning overflow termination handoff candidate
+
+Added native `IOBIND` (R14 call, R1=caller-provided callback address, zero disables), saved privately in BCPLIO and reset at IOINIT. On full buffer, IOWRCH always sets sticky IOSTAT=12. If no callback is bound, it retains legacy standalone return for status inspection. If callback is present, it restores the BCPL machine registers and R4 from 0(R5), sets R7=12, then **branches without a return linkage** to the callback. R10 is the scratch branch target and is clobbered; R6 remains original BCPL return linkage. Caller must not return to the interrupted IOWRCH and must coordinate IOFIN, STOPRC and MVS task exit. This keeps BCPLIO free of BCPLMAIN private STOPENT/FINEXIT labels and avoids nested IOWRCH static save-area calls.
+
+Independent `BCOVPRB` proof requires GO RC=0012, not zero, and a 132-character X record flushed by callback-owned IOFIN. Its callback checks R7=12 and IOSTAT=12, returns RC=8 on failed assertions. The callback installs after IOINIT and exercises ordinary primary output. It is NOT a BCPLMAIN integration proof. The separate existing STKOVFL path remains untouched. Commit `cb44c953` corrects the branch-target preservation: R14 is restored by LM, so R10 carries the nonreturning callback address.
