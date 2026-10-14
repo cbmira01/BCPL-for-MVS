@@ -1,6 +1,10 @@
+// ======================================================================
+// BINARY SEARCH: BCPL DEMONSTRATION
+// ======================================================================
 // BINARY-SEARCH.BCPL
 // Search a sorted vector with iterative binary search.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET BSEARCH(V, N, KEY) = VALOF
@@ -16,6 +20,7 @@ $( LET LO = 0
    RESULTIS -1
 $)
 
+// --- Program entry and expected output ---
 AND START() BE
 $( LET V = VEC 15
    WRITEF("DEMO: Binary search in a sorted vector*N")
