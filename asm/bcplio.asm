@@ -9,8 +9,9 @@
 * IOINIT:  R1 = original MVS EXEC parameter-list address as saved
 *          by BCPLMAIN. R14 = return linkage. Saves pointer locally.
 * IOFIN:   R14 = return linkage. Clears initialization flag/pointer.
-* BOTH:    Preserve R0-R15 including BCPL permanent registers;
-*          condition code not specified.
+* BOTH:    Preserve R0-R9, R11-R15. R10 is clobbered for the
+*          module's private base. Caller must save R10 if live.
+*          Condition code not specified.
 * STORAGE: Local static singleton state. Not reentrant.
 * IOINIT/IOFIN perform NO OPEN, PUT, GET or CLOSE in D1.
 *
@@ -22,17 +23,14 @@
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN
 *
-IOINIT   ST    10,IOSR10
-         BALR  10,0
+IOINIT   BALR  10,0
          USING *,10
          ST    1,IOPARM
          MVI   IOACTIVE,X'01'
-         L     10,IOSR10
          BR    14
          DROP  10
 *
-IOFIN    ST    10,IOSR10
-         BALR  10,0
+IOFIN    BALR  10,0
          USING *,10
          MVI   IOACTIVE,X'00'
          XC    IOPARM(4),IOPARM
@@ -41,7 +39,6 @@ IOFIN    ST    10,IOSR10
          DROP  10
 *
          DS    0F
-IOSR10   DC    F'0'
 IOPARM   DC    F'0'
 IOACTIVE DC    X'00'
          END   BCPLIO
