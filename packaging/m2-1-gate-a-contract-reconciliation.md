@@ -55,6 +55,34 @@ Directly inspected tracked `richards-bcpltape/bcplib/bcpl/syn`, `trn`, `cg`, and
 
 **Revised Gate A priority:** resolve DATE and LONGJUMP provider/usage contracts alongside termination semantics. Do not silently treat either historical name as implemented and do not presume an absent D6 native publication is automatically an implementation mandate.
 
+## Gate A completion review — compiler execution boundary (14 October 2026)
+
+The `native-compiler/mvs-resident-cambridge.md` record establishes that the **currently operating compiler is CAMBCOMP INTCODE executed by ICINT V19**. It is not yet a natively linked System/370 compiler. Therefore missing D6 services do **not** block today's 123-case compiler-to-native-application regression workflow; they become relevant when pursuing the later native compiler bootstrap.
+
+The historical native-compiler candidate is more than the three phases previously skimmed. `richards-bcpltape/bcplib/bcpl/bcpl` is the compiler's driver and contributes requirements beyond `syn`, `trn`, `cg`:
+
+| Candidate interface | Historical concrete use | D6 status / Gate C action |
+| --- | --- | --- |
+| G31 LEVEL and G32 LONGJUMP | `syn` FORMTREE and nested parser recoveries save `LEVEL()`, then syntax errors invoke `LONGJUMP(REC.P,REC.L)` | Neither is installed by D6's explicit publication block. **Treat as coupled language/runtime control semantics, not simply optional postmortem tracing.** Determine frame-level contract and CG370 support before any implementation. |
+| G29 DATE | `cg` CG370 invokes DATE and emits three words from returned structure into module prefix | No established D6 provider; required on this historical CG370 code-generation path. Reconstruct exact DATE return layout before implementing, do not substitute a generic printable date. |
+| G42 FINDINPUT / G41 FINDOUTPUT with stream names | Compiler driver requests `SYSIN`, `SYSPRINT`, `OCODE`, `CODE`, `SYSGO`; SYN opens nested GET streams | BCPLIO currently recognizes BCPIN/BCPINB input and SYSPRINT/BCPALT output. Actual compiler DD/stream strategy **cannot be presumed supported**. Understand compile/link/run pipeline and stream mapping before adding names or record modes. |
+| G39 FINDPARM, G11–17 character I/O, G33 WRAPOUTPUT, G46–47 close | Driver's option parsing, source reading, output flushing | Native equivalents exist and are regression-exercised for narrower usage; driver also uses PARMS G45, unestablished as a native publication. |
+| G40 APTOVEC, G85–88 byte/vector services | Compiler workspace, byte manipulation and nested work area | Native implementations installed and regression exercised; capacity against real compiler workload not yet demonstrated. |
+| G10 LOAD, G7/G9 UNLOAD variants, segment/file services | Driver `NEEDS "$LOAD$"`, optional overlays `LOADSEG("SYN"/"TRN"/"CG")`, `UNLOAD`, `LOADCODE` | Potential dependency of overlay/load-and-go modes, **not** proof normal nonoverlay native compiler requires complete historical loader. Bound by selected build mode. |
+| G3 ABORT, G36–37 logging, G78 MAPSTORE | Driver has an own ABORT routine, logging fallback if SYSPRINT unavailable, optional MAPPING | Secondary/error/optional behaviors; do not equate mere references with immediate runtime obligations. |
+
+This source inspection is a **candidate dependency crosswalk**, not complete name binding, feature exercise or a native compiler executable test. `LEVEL`/`LONGJUMP`, the output stream naming/format, and the DATE structure are the highest-priority historical semantics to establish **when scheduling native compiler self-hosting**. A future Gate C should first decide whether its intended payload is a driver/phase source module or a smaller independent compiler component; implementing all of the driver contract by default would be premature.
+
+### Gate A gate recommendations (bounded)
+
+- **B, targeted failure semantics:** record observed stack-overflow diagnostic **and current RC=0** using a dedicated D6 candidate probe; adopt a nonzero failure policy only after separate decision. Check the narrowly identified abnormal cleanup branches; no blanket exception subsystem.
+- **C, source contract study first:** focus G29 DATE representation, G31 LEVEL/G32 LONGJUMP semantics and driver stream needs; do not write native implementations before an agreed native compiler integration slice requires them. Record unsupported globals explicitly.
+- **D, documentation-only initially:** retain historical/minimal programmer observability, do not expand MEMSTAT or implement generalized BACKTRACE/MAPSTORE.
+- **E, executable integration:** use a representative separately compiled BCPL program with existing services, verify both resolved DEVOBJ objects and actual GO; **do not** claim the full Cambridge compiler is native.
+- **F, acceptance:** focused tests and the complete 00–123 regression panel after any code changes, independent builds/linker verification, explicit closing decision.
+
+**Gate A source-review recommendation:** planning/reconciliation can be accepted with historical compiler execution gaps clearly identified as conditional on a later native bootstrap slice. Acceptance of this audit is **not** acceptance of G29/G31/G32 or SYSIN/CODE/SYSGO runtime functionality. No assembler implementation has been authorized.
+
 ## Candidate work and priority
 
 1. **Gate B — termination/failure:** first establish historical and MVS completion-code policy for STKOVFL; develop a focused test that asserts diagnostic **and** RC on the installed D6 candidate. Confirm whether bypass paths leak observable buffered output or skip indispensable cleanup. Make a minimal correction only if the test/contract decision warrants it.
@@ -73,8 +101,8 @@ No re-modularization of the accepted service components, no BCPLSTACK extraction
 
 - [x] Verified accepted M2.0 object/module baseline against repository closure evidence.
 - [x] Reconciled principal M1.9 gaps with D6 source and M2.0 accepted execution; separated resolved, open, uncertain, intentional adaptations, deferred historical facilities and documentation drift.
-- [ ] Complete compiler-source call-site dependency crosswalk for the **next** Cambridge reconstruction stage.
-- [ ] Decide scope and acceptance probes for B–E based on actual blockers and testability.
+- [x] Completed bounded candidate crosswalk for historical SYN/TRN/CG and BCPL driver, explicitly distinguishing current ICINT compiler from prospective native compiler; exact ABI/provider validation transferred to Gate C.
+- [x] Proposed bounded B–E scope and focused acceptance probes; code changes remain conditional on separate gate decisions.
 - [ ] Record project-owner Gate A acceptance decision; **do not** infer acceptance from existence of this document.
 
 **Gate A remains OPEN.** This document is an initial source-grounded planning record, not an authorization to implement assembler changes.
