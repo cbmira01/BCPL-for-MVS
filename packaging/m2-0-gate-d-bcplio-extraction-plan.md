@@ -70,3 +70,7 @@ Resident staging: SOURCE(BCIOPRB) JOB 1324, JCL(BCIOPRB) JOB 1325; launcher JOB 
 ### D2.2 repeat JOB 1334: load-module dataset requires PDS member
 
 After JCL replacement JOB 1329/1330/1331, payload JOB **1334** again assembled ASMPROB RC=0000 but abended IEWL `LKED/SYSLMOD` with **IEC141I 013-14**, S013; GO bypassed. `RECFM=U` sequential temporary `&&PROGLM` was insufficient. Comparison with repository's working `jcl/build-blib-object.jcl` (`&&PREPLD(BLIBPREP)` with three-part SPACE) identified the needed *partitioned load module member* allocation. Commit `0b9622a18cc3916cbfc51682587aee4bdccb8c14` changes the probe SYSLMOD to `&&PROGLM(BCIOPRB)` with `SPACE=(1024,(20,10,1)),DISP=(NEW,PASS)`. Retest still pending; no success claimed.
+
+### D2.2 successful link-and-run checkpoint — JOB 1340
+
+After SYSLMOD PDS-member JCL correction, operator replaced resident JCL(BCIOPRB) via JOB 1335 removal, JOB 1336 compression, JOB 1337 put. Launcher JOB 1339, payload **JOB 1340**: ASMPROB IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, JOB RESULT SUCCESS / highest RC=0000, and `dspal submit` shell exit 0. This confirms the independent probe can assemble, link-edit and execute against DEVOBJ(BCPLIO). **D2.2 final acceptance pending** inspection of the job report for exact `BCPLIO D2 PROBE` SYSPRINT record and IEWL MAP/XREF resolving IOINIT/IOWRCH/IOFIN. This milestone does not authorize BCPLMAIN redirection or a production OBJ change.
