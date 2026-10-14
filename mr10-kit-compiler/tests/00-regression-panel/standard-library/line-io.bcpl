@@ -10,7 +10,9 @@ WRITELINE:127
 $)
 
 LET START() BE
-$( LET S = FINDINPUT("LINE")
+$(
+   WRITEF("TEST: Named input streams and line I/O helpers*N")
+ LET S = FINDINPUT("LINE")
    AND BUF = VEC 20
    AND N = 0
 
