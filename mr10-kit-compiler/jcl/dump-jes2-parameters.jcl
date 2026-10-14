@@ -1,3 +1,6 @@
+//* ============================================================
+//* DUMP-JES2-PARAMETERS: MVS JOB OR STORED JOB BODY
+//* ============================================================
 //DUMPJES  JOB (ACCT),'DUMP JES2 PARMS',CLASS=A,MSGCLASS=A,
 //             MSGLEVEL=(1,1)
 //DUMP     EXEC PGM=IEBPTPCH
