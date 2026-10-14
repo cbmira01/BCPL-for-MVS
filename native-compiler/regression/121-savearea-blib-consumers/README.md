@@ -12,18 +12,14 @@ nonempty loader/vector region lists, allocator membership, or complete
 historical USERSAVE fidelity. It links the historical BLIB object,
 not replacement stubs.
 
-## Validation gates
+## Current validation
+
+Test 121 passed against DEVOBJ(BCPLM7) in Gate E and in the complete native regression panel. Use explicit candidate selection for reproduction:
 
 ```sh
-git pull --ff-only
-BCPL_RUNTIME_PDS=0 tools/run-native-regression 121 --show-output
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 \
+tools/run-native-regression 121 --show-output
 ```
 
-**Do not run the PDS-default regression before production promotion**:
-the currently installed BCPLMAIN does not contain the extended G6
-backing and could perform out-of-bounds loads.
-
-After source-mode 121 passes, full source-mode regression may be run.
-Promote BCPLMAIN only after review and then run installed regression
-121 and installed-object acceptance. Record actual JES job numbers
-and return codes; no TK5 result was available when this test was added.
+Historical source-only and production promotion suggestions in earlier versions of this note are superseded. Production HERC02.BCPL.OBJ remains unchanged.
