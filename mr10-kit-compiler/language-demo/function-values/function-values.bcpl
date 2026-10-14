@@ -1,6 +1,10 @@
+// ======================================================================
+// FUNCTION VALUES: LANGUAGE EXAMPLE
+// ======================================================================
 // FUNCTION-VALUES.BCPL
 // Demonstrate selecting a routine as a value and calling it indirectly.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
 LET SQUARE(N) = N*N
@@ -8,6 +12,7 @@ AND DOUBLE(N) = N+N
 
 AND APPLY(F, N) = F(N)
 
+// --- Program entry and output ---
 AND START() BE
 $( LET F = SQUARE
    AND X = 7
