@@ -12,6 +12,7 @@ AND START() BE
 $( LET F = SQUARE
    AND X = 7
 
+   WRITEF("DEMO: Functions as values and indirect calls*N")
    WRITEF("SQUARE(%N) THROUGH F = %N*N", X, APPLY(F, X))
 
    F := DOUBLE
