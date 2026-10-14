@@ -35,7 +35,7 @@ On failure, the bootstrap runtime emits:
 STACK OVERFLOW
 ```
 
-and terminates normally through the existing FINISH/MVS return path.
+and, in M2.1 D7, terminates through the common cleanup path with MVS GO RC=0012. Earlier D6 completed with RC=0000.
 
 This output path is deliberately provisional. Historical BLIB reports stack
 overflow as system code X'0D3' and ultimately STOP(100); full ABORT integration
@@ -51,6 +51,7 @@ A successful Test 52 must:
 - assemble and link normally;
 - detect the stack boundary before uncontrolled storage corruption;
 - emit exactly `STACK OVERFLOW`;
+- require GO RC=0012 for the D7 candidate;
 - terminate through the controlled WIP overflow path rather than S0C4/S322.
 
 ## Status
@@ -79,3 +80,7 @@ The run crossed the 16 KiB WIP stack boundary through the controlled STKOVFL
 path, emitted `STACK OVERFLOW`, and avoided uncontrolled storage corruption
 or an MVS abend. Historical X'0D3'/ABORT/STOP(100) integration remains
 unreconstructed.
+
+## M2.1 D7 result (14 October 2026)
+
+The first complete D7 panel (00–123) exercised this checked-recursion overflow in payload **JOB 3101 RG052R**: ASMAP RC=0000, LKED RC=0000, **GO RC=0012**, and the expected `STACK OVERFLOW` record matched. The harness reported FAIL because this case still lacked the nonzero-RC fixture, not because the runtime malfunctioned. `expected-go-rc.txt` now specifies `0012`, consistently with regression 093. Re-run on DEVOBJ(BCPLM7) to obtain an automated PASS.
