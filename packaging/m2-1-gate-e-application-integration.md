@@ -1,0 +1,67 @@
+# M2.1 Gate E — Native Runtime Application Integration
+
+**Status: OPEN — 14 October 2026.** Gate D accepted and closed. Scope: native BCPL **applications**, not native compilation of compiler phases. Resident D7 candidate: `HERC02.BCPL.DEVOBJ(BCPLM7)`. Stable production `HERC02.BCPL.OBJ` MUST NOT be changed.
+
+## Goal
+
+Accept a usable, independently linked application-facing runtime by demonstrating (a) resident Cambridge INTCODE compilation of application source into System/370 assembler, (b) assembly of that application into its own control section, (c) linkage with preassembled, distinct MVS DEVOBJ runtime modules and historical BLIB, and (d) **actual MVS GO output/completion**, without using a combined inlined assembler runtime as substitute.
+
+The existing installed-object regression harness is the acceptance vehicle, not a second application loader.
+
+## Baseline and evidence at entry
+
+- D7 assembler/source `asm/bcplmain-d7-candidate.asm` staged to SOURCE(BCPLM7), assembled/installed by payload JOB 2989 (IFOX00 and IEBGENER RC=0000), integrated link by payload JOB 2992 (IEWL RC=0000).
+- Full D7 `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 tools/run-native-regression` completed **123 PASS / 0 FAIL / 1 expected SKIP 083 / 124 total**. This is accepted Gate B/Gate C/Gate D execution baseline, not a new Gate E run.
+- Existing regression 069 establishes independent BLIB object linkage in the historical experimental JOB 2425, and is PASS in the modern full D7 panel. The old `069/README.md` has stage-specific historical assertions including "not yet PASS" that are **stale** for the accepted D7 installed-object path. Treat modern harness execution and MVS JES output as authoritative over that obsolete stage status.
+- Existing tests 025 and 026 cover separate BCPL/library and native-through-global calls, with associated limits; 069 and 075 independently exercise historical BLIB. Tests 091–093 cover external BCPLAPT; 094–119 exercise BCPLIO; 121–123 exercise save-area/vector list cooperation.
+
+## Gate E acceptance profile: selected, then complete
+
+Use the **existing** D7 candidate environment consistently. Do not stage a new assembler, install objects, change JCL, compile compiler phases, or promote production OBJ.
+
+Run a small targeted integration panel of independent application concerns:
+
+| Regression | Application integration property asserted | Evidence boundary |
+| --- | --- | --- |
+| 025 | Separately compiled BCPL library procedure call | Proves tested call/link behavior; may use dedicated fixture mechanism, not automatically proof of production link-library behavior |
+| 026 | Separately assembled native function callable through global vector | Proves tested native-to-BCPL dispatch |
+| 069 | Historical BLIB linked as an independent object | Inspect actual generated JCL and IEWL map on this run; **do not infer** distinct CSECTs from PASS output alone |
+| 075 | Mixed WRITEF through historical BLIB object | Output and BLIB route |
+| 091 | APTOVEC across nested calls | Independent BCPLAPT public interface |
+| 101 | Two output destinations | Separate BCPLIO QSAM streams |
+| 119 | Output flushing on termination | FINISH/STOP stream lifecycle |
+| 121 | SAVEAREA / historical BLIB consumers | G6 collaboration at documented limited scope |
+
+Each test must be PASS with assembler and linkage steps normal and expected GO output. In particular, retain the JCL/JES report for test 069 and inspect for **application**, **BCPLMAIN**, **BLIB**, **BCPLIO**, **BCPLMEM**, **BCPLBYTE** and **BCPLAPT** module inclusion or link resolution as indicated by the job's linker listing. Do not presume all seven CSECTs necessarily appear in every test or claim automatic completeness of unused services.
+
+## Suggested operator execution
+
+From repository root:
+
+```sh
+git pull --ff-only
+
+for n in 25 26 69 75 91 101 119 121; do
+  BCPL_RUNTIME_PDS=1 \
+  BCPL_RUNTIME_LIBRARY=DEVOBJ \
+  BCPL_RUNTIME_CANDIDATE=1 \
+  BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 \
+  tools/run-native-regression "$n" --show-output || break
+done
+```
+
+On successful focused tests, run the complete unchanged D7 panel (same four environment variables). Expected aggregate: **123 PASS, 0 FAIL, one source-only SKIP 083**.
+
+Test 069 link map and exact GO results are separately important; if the runner prints a job number, use `tools/job-summary N` and `tools/dump-report-for-job N` to retain evidence. If no job number appears in the normal output, inspect `workarea/native-regression/logs/069-independent-blib-object.log` or the per-test workarea report.
+
+## Gate E exit criteria
+
+- [x] Existing source/architectural and accepted D7 integration evidence reviewed.
+- [x] Explicit distinction between BLIB independent-object link/edit and an inlined compiler source combiner established.
+- [x] Executable Gate E integration checks and non-production command path prepared.
+- [ ] Owner executes focused D7 candidate application integration panel; record per-case result and job evidence for 069 link map.
+- [ ] Owner executes post-check full D7 regression panel, or explicitly determines why earlier identical binary evidence suffices; record which.
+- [ ] Correct any reproducible application/linkage regression with separate evidence and permission; no speculative runtime refactoring.
+- [ ] Owner accepts and closes Gate E. Transition to Gate F versioned contract, RC register and regression coverage matrix.
+
+**Gate E remains OPEN pending operator MVS execution and explicit acceptance.** No resident DEVOBJ or production objects were changed by this plan.
