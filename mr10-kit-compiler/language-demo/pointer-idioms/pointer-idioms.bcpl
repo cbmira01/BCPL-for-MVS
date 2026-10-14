@@ -1,8 +1,13 @@
+// ======================================================================
+// POINTER IDIOMS: LANGUAGE EXAMPLE
+// ======================================================================
 // POINTER-IDIOMS.BCPL
 // Demonstrate BCPL word pointers and ! indexing through an alias.
 
+// --- Shared global slots ---
 GLOBAL $( START:1; WRITEF:76 $)
 
+// --- Program entry and output ---
 LET START() BE
 $( LET V = VEC 4
    LET P = V
