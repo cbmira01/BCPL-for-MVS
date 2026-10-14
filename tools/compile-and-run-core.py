@@ -37,11 +37,11 @@ MAKE_ASM = ROOT / "tools" / "make-asm-job.py"
 PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
 WORKAREA = ROOT / "workarea"
 
-SYNI = ROOT / "mr10-kit-compiler" / "intcode" / "syni.int"
-TRNI = ROOT / "mr10-kit-compiler" / "intcode" / "trni.int"
-CGI = ROOT / "mr10-kit-compiler" / "intcode" / "cgi.int"
-BLIBI = ROOT / "mr10-kit-compiler" / "intcode" / "blibi.int"
-ICLIB = ROOT / "mr10-kit-compiler" / "intcode" / "iclib.int"
+SYNI = ROOT / "mr10-kit-compiler" / "source" / "syni.int"
+TRNI = ROOT / "mr10-kit-compiler" / "source" / "trni.int"
+CGI = ROOT / "mr10-kit-compiler" / "source" / "cgi.int"
+BLIBI = ROOT / "mr10-kit-compiler" / "source" / "blibi.int"
+ICLIB = ROOT / "mr10-kit-compiler" / "source" / "iclib.int"
 
 DEFAULT_READER_HOST = "127.0.0.1"
 DEFAULT_READER_PORT = 3505
