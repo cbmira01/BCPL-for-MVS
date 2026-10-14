@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CURRENT_FILE="$REPO_ROOT/config/CURRENT"
+CURRENT_FILE="$REPO_ROOT/mr10-kit-compiler/asm/CURRENT"
 
 if [ ! -f "$CURRENT_FILE" ]
 then
@@ -25,7 +25,7 @@ case "$NAME" in
         ;;
 esac
 
-PATHNAME="$REPO_ROOT/asm/$NAME"
+PATHNAME="$REPO_ROOT/mr10-kit-compiler/asm/$NAME"
 
 if [ ! -f "$PATHNAME" ]
 then
