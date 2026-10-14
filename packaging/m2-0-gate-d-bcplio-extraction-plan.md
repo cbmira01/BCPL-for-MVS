@@ -281,3 +281,7 @@ Added `asm/bcplio-replacement-probe.asm` and `jcl/bcplio-replacement-probe.jcl` 
 ### D3 IOREPL standalone probe execution PASS — JOB 1793
 
 Operator staged SOURCE(BCRPPRB) JOB 1789 and JCL(BCRPPRB) JOB 1790; launcher JOB 1792, payload **JOB 1793**. ASMPROB IFOX00 RC=0000, zero flagged statements; LKED IEWL RC=0000; GO RC=0000; JOB SUCCESS. This accepts the probe's internal behavioral assertions (IOREPL invalid length 133 returns 8, valid replacement returns 0, IOSTAT 0, alternate selection preserved), and confirms successful IOFIN. **Output text inspection still pending:** expected `STACK OVERFLOW` and `ALT INTACT`, absent `OLD PRIMARY MUST NOT APPEAR`. Integrated BCPLMAIN STKOVFL->IOREPL path is not yet directly asserted by this independent probe. D3/Gate D open; production OBJ untouched.
+
+### D3 IOREPL GO record inspection ACCEPTED — JOB 1793
+
+Operator inspected `tools/dump-report-for-job 1793`: assembler listing lines 179/278–282 echo all source literals, but actual emitted GO records are **line 408 `STACK OVERFLOW`** and **line 410 `ALT INTACT`**. The superseded `OLD PRIMARY MUST NOT APPEAR` does not appear as an emitted GO record (its listing occurrence at line 278 is not output). With JOB 1793 ASMPROB/LKED/GO RC=0000, **standalone IOREPL state-and-record checkpoint ACCEPTED**. The next outstanding verification is integrated BCPLMAIN STKOVFL-to-IOREPL handling; do not conflate standalone with integrated coverage. Production OBJ untouched.
