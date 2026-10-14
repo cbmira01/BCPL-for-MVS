@@ -66,3 +66,7 @@ Added `asm/bcplio-output-probe.asm` (BCIOPRB standalone assembler entry) and `jc
 ### D2.2 first execution — JOB 1328 (14 October 2026)
 
 Resident staging: SOURCE(BCIOPRB) JOB 1324, JCL(BCIOPRB) JOB 1325; launcher JOB 1327; payload **JOB 1328**. ASMPROB IFOX00 RC=0000, zero assembler diagnostic severity. LKED did not link: IEC141I **013-14** at `LKED/SYSLMOD`, followed by S013, so GO was flushed. Root cause in probe JCL: a freshly allocated temporary load-module dataset lacked an appropriate undefined-record DCB. Updated `jcl/bcplio-output-probe.jcl` in commit `9f05b49ce8eb468987c7a37fc389c10b245dc174` with `SPACE=(TRK,(5,5)),DCB=(RECFM=U,BLKSIZE=32760)` for `&&PROGLM`. This fixes the identified allocation mismatch; actual IEWL and GO success are **not yet proven**. Repeat after restaging JCL; no modification of BCPLIO object or production OBJ.
+
+### D2.2 repeat JOB 1334: load-module dataset requires PDS member
+
+After JCL replacement JOB 1329/1330/1331, payload JOB **1334** again assembled ASMPROB RC=0000 but abended IEWL `LKED/SYSLMOD` with **IEC141I 013-14**, S013; GO bypassed. `RECFM=U` sequential temporary `&&PROGLM` was insufficient. Comparison with repository's working `jcl/build-blib-object.jcl` (`&&PREPLD(BLIBPREP)` with three-part SPACE) identified the needed *partitioned load module member* allocation. Commit `0b9622a18cc3916cbfc51682587aee4bdccb8c14` changes the probe SYSLMOD to `&&PROGLM(BCIOPRB)` with `SPACE=(1024,(20,10,1)),DISP=(NEW,PASS)`. Retest still pending; no success claimed.
