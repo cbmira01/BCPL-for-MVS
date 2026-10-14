@@ -124,3 +124,9 @@ Operator synchronized Git through a4e4ee8 and staged:
 - Payload JOB **2992 D7LINK**: LKED IEWL RC=0000.
 
 These prove assembled/installed DEVOBJ(BCPLM7) and successful integration link-edit. No D7 GO has yet been reported. Proceed to focused regression 093 against BCPLM7 (expect STACK OVERFLOW and GO RC=0012), followed by normal FINISH/STOP cases and full panel before Gate B closure. Stable BCPLM6 and production OBJ remain outside the write targets.
+
+## D7 regression harness block and correction — 14 October 2026
+
+Owner attempted D7 candidate regression 093 after successful D7 assembly/link. Compiler payload JOB **2993 RG093C** completed ICINT19 COMP RC=0000 and SVCODE IEBGENER RC=0000, but the host regression builder rejected BCPLM7 **before the native assembler/link/GO job was submitted**, reporting `candidate member must be BCPLM3, BCPLM4, BCPLM5 or BCPLM6`. No D7 runtime failure or GO result is implied.
+
+Cause: `tools/checks/prepare-runtime-pds-regression.py` contained the outdated candidate allowlist. Commit `f643f6b` extends it to BCPLM7 while retaining DEVOBJ-only candidate restrictions and explicit opt-in. Next action: rerun 093 against DEVOBJ(BCPLM7); check returned GO RC=0012 and diagnostic. No resident source/object rebuild is needed.
