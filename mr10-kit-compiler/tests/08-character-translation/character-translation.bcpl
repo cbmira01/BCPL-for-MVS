@@ -1,7 +1,11 @@
+// ======================================================================
+// CHARACTER TRANSLATION: BCPL RECONSTRUCTION PROBE
+// ======================================================================
 // CHARACTER-TRANSLATION.BCPL
 // Exercise historically valid BCPL spellings that contain backslash,
 // then report character codes returned by RDCH from a named MVS input DD.
 
+// --- Global slots ---
 GLOBAL $(
 START:1
 SELECTINPUT:11
@@ -13,6 +17,7 @@ $)
 
 MANIFEST $( ENDSTREAMCH=-1 $)
 
+// --- Probe entry and output ---
 LET START() BE
 $( LET LOR  = TRUE \/ FALSE
    AND LAND = TRUE /\ TRUE
