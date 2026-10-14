@@ -1,7 +1,12 @@
-# MR10 Kit Compiler — Assembler Sources
+# ICINT assembler sources
 
-System/370 assembler source files for the reconstructed MR10 INTCODE interpreter (ICINT), versions V12 through V19, including the V14 trace variant.
+ICINT runs BCPL programs in the historical INTCODE format on MVS 3.8.
 
-These are interpreter milestones, retained with their original contents during the M3 repository relocation. Current selection remains governed by `mr10-kit-compiler/asm/CURRENT` and `tools/current-icint` through `tools/current-icint`; the tooling paths were updated during M3.
+| File | Use |
+| --- | --- |
+| `icintv12.asm`–`icintv18.asm` | Saved stages of the interpreter |
+| `icintv14-trace.asm` | Diagnostic variant |
+| `icintv19.asm` | Version installed as `ICINT19` in MR10KIT |
+| `CURRENT` | Selects the default interpreter for host tools |
 
-The native BCPLMAIN runtime and other native application modules remain in repository-root `asm/`.
+Run `tools/current-icint` from the repository root to see the host-tool default. The installed MVS `ICINT19` is a separate choice. Native BCPL runtime assembler is in the repository-root `asm/` directory.
