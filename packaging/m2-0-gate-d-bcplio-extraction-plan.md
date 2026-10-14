@@ -225,3 +225,7 @@ Operator synchronized corrected SOURCE(BCPLIO) using JOB 1439 remove, 1440 compr
 ### D3 combined BCPLMAIN candidate assembly ACCEPTED — JOB 1449
 
 Operator staged SOURCE(BCPLM3) JOB 1445 and JCL(BLDD3MN) JOB 1446. Launcher JOB 1448, payload **JOB 1449**: ASMMMAIN IFOX00 RC=0000, PUTMAIN IEBGENER RC=0000; assembler flagged statements 0, severity 0. Combined with JOB 1444 successful BCPLIO ASMIO/PUTIO, both modules now independently assemble and reside in DEVOBJ as BCPLM3 and BCPLIO, leaving canonical BCPLMAIN DEVOBJ and production OBJ unchanged. **Combined D3 assembler/installation checkpoint accepted.** The candidate has not yet been linked with the other runtime modules or executed. Next verify JCL(D3LINK) against DEVOBJ-only and inspect IEWL map and unresolved references. Gate D/D3 open.
+
+### D3 combined candidate integrated link-edit — JOB 1453 PASSED
+
+Operator installed JCL(D3LINK) via JOB 1450 and submitted launcher JOB 1452, payload **JOB 1453**. LKED IEWL RC=0000; job SUCCESS, highest RC=0000. Link-only JCL explicitly includes DEVOBJ(BCPLM3), DEVOBJ(BCPLIO), DEVOBJ(BCPLMEM), DEVOBJ(BCPLBYTE), DEVOBJ(BCPLAPT) and DEVOBJ(BLIB), without a GO step or production OBJ. **Integrated link-edit checkpoint PASSED.** IEWL MAP/XREF and potential LET-tolerated unresolved references still require inspection before claiming complete symbol-resolution acceptance; no integrated runtime execution yet. D3 and Gate D remain open.
