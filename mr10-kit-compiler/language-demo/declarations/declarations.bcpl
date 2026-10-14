@@ -8,6 +8,7 @@ $( LET A = 10
    AND B = 20
    AND C = 30
 
+   WRITEF("DEMO: Local declarations and nested scope*N")
    WRITEF("OUTER A=%N B=%N C=%N*N", A, B, C)
 
    $( LET B = 200
