@@ -62,3 +62,9 @@ Operator report following the corrected generator:
 - **Allocation gate PASS.** Content population, member inspection and binary object migration remain pending. Older datasets are preserved.
 
 Next operator commands: `tools/dspal populate all --dry-run` and, if clean, `tools/dspal populate all`. Save population job evidence before accepting the population gate.
+
+## 14 October 2026 — population inventory gate
+
+Operator ran `tools/dspal ls` after population. The member inventory matches all **142** explicit manifest mappings across **11** populated PDSes: MR10KIT 118 members in 7 PDSes; CAMBRIDG 6 members in 2 PDSes; NATIVE 18 members in 2 PDSes. All other 12 datasets correctly show `(empty)`, including object and load libraries.
+
+**Population inventory gate: PASS.** This is member-name/availability evidence only; full contents have not been independently round-trip compared to Git. New native OBJ/DEVOBJ remain empty, while the old runtime object libraries must be retained until migration and regression acceptance. Do not infer complete M3 closure or delete historical datasets.
