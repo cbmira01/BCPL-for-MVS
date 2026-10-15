@@ -32,7 +32,7 @@ import sys
 import textwrap
 import time
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MAKE_ASM = ROOT / "tools" / "make-asm-job.py"
 PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
 WORKAREA = ROOT / "workarea"
