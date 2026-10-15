@@ -95,6 +95,7 @@ def main():
         raise RuntimeError("missing canonical files: " + ", ".join(missing))
     lost_exec = [p for old, p in DEST.items()
                  if (ROOT / "tools" / old).is_file()
+                 and not old.endswith(".py")
                  and os.access(ROOT / "tools" / old, os.X_OK)
                  and not os.access(ROOT / p, os.X_OK)]
     if lost_exec:
