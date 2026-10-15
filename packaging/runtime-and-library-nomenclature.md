@@ -118,6 +118,21 @@ For **user/site packages**, a central Cambridge registry cannot realistically al
 
 A header makes names visible to the **compiler**. IEWL includes chosen **objects**. The **startup registrar** installs associated addresses. Those are distinct phases. Linking an optional object alone does not guarantee global registration; importing a header alone does not guarantee the extension is available.
 
+### Optional package dispatch and public header conventions
+
+The preferred design under [Milestone Runtime Extensions](milestone-runtime-extensions.md) is **one public global-vector slot for the dispatcher of an optional package**, not one slot per operation. Each package then owns a separate, permanently numbered **opcode namespace**. **Opcode 0** should be the common side-effect-free capability/version query. These are provisional R.0 design choices, not implementation claims.
+
+A package header can publish both its assigned dispatcher slot and its local opcode constants:
+
+```bcpl
+GLOBAL $( TIMESVC:200 $)          // illustrative; not an allocation
+MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2 $)
+```
+
+The proposed query returns a **caller-owned numeric capability descriptor**, not a free-form string or unmanaged function pointer. A shared, versioned descriptor prefix would contain query-format version, package API major/minor, required word count, supported-operation bitmap and feature flags. The call pattern `TIMESVC(0, info, capacity_words)` and size probe `TIMESVC(0,0,0)` are candidates requiring native ABI verification. A missing/unlinked extension cannot be queried safely.
+
+The **Global Number Registry** reserves the package's dispatcher slot; a **package API registry/header** defines stable opcode numbers. Generated BCPL headers and assembler definitions should derive from the authoritative assignments rather than silently diverging. Private implementations and optional future source-level helper wrappers do not require new global slots. User/Site Libraries use the same arrangement with a documented local-number and collision policy.
+
 ## 7. Inclusion policy and runtime startup
 
 | Scope | Inclusion rule |
