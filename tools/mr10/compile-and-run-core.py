@@ -826,8 +826,12 @@ def main(argv=None) -> int:
     try:
         installed_load = None
         if args.installed_icint:
+            # The positional grammar also supports legacy INTERPRETER SOURCE.
+            # In installed mode, the second positional is the first +MODULE.
             if args.source is not None:
-                raise ValueError("--installed-icint mode takes a BCPL source, not an interpreter argument")
+                if not args.source.startswith("+") or args.source == "+":
+                    raise ValueError("installed mode requires SOURCE followed by +MODULE arguments")
+                args.modules.insert(0, args.source)
             if args.interpreter is None:
                 raise ValueError("BCPL source is required")
             args.source = args.interpreter
