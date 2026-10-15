@@ -16,6 +16,8 @@ The canonical MVS dataset manifest is [`config/dspal.yaml`](../config/dspal.yaml
 
 [Milestone Runtime Extensions](milestone-runtime-extensions.md) (R.0–R.3) proposes explicit IEWL selection of optional modules and general startup registration of their BCPL global-vector entries. It records the present BCPLMAIN/BLIB evidence, collision/absence considerations, and compatibility gates. **Proposed, not implemented; not a prerequisite for M4.** This is the shared registration foundation envisaged for the optional QSAM, Decimal Arithmetic and Date/Time modules.
 
+The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The actual ABI and global/opcode assignments remain subject to R.0 tests and registry approval.
+
 ## Proposed optional native I/O milestone
 
 [Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. It is **proposed, not started**, and is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
