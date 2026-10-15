@@ -8,6 +8,10 @@ Create an optional, understandable native MVS 3.8J QSAM extension, provisionally
 
 Why now: 124 native regression cases already exercise a substantial compiler/runtime baseline (the recorded M3 acceptance was 123 PASS, 0 FAIL, 1 expected SKIP). This is a bounded end-user interoperability demonstration: assembler procedure linkage, global-vector publication, handles, errors, fixed/variable record handling and SYSOUT, without affecting M4's self-hosting work.
 
+## Optional module integration dependency
+
+The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) defines shared link-edit selection and global-vector registration. Once accepted, BCPLQSAM should use it instead of implementing an independent registry. Q.0 may proceed with ABI exploration before that work, but automatic optional registration needs a separately verified shared mechanism. Neither milestone blocks M4.
+
 ## Non-negotiable architecture
 
 - Keep `BCPLMAIN` as coordinator and preserve `BCPLIO` character-stream semantics; do not rewrite BCPLIO to depend on QSAM. Add a separate, selectively linkable `BCPLQSAM` and, only if necessary, minimal startup/global registration integration consistent with the *actual* ABI.
