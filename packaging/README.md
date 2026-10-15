@@ -12,6 +12,13 @@ The canonical MVS dataset manifest is [`config/dspal.yaml`](../config/dspal.yaml
 
 [Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. It is **proposed, not started**, and is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
+## Proposed optional numeric and clock milestones
+
+- [Milestone Decimal Arithmetic](milestone-decimal-arithmetic.md): packed-decimal fixed-point arithmetic and business-record interoperability, proposed D.0–D.4.
+- [Milestone Date and Time Services](milestone-date-and-time-services.md): Gregorian calendar helpers and MVS clock adapter, proposed T.0–T.4.
+
+Both are optional, proposed, and independent of M4 and Milestone QSAM.
+
 ## Dataset ownership
 
 | Namespace | Current status | Authority |
