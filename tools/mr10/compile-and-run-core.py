@@ -48,6 +48,7 @@ DEFAULT_READER_PORT = 3505
 DEFAULT_TIMEOUT = 180.0
 DEFAULT_POLL = 0.25
 MAX_MODULES = 99
+INSTALLED_LOAD: str | None = None
 
 MVS_NAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
 RESERVED_COMPILE_DDNAMES = {
@@ -304,10 +305,13 @@ def runtime_step(
     intin_parts: list[tuple[str, str]],
     extra_dds: str = "",
 ) -> str:
+    installed = INSTALLED_LOAD is not None
     return (
         jcl_banner(title, *details)
-        + f"//{step:<8} EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)\n"
-        + "//STEPLIB  DD  DSN=&&GOSET,DISP=(OLD,PASS)\n"
+        + (f"//{step:<8} EXEC PGM=ICINT19,REGION=256K,TIME=(,30),COND=(4,LT)\n"
+           if installed else f"//{step:<8} EXEC PGM=RUNMOD,REGION=256K,COND=(4,LT)\n")
+        + (f"//STEPLIB  DD  DSN={INSTALLED_LOAD},DISP=SHR\n"
+           if installed else "//STEPLIB  DD  DSN=&&GOSET,DISP=(OLD,PASS)\n")
         + "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)\n"
         + intin_concat(intin_parts)
         + extra_dds
@@ -324,14 +328,18 @@ def build_deck(
     named_dds: list[tuple[str, Path]],
     save_ocode: bool = False,
     save_intcode: bool = False,
+    installed_load: str | None = None,
 ) -> str:
-    make_asm = load_make_asm()
-    asm_source = make_asm.check_source(interpreter)
-    entry = (make_asm.source_entry(asm_source) or "ICINT").upper()
-    if not MVS_NAME.fullmatch(entry):
-        raise ValueError(
-            f"cannot infer valid interpreter entry point from {interpreter}"
-        )
+    global INSTALLED_LOAD
+    INSTALLED_LOAD = installed_load
+    if installed_load is None:
+        if interpreter is None:
+            raise ValueError("interpreter source is required without --installed-icint")
+        make_asm = load_make_asm()
+        asm_source = make_asm.check_source(interpreter)
+        entry = (make_asm.source_entry(asm_source) or "ICINT").upper()
+        if not MVS_NAME.fullmatch(entry):
+            raise ValueError(f"cannot infer valid interpreter entry point from {interpreter}")
 
     bcpl_sources = [
         read_ascii_records(source, f"BCPL source {source.name}")
@@ -352,14 +360,17 @@ def build_deck(
         f"//{job_name:<8} JOB (BCPL),'BCPL COMPILE RUN',CLASS=A,MSGCLASS=A,\n"
         "//             MSGLEVEL=(1,1)\n"
         + job_map(
-            interpreter,
+            interpreter if interpreter is not None else Path("MR10_LOAD(ICINT19)"),
             sources,
             listing,
             save_ocode,
             save_intcode,
             named_dds,
         )
-        + jcl_banner(
+    )
+    if installed_load is None:
+        deck += (
+          jcl_banner(
             "PHASE 1 - ASSEMBLE ICINT",
             f"SOURCE: {interpreter.name}",
             f"PROFILE: {listing.upper()}",
@@ -395,7 +406,11 @@ def build_deck(
         + "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))\n"
         + "//SYSPRINT DD  SYSOUT=*\n"
         + "//*\n"
-    )
+        )
+    else:
+        deck += jcl_banner("USE INSTALLED MR10 INTERPRETER",
+                           f"LOAD LIBRARY: {installed_load}",
+                           "PROGRAM: ICINT19; NO ASM OR LKED STEP")
 
     deck += stage_step("STGSYNI", "STAGE COMPILER PHASE - SYNI", "&&SYNI", syni)
     deck += stage_step("STGTRNI", "STAGE COMPILER PHASE - TRNI", "&&TRNI", trni)
@@ -717,10 +732,12 @@ def make_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "interpreter",
-        help="IFOX ICINT assembler source (normally under mr10-kit-compiler/asm/)",
+        "--installed-icint", metavar="LOGICAL",
+        help="use ICINT19 in dspal logical load library (e.g. MR10_LOAD); omit interpreter source",
     )
-    parser.add_argument("source", help="primary BCPL source module")
+    parser.add_argument("interpreter", nargs="?",
+                        help="IFOX ICINT assembler source (legacy mode)")
+    parser.add_argument("source", nargs="?", help="primary BCPL source module")
     parser.add_argument(
         "modules",
         nargs="*",
@@ -803,7 +820,32 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        interpreter = resolve_repo_path(args.interpreter)
+        installed_load = None
+        if args.installed_icint:
+            if args.source is not None:
+                raise ValueError("--installed-icint mode takes a BCPL source, not an interpreter argument")
+            if args.interpreter is None:
+                raise ValueError("BCPL source is required")
+            args.source = args.interpreter
+            args.interpreter = None
+            from importlib.util import spec_from_file_location, module_from_spec
+            core_path = ROOT / "tools" / "datasets" / "dspal-core.py"
+            spec = spec_from_file_location("dspal_core_installed", core_path)
+            if spec is None or spec.loader is None:
+                raise RuntimeError(f"cannot load {core_path}")
+            dcore = module_from_spec(spec)
+            spec.loader.exec_module(dcore)
+            cfg = dcore.load_config()
+            logical = args.installed_icint.upper()
+            if logical != "MR10_LOAD":
+                raise ValueError("--installed-icint currently requires MR10_LOAD")
+            lib = cfg["datasets"][logical]
+            if str(lib.get("type", "")).lower() != "loadlib":
+                raise ValueError(f"{logical} is not a load library")
+            installed_load = dcore.full_dsn(cfg, lib)
+        elif args.interpreter is None or args.source is None:
+            raise ValueError("interpreter assembler and BCPL source arguments are required")
+        interpreter = resolve_repo_path(args.interpreter) if args.interpreter else None
         primary = resolve_repo_path(args.source)
         modules = parse_modules(args.modules)
         named_dds = parse_named_dds(args.dd)
@@ -811,7 +853,7 @@ def main(argv=None) -> int:
 
         if len(sources) > MAX_MODULES:
             raise ValueError(f"at most {MAX_MODULES} BCPL modules are supported")
-        if not interpreter.is_file():
+        if interpreter is not None and not interpreter.is_file():
             raise ValueError(f"interpreter does not exist: {interpreter}")
         for source in sources:
             if not source.is_file():
@@ -857,6 +899,7 @@ def main(argv=None) -> int:
             named_dds=named_dds,
             save_ocode=args.save_ocode,
             save_intcode=args.save_intcode,
+            installed_load=installed_load,
         )
 
         jcl_path = (
