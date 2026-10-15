@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+"""Run a contiguous range of native BCPL regressions."""
+
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+REGRESSION = ROOT / "native-compiler" / "regression"
+RUNNER = REGRESSION / "run-test-mvs.sh"
+LOG_DIR = ROOT / "workarea" / "native-regression" / "logs"
+CASE_RE = re.compile(r"^(\d{2,3})-")
+
+
+def case_id(test_no: int) -> str:
+    if not 0 <= test_no <= 999:
+        raise ValueError(f"test number out of range: {test_no}")
+    width = 2 if test_no <= 52 else 3
+    return f"{test_no:0{width}d}"
+
+
+def number(value: str) -> int:
+    if not value.isdigit():
+        raise argparse.ArgumentTypeError("test numbers must be decimal integers")
+    return int(value, 10)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="run-native-regression",
+        description=(
+            "Run native BCPL regressions through the MVS-resident Cambridge compiler."
+        ),
+    )
+    parser.add_argument(
+        "start",
+        nargs="?",
+        type=number,
+        default=None,
+        help="single test number, or first test when END is also supplied",
+    )
+    parser.add_argument(
+        "end",
+        nargs="?",
+        type=number,
+        help="last test number for an inclusive range",
+    )
+    parser.add_argument(
+        "--show-output",
+        action="store_true",
+        help="show each test's BCPL output; on mismatch also show the native job report",
+    )
+    parser.add_argument(
+        "--check-numbering",
+        action="store_true",
+        help="check the legacy/two-digit to three-digit numbering boundary and exit",
+    )
+    return parser.parse_args()
+
+
+def discover() -> tuple[dict[int, str], int]:
+    cases: dict[int, str] = {}
+    if not REGRESSION.is_dir():
+        raise RuntimeError(f"missing regression directory: {REGRESSION}")
+
+    for path in sorted(REGRESSION.iterdir()):
+        if not path.is_dir():
+            continue
+        match = CASE_RE.match(path.name)
+        if not match:
+            continue
+        raw_id = match.group(1)
+        test_no = int(raw_id, 10)
+        expected_id = case_id(test_no)
+        if raw_id != expected_id:
+            raise RuntimeError(
+                f"noncanonical test directory {path.name!r}: "
+                f"test {test_no} must use prefix {expected_id}-"
+            )
+        if test_no in cases:
+            raise RuntimeError(f"duplicate test number {case_id(test_no)}")
+        cases[test_no] = path.name
+
+    if not cases:
+        raise RuntimeError("no numbered native regression tests found")
+    return cases, max(cases)
+
+
+def check_numbering() -> int:
+    expected = {
+        0: "00",
+        7: "07",
+        52: "52",
+        53: "053",
+        99: "099",
+        100: "100",
+        999: "999",
+    }
+    for test_no, wanted in expected.items():
+        actual = case_id(test_no)
+        if actual != wanted:
+            print(
+                f"numbering check failed: {test_no} -> {actual}, expected {wanted}",
+                file=sys.stderr,
+            )
+            return 1
+
+    print("native regression numbering: OK")
+    for test_no in (52, 53, 99, 100, 999):
+        ident = case_id(test_no)
+        job_base = f"RG{test_no:03d}"
+        entry = f"BCRG{test_no:04d}"
+        if len(job_base + "C") > 8 or len(job_base + "R") > 8:
+            print(f"MVS job-name overflow at test {test_no}", file=sys.stderr)
+            return 1
+        if len(entry) > 8:
+            print(f"assembler entry-name overflow at test {test_no}", file=sys.stderr)
+            return 1
+        print(
+            f"  {test_no:>3} -> dir {ident}-*; "
+            f"jobs {job_base}C/{job_base}R; entry {entry}"
+        )
+    return 0
+
+
+def main() -> int:
+    args = parse_args()
+
+    if args.check_numbering:
+        if args.start is not None or args.end is not None:
+            print(
+                "run-native-regression: --check-numbering takes no test range",
+                file=sys.stderr,
+            )
+            return 64
+        return check_numbering()
+
+    if not RUNNER.is_file():
+        print(f"run-native-regression: missing runner: {RUNNER}", file=sys.stderr)
+        return 66
+
+    try:
+        cases, highest = discover()
+    except (OSError, RuntimeError) as exc:
+        print(f"run-native-regression: {exc}", file=sys.stderr)
+        return 65
+
+    if args.start is None:
+        start = 0
+        end = highest
+    elif args.end is None:
+        start = args.start
+        end = args.start
+    else:
+        start = args.start
+        end = args.end
+
+    if start < 0 or end < 0 or start > end:
+        print(
+            f"run-native-regression: invalid range {start}..{end}",
+            file=sys.stderr,
+        )
+        return 64
+    if end > highest:
+        print(
+            f"run-native-regression: requested end {end} "
+            f"exceeds current test {highest}",
+            file=sys.stderr,
+        )
+        return 64
+
+    missing = [test_no for test_no in range(start, end + 1) if test_no not in cases]
+    if missing:
+        for test_no in missing:
+            print(
+                f"run-native-regression: missing test {case_id(test_no)} "
+                "in requested range",
+                file=sys.stderr,
+            )
+        return 65
+
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+    total = end - start + 1
+    passed = 0
+    failed = 0
+    skipped = 0
+    installed_pds = os.environ.get("BCPL_RUNTIME_PDS") == "1"
+
+    print(
+        f"NATIVE REGRESSION  {case_id(start)}..{case_id(end)}  "
+        f"({total} tests)"
+    )
+
+    for test_no in range(start, end + 1):
+        nn = case_id(test_no)
+        case_name = cases[test_no]
+        log = LOG_DIR / f"{case_name}.log"
+
+        if installed_pds and test_no == 83:
+            skipped += 1
+            print(f"SKIP  {nn}  {case_name} (source-only instrumentation)", flush=True)
+            continue
+
+        print(f"RUN   {nn}  {case_name}", flush=True)
+        with log.open("w", encoding="utf-8") as handle:
+            env = None
+            if args.show_output:
+                env = os.environ.copy()
+                env["NATIVE_REGRESSION_SHOW_OUTPUT"] = "1"
+            proc = subprocess.run(
+                ["bash", str(RUNNER), str(test_no)],
+                cwd=ROOT,
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=env,
+            )
+
+        # Always relay captured BCPL output to the WSL console.
+        lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+        shown = False
+        for heading in ("=== BCPL output ===", "=== Output mismatch ==="):
+            if heading in lines:
+                start_index = lines.index(heading)
+                end_index = len(lines)
+                for index in range(start_index + 1, len(lines)):
+                    if lines[index].startswith("===") and index > start_index:
+                        end_index = index
+                        break
+                print(heading)
+                for line in lines[start_index + 1:end_index]:
+                    print(line)
+                shown = True
+                break
+
+        if not shown and proc.returncode != 0:
+            print("=== Failure log ===")
+            for line in lines:
+                print(line)
+
+        if proc.returncode == 0:
+            passed += 1
+            print(f"PASS  {nn}  {case_name}")
+        else:
+            failed += 1
+            shown_log = log.relative_to(ROOT)
+            print(
+                f"FAIL  {nn}  {case_name} "
+                f"(rc={proc.returncode}; log={shown_log})"
+            )
+
+    print()
+    print("NATIVE REGRESSION COMPLETE")
+    print(f"PASS  {passed}")
+    print(f"FAIL  {failed}")
+    print(f"SKIP  {skipped}")
+    print(f"TOTAL {total}")
+
+    return 0 if failed == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
