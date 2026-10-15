@@ -4,17 +4,17 @@ The commands in this directory drive Hercules/TK5, submit and inspect MVS jobs, 
 
 Unless noted otherwise, run them from the repository root.
 
-The MR10 suite runners now live under `tools/mr10/`. Their former `tools/run-mr10kit-*` paths remain compatibility launchers during the broader directory refactoring.
+The MR10 suite runners now live under `tools/mr10/`. Their former tools-root paths have been removed; use the commands listed below.
 
 ## Directory organization
 
 - `tools/mvs/` — Hercules/TK5 operation, JES reporting, JCL submission and IFOX job generation.
 - `tools/datasets/` — the `dspal` dispatcher and dataset-management modules.
 - `tools/mr10/` — MR10 INTCODE interpreter, compiler, and short-named suite runners.
-- `tools/native/` — Cambridge/native compilation, bootstrap preparation, BLIB builds and native regressions.
+- `tools/native/` — Cambridge/native compilation, bootstrap source staging, native regressions, and resident-JCL build coordination.
 - `tools/checks/` — reusable diagnostics and acceptance helpers (unchanged).
 
-Only this README and the five subsystem directories remain at the tools root. Python helpers reside with their owning subsystem. The relocation has not changed the MVS PDS allocation manifest or the compiler build contract.
+Only this README and the five subsystem directories remain at the tools root. The M3 manifest now defines 24 managed MR10, reserved CAMB, and NATIVE datasets. See the clean-room runbook for the full reconstruction order.
 
 ## Main commands
 
@@ -29,7 +29,7 @@ Only this README and the five subsystem directories remain at the tools root. Py
 | `tools/mr10/current-icint` | Print the promoted ICINT source selected by `mr10-kit-compiler/asm/CURRENT`. |
 | `tools/mr10/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/mr10/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
-| `tools/native/build-cambridge` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
+| `tools/native/prepare-bootstrap` | Regenerate disposable demoted Cambridge bootstrap sources and optional TRNILRG. |\n| `tools/native/stage-bootstrap` | Stage regenerated source members to `NATIVE_SOURCE`. |\n| `NATIVE_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `native-compiler/jcl/`. |\n| `NATIVE_JCL(BLIBBLD)` | Authoritative BLIB object build job in `native-compiler/jcl/`. |
 | `tools/native/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
 | `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
 | `tools/mr10/run-demo-suite` | Run the 17 general BCPL demonstrations. |
@@ -144,7 +144,7 @@ tools/datasets/dspal rm DATASET MEMBER
 tools/datasets/dspal compress DATASET
 tools/datasets/dspal initbcpl
 tools/datasets/dspal populate all
-tools/datasets/dspal submit JCL CAMBBLD
+tools/datasets/dspal submit NATIVE_JCL CAMBBLD
 tools/datasets/dspal purgebcpl
 ```
 
@@ -171,13 +171,13 @@ tools/datasets/dspal submit JCL CAMBBLD
 To wait for the submitted payload and print its summary:
 
 ```sh
-tools/datasets/dspal submit JCL CAMBBLD --wait
+tools/datasets/dspal submit NATIVE_JCL CAMBBLD --wait
 ```
 
 To inspect the launcher without submitting it:
 
 ```sh
-tools/datasets/dspal submit JCL CAMBBLD --show-jcl
+tools/datasets/dspal submit NATIVE_JCL CAMBBLD --show-jcl
 ```
 
 Batch authentication comes from `config/dspal.local.yaml`, which is gitignored. `--show-jcl` redacts both launcher and payload passwords.
@@ -274,3 +274,5 @@ bash native-compiler/regression/run-test-mvs.sh 24
 
 The original `run-test.sh` remains the bootstrap-from-source path and is
 unchanged by default. `mr10-kit-compiler/asm/CURRENT` remains on ICINT V17.
+
+For a complete rebuild starting with an empty `workarea/`, including interpreter, MR10 suites, resident Cambridge image, runtime objects, and all native regressions, use [the single clean-room reconstruction runbook](../packaging/clean-room-mvs-reconstruction.md).
