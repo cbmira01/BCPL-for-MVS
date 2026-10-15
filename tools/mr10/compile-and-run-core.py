@@ -194,6 +194,7 @@ def job_map(
     save_ocode: bool,
     save_intcode: bool,
     named_dds: list[tuple[str, Path]],
+    installed_load: str | None = None,
 ) -> str:
     dd_summary = (
         "NAMED INPUT DDS: " + ", ".join(name for name, _ in named_dds)
@@ -210,8 +211,10 @@ def job_map(
             f"SAVE INTCODE: {'YES' if save_intcode else 'NO'}",
             dd_summary,
         ),
-        "//*  ASM       BUILD ICINT WITH IFOX\n",
-        "//*  LKED      LINK-EDIT ICINT AS RUNMOD\n",
+        *([] if installed_load else [
+            "//*  ASM       BUILD ICINT WITH IFOX\n",
+            "//*  LKED      LINK-EDIT ICINT AS RUNMOD\n",
+        ]),
         "//*  STGSYNI   STAGE SYNI\n",
         "//*  STGTRNI   STAGE TRNI\n",
         "//*  STGCGI    STAGE CGI\n",
@@ -366,6 +369,7 @@ def build_deck(
             save_ocode,
             save_intcode,
             named_dds,
+            installed_load,
         )
     )
     if installed_load is None:
