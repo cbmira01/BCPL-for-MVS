@@ -8,6 +8,10 @@ The canonical MVS dataset manifest is [`config/dspal.yaml`](../config/dspal.yaml
 
 [Accepted M3 evidence](m3-native-reconstruction-acceptance-20261015.md) records the demonstrated component builds and **123 PASS / 0 FAIL / 1 expected SKIP** for the full native regression panel. The single combined destructive procedure still requires one-run verification.
 
+## Runtime and library terminology
+
+[Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) distinguishes the Compiler, Core Runtime, historical Base Library (BLIB/LIBHDR), System Extensions, Standard Libraries, and User/Site Libraries. It also defines module, package, header, object/load library, and the separate global-number allocation versus startup-registration responsibilities. This is a proposed packaging/ABI vocabulary, not a claim that new libraries are implemented.
+
 ## Proposed optional runtime registration architecture
 
 [Milestone Runtime Extensions](milestone-runtime-extensions.md) (R.0–R.3) proposes explicit IEWL selection of optional modules and general startup registration of their BCPL global-vector entries. It records the present BCPLMAIN/BLIB evidence, collision/absence considerations, and compatibility gates. **Proposed, not implemented; not a prerequisite for M4.** This is the shared registration foundation envisaged for the optional QSAM, Decimal Arithmetic and Date/Time modules.
