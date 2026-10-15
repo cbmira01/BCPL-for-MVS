@@ -5,7 +5,6 @@ Canonical entry points for Cambridge/native compiler work:
 - `prepare-bootstrap`: reconstruct disposable bootstrap input files.
 - `NATIVE_JCL(CAMBBLD)`: authoritative M3 resident compiler build job, sourced from `native-compiler/jcl/build-cambridge-resident.jcl`.
 - `compile-mvs`: compile BCPL using the installed resident Cambridge compiler.
-- `compile-bootstrap`: legacy bootstrap-from-source Cambridge driver.
 - `NATIVE_JCL(BLIBBLD)`: build the BLIB relocatable object module using `native-compiler/jcl/build-blib-object.jcl`.
 - `run-regression`: run the native regression panel.
 - `capture-writef-cg370`: capture CG370 diagnostics.
@@ -61,3 +60,5 @@ and executed with `dspal submit`. Accepted objects reside in
 `NATIVE_OBJ`; development candidates reside in `NATIVE_DEVOBJ`.
 The historical job-body steps for assembling, verifying, and installing
 binary FB80 records are preserved. No host build-blib driver exists.
+
+For the full from-scratch M3 reconstruction including MR10 demos and native regression, see [the clean-room PDS runbook](../../packaging/clean-room-mvs-reconstruction.md). The obsolete host source-bootstrap driver and the one-time tools relocation script were retired; their sources remain in Git history.
