@@ -23,7 +23,7 @@ def probe_deck(core, config, volume: str, dsns: list[str]) -> str:
         lines.append(f" LISTPDS DSN={dsn},VOL=SYSDA={volume},FORMAT")
     return "\n".join(lines + ["/*", ""])
 
-def _vtoс_entry(report: str, dsn: str):
+def _vtoc_entry(report: str, dsn: str):
     # Exact name at start of VTOC FORMAT-1 listing, rather than JCL echo.
     start = re.search(r"(?m)^\s*" + re.escape(dsn) +
                       r"\s+1\s+[A-Z0-9]{1,6}\s+1\s+\d{5}", report)
@@ -81,7 +81,7 @@ def _directory(report: str, dsn: str):
                 dir_free=free, members=members)
 
 def parse_space(report: str, dsn: str):
-    allocation = _vtoс_entry(report, dsn)
+    allocation = _vtoc_entry(report, dsn)
     directory = _directory(report, dsn)
     if not allocation and not directory:
         return None
