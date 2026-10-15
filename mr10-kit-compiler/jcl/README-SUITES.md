@@ -55,25 +55,6 @@ A prior regression run exposed invalid placement of `TEST:` statements before lo
 
 For reproducible evidence, record the Git revision, installed member versions, job name, run date/time, and observed output.
 
-## Recreate the ASM source PDS after SE37
-
-The assembler-source PDS uses 20 primary tracks, 10 secondary tracks,
-and 40 directory blocks (twice the former manifest defaults). To **delete
-all its members** and recreate this one PDS without a backup or migration:
-
-```sh
-tools/dspal put MR10_JCL ASMRESET mr10-kit-compiler/jcl/recreate-mr10-asm.jcl
-tools/dspal submit MR10_JCL ASMRESET
-tools/dspal stat MR10_ASM
-tools/dspal populate MR10_ASM
-tools/dspal ls MR10_ASM
-```
-
-Run these commands only when no job is using the ASM source PDS. Check the
-DELETE and ALLOC step results before populating. The Git files are the
-source of truth for the ten assembler-source members. This procedure does
-not rebuild the installed ICINT19 load module.
-
 ## Observe physical PDS capacity with dspal stat
 
 `tools/dspal stat MR10_ASM` and `tools/dspal stat` now request
@@ -88,3 +69,12 @@ may leave reclaimable dead space. The requested allocation in
 allocated on MVS. If IEHLIST cannot be parsed, stat reports
 `unavailable` rather than substituting manifest values. This feature
 requires runtime verification on MVS before it is considered accepted.
+
+## Complete manifest-driven reinitialization
+
+Use the manifest for allocations, not the historical one-off
+`recreate-mr10-asm.jcl`. A purge deletes all managed datasets,
+including MR10_OBJ and MR10_LOAD; the latter must be rebuilt before any
+MR10 suite is run. After allocating, run `dspal populate all`,
+then `dspal submit MR10_JCL IC19BLD` and check its ASM, LKED,
+and SAVEOBJ steps before running the three suites above.
