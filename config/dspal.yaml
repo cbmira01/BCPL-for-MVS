@@ -55,6 +55,9 @@ datasets:
   MR10_ASM:
     dsn: BCPL.MR10KIT.ASM
     description: MR10 ICINT assembler/interpreter milestones
+    primary: 20
+    secondary: 10
+    directory: 40
     type: pds
     dsorg: PO
     recfm: FB
