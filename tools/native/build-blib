@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""Rebuild OBJ(BLIB): position source, position job JCL, submit on MVS.
+
+Everything after text deployment runs on MVS: resident Cambridge compilation,
+CG370 assembly-card preparation, IFOX assembly, binary object installation.
+"""
+from __future__ import annotations
+
+import importlib.util
+from pathlib import Path
+import argparse
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def load_core():
+    path = ROOT / "tools" / "dspal-core.py"
+    spec = importlib.util.spec_from_file_location("dspal_core", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def execute(*command: str) -> str:
+    print("+ " + " ".join(command), flush=True)
+    completed = subprocess.run(
+        list(command), cwd=ROOT, text=True, capture_output=True, check=False,
+    )
+    if completed.stdout:
+        print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+    if completed.stderr:
+        print(
+            completed.stderr, file=sys.stderr,
+            end="" if completed.stderr.endswith("\n") else "\n",
+        )
+    if completed.returncode:
+        raise RuntimeError(
+            f"command exited {completed.returncode}: {' '.join(command)}"
+        )
+    return completed.stdout
+
+
+def require_manifest(core, config) -> dict[str, str]:
+    datasets = config["datasets"]
+    for logical in ("SOURCE", "JCL", "OBJ", "INTCODE", "LOAD"):
+        if logical not in datasets:
+            raise RuntimeError(f"dspal manifest missing {logical}")
+    if datasets["SOURCE"].get("members", {}).get("BLIB") != (
+        "workarea/bootstrap-cambridge/demoted/blib"
+    ):
+        raise RuntimeError("dspal SOURCE(BLIB) mapping is incorrect")
+    if datasets["JCL"].get("members", {}).get("BLIBBLD") != (
+        "jcl/build-blib-object.jcl"
+    ):
+        raise RuntimeError("dspal JCL(BLIBBLD) mapping is incorrect")
+
+    obj = datasets["OBJ"]
+    if not (
+        obj.get("content_type") == "object"
+        and obj.get("populate") is False
+        and core.expected_attrs(obj) == {
+            "dsorg": "PO", "recfm": "FB", "lrecl": "80", "blksize": "800",
+        }
+    ):
+        raise RuntimeError("OBJ must be managed binary FB80 PDS, populate=false")
+
+    dsns = {key: core.full_dsn(config, value)
+            for key, value in datasets.items()}
+    jcl = (ROOT / datasets["JCL"]["members"]["BLIBBLD"]).read_text(
+        encoding="ascii"
+    )
+    if re.search(r"^//[A-Z0-9@$#]+\s+JOB\b", jcl, re.M):
+        raise RuntimeError("BLIBBLD must be a stored job body without JOB")
+    for required in (
+        f"DSN={dsns['SOURCE']}(BLIB)",
+        f"DSN={dsns['OBJ']}(BLIB)",
+        f"DSN={dsns['INTCODE']}(CAMBCOMP)",
+        "EXEC PGM=ICINT19",
+        "EXEC PGM=IFOX00",
+        "EXEC PGM=IEBGENER",
+        "BLIBPREP CSECT",
+    ):
+        if required not in jcl:
+            raise RuntimeError(f"BLIBBLD job is missing {required}")
+    for number, card in enumerate(jcl.splitlines(), 1):
+        if len(card) > 71:
+            raise RuntimeError(f"BLIBBLD JCL card {number} exceeds col 71")
+    return dsns
+
+
+def require_datasets(dsns: dict[str, str]) -> None:
+    # Never allow a missing/mismatched OBJ PDS to be implicitly allocated,
+    # converted to text, or silently overwritten through a bad DD setup.
+    for logical in ("SOURCE", "JCL", "OBJ", "INTCODE", "LOAD"):
+        output = execute("tools/dspal", "stat", logical)
+        dsn = dsns[logical]
+        if not re.search(
+            rf"Dataset:\s*{re.escape(dsn)}(?:\s|,|$)", output, re.I
+        ):
+            raise RuntimeError(f"{dsn} missing; run tools/dspal initbcpl")
+        if logical in ("SOURCE", "JCL", "OBJ"):
+            for attr in ("DSORG:PO", "RECFM:FB", "LRECL:80", "BLKSIZE:800"):
+                if attr not in output.replace(" ", ""):
+                    raise RuntimeError(
+                        f"{dsn}: unexpected DCB (requires {attr})"
+                    )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="validate manifest and JCL and show plan, without MVS jobs",
+    )
+    args = parser.parse_args()
+
+    core = load_core()
+    dsns = require_manifest(core, core.load_config())
+    if args.dry_run:
+        print("BLIB object build plan (no MVS jobs submitted):")
+        print("  regenerate demoted historical BLIB source")
+        print(f"  dspal put SOURCE BLIB -> {dsns['SOURCE']}(BLIB)")
+        print(f"  dspal put JCL BLIBBLD -> {dsns['JCL']}(BLIBBLD)")
+        print("  dspal submit JCL BLIBBLD --wait")
+        print("  resident CAMBCOMP -> MVS card repair -> IFOX/IEBGENER")
+        print(f"  check {dsns['OBJ']}(BLIB)")
+        return 0
+
+    require_datasets(dsns)
+    execute(
+        sys.executable,
+        "native-compiler/bootstrap-cambridge/make-demoted.py",
+        "--blib-only",
+    )
+    source = ROOT / "workarea/bootstrap-cambridge/demoted/blib"
+    execute("tools/dspal", "put", "SOURCE", "BLIB", str(source))
+    execute(
+        "tools/dspal", "put", "JCL", "BLIBBLD",
+        "jcl/build-blib-object.jcl",
+    )
+    summary = execute("tools/dspal", "submit", "JCL", "BLIBBLD", "--wait")
+    for step in ("COMP", "PREPASM", "PREPLK", "FIXASM", "ASMBLIB", "INSTALL"):
+        if re.search(
+            rf"^\s*{step}\s+\S+\s+RC=0000\s*$", summary, re.M
+        ) is None:
+            raise RuntimeError(f"BLIBBLD step {step} did not report RC=0000")
+
+    inventory = execute("tools/dspal", "ls", "OBJ")
+    if re.search(r"^\s*BLIB\s*$", inventory, re.M) is None:
+        raise RuntimeError(f"BLIB member missing from {dsns['OBJ']}")
+    print(f"SUCCESS: rebuilt {dsns['OBJ']}(BLIB) on MVS")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (RuntimeError, OSError, ValueError, UnicodeError) as exc:
+        print(f"build-blib-object: {exc}", file=sys.stderr)
+        sys.exit(2)
