@@ -73,3 +73,18 @@ Run these commands only when no job is using the ASM source PDS. Check the
 DELETE and ALLOC step results before populating. The Git files are the
 source of truth for the ten assembler-source members. This procedure does
 not rebuild the installed ICINT19 load module.
+
+## Observe physical PDS capacity with dspal stat
+
+`tools/dspal stat MR10_ASM` and `tools/dspal stat` now request
+read-only IEHLIST VTOC and directory listings in addition to LISTDS.
+The report prints allocated tracks, tracks occupied through the
+end-of-data high-water mark, unused tail tracks, extent count, and
+PDS directory allocation/unused-block counts.
+
+The high-water mark is **not** live-member utilization; replaced members
+may leave reclaimable dead space. The requested allocation in
+`config/dspal.yaml` is distinct from the physical extents actually
+allocated on MVS. If IEHLIST cannot be parsed, stat reports
+`unavailable` rather than substituting manifest values. This feature
+requires runtime verification on MVS before it is considered accepted.
