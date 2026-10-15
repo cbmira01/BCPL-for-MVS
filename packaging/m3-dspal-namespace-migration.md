@@ -1,5 +1,8 @@
 # M3 — dspal namespace migration and operator execution
 
+> **Historical planning and migration log.** Its initial status and dataset counts describe the state on 14 October 2026 and are superseded by [M3 native reconstruction acceptance](m3-native-reconstruction-acceptance-20261015.md): 123 PASS, 0 FAIL, 1 expected SKIP on the full native panel. Do not interpret the early migration instructions below as current pending steps.
+
+
 Status: **manifest rebuilt and statically checked; MVS allocation/population NOT YET EXECUTED** (14 October 2026).
 
 The Git-tracked `config/dspal.yaml` defines **23** datasets under `HERC02.BCPL.MR10KIT` (9), `HERC02.BCPL.CAMBRIDG` (9), and `HERC02.BCPL.NATIVE` (5). It has **142** explicit source-to-member mappings in 11 mapped, populated-by-default source/JCL/library/test PDSes. The remaining 12 PDS/load libraries have no mapped text members and use `populate: false`. The staging source paths for Cambridge's demoted/bootstrap artifacts are intentionally omitted until available in the host workarea.
