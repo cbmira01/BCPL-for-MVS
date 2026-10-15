@@ -1,36 +1,21 @@
 #!/usr/bin/env python3
-"""Offline M3 native bootstrap allocation and generated-JCL contract check."""
+"""Static contract for authoritative M3 NATIVE_JCL(CAMBBLD) source."""
 from pathlib import Path
-import importlib.util
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
-script = ROOT / "tools/native/build-cambridge"
-spec = importlib.util.spec_from_file_location("native_bootstrap", script)
-if spec is None or spec.loader is None:
-    # Source filename has no .py extension: use the Python source loader.
-    from importlib.machinery import SourceFileLoader
-    loader = SourceFileLoader("native_bootstrap", str(script))
-    spec = importlib.util.spec_from_loader("native_bootstrap", loader)
-assert spec is not None and spec.loader is not None
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-config = module.core.load_config()
-deck = module.build_deck(config, redact_password=True)
-datasets = config["datasets"]
-full = lambda key: module.core.full_dsn(config, datasets[key])
-assert "HERC02.BCPL.SOURCE" not in deck
-assert "HERC02.BCPL.INTCODE" not in deck
-assert "HERC02.BCPL.LOAD" not in deck
-assert "BCPL.CAMBRIDG." not in deck
-assert "//ASM      EXEC" not in deck
-assert "//LKED     EXEC" not in deck
-assert deck.count("EXEC PGM=ICINT19") == len(module.CAMBRIDGE_UNITS) * 2
+deck = (ROOT / "native-compiler/jcl/build-cambridge-resident.jcl").read_text(encoding="ascii")
+assert "HERC02.BCPL.CAMBRIDG." not in deck
+for old in ("HERC02.BCPL.SOURCE(", "HERC02.BCPL.INTCODE(", "HERC02.BCPL.LOAD,"):
+    assert old not in deck, old
+assert not re.search(r"^//(?:ASM|LKED)\s+EXEC", deck, re.M)
+assert len(re.findall(r"^//C\d{2}(?:CMP|CG)\s+EXEC PGM=ICINT19", deck, re.M)) == 22
+assert re.search(r"^//PACKCOMP\s+EXEC PGM=IEBGENER", deck, re.M)
+assert "HERC02.BCPL.MR10KIT.LOAD,DISP=SHR" in deck
 for member in ("SYNI", "CGI", "BLIBI", "ICLIB"):
-    assert f"{full('MR10_SOURCE')}({member})" in deck
-assert f"{full('NATIVE_INTCODE')}(TRNILRG)" in deck
-assert f"{full('NATIVE_INTCODE')}(CAMBCOMP)" in deck
-assert f"{full('MR10_LOAD')},DISP=SHR" in deck
-for src, target in module.CAMBRIDGE_UNITS:
-    assert f"{full('NATIVE_SOURCE')}({src})" in deck
-    assert f"{full('NATIVE_INTCODE')}({target})" in deck
-print("PASS: M3 native bootstrap JCL uses only NATIVE_* and MR10_* PDSes")
+    assert f"HERC02.BCPL.MR10KIT.SOURCE({member})" in deck
+for member in ("TRNILRG", "CAMBCOMP"):
+    assert f"HERC02.BCPL.NATIVE.INTCODE({member})" in deck
+for member in ("BCPL", "SYN", "LEX", "TRNA", "TRNB", "CGA", "CGB", "CGC", "CGD", "CGE", "BOOTHOST"):
+    assert f"HERC02.BCPL.NATIVE.SOURCE({member})" in deck
+print("PASS: authoritative M3 CAMBBLD JCL stays within MR10_* and NATIVE_* PDSes")
