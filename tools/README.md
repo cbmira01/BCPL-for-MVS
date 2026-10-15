@@ -6,6 +6,16 @@ Unless noted otherwise, run them from the repository root.
 
 The MR10 suite runners now live under `tools/mr10/`. Their former `tools/run-mr10kit-*` paths remain compatibility launchers during the broader directory refactoring.
 
+## Directory organization
+
+- `tools/mvs/` — Hercules/TK5 operation, JES reporting, JCL submission and IFOX job generation.
+- `tools/datasets/` — the `dspal` dispatcher and dataset-management modules.
+- `tools/mr10/` — MR10 INTCODE interpreter, compiler, and short-named suite runners.
+- `tools/native/` — Cambridge/native compilation, bootstrap preparation, BLIB builds and native regressions.
+- `tools/checks/` — reusable diagnostics and acceptance helpers (unchanged).
+
+The original root `tools/` executable paths are retained as compatibility launchers. Python helper modules with external consumers also retain their legacy locations during the transition. The relocation has not changed the MVS PDS allocation manifest or the compiler build contract.
+
 ## Main commands
 
 | Command | Purpose |
@@ -19,9 +29,9 @@ The MR10 suite runners now live under `tools/mr10/`. Their former `tools/run-mr1
 | `tools/current-icint` | Print the promoted ICINT source selected by `mr10-kit-compiler/asm/CURRENT`. |
 | `tools/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
-| `tools/build-cambridge-mvs` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
-| `tools/cambridge-compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
-| `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/run-native-regression` | Run the native regression panel from a selected start through the current test. |
+| `tools/native/build-cambridge` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
+| `tools/native/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
+| `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
 | `tools/mr10/run-demo-suite` | Run the 17 general BCPL demonstrations. |
 | `tools/mr10/run-language-demos` | Run the focused BCPL language demonstrations. |
 | `tools/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
