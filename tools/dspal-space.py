@@ -10,7 +10,7 @@ import re
 TRKS_PER_CYL = 15  # TK5 3390-class DASD, as shown by the VTOC probe
 
 def probe_deck(core, config, volume: str, dsns: list[str]) -> str:
-    lines = core.authenticated_job_card(config, "DSPALSP", "DSPAL SPACE")
+    lines = core.authenticated_job_card(config, "DSPALSP", "DSPAL SPACE", redact_password=False)
     lines += [
         "//* READ-ONLY IEHLIST SPACE/ DIRECTORY REPORT",
         "//SPACE    EXEC PGM=IEHLIST",
