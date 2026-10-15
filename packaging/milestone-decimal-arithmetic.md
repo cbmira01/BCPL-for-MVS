@@ -16,6 +16,10 @@ System/370 has packed-decimal operations such as ZAP, AP, SP, CP, MP, DP and SRP
 
 The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) is the common architecture for selectively linking BCPLDEC and installing its global entries at startup. Decimal arithmetic may be prototyped independently, but must not invent a separate automatic registration system. Neither milestone blocks M4.
 
+### Shared optional-module dispatch architecture
+
+See [Milestone Runtime Extensions](milestone-runtime-extensions.md). The preferred R.0 pattern assigns *one* global slot to a BCPLDEC dispatcher, with local stable decimal-operation opcodes and **opcode 0** as a side-effect-free numeric capability/version query. The table of named decimal operations below specifies logical services, **not** a promise that each procedure gets a separate global number. Concrete opcode, descriptor and parameter-vector conventions remain to be validated; do not assign sample numbers in public headers until the Global Number Registry exists. Friendly wrappers can be considered later, not as an initial prerequisite.
+
 ## Representation and contracts (provisional)
 
 - An application-owned, fixed-size **decimal descriptor**, provisionally `VEC 7` (eight BCPL words), contains implementation-managed value, precision/scale and validity metadata. Its concrete layout is **undecided** until the ABI review. Do not directly dereference it in application code.
