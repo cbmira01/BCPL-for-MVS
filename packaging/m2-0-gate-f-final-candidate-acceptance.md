@@ -17,7 +17,7 @@ From repository root after `git pull --ff-only`:
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
 BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
-tools/run-native-regression 0 --show-output
+tools/native/run-regression 0 --show-output
 ```
 
 Require 1 PASS, 0 FAIL. Then run *the current final rebuilt object set*:
@@ -25,7 +25,7 @@ Require 1 PASS, 0 FAIL. Then run *the current final rebuilt object set*:
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
 BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
-tools/run-native-regression --show-output
+tools/native/run-regression --show-output
 ```
 
 Require exactly **123 PASS, 0 FAIL, 1 SKIP, 124 TOTAL** (083 is expected source-only instrumentation). The full run subsumes the smoke test, but recording both explicitly identifies Gate E's deferred check. Retain job IDs / failure reports if any test diverges.

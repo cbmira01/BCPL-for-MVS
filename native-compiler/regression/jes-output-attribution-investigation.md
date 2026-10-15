@@ -18,7 +18,7 @@ locating its text in a flattened Hercules/JES printer report?
   Those are **separate SYSOUT spool datasets**, but the combined report
   does not explicitly assign each application's output record to one
   identifier. Do not assume the suffix number is the DD name.
-- `tools/dump-report-for-job` reads `mvs-state/prt/prt00e.txt`, strips
+- `tools/mvs/dump-report-for-job` reads `mvs-state/prt/prt00e.txt`, strips
   the Hercules per-job start/end banners, and returns a flattened report.
   This is a printer image, not an IBM QSAM DD-by-DD read interface.
 - Hercules/TK5 has multiple emulated printers available in its
@@ -127,7 +127,7 @@ python3 tools/checks/prepare-dd-attribution-probe.py
 grep -nE '^//(GO|SYSPRINT|BCPALT)' workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl | tail -12
 # Optional: snapshot sizes; submission may print additional unrelated work.
 wc -c mvs-state/prt/prt00e.txt mvs-state/prt/prt00f.txt
-bash tools/submit-jcl workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl
+bash tools/mvs/submit-jcl workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl
 # Use resulting JOB number; inspect both printer files and job-summary.
 ```
 
@@ -135,7 +135,7 @@ Expected logical data from regression 114 is SYSPRINT records `AB` then `C`, and
 
 ## Class-separated printer experiment accepted — 2026-10-10, JOB 5512
 
-Operator generated the isolated AT114R deck from regression 114, retaining the existing assembler/runtime. GO DD cards were verified as SYSPRINT SYSOUT=A and BCPALT SYSOUT=Z, both FB132. The operator recorded printer file lengths before submission: class A `prt00e.txt` 474,587,507 bytes, class Z `prt00f.txt` 165,817 bytes, then submitted **JOB 5512 AT114R**. `tools/job-summary 5512` reported **ASM=0000, LKED=0000, GO=0000; SUCCESS**.
+Operator generated the isolated AT114R deck from regression 114, retaining the existing assembler/runtime. GO DD cards were verified as SYSPRINT SYSOUT=A and BCPALT SYSOUT=Z, both FB132. The operator recorded printer file lengths before submission: class A `prt00e.txt` 474,587,507 bytes, class Z `prt00f.txt` 165,817 bytes, then submitted **JOB 5512 AT114R**. `tools/mvs/job-summary 5512` reported **ASM=0000, LKED=0000, GO=0000; SUCCESS**.
 
 The appended class Z printer image begins with `****Z START JOB 5512 AT114R ... PRINTER2`, contains successive standalone logical output records `1`, `2`, and closes with the class Z END banner. The appended class A printer image begins with `****A START JOB 5512 AT114R ... PRINTER1` and contains standalone `AB` and `C` records in the GO output suffix (along with the ASM/LKED/job listing). Its JES job log confirms three separately allocated GO SYSOUT DDs (SYSPRINT, BCPALT, SYSUDUMP) and three SO spool identifiers. After the run the A file measured 474,819,465 bytes; the Z file 172,176 bytes. The two printer outputs are independent files verified in the active Hercules config: device 00E to `prt00e.txt`, device 00F to `prt00f.txt`. JES2 `$D U,PRTS` independently established Q=A for PRINTER1 and Q=Z for PRINTER2.
 
@@ -146,7 +146,7 @@ The appended class Z printer image begins with `****Z START JOB 5512 AT114R ... 
 Added `tools/checks/check-dd-attribution.py` and offline self-test
 `tools/checks/test-dd-attribution.py`. This is an independent, opt-in
 acceptance path for class-separated probe jobs: the ordinary
-`tools/run-native-regression` runner remains unchanged.
+`tools/native/run-regression` runner remains unchanged.
 
 The checker requires separate A and Z host printer files, pre-submit
 byte offsets, the exact job number and job name, complete START/END
@@ -170,8 +170,8 @@ regression 114 generated GO job deck:
 ```sh
 python3 tools/checks/prepare-dd-attribution-probe.py
 wc -c mvs-state/prt/prt00e.txt mvs-state/prt/prt00f.txt
-bash tools/submit-jcl workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl
-tools/job-summary JOBNUMBER
+bash tools/mvs/submit-jcl workarea/native-regression/114-interleaved-stream-records/dd-attribution-probe.jcl
+tools/mvs/job-summary JOBNUMBER
 python3 tools/checks/check-dd-attribution.py JOBNUMBER \
   --a-offset A_BYTES_BEFORE_SUBMISSION \
   --z-offset Z_BYTES_BEFORE_SUBMISSION

@@ -73,7 +73,7 @@ def main() -> None:
         sources = [sources[0], sources[3]]
     for _, file in sources:
         run(CHECKS / "check-asm-source.py", file)
-    core_path = ROOT / "tools/dspal-core.py"
+    core_path = ROOT / "tools/datasets/dspal-core.py"
     spec = importlib.util.spec_from_file_location("dspal_core_obj", core_path)
     if spec is None or spec.loader is None:
         raise RuntimeError("unable to load dspal core")
@@ -161,7 +161,7 @@ def main() -> None:
     print("Selected object members: " + " ".join(name for name, _ in sources))
     print("BCPLMAIN depends on resident OBJ(BLIB) at linkage.")
     print("NOT submitted. Inspect the deck before replacing any OBJ member.")
-    print("Run 'tools/dspal stat OBJ' first; preserve the prior object library.")
+    print("Run 'tools/datasets/dspal stat OBJ' first; preserve the prior object library.")
 
 
 if __name__ == "__main__":

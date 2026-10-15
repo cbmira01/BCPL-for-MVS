@@ -48,8 +48,8 @@ Numbering has one deliberate historical width break:
 ```
 
 The command-line runners accept natural decimal integers and normalize them
-internally. Thus `tools/run-native-regression 53` resolves `053-*`, while
-`tools/run-native-regression 7` continues to resolve `07-*`. Existing tests
+internally. Thus `tools/native/run-regression 53` resolves `053-*`, while
+`tools/native/run-regression 7` continues to resolve `07-*`. Existing tests
 must not be renamed merely to make their prefixes three digits.
 
 Each numbered test owns its executable output contract in `expected.txt`.
@@ -114,7 +114,7 @@ With the resident Cambridge compiler installed on MVS, the canonical full-panel
 command is:
 
 ```sh
-tools/run-native-regression
+tools/native/run-regression
 ```
 
 With no arguments, this discovers the highest numbered test and runs every
@@ -122,8 +122,8 @@ contiguous case from 00 through that test.  One number runs one test; two
 numbers run an inclusive range:
 
 ```sh
-tools/run-native-regression 30
-tools/run-native-regression 27 30
+tools/native/run-regression 30
+tools/native/run-regression 27 30
 ```
 
 The runner continues after individual failures, records each test's complete
@@ -136,7 +136,7 @@ runner also exposes the saved native job report for diagnosis.
 The numbering boundary itself can be checked without MVS:
 
 ```sh
-tools/run-native-regression --check-numbering
+tools/native/run-regression --check-numbering
 ```
 
 That verifies representative directory IDs and the compact MVS job/entry names
@@ -1524,7 +1524,7 @@ This extends only the octal width decoder.
 
 **PASS: 65 / FAIL: 0 / TOTAL: 65** on the native MVS 3.8J path.
 
-The operator ran `tools/run-native-regression 0 64 --show-output`
+The operator ran `tools/native/run-regression 0 64 --show-output`
 after the WRITEF hexadecimal/octal alphabetic-width additions. Every
 test from 00 through 064 passed, including WRITEF tests 053–064.
 This establishes a verified checkpoint for the current *WRITEF formatting

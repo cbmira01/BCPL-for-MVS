@@ -225,7 +225,7 @@ retest. The code was checked in the execution environment for
 injection anchors; the actual Python check-native-runtime.py was
 not executed in that environment.
 
-Next: focused `tools/run-native-regression 94 --show-output`.
+Next: focused `tools/native/run-regression 94 --show-output`.
 Do not advance to 095 unless output and GO completion both pass.
 
 ## Regression 094 accepted under TK5
@@ -301,7 +301,7 @@ remains **PENDING TK5** and 094 remains the accepted baseline.
 
 After changing the test-only newline display marker from pipe to slash,
 the operator pulled commit `87ee8e5` and ran
-`tools/run-native-regression 95 --show-output`.
+`tools/native/run-regression 95 --show-output`.
 The BCPL output was `A/B`; the harness reported `PASS 1`, `FAIL 0`,
 `TOTAL 1`. **095 ACCEPTED.** This establishes the first two-record
 character stream with an inserted logical newline (value 10) for this
@@ -314,7 +314,7 @@ The complete 000–095 panel has not yet been rerun.
 
 ## Regression 094 compatibility retest after 095
 
-Operator ran `tools/run-native-regression 94 --show-output` after
+Operator ran `tools/native/run-regression 94 --show-output` after
 accepting 095. Output was `A`; harness reported PASS 1, FAIL 0,
 TOTAL 1. Therefore **094 remains green against the 095 runtime**.
 Together 094 and 095 are independently accepted. Next proposed
@@ -342,7 +342,7 @@ this one-input-stream implementation is production-complete.
 ## Regression 096 accepted under TK5
 
 Operator pulled commit `c20a6ce` and ran
-`tools/run-native-regression 96 --show-output`. Observed BCPL output
+`tools/native/run-regression 96 --show-output`. Observed BCPL output
 `A/EE`; harness reported PASS 1, FAIL 0, TOTAL 1. **096 ACCEPTED.**
 This verifies the one-record sequence 'A', logical newline 10, first
 EOF -1, and repeated EOF -1, with the existing EODAD/INEOF logic.
@@ -380,7 +380,7 @@ No runtime execution or regression panel pass is claimed.
 
 ## Regression 097 accepted under TK5
 
-Operator pulled `2284bfd` and ran `tools/run-native-regression 97 --show-output`.
+Operator pulled `2284bfd` and ran `tools/native/run-regression 97 --show-output`.
 Observed BCPL output `AA//BB` and harness PASS 1 / FAIL 0 / TOTAL 1.
 **097 ACCEPTED.** The test exercises one-character UNRDCH pushback of
 an ordinary character, the logical newline separating two input records,
@@ -393,7 +393,7 @@ to inspection of historical interface and existing handle semantics.
 
 ## Full 000–097 panel: one tooling failure, repaired pending retest
 
-Operator ran `tools/run-native-regression` after accepting 097.
+Operator ran `tools/native/run-regression` after accepting 097.
 Result was **97 PASS / 1 FAIL / 98 TOTAL**. The only failure was
 083-instrumented-storage-reclamation, where its Python test-local
 instrumenter rejected the prior strict source anchor
@@ -447,7 +447,7 @@ loosening regression 083. **Pending TK5 retest of 083, then full
 ## Regression 083 accepted after FINEXIT repair
 
 Operator pulled `ee37a34` and ran
-`tools/run-native-regression 83 --show-output`. The observed BCPL
+`tools/native/run-regression 83 --show-output`. The observed BCPL
 output was `42` followed by `V=2 M=1`. The harness reported
 **PASS 1 / FAIL 0 / TOTAL 1**. This accepts the focused 083 repair:
 test-local output CLOSE after final diagnostic PUT and canonical
@@ -459,7 +459,7 @@ canonical FINEXIT change is still pending**.
 ## Complete 000–097 panel accepted — 2026-10-10
 
 Operator pulled repository commit `3ba85f9` and ran the unqualified
-`tools/run-native-regression` command, thereby rerunning the entire
+`tools/native/run-regression` command, thereby rerunning the entire
 native suite after canonical FINEXIT was corrected. The displayed
 harness summary was **PASS 98 / FAIL 0 / TOTAL 98**. Regression 083
 produced `42` and `V=2 M=1` and PASSED; FINISH/STOP cases 084–089
@@ -491,11 +491,11 @@ passed; no TK5 assemble/link/GO run has yet occurred. Baseline
 
 ## Regression 098 accepted under TK5
 
-Operator pulled `7374c24` and ran `tools/run-native-regression 98 --show-output`. The observed output was `AEA/`, with harness **PASS 1 / FAIL 0 / TOTAL 1**. **098 ACCEPTED.** The test establishes G!46 ENDREAD closing the selected BCPIN stream, provisional no-selection RDCH EOF (-1), and successful reopening from the first record with newline handling. The last full native panel remains 000–097 at 98/98 PASS; a complete 000–098 panel has not yet been rerun after ENDREAD was added.
+Operator pulled `7374c24` and ran `tools/native/run-regression 98 --show-output`. The observed output was `AEA/`, with harness **PASS 1 / FAIL 0 / TOTAL 1**. **098 ACCEPTED.** The test establishes G!46 ENDREAD closing the selected BCPIN stream, provisional no-selection RDCH EOF (-1), and successful reopening from the first record with newline handling. The last full native panel remains 000–097 at 98/98 PASS; a complete 000–098 panel has not yet been rerun after ENDREAD was added.
 
 ## Full 000–098 suite accepted — 2026-10-10
 
-Operator pulled `965a57e` and ran `tools/run-native-regression` without a test-number filter. The harness executed regressions 000–098, including 083 storage-reclamation instrumentation, 084–089 FINISH/STOP, and 094–098 selected-input stream I/O. All passed: **PASS 99 / FAIL 0 / TOTAL 99**. Output for 098 was `AEA/`. This establishes an accepted full-suite 99/99 TK5 / MVS 3.8J baseline after the G!46 ENDREAD implementation. This does not imply broader multistream or production-QSAM coverage beyond the exercised regressions.
+Operator pulled `965a57e` and ran `tools/native/run-regression` without a test-number filter. The harness executed regressions 000–098, including 083 storage-reclamation instrumentation, 084–089 FINISH/STOP, and 094–098 selected-input stream I/O. All passed: **PASS 99 / FAIL 0 / TOTAL 99**. Output for 098 was `AEA/`. This establishes an accepted full-suite 99/99 TK5 / MVS 3.8J baseline after the G!46 ENDREAD implementation. This does not imply broader multistream or production-QSAM coverage beyond the exercised regressions.
 
 ## Batch candidate 099–103 — awaiting sequential TK5 execution
 
@@ -546,7 +546,7 @@ Operator ran each regression sequentially following the IFOX-label fix: 099 outp
 
 ## Complete native regression panel 000–103 accepted — 2026-10-10
 
-Operator pulled commit `4dc4253` and ran `tools/run-native-regression` without filtering. Every case through 103 passed: **PASS 104 / FAIL 0 / TOTAL 104**. Specifically, 099 and 100 returned `A/EEE` and `A//B`; 101–103 produced primary output `AC`, `Z`, and `Z` respectively and passed the existing secondary-output assertions. This establishes the 000–103 TK5 / MVS 3.8J full-suite checkpoint. The same earlier qualification applies: the post-link alternate-output assertion is not an independent DD-identity check, and overlength output behavior remains unfinished. Next series should focus on compiler-facing INPUT/OUTPUT, stream switching, FINDPARM/WRAPOUTPUT, and multistream semantics, with acceptance gates decided before implementation.
+Operator pulled commit `4dc4253` and ran `tools/native/run-regression` without filtering. Every case through 103 passed: **PASS 104 / FAIL 0 / TOTAL 104**. Specifically, 099 and 100 returned `A/EEE` and `A//B`; 101–103 produced primary output `AC`, `Z`, and `Z` respectively and passed the existing secondary-output assertions. This establishes the 000–103 TK5 / MVS 3.8J full-suite checkpoint. The same earlier qualification applies: the post-link alternate-output assertion is not an independent DD-identity check, and overlength output behavior remains unfinished. Next series should focus on compiler-facing INPUT/OUTPUT, stream switching, FINDPARM/WRAPOUTPUT, and multistream semantics, with acceptance gates decided before implementation.
 
 ## Batch 104–109 staged for sequential operator testing
 
@@ -564,7 +564,7 @@ A proposed relocation before SYSV was committed then reverted without TK5 execut
 
 ## Focused 104–109 TK5 acceptance — 2026-10-10
 
-Operator pulled commit `262b664` and verified `USING MSVSAVE,13` in BCPLMAIN at source line 599. Regression 104 compiled, assembled, linked, ran, and passed with primary output `IA` (PASS 1 / FAIL 0). Then operator ran `tools/run-native-regression 105 109 --show-output`; all five passed (PASS 5 / FAIL 0): 105 `DS`, 106 `ACE`, 107 `AY1B2`, 108 `P`, 109 `Z`. These are six focused passes, **not yet a full-suite 000–109 acceptance**. Secondary BCPALT output for 105/106/109 is checked by the current harness but physical JES DD-specific attribution remains unproven. FINDPARM and WRAPOUTPUT are still documented provisional TK5 bootstrap contracts. The R13 assembler base repair resolved the reported IFOX addressability failure for 104. Next mandatory gate: unfiltered `tools/run-native-regression`, target 110 PASS / 0 FAIL / 110 TOTAL.
+Operator pulled commit `262b664` and verified `USING MSVSAVE,13` in BCPLMAIN at source line 599. Regression 104 compiled, assembled, linked, ran, and passed with primary output `IA` (PASS 1 / FAIL 0). Then operator ran `tools/native/run-regression 105 109 --show-output`; all five passed (PASS 5 / FAIL 0): 105 `DS`, 106 `ACE`, 107 `AY1B2`, 108 `P`, 109 `Z`. These are six focused passes, **not yet a full-suite 000–109 acceptance**. Secondary BCPALT output for 105/106/109 is checked by the current harness but physical JES DD-specific attribution remains unproven. FINDPARM and WRAPOUTPUT are still documented provisional TK5 bootstrap contracts. The R13 assembler base repair resolved the reported IFOX addressability failure for 104. Next mandatory gate: unfiltered `tools/native/run-regression`, target 110 PASS / 0 FAIL / 110 TOTAL.
 
 ## Full-suite checkpoint and 110–119 behavioral candidates — 2026-10-10
 
@@ -588,23 +588,23 @@ After pulling `6fd70d6`, operator ran 115 and got expected primary `YCZ` and har
 
 ## Focused 110–119 acceptance complete — 2026-10-10
 
-Operator pulled commit `1318b05` and executed four remaining native tests sequentially: 116 PASS (`IOAD`), 117 PASS (`AEBE`), 118 PASS (`1A2A`), 119 PASS (`A`). Earlier TK5 runs established 110–115 PASS, including 113 expected controlled GO RC=0012, 114 BCPALT newline fallthrough repair, and 115 declaration-order correction. **All ten focused regressions 110–119 have now passed under TK5, separately.** This is not yet complete-panel acceptance: last full suite was 000–109, 110/110 PASS. Next acceptance gate: `tools/run-native-regression`, expected 120 PASS / 0 FAIL / 120 TOTAL. The runner's `expected-alt.txt` verification still matches the post-link job report and has not yet established physical JES DD attribution or exact FB132 record whitespace. Do not claim stream behavioral-contract completion until this independent record-level validation is addressed and full suite remains green.
+Operator pulled commit `1318b05` and executed four remaining native tests sequentially: 116 PASS (`IOAD`), 117 PASS (`AEBE`), 118 PASS (`1A2A`), 119 PASS (`A`). Earlier TK5 runs established 110–115 PASS, including 113 expected controlled GO RC=0012, 114 BCPALT newline fallthrough repair, and 115 declaration-order correction. **All ten focused regressions 110–119 have now passed under TK5, separately.** This is not yet complete-panel acceptance: last full suite was 000–109, 110/110 PASS. Next acceptance gate: `tools/native/run-regression`, expected 120 PASS / 0 FAIL / 120 TOTAL. The runner's `expected-alt.txt` verification still matches the post-link job report and has not yet established physical JES DD attribution or exact FB132 record whitespace. Do not claim stream behavioral-contract completion until this independent record-level validation is addressed and full suite remains green.
 
 ## Full native regression acceptance — 2026-10-10
 
-Operator pulled commit `04d607b` and ran `tools/run-native-regression` across native tests **000–119**, obtaining **PASS 120 / FAIL 0 / TOTAL 120**. This is the first complete-panel acceptance following the 110–119 stream-behavior candidate march. Individual cases 110–119 also passed in sequence. The current harness uses post-link report text matching and does not yet independently attribute alternate output to a specific JES DD or prove exact FB132 record contents; this full-panel pass establishes compatibility of the current implementation with the existing assertions, not completion of that stricter validation objective. Next work: improve output/DD record validator using real JES evidence, document the frozen stream contract, then modularize BCPLMAIN.
+Operator pulled commit `04d607b` and ran `tools/native/run-regression` across native tests **000–119**, obtaining **PASS 120 / FAIL 0 / TOTAL 120**. This is the first complete-panel acceptance following the 110–119 stream-behavior candidate march. Individual cases 110–119 also passed in sequence. The current harness uses post-link report text matching and does not yet independently attribute alternate output to a specific JES DD or prove exact FB132 record contents; this full-panel pass establishes compatibility of the current implementation with the existing assertions, not completion of that stricter validation objective. Next work: improve output/DD record validator using real JES evidence, document the frozen stream contract, then modularize BCPLMAIN.
 
 ## Combined JES validator tightening and stream-contract document — 2026-10-10
 
-Introduced `tools/checks/check-combined-jes-records.py` and its independent unittest driver `tools/checks/test-combined-jes-records.py`. The regression runner now uses this helper on nonempty expected primary and alternate output. It searches only after the final linker authorization boundary; requires contiguous ordered records; treats empty expected lines as real records; preserves leading blanks and interior spaces; and rejects empty expectations. **This is NOT physical JES DD attribution**: dump-report-for-job yields a combined printer report without reliable source-DD labels, and physical trailing FB132 spaces are still not provable. The helper explicitly reports DD attribution NOT VERIFIED. Expected nonzero GO RC fixtures remain supported. Wrote `native-compiler/regression/native-stream-contract.md` enumerating documented interfaces, observed lifetime/buffering/error semantics, the incomplete historical services and QSAM error limitations, and the precise unverified record-evidence boundary. Runtime code and existing regression expected output files are unchanged. **Changed runner is NOT YET TK5-validated.** Suggested gate: run `python3 tools/checks/test-combined-jes-records.py`, then `tools/run-native-regression 110 119 --show-output`, stop on failure, then full `tools/run-native-regression` (120/120 target). A subsequent separate JES spool extraction exercise is required for real DD-scoped record verification.
+Introduced `tools/checks/check-combined-jes-records.py` and its independent unittest driver `tools/checks/test-combined-jes-records.py`. The regression runner now uses this helper on nonempty expected primary and alternate output. It searches only after the final linker authorization boundary; requires contiguous ordered records; treats empty expected lines as real records; preserves leading blanks and interior spaces; and rejects empty expectations. **This is NOT physical JES DD attribution**: dump-report-for-job yields a combined printer report without reliable source-DD labels, and physical trailing FB132 spaces are still not provable. The helper explicitly reports DD attribution NOT VERIFIED. Expected nonzero GO RC fixtures remain supported. Wrote `native-compiler/regression/native-stream-contract.md` enumerating documented interfaces, observed lifetime/buffering/error semantics, the incomplete historical services and QSAM error limitations, and the precise unverified record-evidence boundary. Runtime code and existing regression expected output files are unchanged. **Changed runner is NOT YET TK5-validated.** Suggested gate: run `python3 tools/checks/test-combined-jes-records.py`, then `tools/native/run-regression 110 119 --show-output`, stop on failure, then full `tools/native/run-regression` (120/120 target). A subsequent separate JES spool extraction exercise is required for real DD-scoped record verification.
 
 ## Strict combined-report validator focused acceptance — 2026-10-10
 
-Operator pulled `7eedf8c` and executed `python3 tools/checks/test-combined-jes-records.py`: **7 tests ran, OK**. Next `tools/run-native-regression 110 119 --show-output`: **PASS 10 / FAIL 0 / TOTAL 10**, all 110–119. Thus the newly introduced stricter combined-report logical-record checker has focused live TK5 acceptance. This does NOT certify physical JES DD identity or exact FB132 trailing padding. No runtime code changed in this validator phase. Next required gate is full `tools/run-native-regression` against the updated checker (target 120/0/120); only then accept the entire panel under the new validator.
+Operator pulled `7eedf8c` and executed `python3 tools/checks/test-combined-jes-records.py`: **7 tests ran, OK**. Next `tools/native/run-regression 110 119 --show-output`: **PASS 10 / FAIL 0 / TOTAL 10**, all 110–119. Thus the newly introduced stricter combined-report logical-record checker has focused live TK5 acceptance. This does NOT certify physical JES DD identity or exact FB132 trailing padding. No runtime code changed in this validator phase. Next required gate is full `tools/native/run-regression` against the updated checker (target 120/0/120); only then accept the entire panel under the new validator.
 
 ## Full suite acceptance with strengthened validator — 2026-10-10
 
-Operator pulled `13632ff` and ran `tools/run-native-regression` across **000–119**, obtaining **PASS 120 / FAIL 0 / TOTAL 120**. The newly introduced `tools/checks/check-combined-jes-records.py` now governs primary and alternate logical-record fixture matching for this complete run. Its seven standalone unit tests and the focused 110–119 native run had already passed. This accepts the changed checker across the entire historical native regression panel without requiring changes to BCPLMAIN or fixture expectations. **Open verification limitation remains:** post-link combined-report matching is not DD-attributed and cannot prove all physical FB132 bytes. Native stream interface snapshot resides in `native-compiler/regression/native-stream-contract.md`. Suggested next independent engineering investigation: obtain DD-specific JES spool data before declaring strict physical-record verification complete; this need not invalidate the 120/120 functional acceptance.
+Operator pulled `13632ff` and ran `tools/native/run-regression` across **000–119**, obtaining **PASS 120 / FAIL 0 / TOTAL 120**. The newly introduced `tools/checks/check-combined-jes-records.py` now governs primary and alternate logical-record fixture matching for this complete run. Its seven standalone unit tests and the focused 110–119 native run had already passed. This accepts the changed checker across the entire historical native regression panel without requiring changes to BCPLMAIN or fixture expectations. **Open verification limitation remains:** post-link combined-report matching is not DD-attributed and cannot prove all physical FB132 bytes. Native stream interface snapshot resides in `native-compiler/regression/native-stream-contract.md`. Suggested next independent engineering investigation: obtain DD-specific JES spool data before declaring strict physical-record verification complete; this need not invalidate the 120/120 functional acceptance.
 
 ## JES physical DD attribution reconnaissance — 2026-10-10
 

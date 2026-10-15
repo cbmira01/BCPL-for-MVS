@@ -27,7 +27,7 @@ def main() -> None:
     deck.unlink(missing_ok=True)
     generated = ROOT / "workarea" / f"{NAME}.s370.asm"
     generated.unlink(missing_ok=True)
-    run(ROOT / "tools/cambridge-compile-mvs", source,
+    run(ROOT / "tools/native/compile-mvs", source,
         "--job-name", "RG120C", "--listing", "light", "--timeout", "180")
     if not generated.is_file():
         raise RuntimeError(f"expected Cambridge CODE at {generated}")
@@ -47,9 +47,9 @@ def main() -> None:
     print(f"Read-only installed-PDS linkage probe: {deck}")
     print("Review JCL before running. No job submitted; no OBJ members changed.")
     print("The JCL may contain local authentication details. Do not commit it.")
-    print("Submit: tools/submit-jcl " + str(deck.relative_to(ROOT)))
-    print("Inspect: tools/job-summary <job-number>")
-    print("Report: tools/dump-report-for-job <job-number>")
+    print("Submit: tools/mvs/submit-jcl " + str(deck.relative_to(ROOT)))
+    print("Inspect: tools/mvs/job-summary <job-number>")
+    print("Report: tools/mvs/dump-report-for-job <job-number>")
     print("Inspect IEWL MAP/XREF for BLIB and runtime calls,")
     print("and GO output for STACKBASE/STACKEND/STACKHWM.")
 

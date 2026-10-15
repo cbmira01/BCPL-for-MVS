@@ -22,7 +22,7 @@ data-argument corruption remains unknown.
 
 - `jcl/build-cg370-diagnostic.jcl` builds the diagnostic compiler image
   `HERC02.BCPL.INTCODE(CG370D)` independently of `CAMBCOMP`.
-- `tools/cambridge-compile-mvs` supports `--compiler-image`, `--output`
+- `tools/native/compile-mvs` supports `--compiler-image`, `--output`
   and `--job-name` to compile without changing the default image.
 - `native-compiler/bootstrap-cambridge/check-cg370-diagnostic.py`
   checks that removing lines beginning `* CG370-DIAG:` from the diagnostic
@@ -35,14 +35,14 @@ data-argument corruption remains unknown.
 
 First verify that the diagnostic member `CG370D` is installed and current;
 if necessary, use the existing diagnostic build/deployment procedure
-(`tools/dspal populate SOURCE`, `tools/dspal populate JCL`,
-`tools/dspal submit JCL CG370DB --wait`). Do not rebuild or replace BLIB.
+(`tools/datasets/dspal populate SOURCE`, `tools/datasets/dspal populate JCL`,
+`tools/datasets/dspal submit JCL CG370DB --wait`). Do not rebuild or replace BLIB.
 
 Then execute:
 
 ```sh
 python3 native-compiler/bootstrap-cambridge/make-demoted.py --blib-only
-python3 tools/capture-writef-cg370 --cases 75 76 79 80 81 --include-blib
+python3 tools/native/capture-writef-cg370 --cases 75 76 79 80 81 --include-blib
 ```
 
 The capture runs both `CAMBCOMP` and `CG370D` for each listed source,

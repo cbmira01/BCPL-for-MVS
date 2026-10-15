@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_dspal_core():
-    path = ROOT / "tools" / "dspal-core.py"
+    path = ROOT / "tools" / "datasets" / "dspal-core.py"
     spec = importlib.util.spec_from_file_location("dspal_core", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot import {path}")

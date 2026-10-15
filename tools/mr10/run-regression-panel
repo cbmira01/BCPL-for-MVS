@@ -13,8 +13,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "mr10-kit-compiler" / "tests" / "00-regression-panel" / "manifest.tsv"
-COMPILE = ROOT / "tools" / "compile-and-run"
-CURRENT = ROOT / "tools" / "current-icint"
+COMPILE = ROOT / "tools" / "mr10" / "compile-and-run"
+CURRENT = ROOT / "tools" / "mr10" / "current-icint"
 CODE_RE = re.compile(r"EXECUTION CYCLES\s*=.*?,\s*CODE\s*=\s*(-?\d+)")
 
 

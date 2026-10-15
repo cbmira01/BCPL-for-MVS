@@ -22,9 +22,9 @@ Inspect `workarea/runtime-object-library/build-runtime-objects.jcl` locally for 
 Only after reviewing and safeguarding the existing object:
 
 ```sh
-tools/submit-jcl workarea/runtime-object-library/build-runtime-objects.jcl
+tools/mvs/submit-jcl workarea/runtime-object-library/build-runtime-objects.jcl
 # Use the actual JOB number printed by submit-jcl:
-tools/job-summary <job-number>
+tools/mvs/job-summary <job-number>
 ```
 
 Require AMAIN RC=0000 and IMAIN RC=0000. Do not run installed-object acceptance if either step fails. Remove the credential-bearing generated JCL after use.
@@ -32,9 +32,9 @@ Require AMAIN RC=0000 and IMAIN RC=0000. Do not run installed-object acceptance 
 ## Gate C — installed runtime execution
 
 ```sh
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 108 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 108 --show-output
 python3 tools/checks/run-runtime-pds-acceptance.py
-tools/run-native-regression
+tools/native/run-regression
 ```
 
 Installed regression 108 must read GO `PARM='P'` while the independent BCPIN DD contains `X`, and produce `P`. Installed-object acceptance must report 119/119, excluding instrumented 083 by design. The default regression suite should still pass its 120-test panel (regression 083 uses its special source instrumentation).

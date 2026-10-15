@@ -17,30 +17,30 @@ Persistent printer, punch, DASD, tape, configuration, and hardcopy paths live un
 From the repository root:
 
 ```sh
-tools/start-tk5 --detached
+tools/mvs/start-tk5 --detached
 ```
 
 or run attached with:
 
 ```sh
-tools/start-tk5
+tools/mvs/start-tk5
 ```
 
 Use:
 
 ```sh
-tools/shutdown-tk5
+tools/mvs/shutdown-tk5
 ```
 
 for an orderly MVS/Hercules shutdown.
 
 ## Project data sets
 
-MVS-side BCPL libraries are no longer expected to accumulate by hand. `tools/dspal` creates and repopulates the manifest-defined `HERC02.BCPL.*` libraries from Git:
+MVS-side BCPL libraries are no longer expected to accumulate by hand. `tools/datasets/dspal` creates and repopulates the manifest-defined `HERC02.BCPL.*` libraries from Git:
 
 ```sh
-tools/dspal initbcpl
-tools/dspal populate all
+tools/datasets/dspal initbcpl
+tools/datasets/dspal populate all
 ```
 
 That lifecycle has been tested through purge and full reconstruction. See `config/README.md`, `packaging/README.md`, and `tools/README.md`.

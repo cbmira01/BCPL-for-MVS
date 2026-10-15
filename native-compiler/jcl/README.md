@@ -8,12 +8,12 @@ Current files include:
 - `dump-jes2-parameters.jcl` and `list-parmlib-members.jcl` — MVS/JES inspection jobs;
 - `mr10-kit-compiler/jcl/` — relocated ICINT V12/V13 milestone decks (outside this directory).
 
-The relocated ICINT milestone decks are evidence of earlier reconstruction stages. They should not be treated as the current way to build the promoted interpreter; use `tools/current-icint`, `tools/run-intcode`, or `tools/compile-and-run` instead.
+The relocated ICINT milestone decks are evidence of earlier reconstruction stages. They should not be treated as the current way to build the promoted interpreter; use `tools/mr10/current-icint`, `tools/mr10/run-intcode`, or `tools/mr10/compile-and-run` instead.
 
 For new assembler work, generate JCL with:
 
 ```sh
-tools/make-asm-job asm/program.asm --output-dir jcl --listing heavy
+tools/mvs/make-asm-job asm/program.asm --output-dir jcl --listing heavy
 ```
 
 For BCPL/INTCODE work, prefer the higher-level host tools. They generate explicit phase banners and data-set wiring while keeping the job reproducible.

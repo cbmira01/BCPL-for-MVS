@@ -40,7 +40,7 @@ BCPLMAIN  ER    0002
   ADDRESS 00000C`: the external BCPLMAIN address in BLIB's section wrapper.
 - Installation used IEBGENER to copy the IFOX binary FB/80 object records
   from a temporary dataset directly into `HERC02.BCPL.OBJ(BLIB)`.
-  `tools/dspal ls HERC02.BCPL.OBJ` listed member `BLIB`.
+  `tools/datasets/dspal ls HERC02.BCPL.OBJ` listed member `BLIB`.
 - IEWL received an explicit `INCLUDE OBJ(BLIB)` with `OBJ` allocated to
   `HERC02.BCPL.OBJ`; `NCAL` did not prevent this explicit include.
   Its control-card echo and map confirmed:

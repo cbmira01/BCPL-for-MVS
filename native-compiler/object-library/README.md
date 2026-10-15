@@ -19,7 +19,7 @@ combiner, or `BCPLMAIN-wip`.
    obtain its `library-generated.s370.asm` artifact. The currently established
    path is `workarea/native-regression/067-full-historical-blib-link/library-generated.s370.asm`
    (verify the file exists; do not substitute combined application assembly).
-3. Inspect `HERC02.BCPL.OBJ` using `tools/dspal stat HERC02.BCPL.OBJ --raw`.
+3. Inspect `HERC02.BCPL.OBJ` using `tools/datasets/dspal stat HERC02.BCPL.OBJ --raw`.
    **Only if missing**, generate an authenticated allocation JCL using
    `make-obj-allocation-job.py`; submit it and check RC=0000. Do not replace
    an existing dataset. The proposed DCB is DSORG=PO, RECFM=FB, LRECL=80,
@@ -37,7 +37,7 @@ From repository root, allocate the object PDS **only if it does not exist**:
 ```sh
 python3 native-compiler/object-library/make-obj-allocation-job.py \
   workarea/blib-object-allocate.jcl
-tools/submit-jcl workarea/blib-object-allocate.jcl
+tools/mvs/submit-jcl workarea/blib-object-allocate.jcl
 # Check allocation job summary before proceeding.
 ```
 
@@ -49,7 +49,7 @@ python3 native-compiler/object-library/make-blib-object-job.py \
   asm/bcplmain-wip.asm \
   workarea/blib-object-probe.jcl
 
-tools/submit-jcl workarea/blib-object-probe.jcl
+tools/mvs/submit-jcl workarea/blib-object-probe.jcl
 # Inspect both jobs, then remove generated credential-bearing JCL:
 # rm -f workarea/blib-object-allocate.jcl workarea/blib-object-probe.jcl
 ```
@@ -105,8 +105,8 @@ BLKSIZE=800 PDS with `content_type: object` and `populate: false`.
 The normal host command is:
 
 ```sh
-tools/build-blib-object --dry-run
-tools/build-blib-object
+tools/native/build-blib --dry-run
+tools/native/build-blib
 ```
 
 After verifying dataset attributes, the command performs exactly:
@@ -186,7 +186,7 @@ observed.
 To submit the already deployed source/job body without host orchestration:
 
 ```sh
-tools/dspal submit JCL BLIBBLD --wait
+tools/datasets/dspal submit JCL BLIBBLD --wait
 ```
 
 This will overwrite `OBJ(BLIB)` when successful. It does **not** link-edit
@@ -212,9 +212,9 @@ the two text members:
 ```sh
 git pull --ff-only
 python3 native-compiler/object-library/test_packaging.py
-tools/dspal put ASM BCMWIP asm/bcplmain-wip.asm
-tools/dspal put JCL BLIBLINK jcl/probe-blib-object-consumer.jcl
-tools/dspal submit JCL BLIBLINK --wait
+tools/datasets/dspal put ASM BCMWIP asm/bcplmain-wip.asm
+tools/datasets/dspal put JCL BLIBLINK jcl/probe-blib-object-consumer.jcl
+tools/datasets/dspal submit JCL BLIBLINK --wait
 ```
 
 The exact acceptance result is `ASMRUN RC=0000` and `LKED RC=0000`,

@@ -16,14 +16,14 @@ Run at the repository root with Hercules/MVS running:
 
 ```sh
 git pull --ff-only
-tools/dspal populate MR10_BCPLDEMO
-tools/dspal populate MR10_LANGDEMO
-tools/dspal populate MR10_TESTS
-tools/dspal populate MR10_LIBRARY
+tools/datasets/dspal populate MR10_BCPLDEMO
+tools/datasets/dspal populate MR10_LANGDEMO
+tools/datasets/dspal populate MR10_TESTS
+tools/datasets/dspal populate MR10_LIBRARY
 
-tools/dspal put MR10_JCL MRBCDEMO mr10-kit-compiler/jcl/run-bcpl-demos.jcl
-tools/dspal put MR10_JCL MRLANGDM mr10-kit-compiler/jcl/run-language-demos.jcl
-tools/dspal put MR10_JCL MRREGRES mr10-kit-compiler/jcl/run-regression-tests.jcl
+tools/datasets/dspal put MR10_JCL MRBCDEMO mr10-kit-compiler/jcl/run-bcpl-demos.jcl
+tools/datasets/dspal put MR10_JCL MRLANGDM mr10-kit-compiler/jcl/run-language-demos.jcl
+tools/datasets/dspal put MR10_JCL MRREGRES mr10-kit-compiler/jcl/run-regression-tests.jcl
 ```
 
 The JCL files are stored **without JOB cards**. `dspal submit` adds the authenticated JOB card.
@@ -31,9 +31,9 @@ The JCL files are stored **without JOB cards**. `dspal submit` adds the authenti
 ## Run
 
 ```sh
-tools/dspal submit MR10_JCL MRLANGDM
-tools/dspal submit MR10_JCL MRBCDEMO
-tools/dspal submit MR10_JCL MRREGRES
+tools/datasets/dspal submit MR10_JCL MRLANGDM
+tools/datasets/dspal submit MR10_JCL MRBCDEMO
+tools/datasets/dspal submit MR10_JCL MRREGRES
 ```
 
 ## Read the report
@@ -49,7 +49,7 @@ tools/dspal submit MR10_JCL MRREGRES
 | `CODE=0` | Successful interpreted completion |
 | `SYNTAX ERROR`, `INTCODE ERROR`, `MAPSTORE` | Investigate even if JES says success |
 
-**JES RC=0000 is not enough.** ICINT19 may still print a nonzero interpreted `CODE`. The MVS regression JCL does not yet compare results with `.expected` files. The host `tools/run-mr10kit-regression-panel` does.
+**JES RC=0000 is not enough.** ICINT19 may still print a nonzero interpreted `CODE`. The MVS regression JCL does not yet compare results with `.expected` files. The host `tools/mr10/run-regression-panel` does.
 
 A prior regression run exposed invalid placement of `TEST:` statements before local `LET` declarations. Those source lines were moved below the declarations, and a later MVS run showed zero interpreted codes and the expected result records. Do not use JES job numbers as unique historical proof; they wrap.
 
@@ -57,7 +57,7 @@ For reproducible evidence, record the Git revision, installed member versions, j
 
 ## Observe physical PDS capacity with dspal stat
 
-`tools/dspal stat MR10_ASM` and `tools/dspal stat` now request
+`tools/datasets/dspal stat MR10_ASM` and `tools/datasets/dspal stat` now request
 read-only IEHLIST VTOC and directory listings in addition to LISTDS.
 The report prints allocated tracks, tracks occupied through the
 end-of-data high-water mark, unused tail tracks, extent count, and

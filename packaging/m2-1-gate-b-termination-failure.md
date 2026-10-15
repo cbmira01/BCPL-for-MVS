@@ -28,14 +28,14 @@ Determine whether the accepted D6 candidate has an actionable mismatch between p
 
 The existing `native-compiler/regression/093-aptovec-stack-overflow/` case already triggers the independent G40 limit and asserts the diagnostic text `STACK OVERFLOW` without reaching its `DEBUGINT(999)` callee. Its dated README says it expects **GO RC=0000**; therefore it is historical evidence of the current behavior, not a policy specification for future nonzero status.
 
-Current `native-compiler/regression/run-test.sh` uses `tools/job-summary` to distinguish completed GO status; its `expected-go-rc.txt` fixture only participates in the *nonzero failure* branch (RC=1 from job-summary). Merely adding an RC=0000 fixture to regression 093 would **not** assert RC=0. Instead capture the actual step summary from the baseline D6 candidate, including the GO RC and diagnostic.
+Current `native-compiler/regression/run-test.sh` uses `tools/mvs/job-summary` to distinguish completed GO status; its `expected-go-rc.txt` fixture only participates in the *nonzero failure* branch (RC=1 from job-summary). Merely adding an RC=0000 fixture to regression 093 would **not** assert RC=0. Instead capture the actual step summary from the baseline D6 candidate, including the GO RC and diagnostic.
 
 Operator command (no rebuild or object changes):
 
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
 BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
-tools/run-native-regression 93 --show-output
+tools/native/run-regression 93 --show-output
 ```
 
 Acceptance of the **baseline probe** requires `STACK OVERFLOW`, absence of `999`, successful compile/link steps, and explicit recorded `GO RC=0000`. If RC differs, investigate resident build selection and report; do not edit code reflexively.
@@ -93,16 +93,16 @@ The owner explicitly **approved RC=12 as the stack-overflow completion code**. T
 **Pending execution:** these Git edits do not constitute assembled, linked or executed proof. Run this sequence after `git pull --ff-only` while MVS is available:
 
 ```sh
-tools/dspal put SOURCE BCPLM7 asm/bcplmain-d7-candidate.asm
-tools/dspal put JCL BLDD7MN jcl/build-dev-bcplmain-d7.jcl
-tools/dspal put JCL D7LINK jcl/bcplio-d7-integration-link.jcl
-tools/dspal submit JCL BLDD7MN
+tools/datasets/dspal put SOURCE BCPLM7 asm/bcplmain-d7-candidate.asm
+tools/datasets/dspal put JCL BLDD7MN jcl/build-dev-bcplmain-d7.jcl
+tools/datasets/dspal put JCL D7LINK jcl/bcplio-d7-integration-link.jcl
+tools/datasets/dspal submit JCL BLDD7MN
 # Verify payload assembler and IEBGENER steps, both RC=0000.
-tools/dspal submit JCL D7LINK
+tools/datasets/dspal submit JCL D7LINK
 # Verify payload IEWL RC=0000 and distinct BCPLM7 object.
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
 BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 \
-tools/run-native-regression 93 --show-output
+tools/native/run-regression 93 --show-output
 ```
 
 Then exercise normal STOP/FINISH and a checked-frame overflow (where independently testable), and rerun full 00–123 against selected DEVOBJ(BCPLM7). **No MVS jobs or tests are claimed executed by this commit.** A documented focused pass and full panel are acceptance requirements.
@@ -151,7 +151,7 @@ Git-only remedy:
 
 ## Final full D7 candidate regression — 14 October 2026
 
-Owner executed `tools/run-native-regression` with `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, and `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7`, following the regression 052 fixture correction.
+Owner executed `tools/native/run-regression` with `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, and `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7`, following the regression 052 fixture correction.
 
 **Recorded result:** native regression 00–123, **123 PASS / 0 FAIL / 1 expected SKIP / 124 total**. SKIP 083 remains the planned source-instrumentation-only case. Both independent stack-overflow paths, **052 checked-frame** and **093 APTOVEC**, passed under the explicit GO RC=0012 fixture. Termination regressions **084–089** (FINISH and STOP, including nonzero and buffered exits) all passed. Regression 119, termination flushing both destinations, also passed. This matches the M2.0 aggregate baseline while enforcing the new RC=12 failure semantics.
 

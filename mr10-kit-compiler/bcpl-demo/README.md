@@ -27,9 +27,9 @@ These 17 programs show what BCPL can do. Each prints a short `DEMO:` line when r
 From the repository root:
 
 ```sh
-tools/run-mr10kit-demo-suite
+tools/mr10/run-demo-suite
 ```
 
-On MVS, first install the mapped BCPLDEMO and LIBRARY members. Then submit stored `MR10_JCL(MRBCDEMO)` with `tools/dspal submit MR10_JCL MRBCDEMO`. See [suite jobs](../jcl/README-SUITES.md).
+On MVS, first install the mapped BCPLDEMO and LIBRARY members. Then submit stored `MR10_JCL(MRBCDEMO)` with `tools/datasets/dspal submit MR10_JCL MRBCDEMO`. See [suite jobs](../jcl/README-SUITES.md).
 
 Some programs need extra modules or input DDs. The suite runner and stored JCL provide those details. These are demonstrations; exact-output checks are in [the regression panel](../tests/00-regression-panel/README.md).

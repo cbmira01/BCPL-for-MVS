@@ -30,13 +30,13 @@ inventories:
 
 ```sh
 git pull --ff-only
-tools/dspal stat OBJ
-tools/dspal stat DEVOBJ
-tools/dspal ls OBJ
-tools/dspal ls DEVOBJ
+tools/datasets/dspal stat OBJ
+tools/datasets/dspal stat DEVOBJ
+tools/datasets/dspal ls OBJ
+tools/datasets/dspal ls DEVOBJ
 ```
 
-Use `tools/dspal initbcpl` only after reviewing its allocation preflight.
+Use `tools/datasets/dspal initbcpl` only after reviewing its allocation preflight.
 The newly registered DEVOBJ is a PO/FB/LRECL=80/BLKSIZE=800 library.
 **Do not submit SEEDDEV unless DEVOBJ exists and is empty.** Review the
 effective allocation report and ensure no other managed dataset is at risk.
@@ -45,15 +45,15 @@ Confirm production OBJ has all five accepted members.
 Install the two new job bodies, *as text*:
 
 ```sh
-tools/dspal put JCL SEEDDEV jcl/seed-devobj.jcl
-tools/dspal put JCL BLDDEVM jcl/build-dev-bcplmem.jcl
+tools/datasets/dspal put JCL SEEDDEV jcl/seed-devobj.jcl
+tools/datasets/dspal put JCL BLDDEVM jcl/build-dev-bcplmem.jcl
 ```
 
 Seed the empty candidate library with one MVS-native binary IEBCOPY:
 
 ```sh
-tools/dspal submit JCL SEEDDEV --wait
-tools/dspal ls DEVOBJ
+tools/datasets/dspal submit JCL SEEDDEV --wait
+tools/datasets/dspal ls DEVOBJ
 ```
 
 Require IEBCOPY RC=0000 and exactly the five expected object members.
@@ -82,9 +82,9 @@ execution is yet accepted.
 An individual BCPLMEM candidate build is:
 
 ```sh
-tools/dspal put SOURCE BCPLMEM asm/bcplmem.asm
-tools/dspal submit JCL BLDDEVM --wait
-tools/dspal ls DEVOBJ
+tools/datasets/dspal put SOURCE BCPLMEM asm/bcplmem.asm
+tools/datasets/dspal submit JCL BLDDEVM --wait
+tools/datasets/dspal ls DEVOBJ
 ```
 
 Inspect the payload JES listing. Require IFOX ASMMEM RC=0000, highest
@@ -97,7 +97,7 @@ Test explicitly against candidates, not production:
 
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/run-native-regression 27 --show-output
+  tools/native/run-regression 27 --show-output
 ```
 
 The regression generator validates that the logical library is a managed
@@ -143,7 +143,7 @@ execution have been demonstrated, run the full panel **once**:
 
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/run-native-regression
+  tools/native/run-regression
 ```
 
 Expected baseline is 123 PASS / 0 FAIL / 1 expected SKIP (083).
@@ -169,7 +169,7 @@ IEBCOPY/IEBGENER return codes, link-editor report, and regression totals.
 ## March acceptance — CLOSED (13 October 2026)
 
 The operator ran the sole full panel for this development march with
-`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression`
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression`
 after pulling commit 6529fcb. All numbered cases 00–123 were evaluated:
 **123 PASS, 0 FAIL, 1 expected SKIP, TOTAL 124**. Case 083 was skipped
 because it requires source-only FREEMAIN instrumentation. The operator's

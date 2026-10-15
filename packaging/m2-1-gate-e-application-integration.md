@@ -11,7 +11,7 @@ The existing installed-object regression harness is the acceptance vehicle, not 
 ## Baseline and evidence at entry
 
 - D7 assembler/source `asm/bcplmain-d7-candidate.asm` staged to SOURCE(BCPLM7), assembled/installed by payload JOB 2989 (IFOX00 and IEBGENER RC=0000), integrated link by payload JOB 2992 (IEWL RC=0000).
-- Full D7 `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 tools/run-native-regression` completed **123 PASS / 0 FAIL / 1 expected SKIP 083 / 124 total**. This is accepted Gate B/Gate C/Gate D execution baseline, not a new Gate E run.
+- Full D7 `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 tools/native/run-regression` completed **123 PASS / 0 FAIL / 1 expected SKIP 083 / 124 total**. This is accepted Gate B/Gate C/Gate D execution baseline, not a new Gate E run.
 - Existing regression 069 establishes independent BLIB object linkage in the historical experimental JOB 2425, and is PASS in the modern full D7 panel. The old `069/README.md` has stage-specific historical assertions including "not yet PASS" that are **stale** for the accepted D7 installed-object path. Treat modern harness execution and MVS JES output as authoritative over that obsolete stage status.
 - Existing tests 025 and 026 cover separate BCPL/library and native-through-global calls, with associated limits; 069 and 075 independently exercise historical BLIB. Tests 091–093 cover external BCPLAPT; 094–119 exercise BCPLIO; 121–123 exercise save-area/vector list cooperation.
 
@@ -46,13 +46,13 @@ for n in 25 26 69 75 91 101 119 121; do
   BCPL_RUNTIME_LIBRARY=DEVOBJ \
   BCPL_RUNTIME_CANDIDATE=1 \
   BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 \
-  tools/run-native-regression "$n" --show-output || break
+  tools/native/run-regression "$n" --show-output || break
 done
 ```
 
 On successful focused tests, run the complete unchanged D7 panel (same four environment variables). Expected aggregate: **123 PASS, 0 FAIL, one source-only SKIP 083**.
 
-Test 069 link map and exact GO results are separately important; if the runner prints a job number, use `tools/job-summary N` and `tools/dump-report-for-job N` to retain evidence. If no job number appears in the normal output, inspect `workarea/native-regression/logs/069-independent-blib-object.log` or the per-test workarea report.
+Test 069 link map and exact GO results are separately important; if the runner prints a job number, use `tools/mvs/job-summary N` and `tools/mvs/dump-report-for-job N` to retain evidence. If no job number appears in the normal output, inspect `workarea/native-regression/logs/069-independent-blib-object.log` or the per-test workarea report.
 
 ## Gate E exit criteria
 
@@ -85,14 +85,14 @@ The supplied regression 069 log shows compiler **JOB 3645**, native payload **JO
 - output record logical sequence matched expected `BLIB 42`; regression PASS;
 - JES DD attribution not independently verified by the record-check tool.
 
-**Remaining formal linkage map check:** console and per-test log do not include IEWL MAP/XREF CSECT listing. Before formal Gate E closure obtain `tools/dump-report-for-job 3646` and inspect actual link-edit inclusions/CSECTs and resolution; do not fabricate a map from a successful GO. The expected outcome is separate application CSECT, BCPLMAIN and linked runtime/BLIB sections, as shown in the available listing. If only partial map information is present, identify its limits rather than claiming all objects listed.
+**Remaining formal linkage map check:** console and per-test log do not include IEWL MAP/XREF CSECT listing. Before formal Gate E closure obtain `tools/mvs/dump-report-for-job 3646` and inspect actual link-edit inclusions/CSECTs and resolution; do not fabricate a map from a successful GO. The expected outcome is separate application CSECT, BCPLMAIN and linked runtime/BLIB sections, as shown in the available listing. If only partial map information is present, identify its limits rather than claiming all objects listed.
 
 No candidate source, assembler, DEVOBJ object, or production OBJ changes were made for these Gate E executions. **Gate E ready for final map inspection, not yet formally closed.**
 
 
 ## Final independent-object IEWL evidence and closure — 14 October 2026
 
-Owner supplied the complete `tools/dump-report-for-job 3646` JES/IFOX/IEWL/GO report. **JOB 3646 RG069R**: ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; program printed **`BLIB 42`**.
+Owner supplied the complete `tools/mvs/dump-report-for-job 3646` JES/IFOX/IEWL/GO report. **JOB 3646 RG069R**: ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; program printed **`BLIB 42`**.
 
 The IEWL `LIST,XREF,MAP` report explicitly includes `OBJ(BCPLM7)`, `OBJ(BCPLIO)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)` from `HERC02.BCPL.DEVOBJ`, with `ENTRY BCRG0069`.
 

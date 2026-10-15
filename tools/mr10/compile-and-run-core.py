@@ -33,7 +33,7 @@ import textwrap
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-MAKE_ASM = ROOT / "tools" / "make-asm-job.py"
+MAKE_ASM = ROOT / "tools" / "mvs" / "make-asm-job.py"
 PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
 WORKAREA = ROOT / "workarea"
 
@@ -711,7 +711,7 @@ def make_parser() -> argparse.ArgumentParser:
             "ICINT, then load/run their INTCODE with BLIBI and ICLIB."
         ),
         epilog=(
-            "Example: tools/compile-and-run --results --save-ocode "
+            "Example: tools/mr10/compile-and-run --results --save-ocode "
             "--save-intcode --dd EXTRA=extra.bcpl mr10-kit-compiler/asm/icintv15.asm "
             "main.bcpl +module2.bcpl"
         ),

@@ -12,15 +12,15 @@ This is an internal service implementation change, not a BCPL-facing G40 ABI cha
 
 ## Candidate build and validation sequence
 
-No resident MVS writes were performed by this Git source change. Operator must explicitly synchronize only `asm/bcplmain.asm` to `HERC02.BCPL.SOURCE(BCPLMAIN)` through the established DSPAL text-member procedure, with readback verification. Follow `packaging/m1-8-reproducible-runtime.md` Gate C rules: inventory `tools/dspal ls SOURCE`, replace only member BCPLMAIN (selective `dspal rm`, `dspal compress SOURCE`, `dspal put SOURCE BCPLMAIN asm/bcplmain.asm`), readback and CP037/FB80 normalization comparison. Rebuild **only** DEVOBJ(BCPLMAIN) using existing resident `JCL(BLDDEVN)` or `jcl/build-dev-bcplmain.jcl`; confirm assembler RC=0000 and install RC=0000. Confirm `DEVOBJ(BCPLAPT)` remains independently assembled and present. Do not alter stable `HERC02.BCPL.OBJ` or rerun compiler bootstrap.
+No resident MVS writes were performed by this Git source change. Operator must explicitly synchronize only `asm/bcplmain.asm` to `HERC02.BCPL.SOURCE(BCPLMAIN)` through the established DSPAL text-member procedure, with readback verification. Follow `packaging/m1-8-reproducible-runtime.md` Gate C rules: inventory `tools/datasets/dspal ls SOURCE`, replace only member BCPLMAIN (selective `dspal rm`, `dspal compress SOURCE`, `dspal put SOURCE BCPLMAIN asm/bcplmain.asm`), readback and CP037/FB80 normalization comparison. Rebuild **only** DEVOBJ(BCPLMAIN) using existing resident `JCL(BLDDEVN)` or `jcl/build-dev-bcplmain.jcl`; confirm assembler RC=0000 and install RC=0000. Confirm `DEVOBJ(BCPLAPT)` remains independently assembled and present. Do not alter stable `HERC02.BCPL.OBJ` or rerun compiler bootstrap.
 
 Then execute:
 
 ```bash
 git pull --ff-only
-BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression 91 --show-output
-BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression 92 --show-output
-BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression 93 --show-output
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression 91 --show-output
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression 92 --show-output
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression 93 --show-output
 ```
 
 These checks validate nested APTOVEC calls and overflow against the installed candidate library. **Additional mandatory structural evidence:** review assembler external-symbol/reference records and link-edit map (or equivalent executable address trace) demonstrating that G40's relocated address resolves to independent DEVOBJ(BCPLAPT), not an internal BCPLMAIN duplicate. Link-editor member inclusion is insufficient on its own. Confirm APLIMIT is nonzero and matches initialized STKLIM in the executing image, by focused probe or suitable object/runtime evidence. Record job IDs, assembler/link-edit CCs, output and expected results. Any build/link failure or regression mismatch keeps Gate B open.

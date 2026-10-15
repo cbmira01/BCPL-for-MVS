@@ -26,8 +26,8 @@ This deliberately preserves the existing 16K checked-entry threshold; the 256-by
 
 ## Operator acceptance
 
-1. Pull `main`, run `tools/run-native-regression 0 --show-output` and `tools/run-native-regression 52 --show-output`.
-2. If both pass, run `tools/run-native-regression --show-output`.
+1. Pull `main`, run `tools/native/run-regression 0 --show-output` and `tools/native/run-regression 52 --show-output`.
+2. If both pass, run `tools/native/run-regression --show-output`.
 3. Record operator results only after real TK5 execution.
 
 Baseline **before** this change: 82 PASS, 0 FAIL, observed after commit `f58b9d0` and recorded at `64d4828`. The modified layout is not yet validated under TK5.

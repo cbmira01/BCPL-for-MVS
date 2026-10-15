@@ -32,9 +32,9 @@ No edits to R13 entry linkage, G6 initialization, runtime object library, BLIB, 
 1. `git pull --ff-only`
 2. `python3 tools/checks/check-bcplmain-modules.py`
 3. `python3 tools/checks/check-asm-source.py asm/bcplmain-wip.asm`
-4. `BCPL_RUNTIME_PDS=0 tools/run-native-regression 120 --show-output`
+4. `BCPL_RUNTIME_PDS=0 tools/native/run-regression 120 --show-output`
 5. Optional focused consumer experiment after static and source-mode checks: native BCPL probe with `VALIDPOINTER` on a clearly invalid pointer and `INPROGRAM` outside program extents; neither should traverse a nonzero list or abend. Confirm exact test source before reporting semantic PASS.
-6. `tools/run-native-regression` for full 121-case mixed-mode acceptance before installing a new PDS BCPLMAIN.
+6. `tools/native/run-regression` for full 121-case mixed-mode acceptance before installing a new PDS BCPLMAIN.
 
 **Status (2026-10-12): ACCEPTED and installed.** The preceding checklist describes the original gate; actual results are recorded below.
 
@@ -50,9 +50,9 @@ No edits to R13 entry linkage, G6 initialization, runtime object library, BLIB, 
 - `check-bcplmain-modules.py`: PASS, four fragments byte-identical to canonical assembler; `check-asm-source.py`: OK.
 - Source-mode regression 120: PASS. Full mixed-mode regression 000..120: **121 PASS, 0 FAIL** before adding regression 121.
 - Added `native-compiler/regression/121-savearea-blib-consumers`, using actual historical BLIB object for G58 `INPROGRAM` and G59 `VALIDPOINTER`. After removing an invalid `FINISH:30` declaration, source-mode regression 121: PASS.
-- `prepare-runtime-object-library.py --only-main` selected **BCPLMAIN** alone; `tools/dspal stat OBJ` confirmed `HERC02.BCPL.OBJ` on TSO003. Backup preservation was advised but is not independently verified by the provided output.
+- `prepare-runtime-object-library.py --only-main` selected **BCPLMAIN** alone; `tools/datasets/dspal stat OBJ` confirmed `HERC02.BCPL.OBJ` on TSO003. Backup preservation was advised but is not independently verified by the provided output.
 - **JOB 8551 BCOBJBLD**: AMAIN (IFOX00) RC=0000; IMAIN (IEBGENER) RC=0000; assembler statements flagged 0, highest severity 0. Production BCPLMAIN installed in `HERC02.BCPL.OBJ(BCPLMAIN)`.
-- Installed-object `BCPL_RUNTIME_PDS=1 tools/run-native-regression 121 --show-output`: **PASS**.
+- Installed-object `BCPL_RUNTIME_PDS=1 tools/native/run-regression 121 --show-output`: **PASS**.
 - `run-runtime-pds-acceptance.py`: **119 PASS, 0 FAIL**, comprising 000..082 (83 PASS) and 084..119 (36 PASS). Regression 083 excluded as instrumented source-only, and test 120/121 are outside that helper's 119-case range (121 was separately verified above).
 
 **Acceptance conclusion:** minimal historical G6 empty-list backing and its direct BLIB consumer behavior are accepted. This does not validate nonempty load/vector descriptor lists, full `USERSAVE` compatibility, or the other historical fields. No post-install full mixed-mode 000..121 result is claimed here.

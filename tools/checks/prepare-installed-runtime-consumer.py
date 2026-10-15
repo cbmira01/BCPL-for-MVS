@@ -28,7 +28,7 @@ def main():
     args.output_jcl.unlink(missing_ok=True)
     stage = module(ROOT / "native-compiler/regression/069-independent-blib-object/prepare-linkage.py",
                    "blib_app_cards")
-    core = module(ROOT / "tools/dspal-core.py", "obj_consumer_dspal")
+    core = module(ROOT / "tools/datasets/dspal-core.py", "obj_consumer_dspal")
     cfg = core.load_config()
     obj, _ = core.resolve_dsn(cfg, "OBJ")
     if obj.upper() != "HERC02.BCPL.OBJ":

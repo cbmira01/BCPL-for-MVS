@@ -82,14 +82,14 @@ cases. This means an application-only assembly step followed by IEWL
 linkage against the five installed `HERC02.BCPL.OBJ` members, rather
 than reconstructing/assembling the runtime on every invocation.
 
-* `tools/run-native-regression 25` uses installed production objects
+* `tools/native/run-regression 25` uses installed production objects
   by default (provided TK5 already has the accepted object library).
-* `BCPL_RUNTIME_PDS=0 tools/run-native-regression 25` explicitly
+* `BCPL_RUNTIME_PDS=0 tools/native/run-regression 25` explicitly
   selects the development/source-runtime path.
 * Regression 083, **when no `BCPL_RUNTIME_PDS` setting is supplied**,
   retains its monolithic source-runtime instrumentation path and must
   still prove `V=2 M=1`. It is not counted as an installed-object test.
-* An explicit `BCPL_RUNTIME_PDS=1 tools/run-native-regression 83`
+* An explicit `BCPL_RUNTIME_PDS=1 tools/native/run-regression 83`
   remains rejected; no unmeasured 083 production-object PASS is fabricated.
 * `tools/checks/run-runtime-pds-acceptance.py` continues to require
   119/119 production-object passes, expressly excluding 083.
@@ -102,8 +102,8 @@ the source of truth. The source-mode flags `BCPLMEM_OBJECT`,
 `BCPL_RUNTIME_PDS=0`.
 
 After pulling this default change, the first operator checks should
-be a normal `tools/run-native-regression 25` followed by
-`tools/run-native-regression 83`, and then a complete ordinary
+be a normal `tools/native/run-regression 25` followed by
+`tools/native/run-regression 83`, and then a complete ordinary
 120-test run. Its count would be a **mixed-mode 120/120** result, not
 a 120/120 installed-object result.
 
@@ -111,7 +111,7 @@ a 120/120 installed-object result.
 ## Default-linkage final validation — 120/120 mixed-mode PASS
 
 On 2026-10-11, after pulling through commit `ddbe77f`, the operator
-executed `tools/run-native-regression` without environment overrides.
+executed `tools/native/run-regression` without environment overrides.
 All 120 numbered regressions, 000–119, passed:
 
 ```text

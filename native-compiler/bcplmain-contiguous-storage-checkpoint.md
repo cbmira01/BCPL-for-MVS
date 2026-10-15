@@ -11,7 +11,7 @@ Startup records the block address and the start/end of workspace, initializes G!
 1. Pull `main`; inspect/assemble the modified `asm/bcplmain-wip.asm` using the established native regression runner.
 2. Run a narrow smoke test of regressions 00 (entry/FINISH), 07 (global initialization), 27–30 (GETVEC/FREEVEC), 48–52 (stack checking), 069 (independent BLIB), 075/076 (BLIB WRITEF binding).
 3. Inspect IFOX/IEWL/JES diagnostics and resolve any assembler addressability errors or MVS storage failures before asserting runtime success.
-4. Once any shared-runtime change is stable, execute the **entire** `tools/run-native-regression` panel. Only record PASS after actual guest execution.
+4. Once any shared-runtime change is stable, execute the **entire** `tools/native/run-regression` panel. Only record PASS after actual guest execution.
 
 The prior observed baseline remains **82 PASS, 0 FAIL (00–081)**, *before* this storage change. It is not evidence of the modified runtime's correctness.
 

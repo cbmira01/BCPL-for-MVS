@@ -30,4 +30,4 @@ BCPLMAIN is recompiled or changed.
 
 ## Validation after G!76 binding correction
 
-**PASS** — user reran `tools/run-native-regression 75 76` after runtime commit `ab1d993`; the two tests passed, 0 failures. The originally observed third-argument truncation originated in BCPLMAIN's provisional `WRITEST` shadowing the imported historical BLIB G!76 binding. The corrected BCPLMAIN preserves BLIB's entry and uses bootstrap WRITEST only when G!76 remains unset. No CG370 or BLIB change was needed.
+**PASS** — user reran `tools/native/run-regression 75 76` after runtime commit `ab1d993`; the two tests passed, 0 failures. The originally observed third-argument truncation originated in BCPLMAIN's provisional `WRITEST` shadowing the imported historical BLIB G!76 binding. The corrected BCPLMAIN preserves BLIB's entry and uses bootstrap WRITEST only when G!76 remains unset. No CG370 or BLIB change was needed.

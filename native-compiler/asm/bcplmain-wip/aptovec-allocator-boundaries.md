@@ -223,12 +223,12 @@ Run one case at a time on TK5:
 ```sh
 git pull --ff-only
 python3 -m py_compile tools/checks/prepare-bcplapt-runtime-probe.py
-tools/run-native-regression 91 --show-output
+tools/native/run-regression 91 --show-output
 python3 tools/checks/prepare-bcplapt-runtime-probe.py 91
-bash tools/submit-jcl \
+bash tools/mvs/submit-jcl \
   workarea/native-regression/091-aptovec-nested-call/aptovec-object-probe/aptovec-object-probe.jcl
-tools/job-summary JOBNUMBER
-tools/dump-report-for-job JOBNUMBER
+tools/mvs/job-summary JOBNUMBER
+tools/mvs/dump-report-for-job JOBNUMBER
 ```
 
 Repeat for 092 and 093 using their corresponding workarea directory.
@@ -278,12 +278,12 @@ bash -n native-compiler/regression/run-test.sh
 python3 -m py_compile tools/checks/externalize-bcplapt.py \
     native-compiler/regression/make-two-object-job.py \
     native-compiler/regression/069-independent-blib-object/prepare-stage2.py
-BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/run-native-regression 91 --show-output
-BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/run-native-regression 93 --show-output
+BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/native/run-regression 91 --show-output
+BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/native/run-regression 93 --show-output
 ```
 
 If both pass, run `BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1
-tools/run-native-regression`. Acceptance requires **120/120 PASS**,
+tools/native/run-regression`. Acceptance requires **120/120 PASS**,
 including BLIB object/PDS regressions and all stream fixture tests;
 do not promote either flag to default before that evidence. Also
 check whether JCL assembler/link reports show all intended external
@@ -294,7 +294,7 @@ object steps and resolved `APTOVEC/APLIMIT/STKOVFL`.
 Operator report (2026-10-10 local): after pulling through commit `5e69214`, `bash -n native-compiler/regression/run-test.sh` and `python3 -m py_compile` for the APTOVEC externalizer and both JCL generators completed without errors. The opt-in **combined** invocation
 
 ```sh
-BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/run-native-regression
+BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/native/run-regression
 ```
 
 completed **PASS 120 / FAIL 0 / TOTAL 120** across regressions 00–119. Both focused combined runs, 091 and 093, separately reported PASS 1/1 each. The full run also includes large APTOVEC 092; independently assembled native call 026; BCPLBYTE round-trip 038; BLIB PDS object paths 069–076; reclamation 082–083; and stream/termination tests 094–119. This meets the full-suite acceptance criterion for the **opt-in combined runner configuration** and supersedes Checkpoint 5's pending-test status.

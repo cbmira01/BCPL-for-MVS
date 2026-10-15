@@ -147,15 +147,15 @@ remains open pending that evidence; production PDS remains unchanged.
 
 ## Gate F1 source-candidate acceptance — 12 October 2026
 
-Operator ran `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/run-native-regression` against the candidate; the full 00–123 range returned **PASS 124, FAIL 0, SKIP 0, TOTAL 124**. Earlier targeted 039, 082, 083, 088, 122 and 123 also each passed under this configuration. Together with non-installing IFOX assembly JOB 9638 and nine-checkpoint execution JOB 9642, this closes the **Gate F1 source-candidate validation**.
+Operator ran `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/native/run-regression` against the candidate; the full 00–123 range returned **PASS 124, FAIL 0, SKIP 0, TOTAL 124**. Earlier targeted 039, 082, 083, 088, 122 and 123 also each passed under this configuration. Together with non-installing IFOX assembly JOB 9638 and nine-checkpoint execution JOB 9642, this closes the **Gate F1 source-candidate validation**.
 
 Gate E installed production object library `HERC02.BCPL.OBJ` remains unchanged. This acceptance does not constitute installation or production-PDS regression approval. Any subsequent promotion must be separately authorized and followed by installed-runtime acceptance testing. The historical staging instructions and unexecuted notes above describe the state at their original recording dates; this section is the controlling current acceptance status.
 
 ## Production object installation — JOB 9919 (13 October 2026)
 
-Resident `SOURCE(BCPLMEM)` updated via JOBs 9910–9913; readback matched the canonical source. Resident `JCL(BLDGFMEM)` written/read back via JOBs 9915–9916 (only trailing newline differed). Unauthenticated direct JOB 9914 successfully assembled but PUTMEM abended S913-38 as PROD; **no object was installed by that job**. Authenticated `dspal submit JCL BLDGFMEM --wait` used launcher JOB 9918 and payload **JOB 9919**, with ASMMEM IFOX00 RC=0000, PUTMEM IEBGENER RC=0000, zero assembler statements flagged, highest severity 0 and job SUCCESS. Subsequent `tools/dspal ls OBJ` listed BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB. The one-member installation changed `OBJ(BCPLMEM)` only; no BCPLMAIN/other runtime-object replacement was requested. **Production installation accepted; installed full regression not yet reported.**
+Resident `SOURCE(BCPLMEM)` updated via JOBs 9910–9913; readback matched the canonical source. Resident `JCL(BLDGFMEM)` written/read back via JOBs 9915–9916 (only trailing newline differed). Unauthenticated direct JOB 9914 successfully assembled but PUTMEM abended S913-38 as PROD; **no object was installed by that job**. Authenticated `dspal submit JCL BLDGFMEM --wait` used launcher JOB 9918 and payload **JOB 9919**, with ASMMEM IFOX00 RC=0000, PUTMEM IEBGENER RC=0000, zero assembler statements flagged, highest severity 0 and job SUCCESS. Subsequent `tools/datasets/dspal ls OBJ` listed BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB. The one-member installation changed `OBJ(BCPLMEM)` only; no BCPLMAIN/other runtime-object replacement was requested. **Production installation accepted; installed full regression not yet reported.**
 
-Next (single end-of-march installed-object panel): `BCPL_RUNTIME_PDS=1 tools/run-native-regression`; expect 123 PASS, 0 FAIL, 1 SKIP (083 source-only). Do not mark Gate F1 complete until actual result is received.
+Next (single end-of-march installed-object panel): `BCPL_RUNTIME_PDS=1 tools/native/run-regression`; expect 123 PASS, 0 FAIL, 1 SKIP (083 source-only). Do not mark Gate F1 complete until actual result is received.
 
 ## Installed panel diagnostic — JES number rollover (13 October 2026)
 
@@ -167,7 +167,7 @@ report was an old October 1 `ICINTTRI` JOB 37. This is not valid evidence
 of 66 BCPL runtime defects and cannot be used for Gate F1 acceptance.
 
 The root cause was first-incarnation lookup in both
-`tools/job-summary` and `tools/dump-report-for-job`: the persistent
+`tools/mvs/job-summary` and `tools/mvs/dump-report-for-job`: the persistent
 printer file contains earlier jobs using the recycled number. Fixes
 select the **latest** START JOB banner and require its matching END,
 without accepting stale completed jobs while the current job runs.
@@ -176,9 +176,9 @@ A new complete installed regression result is required to close F1.
 
 ## Gate F1 final installed-runtime acceptance — 13 October 2026
 
-After repairing JES job-number rollover lookup in `tools/job-summary` and
-`tools/dump-report-for-job`, the operator repeated the complete installed
-runtime panel: `BCPL_RUNTIME_PDS=1 tools/run-native-regression`.
+After repairing JES job-number rollover lookup in `tools/mvs/job-summary` and
+`tools/mvs/dump-report-for-job`, the operator repeated the complete installed
+runtime panel: `BCPL_RUNTIME_PDS=1 tools/native/run-regression`.
 The observed results were **PASS 123, FAIL 0, SKIP 1, TOTAL 124**.
 The sole SKIP is regression 083, whose FREEMAIN instrumentation is expressly
 source-only. Every eligible installed-object regression, including 057–123,

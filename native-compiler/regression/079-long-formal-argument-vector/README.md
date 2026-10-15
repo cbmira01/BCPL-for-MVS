@@ -27,4 +27,4 @@ unchanged historical BLIB and BCPLMAIN.
 
 ## Status
 
-**PASS** — user-executed `tools/run-native-regression 79` on TK5 (2026-10-08 local), exact `11 22 33 33`; 1 PASS, 0 FAIL. A freshly compiled twelve-formal procedure handles R10 and the third data argument through `@A`. 075/076 remain failing.
+**PASS** — user-executed `tools/native/run-regression 79` on TK5 (2026-10-08 local), exact `11 22 33 33`; 1 PASS, 0 FAIL. A freshly compiled twelve-formal procedure handles R10 and the third data argument through `@A`. 075/076 remain failing.

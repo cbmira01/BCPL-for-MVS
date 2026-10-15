@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Compatibility launcher: tools/native/prepare-bootstrap
-set -e
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/native/prepare-bootstrap" "$@"

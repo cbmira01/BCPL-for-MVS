@@ -7,8 +7,8 @@ cd "$REPO_ROOT"
 set -u
 set -o pipefail
 
-COMPILE="tools/compile-and-run"
-ICINT="$(bash tools/current-icint)"
+COMPILE="tools/mr10/compile-and-run"
+ICINT="$(bash tools/mr10/current-icint)"
 SUITE="mr10-kit-compiler/language-demo"
 
 while [ "$#" -gt 0 ]
@@ -24,7 +24,7 @@ do
             shift 2
             ;;
         --help|-h)
-            echo "usage: tools/run-language-demos [--icint PATH]"
+            echo "usage: tools/mr10/run-language-demos [--icint PATH]"
             exit 0
             ;;
         *)

@@ -179,7 +179,7 @@ Status: **PENDING TK5**. Full panel deferred pending focused 086–087.
 ## STOP adapter focused acceptance — 2026-10-09
 
 Operator executed `python3 tools/checks/check-native-runtime.py`:
-**OK (source and BLIB injection)**. Focused `tools/run-native-regression
+**OK (source and BLIB injection)**. Focused `tools/native/run-regression
 86 87 --show-output`: **2 PASS, 0 FAIL**. Both emitted `S`.
 
 Regression 086's test-only STOP(0) adapter completed normally with
@@ -256,7 +256,7 @@ special GO RC=0100 acceptance applies only to 087.
 Source/anchor checks succeeded against committed repository text,
 including 71-column assembler limits, presence of G!30, and removal
 of test injection. **No TK5 acceptance is claimed yet for canonical
-STOP.** Next validation: `tools/run-native-regression 86 87
+STOP.** Next validation: `tools/native/run-regression 86 87
 --show-output`, then full panel if both pass.
 
 Scope: mapping is documented by Richards (1974) for representable
@@ -266,7 +266,7 @@ BCPL integers is deferred explicitly, not characterized as historical.
 ## Production STOP focused acceptance and expanded regressions
 
 Operator ran `tools/checks/check-native-runtime.py` successfully, then
-`tools/run-native-regression 86 87 --show-output` on canonical STOP
+`tools/native/run-regression 86 87 --show-output` on canonical STOP
 (G!30, no adapter): **2 PASS, 0 FAIL**. STOP(0) and STOP(100)
 both printed `S`, and their respective GO completion codes met
 the regression acceptance rules. This is the first TK5 acceptance
@@ -281,14 +281,14 @@ New regression **089** executes WRCH('E'), then STOP(8), expecting
 for case 089, with matching output and successful ASM/LKED. Existing
 case 087 alone continues to accept GO RC=0100.
 
-**Next acceptance:** `tools/run-native-regression 88 89 --show-output`.
+**Next acceptance:** `tools/native/run-regression 88 89 --show-output`.
 Only after those pass should the full 000–089 panel run. The last
 full-panel baseline remains 86/86; additional tests are not yet
 counted as full-panel acceptance.
 
 ## STOP 088–089 focused acceptance — 2026-10-09
 
-Operator executed `tools/run-native-regression 88 89 --show-output`
+Operator executed `tools/native/run-regression 88 89 --show-output`
 under TK5/MVS 3.8J: **2 PASS, 0 FAIL, TOTAL 2**.
 Regression 088 emitted `42` with two GETVEC vectors outstanding
 at `STOP(0)`; regression 089 emitted `E` through a buffered

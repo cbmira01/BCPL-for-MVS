@@ -36,14 +36,14 @@ From the repo root after `git pull --ff-only`, run:
 bash native-compiler/regression/069-independent-blib-object/run-stage1.sh
 ```
 
-The script compiles the application using `tools/cambridge-compile-mvs`,
+The script compiles the application using `tools/native/compile-mvs`,
 generates private authenticated JCL via `prepare-linkage.py`, and submits
 the **non-executing** `RG069L` three-CSECT linkage job. The transcript
 will print a `JOB N` number; inspect that job using:
 
 ```sh
-tools/job-summary N
-tools/dump-report-for-job N
+tools/mvs/job-summary N
+tools/mvs/dump-report-for-job N
 ```
 
 Gate: `ASMAP`, `ASMRUN`, `LKED` must all complete at RC=0000.
@@ -58,7 +58,7 @@ the new object-linked GO path can be validated; otherwise the existing
 static combiner could incorrectly mark 069 PASS. Thus an entire
 `run-native-regression` sweep currently encounters a planned
 in-development 069 failure. The accepted historical full passing
-baseline remains 000–068. Invoke `tools/run-native-regression 0 68`
+baseline remains 000–068. Invoke `tools/native/run-regression 0 68`
 to exercise only the established panel.
 
 ### Architectural concern to resolve
@@ -154,13 +154,13 @@ in the Stage 2 generator before promoting this to the permanent runner.
 
 ## Permanent runner integration (awaiting first integrated run)
 
-`tools/run-native-regression 69` now drives the previously proven
+`tools/native/run-regression 69` now drives the previously proven
 resident-compiler -> independent app IFOX -> experimental BCPLMAIN IFOX
 -> IEWL with `INCLUDE OBJ(BLIB)` -> GO sequence. The runner uses the
 same strict `expected.txt` check and MVS job-summary acceptance as other
 native regressions. It does **not** fall back to static source combining.
 
-`tools/run-native-regression` now **prints the matched BCPL output
+`tools/native/run-regression` now **prints the matched BCPL output
 on the WSL console by default**, followed by its verdict. Logs and the
 full captured MVS report remain under `workarea/native-regression/`.
 `--show-output` retains the extra full-report diagnostic on failure.
@@ -169,7 +169,7 @@ Run:
 
 ```sh
 git pull --ff-only
-tools/run-native-regression 69
+tools/native/run-regression 69
 ```
 
 Expected console conclusion (after successful resident compilation

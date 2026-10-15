@@ -217,8 +217,8 @@ IFOX or actual GO execution, and neither constitutes a local
 execution of the project's full checking scripts.
 
 **Next TK5 acceptance:**
-`tools/run-native-regression 91 --show-output`, expected output
-`42`; then `tools/run-native-regression --show-output` for
+`tools/native/run-regression 91 --show-output`, expected output
+`42`; then `tools/native/run-regression --show-output` for
 the complete panel 000..091. The APTOVEC service remains
 **provisional pending guest acceptance**.
 
@@ -246,7 +246,7 @@ until guest execution establishes the result. No changes to the
 
 ## Closure — full native panel acceptance (2026-10-09)
 
-Operator ran `tools/run-native-regression` against the repository state
+Operator ran `tools/native/run-regression` against the repository state
 through regression 093 and reported:
 
 ```text

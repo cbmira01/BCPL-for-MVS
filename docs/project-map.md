@@ -101,7 +101,7 @@ The principal current component is ICINT, the INTCODE interpreter used to host t
 This directory also holds numbered ICINT checkpoints. The validated interpreter is selected through `asm/CURRENT` and resolved with:
 
 ```sh
-tools/current-icint
+tools/mr10/current-icint
 ```
 
 Do not assume that the numerically highest `icintv*.asm` file is the promoted baseline.
@@ -141,8 +141,8 @@ Examples include:
 These are intended to be separately compiled alongside application source, for example:
 
 ```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+    "$(tools/mr10/current-icint)" \
     main.bcpl \
     +library/random.bcpl \
     +library/integer-utils.bcpl
@@ -395,7 +395,7 @@ The promoted ICINT baseline can be overridden explicitly when testing a candidat
 Runners should resolve the promoted interpreter through:
 
 ```sh
-tools/current-icint
+tools/mr10/current-icint
 ```
 
 The reason is simple: a newly created numbered checkpoint may exist before it has passed the regression panel.
@@ -456,7 +456,7 @@ When documenting an experiment, identify it using reconstructable material such 
 - generated/intermediate artifact;
 - committed test or documentation.
 
-A statement like "JOB 332 proved this" is less useful than a retained regression or exact `tools/compile-and-run` command.
+A statement like "JOB 332 proved this" is less useful than a retained regression or exact `tools/mr10/compile-and-run` command.
 
 ---
 
@@ -489,16 +489,16 @@ When a development decision becomes stable and affects future contributors, docu
 ### Run one BCPL program
 
 ```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+    "$(tools/mr10/current-icint)" \
     path/to/program.bcpl
 ```
 
 ### Add library modules
 
 ```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+    "$(tools/mr10/current-icint)" \
     path/to/program.bcpl \
     +library/string-utils.bcpl \
     +library/integer-utils.bcpl

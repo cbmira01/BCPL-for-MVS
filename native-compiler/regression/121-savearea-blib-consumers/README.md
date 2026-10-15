@@ -19,7 +19,7 @@ Test 121 passed against DEVOBJ(BCPLM7) in Gate E and in the complete native regr
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
 BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM7 \
-tools/run-native-regression 121 --show-output
+tools/native/run-regression 121 --show-output
 ```
 
 Historical source-only and production promotion suggestions in earlier versions of this note are superseded. Production HERC02.BCPL.OBJ remains unchanged.

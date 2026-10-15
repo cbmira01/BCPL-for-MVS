@@ -8,7 +8,7 @@ Configuration belongs here when it is part of the reproducible project definitio
 
 | File | Purpose |
 | --- | --- |
-| [`mr10-kit-compiler/asm/CURRENT`](../mr10-kit-compiler/asm/CURRENT) | Current validated ICINT source filename, read by `tools/current-icint`. |
+| [`mr10-kit-compiler/asm/CURRENT`](../mr10-kit-compiler/asm/CURRENT) | Current validated ICINT source filename, read by `tools/mr10/current-icint`. |
 | [`dspal.yaml`](dspal.yaml) | Canonical checked-in `dspal` manifest: MVS namespace defaults, runtime endpoints, text conversion policy, allocation defaults, and the managed BCPL PDS set. |
 | `dspal.local.yaml` | Optional machine-local overrides for `dspal`. This file is gitignored and is not part of the shared project definition. |
 
@@ -22,7 +22,7 @@ Do not infer the current interpreter by selecting the numerically highest `mr10-
 
 ## `dspal` configuration
 
-`tools/dspal` loads configuration in this order:
+`tools/datasets/dspal` loads configuration in this order:
 
 ```text
 config/dspal.yaml

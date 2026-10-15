@@ -113,7 +113,7 @@ def main():
     if any(len(row) > 71 or row == "/*" or row.startswith("//")
            for row in lines):
         raise ValueError("invalid application assembler card")
-    core = load(ROOT / "tools/dspal-core.py", "runtime_pds_dspal")
+    core = load(ROOT / "tools/datasets/dspal-core.py", "runtime_pds_dspal")
     config = core.load_config()
     import os
     candidate = os.environ.get("BCPL_RUNTIME_CANDIDATE", "0")

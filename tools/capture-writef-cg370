@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Compatibility launcher: tools/native/capture-writef-cg370
-set -e
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/native/capture-writef-cg370" "$@"

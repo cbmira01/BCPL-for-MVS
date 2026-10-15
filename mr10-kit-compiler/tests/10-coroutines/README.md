@@ -33,7 +33,7 @@ The call probes also show that `CHANGECO(VALUE, CPTR)` uses the two argument slo
 
 ## Run and check
 
-Use `tools/compile-and-run --results` with `"$(tools/current-icint)"` and the chosen BCPL source. The create/delete test also needs `+mr10-kit-compiler/library/getvec-freevec.bcpl` and `+mr10-kit-compiler/library/coroutines.bcpl`. A successful run returns interpreted `CODE=0`.
+Use `tools/mr10/compile-and-run --results` with `"$(tools/mr10/current-icint)"` and the chosen BCPL source. The create/delete test also needs `+mr10-kit-compiler/library/getvec-freevec.bcpl` and `+mr10-kit-compiler/library/coroutines.bcpl`. A successful run returns interpreted `CODE=0`.
 
 | Runtime result | What it proves |
 | --- | --- |

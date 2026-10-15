@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Compatibility launcher; canonical tool: tools/mr10/run-regression-panel
-set -e
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mr10/run-regression-panel" "$@"

@@ -12,7 +12,7 @@ The user updated the experiment branch to the fix recorded in commit
 The revised JCL was installed with:
 
 ```sh
-tools/dspal put JCL BLIBBLD jcl/build-blib-object.jcl
+tools/datasets/dspal put JCL BLIBBLD jcl/build-blib-object.jcl
 ```
 
 This completed as **JOB 2410**, installing the job body in
@@ -21,7 +21,7 @@ been deployed successfully in **JOB 2404** by the normal `dspal put`
 operation. The user submitted:
 
 ```sh
-tools/dspal submit JCL BLIBBLD --wait
+tools/datasets/dspal submit JCL BLIBBLD --wait
 ```
 
 JES assigned launcher **JOB 2412** and payload **JOB 2413**. The
@@ -97,7 +97,7 @@ The historically passing 69-test static-combination native regression
 suite was not rerun in this build-only checkpoint.
 
 The user ran the two `dspal put` and `dspal submit` commands directly
-for acceptance. The convenience wrapper `tools/build-blib-object`
+for acceptance. The convenience wrapper `tools/native/build-blib`
 has passing offline checks and dry-run, but has **not yet been separately
 run to completion** as a single command. A direct member listing after
 JOB 2413 was not included in this report; INSTALL RC=0 is the reported

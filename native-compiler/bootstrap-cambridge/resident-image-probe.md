@@ -14,7 +14,7 @@ state.
 
 ## Tool support
 
-`tools/compile-and-run` accepts:
+`tools/mr10/compile-and-run` accepts:
 
 ```text
 --trni PATH

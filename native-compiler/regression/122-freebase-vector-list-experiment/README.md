@@ -17,7 +17,7 @@ The test must run in source mode and must not modify the installed PDS.
 ```sh
 git pull --ff-only
 BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 \
-  tools/run-native-regression 122 --show-output
+  tools/native/run-regression 122 --show-output
 ```
 
 Source-mode BLIB linkage uses the existing `object-blib.txt` fixture.
@@ -36,7 +36,7 @@ No permanent BCPLMAIN/BCPLMEM/BLIB sources are modified.
 
 ## Execution result — 2026-10-12
 
-Regression 122 **PASS** using `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/run-native-regression 122 --show-output`, after test-only adjustment to save and temporarily set `STACKEND := SAVEAREA`, excluding historical VALIDPOINTER's broad initial extent predicate. The first attempt (JOB 8793) returned `?`; numbered diagnostics (JOB 8797) pinpointed assertion 1, showing the allocator's address satisfied the broad region predicate even without G6!48 publication. The accepted rerun returned `V` for all checks. This demonstrates three-word descriptor traversal with a manually published head, including unlink behavior under controlled publication; it does **not** establish automatic head synchronization, historical COMACRO FREEBASE allocator semantics, or precise pointer bounds. Production PDS and runtime assembler remain unchanged.
+Regression 122 **PASS** using `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/native/run-regression 122 --show-output`, after test-only adjustment to save and temporarily set `STACKEND := SAVEAREA`, excluding historical VALIDPOINTER's broad initial extent predicate. The first attempt (JOB 8793) returned `?`; numbered diagnostics (JOB 8797) pinpointed assertion 1, showing the allocator's address satisfied the broad region predicate even without G6!48 publication. The accepted rerun returned `V` for all checks. This demonstrates three-word descriptor traversal with a manually published head, including unlink behavior under controlled publication; it does **not** establish automatic head synchronization, historical COMACRO FREEBASE allocator semantics, or precise pointer bounds. Production PDS and runtime assembler remain unchanged.
 
 ## Compatibility with automatic publication
 

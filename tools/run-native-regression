@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Compatibility launcher: tools/native/run-regression
-set -e
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/native/run-regression" "$@"

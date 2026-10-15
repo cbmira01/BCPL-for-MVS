@@ -26,15 +26,15 @@ def module(name: str, path: str):
 class ObjectPackagingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.core = module("dspal_core_test", "tools/dspal-core.py")
-        cls.io = module("dspal_io_test", "tools/dspal-io.py")
-        cls.read = module("dspal_read_test", "tools/dspal-read.py")
-        cls.submit = module("dspal_submit_test", "tools/dspal-submit.py")
+        cls.core = module("dspal_core_test", "tools/datasets/dspal-core.py")
+        cls.io = module("dspal_io_test", "tools/datasets/dspal-io.py")
+        cls.read = module("dspal_read_test", "tools/datasets/dspal-read.py")
+        cls.submit = module("dspal_submit_test", "tools/datasets/dspal-submit.py")
         cls.blib = module(
             "blib_card_test",
             "native-compiler/object-library/make-blib-object-job.py",
         )
-        cls.builder = module("blib_builder_test", "tools/build-blib-object")
+        cls.builder = module("blib_builder_test", "tools/native/build-blib")
         cls.config = cls.core.load_config()
 
     def test_manifest_and_build_deck(self):

@@ -115,7 +115,7 @@ The `N` option suppresses deck generation, but doing so would bypass exactly the
 
 ## Tooling decision
 
-`tools/compile-and-run` remains the MR10 bootstrap tool. Its architecture is intentionally:
+`tools/mr10/compile-and-run` remains the MR10 bootstrap tool. Its architecture is intentionally:
 
 ```text
 BCPL source
@@ -137,7 +137,7 @@ build ICINT
   -> capture CODE / SYSGO / diagnostics
 ```
 
-Do not keep extending `compile-and-run` with Cambridge-specific output handling. Introduce a separate Cambridge-oriented tool (working name `tools/cambridge-compile`) whose first-class outputs include the historical compiler's `CODE` and `SYSGO` streams.
+Do not keep extending `compile-and-run` with Cambridge-specific output handling. Introduce a separate Cambridge-oriented tool (working name `tools/native/compile-bootstrap`) whose first-class outputs include the historical compiler's `CODE` and `SYSGO` streams.
 
 A generic facility for injecting named input DDs only into the final RUN step may still be appropriate in `compile-and-run`; that capability is not Cambridge-specific. In contrast, allocating and recovering Cambridge native-output streams belongs in the new Cambridge tool.
 

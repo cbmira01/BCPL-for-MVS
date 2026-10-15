@@ -12,4 +12,4 @@
 | `hello-world-heavy.jcl` | Assembler example |
 | `dump-jes2-parameters.jcl` | JES2 configuration inspection |
 
-The three suite files and ICINT19 build are **stored JCL bodies**; `tools/dspal submit` supplies the JOB card. See [suite commands](README-SUITES.md) and [ICINT19 build instructions](README-ICINT19.md). Older JCL decks are historical examples.
+The three suite files and ICINT19 build are **stored JCL bodies**; `tools/datasets/dspal submit` supplies the JOB card. See [suite commands](README-SUITES.md) and [ICINT19 build instructions](README-ICINT19.md). Older JCL decks are historical examples.

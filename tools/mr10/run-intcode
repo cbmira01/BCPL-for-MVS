@@ -43,7 +43,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-MAKE_ASM = ROOT / "tools" / "make-asm-job.py"
+MAKE_ASM = ROOT / "tools" / "mvs" / "make-asm-job.py"
 PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
 WORKAREA = ROOT / "workarea"
 DEFAULT_READER_HOST = "127.0.0.1"

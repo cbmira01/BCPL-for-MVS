@@ -98,7 +98,7 @@ def make_deck(source: str, name: str, entry: str, job: str,
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Inline asm/NAME.asm into an IFOX/IEWL/GO JCL deck in jcl/.",
-        epilog="Example: python tools/make-asm-job.py assembler-demo "
+        epilog="Example: python tools/mvs/make-asm-job.py assembler-demo "
                "--listing heavy --parm XS,1",
     )
     parser.add_argument("program", nargs="?", help="source basename in asm/ (with or without .asm)")

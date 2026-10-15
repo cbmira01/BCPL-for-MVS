@@ -2,9 +2,9 @@
 """Submit a stored JCL job body through the JES internal reader.
 
 Usage:
-    tools/dspal submit JCL CAMBBLD
-    tools/dspal submit JCL CAMBBLD --wait  (compatibility alias)
-    tools/dspal submit JCL CAMBBLD --show-jcl
+    tools/datasets/dspal submit JCL CAMBBLD
+    tools/datasets/dspal submit JCL CAMBBLD --wait  (compatibility alias)
+    tools/datasets/dspal submit JCL CAMBBLD --show-jcl
 
 The PDS member is never copied back to the host.  dspal submits a small
 authenticated launcher job whose IEBGENER SYSUT1 concatenates:

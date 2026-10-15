@@ -18,9 +18,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "config" / "dspal.yaml"
 LOCAL_CONFIG = ROOT / "config" / "dspal.local.yaml"
-SUBMIT_JCL = ROOT / "tools" / "submit-jcl"
-JOB_SUMMARY = ROOT / "tools" / "job-summary"
-DUMP_REPORT = ROOT / "tools" / "dump-report-for-job"
+SUBMIT_JCL = ROOT / "tools" / "mvs" / "submit-jcl"
+JOB_SUMMARY = ROOT / "tools" / "mvs" / "job-summary"
+DUMP_REPORT = ROOT / "tools" / "mvs" / "dump-report-for-job"
 
 
 class DspalError(RuntimeError):

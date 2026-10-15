@@ -51,7 +51,7 @@ Source inspected directly at M1.9 opening: `asm/bcplmain.asm`, `asm/bcplmem.asm`
 
 ## Existing acceptance baseline
 
-M1.8 Gate F: `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression` resulted in **123 PASS, 0 FAIL, 1 expected SKIP (083 source-only instrumentation), TOTAL 124**. This is broad regression baseline evidence, not individual proof of every contract. Keep this baseline stable during audit.
+M1.8 Gate F: `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression` resulted in **123 PASS, 0 FAIL, 1 expected SKIP (083 source-only instrumentation), TOTAL 124**. This is broad regression baseline evidence, not individual proof of every contract. Keep this baseline stable during audit.
 
 ## Immediate Gate A work
 
@@ -434,7 +434,7 @@ an ESD/RLD inspection. If future work needs an exact binary
 inventory, collect a read-only object-deck listing or decode a
 binary-safe copy under a separately controlled evidence task.
 
-`tools/dspal cat/get` deliberately rejects object libraries for
+`tools/datasets/dspal cat/get` deliberately rejects object libraries for
 text transfer; using it on DEVOBJ(BLIB) would be incorrect. This
 does not prevent Gate A acceptance because the contract inventory
 records uncertainty rather than inventing operational proof.
@@ -593,7 +593,7 @@ contract with explicit tested versus source-observed evidence.
 ## Gate B — resolved DEVOBJ APTOVEC linkage ambiguity (13 October 2026)
 
 The actual installed-object regression construction is now traced
-through `tools/run-native-regression` →
+through `tools/native/run-regression` →
 `native-compiler/regression/run-test-mvs.sh` →
 `run-test.sh` →
 `tools/checks/prepare-runtime-pds-regression.py`.

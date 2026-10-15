@@ -72,7 +72,7 @@ Targeted validation to perform on the running TK5 host:
 
 ```sh
 bash -n native-compiler/regression/run-test.sh
-BCPLMAIN_MODULAR_SOURCE=1 tools/run-native-regression 114 --show-output
+BCPLMAIN_MODULAR_SOURCE=1 tools/native/run-regression 114 --show-output
 cmp asm/bcplmain-wip.asm workarea/native-regression/114-interleaved-stream-records/bcplmain-modular.asm
 ```
 
@@ -130,8 +130,8 @@ python3 native-compiler/regression/make-two-object-job.py \
   asm/bcplbyte.asm \
   workarea/bcplbyte-linkage.jcl \
   --entry BCBYTEST --job-name BCBYTE1
-bash tools/submit-jcl workarea/bcplbyte-linkage.jcl
-tools/job-summary JOBNUMBER
+bash tools/mvs/submit-jcl workarea/bcplbyte-linkage.jcl
+tools/mvs/job-summary JOBNUMBER
 ```
 
 Expected: `ASMBCPL=0000`, `ASMNAT=0000`, `LKED=0000`,
@@ -144,7 +144,7 @@ installation, or any regression. **Pending actual operator MVS run.**
 
 ## Checkpoint 4 accepted — JOB 5515 (2026-10-10)
 
-Operator submitted the isolated `BCBYTE1` two-object test, returned as **JOB 5515**. `tools/job-summary 5515` reports ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, overall SUCCESS, and no flagged assembler statements. The external caller checks original GETBYTE, PUTBYTE modification, and GETBYTE readback. This **accepts independent BCPLBYTE assembly/link/execution**; it does not yet validate installing G85/G86 via external object addresses in BCPLMAIN. Next change must be opt-in and preserve the default 120-test baseline.
+Operator submitted the isolated `BCBYTE1` two-object test, returned as **JOB 5515**. `tools/mvs/job-summary 5515` reports ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, overall SUCCESS, and no flagged assembler statements. The external caller checks original GETBYTE, PUTBYTE modification, and GETBYTE readback. This **accepts independent BCPLBYTE assembly/link/execution**; it does not yet validate installing G85/G86 via external object addresses in BCPLMAIN. Next change must be opt-in and preserve the default 120-test baseline.
 
 ## Checkpoint 5 — opt-in BCPLMAIN-to-BCPLBYTE object integration
 
@@ -169,9 +169,9 @@ On a host with the regression 114 generated source already present:
 
 ```sh
 python3 tools/checks/prepare-bcplbyte-runtime-probe.py
-bash tools/submit-jcl \
+bash tools/mvs/submit-jcl \
   workarea/native-regression/114-interleaved-stream-records/byte-object-probe/byte-object-probe.jcl
-tools/job-summary JOBNUMBER
+tools/mvs/job-summary JOBNUMBER
 ```
 
 Accept only `ASMBCPL`, `ASMNAT`, `LKED`, and `GO` all RC=0000,
@@ -185,7 +185,7 @@ tested against this externalized runtime before generalization.
 
 ## Checkpoint 5 MVS job result — JOB 5516 (2026-10-10)
 
-Operator ran the opt-in `BY114R` two-object integration probe as **JOB 5516**. `tools/job-summary 5516` returned ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, and GO RC=0000; no flagged assembler statements. This accepts assembling and linking the externalized BCPLMAIN G85/G86 installation against the independently assembled BCPLBYTE object, and successful execution of regression 114's program. Because regression 114 does not actually call G85/G86, **behavioral acceptance is still pending**: use a real byte-operation BCPL regression with this externalized runtime. SYSOUT contents were not independently rechecked in this run. Default build remains unchanged.
+Operator ran the opt-in `BY114R` two-object integration probe as **JOB 5516**. `tools/mvs/job-summary 5516` returned ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, and GO RC=0000; no flagged assembler statements. This accepts assembling and linking the externalized BCPLMAIN G85/G86 installation against the independently assembled BCPLBYTE object, and successful execution of regression 114's program. Because regression 114 does not actually call G85/G86, **behavioral acceptance is still pending**: use a real byte-operation BCPL regression with this externalized runtime. SYSOUT contents were not independently rechecked in this run. Default build remains unchanged.
 
 ## Checkpoint 6 — actual BCPL byte-operation behavior (pending TK5)
 
@@ -203,12 +203,12 @@ BCPLBYTE object symbols. The baseline and regression runner are
 left unchanged.
 
 ```sh
-tools/run-native-regression 38 --show-output
+tools/native/run-regression 38 --show-output
 python3 tools/checks/prepare-bcplbyte-roundtrip-probe.py
-bash tools/submit-jcl \
+bash tools/mvs/submit-jcl \
   workarea/native-regression/38-putbyte-getbyte-roundtrip/byte-object-probe/byte-object-probe.jcl
-tools/job-summary JOBNUMBER
-tools/dump-report-for-job JOBNUMBER
+tools/mvs/job-summary JOBNUMBER
+tools/mvs/dump-report-for-job JOBNUMBER
 ```
 
 Accept all assembly/link/run steps RC=0000 **and** independently
@@ -249,8 +249,8 @@ bash -n native-compiler/regression/run-test.sh
 python3 -m py_compile \
   native-compiler/regression/make-two-object-job.py \
   tools/checks/externalize-bcplbyte.py
-BCPLBYTE_OBJECT=1 tools/run-native-regression 38 --show-output
-BCPLBYTE_OBJECT=1 tools/run-native-regression 75 --show-output
+BCPLBYTE_OBJECT=1 tools/native/run-regression 38 --show-output
+BCPLBYTE_OBJECT=1 tools/native/run-regression 75 --show-output
 ```
 
 Use 38 for the actual G85/G86 BCPL roundtrip, and 75 for the
@@ -262,11 +262,11 @@ installation or permanent default switch has occurred.
 
 ## Checkpoint 7 targeted validation accepted (2026-10-10)
 
-Operator ran `bash -n native-compiler/regression/run-test.sh`, Python byte-compilation of `make-two-object-job.py` and `externalize-bcplbyte.py`, and two opt-in live TK5 regressions: `BCPLBYTE_OBJECT=1 tools/run-native-regression 38 --show-output` **PASS 1/1**, and similarly regression **075 PASS 1/1**. Thus both the direct BCPL G85/G86 byte-operation path and the BLIB-linked path pass with separate BCPLBYTE object linkage. The full native regression suite under the opt-in flag remains the final acceptance gate before considering a default switch. Baseline path unchanged.
+Operator ran `bash -n native-compiler/regression/run-test.sh`, Python byte-compilation of `make-two-object-job.py` and `externalize-bcplbyte.py`, and two opt-in live TK5 regressions: `BCPLBYTE_OBJECT=1 tools/native/run-regression 38 --show-output` **PASS 1/1**, and similarly regression **075 PASS 1/1**. Thus both the direct BCPL G85/G86 byte-operation path and the BLIB-linked path pass with separate BCPLBYTE object linkage. The full native regression suite under the opt-in flag remains the final acceptance gate before considering a default switch. Baseline path unchanged.
 
 ## Checkpoint 7 full-suite trial — fixture/JCL failure (2026-10-10)
 
-The first `BCPLBYTE_OBJECT=1 tools/run-native-regression` returned
+The first `BCPLBYTE_OBJECT=1 tools/native/run-regression` returned
 **99 PASS / 21 FAIL / 120 TOTAL**. Failures clustered in input and
 alternate-output tests, beginning at regression 094. The failure log
 reported `cannot locate final GO EXEC statement` before it submitted
@@ -288,9 +288,9 @@ Validation requested before repeating the full panel:
 ```sh
 git pull --ff-only
 bash -n native-compiler/regression/run-test.sh
-BCPLBYTE_OBJECT=1 tools/run-native-regression 94 --show-output
-BCPLBYTE_OBJECT=1 tools/run-native-regression 114 --show-output
-BCPLBYTE_OBJECT=1 tools/run-native-regression
+BCPLBYTE_OBJECT=1 tools/native/run-regression 94 --show-output
+BCPLBYTE_OBJECT=1 tools/native/run-regression 114 --show-output
+BCPLBYTE_OBJECT=1 tools/native/run-regression
 ```
 
 Full 120-test acceptance is still pending a fresh run.
@@ -301,4 +301,4 @@ After the JCL preparation correction in commit `243cceb`, operator ran `bash -n 
 
 ## Checkpoint 7 accepted — full external-BCPLBYTE suite (2026-10-10)
 
-Operator ran `BCPLBYTE_OBJECT=1 tools/run-native-regression` after the fixture correction. **All 120 regressions 00–119 PASSED, 0 failed**. This includes direct G85/G86 roundtrip regression 38, separately linked BLIB/native-object cases, STOP/termination, storage management, selected input, and multi-stream output. This is the acceptance evidence for normal-runner opt-in BCPLBYTE object linkage across the full current regression suite. The default remains `BCPLBYTE_OBJECT=0` pending an explicit default-policy change; historical monolithic BCPLMAIN remains available. The tested regression workflow still assembles BCPLBYTE per job; this does not yet demonstrate installation of a reusable object into an MVS PDS.
+Operator ran `BCPLBYTE_OBJECT=1 tools/native/run-regression` after the fixture correction. **All 120 regressions 00–119 PASSED, 0 failed**. This includes direct G85/G86 roundtrip regression 38, separately linked BLIB/native-object cases, STOP/termination, storage management, selected input, and multi-stream output. This is the acceptance evidence for normal-runner opt-in BCPLBYTE object linkage across the full current regression suite. The default remains `BCPLBYTE_OBJECT=0` pending an explicit default-policy change; historical monolithic BCPLMAIN remains available. The tested regression workflow still assembles BCPLBYTE per job; this does not yet demonstrate installation of a reusable object into an MVS PDS.

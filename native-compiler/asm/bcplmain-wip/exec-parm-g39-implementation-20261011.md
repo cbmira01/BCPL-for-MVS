@@ -27,7 +27,7 @@ From WSL after `git pull --ff-only`:
 
 ```sh
 python3 tools/checks/check-bcplmain-modules.py
-BCPL_RUNTIME_PDS=0 tools/run-native-regression 108 --show-output
+BCPL_RUNTIME_PDS=0 tools/native/run-regression 108 --show-output
 ```
 
 Regression 108's GO step now carries `PARM='P'` from
@@ -43,8 +43,8 @@ replaces four runtime PDS objects, is not atomic, and requires review
 before submission. Then test the installed runtime:
 
 ```sh
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 108 --show-output
-tools/run-native-regression
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 108 --show-output
+tools/native/run-regression
 ```
 
 Record IFOX/IEWL/GO return codes and summary before accepting the

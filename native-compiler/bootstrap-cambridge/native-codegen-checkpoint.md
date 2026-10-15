@@ -293,7 +293,7 @@ does not alter ICINT V19 status.
 ## Host recovery encoding
 
 The Hercules printer report is consumed as Latin-1 so byte values survive
-recovery. `tools/cambridge-compile` likewise writes recovered CODE as Latin-1
+recovery. `tools/native/compile-bootstrap` likewise writes recovered CODE as Latin-1
 rather than narrowing it to ASCII. This is a transport property, not a claim
 that arbitrary non-ASCII bytes are valid assembler source.
 

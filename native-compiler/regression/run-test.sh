@@ -71,7 +71,7 @@ cp "$source" "$source_copy"
 
 compiler_job="${job_base}C"
 
-compiler_driver="${CAMBRIDGE_COMPILE:-$root/tools/cambridge-compile}"
+compiler_driver="${CAMBRIDGE_COMPILE:-$root/tools/native/compile-bootstrap}"
 
 echo "=== Cambridge compile: $case_name ==="
 compile_args=(
@@ -481,7 +481,7 @@ if (( ${#objects[@]} > 0 )); then
         --entry "$entry" --job-name "${job_base}R" \
         "${extra_args[@]}" || exit $?
 else
-    python3 "$root/tools/make-asm-job" \
+    python3 "$root/tools/mvs/make-asm-job" \
         "$combined" --output-dir "$work" \
         --entry "$entry" --job-name "${job_base}R" \
         --listing heavy --force || exit $?
@@ -569,7 +569,7 @@ fi # end source-object strategy vs installed-runtime PDS
 echo
 echo "=== Submit native run ==="
 submit=$(
-    bash "$root/tools/submit-jcl" --timeout 30 "$jcl"
+    bash "$root/tools/mvs/submit-jcl" --timeout 30 "$jcl"
 ) || exit $?
 
 echo "$submit"
@@ -599,7 +599,7 @@ expected_output() {
 
 show_bcpl_output() {
     local report
-    report=$(bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null)
+    report=$(bash "$root/tools/mvs/dump-report-for-job" "$job" 2>/dev/null)
     printf '%s\n' "$report" >"$work/job-report.txt"
     python3 "$root/tools/checks/check-combined-jes-records.py" \
         "$expected_file" "$work/job-report.txt" \
@@ -634,7 +634,7 @@ show_result() {
 
 deadline=$((SECONDS + 30))
 while (( SECONDS <= deadline )); do
-    summary=$("$root/tools/job-summary" "$job" 2>&1)
+    summary=$("$root/tools/mvs/job-summary" "$job" 2>&1)
     rc=$?
 
     if (( rc == 0 )); then
@@ -674,7 +674,7 @@ while (( SECONDS <= deadline )); do
         echo "$summary"
 
         report=$(
-            bash "$root/tools/dump-report-for-job" "$job" 2>/dev/null
+            bash "$root/tools/mvs/dump-report-for-job" "$job" 2>/dev/null
         )
         printf '%s\n' "$report" >"$work/job-report.txt"
 

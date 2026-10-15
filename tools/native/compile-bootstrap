@@ -29,7 +29,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-CORE_PATH = ROOT / "tools" / "compile-and-run-core.py"
+CORE_PATH = ROOT / "tools" / "mr10" / "compile-and-run-core.py"
 BOOT = ROOT / "native-compiler" / "bootstrap-cambridge"
 ICINT = ROOT / "asm" / "icintv19.asm"
 BOOT_WORK = ROOT / "workarea" / "bootstrap-cambridge"

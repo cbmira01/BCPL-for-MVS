@@ -85,10 +85,10 @@ remains the one full DEVOBJ panel; production OBJ is not a write target.
 ```sh
 git pull --ff-only
 python3 tools/checks/check-bcplmain-canonical.py
-tools/dspal put SOURCE BCPLMAIN asm/bcplmain.asm
-tools/dspal put JCL BLDDEVN jcl/build-dev-bcplmain.jcl
-tools/dspal submit JCL BLDDEVN --wait
-tools/dspal ls DEVOBJ
+tools/datasets/dspal put SOURCE BCPLMAIN asm/bcplmain.asm
+tools/datasets/dspal put JCL BLDDEVN jcl/build-dev-bcplmain.jcl
+tools/datasets/dspal submit JCL BLDDEVN --wait
+tools/datasets/dspal ls DEVOBJ
 ```
 
 Require source-equivalence PASS **before** the PUT steps.
@@ -100,15 +100,15 @@ Possible focused Gate C tests (do not run the full panel prematurely):
 
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/run-native-regression 00 --show-output
+  tools/native/run-regression 00 --show-output
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/run-native-regression 69 --show-output
+  tools/native/run-regression 69 --show-output
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/run-native-regression 91 --show-output
+  tools/native/run-regression 91 --show-output
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/run-native-regression 120 --show-output
+  tools/native/run-regression 120 --show-output
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/run-native-regression 123 --show-output
+  tools/native/run-regression 123 --show-output
 ```
 
 The development object library was seeded from the Gate F1

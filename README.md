@@ -18,7 +18,7 @@ The regression suite therefore demonstrates the behavior explicitly tested by th
 
 The interpreted bootstrap path works. The promoted interpreter is selected by `config/CURRENT` and currently resolves to `asm/icintv17.asm`.
 
-Using `tools/compile-and-run`, the preserved kit compiler can:
+Using `tools/mr10/compile-and-run`, the preserved kit compiler can:
 
 - run `SYNI` and `TRNI` to translate BCPL source to OCODE;
 - run `CGI` to translate OCODE to INTCODE;
@@ -56,29 +56,29 @@ For detailed provenance and licensing boundaries, read [`THIRD-PARTY-NOTICES.md`
 Start the local TK5/Hercules system, then create and populate the managed MVS libraries:
 
 ```sh
-tools/start-tk5 --detached
-tools/dspal initbcpl
-tools/dspal populate all
+tools/mvs/start-tk5 --detached
+tools/datasets/dspal initbcpl
+tools/datasets/dspal populate all
 ```
 
 Run a BCPL program through the preserved compiler phases and ICINT:
 
 ```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+    "$(tools/mr10/current-icint)" \
     suite/richards-factorial/richards-factorial.bcpl
 ```
 
 Run the durable regression panel:
 
 ```sh
-tools/run-mr10kit-regression-panel
+tools/mr10/run-regression-panel
 ```
 
 Run the demonstration suite:
 
 ```sh
-tools/run-mr10kit-demo-suite
+tools/mr10/run-demo-suite
 ```
 
 ## Repository guide

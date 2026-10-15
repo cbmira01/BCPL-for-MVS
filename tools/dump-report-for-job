@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Compatibility launcher: tools/mvs/dump-report-for-job
-set -e
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mvs/dump-report-for-job" "$@"

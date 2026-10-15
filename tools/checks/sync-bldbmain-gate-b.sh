@@ -8,26 +8,26 @@ python3 tools/checks/stage-bldbmain.py
 echo "Inspect workarea/runtime-object-candidates/bldbmain-gate-b.manifest"
 echo "Source and JCL updates are separate PDS batches."
 echo "Checking existing members..."
-src_members="$(tools/dspal ls SOURCE)"
-jcl_members="$(tools/dspal ls JCL)"
+src_members="$(tools/datasets/dspal ls SOURCE)"
+jcl_members="$(tools/datasets/dspal ls JCL)"
 for member in BCPLMAIN BCPLMEM; do
   if grep -qx "$member" <<< "$src_members"; then
-    tools/dspal rm SOURCE "$member"
+    tools/datasets/dspal rm SOURCE "$member"
   fi
 done
 # Compress ONCE after the entire SOURCE removal batch; even if none existed.
-tools/dspal compress SOURCE
-tools/dspal put SOURCE BCPLMAIN workarea/runtime-object-candidates/bcplmain-pds.asm
-tools/dspal put SOURCE BCPLMEM asm/bcplmem.asm
+tools/datasets/dspal compress SOURCE
+tools/datasets/dspal put SOURCE BCPLMAIN workarea/runtime-object-candidates/bcplmain-pds.asm
+tools/datasets/dspal put SOURCE BCPLMEM asm/bcplmem.asm
 if grep -qx BLDBMAIN <<< "$jcl_members"; then
-  tools/dspal rm JCL BLDBMAIN
+  tools/datasets/dspal rm JCL BLDBMAIN
 fi
-tools/dspal compress JCL
-tools/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl
+tools/datasets/dspal compress JCL
+tools/datasets/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl
 echo "Checking resident source and build JCL by readback..."
-tools/dspal get SOURCE BCPLMAIN workarea/runtime-object-candidates/readback-bcplmain.asm
-tools/dspal get SOURCE BCPLMEM workarea/runtime-object-candidates/readback-bcplmem.asm
-tools/dspal get JCL BLDBMAIN workarea/runtime-object-candidates/readback-bldbmain.jcl
+tools/datasets/dspal get SOURCE BCPLMAIN workarea/runtime-object-candidates/readback-bcplmain.asm
+tools/datasets/dspal get SOURCE BCPLMEM workarea/runtime-object-candidates/readback-bcplmem.asm
+tools/datasets/dspal get JCL BLDBMAIN workarea/runtime-object-candidates/readback-bldbmain.jcl
 python3 - <<'PY'
 from pathlib import Path
 root = Path("workarea/runtime-object-candidates")
@@ -43,4 +43,4 @@ for a, b in (
     print(f"READBACK OK: {a}")
 PY
 echo "Gate B resident text synchronized; OBJ was NOT changed."
-echo "Optional next: tools/dspal submit JCL BLDBMAIN --wait"
+echo "Optional next: tools/datasets/dspal submit JCL BLDBMAIN --wait"

@@ -28,7 +28,7 @@ fi
 # rendezvous through the shared global vector.  bootstrap-host.bcpl supplies
 # only host services proven missing from the current MR10 runtime.  BLIBI and
 # ICLIB are appended by compile-and-run after these generated modules.
-exec tools/compile-and-run --results --timeout 600 \
+exec tools/mr10/compile-and-run --results --timeout 600 \
     --trni "$TRNI" \
     --dd OPTIONS="$BOOT/options-large-tree.txt" \
     --dd CAMBPARM="$BOOT/cambridge-options.txt" \

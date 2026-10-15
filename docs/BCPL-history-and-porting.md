@@ -255,7 +255,7 @@ Because ICINT is much smaller than a complete native BCPL compiler. Once it work
 The current validated interpreter is selected through:
 
 ```sh
-tools/current-icint
+tools/mr10/current-icint
 ```
 
 At the time of writing the validated baseline is **ICINT V17**.
@@ -271,8 +271,8 @@ Once ICINT could execute INTCODE reliably, the project connected the preserved c
 A normal test now looks like:
 
 ```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+    "$(tools/mr10/current-icint)" \
     program.bcpl
 ```
 

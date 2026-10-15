@@ -20,9 +20,9 @@ Two kinds of tests live here:
 ## Run
 
 ```sh
-tools/run-mr10kit-regression-panel
+tools/mr10/run-regression-panel
 ```
 
-Use `tools/compile-and-run` for individual BCPL probes and `tools/run-intcode` for existing INTCODE files. Some probes need added modules or DD files; consult their local README.
+Use `tools/mr10/compile-and-run` for individual BCPL probes and `tools/mr10/run-intcode` for existing INTCODE files. Some probes need added modules or DD files; consult their local README.
 
 Saved OCODE and INTCODE files are evidence, not build litter. Keep them where they explain an observed compiler or runtime behavior.

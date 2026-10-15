@@ -108,7 +108,7 @@ The Python generator splits tracked historical
 `richards-bcpltape/mr10/bcplkit/trn`, increasing the TRN0
 declaration-vector capacity from 1200 to 2400 words with strict
 anchors. The shell script compiles its generated TRN units under
-`asm/icintv19.asm` with `tools/compile-and-run --save-intcode`,
+`asm/icintv19.asm` with `tools/mr10/compile-and-run --save-intcode`,
 using the tracked large-tree options and LIBHDR, then concatenates
 the resulting INTCODE into the configured `TRNILRG` file.
 
@@ -148,7 +148,7 @@ runtime or utility requirements revealed by execution.
 
 ## Gate B — bootstrap preparation driver staged
 
-Git now tracks `tools/prepare-bootstrap`, a single orchestrator of
+Git now tracks `tools/native/prepare-bootstrap`, a single orchestrator of
 existing historical transformations. It requires only the checked-in
 source paths for a `--check-inputs` preflight. The default run executes
 `make-demoted.py` and `make-mr10-trn-large-names.py`, rebuilding
@@ -162,15 +162,15 @@ MVS-resident equality check.
 Usage:
 
 ```sh
-python3 tools/prepare-bootstrap --check-inputs
-python3 tools/prepare-bootstrap
+python3 tools/native/prepare-bootstrap --check-inputs
+python3 tools/native/prepare-bootstrap
 ```
 
 Full translator INTCODE generation is **opt-in** because it launches
-the existing MVS-backed `tools/compile-and-run` workflow:
+the existing MVS-backed `tools/mr10/compile-and-run` workflow:
 
 ```sh
-python3 tools/prepare-bootstrap --with-trnilrg
+python3 tools/native/prepare-bootstrap --with-trnilrg
 ```
 
 That optional mode runs the existing
@@ -188,9 +188,9 @@ claim of resident member equality or clean-checkout MVS run yet.
 ## Gate B — host generator execution evidence (13 October 2026)
 
 After pulling Git through `54c6930`, the operator ran
-`python3 tools/prepare-bootstrap --check-inputs`, reporting
+`python3 tools/native/prepare-bootstrap --check-inputs`, reporting
 **18/18 required paths present** without file writes. The default
-`python3 tools/prepare-bootstrap` then successfully executed the
+`python3 tools/native/prepare-bootstrap` then successfully executed the
 tracked `make-demoted.py` and `make-mr10-trn-large-names.py`
 generators, reporting **24 generated outputs** and a SHA-256
 inventory at
@@ -210,10 +210,10 @@ TRNILRG generation/equivalence still pending.**
 ## Gate B — full bootstrap preparation accepted (13 October 2026)
 
 The operator pulled commit `544ce37` and ran
-`python3 tools/prepare-bootstrap --with-trnilrg`.
+`python3 tools/native/prepare-bootstrap --with-trnilrg`.
 Both tracked source generators completed, followed by the opt-in
 `build-mr10-trni-large-names.sh`. The MVS-backed
-`tools/compile-and-run` submitted **JOB 936** and reported saved
+`tools/mr10/compile-and-run` submitted **JOB 936** and reported saved
 INTCODE files for TRN0–TRN6. The concatenated
 `workarea/bootstrap-cambridge/trni-large-names.int` was
 **20,885 bytes**, agreeing with the previously reported file size.
@@ -234,11 +234,11 @@ The operator suggested a controlled **delete–compress–rebuild–list**
 test for Git-to-MVS synchronization:
 
 ```sh
-tools/dspal rm SOURCE <explicit-approved-member>
-tools/dspal compress SOURCE
+tools/datasets/dspal rm SOURCE <explicit-approved-member>
+tools/datasets/dspal compress SOURCE
 # Stage replacement from the corresponding Git mapping, e.g.
-tools/dspal put SOURCE <member> <mapped-host-file>
-tools/dspal ls SOURCE
+tools/datasets/dspal put SOURCE <member> <mapped-host-file>
+tools/datasets/dspal ls SOURCE
 ```
 
 Use exact member names and the mapped source filenames; do **not**
@@ -264,7 +264,7 @@ identified bootstrap-input step; rebuilding CAMBCOMP is not needed
 to validate the five existing runtime build jobs.
 
 **Preflight:** `git pull --ff-only`; then
-`python3 tools/prepare-bootstrap --check-inputs`. All mapped host
+`python3 tools/native/prepare-bootstrap --check-inputs`. All mapped host
 files below must exist before *any* resident deletion.
 
 | PDS | Member | Authoritative host input |
@@ -280,7 +280,7 @@ files below must exist before *any* resident deletion.
 | JCL | BLDDEVA | jcl/build-dev-bcplapt.jcl |
 | JCL | BLDDEVL | jcl/build-dev-blib.jcl |
 
-Begin with `tools/dspal ls SOURCE` and `tools/dspal ls JCL`
+Begin with `tools/datasets/dspal ls SOURCE` and `tools/datasets/dspal ls JCL`
 for the original inventories. For each selected PDS use explicit
 `dspal rm` for **only** the mapped members above, followed by
 one `dspal compress` for that PDS, then explicit
@@ -288,8 +288,8 @@ one `dspal compress` for that PDS, then explicit
 Check each command's completion and stop immediately on any
 nonzero exit or unanticipated inventory.
 
-Finish with `tools/dspal ls SOURCE` and
-`tools/dspal ls JCL`, and verify the ten selected names all
+Finish with `tools/datasets/dspal ls SOURCE` and
+`tools/datasets/dspal ls JCL`, and verify the ten selected names all
 reappear. Before claiming content equivalence, independently
 read each text member back using `dspal get` and compare under
 the configured UTF-8 ↔ CP037 FB80 round-trip normalization;
@@ -334,7 +334,7 @@ The operator's ten-member normalized readback check passed
 SOURCE(BCPLMAIN), SOURCE(BCPLMEM), SOURCE(BCPLBYTE),
 SOURCE(BCPLAPT), JOBs **963–966**. The fifth `dspal get`
 of SOURCE(BLIB), JOB **967**, exited nonzero because
-`tools/job-summary` reported `ABEND: detected`
+`tools/mvs/job-summary` reported `ABEND: detected`
 despite IEBGENER COPY RC=0000.
 
 The operator supplied JOB 967's complete JES report:
@@ -342,7 +342,7 @@ The operator supplied JOB 967's complete JES report:
 the job and `$HASP395` confirmed normal completion.
 The job's SYSOUT included BLIB source lines
 `STEP ABEND USER CODE` and `STEP ABEND SYSTEM CODE`.
-Audit of `tools/job-summary` found its previous generic
+Audit of `tools/mvs/job-summary` found its previous generic
 `ABEND_RE` scanning all SYSOUT lines, explaining the
 false-positive classification. The detector has been
 constrained to genuine IEF/IEA diagnostic message IDs,
@@ -391,7 +391,7 @@ Each job completed successfully:
 
 All five jobs reported highest RC=0000, zero flagged
 assembler statements and highest assembler severity zero.
-The operator's `tools/dspal ls DEVOBJ` inventory showed exactly
+The operator's `tools/datasets/dspal ls DEVOBJ` inventory showed exactly
 BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB.
 
 **Gate C accepted:** the ten synchronized and text-verified
@@ -405,7 +405,7 @@ panel until final Gate F.
 
 After pulling Git through `e216ac4`, the operator ran
 `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ
-tools/run-native-regression <test> --show-output` separately for
+tools/native/run-regression <test> --show-output` separately for
 04 (string output), 25 (separately compiled BCPL library),
 26 (separately assembled native through G), 27 (GETVEC),
 069 (independent BLIB object), 091 (nested APTOVEC),
@@ -440,7 +440,7 @@ commands are yet required for the provenance audit.
 After pulling Git through `b71e81c`, the operator ran:
 
 ```sh
-BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/run-native-regression
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression
 ```
 
 The single full native regression panel enumerated cases 00 through 123

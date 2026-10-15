@@ -9,4 +9,4 @@ ICINT runs BCPL programs in the historical INTCODE format on MVS 3.8.
 | `icintv19.asm` | Version installed as `ICINT19` in MR10KIT |
 | `CURRENT` | Selects the default interpreter for host tools |
 
-Run `tools/current-icint` from the repository root to see the host-tool default. The installed MVS `ICINT19` is a separate choice. Native BCPL runtime assembler is in the repository-root `asm/` directory.
+Run `tools/mr10/current-icint` from the repository root to see the host-tool default. The installed MVS `ICINT19` is a separate choice. Native BCPL runtime assembler is in the repository-root `asm/` directory.

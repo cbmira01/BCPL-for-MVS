@@ -38,9 +38,9 @@ INTCODE inputs including `TRNILRG` into `HERC02.BCPL.INTCODE`.
 After `dspal initbcpl`:
 
 ```sh
-tools/dspal populate SOURCE
-tools/dspal populate ASM
-tools/dspal populate INTCODE
+tools/datasets/dspal populate SOURCE
+tools/datasets/dspal populate ASM
+tools/datasets/dspal populate INTCODE
 ```
 
 At this point the source/input PDS state is complete and independently
@@ -58,13 +58,13 @@ HERC02.BCPL.JCL(CAMBBLD)
 It deliberately contains no JOB statement and no credential. Populate it with:
 
 ```sh
-tools/dspal populate JCL
+tools/datasets/dspal populate JCL
 ```
 
 Submit it with:
 
 ```sh
-tools/dspal submit JCL CAMBBLD --wait
+tools/datasets/dspal submit JCL CAMBBLD --wait
 ```
 
 `dspal submit` generates a small authenticated launcher job. The launcher
@@ -100,15 +100,15 @@ populate the diagnostic source members with:
 
 ```sh
 python3 native-compiler/bootstrap-cambridge/make-demoted.py
-tools/dspal populate SOURCE
-tools/dspal populate JCL
+tools/datasets/dspal populate SOURCE
+tools/datasets/dspal populate JCL
 ```
 
 The diagnostic source members are `CGAD`, `CGBD`, `CGCD`, `CGDD`, and
 `CGED`. Build the separate resident image with:
 
 ```sh
-tools/dspal submit JCL CG370DB --wait
+tools/datasets/dspal submit JCL CG370DB --wait
 ```
 
 This compiles those five units to corresponding INTCODE members and packs a
@@ -120,16 +120,16 @@ HERC02.BCPL.INTCODE(CG370D)
 
 `CAMBCOMP` and the ordinary `CGA`..`CGE` members are left untouched.
 
-`tools/cambridge-compile-mvs` selects the resident image with
+`tools/native/compile-mvs` selects the resident image with
 `--compiler-image` (or environment variable `CAMBRIDGE_IMAGE`). It also
 accepts an explicit `--output` path, making an A/B compile straightforward:
 
 ```sh
-tools/cambridge-compile-mvs program.bcpl \
+tools/native/compile-mvs program.bcpl \
     --compiler-image CAMBCOMP \
     --output workarea/cg370-baseline.s370.asm
 
-tools/cambridge-compile-mvs program.bcpl \
+tools/native/compile-mvs program.bcpl \
     --compiler-image CG370D \
     --output workarea/cg370-diagnostic.s370.asm
 
@@ -146,18 +146,18 @@ The comparison must pass after removing only lines beginning
 No regression is run by `build-cambridge-mvs`. After the build, inspect:
 
 ```sh
-tools/dspal ls SOURCE
-tools/dspal ls ASM
-tools/dspal ls INTCODE
-tools/dspal ls LOAD
+tools/datasets/dspal ls SOURCE
+tools/datasets/dspal ls ASM
+tools/datasets/dspal ls INTCODE
+tools/datasets/dspal ls LOAD
 ```
 
 Useful content checks include:
 
 ```sh
-tools/dspal cat SOURCE BCPL
-tools/dspal cat SOURCE CGA
-tools/dspal cat INTCODE CAMBCOMP
+tools/datasets/dspal cat SOURCE BCPL
+tools/datasets/dspal cat SOURCE CGA
+tools/datasets/dspal cat INTCODE CAMBCOMP
 ```
 
 The load library is RECFM=U, so `dspal cat` does not apply to LOAD; use

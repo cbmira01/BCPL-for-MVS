@@ -97,15 +97,15 @@ changed; any new source/object build must be identified explicitly.
 Comment-only updated BCPLAPT, BCPLBYTE and BCPLIO files require synchronization and independent DEVOBJ reassembly to verify reproducibility. From the repository root after git pull --ff-only:
 
 ```sh
-tools/dspal put SOURCE BCPLAPT asm/bcplapt.asm
-tools/dspal put SOURCE BCPLBYTE asm/bcplbyte.asm
-tools/dspal put SOURCE BCPLIO asm/bcplio.asm
-tools/dspal put JCL BLDDEVA jcl/build-dev-bcplapt.jcl
-tools/dspal put JCL BLDDEVB jcl/build-dev-bcplbyte.jcl
-tools/dspal put JCL BLDDEVI jcl/build-dev-bcplio.jcl
-tools/dspal submit JCL BLDDEVA
-tools/dspal submit JCL BLDDEVB
-tools/dspal submit JCL BLDDEVI
+tools/datasets/dspal put SOURCE BCPLAPT asm/bcplapt.asm
+tools/datasets/dspal put SOURCE BCPLBYTE asm/bcplbyte.asm
+tools/datasets/dspal put SOURCE BCPLIO asm/bcplio.asm
+tools/datasets/dspal put JCL BLDDEVA jcl/build-dev-bcplapt.jcl
+tools/datasets/dspal put JCL BLDDEVB jcl/build-dev-bcplbyte.jcl
+tools/datasets/dspal put JCL BLDDEVI jcl/build-dev-bcplio.jcl
+tools/datasets/dspal submit JCL BLDDEVA
+tools/datasets/dspal submit JCL BLDDEVB
+tools/datasets/dspal submit JCL BLDDEVI
 ```
 
 Require each assembler and binary-safe object installation step RC=0000, zero flagged source statements. Then submit existing JCL(D6LINK) and require IEWL RC=0000 and unchanged object boundaries. A smoke run against DEVOBJ(BCPLM6) should follow, then Gate F full-panel candidate acceptance. No production OBJ promotion. Gate E remains OPEN pending MVS evidence.

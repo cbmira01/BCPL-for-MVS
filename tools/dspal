@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Compatibility launcher for the dataset-management command.
-set -e
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/datasets/dspal" "$@"

@@ -24,4 +24,4 @@ BLIB and BCPLMAIN remain unmodified, and 075/076 remain failing.
 
 ## Status
 
-**PASS** — user-executed `tools/run-native-regression 80` on TK5 (2026-10-08 local). Exact output `>HI< 11 22 33 33`; PASS 1, FAIL 0. This confirms that a local `@A` argument-vector pointer survives nested historical WRCH/WRITES calls for a twelve-formal procedure. 075/076 remain failing.
+**PASS** — user-executed `tools/native/run-regression 80` on TK5 (2026-10-08 local). Exact output `>HI< 11 22 33 33`; PASS 1, FAIL 0. This confirms that a local `@A` argument-vector pointer survives nested historical WRCH/WRITES calls for a twelve-formal procedure. 075/076 remain failing.

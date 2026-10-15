@@ -4,7 +4,7 @@ Status: **Gates A (9337), A2 (9340), C (9342) accepted; not installed**, 12 Octo
 
 ## Accepted basis and scope
 
-The operator's full `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/run-native-regression` panel completed 124/124 PASS. This establishes a source-mode independently linked BCPLMEM architecture, including MEMBIND automatic G6!48 publication and regression 083's source-only counter instrumentation. It is **not** an installed-object acceptance result.
+The operator's full `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 tools/native/run-regression` panel completed 124/124 PASS. This establishes a source-mode independently linked BCPLMEM architecture, including MEMBIND automatic G6!48 publication and regression 083's source-only counter instrumentation. It is **not** an installed-object acceptance result.
 
 Production OBJ is `HERC02.BCPL.OBJ`, FB/80, BLKSIZE=800, a relocatable deck PDS. It is explicitly excluded from `dspal populate` (`config/dspal.yaml`: `content_type: object`, `populate: false`). Do **not** pass assembler decks through `dspal put` or CP037 text processing. Existing BLIB precedent: `jcl/build-blib-object.jcl` assembles a temporary FB80 object and conditionally writes `OBJ(BLIB)` using IEBGENER. The regression installed-PDS linker includes `BCPLMAIN`, `BCPLBYTE`, `BCPLAPT`, `BCPLMEM`, and `BLIB`.
 
@@ -20,9 +20,9 @@ python3 tools/checks/prepare-runtime-object-candidates.py
 #   workarea/runtime-object-candidates/bcplmain-external-mem.asm
 #   workarea/runtime-object-candidates/assemble-candidates.jcl
 # Then, only if the deck looks correct:
-bash tools/submit-jcl workarea/runtime-object-candidates/assemble-candidates.jcl
-tools/job-summary JOBNUMBER
-tools/dump-report-for-job JOBNUMBER
+bash tools/mvs/submit-jcl workarea/runtime-object-candidates/assemble-candidates.jcl
+tools/mvs/job-summary JOBNUMBER
+tools/mvs/dump-report-for-job JOBNUMBER
 ```
 
 The candidate job assembles BCPLMAIN and BCPLMEM in independent IFOX steps. It creates **only temporary sequential FB80 decks** and has **no OBJ PDS DD**. Require zero assembler severity, zero flagged cards and expected ESD export/import declarations. A zero return code here does **not** prove that the pair links with applications or that a PDS member can be restored.
@@ -43,8 +43,8 @@ sha256sum asm/bcplmain-wip.asm asm/bcplmem.asm \
   tools/checks/prepare-runtime-object-candidates.py \
   tools/checks/prepare-runtime-object-execution-probe.py \
   workarea/runtime-object-candidates/bcplmain-link-export.asm
-tools/dspal stat OBJ
-tools/dspal ls OBJ
+tools/datasets/dspal stat OBJ
+tools/datasets/dspal ls OBJ
 ```
 
 Inspect the generated candidate and make its provenance explicit:
@@ -73,10 +73,10 @@ On any failure, stop and follow the Gate B rebuild/redeploy recovery plan or rep
 Run focused installed-object regressions followed by the applicable full panel:
 
 ```sh
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 00 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 27 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 122 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 123 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 00 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 27 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 122 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 123 --show-output
 ```
 
 `BCPL_RUNTIME_PDS=1` explicitly **excludes 083**: compiled object members lack its private FREEMAIN counters. The other 123 regressions are eligible; the normal whole-panel command encounters an intentional 083 failure rather than silently skipping it. Use a recorded explicit 083 exclusion in the installed-mode validation report (or improve the runner with a clear opt-in skip facility after review). Preserve separate 083 source-only 124/124 evidence. If installed-object acceptance fails, stop promotion and follow Gate B's documented rebuild/redeploy or forward-repair recovery path; then retest. Exact incumbent binary restoration is not guaranteed.
@@ -111,7 +111,7 @@ Operator submitted BCOEX28 JOB 9342 from corrected non-installing execution prob
 
 ### Gate B inventory and staged deployment generator — 12 October 2026
 
-Operator's `tools/dspal stat OBJ` ran as JOB 9343: `HERC02.BCPL.OBJ` on volume `TSO003`, `DSORG=PO`, `RECFM=FB`, `LRECL=80`, `BLKSIZE=800`. `tools/dspal ls OBJ` listed exactly `BCPLAPT`, `BCPLBYTE`, `BCPLMAIN`, `BCPLMEM`, `BLIB`. **Inventory accepted; incumbent BCPLMAIN/BCPLMEM Git provenance remains unproven.** The operator deliberately selected Git-based rebuild/redeploy, rather than IEBCOPY backup.
+Operator's `tools/datasets/dspal stat OBJ` ran as JOB 9343: `HERC02.BCPL.OBJ` on volume `TSO003`, `DSORG=PO`, `RECFM=FB`, `LRECL=80`, `BLKSIZE=800`. `tools/datasets/dspal ls OBJ` listed exactly `BCPLAPT`, `BCPLBYTE`, `BCPLMAIN`, `BCPLMEM`, `BLIB`. **Inventory accepted; incumbent BCPLMAIN/BCPLMEM Git provenance remains unproven.** The operator deliberately selected Git-based rebuild/redeploy, rather than IEBCOPY backup.
 
 The new `tools/checks/prepare-runtime-object-install.py` **stages, but never submits**, `workarea/runtime-object-candidates/install-runtime-objects.jcl` and a Git SHA256 source manifest. It regenerates the externalized BCPLMAIN from canonical source and adds `ENTRY STKOVFL` to the disposable installation source; its two IFOX object decks feed sequential conditional IEBGENER writes to `OBJ(BCPLMAIN)` and `OBJ(BCPLMEM)`. The JCL uses the established `build-blib-object.jcl` FB80 copying pattern, but **the installation JCL has not been tested or submitted**. Do not submit until operator has reviewed the JCL/manifest, accepted lack of exact incumbent rollback, and captured commit/source hashes. **The member pair is not atomic.** Verify both writes and installed-PDS regressions after submission.
 
@@ -127,7 +127,7 @@ bash tools/checks/sync-bldbmain-gate-b.sh
 
 This stages from Git sources, records hashes, inventories members, deletes **all present target SOURCE members**, calls **one `dspal compress SOURCE`**, and PUTs both source members; it similarly removes `JCL(BLDBMAIN)`, compresses JCL once, then PUTs JCL. It performs `dspal get` readback and record comparison (ignoring FB80 trailing blanks). Avoid `dspal populate SOURCE` until staged dynamic member dependencies are available; it is not needed for this targeted update. If an rm or compress fails, the script aborts before PUT. If a PUT fails, synchronize the *whole* source set again before running BLDBMAIN. Repeated execution is intended. **These operations modify SOURCE and JCL PDS text members only, never OBJ.**
 
-Then, if readback is accepted, explicitly submit `tools/dspal submit JCL BLDBMAIN --wait` and review ASMMMAIN/ASMMMEM/VERIFY codes and ESD. This Gate B job reads assembler cards from resident SOURCE members (not inline JCL); it produces temporary FB80 decks and does **not** install them. This tests resident-source reproducibility. Gate D will extend/reuse its conditional two-assembly structure for object-member installation after separate approval. No successful MVS synchronization or job result is claimed until operator evidence arrives.
+Then, if readback is accepted, explicitly submit `tools/datasets/dspal submit JCL BLDBMAIN --wait` and review ASMMMAIN/ASMMMEM/VERIFY codes and ESD. This Gate B job reads assembler cards from resident SOURCE members (not inline JCL); it produces temporary FB80 decks and does **not** install them. This tests resident-source reproducibility. Gate D will extend/reuse its conditional two-assembly structure for object-member installation after separate approval. No successful MVS synchronization or job result is claimed until operator evidence arrives.
 
 **Supersession:** The earlier `tools/checks/prepare-runtime-object-install.py` inline-source write job is superseded by the MVS-resident source/JCL architecture. Do not submit that older generated installation deck. This revised architecture takes precedence over the earlier Gate D sketch until resident-build acceptance.
 
@@ -140,22 +140,22 @@ Operator-visible deployment of the **JCL member only** (do not remove or re-PUT 
 ```sh
 git pull --ff-only
 # Review jcl/build-bcplmain-objects.jcl before installation.
-tools/dspal rm JCL BLDBMAIN
-tools/dspal compress JCL
-tools/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl
-tools/dspal get JCL BLDBMAIN workarea/runtime-object-candidates/readback-bldbmain-gated.jcl
+tools/datasets/dspal rm JCL BLDBMAIN
+tools/datasets/dspal compress JCL
+tools/datasets/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl
+tools/datasets/dspal get JCL BLDBMAIN workarea/runtime-object-candidates/readback-bldbmain-gated.jcl
 diff -u jcl/build-bcplmain-objects.jcl workarea/runtime-object-candidates/readback-bldbmain-gated.jcl
 # This next action writes production OBJ members:
-tools/dspal submit JCL BLDBMAIN --wait
+tools/datasets/dspal submit JCL BLDBMAIN --wait
 ```
 
-Require ASMMMAIN, ASMMMEM, VERIFY, PUTMAIN, PUTMEM all RC=0000; inspect both IEBGENER SYSOUTs and run `tools/dspal ls OBJ`. Then proceed to Gate E installed-PDS regressions. If either PUT fails, stop: old/new runtime pair may be mixed and rebuilding/reinstalling both is required. No `dspal put OBJ`.
+Require ASMMMAIN, ASMMMEM, VERIFY, PUTMAIN, PUTMEM all RC=0000; inspect both IEBGENER SYSOUTs and run `tools/datasets/dspal ls OBJ`. Then proceed to Gate E installed-PDS regressions. If either PUT fails, stop: old/new runtime pair may be mixed and rebuilding/reinstalling both is required. No `dspal put OBJ`.
 
-**Note:** `tools/checks/stage-bldbmain.py` and the earlier `sync-bldbmain-gate-b.sh` are Gate B staging/synchronization aids; Gate D uses explicit `tools/dspal` commands as requested.
+**Note:** `tools/checks/stage-bldbmain.py` and the earlier `sync-bldbmain-gate-b.sh` are Gate B staging/synchronization aids; Gate D uses explicit `tools/datasets/dspal` commands as requested.
 
 ### Gate D JOB 9366 JCL rejection (12 October 2026)
 
-Operator updated JCL(BLDBMAIN) with RM JOB 9360, COMPRESS JOB 9361, PUT JOB 9362 and verified exact GET readback JOB 9363. `dspal submit JCL BLDBMAIN --wait` launched payload JOB 9366; JES reported **JCL ERROR**, no executed steps. OBJ inventory afterwards still lists BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB; inventory does not verify object bytes. Repository inspection identified an invalid `////*` card between VERIFY and PUTMAIN (accidental concatenation of previous terminator with a comment). Corrected to `//*`; this is a *likely* JCL failure cause pending JES diagnostic confirmation. **No Gate D acceptance; assembly/install did not execute.** To retry: `git pull --ff-only`, `tools/dspal rm JCL BLDBMAIN`, `tools/dspal compress JCL`, `tools/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl`, perform GET/diff readback, then explicit operator submission. Record the next payload job and inspect all five step results.
+Operator updated JCL(BLDBMAIN) with RM JOB 9360, COMPRESS JOB 9361, PUT JOB 9362 and verified exact GET readback JOB 9363. `dspal submit JCL BLDBMAIN --wait` launched payload JOB 9366; JES reported **JCL ERROR**, no executed steps. OBJ inventory afterwards still lists BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB; inventory does not verify object bytes. Repository inspection identified an invalid `////*` card between VERIFY and PUTMAIN (accidental concatenation of previous terminator with a comment). Corrected to `//*`; this is a *likely* JCL failure cause pending JES diagnostic confirmation. **No Gate D acceptance; assembly/install did not execute.** To retry: `git pull --ff-only`, `tools/datasets/dspal rm JCL BLDBMAIN`, `tools/datasets/dspal compress JCL`, `tools/datasets/dspal put JCL BLDBMAIN jcl/build-bcplmain-objects.jcl`, perform GET/diff readback, then explicit operator submission. Record the next payload job and inspect all five step results.
 
 ### Gate D accepted — JOB 9374 (12 October 2026)
 
@@ -175,14 +175,14 @@ Use operator-visible explicit dspal invocations, not hidden synchronization:
 git pull --ff-only
 python3 tools/checks/stage-bldbmain.py
 # inspect staged file and manifest; update the SOURCE member only
-tools/dspal rm SOURCE BCPLMAIN
-tools/dspal compress SOURCE
-tools/dspal put SOURCE BCPLMAIN workarea/runtime-object-candidates/bcplmain-pds.asm
-tools/dspal get SOURCE BCPLMAIN workarea/runtime-object-candidates/readback-bcplmain.asm
+tools/datasets/dspal rm SOURCE BCPLMAIN
+tools/datasets/dspal compress SOURCE
+tools/datasets/dspal put SOURCE BCPLMAIN workarea/runtime-object-candidates/bcplmain-pds.asm
+tools/datasets/dspal get SOURCE BCPLMAIN workarea/runtime-object-candidates/readback-bcplmain.asm
 diff -u workarea/runtime-object-candidates/bcplmain-pds.asm workarea/runtime-object-candidates/readback-bcplmain.asm
 # BLDBMAIN Gate D job already resident; writes OBJ(BCPLMAIN), OBJ(BCPLMEM)
-tools/dspal submit JCL BLDBMAIN --wait
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output
+tools/datasets/dspal submit JCL BLDBMAIN --wait
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 69 --show-output
 ```
 
 Do not accept the remediation until BLDBMAIN IFOX/IEBGENER all RC=0000 and regression 069 executes with `BLIB 42`. Then repeat 00,27,28 and installed-PDS regression expansion. In case of assembly error, **do not submit BLDBMAIN again until repaired**. Note re-running BLDBMAIN replaces *both* runtime OBJ members by design.
@@ -195,7 +195,7 @@ Do not accept the remediation until BLDBMAIN IFOX/IEBGENER all RC=0000 and regre
 
 **JOB 9388:** ASMMMAIN IFOX00 RC=0000; ASMMMEM IFOX00 RC=0000; VERIFY IEFBR14 RC=0000; PUTMAIN IEBGENER RC=0000; PUTMEM IEBGENER RC=0000. Job SUCCESS, highest RC=0000, zero assembler statements flagged and zero severity. This rebuilt and installed `HERC02.BCPL.OBJ(BCPLMAIN)` and `HERC02.BCPL.OBJ(BCPLMEM)` using the independent runtime components. Other installed OBJ members `BCPLAPT`, `BCPLBYTE`, `BLIB` were retained.
 
-**Functional evidence:** Following JOB 9388, `BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output` passed 1/1. Subsequently operator ran `BCPL_RUNTIME_PDS=1 tools/run-native-regression` over numbered tests 000..123 (124 discovered cases). Actual reported summary: **PASS 123, FAIL 1, TOTAL 124**. The sole reported failure, **083-instrumented-storage-reclamation**, exited RC=65 expressly because installed-library counter instrumentation is not provided; it is a deliberate **source-only** test, not a failed execution against the installed runtime. **All 123 installed-object-eligible tests passed**, including 069 and 120..123. No unexpected eligible failure is present. Gate E acceptance is based on the observed 123 passes plus the documented 083 exclusion; do not misquote the original runner output as zero failures.
+**Functional evidence:** Following JOB 9388, `BCPL_RUNTIME_PDS=1 tools/native/run-regression 69 --show-output` passed 1/1. Subsequently operator ran `BCPL_RUNTIME_PDS=1 tools/native/run-regression` over numbered tests 000..123 (124 discovered cases). Actual reported summary: **PASS 123, FAIL 1, TOTAL 124**. The sole reported failure, **083-instrumented-storage-reclamation**, exited RC=65 expressly because installed-library counter instrumentation is not provided; it is a deliberate **source-only** test, not a failed execution against the installed runtime. **All 123 installed-object-eligible tests passed**, including 069 and 120..123. No unexpected eligible failure is present. Gate E acceptance is based on the observed 123 passes plus the documented 083 exclusion; do not misquote the original runner output as zero failures.
 
 **Runner maintenance:** Commit `d6979ff` now treats 083 as **SKIP (source-only instrumentation)** only when `BCPL_RUNTIME_PDS=1`, reports a separate SKIP count, and retains ordinary execution of test 083 in source-mode. This behavior was implemented after the acceptance run and **has not yet been re-executed**. A subsequent installed-PDS full run should report PASS 123 / FAIL 0 / SKIP 1 / TOTAL 124, but this is an expectation, not measured evidence.
 
@@ -217,13 +217,13 @@ It does not change the existing paired BLDBMAIN job.
 
 Preconditions: synchronize SOURCE(BCPLMEM) from accepted Git candidate
 `asm/bcplmem.asm`, read back and compare it, then submit the new standalone
-JCL using `bash tools/submit-jcl jcl/build-gate-f1-bcplmem.jcl`.
+JCL using `bash tools/mvs/submit-jcl jcl/build-gate-f1-bcplmem.jcl`.
 Require ASMMEM IFOX00 RC=0000 and PUTMEM IEBGENER RC=0000. The latter
 **writes production OBJ(BCPLMEM)**. The source PDS update is operator-visible,
 not hidden in a generator. Preserve a provenance note with Git HEAD and
 both object-promotion job number and post-promotion regression summary.
 
-After promotion, run `BCPL_RUNTIME_PDS=1 tools/run-native-regression`.
+After promotion, run `BCPL_RUNTIME_PDS=1 tools/native/run-regression`.
 Expected 124 discovered, PASS 123, FAIL 0, SKIP 1 (083 is source-only).
 This is **not yet measured** for the new F1 object. On any write or
 installed-regression failure, freeze further OBJ edits and follow the
@@ -255,12 +255,12 @@ job inherited PROD rather than HERC02. No object data was copied
 
 Corrected method: `jcl/build-gate-f1-bcplmem.jcl` is a **job body**
 (no top-level JOB card), mapped to `JCL(BLDGFMEM)`. Stage with
-`tools/dspal put JCL BLDGFMEM jcl/build-gate-f1-bcplmem.jcl`,
+`tools/datasets/dspal put JCL BLDGFMEM jcl/build-gate-f1-bcplmem.jcl`,
 read back and compare, then run
-`tools/dspal submit JCL BLDGFMEM --wait`. dspal's authenticated
+`tools/datasets/dspal submit JCL BLDGFMEM --wait`. dspal's authenticated
 launcher derives USER/PASSWORD from private local config and injects
 the HERC02 job card for the resident payload. Never commit or echo
 that password or grant broader DATASET access. Check ASMMEM and
 PUTMEM RC=0000 and the installed regression panel before acceptance.
-The prior instructions to use `bash tools/submit-jcl` for this
+The prior instructions to use `bash tools/mvs/submit-jcl` for this
 production write are **superseded**.

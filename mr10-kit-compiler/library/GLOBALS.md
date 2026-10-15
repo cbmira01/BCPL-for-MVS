@@ -80,8 +80,8 @@ $)
 and:
 
 ```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+    "$(tools/mr10/current-icint)" \
     my-program.bcpl \
     +library/random.bcpl
 ```

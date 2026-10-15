@@ -21,4 +21,4 @@ BCPL source
   -> ICINT with BLIBI / ICLIB -> program output
 ```
 
-Use `tools/compile-and-run` to compile a BCPL program or `tools/run-intcode` to run an existing INTCODE deck. MVS jobs use the installed `ICINT19`. Native code generation is a separate part of the reconstruction.
+Use `tools/mr10/compile-and-run` to compile a BCPL program or `tools/mr10/run-intcode` to run an existing INTCODE deck. MVS jobs use the installed `ICINT19`. Native code generation is a separate part of the reconstruction.

@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Compatibility launcher: tools/mr10/current-icint
-set -e
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mr10/current-icint" "$@"

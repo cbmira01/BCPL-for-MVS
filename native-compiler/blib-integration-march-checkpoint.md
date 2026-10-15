@@ -10,7 +10,7 @@ The user ran the entire native regression panel on the TK5 MVS 3.8
 system:
 
 ```text
-tools/run-native-regression 0 68 --show-output
+tools/native/run-regression 0 68 --show-output
 NATIVE REGRESSION COMPLETE
 PASS  69
 FAIL  0
@@ -118,7 +118,7 @@ not proven to be a BLIB defect.
 
 ### MVS library planning — verify before changing configuration
 
-The established deployment authority is `tools/dspal` using
+The established deployment authority is `tools/datasets/dspal` using
 `config/dspal.yaml`. The repository is authoritative; MVS datasets
 are reproducibly deployed/build artifacts.
 
@@ -162,7 +162,7 @@ services.
 > Resume the BCPL-for-MVS project from the completed historical BLIB
 > static-integration march, documented in
 > `native-compiler/blib-integration-march-checkpoint.md`. The user
-> executed `tools/run-native-regression 0 68 --show-output` under
+> executed `tools/native/run-regression 0 68 --show-output` under
 > MVS 3.8J TK5 with **69 PASS, 0 FAIL**. Tests 065–068 use the
 > complete demoted Cambridge BLIB. **Do not restart this march or
 > change the passing regressions.** The next architectural objective

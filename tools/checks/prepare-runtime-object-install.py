@@ -78,7 +78,7 @@ def main():
             "accepted executable model: JOB 9342 (RC=0; output 42)",
             "incumbent object provenance: NOT ESTABLISHED",
             "recovery: rebuild/redeploy both from known-good Git revision; no exact rollback guarantee",
-            "required manual pre-submit check: tools/dspal stat OBJ ; tools/dspal ls OBJ",
+            "required manual pre-submit check: tools/datasets/dspal stat OBJ ; tools/datasets/dspal ls OBJ",
             "required manual pre-submit review: inspect JCL, source hashes and operator approval",
             "The generated JCL is NOT atomic and does not itself verify ESD after writing.",
             ""]

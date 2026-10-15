@@ -2,7 +2,7 @@
 
 This directory used to contain design notes for `pdspal` and early `dspal` work. Those decisions are now implemented, so the superseded planning files have been removed from the current tree. Their history remains available in Git.
 
-The current deployment interface is `tools/dspal`; the checked-in manifest is `config/dspal.yaml`.
+The current deployment interface is `tools/datasets/dspal`; the checked-in manifest is `config/dspal.yaml`.
 
 ## Native BLIB object-library planning
 
@@ -29,21 +29,21 @@ The managed MVS libraries are normally under `HERC02.BCPL.*`. Source-oriented li
 Create and populate the managed set with:
 
 ```sh
-tools/dspal initbcpl
-tools/dspal populate all
+tools/datasets/dspal initbcpl
+tools/datasets/dspal populate all
 ```
 
 Inspect it with:
 
 ```sh
-tools/dspal stat
-tools/dspal ls
+tools/datasets/dspal stat
+tools/datasets/dspal ls
 ```
 
 Remove the complete managed set with:
 
 ```sh
-tools/dspal purgebcpl
+tools/datasets/dspal purgebcpl
 ```
 
 `purgebcpl` operates only on the explicit manifest-defined data sets and requires confirmation unless `--yes` is supplied. Re-running it after the data sets are already absent is a clean no-op.

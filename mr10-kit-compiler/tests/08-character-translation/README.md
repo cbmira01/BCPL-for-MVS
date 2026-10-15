@@ -8,4 +8,4 @@ This test checks how source text and input records move between ASCII, EBCDIC, a
 | `punct.txt` on DD `PUNCT` | Character values returned by RDCH |
 | Saved OCODE / INTCODE | Proof that the source passed the compiler stages |
 
-Run with `tools/compile-and-run --results --save-ocode --save-intcode` and `--dd PUNCT=mr10-kit-compiler/tests/08-character-translation/punct.txt`; supply the BCPL source in the same directory. Do not replace historical BCPL operators to hide a character-conversion bug.
+Run with `tools/mr10/compile-and-run --results --save-ocode --save-intcode` and `--dd PUNCT=mr10-kit-compiler/tests/08-character-translation/punct.txt`; supply the BCPL source in the same directory. Do not replace historical BCPL operators to hide a character-conversion bug.

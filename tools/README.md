@@ -14,27 +14,27 @@ The MR10 suite runners now live under `tools/mr10/`. Their former `tools/run-mr1
 - `tools/native/` — Cambridge/native compilation, bootstrap preparation, BLIB builds and native regressions.
 - `tools/checks/` — reusable diagnostics and acceptance helpers (unchanged).
 
-The original root `tools/` executable paths are retained as compatibility launchers. Python helper modules with external consumers also retain their legacy locations during the transition. The relocation has not changed the MVS PDS allocation manifest or the compiler build contract.
+Only this README and the five subsystem directories remain at the tools root. Python helpers reside with their owning subsystem. The relocation has not changed the MVS PDS allocation manifest or the compiler build contract.
 
 ## Main commands
 
 | Command | Purpose |
 | --- | --- |
-| `tools/start-tk5` | Start the Hercules/TK5 container. |
-| `tools/shutdown-tk5` | Perform an orderly shutdown. |
-| `tools/submit-jcl` | Submit a JCL deck through the JES socket reader. |
-| `tools/job-summary` | Summarize steps and return codes for a JES job. |
-| `tools/dump-report-for-job` | Extract the complete printer report for one job. |
-| `tools/make-asm-job` | Generate IFOX assemble/link/run JCL from assembler source. |
-| `tools/current-icint` | Print the promoted ICINT source selected by `mr10-kit-compiler/asm/CURRENT`. |
-| `tools/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
-| `tools/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
+| `tools/mvs/start-tk5` | Start the Hercules/TK5 container. |
+| `tools/mvs/shutdown-tk5` | Perform an orderly shutdown. |
+| `tools/mvs/submit-jcl` | Submit a JCL deck through the JES socket reader. |
+| `tools/mvs/job-summary` | Summarize steps and return codes for a JES job. |
+| `tools/mvs/dump-report-for-job` | Extract the complete printer report for one job. |
+| `tools/mvs/make-asm-job` | Generate IFOX assemble/link/run JCL from assembler source. |
+| `tools/mr10/current-icint` | Print the promoted ICINT source selected by `mr10-kit-compiler/asm/CURRENT`. |
+| `tools/mr10/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
+| `tools/mr10/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
 | `tools/native/build-cambridge` | Build the persistent Cambridge compiler from dspal-populated MVS members. |
 | `tools/native/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
 | `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
 | `tools/mr10/run-demo-suite` | Run the 17 general BCPL demonstrations. |
 | `tools/mr10/run-language-demos` | Run the focused BCPL language demonstrations. |
-| `tools/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
+| `tools/datasets/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
 
 The old Cambridge-first bootstrap generator is no longer a current tool or workflow.
 
@@ -43,10 +43,10 @@ The old Cambridge-first bootstrap generator is no longer a current tool or workf
 A typical assembler cycle is:
 
 ```sh
-tools/make-asm-job asm/program.asm --output-dir jcl --listing heavy
-tools/submit-jcl jcl/program-heavy.jcl
-tools/job-summary JOB_NUMBER
-tools/dump-report-for-job JOB_NUMBER
+tools/mvs/make-asm-job asm/program.asm --output-dir jcl --listing heavy
+tools/mvs/submit-jcl jcl/program-heavy.jcl
+tools/mvs/job-summary JOB_NUMBER
+tools/mvs/dump-report-for-job JOB_NUMBER
 ```
 
 `submit-jcl` uses the Hercules socket reader, normally port 3505. The reporting tools read the configured printer output under `mvs-state/prt/`.
@@ -56,8 +56,8 @@ tools/dump-report-for-job JOB_NUMBER
 Use `run-intcode` when the primary program is already INTCODE:
 
 ```sh
-tools/run-intcode --results \
-    "$(tools/current-icint)" \
+tools/mr10/run-intcode --results \
+    "$(tools/mr10/current-icint)" \
     mr10-kit-compiler/tests/01-echo-test/echo-sysin.int \
     +mr10-kit-compiler/source/blibi.int \
     +mr10-kit-compiler/source/iclib.int
@@ -70,10 +70,10 @@ Additional modules are written as `+PATH` and are loaded in command-line order. 
 `compile-and-run` is the normal interpreted compiler driver:
 
 ```sh
-tools/compile-and-run --results \
+tools/mr10/compile-and-run --results \
     --save-ocode \
     --save-intcode \
-    "$(tools/current-icint)" \
+    "$(tools/mr10/current-icint)" \
     mr10-kit-compiler/tests/03-compile-richards-factorial/richards-factorial-test.bcpl
 ```
 
@@ -93,8 +93,8 @@ BCPL source
 Separate compilation units use the same explicit `+PATH` convention:
 
 ```sh
-tools/compile-and-run --results \
-    "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+    "$(tools/mr10/current-icint)" \
     mr10-kit-compiler/tests/04-module-test/module-test-1.bcpl \
     +mr10-kit-compiler/tests/04-module-test/module-test-2.bcpl
 ```
@@ -132,28 +132,28 @@ tools/mr10/run-language-demos
 Useful commands include:
 
 ```text
-tools/dspal info
-tools/dspal status [--probe]
-tools/dspal stat [DATASET]
-tools/dspal list
-tools/dspal ls [DATASET]
-tools/dspal cat DATASET MEMBER
-tools/dspal get DATASET MEMBER FILE
-tools/dspal put DATASET MEMBER FILE
-tools/dspal rm DATASET MEMBER
-tools/dspal compress DATASET
-tools/dspal initbcpl
-tools/dspal populate all
-tools/dspal submit JCL CAMBBLD
-tools/dspal purgebcpl
+tools/datasets/dspal info
+tools/datasets/dspal status [--probe]
+tools/datasets/dspal stat [DATASET]
+tools/datasets/dspal list
+tools/datasets/dspal ls [DATASET]
+tools/datasets/dspal cat DATASET MEMBER
+tools/datasets/dspal get DATASET MEMBER FILE
+tools/datasets/dspal put DATASET MEMBER FILE
+tools/datasets/dspal rm DATASET MEMBER
+tools/datasets/dspal compress DATASET
+tools/datasets/dspal initbcpl
+tools/datasets/dspal populate all
+tools/datasets/dspal submit JCL CAMBBLD
+tools/datasets/dspal purgebcpl
 ```
 
 The normal deployment cycle is:
 
 ```sh
-tools/dspal initbcpl
-tools/dspal populate all
-tools/dspal ls
+tools/datasets/dspal initbcpl
+tools/datasets/dspal populate all
+tools/datasets/dspal ls
 ```
 
 `purgebcpl` deletes only the explicit managed data-set set and requires interactive confirmation unless `--yes` is supplied. The full create/populate/purge/recreate lifecycle has been exercised on TK5.
@@ -163,7 +163,7 @@ tools/dspal ls
 Runnable members in the managed JCL PDS are stored as job bodies without a JOB statement. Submit one with:
 
 ```sh
-tools/dspal submit JCL CAMBBLD
+tools/datasets/dspal submit JCL CAMBBLD
 ```
 
 `dspal` generates a small authenticated `DSPALSUB` launcher. Its `IEBGENER` input is an authenticated payload JOB card followed by the requested PDS member, and its output is `SYSOUT=(A,INTRDR)`. The member therefore stays on MVS; it is not copied back through the host.
@@ -171,13 +171,13 @@ tools/dspal submit JCL CAMBBLD
 To wait for the submitted payload and print its summary:
 
 ```sh
-tools/dspal submit JCL CAMBBLD --wait
+tools/datasets/dspal submit JCL CAMBBLD --wait
 ```
 
 To inspect the launcher without submitting it:
 
 ```sh
-tools/dspal submit JCL CAMBBLD --show-jcl
+tools/datasets/dspal submit JCL CAMBBLD --show-jcl
 ```
 
 Batch authentication comes from `config/dspal.local.yaml`, which is gitignored. `--show-jcl` redacts both launcher and payload passwords.
@@ -222,16 +222,16 @@ bash native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh
 Then populate the managed MVS libraries:
 
 ```sh
-tools/dspal populate SOURCE
-tools/dspal populate ASM
-tools/dspal populate INTCODE
+tools/datasets/dspal populate SOURCE
+tools/datasets/dspal populate ASM
+tools/datasets/dspal populate INTCODE
 ```
 
 Populate the stored build job and submit it through the internal-reader launcher:
 
 ```sh
-tools/dspal populate JCL
-tools/dspal submit JCL CAMBBLD --wait
+tools/datasets/dspal populate JCL
+tools/datasets/dspal submit JCL CAMBBLD --wait
 ```
 
 The checked-in `CAMBBLD` member is a job body with no JOB card; `dspal submit`
@@ -257,13 +257,13 @@ members are retained for diagnosis and inspection.
 Inspect the complete generated build JCL without submitting it:
 
 ```sh
-python3 tools/build-cambridge-mvs --show-jcl
+python3 tools/native/build-cambridge --show-jcl
 ```
 
 After inspecting the PDSes, compile a source through that resident image with:
 
 ```sh
-python3 tools/cambridge-compile-mvs path/to/program.bcpl
+python3 tools/native/compile-mvs path/to/program.bcpl
 ```
 
 For the native regression panel, use:

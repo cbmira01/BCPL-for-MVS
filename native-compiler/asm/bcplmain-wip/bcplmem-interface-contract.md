@@ -77,13 +77,13 @@ The current experiment intentionally excludes regression **083**, whose existing
 
 ```sh
 git pull --ff-only
-tools/run-native-regression 27 --show-output
+tools/native/run-regression 27 --show-output
 python3 tools/checks/prepare-bcplmem-runtime-probe.py 27
-bash tools/submit-jcl \
+bash tools/mvs/submit-jcl \
   workarea/native-regression/27-getvec/bcplmem-object-probe/bcplmem-object-probe.jcl
 ```
 
-Inspect with `tools/job-summary JOBNUMBER` and `tools/dump-report-for-job JOBNUMBER`. Expect `ASMBCPL`, `ASMNAT`, `LKED`, `GO` each RC=0000 and the same BCPL output as canonical regression 027. **This expectation is unverified** until the real IFOX/IEWL/SYSOUT report is examined. Stop and diagnose any failure; do not run other extracted-object cases automatically.
+Inspect with `tools/mvs/job-summary JOBNUMBER` and `tools/mvs/dump-report-for-job JOBNUMBER`. Expect `ASMBCPL`, `ASMNAT`, `LKED`, `GO` each RC=0000 and the same BCPL output as canonical regression 027. **This expectation is unverified** until the real IFOX/IEWL/SYSOUT report is examined. Stop and diagnose any failure; do not run other extracted-object cases automatically.
 
 This checkpoint is a *staged experiment*, not confirmation of BCPLMEM linkage or completed extraction. The prior combined 120/120 suite remains the accepted baseline.
 
@@ -163,7 +163,7 @@ Next gates: **039** (storage release), **082** (outstanding allocations at FINIS
 
 ## Checkpoint 2f: JOB 6286 accepted — storage-release regression 039
 
-Operator report from 11 Oct 2026: canonical `tools/run-native-regression 39 --show-output` gave **PASS 1/1**. Preparation of the isolated two-object BCPLMEM experiment passed both assembler preflights, and `MM039R` **JOB 6286** completed **ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000**. IFOX flagged no assembler statements. IEWL cross-reference: **BCPLMEM X'1470'**, `GETVEC X'1470'`, `FREEVEC X'1510'`, `MEMDRAIN X'1596'`; external references from BCPLMAIN resolve at X'364', X'368', and X'4D8'. GO output: **42**. These are operator-supplied real-TK5 results.
+Operator report from 11 Oct 2026: canonical `tools/native/run-regression 39 --show-output` gave **PASS 1/1**. Preparation of the isolated two-object BCPLMEM experiment passed both assembler preflights, and `MM039R` **JOB 6286** completed **ASMBCPL IFOX00 RC=0000, ASMNAT IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000**. IFOX flagged no assembler statements. IEWL cross-reference: **BCPLMEM X'1470'**, `GETVEC X'1470'`, `FREEVEC X'1510'`, `MEMDRAIN X'1596'`; external references from BCPLMAIN resolve at X'364', X'368', and X'4D8'. GO output: **42**. These are operator-supplied real-TK5 results.
 
 Regression 039 validates free/reallocate behavior in the external BCPLMEM arrangement, including a 252-word vector, **but does not instrument or count actual MVS FREEMAIN calls**. This limitation is intentionally retained until a module-aware adaptation of regression 083.
 
@@ -187,9 +187,9 @@ Execution gate (operator's TK5 environment):
 
 ```sh
 git pull --ff-only
-tools/run-native-regression 83 --show-output
+tools/native/run-regression 83 --show-output
 python3 tools/checks/prepare-bcplmem-083-probe.py &&
-bash tools/submit-jcl \
+bash tools/mvs/submit-jcl \
   workarea/native-regression/083-instrumented-storage-reclamation/bcplmem-object-probe/bcplmem-083-object-probe.jcl
 ```
 
@@ -217,20 +217,20 @@ Commit `52e3ff8` adds an explicit `BCPLMEM_OBJECT=1` switch to `native-compiler/
 Fail-closed boundaries: nonbinary `BCPLMEM_OBJECT` values are rejected; test 083 requires its dedicated `tools/checks/prepare-bcplmem-083-probe.py` because canonical 083 instruments a monolithic runtime; and BLIB-object-staged cases are explicitly refused while their separate prepare-stage2 linkage is not updated. These restrictions prevent a partially externalized pass being mistaken for validated object-mode integration. The intended initial **operator validation** is:
 ```sh
 git pull --ff-only
-BCPLMEM_OBJECT=1 tools/run-native-regression 27 --show-output
-BCPLMEM_OBJECT=1 tools/run-native-regression 29 --show-output
+BCPLMEM_OBJECT=1 tools/native/run-regression 27 --show-output
+BCPLMEM_OBJECT=1 tools/native/run-regression 29 --show-output
 BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
-  tools/run-native-regression 29 --show-output
+  tools/native/run-regression 29 --show-output
 ```
 Capture job-summary, assembler steps, IEWL externals, output checks. At this stage **no runner-level MVS execution has been reported**; no 120/120 opt-in suite result is claimed. Full-suite acceptance requires adding appropriate BLIB-object staging and native regression 083 module-aware instrumentation, and verifying them under TK5. The all-default baseline remains unchanged.
 
 ## Checkpoint 3b: BCPLMEM_OBJECT runner acceptance — operator report
 
-On 11 October 2026, after pulling main through `7b2d8ec`, the operator executed `BCPLMEM_OBJECT=1 tools/run-native-regression 27 --show-output` and `... 29 --show-output`. **Both reported PASS 1/1.** The operator then ran `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 tools/run-native-regression 29 --show-output`, also **PASS 1/1**. These are end-to-end regression-runner pass results, including its normal output checks. The abbreviated console report does not contain individual IFOX, IEWL cross-reference, or JOB numbers, so separate object resolution in these three specific jobs is supported by the selected build path and prior isolated tests rather than fresh displayed IEWL evidence. Normal mode remains unchanged. Next: broaden runner coverage, integrate the special 083 case and BLIB-object path before claiming full opt-in suite acceptance.
+On 11 October 2026, after pulling main through `7b2d8ec`, the operator executed `BCPLMEM_OBJECT=1 tools/native/run-regression 27 --show-output` and `... 29 --show-output`. **Both reported PASS 1/1.** The operator then ran `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 tools/native/run-regression 29 --show-output`, also **PASS 1/1**. These are end-to-end regression-runner pass results, including its normal output checks. The abbreviated console report does not contain individual IFOX, IEWL cross-reference, or JOB numbers, so separate object resolution in these three specific jobs is supported by the selected build path and prior isolated tests rather than fresh displayed IEWL evidence. Normal mode remains unchanged. Next: broaden runner coverage, integrate the special 083 case and BLIB-object path before claiming full opt-in suite acceptance.
 
 ## Checkpoint 3c: six additional three-object runner regressions pass
 
-Operator report, 11 October 2026, following pull through `f89ef01`: with `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`, `tools/run-native-regression 30 32 --show-output` passed **3/3** (030 GETVEC failure, 031 vectors across calls, 032 returned vector pointer). Separate invocations passed **039 FREEVEC release/reallocation 1/1**, **082 FINISH with outstanding vectors 1/1**, and **088 STOP with outstanding vectors 1/1**. Total for this checkpoint **6/6 PASS**, zero failures; with prior checkpoint 3b **9/9 opt-in executions**. Console output supplies runner acceptance, not individual IEWL symbol listings or per-step RC details. The opt-in runner still intentionally refuses monolithic-instrumented 083 and BLIB-object staging. Address these boundaries before claiming 120/120 object-mode support. Default runner stays unchanged.
+Operator report, 11 October 2026, following pull through `f89ef01`: with `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`, `tools/native/run-regression 30 32 --show-output` passed **3/3** (030 GETVEC failure, 031 vectors across calls, 032 returned vector pointer). Separate invocations passed **039 FREEVEC release/reallocation 1/1**, **082 FINISH with outstanding vectors 1/1**, and **088 STOP with outstanding vectors 1/1**. Total for this checkpoint **6/6 PASS**, zero failures; with prior checkpoint 3b **9/9 opt-in executions**. Console output supplies runner acceptance, not individual IEWL symbol listings or per-step RC details. The opt-in runner still intentionally refuses monolithic-instrumented 083 and BLIB-object staging. Address these boundaries before claiming 120/120 object-mode support. Default runner stays unchanged.
 
 ## Checkpoint 3d: module-aware 083 integrated into the opt-in runner
 
@@ -241,16 +241,16 @@ Regression 083 without BCPLMEM_OBJECT remains on its original monolithic instrum
 **Validation required, not yet claimed**:
 ```sh
 git pull --ff-only
-BCPLMEM_OBJECT=1 tools/run-native-regression 83 --show-output
+BCPLMEM_OBJECT=1 tools/native/run-regression 83 --show-output
 BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
-  tools/run-native-regression 83 --show-output
-tools/run-native-regression 83 --show-output
+  tools/native/run-regression 83 --show-output
+tools/native/run-regression 83 --show-output
 ```
 Each must pass 1/1 and emit the two exact output records. The preexisting isolated JOB 6295 establishes the module-aware instrumentation, not yet the automated runner path or its three-object coexistence. BLIB-object staging remains separately excluded.
 
 ## Checkpoint 3e: automated regression 083 triple acceptance
 
-Operator report, 11 October 2026, after pulling main through `668c11c`: three independent `tools/run-native-regression 83 --show-output` invocations all reported **PASS 1/1**, FAIL 0: (1) `BCPLMEM_OBJECT=1`; (2) `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`; (3) default mode with no object switches. The expected regression fixture is exactly two records, `42` and `V=2 M=1`, verified through the ordinary runner's JES output checker. The abbreviated console report does not individually display output records or IEWL symbols. These results close the runner-level module-aware 083 acceptance gate and confirm default regression compatibility. Remaining integration boundary: BLIB-object staging with BCPLMEM_OBJECT, before full three-object 120-test suite.
+Operator report, 11 October 2026, after pulling main through `668c11c`: three independent `tools/native/run-regression 83 --show-output` invocations all reported **PASS 1/1**, FAIL 0: (1) `BCPLMEM_OBJECT=1`; (2) `BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1`; (3) default mode with no object switches. The expected regression fixture is exactly two records, `42` and `V=2 M=1`, verified through the ordinary runner's JES output checker. The abbreviated console report does not individually display output records or IEWL symbols. These results close the runner-level module-aware 083 acceptance gate and confirm default regression compatibility. Remaining integration boundary: BLIB-object staging with BCPLMEM_OBJECT, before full three-object 120-test suite.
 
 ## Checkpoint 4a: BLIB-object staging supports opt-in BCPLMEM (pending TK5)
 
@@ -259,10 +259,10 @@ The `069-independent-blib-object/prepare-stage2.py` now accepts `--external-mem`
 **Operator acceptance gates (not yet executed):**
 ```sh
 git pull --ff-only
-BCPLMEM_OBJECT=1 tools/run-native-regression 69 --show-output
+BCPLMEM_OBJECT=1 tools/native/run-regression 69 --show-output
 BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1 \
-  tools/run-native-regression 69 --show-output
-tools/run-native-regression 69 --show-output
+  tools/native/run-regression 69 --show-output
+tools/native/run-regression 69 --show-output
 ```
 
 Confirm that each reports PASS, the IEWL report contains the BLIB PDS INCLUDE and resolves exported GETVEC, FREEVEC, MEMDRAIN, and that every selected IFOX step completed normally. As usual, there are no local TK5 results at commit time, and this is not full-suite acceptance.
@@ -273,7 +273,7 @@ Operator report, 11 October 2026, after pull through `9254acf`: regression **069
 
 ## Checkpoint 4c: full 120/120 opt-in object-mode suite ACCEPTED
 
-Operator report, **11 October 2026**, after pulling `main` through `e861093`: the complete native regression suite `tools/run-native-regression` ran with **BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1**. All numbered tests **000–119** individually reported PASS. The aggregate result was **PASS 120 / FAIL 0 / TOTAL 120**. This includes object-linked BLIB tests, module-aware reclaimed-storage instrumentation in 083, GETVEC/FREEVEC functional cases, and STOP/FINISH teardown scenarios. It is direct operator evidence of complete regression-suite acceptance of the simultaneous three-module opt-in configuration under MVS/TK5.
+Operator report, **11 October 2026**, after pulling `main` through `e861093`: the complete native regression suite `tools/native/run-regression` ran with **BCPLMEM_OBJECT=1 BCPLBYTE_OBJECT=1 BCPLAPT_OBJECT=1**. All numbered tests **000–119** individually reported PASS. The aggregate result was **PASS 120 / FAIL 0 / TOTAL 120**. This includes object-linked BLIB tests, module-aware reclaimed-storage instrumentation in 083, GETVEC/FREEVEC functional cases, and STOP/FINISH teardown scenarios. It is direct operator evidence of complete regression-suite acceptance of the simultaneous three-module opt-in configuration under MVS/TK5.
 
 The baseline (no object options) remains the default and was not altered by this march. The external BCPLMEM implementation is still housed in experimental tooling; the passing suite does **not** prove historical equivalence or leak freedom beyond measured instrumentation. Architectural promotion to a permanent runtime module and MVS object-PDS lifecycle is a separate, deliberate decision. **Do not claim production readiness or default-mode migration from this result alone.**
 
@@ -285,11 +285,11 @@ Canonical source candidates are `asm/bcplbyte.asm`, `asm/bcplapt.asm` (copied fr
 
 `python3 tools/checks/prepare-runtime-object-library.py` runs source checks and **only generates**, but does **not submit**, `workarea/runtime-object-library/build-runtime-objects.jcl`. It obtains the job card and managed `OBJ` dataset through the project's **dspal** configuration. Its four IFOX assembly steps and four guarded IEBGENER member-install steps use the exact FB80 PDS object format already established by `jcl/build-blib-object.jcl`. It does not rebuild, delete or replace `OBJ(BLIB)`.
 
-**Caution:** the generated installer overwrites four production object members and is **non-atomic**; successful early member installs would remain if a later step failed. **Do not submit** until source preflight, backup/recovery procedure, and downstream installed-object consumer JCL have been reviewed. Review `tools/dspal stat OBJ` and `tools/dspal ls OBJ` first. No fresh TK5 job has run for this staging checkpoint and the 120/120 evidence applies to the earlier object-source configuration, not installed members.
+**Caution:** the generated installer overwrites four production object members and is **non-atomic**; successful early member installs would remain if a later step failed. **Do not submit** until source preflight, backup/recovery procedure, and downstream installed-object consumer JCL have been reviewed. Review `tools/datasets/dspal stat OBJ` and `tools/datasets/dspal ls OBJ` first. No fresh TK5 job has run for this staging checkpoint and the 120/120 evidence applies to the earlier object-source configuration, not installed members.
 
 ## Four-module PDS preparation: operator preflight accepted
 
-Operator report 11 October 2026: `python3 tools/checks/prepare-runtime-object-library.py` completed all three strict extraction passes and all four assembler-source preflights, generating `workarea/runtime-object-library/build-runtime-objects.jcl` without submission. `tools/dspal stat OBJ` confirmed `HERC02.BCPL.OBJ` on volume `TSO003`, DSORG PO, RECFM FB, LRECL 80, BLKSIZE 800. `tools/dspal ls OBJ` enumerated only the existing `BLIB` member. No four-module installation job was submitted and no new library members have been installed.
+Operator report 11 October 2026: `python3 tools/checks/prepare-runtime-object-library.py` completed all three strict extraction passes and all four assembler-source preflights, generating `workarea/runtime-object-library/build-runtime-objects.jcl` without submission. `tools/datasets/dspal stat OBJ` confirmed `HERC02.BCPL.OBJ` on volume `TSO003`, DSORG PO, RECFM FB, LRECL 80, BLKSIZE 800. `tools/datasets/dspal ls OBJ` enumerated only the existing `BLIB` member. No four-module installation job was submitted and no new library members have been installed.
 
 **Important integration constraint:** existing BLIB-object staging injects `EXTRN BLIB` and the `GIDONE` BLIB-global registration code into a *test-local BCPLMAIN assembler copy*. The generated canonical BCPLMAIN object candidate does not contain that injection. Installed-object BLIB tests cannot simply swap to `INCLUDE OBJ(BCPLMAIN)` without first resolving the conditional BLIB-global registration contract. Preserve the 120/120 source-object baseline; establish this interface and an independent installed-object consumer before submitting the installer.
 
@@ -307,7 +307,7 @@ python3 tools/checks/prepare-installed-runtime-consumer.py \
   workarea/native-regression/069-independent-blib-object/generated.s370.asm \
   workarea/runtime-object-library/installed-consumer-069.jcl
 grep -n 'INCLUDE OBJ' workarea/runtime-object-library/installed-consumer-069.jcl
-tools/dspal ls OBJ
+tools/datasets/dspal ls OBJ
 ```
 The prior application assembler should exist from the operator's successful 069 regression; regenerate test 069 normally if missing. Inspect both generated JCL decks for valid job steps, external references, and any site-specific JCL adjustments. **Neither tool submits jobs.** The installation remains non-atomic, requires a recoverable backup, and should not run until reviewed. No freshly installed object-member execution is claimed.
 
@@ -319,34 +319,34 @@ To reduce partial-update risk, installer staging now generates **all four IFOX a
 
 ## Installed runtime object library: first MVS installation ACCEPTED
 
-Operator evidence, 11 October 2026, **JOB 6573 BCOBJBLD**: four IFOX00 steps `AMAIN`, `ABYTE`, `AAPT`, `AMEM` each RC=0000, followed by four IEBGENER installations `IMAIN`, `IBYTE`, `IAPT`, `IMEM` each RC=0000. Highest job RC=0000; 0 assembler statements flagged, highest severity 0. Afterward `tools/dspal ls OBJ` enumerated precisely `BCPLAPT`, `BCPLBYTE`, `BCPLMAIN`, `BCPLMEM`, and original `BLIB` in `HERC02.BCPL.OBJ`. Thus four new FB80 relocatable object members are installed and the resident BLIB remains. This does **not** yet verify IEWL resolution or GO execution with the installed objects; next gate is `installed-consumer-069.jcl`. Retain the proven 120/120 source-object mode as fallback.
+Operator evidence, 11 October 2026, **JOB 6573 BCOBJBLD**: four IFOX00 steps `AMAIN`, `ABYTE`, `AAPT`, `AMEM` each RC=0000, followed by four IEBGENER installations `IMAIN`, `IBYTE`, `IAPT`, `IMEM` each RC=0000. Highest job RC=0000; 0 assembler statements flagged, highest severity 0. Afterward `tools/datasets/dspal ls OBJ` enumerated precisely `BCPLAPT`, `BCPLBYTE`, `BCPLMAIN`, `BCPLMEM`, and original `BLIB` in `HERC02.BCPL.OBJ`. Thus four new FB80 relocatable object members are installed and the resident BLIB remains. This does **not** yet verify IEWL resolution or GO execution with the installed objects; next gate is `installed-consumer-069.jcl`. Retain the proven 120/120 source-object mode as fallback.
 
 ## Installed-object application linkage and GO: JOB 6575 accepted at step level
 
-Operator report 11 October 2026: `tools/submit-jcl --timeout 30 workarea/runtime-object-library/installed-consumer-069.jcl` submitted **JOB 6575 BCOBJP69**. `tools/job-summary 6575` showed **ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000**, JOB SUCCESS, highest RC 0000, zero flagged assembler statements, severity zero. The generated deck explicitly includes installed `OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)`. Thus first installed-library application assembly, link-edit and execution completed successfully. **The operator has not yet displayed or validated JOB 6575's BCPL output**; regression 069 expects exactly `BLIB 42`. Confirm that output before claiming complete functional acceptance or replacing source-object regression linkage.
+Operator report 11 October 2026: `tools/mvs/submit-jcl --timeout 30 workarea/runtime-object-library/installed-consumer-069.jcl` submitted **JOB 6575 BCOBJP69**. `tools/mvs/job-summary 6575` showed **ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000**, JOB SUCCESS, highest RC 0000, zero flagged assembler statements, severity zero. The generated deck explicitly includes installed `OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)`. Thus first installed-library application assembly, link-edit and execution completed successfully. **The operator has not yet displayed or validated JOB 6575's BCPL output**; regression 069 expects exactly `BLIB 42`. Confirm that output before claiming complete functional acceptance or replacing source-object regression linkage.
 
 ## Installed-object consumer functional acceptance: JOB 6575
 
-Operator subsequently ran `tools/dump-report-for-job 6575 | grep -F 'BLIB 42'` and obtained the exact expected functional record **`BLIB 42`**. Together with JOB 6575 ASMAP/LKED/GO RC=0000 and JOB 6573's eight successful assembly/installation steps, this **closes the first installed five-member object-library end-to-end acceptance gate**. The host AWK reported a locale-dependent invalid-multibyte warning while reading the printer stream; the expected record was nevertheless recovered. No full-suite installed-object run is yet claimed. Next: an opt-in 120-test regression path linking installed `OBJ(BCPLMAIN/BCPLBYTE/BCPLAPT/BCPLMEM/BLIB)`, with the original source-object path preserved.
+Operator subsequently ran `tools/mvs/dump-report-for-job 6575 | grep -F 'BLIB 42'` and obtained the exact expected functional record **`BLIB 42`**. Together with JOB 6575 ASMAP/LKED/GO RC=0000 and JOB 6573's eight successful assembly/installation steps, this **closes the first installed five-member object-library end-to-end acceptance gate**. The host AWK reported a locale-dependent invalid-multibyte warning while reading the printer stream; the expected record was nevertheless recovered. No full-suite installed-object run is yet claimed. Next: an opt-in 120-test regression path linking installed `OBJ(BCPLMAIN/BCPLBYTE/BCPLAPT/BCPLMEM/BLIB)`, with the original source-object path preserved.
 
 ## Checkpoint: opt-in installed runtime PDS regression runner (first scope)
 
-`BCPL_RUNTIME_PDS=1 tools/run-native-regression N` now has a distinct, **application-only** assembly/link-edit/GO preparation path for single-source tests. `tools/checks/prepare-runtime-pds-regression.py` transforms the recovered compiler assembler by naming its CSECT `BCRGnnnn`, retaining `EXTRN BCPLMAIN`, and emits IEWL `INCLUDE OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)`. The generated deck uses the same installed library validated with JOB 6575 and the existing runner's JES output/termination verifier. No runtime service is reassembled or installed by this path.
+`BCPL_RUNTIME_PDS=1 tools/native/run-regression N` now has a distinct, **application-only** assembly/link-edit/GO preparation path for single-source tests. `tools/checks/prepare-runtime-pds-regression.py` transforms the recovered compiler assembler by naming its CSECT `BCRGnnnn`, retaining `EXTRN BCPLMAIN`, and emits IEWL `INCLUDE OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`, `OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, and `OBJ(BLIB)`. The generated deck uses the same installed library validated with JOB 6575 and the existing runner's JES output/termination verifier. No runtime service is reassembled or installed by this path.
 
 This checkpoint deliberately refuses `BCPL_RUNTIME_PDS=1` combined with any of `BCPLMEM_OBJECT`, `BCPLBYTE_OBJECT`, `BCPLAPT_OBJECT`. It also refuses cases with a separate native or BCPL library source, regression 083's special local instrumentation, input fixture decks and alternate output fixture decks. These need their own installed-library adaptations. Compile-only cases keep their canonical behavior. The original runner and all prior opt-in object-source modes remain intact. **This is not yet a full-suite implementation**, and no TK5 validation has been reported for the new runner mode.
 
 First operator gate:
 ```sh
 git pull --ff-only
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 27 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 38 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 69 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 27 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 38 --show-output
 ```
 These check installed BLIB registration, allocation and byte operations. They must pass through application-only IFOX, installed-object IEWL and GO with matching output. Do **not** run the full 120-test suite with this mode until its special paths are implemented.
 
 ## Installed-object PDS runner: initial three regressions accepted
 
-Operator report, 11 October 2026, after pulling main through `6e8731b`: `BCPL_RUNTIME_PDS=1 tools/run-native-regression 69 --show-output` **PASS 1/1**, regression 027 **PASS 1/1**, and regression 038 **PASS 1/1**. All three produced FAIL 0 under the ordinary runner's output checks. These establish the opt-in installed five-member runtime library path across BLIB global registration, GETVEC and byte services. The concise console output does not include separate IEWL cross-reference detail. Special cases remain excluded as documented; do not claim 120/120 installed-object coverage yet.
+Operator report, 11 October 2026, after pulling main through `6e8731b`: `BCPL_RUNTIME_PDS=1 tools/native/run-regression 69 --show-output` **PASS 1/1**, regression 027 **PASS 1/1**, and regression 038 **PASS 1/1**. All three produced FAIL 0 under the ordinary runner's output checks. These establish the opt-in installed five-member runtime library path across BLIB global registration, GETVEC and byte services. The concise console output does not include separate IEWL cross-reference detail. Special cases remain excluded as documented; do not claim 120/120 installed-object coverage yet.
 
 ## Checkpoint: installed PDS mode accepts additional regression shapes (not yet TK5-validated)
 
@@ -360,10 +360,10 @@ Following the accepted installed-PDS regressions 069, 027 and 038, the opt-in `B
 
 ```sh
 git pull --ff-only
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 26 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 25 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 94 --show-output
-BCPL_RUNTIME_PDS=1 tools/run-native-regression 102 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 26 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 25 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 94 --show-output
+BCPL_RUNTIME_PDS=1 tools/native/run-regression 102 --show-output
 ```
 
 Stop at the first failure and inspect its JES report before broadening.

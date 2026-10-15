@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNNER = ROOT / "tools/run-native-regression"
+RUNNER = ROOT / "tools/native/run-regression"
 RANGES = ((0, 82, 83), (84, 119, 36))
 
 

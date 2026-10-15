@@ -34,7 +34,7 @@ def main():
         raise ValueError(
             "Missing compiled regression 28 code. Run "
             "BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 "
-            "tools/run-native-regression 28 first."
+            "tools/native/run-regression 28 first."
         )
     if not (OUT / "bcplmain-external-mem.asm").is_file():
         raise ValueError("Run prepare-runtime-object-candidates.py first")

@@ -45,7 +45,7 @@ def main() -> None:
     args = parser.parse_args()
     app = app_cards(args.generated_assembly)
     root = Path(__file__).resolve().parents[3]
-    core_path = root / "tools/dspal-core.py"
+    core_path = root / "tools/datasets/dspal-core.py"
     spec = importlib.util.spec_from_file_location("dspal_core_069", core_path)
     if spec is None or spec.loader is None:
         raise RuntimeError("cannot import dspal configuration")

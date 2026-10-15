@@ -17,8 +17,8 @@ Library modules are BCPL files compiled alongside an application. They share the
 ## Compile with a program
 
 ```sh
-tools/compile-and-run --results \
-  "$(tools/current-icint)" \
+tools/mr10/compile-and-run --results \
+  "$(tools/mr10/current-icint)" \
   mr10-kit-compiler/bcpl-demo/quicksort/quicksort.bcpl \
   +mr10-kit-compiler/library/random.bcpl
 ```
@@ -37,4 +37,4 @@ tools/compile-and-run --results \
 
 The historical global slots run through 86. Reconstructed runtime services use 87–95; other project library functions use 96–159. See `GLOBALS.md` before assigning a new slot.
 
-Run library tests with `tools/run-mr10kit-regression-panel --category standard-library`; the allocator and coroutine tests are in the storage and coroutines categories.
+Run library tests with `tools/mr10/run-regression-panel --category standard-library`; the allocator and coroutine tests are in the storage and coroutines categories.

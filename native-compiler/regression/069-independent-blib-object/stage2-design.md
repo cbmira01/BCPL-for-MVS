@@ -101,7 +101,7 @@ First inspect the generated deck to confirm distinct `ASMAP`, `ASMRUN`,
 `LKED`, `GO` and `EXTRN BLIB`. Then submit:
 
 ```sh
-tools/submit-jcl \
+tools/mvs/submit-jcl \
   workarea/native-regression/069-independent-blib-object/069-stage2-go.jcl
 ```
 

@@ -14,10 +14,10 @@ From the repository root:
 
 ```sh
 git pull --ff-only
-tools/dspal put MR10_JCL IC19BLD mr10-kit-compiler/jcl/build-icintv19.jcl
-tools/dspal submit MR10_JCL IC19BLD
-tools/dspal ls MR10_LOAD
-tools/dspal ls MR10_OBJ
+tools/datasets/dspal put MR10_JCL IC19BLD mr10-kit-compiler/jcl/build-icintv19.jcl
+tools/datasets/dspal submit MR10_JCL IC19BLD
+tools/datasets/dspal ls MR10_LOAD
+tools/datasets/dspal ls MR10_OBJ
 ```
 
 The stored JCL has no JOB card. Use `dspal submit`, not `submit-jcl`.

@@ -4,7 +4,7 @@ This directory contains native MVS 3.8J assembler and runtime development source
 
 ## Relocated ICINT line (historical notes)
 
-The current promoted interpreter is selected by `mr10-kit-compiler/asm/CURRENT`; `tools/current-icint` resolves that selection for scripts and users. At the time of this README the promoted source is `mr10-kit-compiler/asm/icintv17.asm`.
+The current promoted interpreter is selected by `mr10-kit-compiler/asm/CURRENT`; `tools/mr10/current-icint` resolves that selection for scripts and users. At the time of this README the promoted source is `mr10-kit-compiler/asm/icintv17.asm`.
 
 The numbered ICINT files are retained because each is a useful reconstruction milestone rather than an arbitrary backup:
 
@@ -22,10 +22,10 @@ The interpreter is based closely on `richards-bcpltape/mr10/bcplkit/icint`. The 
 For direct assembler work, generate a self-contained IFOX job with:
 
 ```sh
-tools/make-asm-job asm/program.asm --output-dir jcl --listing heavy
+tools/mvs/make-asm-job asm/program.asm --output-dir jcl --listing heavy
 ```
 
-For ICINT workloads, use `tools/run-intcode` or `tools/compile-and-run`; they generate the necessary assembly/link/run jobs automatically.
+For ICINT workloads, use `tools/mr10/run-intcode` or `tools/mr10/compile-and-run`; they generate the necessary assembly/link/run jobs automatically.
 
 `hello-world.asm` is a small IFOX example retained as a toolchain sanity check.
 

@@ -327,7 +327,7 @@ PARM pseudo-stream. Its narrow accommodation is:
 LET FINDPARM() = FINDINPUT("CAMBPARM")
 ```
 
-and `tools/cambridge-compile` supplies an FB80 `CAMBPARM` DD.
+and `tools/native/compile-bootstrap` supplies an FB80 `CAMBPARM` DD.
 
 The current record begins:
 

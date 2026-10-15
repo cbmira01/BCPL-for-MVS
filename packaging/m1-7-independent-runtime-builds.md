@@ -78,7 +78,7 @@ zero flagged assembler statements, assembler severity zero.
 The FIXASM program returns RC=0000 only if both required
 CG370 substitutions occur exactly once.
 
-`tools/dspal ls DEVOBJ` subsequently listed five members:
+`tools/datasets/dspal ls DEVOBJ` subsequently listed five members:
 BCPLAPT, BCPLBYTE, BCPLMAIN, BCPLMEM, BLIB.
 **Gate B accepted** for all five independent development builds.
 No production OBJ write was requested.
@@ -162,7 +162,7 @@ Run:
 
 ```sh
 BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 \
-  tools/run-native-regression 83 --show-output
+  tools/native/run-regression 83 --show-output
 ```
 
 Accept only an actual PASS with both output records and verified
@@ -179,7 +179,7 @@ MVS revalidation pending.
 ## Gate E — focused MVS diagnostic acceptance (13 October 2026)
 
 Operator ran `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1
-tools/run-native-regression 83 --show-output`. The runner reported
+tools/native/run-regression 83 --show-output`. The runner reported
 `PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1` for
 `083-instrumented-storage-reclamation`. This accepts the distinct,
 test-only reclamation probe after the MEMBIND-compatible update.
@@ -194,7 +194,7 @@ normal DEVOBJ execution does not need it. Gate F remains outstanding.
 
 The operator pulled commit `8454442` and executed exactly one
 complete `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ
-tools/run-native-regression` panel covering 00–123 (124 cases).
+tools/native/run-regression` panel covering 00–123 (124 cases).
 Results: **123 PASS, 0 FAIL, 1 SKIP, TOTAL 124**.
 The sole skip was **083-instrumented-storage-reclamation**
 (source-only instrumentation), separately passed under Gate E.
@@ -230,15 +230,15 @@ builds; BCPLMAIN and BCPLMEM already have separate proven DEVOBJ jobs.
 
 ```sh
 git pull --ff-only
-tools/dspal put SOURCE BCPLBYTE asm/bcplbyte.asm
-tools/dspal put SOURCE BCPLAPT asm/bcplapt.asm
-tools/dspal put JCL BLDDEVB jcl/build-dev-bcplbyte.jcl
-tools/dspal put JCL BLDDEVA jcl/build-dev-bcplapt.jcl
-tools/dspal put JCL BLDDEVL jcl/build-dev-blib.jcl
-tools/dspal submit JCL BLDDEVB --wait
-tools/dspal submit JCL BLDDEVA --wait
-tools/dspal submit JCL BLDDEVL --wait
-tools/dspal ls DEVOBJ
+tools/datasets/dspal put SOURCE BCPLBYTE asm/bcplbyte.asm
+tools/datasets/dspal put SOURCE BCPLAPT asm/bcplapt.asm
+tools/datasets/dspal put JCL BLDDEVB jcl/build-dev-bcplbyte.jcl
+tools/datasets/dspal put JCL BLDDEVA jcl/build-dev-bcplapt.jcl
+tools/datasets/dspal put JCL BLDDEVL jcl/build-dev-blib.jcl
+tools/datasets/dspal submit JCL BLDDEVB --wait
+tools/datasets/dspal submit JCL BLDDEVA --wait
+tools/datasets/dspal submit JCL BLDDEVL --wait
+tools/datasets/dspal ls DEVOBJ
 ```
 
 BLIB source is the existing managed `SOURCE(BLIB)` member. Before

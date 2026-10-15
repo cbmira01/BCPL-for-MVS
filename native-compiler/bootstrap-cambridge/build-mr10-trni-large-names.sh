@@ -18,7 +18,7 @@ for section in "${sections[@]:1}"; do
     modules+=("+$section")
 done
 
-tools/compile-and-run --save-intcode \
+tools/mr10/compile-and-run --save-intcode \
     --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
     --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
     --dd TRNHDR="$srcdir/trnhdr" \
