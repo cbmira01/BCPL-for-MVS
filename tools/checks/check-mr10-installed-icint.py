@@ -33,6 +33,21 @@ def run():
         assert token in installed, token
     assert "SAVE INTCODE: YES" in installed
     assert "ASM       BUILD" not in installed
+    # One source and seven +MODULE operands exercise the TRNILRG command form.
+    items = ["trn0", "+trn1", "+trn2", "+trn3",
+             "+trn4", "+trn5", "+trn6"]
+    args = core.make_parser().parse_args(
+        ["--installed-icint", "MR10_LOAD", *items]
+    )
+    core.normalize_installed_positionals(args)
+    assert args.interpreter is None
+    assert args.source == "trn0"
+    assert args.modules == items[1:]
+    assert len(core.parse_modules(args.modules)) == 6
+    # The original two-position argument mode must remain unchanged.
+    old_args = core.make_parser().parse_args(["icint.asm", "example.bcpl"])
+    assert old_args.interpreter == "icint.asm"
+    assert old_args.source == "example.bcpl"
     print("PASS: legacy and installed MR10 compile JCL modes; no MVS jobs")
 
 if __name__ == "__main__":
