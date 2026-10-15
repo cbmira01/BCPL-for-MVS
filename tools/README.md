@@ -29,9 +29,13 @@ Only this README and the five subsystem directories remain at the tools root. Th
 | `tools/mr10/current-icint` | Print the promoted ICINT source selected by `mr10-kit-compiler/asm/CURRENT`. |
 | `tools/mr10/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/mr10/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
-| `tools/native/prepare-bootstrap` | Regenerate disposable demoted Cambridge bootstrap sources and optional TRNILRG. |\n| `tools/native/stage-bootstrap` | Stage regenerated source members to `NATIVE_SOURCE`. |\n| `NATIVE_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `native-compiler/jcl/`. |\n| `NATIVE_JCL(BLIBBLD)` | Authoritative BLIB object build job in `native-compiler/jcl/`. |
+| `tools/native/prepare-bootstrap` | Regenerate disposable demoted Cambridge bootstrap sources and optional TRNILRG. |
+| `tools/native/stage-bootstrap` | Stage regenerated source members to `NATIVE_SOURCE`. |
+| `NATIVE_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `native-compiler/jcl/`. |
+| `NATIVE_JCL(BLIBBLD)` | Authoritative BLIB object build job in `native-compiler/jcl/`. |
 | `tools/native/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
-| `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |\n| `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
+| `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |
+| `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
 | `tools/mr10/run-demo-suite` | Run the 17 general BCPL demonstrations. |
 | `tools/mr10/run-language-demos` | Run the focused BCPL language demonstrations. |
 | `tools/datasets/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
