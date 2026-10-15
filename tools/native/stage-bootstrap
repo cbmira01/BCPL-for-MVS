@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "workarea/bootstrap-cambridge/demoted"
 STAGING = (
     *((name.upper(), BASE / name) for name in
-      ("bcpl", "syn", "lex", "trna", "trnb", "cga", "cgb",
+      ("blib", "bcpl", "syn", "lex", "trna", "trnb", "cga", "cgb",
        "cgc", "cgd", "cge")),
     ("BOOTHOST", ROOT / "native-compiler/bootstrap-cambridge/bootstrap-host.bcpl"),
     ("OPTIONS", ROOT / "native-compiler/bootstrap-cambridge/options-large-tree.txt"),

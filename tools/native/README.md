@@ -6,7 +6,7 @@ Canonical entry points for Cambridge/native compiler work:
 - `NATIVE_JCL(CAMBBLD)`: authoritative M3 resident compiler build job, sourced from `native-compiler/jcl/build-cambridge-resident.jcl`.
 - `compile-mvs`: compile BCPL using the installed resident Cambridge compiler.
 - `compile-bootstrap`: legacy bootstrap-from-source Cambridge driver.
-- `build-blib`: build the BLIB relocatable object module.
+- `NATIVE_JCL(BLIBBLD)`: build the BLIB relocatable object module using `native-compiler/jcl/build-blib-object.jcl`.
 - `run-regression`: run the native regression panel.
 - `capture-writef-cg370`: capture CG370 diagnostics.
 
@@ -33,7 +33,7 @@ tools/datasets/dspal put NATIVE_JCL CAMBBLD native-compiler/jcl/build-cambridge-
 tools/datasets/dspal submit NATIVE_JCL CAMBBLD
 ```
 
-The staging command transfers ten demoted compiler units, `BOOTHOST`,
+The staging command transfers BLIB and ten demoted compiler units, `BOOTHOST`,
 `OPTIONS`, and `CAMBPARM` into `NATIVE_SOURCE`; it never allocates a
 dataset. `NATIVE_SOURCE` headers are populated directly by the manifest.
 The generated resident build uses MR10 INTCODE phases, the installed MR10
@@ -46,3 +46,18 @@ The authoritative build JCL source is
 host-side JCL-generation driver is maintained. JES return codes are insufficient
 to establish interpreted compilation success; inspect the ICINT completion
 codes in the job report and confirm the `NATIVE_INTCODE(CAMBCOMP)` member.
+
+## Runtime assembly and object build jobs (M3)
+
+The Git-controlled runtime assembler sources under `native-compiler/asm/`
+are populated by `dspal populate NATIVE_ASM` into `NATIVE_ASM`, as
+specified by `config/dspal.yaml`. Do not put assembler source into
+`NATIVE_SOURCE`, which contains BCPL compiler input and headers.
+
+Rebuild accepted runtime objects with the authoritative JCL in
+`native-compiler/jcl/` installed as `NATIVE_JCL(BLDBMAIN)` and
+`NATIVE_JCL(BLIBBLD)`. These source files are installed with `dspal put`
+and executed with `dspal submit`. Accepted objects reside in
+`NATIVE_OBJ`; development candidates reside in `NATIVE_DEVOBJ`.
+The historical job-body steps for assembling, verifying, and installing
+binary FB80 records are preserved. No host build-blib driver exists.
