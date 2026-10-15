@@ -10,6 +10,10 @@ Provide programs compiled with the existing native System/370 BCPL compiler with
 
 **Excluded:** modern IANA timezone database, daylight-saving rules/historical conversion, leap-second tables, scheduling/alarms, OS clock setting, high-resolution/monotonic promises not established on TK5, universal POSIX epoch semantics, and cross-address-space synchronization.
 
+## Optional module integration dependency
+
+The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) supplies a shared design for linking BCPLTIME optionally and registering its global functions. This is separate from investigating MVS timing macros and BCPL calendar routines. Do not create a BCPLTIME-specific startup registrar. Neither milestone blocks M4.
+
 ## Values and semantics (provisional)
 
 - `DATE` is an ordinary BCPL signed integer `YYYYMMDD`; e.g. `20261015`. Year policy initially `0001..9999`, strictly Gregorian **proleptic** calendar, pending verification of numeric range/word behavior. Calendar arithmetic does not require MVS.
