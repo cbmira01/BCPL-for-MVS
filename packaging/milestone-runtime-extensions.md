@@ -49,6 +49,71 @@ See [Cambridge runtime and library nomenclature](runtime-and-library-nomenclatur
 - **Source authority:** Git-controlled text sources and JCL are authoritative. All module objects, registration objects and load modules are rebuildable; no binary migration.
 - **Incremental work:** preserve `BCPLIO` and existing stream semantics. No change to accepted objects until individually validated.
 
+### Preferred R.0 candidate: one global slot per optional package, opcode dispatcher
+
+**Design preference (not an implemented or accepted ABI):** An optional System Extension, Standard Library or User/Site Library normally occupies **one allocated BCPL global-vector slot** containing the address of a single **dispatcher procedure**. The caller passes an operation number as the first argument. Internal procedures remain private and do not consume additional public `G!N` slots. Only justified exceptions should use multiple public slots.
+
+For example, **illustrative global number only**:
+
+```bcpl
+GLOBAL $( TIMESVC:200 $)
+MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2; T_DIFF=3 $)
+```
+
+`G!200` is **not allocated** by this document. The central Global Number Registry owns the package's dispatcher slot; a package-specific API/header owns its *stable, local opcode numbers*. Compilation embeds the selected global and opcode constants; IEWL chooses which package is linked; BCPLREG (if adopted) installs its **single** dispatcher address into G before START. No dynamic global-number assignment is required.
+
+**Opcode 0 is reserved for `QUERY` in every participating optional package.** It must be side-effect free: no I/O, clock read, dataset OPEN, state-changing setup or allocation. It returns interface/capability information about a *linked and registered* package; it is **not** a package-discovery mechanism and cannot safely be called if that package's global remains unset. The build's link/registration and required-package checking must cover that case.
+
+#### Capability query: caller-owned numeric descriptor, not a string
+
+**Recommended signature (provisional):**
+
+```text
+PACKAGE_SVC(0, info_vector, capacity_words) -> positive_required_words | negative_error
+PACKAGE_SVC(0, 0, 0)                       -> positive_required_words  (size inquiry)
+```
+
+The vector is writable BCPL word storage, capacity is in **32-bit BCPL words**, and `capacity_words` includes the *entire* descriptor. Query with a null vector and zero capacity returns the required size without writing. A sufficiently large buffer is filled, and the function returns the required word count. An undersized or invalid buffer produces a documented negative error and **must not write partially**. No pointer to an extension-owned lifetime-sensitive table is returned. An immutable static table can still be an *internal* implementation detail copied into the client's vector. Exact argument-register and pointer validation remain R.0 obligations.
+
+**Illustrative six-word, version-1 prefix** (the field numbering and flags are a candidate contract, not a tested ABI):
+
+| BCPL word | Field | Meaning |
+| --- | --- | --- |
+| `info!0` | descriptor format | Version of the *shared query layout* (initially 1) |
+| `info!1` | API major | Package interface compatibility generation; incompatible changes increment major |
+| `info!2` | API minor | Backwards-compatible additions increment minor |
+| `info!3` | required words | Full descriptor size, including future appended words |
+| `info!4` | supported operations | 32-bit bitmap: bit 0 means opcode 1 supported; bit N-1 means opcode N supported for 1..32 |
+| `info!5` | capability flags | Versioned, package-defined secondary capabilities; initially zero if none |
+
+Proposed initial required size is **6 words**, so `VEC 5` is the BCPL allocation shape. Extra capability words (additional opcode maps or documented feature fields) may be appended in future versions *without altering this prefix*. Query-format and API-version compatibility rules must be recorded separately. A capability flag or advertised opcode indicates **implemented support**, not necessarily that an environmental resource (such as a particular DDNAME or clock state) will work when invoked. A feature can also be absent from an older compatible implementation.
+
+**Possible standardized query errors** (numbers provisional): `-1` insufficient capacity, `-2` unsupported opcode (for calls other than opcode 0), `-3` invalid query arguments. Each package must document operation-specific status/result semantics without collisions or ambiguity.
+
+#### How client BCPL would consume the query
+
+Schematic BCPL; uses provisional `TIMESVC` and opcode allocation; **not regression-tested source**:
+
+```bcpl
+LET INFO = VEC 5
+LET NEED = TIMESVC(0, 0, 0)         // size inquiry; no write
+// Reject non-positive NEED, or allocate VEC (NEED-1) if needed.
+LET RC = TIMESVC(0, INFO, 6)       // valid only when NEED <= 6
+// Require RC = NEED, INFO!0 = 1, INFO!1 = expected API major.
+// Before invoking T_ADD=2, require bit 1 of INFO!4 to be set.
+// Then use TIMESVC(T_ADD, date, delta, output), as defined by BCPLTIME.
+```
+
+A production example must perform the indicated branches and reserve the complete returned size. A simpler known-version client can allocate the documented fixed prefix directly and treat a larger required size conservatively; whether a prefix-only request can succeed is an R.0 contract decision. Do **not** copy a partial descriptor or rely on a query to discover an unlinked module.
+
+**Why a numeric descriptor:** BCPL applications can inspect version and feature bits directly, with no EBCDIC parsing, storage ownership/lifetime ambiguity, or host-dependent text formatting. A human-readable module name or release string could be an *optional separate opcode*, not required for ABI negotiation. A flat version integer alone would not efficiently report optional functions.
+
+**Wrappers are deferred.** Callers may initially invoke the dispatcher explicitly. Friendly BCPL helper functions can be added later as package source code without allocating additional public globals, but must not become a prerequisite for this contract.
+
+A function-address table in the single slot is an alternate design, but it would require verified native BCPL procedure-pointer and indirect-call semantics and more lifetime guarantees. Prefer the **dispatcher** for the first implementation because it uses the proven BCPL call path; measure its overhead only if later workloads justify optimization. The shared query protocol and local opcodes remain stable if an implementation changes its private procedure layout.
+
+**R.0 verification:** verify integer/bitwise conventions, BCPL VEC and pointer ABI, supported call argument registers, query return and error semantics, version negotiation, missing/duplicate module checks, IEWL startup registration and global allocations. Do not reserve illustrative `G!200` or commit candidate opcodes as permanent assignments without the authoritative registry.
+
 ## 4. Proposed general registration model
 
 The preferred starting point is a small **application-specific registration object**, provisionally named `BCPLREG`, which contains a fixed, versioned list of references to selected extension descriptors. This table is ordinary assembler/object data that IEWL can relocate.
@@ -121,21 +186,21 @@ The BCPL application separately imports a library-specific `GLOBAL` declaration/
 1. **Compiler-generated exports:** layout, relocation, control marker, safe section length, validation and existing BLIB treatment.
 2. **Assembler exports:** entry address representation, calling convention (R7..R10 arguments, etc.), memory ownership, and whether a single object can export multiple global procedures.
 3. **Registration table:** ownership, version, bounds, linker-resolved references, empty-table representation, and deterministic selection order.
-4. **Global slots:** authoritative registry; historical G!0..G!149; occupied G!150 and above; no accidental collisions; capacity policy and maximum global number.
+4. **Global slots and dispatcher namespaces:** authoritative static Global Number Registry; historical G!0..G!149 and occupied G!150+; one dispatcher slot per optional package by default; package-owned stable opcode allocations; capacity policy and collision checks.
 5. **Conflict handling:** duplicate declarations within a module, between selected modules, against app/BLIB/core; explicit intentional override if ever supported, otherwise fail cleanly before START. No silent last-write-wins.
 6. **Dependencies:** what happens when QSAM depends on a core service or another optional module, and how the link and registration table express it.
 7. **Initialization:** entries alone versus optional init/finalization hook, sequencing, failure cleanup, and correct MVS save-area/register discipline. Prefer no hooks for stateless facilities.
 8. **Missing optional functions:** a BCPL `GLOBAL` reference is indirect through `G`, so omission can escape the linkage editor; define a preflight declared-requirements check or reliable failure mode. Never claim ordinary link-edit checks all missing globals.
-9. **ABI/versioning:** module signature/version, rejection of incompatible extension descriptors, and programmer documentation.
+9. **ABI/versioning and opcode 0:** module/descriptor signature and version; shared QUERY prefix, API major/minor, opcode-support bitmap, capacity/size inquiry, failure behavior, and client consumption; rejection of incompatible extension descriptors.
 10. **Testing:** preserving existing BLIB and native service behavior without modifying current accepted artifacts ahead of gates.
 
 ## 7. March roadmap with explicit gates
 
 | March | Objective | Deliverable and exit gate |
 | --- | --- | --- |
-| **R.0 — Evidence and contract** | Inventory the actual CG370 trailer, global initialization/import ordering, BLIB and native binders, link-editor behavior, and slot map | Recorded verified ABI; chosen registry/descriptor formats, collision policy, empty-table and optional-init contracts, compatibility tests; **no speculative source refactor** |
+| **R.0 — Evidence and contract** | Inventory the actual CG370 trailer, global initialization/import ordering, BLIB and native binders, link-editor behavior, and slot map; evaluate dispatcher/opcode-0 capability ABI | Recorded verified ABI; static global-number registry policy, one-slot dispatcher decision, candidate six-word QUERY descriptor and client tests, chosen registrar/descriptor formats, collision and empty-table rules; **no speculative source refactor** |
 | **R.1 — Generic registration foundation** | Implement one minimal, linker-driven registration path with an empty registry and one trivial optional assembler service | Compile/link/run demonstrations prove `START` runs with empty registry and a chosen extension's global is installed; core BLIB regression evidence preserved |
-| **R.2 — Selective interoperability** | Link two independent optional extension *probes*, individually and together; if practical one compiled BCPL extension export plus one assembler export | 0/A/B/A+B combinations work without BCPLMAIN rebuild; collisions, invalid descriptor, missing dependency/slot, absent module diagnosed deterministically; inspect linkage maps |
+| **R.2 — Selective interoperability** | Link two independent optional extension *probes*, individually and together; if practical one compiled BCPL extension export plus one assembler export | 0/A/B/A+B combinations work without BCPLMAIN rebuild; each linked dispatcher answers opcode 0 and rejects unsupported calls, client inspects version/opcode bitmap; collisions, invalid descriptor, missing dependency/slot, absent module diagnosed deterministically; inspect linkage maps |
 | **R.3 — Packaging and acceptance** | Stable user-facing link-edit recipe, BCPL declaration conventions, developer template and reproducible rebuild from Git | Full native regression baseline; separately accepted object PDS installation decision; documented accepted startup contract and actual JES/IEWL evidence |
 
 The probes should be *tiny*, not premature implementations of QSAM/DEC/TIME. Subsequent feature milestones own their APIs and behavior. A failed gate can suspend R without blocking M4.
