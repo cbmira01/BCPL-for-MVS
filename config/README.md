@@ -15,7 +15,7 @@ Configuration belongs here when it is part of the reproducible project definitio
 `CURRENT` contains only an assembler filename, currently:
 
 ```text
-icintv17.asm
+icintv19.asm
 ```
 
 Do not infer the current interpreter by selecting the numerically highest `mr10-kit-compiler/asm/icintv*.asm` file. New numbered sources may exist while still experimental. Promotion of a validated interpreter consists of changing `mr10-kit-compiler/asm/CURRENT` after the appropriate regression work has passed.
@@ -32,7 +32,7 @@ config/dspal.local.yaml, when present
 
 The local file is deep-merged over the checked-in manifest. It is the place for installation-specific changes such as another userid/HLQ, a pinned DASD volume, different reader or Hercules ports, another container name, and MVS batch credentials.
 
-The checked-in defaults use `HERC02`, leave physical volume selection to normal MVS allocation, use `SYSDA` as the default allocation unit, use the local TK5 reader on port 3505, and define the ten managed BCPL PDS datasets used by `dspal initbcpl`.
+The checked-in defaults use `HERC02`, leave physical volume selection to normal MVS allocation, use `SYSDA` as the default allocation unit, use the local TK5 reader on port 3505, and define the 24 managed MR10, CAMB-reserved, and NATIVE datasets used by `dspal initbcpl`.
 
 ## Batch credentials
 
