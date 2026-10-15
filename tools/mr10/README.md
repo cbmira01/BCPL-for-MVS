@@ -6,7 +6,7 @@ These tools belong to the historical MR10 INTCODE compiler/interpreter workflow.
 - `run-language-demos` — run the language demonstration suite.
 - `run-regression-panel` — run the interpreted regression panel.
 
-Legacy `tools/run-mr10kit-*` commands remain as compatibility launchers until all callers are migrated. This is a relocation-only change; it does not change the interpreter or MVS dataset contracts.
+The historical tool paths at the old tools root were retired during M3. Use the paths shown above. The installed interpreter is rebuilt from `MR10_JCL(IC19BLD)`; suite runners that omit `--installed-icint` may assemble an interpreter from the currently promoted source.
 
 ## Installed MR10 interpreter mode
 
