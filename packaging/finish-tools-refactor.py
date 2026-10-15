@@ -115,6 +115,14 @@ def main():
         except (UnicodeError, OSError):
             continue
         updated = transform(original)
+        if rel == "tools/README.md":
+            updated = updated.replace(
+                "The original root `tools/` executable paths are retained as compatibility launchers.",
+                "Only this README and the five subsystem directories remain at the tools root.",
+            ).replace(
+                "Python helper modules with external consumers also retain their legacy locations during the transition.",
+                "Python helpers reside with their owning subsystem.",
+            )
         if updated != original:
             edits.append((file, updated))
     print(f"Old tool files to remove: {len(old_paths)}")
