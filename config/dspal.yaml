@@ -34,11 +34,14 @@ allocation_defaults:
 
 # M3 namespace migration: previous HERC02.BCPL.* datasets are not deleted.
 # Generated workarea inputs are omitted until staged; they are not Git-backed.
-# MR10 objects, native accepted objects and loadlibs must be migrated separately.
+# Object and load libraries require rebuilding after a destructive purge.
 datasets:
   MR10_SOURCE:
     dsn: BCPL.MR10KIT.SOURCE
     description: MR10 INTCODE compiler phases and interpreter input
+    primary: 15
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -55,9 +58,9 @@ datasets:
   MR10_ASM:
     dsn: BCPL.MR10KIT.ASM
     description: MR10 ICINT assembler/interpreter milestones
-    primary: 20
-    secondary: 10
-    directory: 40
+    primary: 100
+    secondary: 20
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -79,6 +82,9 @@ datasets:
   MR10_JCL:
     dsn: BCPL.MR10KIT.JCL
     description: MR10 interpreter JCL and demonstration jobs
+    primary: 100
+    secondary: 20
+    directory: 10
     type: pds
     dsorg: PO
     recfm: FB
@@ -99,6 +105,9 @@ datasets:
   MR10_LIBRARY:
     dsn: BCPL.MR10KIT.LIBRARY
     description: MR10 BCPL support library
+    primary: 15
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -119,6 +128,9 @@ datasets:
   MR10_BCPLDEMO:
     dsn: BCPL.MR10KIT.BCPLDEMO
     description: MR10 complete BCPL demonstration programs
+    primary: 25
+    secondary: 10
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -151,6 +163,9 @@ datasets:
   MR10_LANGDEMO:
     dsn: BCPL.MR10KIT.LANGDEMO
     description: MR10 BCPL language examples
+    primary: 15
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -173,6 +188,9 @@ datasets:
   MR10_TESTS:
     dsn: BCPL.MR10KIT.TESTS
     description: MR10 regression cases, expected output and fixtures
+    primary: 35
+    secondary: 10
+    directory: 10
     type: pds
     dsorg: PO
     recfm: FB
@@ -245,6 +263,9 @@ datasets:
   MR10_OBJ:
     dsn: BCPL.MR10KIT.OBJ
     description: MR10 relocatable object library
+    primary: 15
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -256,6 +277,9 @@ datasets:
   MR10_LOAD:
     dsn: BCPL.MR10KIT.LOAD
     description: MR10 executable load library
+    primary: 15
+    secondary: 5
+    directory: 5
     type: loadlib
     dsorg: PO
     recfm: U
@@ -357,6 +381,9 @@ datasets:
   NATIVE_SOURCE:
     dsn: BCPL.NATIVE.SOURCE
     description: Native compiler/bootstrap BCPL headers
+    primary: 10
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -372,6 +399,9 @@ datasets:
   NATIVE_ASM:
     dsn: BCPL.NATIVE.ASM
     description: Native System/370 runtime assembler sources
+    primary: 40
+    secondary: 10
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -391,6 +421,9 @@ datasets:
   NATIVE_JCL:
     dsn: BCPL.NATIVE.JCL
     description: Native runtime assembler/link and acceptance jobs
+    primary: 15
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -414,6 +447,9 @@ datasets:
   NATIVE_OBJ:
     dsn: BCPL.NATIVE.OBJ
     description: Accepted native relocatable object modules
+    primary: 15
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
@@ -425,6 +461,9 @@ datasets:
   NATIVE_DEVOBJ:
     dsn: BCPL.NATIVE.DEVOBJ
     description: Unaccepted native development candidates
+    primary: 15
+    secondary: 5
+    directory: 5
     type: pds
     dsorg: PO
     recfm: FB
