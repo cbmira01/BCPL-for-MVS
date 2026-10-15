@@ -78,7 +78,7 @@ def transform(text):
         )
     for old, new in sorted(DEST.items(), key=lambda v: -len(v[0])):
         text = re.sub(
-            rf"(?<![A-Za-z0-9_./-])tools/{re.escape(old)}(?![A-Za-z0-9_.-])",
+            rf"(?<![A-Za-z0-9_-])tools/{re.escape(old)}(?![A-Za-z0-9_.-])",
             lambda m, value=new: value, text,
         )
     return text
