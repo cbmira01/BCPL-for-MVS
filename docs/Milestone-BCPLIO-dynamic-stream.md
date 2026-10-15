@@ -1,0 +1,101 @@
+# Milestone - BCPLIO dynamic stream
+
+Status: proposed / not started  
+Date: 2026-10-15  
+Project: BCPL for MVS 3.8 reconstruction  
+Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## Purpose and decision
+
+Implement in the **native core BCPL stream runtime** the dynamic, arbitrary-DD-name stream capability already demonstrated by the MR10 INTCODE interpreter `ICINT v19`. This is a runtime compatibility/completion milestone, **not** a new QSAM application library and **not** an optional runtime extension.
+
+A BCPL application should be able to say `FINDINPUT("CUSTOMER")` or `FINDOUTPUT("REPORT")`, where the named DD is supplied through the GO step's JCL, without adding that DD name to assembler source or reserving a fixed BCPLIO slot. The caller receives an opaque stream handle and continues to use the historical BCPL stream operations. The runtime manages MVS DCBs, QSAM record buffers, OPEN/CLOSE, resource ownership, selection, and cleanup.
+
+**Clarification:** DD-name *discovery* means resolving a particular name supplied by the application and checking its JCL allocation (as ICINT uses RDJFCB); it does not mean enumerating all allocated DD statements. These are BCPL streams, not physical S/370 channels or MVS channel addresses.
+
+## Historical and current evidence
+
+- `mr10-kit-compiler/asm/icintv19.asm`: V15 arbitrary DD discovery; V16 GETMAIN-backed dynamically allocated descriptors/DCBs/buffers, linked active-stream list, conditional allocation failure, RDJFCB validation, release on ENDREAD/ENDWRITE. `DYNFIND`, `DYFALLOC`, `DYFVERIF`, `DYNFRE...`, name normalization and `OPENSTRM` are implementation study points. The interpreter retains special static streams `INTIN`, `SYSPRINT`, `INTCODE`. Its generic discovered streams use 80-byte text records.
+- `mr10-kit-compiler/tests/07-many-streams/main.bcpl` and README: established interpreter demonstration opening twelve independently named DD01..DD12 input streams simultaneously and reading/closing each.
+- `mr10-kit-compiler/tests/06-dynamic-streams/`: multi-level historical dynamic stream tests.
+- `native-compiler/asm/bcplio.asm`: current separate BCPLIO implementation recognizes only `BCPIN`, `BCPINB`, `SYSPRINT`, `BCPALT` with static DCBs and handles. The PARM pseudo-stream is separate.
+- `native-compiler/asm/bcplmain-wip/20-streams-and-services.asmfrag`: older/bootstrap stream logic; ascertain actual installed canonical owner before editing.
+- `native-compiler/regression/native-stream-contract.md`: accepted *fixed-DD* behavior, remaining observability/attribution caveats, and current stream ABI. In particular G11 SELECTINPUT, G12 SELECTOUTPUT, G13 RDCH, G14 WRCH, G15 UNRDCH, G16 INPUT, G17 OUTPUT, G33 WRAPOUTPUT, G39 FINDPARM, G41 FINDOUTPUT, G42 FINDINPUT, G46 ENDREAD, G47 ENDWRITE.
+- `native-compiler/regression/094-... through 119-...`: baseline focused regression corpus, notably 114 interleaving, 115 output reopening, 116 unknown names, 117 EOF/unread, 118 re-open and 119 shutdown.
+- Native regression panel historically has 124 cases (00..123), but run the current panel and report its actual count, baseline, commit and failures; do not silently assume green.
+
+Read the code and current MVS PDS/build inventory before modifying anything. Do not equate the interpreter's host X-operation internals with the native BCPL procedure ABI.
+
+## Scope
+
+**Required:**
+1. Arbitrary valid MVS DD-name lookup by `FINDINPUT`/`FINDOUTPUT` (case/length normalization documented; MVS DD names are at most eight characters); no compile-time named-DD allowlist.
+2. Dynamically allocated, independently owned, per-stream descriptor, DCB and record buffer, suitable for more than twelve simultaneous ordinary input streams; no fixed slot-count ceiling.
+3. Opaque BCPL stream handles preserving existing word-address conventions and G-slot/calling ABI. Validate selected/open handles; never expose raw DCB pointers as arbitrary BCPL memory to programs.
+4. Independent stream state: position, record boundaries, EOF, one-character UNRDCH, output buffering, and input/output selection; switching streams must not corrupt state.
+5. Repeated FIND of an already-open name returns a consistent documented handle/behavior; failures (unknown/unallocated DD, storage exhaustion, OPEN failure) are nonfatal and return the historical failure indication where feasible, without perturbing current selection.
+6. ENDREAD/ENDWRITE and process termination flush/close and reclaim objects exactly once; support reopen by name after close and distinguish stale from live handles.
+7. Retain standard streams and FINDPARM semantics; do not regress compiler output, SYSOUT, EXEC PARM, FINISH/STOP cleanup, or established BLIB stream operations.
+8. A precise record/character contract covering FB80 input trimming, synthetic newline, output recordization, ASCII/ EBCDIC conversion, significant trailing blanks, record length, and empty lines. Preserve existing accepted behavior initially; identify historical differences rather than quietly changing semantics.
+9. Documentation: descriptor ownership, linked-list/index design, DD-name validation, status/failure map, register and storage contracts, and limits imposed by MVS/resource availability.
+
+**Not in scope:** a general-purpose BCPLQSAM or BCPLVSAM library; keyed/binary/variable-record application I/O; DD enumeration; dynamic allocation of datasets/SVC 99; arbitrary file-system paths; new BCPL syntax or compiler G slots; general reentrant/multitasking runtime redesign; migrating interpreter-produced binaries or the Cambridge compiler as a prerequisite.
+
+### Architecture rules / collected wisdom
+
+- BCPL streams are a **core runtime service** because the historical language/BLIB stream interface depends on them. The QSAM implementation is a host-specific internal adapter, not evidence that every MVS-dependent facility belongs in BCPLMAIN.
+- Application-facing record-oriented **BCPLQSAM** and future **BCPLVSAM** remain optional separately linked libraries, distinct from the character-oriented BCPL stream abstraction. Avoid duplicating ownership and semantics through premature generalization.
+- Reuse ICINT v19's proven dynamic allocation and RDJFCB approach conceptually; port/adapt under the native procedure calling convention rather than copying blindly.
+- Favor simple historically intelligible assembler, independently testable helpers, and tightly defined ownership. Keep BCPLMAIN small; prefer BCPLIO to own DCBs, buffers and stream registry.
+- Stream handle identity and validity must be reasoned about explicitly. On close, the runtime must not accidentally accept a stale handle whose address has been reused; document the practical design (e.g. retained control identities/generation checks) and its trade-offs.
+- Preserve known working behavior before adding features. Distinguish code inspection, assembly success, JCL execution, and verified output assertions. Make regression claims only from observed evidence.
+- The runtime should rely on JCL DD allocation, not assume or hardcode every application name. DD lookup failure should not by itself cause an abend.
+- Avoid inventing a new extension dispatcher, global assignment scheme, or mandatory library packaging solely for this work.
+
+## March plan (each march has a review/commit gate)
+
+### M0 — Baseline, contract, and implementation map
+Inventory installed/current BCPLMAIN/BCPLIO source and MVS PDS object/link paths, and compare them with ICINT v19. Run native regression, pin SHA/job/evidence, identify precise G slot and native register/handle contract. Specify DD naming, duplicate lookup, special streams, resource lifetime, error behaviors, and record semantics in a design note. **Exit:** approved contract and green (or explicitly characterized) baseline; no functional changes.
+
+### M1 — Dynamic descriptor and DD discovery
+Implement runtime-owned dynamically allocated descriptors/DCBs/buffers, name normalization, RDJFCB-based DD resolution, active-stream registry, and conditional GETMAIN failure. Preserve bootstrap streams/special semantics. First test arbitrary third input DD beyond BCPIN/BCPINB and a third output DD beyond BCPALT. **Exit:** arbitrary allocated names open; unallocated names return zero without changing selection; no fixed-name allowlist.
+
+### M2 — Input stream behavior and multiplicity
+Implement independent GET/record cursors, synthetic newlines, EOF, UNRDCH, SELECTINPUT/INPUT, ENDREAD/reopen. Run 3, then 12, then 13+ concurrent independent input streams (13+ verifies we did not merely replace a twelve-slot table). **Exit:** correct data/EOF and interleaving for all streams; cleanup and reopen correct.
+
+### M3 — Output and mixed-stream behavior
+Implement independent PUT buffers, SELECTOUTPUT/OUTPUT, WRCH/WRAPOUTPUT, FINDOUTPUT, ENDWRITE, flushing, and mixed read/write interleaving. Preserve SYSPRINT standard output and any existing BCPALT behavior. **Exit:** named outputs receive exactly their own records, including empty/partial-final records under the documented contract; no cross-DD corruption.
+
+### M4 — Failure paths and lifecycle hardening
+Test absent DD, invalid/overlength name, DCB OPEN failure after allocation discovery, resource exhaustion (ideally deterministic fault injection), failed selection, duplicate FIND, close/reopen, stale handle, EOF+UNRDCH, FINISH/STOP/nonzero exit. Ensure DCB CLOSE/FREEMAIN correctness and do not suppress MVS diagnostics. **Exit:** documented deterministic outcomes and no leaks/double-close in supported paths.
+
+### M5 — Integration, documentation and acceptance
+Re-run entire native regression panel including BLIB/compiler smoke tests; add focused test corpus and tools under existing `native-compiler/regression` patterns. Validate separate JES DD output attribution using a lossless method (the existing contract warns aggregated printer text cannot prove DD identity). Update stream contract, runtime docs, build/rebuild procedure, and acceptance evidence. **Exit:** all new tests + baseline pass, documented remaining deviations/limits, accepted native dynamic-stream milestone.
+
+## Proposed testing matrix
+
+| Test | Expected evidence |
+|---|---|
+| Known defaults BCPIN/BCPINB/SYSPRINT/BCPALT | Existing behavior unchanged |
+| FINDINPUT("CUSTOMER") with //CUSTOMER | nonzero handle, correct characters |
+| FINDOUTPUT("REPORT") with //REPORT | nonzero handle; exact DD-specific records |
+| Unknown/unallocated and invalid DD names | zero; selected input/output unchanged |
+| 12 simultaneous DD01..DD12 | interpreter-equivalent output and independent handles |
+| 13 or 16 simultaneous streams | proves dynamically scalable registry, subject to MVS resource limits |
+| Interleave A/B/C reads, EOF, UNRDCH | independent cursor, pushback, EOF |
+| Interleave two or more outputs | records never mixed; exact per-DD comparison |
+| Duplicate FIND; ENDREAD/ENDWRITE; reopen | documented stable handle/lifecycle behavior |
+| FINISH, STOP, abnormal/error path | flush/close/reclaim within stated guarantees |
+| Allocation/OPEN failure | predictable return/status; no abend for ordinary failures |
+| Blank records, trailing blanks, newline, EBCDIC | matches published record contract |
+| Full native regression 00..current end | zero new failures; job/step/output evidence |
+
+Implement tests in the style of the existing numbered native regression directory and its runner, allocating DD statements dynamically in JCL generation as needed. Compare against ICINT's 07-many-streams as a **behavioral reference**; do not presume identical handles or internal object layout. For outputs, use DD-specific captured spool artifacts or another demonstrably lossless extraction, **not** concatenated `prt00e.txt` as sole evidence. Check appropriate assembler/link/go condition codes and failure diagnostics.
+
+## Acceptance criteria
+
+A native BCPL application compiled by our native compiler can request an arbitrary, JCL-allocated DD by name via normal BCPL stream calls; can retain at least twelve simultaneously open ordinary streams (and demonstrate a thirteenth if MVS resources permit); can switch among streams with independent state; and can close/reopen and complete with reliable cleanup. Existing baseline stream/BLIB/compiler regression remains green. The interface remains ordinary historical BCPL, and no native compiler change or extra library extension is required.
+
+## Handoff / next-conversation prompt
+
+We are working in `cbmira01/BCPL-for-MVS`, on **Milestone - BCPLIO dynamic stream**. Treat this document as the scope and march contract. Start with **M0 only**: inspect installed/canonical BCPLMAIN and BCPLIO sources and object/PDS build path; inspect `mr10-kit-compiler/asm/icintv19.asm` dynamic streams (RDJFCB, GETMAIN, descriptor list, OPEN/CLOSE), `native-compiler/asm/bcplio.asm`, `native-compiler/regression/native-stream-contract.md`, and interpreter test `07-many-streams`. Run the current native baseline and record commit, actual tests and evidence. Propose the native ABI-compatible descriptor/ownership design and exact contract of all affected G entry points, error cases, standard streams and record semantics. Preserve the BCPL programmer-facing API, current runtime/BLIB functionality, and ordinary QSAM library separation. Do not implement M1 before M0 review/acceptance. Use `tools/checks/` for reusable repository-owned analysis aids if useful. Keep changes incremental, document evidence and commit each accepted march.
