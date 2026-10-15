@@ -190,7 +190,7 @@ def main() -> int:
     passed = 0
     failed = 0
     skipped = 0
-    installed_pds = os.environ.get("BCPL_RUNTIME_PDS") == "1"
+    installed_pds = os.environ.get("BCPL_RUNTIME_PDS", "1") == "1"
 
     print(
         f"NATIVE REGRESSION  {case_id(start)}..{case_id(end)}  "
