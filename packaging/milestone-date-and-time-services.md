@@ -14,6 +14,10 @@ Provide programs compiled with the existing native System/370 BCPL compiler with
 
 The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) supplies a shared design for linking BCPLTIME optionally and registering its global functions. This is separate from investigating MVS timing macros and BCPL calendar routines. Do not create a BCPLTIME-specific startup registrar. Neither milestone blocks M4.
 
+### Shared optional-module dispatch architecture
+
+See [Milestone Runtime Extensions](milestone-runtime-extensions.md). **The preferred R.0 direction** is to allocate *one* global slot for a BCPLTIME dispatcher (provisional name `TIMESVC`), rather than one global per listed date/time function. **Opcode 0** would return the standard numeric capability descriptor: API major/minor, supported opcode bitmap and other defined features in a caller-owned BCPL vector. The following named functions remain *logical operations*; whether implemented as dispatcher opcodes, private routines or optional later wrappers is not yet fixed. Assign neither global number nor opcode numbers before the common registry/ABI decision. A capability query describes implemented functions, not clock validity or availability at any particular moment.
+
 ## Values and semantics (provisional)
 
 - `DATE` is an ordinary BCPL signed integer `YYYYMMDD`; e.g. `20261015`. Year policy initially `0001..9999`, strictly Gregorian **proleptic** calendar, pending verification of numeric range/word behavior. Calendar arithmetic does not require MVS.
