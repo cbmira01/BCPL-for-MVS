@@ -54,3 +54,22 @@ tools/dspal submit MR10_JCL MRREGRES
 A prior regression run exposed invalid placement of `TEST:` statements before local `LET` declarations. Those source lines were moved below the declarations, and a later MVS run showed zero interpreted codes and the expected result records. Do not use JES job numbers as unique historical proof; they wrap.
 
 For reproducible evidence, record the Git revision, installed member versions, job name, run date/time, and observed output.
+
+## Recreate the ASM source PDS after SE37
+
+The assembler-source PDS uses 20 primary tracks, 10 secondary tracks,
+and 40 directory blocks (twice the former manifest defaults). To **delete
+all its members** and recreate this one PDS without a backup or migration:
+
+```sh
+tools/dspal put MR10_JCL ASMRESET mr10-kit-compiler/jcl/recreate-mr10-asm.jcl
+tools/dspal submit MR10_JCL ASMRESET
+tools/dspal stat MR10_ASM
+tools/dspal populate MR10_ASM
+tools/dspal ls MR10_ASM
+```
+
+Run these commands only when no job is using the ASM source PDS. Check the
+DELETE and ALLOC step results before populating. The Git files are the
+source of truth for the ten assembler-source members. This procedure does
+not rebuild the installed ICINT19 load module.
