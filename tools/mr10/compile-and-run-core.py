@@ -820,16 +820,16 @@ def make_parser() -> argparse.ArgumentParser:
 
 
 def normalize_installed_positionals(args) -> None:
-        # The positional grammar also supports legacy INTERPRETER SOURCE.
-        # In installed mode, the second positional is the first +MODULE.
-        if args.source is not None:
-            if not args.source.startswith("+") or args.source == "+":
-                raise ValueError("installed mode requires SOURCE followed by +MODULE arguments")
-            args.modules.insert(0, args.source)
-        if args.interpreter is None:
-            raise ValueError("BCPL source is required")
-        args.source = args.interpreter
-        args.interpreter = None
+    # The positional grammar also supports legacy INTERPRETER SOURCE.
+    # In installed mode, the second positional is the first +MODULE.
+    if args.source is not None:
+        if not args.source.startswith("+") or args.source == "+":
+            raise ValueError("installed mode requires SOURCE followed by +MODULE arguments")
+        args.modules.insert(0, args.source)
+    if args.interpreter is None:
+        raise ValueError("BCPL source is required")
+    args.source = args.interpreter
+    args.interpreter = None
 
 
 def main(argv=None) -> int:
