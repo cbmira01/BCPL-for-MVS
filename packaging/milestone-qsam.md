@@ -12,6 +12,10 @@ Why now: 124 native regression cases already exercise a substantial compiler/run
 
 The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) defines shared link-edit selection and global-vector registration. Once accepted, BCPLQSAM should use it instead of implementing an independent registry. Q.0 may proceed with ABI exploration before that work, but automatic optional registration needs a separately verified shared mechanism. Neither milestone blocks M4.
 
+### Shared optional-module dispatch architecture
+
+See [Milestone Runtime Extensions](milestone-runtime-extensions.md). The preferred R.0 design is *one* global-vector slot for a BCPLQSAM dispatcher with package-local stable opcodes, beginning with **opcode 0**, a side-effect-free numeric API/capability query into caller-owned BCPL words. The named OPENREC/READREC/WRITEREC/CLOSEREC operations below are logical services, not preallocated public global numbers. Neither package global slot nor opcodes are approved yet. A query reporting support for a record operation does not guarantee that a DD is allocated or OPEN succeeds. Keep any historical `READREC`/`WRITEREC` `LIBHDR` contracts distinct.
+
 ## Non-negotiable architecture
 
 - Keep `BCPLMAIN` as coordinator and preserve `BCPLIO` character-stream semantics; do not rewrite BCPLIO to depend on QSAM. Add a separate, selectively linkable `BCPLQSAM` and, only if necessary, minimal startup/global registration integration consistent with the *actual* ABI.
