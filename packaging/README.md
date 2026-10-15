@@ -8,6 +8,10 @@ The canonical MVS dataset manifest is [`config/dspal.yaml`](../config/dspal.yaml
 
 [Accepted M3 evidence](m3-native-reconstruction-acceptance-20261015.md) records the demonstrated component builds and **123 PASS / 0 FAIL / 1 expected SKIP** for the full native regression panel. The single combined destructive procedure still requires one-run verification.
 
+## Proposed optional native I/O milestone
+
+[Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. It is **proposed, not started**, and is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
+
 ## Dataset ownership
 
 | Namespace | Current status | Authority |
