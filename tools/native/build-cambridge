@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
-"""Build the MVS-resident interpreted Cambridge compiler from dspal PDS state.
+"""Rebuild native-compiler's resident INTCODE image in M3 NATIVE_* PDSes.
 
-This command performs no host-to-MVS file positioning.  Populate the managed
-PDSes with tools/dspal first.  The generated JCL then:
-
-  * assembles HERC02.BCPL.ASM(ICINT19);
-  * link-edits HERC02.BCPL.LOAD(ICINT19);
-  * compiles the demoted Cambridge sources already in HERC02.BCPL.SOURCE;
-  * writes individual compiler INTCODE units to HERC02.BCPL.INTCODE; and
-  * concatenates them with BLIBI/ICLIB as HERC02.BCPL.INTCODE(CAMBCOMP).
-
-CAMBCOMP is directly runnable as the single INTIN compiler image under ICINT19.
+Sources and supporting members must first be staged into NATIVE_SOURCE using
+manifest-managed dspal datasets. MR10_SOURCE supplies historical compiler
+phases and MR10_LOAD supplies the already-installed ICINT19 interpreter.
+No CAMB_* datasets are used or changed.
 """
 
 from __future__ import annotations
@@ -22,7 +16,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-DSPAL_CORE = ROOT / "tools" / "dspal-core.py"
+DSPAL_CORE = ROOT / "tools" / "datasets" / "dspal-core.py"
 
 CAMBRIDGE_UNITS = [
     ("BCPL", "BCPL"),
@@ -61,10 +55,10 @@ def runtime_step(step: str, load: str) -> list[str]:
 
 
 def build_deck(config, redact_password: bool) -> str:
-    source = core.full_dsn(config, config["datasets"]["SOURCE"])
-    asm = core.full_dsn(config, config["datasets"]["ASM"])
-    intcode = core.full_dsn(config, config["datasets"]["INTCODE"])
-    load = core.full_dsn(config, config["datasets"]["LOAD"])
+    source = core.full_dsn(config, config["datasets"]["NATIVE_SOURCE"])
+    mr10_source = core.full_dsn(config, config["datasets"]["MR10_SOURCE"])
+    intcode = core.full_dsn(config, config["datasets"]["NATIVE_INTCODE"])
+    load = core.full_dsn(config, config["datasets"]["MR10_LOAD"])
 
     lines = core.authenticated_job_card(
         config,
@@ -73,33 +67,11 @@ def build_deck(config, redact_password: bool) -> str:
         redact_password=redact_password,
     )
     lines.extend([
-        "//* BUILD ONLY: ALL INPUT MEMBERS MUST ALREADY BE POPULATED BY DSPAL",
-        "//* CAMBRIDGE REMAINS INTCODE EXECUTED BY ICINT V19",
-        "//*",
-        "//* ASSEMBLE ICINT V19 FROM HERC02.BCPL.ASM",
-        "//ASM      EXEC PGM=IFOX00,",
-        "//             PARM='OBJECT,NODECK,NOLIST,NOXREF',REGION=256K",
-        "//SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR",
-        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1700,(600,100))",
-        "//SYSUT2   DD  UNIT=SYSDA,SPACE=(1700,(300,50))",
-        "//SYSUT3   DD  UNIT=SYSDA,SPACE=(1700,(300,50))",
-        "//SYSPRINT DD  SYSOUT=*",
-        "//SYSPUNCH DD  DUMMY",
-        "//SYSGO    DD  DSN=&&ICOBJ,UNIT=SYSDA,SPACE=(80,(300,100)),",
-        "//             DISP=(NEW,PASS)",
-        f"//SYSIN    DD  DSN={asm}(ICINT19),DISP=SHR",
-        "//*",
-        "//* LINK ICINT V19 INTO THE PROJECT LOAD LIBRARY",
-        "//LKED     EXEC PGM=IEWL,PARM='LET,NCAL',REGION=256K,",
-        "//             COND=(4,LT,ASM)",
-        "//SYSLIN   DD  DSN=&&ICOBJ,DISP=(OLD,DELETE)",
-        "//         DD  *",
-        "  ENTRY ICINT",
-        "  NAME ICINT19(R)",
-        "/*",
-        f"//SYSLMOD  DD  DSN={load},DISP=SHR",
-        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))",
-        "//SYSPRINT DD  SYSOUT=*",
+        "//* M3 NATIVE COMPILER BOOTSTRAP; NO CAMB_* DATASETS",
+        "//* INPUTS MUST BE POSITIONED USING DSPAL INTO MANIFEST-MANAGED PDS",
+        f"//* MR10 INTERPRETER: {load}(ICINT19)",
+        f"//* MR10 COMPILER PHASES: {mr10_source}",
+        f"//* NATIVE OUTPUT INTCODE: {intcode}",
     ])
 
     for index, (src_member, out_member) in enumerate(CAMBRIDGE_UNITS, 1):
@@ -110,10 +82,10 @@ def build_deck(config, redact_password: bool) -> str:
             "//*",
             f"//* {source}({src_member}) -> {intcode}({out_member})",
             *runtime_step(comp, load),
-            f"//INTIN    DD  DSN={intcode}(SYNI),DISP=SHR",
+            f"//INTIN    DD  DSN={mr10_source}(SYNI),DISP=SHR",
             f"//         DD  DSN={intcode}(TRNILRG),DISP=SHR",
-            f"//         DD  DSN={intcode}(BLIBI),DISP=SHR",
-            f"//         DD  DSN={intcode}(ICLIB),DISP=SHR",
+            f"//         DD  DSN={mr10_source}(BLIBI),DISP=SHR",
+            f"//         DD  DSN={mr10_source}(ICLIB),DISP=SHR",
             f"//SYSIN    DD  DSN={source}({src_member}),DISP=SHR",
             f"//OPTIONS  DD  DSN={source}(OPTIONS),DISP=SHR",
             f"//LIBHDR   DD  DSN={source}(LIBHDR),DISP=SHR",
@@ -125,9 +97,9 @@ def build_deck(config, redact_password: bool) -> str:
             "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),",
             "//             DISP=(NEW,PASS)",
             *runtime_step(cg, load),
-            f"//INTIN    DD  DSN={intcode}(CGI),DISP=SHR",
-            f"//         DD  DSN={intcode}(BLIBI),DISP=SHR",
-            f"//         DD  DSN={intcode}(ICLIB),DISP=SHR",
+            f"//INTIN    DD  DSN={mr10_source}(CGI),DISP=SHR",
+            f"//         DD  DSN={mr10_source}(BLIBI),DISP=SHR",
+            f"//         DD  DSN={mr10_source}(ICLIB),DISP=SHR",
             f"//SYSIN    DD  DSN={oc},DISP=(OLD,DELETE)",
             f"//INTCODE  DD  DSN={intcode}({out_member}),DISP=SHR",
         ])
@@ -144,7 +116,8 @@ def build_deck(config, redact_password: bool) -> str:
     for member in [m for _s, m in CAMBRIDGE_UNITS] + ["BLIBI", "ICLIB"]:
         dd = "SYSUT1" if first else ""
         first = False
-        lines.append(f"//{dd:<8} DD  DSN={intcode}({member}),DISP=SHR")
+        input_dsn = mr10_source if member in ("BLIBI", "ICLIB") else intcode
+        lines.append(f"//{dd:<8} DD  DSN={input_dsn}({member}),DISP=SHR")
 
     return "\n".join(lines) + "\n"
 
@@ -160,8 +133,8 @@ def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="build-cambridge-mvs",
         description=(
-            "Build ICINT19 and the persistent Cambridge INTCODE image from "
-            "members already positioned by dspal."
+            "Rebuild native-compiler CAMBCOMP using installed MR10 ICINT19 "
+            "and manifest-managed NATIVE source/INTCODE datasets."
         ),
     )
     p.add_argument(
@@ -201,8 +174,8 @@ def main() -> int:
 
         print(summary.rstrip())
         print(f"Cambridge build completed as JOB {job}")
-        print("  HERC02.BCPL.LOAD(ICINT19)")
-        print("  HERC02.BCPL.INTCODE(CAMBCOMP)")
+        print("  " + core.full_dsn(config, config["datasets"]["MR10_LOAD"]) + "(ICINT19)")
+        print("  " + core.full_dsn(config, config["datasets"]["NATIVE_INTCODE"]) + "(CAMBCOMP)")
         print("No regression was run.")
         return 0
     except (core.DspalError, RuntimeError, ValueError, OSError) as exc:
