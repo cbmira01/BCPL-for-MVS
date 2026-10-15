@@ -451,6 +451,7 @@ datasets:
       BLDDEVM: native-compiler/jcl/build-dev-bcplmem.jcl
       BLDDEVN: native-compiler/jcl/build-dev-bcplmain.jcl
       BLDDEVB: native-compiler/jcl/build-dev-bcplbyte.jcl
+      BLDDEVI: native-compiler/jcl/build-dev-bcplio.jcl
       BLDDEVA: native-compiler/jcl/build-dev-bcplapt.jcl
       BLDDEVL: native-compiler/jcl/build-dev-blib.jcl
       SEEDDEV: native-compiler/jcl/seed-devobj.jcl
