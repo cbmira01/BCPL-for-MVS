@@ -33,6 +33,10 @@ See `richards-bcpltape/sys3/bcpl/libhdr`: historical globals already assign `REA
 
 The prior runtime object library work with BLIB establishes *independent object building*, but not a generic optional-module registration protocol.
 
+### Shared terminology and package ownership
+
+See [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) for the distinction among Core Runtime, Base Library (BLIB), System Extensions, Standard Libraries and User/Site Libraries, and among headers, source modules, object modules and packages. The same optional registration protocol should serve independently developed User/Site Libraries, not only project-supplied System Extensions. R.0 must establish a source-controlled official global-number allocation registry together with a realistic installation-level policy for site/private globals and collision detection. This is separate from per-application BCPLREG registration.
+
 ## 3. Architectural principles
 
 - **Core remains small:** the native compiler, BCPLMAIN coordination and the essential historical runtime remain mandatory as appropriate. The three proposed extension modules are not core.
