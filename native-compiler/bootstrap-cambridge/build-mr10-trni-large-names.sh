@@ -18,11 +18,10 @@ for section in "${sections[@]:1}"; do
     modules+=("+$section")
 done
 
-tools/mr10/compile-and-run --save-intcode \
+tools/mr10/compile-and-run --installed-icint MR10_LOAD --save-intcode \
     --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
     --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
     --dd TRNHDR="$srcdir/trnhdr" \
-    asm/icintv19.asm \
     "${modules[@]}"
 
 target=workarea/bootstrap-cambridge/trni-large-names.int
