@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate an application-only native regression using five installed OBJ members.
+"""Generate native regressions with accepted and development runtime PDS objects.
 
 Non-submitting. Does not assemble or overwrite BCPLMAIN or service modules.
 Only the simple single-BCPL-source strategy is supported by this first gate.
@@ -119,23 +119,30 @@ def main():
     candidate = os.environ.get("BCPL_RUNTIME_CANDIDATE", "0")
     if candidate not in ("0", "1"):
         raise ValueError("BCPL_RUNTIME_CANDIDATE must be 0 or 1")
-    library = os.environ.get("BCPL_RUNTIME_LIBRARY", "OBJ").upper()
+    library = os.environ.get("BCPL_RUNTIME_LIBRARY", "MIXED").upper()
     candidate_member = os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER", "BCPLM3").upper()
     if candidate_member not in ("BCPLM3", "BCPLM4", "BCPLM5", "BCPLM6", "BCPLM7"):
-        raise ValueError("candidate member must be BCPLM3, BCPLM4, BCPLM5, BCPLM6 or BCPLM7")
+        raise ValueError("invalid BCPLMAIN candidate member")
     if candidate != "1" and "BCPL_RUNTIME_CANDIDATE_MEMBER" in os.environ:
         raise ValueError("candidate member selection requires candidate mode")
     if candidate == "1" and library != "DEVOBJ":
-        raise ValueError("BCPL_RUNTIME_CANDIDATE=1 requires BCPL_RUNTIME_LIBRARY=DEVOBJ")
-    if library not in ("OBJ", "DEVOBJ"):
-        raise ValueError("BCPL_RUNTIME_LIBRARY must be OBJ or DEVOBJ")
-    dsn, logical = core.resolve_dsn(config, library)
-    if logical != library:
-        raise ValueError("runtime library must be a managed PDS")
-    spec = config["datasets"][logical]
-    if (spec.get("content_type") != "object" or spec.get("recfm") != "FB"
-            or int(spec.get("lrecl", 0)) != 80 or spec.get("dsorg") != "PO"):
-        raise ValueError(f"{library} must be a binary FB80 object PDS")
+        raise ValueError("candidate BCPLMAIN requires BCPL_RUNTIME_LIBRARY=DEVOBJ")
+    if library not in ("MIXED", "OBJ", "DEVOBJ"):
+        raise ValueError("BCPL_RUNTIME_LIBRARY must be MIXED, OBJ or DEVOBJ")
+
+    # M3 reconstructs accepted BCPLMAIN, BCPLMEM, BLIB separately from
+    # development BCPLAPT and BCPLBYTE. The linker must not silently
+    # promote those candidate objects into the accepted library.
+    chosen = ("NATIVE_DEVOBJ" if library == "DEVOBJ" else "NATIVE_OBJ")
+    devchosen = ("NATIVE_OBJ" if library == "OBJ" else "NATIVE_DEVOBJ")
+    def object_dsn(logical):
+        spec = config["datasets"][logical]
+        if (spec.get("content_type") != "object" or spec.get("recfm") != "FB"
+                or int(spec.get("lrecl", 0)) != 80 or spec.get("dsorg") != "PO"):
+            raise ValueError(f"{logical} must be a binary FB80 object PDS")
+        return core.full_dsn(config, spec)
+    main_dsn = object_dsn(chosen)
+    service_dsn = object_dsn(devchosen)
     job = f"RG{n:03d}R"
     cards = [
         *core.authenticated_job_card(config, job, "BCPL PDS REG",
@@ -156,13 +163,14 @@ def main():
         "//SYSIN    DD *", *lines, "/*",
         "//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',",
         "//             COND=(0,NE,ASMAP)",
-        f"//OBJ      DD DSN={dsn},DISP=SHR",
+        f"//OBJ      DD DSN={main_dsn},DISP=SHR",
+        f"//DEVOBJ   DD DSN={service_dsn},DISP=SHR",
         "//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)",
         "//         DD *",
         f" INCLUDE OBJ({candidate_member})" if candidate == "1" else " INCLUDE OBJ(BCPLMAIN)",
         *([" INCLUDE OBJ(BCPLIO)"] if candidate == "1" else []),
-        " INCLUDE OBJ(BCPLBYTE)",
-        " INCLUDE OBJ(BCPLAPT)",
+        " INCLUDE DEVOBJ(BCPLBYTE)",
+        " INCLUDE DEVOBJ(BCPLAPT)",
         " INCLUDE OBJ(BCPLMEM)",
         " INCLUDE OBJ(BLIB)",
         f" ENTRY {entry}",
