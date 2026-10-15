@@ -12,6 +12,10 @@ System/370 has packed-decimal operations such as ZAP, AP, SP, CP, MP, DP and SRP
 
 **Excluded:** binary/IEEE floating point; arbitrary precision; locale/currency policy; automatic compiler operators/types; COBOL PICTURE compiler; VSAM/QSAM integration beyond buffer interoperability; dynamic global-vector changes to the compiler.
 
+## Optional module integration dependency
+
+The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) is the common architecture for selectively linking BCPLDEC and installing its global entries at startup. Decimal arithmetic may be prototyped independently, but must not invent a separate automatic registration system. Neither milestone blocks M4.
+
 ## Representation and contracts (provisional)
 
 - An application-owned, fixed-size **decimal descriptor**, provisionally `VEC 7` (eight BCPL words), contains implementation-managed value, precision/scale and validity metadata. Its concrete layout is **undecided** until the ABI review. Do not directly dereference it in application code.
