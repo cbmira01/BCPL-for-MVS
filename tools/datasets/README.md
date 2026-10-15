@@ -1,5 +1,7 @@
 # Dataset management tools
 
-The canonical `dspal` dispatcher and implementation modules live here. The familiar `tools/datasets/dspal` command remains a compatibility launcher. Dataset names and allocation semantics are unchanged by this relocation.
+The authoritative `dspal` dispatcher and its implementation modules live in this directory. Use `tools/datasets/dspal`; old paths at the tools root were removed in the M3 refactor.
 
-The old helper module paths remain available temporarily for callers that import them directly; they will be retired only after auditing their consumers.
+`config/dspal.yaml` defines all 24 managed datasets: nine `MR10_*`, nine `CAMB_*` reserved for M4, and six `NATIVE_*`. Installation-specific credentials and overrides belong in the ignored `config/dspal.local.yaml`.
+
+The full destructive clean-room procedure is [documented here](../../packaging/clean-room-mvs-reconstruction.md). In normal development, do **not** run `purgebcpl` unless you intend to delete and reconstruct every managed dataset.
