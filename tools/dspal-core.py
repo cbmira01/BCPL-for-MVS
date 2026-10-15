@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import importlib.util
 from pathlib import Path
 import re
 import socket
@@ -692,6 +693,16 @@ def cmd_status(
     return 0
 
 
+def load_space_module():
+    path = ROOT / "tools" / "dspal-space.py"
+    spec = importlib.util.spec_from_file_location("dspal_space", path)
+    if spec is None or spec.loader is None:
+        raise DspalError("cannot load dspal-space.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def cmd_stat(
     config: dict[str, Any], operand: str | None, show_jcl: bool, raw: bool
 ) -> int:
@@ -709,6 +720,8 @@ def cmd_stat(
                 print()
             return 0
 
+        space = load_space_module()
+        utilization = space.space_inventory(sys.modules[__name__], config, inventory)
         for logical, spec in config["datasets"].items():
             dsn = full_dsn(config, spec)
             attrs = inventory[logical]
@@ -717,6 +730,8 @@ def cmd_stat(
                 print(f"    Job:{job},  Missing")
             else:
                 format_stat(dsn, logical, job, attrs)
+                if attrs.get("dsorg") == "PO":
+                    space.show_space(utilization.get(logical))
         return 0
 
     dsn, logical = resolve_dsn(config, operand)
@@ -744,6 +759,11 @@ def cmd_stat(
             f"retry with: dspal stat {operand} --raw"
         )
     format_stat(dsn, logical, job, attrs)
+    if logical and attrs.get("dsorg") == "PO":
+        space = load_space_module()
+        utilization = space.space_inventory(
+            sys.modules[__name__], config, {logical: attrs})
+        space.show_space(utilization.get(logical))
     return 0
 
 
