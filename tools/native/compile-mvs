@@ -11,7 +11,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-DSPAL_CORE = ROOT / "tools" / "dspal-core.py"
+DSPAL_CORE = ROOT / "tools" / "datasets" / "dspal-core.py"
 WORKAREA = ROOT / "workarea"
 
 def load_core():
@@ -48,9 +48,9 @@ def build_deck(
     cambridge_parm_path: Path | None = None,
     compiler_image: str = "CAMBCOMP",
 ) -> str:
-    source = core.full_dsn(config, config["datasets"]["SOURCE"])
-    intcode = core.full_dsn(config, config["datasets"]["INTCODE"])
-    load = core.full_dsn(config, config["datasets"]["LOAD"])
+    source = core.full_dsn(config, config["datasets"]["NATIVE_SOURCE"])
+    intcode = core.full_dsn(config, config["datasets"]["NATIVE_INTCODE"])
+    load = core.full_dsn(config, config["datasets"]["MR10_LOAD"])
 
     lines = core.authenticated_job_card(
         config,
@@ -60,7 +60,7 @@ def build_deck(
     )
     lines.extend([
         "//* COMPILE ONE BCPL SOURCE WITH THE PERSISTENT CAMBRIDGE IMAGE",
-        "//* CAMBRIDGE IS INTCODE EXECUTED BY HERC02.BCPL.LOAD(ICINT19)",
+        "//* M3 NATIVE COMPILER IMAGE EXECUTED BY INSTALLED MR10 ICINT19",
         f"//* INTIN IS THE PACKED {intcode}({compiler_image}) IMAGE",
         "//COMP     EXEC PGM=ICINT19,REGION=256K,TIME=(,30)",
         f"//STEPLIB  DD  DSN={load},DISP=SHR",
