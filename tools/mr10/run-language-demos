@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$REPO_ROOT"
+
+set -u
+set -o pipefail
+
+COMPILE="tools/compile-and-run"
+ICINT="$(bash tools/current-icint)"
+SUITE="mr10-kit-compiler/language-demo"
+
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+        --icint)
+            if [ "$#" -lt 2 ]
+            then
+                echo "run-language-demos: --icint requires a path" >&2
+                exit 2
+            fi
+            ICINT="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "usage: tools/run-language-demos [--icint PATH]"
+            exit 0
+            ;;
+        *)
+            echo "run-language-demos: unknown option: $1" >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ ! -f "$ICINT" ]
+then
+    echo "run-language-demos: ICINT source not found: $ICINT" >&2
+    exit 2
+fi
+
+echo "ICINT: $ICINT"
+
+FAILURES=0
+TOTAL=0
+
+run_demo()
+{
+    name="$1"
+    shift
+    TOTAL=$((TOTAL + 1))
+
+    echo
+    echo "================================================================"
+    echo "LANGUAGE DEMO: $name"
+    echo "================================================================"
+
+    if "$@"
+    then
+        echo
+        echo "PASS: $name"
+    else
+        rc=$?
+        echo
+        echo "FAIL: $name (rc=$rc)"
+        FAILURES=$((FAILURES + 1))
+    fi
+}
+
+run_demo "declarations" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/declarations/declarations.bcpl"
+
+run_demo "valof-resultis" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/valof-resultis/valof-resultis.bcpl"
+
+run_demo "switchon" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/switchon/switchon.bcpl"
+
+run_demo "table-vector" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/table-vector/table-vector.bcpl"
+
+run_demo "manifest-global" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/manifest-global/manifest-global.bcpl"
+
+run_demo "repeat-forms" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/repeat-forms/repeat-forms.bcpl"
+
+run_demo "strings-bytes" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/strings-bytes/strings-bytes.bcpl"
+
+run_demo "test-then-or" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/test-then-or/test-then-or.bcpl"
+
+run_demo "boolean-operators" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/boolean-operators/boolean-operators.bcpl"
+
+run_demo "pointer-idioms" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/pointer-idioms/pointer-idioms.bcpl"
+
+run_demo "function-values" \
+    "$COMPILE" --results \
+    "$ICINT" \
+    "$SUITE/function-values/function-values.bcpl"
+
+echo
+echo "================================================================"
+echo "LANGUAGE SUITE COMPLETE"
+echo "================================================================"
+
+if [ "$FAILURES" -eq 0 ]
+then
+    echo "All $TOTAL language demos passed."
+    exit 0
+else
+    echo "$FAILURES of $TOTAL language demo(s) failed."
+    exit 1
+fi
