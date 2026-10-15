@@ -1,98 +1,27 @@
-# MVS deployment model
+# MVS deployment and reconstruction
 
-This directory used to contain design notes for `pdspal` and early `dspal` work. Those decisions are now implemented, so the superseded planning files have been removed from the current tree. Their history remains available in Git.
+The canonical MVS dataset manifest is [`config/dspal.yaml`](../config/dspal.yaml) and its operator interface is `tools/datasets/dspal`. All tracked source files and build JCL reside in Git; MVS libraries hold deployed sources and rebuildable outputs.
 
-The current deployment interface is `tools/datasets/dspal`; the checked-in manifest is `config/dspal.yaml`.
+## Complete reconstruction
 
-## Native BLIB object-library planning
+**[Clean-room MR10-to-native MVS reconstruction runbook](clean-room-mvs-reconstruction.md)** is the single chronological procedure for emptying `workarea/`, inspecting and purging the manifest-defined PDS set, reinitialization, text population, ICINT19 rebuilding, MR10 demos/tests, demoted Cambridge bootstrap, runtime object rebuilding, and the complete native regression panel.
 
-The completed 2026-10-08 historical BLIB static-integration checkpoint,
-69/69 regression sweep, and proposed next object-library milestone are
-recorded in [`native-compiler/blib-integration-march-checkpoint.md`](../native-compiler/blib-integration-march-checkpoint.md).
+[Accepted M3 evidence](m3-native-reconstruction-acceptance-20261015.md) records the demonstrated component builds and **123 PASS / 0 FAIL / 1 expected SKIP** for the full native regression panel. The single combined destructive procedure still requires one-run verification.
 
-`HERC02.BCPL.OBJ(BLIB)` is **proposed**, not currently managed by the
-`dspal` manifest. The `LOAD` dataset is for load modules, not a
-substitute for a relocatable-object library. Object-deck storage and
-installation require separate design and validation.
+## Dataset ownership
 
-## Authority and lifecycle
+| Namespace | Current status | Authority |
+| --- | --- | --- |
+| `MR10_*` (9 datasets) | Reconstructed historical kit interpreter, tests, demos | `mr10-kit-compiler/` and manifest |
+| `NATIVE_*` (6 datasets) | Reconstructed resident compiler INTCODE, native runtime ASM/JCL, objects | `native-compiler/` and manifest |
+| `CAMB_*` (9 datasets) | Reserved for M4; **not used for M3 compiler reconstruction** | Manifest allocation only |
 
-The basic rule is:
+`NATIVE_OBJ` contains the accepted BCPLMAIN, BCPLMEM, and BLIB objects. `NATIVE_DEVOBJ` contains independently assembled BCPLAPT, BCPLBYTE, and BCPLIO candidates. No binary migration or implicit object promotion is permitted.
 
-```text
-Git repository = authoritative project source
-MVS data sets  = reproducible deployed/build state
-```
+A successful `dspal populate` updates explicitly mapped text members without pruning unlisted members. `dspal purgebcpl` is destructive to **all 24 manifest-managed datasets**; it does not delete datasets outside the manifest and prompts for explicit confirmation. Generated sources and binary outputs must be rebuilt after a purge. Keep local credentials in the ignored `config/dspal.local.yaml`.
 
-The managed MVS libraries are normally under `HERC02.BCPL.*`. Source-oriented libraries use FB/80 text records and CP037 conversion; `LOAD` is a load-module library.
+## Historical design and evidence
 
-Create and populate the managed set with:
+The older proposal and milestone records elsewhere under `packaging/` preserve decisions and rationale as of their stated dates. In particular, previous `HERC02.BCPL.OBJ` proposals and old `SOURCE/JCL/DEVOBJ` commands are historical, **not current installation guidance**.
 
-```sh
-tools/datasets/dspal initbcpl
-tools/datasets/dspal populate all
-```
-
-Inspect it with:
-
-```sh
-tools/datasets/dspal stat
-tools/datasets/dspal ls
-```
-
-Remove the complete managed set with:
-
-```sh
-tools/datasets/dspal purgebcpl
-```
-
-`purgebcpl` operates only on the explicit manifest-defined data sets and requires confirmation unless `--yes` is supplied. Re-running it after the data sets are already absent is a clean no-op.
-
-The create -> populate -> purge -> recreate -> repopulate lifecycle has been exercised successfully on the TK5 development system.
-
-## Population rules
-
-`populate` is authoritative for mapped members but deliberately does not prune unrelated MVS members.
-
-It:
-
-- validates all selected host files before mutation;
-- converts UTF-8 host text to EBCDIC CP037 strictly;
-- refuses records longer than the target LRECL;
-- replaces explicitly mapped members;
-- leaves unrelated members alone;
-- refuses ambiguous member mappings; and
-- supports `--dry-run` and redacted `--show-jcl` inspection.
-
-`SOURCE` has explicit Cambridge bootstrap/compiler member mappings, including generated demoted sources under `workarea/bootstrap-cambridge/`. Those generated host artifacts must exist before `dspal populate SOURCE`. `LOAD` remains build output and is not populated from Git.
-
-## Local configuration and credentials
-
-Checked-in defaults live in `config/dspal.yaml`. Installation-specific values, including the MVS batch password, belong in:
-
-```text
-config/dspal.local.yaml
-```
-
-That file is gitignored and was confirmed during the public-release audit never to have been committed to the repository's reachable history.
-
-See `config/README.md` for configuration details and `tools/README.md` for the command interface.
-## Deferred lineage-based repository/PDS refactor
-
-The future three-line MR10KIT / NATIV / CAMBRG source ownership proposal,
-implementation-neutral SHARED resources, historical-evidence separation,
-per-line regressions/demos and tool ownership, and staged repository-first
-migration strategy are recorded in
-[repository-lineage-refactor-proposal.md](repository-lineage-refactor-proposal.md).
-This is **architecture documentation only**: no moves, PDS renames, or
-manifest refactor have been authorized.
-
-## Deferred BCPL file-access and dspal provisioning architecture
-
-Dataset taxonomy (PS/PDS/BDAM/ISAM and VSAM ESDS/KSDS/RRDS),
-proposed per-line support priorities, BCPL stream versus record-file
-interfaces, `dspal` provisioning boundaries, and shared immutable test
-fixtures are documented in
-[access-methods-and-dspal-proposal.md](access-methods-and-dspal-proposal.md).
-This is an **unimplemented proposal**; existing manifests, dataset
-allocations, code and acceptance suites remain unchanged.
+Useful further references: [Git/MVS source authority](git-mvs-authority.md), [M3 namespace migration log](m3-dspal-namespace-migration.md), and [M2.1 runtime acceptance](m2-1-gate-f-final-runtime-acceptance.md).
