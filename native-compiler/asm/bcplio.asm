@@ -978,4 +978,76 @@ IOBUF    DS    CL132
 IODCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 IO2BUF   DS    CL132
 IO2DCB   DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
+*
+* M1 PRIVATE DESCRIPTOR REGISTRY (NOT WIRED TO FIND).
+* DALLOC: R2=normalized 8-byte DD name, R3=direction 1/2.
+*         R15=allocated descriptor byte address or zero.
+* DREL:   R1=descriptor byte address; R15=0 success/8 absent.
+* Native R14 linkage, R10 clobbered; static and nonreentrant.
+* Descriptor: +0 next, +4 direction, +8 name, +16 reserved.
+* The descriptor is NOT a BCPL stream handle. It must never
+* escape to the BCPL program: stable handles come separately.
+* No DCB allocation, OPEN or RDJFCB in this first slice.
+*
+         ENTRY DALLOC,DREL
+DALLOC   BALR  10,0
+         USING *,10
+         STM   0,9,DSAVE
+         STM   11,14,DSAVE+44
+         ST    2,DNAMEP
+         ST    3,DTYPE
+         GETMAIN RC,LV=32
+         LTR   15,15
+         BNZ   DALFAIL
+         LR    6,1
+         XC    0(32,6),0(6)
+         L     7,DHEAD
+         ST    7,0(6)
+         L     7,DTYPE
+         ST    7,4(6)
+         L     7,DNAMEP
+         MVC   8(8,6),0(7)
+         ST    6,DHEAD
+         ST    6,DRESULT
+         B     DALRET
+DALFAIL  XC    DRESULT(4),DRESULT
+DALRET   LM    0,9,DSAVE
+         LM    11,14,DSAVE+44
+         L     15,DRESULT
+         BR    14
+         DROP  10
+*
+DREL     BALR  10,0
+         USING *,10
+         STM   0,9,DSAVE
+         STM   11,14,DSAVE+44
+         ST    1,DTARGET
+         LA    6,DHEAD
+DRELSCAN L     7,0(6)
+         LTR   7,7
+         BZ    DRELBAD
+         C     7,DTARGET
+         BE    DRELHIT
+         LR    6,7
+         B     DRELSCAN
+DRELHIT  L     8,0(7)
+         ST    8,0(6)
+         LR    1,7
+         FREEMAIN R,LV=32,A=(1)
+         XC    DRESULT(4),DRESULT
+         B     DRELRET
+DRELBAD  MVC   DRESULT(4),DERR8
+DRELRET  LM    0,9,DSAVE
+         LM    11,14,DSAVE+44
+         L     15,DRESULT
+         BR    14
+         DROP  10
+         DS    0F
+DHEAD    DC    F'0'
+DNAMEP   DC    F'0'
+DTYPE    DC    F'0'
+DTARGET  DC    F'0'
+DRESULT  DC    F'0'
+DERR8    DC    F'8'
+DSAVE    DS    16F
          END   BCPLIO
