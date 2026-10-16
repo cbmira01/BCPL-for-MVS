@@ -117,3 +117,24 @@ M1 acceptance remains pending; all work is isolated to NATIVE.DEVOBJ and reposit
 ## Stable handle MVS acceptance — 2026-10-16
 
 Operator staged NATIVE.ASM(BCPLIO) JOB 5596, NATIVE.ASM(IOHPRB) JOB 5597, and NATIVE.JCL(IOHPRB) JOB 5598. Resident BLDDEVI payload **JOB 5601**: ASMIO IFOX00 RC=0000 and PUTIO IEBGENER RC=0000, zero flagged statements. IOHPRB payload **JOB 5604**: ASMHND IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, zero flagged statements. The standalone probe passed creation/lookup, close and DREL, stale-handle rejection after allocating a second descriptor, distinct handle identity, and double-close rejection. **Accept isolated stable-handle checkpoint.** IOFIN reclamation, conditional failure edge cases, dynamic DD discovery and FIND integration are still pending. No production OBJ promotion.
+
+
+## RDJFCB discovery staging — 2026-10-16
+
+A private `DDVERIFY` entry was added to BCPLIO. Its native R14 calling contract accepts R1 pointing to a normalized EBCDIC eight-byte DD name, returns R15=0 for RDJFCB success or 8 otherwise, and clobbers R10. It uses a separate scratch DCB, writes the DDNAME at DCB +40 (as established by the IFOX-generated DCB expansions), and issues `RDJFCB ((2))`. This is **only a DD allocation inquiry**: it does not OPEN, create descriptors, allocate handles, or connect to BCPL FIND calls. Nonreentrant module-level storage remains the design baseline.
+
+An independent `IODVPRB` test checks the GO step's allocated `CUSTOMER` DD, unallocated `ZXYZ1234`, then `CUSTOMER` again. JCL allocates CUSTOMER against `SYS1.MACLIB` with DISP=SHR and explicitly includes the independent BCPLIO in the link. Source and JCL are staged in `native-compiler/asm/bcplio-ddverify-probe.asm` and `native-compiler/jcl/bcplio-ddverify-probe.jcl`. IFOX, IEWL and GO **not yet executed** for this slice; RDJFCB error/flag semantics and DCB scratch reuse require observation under MVS.
+
+Run after synchronizing Git:
+
+```sh
+tools/datasets/dspal put native_asm BCPLIO native-compiler/asm/bcplio.asm
+tools/datasets/dspal put native_asm IODVPRB native-compiler/asm/bcplio-ddverify-probe.asm
+tools/datasets/dspal put native_jcl IODVPRB native-compiler/jcl/bcplio-ddverify-probe.jcl
+tools/datasets/dspal submit native_jcl BLDDEVI
+# Require ASMIO / PUTIO both RC=0000.
+tools/datasets/dspal submit native_jcl IODVPRB
+# Require ASMDV / LKED / GO all RC=0000.
+```
+
+Production NATIVE.OBJ remains out of scope. M1 not yet accepted.
