@@ -1050,4 +1050,98 @@ DTARGET  DC    F'0'
 DRESULT  DC    F'0'
 DERR8    DC    F'8'
 DSAVE    DS    16F
+*
+* M1 PRIVATE NON-REUSED HANDLE IDENTITIES (NOT WIRED TO FIND).
+* HNEW R1=descriptor, R15=BCPL word-address handle or 0.
+* HLOOK R1=handle, R15=live descriptor or 0.
+* HCLOSE R1=handle, R15=detached descriptor or 0.
+* Caller must DREL a nonzero HCLOSE result; HCLOSE itself
+* only invalidates the stable handle record. Tombstones are
+* retained until IOFIN cleanup is subsequently implemented.
+* The public handle names the fullword at record offset +4.
+* NEVER dereference the caller-provided handle before search.
+*
+         ENTRY HNEW,HLOOK,HCLOSE
+HNEW     BALR  10,0
+         USING *,10
+         STM   0,9,HSAVE
+         STM   11,14,HSAVE+44
+         ST    1,HDESC
+         LTR   1,1
+         BZ    HNEWBAD
+         GETMAIN RC,LV=16
+         LTR   15,15
+         BNZ   HNEWBAD
+         LR    6,1
+         XC    0(16,6),0(6)
+         L     7,HHEAD
+         ST    7,0(6)
+         L     7,HDESC
+         ST    7,4(6)
+         ST    6,HHEAD
+         LA    7,4(6)
+         SRL   7,2
+         ST    7,HRESULT
+         B     HRETURN
+HNEWBAD  XC    HRESULT(4),HRESULT
+HRETURN  LM    0,9,HSAVE
+         LM    11,14,HSAVE+44
+         L     15,HRESULT
+         BR    14
+         DROP  10
+*
+HLOOK    BALR  10,0
+         USING *,10
+         STM   0,9,HSAVE
+         STM   11,14,HSAVE+44
+         ST    1,HTARGET
+         L     6,HHEAD
+HLNEXT   LTR   6,6
+         BZ    HLMISS
+         LA    7,4(6)
+         SRL   7,2
+         C     7,HTARGET
+         BE    HLFOUND
+         L     6,0(6)
+         B     HLNEXT
+HLFOUND  L     7,4(6)
+         ST    7,HRESULT
+         B     HLRET
+HLMISS   XC    HRESULT(4),HRESULT
+HLRET    LM    0,9,HSAVE
+         LM    11,14,HSAVE+44
+         L     15,HRESULT
+         BR    14
+         DROP  10
+*
+HCLOSE   BALR  10,0
+         USING *,10
+         STM   0,9,HSAVE
+         STM   11,14,HSAVE+44
+         ST    1,HTARGET
+         L     6,HHEAD
+HCNEXT   LTR   6,6
+         BZ    HCMISS
+         LA    7,4(6)
+         SRL   7,2
+         C     7,HTARGET
+         BE    HCFOUND
+         L     6,0(6)
+         B     HCNEXT
+HCFOUND  L     7,4(6)
+         ST    7,HRESULT
+         XC    4(4,6),4(6)
+         B     HCRET
+HCMISS   XC    HRESULT(4),HRESULT
+HCRET    LM    0,9,HSAVE
+         LM    11,14,HSAVE+44
+         L     15,HRESULT
+         BR    14
+         DROP  10
+         DS    0F
+HHEAD    DC    F'0'
+HDESC    DC    F'0'
+HTARGET  DC    F'0'
+HRESULT  DC    F'0'
+HSAVE    DS    16F
          END   BCPLIO
