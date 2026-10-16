@@ -91,6 +91,7 @@ IFDPARM  XC    IOPARM(4),IOPARM
          LM    0,9,IOFSAVE
          LM    11,15,IOFSAVE+44
          BR    14
+         DROP  11
          DROP  10
 *
 * BCPL-facing candidate: R7 holds a character code.
