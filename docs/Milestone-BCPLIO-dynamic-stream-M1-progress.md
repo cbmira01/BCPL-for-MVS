@@ -155,3 +155,8 @@ Operator restaged corrected BCPLIO as JOB 5614. BLDDEVI payload **JOB 5617**: AS
 ## Explicit native BCPL regression gate adopted — 2026-10-16
 
 M1 acceptance now requires compiled-BCPL panel tests for the new public FIND features, not merely assembler helper probes. The milestone M1 exit clause was amended and M5 clarified as expansion of tests begun in M1. The planned contiguous IDs 124..130, with test 131 reserved for 13 streams (potential M2 gate), test DD configurations, expected evidence and runner/link-mode prerequisite are recorded in `native-compiler/regression/dynamic-stream-M1-test-plan.md`. These test cases are **planned, not created or executed**; existing 00..123 remain intact. Critical dependency: explicitly ensure the native regression runner tests DEVOBJ BCPLIO rather than assuming its currently monolithic BCPLMAIN path exercises the newly staged routines. The M1 gate remains open.
+
+
+## Development-only BCPL regression linkage staged — 2026-10-16
+
+Added `tools/native/run-dynamic-regression` (invoke with `bash`), requiring explicit `BCPL_DYNAMIC_MAIN_MEMBER=BCPLM3..BCPLM7`. It selects existing candidate mode with development BCPLMAIN and BCPLIO from NATIVE.DEVOBJ, BCPLBYTE/BCPLAPT from NATIVE.DEVOBJ, and BLIB/BCPLMEM from production NATIVE.OBJ, with explicit COREOBJ DD routing fixed in `prepare-runtime-pds-regression.py`. Normal native regression defaults are unchanged. This mode has **not been executed** in the current M1 checkpoint; do not claim a candidate BCPLMAIN object exists in PDS after rebuild. Next operator work: verify/rebuild source-derived compatible BCPLMAIN candidate, inspect generated JCL and link map, then run legacy stream cases 114..119 in development mode. BCPL 124..130 cases remain planned, not created.
