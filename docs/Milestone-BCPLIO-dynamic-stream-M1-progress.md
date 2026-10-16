@@ -495,3 +495,21 @@ Running candidate regression 125 generated native assembly with Cambridge JOB **
 The previous IFOX addressability fix moved **IOSAVE** from the secondary (>4 KB) range down near `IOWRCH` so assembler instruction operands `L 10,IOSAVE+40` and `L 11,IOSAVE+44` are now **R10-relative** (not R11-relative). The earlier valid-for-high-save restore order loaded R10 first, then attempted an R10-relative R11 load after R10 reverted to the BCPL caller's value (zero in this dump). This destroys addressability and plausibly explains program check after last WRCH. Similar incorrect order existed in the overflow callback. Commit **`56e0dbf`** repairs BOTH: `IOWRET` restores saved R11 first, R10 last; `IOWFULL` loads high-base `IOOVHAND` before restoring R11, then restores R10 last. No input logic or global assignments changed. IFOX card-width audit passes; **this new revision has NOT been assembled or run**.
 
 **Required narrow retest:** `git pull --ff-only`, put `native_asm BCPLIO`, submit DEVOBJ-only `native_jcl BLDDEVI`; require ASMIO and PUTIO RC0000 without flags; then execute candidate regression 125 with the four environment flags. Positive acceptance requires GO RC0000 and `BCPL INPUT OK` and 1 PASS; any abend is FAIL. Once 125 passes, rerun 113 (controlled STOP12), 124, then 00..123 under same candidate. Production OBJ still untouched. The earlier test 124 and full compatibility acceptance applies to the **prior** DEVOBJ BCPLIO revision, not the newly altered input candidate.
+
+## JOB 6289 — corrected BCPLIO / compiled dynamic-input regression 125 PASSED (2026-10-17)
+
+Operator pulled repository through `e7c74bd` (including the R10/R11 restore-order correction `56e0dbf`). Staged `native-compiler/asm/bcplio.asm` into `HERC02.BCPL.NATIVE.ASM(BCPLIO)` via JOB **6286**, then submitted existing DEVOBJ-only `BLDDEVI` (launcher JOB **6288**, payload **JOB 6289**), 17 Oct 2026 00:49:43. `ASMIO IFOX00 RC=0000`, `PUTIO IEBGENER RC=0000`; **0 flagged assembler statements; highest severity 0**. Only the development `HERC02.BCPL.NATIVE.DEVOBJ(BCPLIO)` candidate was installed. Production `NATIVE.OBJ` was not touched.
+
+Operator executed:
+```sh
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 125 --show-output
+```
+Observed: `RUN 125 125-dynamic-dd-two-input-streams`, **PASS 125**, panel **PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**. The regression's expected-go-rc/default-success contract requires normal RC=0000 and its `expected.txt` requires the `BCPL INPUT OK` record, so PASS establishes the runner's checks succeeded. Individual application JOB numbers and a separately extracted GO report were not included in this operator message; do not invent them. Regression 125's source exercises compiled BCPL FINDINPUT on arbitrary **DDA** and **DDB** JCL allocations, alternating SELECTINPUT/RDCH, descriptor-private cursors, UNRDCH, record newline and EOF behavior, failed NOFILE lookup, ENDREAD and rejection of stale handles, with STOP(8) assertion failures.
+
+**ACCEPTED: targeted compiled-BCPL dynamic two-input-stream integration gate.** Previous JOB 6285's S0C1 is superseded by this new positive candidate run, but remains part of the diagnostic history. **Not accepted:** complete input stress requirements, FINISH/STOP cleanup, independent DD ownership/physical attribution, or compatibility of the *new* BCPLIO object with prior native tests.
+
+**Immediate next gate:** rerun candidate regressions `113 --show-output`, `124 --show-output`, and the full `0 123` panel under exactly the four DEVOBJ environment variables above. Targets: regression 113 PASS (controlled STOP12), regression 124 PASS (dual dynamic output), and baseline 123 PASS / 0 FAIL / 1 expected SKIP 083. Any regression is a block on M1 progress. After compatibility acceptance, implement permanent regression **126** for twelve concurrent dynamically opened input DDs; keep candidate-only initially. Maintain production OBJ unchanged until explicit authorization.
