@@ -1,11 +1,12 @@
 ***********************************************************************
 * IO2DPRB - M1 QSAM SECONDARY PUT POINTER BEFORE/AFTER OPEN.
 * RETURN: 0 changed to nonzero, 4 unchanged, 8 zero,
-*         12 known observed bad pointer D01407FE.
+*         12 known observed bad pointer D01407FE, 16 IOSEL failed.
+* No IOFIN: avoid CLOSE while diagnosing OPEN; MVS step cleanup.
 ***********************************************************************
 IO2DPRB  CSECT
          ENTRY IO2DPRB
-         EXTRN IOINIT,IOSEL,IO2PTR,IOFIN
+         EXTRN IOINIT,IOSEL,IO2PTR
          STM   14,12,12(13)
          LR    12,15
          USING IO2DPRB,12
@@ -40,15 +41,15 @@ ZEROPTR  LA    8,8
 BADPTR   LA    8,12
          B     FINISH
 BADOPEN  LA    8,16
-FINISH   L     15,=A(IOFIN)
-         BALR  14,15
-         LR    15,8
+FINISH   ST    8,RESULT
          L     13,OLDSAVE+4
          LM    14,12,12(13)
+         L     15,RESULT
          BR    14
          LTORG
 BEFORE   DS    F
 AFTER    DS    F
+RESULT   DS    F
 OLDSAVE  DS    18F
 NEWSAVE  DS    18F
          END   IO2DPRB
