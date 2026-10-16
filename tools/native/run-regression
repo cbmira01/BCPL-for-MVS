@@ -214,6 +214,16 @@ def main() -> int:
                 and os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER") == "BCPLM6"
             )
             if not candidate_env:
+                if start == end == test_no:
+                    print(
+                        f"ERROR {nn} {case_name}: requires "
+                        "BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ "
+                        "BCPL_RUNTIME_CANDIDATE=1 "
+                        "BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    return 64
                 skipped += 1
                 print(
                     f"SKIP  {nn}  {case_name} (requires DEVOBJ BCPLM6)",
