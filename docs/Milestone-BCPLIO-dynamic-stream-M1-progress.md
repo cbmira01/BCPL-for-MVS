@@ -86,3 +86,8 @@ tools/datasets/dspal submit native_jcl IODRPRB
 ```
 
 Do not claim acceptance until the payload's ASMREG, LKED and GO steps succeed under MVS. Keep `NATIVE.OBJ` untouched. Dynamic DCBs, RDJFCB, stable external handles and FIND dispatch remain unimplemented.
+
+
+## Descriptor registry execution acceptance — 2026-10-16
+
+Operator staged NATIVE.ASM(IODRPRB) via JOB 5591 and NATIVE.JCL(IODRPRB) via JOB 5592. Resident JCL launch JOB 5594, payload **JOB 5595**, completed successfully: ASMREG IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; assembler flagged 0 statements, highest severity 0. The standalone probe's GO success supports its assertions for two allocations, descriptor names/directions and linkage, unlinking non-head and head nodes, matching FREEMAIN, and double-release rejection. This **accepts the isolated descriptor-registry execution checkpoint**. The test does not demonstrate allocation failure under actual storage pressure, stable BCPL handle identity, RDJFCB/DD discovery, OPEN, or FIND integration. Those remain M1 work. No production OBJ change was made.
