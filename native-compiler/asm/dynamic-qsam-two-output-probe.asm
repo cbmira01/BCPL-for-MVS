@@ -66,7 +66,8 @@ FINISH   ST    8,RESULT
          LM    14,12,12(13)
          BR    14
 * R6 is private region pointer. +28 stores caller R14.
-INITREG  XC    0(288,6),0(6)
+INITREG  XC    0(256,6),0(6)
+         XC    256(32,6),256(6)
          MVC   164(96,6),TEMPLATE
          LA    7,164(6)
          ST    7,20(6)
