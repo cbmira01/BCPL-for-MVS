@@ -1149,6 +1149,7 @@ HSAVE    DS    16F
 * R1 -> normalized EBCDIC CL8 DD name; R15 0 allocated,
 * 8 otherwise. Nonreentrant: separate unopened scratch DCB.
 * This inquiry does not OPEN the DD, or allocate a stream.
+* JFCB exit list + 176-byte area are required by RDJFCB.
 * RDJFCB uses the DCB at R2; the offset of the DDNAME
 * field is verified against the IFOX DCB macro expansion.
 *
@@ -1175,5 +1176,8 @@ DVRET    ST    15,DVRESULT
          DS    0F
 DVRESULT DC    F'0'
 DVSAVE   DS    16F
-DVDCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=GM
+DVDCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=GM,EXLST=DVEXL
+         DS    0F
+DVEXL    DC    X'87',AL3(DVJFCB)
+DVJFCB   DS    CL176
          END   BCPLIO
