@@ -1,7 +1,7 @@
 # M1 native BCPL regression gate — dynamic streams
 
 Status: **contract accepted; cases planned, not yet implemented or run**.
-Milestone: [BCPLIO dynamic stream](../docs/Milestone-BCPLIO-dynamic-stream.md).
+Milestone: [BCPLIO dynamic stream](../../docs/Milestone-BCPLIO-dynamic-stream.md).
 The M1 gate requires the real native BCPL source-to-MVS execution path,
 not only the private assembler ABI probes.
 
