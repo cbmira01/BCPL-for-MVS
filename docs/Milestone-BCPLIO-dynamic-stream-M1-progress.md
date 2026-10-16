@@ -160,3 +160,19 @@ M1 acceptance now requires compiled-BCPL panel tests for the new public FIND fea
 ## Development-only BCPL regression linkage staged — 2026-10-16
 
 Added `tools/native/run-dynamic-regression` (invoke with `bash`), requiring explicit `BCPL_DYNAMIC_MAIN_MEMBER=BCPLM3..BCPLM7`. It selects existing candidate mode with development BCPLMAIN and BCPLIO from NATIVE.DEVOBJ, BCPLBYTE/BCPLAPT from NATIVE.DEVOBJ, and BLIB/BCPLMEM from production NATIVE.OBJ, with explicit COREOBJ DD routing fixed in `prepare-runtime-pds-regression.py`. Normal native regression defaults are unchanged. This mode has **not been executed** in the current M1 checkpoint; do not claim a candidate BCPLMAIN object exists in PDS after rebuild. Next operator work: verify/rebuild source-derived compatible BCPLMAIN candidate, inspect generated JCL and link map, then run legacy stream cases 114..119 in development mode. BCPL 124..130 cases remain planned, not created.
+
+
+## Development BCPLMAIN candidate absent; source rebuild prepared
+
+Operator `tools/datasets/dspal ls native_DEVOBJ` returned only `BCPLAPT`, `BCPLBYTE`, and `BCPLIO`; **no BCPLM3..BCPLM7** development object is installed. Consequently, the dynamic regression launcher cannot yet execute. Rather than migrate a binary, the repository retains `native-compiler/asm/bcplmain-d7-candidate.asm`, a modular BCPLMAIN candidate. A modern dataset-qualified JCL source `native-compiler/jcl/build-native-bcplm7-for-dynamic.jcl` has been added to assemble NATIVE.ASM(BCPLM7) and install only NATIVE.DEVOBJ(BCPLM7). This is an *unverified source-build candidate*, not new design acceptance. Its ability to link against current BCPLIO and execute regressions must be established.
+
+Operator procedure (staging and build only, no production OBJ writes):
+
+```sh
+git pull --ff-only
+tools/datasets/dspal put native_asm BCPLM7 native-compiler/asm/bcplmain-d7-candidate.asm
+tools/datasets/dspal put native_jcl BLDD7MN native-compiler/jcl/build-native-bcplm7-for-dynamic.jcl
+tools/datasets/dspal submit native_jcl BLDD7MN
+```
+
+Require IFOX assembler and PUTMAIN RC=0000, confirm `native_DEVOBJ` lists BCPLM7, then run `BCPL_DYNAMIC_MAIN_MEMBER=BCPLM7 bash tools/native/run-dynamic-regression 114 119`. Inspect the generated JCL's OBJ/DEVOBJ/COREOBJ routing and link map, along with all regression results. If source build or linkage fails, diagnose before attempting dynamic FIND integration. D7 object presence and compatibility **not yet verified**.
