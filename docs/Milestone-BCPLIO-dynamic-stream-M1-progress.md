@@ -302,3 +302,8 @@ Operator staged BCPLIO ASM (JOB 5705), DQFPRB ASM (JOB 5706), DQFPRB JCL (JOB 57
 ## JOB 5714: corrected FINDOUTPUT development BCPLIO build passes (2026-10-16)
 
 Operator restaged BCPLIO ASM via JOB 5711 and submitted BLDDEVI launcher JOB 5713, payload JOB **5714**. ASMIO IFOX00 RC=0000, PUTIO IEBGENER RC=0000, zero flagged assembler statements and severity zero. This resolves JOB 5710's invalid `DFFRESULT` IFOX symbol by using `DFFRES`; current BCPLIO object is installed in DEVOBJ(BCPLIO) only. **DQFPRB has not yet been executed against this build**. Next submit the already staged `native_jcl DQFPRB`; require ASMDQ/LKED/GO RC0 and check actual REPORT `DQFIND OUTPUT SUCCESS`. Preserve production OBJ.
+
+
+## JOB 5717: DQFIND private runtime probe RC0 (2026-10-16)
+
+Operator submitted staged DQFPRB after successful JOB 5714 DEVOBJ build. Launcher JOB 5716, payload **JOB 5717**: ASMDQ IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; zero flagged assembler statements, highest severity zero. The DQFPRB assertions run through DQFIND("REPORT"), HLOOK/DQPUT/DQCLOSE/HCLOSE/DREL, stale-handle rejection, and missing DD `ZZZZZZZZ` rejection. **REPORT SYSOUT record content is not yet verified**; request full report or grep for an actual `DQFIND OUTPUT SUCCESS` line, not assembler literal. This is a private direct-call probe; actual BCPL `IOFOUT` dispatch and SELECTOUTPUT/WRCH/ENDWRITE dynamic integration remain untested. No production OBJ changes.
