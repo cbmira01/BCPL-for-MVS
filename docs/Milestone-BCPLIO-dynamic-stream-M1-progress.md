@@ -176,3 +176,8 @@ tools/datasets/dspal submit native_jcl BLDD7MN
 ```
 
 Require IFOX assembler and PUTMAIN RC=0000, confirm `native_DEVOBJ` lists BCPLM7, then run `BCPL_DYNAMIC_MAIN_MEMBER=BCPLM7 bash tools/native/run-dynamic-regression 114 119`. Inspect the generated JCL's OBJ/DEVOBJ/COREOBJ routing and link map, along with all regression results. If source build or linkage fails, diagnose before attempting dynamic FIND integration. D7 object presence and compatibility **not yet verified**.
+
+
+## D7 modular rebuild and preliminary BCPL regression — 2026-10-16
+
+Operator staged NATIVE.ASM(BCPLM7) JOB 5622 and NATIVE.JCL(BLDD7MN) JOB 5623; BLDDEV D7 payload **JOB 5626**: ASMMMAIN IFOX00 RC=0000, PUTMAIN IEBGENER RC=0000 (0 flagged statements). NATIVE.DEVOBJ then enumerated BCPLAPT, BCPLBYTE, BCPLIO, BCPLM7. Invoked `BCPL_DYNAMIC_MAIN_MEMBER=BCPLM7 bash tools/native/run-dynamic-regression 114 119`. Results: **PASS 116,117,118; FAIL 114 (RG114R JOB 5629), 115 (RG115R JOB 5631), 119 (RG119R JOB 5639)**. All failing applications assembled and link-edited RC=0000, but their GO steps abended (no system code in supplied short summaries). The 114,115,119 regression fixtures include `expected-alt.txt`, which requests a BCPALT output DD; this is a correlation, not yet proof of root cause. Do not accept development BCPLIO compatibility or add new FIND tests based on this partial pass. Obtain the complete report for JOB 5629 (and perhaps 5631), including IEF450I and SYSUDUMP, before source modifications. The current `prepare-runtime-pds-regression.py` generator includes BCPALT DD if `expected-alt.txt` is present, so absence of allocation is not yet established. No production OBJ write occurred.
