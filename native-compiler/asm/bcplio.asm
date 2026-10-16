@@ -196,6 +196,93 @@ IOSERET  LM    0,9,IOESAVE
          DROP  10
 *
 *
+* M1 STAGING: DD-name normalization; not yet wired to FIND.
+* Private R14 call: R1=BCPL counted-string byte address,
+* R2=eight-byte caller buffer, R15=0 success/8 invalid.
+* Uppercase ASCII-like BCPL names in host EBCDIC, then pad.
+* R10 clobbered. All other registers preserved except R15.
+* MVS DD first character is alphabetic/@/#/$; remaining
+* characters may also be decimal digits. Empty or >8 fails.
+*
+IONORM   BALR  10,0
+         USING *,10
+         STM   0,9,IONMSAV
+         STM   11,14,IONMSAV+44
+         LR    4,1
+         LR    5,2
+         SR    3,3
+         IC    3,0(4)
+         LTR   3,3
+         BZ    IONMBAD
+         CH    3,IONMMAX
+         BH    IONMBAD
+         MVI   0(5),C' '
+         MVC   1(7,5),0(5)
+         LA    4,1(4)
+         SR    6,6
+IONMLOOP SR    7,7
+         IC    7,0(4)
+* Lowercase EBCDIC a-i, j-r, s-z => uppercase (OR X'40').
+         CLI   0(4),X'81'
+         BL    IONMUP
+         CLI   0(4),X'89'
+         BNH   IONMLOW
+         CLI   0(4),X'91'
+         BL    IONMUP
+         CLI   0(4),X'99'
+         BNH   IONMLOW
+         CLI   0(4),X'A2'
+         BL    IONMUP
+         CLI   0(4),X'A9'
+         BH    IONMUP
+IONMLOW  O     7,IONMCASE
+IONMUP   STC   7,0(5)
+* All positions allow A-I, J-R, S-Z and @/#/$.
+         CLI   0(5),X'C1'
+         BL    IONMSPEC
+         CLI   0(5),X'C9'
+         BNH   IONMOK
+         CLI   0(5),X'D1'
+         BL    IONMSPEC
+         CLI   0(5),X'D9'
+         BNH   IONMOK
+         CLI   0(5),X'E2'
+         BL    IONMSPEC
+         CLI   0(5),X'E9'
+         BNH   IONMOK
+IONMSPEC CLI   0(5),X'7C'
+         BE    IONMOK
+         CLI   0(5),X'7B'
+         BE    IONMOK
+         CLI   0(5),X'5B'
+         BE    IONMOK
+         LTR   6,6
+         BZ    IONMBAD
+         CLI   0(5),X'F0'
+         BL    IONMBAD
+         CLI   0(5),X'F9'
+         BH    IONMBAD
+IONMOK   LA    6,1(6)
+         LA    4,1(4)
+         LA    5,1(5)
+         CR    6,3
+         BL    IONMLOOP
+         SR    15,15
+         B     IONMRET
+IONMBAD  LA    15,8
+IONMRET  ST    15,IONMRC
+         LM    0,9,IONMSAV
+         LM    11,14,IONMSAV+44
+         L     15,IONMRC
+         BR    14
+         DROP  10
+         DS    0F
+IONMCASE DC    X'00000040'
+IONMMAX  DC    H'8'
+         DS    0F
+IONMRC   DC    F'0'
+IONMSAV  DS    16F
+*
 * BCPL output-stream ABI. These five entries use R6 linkage, R7
 * argument/result, restore R4 from 0(R5), clobber R10.
 * Handles are the word addresses of private IOCTL1/IOCTL2.
