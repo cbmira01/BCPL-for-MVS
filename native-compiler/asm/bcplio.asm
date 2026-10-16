@@ -108,7 +108,7 @@ IOWRCH   LR    4,10
          STM   11,15,IOSAVE+44
 * Independent high base for IO2BUF, IO2DCB and IODCB.
          LA    11,3584(10)
-         USING IOWRCH+3586,11
+         USING IOWRCH+3588,11
          CLI   IOSELCT,X'03'
          BE    IOWDYN
          CLI   IOSELCT,X'02'
@@ -159,6 +159,7 @@ IOW2PUT  PUT   IO2DCB,IO2BUF
          XC    IO2POS(4),IO2POS
          MVI   IO2BUF,C' '
          MVC   IO2BUF+1(131),IO2BUF
+         B     IOWRET
 * Dynamic stream buffer occupies descriptor-owned region +0..131;
 * current fill count at region +236. Handle never dereferenced.
 IOWDYN   LR    9,10
