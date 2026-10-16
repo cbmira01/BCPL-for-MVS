@@ -140,11 +140,11 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
          LM    12,15,IOSAVE+48
          L     4,0(5)
          LA    7,12
-* R11 is still our private high base for both operands.
+* IOOVHAND needs high R11 while IOSAVE now needs low R10.
          L     14,IOOVHAND
-         L     10,IOSAVE+40
-* Restore the caller's R11 only after the final static load.
          L     11,IOSAVE+44
+* Keep R10 until the last IOSAVE access.
+         L     10,IOSAVE+40
          BCR   15,14
 IOW2     C     7,IOLF
          BE    IOW2PUT
@@ -203,9 +203,10 @@ IOWRET   LA    11,3584(10)
          LM    0,9,IOSAVE
          LM    12,15,IOSAVE+48
          L     4,0(5)
-         L     10,IOSAVE+40
-* R11 owns IOSAVE addressability; restore it last.
+* IOSAVE moved within R10 reach; assembler selects R10.
+* Restore caller R11 before restoring the R10 address base.
          L     11,IOSAVE+44
+         L     10,IOSAVE+40
          BCR   15,6
          LTORG
          DROP  11
