@@ -98,14 +98,6 @@ IFDPARM  XC    IOPARM(4),IOPARM
          DROP  11
          DROP  10
 *
-* Early save areas must be reachable BEFORE the high base exists.
-* Keep these four 64-byte images in the first 4K of BCPLIO.
-         DS    0F
-IOSAVE   DS    16F
-IOISAVE  DS    16F
-IOFSAVE  DS    16F
-IOESAVE  DS    16F
-*
 * BCPL-facing candidate: R7 holds a character code.
 * Save caller registers before all output paths, including PUT.
 IOWRCH   LR    4,10
@@ -219,6 +211,13 @@ IOWRET   LA    11,3584(10)
          DROP  11
          DROP  10
 *
+* Keep early entry save images within forward R10 reach.
+* Storage lies after IOWRCH, not before its BALR base.
+         DS    0F
+IOSAVE   DS    16F
+IOISAVE  DS    16F
+IOFSAVE  DS    16F
+*
 * Native diagnostic accessor, not a BCPL global-vector service.
 IOSTAT   BALR  10,0
          USING *,10
@@ -234,6 +233,9 @@ IOSEL    BALR  10,0
          USING *,10
          STM   0,9,IOESAVE
          STM   11,14,IOESAVE+44
+* Secondary base reaches IO2BUF after code expansion.
+         LA    11,3584(10)
+         USING IOSEL+3586,11
          LR    15,1
          CLI   IOACTIVE,X'01'
          BNE   IOSEBAD
@@ -263,6 +265,7 @@ IOSEBAD  LA    15,8
 IOSERET  LM    0,9,IOESAVE
          LM    11,14,IOESAVE+44
          BR    14
+         DROP  11
          DROP  10
 *
 *
@@ -1233,7 +1236,7 @@ IOOVHAND DC    F'0'
 IOOVCODE DC    F'12'
 IOACTIVE DC    X'00'
          DS    0F
-* Early entry save images are placed directly after IOFIN.
+IOESAVE  DS    16F
 IOOSAVE  DS    16F
 IODSAVE  DS    16F
 IOBUF    DS    CL132
