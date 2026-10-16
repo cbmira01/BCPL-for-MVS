@@ -1,9 +1,13 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: proposed / not started  
+Status: M0 accepted 2026-10-16; M1 not started  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M0 gate decision (2026-10-16)
+
+**ACCEPTED.** The owner approved stable non-recycled opaque handle identities, duplicate FIND returning the same active handle, lowercase-to-uppercase DD-name normalization, zero/non-destructive ordinary FIND failure, and preservation of existing stream semantics. Baseline: commit `73a6591d7dc574603b19ea025a3d8c9a428f5e36`, native regression 00–123: **123 PASS, 0 FAIL, 1 expected SKIP (083)**. Production default links BCPLMAIN from OBJ and does not include BCPLIO separately; historical Gate D D6 modular candidate acceptance is distinct. Detailed contract, implementation map, evidentiary limitations and future tests: [Milestone-BCPLIO-dynamic-stream-M0-contract.md](Milestone-BCPLIO-dynamic-stream-M0-contract.md). No M1 implementation began as part of M0 acceptance.
 
 ## Purpose and decision
 
