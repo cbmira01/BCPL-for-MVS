@@ -206,6 +206,20 @@ def main() -> int:
             skipped += 1
             print(f"SKIP  {nn}  {case_name} (source-only instrumentation)", flush=True)
             continue
+        if (REGRESSION / case_name / "candidate-only.txt").is_file():
+            candidate_env = (
+                installed_pds
+                and os.environ.get("BCPL_RUNTIME_LIBRARY") == "DEVOBJ"
+                and os.environ.get("BCPL_RUNTIME_CANDIDATE") == "1"
+                and os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER") == "BCPLM6"
+            )
+            if not candidate_env:
+                skipped += 1
+                print(
+                    f"SKIP  {nn}  {case_name} (requires DEVOBJ BCPLM6)",
+                    flush=True,
+                )
+                continue
 
         print(f"RUN   {nn}  {case_name}", flush=True)
         with log.open("w", encoding="utf-8") as handle:
