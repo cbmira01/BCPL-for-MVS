@@ -112,3 +112,8 @@ tools/datasets/dspal submit native_jcl IOHPRB
 ```
 
 M1 acceptance remains pending; all work is isolated to NATIVE.DEVOBJ and repository sources.
+
+
+## Stable handle MVS acceptance — 2026-10-16
+
+Operator staged NATIVE.ASM(BCPLIO) JOB 5596, NATIVE.ASM(IOHPRB) JOB 5597, and NATIVE.JCL(IOHPRB) JOB 5598. Resident BLDDEVI payload **JOB 5601**: ASMIO IFOX00 RC=0000 and PUTIO IEBGENER RC=0000, zero flagged statements. IOHPRB payload **JOB 5604**: ASMHND IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000, zero flagged statements. The standalone probe passed creation/lookup, close and DREL, stale-handle rejection after allocating a second descriptor, distinct handle identity, and double-close rejection. **Accept isolated stable-handle checkpoint.** IOFIN reclamation, conditional failure edge cases, dynamic DD discovery and FIND integration are still pending. No production OBJ promotion.
