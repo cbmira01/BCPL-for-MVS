@@ -145,3 +145,8 @@ Production NATIVE.OBJ remains out of scope. M1 not yet accepted.
 Operator rebuilt BCPLIO into DEVOBJ with BLDDEVI payload JOB 5610 (ASMIO=0000, PUTIO=0000). IODVPRB payload JOB 5613 completed ASMDV=0000 and LKED=0000, but **GO ABEND S240-08** (IEC155I 240-08 in IGC0006D). The scratch DCB originally specified no EXLST. RDJFCB requires a JFCB exit-list entry and target area; lacking it raises the S240-08 condition. The dump includes a static message string about blank DDNAME, but that is *not* the emitted JES diagnostic and should not be diagnosed as the cause without further evidence. IBM documents 240-08 as absent DCB EXLST address in this interface. The analogous ICINT v19 templates use EXLST=GENEXL and a X'87' JFCB exit entry to a 176-byte work area.
 
 Corrective commit 9489142 adds EXLST=DVEXL to DVDCB, a fullword-aligned DVEXL DC X'87',AL3(DVJFCB), and DVJFCB DS CL176. Not yet reassembled or tested. Re-stage BCPLIO, rebuild BLDDEVI and rerun IODVPRB, recording all steps. Do not claim RDJFCB checkpoint acceptance until GO RC=0000.
+
+
+## RDJFCB discovery acceptance — 2026-10-16
+
+Operator restaged corrected BCPLIO as JOB 5614. BLDDEVI payload **JOB 5617**: ASMIO IFOX00 RC=0000, PUTIO IEBGENER RC=0000; zero assembler statements flagged. IODVPRB payload **JOB 5620**: ASMDV IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; zero statements flagged. The GO result accepts the probe assertions: allocated CUSTOMER DD succeeds, absent ZXYZ1234 DD fails gracefully, and repeated CUSTOMER lookup succeeds. The previous S240-08 (JOB 5613) was resolved by supplying the JFCB exit list and 176-byte JFCB area. **Isolated DDVERIFY checkpoint accepted.** No FIND wiring, QSAM OPEN, production OBJ promotion, or whole-M1 acceptance is asserted.
