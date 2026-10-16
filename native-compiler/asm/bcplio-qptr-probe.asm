@@ -43,8 +43,9 @@ BADPTR   LA    8,12
 BADOPEN  LA    8,16
 FINISH   ST    8,RESULT
          L     13,OLDSAVE+4
-         LM    14,12,12(13)
          L     15,RESULT
+         ST    15,16(13)
+         LM    14,12,12(13)
          BR    14
          LTORG
 BEFORE   DS    F
