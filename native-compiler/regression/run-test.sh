@@ -36,6 +36,15 @@ fi
 
 case_dir=${matches[0]}
 case_name=$(basename "$case_dir")
+if [[ -f "$case_dir/candidate-only.txt" ]]; then
+    if [[ ${BCPL_RUNTIME_PDS:-1} != 1 ||
+          ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
+          ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
+          ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
+        echo "run-test: $case_name requires DEVOBJ BCPLM6 candidate" >&2
+        exit 64
+    fi
+fi
 source="$case_dir/source.bcpl"
 library="$case_dir/library.bcpl"
 # Whole-library tests may reference the shared canonical native BLIB unit.
@@ -619,6 +628,17 @@ show_alt_output() {
         --destination BCPALT
 }
 
+show_named_output() {
+    local dd fixture
+    for dd in REPORT REPORT2; do
+        fixture="$case_dir/expected-${dd,,}.txt"
+        [[ -f "$fixture" ]] || continue
+        python3 "$root/tools/checks/check-combined-jes-records.py" \
+            "$fixture" "$work/job-report.txt" --destination "$dd" ||
+            return 1
+    done
+}
+
 show_result() {
     local objective=$1
     local termination=$2
@@ -661,6 +681,11 @@ while (( SECONDS <= deadline )); do
 
         if ! show_alt_output; then
             echo "run-test: alternate output mismatch" >&2
+            show_result "FAIL" "NORMAL" "FAIL"
+            exit 1
+        fi
+        if ! show_named_output; then
+            echo "run-test: named DD output mismatch" >&2
             show_result "FAIL" "NORMAL" "FAIL"
             exit 1
         fi
