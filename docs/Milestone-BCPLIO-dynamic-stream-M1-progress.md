@@ -22,3 +22,27 @@ Contract: native R14-linked private call, R1 byte address of a counted BCPL stri
 ## Gate status
 
 M1 **not accepted**. Required exit remains arbitrary third input/output DD names, absent-DD nonfatal return zero, and no static allowlist, with integrated candidate MVS evidence and baseline regression preservation.
+
+
+## Second implementation slice: isolated IFOX/IEWL/GO probe
+
+- Exported `IONORM` as a native-private BCPLIO ENTRY (not a new BCPL G slot).
+- Added `native-compiler/asm/bcplio-name-probe.asm` (`IONMPRB`) and `native-compiler/jcl/bcplio-name-probe.jcl`.
+- Probe checks mixed/lowercase `customer` and `RepOrt`, digit after a letter, zero-length, over-eight-character, and digit-leading name. Expects native RC=0 for accepted and RC=8 for rejected names, with exact normalized eight-byte EBCDIC comparisons.
+- JCL references `HERC02.BCPL.NATIVE.ASM(IONMPRB)` and links `HERC02.BCPL.NATIVE.DEVOBJ(BCPLIO)`; no production object library modifications.
+- Do **not** treat file creation or static inspection as assembler or runtime acceptance. IFOX and IEWL have not run for these additions.
+
+Operator execution sequence (from repository root after `git pull --ff-only`):
+
+```sh
+tools/datasets/dspal put NATIVE_ASM BCPLIO native-compiler/asm/bcplio.asm
+tools/datasets/dspal put NATIVE_ASM IONMPRB native-compiler/asm/bcplio-name-probe.asm
+tools/datasets/dspal put NATIVE_JCL IONMPRB native-compiler/jcl/bcplio-name-probe.jcl
+tools/datasets/dspal submit NATIVE_JCL BLDDEVI
+# Verify payload ASMIO and PUTIO RC=0000, no severe IFOX diagnostics.
+tools/datasets/dspal submit NATIVE_JCL IONMPRB
+# Verify payload ASMNORM, LKED, GO all RC=0000.
+# Confirm IEWL MAP/XREF resolves IONORM to DEVOBJ(BCPLIO).
+```
+
+Before running, verify the installed `BLDDEVI` member still targets the current `NATIVE.ASM` and `NATIVE.DEVOBJ` datasets. Preserve JES job numbers and failure listing if anything disagrees. The normalizer remains disconnected from FINDINPUT/FINDOUTPUT. M1 gate remains open.
