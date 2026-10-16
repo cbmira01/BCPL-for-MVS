@@ -322,7 +322,12 @@ IOFALT   CLI   0(14),X'06'
 IOFOK2   LA    7,IOCTL2
          SRL   7,2
          B     IOFRET
-IOFBAD   SR    7,7
+IOFBAD   LR    1,14
+         L     15,=A(DQFIND)
+         BALR  14,15
+* DQFIND returns a word-address stable handle, or zero.
+         LR    7,15
+* DQFIND uses independent R11 base and preserves caller R10.
 IOFRET   ST    7,IORESULT
          LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
@@ -330,6 +335,7 @@ IOFRET   ST    7,IORESULT
          L     4,0(5)
          L     10,IOOSAVE+40
          BCR   15,6
+         LTORG
          DROP  10
 *
 IOOUT    LR    4,10
@@ -1185,6 +1191,67 @@ DQSRC    DC    F'0'
 DQRESULT DC    F'0'
 DQSAVE   DS    16F
 DQTEMP   DCB   DDNAME=DUMMY,DSORG=PS,MACRF=PM
+*
+* M1 programmer-visible FINDOUTPUT dynamic fallback.
+* R1 = BCPL counted string byte address, R15 = stable handle or 0.
+* R11 is local base, R14 is call return; nested private helpers
+* preserve R11 and R14. Native R10 remains caller-owned here.
+* DDVERIFY confirms JCL DD allocation before QSAM OPEN.
+* No selection, WRCH or ENDWRITE wiring at this gate.
+         ENTRY DQFIND
+DQFIND   BALR  11,0
+         USING *,11
+         STM   0,10,DFFSAV
+         STM   12,14,DFFSAV+48
+         ST    1,DFFARG
+         LA    2,DFFNAME
+         L     15,=A(IONORM)
+         BALR  14,15
+         LTR   15,15
+         BNZ   DFFBAD
+         LA    1,DFFNAME
+         L     15,=A(DDVERIFY)
+         BALR  14,15
+         LTR   15,15
+         BNZ   DFFBAD
+         LA    2,DFFNAME
+         LA    3,2
+         L     15,=A(DALLOC)
+         BALR  14,15
+         LTR   15,15
+         BZ    DFFBAD
+         ST    15,DFFDESC
+         LR    1,15
+         L     15,=A(DQOPEN)
+         BALR  14,15
+         LTR   15,15
+         BNZ   DFFCLEAN
+         L     1,DFFDESC
+         L     15,=A(HNEW)
+         BALR  14,15
+         LTR   15,15
+         BZ    DFFCLOSE
+         ST    15,DFFRESULT
+         B     DFFRET
+DFFCLOSE L     1,DFFDESC
+         L     15,=A(DQCLOSE)
+         BALR  14,15
+DFFCLEAN L     1,DFFDESC
+         L     15,=A(DREL)
+         BALR  14,15
+DFFBAD   XC    DFFRESULT(4),DFFRESULT
+DFFRET   LM    0,10,DFFSAV
+         LM    12,14,DFFSAV+48
+         L     15,DFFRESULT
+         BR    14
+         LTORG
+         DROP  11
+         DS    0F
+DFFNAME  DC    CL8'        '
+DFFARG   DC    F'0'
+DFFDESC  DC    F'0'
+DFFRESULT DC   F'0'
+DFFSAV   DS    16F
 *
 * M1 PRIVATE NON-REUSED HANDLE IDENTITIES (NOT WIRED TO FIND).
 * HNEW R1=descriptor, R15=BCPL word-address handle or 0.
