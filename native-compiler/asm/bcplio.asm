@@ -133,8 +133,8 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
          L     14,IOOVHAND
          LTR   14,14
          BZ    IOWRET
-* Transfer once, never return. Restore caller R14 with LM, then
-* load callback into scratch R10 just before leaving module.
+* Nonreturning STOP(12): restore BCPL context and branch to
+* installed callback. Load static operands before restoring R11.
          LA    11,3584(10)
          LM    0,9,IOSAVE
          LM    12,15,IOSAVE+48
