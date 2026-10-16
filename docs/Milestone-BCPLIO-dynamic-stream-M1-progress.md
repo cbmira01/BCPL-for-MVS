@@ -425,3 +425,11 @@ Next narrow retest:
 2. Submit installed `native_jcl BLDDEVI` to assemble/install **only DEVOBJ(BCPLIO)**; demand ASMIO/PUTIO RC=0000 with zero flags.
 3. Run candidate test **113** with the exact four DEVOBJ environment variables and `--show-output`; acceptance requires GO RC=0012 (expected controlled STOP), no S0C1 and regression PASS. This test contains no expected logical output; it must not require a marker.
 4. If 113 passes, rerun candidate **124** then full **00..123**; require 123 PASS, 0 FAIL, 1 SKIP. Do not adjust the expected-go-rc fixture or excuse an abend. Production OBJ untouched.
+
+## JOB 6023 — corrected IOWRCH overflow exit accepted; test 113 PASS (2026-10-17)
+
+Operator pulled `ec847bf`, staged corrected `native-compiler/asm/bcplio.asm` as `HERC02.BCPL.NATIVE.ASM(BCPLIO)` via JOB **6020**, and submitted existing DEVOBJ-only `BLDDEVI` (launcher **6022**, payload **6023**). Job 6023 on 17 October 2026 00:24:13: `ASMIO IFOX00 RC=0000`, `PUTIO IEBGENER RC=0000`, zero flagged assembler statements and severity zero. The corrected `DEVOBJ(BCPLIO)` now contains source fix `ab97a19` (with comment clarification `ec847bf`): delay R11 restoration until after all R11-relative IOSAVE and IOOVHAND loads in both IOWRCH return paths. No other runtime PDS members reinstalled.
+
+Operator then ran `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 tools/native/run-regression 113 --show-output`; observed **PASS 1, FAIL 0, SKIP 0, TOTAL 1**. Test 113's expected GO RC fixture is `0012`, so runner PASS establishes that its controlled STOP(12) termination check succeeded rather than the earlier S0C1; separate GO job number / step summary not supplied. **Regression 113 targeted gate ACCEPTED.** This does not overwrite or negate historical failure evidence for JOB 5999, but documents its remediation.
+
+**Next gate still open:** reexecute candidate regression **124** and entire **00..123** with identical four environment variables, after this updated BCPLIO install. Require 124 PASS and baseline 123 PASS / 0 FAIL / 1 expected SKIP 083. Then proceed to compiled BCPL dynamic-input and independent DD attribution; milestone M1 remains active. Production NATIVE.OBJ untouched.
