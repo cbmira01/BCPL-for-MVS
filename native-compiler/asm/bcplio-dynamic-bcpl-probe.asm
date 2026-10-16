@@ -40,21 +40,21 @@ DQBPRB   CSECT
          L     15,=A(IOSOUT)
          BALR  6,15
          LA    8,MSG1
-         LA    9,12
+         LA    9,13
          BAL   14,SEND
 * Select second; leave partial text (flush on ENDWRITE).
          L     7,HAND2
          L     15,=A(IOSOUT)
          BALR  6,15
          LA    8,MSG2
-         LA    9,17
+         LA    9,16
          BAL   14,SEND
 * Select first again, write second complete line.
          L     7,HAND1
          L     15,=A(IOSOUT)
          BALR  6,15
          LA    8,MSG3
-         LA    9,12
+         LA    9,13
          BAL   14,SEND
 * ENDWRITE first: closes, tombstones, reverts to primary.
          L     15,=A(IOENDW)
@@ -81,7 +81,7 @@ DQBPRB   CSECT
          LTR   7,7
          BZ    FAIL
          LA    8,MSG4
-         LA    9,11
+         LA    9,12
          BAL   14,SEND
 * Flush primary on FIN.
          L     15,=A(IOFIN)
