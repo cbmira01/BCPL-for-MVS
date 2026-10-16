@@ -159,9 +159,11 @@ IOW2PUT  PUT   IO2DCB,IO2BUF
          MVC   IO2BUF+1(131),IO2BUF
 * Dynamic stream buffer occupies descriptor-owned region +0..131;
 * current fill count at region +236. Handle never dereferenced.
-IOWDYN   L     1,IOCURH
+IOWDYN   LR    9,10
+         L     1,IOCURH
          L     15,=A(HLOOK)
          BALR  14,15
+         LR    10,9
          LTR   15,15
          BZ    IOWFULL
          LR    2,15
@@ -180,11 +182,13 @@ IOWDPUT  LR    1,2
          LR    2,3
          L     15,=A(DQPUT)
          BALR  14,15
+         LR    10,9
          LTR   15,15
          BNZ   IOWFULL
          L     1,IOCURH
          L     15,=A(HLOOK)
          BALR  14,15
+         LR    10,9
          L     3,16(15)
          XC    236(4,3),236(3)
          MVI   0(3),C' '
@@ -411,9 +415,11 @@ IOSOUT   LR    4,10
          MVI   IOSELCT,X'02'
          ST    7,IOCURH
          B     IOSRET
-IOSDYN   LR    1,7
+IOSDYN   LR    9,10
+         LR    1,7
          L     15,=A(HLOOK)
          BALR  14,15
+         LR    10,9
          LTR   15,15
          BZ    IOSRET
          C     7,IOCURH
@@ -480,9 +486,11 @@ IOEWDONE MVI   IOSELCT,X'01'
          B     IOEWRET
 * ENDWRITE on selected dynamic handle. If buffered, flush first;
 * then close, invalidate handle, free descriptor, select primary.
-IOEWDYN  L     1,IOCURH
+IOEWDYN  LR    9,10
+         L     1,IOCURH
          L     15,=A(HLOOK)
          BALR  14,15
+         LR    10,9
          LTR   15,15
          BZ    IOEWDONE
          ST    15,IOWDESC
@@ -493,15 +501,19 @@ IOEWDYN  L     1,IOCURH
          LR    1,15
          L     15,=A(DQPUT)
          BALR  14,15
+         LR    10,9
 IOEDCLOS L     1,IOWDESC
          L     15,=A(DQCLOSE)
          BALR  14,15
+         LR    10,9
          L     1,IOCURH
          L     15,=A(HCLOSE)
          BALR  14,15
+         LR    10,9
          L     1,IOWDESC
          L     15,=A(DREL)
          BALR  14,15
+         LR    10,9
          B     IOEWDONE
 IOEWRET  LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
