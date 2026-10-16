@@ -1231,7 +1231,7 @@ DQFIND   BALR  11,0
          BALR  14,15
          LTR   15,15
          BZ    DFFCLOSE
-         ST    15,DFFRESULT
+         ST    15,DFFRES
          B     DFFRET
 DFFCLOSE L     1,DFFDESC
          L     15,=A(DQCLOSE)
@@ -1239,10 +1239,10 @@ DFFCLOSE L     1,DFFDESC
 DFFCLEAN L     1,DFFDESC
          L     15,=A(DREL)
          BALR  14,15
-DFFBAD   XC    DFFRESULT(4),DFFRESULT
+DFFBAD   XC    DFFRES(4),DFFRES
 DFFRET   LM    0,10,DFFSAV
          LM    12,14,DFFSAV+48
-         L     15,DFFRESULT
+         L     15,DFFRES
          BR    14
          LTORG
          DROP  11
@@ -1250,7 +1250,7 @@ DFFRET   LM    0,10,DFFSAV
 DFFNAME  DC    CL8'        '
 DFFARG   DC    F'0'
 DFFDESC  DC    F'0'
-DFFRESULT DC   F'0'
+DFFRES DC   F'0'
 DFFSAV   DS    16F
 *
 * M1 PRIVATE NON-REUSED HANDLE IDENTITIES (NOT WIRED TO FIND).
