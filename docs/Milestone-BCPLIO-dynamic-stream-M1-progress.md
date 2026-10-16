@@ -433,3 +433,24 @@ Operator pulled `ec847bf`, staged corrected `native-compiler/asm/bcplio.asm` as 
 Operator then ran `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 tools/native/run-regression 113 --show-output`; observed **PASS 1, FAIL 0, SKIP 0, TOTAL 1**. Test 113's expected GO RC fixture is `0012`, so runner PASS establishes that its controlled STOP(12) termination check succeeded rather than the earlier S0C1; separate GO job number / step summary not supplied. **Regression 113 targeted gate ACCEPTED.** This does not overwrite or negate historical failure evidence for JOB 5999, but documents its remediation.
 
 **Next gate still open:** reexecute candidate regression **124** and entire **00..123** with identical four environment variables, after this updated BCPLIO install. Require 124 PASS and baseline 123 PASS / 0 FAIL / 1 expected SKIP 083. Then proceed to compiled BCPL dynamic-input and independent DD attribution; milestone M1 remains active. Production NATIVE.OBJ untouched.
+
+## BCPL dynamic output and full native compatibility: ACCEPTED (2026-10-17)
+
+The operator pulled commit `fdc46d0` and executed the **same modular DEVOBJ candidate** after JOB 6023 had installed the corrected BCPLIO. Exact environment:
+
+```sh
+export BCPL_RUNTIME_PDS=1
+export BCPL_RUNTIME_LIBRARY=DEVOBJ
+export BCPL_RUNTIME_CANDIDATE=1
+export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+tools/native/run-regression 124 --show-output
+tools/native/run-regression 0 123
+```
+
+**Test 124** `124-dynamic-dd-selected-output`: **PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**. It compiles a BCPL source client and verifies expected logical GO output from two JCL-defined dynamic DD names and restored primary output against fixtures. The combined JES verifier remains *insufficient for independent physical DD attribution*.
+
+**Full baseline 00..123**: **PASS 123 / FAIL 0 / SKIP 1 (expected source-only test 083) / TOTAL 124**. Explicit results include test **113-overlong-output-rejected PASS** (controlled STOP(12) expected termination), tests **094..119** stream regressions all PASS, and other compiler/linkage/memory/BLIB/STOP regressions all PASS. This supersedes the failed earlier JOB 5999 full-panel result as the *current* accepted candidate while preserving that incident's history.
+
+**Acceptance decision:** compiled-BCPL dynamic-output **integration and baseline compatibility gates CLOSED/ACCEPTED** for the isolated `DEVOBJ(BCPLM6)+DEVOBJ(BCPLIO)` candidate. This demonstrates no regression relative to the original 00..123 panel at the tested revision, but does **not** accept the entire M1 milestone or authorize promotion into production `HERC02.BCPL.NATIVE.OBJ`.
+
+**Remaining M1 scope:** make dynamic DD-backed *input* work through compiled BCPL `FINDINPUT`/`SELECTINPUT`/`RDCH`/`UNRDCH`/`ENDREAD`; test absent/invalid DDs, simultaneously open streams (target >=12 per milestone), independent positions and EOF/unread handling, cleanup on FINISH/STOP, repeat opens and closed handles, failure paths and resource limits. Output tests should additionally establish DD attribution from independently identified JES spool files rather than rely solely on combined logical-record matching. Retest full candidate panel after any subsequent runtime edits.
