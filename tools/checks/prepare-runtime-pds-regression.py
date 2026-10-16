@@ -142,7 +142,9 @@ def main():
             raise ValueError(f"{logical} must be a binary FB80 object PDS")
         return core.full_dsn(config, spec)
     main_dsn = object_dsn(chosen)
-    service_dsn = object_dsn(devchosen)
+    service_dsn = object_dsn("NATIVE_DEVOBJ" if candidate == "1"
+                             else devchosen)
+    core_dsn = object_dsn("NATIVE_OBJ")
     job = f"RG{n:03d}R"
     cards = [
         *core.authenticated_job_card(config, job, "BCPL PDS REG",
@@ -165,14 +167,15 @@ def main():
         "//             COND=(0,NE,ASMAP)",
         f"//OBJ      DD DSN={main_dsn},DISP=SHR",
         f"//DEVOBJ   DD DSN={service_dsn},DISP=SHR",
+        *([f"//COREOBJ  DD DSN={core_dsn},DISP=SHR"] if candidate == "1" else []),
         "//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)",
         "//         DD *",
         f" INCLUDE OBJ({candidate_member})" if candidate == "1" else " INCLUDE OBJ(BCPLMAIN)",
         *([" INCLUDE OBJ(BCPLIO)"] if candidate == "1" else []),
         " INCLUDE DEVOBJ(BCPLBYTE)",
         " INCLUDE DEVOBJ(BCPLAPT)",
-        " INCLUDE OBJ(BCPLMEM)",
-        " INCLUDE OBJ(BLIB)",
+        " INCLUDE COREOBJ(BCPLMEM)" if candidate == "1" else " INCLUDE OBJ(BCPLMEM)",
+        " INCLUDE COREOBJ(BLIB)" if candidate == "1" else " INCLUDE OBJ(BLIB)",
         f" ENTRY {entry}",
         f" NAME RG{n:03d}OBJ(R)",
         "/*",
