@@ -60,3 +60,12 @@ Retest: synchronize the corrected source, `dspal put NATIVE_ASM BCPLIO native-co
 ## IONORM MVS validation accepted — 2026-10-16
 
 Operator evidence: installed corrected BCPLIO into NATIVE.DEVOBJ from BLDDEVI payload JOB 5583, IFOX ASMIO RC=0000, IEBGENER PUTIO RC=0000 (0 flagged statements). IONMPRB payload JOB 5586: ASMNORM RC=0000, IEWL LKED RC=0000, GO RC=0000. Link map resolves IONORM to the BCPLIO control section at location X'422'. Six normalization checks passed for customer, RepOrt, DD1, empty name, nine-byte name and digit-leading name. The prior addressability and unresolved-symbol problems are resolved. This accepts the **isolated name normalization helper**; no dynamic stream FIND integration, no M1 march acceptance, and no production OBJ modification are claimed.
+
+
+## M1 candidate descriptor registry — 2026-10-16
+
+Commit `432b4e8` adds non-wired, private native entries `DALLOC` and `DREL` to BCPLIO. `DALLOC` takes an eight-byte normalized name at R2 and a direction at R3, calls conditional `GETMAIN RC,LV=32`, clears a 32-byte descriptor, copies name/direction, and inserts it at the head of a singly linked active registry. Returns descriptor **byte address** in R15 on success, zero on allocation failure. `DREL` takes R1 descriptor address, searches the registry for identity without dereferencing the supplied untrusted pointer, unlinks on success, and uses matching `FREEMAIN R,LV=32,A=(1)`; R15=0 for success, 8 if absent. Both are R14-linked, use static shared save storage and clobber R10. Not reentrant.
+
+**Important:** DALLOC's returned address is strictly internal. It is **not** a BCPL stream handle and must never be exposed to BCPL. Stable non-reused external handle records, actual DCBs/buffers, RDJFCB discovery, QSAM OPEN, and integration with FIND/END/IOFIN are *not* implemented in this slice. This registry is an isolated substrate only; it deliberately does not change any current stream behavior.
+
+Code has only undergone source-layout inspection (all lines <=71 columns). IFOX assembly, linkage, and runtime validation **pending**. M1 gate remains open. Suggested next validation: stage NATIVE_ASM(BCPLIO), run installed NATIVE_JCL(BLDDEVI), inspect IFOX flagged statements and PUTIO RC; then write an independent registry harness verifying allocate/two inserts, direction/name contents, unlink head/middle, double release rejection, and conditional failure handling before wiring it into FIND.
