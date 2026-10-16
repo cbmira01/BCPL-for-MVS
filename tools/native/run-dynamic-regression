@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Development-only dynamic BCPLIO native regression entry point.
+# No production object writes. Uses existing D3 modular candidate link mode.
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+member="${BCPL_DYNAMIC_MAIN_MEMBER:-}"
+if [[ ! "$member" =~ ^BCPLM[3-7]$ ]]; then
+    echo "run-dynamic-regression: set BCPL_DYNAMIC_MAIN_MEMBER=BCPLM3..BCPLM7" >&2
+    echo "run-dynamic-regression: member must exist in NATIVE.DEVOBJ" >&2
+    echo "run-dynamic-regression: rebuild it from source if PDS was reset" >&2
+    exit 64
+fi
+echo "DYNAMIC REGRESSION: candidate BCPLMAIN=${member}" >&2
+echo "DYNAMIC REGRESSION: BCPLIO=DEVOBJ(BCPLIO)" >&2
+echo "DYNAMIC REGRESSION: BLIB/BCPLMEM=production OBJ" >&2
+exec env BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
+    BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER="$member" \
+    "$root/tools/native/run-regression" "$@"
