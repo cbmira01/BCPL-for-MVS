@@ -56,6 +56,11 @@ IOFIN    BALR  10,0
          USING *,10
          STM   0,9,IOFSAVE
          STM   11,15,IOFSAVE+44
+* Second base for DCBs beyond first 4K displacement.
+* R11 is already saved, and IOFIN restores it at return.
+         LA    11,4095(10)
+         LA    11,1(11)
+         USING IOFIN+4098,11
          CLI   IOACTIVE,X'01'
          BNE   IOFDONE
          L     1,IOPOS
