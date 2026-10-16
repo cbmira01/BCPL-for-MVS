@@ -679,7 +679,10 @@ FTRYIN1  EQU   *
 FFOUND   LA    7,INCTRL
          SRL   7,2
          B     FRET
-FNOTFND  SR    7,7
+FNOTFND  LR    1,14
+         L     15,=A(DIFIND)
+         BALR  14,15
+         LR    7,15
 FRET     ST    7,IINRES
          LM    0,15,IINSAVE
          L     7,IINRES
@@ -752,6 +755,19 @@ IOSELIN    LR    4,10
          LA    14,INCTRL
          SRL   14,2
          CR    7,14
+         BNE   SELDYN
+         ST    7,INCURR
+         B     SELIRET
+SELDYN   LR    9,10
+         LR    1,7
+         L     15,=A(HLOOK)
+         BALR  14,15
+         LR    10,9
+         LTR   15,15
+         BZ    SELIRET
+         CLI   7(15),X'01'
+         BNE   SELIRET
+         CLI   27(15),X'01'
          BNE   SELIRET
          ST    7,INCURR
          B     SELIRET
@@ -778,6 +794,10 @@ IORDCH    LR    4,10
          SRL   3,2
          CR    14,3
          BE    RD2START
+         LA    3,INCTRL
+         SRL   3,2
+         CR    14,3
+         BNE   RDYDYN
          CLI   INPUSH,X'01'
          BE    RDPUSH
          CLI   INEOF,X'01'
@@ -914,6 +934,81 @@ RD2RET   ST    7,IINRES
          L     4,0(5)
          BCR   15,6
 *
+* Dynamic input descriptors carry one FB80 record, cursor and
+* EOF/UNRDCH state independently at offsets +236..+251 in QSAM
+* region. R10 is the IORDCH base; HLOOK uses a private base.
+RDYDYN   LR    9,10
+         LR    1,14
+         L     15,=A(HLOOK)
+         BALR  14,15
+         LR    10,9
+         LTR   15,15
+         BZ    RDEND
+         CLI   7(15),X'01'
+         BNE   RDEND
+         CLI   27(15),X'01'
+         BNE   RDEND
+         LR    2,15
+         L     3,16(2)
+         CLI   245(3),X'01'
+         BE    RDYPUSH
+         CLI   247(3),X'01'
+         BE    RDYEOF
+         L     14,236(3)
+         C     14,240(3)
+         BL    RDYCHAR
+         CLI   244(3),X'01'
+         BE    RDYNL
+* The live descriptor is saved for the QSAM EODAD exit.
+         ST    2,INDESC
+         L     1,20(2)
+         LR    0,3
+         GET   (1),(0)
+         L     2,INDESC
+         L     3,16(2)
+* Preserve historical trailing-FB80-padding trimming policy.
+         LA    14,80
+         LA    2,79(3)
+RDYTRIM  LTR   14,14
+         BZ    RDYTRDN
+         CLI   0(2),C' '
+         BNE   RDYTRDN
+         BCTR  14,0
+         BCTR  2,0
+         B     RDYTRIM
+RDYTRDN  ST    14,240(3)
+         XC    236(4,3),236(3)
+         MVI   244(3),X'01'
+         LTR   14,14
+         BZ    RDYNL
+         SR    14,14
+         B     RDYCHAR
+RDYCHAR  LA    2,0(3,14)
+         SR    7,7
+         IC    7,0(2)
+         LA    14,1(14)
+         ST    14,236(3)
+         B     RDYRET
+RDYNL    MVI   244(3),X'00'
+         L     14,240(3)
+         ST    14,236(3)
+         LA    7,10
+         B     RDYRET
+RDYPUSH  MVI   245(3),X'00'
+         L     7,248(3)
+         B     RDYRET
+RDYEOF   L     7,INENDVAL
+RDYRET   ST    7,248(3)
+         MVI   246(3),X'01'
+         B     RDRETURN
+*
+* QSAM EODAD is reached from the dynamic GET and does not
+* return to GET's next instruction. R10 stays IORDCH base.
+INDYEOD  L     2,INDESC
+         L     3,16(2)
+         MVI   247(3),X'01'
+         B     RDYEOF
+*
 * UNRDCH repeats the last RDCH result once for this selected stream.
 IOUNRD   LR    4,10
          BALR  10,0
@@ -929,6 +1024,10 @@ IOUNRD   LR    4,10
          SRL   3,2
          CR    14,3
          BE    UNRD2
+         LA    3,INCTRL
+         SRL   3,2
+         CR    14,3
+         BNE   UNRDYN
          CLI   INSEEN,X'01'
          BNE   UNRDRET
          MVI   INPUSH,X'01'
@@ -940,6 +1039,20 @@ UNRDPM   CLI   PMSEEN,X'01'
 UNRD2    CLI   IN2SEEN,X'01'
          BNE   UNRDRET
          MVI   IN2PUSH,X'01'
+         B     UNRDRET
+UNRDYN   LR    9,10
+         LR    1,14
+         L     15,=A(HLOOK)
+         BALR  14,15
+         LR    10,9
+         LTR   15,15
+         BZ    UNRDRET
+         CLI   7(15),X'01'
+         BNE   UNRDRET
+         L     3,16(15)
+         CLI   246(3),X'01'
+         BNE   UNRDRET
+         MVI   245(3),X'01'
 UNRDRET  L     3,IINR3
          L     10,IINBASE
          L     4,0(5)
@@ -960,6 +1073,10 @@ IOENDRD  LR    4,10
          SRL   3,2
          CR    14,3
          BE    ENDR2
+         LA    3,INCTRL
+         SRL   3,2
+         CR    14,3
+         BNE   ENRDYN
          L     14,INCURR
          LTR   14,14
          BZ    ENDRDONE
@@ -988,6 +1105,31 @@ ENDR2CLR XC    INCURR(4),INCURR
          MVI   IN2EOF,X'00'
          MVI   IN2PUSH,X'00'
          MVI   IN2SEEN,X'00'
+         B     ENDRDONE
+* Close and invalidate the selected dynamic input handle.
+ENRDYN   LR    9,10
+         L     1,INCURR
+         L     15,=A(HLOOK)
+         BALR  14,15
+         LR    10,9
+         LTR   15,15
+         BZ    ENRDCLR
+         CLI   7(15),X'01'
+         BNE   ENRDCLR
+         ST    15,INDESC
+         LR    1,15
+         L     15,=A(DQICLOSE)
+         BALR  14,15
+         LR    10,9
+         L     1,INCURR
+         L     15,=A(HCLOSE)
+         BALR  14,15
+         LR    10,9
+         L     1,INDESC
+         L     15,=A(DREL)
+         BALR  14,15
+         LR    10,9
+ENRDCLR  XC    INCURR(4),INCURR
 ENDRDONE EQU   *
          LM    0,15,IINSAVE
          L     10,IINBASE
@@ -1008,6 +1150,7 @@ INATEND  MVI   INEOF,X'01'
          DS    0F
 IINBASE  DC    F'0'
 IINR3    DC    F'0'
+INDESC   DC    F'0'
 PMMASK   DC    X'7FFFFFFF'
 PMMAX    DC    F'100'
 PMCTRL   DC    F'3'
