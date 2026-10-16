@@ -394,3 +394,21 @@ The case is **candidate-only**; full default production panel skips 124 while co
 ### BCPLM6 candidate PDS staging clarification
 
 Verified the historical D6 candidate file exists at `native-compiler/asm/bcplmain-d6-candidate.asm`, and its old builder at `native-compiler/jcl/build-dev-bcplmain-d6.jcl` still names obsolete `HERC02.BCPL.SOURCE`/`HERC02.BCPL.DEVOBJ` datasets. Added `native-compiler/jcl/build-dev-bcplm6.jcl` with the current `HERC02.BCPL.NATIVE.ASM(BCPLM6)` input and `HERC02.BCPL.NATIVE.DEVOBJ(BCPLM6)` output, conditional upon IFOX success. Stage via `dspal put native_asm BCPLM6 native-compiler/asm/bcplmain-d6-candidate.asm`, `dspal put native_jcl BLDDEVM6 native-compiler/jcl/build-dev-bcplm6.jcl`, and submit `native_jcl BLDDEVM6` before test 124. The previous note's SOURCE/BLDD6MN instructions referred to pre-refactor paths and should not be used. No MVS build or compiled BCPL execution has yet been observed for the new candidate/build gate. This preserves accepted production OBJ and the existing independent BCPLIO DEVOBJ object.
+
+## Compiled BCPL candidate gate: JOB 5771 / native regression 124 PASS (2026-10-17)
+
+Operator pulled repo at commit `9691a60`. Staged `native-compiler/asm/bcplmain-d6-candidate.asm` into `HERC02.BCPL.NATIVE.ASM(BCPLM6)` (JOB **5767**) and `native-compiler/jcl/build-dev-bcplm6.jcl` into `HERC02.BCPL.NATIVE.JCL(BLDDEVM6)` (JOB **5768**). Submitted `BLDDEVM6` launcher JOB **5770**, payload **JOB 5771**, dated 17 Oct 2026 00:12:10-00:12:11. `ASMMMAIN IFOX00 RC=0000`; `PUTMAIN IEBGENER RC=0000`; no flagged assembler statements; highest severity 0. Installs **DEVOBJ(BCPLM6)** only; production OBJ unmodified.
+
+Operator then ran exactly:
+
+```sh
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 124 --show-output
+```
+
+Native-compiled BCPL regression **124-dynamic-dd-selected-output PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**. Its runner compiles source through resident Cambridge, then assembles/links/executes under the DEVOBJ modular BCPLM6+BCPLIO candidate, allocates JCL DDs REPORT/REPORT2, checks three named logical-output fixtures and post-link SYSPRINT success marker, and rejects missing DD and stale selection through BCPL globals. The stdout provided only the concise panel result, not detailed JES GO job numbers or separately extracted DD spool records; the regression result is operator evidence that its existing checks passed. The combined JES checker explicitly **does not prove physical DD attribution**, even though the expected per-name logical records match. **Compiled BCPL dynamic output test-124 gate ACCEPTED; entire M1 not accepted.**
+
+Next execute full baseline **00..123** under these identical DEVOBJ candidate environment variables (do not substitute default MIXED or OBJ paths), and record PASS/FAIL/SKIP and failing cases if any. Expected previous baseline: 123 PASS, 0 FAIL, expected SKIP 083; these numbers are not a prediction or current acceptance. Additional M1 exit obligations include dynamic FINDINPUT from compiled BCPL, absent-DD input, no static allowlist, repeat names/cleanup, and richer QSAM failure handling. No permission for production OBJ promotion.
