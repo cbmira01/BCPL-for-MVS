@@ -137,7 +137,8 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
 * load callback into scratch R10 just before leaving module.
          LA    11,3584(10)
          LM    0,9,IOSAVE
-         LM    11,15,IOSAVE+44
+         LM    12,15,IOSAVE+48
+         L     11,IOSAVE+44
          L     4,0(5)
          LA    7,12
          L     14,IOOVHAND
@@ -197,7 +198,8 @@ IOWDPUT  LR    1,2
          B     IOWRET
 IOWRET   LA    11,3584(10)
          LM    0,9,IOSAVE
-         LM    11,15,IOSAVE+44
+         LM    12,15,IOSAVE+48
+         L     11,IOSAVE+44
          L     4,0(5)
          L     10,IOSAVE+40
          BCR   15,6
