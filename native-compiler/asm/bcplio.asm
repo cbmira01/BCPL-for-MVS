@@ -477,6 +477,7 @@ IOEWDONE MVI   IOSELCT,X'01'
          LA    1,IOCTL1
          SRL   1,2
          ST    1,IOCURH
+         B     IOEWRET
 * ENDWRITE on selected dynamic handle. If buffered, flush first;
 * then close, invalidate handle, free descriptor, select primary.
 IOEWDYN  L     1,IOCURH
