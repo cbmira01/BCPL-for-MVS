@@ -744,6 +744,7 @@ IOSELIN    LR    4,10
          BALR  10,0
          USING *,10
          ST    4,IINBASE
+         STM   0,15,IINSAVE
          LA    14,PMCTRL
          SRL   14,2
          CR    7,14
@@ -774,7 +775,8 @@ SELDYN   LR    9,10
 SELPM    ST    7,INCURR
          B     SELIRET
 SEL2IN   ST    7,INCURR
-SELIRET  L     10,IINBASE
+SELIRET  LM    0,15,IINSAVE
+         L     10,IINBASE
          L     4,0(5)
          BCR   15,6
 *
@@ -1014,7 +1016,7 @@ IOUNRD   LR    4,10
          BALR  10,0
          USING *,10
          ST    4,IINBASE
-         ST    3,IINR3
+         STM   0,15,IINSAVE
          L     14,INCURR
          LA    3,PMCTRL
          SRL   3,2
@@ -1053,7 +1055,7 @@ UNRDYN   LR    9,10
          CLI   246(3),X'01'
          BNE   UNRDRET
          MVI   245(3),X'01'
-UNRDRET  L     3,IINR3
+UNRDRET  LM    0,15,IINSAVE
          L     10,IINBASE
          L     4,0(5)
          BCR   15,6
