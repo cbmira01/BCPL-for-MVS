@@ -364,3 +364,21 @@ Reinspection of the exact JOB 5755 runtime bytes at `000A586C`–`000A5884` iden
 ## JOB 5759: IOWRCH base-register mismatch identified
 
 DQBPRB JOB 5759: ASMDQ and LKED RC=0000, GO S0C4, PSW 000A587C. Dump code and data demonstrate R11 addressing two bytes past intended static data. IOWRCH begins at 000A570A with LR 4,10 then BALR 10,0, placing R10 at 000A570E. LA 11,3584(10) therefore places R11 at 000A650E (IOWRCH+3588), but source declared USING IOWRCH+3586,11. Actual IOSAVE is at 000A6548; LM 0,9,IOSAVE consequently reads from 000A654A. Dumped original bytes 009BE508 000A5550 00000040 009B0634 yield erroneous registers E508000A 55500000 0040009B 0634400A, exactly matching the EED Type1 register image. This establishes the two-byte addressing error, superseding previous speculative R5/R11 restore explanations. Commit a33d380 fixes the USING constant to +3588. A separate source-review fix inserts B IOWRET after IOW2PUT to prevent fallthrough into the dynamic branch. Changes are not yet MVS validated. Rebuild BCPLIO only into DEVOBJ; retest existing DQBPRB and inspect real DD records. Production OBJ unchanged.
+
+
+## JOBS 5763 and 5766: BCPL-facing dynamic selected-output integration gate ACCEPTED (2026-10-17)
+
+Operator updated local source from `442fca9` and staged corrected `BCPLIO` as JOB **5760**. DEVOBJ-only `BLDDEVI` launcher JOB 5762, payload **JOB 5763**, passed **ASMIO IFOX00 RC=0000; PUTIO IEBGENER RC=0000**, with zero flagged statements and highest assembler severity zero. This installed corrected `HERC02.BCPL.NATIVE.DEVOBJ(BCPLIO)`; no production `NATIVE.OBJ` change.
+
+Operator then submitted already staged `DQBPRB` (with post-call R5 frame assertions), launcher JOB 5765, payload **JOB 5766** on **17 Oct 2026 at 00:02**. `ASMDQ IFOX00 RC=0000`, `LKED IEWL RC=0000`, **GO RC=0000**, zero flagged statements. JES full report contains actual output records from GO DD streams, not just assembler literals:
+
+```text
+DQB PRIMARY
+DQB REPORT A
+DQB REPORT B
+DQB REPORT2 PART
+```
+
+This supports acceptance of this **assembler ABI integration gate** for BCPL-facing `IOFOUT` / `IOSOUT` / `IOWRCH` / `IOENDW` / `IOOUT` under R5/R6/R7 ABI. The test discovers REPORT and REPORT2 DD allocations, interleaves writes through selected handles, flushes line records and a partial final record, verifies stale handles through HLOOK, verifies primary output restored, and verifies frame preservation. The earlier repeated S0C4 is resolved by the correctly matched `USING IOWRCH+3588,11` secondary base, as evidenced by this passing runtime job (source correction `a33d380`). Static BCPALT newline fallthrough correction also assembled, but **not yet directly exercised** by this probe.
+
+**Gate accepted; milestone M1 remains active.** Explicitly still unverified: use from *compiled BCPL program source* through its compiler/linkage, compatibility of the full 124-test native regression suite with the new DEVOBJ module, legacy BCPALT path and WRAPOUTPUT semantics, dynamically selected streams left open at IOFIN, and invalid/closed handle behavior through the public SELECTOUTPUT entry (versus HLOOK-only checks). Complete these in separate development gates before any promotion to production NATIVE.OBJ.
