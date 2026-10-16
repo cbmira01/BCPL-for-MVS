@@ -1144,4 +1144,36 @@ HDESC    DC    F'0'
 HTARGET  DC    F'0'
 HRESULT  DC    F'0'
 HSAVE    DS    16F
+*
+* M1 DD ALLOCATION INQUIRY (PRIVATE, NOT WIRED TO FIND).
+* R1 -> normalized EBCDIC CL8 DD name; R15 0 allocated,
+* 8 otherwise. Nonreentrant: separate unopened scratch DCB.
+* This inquiry does not OPEN the DD, or allocate a stream.
+* RDJFCB uses the DCB at R2; the offset of the DDNAME
+* field is verified against the IFOX DCB macro expansion.
+*
+         ENTRY DDVERIFY
+DDVERIFY BALR  10,0
+         USING *,10
+         STM   0,9,DVSAVE
+         STM   11,14,DVSAVE+44
+         LR    7,1
+         MVC   DVDCB+40(8),0(7)
+         LA    2,DVDCB
+         RDJFCB ((2))
+         LTR   15,15
+         BZ    DVGOOD
+         LA    15,8
+         B     DVRET
+DVGOOD   SR    15,15
+DVRET    ST    15,DVRESULT
+         LM    0,9,DVSAVE
+         LM    11,14,DVSAVE+44
+         L     15,DVRESULT
+         BR    14
+         DROP  10
+         DS    0F
+DVRESULT DC    F'0'
+DVSAVE   DS    16F
+DVDCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=GM
          END   BCPLIO
