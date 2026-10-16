@@ -243,6 +243,26 @@ def main():
                     f"//{dd:<8} DD DATA,DLM={dlm}", *rows, dlm,
                 ]
                 anchor += len(rows) + 2
+        # Generic input DD DATA fixtures for the dynamic-FINDINPUT marches.
+        # Keep this independent of legacy BCPIN and BCPINB fixture names.
+        sources = sorted(case.glob("input-dd*.records"))
+        if len(sources) > 36:
+            raise ValueError("too many dynamic input DD fixtures")
+        for index, source in enumerate(sources):
+            dd = source.stem[len("input-"):].upper()
+            if not re.fullmatch(r"DD[A-Z0-9@$#]{1,6}", dd):
+                raise ValueError(f"invalid dynamic DD fixture: {source}")
+            delim = "X" + "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[index]
+            rows = source.read_text(encoding="ascii").splitlines()
+            if not rows or any(
+                len(row) > 80 or row.startswith(("//", "/*"))
+                or row == delim for row in rows
+            ):
+                raise ValueError(f"unsafe dynamic input fixture: {source}")
+            cards[anchor:anchor] = [
+                f"//{dd:<8} DD DATA,DLM={delim}", *rows, delim,
+            ]
+            anchor += len(rows) + 2
         if (case / "expected-alt.txt").is_file():
             cards.insert(anchor,
                 "//BCPALT   DD SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)")
