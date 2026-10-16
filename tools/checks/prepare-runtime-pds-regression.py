@@ -246,6 +246,15 @@ def main():
         if (case / "expected-alt.txt").is_file():
             cards.insert(anchor,
                 "//BCPALT   DD SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)")
+            anchor += 1
+        # Candidate-only BCPL dynamic stream regression destinations.
+        for dd in ("REPORT", "REPORT2"):
+            if (case / f"expected-{dd.lower()}.txt").is_file():
+                cards.insert(anchor, (
+                    f"//{dd:<8} DD SYSOUT=*,"
+                    "DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)"
+                ))
+                anchor += 1
         if n == 3:
             cards[cards.index("//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),")] = (
                 "//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,3),"
