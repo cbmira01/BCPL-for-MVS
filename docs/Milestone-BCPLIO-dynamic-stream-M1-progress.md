@@ -150,3 +150,8 @@ Corrective commit 9489142 adds EXLST=DVEXL to DVDCB, a fullword-aligned DVEXL DC
 ## RDJFCB discovery acceptance — 2026-10-16
 
 Operator restaged corrected BCPLIO as JOB 5614. BLDDEVI payload **JOB 5617**: ASMIO IFOX00 RC=0000, PUTIO IEBGENER RC=0000; zero assembler statements flagged. IODVPRB payload **JOB 5620**: ASMDV IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; zero statements flagged. The GO result accepts the probe assertions: allocated CUSTOMER DD succeeds, absent ZXYZ1234 DD fails gracefully, and repeated CUSTOMER lookup succeeds. The previous S240-08 (JOB 5613) was resolved by supplying the JFCB exit list and 176-byte JFCB area. **Isolated DDVERIFY checkpoint accepted.** No FIND wiring, QSAM OPEN, production OBJ promotion, or whole-M1 acceptance is asserted.
+
+
+## Explicit native BCPL regression gate adopted — 2026-10-16
+
+M1 acceptance now requires compiled-BCPL panel tests for the new public FIND features, not merely assembler helper probes. The milestone M1 exit clause was amended and M5 clarified as expansion of tests begun in M1. The planned contiguous IDs 124..130, with test 131 reserved for 13 streams (potential M2 gate), test DD configurations, expected evidence and runner/link-mode prerequisite are recorded in `native-compiler/regression/dynamic-stream-M1-test-plan.md`. These test cases are **planned, not created or executed**; existing 00..123 remain intact. Critical dependency: explicitly ensure the native regression runner tests DEVOBJ BCPLIO rather than assuming its currently monolithic BCPLMAIN path exercises the newly staged routines. The M1 gate remains open.
