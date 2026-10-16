@@ -979,6 +979,18 @@ IODCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 IO2BUF   DS    CL132
 IO2DCB   DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
 *
+* M1 PRIVATE DIAGNOSTIC ONLY. IO2PTR R15=IO2DCB+48 contents.
+* Read-only snapshot of QSAM PUT exit pointer; R1/R10 clobbered.
+* Never called from BCPL entry points or normal I/O paths.
+         ENTRY IO2PTR
+IO2PTR   BALR  10,0
+         USING *,10
+         L     1,=A(IO2DCB)
+         L     15,48(1)
+         BR    14
+         LTORG
+         DROP  10
+*
 * M1 PRIVATE DESCRIPTOR REGISTRY (NOT WIRED TO FIND).
 * DALLOC: R2=normalized 8-byte DD name, R3=direction 1/2.
 *         R15=allocated descriptor byte address or zero.
