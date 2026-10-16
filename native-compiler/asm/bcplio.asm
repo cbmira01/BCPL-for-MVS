@@ -1165,14 +1165,20 @@ DQCLOSE  BALR  10,0
          B     DQGOOD
          DROP  10
 *
-DQGOOD   SR    15,15
+DQGOOD   BALR  10,0
+         USING *,10
+         SR    15,15
          B     DQRET
+         DROP  10
 DQBAD    LA    15,8
-DQRET    ST    15,DQRESULT
+DQRET    BALR  10,0
+         USING *,10
+         ST    15,DQRESULT
          LM    0,9,DQSAVE
          LM    11,14,DQSAVE+44
          L     15,DQRESULT
          BR    14
+         DROP  10
          DS    0F
 DQARG    DC    F'0'
 DQSRC    DC    F'0'
