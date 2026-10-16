@@ -102,6 +102,8 @@ IOWRCH   LR    4,10
          ST    4,IOSAVE+40
          STM   0,9,IOSAVE
          STM   11,15,IOSAVE+44
+         CLI   IOSELCT,X'03'
+         BE    IOWDYN
          CLI   IOSELCT,X'02'
          BE    IOW2
          C     7,IOLF
@@ -148,11 +150,45 @@ IOW2PUT  PUT   IO2DCB,IO2BUF
          XC    IO2POS(4),IO2POS
          MVI   IO2BUF,C' '
          MVC   IO2BUF+1(131),IO2BUF
+* Dynamic stream buffer occupies descriptor-owned region +0..131;
+* current fill count at region +236. Handle never dereferenced.
+IOWDYN   L     1,IOCURH
+         L     15,=A(HLOOK)
+         BALR  14,15
+         LTR   15,15
+         BZ    IOWFULL
+         LR    2,15
+         L     3,16(2)
+         L     14,236(3)
+         C     7,IOLF
+         BE    IOWDPUT
+         C     14,IOMAX
+         BNL   IOWFULL
+         LA    4,0(3,14)
+         STC   7,0(4)
+         LA    14,1(14)
+         ST    14,236(3)
+         B     IOWRET
+IOWDPUT  LR    1,2
+         LR    2,3
+         L     15,=A(DQPUT)
+         BALR  14,15
+         LTR   15,15
+         BNZ   IOWFULL
+         L     1,IOCURH
+         L     15,=A(HLOOK)
+         BALR  14,15
+         L     3,16(15)
+         XC    236(4,3),236(3)
+         MVI   0(3),C' '
+         MVC   1(131,3),0(3)
+         B     IOWRET
 IOWRET   LM    0,9,IOSAVE
          LM    11,15,IOSAVE+44
          L     4,0(5)
          L     10,IOSAVE+40
          BCR   15,6
+         LTORG
          DROP  10
 *
 * Native diagnostic accessor, not a BCPL global-vector service.
@@ -361,11 +397,21 @@ IOSOUT   LR    4,10
          LA    14,IOCTL2
          SRL   14,2
          CR    7,14
-         BNE   IOSRET
+         BNE   IOSDYN
          CLI   IO2ACTV,X'01'
          BNE   IOSRET
          MVI   IOSELCT,X'02'
          ST    7,IOCURH
+         B     IOSRET
+IOSDYN   LR    1,7
+         L     15,=A(HLOOK)
+         BALR  14,15
+         LTR   15,15
+         BZ    IOSRET
+         C     7,IOCURH
+         BE    IOSRET
+         ST    7,IOCURH
+         MVI   IOSELCT,X'03'
          B     IOSRET
 IOSPRI   MVI   IOSELCT,X'01'
          ST    7,IOCURH
@@ -374,6 +420,7 @@ IOSRET   LM    0,9,IOOSAVE
          L     4,0(5)
          L     10,IOOSAVE+40
          BCR   15,6
+         LTORG
          DROP  10
 *
 * WRAPOUTPUT: only alternate stream emits an empty record on wrap.
@@ -405,6 +452,8 @@ IOENDW   LR    4,10
          ST    4,IOOSAVE+40
          STM   0,9,IOOSAVE
          STM   11,15,IOOSAVE+44
+         CLI   IOSELCT,X'03'
+         BE    IOEWDYN
          CLI   IOSELCT,X'02'
          BNE   IOEWRET
          CLI   IO2ACTV,X'01'
@@ -420,11 +469,37 @@ IOEWDONE MVI   IOSELCT,X'01'
          LA    1,IOCTL1
          SRL   1,2
          ST    1,IOCURH
+* ENDWRITE on selected dynamic handle. If buffered, flush first;
+* then close, invalidate handle, free descriptor, select primary.
+IOEWDYN  L     1,IOCURH
+         L     15,=A(HLOOK)
+         BALR  14,15
+         LTR   15,15
+         BZ    IOEWDONE
+         ST    15,IOWDESC
+         L     2,16(15)
+         L     3,236(2)
+         LTR   3,3
+         BZ    IOEDCLOS
+         LR    1,15
+         L     15,=A(DQPUT)
+         BALR  14,15
+IOEDCLOS L     1,IOWDESC
+         L     15,=A(DQCLOSE)
+         BALR  14,15
+         L     1,IOCURH
+         L     15,=A(HCLOSE)
+         BALR  14,15
+         L     1,IOWDESC
+         L     15,=A(DREL)
+         BALR  14,15
+         B     IOEWDONE
 IOEWRET  LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
          L     4,0(5)
          L     10,IOOSAVE+40
          BCR   15,6
+         LTORG
          DROP  10
 *
 *
@@ -960,6 +1035,7 @@ IOCTL1   DC    F'1'
 IOCTL2   DC    F'2'
 IOCURH   DC    F'0'
 IORESULT DC    F'0'
+IOWDESC  DC    F'0'
 IONAME1  DC    CL8'SYSPRINT'
 IONAME2  DC    CL6'BCPALT'
 IOONE    DC    F'1'
@@ -1038,6 +1114,8 @@ DALLOC   BALR  10,0
          XC    256(12,8),256(8)
          MVC   132(96,8),DQTEMP
          MVC   172(8,8),8(6)
+         MVI   0(8),C' '
+         MVC   1(131,8),0(8)
          LA    7,132(8)
          STCM  7,7,229(8)
          STCM  7,7,233(8)
