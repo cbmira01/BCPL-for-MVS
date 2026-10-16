@@ -1310,8 +1310,12 @@ DALDCB   MVC   172(8,8),8(6)
          LA    7,132(8)
          STCM  7,7,229(8)
          STCM  7,7,233(8)
+* SVC19 OPEN list: X'80' for INPUT, X'8F' for OUTPUT.
          MVI   228(8),X'8F'
-         MVI   232(8),X'80'
+         CLI   DTYPE+3,X'01'
+         BNE   DALOMODE
+         MVI   228(8),X'80'
+DALOMODE MVI   232(8),X'80'
          ST    8,16(6)
          ST    7,20(6)
          ST    6,DHEAD
