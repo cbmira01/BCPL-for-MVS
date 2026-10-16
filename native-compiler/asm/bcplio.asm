@@ -1107,8 +1107,7 @@ DQOPEN   BALR  10,0
          L     6,16(1)
          LTR   6,6
          BZ    DQBAD
-         CLI   27(1),X'00'
-* Record state at +24 is fullword; test its low byte.
+* The +24 open-state is a fullword.
          L     7,24(1)
          LTR   7,7
          BNZ   DQBAD
