@@ -31,6 +31,9 @@ IOINIT   BALR  10,0
          USING *,10
          STM   0,9,IOISAVE
          STM   11,15,IOISAVE+44
+* Second address base reaches static output buffers past 4K.
+         LA    11,3584(10)
+         USING IOINIT+3586,11
          CLI   IOACTIVE,X'01'
          BE    IOIDONE
          ST    1,IOPARM
@@ -50,6 +53,7 @@ IOINIT   BALR  10,0
 IOIDONE  LM    0,9,IOISAVE
          LM    11,15,IOISAVE+44
          BR    14
+         DROP  11
          DROP  10
 *
 IOFIN    BALR  10,0
@@ -102,6 +106,9 @@ IOWRCH   LR    4,10
          ST    4,IOSAVE+40
          STM   0,9,IOSAVE
          STM   11,15,IOSAVE+44
+* Independent high base for IO2BUF, IO2DCB and IODCB.
+         LA    11,3584(10)
+         USING IOWRCH+3586,11
          CLI   IOSELCT,X'03'
          BE    IOWDYN
          CLI   IOSELCT,X'02'
@@ -189,6 +196,7 @@ IOWRET   LM    0,9,IOSAVE
          L     10,IOSAVE+40
          BCR   15,6
          LTORG
+         DROP  11
          DROP  10
 *
 * Native diagnostic accessor, not a BCPL global-vector service.
