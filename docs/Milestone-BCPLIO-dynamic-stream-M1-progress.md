@@ -262,3 +262,8 @@ Re-submitted DQ2PRB after removal of an inline `//*` comment: upload JOB 5683, l
 ## JOB 5691: two-output allocated-QSAM prototype executes RC=0000
 
 Operator restaged corrected JOB-card-free DQ2PRB JCL via JOB 5688; launcher JOB 5690, payload JOB **5691** on 2026-10-16. `ASMDQ` IFOX00 RC=0000, no flagged statements/severity zero; `LKED` IEWL RC=0000; `GO` RC=0000; no reported abend; JES reports 30 cards and 408 SYSOUT records. This proves the private probe completed its dynamic two-region OPEN/PUT/CLOSE/FREEMAIN path without observed failure. **Output-content gate pending**: operator should show the `REPORT RECORD ONE/TWO` and `REPORT2 RECORD ONE/TWO` lines in the full job report and confirm DD separation. Do not conflate this isolated prototype with actual BCPLIO DALLOC/HNEW lifecycle integration. Production OBJ remains unchanged.
+
+
+## JOB 5691: two-stream private QSAM gate accepted (2026-10-16)
+
+Operator used `tools/mvs/dump-report-for-job 5691` and showed actual SYSOUT output (not merely assembler source lines): line 455 `REPORT RECORD ONE`, line 456 `REPORT RECORD TWO`, line 458 `REPORT2 RECORD ONE`, line 459 `REPORT2 RECORD TWO`. The corresponding assembler literal definitions also occur at lines 316–319; acceptance relies on **lines 455–459**. Combined with ASMDQ/LKED/GO all RC=0000, zero flagged assembler statements, the separate REPORT and REPORT2 SYSOUT sections and expected record order satisfy this private two-descriptor prototype gate. **Accept private two-stream QSAM storage lifecycle prototype.** Next work: integrate actual BCPLIO DALLOC/DREL and HNEW/HLOOK/HCLOSE on DEVOBJ, validate independently; do not infer that public FINDOUTPUT has already been implemented. Production NATIVE.OBJ remains unchanged.
