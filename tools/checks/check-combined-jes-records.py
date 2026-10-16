@@ -43,7 +43,7 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("expected")
     ap.add_argument("report")
-    ap.add_argument("--destination",choices=("SYSPRINT","BCPALT"),required=True)
+    ap.add_argument("--destination",choices=("SYSPRINT","BCPALT","REPORT","REPORT2"),required=True)
     args=ap.parse_args()
     try:
         occurrences=validate(args.expected,args.report,args.destination)
