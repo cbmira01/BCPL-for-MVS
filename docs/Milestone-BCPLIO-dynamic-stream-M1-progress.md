@@ -297,3 +297,8 @@ Modified BCPLIO `IOFOUT` to preserve recognized `SYSPRINT` and `BCPALT` cases, t
 ## JOB 5710 — DQFIND label length correction (2026-10-16)
 
 Operator staged BCPLIO ASM (JOB 5705), DQFPRB ASM (JOB 5706), DQFPRB JCL (JOB 5707), then ran BLDDEVI launcher JOB 5709, payload **JOB 5710**. IFOX ASMIO RC=0008; PUTIO flushed, leaving DEVOBJ unchanged. Full assembler diagnostics show statement 1627 IFO236, statement 1635 IFO236, statement 1638 IFO236, and statement 1653 IFO016. All four are the too-long nine-character `DFFRESULT` symbol (three references and the definition); IFOX Assembler F requires maximum eight-character labels. Replaced all five occurrences of the symbol with `DFFRES` in native-compiler/asm/bcplio.asm. This is a source-only correction; it has not yet been reassembled on MVS. Restage BCPLIO, rerun BLDDEVI and require ASMIO/PUTIO RC0000, then execute already staged DQFPRB. Production OBJ unchanged.
+
+
+## JOB 5714: corrected FINDOUTPUT development BCPLIO build passes (2026-10-16)
+
+Operator restaged BCPLIO ASM via JOB 5711 and submitted BLDDEVI launcher JOB 5713, payload JOB **5714**. ASMIO IFOX00 RC=0000, PUTIO IEBGENER RC=0000, zero flagged assembler statements and severity zero. This resolves JOB 5710's invalid `DFFRESULT` IFOX symbol by using `DFFRES`; current BCPLIO object is installed in DEVOBJ(BCPLIO) only. **DQFPRB has not yet been executed against this build**. Next submit the already staged `native_jcl DQFPRB`; require ASMDQ/LKED/GO RC0 and check actual REPORT `DQFIND OUTPUT SUCCESS`. Preserve production OBJ.
