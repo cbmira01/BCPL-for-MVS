@@ -135,6 +135,7 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
          BZ    IOWRET
 * Transfer once, never return. Restore caller R14 with LM, then
 * load callback into scratch R10 just before leaving module.
+         LA    11,3584(10)
          LM    0,9,IOSAVE
          LM    11,15,IOSAVE+44
          L     4,0(5)
@@ -194,7 +195,8 @@ IOWDPUT  LR    1,2
          MVI   0(3),C' '
          MVC   1(131,3),0(3)
          B     IOWRET
-IOWRET   LM    0,9,IOSAVE
+IOWRET   LA    11,3584(10)
+         LM    0,9,IOSAVE
          LM    11,15,IOSAVE+44
          L     4,0(5)
          L     10,IOSAVE+40
