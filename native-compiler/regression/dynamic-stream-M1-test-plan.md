@@ -97,8 +97,9 @@ BCPL_DYNAMIC_MAIN_MEMBER=BCPLM6 \
 No candidate member is guessed. The launcher enforces PDS mode, DEVOBJ
 selection and BCPL_RUNTIME_CANDIDATE=1; the generator then uses
 `INCLUDE OBJ(BCPLM6)` and `INCLUDE OBJ(BCPLIO)` with `OBJ` DD pointing
-to DEVOBJ. The shared BCPLMEM and BLIB remain from production OBJ via the
-generator's `DEVOBJ` DD. Review generated JCL and the IEWL map before
+to DEVOBJ. The generator now routes BCPLBYTE and BCPLAPT through its
+`DEVOBJ` DD (also NATIVE.DEVOBJ), while its `COREOBJ` DD points to
+production NATIVE.OBJ for BCPLMEM and BLIB. Review generated JCL and the IEWL map before
 accepting evidence, especially to confirm no unintended duplicate
 BCPLMAIN/BCPLIO entry ownership. Neither the launcher nor its documentation
 means that BCPLM6 currently exists in PDS. If it is absent, rebuild it;
