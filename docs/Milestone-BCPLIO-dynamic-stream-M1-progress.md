@@ -91,3 +91,24 @@ Do not claim acceptance until the payload's ASMREG, LKED and GO steps succeed un
 ## Descriptor registry execution acceptance — 2026-10-16
 
 Operator staged NATIVE.ASM(IODRPRB) via JOB 5591 and NATIVE.JCL(IODRPRB) via JOB 5592. Resident JCL launch JOB 5594, payload **JOB 5595**, completed successfully: ASMREG IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; assembler flagged 0 statements, highest severity 0. The standalone probe's GO success supports its assertions for two allocations, descriptor names/directions and linkage, unlinking non-head and head nodes, matching FREEMAIN, and double-release rejection. This **accepts the isolated descriptor-registry execution checkpoint**. The test does not demonstrate allocation failure under actual storage pressure, stable BCPL handle identity, RDJFCB/DD discovery, OPEN, or FIND integration. Those remain M1 work. No production OBJ change was made.
+
+
+## Stable handle lifecycle staging — 2026-10-16
+
+Source commit `1995a7f` adds three private native BCPLIO entries, without changing FIND, QSAM operations, or global slots: `HNEW` (R1=descriptor address; R15=word-address identity handle or 0), `HLOOK` (R1=handle; R15=live descriptor or zero), and `HCLOSE` (R1=handle; R15=detached descriptor or zero, then invalidates handle). Each handle uses conditional GETMAIN for a 16-byte retained record; record +4 holds the live descriptor pointer. The BCPL handle is the **word address of that record's +4 field**, consistent with existing opaque word-address conventions. Registry search compares the supplied handle without dereferencing it, so stale handles do not touch freed descriptors. Handle records are intentionally never reused; reclamation at IOFIN is **still to be implemented**, as is rollback if caller cannot complete descriptor setup. The HCLOSE caller must independently release the returned descriptor using DREL.
+
+Independent probe sources `native-compiler/asm/bcplio-handle-probe.asm` (IOHPRB) and `native-compiler/jcl/bcplio-handle-probe.jcl` test allocation/lookup/close, DREL, second open with distinct handle, old-handle rejection across possible recycled descriptor storage, and double close. No MVS assembly, linkage or execution result is claimed for these additions.
+
+Operator validation after git pull:
+
+```sh
+tools/datasets/dspal put native_asm BCPLIO native-compiler/asm/bcplio.asm
+tools/datasets/dspal put native_asm IOHPRB native-compiler/asm/bcplio-handle-probe.asm
+tools/datasets/dspal put native_jcl IOHPRB native-compiler/jcl/bcplio-handle-probe.jcl
+tools/datasets/dspal submit native_jcl BLDDEVI
+# Require ASMIO=0000 and PUTIO=0000 before submitting IOHPRB.
+tools/datasets/dspal submit native_jcl IOHPRB
+# Require ASMHND=0000, LKED=0000 and GO=0000.
+```
+
+M1 acceptance remains pending; all work is isolated to NATIVE.DEVOBJ and repository sources.
