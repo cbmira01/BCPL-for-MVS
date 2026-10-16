@@ -17,11 +17,17 @@ DQBPRB   CSECT
          SR    1,1
          L     15,=A(IOINIT)
          BALR  14,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
 * FINDOUTPUT REPORT (BCPL counted string word address)
          LA    7,STR1
          SRL   7,2
          L     15,=A(IOFOUT)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LTR   7,7
          BZ    FAIL
          ST    7,HAND1
@@ -30,6 +36,9 @@ DQBPRB   CSECT
          SRL   7,2
          L     15,=A(IOFOUT)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LTR   7,7
          BZ    FAIL
          C     7,HAND1
@@ -39,6 +48,9 @@ DQBPRB   CSECT
          L     7,HAND1
          L     15,=A(IOSOUT)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LA    8,MSG1
          LA    9,13
          BAL   14,SEND
@@ -46,6 +58,9 @@ DQBPRB   CSECT
          L     7,HAND2
          L     15,=A(IOSOUT)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LA    8,MSG2
          LA    9,16
          BAL   14,SEND
@@ -53,31 +68,52 @@ DQBPRB   CSECT
          L     7,HAND1
          L     15,=A(IOSOUT)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LA    8,MSG3
          LA    9,13
          BAL   14,SEND
 * ENDWRITE first: closes, tombstones, reverts to primary.
          L     15,=A(IOENDW)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          L     1,HAND1
          L     15,=A(HLOOK)
          BALR  14,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LTR   15,15
          BNZ   FAIL
 * Re-select remaining second handle, then ENDWRITE.
          L     7,HAND2
          L     15,=A(IOSOUT)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          L     15,=A(IOENDW)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          L     1,HAND2
          L     15,=A(HLOOK)
          BALR  14,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LTR   15,15
          BNZ   FAIL
 * Primary selected after ENDWRITE; output to SYSPRINT.
          L     15,=A(IOOUT)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LTR   7,7
          BZ    FAIL
          LA    8,MSG4
@@ -86,6 +122,9 @@ DQBPRB   CSECT
 * Flush primary on FIN.
          L     15,=A(IOFIN)
          BALR  14,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          SR    8,8
          B     DONE
 * SEND R8 byte ptr, R9 byte count; append LF on first / third.
@@ -95,10 +134,15 @@ SENDLP   SR    7,7
          IC    7,0(8)
          L     15,=A(IOWRCH)
          BALR  6,15
+         LA    1,FRAME
+         CR    5,1
+         BNE   BADFRAME
          LA    8,1(8)
          BCT   9,SENDLP
          L     14,SENDRET
          BR    14
+BADFRAME LA    8,12
+         B     DONE
 FAIL     LA    8,8
 DONE     ST    8,RESULT
          L     13,OLDSAVE+4
