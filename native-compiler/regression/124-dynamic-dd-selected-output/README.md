@@ -13,8 +13,21 @@ candidate BCPLM6 and BCPLIO from DEVOBJ (other production services remain
 in OBJ), and executes under MVS. The GO JCL receives explicitly declared
 FB132 REPORT and REPORT2 DDs from fixture files.
 
-Run only after **verifying or rebuilding DEVOBJ(BCPLM6)**, separate from the
-already verified DEVOBJ(BCPLIO). No production OBJ installation:
+Before running, **rebuild DEVOBJ(BCPLM6)** unless its presence and current
+content are already verified. The historical D6 assembly/JCL files have been
+relocated into `native-compiler/asm/` and `native-compiler/jcl/`; the old D6
+JCL uses obsolete dataset names, so use the current-PDS build below. This is
+separate from the verified DEVOBJ(BCPLIO) build and never writes OBJ:
+
+```sh
+tools/datasets/dspal put native_asm BCPLM6 \
+  native-compiler/asm/bcplmain-d6-candidate.asm
+tools/datasets/dspal put native_jcl BLDDEVM6 \
+  native-compiler/jcl/build-dev-bcplm6.jcl
+tools/datasets/dspal submit native_jcl BLDDEVM6
+```
+
+Require `ASMMMAIN` and `PUTMAIN` RC0, then run:
 
 ```sh
 BCPL_RUNTIME_PDS=1 \
