@@ -307,3 +307,8 @@ Operator restaged BCPLIO ASM via JOB 5711 and submitted BLDDEVI launcher JOB 571
 ## JOB 5717: DQFIND private runtime probe RC0 (2026-10-16)
 
 Operator submitted staged DQFPRB after successful JOB 5714 DEVOBJ build. Launcher JOB 5716, payload **JOB 5717**: ASMDQ IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; zero flagged assembler statements, highest severity zero. The DQFPRB assertions run through DQFIND("REPORT"), HLOOK/DQPUT/DQCLOSE/HCLOSE/DREL, stale-handle rejection, and missing DD `ZZZZZZZZ` rejection. **REPORT SYSOUT record content is not yet verified**; request full report or grep for an actual `DQFIND OUTPUT SUCCESS` line, not assembler literal. This is a private direct-call probe; actual BCPL `IOFOUT` dispatch and SELECTOUTPUT/WRCH/ENDWRITE dynamic integration remain untested. No production OBJ changes.
+
+
+## JOB 5717 DQFIND discovery gate ACCEPTED (2026-10-16)
+
+Operator confirmed actual SYSOUT line 364 `DQFIND OUTPUT SUCCESS` from `tools/mvs/dump-report-for-job 5717` (as distinct from source literal). Coupled with JOB 5714 DEVOBJ ASMIO/PUTIO RC=0000, and JOB 5717 ASMDQ/LKED/GO RC=0000 with zero flagged assembler statements, this **accepts the private DQFIND dynamic output discovery and stable-handle lifecycle gate**. DQFPRB explicitly tested valid REPORT DD, DQPUT, close, HCLOSE, DREL, stale-handle HLOOK rejection, and nonexistent DD rejection. Public IOFOUT dispatch and compiled-BCPL FINDOUTPUT remain to be exercised; SELECTOUTPUT, WRCH, ENDWRITE dynamic handles are not yet wired. Next gate: selected-stream buffered output with full compiled-BCPL regression and legacy compatibility. Production NATIVE.OBJ untouched.
