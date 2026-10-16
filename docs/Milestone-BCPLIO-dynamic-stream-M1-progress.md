@@ -69,3 +69,20 @@ Commit `432b4e8` adds non-wired, private native entries `DALLOC` and `DREL` to B
 **Important:** DALLOC's returned address is strictly internal. It is **not** a BCPL stream handle and must never be exposed to BCPL. Stable non-reused external handle records, actual DCBs/buffers, RDJFCB discovery, QSAM OPEN, and integration with FIND/END/IOFIN are *not* implemented in this slice. This registry is an isolated substrate only; it deliberately does not change any current stream behavior.
 
 Code has only undergone source-layout inspection (all lines <=71 columns). IFOX assembly, linkage, and runtime validation **pending**. M1 gate remains open. Suggested next validation: stage NATIVE_ASM(BCPLIO), run installed NATIVE_JCL(BLDDEVI), inspect IFOX flagged statements and PUTIO RC; then write an independent registry harness verifying allocate/two inserts, direction/name contents, unlink head/middle, double release rejection, and conditional failure handling before wiring it into FIND.
+
+
+## Descriptor registry IFOX build accepted; execution pending
+
+Operator staged BCPLIO source via JOB 5587, then ran resident BLDDEVI payload **JOB 5590** on 2026-10-16. ASMIO (IFOX00) RC=0000; PUTIO (IEBGENER) RC=0000; zero flagged statements, zero assembler diagnostic severity. This **accepts assembly and DEVOBJ installation**, but not runtime allocation/free behavior.
+
+An isolated native execution harness is now staged in repository source as `native-compiler/asm/bcplio-registry-probe.asm` (IODRPRB) with `native-compiler/jcl/bcplio-registry-probe.jcl`. It allocates two 32-byte descriptors, verifies direction/name/links, unlinks a non-head descriptor then the head, and checks double release yields 8. Expected assembler, linker and GO RC all zero.
+
+Operator sequence after synchronizing Git:
+
+```sh
+tools/datasets/dspal put native_asm IODRPRB native-compiler/asm/bcplio-registry-probe.asm
+tools/datasets/dspal put native_jcl IODRPRB native-compiler/jcl/bcplio-registry-probe.jcl
+tools/datasets/dspal submit native_jcl IODRPRB
+```
+
+Do not claim acceptance until the payload's ASMREG, LKED and GO steps succeed under MVS. Keep `NATIVE.OBJ` untouched. Dynamic DCBs, RDJFCB, stable external handles and FIND dispatch remain unimplemented.
