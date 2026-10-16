@@ -1,0 +1,47 @@
+// M1 native-compiled BCPL dynamic DD output probe.
+// Test only with BCPLM6 + BCPLIO linked from DEVOBJ.
+GLOBAL $( START:1; SELECTOUTPUT:12; WRCH:14; OUTPUT:17
+          FINDOUTPUT:41; ENDWRITE:47; WRITES:60 $)
+
+LET START () BE
+$(1
+    LET PRIMARY = OUTPUT()
+    LET A = FINDOUTPUT("REPORT")
+    LET B = FINDOUTPUT("REPORT2")
+
+    IF A=0 DO FINISH
+    IF B=0 DO FINISH
+    IF A=B DO FINISH
+
+    SELECTOUTPUT(A)
+    IF OUTPUT() ~= A DO FINISH
+    WRITES("BCPL REPORT A")
+    WRCH(10)
+
+    // Unallocated DD must fail without changing selection.
+    IF FINDOUTPUT("NOFILE") ~= 0 DO FINISH
+    IF OUTPUT() ~= A DO FINISH
+
+    SELECTOUTPUT(B)
+    IF OUTPUT() ~= B DO FINISH
+    WRITES("BCPL REPORT2 PART")
+
+    SELECTOUTPUT(A)
+    WRITES("BCPL REPORT B")
+    WRCH(10)
+    ENDWRITE()
+    IF OUTPUT() ~= PRIMARY DO FINISH
+
+    // A was closed; a stale stream selection must be rejected.
+    SELECTOUTPUT(A)
+    IF OUTPUT() ~= PRIMARY DO FINISH
+
+    SELECTOUTPUT(B)
+    IF OUTPUT() ~= B DO FINISH
+    ENDWRITE()
+    IF OUTPUT() ~= PRIMARY DO FINISH
+
+    WRITES("BCPL DYNAMIC OK")
+    WRCH(10)
+    FINISH
+$)1
