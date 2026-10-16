@@ -98,6 +98,14 @@ IFDPARM  XC    IOPARM(4),IOPARM
          DROP  11
          DROP  10
 *
+* Early save areas must be reachable BEFORE the high base exists.
+* Keep these four 64-byte images in the first 4K of BCPLIO.
+         DS    0F
+IOSAVE   DS    16F
+IOISAVE  DS    16F
+IOFSAVE  DS    16F
+IOESAVE  DS    16F
+*
 * BCPL-facing candidate: R7 holds a character code.
 * Save caller registers before all output paths, including PUT.
 IOWRCH   LR    4,10
@@ -1225,10 +1233,7 @@ IOOVHAND DC    F'0'
 IOOVCODE DC    F'12'
 IOACTIVE DC    X'00'
          DS    0F
-IOSAVE   DS    16F
-IOISAVE  DS    16F
-IOFSAVE  DS    16F
-IOESAVE  DS    16F
+* Early entry save images are placed directly after IOFIN.
 IOOSAVE  DS    16F
 IODSAVE  DS    16F
 IOBUF    DS    CL132
