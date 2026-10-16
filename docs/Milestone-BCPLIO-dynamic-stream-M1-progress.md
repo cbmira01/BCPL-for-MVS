@@ -1,6 +1,6 @@
 # Dynamic BCPLIO streams — M1 progress log
 
-Status: **M1 in progress; no acceptance claimed**  
+Status: **M1 in progress; assembler ABI integration JOB 5766 accepted; compiled BCPL validation pending**  
 Started: 2026-10-16  
 Predecessor: [M0 contract](Milestone-BCPLIO-dynamic-stream-M0-contract.md)
 
@@ -382,3 +382,10 @@ DQB REPORT2 PART
 This supports acceptance of this **assembler ABI integration gate** for BCPL-facing `IOFOUT` / `IOSOUT` / `IOWRCH` / `IOENDW` / `IOOUT` under R5/R6/R7 ABI. The test discovers REPORT and REPORT2 DD allocations, interleaves writes through selected handles, flushes line records and a partial final record, verifies stale handles through HLOOK, verifies primary output restored, and verifies frame preservation. The earlier repeated S0C4 is resolved by the correctly matched `USING IOWRCH+3588,11` secondary base, as evidenced by this passing runtime job (source correction `a33d380`). Static BCPALT newline fallthrough correction also assembled, but **not yet directly exercised** by this probe.
 
 **Gate accepted; milestone M1 remains active.** Explicitly still unverified: use from *compiled BCPL program source* through its compiler/linkage, compatibility of the full 124-test native regression suite with the new DEVOBJ module, legacy BCPALT path and WRAPOUTPUT semantics, dynamically selected streams left open at IOFIN, and invalid/closed handle behavior through the public SELECTOUTPUT entry (versus HLOOK-only checks). Complete these in separate development gates before any promotion to production NATIVE.OBJ.
+
+
+## Compiled BCPL dynamic-output test 124 staged (not yet MVS validated)
+
+Added `native-compiler/regression/124-dynamic-dd-selected-output` as a real native Cambridge-compiled BCPL test, with source, candidate-only marker, README and three logical-output fixtures. BCPL uses G41 FINDOUTPUT, G12 SELECTOUTPUT, G17 OUTPUT, G14 WRCH, G47 ENDWRITE, G60 WRITES (BLIB). GO JCL created by the existing installed-PDS regression preparer now allocates FB132 DDs REPORT and REPORT2 from explicit fixture files. The regression compares combined post-link GO logical output for primary SYSPRINT (`BCPL DYNAMIC OK`), REPORT (`BCPL REPORT A`, `BCPL REPORT B`), and REPORT2 (`BCPL REPORT2 PART`) with exact ordered expected records. It tests failed FINDOUTPUT on absent NOFILE, selection preservation, interleaving, buffered partial flush, rejected stale handle and primary reselection. Combined JES text does *not* independently establish DD attribution; fixture checker continues to say so. No MVS compile/assemble/link/GO result has been observed for this case.
+
+The case is **candidate-only**; full default production panel skips 124 while continuing to report the original 00..123 results. To run case 124 require all four variables: `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`. The linker thereby explicitly includes DEVOBJ BCPLM6 and BCPLIO along with existing service-object links. The M0 inventory did not establish that BCPLM6 was currently installed: before running, check `tools/datasets/dspal ls native_devOBJ`; if absent, stage historical `asm/bcplmain-d6-candidate.asm` as SOURCE(BCPLM6), stage `jcl/build-dev-bcplmain-d6.jcl` as NATIVE.JCL(BLDD6MN), submit BLDD6MN and demand ASMMMAIN/PUTMAIN RC0. No production object mutation is authorized. A test-124 PASS must include the MVS compile, IFOX, IEWL, GO, actual GO records and no unexpected 124 skip. Once accepted, run baseline 00..123 explicitly through the same modular candidate and record actual totals. Do not treat source commits as acceptance.
