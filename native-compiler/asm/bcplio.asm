@@ -997,10 +997,12 @@ IO2PTR   BALR  10,0
 *         R15=allocated descriptor byte address or zero.
 * DREL:   R1=descriptor byte address; R15=0 success/8 absent.
 * Native R14 linkage, R10 clobbered; static and nonreentrant.
-* Descriptor: +0 next, +4 direction, +8 name, +16 reserved.
+* Descriptor: +0 next, +4 direction, +8 name, +16 owned 268-byte
+* QSAM region, +20 DCB, +24 state, +28 reserved.
 * The descriptor is NOT a BCPL stream handle. It must never
 * escape to the BCPL program: stable handles come separately.
-* No DCB allocation, OPEN or RDJFCB in this first slice.
+* DALLOC allocates an unopened DCB+buffer region; DREL releases it.
+* OPEN/PUT/CLOSE are separate private DQ* calls (output only).
 *
          ENTRY DALLOC,DREL
 DALLOC   BALR  10,0
@@ -1020,9 +1022,28 @@ DALLOC   BALR  10,0
          ST    7,4(6)
          L     7,DNAMEP
          MVC   8(8,6),0(7)
+* Own 268 bytes: buffer 0..131, DCB 132..227,
+* SVC19 list 228..231, SVC20 list 232..235.
+         GETMAIN RC,LV=268
+         LTR   15,15
+         BNZ   DALNOMEM
+         LR    8,1
+         XC    0(256,8),0(8)
+         XC    256(12,8),256(8)
+         MVC   132(96,8),DQTEMP
+         MVC   172(8,8),8(6)
+         LA    7,132(8)
+         STCM  7,7,229(8)
+         STCM  7,7,233(8)
+         MVI   228(8),X'8F'
+         MVI   232(8),X'80'
+         ST    8,16(6)
+         ST    7,20(6)
          ST    6,DHEAD
          ST    6,DRESULT
          B     DALRET
+DALNOMEM LR    1,6
+         FREEMAIN R,LV=32,A=(1)
 DALFAIL  XC    DRESULT(4),DRESULT
 DALRET   LM    0,9,DSAVE
          LM    11,14,DSAVE+44
@@ -1043,9 +1064,14 @@ DRELSCAN L     7,0(6)
          BE    DRELHIT
          LR    6,7
          B     DRELSCAN
-DRELHIT  L     8,0(7)
+DRELHIT  L     8,24(7)
+         LTR   8,8
+         BNZ   DRELBAD
+         L     8,0(7)
          ST    8,0(6)
-         LR    1,7
+         L     1,16(7)
+         FREEMAIN R,LV=268,A=(1)
+         L     1,DTARGET
          FREEMAIN R,LV=32,A=(1)
          XC    DRESULT(4),DRESULT
          B     DRELRET
@@ -1063,6 +1089,97 @@ DTARGET  DC    F'0'
 DRESULT  DC    F'0'
 DERR8    DC    F'8'
 DSAVE    DS    16F
+*
+* Private QSAM stream operations: R1=descriptor byte pointer.
+* Only callers holding an active descriptor may invoke these;
+* output DD is assigned by JCL, FB132. R15 0 success/8 invalid.
+* DQPUT: R2 -> complete 132-byte record.
+* DQOPEN and DQCLOSE update descriptor +24 open state.
+* Uses DQ-owned save area; not reentrant.
+         ENTRY DQOPEN,DQPUT,DQCLOSE
+DQOPEN   BALR  10,0
+         USING *,10
+         STM   0,9,DQSAVE
+         STM   11,14,DQSAVE+44
+         ST    1,DQARG
+         LTR   1,1
+         BZ    DQBAD
+         L     6,16(1)
+         LTR   6,6
+         BZ    DQBAD
+         CLI   27(1),X'00'
+* Record state at +24 is fullword; test its low byte.
+         L     7,24(1)
+         LTR   7,7
+         BNZ   DQBAD
+         LA    1,228(6)
+         SVC   19
+         L     1,DQARG
+         L     7,20(1)
+         L     7,48(7)
+         LTR   7,7
+         BZ    DQBAD
+         L     1,DQARG
+         LA    7,1
+         ST    7,24(1)
+         B     DQGOOD
+         DROP  10
+*
+DQPUT    BALR  10,0
+         USING *,10
+         STM   0,9,DQSAVE
+         STM   11,14,DQSAVE+44
+         ST    1,DQARG
+         ST    2,DQSRC
+         LTR   1,1
+         BZ    DQBAD
+         L     7,24(1)
+         LTR   7,7
+         BZ    DQBAD
+         L     6,16(1)
+         LTR   6,6
+         BZ    DQBAD
+         L     7,DQSRC
+         MVC   0(132,6),0(7)
+         L     1,20(1)
+         LR    0,6
+         L     15,48(1)
+         BALR  14,15
+         B     DQGOOD
+         DROP  10
+*
+DQCLOSE  BALR  10,0
+         USING *,10
+         STM   0,9,DQSAVE
+         STM   11,14,DQSAVE+44
+         ST    1,DQARG
+         LTR   1,1
+         BZ    DQBAD
+         L     7,24(1)
+         LTR   7,7
+         BZ    DQBAD
+         L     6,16(1)
+         LA    1,232(6)
+         SVC   20
+         L     1,DQARG
+         XC    24(4,1),24(1)
+         B     DQGOOD
+         DROP  10
+*
+DQGOOD   SR    15,15
+         B     DQRET
+DQBAD    LA    15,8
+DQRET    ST    15,DQRESULT
+         LM    0,9,DQSAVE
+         LM    11,14,DQSAVE+44
+         L     15,DQRESULT
+         BR    14
+         DS    0F
+DQARG    DC    F'0'
+DQSRC    DC    F'0'
+DQRESULT DC    F'0'
+DQSAVE   DS    16F
+DQTEMP   DCB   DDNAME=DUMMY,DSORG=PS,MACRF=PM
 *
 * M1 PRIVATE NON-REUSED HANDLE IDENTITIES (NOT WIRED TO FIND).
 * HNEW R1=descriptor, R15=BCPL word-address handle or 0.
