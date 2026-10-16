@@ -1118,7 +1118,7 @@ ENRDYN   LR    9,10
          BNE   ENRDCLR
          ST    15,INDESC
          LR    1,15
-         L     15,=A(DQICLOSE)
+         L     15,=A(DQCLOSE)
          BALR  14,15
          LR    10,9
          L     1,INCURR
@@ -1284,8 +1284,17 @@ DALLOC   BALR  10,0
          LR    8,1
          XC    0(256,8),0(8)
          XC    256(12,8),256(8)
-         MVC   132(96,8),DQTEMP
-         MVC   172(8,8),8(6)
+* Input and output share the owned DCB/buffer lifetime,
+* but input needs GM mode and a dynamic EODAD exit.
+         CLI   DTYPE+3,X'01'
+         BNE   DALOUT
+         MVC   132(96,8),DQTIN
+         LA    7,80
+         ST    7,236(8)
+         ST    7,240(8)
+         B     DALDCB
+DALOUT   MVC   132(96,8),DQTEMP
+DALDCB   MVC   172(8,8),8(6)
          MVI   0(8),C' '
          MVC   1(131,8),0(8)
          LA    7,132(8)
@@ -1441,6 +1450,8 @@ DQSRC    DC    F'0'
 DQRESULT DC    F'0'
 DQSAVE   DS    16F
 DQTEMP   DCB   DDNAME=DUMMY,DSORG=PS,MACRF=PM
+DQTIN    DCB   DDNAME=DUMMY,DSORG=PS,MACRF=GM,          X
+               EODAD=INDYEOD
 *
 * M1 programmer-visible FINDOUTPUT dynamic fallback.
 * R1 = BCPL counted string byte address, R15 = stable handle or 0.
@@ -1596,6 +1607,64 @@ HDESC    DC    F'0'
 HTARGET  DC    F'0'
 HRESULT  DC    F'0'
 HSAVE    DS    16F
+*
+*
+* Dynamic FINDINPUT: same stable-handle registry as FINDOUTPUT,
+* separate input direction and QSAM GET DCB template.
+* R1=BCPL counted-string address, R15=word handle or zero.
+* R11 local base; the enclosing BCPL entry restores R11.
+         ENTRY DIFIND
+DIFIND   BALR  11,0
+         USING *,11
+         STM   0,10,DIFSAV
+         STM   12,14,DIFSAV+48
+         LA    2,DIFNAME
+         L     15,=A(IONORM)
+         BALR  14,15
+         LTR   15,15
+         BNZ   DIFBAD
+         LA    1,DIFNAME
+         L     15,=A(DDVERIFY)
+         BALR  14,15
+         LTR   15,15
+         BNZ   DIFBAD
+         LA    2,DIFNAME
+         LA    3,1
+         L     15,=A(DALLOC)
+         BALR  14,15
+         LTR   15,15
+         BZ    DIFBAD
+         ST    15,DIFDESC
+         LR    1,15
+         L     15,=A(DQOPEN)
+         BALR  14,15
+         LTR   15,15
+         BNZ   DIFCLEAN
+         L     1,DIFDESC
+         L     15,=A(HNEW)
+         BALR  14,15
+         LTR   15,15
+         BZ    DIFCLOSE
+         ST    15,DIFRES
+         B     DIFRET
+DIFCLOSE L     1,DIFDESC
+         L     15,=A(DQCLOSE)
+         BALR  14,15
+DIFCLEAN L     1,DIFDESC
+         L     15,=A(DREL)
+         BALR  14,15
+DIFBAD   XC    DIFRES(4),DIFRES
+DIFRET   LM    0,10,DIFSAV
+         LM    12,14,DIFSAV+48
+         L     15,DIFRES
+         BR    14
+         LTORG
+         DROP  11
+         DS    0F
+DIFNAME  DC    CL8'        '
+DIFDESC  DC    F'0'
+DIFRES   DC    F'0'
+DIFSAV   DS    16F
 *
 * M1 DD ALLOCATION INQUIRY (PRIVATE, NOT WIRED TO FIND).
 * R1 -> normalized EBCDIC CL8 DD name; R15 0 allocated,
