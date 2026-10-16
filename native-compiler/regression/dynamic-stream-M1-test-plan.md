@@ -78,3 +78,31 @@ misattribute the aggregated printer file to a particular DD.
   repository source and did not modify production OBJ.
 - Keep infrastructure probes as separate permanent checks.
 - No M1 gate acceptance from assembler-only probe successes.
+
+
+## Development-only regression entry point (staged)
+
+`tools/native/run-dynamic-regression` is a Bash launcher for the **already
+implemented D3 candidate link path** in `run-test.sh` and
+`prepare-runtime-pds-regression.py`. It deliberately requires an explicitly
+chosen candidate BCPLMAIN object:
+
+```sh
+# First verify the requested BCPLM6 (or BCPLM3..BCPLM7)
+# is rebuilt from repository source and installed in NATIVE.DEVOBJ.
+BCPL_DYNAMIC_MAIN_MEMBER=BCPLM6 \
+  bash tools/native/run-dynamic-regression 114 119
+```
+
+No candidate member is guessed. The launcher enforces PDS mode, DEVOBJ
+selection and BCPL_RUNTIME_CANDIDATE=1; the generator then uses
+`INCLUDE OBJ(BCPLM6)` and `INCLUDE OBJ(BCPLIO)` with `OBJ` DD pointing
+to DEVOBJ. The shared BCPLMEM and BLIB remain from production OBJ via the
+generator's `DEVOBJ` DD. Review generated JCL and the IEWL map before
+accepting evidence, especially to confirm no unintended duplicate
+BCPLMAIN/BCPLIO entry ownership. Neither the launcher nor its documentation
+means that BCPLM6 currently exists in PDS. If it is absent, rebuild it;
+never migrate an old binary.
+
+GitHub-created launcher file might lack an executable bit; invoke through
+`bash` as shown. No MVS execution of this launcher has yet been observed.
