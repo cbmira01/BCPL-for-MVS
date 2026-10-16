@@ -1452,8 +1452,7 @@ DQSRC    DC    F'0'
 DQRESULT DC    F'0'
 DQSAVE   DS    16F
 DQTEMP   DCB   DDNAME=DUMMY,DSORG=PS,MACRF=PM
-DQTIN    DCB   DDNAME=DUMMY,DSORG=PS,MACRF=GM,          X
-               EODAD=INDYEOD
+DQTIN    DCB   DDNAME=DUMMY,DSORG=PS,MACRF=GM,EODAD=INDYEOD
 *
 * M1 programmer-visible FINDOUTPUT dynamic fallback.
 * R1 = BCPL counted string byte address, R15 = stable handle or 0.
