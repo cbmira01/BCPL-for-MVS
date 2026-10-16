@@ -138,11 +138,13 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
          LA    11,3584(10)
          LM    0,9,IOSAVE
          LM    12,15,IOSAVE+48
-         L     11,IOSAVE+44
          L     4,0(5)
          LA    7,12
+* R11 is still our private high base for both operands.
          L     14,IOOVHAND
          L     10,IOSAVE+40
+* Restore the caller's R11 only after the final static load.
+         L     11,IOSAVE+44
          BCR   15,14
 IOW2     C     7,IOLF
          BE    IOW2PUT
@@ -200,9 +202,10 @@ IOWDPUT  LR    1,2
 IOWRET   LA    11,3584(10)
          LM    0,9,IOSAVE
          LM    12,15,IOSAVE+48
-         L     11,IOSAVE+44
          L     4,0(5)
          L     10,IOSAVE+40
+* R11 owns IOSAVE addressability; restore it last.
+         L     11,IOSAVE+44
          BCR   15,6
          LTORG
          DROP  11
