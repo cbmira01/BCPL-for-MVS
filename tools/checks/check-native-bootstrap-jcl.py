@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-deck = (ROOT / "native-compiler/jcl/build-cambridge-resident.jcl").read_text(encoding="ascii")
+deck = (ROOT / "native-compiler/jcl/cambbld.jcl").read_text(encoding="ascii")
 assert "HERC02.BCPL.CAMBRIDG." not in deck
 for old in ("HERC02.BCPL.SOURCE(", "HERC02.BCPL.INTCODE(", "HERC02.BCPL.LOAD,"):
     assert old not in deck, old

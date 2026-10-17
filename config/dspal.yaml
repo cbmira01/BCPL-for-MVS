@@ -431,7 +431,7 @@ datasets:
 
   NATIVE_JCL:
     dsn: BCPL.NATIVE.JCL
-    description: Native runtime assembler/link and acceptance jobs
+    description: Canonical native build JCL (source file basename equals member)
     primary: 15
     secondary: 5
     directory: 5
@@ -442,19 +442,16 @@ datasets:
     blksize: 800
     populate: true
     members:
-      BLIBBLD: native-compiler/jcl/build-blib-object.jcl
-      BLIBLINK: native-compiler/jcl/probe-blib-object-consumer.jcl
-      BLDBMAIN: native-compiler/jcl/build-bcplmain-objects.jcl
-      BLDGFMEM: native-compiler/jcl/build-gate-f1-bcplmem.jcl
-      BLDDEVM: native-compiler/jcl/build-dev-bcplmem.jcl
-      BLDDEVN: native-compiler/jcl/build-dev-bcplmain.jcl
-      BLDDEVB: native-compiler/jcl/build-dev-bcplbyte.jcl
-      BLDDEVI: native-compiler/jcl/build-dev-bcplio.jcl
-      BLDDEVA: native-compiler/jcl/build-dev-bcplapt.jcl
-      BLDDEVL: native-compiler/jcl/build-dev-blib.jcl
-      SEEDDEV: native-compiler/jcl/seed-devobj.jcl
-      CAMBBLD: native-compiler/jcl/build-cambridge-resident.jcl
-      CG370DB: native-compiler/jcl/build-cg370-diagnostic.jcl
+      BLIBBLD: native-compiler/jcl/blibbld.jcl
+      BLDBMAIN: native-compiler/jcl/bldbmain.jcl
+      BLDDEVM: native-compiler/jcl/blddevm.jcl
+      BLDDEVN: native-compiler/jcl/blddevn.jcl
+      BLDDEVB: native-compiler/jcl/blddevb.jcl
+      BLDDEVI: native-compiler/jcl/blddevi.jcl
+      BLDDEVA: native-compiler/jcl/blddeva.jcl
+      BLDDEVL: native-compiler/jcl/blddevl.jcl
+      CAMBBLD: native-compiler/jcl/cambbld.jcl
+      CG370DB: native-compiler/jcl/cg370db.jcl
 
   NATIVE_OBJ:
     dsn: BCPL.NATIVE.OBJ

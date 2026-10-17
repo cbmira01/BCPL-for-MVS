@@ -74,3 +74,17 @@ quoted strings, or continuation cards as definitions. It is a preflight
 constraint check, not a complete Assembler F parser and does not replace
 IFOX. `check-native-runtime.py` invokes the same checker and therefore
 inherits this guard on the complete BCPLMAIN source.
+
+
+## Native canonical JCL manifest
+
+`check-native-jcl-manifest.py` confirms that only the ten supported
+build jobs appear in `NATIVE_JCL`, that each JCL basename equals
+the lowercase PDS member name, and that historical decks are excluded:
+
+```sh
+python3 tools/checks/check-native-jcl-manifest.py
+```
+
+This is a local, non-submitting source-layout check, **not**
+approval to run `BLDBMAIN` or modify production MVS object modules.

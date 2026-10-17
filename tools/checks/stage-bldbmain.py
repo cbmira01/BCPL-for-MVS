@@ -38,7 +38,7 @@ def main():
         raise RuntimeError("BLIB registration is missing")
     main.write_text(src, encoding="ascii", newline="\n")
     files = [main, ROOT / "native-compiler/asm/bcplmem.asm",
-             ROOT / "jcl/build-bcplmain-objects.jcl"]
+             ROOT / "native-compiler/jcl/bldbmain.jcl"]
     for path in files[:2]:
         subprocess.run([sys.executable, str(ROOT / "tools/checks/check-asm-source.py"),
                         str(path)], check=True)

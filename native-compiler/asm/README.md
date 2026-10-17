@@ -30,7 +30,7 @@ the existing `NATIVE_JCL(BLDBMAIN)` **would now assemble D6 into
 `NATIVE_OBJ(BCPLMAIN)` if submitted**. Such production promotion has
 not been authorized; do not execute BLDBMAIN without a separate decision.
 
-The optional historical `build-dev-bcplm6.jcl` reads the canonical
+The optional historical [`build-dev-bcplm6.jcl`](../jcl/history/build-dev-bcplm6.jcl) reads the canonical
 `NATIVE_ASM(BCPLMAIN)` and writes only `NATIVE_DEVOBJ(BCPLM6)`.
 It is **not in the manifest**; stage its JCL explicitly only when
 reproducing the accepted M5.5 development profile. The versioned

@@ -148,12 +148,12 @@ tools/native/stage-bootstrap
 tools/datasets/dspal ls NATIVE_SOURCE
 python3 tools/checks/check-native-bootstrap-jcl.py
 tools/datasets/dspal put NATIVE_JCL CAMBBLD \
-  native-compiler/jcl/build-cambridge-resident.jcl
+  native-compiler/jcl/cambbld.jcl
 tools/datasets/dspal submit NATIVE_JCL CAMBBLD
 tools/datasets/dspal ls NATIVE_INTCODE
 ```
 
-`stage-bootstrap` puts 14 members: `BLIB`, 10 demoted Cambridge compiler units, `BOOTHOST`, `OPTIONS`, and `CAMBPARM`. Headers (`LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR`) were populated from Git in gate 2. The authoritative resident build is `native-compiler/jcl/build-cambridge-resident.jcl`; it uses `MR10_LOAD(ICINT19)`, `MR10_SOURCE`, `NATIVE_INTCODE(TRNILRG)`, and `NATIVE_SOURCE`. It contains 22 interpreter executions plus a PACKCOMP step. Require `CODE=0` for **all 22** interpreted phases (not merely each step's `RC=0000`) and verify `NATIVE_INTCODE(CAMBCOMP)` and the constituent units. No `CAMB_*` library is used.
+`stage-bootstrap` puts 14 members: `BLIB`, 10 demoted Cambridge compiler units, `BOOTHOST`, `OPTIONS`, and `CAMBPARM`. Headers (`LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR`) were populated from Git in gate 2. The authoritative resident build is `native-compiler/jcl/cambbld.jcl`; it uses `MR10_LOAD(ICINT19)`, `MR10_SOURCE`, `NATIVE_INTCODE(TRNILRG)`, and `NATIVE_SOURCE`. It contains 22 interpreter executions plus a PACKCOMP step. Require `CODE=0` for **all 22** interpreted phases (not merely each step's `RC=0000`) and verify `NATIVE_INTCODE(CAMBCOMP)` and the constituent units. No `CAMB_*` library is used.
 
 Smoke-test compilation using the resident image:
 
@@ -184,15 +184,15 @@ runbook is an engineering reference, not authorization to deploy D6.
 tools/datasets/dspal ls NATIVE_ASM
 
 tools/datasets/dspal put NATIVE_JCL BLDBMAIN \
-  native-compiler/jcl/build-bcplmain-objects.jcl
+  native-compiler/jcl/bldbmain.jcl
 tools/datasets/dspal put NATIVE_JCL BLIBBLD \
-  native-compiler/jcl/build-blib-object.jcl
+  native-compiler/jcl/blibbld.jcl
 tools/datasets/dspal put NATIVE_JCL BLDDEVA \
-  native-compiler/jcl/build-dev-bcplapt.jcl
+  native-compiler/jcl/blddeva.jcl
 tools/datasets/dspal put NATIVE_JCL BLDDEVB \
-  native-compiler/jcl/build-dev-bcplbyte.jcl
+  native-compiler/jcl/blddevb.jcl
 tools/datasets/dspal put NATIVE_JCL BLDDEVI \
-  native-compiler/jcl/build-dev-bcplio.jcl
+  native-compiler/jcl/blddevi.jcl
 
 tools/datasets/dspal submit NATIVE_JCL BLDBMAIN
 tools/datasets/dspal submit NATIVE_JCL BLIBBLD
@@ -210,7 +210,7 @@ tools/datasets/dspal ls NATIVE_DEVOBJ
 | `NATIVE_OBJ` | `BLIB` | `BLIBBLD`: resident compiler + card repair + IFOX + IEBGENER |
 | `NATIVE_DEVOBJ` | `BCPLAPT`, `BCPLBYTE`, `BCPLIO` | `BLDDEVA`, `BLDDEVB`, `BLDDEVI`: IFOX + IEBGENER |
 
-**Do not promote** development objects into the accepted library for convenience, and **do not run `SEEDDEV`** on the clean-room path. It is an older five-member copy job with a prerequisite not present in the newly rebuilt accepted library.
+**Do not promote** development objects into the accepted library for convenience. The obsolete `SEEDDEV` binary-copy job has been retired from the working tree; it is not part of clean-room reconstruction.
 
 **Installed JCL synchronization warning:** after editing checked-in job bodies, re-install them into `NATIVE_JCL` before submission. On 15 October, an old `BLDDEVA` member assembled and wrote to retired `HERC02.BCPL.SOURCE/DEVOBJ` with `RC=0000`; the new library remained unchanged until the corrected JCL was reinstalled. Always verify final PDS inventories, not just return codes.
 
@@ -309,9 +309,9 @@ tools/datasets/dspal put NATIVE_ASM BCPLIO \
 
 # Explicitly install the current, approved build JCL bodies:
 tools/datasets/dspal put NATIVE_JCL BLDDEVM6 \
-  native-compiler/jcl/build-dev-bcplm6.jcl
+  native-compiler/jcl/history/build-dev-bcplm6.jcl
 tools/datasets/dspal put NATIVE_JCL BLDDEVI \
-  native-compiler/jcl/build-dev-bcplio.jcl
+  native-compiler/jcl/blddevi.jcl
 
 tools/datasets/dspal submit NATIVE_JCL BLDDEVM6
 tools/datasets/dspal submit NATIVE_JCL BLDDEVI

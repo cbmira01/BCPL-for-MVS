@@ -41,7 +41,7 @@ def main() -> None:
         main_source.count("         END   BCPLMAIN") != 1
     ):
         raise ValueError("unexpected BCPLMAIN CSECT/END structure")
-    candidate = (ROOT / "native-compiler/jcl/build-dev-bcplm6.jcl"
+    candidate = (ROOT / "native-compiler/jcl/history/build-dev-bcplm6.jcl"
                  ).read_text(encoding="ascii")
     if "NATIVE.ASM(BCPLMAIN)" not in candidate:
         raise ValueError("historical BCPLM6 job does not read canonical source")

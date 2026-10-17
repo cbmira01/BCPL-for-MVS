@@ -1,40 +1,67 @@
-# MVS build JCL (M3)
+# Native MVS JCL — canonical builds
 
-This directory is the authoritative source of reusable MVS build job bodies.
-`config/dspal.yaml` maps approved jobs into `NATIVE_JCL`; `dspal populate
-NATIVE_JCL` or `dspal put` installs them, and `dspal submit NATIVE_JCL
-<MEMBER>` runs them. No competing host-side build driver should be introduced.
+`config/dspal.yaml` maps **one canonical Git `.jcl` file to each
+same-named `NATIVE_JCL` PDS member**. Filenames are lowercase; MVS
+member names are uppercase, each within the eight-character limit.
 
-## Source ownership
+| Git JCL file | PDS member | Role |
+|---|---|---|
+| `cambbld.jcl` | CAMBBLD | Rebuild demoted Cambridge compiler INTCODE |
+| `cg370db.jcl` | CG370DB | Optional diagnostic compiler image |
+| `blibbld.jcl` | BLIBBLD | Build BLIB into production NATIVE_OBJ |
+| `bldbmain.jcl` | BLDBMAIN | Build BCPLMAIN and BCPLMEM into production NATIVE_OBJ |
+| `blddeva.jcl` | BLDDEVA | Development BCPLAPT object |
+| `blddevb.jcl` | BLDDEVB | Development BCPLBYTE object |
+| `blddevi.jcl` | BLDDEVI | Development BCPLIO object |
+| `blddevm.jcl` | BLDDEVM | Development BCPLMEM object |
+| `blddevn.jcl` | BLDDEVN | Development BCPLMAIN object |
+| `blddevl.jcl` | BLDDEVL | Development BLIB object |
 
-The current `bcplmain.asm` is the D6/M5.5 development source.
-It is mapped to `NATIVE_ASM(BCPLMAIN)`, matching its Git filename.
-The other four canonical modules map the same way.
+`dspal populate NATIVE_JCL` installs the ten tracked job *bodies*.
+They do not execute until submitted. Use `dspal submit NATIVE_JCL
+<MEMBER>` only after checking the job's source/output datasets and
+whether its target is NATIVE_OBJ or NATIVE_DEVOBJ.
 
-**Do not submit BLDBMAIN without separate production approval.** It
-would now assemble D6 and replace `NATIVE_OBJ(BCPLMAIN)`.
-Populating source members alone does not modify binary objects.
+## Production promotion hold
 
-## Current production rebuilds
+The manifest currently maps canonical Git `native-compiler/asm/bcplmain.asm`
+(the accepted D6/M5.5 source) to `NATIVE_ASM(BCPLMAIN)`.
+**Submitting BLDBMAIN would therefore replace the existing production
+NATIVE_OBJ(BCPLMAIN) with D6** (and rewrite BCPLMEM). This is a
+production promotion, **not approved by canonicalizing filenames**.
+Do not submit that job, or run the historical destructive clean-room
+sequence through it, without an explicit separate production decision.
 
-- `CAMBBLD` — build the resident compiler image in `NATIVE_INTCODE`.
-- `BLDBMAIN` — assemble `NATIVE_ASM(BCPLMAIN,BCPLMEM)` into `NATIVE_OBJ`.
-- `BLIBBLD` — compile `NATIVE_SOURCE(BLIB)` and install `NATIVE_OBJ(BLIB)`.
+`BLIBBLD` also installs a production BLIB object; its own
+prerequisites and installation must be reviewed independently.
+Development builders use `NATIVE_DEVOBJ` and do not promote to
+`NATIVE_OBJ`.
 
-## Candidate builds (not production promotion)
+## Historical builds, probes and source names
 
-- `BLDDEVA` — `NATIVE_ASM(BCPLAPT)` to `NATIVE_DEVOBJ(BCPLAPT)`.
-- `BLDDEVB` — `NATIVE_ASM(BCPLBYTE)` to `NATIVE_DEVOBJ(BCPLBYTE)`.
-- `BLDDEVI` — `NATIVE_ASM(BCPLIO)` to `NATIVE_DEVOBJ(BCPLIO)`.
-- `build-dev-bcplm6.jcl` — optional historical job, **not mapped in the manifest**. Stage it explicitly as `BLDDEVM6` to assemble `NATIVE_ASM(BCPLMAIN)` into `NATIVE_DEVOBJ(BCPLM6)` only.
-- `BLDDEVM`, `BLDDEVN`, `BLDDEVL` — existing candidate builds for
-  BCPLMEM, BCPLMAIN, and BLIB respectively.
+Useful earlier D6/D7 reproducibility decks are isolated under
+[`history/`](history/), **not manifest-mapped**. In particular,
+`history/build-dev-bcplm6.jcl` can be explicitly staged as
+`NATIVE_JCL(BLDDEVM6)` to build canonical
+`NATIVE_ASM(BCPLMAIN)` into historical
+`NATIVE_DEVOBJ(BCPLM6)`. That object-member name remains relevant
+to the accepted 145-pass BCPLIO regression profile.
 
-`SEEDDEV` is **not** an initial bootstrap or promotion step: it copies a
-specific accepted five-member set and must not be submitted before that set
-exists. A successful candidate assembly does **not** authorize copying an
-object into `NATIVE_OBJ`. Retain explicit runtime acceptance evidence and
-only then establish an authoritative production build procedure if needed.
+The obsolete `BLIBLINK` consumer, `BLDGFMEM` standalone job and
+`SEEDDEV` binary-copy job are removed from the manifest. The
+first and third are retired from the working tree; the
+single-member F1 job remains only in history.
+Other one-off D3–D5 link/assemble decks and test probes were retired;
+Git history retains them. Do not assume `dspal populate` deletes
+previously installed but now-unmapped members in MVS.
 
-All M3 source and binary object references use manifest-managed `NATIVE_*`
-and `MR10_*` datasets; `CAMB_*` resources are reserved for M4.
+## Verification
+
+```sh
+python3 tools/checks/check-native-jcl-manifest.py
+tools/datasets/dspal populate NATIVE_JCL --dry-run
+```
+
+This check only validates source layout and manifest agreement.
+It does not assemble programs, execute jobs, or verify MVS runtime
+compatibility.

@@ -3,9 +3,9 @@
 Canonical entry points for Cambridge/native compiler work:
 
 - `prepare-bootstrap`: reconstruct disposable bootstrap input files.
-- `NATIVE_JCL(CAMBBLD)`: authoritative M3 resident compiler build job, sourced from `native-compiler/jcl/build-cambridge-resident.jcl`.
+- `NATIVE_JCL(CAMBBLD)`: authoritative M3 resident compiler build job, sourced from `native-compiler/jcl/cambbld.jcl`.
 - `compile-mvs`: compile BCPL using the installed resident Cambridge compiler.
-- `NATIVE_JCL(BLIBBLD)`: build the BLIB relocatable object module using `native-compiler/jcl/build-blib-object.jcl`.
+- `NATIVE_JCL(BLIBBLD)`: build the BLIB relocatable object module using `native-compiler/jcl/blibbld.jcl`.
 - `run-regression`: run the native regression panel.
 - `capture-writef-cg370`: capture CG370 diagnostics.
 
@@ -51,7 +51,7 @@ Stage the host-generated native bootstrap sources **only through dspal**:
 python3 tools/native/stage-bootstrap --dry-run
 python3 tools/native/stage-bootstrap
 python3 tools/checks/check-native-bootstrap-jcl.py
-tools/datasets/dspal put NATIVE_JCL CAMBBLD native-compiler/jcl/build-cambridge-resident.jcl
+tools/datasets/dspal put NATIVE_JCL CAMBBLD native-compiler/jcl/cambbld.jcl
 tools/datasets/dspal submit NATIVE_JCL CAMBBLD
 ```
 
@@ -64,7 +64,7 @@ interpreter, and writes `BCPL`, `SYN`, `LEX`, `TRNA`, `TRNB`,
 `NATIVE_INTCODE`. All outputs are disposable.
 
 The authoritative build JCL source is
-`native-compiler/jcl/build-cambridge-resident.jcl` and is installed as `NATIVE_JCL(CAMBBLD)` through `dspal put`. No separate
+`native-compiler/jcl/cambbld.jcl` and is installed as `NATIVE_JCL(CAMBBLD)` through `dspal put`. No separate
 host-side JCL-generation driver is maintained. JES return codes are insufficient
 to establish interpreted compilation success; inspect the ICINT completion
 codes in the job report and confirm the `NATIVE_INTCODE(CAMBCOMP)` member.
