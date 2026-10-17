@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0 and M4.1 accepted; targeted 135–137 PASS; full panel owner-deferred; M4.2/M4.3 open**
+Status: **M4.0/M4.1 accepted; M4.2 synthetic OPEN gate 138 staged, actual OPEN failure pending; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -308,3 +308,39 @@ Next: M4.2 MVS QSAM OPEN failure characterization, then
 M4.3 independent GETMAIN/FREEMAIN and SVC19/SVC20
 accountability. Do not treat a host abend as successful
 recoverable FIND behavior.
+
+## M4.2 preparation — distinguish returned failure from abend
+
+Opened M4.2 with a [separate technical plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md).
+Source inspection shows `DQOPEN` issues SVC 19, then
+consults DCB-derived state before returning 0 or 8.
+A nonzero DQOPEN return travels via `DIFCLEAN` /
+`DFFCLEAN` to `DREL`, whereas HNEW failure after a
+successful OPEN requires `DQCLOSE` first.
+
+To verify that DQOPEN-reported errors preserve the caller,
+staged permanent test-only compiled BCPL regression **138**
+and an isolated transformer that denies the **second**
+DQOPEN call **before SVC 19**, with the third call restoring
+the real OPEN. The source-only check and MVS test **have
+not yet been run**. No canonical runtime or PDS change
+was made. This is a cleanup-branch probe, **not**
+an actual incompatible-DD OPEN failure.
+
+A later exploratory, isolated MVS job must characterize
+**real** SVC 19 failure or x13 abend and record accurate
+IEC/IEF codes. That gate is not staged or accepted.
+The overall native regression panel is still deferred.
+
+**Next focused operator command:**
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+python3 tools/checks/check-bcplio-m42-open.py
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 138 --show-output
+```
