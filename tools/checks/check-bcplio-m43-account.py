@@ -56,5 +56,19 @@ for site in (
             pass
         else:
             raise AssertionError(f"accepted changed site {site!r}")
+# JOB 7878 exposed a missing IFOX base register in the test shim.
+# Require a base before the V-type external literal, separately from
+# the canonical BCPLIO instrumentation source audit.
+shim = (ROOT / "native-compiler/regression/139-dynamic-dd-resource-accounting/"
+        "native.asm").read_text(encoding="ascii")
+assert shim.count("         L     15,=V(IOACCT)") == 1
+assert shim.count("         EXTRN IOACCT") == 1
+assert shim.count("         BALR  10,0\n         USING *,10\n"
+                  "         L     15,=V(IOACCT)") == 1
+assert shim.count("         DROP  10") == 1
+assert shim.count("         END") == 1
+assert all(line.isascii() and len(line) <= 71
+           for line in shim.splitlines())
+print("M4.3 native counter shim base setup: source check PASS")
 print("M4.3 private source accounting checks: PASS")
 print("MVS assembly and execution/accounting evidence: NOT TESTED")

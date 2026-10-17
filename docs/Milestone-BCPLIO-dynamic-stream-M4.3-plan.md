@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.3 resource accountability
 
-**Status: source-only accounting infrastructure and test 139 STAGED; no current IFOX/IEWL/GO result.**
+**Status: M4.3.0 source checker PASS; JOB 7878 partial assembly, ASMNAT IFOX RC=0008 (IFO209); isolated native helper fixed, M4.3.1 awaiting rerun.**
 Date: 2026-10-17
 
 ## Contract
@@ -27,6 +27,28 @@ An isolated generated BCPLIO adds an internal assembler entry named `IOACCT` (R1
 | 9 | M43CRET | returned dynamic SVC20 |
 
 A returned FREEMAIN call does not by itself prove physical MVS reclamation; nor does SVC20 returning establish every host CLOSE result. Counters reflect instrumented runtime control flow, with separate lifecycle and host-completion evidence.
+
+## First MVS run and correction (2026-10-17)
+
+The operator ran the source audit successfully. Cambridge compilation
+**JOB 7877** generated CODE. The first candidate-only GO deck,
+**JOB 7878 (RG139R)**, produced:
+
+| Step | Result |
+|---|---|
+| ASMAP / IFOX00 | RC=0000 |
+| ASMFIO / IFOX00 (instrumented BCPLIO) | RC=0000 |
+| ASMNAT / IFOX00 (native helper) | RC=0008 |
+| IEWL LKED | Bypassed |
+| GO | Bypassed |
+
+ASMNAT statement 9 failed with **IFO209 ADDRESSABILITY ERROR** on
+`L 15,=V(IOACCT)`. The test-only helper had no established base
+register for the address-literal load. Its source was corrected with
+`BALR 10,0` and `USING *,10` (with a subsequent `DROP 10`).
+This is a harness error, not a tested BCPLIO accounting imbalance.
+**M4.3.1 has not passed.** The corrected helper must undergo
+IFOX/IEWL/GO verification before any count-based conclusion.
 
 ## Staged acceptance gates
 
