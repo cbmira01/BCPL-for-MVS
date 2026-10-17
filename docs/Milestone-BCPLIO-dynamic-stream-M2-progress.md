@@ -1,6 +1,6 @@
 # Dynamic BCPLIO streams — M2 input multiplicity progress
 
-Status: **M2 functional gates through 132 ACCEPTED on DEVOBJ; full 00..132 compatibility sweep pending**
+Status: **M2 CLOSED — full DEVOBJ 00..132 acceptance: 132 PASS, 0 FAIL, 1 expected SKIP (083), TOTAL 133**
 Project: BCPL for MVS 3.8 reconstruction
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 
@@ -359,3 +359,59 @@ Expected `00..132`: **132 PASS, 0 FAIL, 1 expected SKIP
 with the explicit DD DATA read-position limitation preserved
 and M4 failure handling, GETMAIN/FREEMAIN accounting and M5
 DD-specific attribution remaining separate.
+
+## M2 final acceptance — full 00..132 DEVOBJ panel (MVS 2026-10-17)
+
+**M2 CLOSED (development candidate).** The operator pulled from
+`9486824` to `c4f7a8d` and ran the entire native regression with
+`BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1`,
+`BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`:
+
+```text
+NATIVE REGRESSION  00..132  (133 tests)
+...
+PASS  130  130-dynamic-dd-sixteen-input-streams
+PASS  131  131-dynamic-dd-output-reopen-identity
+PASS  132  132-dynamic-dd-input-reopen-identity
+
+NATIVE REGRESSION COMPLETE
+PASS  132
+FAIL  0
+SKIP  1
+TOTAL 133
+```
+
+The sole SKIP is regression 083, an expected source-only storage
+instrumentation case. The submitted log individually lists PASS for
+every other numbered regression. M2 acceptance covers the 16-input
+simultaneous-DD threshold, independently maintained cursor/EOF/
+UNRDCH state, stable opaque nonrecycled handles, and same-DD input
+ENDREAD/re-FIND with a fresh handle and stale-handle rejection.
+Repeated opening of the same `DD DATA` succeeded. Regression 132
+**does not read the reopened DD**: no guarantee about re-GET,
+rewind, or cursor positioning on instream DD DATA is implied.
+
+This is a source-and-object configuration acceptance of the
+existing `DEVOBJ(BCPLM6+BCPLIO)` test target, **not** production
+`HERC02.BCPL.NATIVE.OBJ` promotion. No runtime assembler
+rebuild is needed and none occurred in this checkpoint. The
+complete parent milestone remains open for M3 output attribution,
+M4 failure/reclamation and M5 final integration.
+
+### M2 exit checklist
+
+- Sixteen simultaneously open ordinary input DDs: **PASS 130**
+- Independent FB80 records, newlines, EOF, UNRDCH: **PASS 125/126/130**
+- Consistent duplicate FIND and distinct post-close identity:
+  **PASS 127/131/132**
+- Stale selected-handle rejection, ENDREAD/reopen:
+  **PASS 125/126/130/132**
+- Complete backwards-compatibility suite:
+  **132 PASS, 0 FAIL, 1 expected SKIP, 133 total**
+- Instream DD DATA seek or rewind guarantees:
+  **explicitly not claimed or required for M2**
+
+**Close M2.** Next engineering work should begin with a
+source-only inventory for M4 and an explicit M3 mixed-stream /
+physical-output-attribution review, not with further DD counts.
