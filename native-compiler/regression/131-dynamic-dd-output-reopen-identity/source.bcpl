@@ -1,0 +1,51 @@
+// M2 stable identities: close and reopen the SAME dynamic output DD.
+GLOBAL $( START:1; SELECTOUTPUT:12; WRCH:14; OUTPUT:17;
+          STOP:30; FINDOUTPUT:41; ENDWRITE:47; WRITES:60 $)
+
+LET START() BE
+$(1
+    LET MAIN = OUTPUT()
+    LET A = FINDOUTPUT("REPORT")
+    LET B = 0
+    LET C = 0
+
+    IF A=0 DO STOP(8)
+    SELECTOUTPUT(A)
+    IF OUTPUT() NE A DO STOP(8)
+    WRITES("REPORT FIRST")
+    WRCH(10)
+    ENDWRITE()
+    IF OUTPUT() NE MAIN DO STOP(8)
+
+    // Retirement must reject the old identity immediately.
+    SELECTOUTPUT(A)
+    IF OUTPUT() NE MAIN DO STOP(8)
+
+    // A fresh OPEN of the same DD creates a fresh stable handle.
+    B := FINDOUTPUT("report")
+    IF B=0 DO STOP(8)
+    IF B=A DO STOP(8)
+    SELECTOUTPUT(B)
+    IF OUTPUT() NE B DO STOP(8)
+
+    // Active duplicate-FIND returns the new existing identity.
+    C := FINDOUTPUT("REPORT")
+    IF C NE B DO STOP(8)
+    SELECTOUTPUT(A)
+    IF OUTPUT() NE B DO STOP(8)
+
+    WRITES("REPORT SECOND")
+    WRCH(10)
+    ENDWRITE()
+    IF OUTPUT() NE MAIN DO STOP(8)
+
+    // Both retired handles stay invalid.
+    SELECTOUTPUT(A)
+    IF OUTPUT() NE MAIN DO STOP(8)
+    SELECTOUTPUT(B)
+    IF OUTPUT() NE MAIN DO STOP(8)
+
+    WRITES("BCPL REOPEN OK")
+    WRCH(10)
+    FINISH
+$)1
