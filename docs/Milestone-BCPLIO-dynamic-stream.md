@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical 133 and M4.0 negative-DD 134 PASS individually; full 00..132 baseline 132 PASS/0 FAIL/skip 083; M4/M5 open  
+Status: M0/M1/M2 accepted; focused 133/134 PASS; owner deferred full 00..134; M4.1 instrumented tests 135–137 staged; M4/M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -224,6 +224,34 @@ matching FREEMAIN / CLOSE accounting and termination cleanup.
 M5 still owns lossless physical DD attribution and final
 integration acceptance. Neither candidate object promotion nor
 overall milestone closure is authorized.
+
+## M4.1 — explicit deferral and fault-injection development (2026-10-17)
+
+**Owner decision:** Defer the full native `00..134` compatibility
+panel and proceed directly into **M4.1 deterministic
+allocation-failure verification**. The last accepted full panel
+remains `00..132` (132 PASS, no FAIL, source-only SKIP 083).
+Focused tests 133 and 134 both passed individually. The
+deferral is intentional, neither a failure nor a completed
+compatibility gate. Do not promote PDS members or close the
+parent milestone on the strength of the targeted tests alone.
+
+M4.1 now has a [complete source-transform, test-only JCL and
+acceptance plan](Milestone-BCPLIO-dynamic-stream-M4.1-plan.md):
+strict test-only copy of canonical BCPLIO, inline assembly
+into a temporary `&&IOOBJ` object, linked with existing
+development `BCPLM6` and all other normally installed
+objects. The standalone mode-based generator deterministically
+fails the second GETMAIN invocation at each of the 32-, 268-,
+and 16-byte dynamic-stream allocation points. Permanent
+candidate-only compiled BCPL cases 135–137 are staged.
+
+**No new MVS evidence for 135–137 exists yet.** Begin with
+focused regression **135** and investigate test-only
+ASMFIO/LKED linkage results before expanding testing. Installed
+DEVOBJ and production NATIVE.OBJ remain unchanged. M4.2 true
+OPEN failures, M4.3 independent resource accounting and M5
+physical DD attribution are still outstanding.
 
 ## Handoff / next-conversation prompt
 
