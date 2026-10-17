@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical 133 PASS; M4.0/4.1 focused 134–137 PASS; full panel deferred; M4.2/M4.3 and M5 open  
+Status: M0/M1/M2 accepted; M4.1 CLOSED 135–137 PASS; M4.2 synthetic test 138 staged, genuine OPEN pending; M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -318,6 +318,34 @@ or canonical BCPLIO assembler source were changed.
 Next milestones: M4.2 QSAM OPEN failure diagnostics,
 M4.3 independent resource accounting, and M5 physical DD
 output attribution and final integration.
+
+
+## M4.2 OPEN-failure analysis and staged probe 138
+
+After accepting M4.1's three focused synthetic allocation
+failure tests (135–137 PASS individually), inspected
+canonical `native-compiler/asm/bcplio.asm` for
+`DQOPEN` SVC19 return and `DIFIND`/`DQFIND`
+cleanup handling. MVS OPEN can sometimes leave an
+unopened DCB and continue, but other DCB/mode errors
+may produce an x13 system abend. A genuine host
+failure is therefore not interchangeable with a
+synthetic nonzero return from DQOPEN.
+
+The [M4.2 contract and test plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md)
+distinguishes these cases. Permanent regression **138**
+is now **STAGED ONLY** with a development-only, temporary
+BCPLIO assembled into the GO JCL; its second
+DQOPEN attempt returns nonzero before SVC19, and a
+third attempt performs normal SVC19. This checks the
+nonfatal cleanup/retry branch but **does not** establish
+how MVS 3.8J responds to a real incompatible-DD OPEN.
+A separate exploratory real-OPEN failure gate and
+M4.3 resource accounting remain required.
+
+Nothing has been rebuilt or promoted in installed
+`DEVOBJ` or production `OBJ`. The owner's full
+native regression deferral is still in effect.
 
 ## Handoff / next-conversation prompt
 
