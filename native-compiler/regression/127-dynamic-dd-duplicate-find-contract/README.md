@@ -1,15 +1,22 @@
 # 127 — Repeated FIND must preserve live handle identity
 
-**Status: RED GATE CONFIRMED, FIX RETEST PENDING.** The initial
-candidate-only compiled-BCPL execution (Cambridge JOB 6794, native
-JOB 6795) assembled and linked successfully but GO abended **S013-C0**
-with `IEC141I 013-C0,IGG0199G,RG127R,GO,DD01`. This is a regression
-failure, **not** the expected controlled STOP(8). It is consistent
-with a duplicate OPEN of an already-open instream DD.
+**Status: ACCEPTED, candidate-only DEVOBJ regression.** The first
+compiled-BCPL execution (Cambridge JOB 6794, native JOB 6795) assembled
+and linked cleanly but GO abended **S013-C0** with
+`IEC141I 013-C0,IGG0199G,RG127R,GO,DD01`, consistent with opening
+an already-open instream DD twice.
 
-Commit `9c9dcb4` adds pre-OPEN active handle/name lookup in both
-dynamic FIND paths. It has **not yet been rebuilt or run under MVS**.
-The same immutable fixture is the acceptance test for that fix.
+Source commits `9c9dcb4` and `04ebb84` inserted a live-handle lookup
+before RDJFCB and QSAM OPEN, reusing the active name/direction identity.
+Operator staged revised BCPLIO via JOB **6796**; DEVOBJ-only BLDDEVI
+launcher JOB **6798**, payload JOB **6799**, reported IFOX00 ASMIO
+RC=0000 and IEBGENER PUTIO RC=0000, with zero flagged statements.
+The same compiled-BCPL regression 127 then reported **PASS 1 / FAIL 0 /
+SKIP 0 / TOTAL 1** with the standard DEVOBJ candidate variables. The
+operator did not supply individual GO step JOB numbers in that positive
+run; the runner accepted its normal completion and logical-record
+fixtures. **The duplicate FIND targeted gate is accepted**, pending
+full post-change compatibility revalidation.
 
 M0's approved duplicate-FIND contract explicitly requires multiple
 calls to `FINDINPUT` or `FINDOUTPUT` for the **same normalized DD name,
@@ -37,11 +44,8 @@ BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
 tools/native/run-regression 127 --show-output
 ```
 
-**Acceptance target after DEVOBJ-only BCPLIO rebuild:** clean IFOX
-and PUTIO RC0000; Cambridge/ASMAP/IEWL success; GO RC0000 without
-abend; exact primary and REPORT logical records; runner PASS 127.
-Until the MVS operator observes that result, do not declare duplicate
-FIND behavior accepted. This test does not yet cover reopen-after-close
-using the same DD, nor FINISH/STOP cleanup of unclosed streams. Those
-need separate cases. Combined JES output does not independently prove
-REPORT DD attribution.
+**Acceptance evidence:** candidate BCPLIO build JOB 6799 and
+targeted regression 127 PASS, as described above. The test still does
+not cover reopening a DD after close, nor FINISH/STOP cleanup of
+unclosed streams. Those need separate cases. Combined JES output does
+not independently prove physical REPORT DD attribution.
