@@ -1,7 +1,12 @@
 # 126 — Twelve simultaneously open dynamic input streams
 
-**Status:** permanent native compiled-BCPL candidate-only stress regression,
-staged for first MVS execution. Not yet accepted or MVS-validated.
+**Status: ACCEPTED** for the DEVOBJ modular runtime candidate.
+After pulling commit `1b95c9a`, the MVS operator executed regression 126
+with `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1` and `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`.
+Result: **PASS 1, FAIL 0, SKIP 0, TOTAL 1**. The positive test fixture
+requires normal GO RC0000 and the exact success marker; the operator
+provided the regression panel rather than individual JOB step details.
 
 The harness generates twelve separate GO-step DD DATA allocations,
 `DD01` through `DD12`, using `input-dd01.records` through
