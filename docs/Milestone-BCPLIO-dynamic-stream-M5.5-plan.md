@@ -1,13 +1,16 @@
 # BCPLIO dynamic streams — M5.5 final acceptance gate
 
 **Status: M5.5 FORMALLY CLOSED by project owner 17 October 2026. Final run 145 PASS / 0 FAIL / expected SKIP 083 with 145/145 fresh-log audit PASS. Follow-up interrupted duplicate altered current on-disk artifacts after verification; caveat retained.**
-M5.0 through M5.4 are closed. The last **measured** full
-DEVOBJ BCPLM6+BCPLIO panel is still M4.4 (00..145:
-145 PASS, 0 FAIL, expected SKIP 083 and 145/145
-saved log audit). M5.5 must generate its **own fresh**
-execution evidence and obtain the owner's explicit
-acceptance. This is a final compatibility run,
-**not** a destructive purge-to-clean-room rebuild.
+The earlier M4.4 145/0/1 DEVOBJ result was the
+pre-final compatibility baseline. The later fresh
+M5.5 00..145 run at `57c7354` also produced
+**145 PASS, 0 FAIL, one expected SKIP 083** with
+**145/145 fresh logs audited**. The owner accepted
+those final results. The procedures and earlier
+pending statements below are preserved as
+dated preparation/execution history, **not as
+outstanding work**. This was not a destructive
+clean-room purge/rebuild.
 
 ## Formal gate closure — 17 October 2026
 

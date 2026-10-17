@@ -12,7 +12,7 @@ The MR10 suite runners now live under `tools/mr10/`. Their former tools-root pat
 - `tools/datasets/` — the `dspal` dispatcher and dataset-management modules.
 - `tools/mr10/` — MR10 INTCODE interpreter, compiler, and short-named suite runners.
 - `tools/native/` — Cambridge/native compilation, bootstrap source staging, native regressions, and resident-JCL build coordination.
-- `tools/checks/` — reusable diagnostics and acceptance helpers (unchanged).
+- `tools/checks/` — reusable static checks, test-only QSAM output probes, job/RC auditing, and final-run freshness evidence.
 
 Only this README and the five subsystem directories remain at the tools root. The M3 manifest now defines 24 managed MR10, reserved CAMB, and NATIVE datasets. See the clean-room runbook for the full reconstruction order.
 

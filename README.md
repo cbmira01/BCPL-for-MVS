@@ -14,7 +14,7 @@ In particular, even a compiler that successfully compiles itself and passes this
 
 The regression suite therefore demonstrates the behavior explicitly tested by the project; it is not a certification of full historical source, binary, or runtime compatibility.
 
-## Current state (M3 accepted, 15 October 2026)
+## Reconstruction status (17 October 2026)
 
 The historical MR10 kit compiler runs under reconstructed System/370 ICINT19,
 which is built on MVS as `MR10_LOAD(ICINT19)`. The resident demoted Cambridge
@@ -26,6 +26,26 @@ The complete native panel spanning 00–123 passed with **123 PASS, 0 FAIL,
 1 expected SKIP (083)** using rebuilt objects in `NATIVE_OBJ` and
 `NATIVE_DEVOBJ`. This is not a claim of full historical BCPL compatibility.
 The M4 native Cambridge compiler and `CAMB_*` datasets remain out of scope.
+
+**Current native-stream milestone:** BCPLIO dynamic stream
+**formally CLOSED** 17 October 2026 with owner acceptance of
+the candidate `NATIVE_DEVOBJ(BCPLM6+BCPLIO)` under the documented
+QSAM stream contract. A fresh `00..145` native regression
+at Git `57c7354` returned **145 PASS, zero FAIL,
+one expected SKIP 083**, with independent audit
+of **145/145 fresh per-case logs**. JES/QSAM physical
+evidence is recorded for JOBS 8184–8186.
+The accepted DEVOBJ candidate has **not** been promoted
+to production `NATIVE_OBJ`; the Cambridge compiler still
+executes as INTCODE under ICINT19. The earlier
+00–123 acceptance above is the M3 *historical* baseline.
+
+Read the [formal BCPLIO milestone sign-off]
+(docs/Milestone-BCPLIO-dynamic-stream-final-acceptance.md),
+[current runtime contract]
+(docs/BCPLIO-dynamic-runtime-contract.md), and
+[handoff for repository cleanup and regression-runner review]
+(docs/Handoff-repository-cleanup-regression-runner.md).
 
 **Start here:** [Clean-room reconstruction of the entire MVS PDS
 environment](packaging/clean-room-mvs-reconstruction.md). The consolidated

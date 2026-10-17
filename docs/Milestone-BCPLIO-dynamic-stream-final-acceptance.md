@@ -96,3 +96,37 @@ Related documents:
 [M5.5 gate history](Milestone-BCPLIO-dynamic-stream-M5.5-plan.md),
 [current runtime contract](BCPLIO-dynamic-runtime-contract.md),
 [canonical clean-room procedure](../packaging/clean-room-mvs-reconstruction.md).
+
+## Administrative closeout and transfer to maintenance
+
+Following owner sign-off, the project requested a
+separate handoff for **repository cleanup and questions
+about the native regression runner**. The main
+README, native tools overview and historical M5.5
+plan introduction were reconciled to the accepted
+17 October 2026 result; older progress/evidence
+sections retain their original historical status.
+
+The [next-conversation handoff]
+(Handoff-repository-cleanup-regression-runner.md)
+is deliberately a **read-only inventory and design
+discussion**, not authorization to delete files
+or rewrite the runner. No compiler, BCPLIO,
+BCPLM6, BLIB, public BCPL globals, assembler source,
+JCL, PDS member or production object was changed
+for this administrative closeout. No new JES
+submission, suite run, destructive clean-room
+test or object promotion was made.
+
+**Evidence housekeeping remains optional:**
+the accepted first-run receipt
+`workarea/native-regression/m55-verification.json`
+and original operator paste should be preserved.
+The original transcript path was overwritten
+by an interrupted second run. A recovered
+298-line transcript is known, SHA-256
+`5623d6949629ccfa38833b8f4765c42053bd18a54bed795e4ec989a80eff63fe`,
+but **its digest has not been reconciled** with
+the receipt's `runner_transcript_sha256`;
+byte identity is unproven. This caveat does
+not reopen the successfully accepted milestone.

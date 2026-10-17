@@ -30,7 +30,7 @@ The [current dynamic BCPLIO stream contract]
 describes the BCPL interface and supported QSAM
 record semantics. The accepted M4.4 result was
 145 PASS/0 FAIL/expected SKIP 083, while the
-fresh M5.5 execution gate remains open.
+fresh M5.5 DEVOBJ panel and strict 145/145 log audit **passed**, and the owner formally **closed** the BCPLIO dynamic-stream milestone on 2026-10-17. Production NATIVE_OBJ promotion remains a separate decision; see the [final acceptance](../../docs/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
 
 ## M3 clean native-compiler bootstrap (not M4)
 
