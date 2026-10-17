@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; M4.2 synthetic OPEN gate 138 staged, actual OPEN failure pending; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; M4.2.0 synthetic 138 PASS; genuine OPEN M4.2.1 not tested; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -344,3 +344,22 @@ BCPL_RUNTIME_CANDIDATE=1 \
 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
 tools/native/run-regression 138 --show-output
 ```
+
+## M4.2.0 targeted synthetic DQOPEN denial PASS
+
+The operator pulled `main` through `5c890d3`,
+successfully executed `tools/checks/check-bcplio-m42-open.py`,
+and observed regression **138 PASS** against the
+development candidate using a temporary test-only
+BCPLIO object (**1 PASS, 0 FAIL, 0 SKIP, total 1**).
+The injected second DQOPEN call returned failure **without
+executing SVC 19**. The failed FIND returned zero, DD01
+selection/cursor were preserved, and a subsequent DD02
+attempt opened successfully. No installed object changed.
+
+**This does not validate real host QSAM OPEN failure.**
+The M4.2.1 exploration remains open for a truly incompatible
+but allocated DD, potentially an S013 abend, with genuine
+JES evidence. M4.3 independent resource counts and M5
+physical DD attribution also remain outstanding. Full
+regression remains owner-deferred.
