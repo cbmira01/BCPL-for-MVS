@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: synthetic 138 PASS; exploratory 7874/7875 returned HANDLE; RG892R malformed-FB JCL PREPARED but GO NOT SUBMITTED; real failed OPEN unproved; full panel deferred.**
+**Status: 138 synthetic DQOPEN PASS; exploratory 7874/7875/7876 all returned HANDLE despite suspect DD allocations; real unsuccessful QSAM OPEN unproved; move to in-storage DCB/SVC19 observability; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -626,3 +626,77 @@ rejection, a nonzero handle and a failed SVC19 remain possible
 outcomes, not established facts. Continue with a single
 exploratory submission and capture complete JES/IEC/IEF output.
 M4.2 stays open, full regression deferred, no object promotion.
+
+## M4.2.3 JOB 7876 — malformed FB JCL DCB accepted, HANDLE returned
+
+Received operator's complete `RG892R` JOB 7876
+JES report (17 October 2026, 05.50.01).
+Actual GO JCL includes:
+
+```jcl
+//DD02     DD SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=81)
+```
+
+The GO step received `IEF237I JES2 ALLOCATED TO
+DD02`. The linker included the normal development
+`BCPLM6` and `BCPLIO` objects, not a fault
+injection. ASMAP/LKED/GO were each `RC=0000`,
+with no reported IEC OPEN diagnostic or system
+abend. BCPL output was:
+
+```text
+M42 BEFORE FIND DD02
+M42 DD02 RETURNED HANDLE
+M42 SURVIVED FIND DD02
+```
+
+This **does not** prove that the post-OPEN DCB
+actually retained RECFM=FB/LRECL=80/BLKSIZE=81,
+nor that a GET would work. The application does
+not GET from DD02. Canonical DIFIND returns a
+nonzero new handle only after DDVERIFY succeeds,
+DALLOC constructs the descriptor, DQOPEN executes
+real SVC19 and observes apparently open DCB
+state, and HNEW succeeds. Thus the attempted
+malformed JCL DCB did **not** trigger a recoverable
+or abending QSAM OPEN failure here.
+
+### M4.2 technical course correction
+
+Three actual allocated-DD attempts had the same result:
+**JOB 7874** SYSOUT as input: HANDLE;
+**JOB 7875** read-only nonmember PDS: HANDLE;
+**JOB 7876** SYSOUT FB `80/81`: HANDLE.
+
+The crucial implementation fact is that DALLOC
+copies a `DQTIN` template into a 96-byte private
+DCB at owned-region offset +132; `DQTIN` itself
+declares `DSORG=PS,MACRF=GM,EODAD=INDYEOD`
+**without explicit LRECL, BLKSIZE or RECFM**.
+MVS merges those attributes at OPEN from whatever
+applicable sources it accepts. We have not yet
+measured the effective merged bytes. Merely
+varying a JCL DD is not enough to establish
+which in-memory DCB fields SVC19 validated.
+
+**Next design gate (not executed):** a development-only,
+source-generated disposable BCPLIO object, with
+diagnostics immediately before and after the real
+SVC19 in DQOPEN for **DD02 only**, observing the
+DCB RECFM/LRECL/BLKSIZE and open-state. Verify
+DCB field offsets against contemporary OS/VS2
+DCBD macro or IFOX macro expansion **before**
+writing to any byte. Keep DD01 unchanged as
+a control and keep compiled BCPL marker output.
+Only then consider a private, DD02-only invalid
+DCB patch that reaches the real OPEN call and
+may abend. An abend is a diagnostic, **never**
+a native-regression PASS. Do not change
+production BCPLIO, installed DEVOBJ/OBJ,
+G-slot ABI, full-panel deferral or resource
+accounting scope.
+
+**M4.2's actual failed-OPEN acceptance remains OPEN.**
+No new operator job is requested at this stage;
+the next work is repository-side DCB verification
+and design, not speculative JCL reruns.
