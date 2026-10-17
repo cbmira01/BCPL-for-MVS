@@ -1,9 +1,41 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0/M5.1/M5.2 CLOSED under QSAM responsibility boundary (JOBS 8184/8185/8186); M5.3 coverage review IN PROGRESS; M5.4–M5.5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0–M5.3 CLOSED under agreed QSAM boundary (JOBS 8184/8185/8186; M4.4 00..145 compatibility); M5.4 NEXT; M5.5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.3 — CLOSED on existing compiled-BCPL evidence (2026-10-17)
+
+After M5.2 acceptance, reviewed source and already
+accepted results for native cases 101, 103, 110–114,
+124–133 and existing failure/accounting 134–145.
+The M4.4 full DEVOBJ suite (00..145, **145 PASS /
+0 FAIL / one expected SKIP 083**) and all 145
+saved-log audits are the compatibility baseline.
+The independent M5.1/M5.2 physical QSAM proof
+remains JOBS 8184 (two printer routes), 8185
+(two distinct REPORT/REPORT2 FB132 datasets,
+full 132-byte record check), 8186 (deliberately
+wrong pad byte rejected by VCHK RC0012).
+
+**Disposition:** no untested behavior within the
+agreed BCPLIO/QSAM acceptance boundary justifies a
+new compiled-BCPL regression case. The two-dataset
+physical byte verification applies to case 124, not
+all native cases; FINISH, STOP, reopen and mixed-stream
+cases are accepted via existing functional/logical
+regressions. No fresh MVS job, runtime modification,
+PDS update, new numbering or runner change occurred
+in M5.3. Internal JES2 spool representation remains
+outside scope.
+
+**M5.3 CLOSED (scoped). M5.4 NEXT:** publish the
+current dynamic runtime contract and one coherent
+clean-room rebuild/runbook. **M5.5** retains the
+fresh full DEVOBJ run and final acceptance.
+See the [M5.3 source-to-evidence reconciliation]
+(Milestone-BCPLIO-dynamic-stream-M5.3-review.md).
 
 ## M5.2 — CLOSED, intentionally rejected padding byte (JOB 8186, 2026-10-17)
 
