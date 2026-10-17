@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; 138 synthetic OPEN PASS; JOB 7874 returned HANDLE; M4.2.2 PDS probe staged; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; 138 PASS; JOB 7874 returned HANDLE; RG891R PDS GO JCL prepared but unsubmitted; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -474,6 +474,20 @@ The job has **NOT been prepared or submitted on TK5**
 and a failing OPEN is not assumed. Record the actual
 IEC/IEF/program results before any M4.2 closure.
 The full regression panel stays owner-deferred.
+
+
+## M4.2.2 RG891R exploratory JCL generation successful
+
+Following a fast-forward to `3235115`, the operator ran
+the existing DEVOBJ/BCPLM6 non-submitting JCL generator
+using the Cambridge assembler produced in JOB 7873.
+The generator successfully wrote
+`workarea/m42-real-open/pds-open.jcl` with
+`DD01 DD DATA` and read-only `DD02 DD
+DSN=SYS1.MACLIB,DISP=SHR` (PDS without member).
+**RG891R has not been submitted; no real OPEN failure
+was measured and no PDS member was changed.**
+M4.2 remains open and the full panel deferred.
 
 ## Handoff / next-conversation prompt
 
