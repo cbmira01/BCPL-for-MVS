@@ -1,10 +1,64 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: 138 synthetic PASS; JOB 7874/7875/7876 all returned HANDLE; actual failing OPEN unproved; historical OS/VS2 R3.8 manual identifies printer DCB normalization, so defer new GO until effective DCB/SVC19 observability is designed; full panel deferred.**
+**Status: M4.2 CLOSED (scoped return-to-caller failure contract, 2026-10-17); regression 138 PASS; jobs 7874/7875/7876 returned handles; genuine failed SVC19 unobserved; M4.3 accounting and full-panel sweep remain pending.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
 panel 00..132: 132 PASS / 0 FAIL / expected SKIP 083).
+
+## Governing M4.2 acceptance revision — approved 2026-10-17
+
+**Decision: M4.2 CLOSED on the explicitly bounded return-to-caller
+recovery contract.** This is the current acceptance ruling and **supersedes**
+the original actual-failing-SVC19 exit requirement and later historical
+"must remain open" notes below. Earlier observations and rejected
+experiments are retained for traceability, not as active marching orders.
+
+The BCPL application sees character streams, not DCBs or QSAM records.
+The programmer's JCL/dataset setup must provide suitable DD allocations;
+MVS validates, opens and performs record I/O. BCPLIO translates the
+supported record shape to BCPL's stream contract and handles errors
+that actually return control to it. BCPLIO need not intercept S013
+or other unrecovered MVS abends, repair bad JCL, or guarantee that
+every host OPEN failure is nonfatal. BCPLIO must still manage its own
+DCBs, record buffers, descriptors, stable handles and cleanup paths.
+
+The scoped acceptance evidence is:
+
+| Gate | Evidence | Disposition |
+|---|---|---|
+| Ordinary name/allocation failure | Compiled-BCPL 134 targeted PASS | Accepted: zero FIND and unchanged selection/cursor |
+| Storage-allocation branches | Compiled-BCPL 135/136/137 individually PASS (private synthetic GETMAIN failures) | Accepted branch behavior; **not** exact free counts |
+| OPEN failure return branch | Compiled-BCPL 138 targeted PASS (private DQOPEN denial **before** SVC19) | Accepted: zero FIND, selected DD01 intact, later DD02 retry works |
+| Real QSAM OPEN explorations | JOB 7874/7875/7876: all HANDLE, GO RC0000 | Characterized; **no** unsuccessful SVC19 observed or inferred |
+
+Canonical assembler inspection shows `DIFIND`/`DQFIND`
+taking `DIFCLEAN`/`DFFCLEAN` to `DREL` when `DQOPEN`
+returns failure, without closing an unopened descriptor.
+When HNEW fails **after** successful OPEN, the source first
+invokes `DQCLOSE`, then `DREL`. These source paths and
+the focused behavioral tests meet **M4.2's scoped exit**.
+They are **not** independent instrumentation proving balanced
+FREEMAINs, CLOSE counts, or the MVS 3.8J interpretation of
+post-SVC19 DCB state. Those claims are explicitly reserved for M4.3.
+
+The current supported logical dataset contract is documented in
+[BCPLIO JCL and QSAM stream contract](BCPLIO-JCL-QSAM-stream-contract.md):
+fixed-text 80-byte input translation and fixed 132-byte output
+recordization; no blanket promise to accept variable/binary/PDS
+or other QSAM formats. A suspected mismatch does not prove
+the actual merged DCB attributes, nor does a returned handle
+prove that a GET or PUT would succeed.
+
+**What is closed:** M4.2's design and branch-behavior acceptance.
+**What is not closed:** M4.3 exact resource accounting, M4.4
+full compatibility regression (still owner-deferred), M5 physical
+DD attribution, overall stream milestone, and any claim that a
+real unsuccessful SVC19 was observed. No new MVS job, native
+assembler change, installed DEVOBJ/OBJ change or OBJ promotion
+is required/claimed for this documentary acceptance.
+
+---
 
 ## Scope and non-goals
 
@@ -199,7 +253,7 @@ A zero FIND return alone does not prove SVC19 executed,
 since `DDVERIFY` can fail earlier. No real SVC19 outcome
 is claimed before operator evidence is supplied.
 
-## Exit criteria
+## Original exit criteria (superseded by governing 2026-10-17 revision)
 
 M4.2 can close only after documented TK5 evidence for at
 least one **actual** incompatible allocated-DD OPEN attempt,

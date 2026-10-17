@@ -1,9 +1,36 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; 7874/7875/7876 returned HANDLE; R3.8 QSAM printer DCB normalization identified; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2 closed (M4.2 scope-limited, 2026-10-17); M4.3/M4.4/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M4.2 closure and remaining marches (2026-10-17)
+
+The owner accepted a narrower, historically appropriate responsibility
+boundary. **M4.2 is CLOSED**, under the [revised M4.2 acceptance](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md):
+BCPLIO translates character streams to/from record-oriented QSAM and
+responds correctly to errors for which MVS returns control. The
+programmer/JCL provides compatible DD allocations; MVS validates
+datasets and may abend on unrecoverable errors. BCPLIO does **not**
+promise to catch S013 or manufacture a real failing OPEN to prove its
+return-to-caller branch.
+
+Focused **134–138 individually PASS** (135–138 contain specifically
+described synthetic fault paths). Exploratory **JOB 7874, 7875, 7876**
+all returned nonzero DD02 handles; they neither proved an unsuccessful
+SVC19 nor demonstrated GET from DD02. The M4.2 source-inspected
+cleanup branch and regression 138 support scoped recovery, **not**
+instrumented proof of matching FREEMAIN/CLOSE calls. See the
+[programmer-facing dataset contract](BCPLIO-JCL-QSAM-stream-contract.md).
+
+**Next: M4.3** independent descriptor (32), region (268), and handle
+(16) ownership counts, SVC19/SVC20 counts and cleanup validation
+without changing the public ABI. M4.4's full native panel remains
+owner-deferred (last accepted full 00..132: 132 PASS, 0 FAIL, one
+expected SKIP 083). M5 physical DD attribution and overall milestone
+acceptance remain open. No runtime source was changed and no
+DEVOBJ/OBJ promotion is authorized by this decision.
 
 ## M0 gate decision (2026-10-16)
 

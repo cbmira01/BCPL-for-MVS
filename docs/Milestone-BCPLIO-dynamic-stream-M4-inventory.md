@@ -1,9 +1,32 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; 7874/7875/7876 returned HANDLE; 1979 IBM R3.8 printer-DCB normalization identified; actual failed OPEN unproved; full panel deferred**
+Status: **M4.0/M4.1/M4.2 accepted (M4.2 scope-limited to returned errors, 2026-10-17); 138 synthetic PASS; 7874/7875/7876 HANDLE; genuine failed OPEN unobserved; M4.3 accounting and full panel pending**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
+
+## Current gate — M4.2 acceptance revised 2026-10-17
+
+**M4.2 CLOSED on its returned-error handling contract.**
+The previously required deliberate real failing SVC19 experiment is
+no longer an acceptance gate: MVS may return control or terminate the
+task, and BCPLIO cannot be required to recover from an unhandled
+system abend. The programmer/JCL owns the compatible DD presentation;
+MVS validates and runs record I/O; BCPLIO provides the supported
+character-stream translation and cleans up its own recoverable paths.
+
+Regression 138 PASS establishes the isolated synthetic DQOPEN
+failure branch, selection/cursor preservation and retry. Jobs
+7874–7876 returned handles, not OPEN failures. **Do not mislabel
+the synthetic test as real SVC19 recovery.** The source's DREL
+branch is not yet a count-based proof of no leaks.
+
+[Detailed owner-approved revision and disposition](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md).
+[Supported JCL/QSAM stream shape](BCPLIO-JCL-QSAM-stream-contract.md).
+Proceed to **M4.3** for independently measured GETMAIN/FREEMAIN,
+OPEN/CLOSE and termination counts. The old M4.2 requirements and
+experimental notes below remain as historical records only.
+Full regression deferral, M5 and no OBJ promotion are unchanged.
 
 ## Purpose
 
