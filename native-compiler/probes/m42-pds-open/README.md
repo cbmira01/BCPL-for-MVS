@@ -1,0 +1,88 @@
+# M4.2.2 — read-only PDS without member: real QSAM OPEN probe
+
+**Status: STAGED; NOT PREPARED OR EXECUTED UNDER TK5.**
+**Exploratory only, NOT a native-regression PASS/FAIL case.**
+
+M4.2.1 `RG890R` (JOB 7874) used `DD02 DD SYSOUT=*`
+and returned a valid `FINDINPUT("DD02")` handle.
+The complete JES report showed no OPEN error. Therefore
+the initial mode mismatch did **not** create the desired
+genuinely unsuccessful SVC 19.
+
+M4.2.2 changes only the DD allocation. The existing
+version-controlled Cambridge BCPL application and `DD01`
+fixture under `native-compiler/probes/m42-real-open/`
+are reused. Its **previously generated** assembler at
+`workarea/m42-real-open/generated.s370.asm` from compiler
+JOB 7873 is also reusable. No new Cambridge compilation
+or source check needs to be run on the operator workstation.
+
+The GO DDs for the new `RG891R` deck are:
+- `DD01 DD DATA` (two known input records, A and B).
+- `DD02 DD DSN=SYS1.MACLIB,DISP=SHR` (read-only
+  partitioned dataset **without any selected member**).
+
+The BCPL code calls `FINDINPUT("DD02")` without GETting
+from DD02 even if FIND succeeds, so this is an OPEN
+diagnostic rather than a data-read experiment. Current
+IBM QSAM documentation describes access to a PDS without
+a member as a possible error. MVS 3.8J may reject earlier
+at RDJFCB, fail at OPEN (including system x13 abend),
+or accept the allocation. **All outcomes are diagnostic.**
+
+The builder `tools/checks/prepare-m42-pds-open-jcl.py`
+starts from canonical source and the existing PDS regression
+JCL generator, uses test number 891 strictly as a unique
+job identity (not a registered regression), inserts the
+read-only SYS1.MACLIB DD, and refuses duplicate DD02 or
+malformed JCL. It does not submit the generated job,
+modify the actual PDS or write to any installed OBJ/DEVOBJ.
+JCL statements are checked for assembler/JCL card width
+inside the generator. No separately invoked workstation
+checks are required.
+
+## Operator preparation — NO MVS GO submission
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+python3 tools/checks/prepare-m42-pds-open-jcl.py \
+  workarea/m42-real-open/generated.s370.asm \
+  workarea/m42-real-open/pds-open.jcl
+```
+
+Expected JCL generator output identifies `RG891R`,
+`DD02=SYS1.MACLIB,DISP=SHR`, and explicitly says
+the GO job was not submitted.
+
+## Exploratory submission (separate deliberate action)
+
+Only after checking the prepared deck's intended DD
+and read-only mode, submit it to the TK5 reader:
+
+```sh
+submission=$(tools/mvs/submit-jcl --timeout 30 \
+  workarea/m42-real-open/pds-open.jcl)
+printf '%s\n' "$submission"
+job=$(printf '%s\n' "$submission" |
+  awk '/^JOB [0-9]+$/ {print $2; exit}')
+tools/mvs/job-summary "$job" || true
+tools/mvs/dump-report-for-job "$job" \
+  > workarea/m42-real-open/pds-open-report.txt
+```
+
+Supply the job summary and complete `pds-open-report.txt`
+with credentials redacted. Preserve IEC/IEF messages and
+all three step condition codes. A GO ABEND is possible
+and **must not be recorded as a successful regression**.
+
+No source-only test checks or full native regression
+panel are required of the operator. The full panel remains
+owner-deferred. The still-open M4.2 actual failure gate
+will be interpreted against the observed control flow,
+rather than assumed from DD allocation alone.
