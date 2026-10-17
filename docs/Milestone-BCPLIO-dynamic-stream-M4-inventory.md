@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0 ACCEPTED; owner deferred full 00..134 suite; isolated M4.1 cases 135–137 STAGED, not MVS tested**
+Status: **M4.0 accepted; owner deferred full suite; M4.1 source checker and case 135 PASS, 136/137 pending; M4.2/M4.3 open**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -233,3 +233,27 @@ if the instrumented module has addressability/assembly issues.
 Do not change canonical runtime source or promote installed
 objects merely to fix test infrastructure. Then run 136 and
 137 separately after validating the first case.
+
+## M4.1 first focused gate accepted — regression 135
+
+The operator pulled through `175fc2e` and reported
+`python3 tools/checks/check-bcplio-m41-fault.py` PASS for
+all three injection source modes. This is **host-side static
+validation**, not MVS execution of all three cases.
+
+The subsequent isolated compiled-native regression
+`135-dynamic-dd-fault-descriptor32` completed:
+**PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**. This accepts
+the second-invocation synthetic failure of DALLOC
+`GETMAIN RC,LV=32` and subsequent non-destructive
+BCPL FINDINPUT retry. The installed DEVOBJ modules and
+production OBJ remain unchanged. Neither a true MVS
+low-storage condition nor independently counted FREEMAIN
+or CLOSE operations has been proved.
+
+**Next:** run focused 136 (268-byte region failure),
+then 137 (16-byte handle failure after successful OPEN).
+Both are staged and **not yet executed**. The full
+00..134 panel remains **explicitly deferred**, with last
+accepted complete suite 00..132 (132 PASS / 0 FAIL /
+one expected SKIP 083).
