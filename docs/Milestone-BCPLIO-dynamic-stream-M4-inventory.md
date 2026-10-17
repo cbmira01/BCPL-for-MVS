@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0 accepted; full suite deferred; M4.1 source checker and cases 135/136 PASS, 137 pending; M4.2/M4.3 open**
+Status: **M4.0 and M4.1 accepted; targeted 135–137 PASS; full panel owner-deferred; M4.2/M4.3 open**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -281,3 +281,30 @@ at this stage: the owner deferred it explicitly. M4.2
 OPEN diagnostics and M4.3 independently verified resource
 counts remain outstanding. No installed OBJ or DEVOBJ
 object was changed by this test.
+
+## M4.1 close — all three isolated failure-path gates ACCEPTED
+
+Following prior focused PASS 135 and 136, the operator
+fast-forwarded `main` from `831ee82` to `ccb0f1b`
+and ran candidate-only regression **137**, obtaining
+**PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**. This exercises
+HNEW's second-visit 16-byte handle GETMAIN failure after
+successfully opening the candidate DD and verifies the
+zero-valued FIND, selected DD01/cursor preservation and
+successful later DD02 open, read and close. Actual DQCLOSE
+and DREL invocation counts were **not** instrumented.
+
+**M4.1 formally CLOSED:** source-only instrumentation
+checks passed for all three 32/268/16 modes and
+**135, 136, 137** passed *individually* under MVS.
+This is deterministic synthetic failure-path behavior,
+not true host GETMAIN exhaustion. Installed DEVOBJ
+members and production OBJ remain unchanged.
+The owner-deferral of full `00..134` regression remains
+in effect; the last full panel is still `00..132`
+with **132 PASS / 0 FAIL / 1 expected SKIP 083**.
+
+Next: M4.2 MVS QSAM OPEN failure characterization, then
+M4.3 independent GETMAIN/FREEMAIN and SVC19/SVC20
+accountability. Do not treat a host abend as successful
+recoverable FIND behavior.
