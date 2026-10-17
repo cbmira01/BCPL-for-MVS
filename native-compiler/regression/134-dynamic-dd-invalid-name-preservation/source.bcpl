@@ -1,0 +1,52 @@
+// M4.0: invalid and absent DD names fail without changing selection.
+GLOBAL $( START:1; SELECTINPUT:11; SELECTOUTPUT:12; RDCH:13;
+          WRCH:14; INPUT:16; OUTPUT:17; STOP:30;
+          FINDOUTPUT:41; FINDINPUT:42; ENDREAD:46;
+          ENDWRITE:47; WRITES:60 $)
+
+LET CHECKBAD(NAME, IH, OH) BE
+$(1
+    IF FINDINPUT(NAME) NE 0 DO STOP(8)
+    IF INPUT() NE IH DO STOP(8)
+    IF FINDOUTPUT(NAME) NE 0 DO STOP(8)
+    IF OUTPUT() NE OH DO STOP(8)
+$)1
+
+LET START() BE
+$(1
+    LET PRIMARY = OUTPUT()
+    LET I = FINDINPUT("DD01")
+    LET O = FINDOUTPUT("REPORT")
+
+    IF I=0 | O=0 DO STOP(8)
+    SELECTINPUT(I)
+    SELECTOUTPUT(O)
+    IF INPUT() NE I DO STOP(8)
+    IF OUTPUT() NE O DO STOP(8)
+    IF RDCH() NE 'A' DO STOP(8)
+
+    // Counted-string length 0 and 9; malformed DD syntax.
+    CHECKBAD("", I, O)
+    CHECKBAD("ABCDEFGHI", I, O)
+    CHECKBAD("1BAD", I, O)
+    CHECKBAD("AB-C", I, O)
+
+    // Valid MVS DDNAME spelling but no allocation in GO JCL.
+    CHECKBAD("NOFILE", I, O)
+
+    // Successful normalized duplicate FIND must still be possible.
+    IF FINDINPUT("dd01") NE I DO STOP(8)
+    IF FINDOUTPUT("report") NE O DO STOP(8)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE 'B' DO STOP(8)
+
+    WRITES("NEGATIVE DD OK")
+    WRCH(10)
+    ENDREAD()
+    IF INPUT() NE 0 DO STOP(8)
+    ENDWRITE()
+    IF OUTPUT() NE PRIMARY DO STOP(8)
+    WRITES("BCPL DD FAILURES OK")
+    WRCH(10)
+    FINISH
+$)1
