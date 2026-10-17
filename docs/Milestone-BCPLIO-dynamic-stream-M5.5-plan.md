@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M5.5 final acceptance gate
 
-**Status: STAGED; first operator self-test FAILED, parser correction prepared (17 October 2026); no M5.5 panel run or final acceptance.**
+**Status: FRESH M5.5 EXECUTION AND AUDIT TECHNICALLY PASSED (17 October 2026), owner final acceptance pending; follow-up interrupted run altered on-disk evidence.**
 M5.0 through M5.4 are closed. The last **measured** full
 DEVOBJ BCPLM6+BCPLIO panel is still M4.4 (00..145:
 145 PASS, 0 FAIL, expected SKIP 083 and 145/145
@@ -235,3 +235,63 @@ the shell short-circuited before `mv`.
 Follow the guarded archive-and-rebegin commands
 above after pulling this correction. Do not
 accept the old checkpoint for the new run.
+
+## M5.5 fresh operator execution and successful verifier (2026-10-17)
+
+After pulling and using `57c7354`, the operator
+achieved **11/11 offline self-tests PASS twice**,
+M4.4 candidate source preflight PASS, M4.3 checks
+PASS and numbering PASS, then recorded a new
+`m55-begin.json` at `57c7354`. The first fresh
+`tools/native/run-regression 0 145` finished with:
+
+```text
+NATIVE REGRESSION COMPLETE
+PASS  145
+FAIL  0
+SKIP  1
+TOTAL 146
+```
+
+Immediately afterward, the strict evidence verifier
+reported **145 newly written logs, 145/145 passed
+M4.4 job/step audits and M5.5 PASS**, writing
+`m55-verification.json`. There were no detected
+known-defect or abend exceptions. Expected GO
+RC distribution: 0000=139, 0008=3, 0012=1,
+0100=1. Case 048 is compile-only, and 083
+was the expected source-only skip. The exact
+case-by-case runner output was supplied in an
+operator terminal paste; the observed first-run
+logs had UTC mtime range 16:22:25 to 16:32:04
+on 17 October 2026.
+
+**Second run caution:** after this verified success,
+the operator ran the same full-panel command again,
+which re-created `m55-full-panel.log`, ran cases
+00 and 01 successfully, then interrupted case 02.
+The second transcript is partial and **must not**
+replace the first-run accepted test outcome.
+Because `tee` truncated the transcript and the
+runner rewrote at least two individual logs, the
+on-disk artifacts should no longer be described as
+a fully intact, directly re-auditable first-run set.
+The receipt remains a record that `verify` DID
+pass before the second run; the operator terminal
+paste independently reports both events.
+
+A 298-line first-run transcript can be extracted
+from the user-supplied terminal paste. Its SHA-256
+is `5623d6949629ccfa38833b8f4765c42053bd18a54bed795e4ec989a80eff63fe`.
+**This recovery SHA is not known to match the
+receipt's saved transcript digest.** Compare
+them before restoring any file or claiming a
+verified bit-for-bit recovery; avoid overwriting
+the partial second-run artifact until preserved.
+
+**Technical exit conditions are met** on the
+documented first run. The final explicit owner
+acceptance decision is outstanding. No
+production OBJ promotion, source change or
+further JES2 experiment is required for that
+decision.

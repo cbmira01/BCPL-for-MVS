@@ -1,9 +1,81 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0–M5.4 CLOSED under agreed QSAM responsibility boundary (JOBS 8184/8185/8186; M4.4 00..145 compatibility); M5.5 fresh full panel/final acceptance OPEN  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0–M4.4 CLOSED (M4.2/M4.3 scoped); M5.0–M5.4 CLOSED; M5.5 fresh full-panel and independent audit TECHNICALLY PASSED 2026-10-17 at 57c7354, formal owner acceptance PENDING. DEVOBJ candidate remains unpromoted.  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.5 observed final-panel success — technical gate PASSED, owner acceptance pending (2026-10-17)
+
+**Accepted technical evidence provided by the operator:** a
+complete fresh full native DEVOBJ run at Git
+`57c7354cf728ba3a46aef7e8f140006e1d3e5aeb`,
+with the fixed M5.5 offline verifier. The first,
+completed `tools/native/run-regression 0 145` output
+contained exactly **145 PASS, zero FAIL, one expected
+SKIP 083, TOTAL 146**. The immediately subsequent
+`m55-final-evidence.py verify` reported:
+
+```text
+M4.4 existing regression logs: 145/145
+GO-RC profile: DEVOBJ BCPLM6/D6; 052 and 093 expected RC0000
+GO RC distribution: 0000=139, 0008=3, 0012=1, 0100=1
+Log mtime UTC: 2026-10-17T16:22:25.767866+00:00 .. 2026-10-17T16:32:04.475723+00:00
+M4.4 detailed log audit: PASS (no detected known-defect/abend exceptions)
+M5.5 fresh DEVOBJ native panel evidence: PASS
+  145 fresh logs; 145 PASS, 0 FAIL, expected SKIP 083
+  Per-case M4.4 job/step audit: PASS
+  Receipt: workarea/native-regression/m55-verification.json
+  Final milestone owner acceptance: STILL REQUIRED
+```
+
+The operator previously ran the 11 offline self-tests
+successfully **twice**, the M4.4 source-only candidate
+preflight PASS, M4.3 source checks PASS and numbering PASS;
+the new BEGIN snapshot was recorded at that same Git SHA.
+The earlier physical QSAM evidence remains JOBS
+**8184 / 8185 / 8186**, with the JES2-internals obligation
+withdrawn by owner decision.
+
+**Subsequent separate event, after success:** the
+operator accidentally/again issued the same full-panel
+command. The second invocation overwrote
+`workarea/native-regression/m55-full-panel.log`,
+completed cases 00 and 01, then was interrupted
+with `KeyboardInterrupt` during case 02. The
+interruption is **not part of the completed
+first run** and cannot retroactively change
+its successful result. It **does** mean that the
+current on-disk transcript is not the transcript
+whose digest was saved in the earlier successful
+`m55-verification.json`; case logs 00–02 may also
+have been overwritten. Do **not** claim that a
+current rerun of `verify` would pass without
+restoration. Keep the first-run terminal paste as
+independent user-supplied evidence.
+
+An extract of the *first* complete runner transcript
+from the user-supplied paste has 298 lines and a
+SHA-256 of
+`5623d6949629ccfa38833b8f4765c42053bd18a54bed795e4ec989a80eff63fe`.
+This is a **reconstructed copy**, not yet verified
+against the original receipt. Compare its bytes to
+`m55-verification.json["runner_transcript_sha256"]`
+before claiming identical restored contents. Preserve
+the interrupted log separately rather than silently
+replacing any evidence.
+
+**Disposition:** M5.5 fresh runtime execution and
+strict verifier **TECHNICALLY PASSED at the moment
+of first verification**, and the evidence is
+sufficient to recommend final acceptance under the
+agreed BCPLIO/QSAM scope. The master milestone
+remains formally **OPEN for the owner's explicit
+acceptance**, per the M5.5 contract. No BCPLIO,
+compiler, runtime ABI, JCL, PDS or OBJ promotion is
+included. Do not require a second full run solely
+because the operator subsequently interrupted an
+unnecessary repeat.
 
 ## M5.5 second self-test correction — fixture fixed, panel still open (2026-10-17)
 
