@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; 7874/7875 returned HANDLE; M4.2.3 bad-FB DCB probe RG892R staged; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; 7874/7875 returned HANDLE; RG892R bad-FB diagnostic JCL PREPARED, GO unsubmitted; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -518,3 +518,16 @@ committed under `tools/checks/` and
 `native-compiler/probes/m42-fb-open/`.
 GO JCL not prepared or submitted; no installed
 runtime changes and no full regression requested.
+
+## M4.2.3 invalid-FB diagnostic preparation accepted
+
+The operator pulled `main` through `19e658a`
+and generated `workarea/m42-real-open/fb-open.jcl`
+using the existing Cambridge-compiled application.
+Generator reported `RG892R`, `DD02 SYSOUT`,
+`RECFM=FB,LRECL=80,BLKSIZE=81`, and explicitly
+confirmed **GO not submitted, no installed PDS change**.
+No MVS result or actual OPEN failure has been observed.
+Next: exploratory submission and complete JES spool;
+not a native regression PASS/FAIL gate. The owner's full
+panel deferral remains in force.
