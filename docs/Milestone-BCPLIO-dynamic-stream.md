@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0 accepted; M1 engineering gates validated through 129; M2 sixteen-stream test staged; overall milestone open  
+Status: M0/M1 engineering accepted; M2 sixteen-stream 130 PASS, close/reopen 131 staged; overall milestone open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -116,7 +116,7 @@ for this candidate. The broader dynamic-stream milestone is **not closed**:
 the original M2 threshold requires 13+ simultaneous independent streams
 and close/reopen semantics, while M4/M5 still require resource failures,
 instrumented reclamation, and lossless DD-specific output attribution.
-Regression 130 (sixteen concurrent input DDs) is staged, not yet run.
+Regression 130 (sixteen concurrent input DDs) now PASSED on DEVOBJ with the compact test source; no higher count is planned. Regression 131 (reopen same output DD with a fresh nonrecycled handle) is staged, not yet run.
 See `Milestone-BCPLIO-dynamic-stream-M1-progress.md` and
 `Milestone-BCPLIO-dynamic-stream-M2-progress.md`.
 
