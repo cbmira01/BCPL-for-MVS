@@ -645,3 +645,26 @@ tools/native/run-regression 128 --show-output
 tools/native/run-regression 129 --show-output
 ```
 Expect failures until the dynamic IOFIN sweep exists; distinguish ordinary missing output from JCL/compiler, assembler/link, or system abend. Production OBJ remains untouched.
+
+## MVS JOB 7059/7061 — termination-drain red gates confirmed (2026-10-17)
+
+Operator pulled through `b9b73f3` with `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`; executed cases 128 and 129 unchanged. **Neither test passed**, as deliberately anticipated for the pre-cleanup DEVOBJ BCPLIO source.
+
+**128 FINISH:** resident Cambridge JOB **7058** compiled. GO payload JOB **7059 RG128R** assembled `ASMAP IFOX00 RC=0000`, `LKED IEWL RC=0000`, executed **GO RC=0000** without an abend. The primary `FINISH MAIN OK` record matched, but `record-check: REPORT: ordered logical records not found in GO suffix`; case **FAIL 0 PASS / 1 FAIL / 0 SKIP**. REPORT2 also had a pending record; checker stops after REPORT is missing.
+
+**129 STOP:** Cambridge JOB **7060**, payload **JOB 7061 RG129R**, `ASMAP RC=0000`, `LKED RC=0000`, **GO RC=0008**, no system abend. The expected primary `STOP MAIN OK` matched; named `REPORT` partial record was missing, as recorded by `record-check`; **FAIL 0 PASS / 1 FAIL / 0 SKIP**. The runner now correctly checks named-DD fixtures even when GO has an expected nonzero RC. Its displayed `TERMINATION: ABNORMAL` refers to overall regression assertion failure, **not an MVS abend**. DD01, REPORT and REPORT2 were allocated in JCL; map resolved DEVOBJ BCPLIO and BCPLM6. Evidence is the operator log `Pasted text(20261017-023341).txt`. There is no evidence of an IFOX, IEWL or STOP/FINISH-control defect.
+
+**DECISION: both termination-flush RED gates accepted as test-first failure evidence; the candidate lifecycle feature remains OPEN.** The prior 00..127 compatibility gate remains accepted from before the lifecycle change.
+
+### IOFIN dynamic cleanup implementation — staged, not MVS validated
+
+Commit `8597a8874f081503489863a90524f4acce59f966` changes **only** `native-compiler/asm/bcplio.asm`. On IOFIN, after legacy primary/alternate and fixed-input cleanup, it calls private `IODRAIN`, then restores IOFIN R10 base and recomputes its secondary R11 base. The drain iterates `DHEAD` until empty and, for each open direction=2 descriptor with nonzero buffer fill at region+236, writes the space-padded FB132 record through existing `DQPUT`, then uses `DQCLOSE` (input or output) and `DREL` to free 268-byte QSAM-region storage plus the 32-byte descriptor. A second sweep over `HHEAD` releases all retained 16-byte handle records, including tombstones. Both registries become empty. The implementation reuses existing QSAM operations, does not change public BCPL global assignments or any test fixtures, and leaves production `NATIVE.OBJ` untouched. Static source audit: all cards <=71 characters and no duplicate assembler labels; **no IFOX/GO result yet** for this new revision.
+
+**Immediate MVS gate:**
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+tools/datasets/dspal put native_asm BCPLIO native-compiler/asm/bcplio.asm
+tools/datasets/dspal submit native_jcl BLDDEVI
+```
+Require `ASMIO` and `PUTIO` both RC0000 with zero assembler flags and DEVOBJ-only installation. Then, with the four candidate environment variables, execute `tools/native/run-regression 128 --show-output` and `tools/native/run-regression 129 --show-output`. The success markers must appear in primary and both named REPORT/REPORT2 expected logical-record fixtures; 128 must GO RC0000, 129 must GO RC0008, neither may abend, and both must report PASS. On any failure inspect first assembler diagnostics or GO dump; do not weaken immutable test sources. Follow with 125..129 and 00..123 compatibility check. Even if 128/129 pass, this tests externally visible draining, not independently verified FREEMAIN counts or physical DD attribution. Further lifecycle/error gates remain.
