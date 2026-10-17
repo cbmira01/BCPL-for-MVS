@@ -91,7 +91,14 @@ IFD2     CLI   IN2OPEN,X'01'
          BNE   IFDPARM
          CLOSE (BCPIN2)
          MVI   IN2OPEN,X'00'
-IFDPARM  XC    IOPARM(4),IOPARM
+IFDPARM  LR    9,10
+         L     15,=A(IODRAIN)
+         BALR  14,15
+         LR    10,9
+* IODRAIN uses R11 as its private base; restore IOFIN high base.
+         LA    11,4095(10)
+         LA    11,1(11)
+         XC    IOPARM(4),IOPARM
          LM    0,9,IOFSAVE
          LM    11,15,IOFSAVE+44
          BR    14
@@ -1780,4 +1787,67 @@ DVDCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=GM,EXLST=DVEXL
          DS    0F
 DVEXL    DC    X'87',AL3(DVJFCB)
 DVJFCB   DS    CL176
+*
+* M1 dynamic-stream termination drain; invoked from IOFIN only.
+* Flush pending FB132 records, CLOSE each live QSAM DCB, release
+* all owned descriptors, then free live and retired handle records.
+* No BCPL observable handle remains after FINISH or STOP.
+* This module is nonreentrant, like BCPLIO's existing QSAM paths.
+* R11 private base; R10 clobbered by nested helper calls.
+* DHEAD/HHEAD lie behind this base, so address via literals.
+IODRAIN  BALR  11,0
+         USING *,11
+         STM   0,10,DRSAVE
+         STM   12,14,DRSAVE+48
+DRAINDS  L     1,=A(DHEAD)
+         L     6,0(1)
+         LTR   6,6
+         BZ    DRAINHS
+         ST    6,DRDESC
+         L     7,24(6)
+         LTR   7,7
+         BZ    DRAINFR
+         CLI   7(6),X'02'
+         BNE   DRAINCL
+         L     7,16(6)
+         L     7,236(7)
+         LTR   7,7
+         BZ    DRAINCL
+* QSAM buffer +0 is a complete, space-padded FB132 record.
+         LR    1,6
+         L     2,16(6)
+         L     15,=A(DQPUT)
+         BALR  14,15
+DRAINCL  L     1,DRDESC
+         L     15,=A(DQCLOSE)
+         BALR  14,15
+DRAINFR  L     1,DRDESC
+         L     15,=A(DREL)
+         BALR  14,15
+         B     DRAINDS
+*
+* Each handle record is a separate 16-byte GETMAIN area.
+* Free tombstones too; never recycle word handles while running.
+DRAINHS  L     1,=A(HHEAD)
+         L     6,0(1)
+         LTR   6,6
+         BZ    DRAINDN
+         L     7,0(6)
+         ST    7,DRNEXT
+         XC    4(4,6),4(6)
+         LR    1,6
+         FREEMAIN R,LV=16,A=(1)
+         L     1,=A(HHEAD)
+         L     7,DRNEXT
+         ST    7,0(1)
+         B     DRAINHS
+DRAINDN  LM    0,10,DRSAVE
+         LM    12,14,DRSAVE+48
+         BR    14
+         LTORG
+         DROP  11
+         DS    0F
+DRDESC   DC    F'0'
+DRNEXT   DC    F'0'
+DRSAVE   DS    16F
          END   BCPLIO
