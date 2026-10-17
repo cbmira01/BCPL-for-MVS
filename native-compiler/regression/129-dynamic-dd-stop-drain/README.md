@@ -1,6 +1,13 @@
 # 129 — STOP(8) drains outstanding dynamic streams
 
-Status: **STAGED RED GATE; not run or accepted.**
+**RED GATE CONFIRMED:** Cambridge JOB 7060 compiled; GO payload JOB
+7061 assembled and linked RC0000 and exited at the intended
+STOP(8) RC0008, without an abend. The primary marker was present,
+but the pending REPORT record was missing; harness returned FAIL
+129, rather than accepting the exit code alone. IOFIN cleanup
+source is staged in commit `8597a88`, **not yet MVS validated**.
+
+**Acceptance remains open.**
 
 This compiled-BCPL DEVOBJ-only regression is paired with 128 FINISH.
 It opens input DD01 and two output destinations REPORT and REPORT2.
