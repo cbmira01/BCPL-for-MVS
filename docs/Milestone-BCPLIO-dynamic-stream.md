@@ -1,9 +1,24 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4/M5 open; M4.4.1 full panel authorized, execution pending  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M4.4.1 — owner authorizes complete candidate panel (2026-10-17)
+
+The owner explicitly lifted the previously recorded deferral:
+**run the full DEVOBJ BCPLM6 00..145 candidate panel.**
+M4.4.0 source-only readiness is accepted; before
+execution, validate the four candidate environment
+variables with `check-m44-compatibility.py --candidate`.
+Expected: **145 PASS / 0 FAIL / 1 SKIP 083**.
+**Authorization is recorded, but execution results are
+not yet supplied.** M4.4 remains OPEN pending the
+actual complete suite and evidence review. No runtime
+rebuild, installed-object promotion or change to the
+M5 DD-attribution scope is authorized. See the
+[M4.4 plan](Milestone-BCPLIO-dynamic-stream-M4.4-plan.md).
 
 ## M4.4.0 accepted — read-only preflight (2026-10-17)
 

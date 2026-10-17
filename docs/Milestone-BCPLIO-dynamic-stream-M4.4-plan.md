@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.4 compatibility verification
 
-**Status: M4.4.0 SOURCE-ONLY PREFLIGHT ACCEPTED (2026-10-17); M4.4.1 complete candidate-panel execution owner-deferred; M4.4 OPEN.**
+**Status: M4.4.0 source-only preflight ACCEPTED; owner lifted the full-panel deferral on 2026-10-17 and AUTHORIZED M4.4.1 candidate 00..145; execution evidence PENDING; M4.4 remains OPEN.**
 Date: 2026-10-17
 Predecessor: M4.3 CLOSED (returned-control resource accounting).
 
@@ -19,10 +19,10 @@ tests; the next complete checkpoint must show **145 PASS,
 0 FAIL, 1 expected SKIP 083**. Do not substitute the focused
 results for this complete-run evidence.
 
-The owner explicitly deferred the full suite at M4.1. Nothing
-in M4.3's focused results cancels that decision. This march
-stages the procedure and read-only tests but does not submit the
-entire panel without a separate owner decision.
+The owner deferred the full suite at M4.1; that deferral
+remained in place through M4.4.0. On 2026-10-17 the owner
+explicitly lifted it for the full 00..145 candidate panel.
+Authorization is not execution evidence.
 
 ## M4.4.0 — source and runner preflight
 
@@ -82,10 +82,32 @@ Its expected 145 PASS / 0 FAIL / 1 SKIP is **not**
 a measured full-suite result. The final M4.4 closure and
 M5 lossless physical DD attribution remain separate.
 
-## M4.4.1 — complete candidate regression (owner-deferred)
+## M4.4.1 authorization — 2026-10-17
 
-When the owner explicitly releases the full-suite deferral,
-execute against the already installed development candidate:
+**Owner decision: the prior complete-panel deferral is lifted.**
+The owner explicitly directed: "Let's go for full panel."
+This authorizes one complete unchanged-candidate
+`BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1`, `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`
+native regression **00..145**, after the read-only
+`check-m44-compatibility.py --candidate` check.
+
+**No panel execution has yet been reported for this authorization.**
+The successful M4.4.0 source-only preflight is not a substitute
+for JES compile/assemble/link/GO evidence. Expected:
+146 cases, **145 PASS / 0 FAIL / 1 intentional SKIP 083**.
+Test 141's `STOP(8)` GO RC0008 is expected PASS.
+Capture individual log/job/step diagnostics and the final
+runner summary; on any failure preserve the first diagnostic.
+A green full panel completes **M4.4.1 evidence**, not
+M4.4.2 review or M5 DD-attribution.
+No PDS rebuild, promotion, production overwrite, ABI
+change or compiler change is authorized by this decision.
+
+## M4.4.1 — complete candidate regression (authorized; execution pending)
+
+The owner has explicitly released the full-suite deferral.
+Execute against the already installed development candidate:
 
 ~~~sh
 cd ~/Source/Repos/BCPL-for-MVS
