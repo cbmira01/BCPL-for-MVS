@@ -1484,7 +1484,17 @@ DQFIND   BALR  11,0
          BALR  14,15
          LTR   15,15
          BNZ   DFFBAD
+* Duplicate live FIND returns the original stable word handle.
+* Do this before RDJFCB/OPEN to avoid a second QSAM OPEN.
          LA    1,DFFNAME
+         LA    2,2
+         L     15,=A(HACTIVE)
+         BALR  14,15
+         LTR   15,15
+         BZ    DFFNEW
+         ST    15,DFFRES
+         B     DFFRET
+DFFNEW   LA    1,DFFNAME
          L     15,=A(DDVERIFY)
          BALR  14,15
          LTR   15,15
@@ -1622,6 +1632,50 @@ HTARGET  DC    F'0'
 HRESULT  DC    F'0'
 HSAVE    DS    16F
 *
+* Find a live identity by normalized DDNAME plus direction.
+* R1 -> EBCDIC CL8, R2=1 INPUT / 2 OUTPUT.
+* R15 = BCPL word handle, or 0. No DCB OPEN, no allocation.
+* The stable HHEAD chain retains retired records; skip +4=0.
+* Use an independent save area; R10 is private base/clobbered.
+HACTIVE  BALR  10,0
+         USING *,10
+         STM   0,9,HASAVE
+         STM   11,14,HASAVE+44
+         LR    7,1
+         MVC   HAKEY(8),0(7)
+         ST    2,HADIR
+         L     6,HHEAD
+HANEXT   LTR   6,6
+         BZ    HAMISS
+         L     8,4(6)
+         LTR   8,8
+         BZ    HASKIP
+         L     7,4(8)
+         C     7,HADIR
+         BNE   HASKIP
+         L     7,24(8)
+         LTR   7,7
+         BZ    HASKIP
+         CLC   8(8,8),HAKEY
+         BNE   HASKIP
+* The same record will be used by SELECT and ENDREAD/ENDWRITE.
+         LA    7,4(6)
+         SRL   7,2
+         ST    7,HARES
+         B     HARET
+HASKIP   L     6,0(6)
+         B     HANEXT
+HAMISS   XC    HARES(4),HARES
+HARET    LM    0,9,HASAVE
+         LM    11,14,HASAVE+44
+         L     15,HARES
+         BR    14
+         DROP  10
+         DS    0F
+HAKEY    DC    CL8'        '
+HADIR    DC    F'0'
+HARES    DC    F'0'
+HASAVE   DS    16F
 *
 * Dynamic FINDINPUT: same stable-handle registry as FINDOUTPUT,
 * separate input direction and QSAM GET DCB template.
@@ -1637,7 +1691,16 @@ DIFIND   BALR  11,0
          BALR  14,15
          LTR   15,15
          BNZ   DIFBAD
+* Return a live input identity without reopening the DD.
          LA    1,DIFNAME
+         LA    2,1
+         L     15,=A(HACTIVE)
+         BALR  14,15
+         LTR   15,15
+         BZ    DIFNEW
+         ST    15,DIFRES
+         B     DIFRET
+DIFNEW   LA    1,DIFNAME
          L     15,=A(DDVERIFY)
          BALR  14,15
          LTR   15,15
