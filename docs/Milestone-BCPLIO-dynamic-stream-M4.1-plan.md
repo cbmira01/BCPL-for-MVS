@@ -104,6 +104,23 @@ second FIND would **FAIL** the test. The expected MVS
 execution steps include Cambridge COMP/SVCODE, IFOX00
 ASMAP/ASMFIO, IEWL LKED and GO.
 
+## Host-side source-only QA gate
+
+A separate fail-closed static test can check all three
+transformer modes before any JCL submission:
+
+```sh
+python3 tools/checks/check-bcplio-m41-fault.py
+```
+
+This imports the source transform and verifies unique anchors,
+preservation of the number of GETMAIN sites, correct one-shot
+phase storage, IFOX card-width compliance and rejection of
+repeat instrumentation. It **does not** assemble or link
+the object under IFOX and cannot demonstrate that the MVS
+fault is exercised at runtime. No verified execution result
+for this local checker has been supplied yet.
+
 ## First operator gate: 135
 
 ```sh
