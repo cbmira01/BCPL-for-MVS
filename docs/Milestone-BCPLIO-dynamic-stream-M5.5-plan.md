@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M5.5 final acceptance gate
 
-**Status: STAGED, NOT EXECUTED / NOT ACCEPTED (17 October 2026).**
+**Status: STAGED; first operator self-test FAILED, parser correction prepared (17 October 2026); no M5.5 panel run or final acceptance.**
 M5.0 through M5.4 are closed. The last **measured** full
 DEVOBJ BCPLM6+BCPLIO panel is still M4.4 (00..145:
 145 PASS, 0 FAIL, expected SKIP 083 and 145/145
@@ -135,3 +135,59 @@ documented limits and owner's decision.
 Only then update the master milestone to
 **CLOSED**. DEVOBJ -> NATIVE_OBJ promotion
 is a **distinct later authorization**.
+
+## M5.5 first operator preflight: parser correction and safe restart
+
+At commit `969acf8`, the operator confirmed Hercules/JES2 ready (probe
+JOB 8187), DEVOBJ containing BCPLAPT, BCPLBYTE, BCPLIO, BCPLM6
+and BCPLM7, and OBJ containing BCPLMAIN, BCPLMEM and BLIB.
+The first offline M5.5 unit suite reported **6/8 passed**,
+**one ERROR** and **one FAIL**; the positive-fixture parser
+mistakenly treated the aggregate `PASS  145` footer
+and following `FAIL  0` line as another per-case result.
+The wrong-SKIP negative fixture consequently failed for the
+same reason. No BCPLIO or native runner issue was observed.
+
+The first `begin` command nevertheless produced a
+`m55-begin.json` snapshot at Git `969acf8`
+because the operator shell proceeded after the test failure.
+This **is not accepted as a valid final-panel start**,
+and no 00..145 MVS panel has been submitted.
+The corrected checker uses **horizontal-only separators**
+for RUN/PASS/SKIP/FAIL and adds tests against the
+real discovered case names and the exact aggregate footer.
+`begin` now invokes its offline self-test internally:
+an offline failure cannot create another successful
+M5.5 checkpoint.
+
+**Archive, do not delete or overwrite, the original
+pre-parser-fix `begin` evidence**, but only if no
+`m55-full-panel.log` or `m55-verification.json`
+has been created:
+
+```bash
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+
+# Check before touching the existing snapshot:
+test ! -e workarea/native-regression/m55-full-panel.log
+test ! -e workarea/native-regression/m55-verification.json
+test ! -e workarea/native-regression/m55-begin-before-fix.json
+
+# Archive the stale original BEGIN under a new name:
+mv workarea/native-regression/m55-begin.json \
+   workarea/native-regression/m55-begin-before-fix.json
+
+python3 tools/checks/test-m55-final-evidence.py
+python3 tools/checks/m55-final-evidence.py begin
+```
+
+The `test` guards are intentionally independent commands
+for inspection; **if any returns nonzero, stop, do not
+execute mv or begin**. Run in `set -e` mode if you
+want the shell to halt automatically on failure.
+The new begin checkpoint must name the **new Git
+commit**, not the old `969acf8`. Only after the
+new offline tests and begin succeed should the
+single full 00..145 panel proceed. Historical
+M5.1/M5.2 proofs remain unchanged.

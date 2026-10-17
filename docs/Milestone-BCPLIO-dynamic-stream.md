@@ -5,6 +5,33 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M5.5 first preflight parser issue — corrected, panel not yet run (2026-10-17)
+
+The operator's first M5.5 source preflight,
+candidate-library inventory and Hercules/JES
+probe passed; M5.5 offline unit suite had one
+false error and one dependent failure. The
+record parser incorrectly allowed newline as
+a separator in PASS-case lines and interpreted
+the aggregate `PASS  145` footer followed by
+`FAIL  0` as another case.
+The original `begin` nevertheless created
+`m55-begin.json` at `969acf8` because the
+shell continued after test failure. **No native
+M5.5 00..145 panel was executed**.
+
+Patched the checker to require horizontal
+field separators, added the real regression
+case-name/summary tests and made `begin`
+run self-tests before creating evidence.
+Retain and archive the original pre-fix
+snapshot (do not overwrite it) before taking
+a fresh checkpoint at the corrected revision.
+See the [M5.5 procedure]
+(Milestone-BCPLIO-dynamic-stream-M5.5-plan.md).
+No BCPL runtime, ordinary runner, JCL or PDS
+change. M5.5 remains OPEN.
+
 ## M5.5 — FINAL PANEL STAGED, NOT YET ACCEPTED (2026-10-17)
 
 The [M5.5 acceptance procedure]

@@ -14,13 +14,15 @@ gate = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(gate)
 
 
-def fixture():
-    names = {n: f"{n:02d}" if n <= 52 else f"{n:03d}"
-             for n in range(146)}
+def fixture(names=None):
+    if names is None:
+        names = {n: f"{n:02d}" if n <= 52 else f"{n:03d}"
+                 for n in range(146)}
     sections = ["NATIVE REGRESSION  00..145  (146 tests)"]
     for n, name in names.items():
         if n == 83:
-            sections.append("SKIP  083  083 (source-only instrumentation)")
+            sections.append(
+                f"SKIP  083  {name} (source-only instrumentation)")
         else:
             sections.extend((f"RUN   {name}  {name}",
                              f"PASS  {name}  {name}"))
@@ -33,6 +35,19 @@ class PanelTests(unittest.TestCase):
     def test_exact_positive_panel(self):
         names, report = fixture()
         gate.parse_runner(report, names)
+
+    def test_actual_repo_case_names_and_footer(self):
+        # Use the real native runner discovery to catch formatting drift.
+        names = gate.cases()
+        _, report = fixture(names)
+        gate.parse_runner(report, names)
+
+    def test_footer_pass_number_cannot_steal_next_line(self):
+        # A regression of the original failure: \s in the field
+        # separator made "PASS  145\nFAIL  0" an extra PASS record.
+        names, report = fixture()
+        gate.parse_runner(report, names)
+        self.assertIn("PASS  145\nFAIL  0\nSKIP  1", report)
 
     def test_missing_case_rejected(self):
         names, report = fixture()

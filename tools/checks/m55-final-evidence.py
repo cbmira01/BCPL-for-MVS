@@ -123,9 +123,12 @@ def parse_runner(text: str, names: dict[int, str]) -> None:
     require(any(lines[i:i + 5] == summary
                 for i in range(max(0, len(lines) - 4))),
             "full-panel summary is not 145 PASS / 0 FAIL / 1 SKIP")
-    runs = re.findall(r"(?m)^RUN\s+(\d{2,3})\s+([^\r\n]+)$", text)
-    passes = re.findall(r"(?m)^PASS\s+(\d{2,3})\s+([^\r\n]+)$", text)
-    skips = re.findall(r"(?m)^SKIP\s+(\d{2,3})\s+([^\r\n]+)$", text)
+    # Match only horizontal whitespace between fields. \s includes
+    # newlines: on the final "PASS  145" summary line it consumed the
+    # newline and mistook "FAIL  0" for a case name. Parse each line.
+    runs = re.findall(r"(?m)^RUN[ \t]+(\d{2,3})[ \t]+([^\r\n]+)$", text)
+    passes = re.findall(r"(?m)^PASS[ \t]+(\d{2,3})[ \t]+([^\r\n]+)$", text)
+    skips = re.findall(r"(?m)^SKIP[ \t]+(\d{2,3})[ \t]+([^\r\n]+)$", text)
     expected = [(f"{n:02d}" if n <= 52 else f"{n:03d}", names[n])
                 for n in sorted(names) if n != 83]
     require(runs == expected, "RUN lines do not identify all 145 cases in order")
@@ -133,7 +136,7 @@ def parse_runner(text: str, names: dict[int, str]) -> None:
     require(len(skips) == 1 and skips[0] == (
         "083", names[83] + " (source-only instrumentation)"),
         "expected SKIP 083 missing or additional SKIPs observed")
-    require(not re.search(r"(?m)^FAIL\s+\d{2,3}\s+", text),
+    require(not re.search(r"(?m)^FAIL[ \t]+\d{2,3}[ \t]+", text),
             "one or more numbered cases failed")
 
 
@@ -143,7 +146,10 @@ def begin() -> None:
     rev = check_clean_checkout()
     require(not (BEGIN.exists() or TRANSCRIPT.exists() or RECEIPT.exists()),
             "M5.5 evidence files already exist: do not overwrite a run")
+    # A failed gate self-test must prevent "begin" from declaring readiness,
+    # even if the operator's shell does not use set -e.
     for cmd in (
+        [sys.executable, "tools/checks/test-m55-final-evidence.py"],
         [sys.executable, "tools/checks/check-m44-compatibility.py", "--candidate"],
         [sys.executable, "tools/checks/check-bcplio-m43-account.py"],
         ["tools/native/run-regression", "--check-numbering"],
