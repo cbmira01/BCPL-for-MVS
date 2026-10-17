@@ -570,3 +570,25 @@ Operator pulled through `4d26706`, executed candidate-only `tools/native/run-reg
 ### Source audit follow-up — HHEAD addressability
 
 After adding HACTIVE, review identified one pre-assembly IFOX addressability hazard: `HHEAD` is declared **before** the new helper, so direct `L 6,HHEAD` is a negative displacement from its `BALR 10,0` base. Follow-up source commit **`04ebb84`** uses `L 1,=A(HHEAD)` plus `L 6,0(1)`, relocating the existing header address through HACTIVE's next reachable LTORG rather than relying on a backward base displacement. Retains no public ABI changes; current source still requires operator IFOX/GO evidence. The original helper source commit `9c9dcb4` alone should not be used for build.
+
+## JOB 6799 — BCPLIO duplicate FIND correction ACCEPTED; regression 127 PASS (MVS 2026-10-17)
+
+Operator pulled commits through `c3aa243`, staged corrected `native-compiler/asm/bcplio.asm` to `HERC02.BCPL.NATIVE.ASM(BCPLIO)` via **JOB 6796**, submitted DEVOBJ-only `BLDDEVI` (launcher **JOB 6798**, payload **JOB 6799**), run at 02:27:02–02:27:03 on 17 Oct 2026. Build evidence: `ASMIO IFOX00 RC=0000`, `PUTIO IEBGENER RC=0000`, highest RC0, **0 flagged statements / severity 0**; `DEVOBJ(BCPLIO)` was replaced successfully. Production `HERC02.BCPL.NATIVE.OBJ` was not installed or modified.
+
+Operator ran compiled regression `127-dynamic-dd-duplicate-find-contract` with `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`: **PASS 127; PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**. Its test source asserts identical nonzero stable handle identity for `FINDINPUT("DD01")` versus `FINDINPUT("dd01")`, independent ongoing read position while using both aliases, close and stale selection rejection; likewise for `FINDOUTPUT("REPORT")` vs `FINDOUTPUT("report")`, followed by record output and close. The runner reports a PASS for both expected logical-record fixtures and normal GO completion. No separate GO payload job number or raw per-DD SYSOUT files were provided for this positive run; do not invent them. The previous **JOB 6795 S013-C0** is preserved as the failing baseline and superseded for this targeted contract gate by the positive result.
+
+**ACCEPTED: M1 duplicate live FIND identity targeted gate for the newly installed DEVOBJ candidate.** Source `HACTIVE` checks name, direction, live state and handle record before any repeat DDVERIFY/DALLOC/DQOPEN; the test demonstrates that live aliases share cursor and output destination. **Pending:** revalidate 125/126 and 124/113, plus full `00..123` compatibility after this BCPLIO change. Separately, active dynamic descriptors and stable-handle tombstones are not yet drained in `IOFIN`; FINISH/STOP cleanup, reopen-after-close identity, negative error cases and 13+ streams remain outside accepted gates. Production OBJ untouched.
+
+Next operator command sequence:
+```sh
+git pull --ff-only
+export BCPL_RUNTIME_PDS=1
+export BCPL_RUNTIME_LIBRARY=DEVOBJ
+export BCPL_RUNTIME_CANDIDATE=1
+export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+tools/native/run-regression 125 127
+tools/native/run-regression 124 --show-output
+tools/native/run-regression 113 --show-output
+tools/native/run-regression 0 123
+```
+Targets for 125..127: 3 PASS; for 124 and 113: one PASS each; for 00..123: 123 PASS, 0 FAIL, expected one SKIP (083).
