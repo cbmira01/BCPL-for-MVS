@@ -202,11 +202,84 @@ def prepare():
     print("Inspect assembler and JCL before any manual submission.")
 
 
+def review_bundle(source: bytes, deck: bytes, asm: bytes,
+                  record_a: bytes, record_b: bytes, meta: dict) -> None:
+    """Fail closed if any generated M5.1.2 v2 artifact differs from
+    the original DEVOBJ 124 deck or its independently reproduced form.
+    No calls to JES, disk mutation or printer interpretation here.
+    """
+    if meta.get("schema") != "m51-dataset-readback-v2":
+        raise ValueError("incorrect M5.1.2 manifest schema")
+    if meta.get("job") != JOB or meta.get("writer") != "GO" or (
+            meta.get("verifier") != "VCHK"
+            or meta.get("state") != "PREPARED_NOT_EXECUTED"):
+        raise ValueError("unexpected job or staging state")
+    for label, content, field in (
+        ("original GO", source, "source_sha256"),
+        ("generated GO+verifier deck", deck, "deck_sha256"),
+        ("verifier assembler", asm, "asm_sha256"),
+        ("REPORT fixture", record_a, "report_fixture_sha256"),
+        ("REPORT2 fixture", record_b, "report2_fixture_sha256"),
+    ):
+        digest = hashlib.sha256(content).hexdigest()
+        if digest != meta.get(field):
+            raise ValueError(f"{label}: staging SHA256 mismatch")
+
+    original = source.decode("ascii")
+    records1 = record_a.decode("ascii").splitlines()
+    records2 = record_b.decode("ascii").splitlines()
+    want_asm = verifier(records1, records2).encode("ascii")
+    if asm != want_asm:
+        raise ValueError("assembled verifier differs from generated contract")
+    want_deck = transform(original, want_asm.decode("ascii")).encode("ascii")
+    if deck != want_deck:
+        raise ValueError("final JCL differs from reviewed DEVOBJ transform")
+
+    rows = deck.decode("ascii").splitlines()
+    names = [re.match(r"^//(\w+)\s+EXEC\b", row) for row in rows]
+    steps = [m.group(1) for m in names if m]
+    if steps != ["ASMAP", "LKED", "GO", "VASM", "VLINK", "VCHK"]:
+        raise ValueError(f"unexpected JES step order: {steps!r}")
+    # Prevent accidental exposure of the input dataset identities in
+    # additional DD cards or invalid insertion of a seventh step.
+    for dd, dsn in (("REPORT", "M5RPT1"),
+                    ("REPORT2", "M5RPT2")):
+        expected_write = f"//{dd:<8} DD DSN=&&{dsn},UNIT=SYSDA,"
+        expected_read = f"//{dd:<8} DD DSN=&&{dsn},DISP=(OLD,DELETE)"
+        if rows.count(expected_write) != 1 or rows.count(expected_read) != 1:
+            raise ValueError(f"{dd}: missing or duplicate writer/reader DD")
+
+
+def review() -> None:
+    for path in (SOURCE, TARGET, ASM, META,
+                 CASE / "expected-report.txt",
+                 CASE / "expected-report2.txt"):
+        if not path.is_file():
+            raise ValueError(f"missing staged artifact: {path}")
+    meta = json.loads(META.read_text(encoding="utf-8"))
+    review_bundle(
+        SOURCE.read_bytes(), TARGET.read_bytes(), ASM.read_bytes(),
+        (CASE / "expected-report.txt").read_bytes(),
+        (CASE / "expected-report2.txt").read_bytes(), meta)
+    print("M5.1.2 v2 offline artifact review: PASS")
+    print("  Job M5D124B, DEVOBJ BCPLM6 + BCPLIO")
+    print("  Step order ASMAP / LKED / GO / VASM / VLINK / VCHK")
+    print("  REPORT / REPORT2 distinct temporary FB132 dataset write/read")
+    print("  JCL, assembler and fixture SHA256 match staged manifest")
+    print("  Regenerated exact v2 assembler/JCL compare: PASS")
+    print("  MVS assembly/execution and JES raw SYSOUT: NOT VERIFIED")
+    print("  No MVS jobs submitted by review")
+
+
 if __name__ == "__main__":
     try:
-        if sys.argv[1:] != ["prepare"]:
-            raise ValueError("usage: m51-fb132-dataset-probe.py prepare")
-        prepare()
+        if sys.argv[1:] == ["prepare"]:
+            prepare()
+        elif sys.argv[1:] == ["review"]:
+            review()
+        else:
+            raise ValueError(
+                "usage: m51-fb132-dataset-probe.py prepare|review")
     except (OSError, ValueError, UnicodeError,
-            subprocess.CalledProcessError) as exc:
+            subprocess.CalledProcessError, json.JSONDecodeError) as exc:
         sys.exit(f"m51-fb132-dataset-probe: {exc}")

@@ -67,6 +67,39 @@ class TestDatasetProbe(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "drifted"):
             fb.verifier(["ALTERED"], ["BCPL REPORT2 PART"])
 
+    def test_review_bundle_exact_and_tampered(self):
+        from hashlib import sha256
+        source = SAMPLE.encode("ascii")
+        deck = fb.transform(SAMPLE, self.asm).encode("ascii")
+        asm = self.asm.encode("ascii")
+        records1 = b"BCPL REPORT A\nBCPL REPORT B\n"
+        records2 = b"BCPL REPORT2 PART\n"
+        base = {
+            "schema": "m51-dataset-readback-v2",
+            "job": fb.JOB, "writer": "GO", "verifier": "VCHK",
+            "state": "PREPARED_NOT_EXECUTED",
+        }
+        for key, payload in (
+            ("source_sha256", source),
+            ("deck_sha256", deck),
+            ("asm_sha256", asm),
+            ("report_fixture_sha256", records1),
+            ("report2_fixture_sha256", records2),
+        ):
+            base[key] = sha256(payload).hexdigest()
+        fb.review_bundle(source, deck, asm, records1, records2, base)
+        with self.assertRaisesRegex(ValueError, "SHA256"):
+            fb.review_bundle(source, deck + b"\\n", asm,
+                             records1, records2, base)
+        altered = dict(base)
+        altered["deck_sha256"] = sha256(deck + b"\\n").hexdigest()
+        with self.assertRaisesRegex(ValueError, "JCL differs"):
+            fb.review_bundle(source, deck + b"\\n", asm,
+                             records1, records2, altered)
+        with self.assertRaisesRegex(ValueError, "staging state"):
+            fb.review_bundle(source, deck, asm, records1,
+                             records2, {**base, "state": "VERIFIED"})
+
 
 if __name__ == "__main__":
     unittest.main()

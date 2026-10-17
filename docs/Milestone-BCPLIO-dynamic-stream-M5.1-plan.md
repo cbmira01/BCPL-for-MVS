@@ -286,3 +286,34 @@ submit either v1 or v2 yet; M5.1.2 is still a
 new verifier program without first-run IFOX evidence.
 No BCPL compiler, BCPLIO, BCPLMAIN or PDS object
 was modified to make this correction.
+
+## M5.1.2 additional read-only deck integrity gate (2026-10-17)
+
+The v2 operator preparation passed **5/5 offline tests** and
+staged its JCL, ASM and JSON under distinct v2 paths,
+without any MVS submission. The generator's source review
+found the six-step sequence, distinct REPORT and REPORT2
+FB132 temporary allocations and the corrected MVS save-area
+linkage consistent with the existing independent assembler
+probe convention. Because the actual untracked workarea
+files cannot be inspected from Git, **the repo now provides
+a read-only exact-artifact verifier**:
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+python3 tools/checks/test-m51-fb132-dataset-probe.py
+python3 tools/checks/m51-fb132-dataset-probe.py review
+```
+
+It verifies the staged manifest's hashes for original GO,
+generated deck, assembler and both expected fixtures,
+regenerates the entire JCL and ASM and requires byte-for-byte
+agreement, enforces exact ASMAP/LKED/GO/VASM/VLINK/VCHK
+order and one physical sequential dataset writer/reader
+allocation for each of REPORT/REPORT2. It does **not**
+submit jobs or change any staged evidence. The unit tests
+also include tampering/rejection cases. **Do not submit**
+unless this final offline gate is PASS; the first MVS
+execution is still an independent experiment, not a
+prior success claim.
