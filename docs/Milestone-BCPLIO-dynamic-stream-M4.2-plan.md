@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: 138 synthetic DQOPEN PASS; M4.2.1 JOB 7874 returned HANDLE (not failed OPEN); M4.2.2 read-only nonmember-PDS OPEN probe STAGED, not run; full panel deferred.**
+**Status: synthetic 138 PASS; JOB 7874 returned HANDLE; M4.2.2 RG891R JCL prepared and unsubmitted (PDS without member); M4.2 actual failing OPEN still unproven; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -437,3 +437,34 @@ or full regression is requested during preparation.
 assembler return code, diagnostic or OPEN failure is
 yet available. The owner's deferral of full native
 regression remains in effect.
+
+## M4.2.2 operator preparation accepted — RG891R JCL generated
+
+On 17 October 2026, the operator fast-forwarded the repository
+from `ab44dad` through `3235115` and ran the development-only
+`prepare-m42-pds-open-jcl.py` generator with the four required
+DEVOBJ/BCPLM6 candidate variables. Output:
+
+```text
+Prepared DEVOBJ runtime PDS regression:
+workarea/m42-real-open/pds-open.jcl.base
+Prepared M4.2.2 read-only PDS QSAM OPEN exploratory deck:
+workarea/m42-real-open/pds-open.jcl
+RG891R: DD01=DATA; DD02=SYS1.MACLIB,DISP=SHR (no member)
+The GO job was NOT submitted; no PDS object was modified.
+```
+
+**Preparation accepted, exploratory execution pending.**
+The builder reused the already compiled Cambridge application
+from JOB 7873; it generated a new non-submitting `RG891R`
+assembler/link/GO deck, allocating DD02 to read-only
+`SYS1.MACLIB` with no member. This is an experiment, **not**
+registered regression 891. The operator output does not
+include the generated card deck for line-by-line inspection,
+nor any JES job number or MVS GO execution for RG891R.
+
+On submission, preserve the job summary and complete
+`workarea/m42-real-open/pds-open-report.txt`, including
+IEF/IEC/ABEND messages. An actual unsuccessful SVC19 is
+not yet established. The owner-deferred full regression
+panel and prohibition on object promotion remain unchanged.
