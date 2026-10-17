@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; M4.2.1 JOB 7874 returned HANDLE; M4.2.2 read-only PDS OPEN diagnostic staged; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; JOB 7874 returned HANDLE; RG891R PDS exploratory deck prepared, not submitted; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -452,3 +452,15 @@ has yet been supplied.** A normal returned handle,
 RDJFCB rejection, recoverable failed SVC19 and an
 S013 are distinct outcomes. Keep M4.2 open pending
 the report; full regression remains deferred.
+
+## M4.2.2 JCL preparation checkpoint
+
+Operator pulled through `3235115` and successfully
+generated `workarea/m42-real-open/pds-open.jcl`
+using existing Cambridge assembler from JOB 7873.
+Generator confirmed `RG891R` with `DD01=DATA`
+and `DD02=SYS1.MACLIB,DISP=SHR` without member.
+**No exploratory GO submission or PDS modification**
+occurred. Record this as successful preparation only;
+real OPEN behavior and the M4.2 failure gate remain open.
+Full panel remains owner-deferred.
