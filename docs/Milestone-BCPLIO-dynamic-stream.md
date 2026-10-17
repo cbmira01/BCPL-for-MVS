@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; real OPEN jobs 7874/7875/7876 returned HANDLE; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; 7874/7875/7876 returned HANDLE; R3.8 QSAM printer DCB normalization identified; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -588,6 +588,31 @@ private BCPLIO SVC19 observability design
 before requesting any more operator runs.
 No installed runtime or production object
 changed. Full regression is owner-deferred.
+
+
+## M4.2 source-level course correction — period IBM guide
+
+Following JOB 7876's third returned DD02 handle,
+reviewed IBM `GC26-3875-0`, the OS/VS2 MVS
+Release 3.8 Data Management Services Guide,
+June 1979 revision, page 86. Its QSAM printer
+device section says FB datasets have DCB block
+size normalized to LRECL and are treated as
+unblocked F. This provides a credible explanation
+for the failure of the malformed FB SYSOUT DD
+to provoke an OPEN rejection. It is not a
+measured after-OPEN DCB trace.
+
+The next M4.2 gate moves away from arbitrary
+JCL allocation mismatches to verification
+of historical DCB field offsets and **DD02-only,
+test-only** observation immediately around
+real SVC19, with normal DD01 as a control.
+Review [M4.2 plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md)
+before staging further execution. Production
+and installed candidate object PDS members
+are unchanged. The full regression remains
+owner-deferred.
 
 ## Handoff / next-conversation prompt
 
