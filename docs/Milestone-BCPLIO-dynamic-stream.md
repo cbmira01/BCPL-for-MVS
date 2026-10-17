@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; DEVOBJ 00..132 132 PASS/0 FAIL/skip 083; M3 test 133 staged; M4 inventory done, M4–M5 open  
+Status: M0/M1/M2 accepted; M3 logical gate 133 PASS; M4.0 test 134 staged; full 00..132 baseline 132 PASS/0 FAIL/skip 083; M4/M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -170,6 +170,34 @@ M4 deterministic failure/resource accounting, and M5
 lossless DD-specific physical attribution, documentation,
 and final full-panel acceptance. Production OBJ has not been
 modified or promoted.
+
+
+## M3 logical gate accepted, M4.0 staged (MVS 2026-10-17)
+
+The operator pulled repository head through `b25d643` and ran
+compiled-BCPL native candidate regression **133** individually,
+observing **PASS 1, FAIL 0, SKIP 0, TOTAL 1**. It exercises two
+concurrently open dynamic DD DATA input streams and two independent
+dynamic SYSOUT output buffers with repeated read/write switching.
+No runtime source or installed objects changed. The established
+**full** DEVOBJ panel remains `00..132` at 132 PASS / 0 FAIL /
+expected SKIP 083; a full 00..133 pass has not yet been submitted.
+
+The M3 *logical functional* gate is now demonstrated. The complete
+M3 physical DD-integrity claim and M5 final exit remain open
+until lossless DD-specific JES2 SYSOUT attribution has been
+implemented and verified. Do not equate combined-JES logical
+record matching with proof of physical DD association.
+
+A new permanent candidate-only test **134** is staged at
+`native-compiler/regression/134-dynamic-dd-invalid-name-preservation/`.
+It verifies invalid/overlength/absent DD-name FIND failures are
+zero-valued and non-destructive to selected streams; it has
+**not** yet run under MVS. See
+[M4 failure/lifecycle inventory](Milestone-BCPLIO-dynamic-stream-M4-inventory.md).
+M4 fault injection, CLOSE/FREEMAIN accounting and M5 physical
+record attribution still await acceptance. No DEVOBJ-to-OBJ
+promotion is authorized.
 
 ## Handoff / next-conversation prompt
 
