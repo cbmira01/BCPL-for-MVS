@@ -1,124 +1,217 @@
-# Clean-room MVS reconstruction — full native OBJ runtime
+# Rebuild BCPL for MVS from source
 
-**Current objective (17 October 2026):** rebuild the *entire project-managed*
-MVS PDS environment from Git and historical source, starting with an empty
-ignored `workarea/`, then assemble **all five canonical runtime modules
-and freshly compiled BLIB into `NATIVE_OBJ`**. The result is intended to
-run the entire native regression panel **00..145 from OBJ alone**.
+**Operator guide — Hercules / MVS 3.8J / TK5**
 
-**Authority:** the owner explicitly requested an all-OBJ rebuild with the
-latest canonical source. This supersedes the historical pre-D6 production
-source hold. The complete source-based production reconstruction was accepted
-on 17 October 2026 against baseline commit 04c74af8b07b5cdc2aaec44d79f020a848cb7e65,
-with 145 PASS, 0 FAIL, and 1 expected SKIP (083).
+This guide shows how to rebuild the BCPL tools and native runtime on a working
+MVS 3.8 system. Follow the steps in order. Check each result before moving on.
 
-**Procedure revision:** the manifest-driven two-pass population sequence below
-replaces the procedure used for that acceptance run. The historical acceptance
-record remains valid, but this revised sequence has not yet been executed
-end-to-end on a freshly purged MVS environment.
+**What you will get:** a working BCPL interpreter, a BCPL compiler that writes
+System/370 assembler, six native runtime object modules, and a tested system.
 
-## Scope and destructive boundary
+**Important:** this is a clean rebuild of the **BCPL project data sets inside
+MVS**. It is not a guide to installing Linux, Docker, Hercules, or TK5 from
+nothing. Those must already be set up.
 
-- `dspal purgebcpl` removes **the 24 datasets explicitly managed by
-  `config/dspal.yaml`**, not SYS1 system datasets, TK5 installation files,
-  all MVS DASD volumes, or any other guest datasets. Review its exact list
-  before responding `YES`. This also deletes user-created content in
-  managed PDSes, so inspect anything worth retaining first.
-- Remove only repository-root `workarea/` (ignored generated artifacts);
-  preserve any uncommitted evidence before deleting it.
-  **Never delete `mvs-state/`, the DASD images, `docker/`,
-  historical Git source, or `config/dspal.local.yaml`.**
-- A new `NATIVE_OBJ` begins empty and is rebuilt *from source*.
-  No `SEEDDEV`, copying old FB80 objects, importing INTCODE,
-  or migrating previous load libraries.
-- `NATIVE_DEVOBJ` remains part of the managed dataset inventory
-  but is intentionally unused and empty after the clean rebuild.
-- Run the commands from the repository root on the host with
-  Hercules/TK5 and JES available. Inspect every **payload** JES job
-  and step RC, not only the outer `dspal submit` launcher.
-- Ensure a clean Git checkout at a recorded revision, a correct MVS HLQ,
-  and a functioning local JES reader before the destructive operation.
-  Local overrides and MVS credentials are private.
+## Before you begin
 
-## Ordered reconstruction
+### What the names mean
 
-| Stage | Work | Expected result |
-|---|---|---|
-| 0 | Check Git, TK5, source inputs and build contracts | Validated starting point |
-| 1 | Safely empty disposable `workarea/` | Clean host build directory; tracked placeholder retained |
-| 2 | Purge, initialize and run first manifest population | Tracked sources installed; missing generated sources reported with nonzero status |
-| 3 | Assemble/link ICINT19 from MR10 source | `MR10_LOAD(ICINT19)` |
-| 4 | Verify MR10 interpreted examples | Compiler and interpreter sanity |
-| 5 | Generate all bootstrap artifacts and repeat manifest population | Demoted Cambridge sources and `NATIVE_INTCODE(TRNILRG)` installed |
-| 6 | Build CAMBCOMP from populated source and INTCODE | `NATIVE_INTCODE(CAMBCOMP)` |
-| 7 | Assemble all five latest canonical runtime modules | Five `NATIVE_OBJ` members |
-| 8 | Compile and assemble BLIB from BCPL source | `NATIVE_OBJ(BLIB)` |
-| 9 | Run production-only 00..145 regression panel | Target 145 PASS/0 FAIL/1 SKIP |
+| Term | Plain meaning |
+| --- | --- |
+| **BCPL** | The programming language we are rebuilding. |
+| **MVS** | The IBM operating system that runs inside Hercules. |
+| **Hercules / TK5** | The emulator and MVS 3.8J system used for this project. |
+| **PDS** | An MVS data set that holds named members, much like files in a folder. |
+| **JCL** | Instructions that tell MVS which programs or build steps to run. |
+| **JES job** | A batch job sent to MVS. Each job has a number and a result. |
+| **`dspal`** | Our tool for creating, filling, listing, and deleting the BCPL PDSes. |
+| **`ICINT19`** | The interpreter that runs the early BCPL compiler's INTCODE. |
+| **INTCODE** | The intermediate code used during the BCPL bootstrap. |
+| **`TRNILRG`** | A larger-name translator image needed to build the Cambridge compiler. |
+| **`CAMBCOMP`** | The rebuilt Cambridge compiler, stored as INTCODE. |
+| **`NATIVE_OBJ`** | The PDS that holds the six finished, native object modules. |
+| **RC / CODE** | A job step's return code / the BCPL interpreter's own completion code. Check both. |
 
-## 0. Establish a reproducible operator session
+### What is kept, and what is erased?
+
+This process **deletes data**. Read this table first.
+
+| Area | What happens | What you must know |
+| --- | --- | --- |
+| `workarea/` on Linux | Its contents are deleted | Save any build logs or evidence you need first. |
+| `workarea/.gitignore` | **Kept** | Git tracks this file so `workarea/` exists after a fresh clone. |
+| 24 BCPL PDSes listed in `config/dspal.yaml` | **Deleted and rebuilt** | Any personal files in these managed PDSes will be lost. |
+| `NATIVE_OBJ` | Recreated empty, then rebuilt | Do not copy old binary objects into it. |
+| `NATIVE_DEVOBJ` | Recreated empty | Leave it empty during the production rebuild. |
+| `mvs-state/`, DASD images, TK5 system files | **Kept** | Never erase these as part of this guide. |
+| Git source, `docker/`, `config/dspal.local.yaml` | **Kept** | The local config may contain credentials. Never paste them into logs or commits. |
+
+The purge command works only on the data sets named in the **effective**
+`dspal` configuration. First check the high-level qualifier (HLQ) and the
+full delete list. It does **not** erase IBM system data sets or the whole
+MVS disk.
+
+### One source of truth for PDS content
+
+`config/dspal.yaml` says which host file goes into each MVS PDS member.
+It has two kinds of input:
+
+| Kind | Example | When it exists |
+| --- | --- | --- |
+| Git-tracked | `mr10-kit-compiler/asm/icintv19.asm` | Right after clone |
+| Generated | `workarea/bootstrap-cambridge/demoted/syn` or `trni-large-names.int` | After we run the bootstrap generator |
+
+We run **`dspal populate all` twice**. On the first pass it installs what
+already exists. On the second pass it adds the files we generated. The same
+manifest controls both passes.
+
+There is **no `stage-bootstrap` step** and no manual `dspal put` for
+`TRNILRG` or `CAMBBLD` in this rebuild.
+
+### Build map
+
+| Step | Task | Good result |
+| --- | --- | --- |
+| 0 | Check Git, MVS, and settings | Ready to start |
+| 1 | Clean `workarea/` | Empty except for `.gitignore` |
+| 2 | Purge and recreate the BCPL PDSes; first populate | Tracked source installed; generated files still missing |
+| 3 | Build `ICINT19` | Installed, working interpreter |
+| 4 | Run the MR10 examples and tests | All resident suites pass |
+| 5 | Generate Cambridge sources and `TRNILRG`; second populate | All mapped members installed |
+| 6 | Build and test `CAMBCOMP` | Compiler produces System/370 assembler |
+| 7 | Assemble five native runtime modules | Five members in `NATIVE_OBJ` |
+| 8 | Compile and assemble `BLIB` | Six members in `NATIVE_OBJ` |
+| 9 | Run native regression tests | 145 PASS, 0 FAIL, 1 expected SKIP |
+| 10 | Save the evidence | Results and limits recorded |
+
+> **Status:** A full clean-room rebuild was accepted on **17 October 2026**
+> using source baseline `04c74af8b07b5cdc2aaec44d79f020a848cb7e65`.
+> See the [acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md).
+> The *two-pass manifest procedure in this guide* was added **after** that
+> acceptance. It has **not yet passed a new end-to-end clean-room test**.
+> Do not claim it has until that test is done.
+
+## Step 0 — Check the system
+
+Open a shell on the Linux host. Work from the repository root.
 
 ```sh
 cd ~/Source/Repos/BCPL-for-MVS
+
 git status --short
 git pull --ff-only
 git rev-parse HEAD
+
 tools/mvs/start-tk5 --detached
 tools/datasets/dspal status --probe
 tools/datasets/dspal info
 tools/native/prepare-bootstrap --check-inputs
-python3 tools/checks/check-native-bootstrap-jcl.py
-python3 tools/checks/check-native-production-build.py
 ```
 
-Do not continue after an unexpected Git modification, unavailable JES card reader, or incorrect target HLQ. Confirm the password is configured in `config/dspal.local.yaml`; do **not** paste credentials into a report. Starting an already-running container should not be treated as a demand to recreate its DASD.
+**Check before going on:**
 
-## 1. Clean only disposable host-generated files
+- Git has no unexpected changes. Note the full commit ID.
+- Docker/Hercules and the JES card reader are ready.
+- The `dspal` settings point to the **right** MVS system and HLQ.
+- The input check finds the tracked source files.
+- The private `config/dspal.local.yaml` has the needed MVS login settings.
+  Never print the password in a public report.
+
+A command error must be understood before you continue.
+
+## Step 1 — Clean the host work area
+
+This deletes generated files and earlier test logs, **not** Git source or
+MVS data sets.
 
 ```sh
-# Requires typing DELETE; preserves the Git-tracked workarea/.gitignore.
-tools/clean-workarea
+# Review the items shown. Type DELETE only if you want to erase them.
+bash tools/clean-workarea
+
+git status --short
 ```
 
-Do not delete the workarea placeholder: Git tracks `workarea/.gitignore`
-to create the directory on a fresh clone. The clean-room compiler artifacts
-will be generated after rebuilding the interpreter in stage 3. Retain any
-prior host-side evidence needed for review *before* authorizing cleanup.
+The tool is interactive. It shows what will be removed, requires the exact
+word `DELETE`, and keeps `workarea/.gitignore`. It refuses to run if
+other tracked files are under `workarea/`.
 
-## 2. Purge, initialize, and populate currently ready managed sources
+**Check:** `workarea/` still exists, and `workarea/.gitignore` is still
+there. The Git working tree has no new changes.
+
+Do **not** use `rm -rf workarea`. That removes the tracked file that makes
+this directory appear in a fresh clone.
+
+## Step 2 — Rebuild the managed PDS layout
+
+### 2A. Review and purge the BCPL data sets
 
 ```sh
-# INSPECT THE EXACT DELETE DECK BEFORE AUTHORIZING DELETION.
+# Show the proposed delete job. This does not delete anything.
 tools/datasets/dspal purgebcpl --show-jcl
-tools/datasets/dspal purgebcpl    # requires explicit YES
 
+# The real purge asks you to type YES.
+tools/datasets/dspal purgebcpl
+```
+
+**Stop and read the list before typing `YES`.** The purge removes the
+managed BCPL PDSes and their contents. Do not run it if any of them holds
+data you still need.
+
+**Check:** the purge reports which data sets were deleted and the JES job
+number. Save the result.
+
+### 2B. Create new empty PDSes
+
+```sh
 tools/datasets/dspal initbcpl --show-jcl
 tools/datasets/dspal initbcpl
 tools/datasets/dspal stat
-tools/datasets/dspal populate all --dry-run  # expected RC=2: generated files missing
-tools/datasets/dspal populate all            # expected RC=2: tracked members installed
-tools/datasets/dspal ls
 ```
 
-**The first population is intentionally incomplete and returns RC=2.** Unlike
-ordinary preflight failures, *missing generated sources* are reported after
-the available tracked members have been populated. Confirm the summary says
-the expected generated files are missing, and verify that the tracked MR10
-and native source/JCL members exist. Do not suppress or ignore other error
-messages: invalid mappings, missing tracked sources, malformed FB80 records,
-or stale generated-file hashes stop population before writes. A failed JES
-installation is also a hard failure and must be investigated.
+**Check:** all **24** managed data sets exist with the expected record
+formats. The binary libraries start empty. The MVS system data sets and
+the host's DASD images are unchanged.
 
-The initial binary libraries (including `MR10_LOAD`, `MR10_OBJ`,
-`NATIVE_OBJ`, `NATIVE_DEVOBJ`, and `NATIVE_INTCODE`) remain empty.
-No old binary images may be copied into them. The manifest lists **24
-managed datasets**; both tracked and generated member mappings reside in
-`config/dspal.yaml`. The first pass installs the tracked mappings only.
+### 2C. First population: install the Git-tracked files
 
-**Do not chain the first population to subsequent commands with `&&` or
-use a blanket `set -e` wrapper.** Its nonzero status is deliberate and
-must be inspected, not disguised as a successful complete population.
+```sh
+# Preview the ready files. No PDS writes.
+tools/datasets/dspal populate all --dry-run
 
-## 3. Rebuild the MR10 version-19 interpreter
+# Install the available files into MVS.
+tools/datasets/dspal populate all
+
+# Look at the new member lists.
+tools/datasets/dspal ls MR10_SOURCE
+tools/datasets/dspal ls MR10_JCL
+tools/datasets/dspal ls MR10_ASM
+tools/datasets/dspal ls NATIVE_SOURCE
+tools/datasets/dspal ls NATIVE_JCL
+```
+
+**The first population is meant to end with RC=2.** That does **not** mean
+it installed nothing. At this point, the 11 demoted Cambridge sources and
+`TRNILRG` do not exist yet, so the tool reports **12 missing generated
+members** after writing the ready tracked members.
+
+Check the output carefully:
+
+| Output | Meaning | Action |
+| --- | --- | --- |
+| `populate completed: ... ready member(s) written` and 12 `MISSING GENERATED` entries | Expected first pass | Check that the tracked members are in MVS, then continue |
+| Missing Git-tracked source, bad record length, duplicate member, stale hash | Real preflight problem | Fix it; do not continue |
+| JES job failed, a required data set is absent, or a member was not written | Real installation problem | Fix it; do not continue |
+| RC=0 on a fresh, empty workarea | Unexpected for this stage | Check whether old generated files remain or the manifest has changed |
+
+**Important:** verify the **reason** for RC=2. Do not automatically treat
+every RC=2 as success. Do not run this stage in a shell chain that requires
+each command to return zero, such as one long `&&` chain or `set -e` script.
+
+The finished first pass must leave the interpreter's tracked assembler,
+JCL, and input files ready. It must **not** restore old INTCODE, object, or
+load modules from another machine.
+
+## Step 3 — Rebuild the interpreter
 
 ```sh
 tools/datasets/dspal submit MR10_JCL IC19BLD
@@ -126,20 +219,42 @@ tools/datasets/dspal ls MR10_LOAD
 tools/datasets/dspal ls MR10_OBJ
 ```
 
-Verify the **payload** ASM (IFOX), LKED (IEWL), and SAVEOBJ (IEBGENER) each returned `RC=0000`, and that both libraries contain `ICINT19`. The job-body source is `mr10-kit-compiler/jcl/build-icintv19.jcl`. Never use a preexisting load module to satisfy this gate.
+This builds `ICINT19` from assembler source, then installs it. The build
+uses IBM assembler and link-edit tools.
 
-For an independent interpreted smoke test using the newly installed interpreter:
+**Check:** the job steps `ASM`, `LKED`, and `SAVEOBJ` all finish with
+`RC=0000`. Both `MR10_LOAD` and `MR10_OBJ` contain `ICINT19`.
+
+Now make sure the newly installed interpreter can run a BCPL program:
 
 ```sh
 tools/mr10/compile-and-run --installed-icint MR10_LOAD --results \
   mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.bcpl
 ```
 
-Require interpreted `EXECUTION CYCLES=...,CODE=0` and expected output; JES `RC=0000` alone does not establish semantic success.
+**Check:** the program's output is correct and the interpreter reports
+`CODE=0`. A good JES step RC by itself is not enough.
 
-## 4. Exercise all MR10 language demos, BCPL demos, and regressions
+### How to read an MVS job report
 
-The three authoritative **MVS-resident suites** are already manifest-mapped into `MR10_JCL` and depend on the freshly populated `MR10_*` test/source PDSes:
+`dspal submit` runs a short **launcher job** and then the real **payload
+job**. It prints both job numbers. The payload is the one to inspect.
+
+Use the payload number shown on your machine in place of `NNNN`:
+
+```sh
+tools/mvs/job-summary NNNN
+tools/mvs/dump-report-for-job NNNN
+```
+
+Check the steps and their RC values. In the full report, also look for
+interpreter `CODE=0` messages and the program's actual output. Do not
+assume that the launcher completing means that the real job passed.
+
+## Step 4 — Test the new interpreter
+
+The project includes three groups of test and example programs. These
+jobs run inside MVS using the installed interpreter.
 
 ```sh
 tools/datasets/dspal submit MR10_JCL MRLANGDM
@@ -147,200 +262,329 @@ tools/datasets/dspal submit MR10_JCL MRBCDEMO
 tools/datasets/dspal submit MR10_JCL MRREGRES
 ```
 
-| Member | MVS job-body file | Programs | Interpretation |
-| --- | --- | ---: | --- |
-| `MRLANGDM` | `mr10-kit-compiler/jcl/run-language-demos.jcl` | 11 | BCPL language constructs |
-| `MRBCDEMO` | `mr10-kit-compiler/jcl/run-bcpl-demos.jcl` | 17 | Application demonstrations |
-| `MRREGRES` | `mr10-kit-compiler/jcl/run-regression-tests.jcl` | 12 | MR10 kit regression programs |
+| Job member | What it tests | Programs |
+| --- | --- | ---: |
+| `MRLANGDM` | Basic BCPL language features | 11 |
+| `MRBCDEMO` | Complete BCPL example programs | 17 |
+| `MRREGRES` | MR10 compiler/runtime regression cases | 12 |
 
-Each includes compile, code-generation and program-run steps; the regression suite does **not** perform host-side exact comparison against checked-in `.expected` files. Inspect `CODE=0`, `RP:` lines, and error markers in the full payload reports. Details: `mr10-kit-compiler/jcl/README-SUITES.md`.
+**Check:** inspect the **payload** reports. Check step return codes,
+`CODE=0` lines, output, and error messages. All three suites must pass
+before you build the Cambridge compiler.
 
-For stricter **host-verified expected-output comparison**, additionally run:
+**Limit:** these resident suites do **not** automatically compare their
+output with every checked-in `.expected` file. Other host-side test runners
+can make those comparisons, but they may build an interpreter from source
+rather than use the installed `ICINT19`. These are different kinds of
+evidence; do not treat them as the same test.
 
-```sh
-tools/mr10/run-regression-panel
-tools/mr10/run-language-demos
-tools/mr10/run-demo-suite
-```
+See `mr10-kit-compiler/jcl/README-SUITES.md` for more about the suites.
 
-These legacy host suite runners currently use `tools/mr10/current-icint` (assembler source) and may assemble/link their own interpreter per test; they are **additional tests, not proof that each case ran through the newly installed `MR10_LOAD(ICINT19)`**. The installed-interpreter smoke test above and the resident MVS suites supply that proof. Do not misstate the distinction.
+## Step 5 — Make the Cambridge bootstrap files
 
-## 5. Regenerate all bootstrap inputs and populate them through dspal
+The full `TRNILRG` image needs a running `ICINT19`. That is why this step
+comes **after** Steps 3 and 4, not before the first population.
+
+### 5A. Generate all bootstrap inputs in one pass
 
 ```sh
 tools/native/prepare-bootstrap --with-trnilrg
 cat workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json
+```
+
+This one command makes:
+
+- 11 demoted Cambridge BCPL source units, including `BLIB`.
+- Five *diagnostic* code-generator source units (saved for optional work).
+- The split MR10 translator source units.
+- One compiled translator image: `trni-large-names.int`, for `TRNILRG`.
+- A JSON inventory with SHA-256 file hashes.
+
+The diagnostic units are **not** part of the normal compiler or its
+production object build.
+
+**Check:** the generator finishes successfully. The JSON manifest says
+`"trnilrg_rebuilt": true`, and the compiled image exists and is not
+empty. Inspect the interpreted jobs for success and `CODE=0`.
+
+### 5B. Second population: install the generated files
+
+```sh
 tools/datasets/dspal populate all --dry-run
 tools/datasets/dspal populate all
+
 tools/datasets/dspal ls NATIVE_SOURCE
 tools/datasets/dspal ls NATIVE_INTCODE
 ```
 
-The single `prepare-bootstrap --with-trnilrg` invocation generates all
-11 demoted Cambridge sources, five diagnostic demotions, the enlarged
-MR10 translator sections, and the assembled `TRNILRG` INTCODE image
-using freshly installed `MR10_LOAD(ICINT19)`.
+**This pass must return RC=0.** It installs every mapped source file
+again, plus the generated members that were missing the first time.
 
-The second `dspal populate all` must complete **RC=0**, restoring the
-tracked member mappings and installing the 11 demoted Cambridge members
-into `NATIVE_SOURCE` plus `NATIVE_INTCODE(TRNILRG)`. Generated source
-integrity is checked against the preparation SHA-256 inventory, including
-its tracked inputs. A missing or stale generated artifact is an error.
-There is no separate `stage-bootstrap` operation or manual `dspal put`
-for `TRNILRG`.
+| PDS | What should now be there |
+| --- | --- |
+| `NATIVE_SOURCE` | Four headers, `BOOTHOST`, `OPTIONS`, `CAMBPARM`, and 11 demoted Cambridge source units |
+| `NATIVE_INTCODE` | `TRNILRG`; the compiler will be added next |
+| `NATIVE_JCL` | The Git-tracked `CAMBBLD` build job, already present from the first pass |
 
-## 6. Build CAMBCOMP from the manifest-populated sources
+`dspal` checks generated files against the saved hashes and checks the
+tracked inputs used to make them. If a file is missing, changed, or not
+listed in the inventory, correct the source or rerun the generator.
+Do **not** copy an old image from another PDS.
+
+There is no second installation map in Python: `config/dspal.yaml` is the
+only source-to-PDS map for this stage.
+
+## Step 6 — Build the Cambridge compiler
 
 ```sh
-python3 tools/checks/check-native-bootstrap-jcl.py
 tools/datasets/dspal submit NATIVE_JCL CAMBBLD
 tools/datasets/dspal ls NATIVE_INTCODE
 ```
 
-`CAMBBLD` and the three tracked bootstrap inputs `BOOTHOST`,
-`OPTIONS` and `CAMBPARM` are already populated through the manifest.
-The resident build `native-compiler/jcl/cambbld.jcl` uses
-`MR10_LOAD(ICINT19)`, `MR10_SOURCE`, `NATIVE_INTCODE(TRNILRG)`
-and `NATIVE_SOURCE`. It contains 22 interpreter executions plus a
-PACKCOMP step. Require `CODE=0` for **all 22** interpreted phases
-(not merely each step's `RC=0000`) and verify `NATIVE_INTCODE(CAMBCOMP)`
-and its constituent units. No `CAMB_*` library is used.
+This job uses `ICINT19` and `TRNILRG` to compile the demoted Cambridge
+source. It installs `CAMBCOMP` and its 11 compiler units in
+`NATIVE_INTCODE`.
 
-Smoke-test compilation using the resident image:
+**Check:** there are **22 interpreter phases** (compile and code generation
+for each unit) plus a `PACKCOMP` step. Every interpreted phase must report
+`CODE=0`. Review the JES step RCs as well. The final PDS must contain
+`CAMBCOMP` and the expected units.
+
+### Test that the compiler writes assembler
 
 ```sh
 tools/native/compile-mvs \
   native-compiler/regression/00-most-degenerate-bcpl-program/source.bcpl \
   --output workarea/m3-clean-smoke.s370.asm
+
 test -s workarea/m3-clean-smoke.s370.asm
 ```
 
-Look for generated `CSECT`, `EXTRN BCPLMAIN`, and `END` cards. `compile-mvs` verifies interpreted execution code.
+**Check:** the output file has System/370 assembler statements such as
+`CSECT`, `EXTRN BCPLMAIN`, and `END`. The compiler runner must report
+interpreted completion `CODE=0`.
 
-## 7. Build all five canonical assembler modules into NATIVE_OBJ
+**Note:** the historical `CAMB_*` data sets are managed but are not used
+by this reconstruction. The working compiler lives in `NATIVE_INTCODE`.
 
-The authoritative source-to-member mapping is `config/dspal.yaml`.
-After `dspal populate all`, `NATIVE_ASM` must contain exactly:
-`BCPLMAIN`, `BCPLIO`, `BCPLMEM`, `BCPLBYTE`, `BCPLAPT`.
-These map to `native-compiler/asm/<lowercase-member>.asm` with no
-versioned or historical source aliases. The canonical BCPLMAIN is
-the D6/M5.5 source accepted in the dynamic-stream milestone.
+## Step 7 — Build five native runtime modules
 
-**This is a deliberate source-based production build**. The previous
-DEVOBJ-only policy no longer applies to this new clean-room target.
+The runtime provides the low-level services that native BCPL programs
+need. Its assembler sources are tracked in Git and mapped to `NATIVE_ASM`
+by `config/dspal.yaml`.
+
+First check the source and object libraries:
 
 ```sh
-python3 tools/checks/check-native-production-build.py
 tools/datasets/dspal ls NATIVE_ASM
 tools/datasets/dspal ls NATIVE_JCL
 tools/datasets/dspal ls NATIVE_OBJ
+```
 
-# All five modules: one MVS job, five IFOX assemblies and five
-# gated IEBGENER FB80 object installs. No host-side object copying.
+Before the build, `NATIVE_OBJ` must be empty.
+
+Then build and install the runtime:
+
+```sh
 tools/datasets/dspal submit NATIVE_JCL BLDBMAIN
 tools/datasets/dspal ls NATIVE_OBJ
 ```
 
-The canonical `native-compiler/jcl/bldbmain.jcl` installs these
-objects **only after each preceding assembly and installation
-succeeded with RC=0000**:
+| Source in Git | PDS object member |
+| --- | --- |
+| `native-compiler/asm/bcplmain.asm` | `BCPLMAIN` |
+| `native-compiler/asm/bcplmem.asm` | `BCPLMEM` |
+| `native-compiler/asm/bcplbyte.asm` | `BCPLBYTE` |
+| `native-compiler/asm/bcplapt.asm` | `BCPLAPT` |
+| `native-compiler/asm/bcplio.asm` | `BCPLIO` |
 
-| Git source | Assembler step | Production member |
-|---|---|---|
-| `bcplmain.asm` | ASMMMAIN | `NATIVE_OBJ(BCPLMAIN)` |
-| `bcplmem.asm` | ASMMMEM | `NATIVE_OBJ(BCPLMEM)` |
-| `bcplbyte.asm` | ASMMBYTE | `NATIVE_OBJ(BCPLBYTE)` |
-| `bcplapt.asm` | ASMMAPT | `NATIVE_OBJ(BCPLAPT)` |
-| `bcplio.asm` | ASMMIO | `NATIVE_OBJ(BCPLIO)` |
+**Check:** the job has five assembler steps and five object-install steps.
+All ten must return `RC=0000`. The final `NATIVE_OBJ` must contain these
+five members and no old objects.
 
-Check all five assembly RCs and all five binary-install RCs.
-Stop if any step failed; the job is **not transactionally atomic**.
-Before going on, prove five members actually exist and were installed
-in `NATIVE_OBJ`, not the old retired `HERC02.BCPL.OBJ` or `DEVOBJ`.
+The install job is **not all-or-nothing**. If a step fails, stop and find
+the cause; do not claim all five were installed.
 
-## 8. Build the current BLIB from source into NATIVE_OBJ
+The canonical `BCPLIO` is the uninstrumented production I/O module.
+Fault-test instrumentation used by some regression cases is separate.
+
+## Step 8 — Build BLIB, the sixth native object
+
+`BLIB` is BCPL library code. This stage compiles it with our newly
+rebuilt Cambridge compiler, repairs a few known assembler-card details,
+then assembles and installs it.
 
 ```sh
 tools/datasets/dspal submit NATIVE_JCL BLIBBLD
 tools/datasets/dspal ls NATIVE_OBJ
+tools/datasets/dspal ls NATIVE_DEVOBJ
 ```
 
-The canonical `native-compiler/jcl/blibbld.jcl` uses resident
-`ICINT19` and `CAMBCOMP` to translate demoted BCPL `BLIB`
-source into native System/370 code, applies the narrow documented
-CG370 card repairs, assembles it with IFOX and uses IEBGENER
-to install **`NATIVE_OBJ(BLIB)`**.
+**Check:** all six job steps finish with `RC=0000`:
 
-Inspect the payload steps `COMP`, `PREPASM`, `PREPLK`,
-`FIXASM`, `ASMBLIB` and `INSTALL`. Require each expected
-RC=0000 and interpreted `CODE=0` where applicable. Do not treat
-a successful assembler alone as proof of the BLIB build.
+| Step | Job |
+| --- | --- |
+| `COMP` | Compile BCPL library source |
+| `PREPASM` | Prepare assembler cards |
+| `PREPLK` | Prepare link/card content |
+| `FIXASM` | Apply the known card fixes |
+| `ASMBLIB` | Assemble BLIB |
+| `INSTALL` | Save the native BLIB object |
 
-The final production object inventory must contain **all six**:
-`BCPLMAIN`, `BCPLIO`, `BCPLMEM`, `BCPLBYTE`,
-`BCPLAPT`, and `BLIB`. No old binary is copied into that set.
+The compiler's interpreted run must also report `CODE=0`.
 
-## 9. Run the complete native regression against NATIVE_OBJ
+The final production PDS must have **exactly six** object members:
 
-The regression launcher has an explicit full-production profile:
-`tools/native/run-production-regression` sets
-`BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=OBJ`, and disables
-all versioned candidate-member selectors. It causes IEWL to
-`INCLUDE OBJ(...)` for the five runtime modules **and BLIB**.
-The historical `DEVOBJ(BCPLM6)` profile remains available for
-comparison but is not used in this rebuild.
+```text
+BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BLIB
+```
 
-The newer dynamic-stream tests (124..145) are permitted in
-this **full-OBJ profile**. Private fault-instrumented BCPLIO is
-assembled only inside the corresponding GO job, without writing
-back to the canonical `BCPLIO` object. D6-controlled failures
-in cases 052 and 093 continue to expect GO RC0000, not the
-different historical D7 RC0012.
+`NATIVE_DEVOBJ` must remain empty. Do not use it to fill any gap in
+`NATIVE_OBJ`.
+
+## Step 9 — Run the native production tests
+
+Use the production launcher, not a development or candidate profile:
 
 ```sh
-# Static; does not submit MVS jobs:
-python3 tools/checks/check-native-production-build.py
-env -u BCPL_RUNTIME_CANDIDATE_MEMBER \
-    BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=OBJ \
-    BCPL_RUNTIME_CANDIDATE=0 \
-    python3 tools/checks/check-m44-compatibility.py --production
-tools/native/run-production-regression --check-numbering
-
-# MVS compile, assemble, link and GO proof:
-tools/native/run-production-regression 0 --show-output
-tools/native/run-production-regression 52
-tools/native/run-production-regression 93
-tools/native/run-production-regression 124 --show-output
-tools/native/run-production-regression 139 145
-
-# Run the complete, inclusive 146-case panel:
 tools/native/run-production-regression 0 145
+```
 
-# Independently audit saved per-case JES outcome logs:
+This tool selects **only** the rebuilt `NATIVE_OBJ` modules. It does not
+select the older `DEVOBJ(BCPLM6)` development candidate. It compiles
+the tests with `CAMBCOMP`, then assembles, links, and runs the result
+on MVS.
+
+**Target result:**
+
+| Result | Count | Meaning |
+| --- | ---: | --- |
+| PASS | **145** | Tests completed as expected |
+| FAIL | **0** | No failed tests |
+| SKIP | **1** | Case 083 needs source-only instrumentation and is not run in this installed-PDS mode |
+| TOTAL | **146** | Numbered cases 00 through 145 |
+
+A few cases are special:
+
+| Case | Expected behavior |
+| --- | --- |
+| `048` | Compile-only test; a successful compile counts as PASS |
+| `052` and `093` | In the production D6 profile, the GO return code should be `0000` |
+| `124`–`145` | Dynamic-stream and fault/accounting cases run in the all-OBJ production profile |
+| `139`–`145` | The harness uses private test-only accounting; production `BCPLIO` is not replaced |
+
+Each test saves a report under `workarea/native-regression/logs/`.
+For a failed test, read that case's log. You can rerun a single case,
+such as `tools/native/run-production-regression 124 --show-output`.
+
+### Audit the saved test reports
+
+After the full 00–145 panel has run, use:
+
+```sh
 python3 tools/checks/check-m44-full-panel-logs.py
 ```
 
-**Measured on 17 October 2026 on the new OBJ build:**
-145 PASS / 0 FAIL / one source-only SKIP 083 among
-146 numbered cases. Case 048 is deliberately compile-only
-but counts as PASS when compilation succeeds.
-The log audit expects 145 independently PASS case logs, correct
-GO return codes, successful IFOX/IEWL, and no unresolved ABEND
-signatures. A named class/routing receipt from M5.5 is evidence
-of the older DEVOBJ milestone, not a substitute for this new run.
+**Check:** the audit finds **145/145** executed-case logs, expected job
+steps and return codes, and no known-defect or ABEND signatures. It writes
+a job/step summary here:
 
-## 10. Capture the new clean-room acceptance record
+```text
+workarea/native-regression/m44-00-145-jobs.tsv
+```
 
-Record the Git commit and effective `dspal.yaml`, the inspected
-deletion inventory, the purge/allocate/populate payload JOBs,
-recreated `MR10_LOAD(ICINT19)`, fresh TRNILRG and CAMBCOMP,
-interpreted CODE=0 checks, the ten BLDBMAIN and six BLIBBLD
-payload step RCs, the six-member `NATIVE_OBJ` inventory,
-each focused regression result, the full-panel summary and its
-145/145 log audit. Protect credentials and raw MVS data.
+This is a check of **saved harness reports**. It does not read each
+physical MVS DD record independently. The log audit adds useful evidence,
+but it does not replace the full run.
 
-The **complete purge-to-OBJ procedure was executed and verified
-end-to-end on 17 October 2026**. See the
-[acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md). The previously accepted
-[BCPLIO dynamic-stream milestone](bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md)
-documents the earlier DEVOBJ results, not the new production result.
+## Step 10 — Save what you proved
+
+For every new clean-room rebuild, keep a short acceptance record.
+A passing command is not enough if no one can tell which sources,
+PDS members, and jobs were used.
+
+| Record | What to save |
+| --- | --- |
+| Source | Full Git commit ID and the effective `dspal` settings (without passwords) |
+| Erase/recreate | Deleted PDS list; purge and allocation job numbers |
+| First population | Member summary; 12 expected missing generated members; evidence tracked sources were installed |
+| Interpreter | Build payload job, `ASM`/`LKED`/`SAVEOBJ` RCs, smoke-test `CODE=0` |
+| MR10 tests | Payload job numbers, suite pass results, output checked, comparison limits |
+| Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
+| Cambridge | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
+| Runtime | Five assembly and five install RCs; six final `NATIVE_OBJ` members including BLIB |
+| Native tests | Full 00–145 results, one expected skip, 145/145 report audit |
+| Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
+
+Keep credentials out of committed files. `workarea/` is ignored by Git;
+its generated logs, images, and manifests will **not** be saved by a
+normal `git commit`.
+
+The [17 October 2026 acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md)
+proves the **earlier** accepted procedure. When this revised two-pass
+procedure is tested end-to-end, record that result separately. Do not
+change the old record to make it look as if the new procedure was used.
+
+## When something goes wrong
+
+| Symptom | First thing to check |
+| --- | --- |
+| First `populate all` exits 2 | Is the **only** issue the 12 missing generated members? Were tracked members installed? |
+| A tracked member is missing | Git checkout and the member mapping in `config/dspal.yaml` |
+| `prepare-bootstrap --with-trnilrg` fails | Is the newly built `MR10_LOAD(ICINT19)` working? Read the interpreter payload reports |
+| Second `populate all` exits nonzero | Generated inventory, missing files, source hashes, or JES installation failures |
+| `CAMBBLD` fails | Interpreter `CODE=0`, `TRNILRG`, source members, and the payload job |
+| Runtime assembly fails | Full IFOX listing and exact step RC; do not install an old object |
+| Native regression fails | That case's saved log and its compiler, assembler, link, and GO jobs |
+| Printer report is missing | Check `mvs-state/prt/prt00e.txt` and the actual payload job number |
+
+Fix failures at the stage where they occur. Do not hide an unexpected
+error code with `|| true` and continue to a later step.
+
+## Developer checks — not part of a routine rebuild
+
+These checks protect the **build tools and test harness** while someone
+is editing them. They do not rebuild BCPL or run MVS. Use them when you
+change the related scripts or JCL, or when you are investigating a problem.
+
+| Command | What it checks |
+| --- | --- |
+| `python3 tools/checks/test-dspal-generated-population.py` | Offline tests for first/second population behavior |
+| `python3 tools/checks/check-native-bootstrap-jcl.py` | Expected `CAMBBLD` job structure and PDS names |
+| `python3 tools/checks/check-native-production-build.py` | Canonical native build source and JCL contracts |
+| `tools/native/run-production-regression --check-numbering` | Test numbering and expected range |
+| `check-m44-compatibility.py --production` | Harness fixtures, production linkage, and test-only fault settings |
+
+For the last check, the required production environment is:
+
+```sh
+env -u BCPL_RUNTIME_CANDIDATE_MEMBER \
+  BCPL_RUNTIME_PDS=1 \
+  BCPL_RUNTIME_LIBRARY=OBJ \
+  BCPL_RUNTIME_CANDIDATE=0 \
+  python3 tools/checks/check-m44-compatibility.py --production
+```
+
+**Why these checks are optional here:** the JCL, manifest, and runner are
+Git-tracked. We do not expect them to change during a routine rebuild.
+Successful MVS builds and the full regression panel give stronger proof
+that the rebuilt system works. Static checks remain useful when the
+*tools themselves* are being changed.
+
+## Optional historical and diagnostic tools
+
+| Item | Current status |
+| --- | --- |
+| `NATIVE_DEVOBJ` and historical `BCPLM6` candidate | Kept for development/history; **not used** in the production rebuild |
+| `CAMB_*` PDSes | Managed, but **not used** for the resident bootstrap above |
+| Instrumented `CG370D` compiler | Its generator and `NATIVE_JCL(CG370DB)` build job are still in Git; **not part of the normal build** |
+
+`make-demoted.py` still generates the five instrumented code-generator
+sources in `workarea/bootstrap-cambridge/demoted-diag/`.
+`native-compiler/jcl/cg370db.jcl` can build the separate
+`NATIVE_INTCODE(CG370D)` image. At present those five diagnostic sources
+(`CGAD`–`CGED`) still need **explicit staging** into `NATIVE_SOURCE`:
+they are not in the normal `dspal populate all` mapping.
+Building `CG370D` does **not** replace `CAMBCOMP`.
+
+Do not restore or run those optional tools just to complete this guide.
