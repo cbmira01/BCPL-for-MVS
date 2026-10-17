@@ -5,6 +5,25 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M4.4.0 source-only compatibility preparation (2026-10-17)
+
+M4.3 is closed. The [M4.4 compatibility procedure]
+(Milestone-BCPLIO-dynamic-stream-M4.4-plan.md) is staged with a
+new non-submitting checker:
+tools/checks/check-m44-compatibility.py.
+The current numbered corpus 00..145 contains 146 cases;
+the expected eventual full DEVOBJ checkpoint is
+**145 PASS / 0 FAIL / 1 intentional SKIP 083**.
+The last accepted complete panel remains 00..132
+(132 PASS, 0 FAIL, 1 expected skip), with 133..145
+accepted in targeted runs only.
+
+The prior owner decision **to defer the full suite**
+is preserved: this is a source-only preparation gate,
+NOT an observed preflight or full-panel PASS. Runtime
+and PDS members are unchanged; M5 DD-specific attribution
+remains separate.
+
 ## M4.3 closed — scoped resource accounting (2026-10-17)
 
 **M4.3 is CLOSED.** Final JES details were supplied for all seven
