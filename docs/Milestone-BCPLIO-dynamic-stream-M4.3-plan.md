@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.3 resource accountability
 
-**Status: M4.3.0, M4.3.1 and M4.3.2a ACCEPTED (2026-10-17); targeted regressions 139, 140 and 141 PASS; M4.3.2b recoverable-failure accounting OPEN.**
+**Status: M4.3.0, M4.3.1, M4.3.2a and M4.3.2b ACCEPTED (2026-10-17); focused 139–145 all PASS individually/in targeted groups. M4.3 formal closure awaits extraction of successful JES job IDs and per-step codes from existing local regression logs. Full panel remains owner-deferred.**
 Date: 2026-10-17
 
 ## Contract
@@ -145,6 +145,58 @@ Do not replace canonical source or install any generated object.
 Source-only checks and targeted regression outcomes **PASS**.
 Counted synthetic failure modes (M4.3.2b), the complete
 compatibility panel, and production OBJ promotion remain separate.
+## M4.3.2b acceptance — 2026-10-17
+
+The operator pulled commit `ce8d3e1` and reran the source
+audits and focused candidate-only 142..145 panel:
+
+```text
+M4.3 post-IODRAIN terminal assertions: source check PASS
+M4.3 native counter shim base setup: source check PASS
+M4.3 counted BCPL source records: <=80 columns PASS
+M4.3 combined counted failure/terminal source checks: PASS
+M4.3 private source accounting checks: PASS
+NATIVE REGRESSION 142..145 (4 tests)
+PASS 142 142-dynamic-dd-fault32-counted
+PASS 143 143-dynamic-dd-fault268-counted
+PASS 144 144-dynamic-dd-fault16-counted
+PASS 145 145-dynamic-dd-open-denial-counted
+PASS 4 / FAIL 0 / SKIP 0
+```
+
+**M4.3.2b ACCEPTED.** Each passing compiled-BCPL case
+asserted ten private counter values immediately after the
+single synthetic denial, another ten after the two successful
+stream closes, and post-IODRAIN terminal equality and
+DHEAD=HHEAD=0. Each case verified a later successful
+GETMAIN or genuine SVC19 as appropriate, and retained
+the source tests' original stream/cursor checks.
+No claim is made that a real MVS failure returned control.
+
+The first execution attempt at commit `5d204c3` failed
+host-side before MVS because an inserted BCPL comment was
+82 columns; that unsuccessful attempt remains documented
+below and is superseded by this passing attempt.
+
+**Focused M4.3 test status:** 139, 140, 141, 142, 143,
+144 and 145 have all passed in their reported targeted runs;
+the source audit also passed. These runs test the temporary
+instrumented BCPLIO, linked with the existing development
+candidate BCPLM6, rather than installing a new BCPLIO.
+
+**Formal M4.3 closure evidence still to capture:** the
+user's supplied PASS summary omits the successful-run JES
+JOB IDs and individual Cambridge, IFOX, IEWL, GO step
+condition codes required by the explicit M4.3 closure
+contract. Those should be extracted from already-written
+`workarea/native-regression/logs/139-*.log` through
+`145-*.log` rather than rerunning the full panel.
+The source-level and focused behavioral gates are now
+complete. **Do not promote OBJ/DEVOBJ or silently
+remove the owner's full-regression deferral.**
+Physical MVS FREEMAIN verification and unreturned system
+abends are outside the agreed scoped runtime contract.
+
 ## M4.3.2b first attempted run — no MVS execution (2026-10-17)
 
 The operator pulled commit `5d204c3` and ran the source checker,
@@ -165,7 +217,7 @@ test sources for ASCII and the 80-column limit, and confirms
 20 private count assertions per case. **142..145 remain OPEN
 until actual MVS results are received.**
 
-## M4.3.2b — counted failure paths STAGED (not run)
+## M4.3.2b — counted failure paths (accepted)
 
 Regressions **142–145** combine the isolated 139 private counter
 query, 140/141 post-IODRAIN terminal assertions, and the original
@@ -197,10 +249,10 @@ Existing regression 135–138 modes remain untouched.
 A synthetic denied operation is **not a real MVS failure**,
 and source-only checks are not IFOX or JES evidence. No
 new QSAM interface, BCPL global, installed object or promoted
-runtime source is introduced. Focused 142..145 tests are
-pending; M4.3 remains OPEN until their MVS evidence is accepted.
+runtime source is introduced. Focused tests 142..145 have now **PASSED**; formal M4.3
+closure evidence collection remains as specified above.
 
-**M4.3.2 (partially staged):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
+**M4.3.2 (accepted under the returned-error contract):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
 
 **M4.3 CLOSE:** Record the MVS job IDs, Cambridge/IFOX/IEWL/GO outcomes, generated object/link isolation and count observations, identify remaining host-level limitations, then accept only after all supported paths are proven. The owner's full regression deferral, M4.4 compatibility, M5 per-DD attribution and no OBJ promotion remain unchanged.
 

@@ -1,9 +1,33 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2 closed (M4.2 scope-limited, 2026-10-17); M4.3/M4.4/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2 closed (M4.2 scope-limited, 2026-10-17); M4.3 all focused gates accepted, formal JES evidence record pending; M4.4/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M4.3.2b accepted — focused 142–145 PASS (2026-10-17)
+
+At source revision `ce8d3e1`, the owner reran the
+source checks: terminal assertions, native shim,
+80-column BCPL records, combined synthetic fault
+source, and private accounting checks all PASS.
+Candidate-only native **142 descriptor32 PASS,
+143 buffer268 PASS, 144 handle16 PASS,
+145 pre-SVC19 OPEN denial PASS: 4 PASS / 0 FAIL /
+0 SKIP**. The deterministic BCPL assertions
+check returned failure accounting, retry, two
+explicit CLOSEs, and terminal IODRAIN equality
+and empty DHEAD/HHEAD. This completes all
+focused M4.3 gates, together with 139–141.
+**Formal M4.3 closure remains pending extraction
+of the successful MVS JOB numbers and step codes
+from local regression logs**, required by the
+previously agreed acceptance procedure.
+No independent physical MVS storage-free proof
+or actual SVC19 error-return recovery is asserted;
+full native panel remains deferred; installed
+runtime and public ABI unchanged. See the
+[M4.3 plan](Milestone-BCPLIO-dynamic-stream-M4.3-plan.md).
 
 ## M4.3 accounting infrastructure and test 139 staged (2026-10-17)
 

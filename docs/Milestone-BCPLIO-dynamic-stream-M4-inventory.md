@@ -1,9 +1,33 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1/M4.2 accepted (M4.2 scope-limited to returned errors, 2026-10-17); 138 synthetic PASS; 7874/7875/7876 HANDLE; genuine failed OPEN unobserved; M4.3 accounting and full panel pending**
+Status: **M4.0/M4.1/M4.2 accepted; M4.3 focused gates 139..145 accepted (formal JES evidence collection pending); genuine failed OPEN unobserved; full panel owner-deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
+
+## M4.3.2b accepted — focused 142–145 PASS (2026-10-17)
+
+At source revision `ce8d3e1`, the owner reran the
+source checks: terminal assertions, native shim,
+80-column BCPL records, combined synthetic fault
+source, and private accounting checks all PASS.
+Candidate-only native **142 descriptor32 PASS,
+143 buffer268 PASS, 144 handle16 PASS,
+145 pre-SVC19 OPEN denial PASS: 4 PASS / 0 FAIL /
+0 SKIP**. The deterministic BCPL assertions
+check returned failure accounting, retry, two
+explicit CLOSEs, and terminal IODRAIN equality
+and empty DHEAD/HHEAD. This completes all
+focused M4.3 gates, together with 139–141.
+**Formal M4.3 closure remains pending extraction
+of the successful MVS JOB numbers and step codes
+from local regression logs**, required by the
+previously agreed acceptance procedure.
+No independent physical MVS storage-free proof
+or actual SVC19 error-return recovery is asserted;
+full native panel remains deferred; installed
+runtime and public ABI unchanged. See the
+[M4.3 plan](Milestone-BCPLIO-dynamic-stream-M4.3-plan.md).
 
 ## M4.3 accounting infrastructure and test 139 staged (2026-10-17)
 
