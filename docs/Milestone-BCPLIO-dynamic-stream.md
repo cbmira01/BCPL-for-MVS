@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; M4.2.1 exploratory GO JOB 7874 RC0000, report analysis pending; M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; real OPEN probe JOB 7874 returned HANDLE (no failure); M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -429,6 +429,31 @@ and IEC/IEF diagnostics must be read before an
 M4.2.1 disposition. M4.3 and M5 remain open;
 the complete native regression panel remains
 owner-deferred.
+
+
+## M4.2.1 complete JOB 7874 report — unexpected successful handle
+
+The owner supplied `workarea/m42-real-open/real-open-report.txt`
+for `RG890R` JOB 7874. The report shows
+JES2 allocated `DD02 DD SYSOUT=*`, IEWL linked
+normal DEVOBJ `BCPLM6` and `BCPLIO`, and
+ASMAP/LKED/GO all completed RC0000. The program
+printed `M42 BEFORE FIND DD02`,
+`M42 DD02 RETURNED HANDLE`, and
+`M42 SURVIVED FIND DD02`; no OPEN error or abend
+was reported.
+
+`DIFIND` source flow confirms that creating a new
+nonzero handle requires `DDVERIFY`, `DALLOC`,
+`DQOPEN` (real SVC19), and `HNEW`.
+Thus the system did **not reject** this SYSOUT-as-input
+OPEN, contrary to the probe's intended failure condition.
+The BCPL program did not try to read that handle.
+**M4.2.1 actual failed-OPEN acceptance NOT MET; M4.2 stays open.**
+Next explore a nonmember, read-only PDS as a QSAM
+input DD, preserving exact JES diagnostics.
+No canonical BCPLIO or installed object changed.
+Full native regression remains deferred.
 
 ## Handoff / next-conversation prompt
 
