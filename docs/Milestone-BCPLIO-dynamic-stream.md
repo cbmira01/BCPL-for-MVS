@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; focused 133/134 PASS; owner deferred full 00..134; M4.1 instrumented tests 135–137 staged; M4/M5 open  
+Status: M0/M1/M2 accepted; focused 133/134 and M4.1 case 135 PASS; 136/137 pending; full panel deferred; M4/M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -252,6 +252,25 @@ ASMFIO/LKED linkage results before expanding testing. Installed
 DEVOBJ and production NATIVE.OBJ remain unchanged. M4.2 true
 OPEN failures, M4.3 independent resource accounting and M5
 physical DD attribution are still outstanding.
+
+
+## M4.1 descriptor failure gate — PASS 135
+
+Owner-selected continuation into M4.1 remains in force:
+the complete 00..134 compatibility panel is deferred.
+The operator pulled through `175fc2e`, passed the
+source-only fault-generator checker for all three 32/268/16
+modes, then executed targeted regression **135**
+under the isolated test-only BCPLIO assembler/link
+route. Result: **PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**.
+
+This verifies synthetically failed descriptor32 allocation
+recovery and subsequent BCPL stream usability under MVS.
+It does **not** verify genuine low-memory behavior,
+the pending 268/16 tests, or independent resource counts.
+No installed runtime object was changed. The next
+focused gate is regression **136**, then **137**.
+See [M4.1 plan](Milestone-BCPLIO-dynamic-stream-M4.1-plan.md).
 
 ## Handoff / next-conversation prompt
 
