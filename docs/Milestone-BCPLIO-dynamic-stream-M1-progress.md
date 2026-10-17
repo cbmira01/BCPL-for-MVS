@@ -1,6 +1,6 @@
 # Dynamic BCPLIO streams — M1 progress log
 
-Status: **M1 in progress; assembler ABI integration JOB 5766 accepted; compiled BCPL validation pending**  
+Status: **M1 discovery engineering gate validated; DEVOBJ 00..129 (129 PASS, 0 FAIL, expected SKIP 083); M2 sixteen-stream test 130 staged**  
 Started: 2026-10-16  
 Predecessor: [M0 contract](Milestone-BCPLIO-dynamic-stream-M0-contract.md)
 
@@ -683,3 +683,16 @@ Immediately afterward, operator invoked `tools/native/run-regression` with the s
 **ACCEPTED:** observable `IOFIN` dynamic output-buffer flush on FINISH and nonzero STOP, plus the complete DEVOBJ backward-compatibility checkpoint after installing the new termination cleanup. The current stable candidate reaches **129 passing cases, zero failures and expected SKIP 083**. This fulfills a major part of the dynamic-stream runtime core integration; **not independently demonstrated**: matching each GETMAIN with FREEMAIN under instrumented accounting, CLOSE correctness when resources fail, per-DD spool attribution, DD-name reopen with new non-recycled handles, at least 13 simultaneous streams, or fault-injected storage exhaustion/OPEN errors. Do not report full dynamic-stream milestone closure on these results alone; these remain M2/M4/M5 gates. Do not promote `DEVOBJ` into production `OBJ` without explicit owner authorization.
 
 **Next stage recommendation:** advance to native regression 130 covering **16 simultaneously open input DDs** (more than twelve) with distinct handles and independent record positions; then independent close/reopen new-handle and resource accounting tests. Preserve test-first evidence and the accepted 00..129 panel.
+
+### Follow-on M2 handoff
+
+The parent milestone status was updated after JOB 7065 to distinguish
+the validated M1 discovery engineering gate from unclosed M2–M5
+requirements. New `docs/Milestone-BCPLIO-dynamic-stream-M2-progress.md`
+describes the accepted 00..129 DEVOBJ handoff and the permanent
+candidate-only regression **130**, staged with sixteen distinct DD
+DATA fixtures and all-pairs handle identity checks. The 130 source
+and fixture inventory were checked against the repository (20 files,
+16 FINDINPUT calls, 120 distinct-pair comparisons, 70-character
+maximum source line). This **does not** establish any MVS result;
+execute 130 before accepting 16 simultaneous streams.
