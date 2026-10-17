@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.4 compatibility verification
 
-**Status: M4.4.0 READ-ONLY PREFLIGHT STAGED; full candidate panel NOT RUN.**
+**Status: M4.4.0 SOURCE-ONLY PREFLIGHT ACCEPTED (2026-10-17); M4.4.1 complete candidate-panel execution owner-deferred; M4.4 OPEN.**
 Date: 2026-10-17
 Predecessor: M4.3 CLOSED (returned-control resource accounting).
 
@@ -45,6 +45,42 @@ tools/native/run-regression --check-numbering
 
 An observed preflight PASS establishes only *readiness*,
 not IFOX, link-edit, GO, JES or full compatibility acceptance.
+
+## M4.4.0 acceptance — 2026-10-17
+
+The operator pulled `7d718d1` and ran all three source-only
+checks locally, without accessing MVS/JES:
+
+```text
+M4.4 source-only compatibility preflight: PASS
+Corpus: 00..145, 146 numbered cases; no gaps
+Expected full panel: 145 PASS / 0 FAIL / 1 SKIP (083)
+Candidate-only cases: 124..145
+Private test-only accounting: 139..145; canonical BCPLIO clean
+Candidate environment: NOT CHECKED
+MVS/JES execution: NOT PERFORMED
+Full-panel compatibility: NOT VERIFIED
+M4.3 post-IODRAIN terminal assertions: source check PASS
+M4.3 native counter shim base setup: source check PASS
+M4.3 counted BCPL source records: <=80 columns PASS
+M4.3 combined counted failure/terminal source checks: PASS
+M4.3 private source accounting checks: PASS
+native regression numbering: OK
+52->RG052C/RG052R; 53->RG053C/RG053R;
+99->RG099C/RG099R; 100->RG100C/RG100R;
+999->RG999C/RG999R
+```
+
+**M4.4.0 ACCEPTED** as a read-only source and runner
+readiness gate. The four candidate environment values were
+deliberately *not* checked by this invocation; that belongs
+to the `--candidate` preflight preceding an approved panel.
+
+**M4.4.1 remains unexecuted**. The owner-deferred full
+DEVOBJ 00..145 panel must not be launched by default.
+Its expected 145 PASS / 0 FAIL / 1 SKIP is **not**
+a measured full-suite result. The final M4.4 closure and
+M5 lossless physical DD attribution remain separate.
 
 ## M4.4.1 — complete candidate regression (owner-deferred)
 

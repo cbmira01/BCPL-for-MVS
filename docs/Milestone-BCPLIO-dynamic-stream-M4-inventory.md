@@ -5,6 +5,25 @@ Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
 
+## M4.4.0 accepted — read-only preflight (2026-10-17)
+
+Owner-reported `git pull` through `7d718d1` and
+all three preparation checks: **M4.4 compatibility
+preflight PASS, M4.3 private source audit PASS,
+native regression numbering PASS**.
+The verified suite contains **00..145**, 146
+contiguous cases, with candidate-only 124..145,
+the expected source-only skip 083, and isolated
+accounting cases 139..145.
+The candidate environment was **not checked**;
+no JES test was submitted and **no complete
+compatibility run occurred**. M4.4.0 is
+accepted; M4.4.1 is **owner-deferred** until
+the owner explicitly authorizes the full
+00..145 DEVOBJ run. M4.4 and M5 remain open.
+See the [M4.4 plan]
+(Milestone-BCPLIO-dynamic-stream-M4.4-plan.md).
+
 ## M4.4.0 source-only compatibility preparation (2026-10-17)
 
 M4.3 is closed. The [M4.4 compatibility procedure]
