@@ -5,3 +5,7 @@ STAGED, NOT EXECUTED. Test-only BCPLIO asserts zero DHEAD/HHEAD and balanced 32/
 ## First attempted run — source checker correction
 
 The initial 2026-10-17 invocation did not reach this regression: a host-side assertion incorrectly expected eight BNE checks. The generated terminal instrumentation deliberately has two BNZ list checks and six BNE counter checks. The source checker was corrected; **this test has not yet run under MVS**.
+
+## Accepted rerun (2026-10-17)
+
+Operator-reported regression 141 PASS, part of 140..141: 2 PASS / 0 FAIL / 0 SKIP; source audit PASS. The private DRAINDN terminal assertions passed. The supplied summary did not expose new JES IDs or step condition codes. Counted synthetic failures remain untested.

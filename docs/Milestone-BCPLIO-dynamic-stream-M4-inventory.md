@@ -20,6 +20,17 @@ tombstone retention, and close/reopen. See the
 **M4.3 remains OPEN.** No static checker execution, IFOX/IEWL/GO
 PASS, final IODRAIN balance or failure-path accounting is claimed.
 Full regression remains owner-deferred; OBJ/DEVOBJ are unchanged.
+## M4.3.2a accepted (2026-10-17)
+
+The operator supplied targeted source audit PASS and 140 FINISH
+PASS / 141 STOP(8) PASS, **2 PASS / 0 FAIL / 0 SKIP**.
+These private post-IODRAIN cases assert empty DHEAD/HHEAD
+and balanced descriptor/region/handle and OPEN/CLOSE counts.
+No physical free verification or rerun JES IDs were supplied.
+**M4.3.2b recoverable-error resource accounting is next**;
+M4.3 overall remains OPEN. See the
+[M4.3 plan](Milestone-BCPLIO-dynamic-stream-M4.3-plan.md).
+
 ## M4.3.1 acceptance (2026-10-17)
 
 The owner supplied a fresh focused rerun: **139 PASS / 0 FAIL /

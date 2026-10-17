@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.3 resource accountability
 
-**Status: M4.3.0 and M4.3.1 ACCEPTED (2026-10-17); focused regression 139 PASS on corrected helper; M4.3.2 terminal/failure accounting OPEN.**
+**Status: M4.3.0, M4.3.1 and M4.3.2a ACCEPTED (2026-10-17); targeted regressions 139, 140 and 141 PASS; M4.3.2b recoverable-failure accounting OPEN.**
 Date: 2026-10-17
 
 ## Contract
@@ -92,7 +92,37 @@ Because the invocation was chained with `&&`, **neither 140 nor
 141 was submitted to JES**. No IFOX/IEWL/GO result, counter
 observation or M4.3.2a acceptance is claimed. The canonical
 BCPLIO and test-private instrumented assembler are unchanged.
-## M4.3.2a — post-IODRAIN tests 140/141 staged (not run)
+## M4.3.2a acceptance — 2026-10-17
+
+Operator rerun after source checker correction `04f55e0`:
+
+```text
+M4.3 post-IODRAIN terminal assertions: source check PASS
+M4.3 native counter shim base setup: source check PASS
+M4.3 private source accounting checks: PASS
+RUN 140 140-dynamic-dd-finish-accounting
+PASS 140 140-dynamic-dd-finish-accounting
+RUN 141 141-dynamic-dd-stop-accounting
+PASS 141 141-dynamic-dd-stop-accounting
+PASS 2 / FAIL 0 / SKIP 0
+```
+
+**ACCEPTED:** In those isolated tests, after IODRAIN,
+DHEAD/HHEAD were empty and the private successful 32/268/16-byte
+GETMAIN/FREEMAIN and SVC19/SVC20 counters agreed. FINISH and
+STOP(8) behaved according to their case expectations. The source
+audit passed before submissions. The summary does not include
+job IDs or individual step condition codes; independent MVS
+storage-reclamation proof is not claimed. Deliberate test-only
+S0C1 guards were not triggered. This is not evidence that BCPLIO
+catches actual MVS abends.
+
+**Still open:** M4.3.2b counts on synthetic failed GETMAIN
+(32/268/16) and pre-SVC19 OPEN-denial cleanup/retry.
+Neither full native compatibility sweep nor production
+object installation is authorized by these results.
+
+## M4.3.2a — post-IODRAIN tests 140/141 (accepted)
 
 The private instrumentation supports an opt-in `--terminal-check`.
 At DRAINDN, after the last descriptor and handle have been
@@ -112,7 +142,7 @@ The latter retains expected GO RC=0008. Their existing fixture
 checks validate primary and named-output drain contents.
 Do not replace canonical source or install any generated object.
 
-Source-only checks and IFOX/IEWL/GO evidence are **pending**.
+Source-only checks and targeted regression outcomes **PASS**.
 Counted synthetic failure modes (M4.3.2b), the complete
 compatibility panel, and production OBJ promotion remain separate.
 **M4.3.2 (partially staged):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
