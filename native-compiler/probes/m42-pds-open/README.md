@@ -1,7 +1,34 @@
 # M4.2.2 — read-only PDS without member: real QSAM OPEN probe
 
-**Status: PREPARED — RG891R exploratory JCL generated, GO NOT
-SUBMITTED (2026-10-17).**
+**Status: EXECUTED — RG891R JOB 7875 completed with ASMAP/LKED/GO
+RC0000; detailed OPEN-path diagnosis awaits the extracted JES
+report (2026-10-17).**
+
+The operator ran the non-submitting generator and then submitted
+`workarea/m42-real-open/pds-open.jcl` as RG891R JOB 7875.
+`tools/mvs/job-summary 7875` reported:
+
+```text
+JOB 7875  RG891R
+17 OCT 26  05.42.27 - 05.42.27
+ASMAP      IFOX00       RC=0000
+LKED       IEWL         RC=0000
+GO         PGM=*.DD     RC=0000
+JOB RESULT: SUCCESS
+HIGHEST RC: 0000
+Assembler: Statements flagged: 0; Highest severity: 0
+Resources: Cards 271; SYSOUT 502 records
+```
+
+The operator saved the complete spool in
+`workarea/m42-real-open/pds-open-report.txt`, but that
+file's contents have not been provided. There was **no
+reported GO-step abend**, but the summary cannot establish
+whether `FINDINPUT("DD02")` returned a zero or a handle;
+it cannot distinguish RDJFCB rejection from an actual
+unsuccessful SVC19. This probe is not a native regression
+PASS. **No further workstation checks or job runs are
+needed before reviewing the saved report.**
 
 The operator pulled through `3235115` and generated
 `workarea/m42-real-open/pds-open.jcl` from the earlier
