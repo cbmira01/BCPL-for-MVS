@@ -1,6 +1,6 @@
 # Milestone — BCPLIO dynamic streams: M5.0 evidence and acceptance contract
 
-**Status: M5.0 SOURCE INVENTORY AND PROPOSED DESIGN READY FOR OWNER REVIEW (2026-10-17); M5.1–M5.5 NOT STARTED.**
+**Status: M5.0 ACCEPTED BY OWNER (2026-10-17); M5.1 acquisition feasibility IN PROGRESS; M5.2–M5.5 NOT STARTED.**
 Parent: [Milestone-BCPLIO-dynamic-stream.md](Milestone-BCPLIO-dynamic-stream.md)
 Prerequisite: M4.4 DEVOBJ(BCPLM6 + BCPLIO) CLOSED, full native 00..145 **145 PASS / 0 FAIL / 1 expected SKIP 083**, with **145/145 saved logs audited**.
 M5.0 performs source inspection and designs a proof. **No JES/MVS experiment, PDS update, runtime/ABI change, or physical byte capture has been performed by this gate.**
@@ -179,3 +179,15 @@ DD acquisition is accepted, and the parent dynamic-stream
 milestone remains OPEN. The next owner decision is whether
 to accept this strict contract and authorize the limited
 M5.1 feasibility experiments.
+
+## 8. Formal acceptance of M5.0 — 2026-10-17
+
+The owner explicitly accepted the M5.0 strict physical-evidence contract
+and directed commencement of M5.1. Both true DD ownership and original
+FB132 byte fidelity remain required; class-separated printable output
+cannot substitute for full raw record verification.
+
+**M5.0 CLOSED as a design gate.** No new MVS/JES experiment was carried
+out to accept M5.0. M5.1 has its own limited feasibility scope.
+See the M5.1 plan for the first deliberately non-submitting
+preparation and controlled class-A/Z experiment.

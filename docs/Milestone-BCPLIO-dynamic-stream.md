@@ -1,9 +1,27 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 proposed contract for review; M5.1–M5.5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 CLOSED; M5.1 staged for TK5 acquisition; M5.2–M5.5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.0 ACCEPTED; M5.1.0 route-probe staging (2026-10-17)
+
+The owner accepted the strict M5.0 physical-evidence contract
+and authorized M5.1 feasibility work. The
+[M5.1 acquisition procedure]
+(Milestone-BCPLIO-dynamic-stream-M5.1-plan.md)
+starts with a non-submitting DEVOBJ BCPLM6 regression
+114 A/Z class-separation probe. It corrects the
+old source-mode JCL default to runtime-pds-go.jcl,
+checks the active (untracked) TK5 000E/000F 1403
+device definitions and printer paths, and preserves
+pre-submit offsets and verification artifacts.
+
+**M5.0 CLOSED. M5.1.0 STAGED; no live class-routing
+or raw FB132 byte capture has been demonstrated.**
+Do not infer physical DD ownership or full byte
+preservation from formatted JES printer output.
 
 ## M5.0 — source inventory and physical evidence contract (2026-10-17)
 
