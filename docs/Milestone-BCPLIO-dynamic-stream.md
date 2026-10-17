@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; jobs 7874/7875 returned HANDLE; M4.2.3 invalid FB probe staged; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; 7874/7875 returned HANDLE; RG892R malformed-FB JCL prepared, GO unsubmitted; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -549,6 +549,19 @@ are changed. See [M4.2 plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md)
 and [RG892R procedure](../native-compiler/probes/m42-fb-open/README.md).
 The full native regression panel is still
 owner-deferred.
+
+
+## M4.2.3 malformed-FB exploratory job — JCL prepared
+
+Operator pulled through `19e658a` and successfully
+created `workarea/m42-real-open/fb-open.jcl`
+for `RG892R`: DD02 SYSOUT with FB LRECL 80,
+BLKSIZE 81. The builder confirmed the GO deck
+**was not submitted** and no installed PDS object
+was changed. No JCL/OPEN outcome is claimed.
+Single exploratory GO execution and JES evidence
+are pending; M4.2 remains open. Owner-deferred
+native regression remains deferred.
 
 ## Handoff / next-conversation prompt
 
