@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0 accepted 2026-10-16; M1 not started  
+Status: M0 accepted 2026-10-16; M1 active (candidate DD streams 124-127 accepted; lifecycle work outstanding)  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
