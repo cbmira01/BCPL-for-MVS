@@ -135,10 +135,14 @@ def main():
             raise ValueError("test-only BCPLIO requires DEVOBJ candidate")
         if args.native or args.library_generated:
             raise ValueError("test-only BCPLIO cannot combine with extra modules")
-        if not args.case_dir or not (
-            args.case_dir / "io-fault-mode.txt"
-        ).is_file():
-            raise ValueError("test-only BCPLIO requires marked regression case")
+        if not args.case_dir:
+            raise ValueError("test-only BCPLIO requires regression case")
+        markers = (
+            (args.case_dir / "io-fault-mode.txt").is_file(),
+            (args.case_dir / "io-open-fault.txt").is_file(),
+        )
+        if sum(markers) != 1:
+            raise ValueError("test-only BCPLIO requires exactly one marker")
 
     # M3 reconstructs accepted BCPLMAIN, BCPLMEM, BLIB separately from
     # development BCPLAPT and BCPLBYTE. The linker must not silently
