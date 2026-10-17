@@ -1,9 +1,9 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4 source audit and proposed gates ONLY; no MVS execution or runtime changes**
+Status: **M4.0 negative-name compiled BCPL regression 134 STAGED; no M4 MVS execution or runtime change yet**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
-Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 pending.
+Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
 
 ## Purpose
 
@@ -94,6 +94,43 @@ OPEN errors and storage exhaustion.
   explicit owner authorization.
 - M5 physical DD attribution remains a separate acceptance gate.
 
-**M4 is not yet executed or accepted.** The next operational test
-is M3 regression 133; failure-injection implementation should
-begin only after a concrete design/review gate.
+**M4 has not yet been MVS executed or accepted.** Regression 133
+now PASSED its focused M3 logical input/output interleaving test.
+The next focused operational test is M4.0 regression 134 (below).
+Failure-injection implementation must follow a concrete design/review gate.
+
+## M4.0 — compiled-BCPL invalid-name gate 134 STAGED
+
+Permanent DEVOBJ-only test:
+`native-compiler/regression/134-dynamic-dd-invalid-name-preservation/`.
+It opens real DD01 input and REPORT output, selects each, and
+attempts both FINDINPUT and FINDOUTPUT of **five** invalid or
+absent DDNAMEs: empty string, 9-character overlength name,
+invalid leading digit, invalid embedded hyphen, and allocated-
+nowhere but valid `NOFILE`. Each failure must return zero,
+preserve both live selections, and leave their respective
+input/output stream states intact. After the failures it
+also tests lowercase duplicate FIND and RDCH cursor continuity.
+The REPORT logical fixture is `NEGATIVE DD OK`, primary
+SYSPRINT marker `BCPL DD FAILURES OK`.
+
+**STAGED, NOT YET EXECUTED.** No installed DEVOBJ object or
+BCPLIO source, compiler, or JCL generator was changed.
+If compilation or runtime fails, retain the first diagnostic
+and do not obscure it by assuming all five strings were accepted
+by the historical Cambridge compiler.
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 134 --show-output
+```
+
+The last full accepted panel remains 00..132:
+**132 PASS / 0 FAIL / 1 expected SKIP 083**.
+133 is accepted as a focused M3 PASS; a full 00..134 sweep
+is reserved for after candidate test 134 passes.
