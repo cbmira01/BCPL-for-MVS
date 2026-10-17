@@ -1,6 +1,19 @@
 # 133 — Mixed dynamic input/output stream interleaving
 
-**Status: STAGED, NOT YET MVS EXECUTED OR ACCEPTED.**
+**Status: ACCEPTED for the candidate's logical M3 mixed-stream gate
+(2026-10-17); full 00..133 compatibility panel not yet executed.**
+The operator pulled `main` from `c4f7a8d` through `b25d643`
+and ran `tools/native/run-regression 133 --show-output` using
+`BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1`, and
+`BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`. Result:
+**PASS 133; 1 PASS / 0 FAIL / 0 SKIP / TOTAL 1**.
+
+The candidate runtime was not changed to obtain this result.
+PASS establishes the checked logical record ordering and interleaved
+cursor/buffer behavior, **not** exact physical JES DD association.
+A future lossless DD attribution test must verify the real REPORT
+and REPORT2 SYSOUT streams independently under M5.
 
 M3 focused compiled-BCPL candidate regression for two independent
 input DD DATA streams (DD01 and DD02) and two independently
