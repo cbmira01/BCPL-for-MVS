@@ -46,8 +46,10 @@ assembler. It lists any other Markdown notes for **manual review** rather
 than automatically treating them as authoritative documentation.
 
 Before extending an existing checksum manifest, the helper checks the
-previously archived evidence files against their recorded digests. The
-Git-tracked explanatory README is allowed to evolve; its digest is updated.
+previously archived evidence files against their recorded digests.
+The manifest contains **JSON and TSV verification evidence only**.
+Ordinary Markdown documentation, including this README, is versioned by Git
+and is deliberately excluded from the separate checksum inventory.
 
 Review the resulting JSON/TSV for confidential content and correctness
 before `git add` / `git commit`. `sha256sums.txt` records the

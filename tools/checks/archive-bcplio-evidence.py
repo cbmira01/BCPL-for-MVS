@@ -50,7 +50,7 @@ def read_metadata(src: Path) -> bytes | None:
     return data
 
 def main(apply: bool) -> int:
-    if not (ROOT / "docs/Milestone-BCPLIO-dynamic-stream-final-acceptance.md").is_file():
+    if not (ROOT / "packaging/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md").is_file():
         raise ValueError("BCPLIO milestone repository not found")
     receipt_data = read_metadata(WORK / "m55-verification.json")
     receipt = json.loads(receipt_data) if receipt_data else None
@@ -106,8 +106,8 @@ def main(apply: bool) -> int:
         print("Preview only. --apply copies selected evidence; never deletes originals.")
         return 0
 
-    # Before extending an existing archive, verify the entire prior inventory.
-    # Never bless altered archived evidence by silently refreshing its checksum.
+    # Before extending the archive, verify every previously hashed evidence file.
+    # Git already versions README.md and other explanatory documentation.
     sums = DEST / "sha256sums.txt"
     if sums.exists():
         if not sums.is_file() or sums.is_symlink():
@@ -120,8 +120,8 @@ def main(apply: bool) -> int:
             if old_path.is_absolute() or ".." in old_path.parts:
                 raise ValueError("Unsafe entry in previous checksum manifest")
             old_file = DEST / old_path
-            # README is version-controlled explanatory text; it can change
-            # between archivals. All actual evidence files remain immutable.
+            # Backward-compatible with the original manifest that also listed
+            # README.md. Ordinary documentation is not an evidence hash target.
             if old_path.as_posix() == "README.md":
                 continue
             if not old_file.is_file() or old_file.is_symlink() or digest(old_file.read_bytes()) != old_sha:
@@ -133,7 +133,9 @@ def main(apply: bool) -> int:
     if not found:
         print("No matching evidence found; nothing archived.")
         return 0
-    entries = sorted(p for p in DEST.rglob("*") if p.is_file() and p != sums)
+    entries = sorted(p for p in DEST.rglob("*")
+                     if p.is_file() and not p.is_symlink()
+                     and p.suffix.lower() in (".json", ".tsv"))
     listing = "".join(f"{digest(p.read_bytes())}  {p.relative_to(DEST)}\n"
                       for p in entries)
     # The preexisting inventory has been verified; extend it to new evidence.
