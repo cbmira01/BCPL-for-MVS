@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: 138 synthetic DQOPEN recovery ACCEPTED; M4.2.1 real-OPEN exploratory JOB 7874 executed, ASMAP/LKED/GO RC0000; actual RDJFCB vs SVC19 path pending report inspection; full panel deferred.**
+**Status: 138 synthetic DQOPEN recovery ACCEPTED; M4.2.1 JOB 7874 characterized: SYSOUT DD02 returned valid FINDINPUT handle; desired real OPEN failure NOT achieved; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -344,3 +344,53 @@ probe is required. Do not request re-running the
 full native regression panel or source-only checks on
 the operator's workstation. No new installed PDS
 changes are implied by this execution.
+
+## M4.2.1 JOB 7874 — full report disposition
+
+The operator subsequently supplied the complete extracted
+`real-open-report.txt`. It confirms:
+
+```text
+//DD01     DD DATA,DLM=X0
+//DD02     DD SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)
+IEF237I JES2 ALLOCATED TO DD01
+IEF237I JES2 ALLOCATED TO DD02
+IEW0000     INCLUDE OBJ(BCPLM6)
+IEW0000     INCLUDE OBJ(BCPLIO)
+M42 BEFORE FIND DD02
+M42 DD02 RETURNED HANDLE
+M42 SURVIVED FIND DD02
+```
+
+`ASMAP`, `LKED`, `GO` each returned `RC=0000`.
+No IEC OPEN error or abend is reported. The full report
+shows `OBJ` and `DEVOBJ` DD statements both resolving
+to `HERC02.BCPL.NATIVE.DEVOBJ`; the linked `BCPLIO`
+was the installed unmodified development object, **not**
+the isolated synthetic fault module.
+
+**Disposition: unexpected OPEN acceptance, not failure.**
+`FINDINPUT("DD02")` returned a nonzero stable handle.
+In the canonical `DIFIND` path, that outcome requires
+successful `DDVERIFY`, `DALLOC`, `DQOPEN` and
+`HNEW`; `DQOPEN` invokes SVC 19 and checks
+DCB-derived open state. Thus the report and
+source together support a reached, apparently successful
+real OPEN rather than an earlier RDJFCB denial or a
+recoverable failed SVC 19.
+
+The probe deliberately **does not GET** from the returned
+SYSOUT-backed DD, so actual ability to read from that
+stream remains unknown. More importantly, this experiment
+did **not** satisfy the required actual failed-OPEN
+gate. Do not close M4.2 or generalize SYSOUT/input
+behavior to all datasets and MVS versions.
+
+The next candidate is a QSAM input OPEN against an
+allocated **partitioned dataset without a member**, such
+as `SYS1.MACLIB` with `DISP=SHR`, whose DSORG differs
+from the BCPLIO private DCB's `DSORG=PS,MACRF=GM`.
+The behavior under TK5 is still to be observed; an
+abend is possible. This candidate must be a separate
+exploratory GO job, never a normal PASS regression,
+and must not write to SYS1.MACLIB.
