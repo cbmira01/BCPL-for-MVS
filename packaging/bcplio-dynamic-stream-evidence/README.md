@@ -45,7 +45,11 @@ JCL, JES/printer captures, per-case logs, compiled binaries or scratch
 assembler. It lists any other Markdown notes for **manual review** rather
 than automatically treating them as authoritative documentation.
 
-Before an existing checksum manifest is extended, the helper verifies every\npreviously listed file. It refuses to bless changed evidence as a new hash.\n\nReview the resulting JSON/TSV for confidential content and correctness
+Before extending an existing checksum manifest, the helper checks the
+previously archived evidence files against their recorded digests. The
+Git-tracked explanatory README is allowed to evolve; its digest is updated.
+
+Review the resulting JSON/TSV for confidential content and correctness
 before `git add` / `git commit`. `sha256sums.txt` records the
 archived contents, not the identity of the original accepted JES output.
 Do not empty `workarea/` until this review is complete.
