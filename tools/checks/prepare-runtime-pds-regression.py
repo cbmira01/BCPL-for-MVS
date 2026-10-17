@@ -28,6 +28,7 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--test-number", type=int, required=True)
     parser.add_argument("--native", type=Path)
+    parser.add_argument("--test-io-asm", type=Path)
     parser.add_argument("--library-generated", type=Path)
     parser.add_argument("--case-dir", type=Path)
     args = parser.parse_args()
@@ -129,6 +130,15 @@ def main():
         raise ValueError("candidate BCPLMAIN requires BCPL_RUNTIME_LIBRARY=DEVOBJ")
     if library not in ("MIXED", "OBJ", "DEVOBJ"):
         raise ValueError("BCPL_RUNTIME_LIBRARY must be MIXED, OBJ or DEVOBJ")
+    if args.test_io_asm:
+        if candidate != "1" or library != "DEVOBJ":
+            raise ValueError("test-only BCPLIO requires DEVOBJ candidate")
+        if args.native or args.library_generated:
+            raise ValueError("test-only BCPLIO cannot combine with extra modules")
+        if not args.case_dir or not (
+            args.case_dir / "io-fault-mode.txt"
+        ).is_file():
+            raise ValueError("test-only BCPLIO requires marked regression case")
 
     # M3 reconstructs accepted BCPLMAIN, BCPLMEM, BLIB separately from
     # development BCPLAPT and BCPLBYTE. The linker must not silently
@@ -171,7 +181,8 @@ def main():
         "//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)",
         "//         DD *",
         f" INCLUDE OBJ({candidate_member})" if candidate == "1" else " INCLUDE OBJ(BCPLMAIN)",
-        *([" INCLUDE OBJ(BCPLIO)"] if candidate == "1" else []),
+        *([" INCLUDE OBJ(BCPLIO)"]
+          if candidate == "1" and not args.test_io_asm else []),
         " INCLUDE DEVOBJ(BCPLBYTE)",
         " INCLUDE DEVOBJ(BCPLAPT)",
         " INCLUDE COREOBJ(BCPLMEM)" if candidate == "1" else " INCLUDE OBJ(BCPLMEM)",
@@ -189,6 +200,40 @@ def main():
         "//SYSUDUMP DD SYSOUT=*",
         "//",
     ]
+    if args.test_io_asm:
+        io = args.test_io_asm.read_text(encoding="ascii")
+        if not io or any(
+            len(row) > 71 or row.startswith("//") or row == "/*"
+            for row in io.splitlines()
+        ):
+            raise ValueError("invalid test-only BCPLIO assembler cards")
+        insertion = [
+            "//* M4.1 TEST-ONLY BCPLIO FROM INLINE ASSEMBLER",
+            "//ASMFIO   EXEC PGM=IFOX00,REGION=512K,COND=(0,NE,ASMAP),",
+            "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'",
+            "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR",
+            "//SYSUT1   DD UNIT=SYSDA,SPACE=(1700,(600,100))",
+            "//SYSUT2   DD UNIT=SYSDA,SPACE=(1700,(300,50))",
+            "//SYSUT3   DD UNIT=SYSDA,SPACE=(1700,(300,50))",
+            "//SYSPRINT DD SYSOUT=*",
+            "//SYSPUNCH DD DUMMY",
+            "//SYSGO    DD DSN=&&IOOBJ,UNIT=SYSDA,",
+            "//             SPACE=(80,(500,200)),DISP=(NEW,PASS),",
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
+            "//SYSIN    DD *", *io.rstrip("\n").splitlines(), "/*",
+        ]
+        at = cards.index("//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',")
+        cards[at:at] = insertion
+        link_cond = cards.index("//             COND=(0,NE,ASMAP)", at + len(insertion))
+        cards[link_cond] = "//             COND=((0,NE,ASMAP),(0,NE,ASMFIO))"
+        syspass = cards.index("//         DD *", link_cond)
+        cards.insert(syspass, "//         DD DSN=&&IOOBJ,DISP=(OLD,DELETE)")
+        go_cond = cards.index(
+            "//             COND=((0,NE,ASMAP),(0,NE,LKED))"
+        )
+        cards[go_cond] = (
+            "//             COND=((0,NE,ASMAP),(0,NE,ASMFIO),(0,NE,LKED))"
+        )
     if args.native:
         source = args.native.read_text(encoding="ascii")
         if any(len(row) > 71 or row.startswith("//") or row == "/*"
