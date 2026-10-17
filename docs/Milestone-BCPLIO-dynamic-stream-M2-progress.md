@@ -1,6 +1,6 @@
 # Dynamic BCPLIO streams — M2 input multiplicity progress
 
-Status: **M2 16-concurrent-stream target ACCEPTED; DD close/reopen identity not yet validated**
+Status: **M2 16-stream and dynamic output close/reopen gates ACCEPTED; complete 00..131 sweep pending**
 Project: BCPL for MVS 3.8 reconstruction
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 
@@ -190,3 +190,54 @@ tools/native/run-regression 131 --show-output
 Upon acceptance, run a full `00..131` DEVOBJ regression sweep
 and proceed to M4 ordinary failure/resource accounting and M5
 lossless DD attribution work without escalating the stream count.
+
+## Regression 131 accepted — same-DD output reopen and new identity (MVS 2026-10-17)
+
+Operator pulled from `8247e98` through `2a56367` and ran
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 tools/native/run-regression 131 --show-output`.
+The permanent compiled-BCPL test reported:
+
+```text
+NATIVE REGRESSION 131..131 (1 tests)
+RUN 131 131-dynamic-dd-output-reopen-identity
+PASS 131 131-dynamic-dd-output-reopen-identity
+PASS 1 FAIL 0 SKIP 0 TOTAL 1
+```
+
+**ACCEPTED: M2 dynamic output close/reopen identity gate.** The same
+`REPORT` DD is opened, sent `REPORT FIRST`, closed by ENDWRITE,
+then reopened as lowercase `report`. The test requires a nonzero
+new handle different from the retired identity, rejects the old
+handle even when the new stream is selected, verifies repeated
+active FIND reuses the new handle, writes `REPORT SECOND`, closes,
+and rejects both retired handles. The primary expected output is
+`BCPL REOPEN OK`. All checks passed via the existing candidate,
+**without source, assembler, compiler, PDS or harness changes**.
+
+The combined-JES record matcher accepted the expected logical
+records; it is **not** lossless physical DD attribution. This test
+does not establish repositioning/reopening DD DATA input, or
+instrumented DCB CLOSE and FREEMAIN matching.
+
+**Next action:** run the entire DEVOBJ `00..131` panel before
+starting new M2/M4 work. The latest independently accepted full
+panel is still `00..129` (129 PASS, zero FAIL, expected SKIP 083);
+130 and 131 have each passed separately on the same runtime.
+A complete panel should report **131 PASS, 0 FAIL, 1 expected SKIP
+(083), TOTAL 132**. Do not claim it has run until operator evidence
+is returned. No promotion from DEVOBJ to OBJ is authorized.
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression
+```
+
+After that compatibility gate, review DD DATA input reopen behavior
+separately; prioritize deterministic failure/OPEN exhaustion tests,
+descriptor accounting, and M5 DD-specific spool attribution rather
+than escalating concurrency beyond sixteen.
