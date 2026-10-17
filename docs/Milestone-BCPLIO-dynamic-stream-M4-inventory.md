@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; JOB 7874 returned HANDLE; RG891R PDS exploratory deck prepared, not submitted; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; JOB 7874 returned HANDLE; M4.2.2 JOB 7875 GO RC0000, full report pending; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -464,3 +464,19 @@ and `DD02=SYS1.MACLIB,DISP=SHR` without member.
 occurred. Record this as successful preparation only;
 real OPEN behavior and the M4.2 failure gate remain open.
 Full panel remains owner-deferred.
+
+## M4.2.2 exploratory JOB 7875 — normal completion, report pending
+
+Operator submitted RG891R, the read-only no-member
+`SYS1.MACLIB` QSAM-input candidate, as **JOB 7875**.
+Job summary: `ASMAP RC0000`, `LKED RC0000`,
+`GO RC0000`, overall SUCCESS, 271 input cards,
+502 SYSOUT records. No abend is reported.
+
+The complete JES report was written to
+`workarea/m42-real-open/pds-open-report.txt` but not
+supplied, so the BCPL zero-versus-handle diagnostic and
+RDJFCB-versus-SVC19 outcome remain unknown. Do not
+treat normal GO termination as a successful failed OPEN
+or as a regression PASS. Await the existing report.
+M4.2 remains open; full panel owner-deferred.
