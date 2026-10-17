@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; M4.2.0 synthetic 138 PASS; M4.2.1 real-OPEN exploratory JOB 7874 RC0000, path awaiting report; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 synthetic OPEN PASS; M4.2.1 JOB 7874 returned HANDLE, no real OPEN failure; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -408,3 +408,27 @@ or DD02 produced a valid handle. The GO return code
 alone is insufficient to close M4.2.1 or M4.2.
 Request the existing report for analysis; do not run
 new source checks or a full regression suite.
+
+## JOB 7874 complete JES diagnostic reviewed
+
+Received full extracted `real-open-report.txt`.
+The linked `BCPLIO` was the ordinary DEVOBJ object
+(IEWL includes `OBJ(BCPLIO)`). DD02 was allocated
+as SYSOUT FB132. GO program printed:
+`M42 BEFORE FIND DD02`,
+`M42 DD02 RETURNED HANDLE` and
+`M42 SURVIVED FIND DD02`.
+ASMAP/LKED/GO all returned 0000. No OPEN error or
+abend was reported. Canonical `DIFIND` can return a
+new nonzero handle only after DQOPEN succeeded,
+and DQOPEN executes SVC 19.
+
+**Conclusion:** the initial SYSOUT-as-input experiment
+did **not** create a failing QSAM OPEN. It is evidence
+of a returned input stream identity (not evidence
+that GET on SYSOUT works), so M4.2's actual failed
+OPEN gate remains **OPEN**. Next candidate:
+an allocated read-only PDS without a member, tried
+as an input QSAM sequential DD. The test must be
+separate, potentially abending, and use only read-only
+`DISP=SHR` allocation. Full regression stays deferred.
