@@ -22,9 +22,19 @@ def one(source: str, old: str, replacement: str) -> str:
 
 def bump(label: str) -> str:
     assert label in COUNTERS
+    # Register zero cannot be an RX-form base on System/370.
+    # Use a nearby fullword +1 and ordinary A instruction.
+    if label in COUNTERS[:4]:
+        plus_one = "M43ONED"
+    elif label in COUNTERS[6:]:
+        plus_one = "M43ONEQ"
+    elif label == "M43G16":
+        plus_one = "M43ONEH"
+    else:
+        plus_one = "M43ONER"
     return "\n".join((
         f"         L     0,{label}",
-        "         LA    0,1(0)",
+        f"         A     0,{plus_one}",
         f"         ST    0,{label}",
     ))
 
@@ -86,14 +96,15 @@ def transform(source: str) -> str:
                  + bump("M43CRET"))
 
     # Keep counters near the routines whose USING bases access them.
-    for anchor, entries in (
-        ("DSAVE    DS    16F", COUNTERS[:4]),
-        ("DQSAVE   DS    16F", COUNTERS[6:]),
-        ("HSAVE    DS    16F", (COUNTERS[4],)),
-        ("DRSAVE   DS    16F", (COUNTERS[5],)),
+    for anchor, entries, one_label in (
+        ("DSAVE    DS    16F", COUNTERS[:4], "M43ONED"),
+        ("DQSAVE   DS    16F", COUNTERS[6:], "M43ONEQ"),
+        ("HSAVE    DS    16F", (COUNTERS[4],), "M43ONEH"),
+        ("DRSAVE   DS    16F", (COUNTERS[5],), "M43ONER"),
     ):
         new = (anchor + "\n         DS    0F\n"
-               + "\n".join(f"{name:<8} DC    F'0'" for name in entries))
+               + "\n".join(f"{name:<8} DC    F'0'" for name in entries)
+               + f"\n{one_label:<8} DC    F'1'")
         source = one(source, anchor, new)
 
     # Private R14 linkage: R1 counter ID 0..9; R15 value/-1.

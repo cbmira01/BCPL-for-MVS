@@ -32,7 +32,10 @@ for i, name in enumerate(names):
     assert generated.count(f"A({name})") == 1, i
 assert generated.count("         ENTRY IOACCT") == 1
 assert generated.count("         END   BCPLIO") == 1
-assert generated.count("         LA    0,1(0)") == 11
+assert generated.count("         A     0,M43ONE") == 11
+assert "         LA    0,1(0)" not in generated
+for constant in ("M43ONED", "M43ONEQ", "M43ONEH", "M43ONER"):
+    assert generated.count(f"{constant:<8} DC    F'1'") == 1
 assert all(row.isascii() and len(row) <= 71
            for row in generated.splitlines())
 try:
