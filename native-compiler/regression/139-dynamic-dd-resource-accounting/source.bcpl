@@ -1,0 +1,88 @@
+// M4.3 test-only dynamic resource counters through native G151.
+GLOBAL $( START:1; SELECTINPUT:11; RDCH:13; WRCH:14;
+          INPUT:16; STOP:30; FINDINPUT:42; ENDREAD:46;
+          WRITES:60; NATIVEADD:151 $)
+
+LET START() BE
+$(1
+    LET A = FINDINPUT("DD01")
+    LET B = FINDINPUT("DD02")
+    LET C = 0
+    IF A=0 DO STOP(8)
+    IF B=0 DO STOP(8)
+    IF B=A DO STOP(8)
+
+    // Each opened stream owns descriptor/region/stable handle.
+    IF NATIVEADD(0) NE 2 DO STOP(8)
+    IF NATIVEADD(1) NE 0 DO STOP(8)
+    IF NATIVEADD(2) NE 2 DO STOP(8)
+    IF NATIVEADD(3) NE 0 DO STOP(8)
+    IF NATIVEADD(4) NE 2 DO STOP(8)
+    IF NATIVEADD(5) NE 0 DO STOP(8)
+    IF NATIVEADD(6) NE 2 DO STOP(8)
+    IF NATIVEADD(7) NE 2 DO STOP(8)
+    IF NATIVEADD(8) NE 0 DO STOP(8)
+    IF NATIVEADD(9) NE 0 DO STOP(8)
+
+    // Duplicate FIND neither GETMAINs nor re-OPENs.
+    IF FINDINPUT("DD01") NE A DO STOP(8)
+    IF NATIVEADD(0) NE 2 DO STOP(8)
+    IF NATIVEADD(4) NE 2 DO STOP(8)
+    IF NATIVEADD(6) NE 2 DO STOP(8)
+
+    SELECTINPUT(B)
+    IF RDCH() NE 'Q' DO STOP(8)
+    ENDREAD()
+    IF NATIVEADD(1) NE 1 DO STOP(8)
+    IF NATIVEADD(3) NE 1 DO STOP(8)
+    IF NATIVEADD(5) NE 0 DO STOP(8)
+    IF NATIVEADD(8) NE 1 DO STOP(8)
+    IF NATIVEADD(9) NE 1 DO STOP(8)
+
+    // Tombstone cannot select a live stream; A's cursor survives.
+    SELECTINPUT(A)
+    IF INPUT() NE A DO STOP(8)
+    SELECTINPUT(B)
+    IF INPUT() NE A DO STOP(8)
+    IF RDCH() NE 'A' DO STOP(8)
+
+    // Reopening DD DATA tests handle identity, not GET rewind.
+    C := FINDINPUT("DD02")
+    IF C=0 DO STOP(8)
+    IF C=A DO STOP(8)
+    IF C=B DO STOP(8)
+    IF NATIVEADD(0) NE 3 DO STOP(8)
+    IF NATIVEADD(2) NE 3 DO STOP(8)
+    IF NATIVEADD(4) NE 3 DO STOP(8)
+    IF NATIVEADD(5) NE 0 DO STOP(8)
+    IF NATIVEADD(6) NE 3 DO STOP(8)
+    IF NATIVEADD(7) NE 3 DO STOP(8)
+
+    SELECTINPUT(C)
+    ENDREAD()
+    IF NATIVEADD(1) NE 2 DO STOP(8)
+    IF NATIVEADD(3) NE 2 DO STOP(8)
+    IF NATIVEADD(8) NE 2 DO STOP(8)
+    IF NATIVEADD(9) NE 2 DO STOP(8)
+
+    SELECTINPUT(A)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE 'B' DO STOP(8)
+    ENDREAD()
+
+    // All descriptors/regions freed, handles retained until FINISH.
+    IF NATIVEADD(0) NE 3 DO STOP(8)
+    IF NATIVEADD(1) NE 3 DO STOP(8)
+    IF NATIVEADD(2) NE 3 DO STOP(8)
+    IF NATIVEADD(3) NE 3 DO STOP(8)
+    IF NATIVEADD(4) NE 3 DO STOP(8)
+    IF NATIVEADD(5) NE 0 DO STOP(8)
+    IF NATIVEADD(6) NE 3 DO STOP(8)
+    IF NATIVEADD(7) NE 3 DO STOP(8)
+    IF NATIVEADD(8) NE 3 DO STOP(8)
+    IF NATIVEADD(9) NE 3 DO STOP(8)
+
+    WRITES("M43 PRE-DRAIN COUNTS OK")
+    WRCH(10)
+    FINISH
+$)1
