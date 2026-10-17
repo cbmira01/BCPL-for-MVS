@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; M4.2.0 synthetic 138 PASS; real-OPEN diagnostic M4.2.1 staged but not run; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; M4.2.0 synthetic 138 PASS; M4.2.1 real-OPEN exploratory JOB 7874 RC0000, path awaiting report; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -389,3 +389,22 @@ and the probe's README for the prepare/inspect/submit
 procedure. No installed object or canonical assembler
 source has been altered. Full regression is still
 owner-deferred.
+
+## M4.2.1 real-OPEN exploratory execution — normal completion
+
+Operator submitted `RG890R` as JES **JOB 7874** on
+17 October 2026. Reported step results:
+IFOX00 `ASMAP RC=0000`, IEWL `LKED RC=0000`,
+and `GO RC=0000`, job **SUCCESS** with no
+abend reported by the summary. This is the first
+**actual** exploratory execution using DD02 allocated
+as SYSOUT while BCPL requested FINDINPUT.
+
+**Unresolved:** the full `real-open-report.txt`
+was saved locally but not supplied in chat. We cannot
+yet determine whether RDJFCB rejected DD02 before
+SVC19, a true SVC19 OPEN attempt returned unopened,
+or DD02 produced a valid handle. The GO return code
+alone is insufficient to close M4.2.1 or M4.2.
+Request the existing report for analysis; do not run
+new source checks or a full regression suite.
