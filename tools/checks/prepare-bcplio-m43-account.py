@@ -81,7 +81,8 @@ def transform(source: str) -> str:
 
     # Count actual SVC19 attempts and source-observed open DCBs.
     source = one(source, "         LA    1,228(6)\n         SVC   19",
-                 bump("M43OATT")
+                 "         ST    0,M43R0Q\n" + bump("M43OATT")
+                 + "\n         L     0,M43R0Q"
                  + "\n         LA    1,228(6)\n         SVC   19")
     source = one(source,
                  "         LTR   7,7\n         BZ    DQBAD\n"
@@ -91,7 +92,8 @@ def transform(source: str) -> str:
 
     # SVC20 attempted versus returned control; not QSAM status.
     source = one(source, "         LA    1,232(6)\n         SVC   20",
-                 bump("M43CATT")
+                 "         ST    0,M43R0Q\n" + bump("M43CATT")
+                 + "\n         L     0,M43R0Q"
                  + "\n         LA    1,232(6)\n         SVC   20\n"
                  + bump("M43CRET"))
 
@@ -105,6 +107,8 @@ def transform(source: str) -> str:
         new = (anchor + "\n         DS    0F\n"
                + "\n".join(f"{name:<8} DC    F'0'" for name in entries)
                + f"\n{one_label:<8} DC    F'1'")
+        if anchor == "DQSAVE   DS    16F":
+            new += "\nM43R0Q   DC    F'0'"
         source = one(source, anchor, new)
 
     # Private R14 linkage: R1 counter ID 0..9; R15 value/-1.
