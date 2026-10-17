@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: synthetic 138 PASS; real-OPEN probes JOB 7874 (SYSOUT) and 7875 (PDS without member) both returned HANDLE, neither produced failed OPEN; further incompatible DCB probe required; full panel deferred.**
+**Status: 138 synthetic PASS; real OPEN JOB 7874/7875 both returned HANDLE; invalid FB DCB exploratory RG892R staged, not submitted; real failing OPEN still open; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -554,3 +554,52 @@ exploratory GO job using deliberate
 may reject it before SVC19 or MVS may ABEND; neither
 outcome may be assumed. No full regression suite
 or installed runtime changes are authorized.
+
+## M4.2.3 — intentionally invalid FB DCB probe STAGED
+
+Previous exploratory attempts did not fail at QSAM OPEN:
+JOB 7874 (`DD02 SYSOUT=*`) and JOB 7875
+(`DD02 SYS1.MACLIB,DISP=SHR` with no member)
+**both returned a valid FINDINPUT handle**. The
+application did not read DD02 in either case.
+
+New candidate **RG892R** targets an independent
+OPEN-time DCB consistency rule instead of relying
+on the DD name or PDS organization. Its JCL
+deliberately supplies:
+
+```jcl
+//DD02     DD SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=81)
+```
+
+For QSAM RECFM=FB, the BLKSIZE must be a multiple
+of LRECL; `81 mod 80 = 1`. The classic S013-20
+diagnostic covers such a mismatch, but JCL may
+reject the allocation first or MVS may behave
+differently with SYSOUT input. **Do not claim that
+this probe is guaranteed to reach SVC19 or abend.**
+
+A dedicated, **non-submitting** and fail-closed
+JCL builder is committed at
+`tools/checks/prepare-m42-fb-open-jcl.py`.
+It builds a base application link from the
+already generated Cambridge assembler from JOB 7873,
+with normal DEVOBJ BCPLM6+BCPLIO objects (not
+instrumented test-only objects), and inserts
+the one bad-DCB SYSOUT DD02 and an exploratory banner.
+The builder checks job identity RG892R, exact
+GO/DD anchors, duplicate DD detection, candidate
+environment and 71-column JCL card safety.
+It does not alter the canonical assembler,
+installed PDS members or system DASD.
+
+[Operator preparation and separately documented
+submission](../native-compiler/probes/m42-fb-open/README.md)
+are staged but **no RG892R GO JCL or MVS result
+has yet been produced**. Do not ask the operator
+to run host-side source checks or the full regression.
+If a system abend occurs, preserve full JES/IEC/IEF
+diagnostics and do not call it a normal regression PASS.
+
+This probe is only an incremental M4.2.3 experiment;
+M4.3 accounting and M5 DD attribution remain separate.
