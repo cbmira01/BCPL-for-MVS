@@ -120,6 +120,10 @@ def main(apply: bool) -> int:
             if old_path.is_absolute() or ".." in old_path.parts:
                 raise ValueError("Unsafe entry in previous checksum manifest")
             old_file = DEST / old_path
+            # README is version-controlled explanatory text; it can change
+            # between archivals. All actual evidence files remain immutable.
+            if old_path.as_posix() == "README.md":
+                continue
             if not old_file.is_file() or old_file.is_symlink() or digest(old_file.read_bytes()) != old_sha:
                 raise ValueError(f"Archived file has changed: {old_path}")
     for dst, data in pending:
