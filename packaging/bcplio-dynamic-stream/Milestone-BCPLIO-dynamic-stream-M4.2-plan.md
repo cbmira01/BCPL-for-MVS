@@ -218,7 +218,7 @@ corrupted JCL fixture text. This checker **has not yet
 been executed**.
 
 The probe has its own source and instructions:
-[probes/m42-real-open/README.md](../native-compiler/probes/m42-real-open/README.md).
+[probes/m42-real-open/README.md](../../native-compiler/probes/m42-real-open/README.md).
 
 ### Operator commands — prepare, inspect, then optionally submit
 
@@ -481,7 +481,7 @@ abend, or a handle could still be returned. The
 intentional probe logs whichever behavior actually
 occurs and is not a regression PASS/FAIL test.
 
-[Complete operator procedure](../native-compiler/probes/m42-pds-open/README.md)
+[Complete operator procedure](../../native-compiler/probes/m42-pds-open/README.md)
 keeps the JCL-building command separate from the
 possibly abending GO submission. Only assembler/link
 JCL is generated; no MVS job, Python static checker,
@@ -648,7 +648,7 @@ It does not alter the canonical assembler,
 installed PDS members or system DASD.
 
 [Operator preparation and separately documented
-submission](../native-compiler/probes/m42-fb-open/README.md)
+submission](../../native-compiler/probes/m42-fb-open/README.md)
 are staged but **no RG892R GO JCL or MVS result
 has yet been produced**. Do not ask the operator
 to run host-side source checks or the full regression.

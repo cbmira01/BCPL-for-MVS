@@ -3,9 +3,9 @@
 This directory collects **selected contemporaneous verification metadata** from
 the ignored local `workarea/` after the M0–M5.5 milestone was accepted.
 The authoritative narrative is
-[BCPLIO dynamic stream final acceptance](../../docs/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
-The [runtime contract](../../docs/BCPLIO-dynamic-runtime-contract.md)
-and the historical march documents remain in `docs/`.
+[BCPLIO dynamic stream final acceptance](../bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
+The [runtime contract](../bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md)
+and the retained engineering histories live in `packaging/bcplio-dynamic-stream/`.
 
 ## Organization
 

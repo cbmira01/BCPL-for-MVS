@@ -42,7 +42,7 @@ production OBJ promotion or new MVS tests authorized.
 - Candidate from **NATIVE_DEVOBJ(BCPLM6 + BCPLIO)**;
   other service objects resolve as documented in
   [current DEVOBJ runbook]
-  (../packaging/clean-room-mvs-reconstruction.md#10-m54-addendum--reproduce-the-accepted-dynamic-bcplio-candidate).
+  (../clean-room-mvs-reconstruction.md#10-m54-addendum--reproduce-the-accepted-dynamic-bcplio-candidate).
 - Do not promote any candidate to NATIVE_OBJ.
 - No new BCPL global numbers, QSAM/VSAM library,
   compiler changes, JES2 spool investigation,
@@ -91,7 +91,7 @@ It refuses to overwrite existing M5.5 evidence files.
 **No job is submitted by the preparation tool.**
 
 If DEVOBJ members are missing or stale, follow the
-[M5.4 runbook](../packaging/clean-room-mvs-reconstruction.md)
+[M5.4 runbook](../clean-room-mvs-reconstruction.md)
 for the approved BLDDEVM6 and BLDDEVI rebuilds before
 beginning. Check the build *payload* RCs and the
 installed PDS members. Do not perform an automatic

@@ -2,7 +2,7 @@
 
 **Status: M5.1 CLOSED (2026-10-17): M5.1.1 A/Z printer routing JOB 8184 ACCEPTED; M5.1.2 exact QSAM FB132 disk dataset readback JOB 8185 ACCEPTED. Prior M5.1.3 JES2 internals investigation WITHDRAWN from BCPLIO acceptance.**
 Predecessor: M5.0 evidence contract **ACCEPTED** by the owner.
-[M5.0 contract](Milestone-BCPLIO-dynamic-stream-M5.0-contract.md).
+[M5.0 contract](Milestone-BCPLIO-dynamic-stream.md).
 
 ## M5.1 — CLOSED, owner responsibility-boundary decision (2026-10-17)
 

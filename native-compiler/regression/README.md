@@ -1286,7 +1286,7 @@ Uses a non-tail-recursive DEPTH with local `VEC 255`, making each activation
 large enough to cross the current 16 KiB static WORK area after a modest number
 of calls.
 
-The historical checkpoint is recorded in `docs/stack-check-contract.md`.
+The historical checkpoint is recorded in `packaging/stack-check-contract.md`.
 BCPLMAC proves the existence of a byte-addressed safe stack limit (`STKLIM`)
 distinct from the byte beyond allocated stack (`STKHIGH`), and BLIB identifies
 system code `X'0D3'` as stack overflow.

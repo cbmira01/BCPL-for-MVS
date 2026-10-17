@@ -1,61 +1,49 @@
-# Programmer orientation notes
+# Programmer orientation briefings
 
-The files in this directory are working briefings for people developing or reviewing the BCPL reconstruction on System/370 and MVS 3.8J. They are secondary notes, not substitutes for contemporary IBM manuals or the historical BCPL sources.
+This directory contains **human-readable educational briefings** on BCPL,
+System/370, MVS 3.8J, Hercules, IFOX and JCL. They are explanatory notes,
+not historical primary sources, formal runtime contracts or current
+milestone trackers.
 
-## Main briefings
+## BCPL and historical context
 
-- `System_370-briefing.md` — System/370 architecture and instruction-level context
-- `MVS-3_8-briefing.md` — MVS 3.8J services and execution environment
-- `Hercules-briefing.md` — emulator configuration and operation
-- `IFOX-assembler-toolchain-briefing.md` — Assembler F / IFOX workflow
-- `JCL-for-the-programmer.md` — JCL needed for compile/link/run work
-- `IBM-data-representation.md` — EBCDIC, integers, addresses, records, and representation issues
-- `MVS-access-methods.md` — data-set and access-method concepts relevant to runtime work
-- `MVS-debugging.md` — diagnostics available in the MVS 3.8 environment
-- `MVS-program-execution.md` — loading, linkage, execution, and termination
-- `MVS-storage-and-addressing.md` — storage management and addressability
-- `MVS-system-programming-interfaces.md` — useful MVS service interfaces
-- `S370-object-and-load-modules.md` — object modules and linkage-editor/load-module structure
-- `BCPL-history-and-porting.md` — historical compiler/porting context
-- `BCPL-memory-management.md` — GETVEC/FREEVEC, heap allocation, coalescing,
-  compaction research, and the native WIP allocator
-- `BCPL-corpus-audit.md` — Cambridge compiler and historical BCPL corpus audit,
-  regression coverage map, and evidence-driven feature backlog
-- `project-map.md` — repository and workflow map
+- [BCPL history and porting](BCPL-history-and-porting.md)
+- [BCPL memory management](BCPL-memory-management.md)
 
-## Current BCPLIO developer contract (M5.4)
+## System/370 and IBM data
 
-- [BCPLIO dynamic streams — current DEVOBJ runtime contract]
-  (BCPLIO-dynamic-runtime-contract.md): historical BCPL globals,
-  arbitrary named DDs, QSAM FB80/FB132 translation, cleanup,
-  failure boundaries and M5 evidence.
-- [MVS clean-room reconstruction and DEVOBJ candidate runbook]
-  (../packaging/clean-room-mvs-reconstruction.md): complete
-  MR10/ICINT19/CAMBCOMP/PDS rebuild, plus M5.4 BCPLM6/BCPLIO
-  candidate steps and final 00–145 regression process.
-- [Original M4.2 JCL/QSAM responsibility note]
-  (BCPLIO-JCL-QSAM-stream-contract.md): detailed host OPEN/abend
-  distinction, kept for provenance.
+- [System/370 architecture](System_370-briefing.md)
+- [IBM data representation](IBM-data-representation.md)
+- [Object and load modules](S370-object-and-load-modules.md)
 
-## BCPLIO dynamic-stream final acceptance
+## MVS services and runtime environment
 
-- [Formal milestone closure (2026-10-17)]
-  (Milestone-BCPLIO-dynamic-stream-final-acceptance.md):
-  M0–M5.5 owner acceptance, final native regression
-  145/0/1 and 145/145 audit, physical QSAM evidence,
-  tested boundaries and recorded post-success evidence caveat.
+- [MVS 3.8J](MVS-3_8-briefing.md)
+- [MVS access methods](MVS-access-methods.md)
+- [MVS debugging](MVS-debugging.md)
+- [MVS program execution](MVS-program-execution.md)
+- [MVS storage and addressing](MVS-storage-and-addressing.md)
+- [MVS system-programming interfaces](MVS-system-programming-interfaces.md)
 
-## Next maintenance conversation
+## Development environment
 
-- [Handoff — repository cleanup and regression-runner review]
-  (Handoff-repository-cleanup-regression-runner.md):
-  accepted baseline, tool inventory, cleanup candidates
-  and decisions to discuss before making changes.
+- [Hercules](Hercules-briefing.md)
+- [IFOX assembler toolchain](IFOX-assembler-toolchain-briefing.md)
+- [JCL for the programmer](JCL-for-the-programmer.md)
+
+For project architecture, build procedures, milestone decisions, audits
+and runtime contracts, use the
+[packaging documentation index](../packaging/README.md) and
+[current repository map](../packaging/repository-map.md).
 
 ## Source discipline
 
-For questions about the historical BCPL implementation, prefer primary evidence in `richards-bcpltape/` and contemporary manuals. For MVS and System/370 behavior, prefer IBM documentation and observable TK5 behavior. These notes summarize and connect those sources for this project and may contain mistakes.
+For original BCPL behavior prefer [historical BCPL source](../richards-bcpltape/)
+and contemporary manuals. For MVS and System/370 behavior prefer IBM
+manuals and observed TK5 behavior. The
+[BCPL History Collection](https://softwarepreservation.computerhistory.org/BCPL/)
+is a useful primary-source index.
 
-The Computer History Museum Software Preservation Group's [BCPL History Collection](https://softwarepreservation.computerhistory.org/BCPL/) is a useful index to historical manuals, papers, and source archives. Martin Richards' archive and Robert Nordier's Classic BCPL material are also important provenance sources.
-
-Some briefings were drafted or edited with AI assistance. They have been kept because they are useful project notes, not because the drafting method gives them authority. Verify consequential details against primary documentation.
+Some briefings were drafted or edited with AI assistance. This does not
+make them authoritative; verify consequential technical details against
+primary documentation.

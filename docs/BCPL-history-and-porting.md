@@ -314,8 +314,8 @@ This separation is fundamental to the port. It lets the portable library survive
 
 See:
 
-- [`../library/README.md`](../library/README.md)
-- [`../library/GLOBALS.md`](../library/GLOBALS.md)
+- [`../library/README.md`](../mr10-kit-compiler/library/README.md)
+- [`../library/GLOBALS.md`](../mr10-kit-compiler/library/GLOBALS.md)
 
 ---
 
@@ -532,11 +532,11 @@ Everything else in the project—assembler experiments, stream handling, runtime
 
 - [`../README.md`](../README.md) — current project status and direction
 - [`../richards-bcpltape/README.md`](../richards-bcpltape/README.md) — historical transport-tape material
-- [`../asm/README.md`](../asm/README.md) — reconstructed System/370 assembler components
-- [`../intcode/README.md`](../intcode/README.md) — INTCODE material
-- [`../library/README.md`](../library/README.md) — reconstructed BCPL library
-- [`../tests/README.md`](../tests/README.md) — regression tests
-- [`../suite/README.md`](../suite/README.md) — readable demonstration programs
+- [`../asm/README.md`](../mr10-kit-compiler/asm/README.md) — reconstructed System/370 assembler components
+- [`../intcode/README.md`](../mr10-kit-compiler/source/README.md) — INTCODE material
+- [`../library/README.md`](../mr10-kit-compiler/library/README.md) — reconstructed BCPL library
+- [`../tests/README.md`](../mr10-kit-compiler/tests/README.md) — regression tests
+- [`../suite/README.md`](../mr10-kit-compiler/bcpl-demo/README.md) — readable demonstration programs
 
 ---
 

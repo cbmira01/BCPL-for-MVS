@@ -41,11 +41,11 @@ executes as INTCODE under ICINT19. The earlier
 00–123 acceptance above is the M3 *historical* baseline.
 
 Read the [formal BCPLIO milestone sign-off]
-(docs/Milestone-BCPLIO-dynamic-stream-final-acceptance.md),
+(packaging/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md),
 [current runtime contract]
-(docs/BCPLIO-dynamic-runtime-contract.md), and
+(packaging/bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md), and
 [handoff for repository cleanup and regression-runner review]
-(docs/Handoff-repository-cleanup-regression-runner.md).
+(packaging/maintenance/Handoff-repository-cleanup-regression-runner.md).
 
 **Start here:** [Clean-room reconstruction of the entire MVS PDS
 environment](packaging/clean-room-mvs-reconstruction.md). The consolidated
@@ -66,7 +66,8 @@ the previously observed acceptance evidence see [M3 reconstruction acceptance](p
 | `tools/mvs/` | TK5/Hercules, JES and assembler job tools |
 | `tools/checks/` | Repository-owned static and acceptance diagnostics |
 | `config/` | `dspal.yaml` and ignored machine-local overrides |
-| `packaging/` | Architecture, acceptance records, and rebuild procedures |
+| `docs/` | Human-readable educational briefings on BCPL, System/370, MVS, Hercules, IFOX and JCL |
+| `packaging/` | Architecture, engineering contracts, acceptance records, audits, and rebuild procedures; [index](packaging/README.md) |
 | `richards-bcpltape/` | Historical reference sources; third-party rights preserved |
 | `workarea/` | Disposable derived host output, never source authority |
 

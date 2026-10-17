@@ -95,7 +95,7 @@ Related documents:
 [master milestone](Milestone-BCPLIO-dynamic-stream.md),
 [M5.5 gate history](Milestone-BCPLIO-dynamic-stream-M5.5-plan.md),
 [current runtime contract](BCPLIO-dynamic-runtime-contract.md),
-[canonical clean-room procedure](../packaging/clean-room-mvs-reconstruction.md).
+[canonical clean-room procedure](../clean-room-mvs-reconstruction.md).
 
 ## Administrative closeout and transfer to maintenance
 
@@ -108,7 +108,7 @@ plan introduction were reconciled to the accepted
 sections retain their original historical status.
 
 The [next-conversation handoff]
-(Handoff-repository-cleanup-regression-runner.md)
+(../maintenance/Handoff-repository-cleanup-regression-runner.md)
 is deliberately a **read-only inventory and design
 discussion**, not authorization to delete files
 or rewrite the runner. No compiler, BCPLIO,

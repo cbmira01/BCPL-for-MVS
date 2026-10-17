@@ -3,7 +3,7 @@
 **M5.4 documentation baseline: 17 October 2026.** Scope: native Cambridge-compiled
 BCPL on System/370, MVS 3.8J/TK5, linked against the **DEVOBJ(BCPLM6 +
 BCPLIO)** candidate. This is the *current* dynamic-stream contract. The
-[early fixed-DD contract](../native-compiler/regression/native-stream-contract.md)
+[early fixed-DD contract](../../native-compiler/regression/native-stream-contract.md)
 records an older predecessor and should not be read as a description of
 the present candidate. The [M4.2 JCL/QSAM responsibility note]
 (BCPLIO-JCL-QSAM-stream-contract.md) remains authoritative on recoverable
@@ -104,8 +104,8 @@ Core runtime keeps normalized DD descriptors, independent selected
 input/output state, record buffers, cursor/EOF/pushback state, dynamic
 DCB regions and durable handle identities. Canonical ownership and
 QSAM code are in [BCPLIO assembler]
-(../native-compiler/asm/bcplio.asm); [BCPLM6]
-(../native-compiler/asm/bcplmain-d6-candidate.asm) owns bootstrap,
+(../../native-compiler/asm/bcplio.asm); [BCPLM6]
+(../../native-compiler/asm/bcplmain-d6-candidate.asm) owns bootstrap,
 globals, FINISH/STOP orchestration and linkage to other components.
 They are independently linked rather than pasted into one assembly source.
 
@@ -192,7 +192,7 @@ boundary, and M5.3 closed within that agreed scope.
 
 The **single** clean-room procedure is
 [Clean-room MVS PDS reconstruction]
-(../packaging/clean-room-mvs-reconstruction.md).
+(../clean-room-mvs-reconstruction.md).
 Follow its base M3 MR10/ICINT19/CAMBCOMP/BLIB rebuild **and**
 its M5.4 DEVOBJ(BCPLM6+BCPLIO) addendum. Never migrate
 derived .OBJ/.LOAD/INTCODE binaries as if they were source.

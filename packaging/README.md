@@ -2,6 +2,31 @@
 
 The canonical MVS dataset manifest is [`config/dspal.yaml`](../config/dspal.yaml) and its operator interface is `tools/datasets/dspal`. All tracked source files and build JCL reside in Git; MVS libraries hold deployed sources and rebuildable outputs.
 
+## Documentation ownership and navigation
+
+The [educational briefings](../docs/README.md) in `docs/` are for
+human readers. Durable engineering records live here:
+
+- [Current repository map](repository-map.md) — the maintained replacement
+  for the retired, pre-M3 `docs/project-map.md`.
+- [BCPLIO dynamic-stream milestone index](bcplio-dynamic-stream/README.md)
+  — accepted DEVOBJ runtime contract, M0 design decisions, QSAM/JCL
+  responsibilities, selected detailed verification and closure evidence.
+- [BCPLIO accepted evidence metadata](bcplio-dynamic-stream-evidence/)
+  — historical JSON/TSV receipts and checksums, not raw printer captures.
+- [BCPL historical source audit](audits/BCPL-corpus-audit.md) — coverage
+  against preserved compiler/application programs.
+- [Stack-check contract](stack-check-contract.md) — reconstructed
+  System/370 stack semantics from historical evidence.
+- [Regression-runner maintenance handoff](maintenance/Handoff-repository-cleanup-regression-runner.md)
+  — post-acceptance investigation, not a new active milestone.
+
+The accepted dynamic candidate links DEVOBJ(BCPLM6+BCPLIO+BCPLBYTE+
+BCPLAPT) with NATIVE_OBJ(BCPLMEM+BLIB). Its 00..145 panel passed 145,
+failed zero and skipped expected case 083. **No DEVOBJ-to-OBJ promotion**
+was authorized. Earlier milestone progress journals are available through
+Git history but were removed from the working tree.
+
 ## Complete reconstruction
 
 **[Clean-room MR10-to-native MVS reconstruction runbook](clean-room-mvs-reconstruction.md)** is the single chronological procedure for emptying `workarea/`, inspecting and purging the manifest-defined PDS set, reinitialization, text population, ICINT19 rebuilding, MR10 demos/tests, demoted Cambridge bootstrap, runtime object rebuilding, and the complete native regression panel.
@@ -37,7 +62,7 @@ Both are optional, proposed, and independent of M4 and Milestone QSAM.
 | `NATIVE_*` (6 datasets) | Reconstructed resident compiler INTCODE, native runtime ASM/JCL, objects | `native-compiler/` and manifest |
 | `CAMB_*` (9 datasets) | Reserved for M4; **not used for M3 compiler reconstruction** | Manifest allocation only |
 
-`NATIVE_OBJ` contains the accepted BCPLMAIN, BCPLMEM, and BLIB objects. `NATIVE_DEVOBJ` contains independently assembled BCPLAPT, BCPLBYTE, and BCPLIO candidates. No binary migration or implicit object promotion is permitted.
+`NATIVE_OBJ` contains the accepted BCPLMAIN, BCPLMEM, and BLIB objects. `NATIVE_DEVOBJ` contains independently assembled BCPLM6, BCPLAPT, BCPLBYTE, and BCPLIO candidate objects for the accepted dynamic-stream profile. No binary migration or implicit object promotion is permitted.
 
 A successful `dspal populate` updates explicitly mapped text members without pruning unlisted members. `dspal purgebcpl` is destructive to **all 24 manifest-managed datasets**; it does not delete datasets outside the manifest and prompts for explicit confirmation. Generated sources and binary outputs must be rebuilt after a purge. Keep local credentials in the ignored `config/dspal.local.yaml`.
 

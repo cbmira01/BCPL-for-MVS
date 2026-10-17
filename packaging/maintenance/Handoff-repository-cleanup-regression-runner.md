@@ -11,11 +11,11 @@ or new regression runs authorized yet.
 **BCPLIO dynamic stream is formally CLOSED**;
 owner accepted all M0–M5.5 gates.
 Authoritative records:
-[final acceptance](Milestone-BCPLIO-dynamic-stream-final-acceptance.md),
-[master history](Milestone-BCPLIO-dynamic-stream.md),
-[current runtime contract](BCPLIO-dynamic-runtime-contract.md)
+[final acceptance](../bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md),
+[master history](../bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream.md),
+[current runtime contract](../bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md)
 and [single clean-room rebuild runbook]
-(../packaging/clean-room-mvs-reconstruction.md).
+(../clean-room-mvs-reconstruction.md).
 
 - Compiler: **CAMBCOMP is INTCODE running under ICINT19**;
   produces native S/370 assembler; IFOX and IEWL
