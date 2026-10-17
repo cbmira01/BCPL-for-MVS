@@ -5,6 +5,21 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M5.2 — negative record-verifier control staged (2026-10-17)
+
+The [M5.2 negative-verifier plan]
+(Milestone-BCPLIO-dynamic-stream-M5.2-plan.md)
+reuses accepted JOB 8185's QSAM FB132 readback
+and creates one non-submitting M52PAD variant.
+Only an IFOX verifier expected **132nd padding byte**
+is changed; the BCPL GO program, REPORT/REPORT2 DD
+allocations, 132-byte CLC and EOF logic stay identical.
+The required experiment is ASMAP/LKED/GO/VASM/VLINK
+RC0000 and **VCHK RC0012** without abend.
+Existing A/Z routing-negative tests are reused.
+This gate is **STAGED, NOT RUN** on MVS; no
+runtime, compiler or PDS changes.
+
 ## M5.1 CLOSED — proceed to M5.2 (owner decision, 2026-10-17)
 
 The owner accepted a narrower and more accurate system
