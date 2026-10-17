@@ -414,6 +414,4 @@ Unlike the historical M4.4 log auditor alone, the
 M5.5 check snapshots prior logs **before** the full
 run and requires 145 new case logs plus an exact
 145 PASS / 0 FAIL / 1 expected SKIP 083 transcript.
-M5.5 is staged only until the new TK5 run succeeds
-and the owner accepts it. No clean-room PDS purge,
-OBJ promotion, or new runtime/JCL build is implied.
+**M5.5 accepted and CLOSED by the project owner on 2026-10-17** after a fresh 145 PASS / 0 FAIL / expected SKIP 083 DEVOBJ run and successful 145/145 log audit. See the [final milestone acceptance record](../docs/Milestone-BCPLIO-dynamic-stream-final-acceptance.md) for the important subsequent interrupted-repeat/evidence caveat. This accepted incremental run does **not** mean the complete destructive clean-room purge/rebuild procedure in this document has been executed as one new end-to-end experiment. No clean-room PDS purge, OBJ promotion, or new runtime/JCL build is implied.

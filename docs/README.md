@@ -37,6 +37,14 @@ The files in this directory are working briefings for people developing or revie
   (BCPLIO-JCL-QSAM-stream-contract.md): detailed host OPEN/abend
   distinction, kept for provenance.
 
+## BCPLIO dynamic-stream final acceptance
+
+- [Formal milestone closure (2026-10-17)]
+  (Milestone-BCPLIO-dynamic-stream-final-acceptance.md):
+  M0–M5.5 owner acceptance, final native regression
+  145/0/1 and 145/145 audit, physical QSAM evidence,
+  tested boundaries and recorded post-success evidence caveat.
+
 ## Source discipline
 
 For questions about the historical BCPL implementation, prefer primary evidence in `richards-bcpltape/` and contemporary manuals. For MVS and System/370 behavior, prefer IBM documentation and observable TK5 behavior. These notes summarize and connect those sources for this project and may contain mistakes.

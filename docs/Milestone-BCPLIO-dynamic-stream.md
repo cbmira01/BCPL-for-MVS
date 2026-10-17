@@ -1,9 +1,39 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0–M4.4 CLOSED (M4.2/M4.3 scoped); M5.0–M5.4 CLOSED; M5.5 fresh full-panel and independent audit TECHNICALLY PASSED 2026-10-17 at 57c7354, formal owner acceptance PENDING. DEVOBJ candidate remains unpromoted.  
+Status: FORMALLY CLOSED by owner on 2026-10-17 — all M0–M5.5 gates accepted under the scoped BCPLIO/QSAM contract. M5.5: fresh 00..145 DEVOBJ candidate 145 PASS / 0 FAIL / 1 expected SKIP 083, 145/145 fresh logs audited. No production OBJ promotion.  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## FINAL OWNER ACCEPTANCE — M5.5 and parent milestone CLOSED (2026-10-17)
+
+The project owner explicitly approved: **“Agree, close M5.5.”**
+That approval satisfies the final decision requirement in
+the M5.5 contract. The [formal acceptance record]
+(Milestone-BCPLIO-dynamic-stream-final-acceptance.md)
+is now the authoritative final disposition for this
+milestone. All development marches **M0–M5.5 are CLOSED**.
+
+The first fresh DEVOBJ `BCPLM6+BCPLIO` 00..145 panel
+and its independent audit **passed at Git `57c7354`**:
+145 PASS, 0 FAIL, expected SKIP 083; 145 fresh logs
+audited; no detected known-defect or abend exception.
+Previous QSAM boundary proofs remain JOBS 8184–8186.
+
+The later duplicate, interrupted after cases 00–02,
+overwrote some local files **after verification**.
+That evidence-integrity caveat is documented and does
+not reverse the successful first-run acceptance.
+A transcript reconstruction's checksum still requires
+comparison with the original receipt before being
+described as byte-identical.
+
+**No additional MVS run, compiler/runtime/JCL change,
+new stream feature, raw JES2 spool extraction, or
+DEVOBJ-to-OBJ promotion is required** to close the
+milestone. A full destructive clean-room rebuilding
+exercise remains separately unexecuted.
+This closure is a Git documentation change only.
 
 ## M5.5 observed final-panel success — technical gate PASSED, owner acceptance pending (2026-10-17)
 

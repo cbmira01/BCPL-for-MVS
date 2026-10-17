@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M5.5 final acceptance gate
 
-**Status: FRESH M5.5 EXECUTION AND AUDIT TECHNICALLY PASSED (17 October 2026), owner final acceptance pending; follow-up interrupted run altered on-disk evidence.**
+**Status: M5.5 FORMALLY CLOSED by project owner 17 October 2026. Final run 145 PASS / 0 FAIL / expected SKIP 083 with 145/145 fresh-log audit PASS. Follow-up interrupted duplicate altered current on-disk artifacts after verification; caveat retained.**
 M5.0 through M5.4 are closed. The last **measured** full
 DEVOBJ BCPLM6+BCPLIO panel is still M4.4 (00..145:
 145 PASS, 0 FAIL, expected SKIP 083 and 145/145
@@ -8,6 +8,31 @@ saved log audit). M5.5 must generate its **own fresh**
 execution evidence and obtain the owner's explicit
 acceptance. This is a final compatibility run,
 **not** a destructive purge-to-clean-room rebuild.
+
+## Formal gate closure — 17 October 2026
+
+The project owner agreed to close M5.5 based on
+the previously reported **successfully completed**
+fresh 00..145 run at `57c7354` and its strict
+independent 145/145 log verification. The accepted
+result is **145 PASS, 0 FAIL, 1 expected SKIP 083**.
+The original verifier's
+`VERIFIED_AWAITING_OWNER_ACCEPTANCE` receipt has
+now been satisfied by the owner's explicit
+acceptance. See the
+[final milestone acceptance record]
+(Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
+
+The second, interrupted repeat is not an invalidation
+of the accepted first run. It did, however, modify
+the on-disk evidence after success; the original
+receipt and terminal paste should be retained.
+Procedures and earlier OPEN/pending states in this
+document remain dated historical context,
+**not newly outstanding exit criteria**.
+
+**M5.5 CLOSED; parent milestone CLOSED.** No
+production OBJ promotion or new MVS tests authorized.
 
 ## Frozen boundary
 
