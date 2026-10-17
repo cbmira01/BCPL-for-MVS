@@ -1,6 +1,6 @@
 # Dynamic BCPLIO streams — M2 input multiplicity progress
 
-Status: **M2 test 130 first Cambridge transport gate failed; compact source retest staged, not yet accepted**
+Status: **M2 16-concurrent-stream target ACCEPTED; DD close/reopen identity not yet validated**
 Project: BCPL for MVS 3.8 reconstruction
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 
@@ -136,3 +136,20 @@ to M5 and cannot be inferred from the current combined JES report.
 
 This document records project progress, not approval to promote
 DEVOBJ into production OBJ.
+
+## Regression 130 accepted — sixteen concurrent inputs (MVS 2026-10-17)
+
+After compact-source test commit `ded524fec36ec741735f7c813d40724fce20a162` and related documentation through `8247e98`, operator pulled from `ba3ca23` to `8247e98` and reran the **unchanged DEVOBJ(BCPLM6 + BCPLIO)** candidate with `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`. Result:
+
+```text
+NATIVE REGRESSION 130..130 (1 tests)
+RUN 130 130-dynamic-dd-sixteen-input-streams
+PASS 130 130-dynamic-dd-sixteen-input-streams
+PASS 1 FAIL 0 SKIP 0 TOTAL 1
+```
+
+The compiled BCPL test opened **16 independent DD01..DD16 inputs simultaneously**, asserted 16 nonzero pairwise-distinct opaque handles (nested FOR covering 120 pairs), interleaved two records per stream, checked synthetic newline, repeated EOF and UNRDCH, then ENDREADed in reverse order and rejected stale selection. **ACCEPTED: 16-stream concurrency threshold.** The previous original 438-line source failed JOB 7328 SVCODE IEBGENER RC0012, before native execution; compact 121-line source passed. That first transport failure remains unexplained by the available step summary and must not be called proof of a compiler source-length limit. No compiler, BCPLIO, DCB/runtime or harness modification was required for the passing test.
+
+**Decision:** concurrency stress testing stops at **16**, as agreed with the owner. Dynamic linked descriptors have no intentionally fixed 16-slot ceiling, but no guarantee of arbitrary concurrency in resource-limited MVS follows from this test. Last independently accepted full panel remains **00..129: 129 PASS, 0 FAIL, expected SKIP 083**; 130 is an additional passing targeted case. A full 00..130 panel remains pending.
+
+Next work: close/reopen the **same DD** after `ENDWRITE` first (QSAM SYSOUT), require a **fresh nonrecycled BCPL word handle**, old handle still rejected after reallocation and duplicate active FIND of that new handle returns the new identity. Do not presume input DD DATA can rewind on QSAM reopening; investigate separately.
