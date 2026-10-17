@@ -13,14 +13,16 @@ M3 uses the refactored `NATIVE_*` and `MR10_*` dataset namespace. Do not use `CA
 
 ## M5.4 dynamic runtime DEVOBJ candidate
 
-After the base M3 compiler/accepted OBJ reconstruction,
+After an **approved** base M3 compiler/OBJ reconstruction,
 the current M5 native stream candidate consists of
 `NATIVE_DEVOBJ(BCPLM6)` and
 `NATIVE_DEVOBJ(BCPLIO)`, assembled via
 `NATIVE_JCL(BLDDEVM6)` and
 `NATIVE_JCL(BLDDEVI)`. BLDDEVM6 must be
-installed explicitly; it is not part of the
-original M3 `NATIVE_JCL` manifest members.
+installed explicitly; it is not in the current `NATIVE_JCL`
+manifest. The job now reads `NATIVE_ASM(BCPLMAIN)`.
+Submitting production `BLDBMAIN` with that canonical D6 source
+would change `NATIVE_OBJ` and requires separate authorization.
 Run candidate regressions with the four environment
 variables documented in the [complete clean-room
 runbook](../../packaging/clean-room-mvs-reconstruction.md#10-m54-addendum--reproduce-the-accepted-dynamic-bcplio-candidate).

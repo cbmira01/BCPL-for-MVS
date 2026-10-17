@@ -80,7 +80,7 @@ tools/datasets/dspal ls
 
 The purge includes `MR10_LOAD`, `MR10_OBJ`, `NATIVE_INTCODE`, `NATIVE_OBJ` and `NATIVE_DEVOBJ`; they are **empty after initialization by design**. Do not copy modules from old pre-M3 libraries. Text population intentionally excludes derived binary members and generated Cambridge demotions, which are staged later.
 
-The current manifest lists **24 datasets** and **151 explicit mapped files**. These counts are an audit baseline, not a substitute for running `dspal info` and examining actual population output if the manifest changes.
+The manifest lists **24 managed datasets**. Check the current number of mapped source members with `dspal info`; historical counts are not a reliable validation after source reorganization.
 
 ## 3. Rebuild the MR10 version-19 interpreter
 
@@ -167,6 +167,18 @@ test -s workarea/m3-clean-smoke.s370.asm
 Look for generated `CSECT`, `EXTRN BCPLMAIN`, and `END` cards. `compile-mvs` verifies interpreted execution code.
 
 ## 7. Rebuild runtime objects without copying any earlier OBJ
+
+**PRODUCTION-CHANGE HOLD (canonical-source update, October 2026).**
+The commands below document the former M3 procedure. The manifest now
+populates the accepted **D6 development source** into
+`NATIVE_ASM(BCPLMAIN)`. Submitting `BLDBMAIN` below would replace
+the existing production `NATIVE_OBJ(BCPLMAIN)` with D6.
+**Do not run that job or the full destructive clean-room sequence
+without explicit production promotion approval.** For exact historical
+M3 reconstruction, the former pre-D6 source remains in
+`native-compiler/asm/history/bcplmain-pre-d6-production.asm`.
+Until a separate production policy is accepted, the clean-room
+runbook is an engineering reference, not authorization to deploy D6.
 
 ```sh
 tools/datasets/dspal ls NATIVE_ASM
@@ -256,17 +268,17 @@ After following those gates, also do the following.
 ### A. Know which objects are canonical vs candidate
 
 **Canonical Git source and MVS object status are separate.** The
-current BCPLMAIN development file `native-compiler/asm/bcplmain.asm`
-contains the accepted D6 candidate; `dspal.yaml` maps it to
-`NATIVE_ASM(BCPLM6)`. The production build `BLDBMAIN` deliberately
-uses `NATIVE_ASM(BCPLMAIN)`, still mapped to the archived pre-D6
-production source. No object promotion occurs in this source-layout
-change, nor may a full clean-room build silently promote BCPLM6.
+canonical D6 `native-compiler/asm/bcplmain.asm` maps only to
+`NATIVE_ASM(BCPLMAIN)`. Historical source variants are not mapped.
+The optional D6 build JCL reads this canonical source and installs
+`NATIVE_DEVOBJ(BCPLM6)`; its object member retains that historical
+name for accepted regression compatibility. **BLDBMAIN also reads
+BCPLMAIN source and now constitutes a production promotion if run.**
 
 | Manifest alias | Relevant members | Authority |
 |---|---|---|
-| NATIVE_ASM | BCPLM6, BCPLIO and other assembler sources | Git, manifest population; re-stage with dspal put after any source change |
-| NATIVE_JCL | BLDDEVM6 and BLDDEVI build job bodies | BLDDEVI manifest-mapped; BLDDEVM6 must be **explicitly installed with dspal put** (not in the M3 JCL manifest listing) |
+| NATIVE_ASM | BCPLMAIN, BCPLIO, BCPLMEM, BCPLBYTE, BCPLAPT | Exactly five canonical Git `.asm` sources |
+| NATIVE_JCL | BLDDEVI and optional BLDDEVM6 | BLDDEVI manifest-mapped; historical BLDDEVM6 is staged explicitly, not manifest-populated |
 | NATIVE_OBJ | BCPLMAIN, BCPLMEM, BLIB | Rebuild using BLDBMAIN and BLIBBLD in base gates; **no copying old object records** |
 | NATIVE_DEVOBJ | BCPLM6, BCPLIO, BCPLBYTE, BCPLAPT | Build through the resident IFOX/IEBGENER jobs; no PROD OBJ promotion |
 
@@ -290,7 +302,7 @@ tools/datasets/dspal ls NATIVE_ASM
 tools/datasets/dspal ls NATIVE_JCL
 
 # Install source text (not binary object records):
-tools/datasets/dspal put NATIVE_ASM BCPLM6 \
+tools/datasets/dspal put NATIVE_ASM BCPLMAIN \
   native-compiler/asm/bcplmain.asm
 tools/datasets/dspal put NATIVE_ASM BCPLIO \
   native-compiler/asm/bcplio.asm

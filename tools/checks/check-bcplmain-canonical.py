@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Check canonical BCPLMAIN source and the no-promotion manifest boundary.
+"""Verify canonical native assembler member mapping without PDS changes.
 
-The current developed BCPLMAIN is D6/BCPLM6. The earlier M1.6
-pre-D6 canonical equivalence test is now historical, not an active gate.
-This check never writes to a PDS, rebuilds objects, or runs MVS jobs.
+Each NATIVE_ASM member must correspond to exactly one maintained .asm file.
+Historical D3-D7 variants are not manifest members. This tool does not
+assemble, submit jobs, or promote any production object.
 """
 from pathlib import Path
 import re
@@ -11,44 +11,53 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-ASM = ROOT / "native-compiler/asm"
-CANONICAL = ASM / "bcplmain.asm"
-BASELINE = ASM / "history/bcplmain-pre-d6-production.asm"
 MANIFEST = ROOT / "config/dspal.yaml"
+ASM = ROOT / "native-compiler/asm"
+CANONICAL = ("BCPLMAIN", "BCPLIO", "BCPLMEM", "BCPLBYTE", "BCPLAPT")
 
 
 def main() -> None:
-    source = CANONICAL.read_text(encoding="ascii")
-    baseline = BASELINE.read_text(encoding="ascii")
-    mapping = MANIFEST.read_text(encoding="utf-8")
-
-    for entry in ("BCPLMAIN CSECT", "         END   BCPLMAIN"):
-        if source.count(entry) != 1:
-            raise ValueError(f"unexpected canonical assembly anchor: {entry}")
-    if source == baseline:
-        raise ValueError("canonical source was accidentally reverted to pre-D6")
-    for key, path in (
-        ("BCPLM6", "native-compiler/asm/bcplmain.asm"),
-        ("BCPLMAIN",
-         "native-compiler/asm/history/bcplmain-pre-d6-production.asm"),
-        ("BCPLM7", "native-compiler/asm/history/bcplmain-d7-candidate.asm"),
-        ("BCPLMEM", "native-compiler/asm/bcplmem.asm"),
-        ("BCPLBYTE", "native-compiler/asm/bcplbyte.asm"),
-        ("BCPLAPT", "native-compiler/asm/bcplapt.asm"),
-        ("BCPLIO", "native-compiler/asm/bcplio.asm"),
+    yaml = MANIFEST.read_text(encoding="utf-8")
+    start = yaml.index("\n  NATIVE_ASM:\n")
+    end = yaml.index("\n  NATIVE_JCL:\n", start)
+    section = yaml[start:end]
+    member_lines = section.split("    members:\n", 1)[1]
+    entries = re.findall(r"^      ([A-Z0-9]+):\s+(\S+)\s*$",
+                         member_lines, re.M)
+    expected = [(member, f"native-compiler/asm/{member.lower()}.asm")
+                for member in CANONICAL]
+    if entries != expected:
+        raise ValueError(f"NATIVE_ASM mappings differ from canonical list:"
+                         f"\n  actual: {entries}\n  wanted: {expected}")
+    for _, path in expected:
+        source = ROOT / path
+        if not source.is_file():
+            raise ValueError(f"missing assembler source: {source}")
+        subprocess.run([sys.executable,
+                        str(ROOT / "tools/checks/check-asm-source.py"),
+                        str(source)], check=True)
+    main_source = (ASM / "bcplmain.asm").read_text(encoding="ascii")
+    if main_source.count("BCPLMAIN CSECT") != 1 or (
+        main_source.count("         END   BCPLMAIN") != 1
     ):
-        expression = rf"^\s+{key}:\s+{re.escape(path)}\s*$"
-        if len(re.findall(expression, mapping, flags=re.M)) != 1:
-            raise ValueError(f"unexpected NATIVE_ASM mapping: {key}")
-        if not (ROOT / path).is_file():
-            raise ValueError(f"manifest assembler source missing: {path}")
-    subprocess.run([sys.executable, str(ROOT / "tools/checks/check-asm-source.py"),
-                    str(CANONICAL)], check=True)
-    print("PASS: BCPLMAIN source naming, DEVOBJ/OBJ boundary and IFOX cards")
+        raise ValueError("unexpected BCPLMAIN CSECT/END structure")
+    candidate = (ROOT / "native-compiler/jcl/build-dev-bcplm6.jcl"
+                 ).read_text(encoding="ascii")
+    if "NATIVE.ASM(BCPLMAIN)" not in candidate:
+        raise ValueError("historical BCPLM6 job does not read canonical source")
+    if "NATIVE.DEVOBJ(BCPLM6)" not in candidate or (
+        "NATIVE.OBJ(BCPLM6)" in candidate
+    ):
+        raise ValueError("historical BCPLM6 job targets unexpected library")
+    jcl = yaml[end:yaml.index("\n  NATIVE_OBJ:\n", end)]
+    if "BLDDEVM6:" in jcl:
+        raise ValueError("historical versioned JCL is still manifest-mapped")
+    print("PASS: 5 canonical ASM sources, 5 matching PDS members;"
+          " historical versions unmapped")
 
 
 if __name__ == "__main__":
     try:
         main()
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
-        raise SystemExit(f"canonical BCPLMAIN: FAIL: {exc}")
+        raise SystemExit(f"canonical runtime manifest FAIL: {exc}")

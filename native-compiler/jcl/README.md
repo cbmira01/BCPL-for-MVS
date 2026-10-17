@@ -7,12 +7,13 @@ NATIVE_JCL` or `dspal put` installs them, and `dspal submit NATIVE_JCL
 
 ## Source ownership
 
-The canonical **development** BCPLMAIN is
-[`native-compiler/asm/bcplmain.asm`](../asm/bcplmain.asm)
-(D6/BCPLM6), staged into `NATIVE_ASM(BCPLM6)`.
-Production `BLDBMAIN` deliberately continues reading the separately
-manifest-mapped historical `NATIVE_ASM(BCPLMAIN)` snapshot. Do not
-interpret a source rename as authority to promote development objects.
+The current `bcplmain.asm` is the D6/M5.5 development source.
+It is mapped to `NATIVE_ASM(BCPLMAIN)`, matching its Git filename.
+The other four canonical modules map the same way.
+
+**Do not submit BLDBMAIN without separate production approval.** It
+would now assemble D6 and replace `NATIVE_OBJ(BCPLMAIN)`.
+Populating source members alone does not modify binary objects.
 
 ## Current production rebuilds
 
@@ -25,7 +26,7 @@ interpret a source rename as authority to promote development objects.
 - `BLDDEVA` — `NATIVE_ASM(BCPLAPT)` to `NATIVE_DEVOBJ(BCPLAPT)`.
 - `BLDDEVB` — `NATIVE_ASM(BCPLBYTE)` to `NATIVE_DEVOBJ(BCPLBYTE)`.
 - `BLDDEVI` — `NATIVE_ASM(BCPLIO)` to `NATIVE_DEVOBJ(BCPLIO)`.
-- `BLDDEVM6` — manifest-mapped `build-dev-bcplm6.jcl`: assemble `NATIVE_ASM(BCPLM6)` from canonical Git `bcplmain.asm` into `NATIVE_DEVOBJ(BCPLM6)` only.
+- `build-dev-bcplm6.jcl` — optional historical job, **not mapped in the manifest**. Stage it explicitly as `BLDDEVM6` to assemble `NATIVE_ASM(BCPLMAIN)` into `NATIVE_DEVOBJ(BCPLM6)` only.
 - `BLDDEVM`, `BLDDEVN`, `BLDDEVL` — existing candidate builds for
   BCPLMEM, BCPLMAIN, and BLIB respectively.
 

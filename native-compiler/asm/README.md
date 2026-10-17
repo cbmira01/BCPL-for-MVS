@@ -16,25 +16,31 @@ Further BCPLMAIN development belongs in this file, not in another
 `bcplmain-dN-candidate.asm` beside it. Keep other modules on their
 canonical paths as well.
 
-## Source naming is not object promotion
+## Canonical Git source = canonical MVS source member
 
-`config/dspal.yaml` deliberately maintains two MVS assembler member roles:
+`config/dspal.yaml` maps only five `NATIVE_ASM` source members, each
+matching the basename of the canonical assembler file above.
+For example, `bcplmain.asm` populates `NATIVE_ASM(BCPLMAIN)`.
+**BCPLM6, BCPLM7 and BCMWIP are no longer manifest-managed sources.**
+Earlier variants remain under [`history/`](history/) in Git.
 
-- `NATIVE_ASM(BCPLM6)` is populated from canonical
-  `native-compiler/asm/bcplmain.asm`. The D6 candidate build
-  `NATIVE_JCL` job `build-dev-bcplm6.jcl` installs only
-  `NATIVE_DEVOBJ(BCPLM6)`.
-- `NATIVE_ASM(BCPLMAIN)` remains populated from
-  [`history/bcplmain-pre-d6-production.asm`](history/bcplmain-pre-d6-production.asm).
-  The established `NATIVE_JCL(BLDBMAIN)` continues building the
-  historical production `NATIVE_OBJ(BCPLMAIN)` from that source.
-  **No production promotion is authorized by the naming change.**
+The canonical `bcplmain.asm` is the accepted D6/M5.5 candidate source.
+Source population alone does not change an object library. However,
+the existing `NATIVE_JCL(BLDBMAIN)` **would now assemble D6 into
+`NATIVE_OBJ(BCPLMAIN)` if submitted**. Such production promotion has
+not been authorized; do not execute BLDBMAIN without a separate decision.
 
-The independently accepted M2.1 D7 variant is retained at
-[`history/bcplmain-d7-candidate.asm`](history/bcplmain-d7-candidate.asm),
-and the manifest still permits explicit staging of NATIVE_ASM(BCPLM7).
-Its stack-overflow RC=0012 is **not** interchangeable with D6's
-RC=0000 in the accepted dynamic-stream regression.
+The optional historical `build-dev-bcplm6.jcl` reads the canonical
+`NATIVE_ASM(BCPLMAIN)` and writes only `NATIVE_DEVOBJ(BCPLM6)`.
+It is **not in the manifest**; stage its JCL explicitly only when
+reproducing the accepted M5.5 development profile. The versioned
+DEVOBJ object name remains for regression compatibility and does
+not imply a second assembler source.
+
+The accepted M2.1 D7 source is retained as
+[`history/bcplmain-d7-candidate.asm`](history/bcplmain-d7-candidate.asm).
+Its stack-overflow RC=0012 differs from D6's RC=0000 and it is not
+populated by the current manifest.
 
 Earlier D3–D5, pre-D6, and WIP sources are retained in
 [`history/`](history/). The WIP fragments remain in

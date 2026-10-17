@@ -422,16 +422,12 @@ datasets:
     blksize: 800
     populate: true
     members:
-      # Retained production baseline for BLDBMAIN; not a D6 promotion.
-      BCPLMAIN: native-compiler/asm/history/bcplmain-pre-d6-production.asm
+      # Only canonical sources; prior candidate variants stay in Git.
+      BCPLMAIN: native-compiler/asm/bcplmain.asm
+      BCPLIO: native-compiler/asm/bcplio.asm
       BCPLMEM: native-compiler/asm/bcplmem.asm
       BCPLBYTE: native-compiler/asm/bcplbyte.asm
       BCPLAPT: native-compiler/asm/bcplapt.asm
-      # Current developed BCPLMAIN source; accepted DEVOBJ M5.5 profile.
-      BCPLM6: native-compiler/asm/bcplmain.asm
-      # Earlier independent D7 experiment, not the current BCPLIO baseline.
-      BCPLM7: native-compiler/asm/history/bcplmain-d7-candidate.asm
-      BCPLIO: native-compiler/asm/bcplio.asm
 
   NATIVE_JCL:
     dsn: BCPL.NATIVE.JCL
@@ -452,8 +448,6 @@ datasets:
       BLDGFMEM: native-compiler/jcl/build-gate-f1-bcplmem.jcl
       BLDDEVM: native-compiler/jcl/build-dev-bcplmem.jcl
       BLDDEVN: native-compiler/jcl/build-dev-bcplmain.jcl
-      # Explicit D6 candidate assembly from NATIVE_ASM(BCPLM6).
-      BLDDEVM6: native-compiler/jcl/build-dev-bcplm6.jcl
       BLDDEVB: native-compiler/jcl/build-dev-bcplbyte.jcl
       BLDDEVI: native-compiler/jcl/build-dev-bcplio.jcl
       BLDDEVA: native-compiler/jcl/build-dev-bcplapt.jcl
