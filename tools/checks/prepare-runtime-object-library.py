@@ -38,7 +38,7 @@ def main() -> None:
     deck.unlink(missing_ok=True)
 
     # Exact source transformations fail if BCPLMAIN's contract has drifted.
-    source = ROOT / "asm/bcplmain-wip.asm"
+    source = ROOT / "native-compiler/asm/history/bcplmain-wip.asm"
     for name, script in (
         ("byte", "externalize-bcplbyte.py"),
         ("apt", "externalize-bcplapt.py"),
@@ -63,9 +63,9 @@ def main() -> None:
     source = registered
     sources = [
         ("BCPLMAIN", source),
-        ("BCPLBYTE", ROOT / "asm/bcplbyte.asm"),
-        ("BCPLAPT", ROOT / "asm/bcplapt.asm"),
-        ("BCPLMEM", ROOT / "asm/bcplmem.asm"),
+        ("BCPLBYTE", ROOT / "native-compiler/asm/bcplbyte.asm"),
+        ("BCPLAPT", ROOT / "native-compiler/asm/bcplapt.asm"),
+        ("BCPLMEM", ROOT / "native-compiler/asm/bcplmem.asm"),
     ]
     if args.only_main:
         sources = sources[:1]

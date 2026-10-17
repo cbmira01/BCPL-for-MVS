@@ -137,7 +137,7 @@ class ObjectPackagingTests(unittest.TestCase):
         self.assertTrue(all(len(line) <= 71 for line in deck.splitlines()))
         datasets = self.config["datasets"]
         self.assertEqual(datasets["ASM"]["members"]["BCMWIP"],
-                         "asm/bcplmain-wip.asm")
+                         "native-compiler/asm/history/bcplmain-wip.asm")
         self.assertEqual(datasets["JCL"]["members"]["BLIBLINK"],
                          "jcl/probe-blib-object-consumer.jcl")
 

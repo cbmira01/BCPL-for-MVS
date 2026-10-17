@@ -1,38 +1,55 @@
-# System/370 assembler sources
+# Native System/370 assembler runtime sources
 
-This directory contains native MVS 3.8J assembler and runtime development sources. ICINT interpreter sources have moved to `mr10-kit-compiler/asm/` during M3 restructuring.
+This directory holds the **one maintained source per native runtime module**:
 
-## Relocated ICINT line (historical notes)
+| Canonical Git file | CSECT / responsibility |
+|---|---|
+| [`bcplmain.asm`](bcplmain.asm) | BCPLMAIN bootstrap, termination and service dispatch |
+| [`bcplio.asm`](bcplio.asm) | Independent BCPL character-stream / QSAM interface |
+| [`bcplmem.asm`](bcplmem.asm) | Runtime memory services |
+| [`bcplbyte.asm`](bcplbyte.asm) | Byte operations |
+| [`bcplapt.asm`](bcplapt.asm) | Argument vectors and stack support |
 
-The current promoted interpreter is selected by `mr10-kit-compiler/asm/CURRENT`; `tools/mr10/current-icint` resolves that selection for scripts and users. At the time of this README the promoted source is `mr10-kit-compiler/asm/icintv17.asm`.
+**Current BCPLMAIN source:** `bcplmain.asm` contains the unchanged D6
+candidate that was accepted with dynamic-stream M5.5 as DEVOBJ(BCPLM6).
+Further BCPLMAIN development belongs in this file, not in another
+`bcplmain-dN-candidate.asm` beside it. Keep other modules on their
+canonical paths as well.
 
-The numbered ICINT files are retained because each is a useful reconstruction milestone rather than an arbitrary backup:
+## Source naming is not object promotion
 
-- V12 established the main historical instruction model and basic execution path;
-- V13 added map/store work used by later diagnostics;
-- V14/V14-trace developed tracing and reporting;
-- V15 expanded hosted stream support;
-- V16 moved generic streams to dynamic MVS-managed storage and established character translation behavior;
-- V17 is the current baseline, retaining the V16 stream work while adding recent-instruction diagnostics and guarded store handling.
+`config/dspal.yaml` deliberately maintains two MVS assembler member roles:
 
-The interpreter is based closely on `richards-bcpltape/mr10/bcplkit/icint`. The reconstruction rule is to stay close to that historical implementation and depart only where MVS hosting, diagnostics, or demonstrated correctness requires it.
+- `NATIVE_ASM(BCPLM6)` is populated from canonical
+  `native-compiler/asm/bcplmain.asm`. The D6 candidate build
+  `NATIVE_JCL` job `build-dev-bcplm6.jcl` installs only
+  `NATIVE_DEVOBJ(BCPLM6)`.
+- `NATIVE_ASM(BCPLMAIN)` remains populated from
+  [`history/bcplmain-pre-d6-production.asm`](history/bcplmain-pre-d6-production.asm).
+  The established `NATIVE_JCL(BLDBMAIN)` continues building the
+  historical production `NATIVE_OBJ(BCPLMAIN)` from that source.
+  **No production promotion is authorized by the naming change.**
 
-## Building
+The independently accepted M2.1 D7 variant is retained at
+[`history/bcplmain-d7-candidate.asm`](history/bcplmain-d7-candidate.asm),
+and the manifest still permits explicit staging of NATIVE_ASM(BCPLM7).
+Its stack-overflow RC=0012 is **not** interchangeable with D6's
+RC=0000 in the accepted dynamic-stream regression.
 
-For direct assembler work, generate a self-contained IFOX job with:
+Earlier D3–D5, pre-D6, and WIP sources are retained in
+[`history/`](history/). The WIP fragments remain in
+[`bcplmain-wip/`](bcplmain-wip/) for historical reconstruction; they
+are not the source of new BCPLMAIN development.
 
-```sh
-tools/mvs/make-asm-job asm/program.asm --output-dir jcl --listing heavy
-```
+The obsolete standalone M1-era `*-probe.asm` experiments and matching
+JCL decks were removed after the 00..145 regression and focused M4/M5
+verification became the retained tests. Git history preserves the
+older experiments. M4.2 and M5 verification under `native-compiler/probes/`
+and `tools/checks/` remain available.
 
-For ICINT workloads, use `tools/mr10/run-intcode` or `tools/mr10/compile-and-run`; they generate the necessary assembly/link/run jobs automatically.
+Run `python3 tools/checks/check-bcplmain-canonical.py` to check the
+manifest/source relationship and IFOX card formatting without installing
+or running any MVS program.
 
-`hello-world.asm` is a small IFOX example retained as a toolchain sanity check.
-
-## Native direction
-
-ICINT is the bootstrap host, not the end product. The native compiler work now starts from a surviving historical System/370 BCPL code generator. The assembler work ahead is therefore centered on validating generated S/370 code and reconstructing the native runtime/MVS service layer, not on inventing a backend without historical reference.
-
-The **accepted M2.0 Gate D development candidate** is `asm/bcplmain-d6-candidate.asm`, installed as `HERC02.BCPL.DEVOBJ(BCPLM6)`. Its independently assembled partners are `asm/bcplio.asm` (BCPLIO), `asm/bcplapt.asm` (BCPLAPT), `asm/bcplbyte.asm` (BCPLBYTE), `asm/bcplmem.asm` (BCPLMEM), plus the BLIB object. `asm/bcplmain.asm` is a separately maintained canonical/pre-D6 source, **not** the accepted D6 candidate; `bcplmain-wip.asm` retains historical WIP context. Do not substitute either into a D6 validation build.
-
-For the module contracts, independently linked objects and acceptance evidence, start at [`packaging/m2-0-runtime-modularity-architecture.md`](../packaging/m2-0-runtime-modularity-architecture.md), [`packaging/m2-0-gate-e-maintainability-review.md`](../packaging/m2-0-gate-e-maintainability-review.md), and the Gate D extraction record. The validated D6 build uses `jcl/build-dev-bcplmain-d6.jcl` and `jcl/bcplio-d6-integration-link.jcl`. Native PDS regressions require explicit `BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6` with `BCPL_RUNTIME_PDS=1`. These jobs do not promote `HERC02.BCPL.OBJ`.\n\nSee `native-compiler/README.md` for the current compiler direction and `THIRD-PARTY-NOTICES.md` for historical provenance.
+For the authoritative clean-room build and candidate reproduction see
+[`packaging/clean-room-mvs-reconstruction.md`](../../packaging/clean-room-mvs-reconstruction.md).

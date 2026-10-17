@@ -255,6 +255,14 @@ After following those gates, also do the following.
 
 ### A. Know which objects are canonical vs candidate
 
+**Canonical Git source and MVS object status are separate.** The
+current BCPLMAIN development file `native-compiler/asm/bcplmain.asm`
+contains the accepted D6 candidate; `dspal.yaml` maps it to
+`NATIVE_ASM(BCPLM6)`. The production build `BLDBMAIN` deliberately
+uses `NATIVE_ASM(BCPLMAIN)`, still mapped to the archived pre-D6
+production source. No object promotion occurs in this source-layout
+change, nor may a full clean-room build silently promote BCPLM6.
+
 | Manifest alias | Relevant members | Authority |
 |---|---|---|
 | NATIVE_ASM | BCPLM6, BCPLIO and other assembler sources | Git, manifest population; re-stage with dspal put after any source change |
@@ -283,7 +291,7 @@ tools/datasets/dspal ls NATIVE_JCL
 
 # Install source text (not binary object records):
 tools/datasets/dspal put NATIVE_ASM BCPLM6 \
-  native-compiler/asm/bcplmain-d6-candidate.asm
+  native-compiler/asm/bcplmain.asm
 tools/datasets/dspal put NATIVE_ASM BCPLIO \
   native-compiler/asm/bcplio.asm
 

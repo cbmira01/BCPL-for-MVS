@@ -5,6 +5,15 @@ This directory is the authoritative source of reusable MVS build job bodies.
 NATIVE_JCL` or `dspal put` installs them, and `dspal submit NATIVE_JCL
 <MEMBER>` runs them. No competing host-side build driver should be introduced.
 
+## Source ownership
+
+The canonical **development** BCPLMAIN is
+[`native-compiler/asm/bcplmain.asm`](../asm/bcplmain.asm)
+(D6/BCPLM6), staged into `NATIVE_ASM(BCPLM6)`.
+Production `BLDBMAIN` deliberately continues reading the separately
+manifest-mapped historical `NATIVE_ASM(BCPLMAIN)` snapshot. Do not
+interpret a source rename as authority to promote development objects.
+
 ## Current production rebuilds
 
 - `CAMBBLD` — build the resident compiler image in `NATIVE_INTCODE`.
@@ -16,6 +25,7 @@ NATIVE_JCL` or `dspal put` installs them, and `dspal submit NATIVE_JCL
 - `BLDDEVA` — `NATIVE_ASM(BCPLAPT)` to `NATIVE_DEVOBJ(BCPLAPT)`.
 - `BLDDEVB` — `NATIVE_ASM(BCPLBYTE)` to `NATIVE_DEVOBJ(BCPLBYTE)`.
 - `BLDDEVI` — `NATIVE_ASM(BCPLIO)` to `NATIVE_DEVOBJ(BCPLIO)`.
+- `BLDDEVM6` — manifest-mapped `build-dev-bcplm6.jcl`: assemble `NATIVE_ASM(BCPLM6)` from canonical Git `bcplmain.asm` into `NATIVE_DEVOBJ(BCPLM6)` only.
 - `BLDDEVM`, `BLDDEVN`, `BLDDEVL` — existing candidate builds for
   BCPLMEM, BCPLMAIN, and BLIB respectively.
 

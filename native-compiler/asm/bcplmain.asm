@@ -587,6 +587,10 @@ BCPLMAIN CSECT
          EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMBIND
          EXTRN GETBYTE,PUTBYTE
          EXTRN APTOVEC,APLIMIT
+         EXTRN IOINIT,IOFIN,IOWRCH,IOBIND,IODIAG,IOREPL,IOPMGET
+         EXTRN IOFOUT,IOSOUT,IOOUT,IOWRAP,IOENDW
+         EXTRN IOSELIN,IOINP,IOPARMST,IORDCH,IOUNRD,IOFINDIN
+         EXTRN IOENDRD
 *
 * Preserve the compiled-module base before R3 is repurposed as R.K12.
 *
@@ -757,31 +761,31 @@ BLIDONE  L     4,4(12)
 * G!87/G!88 = first WIP GETVEC/FREEVEC dynamic-storage services.
 * G!150 = provisional DEBUGINT bootstrap diagnostic service.
 *
-         LA    1,SELINP
+         L     1,=A(IOSELIN)
          ST    1,44(12)
-         LA    1,INPENT
+         L     1,=A(IOINP)
          ST    1,64(12)
-         LA    1,OUTENT
+         L     1,=A(IOOUT)
          ST    1,68(12)
-         LA    1,PARMENT
+         L     1,=A(IOPARMST)
          ST    1,156(12)
-         LA    1,WRAPENT
+         L     1,=A(IOWRAP)
          ST    1,132(12)
-         LA    1,RDCHENT
+         L     1,=A(IORDCH)
          ST    1,52(12)
-         LA    1,UNRDCHEN
+         L     1,=A(IOUNRD)
          ST    1,60(12)
-         LA    1,FINDINP
+         L     1,=A(IOFINDIN)
          ST    1,168(12)
-         LA    1,FINDOUT
+         L     1,=A(IOFOUT)
          ST    1,164(12)
-         LA    1,SELOUT
+         L     1,=A(IOSOUT)
          ST    1,48(12)
-         LA    1,ENDWENT
+         L     1,=A(IOENDW)
          ST    1,188(12)
-         LA    1,ENDRDENT
+         L     1,=A(IOENDRD)
          ST    1,184(12)
-         LA    1,WRCH
+         L     1,=A(IOWRCH)
          ST    1,56(12)
 * Keep BLIB's G!76 WRITEF when its export has been imported.
 * Install provisional WRITEST only if G!76 retains the unset sentinel.
@@ -818,13 +822,16 @@ WFHAS76  EQU   *
 * Regression 03 output is deliberately narrow: one buffered SYSPRINT
 * record.  This borrows the proven QSAM shape used by ICINT V19.
 *
-         XC    OUTPOS(4),OUTPOS
-         MVI   OUTBUF,C' '
-         MVC   OUTBUF+1(131),OUTBUF
-         OPEN  (BCPOUT,(OUTPUT))
-         LA    1,OUT1CTL
-         SRL   1,2
-         ST    1,OUTCURR
+         LR    9,10
+         L     1,PARMLIST
+         L     15,=A(IOINIT)
+         BALR  14,15
+         LR    10,9
+         LR    9,10
+         LA    1,IOSTOP
+         L     15,=A(IOBIND)
+         BALR  14,15
+         LR    10,9
 *
 * Establish S, initial P/W, and the absolute-base constants required by
 * generated USING 4096,1,2,3 code.
@@ -960,31 +967,12 @@ CNTIMPL  LA    14,4(14)
 FINIMPL  XC    STOPRC(4),STOPRC
          B     FINEXIT
 STOPENT  ST    7,STOPRC
-FINEXIT  L     1,OUTPOS
-         LTR   1,1
-         BZ    FINRETN
-         PUT   BCPOUT,OUTBUF
-FINRETN  CLOSE (BCPOUT)
-         CLI   OUT2OPEN,X'01'
-         BNE   FINNOO2
-         L     1,OUT2POS
-         LTR   1,1
-         BZ    FINO2CL
-         PUT   BCPOUT2,OUT2BUF
-FINO2CL  CLOSE (BCPOUT2)
-         MVI   OUT2OPEN,X'00'
+FINEXIT  LR    9,10
+         L     15,=A(IOFIN)
+         BALR  14,15
+         LR    10,9
 FINNOO2  EQU   *
-* BCPIN is lazily opened by FINDINPUT; close before task exit.
-         CLI   INOPEN,X'01'
-         BNE   FINNOIN
-         CLOSE (BCPIN)
-         MVI   INOPEN,X'00'
-FINNOIN  EQU   *
-         CLI   IN2OPEN,X'01'
-         BNE   FINNOI2
-         CLOSE (BCPIN2)
-         MVI   IN2OPEN,X'00'
-FINNOI2  EQU   *
+* BCPLIO IOFIN closes lazily opened BCPIN and BCPINB.
          BAL   14,RELMEM
          L     15,STOPRC
          L     13,4(13)
@@ -1043,10 +1031,15 @@ STKIMPL  LR    5,15
          L     4,0(15)
          LA    14,4(14)
          BR    14
-STKOVFL  MVC   OUTBUF(14),STKMSG
-         LA    4,14
-         ST    4,OUTPOS
+STKOVFL  LR    9,10
+         LA    1,STKMSG
+         LA    2,14
+         L     15,=A(IOREPL)
+         BALR  14,15
+         LR    10,9
          B     FINIMPL
+IOSTOP   LA    7,12
+         B     STOPENT
 STKFORM  L     4,0(15)
          L     13,4(13)
          LM    14,12,12(13)
@@ -1073,495 +1066,13 @@ STKCIMP  LA    14,4(14)
 * from an 80-byte fixed QSAM record; end-of-data yields -1.
 * This is a bootstrap subset, not multi-stream historical BCPL I/O.
 ***********************************************************************
-FINDINP  STM   0,15,IOSAVE
-         LR    14,7
-         SLL   14,2
-         CLI   0(14),X'06'
-         BNE   FTRYIN1
-         CLC   1(6,14),IN2NAME
-         BNE   FTRYIN1
-         CLI   IN2OPEN,X'01'
-         BE    FIN2OK
-         OPEN  (BCPIN2,(INPUT))
-         MVI   IN2OPEN,X'01'
-         MVI   IN2EOF,X'00'
-         MVI   IN2NL,X'00'
-         MVI   IN2PUSH,X'00'
-         MVI   IN2SEEN,X'00'
-         MVC   IN2POS(4),ININIT
-FIN2OK   LA    7,IN2CTRL
-         SRL   7,2
-         B     FRET
-FTRYIN1  EQU   *
-         LR    14,7
-         SLL   14,2
-         CLI   0(14),X'05'
-         BNE   FNOTFND
-         CLC   1(5,14),INNAME
-         BNE   FNOTFND
-         CLI   INOPEN,X'01'
-         BE    FFOUND
-         OPEN  (BCPIN,(INPUT))
-         MVI   INOPEN,X'01'
-         MVI   INEOF,X'00'
-         MVI   INNL,X'00'
-         MVI   INPUSH,X'00'
-         MVI   INSEEN,X'00'
-         MVC   INPOS(4),ININIT
-FFOUND   LA    7,INCTRL
-         SRL   7,2
-         B     FRET
-FNOTFND  SR    7,7
-FRET     ST    7,IORESULT
-         LM    0,15,IOSAVE
-         L     7,IORESULT
-         L     4,0(5)
-         BCR   15,6
-*
-* G39 opens a dedicated memory stream over the MVS EXEC PARM field.
-* R1 on entry to the load module points to the parameter-list word;
-* that word addresses the halfword length and following EBCDIC bytes.
-* Capture that original pointer before the BCPL startup reuses R1.
-PARMENT  STM   0,15,IOSAVE
-         CLI   PMINIT,X'01'
-         BE    PMREADY
-         MVI   PMINIT,X'01'
-         XC    PMPOS(4),PMPOS
-         XC    PMLEN(4),PMLEN
-         XC    PMADDR(4),PMADDR
-         L     14,PARMLIST
-         LTR   14,14
-         BZ    PMREADY
-         L     14,0(14)
-         N     14,PMMASK
-         LTR   14,14
-         BZ    PMREADY
-         LH    10,0(14)
-         LTR   10,10
-         BNP   PMREADY
-* MVS EXEC PARM length is limited to 100 bytes.
-         C     10,PMMAX
-         BNH   PMSET
-         LA    10,100
-PMSET    ST    10,PMLEN
-         LA    14,2(14)
-         ST    14,PMADDR
-PMREADY  LM    0,15,IOSAVE
-         LA    7,PMCTRL
-         SRL   7,2
-         L     4,0(5)
-         BCR   15,6
-*
-INPENT   L     7,INCURR
-         L     4,0(5)
-         BCR   15,6
-*
-SELINP   LA    14,PMCTRL
-         SRL   14,2
-         CR    7,14
-         BE    SELPM
-         LA    14,IN2CTRL
-         SRL   14,2
-         CR    7,14
-         BE    SEL2IN
-         LA    14,INCTRL
-         SRL   14,2
-         CR    7,14
-         BNE   SELIRET
-         ST    7,INCURR
-         B     SELIRET
-SELPM    ST    7,INCURR
-         B     SELIRET
-SEL2IN   ST    7,INCURR
-SELIRET  L     4,0(5)
-         BCR   15,6
-*
-RDCHENT  STM   0,15,IOSAVE
-         L     14,INCURR
-         LTR   14,14
-         BZ    RDEND
-         LA    10,PMCTRL
-         SRL   10,2
-         CR    14,10
-         BE    RDPM
-         LA    10,IN2CTRL
-         SRL   10,2
-         CR    14,10
-         BE    RD2START
-         CLI   INPUSH,X'01'
-         BE    RDPUSH
-         CLI   INEOF,X'01'
-         BE    RDEND
-         L     14,INPOS
-         C     14,INRECLEN
-         BL    RDGETCH
-         CLI   INNL,X'01'
-         BE    RDNEWLN
-         GET   BCPIN,INBUF
-* Trim fixed-record padding; blanks inside records remain data.
-         LA    14,80
-         LA    10,INBUF+79
-RDTRIM   LTR   14,14
-         BZ    RDTRMDN
-         CLI   0(10),C' '
-         BNE   RDTRMDN
-         BCTR  14,0
-         BCTR  10,0
-         B     RDTRIM
-RDTRMDN ST    14,INRECLEN
-         XC    INPOS(4),INPOS
-         MVI   INNL,X'01'
-         LTR   14,14
-         BZ    RDNEWLN
-         SR    14,14
-         B     RDGETCH
-RDNEWLN  MVI   INNL,X'00'
-         L     14,INRECLEN
-         ST    14,INPOS
-         LA    7,10
-         B     RDRETURN
-RDGETCH  LA    10,INBUF
-         AR    10,14
-         SR    7,7
-         IC    7,0(10)
-         LA    14,1(14)
-         ST    14,INPOS
-         B     RDRETURN
-RDPUSH   MVI   INPUSH,X'00'
-         L     7,INLAST
-         B     RDRETURN
-RDEND    L     7,INENDVAL
-RDRETURN ST    7,IORESULT
-         ST    7,INLAST
-         MVI   INSEEN,X'01'
-         LM    0,15,IOSAVE
-         L     7,IORESULT
-         L     4,0(5)
-         BCR   15,6
-*
-* EXEC PARM stream: bytes, one newline, EOF. A private pushback slot
-* prevents UNRDCH on the PARM stream altering either QSAM stream.
-RDPM     CLI   PMPUSH,X'01'
-         BE    RDPMPUSH
-         L     14,PMPOS
-         C     14,PMLEN
-         BL    RDPMCHAR
-         CLI   PMNL,X'01'
-         BE    RDPMEOF
-         MVI   PMNL,X'01'
-         LA    7,10
-         B     RDPMRET
-RDPMCHAR L     10,PMADDR
-         AR    10,14
-         SR    7,7
-         IC    7,0(10)
-         LA    14,1(14)
-         ST    14,PMPOS
-         B     RDPMRET
-RDPMPUSH MVI   PMPUSH,X'00'
-         L     7,PMLAST
-         B     RDPMRET
-RDPMEOF  L     7,INENDVAL
-RDPMRET  ST    7,IORESULT
-         ST    7,PMLAST
-         MVI   PMSEEN,X'01'
-         LM    0,15,IOSAVE
-         L     7,IORESULT
-         L     4,0(5)
-         BCR   15,6
-*
-* Second input DCB has independent record, pushback, and EOF state.
-RD2START CLI   IN2PUSH,X'01'
-         BE    RD2PUSH
-         CLI   IN2EOF,X'01'
-         BE    RD2END
-         L     14,IN2POS
-         C     14,IN2LEN
-         BL    RD2CHAR
-         CLI   IN2NL,X'01'
-         BE    RD2NL
-         GET   BCPIN2,IN2BUF
-         LA    14,80
-         LA    10,IN2BUF+79
-RD2TRIM  LTR   14,14
-         BZ    RD2TDONE
-         CLI   0(10),C' '
-         BNE   RD2TDONE
-         BCTR  14,0
-         BCTR  10,0
-         B     RD2TRIM
-RD2TDONE ST    14,IN2LEN
-         XC    IN2POS(4),IN2POS
-         MVI   IN2NL,X'01'
-         LTR   14,14
-         BZ    RD2NL
-         SR    14,14
-         B     RD2CHAR
-RD2NL    MVI   IN2NL,X'00'
-         L     14,IN2LEN
-         ST    14,IN2POS
-         LA    7,10
-         B     RD2RET
-RD2CHAR  LA    10,IN2BUF
-         AR    10,14
-         SR    7,7
-         IC    7,0(10)
-         LA    14,1(14)
-         ST    14,IN2POS
-         B     RD2RET
-RD2PUSH  MVI   IN2PUSH,X'00'
-         L     7,IN2LAST
-         B     RD2RET
-RD2END   L     7,INENDVAL
-RD2RET   ST    7,IORESULT
-         ST    7,IN2LAST
-         MVI   IN2SEEN,X'01'
-         LM    0,15,IOSAVE
-         L     7,IORESULT
-         L     4,0(5)
-         BCR   15,6
-*
-* UNRDCH repeats the last RDCH result once for this selected stream.
-UNRDCHEN L     14,INCURR
-         LA    10,PMCTRL
-         SRL   10,2
-         CR    14,10
-         BE    UNRDPM
-         LA    10,IN2CTRL
-         SRL   10,2
-         CR    14,10
-         BE    UNRD2
-         CLI   INSEEN,X'01'
-         BNE   UNRDRET
-         MVI   INPUSH,X'01'
-         B     UNRDRET
-UNRDPM   CLI   PMSEEN,X'01'
-         BNE   UNRDRET
-         MVI   PMPUSH,X'01'
-         B     UNRDRET
-UNRD2    CLI   IN2SEEN,X'01'
-         BNE   UNRDRET
-         MVI   IN2PUSH,X'01'
-UNRDRET  L     4,0(5)
-         BCR   15,6
-*
-* ENDREAD closes the selected BCPIN input stream and clears state.
-ENDRDENT STM   0,15,IOSAVE
-         L     14,INCURR
-         LA    10,PMCTRL
-         SRL   10,2
-         CR    14,10
-         BE    ENDRPM
-         LA    10,IN2CTRL
-         SRL   10,2
-         CR    14,10
-         BE    ENDR2
-         L     14,INCURR
-         LTR   14,14
-         BZ    ENDRDONE
-         CLI   INOPEN,X'01'
-         BNE   ENDRCLR
-         CLOSE (BCPIN)
-         MVI   INOPEN,X'00'
-ENDRCLR  XC    INCURR(4),INCURR
-         MVI   INEOF,X'00'
-         MVI   INNL,X'00'
-         MVI   INPUSH,X'00'
-         MVI   INSEEN,X'00'
-         MVC   INPOS(4),ININIT
-         B     ENDRDONE
-ENDRPM   XC    INCURR(4),INCURR
-         XC    PMPOS(4),PMPOS
-         MVI   PMNL,X'00'
-         MVI   PMPUSH,X'00'
-         MVI   PMSEEN,X'00'
-         B     ENDRDONE
-ENDR2    CLI   IN2OPEN,X'01'
-         BNE   ENDR2CLR
-         CLOSE (BCPIN2)
-         MVI   IN2OPEN,X'00'
-ENDR2CLR XC    INCURR(4),INCURR
-         MVI   IN2EOF,X'00'
-         MVI   IN2PUSH,X'00'
-         MVI   IN2SEEN,X'00'
-ENDRDONE EQU   *
-         LM    0,15,IOSAVE
-         L     4,0(5)
-         BCR   15,6
-*
-* EODAD receives control from the QSAM GET access method.
-IN2ATEND MVI   IN2EOF,X'01'
-         B     RD2END
-INATEND  MVI   INEOF,X'01'
-         B     RDEND
+* D4 input handlers now reside in BCPLIO.
+
 *
 ***********************************************************************
-* WRCH -- FIRST NATIVE CHARACTER OUTPUT
-*
-* G14 WRCH receives the target EBCDIC character in R7.  For the first
-* output milestone it appends bytes to one 132-byte SYSPRINT record.
-* FINISH writes the buffered record.  Explicit CLOSE is deferred.
-* Job 956 showed the first WIP CLOSE path looping until S322.
-* Newline and general stream semantics remain future work.
-*
-* No MVS macro I/O occurs inside WRCH.
-*
-* Job 960 established an additional machine-routine return contract:
-* generated code may branch relative to R4 immediately after a call.
-* Procedure entry saved the caller B value at 0(R5).
-* Native primitives restore R4 from that slot before returning via R6.
-* R0 and R1-R3 are permanent generated-code registers.
-* Native primitives preserve them.
+* BCPL output services and both QSAM DCBs are owned by BCPLIO.
+* G14/G12/G16/G17/G41/G47 point to independent entries.
 ***********************************************************************
-WRCH     L     14,OUTCURR
-         LA    4,OUT2CTL
-         SRL   4,2
-         CR    14,4
-         BE    WROUT2
-         C     7,OUTLF
-         BE    WROUT1
-         L     14,OUTPOS
-         LA    4,132
-         CR    14,4
-         BNL   WROVFL1
-         LA    4,OUTBUF
-         AR    4,14
-         STC   7,0(4)
-         LA    14,1(14)
-         ST    14,OUTPOS
-WRCHRTN  L     4,0(5)
-         BCR   15,6
-WROUT1   STM   0,15,OUTSVREG
-         PUT   BCPOUT,OUTBUF
-         XC    OUTPOS(4),OUTPOS
-         MVI   OUTBUF,C' '
-         MVC   OUTBUF+1(131),OUTBUF
-         LM    0,15,OUTSVREG
-         B     WRCHRTN
-WROVFL1  LA    7,12
-         B     STOPENT
-*
-***********************************************************************
-*
-* Separate named output DCB, simultaneous with default SYSPRINT.
-* This first implementation uses one static BCPL descriptor per DD.
-* Preserve R0-R3, R5, R6, R15 across QSAM services.
-FINDOUT  STM   0,15,OUTSVREG
-         LR    14,7
-         SLL   14,2
-         CLI   0(14),X'08'
-         BNE   FOTRY2
-         CLC   1(8,14),OUT1NAME
-         BNE   FOTRY2
-         LA    7,OUT1CTL
-         SRL   7,2
-         B     FORET
-FOTRY2   CLI   0(14),X'06'
-         BNE   FONOTFD
-         CLC   1(6,14),OUT2NAME
-         BNE   FONOTFD
-         CLI   OUT2OPEN,X'01'
-         BE    FOGOT
-         OPEN  (BCPOUT2,(OUTPUT))
-         MVI   OUT2OPEN,X'01'
-         XC    OUT2POS(4),OUT2POS
-         MVI   OUT2BUF,C' '
-         MVC   OUT2BUF+1(131),OUT2BUF
-FOGOT    LA    7,OUT2CTL
-         SRL   7,2
-         B     FORET
-FONOTFD  SR    7,7
-FORET    ST    7,OUTRES
-         LM    0,15,OUTSVREG
-         L     7,OUTRES
-         L     4,0(5)
-         BCR   15,6
-*
-* Bootstrap WRAPOUTPUT: finish selected alternate logical record.
-WRAPENT  STM   0,15,OUTSVREG
-         L     14,OUTCURR
-         LA    4,OUT2CTL
-         SRL   4,2
-         CR    14,4
-         BNE   WRAPRET
-         PUT   BCPOUT2,OUT2BUF
-         XC    OUT2POS(4),OUT2POS
-         MVI   OUT2BUF,C' '
-         MVC   OUT2BUF+1(131),OUT2BUF
-WRAPRET  LM    0,15,OUTSVREG
-         L     4,0(5)
-         BCR   15,6
-*
-OUTENT   L     7,OUTCURR
-         L     4,0(5)
-         BCR   15,6
-*
-SELOUT   LA    14,OUT2CTL
-         SRL   14,2
-         CR    7,14
-         BE    SO2
-         LA    14,OUT1CTL
-         SRL   14,2
-         CR    7,14
-         BNE   SOR
-SO2      LA    14,OUT2CTL
-         SRL   14,2
-         CR    7,14
-         BNE   SOSET
-         CLI   OUT2OPEN,X'01'
-         BNE   SOR
-SOSET    ST    7,OUTCURR
-SOR      L     4,0(5)
-         BCR   15,6
-*
-* Selected BCPALT path. A BCPL newline ends one QSAM record.
-* The 132-byte buffer is reset to blank after each PUT.
-WROUT2   STM   0,15,OUTSVREG
-         C     7,OUTLF
-         BE    WO2PUT
-         L     14,OUT2POS
-         C     14,OUTMAX
-         BNL   WROVFL2
-         LA    4,OUT2BUF
-         AR    4,14
-         STC   7,0(4)
-         LA    14,1(14)
-         ST    14,OUT2POS
-         B     WO2RET
-WO2PUT   PUT   BCPOUT2,OUT2BUF
-         XC    OUT2POS(4),OUT2POS
-         MVI   OUT2BUF,C' '
-         MVC   OUT2BUF+1(131),OUT2BUF
-         B     WO2RET
-WROVFL2 LM    0,15,OUTSVREG
-         LA    7,12
-         B     STOPENT
-WO2RET   LM    0,15,OUTSVREG
-         L     4,0(5)
-         BCR   15,6
-*
-* Explicit close of selected named output. Default SYSPRINT continues
-* through the existing FINISH-owned path.
-ENDWENT  STM   0,15,OUTSVREG
-         L     14,OUTCURR
-         LA    4,OUT2CTL
-         SRL   4,2
-         CR    14,4
-         BNE   EWRETURN
-         CLI   OUT2OPEN,X'01'
-         BNE   EWCLEAR
-         L     1,OUT2POS
-         LTR   1,1
-         BZ    EWCLOSE
-         PUT   BCPOUT2,OUT2BUF
-EWCLOSE  CLOSE (BCPOUT2)
-         MVI   OUT2OPEN,X'00'
-EWCLEAR  LA    14,OUT1CTL
-         SRL   14,2
-         ST    14,OUTCURR
-EWRETURN LM    0,15,OUTSVREG
-         L     4,0(5)
-         BCR   15,6
 *
 * WRITEF -- LITERAL + %N/%C/%S/%I/%X/%O BOOTSTRAP
 *
@@ -1572,7 +1083,7 @@ EWRETURN LM    0,15,OUTSVREG
 * adds the historical %I width path; Test 060 adds A-F width digits.
 *
 * BCPL strings use a length byte at byte offset zero followed by data
-* bytes.  Literal bytes are copied to OUTBUF.  A '%' followed by 'N'
+* Literal bytes use the BCPL output service. '%' followed by 'N'
 * emits signed decimal; %C emits one character; %S emits a BCPL
 * string; %I consumes one width character and emits signed decimal
 * right-justified in that field. %X and %O consume one width
@@ -1591,7 +1102,7 @@ WRITEST  STM   2,6,WFREGSV
          SR    8,8
          IC    8,0(14)
          LA    14,1(14)
-         L     9,OUTPOS
+         SR    9,9
 WFLITLP  LTR   8,8
          BZ    WFLITDN
          SR    7,7
@@ -1850,22 +1361,33 @@ WFLAST   L     6,WFARGIX
          L     7,0(4)
          BR    10
 *
-* Append R7 low byte to OUTBUF when room remains.  R9 is OUTPOS.
+* Append R7 low byte through the installed BCPL output service.
 * Return through R10, which is scratch for this bootstrap WRITEF.
 *
 WFPUTC   LA    6,132
          CR    9,6
          BNL   WFPUTRT
-         LA    6,OUTBUF
+         LA    6,WFBUF
          AR    6,9
          STC   7,0(6)
          LA    9,1(9)
 WFPUTRT  BR    10
-WFLITDN  ST    9,OUTPOS
+WFLITDN  ST    9,WFLEN
          LM    2,6,WFREGSV
+         STM   0,15,WFALLSV
+         LR    8,10
+         LA    1,WFBUF
+         L     2,WFLEN
+         L     9,=A(IODIAG)
+         BALR  14,9
+         LR    10,8
+         LM    0,15,WFALLSV
          L     4,0(5)
          BCR   15,6
 *
+WFALLSV  DS    16F
+WFLEN    DC    F'0'
+WFBUF    DS    CL132
 WFREGSV  DS    5F
 WFARGS   DS    2F
 WFARGIX  DC    F'0'
@@ -1912,7 +1434,8 @@ WFDECZN  DS    CL15
 * BCPLMEM external allocator routines.
 *
 ***********************************************************************
-DEBUGINT LTR   7,7
+DEBUGINT XC    DBGPOS(4),DBGPOS
+         LTR   7,7
          BNM   DBGCVT
          LA    10,C'-'
          BAL   14,DBGAPND
@@ -1933,20 +1456,28 @@ DBGOUT   SR    10,10
          BAL   14,DBGAPND
          LA    8,1(8)
          BCT   9,DBGOUT
+         STM   0,15,DBGSV
+         LR    8,10
+         LA    1,DBGBUF
+         L     2,DBGPOS
+         L     9,=A(IODIAG)
+         BALR  14,9
+         LR    10,8
+         LM    0,15,DBGSV
          L     4,0(5)
          BCR   15,6
 *
 * Append one EBCDIC byte from R10.  R14 is local linkage.
 *
-DBGAPND  L     4,OUTPOS
+DBGAPND  L     4,DBGPOS
          LA    7,132
          CR    4,7
          BNL   DBGARET
-         LA    7,OUTBUF
+         LA    7,DBGBUF
          AR    7,4
          STC   10,0(7)
          LA    4,1(4)
-         ST    4,OUTPOS
+         ST    4,DBGPOS
 DBGARET  BR    14
 *
 ***********************************************************************
@@ -1965,8 +1496,6 @@ MSVFREE  DC    F'0'              G6!48, byte-pointer free-area head
 MBRT10   DC    F'0'
 * Original MVS EXEC parameter list (R1), retained at entry.
 PARMLIST DC    F'0'
-PMMASK   DC    X'7FFFFFFF'
-PMMAX    DC    F'100'
 MODBASE  DC    F'0'
 MODEND   DC    F'0'
 TRAILER  DC    F'0'
@@ -1992,83 +1521,20 @@ DYNEND   DC    F'0'
 RELRET   DC    F'0'
 STOPRC   DC    F'0'
 *
-* Regression 03 output state.  SYSPRINT is supplied by the GO step.
-* Historical stream/DCB support was richer; this is only the first
-* observable character-output rung.  Normal step termination currently
-* owns DCB cleanup; explicit CLOSE remains under reconstruction.
+* DEBUGINT state remains local; QSAM stream state belongs to BCPLIO.
 *
+DBGSV    DS    16F
+DBGPOS   DC    F'0'
+DBGBUF   DS    CL132
 DECPACK  DS    D
 DECZON   DS    CL15
-OUTPOS   DC    F'0'
-OUTBUF   DS    CL132
-BCPOUT   DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
-*
-*
-* Two simultaneously open logical output destinations (SYSPRINT,
-* BCPALT). The second DCB is explicitly supplied by regression JCL.
-         DS    0F
-OUT1CTL  DC    F'1'
-OUT2CTL  DC    F'2'
-OUTCURR  DC    F'0'
-OUTRES DC   F'0'
-OUT2POS  DC    F'0'
-OUTMAX   DC    F'132'
-OUTLF    DC    F'10'
-OUT1NAME DC    CL8'SYSPRINT'
-OUT2NAME DC    CL6'BCPALT'
-OUT2OPEN DC    X'00'
-         DS    0F
-OUTSVREG DS    16F
-OUT2BUF  DS    CL132
-BCPOUT2  DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
+* Retired obsolete local output DCBs, buffers, and stream handles.
+
 *
 * MVS EXEC PARM pseudo-stream: independently selectable via FINDPARM.
 * No DCB/GET: PARM bytes are held by MVS for this task step.
          DS    0F
-PMCTRL   DC    F'3'
-PMINIT   DC    X'00'
-PMNL     DC    X'00'
-PMPUSH   DC    X'00'
-PMSEEN   DC    X'00'
-PMPOS    DC    F'0'
-PMLEN    DC    F'0'
-PMADDR   DC    F'0'
-PMLAST   DC    F'0'
-*
-* One-stream bootstrap input controls for native regression 094.
-         DS    0F
-IN2CTRL  DC    F'2'
-IN2NAME  DC    CL6'BCPINB'
-IN2OPEN  DC    X'00'
-IN2EOF   DC    X'00'
-IN2NL    DC    X'00'
-IN2PUSH  DC    X'00'
-IN2SEEN  DC    X'00'
-         DS    0F
-IN2POS   DC    F'80'
-IN2LEN   DC    F'80'
-IN2LAST  DC    F'0'
-IN2BUF   DS    CL80
-BCPIN2   DCB   DDNAME=BCPINB,DSORG=PS,MACRF=GM,EODAD=IN2ATEND
-INCTRL   DC    F'1'
-INCURR DC   F'0'
-INRECLEN DC    F'80'
-INNL     DC    X'00'
-INPUSH   DC    X'00'
-INSEEN   DC    X'00'
-         DS    0F
-INLAST   DC    F'0'
-INENDVAL DC    F'-1'
-INPOS    DC    F'80'
-ININIT   DC    F'80'
-INNAME   DC    CL5'BCPIN'
-INOPEN   DC    X'00'
-INEOF    DC    X'00'
-         DS    0F
-IORESULT DC    F'0'
-IOSAVE   DS    16F
-INBUF    DS    CL80
-BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,EODAD=INATEND
+* Input/PARM state, DCBs and EODAD are BCPLIO-owned.
 
 *
 * Stack marker initialization and historical clearance remain separate

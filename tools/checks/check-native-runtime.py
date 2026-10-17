@@ -46,7 +46,7 @@ def validate(runtime: Path, injector: Path) -> list[str]:
 
 
 def main() -> int:
-    runtime = ROOT / "asm/bcplmain-wip.asm"
+    runtime = ROOT / "native-compiler/asm/history/bcplmain-wip.asm"
     injector = (ROOT / "native-compiler/regression/"
                 "069-independent-blib-object/prepare-stage2.py")
     try:

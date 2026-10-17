@@ -14,7 +14,7 @@ def main():
     main = OUT / "bcplmain-pds.asm"
     main.unlink(missing_ok=True)
     subprocess.run([sys.executable, str(ROOT / "tools/checks/externalize-bcplmem.py"),
-                    str(ROOT / "asm/bcplmain-wip.asm"), str(main)], check=True)
+                    str(ROOT / "native-compiler/asm/history/bcplmain-wip.asm"), str(main)], check=True)
     src = main.read_text(encoding="ascii")
     needle = "BCPLMAIN CSECT\n"
     if src.count(needle) != 1 or "STKOVFL" not in src:
@@ -37,7 +37,7 @@ def main():
     if src.count("EXTRN BLIB") != 1:
         raise RuntimeError("BLIB registration is missing")
     main.write_text(src, encoding="ascii", newline="\n")
-    files = [main, ROOT / "asm/bcplmem.asm",
+    files = [main, ROOT / "native-compiler/asm/bcplmem.asm",
              ROOT / "jcl/build-bcplmain-objects.jcl"]
     for path in files[:2]:
         subprocess.run([sys.executable, str(ROOT / "tools/checks/check-asm-source.py"),

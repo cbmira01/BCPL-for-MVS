@@ -81,7 +81,7 @@ def main() -> None:
         deck = intermediate.read_text(encoding="ascii")
     finally:
         intermediate.unlink(missing_ok=True)
-    runtime_source = ROOT / "asm/bcplmain-wip.asm"
+    runtime_source = ROOT / "native-compiler/asm/history/bcplmain-wip.asm"
     # Test-only, fail-closed transformation; never modify canonical source.
     for opt, helper in (
         (args.external_byte, "externalize-bcplbyte.py"),
@@ -115,13 +115,13 @@ def main() -> None:
     # BCPLMAIN, while retaining the resident BLIB object PDS INCLUDE.
     extra = []
     if args.external_byte:
-        extra.append(("ASMBYTE", "BYTOBJ", ROOT / "asm/bcplbyte.asm"))
+        extra.append(("ASMBYTE", "BYTOBJ", ROOT / "native-compiler/asm/bcplbyte.asm"))
     if args.external_apt:
         extra.append(("ASMAPT", "APTOBJ",
                       ROOT / "tools/checks/bcplapt-linkage-probe.asm"))
     if args.external_mem:
         extra.append(("ASMMEM", "MEMOBJ",
-                      ROOT / "asm/bcplmem.asm"))
+                      ROOT / "native-compiler/asm/bcplmem.asm"))
     previous = "ASMRUN"
     for step, obj, source in extra:
         cards = source.read_text(encoding="ascii").rstrip("\n")

@@ -4,8 +4,8 @@ import re
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-old = (root / "asm/bcplmain-wip.asm").read_text(encoding="ascii")
-new = (root / "asm/bcplbyte.asm").read_text(encoding="ascii")
+old = (root / "native-compiler/asm/history/bcplmain-wip.asm").read_text(encoding="ascii")
+new = (root / "native-compiler/asm/bcplbyte.asm").read_text(encoding="ascii")
 
 def instructions(text, begin, stop):
     lines = text.splitlines()

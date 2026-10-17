@@ -359,12 +359,12 @@ fi
 
 combined="$work/native-test.asm"
 # Opt-in only: the standard native regression runtime remains the baseline.
-runtime_source="$root/asm/bcplmain-wip.asm"
+runtime_source="$root/native-compiler/asm/history/bcplmain-wip.asm"
 if [[ ${BCPLMAIN_MODULAR_SOURCE:-0} == 1 ]]; then
     runtime_source="$work/bcplmain-modular.asm"
     python3 "$root/tools/checks/check-bcplmain-modules.py" \
         --output "$runtime_source" || exit $?
-    cmp -s "$root/asm/bcplmain-wip.asm" "$runtime_source" || {
+    cmp -s "$root/native-compiler/asm/history/bcplmain-wip.asm" "$runtime_source" || {
         echo "run-test: modular BCPLMAIN differs from baseline" >&2
         exit 66
     }
@@ -531,9 +531,9 @@ if [[ $apt_object == 1 ]]; then
 fi
 if [[ $byte_object == 1 ]]; then
     python3 "$root/tools/checks/check-asm-source.py" \
-        "$root/asm/bcplbyte.asm" || exit $?
+        "$root/native-compiler/asm/bcplbyte.asm" || exit $?
 fi
-mem_source="$root/asm/bcplmem.asm"
+mem_source="$root/native-compiler/asm/bcplmem.asm"
 if [[ $mem_object == 1 && $test_num == 83 ]]; then
     mem_source="$work/bcplmem-object-probe/bcplmem-083-instrumented.asm"
 fi
@@ -550,7 +550,7 @@ if [[ -f "$native" ]]; then
     objects+=("$native")
 fi
 if [[ $byte_object == 1 ]]; then
-    objects+=("$root/asm/bcplbyte.asm")
+    objects+=("$root/native-compiler/asm/bcplbyte.asm")
 fi
 if [[ $apt_object == 1 ]]; then
     objects+=("$root/tools/checks/bcplapt-linkage-probe.asm")
