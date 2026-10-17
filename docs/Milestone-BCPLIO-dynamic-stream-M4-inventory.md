@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0 negative-name compiled BCPL regression 134 STAGED; no M4 MVS execution or runtime change yet**
+Status: **M4.0 targeted invalid-DD regression 134 ACCEPTED; complete 00..134 compatibility sweep pending; M4.1–M4.3 open**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -134,3 +134,47 @@ The last full accepted panel remains 00..132:
 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 133 is accepted as a focused M3 PASS; a full 00..134 sweep
 is reserved for after candidate test 134 passes.
+
+## M4.0 gate acceptance — regression 134 (MVS 2026-10-17)
+
+Following the source and fixture staging described above, the
+operator pulled `main` through `3678e54` and ran
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ
+BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+tools/native/run-regression 134 --show-output`.
+Reported:
+
+```text
+NATIVE REGRESSION 134..134 (1 tests)
+RUN 134 134-dynamic-dd-invalid-name-preservation
+PASS 134 134-dynamic-dd-invalid-name-preservation
+PASS 1
+FAIL 0
+SKIP 0
+TOTAL 1
+```
+
+**ACCEPTED:** M4.0 ordinary invalid-name/unallocated-DD
+FINDINPUT/FINDOUTPUT behavior. The permanent compiled-BCPL test
+checks that empty, >8-character, invalid-leading-digit,
+invalid-embedded-hyphen, and unallocated `NOFILE` names all
+return zero, preserve selected handles, preserve the input
+cursor, and do not prevent subsequent valid duplicate FIND.
+The test's success marker and REPORT logical fixture were
+accepted by the combined-JES checker. It did not test actual
+QSAM OPEN failures, GETMAIN exhaustion, SVC 19/20 call counts,
+or exact physical REPORT DD association. No installed BCPLIO
+module or candidate object changed.
+
+The accepted full `00..132` panel remains **132 PASS /
+0 FAIL / one expected SKIP 083**; the new 133 and 134
+cases have both passed *individually*. They have not yet
+been demonstrated together with the complete older panel.
+
+**Next checkpoint:** complete DEVOBJ `00..134`, expected
+**134 PASS, 0 FAIL, 1 expected SKIP 083, TOTAL 135**.
+After a green compatibility gate, prepare an explicit isolated
+fault-injection design and acceptance criteria for allocation
+failures in 32-, 268- and 16-byte GETMAIN and for incompatible
+QSAM OPEN before modifying any assembler. Keep instrumentation
+private, rebuildable and limited to DEVOBJ or isolated probes.
