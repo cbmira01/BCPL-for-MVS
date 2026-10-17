@@ -85,7 +85,8 @@ def validate_generated_sources(paths: list[Path]) -> None:
     except (OSError, UnicodeError, ValueError) as exc:
         raise DspalError(f"invalid generated bootstrap manifest: {exc}") from exc
 
-    if data.get("format") != 1 or not isinstance(data.get("inputs"), dict) \
+    if not isinstance(data, dict) or data.get("format") != 1 \
+            or not isinstance(data.get("inputs"), dict) \
             or not isinstance(data.get("outputs"), dict):
         raise DspalError("invalid generated bootstrap manifest structure")
 
@@ -194,7 +195,7 @@ def report_missing_generated(missing: list[str]) -> bool:
         return False
     print(
         f"dspal: {len(missing)} generated member(s) unavailable; "
-        "ready members were processed; run prepare-bootstrap --with-trnilrg "
+        "run prepare-bootstrap --with-trnilrg "
         "after installing ICINT19, then repeat 'dspal populate all':",
         file=sys.stderr,
     )
