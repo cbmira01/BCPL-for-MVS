@@ -1,0 +1,81 @@
+// M3: independent dynamic input and output while switching direction.
+GLOBAL $( START:1; SELECTINPUT:11; SELECTOUTPUT:12; RDCH:13;
+          WRCH:14; INPUT:16; OUTPUT:17; STOP:30; FINDOUTPUT:41;
+          FINDINPUT:42; ENDREAD:46; ENDWRITE:47; WRITES:60 $)
+
+LET START() BE
+$(1
+    LET MAIN = OUTPUT()
+    LET I = FINDINPUT("DD01")
+    LET J = FINDINPUT("DD02")
+    LET X = FINDOUTPUT("REPORT")
+    LET Y = FINDOUTPUT("REPORT2")
+
+    IF I=0 | J=0 | X=0 | Y=0 DO STOP(8)
+    IF I=J | X=Y DO STOP(8)
+
+    SELECTOUTPUT(X)
+    IF OUTPUT() NE X DO STOP(8)
+    WRITES("REPORT A")
+
+    SELECTINPUT(I)
+    IF INPUT() NE I DO STOP(8)
+    IF RDCH() NE 'A' DO STOP(8)
+
+    SELECTOUTPUT(Y)
+    IF OUTPUT() NE Y DO STOP(8)
+    WRITES("REPORT2 Q")
+
+    SELECTINPUT(J)
+    IF INPUT() NE J DO STOP(8)
+    IF RDCH() NE 'Q' DO STOP(8)
+
+    // Both output buffers remain pending while input cursors move.
+    SELECTOUTPUT(X)
+    IF OUTPUT() NE X DO STOP(8)
+    WRITES("B")
+    WRCH(10)
+
+    SELECTINPUT(I)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE 'B' DO STOP(8)
+
+    SELECTOUTPUT(Y)
+    IF OUTPUT() NE Y DO STOP(8)
+    WRITES("R")
+    WRCH(10)
+
+    SELECTINPUT(J)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE 'R' DO STOP(8)
+
+    SELECTOUTPUT(X)
+    WRITES("SECOND 1")
+    WRCH(10)
+
+    SELECTINPUT(I)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE -1 DO STOP(8)
+
+    SELECTOUTPUT(Y)
+    WRITES("SECOND 2")
+    WRCH(10)
+
+    SELECTINPUT(J)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE -1 DO STOP(8)
+
+    ENDREAD()
+    SELECTINPUT(I)
+    ENDREAD()
+
+    SELECTOUTPUT(X)
+    ENDWRITE()
+    SELECTOUTPUT(Y)
+    ENDWRITE()
+
+    IF OUTPUT() NE MAIN DO STOP(8)
+    WRITES("BCPL MIXED STREAM OK")
+    WRCH(10)
+    FINISH
+$)1
