@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M5.1 acquisition feasibility
 
-**Status: M5.1.1 printer routing ACCEPTED (JOB 8184, 2026-10-17); M5.1.2 lossless dynamic REPORT/REPORT2 FB132 feasibility NEXT; original JES2 raw spool remains UNVERIFIED.**
+**Status: M5.1.1 printer routing ACCEPTED (JOB 8184, 2026-10-17); M5.1.2 dual-dataset QSAM FB132 probe STAGED for offline review, not submitted; JES2 raw spool remains UNVERIFIED.**
 Predecessor: M5.0 evidence contract **ACCEPTED** by the owner.
 [M5.0 contract](Milestone-BCPLIO-dynamic-stream-M5.0-contract.md).
 
@@ -175,3 +175,63 @@ capture exists, its provenance and raw-byte limitations
 are recorded, and the chosen acquisition strategy is
 accepted. M5.0 approval does not authorize promotion to
 production OBJ or runtime/ABI changes.
+
+## M5.1.2 — separate FB132 sequential dataset readback (STAGED)
+
+The owner-approved scope requires physical record contents, not
+just formatted printer text. As the next acquisition *feasibility*
+experiment, the non-submitting source generator
+`tools/checks/m51-fb132-dataset-probe.py` reuses
+regression 124's existing DEVOBJ BCPLM6
+`runtime-pds-go.jcl` and immutable REPORT/REPORT2
+expected fixtures. It changes only the GO DD allocation targets:
+
+- REPORT -> unique temporary FB132 sequential dataset &&M5RPT1;
+- REPORT2 -> unique temporary FB132 sequential dataset &&M5RPT2.
+
+It appends separate IFOX `VASM`, IEWL
+`VLINK` and independent native QSAM
+`VCHK` steps. The verifier GETs both
+datasets independently; each record's full **132 EBCDIC
+bytes** are compared using `CLC` against
+explicit assembler CL132 blank-padded literals.
+The checker fails if a record differs, is missing,
+is reordered, or is added unexpectedly.
+
+**Preparation only — offline, no submission:**
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+python3 tools/checks/test-m51-fb132-dataset-probe.py
+python3 tools/checks/m51-fb132-dataset-probe.py prepare
+```
+
+Generator fail-closed checks include the exact
+RG124R candidate GO job, BCPLM6 and BCPLIO
+linkage, original DD placement and the immutable
+regression 124 fixtures. It refuses to overwrite
+staged outputs. It writes only untracked files under
+`workarea/native-regression/124-dynamic-dd-selected-output/`:
+
+- m51-fb132-dataset.jcl — isolated job M5D124R;
+- m51-fb132-verifier.asm — independent machine-byte checker;
+- m51-fb132-dataset.json — source/fixture/probe hashes.
+
+**No job is authorized for automatic submission by
+this tool.** Review the generated assembler and JCL,
+and report the five offline unit-test results plus
+whether the candidate deck was prepared before
+deciding to run the one isolated job. If submitted
+later, acceptance requires ASMAP, LKED, GO, VASM,
+VLINK, VCHK all with RC0000 and no abend.
+
+A successful result would prove the identity and
+byte-for-byte contents of two *physically separate
+temporary sequential QSAM datasets*. It would
+**not** prove unchanged JES2 SYSOUT spool content.
+Original DD-labelled raw spool fidelity remains
+a distinct evidence obligation under the strict
+M5.0 contract, not silently waived by a dataset test.
+
+**M5.1.2 remains STAGED, not executed. M5.1 OPEN.**

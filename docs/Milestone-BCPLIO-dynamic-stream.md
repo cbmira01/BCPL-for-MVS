@@ -5,6 +5,22 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M5.1.2 — independent FB132 dataset probe staged (2026-10-17)
+
+M5.1.1's accepted JOB 8184 physical class routing
+still lacks original record bytes. A separate
+[M5.1.2 acquisition experiment]
+(Milestone-BCPLIO-dynamic-stream-M5.1-plan.md)
+now stages a non-submitting regression-124
+DEVOBJ program, writing REPORT and REPORT2 to
+two temporary FB132 datasets. A second independent
+IFOX/IEWL verifier will QSAM GET and compare
+the entire 132 EBCDIC bytes of every record.
+Only source files and offline test definitions
+are committed; no MVS job has been submitted
+for this experiment. It proves dataset semantics
+if accepted, not untouched JES spool bytes.
+
 ## M5.1.1 route evidence — accepted 2026-10-17
 
 After 10/10 existing attribution unit tests, 6/6 new
