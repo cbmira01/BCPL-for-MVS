@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; DEVOBJ 00..132 full panel 132 PASS/0 FAIL/skip 083; M3 review and M4–M5 open  
+Status: M0/M1/M2 accepted; DEVOBJ 00..132 132 PASS/0 FAIL/skip 083; M3 test 133 staged; M4 inventory done, M4–M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -145,6 +145,31 @@ QSAM rewind behavior. The full M2 record is
 M3 mixed input/output and strict physical DD attribution need an
 explicit exit review; M4 failure-path/accounting and M5 integration
 remain open. Production `NATIVE.OBJ` stays unchanged.
+
+## Following march preparation — M3/M4 (2026-10-17)
+
+Following formal M2 closure, reviewed the parent milestone's
+outstanding **mixed-stream** requirement before attempting M4.
+Existing dynamic output, duplicate FIND, termination-flush and
+reopen behavior have substantial compiled-BCPL evidence.
+However, the current combined JES checker cannot independently
+prove physical DD attribution. These are different issues.
+
+- [M3 output/mixed-stream review](Milestone-BCPLIO-dynamic-stream-M3-review.md)
+  records accepted previous evidence and stages permanent candidate-only
+  **regression 133**, two dynamic inputs interleaved with two
+  independently buffered named dynamic outputs. **Not yet run.**
+- [M4 failure/lifecycle inventory](Milestone-BCPLIO-dynamic-stream-M4-inventory.md)
+  maps existing `IONORM`, `DDVERIFY`, `DALLOC`,
+  `HNEW`, `DQOPEN`, `DQCLOSE`, `DREL` and
+  `IODRAIN` to failure and resource-accounting proof
+  obligations. No new M4 tests or runtime changes have run.
+
+Full milestone closure still requires M3 exit evidence,
+M4 deterministic failure/resource accounting, and M5
+lossless DD-specific physical attribution, documentation,
+and final full-panel acceptance. Production OBJ has not been
+modified or promoted.
 
 ## Handoff / next-conversation prompt
 
