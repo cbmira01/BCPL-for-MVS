@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; real OPEN probe JOB 7874 returned HANDLE (no failure); M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; 138 synthetic OPEN PASS; JOB 7874 returned HANDLE; M4.2.2 PDS probe staged; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -454,6 +454,26 @@ Next explore a nonmember, read-only PDS as a QSAM
 input DD, preserving exact JES diagnostics.
 No canonical BCPLIO or installed object changed.
 Full native regression remains deferred.
+
+
+## M4.2.2 PDS-without-member diagnostic staged
+
+Given that JOB 7874 successfully returned a
+`FINDINPUT("DD02")` handle for a SYSOUT-allocated
+DD, staged a different read-only QSAM input OPEN
+candidate: `DD02 DD DSN=SYS1.MACLIB,DISP=SHR`,
+a partitioned dataset **without a member**.
+A separate exploratory `RG891R` builder generates
+the JCL from the existing Cambridge assembler
+produced by JOB 7873; no new compiler job or
+canonical runtime source modifications are required.
+
+Full instructions:
+[native-compiler/probes/m42-pds-open/README.md](../native-compiler/probes/m42-pds-open/README.md).
+The job has **NOT been prepared or submitted on TK5**
+and a failing OPEN is not assumed. Record the actual
+IEC/IEF/program results before any M4.2 closure.
+The full regression panel stays owner-deferred.
 
 ## Handoff / next-conversation prompt
 
