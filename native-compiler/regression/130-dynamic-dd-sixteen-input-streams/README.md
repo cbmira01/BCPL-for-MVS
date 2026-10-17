@@ -1,6 +1,25 @@
 # 130 — Sixteen simultaneous dynamic input DD streams
 
-**Status: STAGED for first MVS execution. NOT YET ACCEPTED.**
+**Status: CAMBRIDGE CODE RECOVERY BLOCKED ON FIRST TRY; COMPACT
+SOURCE RETEST STAGED, NOT YET ACCEPTED.** The first candidate-only
+MVS run used the original 438-line unrolled BCPL source. Cambridge
+JOB **7328 RG130C** reported `COMP ICINT19 RC=0000` but the next
+`SVCODE IEBGENER RC=0012`; the driver could not recover generated
+assembler, and no native IFOX/LKED/GO execution took place.
+This does **not** establish a sixteen-stream runtime failure.
+
+Source-only commit `ded524f` replaces repetitive unrolled assertions
+with previously regression-validated `FOR` loops and variable vector
+subscripts, reducing source from 438 to 121 nonterminal lines while
+retaining sixteen simultaneous FINDINPUTs, all 120 pairwise identity
+comparisons, independent data/newline/EOF tests, and stale-handle
+checks. The DD fixtures, expected record and DEVOBJ objects are
+unchanged. Its first MVS run is pending.
+
+The exact reason for IEBGENER RC0012 is **not yet established**.
+JOB 7328's detailed compiler/SVCODE report will be needed if the
+compact test also fails. Avoid asserting that source size alone
+caused the error.
 
 This permanent candidate-only compiled Cambridge-BCPL regression is
 the M2 concurrency threshold beyond the twelve-stream regression 126.
