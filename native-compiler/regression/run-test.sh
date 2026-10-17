@@ -194,6 +194,29 @@ if [[ $runtime_pds == 1 ]]; then
             --mode "$fault_mode" || exit $?
         pds_args+=(--test-io-asm "$fault_asm")
     fi
+    # M4.2: separate, fail-closed synthetic DQOPEN denial before SVC 19.
+    if [[ -f "$case_dir/io-open-fault.txt" ]]; then
+        if [[ -f "$case_dir/io-fault-mode.txt" ]]; then
+            echo "run-test: cannot combine M4.1 and M4.2 faults" >&2
+            exit 64
+        fi
+        if [[ ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
+              ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
+              ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
+            echo "run-test: M4.2 fault requires DEVOBJ BCPLM6" >&2
+            exit 64
+        fi
+        [[ $(tr -d '\r\n' < "$case_dir/io-open-fault.txt") == before-svc19 ]] || {
+            echo "run-test: unsupported M4.2 OPEN failure mode" >&2
+            exit 64
+        }
+        fault_asm="$work/bcplio-m42-open.asm"
+        echo "=== Instrument private BCPLIO: M4.2 before SVC 19 ==="
+        python3 "$root/tools/checks/prepare-bcplio-m42-open.py" \
+            "$root/native-compiler/asm/bcplio.asm" "$fault_asm" ||
+            exit $?
+        pds_args+=(--test-io-asm "$fault_asm")
+    fi
     if [[ -f "$native" ]]; then
         pds_args+=(--native "$native")
     fi
