@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; focused 133/134 and M4.1 case 135 PASS; 136/137 pending; full panel deferred; M4/M5 open  
+Status: M0/M1/M2 accepted; focused 133/134 and M4.1 cases 135/136 PASS; 137 pending; full panel deferred; M4/M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -271,6 +271,24 @@ the pending 268/16 tests, or independent resource counts.
 No installed runtime object was changed. The next
 focused gate is regression **136**, then **137**.
 See [M4.1 plan](Milestone-BCPLIO-dynamic-stream-M4.1-plan.md).
+
+
+## M4.1 second allocation failure gate — PASS 136
+
+The operator pulled through `831ee82` and ran targeted
+candidate regression **136** with a temporary instrumented
+BCPLIO object. Reported **PASS 1 / FAIL 0 / SKIP 0 /
+TOTAL 1**. The tested synthetic 268-byte QSAM-region
+allocation failure followed successful 32-byte descriptor
+allocation; recovery returned zero, preserved the previously
+selected DD01 cursor, and permitted successful DD02 retry.
+This is not separate proof of GETMAIN/FREEMAIN accounting
+or actual MVS low-storage failure.
+
+**M4.1 status: 135 and 136 individually accepted; 137 pending.**
+The owner's full-panel deferral remains in force. No installed
+DEVOBJ or production OBJ objects were promoted or modified
+by the isolated test harness. M4.2, M4.3 and M5 remain open.
 
 ## Handoff / next-conversation prompt
 
