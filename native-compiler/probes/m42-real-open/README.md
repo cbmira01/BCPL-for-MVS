@@ -1,6 +1,24 @@
 # M4.2.1 — Real MVS OPEN exploratory probe
 
-**STATUS: STAGED; NOT EXECUTED.** This is **not** a normal regression.
+**STATUS: EXECUTED — exploratory RG890R JOB 7874 normal completion
+(ASMAP, LKED, GO each RC0000); diagnostic report analysis pending.
+This is NOT a normal regression.**
+
+The operator compiled source using Cambridge `JOB 7873`,
+prepared `workarea/m42-real-open/real-open.jcl` and
+submitted it as **RG890R JOB 7874**. On 17 October 2026,
+`tools/mvs/job-summary 7874` reported `ASMAP RC0000`,
+`LKED RC0000`, `GO RC0000`, overall SUCCESS,
+highest RC0000, without a reported abend.
+The operator saved `workarea/m42-real-open/real-open-report.txt`,
+but has not supplied its contents for examination.
+
+**Interpretation pending:** this proves the exploratory GO
+task completed normally but does not show that an attempted
+incompatible QSAM OPEN reached SVC19; `DDVERIFY`/RDJFCB
+may instead have rejected the SYSOUT DD before OPEN.
+The report must establish the program's actual markers
+and any IEC/IEF messages.
 It might issue a real QSAM OPEN against an incompatible DD and
 produce an **S013 system abend**. Never mark an expected abend as a
 successful regression or claim that a returned zero proves OPEN
