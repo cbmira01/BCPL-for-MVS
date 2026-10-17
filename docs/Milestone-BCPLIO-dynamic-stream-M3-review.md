@@ -121,3 +121,13 @@ dynamic-stream milestone complete or claim strict per-DD identity.
 Next: commence M4.0 ordinary invalid-DD-name tests without
 runtime changes; perform a full compatibility sweep with the
 newly staged cases before any runtime implementation change.
+
+## M5.1 later scope decision (2026-10-17)
+
+The M3 physical SYSOUT-spool requirement recorded above has been
+superseded by the owner's QSAM responsibility-boundary decision.
+M5.1 closed after JOB 8184 A/Z printer-route separation and JOB
+8185 independent FB132 QSAM sequential-dataset byte-exact
+readback. Untouched internal JES2 spool bytes were **not** proven
+and are no longer a BCPLIO milestone acceptance criterion. The
+M5.2 negative-verifier gate remains separate.

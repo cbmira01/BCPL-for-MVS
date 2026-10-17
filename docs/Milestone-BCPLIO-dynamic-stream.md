@@ -1,9 +1,30 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 CLOSED; M5.1.1 A/Z printer routing ACCEPTED; M5.1.2 FB132 QSAM dataset verification ACCEPTED; M5.1.3 raw JES2 SYSOUT feasibility OPEN; M5.2–M5.5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0/M5.1 CLOSED under QSAM responsibility boundary (JOBS 8184/8185); M5.2 IN PROGRESS; M5.3–M5.5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.1 CLOSED — proceed to M5.2 (owner decision, 2026-10-17)
+
+The owner accepted a narrower and more accurate system
+responsibility boundary. **BCPLIO owns correct FB132 QSAM
+output; JES2 owns internal spooling and onward delivery.**
+The positive physical evidence is **JOB 8184** for
+independent A/Z printer routes and **JOB 8185** for
+two separate sequential FB132 QSAM datasets, complete
+132-byte EBCDIC data, count and EOF verified via
+independently assembled GET/CLC checker (six IFOX/IEWL/GO
+steps RC0000). Earlier M5.1.3 raw JES2 spool acquisition
+is **withdrawn**, not marked tested.
+
+**M5.0/M5.1 CLOSED. M5.2 starts with a small, separate
+negative check of the proven QSAM verifier.** Historical
+JES-spool requirements and open-gate statements further
+down are retained as dated superseded records. See
+[M5.1 closure]
+(Milestone-BCPLIO-dynamic-stream-M5.1-plan.md).
+No BCPL compiler, runtime object, PDS or ABI change.
 
 ## M5.1.2 accepted — JOB 8185 physical dataset FB132 verifier (2026-10-17)
 
@@ -446,7 +467,7 @@ Implement independent PUT buffers, SELECTOUTPUT/OUTPUT, WRCH/WRAPOUTPUT, FINDOUT
 Test absent DD, invalid/overlength name, DCB OPEN failure after allocation discovery, resource exhaustion (ideally deterministic fault injection), failed selection, duplicate FIND, close/reopen, stale handle, EOF+UNRDCH, FINISH/STOP/nonzero exit. Ensure DCB CLOSE/FREEMAIN correctness and do not suppress MVS diagnostics. **Exit:** documented deterministic outcomes and no leaks/double-close in supported paths.
 
 ### M5 — Integration, documentation and acceptance
-Re-run entire native regression panel including BLIB/compiler smoke tests; **expand the focused test corpus already begun in M1** under existing `native-compiler/regression` patterns. Validate separate JES DD output attribution using a lossless method (the existing contract warns aggregated printer text cannot prove DD identity). Update stream contract, runtime docs, build/rebuild procedure, and acceptance evidence. **Exit:** all new tests + baseline pass, documented remaining deviations/limits, accepted native dynamic-stream milestone.
+Re-run entire native regression panel including BLIB/compiler smoke tests; **expand the focused test corpus already begun in M1** under existing `native-compiler/regression` patterns. Validate DD routing through class-separated JES printer observations and exact QSAM FB132 record formation through independent sequential-dataset readback; internal JES2 spool-byte preservation is an MVS/JES2 responsibility and is not a BCPLIO acceptance requirement. Update stream contract, runtime docs, build/rebuild procedure, and acceptance evidence. **Exit:** all new tests + baseline pass, documented remaining deviations/limits, accepted native dynamic-stream milestone.
 
 ## Proposed testing matrix
 
@@ -466,7 +487,7 @@ Re-run entire native regression panel including BLIB/compiler smoke tests; **exp
 | Blank records, trailing blanks, newline, EBCDIC | matches published record contract |
 | Full native regression 00..current end | zero new failures; job/step/output evidence |
 
-Implement tests in the style of the existing numbered native regression directory and its runner, allocating DD statements dynamically in JCL generation as needed. Compare against ICINT's 07-many-streams as a **behavioral reference**; do not presume identical handles or internal object layout. For outputs, use DD-specific captured spool artifacts or another demonstrably lossless extraction, **not** concatenated `prt00e.txt` as sole evidence. Check appropriate assembler/link/go condition codes and failure diagnostics.
+Implement tests in the style of the existing numbered native regression directory and its runner, allocating DD statements dynamically in JCL generation as needed. Compare against ICINT's 07-many-streams as a **behavioral reference**; do not presume identical handles or internal object layout. For outputs, require DD-specific QSAM FB132 physical dataset byte comparison with separately observed printer routing; **do not** use concatenated `prt00e.txt` as sole evidence or demand untouched JES2 internal spool records. Check appropriate assembler/link/go condition codes and failure diagnostics.
 
 ## Acceptance criteria
 

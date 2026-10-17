@@ -1,8 +1,45 @@
 # BCPLIO dynamic streams — M5.1 acquisition feasibility
 
-**Status: M5.1.1 printer routing ACCEPTED (JOB 8184); M5.1.2 exact FB132 sequential-dataset readback ACCEPTED (JOB 8185); M5.1.3 historical JES2 SYSOUT acquisition feasibility PROPOSED; original JES2 raw spool remains UNVERIFIED.**
+**Status: M5.1 CLOSED (2026-10-17): M5.1.1 A/Z printer routing JOB 8184 ACCEPTED; M5.1.2 exact QSAM FB132 disk dataset readback JOB 8185 ACCEPTED. Prior M5.1.3 JES2 internals investigation WITHDRAWN from BCPLIO acceptance.**
 Predecessor: M5.0 evidence contract **ACCEPTED** by the owner.
 [M5.0 contract](Milestone-BCPLIO-dynamic-stream-M5.0-contract.md).
+
+## M5.1 — CLOSED, owner responsibility-boundary decision (2026-10-17)
+
+The owner explicitly confirmed that **BCPLIO's responsibility ends at
+correctly delivering application records to MVS QSAM**. JES2's
+internal spool storage and subsequent printer delivery are MVS/JES2
+responsibilities, not obligations to reverse-engineer or test in
+this BCPL reconstruction milestone.
+
+**Accepted evidence:**
+- **M5.1.1 / JOB 8184 AT114R:** IFOX ASMAP, IEWL LKED and GO all
+  RC0000. SYSPRINT's two logical output records appeared in the
+  class-A/PRINTER1 image; BCPALT's two appeared in the
+  class-Z/PRINTER2 image, without detected cross-class mixing.
+  This is an observed route check, **not** raw JES2 spool-byte proof.
+- **M5.1.2 / JOB 8185 M5D124B:** original compiled BCPL
+  regression-124 GO against DEVOBJ BCPLM6+BCPLIO, with REPORT and
+  REPORT2 assigned to distinct temporary sequential FB132
+  datasets; ASMAP, LKED, GO, VASM, VLINK and independent VCHK
+  each RC0000, without reported abend. VCHK's QSAM GET/CLC
+  comparisons accepted the complete 132 EBCDIC bytes of all
+  records and exact EOF: REPORT two records; REPORT2 one.
+  The six offline v2 tests and exact generated-JCL/ASM/hash
+  preflight also passed.
+
+**Decision:** M5.1.3 (internal JES2 SYSOUT spool acquisition) is
+**withdrawn as a required acceptance gate**, not declared proven.
+It can be separately investigated later by MVS/JES2 tooling projects;
+this milestone will not depend on it. A class printer image cannot
+demonstrate unmodified raw spool bytes, and the dataset
+readback proves dataset-level QSAM output, not raw SYSOUT internals.
+These caveats remain explicit.
+
+**M5.1 ACCEPTED and CLOSED.** M5.2 will test that the existing
+physical record verifier actually rejects bad data, using a
+small number of negative controls. No runtime change, ABI change,
+PDS update or production OBJ promotion is authorized.
 
 ## Intent
 
@@ -255,7 +292,7 @@ JOB 8184 showed A/Z printer routing,
 not raw spool. Both forms of evidence are
 preserved and not conflated.
 
-## M5.1.3 — inspect historical JES2 SYSOUT record extraction (PROPOSED)
+## Historical proposal superseded by M5.1 closure: JES2 SYSOUT extraction
 
 **Purpose:** investigate whether the actual
 MVS 3.8J/TK5 JES2 SYSOUT spool can provide

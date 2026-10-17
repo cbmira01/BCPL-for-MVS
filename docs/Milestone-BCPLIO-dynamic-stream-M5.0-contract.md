@@ -191,3 +191,25 @@ cannot substitute for full raw record verification.
 out to accept M5.0. M5.1 has its own limited feasibility scope.
 See the M5.1 plan for the first deliberately non-submitting
 preparation and controlled class-A/Z experiment.
+
+## 9. Scope amendment accepted by owner — 2026-10-17
+
+The original M5.0 contract placed independent, byte-for-byte **raw
+JES2 spool** extraction among the BCPLIO acceptance proof obligations.
+The owner subsequently clarified the architectural boundary:
+BCPLIO must correctly present/recordize BCPL output to MVS **QSAM**;
+after QSAM accepts the records, JES2 owns SYSOUT spooling and onward
+transport. The stricter original JES2 spool-observation demand is
+**superseded**, not described as passed.
+
+Revised M5.1 acceptance proof is the combined evidence of
+**JOB 8184** (separated A/Z printer routing) and **JOB 8185**
+(independent full 132-byte FB132 QSAM sequential-dataset readback,
+per-DD content, record count and EOF). They are complementary,
+not one proof of unchanged JES2 spool bytes.
+
+**M5.1 CLOSED; M5.1.3 WITHDRAWN from BCPLIO scope.** Existing
+sections above are retained as the dated original design history.
+M5.2 must verify that the byte-exact QSAM record checker rejects
+bad records and that the printer routing tool detects swapped
+outputs. No JES2 internal spool modifications or tests are required.
