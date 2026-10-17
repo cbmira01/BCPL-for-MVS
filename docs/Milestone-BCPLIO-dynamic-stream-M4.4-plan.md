@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.4 compatibility verification
 
-**Status: M4.4.0 source-only preflight ACCEPTED; owner lifted the full-panel deferral on 2026-10-17 and AUTHORIZED M4.4.1 candidate 00..145; execution evidence PENDING; M4.4 remains OPEN.**
+**Status: M4.4.0 and M4.4.1 ACCEPTED (2026-10-17): full DEVOBJ candidate 00..145 145 PASS / 0 FAIL / 1 expected SKIP 083. M4.4.2 final log-level GO/JES audit pending; M4.4 OPEN.**
 Date: 2026-10-17
 Predecessor: M4.3 CLOSED (returned-control resource accounting).
 
@@ -135,10 +135,59 @@ link-editor, GO, output fixture or JES diagnostic. Record commit,
 candidate PDS members, actual job IDs and step RCs. Never promote
 a runtime object as a side effect of regression testing.
 
+## M4.4.1 acceptance — full candidate panel PASS (2026-10-17)
+
+The operator pulled main through `a572e77`, exported
+`BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1`, and
+`BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`, then ran
+`python3 tools/checks/check-m44-compatibility.py --candidate &&`
+`tools/native/run-regression 0 145 --show-output`.
+
+The supplied complete 146-case console report recorded:
+
+```text
+M4.4 source-only compatibility preflight: PASS
+Candidate environment: PASS
+NATIVE REGRESSION  00..145  (146 tests)
+...
+SKIP  083  083-instrumented-storage-reclamation
+           (source-only instrumentation)
+...
+PASS  145  145-dynamic-dd-open-denial-counted
+NATIVE REGRESSION COMPLETE
+PASS  145
+FAIL  0
+SKIP  1
+TOTAL 146
+```
+
+**M4.4.1 ACCEPTED** against the previously accepted
+00..132 complete panel (132 PASS / 0 FAIL / SKIP 083).
+All thirteen later tests 133–145 passed within the *same*
+complete candidate run. The intentional SKIP remains 083.
+No PDS rebuild, ABI change or production OBJ promotion
+was required.
+
+**M4.4.2 remains an evidence-disposition gate.** The
+145-pass console summary does not show individual
+compiler/GO JES job IDs or IFOX/IEWL/GO return codes.
+The runner also contains a fallback that can report
+`PASS WITH KNOWN RUNTIME DEFECT` for an S322,
+which its outer driver still counts as a PASS.
+Therefore the count summary alone does not prove
+that no accepted test took that exception.
+Audit existing per-test logs and explicitly report
+any S322/known-defect acceptance and unexpected step
+status *before formal M4.4 closure*. **No second
+full regression run is requested.**
+
 ## M4.4.2 — disposition and M5 boundary
 
-M4.4 closes only after the fresh full panel is accepted against
-the original baseline with any deviations explicitly reconciled.
+The new complete panel has passed and M4.4.1 is accepted.
+M4.4 formally closes after the existing per-test log
+exceptions and JES-step evidence are audited and any
+known-defect/abend outcomes reconciled.
 No canonical runtime, object PDS or public G-vector modification
 is required by this readiness stage.
 

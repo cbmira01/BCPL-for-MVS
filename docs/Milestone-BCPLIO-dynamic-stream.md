@@ -1,9 +1,31 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4/M5 open; M4.4.1 full panel authorized, execution pending  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4.1 full candidate 00..145 PASS; M4.4 final JES-log audit pending; M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M4.4.1 accepted — entire 00..145 DEVOBJ candidate PASS (2026-10-17)
+
+The owner ran the previously authorized, complete
+DEVOBJ BCPLM6 candidate panel after
+`check-m44-compatibility.py --candidate` PASSED.
+The provided console report enumerates 00..145
+with **145 PASS, 0 FAIL, 1 expected SKIP (083),
+TOTAL 146**. All cases 133..145 passed in
+this full-panel execution. This supersedes the
+00..132 as the latest complete accepted compatibility
+checkpoint, without asserting any runtime-object
+promotion or physical DD identity verification.
+
+**M4.4.1 ACCEPTED; M4.4.2 log-level audit pending.**
+The summary omits individual MVS jobs and condition
+codes and the runner can count an S322
+`PASS WITH KNOWN RUNTIME DEFECT` as PASS.
+Review saved `workarea/native-regression/logs/`
+without rerunning the suite, and reconcile exceptions
+before closing M4.4. See the
+[M4.4 plan](Milestone-BCPLIO-dynamic-stream-M4.4-plan.md).
 
 ## M4.4.1 — owner authorizes complete candidate panel (2026-10-17)
 
