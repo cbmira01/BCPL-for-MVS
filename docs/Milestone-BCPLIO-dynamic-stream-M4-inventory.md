@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; M4.2.0 synthetic 138 PASS; genuine OPEN M4.2.1 not tested; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; M4.2.0 synthetic 138 PASS; real-OPEN diagnostic M4.2.1 staged but not run; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -363,3 +363,29 @@ but allocated DD, potentially an S013 abend, with genuine
 JES evidence. M4.3 independent resource counts and M5
 physical DD attribution also remain outstanding. Full
 regression remains owner-deferred.
+
+## M4.2.1 real QSAM OPEN diagnostic probe staged
+
+The stand-alone, **non-regression** exploratory files are
+`native-compiler/probes/m42-real-open/`, with a
+source-only fail-closed JCL construction check,
+`tools/checks/check-m42-real-open-jcl.py`,
+and a non-submitting JCL generator
+`tools/checks/prepare-m42-real-open-jcl.py`.
+
+The **normal installed DEVOBJ(BCPLM6+BCPLIO)**
+candidate will be linked without fault instrumentation.
+The exploratory `RG890R` GO job allocates valid input
+`DD01 DD DATA` and deliberately gives `DD02`
+`SYSOUT=*` attributes even though BCPL requests
+`FINDINPUT("DD02")`. The generated deck is a manual
+diagnostic only. OPEN may abend; if FIND returns zero,
+RDJFCB failure vs QSAM OPEN failure must still be
+distinguished from the actual JES/IEC/IEF evidence.
+The source checker, Cambridge compilation and
+real MVS job **have not run**. See
+[M4.2 plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md)
+and the probe's README for the prepare/inspect/submit
+procedure. No installed object or canonical assembler
+source has been altered. Full regression is still
+owner-deferred.
