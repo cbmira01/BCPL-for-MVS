@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; JOB 7874 returned HANDLE; M4.2.2 JOB 7875 GO RC0000, full report pending; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; real-OPEN probes 7874/7875 returned HANDLE (no failed OPEN); M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -480,3 +480,25 @@ RDJFCB-versus-SVC19 outcome remain unknown. Do not
 treat normal GO termination as a successful failed OPEN
 or as a regression PASS. Await the existing report.
 M4.2 remains open; full panel owner-deferred.
+
+## M4.2.2 full JOB 7875 report — PDS OPEN returned a handle
+
+The operator supplied the extracted JOB 7875 report.
+Actual GO allocation was `DD02 DD
+DSN=SYS1.MACLIB,DISP=SHR`, device 390, with
+`SYS1.MACLIB` kept after job. IEWL included the
+normal `BCPLM6` and `BCPLIO` development objects.
+The BCPL program printed `M42 BEFORE FIND DD02`,
+`M42 DD02 RETURNED HANDLE`, and
+`M42 SURVIVED FIND DD02`.
+ASMAP/LKED/GO all RC0000; no S013/IEC OPEN
+error appeared. BCPL did not GET from DD02.
+
+**Conclusion:** nonmember PDS did not fail during
+FINDINPUT/OPEN under this TK5 run; no evidence of
+actual failed QSAM OPEN recovery. Like JOB 7874,
+this is a successful-handle exploratory observation,
+not a regression PASS. An intentionally invalid
+FB BLKSIZE/LRECL OPEN-time DCB combination should
+be explored separately, with no writes to the
+system PDS. M4.2 remains open; full panel deferred.
