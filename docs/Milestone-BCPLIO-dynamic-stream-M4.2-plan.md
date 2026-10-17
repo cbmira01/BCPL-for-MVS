@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: synthetic 138 PASS; JOB 7874 returned HANDLE; M4.2.2 RG891R JOB 7875 executed (GO RC0000), awaiting full JES report for FIND/OPEN outcome; full panel deferred.**
+**Status: synthetic 138 PASS; real-OPEN probes JOB 7874 (SYSOUT) and 7875 (PDS without member) both returned HANDLE, neither produced failed OPEN; further incompatible DCB probe required; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -507,3 +507,50 @@ M4.2 real OPEN-failure gate can be closed on this summary
 alone. Do not request new workstation checks, recompilation,
 or a full native regression panel. The full-panel deferral
 and no object-promotion policy remain in force.
+
+## M4.2.2 JOB 7875 — full JES report accepted
+
+The operator supplied the complete `pds-open-report.txt`
+for exploratory job `RG891R`, JOB 7875 (17 October 2026).
+The actual GO JCL and allocation evidence included:
+
+```text
+//DD02     DD DSN=SYS1.MACLIB,DISP=SHR
+IEF237I 390  ALLOCATED TO DD02
+IEF285I   SYS1.MACLIB   KEPT
+IEW0000     INCLUDE OBJ(BCPLM6)
+IEW0000     INCLUDE OBJ(BCPLIO)
+M42 BEFORE FIND DD02
+M42 DD02 RETURNED HANDLE
+M42 SURVIVED FIND DD02
+```
+
+ASMAP, LKED and GO completed `RC0000`. There was
+no reported IEC OPEN diagnostic or abend. The GO
+step's EXCP/device I/O accounting includes one I/O
+on device 390, but does not prove a BCPL GET operation.
+The BCPL source intentionally **never calls RDCH**
+on this returned DD02 handle. Therefore it is not
+evidence that a nonmember PDS is readable using
+QSAM GET.
+
+**Source-guided interpretation:** DIFIND can only
+return a new handle after DDVERIFY, DALLOC, DQOPEN
+and HNEW success. DQOPEN executes real SVC19 and
+checks DCB-derived open state. Thus this was an
+apparently successful real OPEN, **not a failed OPEN**,
+just as JOB 7874 returned a handle for a SYSOUT DD.
+The intended M4.2 actual unsuccessful OPEN gate
+remains **NOT MET**; the test is exploratory, not
+a regression PASS.
+
+The next candidate should target an actual *OPEN-time
+validation* fault, not merely a suspicious allocation.
+A documented S013-20 situation is an FB QSAM DCB whose
+BLKSIZE is not a multiple of LRECL. Consider a
+separate, strictly read-only/temporary-data-set
+exploratory GO job using deliberate
+`RECFM=FB,LRECL=80,BLKSIZE=81`. JCL allocation
+may reject it before SVC19 or MVS may ABEND; neither
+outcome may be assumed. No full regression suite
+or installed runtime changes are authorized.
