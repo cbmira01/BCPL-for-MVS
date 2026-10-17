@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0 accepted; owner deferred full suite; M4.1 source checker and case 135 PASS, 136/137 pending; M4.2/M4.3 open**
+Status: **M4.0 accepted; full suite deferred; M4.1 source checker and cases 135/136 PASS, 137 pending; M4.2/M4.3 open**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -257,3 +257,27 @@ Both are staged and **not yet executed**. The full
 00..134 panel remains **explicitly deferred**, with last
 accepted complete suite 00..132 (132 PASS / 0 FAIL /
 one expected SKIP 083).
+
+## M4.1 268-byte failed-allocation gate accepted — regression 136
+
+After fast-forwarding to `831ee82`, the operator ran
+`tools/native/run-regression 136 --show-output` under the
+isolated DEVOBJ candidate. It reported **PASS 136**, with
+**PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**.
+
+The synthetic second-site `GETMAIN RC,LV=268` failure
+occurred after successful acquisition of the 32-byte
+descriptor. The BCPL program verified a zero return,
+preservation of the selected DD01 input/cursor, a successful
+subsequent DD02 open/read, and ordinary close. The source
+contains the `DALNOMEM` FREEMAIN cleanup for the
+32-byte descriptor, but no independent FREEMAIN count was
+obtained. No real host low-storage condition was created.
+
+**Next M4.1:** targeted 137, the 16-byte HNEW handle
+allocation denial after QSAM OPEN, whose error branch
+requires DQCLOSE/DREL. No full 00..134 panel is requested
+at this stage: the owner deferred it explicitly. M4.2
+OPEN diagnostics and M4.3 independently verified resource
+counts remain outstanding. No installed OBJ or DEVOBJ
+object was changed by this test.
