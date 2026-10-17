@@ -5,6 +5,21 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M4.3 accounting infrastructure and test 139 staged (2026-10-17)
+
+Test-private accounting generator and static checker are committed.
+Candidate-only compiled BCPL regression **139** uses existing regression
+G151 to call a separate native assembler shim, which reads a private
+IOACCT counter table in a temporary BCPLIO object. ASMFIO and ASMNAT
+are separately assembled, and the job links with DEVOBJ(BCPLM6)
+without overwriting installed BCPLIO. The test asserts allocation,
+release, and real SVC19/SVC20 call-path counts, duplicate FIND,
+tombstone retention, and close/reopen. See the
+[M4.3 plan](Milestone-BCPLIO-dynamic-stream-M4.3-plan.md).
+
+**M4.3 remains OPEN.** No static checker execution, IFOX/IEWL/GO
+PASS, final IODRAIN balance or failure-path accounting is claimed.
+Full regression remains owner-deferred; OBJ/DEVOBJ are unchanged.
 ## M4.2 closure and remaining marches (2026-10-17)
 
 The owner accepted a narrower, historically appropriate responsibility

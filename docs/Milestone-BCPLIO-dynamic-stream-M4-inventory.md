@@ -5,6 +5,21 @@ Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
 
+## M4.3 accounting infrastructure and test 139 staged (2026-10-17)
+
+Test-private accounting generator and static checker are committed.
+Candidate-only compiled BCPL regression **139** uses existing regression
+G151 to call a separate native assembler shim, which reads a private
+IOACCT counter table in a temporary BCPLIO object. ASMFIO and ASMNAT
+are separately assembled, and the job links with DEVOBJ(BCPLM6)
+without overwriting installed BCPLIO. The test asserts allocation,
+release, and real SVC19/SVC20 call-path counts, duplicate FIND,
+tombstone retention, and close/reopen. See the
+[M4.3 plan](Milestone-BCPLIO-dynamic-stream-M4.3-plan.md).
+
+**M4.3 remains OPEN.** No static checker execution, IFOX/IEWL/GO
+PASS, final IODRAIN balance or failure-path accounting is claimed.
+Full regression remains owner-deferred; OBJ/DEVOBJ are unchanged.
 ## Current gate — M4.2 acceptance revised 2026-10-17
 
 **M4.2 CLOSED on its returned-error handling contract.**
