@@ -1,6 +1,20 @@
 # 131 — Dynamic output DD close/reopen: new handle identity
 
-**Status: STAGED candidate-only RED/UNKNOWN gate; NOT RUN OR ACCEPTED.**
+**Status: ACCEPTED under the DEVOBJ candidate (17 October 2026).**
+After pulling repository head through `2a56367`, the operator ran
+`tools/native/run-regression 131 --show-output` using
+`BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1`, and
+`BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`. Result:
+**PASS 131, PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**.
+
+This is positive compiled-BCPL evidence for a new nonrecycled
+opaque output handle after ENDWRITE, retirement of the original,
+duplicate FIND returning the current live identity, and ordinary
+record output across both lifetimes. It does not prove DD-specific
+physical JES attribution, nor any input DD DATA rewind semantics.
+The prior full 00..129 suite (129 PASS, expected skip 083) was
+accepted separately; the full 00..131 suite has not yet been rerun.
 
 This permanent compiled-Cambridge-BCPL test targets the approved
 M0 contract that **ENDWRITE retires a handle permanently** and a
@@ -34,11 +48,10 @@ BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
 tools/native/run-regression 131 --show-output
 ```
 
-**Important unknown:** whether repeated OPEN of the same MVS 3.8
-SYSOUT DD creates two SYSOUT substreams that the current
-combined-JES record checker will preserve in logical record
-order. If this fails, inspect GO RC/IEC/IEF diagnostics and
-actual JES SYSOUT before changing the runtime or expected
-fixture. The runtime was **not** altered to stage this test.
-A separate future input-DD reopen probe must respect non-seekable
-DD DATA semantics; output reopening cannot prove input rewind.
+**Remaining evidentiary boundary:** The combined-JES checker
+accepted both REPORT logical records, but no DD-specific spool
+capture was supplied. Therefore the result does not establish
+physical substream layout or exact DD attribution. The installed
+runtime was not modified for this test. A separate future input
+DD reopen probe must respect non-seekable DD DATA semantics;
+output reopening does not prove input rewind.
