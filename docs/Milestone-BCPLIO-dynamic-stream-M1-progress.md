@@ -513,3 +513,17 @@ Observed: `RUN 125 125-dynamic-dd-two-input-streams`, **PASS 125**, panel **PASS
 **ACCEPTED: targeted compiled-BCPL dynamic two-input-stream integration gate.** Previous JOB 6285's S0C1 is superseded by this new positive candidate run, but remains part of the diagnostic history. **Not accepted:** complete input stress requirements, FINISH/STOP cleanup, independent DD ownership/physical attribution, or compatibility of the *new* BCPLIO object with prior native tests.
 
 **Immediate next gate:** rerun candidate regressions `113 --show-output`, `124 --show-output`, and the full `0 123` panel under exactly the four DEVOBJ environment variables above. Targets: regression 113 PASS (controlled STOP12), regression 124 PASS (dual dynamic output), and baseline 123 PASS / 0 FAIL / 1 expected SKIP 083. Any regression is a block on M1 progress. After compatibility acceptance, implement permanent regression **126** for twelve concurrent dynamically opened input DDs; keep candidate-only initially. Maintain production OBJ unchanged until explicit authorization.
+
+## New dynamic-input candidate compatibility revalidation ACCEPTED (MVS 2026-10-17)
+
+With `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, and `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`, operator reran three checkpoints after compiled-BCPL dynamic-input regression **125** had passed on the corrected `DEVOBJ(BCPLIO)` from JOB 6289:
+
+| Test / panel | Observed result | Acceptance |
+| --- | --- | --- |
+| `113-overlong-output-rejected` | PASS 1, FAIL 0, SKIP 0 | controlled STOP(12) retained |
+| `124-dynamic-dd-selected-output` | PASS 1, FAIL 0, SKIP 0 | compiled dual dynamic output retained |
+| `00..123` (124 native regressions) | PASS **123**, FAIL **0**, SKIP **1** | expected source-only SKIP 083 |
+
+All individual baseline cases except expected skip 083 passed, including 094..119 legacy streams and regression 113. The operator's three test reports are the acceptance evidence; no GO JES job numbers were supplied for this run. The same environment variables selected DEVOBJ(BCPLM6) and DEVOBJ(BCPLIO); no production object installation.
+
+**DECISION: M1 compiled two-input-stream regression 125 + full backward-compatibility gate accepted** for currently built DEVOBJ candidate, alongside regression 124 output. This closes the immediate compatibility gate opened by the dynamic-input implementation; it does not close all of M1. Pending scope: 12 simultaneous dynamic inputs (permanent case 126), descriptor lifecycle on FINISH/STOP, resource exhaustion and close/reopen, repeat-DD identities, and independent physical DD attribution. Do not alter production `HERC02.BCPL.NATIVE.OBJ`.
