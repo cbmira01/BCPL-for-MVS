@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; 7874/7875 returned HANDLE; RG892R malformed-FB JCL prepared, GO unsubmitted; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; real OPEN jobs 7874/7875/7876 returned HANDLE; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -562,6 +562,32 @@ was changed. No JCL/OPEN outcome is claimed.
 Single exploratory GO execution and JES evidence
 are pending; M4.2 remains open. Owner-deferred
 native regression remains deferred.
+
+
+## M4.2.3 actual RG892R/JOB 7876 — third returned handle
+
+The owner supplied the complete RG892R JOB
+7876 spool with intentionally inconsistent
+`DD02 SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=81)`.
+JES allocated DD02, IFOX/IEWL/GO all RC0000,
+and the ordinary development BCPLIO was linked.
+Compiled BCPL printed
+`M42 BEFORE FIND DD02`,
+`M42 DD02 RETURNED HANDLE`, and
+`M42 SURVIVED FIND DD02`.
+No OPEN error/abend or successful GET
+from the DD02 handle was demonstrated.
+
+The three real-OPEN DD-allocation probes
+(7874 SYSOUT, 7875 nonmember PDS,
+7876 invalid FB SYSOUT) all returned handles,
+so **none met M4.2 actual failed-OPEN gate**.
+The next step is a source-only historical DCB
+layout verification and a tightly scoped,
+private BCPLIO SVC19 observability design
+before requesting any more operator runs.
+No installed runtime or production object
+changed. Full regression is owner-deferred.
 
 ## Handoff / next-conversation prompt
 
