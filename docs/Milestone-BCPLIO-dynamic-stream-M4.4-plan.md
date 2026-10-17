@@ -184,6 +184,28 @@ full regression run is requested.**
 
 ## M4.4.2 — disposition and M5 boundary
 
+### Audit existing per-case logs (without rerunning MVS)
+
+Run the repository-owned read-only log verifier:
+
+~~~sh
+cd ~/Source/Repos/BCPL-for-MVS
+python3 tools/checks/check-m44-full-panel-logs.py
+~~~
+
+It reads the existing 145 regression logs, checks per-test
+`RESULT: PASS`, GO RC expectations (including expected
+STOP exits), LKED RC, observed assembler codes and obvious
+`ABEND`/`PASS WITH KNOWN RUNTIME DEFECT` signatures.
+It generates a local 145-row job/step index at
+`workarea/native-regression/m44-00-145-jobs.tsv`
+without modifying canonical assembler, PDS objects, JCL,
+or executing any MVS job. Report any anomalies; do not
+weaken the checker to conceal legitimate known defects.
+Keep the manifest for M4.4.2 evidence reconciliation.
+
+
+
 The new complete panel has passed and M4.4.1 is accepted.
 M4.4 formally closes after the existing per-test log
 exceptions and JES-step evidence are audited and any

@@ -5,6 +5,19 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M4.4.2 — per-case log audit helper staged (2026-10-17)
+
+A repository-owned verifier,
+`tools/checks/check-m44-full-panel-logs.py`,
+can inspect the operator's existing 145 saved case
+logs and write `workarea/native-regression/m44-00-145-jobs.tsv`
+with job IDs and key step return codes. It also flags
+any accepted S322/known-runtime-defect condition.
+This helper **has not yet been run by the operator**,
+and does not submit jobs. M4.4.1's full 145-PASS
+result stands; formal M4.4.2 audit remains pending.
+M5 physical DD attribution remains separate.
+
 ## M4.4.1 accepted — entire 00..145 DEVOBJ candidate PASS (2026-10-17)
 
 The owner ran the previously authorized, complete
