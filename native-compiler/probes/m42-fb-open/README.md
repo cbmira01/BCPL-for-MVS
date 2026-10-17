@@ -1,7 +1,26 @@
 # M4.2.3 — invalid FB block size during QSAM OPEN
 
-**Status: STAGED; NOT BUILT OR EXECUTED.** This is a
-potentially abending exploratory job, **not a regression**.
+**Status: PREPARED — RG892R exploratory JCL generated, NOT
+SUBMITTED (2026-10-17).** This remains a potentially
+abending diagnostic, **not a regression**.
+
+The operator pulled `main` through `19e658a`, then ran
+`tools/checks/prepare-m42-fb-open-jcl.py` with the required
+DEVOBJ/BCPLM6 candidate environment. The builder reported:
+
+```text
+Prepared DEVOBJ runtime PDS regression: workarea/m42-real-open/fb-open.jcl.base
+Prepared M4.2.3 INVALID-FB real OPEN exploratory deck:
+workarea/m42-real-open/fb-open.jcl
+RG892R: DD02 SYSOUT,RECFM=FB,LRECL=80,BLKSIZE=81
+INVALID: 81 is not divisible by 80; JES or OPEN may reject
+GO job NOT submitted. No installed PDS member changed.
+```
+
+**Only preparation has been accepted.** The operator's
+output confirms no exploratory GO submission, and neither
+JES acceptance nor SVC19 behavior is yet known.
+
 
 ## Why this candidate differs
 
