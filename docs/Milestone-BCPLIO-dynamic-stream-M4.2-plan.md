@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: 138 synthetic DQOPEN recovery ACCEPTED; M4.2.1 Cambridge compilation and exploratory JCL preparation SUCCESSFUL (RG890C JOB 7873); RG890R GO NOT SUBMITTED; full panel deferred.**
+**Status: 138 synthetic DQOPEN recovery ACCEPTED; M4.2.1 real-OPEN exploratory JOB 7874 executed, ASMAP/LKED/GO RC0000; actual RDJFCB vs SVC19 path pending report inspection; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -286,3 +286,61 @@ DEVOBJ(BCPLM6 + BCPLIO) candidate. Preserve the actual
 JES job number and complete report. Full native regression
 remains owner-deferred. Source and JCL generation are
 repeatable from version-controlled inputs.
+
+## M4.2.1 exploratory GO execution — JOB 7874 (2026-10-17)
+
+The operator submitted the previously prepared
+`workarea/m42-real-open/real-open.jcl` (source compiled
+in Cambridge JOB 7873). The submission was recognized
+as `RG890R`, **JOB 7874**. The operator's
+`tools/mvs/job-summary 7874` output was:
+
+```text
+JOB 7874  RG890R
+BCPL PDS REG
+17 OCT 26  05.27.40 - 05.27.40
+
+STEP       PROGRAM      RESULT
+ASMAP      IFOX00       RC=0000
+LKED       IEWL         RC=0000
+GO         PGM=*.DD     RC=0000
+
+JOB RESULT: SUCCESS
+HIGHEST RC: 0000
+
+Assembler:
+  Statements flagged: 0
+  Highest severity:   0
+
+Resources:
+  Cards:     271
+  SYSOUT:    489 records
+```
+
+The operator also redirected the complete job report into
+`workarea/m42-real-open/real-open-report.txt`, but the
+report's contents **were not supplied**. **Execution
+outcome established:** the job ran and completed normally,
+without an S013 or other step abend reported by the
+job summary. The assembler and linker both returned 0000.
+
+**OPEN-path attribution remains unresolved** until the
+report is examined for the BCPL markers and IEC/IEF messages.
+In particular, the normal GO completion cannot distinguish:
+(1) early zero return at `DDVERIFY` / RDJFCB before SVC19,
+(2) DQOPEN's SVC19 leaving a DCB unopened and returning 8,
+or (3) an unexpectedly successful handle. The last case
+should emit `M42 DD02 RETURNED HANDLE`; a zero result
+should emit `M42 DD02 RETURNED ZERO`. The program also
+emits `M42 BEFORE FIND DD02` and, when it survives to the
+end, `M42 SURVIVED FIND DD02`. These strings must be
+confirmed from the actual report, not inferred from RC0000.
+
+**Next:** obtain the already-created
+`real-open-report.txt` as an attachment, analyze its
+program output and JES/IEC/IEF messages, then decide
+whether a narrowly instrumented RDJFCB/SVC19 tracing
+probe is required. Do not request re-running the
+full native regression panel or source-only checks on
+the operator's workstation. No new installed PDS
+changes are implied by this execution.
