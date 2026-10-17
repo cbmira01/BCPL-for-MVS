@@ -1,6 +1,6 @@
 # Dynamic BCPLIO streams — M2 input multiplicity progress
 
-Status: **M2 16-stream and dynamic output close/reopen gates ACCEPTED; complete 00..131 sweep pending**
+Status: **M2 16-stream and output reopen accepted; full DEVOBJ 00..131 panel ACCEPTED (131 PASS / 0 FAIL / SKIP 083); input reopen study pending**
 Project: BCPL for MVS 3.8 reconstruction
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 
@@ -241,3 +241,20 @@ After that compatibility gate, review DD DATA input reopen behavior
 separately; prioritize deterministic failure/OPEN exhaustion tests,
 descriptor accounting, and M5 DD-specific spool attribution rather
 than escalating concurrency beyond sixteen.
+
+## Full 00..131 DEVOBJ compatibility checkpoint — ACCEPTED (MVS 2026-10-17)
+
+The operator pulled repository main from `2a56367` through `8f7c03e` and executed `tools/native/run-regression` from repository root with the four candidate variables: `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDATE=1`, `BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`. The run enumerated `00..131` and ended:
+
+```text
+NATIVE REGRESSION COMPLETE
+PASS  131
+FAIL    0
+SKIP    1
+TOTAL 132
+```
+
+The single skip was **083 — source-only storage instrumentation**, expected with the PDS-linked candidate. The operator log contains a PASS line for all other tests, notably the sixteen-concurrent-input case **130** and same-DD output close/reopen case **131**. No BCPLIO, compiler, or installed PDS changes occurred since the earlier successful DEVOBJ installation JOB 7065. Individual regression JES GO job numbers were not supplied; do not invent them.
+
+**ACCEPTED:** full backward-compatibility checkpoint 00..131, 131 distinct passing tests, zero failures, one expected skip, 132 total. The sixteen-stream target is final: do not increase it merely for a larger count. M2 still requires explicit evaluation of same-DD input reopening/identity; input `DD DATA` is not presumed rewindable. Failure injection, storage accounting and DD-specific lossless output attribution remain for M4–M5. Production `NATIVE.OBJ` unchanged.
+
