@@ -33,7 +33,7 @@ handle without reading it, and emits `M42 SURVIVED FIND DD02`.
 - JCL conversion/rejection: the intended allocated-DD condition
   was not achieved; adjust experimental design separately.
 
-The standard builder is `tools/checks/prepare-m42-real-open-jcl.py`;
+Source-only JCL patch validation is available as\n`python3 tools/checks/check-m42-real-open-jcl.py`; it has not\nyet been run.\n\nThe standard builder is `tools/checks/prepare-m42-real-open-jcl.py`;
 it builds a separate `RG890R` deck and inserts exactly one
 `//DD02 DD SYSOUT=*` allocation. It never submits JCL or changes
 any PDS member. It uses `prepare-runtime-pds-regression.py`
@@ -63,11 +63,14 @@ Inspect the generated JCL and run **only when ready to
 characterize a possible GO-step abend**:
 
 ```sh
-tools/mvs/submit-jcl --timeout 30 \
-  workarea/m42-real-open/real-open.jcl
-# Use the actual JOB number returned by the previous command:
-tools/mvs/job-summary <JOB_NUMBER>
-tools/mvs/dump-report-for-job <JOB_NUMBER> \
+jobnum=$(
+  tools/mvs/submit-jcl --timeout 30 \
+    workarea/m42-real-open/real-open.jcl |
+    awk '/^JOB [0-9]+$/ {print $2}'
+)
+printf 'Exploratory JES job: %s\n' "$jobnum"
+tools/mvs/job-summary "$jobnum"
+tools/mvs/dump-report-for-job "$jobnum" \
   > workarea/m42-real-open/real-open-report.txt
 ```
 
