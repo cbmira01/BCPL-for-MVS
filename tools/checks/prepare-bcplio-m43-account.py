@@ -65,7 +65,53 @@ def terminal_assertions() -> str:
     return "\n".join(lines)
 
 
-def transform(source: str, terminal_check: bool = False) -> str:
+
+# Exactly one controlled denial on the second visit to a private
+# operation. All real GETMAIN/SVC calls remain present and counted.
+FAULT_MODES = ("descriptor32", "buffer268", "handle16",
+               "open-before-svc19")
+
+def add_failure(source: str, mode: str) -> str:
+    if mode not in FAULT_MODES or "F43PH" in source:
+        raise ValueError(f"unexpected or repeated fault mode: {mode}")
+    if mode == "open-before-svc19":
+        anchor = ("         ST    0,M43R0Q\n"
+                  + bump("M43OATT"))
+        saved = "DQSAVE   DS    16F"
+        execute = anchor
+        deny = "         B     DQBAD"
+    else:
+        size, bad, saved = {
+            "descriptor32": (32, "DALFAIL", "DSAVE    DS    16F"),
+            "buffer268": (268, "DALNOMEM", "DSAVE    DS    16F"),
+            "handle16": (16, "HNEWBAD", "HSAVE    DS    16F"),
+        }[mode]
+        anchor = (f"         GETMAIN RC,LV={size}\n"
+                  "         LTR   15,15\n"
+                  f"         BNZ   {bad}")
+        execute = (f"F43GET   GETMAIN RC,LV={size}\n"
+                   "F43RET   LTR   15,15\n"
+                   f"         BNZ   {bad}")
+        deny = "         LA    15,8\n         B     F43RET"
+    if mode == "open-before-svc19":
+        execute = "F43GET   " + execute.lstrip()
+    replacement = "\n".join((
+        "         CLI   F43PH,X'00'",
+        "         BE    F43ARM",
+        "         CLI   F43PH,X'01'",
+        "         BNE   F43GET",
+        "         MVI   F43PH,X'02'",
+        deny,
+        "F43ARM   MVI   F43PH,X'01'",
+        execute,
+    ))
+    source = one(source, anchor, replacement)
+    source = one(source, saved,
+                 saved + "\nF43PH    DC    X'00'")
+    return source
+
+def transform(source: str, terminal_check: bool = False,
+              fault_mode: str | None = None) -> str:
     if "         ENTRY IOACCT" in source or any(
         f"{name:<8} DC    F'0'" in source for name in COUNTERS
     ):
@@ -176,6 +222,9 @@ def transform(source: str, terminal_check: bool = False) -> str:
     ))
     source = one(source, "         END   BCPLIO",
                  accessor + "\n         END   BCPLIO")
+    if fault_mode:
+        source = add_failure(source, fault_mode)
+
     if terminal_check:
         source = one(source, "DRAINDN  LM    0,10,DRSAVE",
                      terminal_assertions())
@@ -201,16 +250,20 @@ def main() -> None:
     ap.add_argument("source", type=Path)
     ap.add_argument("output", type=Path)
     ap.add_argument("--terminal-check", action="store_true")
+    ap.add_argument("--fault-mode", choices=FAULT_MODES)
     args = ap.parse_args()
     if args.source.resolve() == args.output.resolve():
         raise ValueError("must not overwrite source")
     result = transform(args.source.read_text(encoding="ascii"),
-                       terminal_check=args.terminal_check)
+                       terminal_check=args.terminal_check,
+                       fault_mode=args.fault_mode)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(result, encoding="ascii", newline="\n")
     print("M4.3 test-only source prepared (MVS NOT RUN)")
     if args.terminal_check:
         print("M4.3 post-IODRAIN terminal assertions armed")
+    if args.fault_mode:
+        print("M4.3 private counted fault mode: " + args.fault_mode)
     print("Counter IDs: " + ", ".join(
         f"{i}={name}" for i, name in enumerate(COUNTERS)))
     print(args.output)

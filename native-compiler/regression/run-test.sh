@@ -246,6 +246,14 @@ if [[ $runtime_pds == 1 ]]; then
                 }
                 account_args+=(--terminal-check)
                 ;;
+            counters-fault-*)
+                [[ -f "$native" ]] || {
+                    echo "run-test: counted fault needs native.asm" >&2
+                    exit 65
+                }
+                account_args+=(--terminal-check --fault-mode
+                               "${account_mode#counters-fault-}")
+                ;;
             *) echo "run-test: unknown accounting mode" >&2; exit 64 ;;
         esac
         account_asm="$work/bcplio-m43-account.asm"

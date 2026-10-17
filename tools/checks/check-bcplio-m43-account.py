@@ -86,5 +86,31 @@ assert shim.count("         END") == 1
 assert all(line.isascii() and len(line) <= 71
            for line in shim.splitlines())
 print("M4.3 native counter shim base setup: source check PASS")
+# Four combined fault/terminal modes. Verify each carries exactly one
+# fail injection, all original allocation/SVC calls, and terminal checks.
+for fault in ("descriptor32", "buffer268", "handle16",
+              "open-before-svc19"):
+    candidate = transform(original, terminal_check=True, fault_mode=fault)
+    assert candidate.count("F43PH    DC    X'00'") == 1, fault
+    assert candidate.count("F43ARM   MVI   F43PH,X'01'") == 1, fault
+    assert candidate.count("         BNE   F43GET") == 1, fault
+    assert candidate.count("         BNE   M43TRAP") == 6, fault
+    assert candidate.count("         BNZ   M43TRAP") == 2, fault
+    assert candidate.count("         ENTRY IOACCT") == 1, fault
+    assert candidate.count("M43DONE  LM    0,10,DRSAVE") == 1, fault
+    for site in ("GETMAIN RC,LV=32", "GETMAIN RC,LV=268",
+                 "GETMAIN RC,LV=16", "         SVC   19",
+                 "         SVC   20"):
+        assert candidate.count(site) == original.count(site), (fault, site)
+    assert all(row.isascii() and len(row) <= 71
+               for row in candidate.splitlines()), fault
+    try:
+        transform(candidate, terminal_check=True, fault_mode=fault)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"re-instrumented fault: {fault}")
+print("M4.3 combined counted failure/terminal source checks: PASS")
+
 print("M4.3 private source accounting checks: PASS")
 print("MVS assembly and execution/accounting evidence: NOT TESTED")

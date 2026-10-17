@@ -145,6 +145,41 @@ Do not replace canonical source or install any generated object.
 Source-only checks and targeted regression outcomes **PASS**.
 Counted synthetic failure modes (M4.3.2b), the complete
 compatibility panel, and production OBJ promotion remain separate.
+## M4.3.2b — counted failure paths STAGED (not run)
+
+Regressions **142–145** combine the isolated 139 private counter
+query, 140/141 post-IODRAIN terminal assertions, and the original
+135–138 compiled-BCPL behavior. Only the **second** selected
+operation is denied in the private assembler; the third attempt
+uses the actual GETMAIN or SVC19 and must succeed.
+
+| Test | Fault | Expected counts immediately after denial (G32/F32, G268/F268, G16/F16, OPEN attempt/success, CLOSE attempt/returned) |
+|---|---|---|
+| 142 | descriptor32 | 1/0, 1/0, 1/0, 1/1, 0/0 |
+| 143 | buffer268 | 2/1, 1/0, 1/0, 1/1, 0/0 |
+| 144 | handle16 | 2/1, 2/1, 1/0, 2/2, 1/1 |
+| 145 | pre-SVC19 DQOPEN | 2/1, 2/1, 1/0, 1/1, 0/0 |
+
+The BCPL tests also verify *after both successful stream closes*:
+descriptor/buffer frees match their actual allocations,
+OPEN/CLOSE counts match real SVC operations, and 16-byte
+handle tombstones remain until FINISH. FINISH executes the
+same private DRAINDN guard already accepted in 140/141:
+all counts balanced and both lists empty.
+
+Each new regression has **only** an `io-accounting.txt` marker,
+with value `counters-fault-<mode>`; it does not use the original
+`io-fault-mode.txt` or `io-open-fault.txt` to avoid
+double-instrumenting BCPLIO. The marker requires a private,
+separately assembled `native.asm` counter-query shim.
+Existing regression 135–138 modes remain untouched.
+
+A synthetic denied operation is **not a real MVS failure**,
+and source-only checks are not IFOX or JES evidence. No
+new QSAM interface, BCPL global, installed object or promoted
+runtime source is introduced. Focused 142..145 tests are
+pending; M4.3 remains OPEN until their MVS evidence is accepted.
+
 **M4.3.2 (partially staged):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
 
 **M4.3 CLOSE:** Record the MVS job IDs, Cambridge/IFOX/IEWL/GO outcomes, generated object/link isolation and count observations, identify remaining host-level limitations, then accept only after all supported paths are proven. The owner's full regression deferral, M4.4 compatibility, M5 per-DD attribution and no OBJ promotion remain unchanged.
