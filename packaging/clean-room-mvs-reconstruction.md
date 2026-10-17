@@ -8,9 +8,9 @@ run the entire native regression panel **00..145 from OBJ alone**.
 
 **Authority:** the owner explicitly requested an all-OBJ rebuild with the
 latest canonical source. This supersedes the historical pre-D6 production
-source hold. It is *not* a claim that the new production build or regression
-has already passed. Only the earlier DEVOBJ(BCPLM6) dynamic-stream panel
-has measured 145 PASS, 0 FAIL, 1 expected SKIP (083).
+source hold. The complete source-based production reconstruction was accepted
+on 17 October 2026 against baseline commit 04c74af8b07b5cdc2aaec44d79f020a848cb7e65,
+with 145 PASS, 0 FAIL, and 1 expected SKIP (083).
 
 ## Scope and destructive boundary
 
@@ -286,7 +286,7 @@ tools/native/run-production-regression 0 145
 python3 tools/checks/check-m44-full-panel-logs.py
 ```
 
-**Target, not yet measured on the new OBJ build:**
+**Measured on 17 October 2026 on the new OBJ build:**
 145 PASS / 0 FAIL / one source-only SKIP 083 among
 146 numbered cases. Case 048 is deliberately compile-only
 but counts as PASS when compilation succeeds.
@@ -305,8 +305,8 @@ payload step RCs, the six-member `NATIVE_OBJ` inventory,
 each focused regression result, the full-panel summary and its
 145/145 log audit. Protect credentials and raw MVS data.
 
-The **new complete purge-to-OBJ procedure has not yet been executed
-or verified end-to-end**. Do not mark it accepted solely because
-this source-and-tooling commit exists. The previously accepted
+The **complete purge-to-OBJ procedure was executed and verified
+end-to-end on 17 October 2026**. See the
+[acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md). The previously accepted
 [BCPLIO dynamic-stream milestone](bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md)
 documents the earlier DEVOBJ results, not the new production result.
