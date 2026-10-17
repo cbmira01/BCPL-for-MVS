@@ -70,6 +70,18 @@ M5 additionally requires reproducible separate DD SYSOUT extraction,
 negative attribution tests (swapped DDs), and physical FB132 record
 comparison before closing the overall dynamic-stream milestone.
 
+## M5.0 current-state note (2026-10-17)
+
+M4.4 has now accepted a full DEVOBJ 00..145 run
+(145 PASS / 0 FAIL / SKIP 083), superseding the
+historical 00..132 baseline stated below.
+Regression 133 passed in that complete run.
+Physical REPORT/REPORT2 DD attribution and original
+FB132 bytes remain outstanding under the
+[M5.0 acceptance contract]
+(Milestone-BCPLIO-dynamic-stream-M5.0-contract.md).
+No lossless raw spool export is claimed.
+
 ## Focused regression 133 — ACCEPTED on DEVOBJ (MVS 2026-10-17)
 
 Operator pulled Git main from `c4f7a8d` through `b25d643`

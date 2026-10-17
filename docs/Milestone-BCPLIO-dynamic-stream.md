@@ -1,9 +1,27 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 proposed contract for review; M5.1–M5.5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.0 — source inventory and physical evidence contract (2026-10-17)
+
+The [M5.0 physical evidence and acceptance contract]
+(Milestone-BCPLIO-dynamic-stream-M5.0-contract.md) records a
+source-only inventory of existing combined-JES, class-separated
+printer and negative-test tooling, plus the M5.1 acquisition
+decision tree. It distinguishes **DD destination identity**
+from original **132-byte EBCDIC FB132 record fidelity**.
+It explicitly retains built-in BCPIN, BCPINB, SYSPRINT,
+BCPALT and the non-QSAM PARM pseudo-stream.
+
+**M5.0 draft ready for owner review; no MVS experiment or
+raw spool/dataset capture has been demonstrated.** The accepted
+M4.4 candidate baseline remains 00..145: 145 PASS /
+0 FAIL / expected SKIP 083. No runtime, PDS, ABI or
+test-harness implementation changed here. M5.1–M5.5
+are not accepted.
 
 ## M4.4 formally closed — full DEVOBJ compatibility (2026-10-17)
 

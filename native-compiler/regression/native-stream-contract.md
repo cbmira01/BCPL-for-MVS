@@ -120,3 +120,15 @@ and independence of stream buffers/cursors. Provisional/unfinished:
 historical FINDPARM and WRAPOUTPUT contracts, generalized streams,
 full QSAM error mapping, true DD-attributed record validation,
 and preservation of significant input trailing blanks.
+
+## M5.0 dated addendum (2026-10-17)
+
+The original fixed-DD source contract remains historical.
+The DEVOBJ(BCPLM6 + BCPLIO) candidate implements arbitrary
+named DD streams and passed M4.4 00..145 with 145 PASS /
+0 FAIL / expected SKIP 083. Independent, lossless
+DD-specific output records are not yet verified. See
+[the M5.0 contract]
+(../../docs/Milestone-BCPLIO-dynamic-stream-M5.0-contract.md).
+M5.4 will produce a complete up-to-date dynamic contract;
+do not silently substitute this original bootstrap contract.
