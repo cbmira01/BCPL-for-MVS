@@ -1,6 +1,26 @@
 # 136 — M4.1 buffer/DCB GETMAIN 268 deterministic failure
 
-**Status: STAGED (MVS execution and acceptance pending).**
+**Status: ACCEPTED — targeted MVS regression 136 PASS against the
+isolated test-only BCPLIO on DEVOBJ (2026-10-17 project record).**
+
+The operator pulled `main` from `175fc2e` through `831ee82` and
+ran `tools/native/run-regression 136 --show-output` with
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ
+BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`.
+The result was `PASS 136`, with **PASS 1 / FAIL 0 / SKIP 0 /
+TOTAL 1**. No individual JES job number or step return-code report
+was supplied; the successful regression runner result is the
+observable acceptance evidence.
+
+This proves synthetic failure-path behavior and recovery after the
+268-byte QSAM region allocation is denied on its second invocation:
+the FIND returns zero, live DD01 remains selected with its input
+cursor preserved, a subsequent DD02 FIND succeeds, and both streams
+remain readable and closable. Source inspection identifies the
+`DALNOMEM` 32-byte FREEMAIN branch, but this result does **not**
+independently count successful FREEMAIN operations or demonstrate
+genuine MVS low-storage exhaustion. Production `OBJ` and installed
+`DEVOBJ` objects were not changed.
 
 Candidate-only compiled BCPL against an **INLINE-assembled test-only
 BCPLIO**, generated from canonical `native-compiler/asm/bcplio.asm`.
