@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 CLOSED 135–137 PASS; M4.2 synthetic test 138 staged, genuine OPEN pending; M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed (135–137 PASS); M4.2.0 synthetic 138 PASS, real OPEN pending; M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -346,6 +346,26 @@ M4.3 resource accounting remain required.
 Nothing has been rebuilt or promoted in installed
 `DEVOBJ` or production `OBJ`. The owner's full
 native regression deferral is still in effect.
+
+
+## M4.2 synthetic OPEN failure case — PASS 138
+
+After pulling through `5c890d3`, the operator accepted
+the host-side source transformer check for private synthetic
+pre-SVC19 DQOPEN denial and ran compiled-BCPL regression
+**138** with the isolated test-only BCPLIO object. Outcome:
+**PASS 1, FAIL 0, SKIP 0, TOTAL 1**.
+The failed FIND returned zero, retained a previously
+selected input stream and cursor, and permitted successful
+retry. This completes **M4.2.0 only**.
+
+The denial is generated **before SVC19**; no genuinely
+unsuccessful QSAM OPEN has yet been demonstrated, and
+S013/IEC/IEF behavior under MVS 3.8J remains uncharacterized.
+M4.2.1 and M4.3 still require separate diagnostic evidence.
+The owner's full-panel deferral remains in force, with
+the most recent full acceptance 00..132. No installed
+development or production runtime PDS member was changed.
 
 ## Handoff / next-conversation prompt
 
