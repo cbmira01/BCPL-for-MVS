@@ -5,6 +5,23 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M5.1.2 source-review hold — corrected assembler v2 (2026-10-17)
+
+The initial `M5D124R` FB132-dataset probe was
+successfully generated (5/5 offline tests, no JES
+submission), but review found its standalone verifier
+lacked the MVS standard 18-fullword save-area
+linkage. **Do not submit the v1 job.**
+A versioned corrected generator now stages
+`M5D124B` with standard R13/save-area entry and
+normal/failure epilogues, leaving v1 artifacts intact.
+The owner must rerun the offline preparation; neither
+v2 assembly nor any MVS GO evidence exists yet.
+See the [M5.1 plan]
+(Milestone-BCPLIO-dynamic-stream-M5.1-plan.md).
+M5.1.2 remains OPEN and no PDS/runtime change
+has occurred.
+
 ## M5.1.2 — independent FB132 dataset probe staged (2026-10-17)
 
 M5.1.1's accepted JOB 8184 physical class routing

@@ -235,3 +235,54 @@ a distinct evidence obligation under the strict
 M5.0 contract, not silently waived by a dataset test.
 
 **M5.1.2 remains STAGED, not executed. M5.1 OPEN.**
+
+## M5.1.2 source review and linkage correction — 2026-10-17
+
+The operator ran **5/5 original offline generator unit
+tests PASS**, and staged the initial unsubmitted three-file
+bundle `m51-fb132-dataset.jcl`,
+`m51-fb132-verifier.asm`, and
+`m51-fb132-dataset.json`.
+Preparation alone does not validate the IFOX assembler.
+
+A source review identified a serious MVS linkage convention
+problem in the generated verifier: it saved only R14, instead
+of using the repository's proven standard 18-fullword
+save-area prologue/epilogue. Such a program cannot be
+accepted as a reliable independent MVS checker, even if
+a simple offline string-oriented generator test passes.
+
+**The v1 bundle MUST NOT BE SUBMITTED.** The fixed
+generator now emits a separate `M5D124B` job and
+three **v2** artifact names, preserving the v1
+untracked workarea files without overwrite:
+`m51-fb132-dataset-v2.jcl`,
+`m51-fb132-verifier-v2.asm`, and
+`m51-fb132-dataset-v2.json`.
+
+The verifier now uses the established
+`STM 14,12,12(13)`, `LR 12,15`,
+`USING M5V124,12`, `ST 13,OLDSAVE+4`,
+`LA 13,NEWSAVE`, and 18F save areas.
+Both normal RC0000 and failure RC0012 exits
+restore R13 and R14..R12, then set R15 only
+*after* restoring saved registers, matching
+earlier accepted native assembler probes.
+The five offline tests now also assert the
+critical MVS linkage statements.
+
+**Next operator source-only step (no new JES job):**
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+python3 tools/checks/test-m51-fb132-dataset-probe.py
+python3 tools/checks/m51-fb132-dataset-probe.py prepare
+```
+
+Only when this passes should the **v2** generated JCL
+and assembler be reviewed for submission. Do not
+submit either v1 or v2 yet; M5.1.2 is still a
+new verifier program without first-run IFOX evidence.
+No BCPL compiler, BCPLIO, BCPLMAIN or PDS object
+was modified to make this correction.

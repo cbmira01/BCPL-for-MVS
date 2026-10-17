@@ -17,10 +17,10 @@ ROOT = Path(__file__).resolve().parents[2]
 CASE = ROOT / "native-compiler/regression/124-dynamic-dd-selected-output"
 WORK = ROOT / "workarea/native-regression/124-dynamic-dd-selected-output"
 SOURCE = WORK / "runtime-pds-go.jcl"
-TARGET = WORK / "m51-fb132-dataset.jcl"
-ASM = WORK / "m51-fb132-verifier.asm"
-META = WORK / "m51-fb132-dataset.json"
-JOB = "M5D124R"
+TARGET = WORK / "m51-fb132-dataset-v2.jcl"
+ASM = WORK / "m51-fb132-verifier-v2.asm"
+META = WORK / "m51-fb132-dataset-v2.json"
+JOB = "M5D124B"
 ENTRY = "M5V124"
 
 
@@ -34,9 +34,11 @@ def verifier(records1, records2):
         raise ValueError("regression 124 immutable record fixtures drifted")
     lines = [
         f"{ENTRY}   CSECT",
-        "         BALR  12,0",
-        "         USING *,12",
-        "         ST    14,SAV14",
+        "         STM   14,12,12(13)",
+        "         LR    12,15",
+        f"         USING {ENTRY},12",
+        "         ST    13,OLDSAVE+4",
+        "         LA    13,NEWSAVE",
         "         MVI   N1,X'00'",
         "         MVI   N2,X'00'",
         "         OPEN  (DCB1,(INPUT))",
@@ -63,16 +65,20 @@ def verifier(records1, records2):
         "         BNE   BAD",
         "         CLOSE (DCB1)",
         "         CLOSE (DCB2)",
+        "GOOD     L     13,OLDSAVE+4",
+        "         LM    14,12,12(13)",
         "         SR    15,15",
-        "         L     14,SAV14",
         "         BR    14",
         "BAD      CLOSE (DCB1)",
         "         CLOSE (DCB2)",
+        "         L     13,OLDSAVE+4",
+        "         LM    14,12,12(13)",
         "         LA    15,12",
-        "         L     14,SAV14",
         "         BR    14",
+        "         LTORG",
         "         DS    0F",
-        "SAV14    DS    F",
+        "OLDSAVE  DS    18F",
+        "NEWSAVE  DS    18F",
         "N1       DC    X'00'",
         "N2       DC    X'00'",
         "         DS    0F",
@@ -162,6 +168,7 @@ def transform(deck, asm):
 
 
 def prepare():
+    # Preserve first-stage v1 files as historical evidence; stage v2 separately.
     if any(path.exists() for path in (TARGET, ASM, META)):
         raise ValueError("previous M5.1.2 artifacts exist; refusing overwrite")
     if not SOURCE.exists():
@@ -177,7 +184,7 @@ def prepare():
     TARGET.write_text(deck, encoding="ascii", newline="\n")
     ASM.write_text(asm, encoding="ascii", newline="\n")
     meta = {
-        "schema": "m51-dataset-readback-v1",
+        "schema": "m51-dataset-readback-v2",
         "git_sha": rev.stdout.strip(),
         "job": JOB, "writer": "GO", "verifier": "VCHK",
         "source_sha256": sha(SOURCE), "deck_sha256": sha(TARGET),
@@ -189,7 +196,7 @@ def prepare():
         "state": "PREPARED_NOT_EXECUTED",
     }
     META.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
-    print("M5.1.2 PREPARED; no MVS job submitted")
+    print("M5.1.2 corrected v2 PREPARED; no MVS job submitted")
     for path in (TARGET, ASM, META):
         print("  " + str(path.relative_to(ROOT)))
     print("Inspect assembler and JCL before any manual submission.")
