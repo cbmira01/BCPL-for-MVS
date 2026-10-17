@@ -1,6 +1,12 @@
 # 128 — FINISH drains outstanding dynamic streams
 
-Status: **STAGED RED GATE; not run or accepted.**
+**RED GATE CONFIRMED:** Cambridge JOB 7058 compiled; GO payload JOB
+7059 assembled and linked RC0000 and exited normally RC0000, but
+the primary marker was present while the pending REPORT record was
+missing. The harness correctly returned FAIL 128. IOFIN cleanup
+source is staged in commit `8597a88`, but **not MVS validated**.
+
+**Acceptance remains open.**
 
 This DEVOBJ-only compiled-BCPL test opens two output DDs (REPORT
 and REPORT2) and an input DD (DD01). It leaves two partially filled
