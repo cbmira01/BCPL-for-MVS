@@ -592,3 +592,32 @@ tools/native/run-regression 113 --show-output
 tools/native/run-regression 0 123
 ```
 Targets for 125..127: 3 PASS; for 124 and 113: one PASS each; for 00..123: 123 PASS, 0 FAIL, expected one SKIP (083).
+
+## Post-JOB 6799 compatibility checkpoint ACCEPTED: 00–127 (operator 2026-10-17)
+
+After staging duplicate-FIND fix with JOB 6799 (ASMIO/PUTIO both RC0000), operator ran all required regression checks from repository root using:
+
+```sh
+export BCPL_RUNTIME_PDS=1
+export BCPL_RUNTIME_LIBRARY=DEVOBJ
+export BCPL_RUNTIME_CANDIDATE=1
+export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+
+tools/native/run-regression 125 127
+tools/native/run-regression 124 --show-output
+tools/native/run-regression 113 --show-output
+tools/native/run-regression 0 123
+```
+
+The first invocation mistakenly attempted these from the `native-compiler/` subdirectory; Bash returned `No such file or directory` for the runner. This was corrected with `cd ~/Source/Repos/BCPL-for-MVS`. Actual executed results were:
+
+| Run | PASS | FAIL | SKIP | TOTAL |
+| --- | ---: | ---: | ---: | ---: |
+| 125..127 | 3 | 0 | 0 | 3 |
+| 124 | 1 | 0 | 0 | 1 |
+| 113 (focused) | 1 | 0 | 0 | 1 |
+| 00..123 | 123 | 0 | 1 | 124 |
+
+The only skip was **083 source-only instrumentation**, as established previously. Regression 113 was also run in the 00..123 panel; there are **127 distinct passing test cases out of 128 numbered 00..127**, with **zero failures and one expected skip**. No newer assembler/source changes occurred between JOB 6799 and these regression runs. The operator's log reports the summary and individual PASS lines, not separate per-test JES job numbers; do not infer those numbers.
+
+**ACCEPTED: full DEVOBJ backward-compatibility gate after duplicate FIND.** Current source, accepted 125 (two dynamic inputs), 126 (twelve simultaneous inputs), 127 (duplicate FIND), 124 (dynamic output), and native 00..123 all pass. Production `HERC02.BCPL.NATIVE.OBJ` is still excluded. The M1 milestone remains OPEN: dynamic IOFIN cleanup on FINISH/STOP, >=13 simultaneous DDs, post-close/new-handle/reopen semantics, error handling, and independent physical DD output attribution are not established by this result.
