@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: synthetic 138 PASS; JOB 7874 returned HANDLE; M4.2.2 RG891R JCL prepared and unsubmitted (PDS without member); M4.2 actual failing OPEN still unproven; full panel deferred.**
+**Status: synthetic 138 PASS; JOB 7874 returned HANDLE; M4.2.2 RG891R JOB 7875 executed (GO RC0000), awaiting full JES report for FIND/OPEN outcome; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -468,3 +468,42 @@ On submission, preserve the job summary and complete
 IEF/IEC/ABEND messages. An actual unsuccessful SVC19 is
 not yet established. The owner-deferred full regression
 panel and prohibition on object promotion remain unchanged.
+
+## M4.2.2 RG891R exploratory JOB 7875 — execution result
+
+On 17 October 2026 the operator submitted the previously
+prepared `workarea/m42-real-open/pds-open.jcl`, using
+`DD02 DD DSN=SYS1.MACLIB,DISP=SHR` without a member
+and the ordinary DEVOBJ/BCPLM6 runtime link. JES assigned
+**JOB 7875**, `RG891R`. The operator reported:
+
+```text
+JOB 7875  RG891R
+17 OCT 26  05.42.27 - 05.42.27
+ASMAP      IFOX00       RC=0000
+LKED       IEWL         RC=0000
+GO         PGM=*.DD     RC=0000
+
+JOB RESULT: SUCCESS
+HIGHEST RC: 0000
+Assembler: Statements flagged 0; highest severity 0
+Resources: 271 cards; 502 SYSOUT records
+```
+
+The task did **not** report an S013 or another GO abend.
+The extracted JES report was saved to
+`workarea/m42-real-open/pds-open-report.txt`, but its
+contents have **not yet been supplied**. The GO RC0000
+does **not** establish what `FINDINPUT("DD02")` returned
+and does not prove whether the actual QSAM OPEN was
+attempted or rejected. Inspect the report for
+`M42 BEFORE FIND DD02`, `M42 DD02 RETURNED ZERO`,
+`M42 DD02 RETURNED HANDLE`,
+`M42 SURVIVED FIND DD02`, and any IEC/IEF messages.
+
+**Disposition: completed exploratory execution; outcome of
+OPEN still uncharacterized.** Neither M4.2.2 nor the
+M4.2 real OPEN-failure gate can be closed on this summary
+alone. Do not request new workstation checks, recompilation,
+or a full native regression panel. The full-panel deferral
+and no object-promotion policy remain in force.
