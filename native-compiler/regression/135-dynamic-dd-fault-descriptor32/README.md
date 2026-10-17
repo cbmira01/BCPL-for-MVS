@@ -1,6 +1,31 @@
 # 135 — M4.1 descriptor GETMAIN 32 deterministic failure
 
-**Status: STAGED (MVS execution and acceptance pending).**
+**Status: ACCEPTED — targeted native regression 135 PASS (DEVOBJ isolated
+test-only BCPLIO; 2026-10-17 project record).**
+
+The operator pulled repository `main` through `175fc2e`. The
+source-only checker reported PASS for `descriptor32`, `buffer268`,
+`handle16`, and its overall test. The operator then ran:
+
+```sh
+BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 135 --show-output
+```
+
+Observed `RUN 135`, `PASS 135`, and the summary **PASS 1,
+FAIL 0, SKIP 0, TOTAL 1**. The runner reported success for its
+normal compile/assemble/link/GO and expected-output checks; the
+console excerpt does not expose the individual JES step RCs or
+job IDs. Do not invent those values.
+
+**Accepted scope:** synthetic second-visit failure at the
+32-byte DALLOC descriptor GETMAIN; non-destructive zero-valued
+FINDINPUT failure; preservation of the first input stream
+and cursor; and successful subsequent retry. This does not
+prove a genuine MVS allocator failure, independent memory
+reclamation counts, or the other two injection cases.
+No installed DEVOBJ or production OBJ member was overwritten.
 
 Candidate-only compiled BCPL against an **INLINE-assembled test-only
 BCPLIO**, generated from canonical `native-compiler/asm/bcplio.asm`.
