@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1 accepted; full DEVOBJ 00..131 baseline 131 PASS/0 FAIL/skip 083; M2 input reopen 132 staged; M4–M5 open  
+Status: M0/M1 accepted; M2 focused gates 130–132 PASS; DEVOBJ 00..132 full sweep pending; M4–M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -116,7 +116,7 @@ for this candidate. The broader dynamic-stream milestone is **not closed**:
 the original M2 threshold requires 13+ simultaneous independent streams
 and close/reopen semantics, while M4/M5 still require resource failures,
 instrumented reclamation, and lossless DD-specific output attribution.
-Regression 130 (sixteen concurrent input DDs) PASSED on DEVOBJ; no higher count is planned. Regression 131 (reopen same output DD with a fresh nonrecycled handle) also PASSED on DEVOBJ. The complete 00..131 DEVOBJ panel now PASSED (131 PASS, 0 FAIL, expected skip 083); the next candidate-only regression 132 probes input-DD reopen with fresh stable identity, explicitly without assuming DD DATA rewind. Failure injection, reclamation accounting and lossless DD-specific attribution remain open.
+Regression 130 (sixteen concurrent input DDs) PASSED on DEVOBJ; no higher count is planned. Regression 131 (reopen same output DD with a fresh nonrecycled handle) also PASSED on DEVOBJ. The complete 00..131 DEVOBJ panel now PASSED (131 PASS, 0 FAIL, expected skip 083); candidate-only regression 132 also PASSED, demonstrating input-DD close/reopen with fresh stable identity (without reading the reopened DD DATA). The complete 00..132 compatibility sweep is pending. Failure injection, reclamation accounting and lossless DD-specific attribution remain open.
 See `Milestone-BCPLIO-dynamic-stream-M1-progress.md` and
 `Milestone-BCPLIO-dynamic-stream-M2-progress.md`.
 
