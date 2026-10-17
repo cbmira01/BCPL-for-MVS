@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0 accepted 2026-10-16; M1 active (candidate DD streams 124-127 accepted; lifecycle work outstanding)  
+Status: M0 accepted; M1 engineering gates validated through 129; M2 sixteen-stream test staged; overall milestone open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -99,6 +99,29 @@ Implement tests in the style of the existing numbered native regression director
 ## Acceptance criteria
 
 A native BCPL application compiled by our native compiler can request an arbitrary, JCL-allocated DD by name via normal BCPL stream calls; can retain at least twelve simultaneously open ordinary streams (and demonstrate a thirteenth if MVS resources permit); can switch among streams with independent state; and can close/reopen and complete with reliable cleanup. Existing baseline stream/BLIB/compiler regression remains green. The interface remains ordinary historical BCPL, and no native compiler change or extra library extension is required.
+
+## Implementation status after JOB 7065 (MVS 2026-10-17)
+
+The separately linked DEVOBJ candidate has passed compiled-BCPL dynamic
+output/input regressions **124–129**, including twelve simultaneous input
+DDs, normalized duplicate-FIND identity, and automatic flushing of
+unfinished dynamic output buffers at FINISH and STOP(8).
+BCPLIO source at commit `8597a88` was assembled and installed in
+development-only `BLDDEVI` payload **JOB 7065** (ASMIO/PUTIO RC0000,
+zero flagged statements). The operator then ran the complete **00–129**
+panel, observing **129 PASS / 0 FAIL / 1 expected SKIP (083)**.
+
+**The M1 DD discovery and installation engineering criteria are satisfied**
+for this candidate. The broader dynamic-stream milestone is **not closed**:
+the original M2 threshold requires 13+ simultaneous independent streams
+and close/reopen semantics, while M4/M5 still require resource failures,
+instrumented reclamation, and lossless DD-specific output attribution.
+Regression 130 (sixteen concurrent input DDs) is staged, not yet run.
+See `Milestone-BCPLIO-dynamic-stream-M1-progress.md` and
+`Milestone-BCPLIO-dynamic-stream-M2-progress.md`.
+
+Production `HERC02.BCPL.NATIVE.OBJ` is unchanged; no promotion is
+authorized by these test results.
 
 ## Handoff / next-conversation prompt
 
