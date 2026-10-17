@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; JOB 7874 returned HANDLE; M4.2.2 JOB 7875 GO RC0000, JES report pending; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; JOB 7874 and 7875 returned HANDLE rather than failed OPEN; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -504,6 +504,30 @@ records and IEC/IEF messages are reviewed, a zero
 `FINDINPUT` versus returned handle, and RDJFCB versus
 SVC19 attribution remain unresolved. M4.2 does not
 close; full native regression remains owner-deferred.
+
+
+## M4.2.2 full JOB 7875 result — valid handle, no OPEN failure
+
+The owner supplied the full `RG891R` JOB 7875
+JES report for the read-only, no-member
+`SYS1.MACLIB` QSAM input candidate. GO
+`DD02` was allocated to `SYS1.MACLIB` and
+JES records include `390 ALLOCATED TO DD02`.
+The compiled BCPL source emitted
+`M42 BEFORE FIND DD02`,
+`M42 DD02 RETURNED HANDLE`,
+`M42 SURVIVED FIND DD02`; GO RC0000
+with no IEC OPEN errors or abend.
+
+Together with the earlier SYSOUT-as-input JOB 7874,
+**both actual-OPEN exploratory attempts returned handles**.
+This does not demonstrate successful GET from either
+DD, nor the requested actual OPEN failure recovery.
+M4.2 remains OPEN; source-guided candidate for
+the next experiment is deliberate incompatibility
+of QSAM FB record length and block size at OPEN.
+The full regression panel remains owner-deferred;
+no canonical runtime or installed objects changed.
 
 ## Handoff / next-conversation prompt
 
