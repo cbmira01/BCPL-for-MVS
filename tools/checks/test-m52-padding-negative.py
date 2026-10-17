@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline M5.2 fault-injection checks; does not submit to JES."""
 import importlib.util
+import re
 from pathlib import Path
 import unittest
 
@@ -37,10 +38,31 @@ class NegativeControls(unittest.TestCase):
 
     def test_positive_identity_and_only_one_fault(self):
         a, b = self.neg_deck.decode(), self.original_deck
+        restored = re.sub(r"^//M52PAD(?=\s+JOB\b)", "//M5D124B",
+                          a, count=1, flags=re.M)
         self.assertEqual(
-            a.replace("//M52PAD JOB", "//M5D124B JOB", 1)
-             .replace(module.INSTRUCTION + "\n", "", 1), b)
+            restored.replace(module.INSTRUCTION + "\n", "", 1), b)
         self.assertEqual(a.count(module.INSTRUCTION), 1)
+
+    def test_real_mvs_job_card_spacing(self):
+        # The real generated GO deck is not required to have exactly one
+        # blank before JOB. Cover the formatting missed by the first tests.
+        for spacing in (" ", "  ", "    "):
+            with self.subTest(spacing=repr(spacing)):
+                original = self.fb.transform(
+                    SAMPLE.replace("//RG124R JOB",
+                                   "//RG124R" + spacing + "JOB"),
+                    self.original_asm)
+                deck, asm = module.negative_variant(
+                    original.encode("ascii"), self.original_asm.encode("ascii"))
+                normalized = re.sub(
+                    r"^//M52PAD(?=\s+JOB\b)", "//M5D124B",
+                    deck.decode("ascii"), count=1, flags=re.M)
+                normalized = normalized.replace(
+                    module.INSTRUCTION + "\n", "", 1)
+                self.assertEqual(normalized, original)
+                self.assertEqual(
+                    asm.decode("ascii").count(module.INSTRUCTION), 1)
 
     def test_last_padding_byte_and_exact_clc(self):
         self.assertEqual(" ".encode("cp037"), b"\x40")

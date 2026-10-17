@@ -91,10 +91,15 @@ def negative_variant(positive_deck: bytes, positive_asm: bytes) -> tuple[bytes, 
 
     original_go = positive_deck.decode("ascii").split("//VASM     EXEC", 1)
     negative_go = deck.split("//VASM     EXEC", 1)
-    if len(original_go) != 2 or len(negative_go) != 2 or (
-        negative_go[0].replace("//" + JOB + " JOB", "//M5D124B JOB", 1)
-        != original_go[0]
-    ):
+    # The real authenticated MVS JOB card can have multiple spaces between
+    # the job name and JOB; the minimal offline fixture used only one.
+    # Restore JUST the name token and preserve the exact original spacing.
+    if len(original_go) != 2 or len(negative_go) != 2:
+        raise ValueError("compiled BCPL GO/JCL changed in negative probe")
+    restored_go, restored_count = re.subn(
+        rf"^//{re.escape(JOB)}(?=\s+JOB\b)", "//M5D124B",
+        negative_go[0], count=1, flags=re.M)
+    if restored_count != 1 or restored_go != original_go[0]:
         raise ValueError("compiled BCPL GO/JCL changed in negative probe")
     if deck.count(INSTRUCTION) != 1:
         raise ValueError("missing unique expected-padding mutation")

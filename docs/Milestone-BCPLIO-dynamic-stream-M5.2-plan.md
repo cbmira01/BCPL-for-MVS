@@ -106,3 +106,33 @@ RC0000, plus negative offline tests PASS and an evidence note.
 Do not begin M5.3 or rerun the entire native panel before reviewing
 this evidence. The combined SYSOUT text tool need not preserve JES2
 internal spool records; M5.1's QSAM responsibility boundary stands.
+
+## M5.2 offline generator correction (2026-10-17)
+
+The first operator offline run at Git `ba2327f` reported
+**10/10 A/Z attribution tests PASS**, **7/7 M5.2 unit
+tests PASS**, then:
+```text
+m52-padding-negative: compiled BCPL GO/JCL changed in negative probe
+m52-padding-negative: M5.2 staged bundle incomplete
+```
+
+**Diagnosis:** the M5.2 preflight reversed a JOB-name edit with a
+literal string containing exactly one blank before the `JOB` keyword.
+The real authenticated GO deck preserves a wider blank field after
+the seven-character JOB name; the shorter negative name changes only
+the *name token* but keeps those blanks. The substring reversal
+therefore missed the name, and the fail-closed checker correctly
+aborted. The second error simply followed because `prepare` had
+not created any artifacts.
+
+**Fix:** restore the JOB name with an anchored
+`^//M52PAD(?=\\s+JOB\\b)` token match; leave all spaces and
+every other JCL character unchanged. Added a dedicated regression
+test of one, two and four spaces before JOB (in addition to the
+prior source/linkage, byte, DD and EOF checks). No changes to
+BCPLIO, QSAM I/O, the MVS verifier, its padding fault instruction,
+or physical DD assignments.
+
+Rerun the same offline commands after pulling the fix.
+No MVS job was submitted or an incorrect result accepted.
