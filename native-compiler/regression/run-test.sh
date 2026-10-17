@@ -217,6 +217,33 @@ if [[ $runtime_pds == 1 ]]; then
             exit $?
         pds_args+=(--test-io-asm "$fault_asm")
     fi
+    # M4.3 isolated accounting: no combined fault mode.
+    if [[ -f "$case_dir/io-accounting.txt" ]]; then
+        if [[ -f "$case_dir/io-fault-mode.txt" ||
+              -f "$case_dir/io-open-fault.txt" ]]; then
+            echo "run-test: accounting/fault markers conflict" >&2
+            exit 64
+        fi
+        if [[ ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
+              ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
+              ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
+            echo "run-test: M4.3 needs DEVOBJ BCPLM6" >&2
+            exit 64
+        fi
+        grep -qx counters "$case_dir/io-accounting.txt" || {
+            echo "run-test: unknown M4.3 accounting mode" >&2
+            exit 64
+        }
+        [[ -f "$native" ]] || {
+            echo "run-test: M4.3 requires native.asm" >&2
+            exit 65
+        }
+        account_asm="$work/bcplio-m43-account.asm"
+        python3 "$root/tools/checks/prepare-bcplio-m43-account.py" \
+            "$root/native-compiler/asm/bcplio.asm" "$account_asm" ||
+            exit $?
+        pds_args+=(--test-io-asm "$account_asm")
+    fi
     if [[ -f "$native" ]]; then
         pds_args+=(--native "$native")
     fi

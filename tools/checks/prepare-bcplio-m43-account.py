@@ -33,6 +33,19 @@ def transform(source: str) -> str:
         f"{name:<8} DC    F'0'" in source for name in COUNTERS
     ):
         raise ValueError("test instrumentation already present")
+    # Fail closed on extra or missing uninstrumented call sites.
+    for call, expected in (
+        ("GETMAIN RC,LV=32", 1),
+        ("GETMAIN RC,LV=268", 1),
+        ("GETMAIN RC,LV=16", 1),
+        ("FREEMAIN R,LV=32", 2),
+        ("FREEMAIN R,LV=268", 1),
+        ("FREEMAIN R,LV=16", 1),
+        ("         SVC   19", 1),
+        ("         SVC   20", 1),
+    ):
+        if source.count(call) != expected:
+            raise ValueError(f"changed call count: {call}")
 
     # Conditional successful GETMAIN. Preserve existing R15 / branch.
     for size, branch, name in (

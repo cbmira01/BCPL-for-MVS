@@ -133,13 +133,21 @@ def main():
     if args.test_io_asm:
         if candidate != "1" or library != "DEVOBJ":
             raise ValueError("test-only BCPLIO requires DEVOBJ candidate")
-        if args.native or args.library_generated:
-            raise ValueError("test-only BCPLIO cannot combine with extra modules")
+        if args.library_generated or (
+            args.native and not (
+                args.case_dir and
+                (args.case_dir / "io-accounting.txt").is_file()
+            )
+        ):
+            raise ValueError(
+                "only M4.3 may combine native and private BCPLIO"
+            )
         if not args.case_dir:
             raise ValueError("test-only BCPLIO requires regression case")
         markers = (
             (args.case_dir / "io-fault-mode.txt").is_file(),
             (args.case_dir / "io-open-fault.txt").is_file(),
+            (args.case_dir / "io-accounting.txt").is_file(),
         )
         if sum(markers) != 1:
             raise ValueError("test-only BCPLIO requires exactly one marker")
@@ -259,14 +267,34 @@ def main():
         ]
         at = cards.index("//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',")
         cards[at:at] = insertion
-        link_cond = cards.index("//             COND=(0,NE,ASMAP)", at + len(insertion))
-        cards[link_cond] = "//             COND=((0,NE,ASMAP),(0,NE,ASMNAT))"
+        old_cond = (
+            "//             COND=((0,NE,ASMAP),(0,NE,ASMFIO))"
+            if args.test_io_asm else
+            "//             COND=(0,NE,ASMAP)"
+        )
+        link_cond = cards.index(old_cond, at + len(insertion))
+        cards[link_cond] = (
+            "//             COND=((0,NE,ASMAP),(0,NE,ASMFIO),(0,NE,ASMNAT))"
+            if args.test_io_asm else
+            "//             COND=((0,NE,ASMAP),(0,NE,ASMNAT))"
+        )
         syspass = cards.index("//         DD *", link_cond)
         cards.insert(syspass, "//         DD DSN=&&NATOBJ,DISP=(OLD,DELETE)")
-        go_cond = cards.index("//             COND=((0,NE,ASMAP),(0,NE,LKED))")
-        cards[go_cond] = (
-            "//             COND=((0,NE,ASMAP),(0,NE,ASMNAT),(0,NE,LKED))"
+        old_go_cond = (
+            "//             COND=((0,NE,ASMAP),(0,NE,ASMFIO),(0,NE,LKED))"
+            if args.test_io_asm else
+            "//             COND=((0,NE,ASMAP),(0,NE,LKED))"
         )
+        go_cond = cards.index(old_go_cond)
+        if args.test_io_asm:
+            cards[go_cond:go_cond + 1] = [
+                "//             COND=((0,NE,ASMAP),(0,NE,ASMFIO),",
+                "//             (0,NE,ASMNAT),(0,NE,LKED))",
+            ]
+        else:
+            cards[go_cond] = (
+                "//             COND=((0,NE,ASMAP),(0,NE,ASMNAT),(0,NE,LKED))"
+            )
     if args.case_dir:
         case = args.case_dir
         parm_fixture = case / "exec-parm.txt"
