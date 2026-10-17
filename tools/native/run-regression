@@ -213,20 +213,26 @@ def main() -> int:
                 and os.environ.get("BCPL_RUNTIME_CANDIDATE") == "1"
                 and os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER") == "BCPLM6"
             )
-            if not candidate_env:
+            production_env = (
+                installed_pds
+                and os.environ.get("BCPL_RUNTIME_LIBRARY") == "OBJ"
+                and os.environ.get("BCPL_RUNTIME_CANDIDATE", "0") == "0"
+                and not os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER")
+            )
+            if not (candidate_env or production_env):
                 if start == end == test_no:
                     print(
                         f"ERROR {nn} {case_name}: requires "
-                        "BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ "
-                        "BCPL_RUNTIME_CANDIDATE=1 "
-                        "BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6",
+                        "BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=OBJ "
+                        "(all production runtime members), or the "
+                        "historical DEVOBJ BCPLM6 candidate profile",
                         file=sys.stderr,
                         flush=True,
                     )
                     return 64
                 skipped += 1
                 print(
-                    f"SKIP  {nn}  {case_name} (requires DEVOBJ BCPLM6)",
+                    f"SKIP  {nn}  {case_name} (requires full OBJ or DEVOBJ BCPLM6)",
                     flush=True,
                 )
                 continue

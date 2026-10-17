@@ -26,9 +26,12 @@ Earlier variants remain under [`history/`](history/) in Git.
 
 The canonical `bcplmain.asm` is the accepted D6/M5.5 candidate source.
 Source population alone does not change an object library. However,
-the existing `NATIVE_JCL(BLDBMAIN)` **would now assemble D6 into
-`NATIVE_OBJ(BCPLMAIN)` if submitted**. Such production promotion has
-not been authorized; do not execute BLDBMAIN without a separate decision.
+the revised `NATIVE_JCL(BLDBMAIN)` now deliberately assembles all
+five canonical runtime modules into `NATIVE_OBJ` under the owner's
+explicit clean-room production rebuild authorization. It includes
+the D6 `BCPLMAIN` and current `BCPLIO`; `BLIBBLD`
+separately builds BLIB into the same library. This new OBJ profile
+still requires actual MVS verification, and no binaries are preseeded.
 
 The optional historical [`build-dev-bcplm6.jcl`](../jcl/history/build-dev-bcplm6.jcl) reads the canonical
 `NATIVE_ASM(BCPLMAIN)` and writes only `NATIVE_DEVOBJ(BCPLM6)`.

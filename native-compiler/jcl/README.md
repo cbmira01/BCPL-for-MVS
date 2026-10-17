@@ -9,7 +9,7 @@ member names are uppercase, each within the eight-character limit.
 | `cambbld.jcl` | CAMBBLD | Rebuild demoted Cambridge compiler INTCODE |
 | `cg370db.jcl` | CG370DB | Optional diagnostic compiler image |
 | `blibbld.jcl` | BLIBBLD | Build BLIB into production NATIVE_OBJ |
-| `bldbmain.jcl` | BLDBMAIN | Build BCPLMAIN and BCPLMEM into production NATIVE_OBJ |
+| `bldbmain.jcl` | BLDBMAIN | Build all five canonical runtime modules into NATIVE_OBJ |
 | `blddeva.jcl` | BLDDEVA | Development BCPLAPT object |
 | `blddevb.jcl` | BLDDEVB | Development BCPLBYTE object |
 | `blddevi.jcl` | BLDDEVI | Development BCPLIO object |
@@ -22,20 +22,25 @@ They do not execute until submitted. Use `dspal submit NATIVE_JCL
 <MEMBER>` only after checking the job's source/output datasets and
 whether its target is NATIVE_OBJ or NATIVE_DEVOBJ.
 
-## Production promotion hold
+## Current clean-room production rebuild
 
-The manifest currently maps canonical Git `native-compiler/asm/bcplmain.asm`
-(the accepted D6/M5.5 source) to `NATIVE_ASM(BCPLMAIN)`.
-**Submitting BLDBMAIN would therefore replace the existing production
-NATIVE_OBJ(BCPLMAIN) with D6** (and rewrite BCPLMEM). This is a
-production promotion, **not approved by canonicalizing filenames**.
-Do not submit that job, or run the historical destructive clean-room
-sequence through it, without an explicit separate production decision.
+The owner authorized a fresh source rebuild of all project-managed PDSes
+and installation of the latest runtime into `NATIVE_OBJ`.
+`BLDBMAIN` now assembles and installs `BCPLMAIN`, `BCPLMEM`,
+`BCPLBYTE`, `BCPLAPT` and `BCPLIO` from the five canonical
+`NATIVE_ASM` members. `BLIBBLD` separately compiles and installs
+`BLIB` into `NATIVE_OBJ` using the rebuilt resident Cambridge
+compiler. The target is a complete **six-member NATIVE_OBJ** without
+any binary copying or DEVOBJ seeding.
 
-`BLIBBLD` also installs a production BLIB object; its own
-prerequisites and installation must be reviewed independently.
-Development builders use `NATIVE_DEVOBJ` and do not promote to
-`NATIVE_OBJ`.
+Each BLDBMAIN assembler and install is gated on zero return codes.
+The job is not atomic: inspect every payload step before accepting
+the output. Build from a freshly purged/initialized PDS environment
+using the [current clean-room runbook](../../packaging/clean-room-mvs-reconstruction.md).
+The all-OBJ full-panel runner is `tools/native/run-production-regression`.
+
+`BLDDEV*` jobs remain available for later isolated experiments,
+but are **not required** by the full production reconstruction.
 
 ## Historical builds, probes and source names
 

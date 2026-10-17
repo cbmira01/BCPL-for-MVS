@@ -26,6 +26,11 @@ CANDIDATE_ENV = {
     "BCPL_RUNTIME_CANDIDATE": "1",
     "BCPL_RUNTIME_CANDIDATE_MEMBER": "BCPLM6",
 }
+PRODUCTION_ENV = {
+    "BCPL_RUNTIME_PDS": "1",
+    "BCPL_RUNTIME_LIBRARY": "OBJ",
+    "BCPL_RUNTIME_CANDIDATE": "0",
+}
 
 
 def require(condition: bool, problem: str) -> None:
@@ -38,7 +43,7 @@ def read(path: Path) -> str:
     return path.read_text(encoding="ascii")
 
 
-def check(require_candidate: bool) -> None:
+def check(require_candidate: bool, require_production: bool = False) -> None:
     # Consult the real runner's numbering and test discovery rules.
     runner_path = ROOT / "tools/native/run-regression"
     runner = runpy.run_path(str(runner_path), run_name="m44_preflight")
@@ -86,6 +91,9 @@ def check(require_candidate: bool) -> None:
             "expected source-only SKIP 083 has changed")
     require('and os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER") == "BCPLM6"'
             in runner_source, "DEVOBJ BCPLM6 candidate gate changed")
+    require('and os.environ.get("BCPL_RUNTIME_LIBRARY") == "OBJ"'
+            in runner_source and 'candidate_env or production_env'
+            in runner_source, "all-OBJ regression gate missing")
     harness = read(REG / "run-test.sh")
     for anchor in (
         'pds_args+=(--test-io-asm "$account_asm")',
@@ -106,25 +114,46 @@ def check(require_candidate: bool) -> None:
         for key, wanted in CANDIDATE_ENV.items():
             require(os.environ.get(key) == wanted,
                     f"{key}={os.environ.get(key)!r}, expected {wanted!r}")
+    if require_production:
+        for key, wanted in PRODUCTION_ENV.items():
+            require(os.environ.get(key) == wanted,
+                    f"{key}={os.environ.get(key)!r}, expected {wanted!r}")
+        require(not os.environ.get("BCPL_RUNTIME_CANDIDATE_MEMBER"),
+                "production profile must not select a versioned BCPLMAIN")
+        preparer = read(ROOT / "tools/checks/prepare-runtime-pds-regression.py")
+        require('or library == "OBJ"' in preparer,
+                "production BCPLIO linkage not enabled")
+        require('INCLUDE OBJ(BCPLBYTE)' in preparer and
+                'INCLUDE OBJ(BCPLAPT)' in preparer,
+                "production modules must link directly through OBJ")
+        harness = read(REG / "run-test.sh")
+        require('dynamic_profile=0' in harness and
+                'if [[ $dynamic_profile != 1 ]]; then' in harness,
+                "production test-only fault profile not enabled")
 
     print("M4.4 source-only compatibility preflight: PASS")
     print("Corpus: 00..145, 146 numbered cases; no gaps")
     print("Expected full panel: 145 PASS / 0 FAIL / 1 SKIP (083)")
-    print("Candidate-only cases: 124..145")
+    print("Dynamic-stream-only cases: 124..145 (OBJ or D6 DEVOBJ)")
     print("Private test-only accounting: 139..145; canonical BCPLIO clean")
-    print("Candidate environment: " +
+    print("Historical DEVOBJ profile: " +
           ("PASS" if require_candidate else "NOT CHECKED"))
+    print("Full production OBJ profile: " +
+          ("PASS" if require_production else "NOT CHECKED"))
     print("MVS/JES execution: NOT PERFORMED")
     print("Full-panel compatibility: NOT VERIFIED")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--candidate", action="store_true",
-                        help="verify the four DEVOBJ BCPLM6 env variables")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--candidate", action="store_true",
+                       help="verify historical DEVOBJ BCPLM6 profile")
+    group.add_argument("--production", action="store_true",
+                       help="verify full production OBJ profile")
     args = parser.parse_args()
     try:
-        check(args.candidate)
+        check(args.candidate, args.production)
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"M4.4 preflight: FAIL: {exc}", file=sys.stderr)
         return 1

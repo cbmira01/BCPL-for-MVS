@@ -1,38 +1,54 @@
-# Clean-room MVS PDS reconstruction — MR10 through native BCPL
+# Clean-room MVS reconstruction — full native OBJ runtime
 
-**Scope:** reconstruct the complete **M3 executable stack**, then reproduce the **M5.4 DEVOBJ(BCPLM6+BCPLIO)** candidate described in section 10, starting from a clean host `workarea/`. This document is the single operator runbook for the reconstruction sequence. It is not an M4 native Cambridge compiler build.
+**Current objective (17 October 2026):** rebuild the *entire project-managed*
+MVS PDS environment from Git and historical source, starting with an empty
+ignored `workarea/`, then assemble **all five canonical runtime modules
+and freshly compiled BLIB into `NATIVE_OBJ`**. The result is intended to
+run the entire native regression panel **00..145 from OBJ alone**.
 
-**Status:** M3 stages and its earlier 00–123 suite were demonstrated on TK5 (15 October 2026); the independent DEVOBJ dynamic-stream candidate later passed M4.4 (00–145, 145 PASS/0 FAIL/expected SKIP 083) and M5.1/M5.2 focused evidence on 17 October. **This full destructive purge-to-DEVOBJ sequence has not been run anew as one clean-room acceptance exercise**. Record its results when executed. The final M3 panel demonstrated **123 PASS / 0 FAIL / 1 expected SKIP (083)**.
+**Authority:** the owner explicitly requested an all-OBJ rebuild with the
+latest canonical source. This supersedes the historical pre-D6 production
+source hold. It is *not* a claim that the new production build or regression
+has already passed. Only the earlier DEVOBJ(BCPLM6) dynamic-stream panel
+has measured 145 PASS, 0 FAIL, 1 expected SKIP (083).
 
-## Authorities, scope, and precautions
+## Scope and destructive boundary
 
-- Run commands from the repository root on the machine that hosts Hercules/TK5. Use a clean checkout at a **recorded Git commit**, or `git pull --ff-only` with a clean tree.
-- Git holds canonical source code and build JCL. `config/dspal.yaml` alone defines **24 managed PDS/load datasets**: **9 MR10**, **9 reserved CAMB**, **6 NATIVE**. It currently has **151 mapped text members**; unpopulated products are generated later.
-- `CAMB_*` is **reserved for M4**. M3 rebuilds use only `MR10_*` and `NATIVE_*`. A full manifest `initbcpl` still allocates the reserved CAMB datasets; do not populate them with compiler artifacts or submit CAMB jobs.
-- `config/dspal.local.yaml` provides local credentials and runtime overrides; keep it secret and **out of Git**. If local overrides change the HLQ, examine the build JCL: several authoritative jobs intentionally contain the canonical `HERC02` DSNs.
-- **Destructive boundary:** `purgebcpl` removes **every dataset named in the manifest, including MR10/NATIVE binaries and the empty/reserved CAMB datasets**. This is not a general MVS reset. Protect anything not reproducible before invoking it. It does not delete retired unlisted PDSes.
-- Clean **only** the disposable host `workarea/`, not `mvs-state/`, TK5 DASD, local configuration, historical evidence, or checked-in source. Do not migrate prior PDS INTCODE/OBJ/LOAD images.
-- Allow each command to finish successfully before progressing. `dspal submit` prints the **launcher** and **payload** jobs; inspect the **payload** summary.
+- `dspal purgebcpl` removes **the 24 datasets explicitly managed by
+  `config/dspal.yaml`**, not SYS1 system datasets, TK5 installation files,
+  all MVS DASD volumes, or any other guest datasets. Review its exact list
+  before responding `YES`. This also deletes user-created content in
+  managed PDSes, so inspect anything worth retaining first.
+- Remove only repository-root `workarea/` (ignored generated artifacts);
+  preserve any uncommitted evidence before deleting it.
+  **Never delete `mvs-state/`, the DASD images, `docker/`,
+  historical Git source, or `config/dspal.local.yaml`.**
+- A new `NATIVE_OBJ` begins empty and is rebuilt *from source*.
+  No `SEEDDEV`, copying old FB80 objects, importing INTCODE,
+  or migrating previous load libraries.
+- `NATIVE_DEVOBJ` remains part of the managed dataset inventory
+  but is intentionally unused and empty after the clean rebuild.
+- Run the commands from the repository root on the host with
+  Hercules/TK5 and JES available. Inspect every **payload** JES job
+  and step RC, not only the outer `dspal submit` launcher.
+- Ensure a clean Git checkout at a recorded revision, a correct MVS HLQ,
+  and a functioning local JES reader before the destructive operation.
+  Local overrides and MVS credentials are private.
 
-## The complete workflow at a glance
+## Ordered reconstruction
 
-**Historical gates 0–9 are the M3 base, not the current dynamic candidate.** The additional candidate build and fresh 00–145 run are documented below in **section 10**; use both parts when reconstructing the current BCPLIO runtime.
-
-| Gate | Rebuild action | Input authority | MVS result / evidence |
-| --- | --- | --- | --- |
-| 0 | Preflight TK5, manifest and Git | `config/dspal.yaml`, local override | Status, `git rev-parse HEAD` |
-| 1 | Remove disposable `workarea/`; regenerate demoted sources | Historical tracked sources and `tools/native/prepare-bootstrap` | 24 generated host outputs and SHA-256 manifest; no PDS writes |
-| 2 | Purge explicit managed PDS set; initialize clean set | `dspal purgebcpl`, `initbcpl` | Manifest-defined PDS/load libraries; **all old binaries discarded** |
-| 3 | Populate Git-backed text members | `dspal populate all` | MR10 source, ASM, JCL, tests, demos and native ASM/JCL/headers |
-| 4 | Build ICINT19 | `MR10_JCL(IC19BLD)` | `MR10_LOAD(ICINT19)`, `MR10_OBJ(ICINT19)` |
-| 5 | Execute MR10 interpreted tests and demos | MR10 kit sources and installed interpreter | 11 language demos, 17 BCPL demos, 12 regressions (MVS jobs) |
-| 6 | Rebuild enlarged MR10 translator | `prepare-bootstrap --with-trnilrg` | `NATIVE_INTCODE(TRNILRG)` |
-| 7 | Stage demoted Cambridge BCPL and options | `tools/native/stage-bootstrap` | `NATIVE_SOURCE` demoted units, BLIB, headers and options |
-| 8 | Build resident Cambridge compiler image | `NATIVE_JCL(CAMBBLD)` | `NATIVE_INTCODE(CAMBCOMP)` and compiler INTCODE units |
-| 9 | Rebuild production runtime | `NATIVE_JCL(BLDBMAIN)`, `NATIVE_JCL(BLIBBLD)` | `NATIVE_OBJ(BCPLMAIN,BCPLMEM,BLIB)` |
-| 10 | Rebuild development service modules | `NATIVE_JCL(BLDDEVA,BLDDEVB,BLDDEVI)` | `NATIVE_DEVOBJ(BCPLAPT,BCPLBYTE,BCPLIO)` |
-| 11 | Native compile smoke and full regression | `tools/native/compile-mvs`, `tools/native/run-regression` | Actual IFOX/IEWL/GO; target 123/0/1 |
-| 12 | Save checks and closure evidence | Git commit, MVS JOB summaries, dataset inventories | Reproducibility record; no migration |
+| Stage | Work | Expected result |
+|---|---|---|
+| 0 | Check Git, TK5, source inputs and build contracts | Validated starting point |
+| 1 | Remove disposable `workarea/`, regenerate inputs | Fresh host-generated demotions |
+| 2 | Purge, initialize and repopulate managed PDSes | Empty binary libraries; tracked text staged |
+| 3 | Assemble/link ICINT19 from MR10 source | `MR10_LOAD(ICINT19)` |
+| 4 | Verify MR10 interpreted examples | Compiler and interpreter sanity |
+| 5 | Rebuild enlarged translator INTCODE | `NATIVE_INTCODE(TRNILRG)` |
+| 6 | Stage demoted Cambridge sources, build CAMBCOMP | `NATIVE_INTCODE(CAMBCOMP)` |
+| 7 | Assemble all five latest canonical runtime modules | Five `NATIVE_OBJ` members |
+| 8 | Compile and assemble BLIB from BCPL source | `NATIVE_OBJ(BLIB)` |
+| 9 | Run production-only 00..145 regression panel | Target 145 PASS/0 FAIL/1 SKIP |
 
 ## 0. Establish a reproducible operator session
 
@@ -46,6 +62,7 @@ tools/datasets/dspal status --probe
 tools/datasets/dspal info
 tools/native/prepare-bootstrap --check-inputs
 python3 tools/checks/check-native-bootstrap-jcl.py
+python3 tools/checks/check-native-production-build.py
 ```
 
 Do not continue after an unexpected Git modification, unavailable JES card reader, or incorrect target HLQ. Confirm the password is configured in `config/dspal.local.yaml`; do **not** paste credentials into a report. Starting an already-running container should not be treated as a demand to recreate its DASD.
@@ -61,7 +78,7 @@ tools/native/prepare-bootstrap
 cat workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json
 ```
 
-The non-live stage regenerates demoted `blib`, `bcpl`, `syn`, `lex`, `trna`, `trnb`, `cga`–`cge`, the diagnostic demotions, and seven large-name MR10 translator sections plus their header (24 generated output files total). This **reconstructs source inputs**, not an executable resident compiler. The enlarged `TRNILRG` INTCODE image is built **after** ICINT19 is available. Retain the generated SHA-256 manifest as host-side provenance.
+The host-side stage regenerates demoted `blib`, `bcpl`, `syn`, `lex`, `trna`, `trnb`, `cga`–`cge`, the diagnostic demotions, and seven large-name MR10 translator sections plus their header (24 generated output files total). This **reconstructs source inputs**, not an executable resident compiler. The enlarged `TRNILRG` INTCODE image is built **after** ICINT19 is available. Retain the generated SHA-256 manifest as host-side provenance.
 
 ## 2. Purge, initialize, and populate managed PDSes
 
@@ -166,272 +183,130 @@ test -s workarea/m3-clean-smoke.s370.asm
 
 Look for generated `CSECT`, `EXTRN BCPLMAIN`, and `END` cards. `compile-mvs` verifies interpreted execution code.
 
-## 7. Rebuild runtime objects without copying any earlier OBJ
+## 7. Build all five canonical assembler modules into NATIVE_OBJ
 
-**PRODUCTION-CHANGE HOLD (canonical-source update, October 2026).**
-The commands below document the former M3 procedure. The manifest now
-populates the accepted **D6 development source** into
-`NATIVE_ASM(BCPLMAIN)`. Submitting `BLDBMAIN` below would replace
-the existing production `NATIVE_OBJ(BCPLMAIN)` with D6.
-**Do not run that job or the full destructive clean-room sequence
-without explicit production promotion approval.** For exact historical
-M3 reconstruction, the former pre-D6 source remains in
-`native-compiler/asm/history/bcplmain-pre-d6-production.asm`.
-Until a separate production policy is accepted, the clean-room
-runbook is an engineering reference, not authorization to deploy D6.
+The authoritative source-to-member mapping is `config/dspal.yaml`.
+After `dspal populate all`, `NATIVE_ASM` must contain exactly:
+`BCPLMAIN`, `BCPLIO`, `BCPLMEM`, `BCPLBYTE`, `BCPLAPT`.
+These map to `native-compiler/asm/<lowercase-member>.asm` with no
+versioned or historical source aliases. The canonical BCPLMAIN is
+the D6/M5.5 source accepted in the dynamic-stream milestone.
+
+**This is a deliberate source-based production build**. The previous
+DEVOBJ-only policy no longer applies to this new clean-room target.
 
 ```sh
-tools/datasets/dspal ls NATIVE_ASM
-
-tools/datasets/dspal put NATIVE_JCL BLDBMAIN \
-  native-compiler/jcl/bldbmain.jcl
-tools/datasets/dspal put NATIVE_JCL BLIBBLD \
-  native-compiler/jcl/blibbld.jcl
-tools/datasets/dspal put NATIVE_JCL BLDDEVA \
-  native-compiler/jcl/blddeva.jcl
-tools/datasets/dspal put NATIVE_JCL BLDDEVB \
-  native-compiler/jcl/blddevb.jcl
-tools/datasets/dspal put NATIVE_JCL BLDDEVI \
-  native-compiler/jcl/blddevi.jcl
-
-tools/datasets/dspal submit NATIVE_JCL BLDBMAIN
-tools/datasets/dspal submit NATIVE_JCL BLIBBLD
-tools/datasets/dspal submit NATIVE_JCL BLDDEVA
-tools/datasets/dspal submit NATIVE_JCL BLDDEVB
-tools/datasets/dspal submit NATIVE_JCL BLDDEVI
-
-tools/datasets/dspal ls NATIVE_OBJ
-tools/datasets/dspal ls NATIVE_DEVOBJ
-```
-
-| Object library | Required members | How rebuilt |
-| --- | --- | --- |
-| `NATIVE_OBJ` | `BCPLMAIN`, `BCPLMEM` | `BLDBMAIN`: IFOX assembler + IEBGENER |
-| `NATIVE_OBJ` | `BLIB` | `BLIBBLD`: resident compiler + card repair + IFOX + IEBGENER |
-| `NATIVE_DEVOBJ` | `BCPLAPT`, `BCPLBYTE`, `BCPLIO` | `BLDDEVA`, `BLDDEVB`, `BLDDEVI`: IFOX + IEBGENER |
-
-**Do not promote** development objects into the accepted library for convenience. The obsolete `SEEDDEV` binary-copy job has been retired from the working tree; it is not part of clean-room reconstruction.
-
-**Installed JCL synchronization warning:** after editing checked-in job bodies, re-install them into `NATIVE_JCL` before submission. On 15 October, an old `BLDDEVA` member assembled and wrote to retired `HERC02.BCPL.SOURCE/DEVOBJ` with `RC=0000`; the new library remained unchanged until the corrected JCL was reinstalled. Always verify final PDS inventories, not just return codes.
-
-## 8. Run the full native panel
-
-```sh
-tools/native/run-regression 0 --show-output
-tools/native/run-regression 0 9
-tools/native/run-regression
-```
-
-The installed-object regression linker reads `BCPLMAIN`, `BCPLMEM`, and `BLIB` from `NATIVE_OBJ` while resolving `BCPLAPT` and `BCPLBYTE` from `NATIVE_DEVOBJ`. There is **no object promotion**. The current complete panel spans **00–123**:
-
-| Expected result | Count |
-| --- | ---: |
-| PASS | 123 |
-| FAIL | 0 |
-| SKIP | 1 (`083-instrumented-storage-reclamation`) |
-| TOTAL | 124 |
-
-Regression 083 is intentionally skipped in installed-object mode because its memory reclamation instrumentation is source-only. This is not a blanket assertion of full historical Cambridge/BCPL compatibility. Review failures and captured `workarea/native-regression/logs/` before making code changes.
-
-## 9. Record complete clean-room evidence
-
-Record the exact Git commit, TK5/MVS date, effective `dspal info` dataset list (redact secrets), operator machine, each payload JOB number and step RC, the ICINT `CODE` values, the member inventories (`MR10_LOAD`, `MR10_OBJ`, `NATIVE_INTCODE`, `NATIVE_ASM`, `NATIVE_SOURCE`, `NATIVE_OBJ`, `NATIVE_DEVOBJ`), the demotion SHA-256 manifest, and the final three regression summary counts.
-
-The baseline stage-by-stage acceptance and representative historical JOB numbers are recorded in `packaging/m3-native-reconstruction-acceptance-20261015.md`. JES job IDs will differ on a fresh run and can wrap.
-
-**Stop condition:** all required members present; no stale retired dataset allocation; all interpreter programs return the expected interpreted status; all assembly/link/install steps complete; native panel 123/0/1. Until the complete sequence is exercised in one clean-room run, consider this a consolidated, source-audited procedure rather than independent proof of one-run reproducibility.
-
----
-
-## 10. M5.4 addendum — reproduce the accepted dynamic BCPLIO candidate
-
-**Status (17 October 2026): source-documented extension to the
-historical M3 clean-room procedure above.** It is **not** a claim
-that the *entire* purge-to-candidate sequence has been newly
-executed end-to-end. Source and live-stage outcomes are recorded
-separately in [M4.4]
-(bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream.md),
-[M5.1]
-(bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-M5.1-plan.md),
-[M5.2]
-(bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-M5.2-plan.md)
-and [the current runtime contract]
-(bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md).
-
-**This section extends, not replaces, gates 0–9 above.** Gates 0–9
-still explain the whole disposable MR10/ICINT19, demoted Cambridge
-compiler, production OBJ, BLIB and service-module bootstrap.
-The original gate 8 expected 123/0/1 was the **older M3
-acceptance result**, not the current candidate acceptance target.
-After following those gates, also do the following.
-
-### A. Know which objects are canonical vs candidate
-
-**Canonical Git source and MVS object status are separate.** The
-canonical D6 `native-compiler/asm/bcplmain.asm` maps only to
-`NATIVE_ASM(BCPLMAIN)`. Historical source variants are not mapped.
-The optional D6 build JCL reads this canonical source and installs
-`NATIVE_DEVOBJ(BCPLM6)`; its object member retains that historical
-name for accepted regression compatibility. **BLDBMAIN also reads
-BCPLMAIN source and now constitutes a production promotion if run.**
-
-| Manifest alias | Relevant members | Authority |
-|---|---|---|
-| NATIVE_ASM | BCPLMAIN, BCPLIO, BCPLMEM, BCPLBYTE, BCPLAPT | Exactly five canonical Git `.asm` sources |
-| NATIVE_JCL | BLDDEVI and optional BLDDEVM6 | BLDDEVI manifest-mapped; historical BLDDEVM6 is staged explicitly, not manifest-populated |
-| NATIVE_OBJ | BCPLMAIN, BCPLMEM, BLIB | Rebuild using BLDBMAIN and BLIBBLD in base gates; **no copying old object records** |
-| NATIVE_DEVOBJ | BCPLM6, BCPLIO, BCPLBYTE, BCPLAPT | Build through the resident IFOX/IEBGENER jobs; no PROD OBJ promotion |
-
-The candidate regression linker includes **BCPLM6 and BCPLIO
-from NATIVE_DEVOBJ**, **BCPLMEM and BLIB from NATIVE_OBJ**
-and **BCPLBYTE and BCPLAPT from NATIVE_DEVOBJ**.
-This mixed object resolution is intentional: the DEVOBJ flag
-names the candidate runtime *library profile*, not an instruction
-to migrate all accepted OBJ members.
-
-### B. Build and verify the two candidate modules in the clean PDS
-
-Only after the complete base compiler/runtime stack has been
-rebuilt as above, use the Git-controlled sources and job bodies:
-
-```sh
-# Review the checked-in source and target dataset identities first:
-git rev-parse HEAD
-tools/datasets/dspal info
+python3 tools/checks/check-native-production-build.py
 tools/datasets/dspal ls NATIVE_ASM
 tools/datasets/dspal ls NATIVE_JCL
+tools/datasets/dspal ls NATIVE_OBJ
 
-# Install source text (not binary object records):
-tools/datasets/dspal put NATIVE_ASM BCPLMAIN \
-  native-compiler/asm/bcplmain.asm
-tools/datasets/dspal put NATIVE_ASM BCPLIO \
-  native-compiler/asm/bcplio.asm
-
-# Explicitly install the current, approved build JCL bodies:
-tools/datasets/dspal put NATIVE_JCL BLDDEVM6 \
-  native-compiler/jcl/history/build-dev-bcplm6.jcl
-tools/datasets/dspal put NATIVE_JCL BLDDEVI \
-  native-compiler/jcl/blddevi.jcl
-
-tools/datasets/dspal submit NATIVE_JCL BLDDEVM6
-tools/datasets/dspal submit NATIVE_JCL BLDDEVI
-tools/datasets/dspal ls NATIVE_DEVOBJ
+# All five modules: one MVS job, five IFOX assemblies and five
+# gated IEBGENER FB80 object installs. No host-side object copying.
+tools/datasets/dspal submit NATIVE_JCL BLDBMAIN
+tools/datasets/dspal ls NATIVE_OBJ
 ```
 
-**For BLDDEVM6:** require *payload* ASMMMAIN (IFOX)
-RC0000, PUTMAIN (IEBGENER) RC0000 and DEVOBJ(BCPLM6).
-**For BLDDEVI:** require *payload* ASMIO (IFOX)
-RC0000, PUTIO (IEBGENER) RC0000 and DEVOBJ(BCPLIO).
-Confirm zero flagged assembler errors, inspect the
-submitted job's real PDS source/output DSNs and do not
-accept a good RC from a stale job targeting retired
-libraries. Launcher job completion is not sufficient.
+The canonical `native-compiler/jcl/bldbmain.jcl` installs these
+objects **only after each preceding assembly and installation
+succeeded with RC=0000**:
 
-The job sources write only **NATIVE_DEVOBJ**, not NATIVE_OBJ.
-Verify that `NATIVE_OBJ(BCPLMAIN,BCPLMEM,BLIB)` remains
-the base accepted runtime; never reassemble or silently
-promote BCPLM6 into NATIVE_OBJ at this gate.
+| Git source | Assembler step | Production member |
+|---|---|---|
+| `bcplmain.asm` | ASMMMAIN | `NATIVE_OBJ(BCPLMAIN)` |
+| `bcplmem.asm` | ASMMMEM | `NATIVE_OBJ(BCPLMEM)` |
+| `bcplbyte.asm` | ASMMBYTE | `NATIVE_OBJ(BCPLBYTE)` |
+| `bcplapt.asm` | ASMMAPT | `NATIVE_OBJ(BCPLAPT)` |
+| `bcplio.asm` | ASMMIO | `NATIVE_OBJ(BCPLIO)` |
 
-### C. Candidate preflight, focused smoke, and complete panel
+Check all five assembly RCs and all five binary-install RCs.
+Stop if any step failed; the job is **not transactionally atomic**.
+Before going on, prove five members actually exist and were installed
+in `NATIVE_OBJ`, not the old retired `HERC02.BCPL.OBJ` or `DEVOBJ`.
+
+## 8. Build the current BLIB from source into NATIVE_OBJ
 
 ```sh
-export BCPL_RUNTIME_PDS=1
-export BCPL_RUNTIME_LIBRARY=DEVOBJ
-export BCPL_RUNTIME_CANDIDATE=1
-export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+tools/datasets/dspal submit NATIVE_JCL BLIBBLD
+tools/datasets/dspal ls NATIVE_OBJ
+```
 
-# Does not submit MVS jobs:
-python3 tools/checks/check-m44-compatibility.py --candidate
-python3 tools/checks/check-bcplio-m43-account.py
-tools/native/run-regression --check-numbering
+The canonical `native-compiler/jcl/blibbld.jcl` uses resident
+`ICINT19` and `CAMBCOMP` to translate demoted BCPL `BLIB`
+source into native System/370 code, applies the narrow documented
+CG370 card repairs, assembles it with IFOX and uses IEBGENER
+to install **`NATIVE_OBJ(BLIB)`**.
 
-# Actual MVS execution; verify the resulting job reports:
-tools/native/run-regression 124 --show-output
-tools/native/run-regression 128 129
-tools/native/run-regression 131 133
+Inspect the payload steps `COMP`, `PREPASM`, `PREPLK`,
+`FIXASM`, `ASMBLIB` and `INSTALL`. Require each expected
+RC=0000 and interpreted `CODE=0` where applicable. Do not treat
+a successful assembler alone as proof of the BLIB build.
 
-# M5.5: run only when the final full-panel gate is authorized:
-tools/native/run-regression 0 145
+The final production object inventory must contain **all six**:
+`BCPLMAIN`, `BCPLIO`, `BCPLMEM`, `BCPLBYTE`,
+`BCPLAPT`, and `BLIB`. No old binary is copied into that set.
+
+## 9. Run the complete native regression against NATIVE_OBJ
+
+The regression launcher has an explicit full-production profile:
+`tools/native/run-production-regression` sets
+`BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=OBJ`, and disables
+all versioned candidate-member selectors. It causes IEWL to
+`INCLUDE OBJ(...)` for the five runtime modules **and BLIB**.
+The historical `DEVOBJ(BCPLM6)` profile remains available for
+comparison but is not used in this rebuild.
+
+The newer dynamic-stream tests (124..145) are permitted in
+this **full-OBJ profile**. Private fault-instrumented BCPLIO is
+assembled only inside the corresponding GO job, without writing
+back to the canonical `BCPLIO` object. D6-controlled failures
+in cases 052 and 093 continue to expect GO RC0000, not the
+different historical D7 RC0012.
+
+```sh
+# Static; does not submit MVS jobs:
+python3 tools/checks/check-native-production-build.py
+env -u BCPL_RUNTIME_CANDIDATE_MEMBER \
+    BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=OBJ \
+    BCPL_RUNTIME_CANDIDATE=0 \
+    python3 tools/checks/check-m44-compatibility.py --production
+tools/native/run-production-regression --check-numbering
+
+# MVS compile, assemble, link and GO proof:
+tools/native/run-production-regression 0 --show-output
+tools/native/run-production-regression 52
+tools/native/run-production-regression 93
+tools/native/run-production-regression 124 --show-output
+tools/native/run-production-regression 139 145
+
+# Run the complete, inclusive 146-case panel:
+tools/native/run-production-regression 0 145
+
+# Independently audit saved per-case JES outcome logs:
 python3 tools/checks/check-m44-full-panel-logs.py
 ```
 
-The `0 145` runner range is inclusive, covering
-146 numbered cases, of which 083 is a deliberate
-source-only skip and 048 is compile-only. The accepted
-M4.4 **historical measured result** was **145 PASS /
-0 FAIL / one expected SKIP 083**, and 145/145 saved
-logs passed the corrected read-only audit. Under the
-BCPLM6/D6 candidate, 052 and 093 have separate
-`expected-go-rc-bcplm6.txt` fixtures because
-their intended GO RC0000 differs from the D7 profile.
-Case 129 and case 141 use intentional nonzero STOP
-termination statuses; the harness determines acceptance
-against each case's profile, **not by demanding every
-GO step RC0000**.
+**Target, not yet measured on the new OBJ build:**
+145 PASS / 0 FAIL / one source-only SKIP 083 among
+146 numbered cases. Case 048 is deliberately compile-only
+but counts as PASS when compilation succeeds.
+The log audit expects 145 independently PASS case logs, correct
+GO return codes, successful IFOX/IEWL, and no unresolved ABEND
+signatures. A named class/routing receipt from M5.5 is evidence
+of the older DEVOBJ milestone, not a substitute for this new run.
 
-**Neither the documented commands nor the preceding
-M5.3 review counts as a fresh M5.5 run.** A newly
-performed full sweep must include its own JES job IDs,
-step RC and saved report/log evidence before M5.5 closes.
+## 10. Capture the new clean-room acceptance record
 
-### D. Physical QSAM proof and experimental JCL (existing results)
+Record the Git commit and effective `dspal.yaml`, the inspected
+deletion inventory, the purge/allocate/populate payload JOBs,
+recreated `MR10_LOAD(ICINT19)`, fresh TRNILRG and CAMBCOMP,
+interpreted CODE=0 checks, the ten BLDBMAIN and six BLIBBLD
+payload step RCs, the six-member `NATIVE_OBJ` inventory,
+each focused regression result, the full-panel summary and its
+145/145 log audit. Protect credentials and raw MVS data.
 
-The ordinary regression runner uses combined JES
-reports for *logical* fixture comparisons; this is
-not an exact byte-level observation of individual
-QSAM output datasets. The separate limited experiments
-verified the boundary once without adding an API:
-
-| Probe | Input and physical output | Actual evidence |
-|---|---|---|
-| M5.1.1 | Native case 114 and split SYSOUT A/Z classes | JOB 8184: two observed printer routes, RC0 |
-| M5.1.2 | Native case 124 linked to separate temporary REPORT and REPORT2 FB132 datasets, followed by assembler QSAM GET/CLC(132) | JOB 8185: all six steps RC0000, complete records/count/EOF |
-| M5.2 | Exact positive case-124 JCL with only one wrong **verifier expectation** at EBCDIC pad offset 131 | JOB 8186: first five steps RC0000, VCHK **RC0012 intentionally** |
-
-The source and offline review commands remain in
-`tools/checks/m51-fb132-dataset-probe.py` and
-`tools/checks/m52-padding-negative.py`
-and their plans. They generate files under
-`workarea/native-regression/124-dynamic-dd-selected-output/`;
-**never submit a negative probe without verifying
-its intended nonzero RC and JOB name**. Do not
-rerun the three already accepted jobs to count
-M5.4 as complete. Their experimental JCL is not
-part of the ordinary regression runner by default.
-
-### E. Capture a new full reconstruction or M5.5 acceptance record
-
-At minimum, keep the Git commit, effective manifest
-mapping (no secrets), whether workarea/PDS purging was
-actually performed, generated bootstrap SHA-256,
-ICINT19/MR10 suite JOB evidence, TRNILRG and
-CAMBCOMP rebuild and interpreted CODE=0 checks,
-BLIB and runtime build payload JOBs and RCs,
-DEVOBJ(BCPLM6/BCPLIO) member inventory,
-candidate environment, compiler/IFOX/IEWL/GO
-results, native test summary, 145/145 log audit,
-and known limitations.
-
-**Do not claim from-scratch completeness merely
-because a normal incremental rebuild works.**
-The base runbook's destructive purge has *not*
-been newly exercised as an M5.4 proof. In normal
-development **do not run purgebcpl** or delete
-`workarea/` just to validate documentation.
-When a truly clean-room reconstruction is desired,
-the operator must explicitly authorize and protect
-any non-reproducible managed PDS content first.
-M5.4 changes only documentation; M5.5 is the
-fresh candidate execution/final acceptance gate.
-
-
-## 11. M5.5 final fresh full panel (operator execution required)
-
-For the precise non-destructive final acceptance procedure, follow
-[M5.5 final acceptance gate]
-(bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-M5.5-plan.md).
-Unlike the historical M4.4 log auditor alone, the
-M5.5 check snapshots prior logs **before** the full
-run and requires 145 new case logs plus an exact
-145 PASS / 0 FAIL / 1 expected SKIP 083 transcript.
-**M5.5 accepted and CLOSED by the project owner on 2026-10-17** after a fresh 145 PASS / 0 FAIL / expected SKIP 083 DEVOBJ run and successful 145/145 log audit. See the [final milestone acceptance record](bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md) for the important subsequent interrupted-repeat/evidence caveat. This accepted incremental run does **not** mean the complete destructive clean-room purge/rebuild procedure in this document has been executed as one new end-to-end experiment. No clean-room PDS purge, OBJ promotion, or new runtime/JCL build is implied.
+The **new complete purge-to-OBJ procedure has not yet been executed
+or verified end-to-end**. Do not mark it accepted solely because
+this source-and-tooling commit exists. The previously accepted
+[BCPLIO dynamic-stream milestone](bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md)
+documents the earlier DEVOBJ results, not the new production result.

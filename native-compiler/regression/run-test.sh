@@ -36,14 +36,23 @@ fi
 
 case_dir=${matches[0]}
 case_name=$(basename "$case_dir")
-if [[ -f "$case_dir/candidate-only.txt" ]]; then
-    if [[ ${BCPL_RUNTIME_PDS:-1} != 1 ||
-          ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
-          ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
-          ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
-        echo "run-test: $case_name requires DEVOBJ BCPLM6 candidate" >&2
-        exit 64
+# Dynamic-stream cases accept either the historical D6 DEVOBJ profile
+# or an explicitly selected full production OBJ profile.
+dynamic_profile=0
+if [[ ${BCPL_RUNTIME_PDS:-1} == 1 ]]; then
+    if [[ ${BCPL_RUNTIME_LIBRARY:-} == OBJ &&
+          ${BCPL_RUNTIME_CANDIDATE:-0} == 0 &&
+          -z ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} ]]; then
+        dynamic_profile=1
+    elif [[ ${BCPL_RUNTIME_LIBRARY:-} == DEVOBJ &&
+            ${BCPL_RUNTIME_CANDIDATE:-0} == 1 &&
+            ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} == BCPLM6 ]]; then
+        dynamic_profile=1
     fi
+fi
+if [[ -f "$case_dir/candidate-only.txt" && $dynamic_profile != 1 ]]; then
+    echo "run-test: $case_name requires full OBJ or D6 DEVOBJ profile" >&2
+    exit 64
 fi
 source="$case_dir/source.bcpl"
 library="$case_dir/library.bcpl"
@@ -180,9 +189,7 @@ if [[ $runtime_pds == 1 ]]; then
     # M4.1: assemble a private test-only BCPLIO CSECT into this GO job.
     # No repository source/PDS overwrite; normal tests are unchanged.
     if [[ -f "$case_dir/io-fault-mode.txt" ]]; then
-        if [[ ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
-              ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
-              ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
+        if [[ $dynamic_profile != 1 ]]; then
             echo "run-test: M4.1 fault requires DEVOBJ BCPLM6" >&2
             exit 64
         fi
@@ -200,9 +207,7 @@ if [[ $runtime_pds == 1 ]]; then
             echo "run-test: cannot combine M4.1 and M4.2 faults" >&2
             exit 64
         fi
-        if [[ ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
-              ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
-              ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
+        if [[ $dynamic_profile != 1 ]]; then
             echo "run-test: M4.2 fault requires DEVOBJ BCPLM6" >&2
             exit 64
         fi
@@ -224,9 +229,7 @@ if [[ $runtime_pds == 1 ]]; then
             echo "run-test: accounting/fault markers conflict" >&2
             exit 64
         fi
-        if [[ ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
-              ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
-              ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
+        if [[ $dynamic_profile != 1 ]]; then
             echo "run-test: M4.3 needs DEVOBJ BCPLM6" >&2
             exit 64
         fi
@@ -738,13 +741,12 @@ show_result() {
 }
 
 # Resolve GO completion contract once for BOTH success and failure.
-# BCPLM6's older controlled-stack-overflow exit is RC0000; the
-# default nonzero fixture retains BCPLM7/D7 RC0012.
+# The current canonical BCPLMAIN source is D6: both full production OBJ
+# and the historical DEVOBJ(BCPLM6) profile use the RC0000 fixture.
+# D7's separate historical profile retains RC0012.
 expected_go_rc=""
 rc_fixture="$case_dir/expected-go-rc.txt"
-if [[ ${BCPL_RUNTIME_CANDIDATE:-0} == 1 &&
-      ${BCPL_RUNTIME_LIBRARY:-} == DEVOBJ &&
-      ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} == BCPLM6 &&
+if [[ $dynamic_profile == 1 &&
       -f "$case_dir/expected-go-rc-bcplm6.txt" ]]; then
     rc_fixture="$case_dir/expected-go-rc-bcplm6.txt"
 fi

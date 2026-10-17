@@ -18,8 +18,8 @@ END = 145
 
 
 def expected_go(number: int, case_dir: Path) -> str:
-    # This M4.4 audit is pinned to the tested DEVOBJ BCPLM6 candidate.
-    # Preserve the existing 0012 D7/BCPLM7 default fixture.
+    # D6 is used by both the accepted historical DEVOBJ(BCPLM6) panel
+    # and the new all-OBJ production profile. D7 retains RC0012.
     profile = case_dir / "expected-go-rc-bcplm6.txt"
     fixture = profile if profile.is_file() else case_dir / "expected-go-rc.txt"
     if fixture.exists():
@@ -115,7 +115,7 @@ def audit() -> int:
         if actual != wanted:
             problems.append(
                 f"{number:03d}: GO RC={actual}; fixture requires {wanted}; "
-                "candidate-specific stack-overflow contract unresolved"
+                "D6 stack-overflow GO contract unresolved"
             )
         if step.get("LKED") != "0000":
             problems.append(f"{number:03d}: LKED RC={step.get('LKED', 'MISSING')}")
@@ -135,7 +135,8 @@ def audit() -> int:
     print(f"M4.4 existing regression logs: {found}/145")
     print("Expected runner skip: 083 (source-only)")
     print("Compile-only: 048 (no GO or LKED)")
-    print("GO-RC profile: DEVOBJ BCPLM6/D6; 052 and 093 expected RC0000")
+    print("GO-RC profile: D6 (all-OBJ or historical DEVOBJ BCPLM6);"
+          " 052 and 093 expect RC0000")
     print("GO RC distribution: " +
           ", ".join(f"{code}={count}" for code, count in sorted(go_counts.items())))
     if first_time is not None:

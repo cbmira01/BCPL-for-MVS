@@ -31,10 +31,12 @@ clean-room rebuild, see
 2. `NATIVE_INTCODE(CAMBCOMP)` generates S/370 assembly for native BCPL
    applications. IFOX assembles it, IEWL links it with runtime objects,
    and a GO step executes it under MVS.
-3. Existing production `NATIVE_OBJ` and development `NATIVE_DEVOBJ`
-   libraries are distinct. BCPLIO dynamic-stream acceptance applies
-   to the **BCPLM6+BCPLIO DEVOBJ candidate**, not production promotion.
-4. See [the DEVOBJ runtime contract](bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md)
+3. The current clean-room target rebuilds all five canonical runtime
+   assembler modules **plus BLIB** into `NATIVE_OBJ`, and runs all
+   146 numbered regression cases using the OBJ-only linker profile.
+   This new production configuration is not yet MVS-validated.
+4. The previously accepted historical milestone used
+   `DEVOBJ(BCPLM6)` and `DEVOBJ(BCPLIO)`. See [the DEVOBJ runtime contract](bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md)
    and [accepted milestone record](bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
    The final candidate native panel was 145 PASS, 0 FAIL, expected SKIP 083.
 

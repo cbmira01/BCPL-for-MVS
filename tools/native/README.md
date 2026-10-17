@@ -11,7 +11,21 @@ Canonical entry points for Cambridge/native compiler work:
 
 M3 uses the refactored `NATIVE_*` and `MR10_*` dataset namespace. Do not use `CAMB_*` datasets before M4.
 
-## M5.4 dynamic runtime DEVOBJ candidate
+## Current complete NATIVE_OBJ clean-room runtime
+
+The operator-requested target is a six-member native production
+object library: `BCPLMAIN`, `BCPLIO`, `BCPLMEM`,
+`BCPLBYTE`, `BCPLAPT`, and `BLIB`.
+The canonical `NATIVE_JCL(BLDBMAIN)` builds the five assembler
+modules and `NATIVE_JCL(BLIBBLD)` compiles/assembles BLIB.
+Run `tools/native/run-production-regression 0 145` only
+after fresh binary rebuilds and member-inventory checks.
+This profile uses `OBJ` exclusively, with no `DEVOBJ` objects;
+its end-to-end result is pending operator execution.
+See [the current reconstruction runbook]
+(../../packaging/clean-room-mvs-reconstruction.md).
+
+## Historical M5.4 dynamic runtime DEVOBJ candidate
 
 After an **approved** base M3 compiler/OBJ reconstruction,
 the current M5 native stream candidate consists of
@@ -21,11 +35,12 @@ the current M5 native stream candidate consists of
 `NATIVE_JCL(BLDDEVI)`. BLDDEVM6 must be
 installed explicitly; it is not in the current `NATIVE_JCL`
 manifest. The job now reads `NATIVE_ASM(BCPLMAIN)`.
-Submitting production `BLDBMAIN` with that canonical D6 source
-would change `NATIVE_OBJ` and requires separate authorization.
+The previous no-promotion policy applied to the accepted DEVOBJ
+milestone. The owner has since explicitly authorized the fresh
+all-OBJ source rebuild; the historical candidate remains independent.
 Run candidate regressions with the four environment
 variables documented in the [complete clean-room
-runbook](../../packaging/clean-room-mvs-reconstruction.md#10-m54-addendum--reproduce-the-accepted-dynamic-bcplio-candidate).
+runbook](../../packaging/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
 
 The [current dynamic BCPLIO stream contract]
 (../../packaging/bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md)

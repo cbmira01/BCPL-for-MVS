@@ -131,8 +131,9 @@ def main():
     if library not in ("MIXED", "OBJ", "DEVOBJ"):
         raise ValueError("BCPL_RUNTIME_LIBRARY must be MIXED, OBJ or DEVOBJ")
     if args.test_io_asm:
-        if candidate != "1" or library != "DEVOBJ":
-            raise ValueError("test-only BCPLIO requires DEVOBJ candidate")
+        if not (candidate == "1" and library == "DEVOBJ"
+                or candidate == "0" and library == "OBJ"):
+            raise ValueError("test-only BCPLIO needs accepted DEVOBJ or OBJ profile")
         if args.library_generated or (
             args.native and not (
                 args.case_dir and
@@ -152,9 +153,10 @@ def main():
         if sum(markers) != 1:
             raise ValueError("test-only BCPLIO requires exactly one marker")
 
-    # M3 reconstructs accepted BCPLMAIN, BCPLMEM, BLIB separately from
-    # development BCPLAPT and BCPLBYTE. The linker must not silently
-    # promote those candidate objects into the accepted library.
+    # OBJ is the explicit clean-room production profile: all six runtime
+    # objects (five assembler CSECTs plus BLIB) reside in NATIVE_OBJ.
+    # MIXED and DEVOBJ remain for historical regression reproducibility.
+    # Generating JCL cannot promote or modify an object library.
     chosen = ("NATIVE_DEVOBJ" if library == "DEVOBJ" else "NATIVE_OBJ")
     devchosen = ("NATIVE_OBJ" if library == "OBJ" else "NATIVE_DEVOBJ")
     def object_dsn(logical):
@@ -172,7 +174,7 @@ def main():
         *core.authenticated_job_card(config, job, "BCPL PDS REG",
                                     redact_password=False),
         f"//* RUNTIME LIBRARY: {library}; APP ASSEMBLY ONLY",
-        f"//* D3 BCPLMAIN+BCPLIO CANDIDATE: {candidate}",
+        f"//* EXPLICIT BCPLMAIN CANDIDATE: {candidate}",
         "//ASMAP    EXEC PGM=IFOX00,REGION=256K,",
         "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'",
         "//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR",
@@ -188,15 +190,19 @@ def main():
         "//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',",
         "//             COND=(0,NE,ASMAP)",
         f"//OBJ      DD DSN={main_dsn},DISP=SHR",
-        f"//DEVOBJ   DD DSN={service_dsn},DISP=SHR",
+        *([f"//DEVOBJ   DD DSN={service_dsn},DISP=SHR"]
+          if library != "OBJ" else []),
         *([f"//COREOBJ  DD DSN={core_dsn},DISP=SHR"] if candidate == "1" else []),
         "//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)",
         "//         DD *",
         f" INCLUDE OBJ({candidate_member})" if candidate == "1" else " INCLUDE OBJ(BCPLMAIN)",
         *([" INCLUDE OBJ(BCPLIO)"]
-          if candidate == "1" and not args.test_io_asm else []),
-        " INCLUDE DEVOBJ(BCPLBYTE)",
-        " INCLUDE DEVOBJ(BCPLAPT)",
+          if (candidate == "1" or library == "OBJ")
+          and not args.test_io_asm else []),
+        " INCLUDE OBJ(BCPLBYTE)" if library == "OBJ"
+            else " INCLUDE DEVOBJ(BCPLBYTE)",
+        " INCLUDE OBJ(BCPLAPT)" if library == "OBJ"
+            else " INCLUDE DEVOBJ(BCPLAPT)",
         " INCLUDE COREOBJ(BCPLMEM)" if candidate == "1" else " INCLUDE OBJ(BCPLMEM)",
         " INCLUDE COREOBJ(BLIB)" if candidate == "1" else " INCLUDE OBJ(BLIB)",
         f" ENTRY {entry}",

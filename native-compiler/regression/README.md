@@ -7,18 +7,22 @@ The panel is driven by BCPL behavior.  Tests are deliberately ordered from the
 smallest possible native BCPL program upward through progressively larger parts
 of the compiler and BCPLMAIN contract.
 
-The normal path under test is:
+The current installed-runtime path under test is:
 
 ```text
-BCPL source
-  -> Cambridge SYN/LEX/TRN
-  -> OCODE
-  -> historical CG370
-  -> System/370 assembler
-  -> IFOX / linkage editor
-  -> asm/bcplmain-wip.asm
-  -> execution under MVS 3.8J
+BCPL source -> resident Cambridge SYN/LEX/TRN + CG370
+  -> System/370 assembler -> IFOX
+  -> IEWL INCLUDE NATIVE_OBJ(BCPLMAIN,BCPLIO,BCPLMEM,
+                             BCPLBYTE,BCPLAPT,BLIB)
+  -> GO under MVS 3.8J
 ```
+
+Run `tools/native/run-production-regression` to test the full
+canonical OBJ profile; this is a **new clean-room production target,
+not yet an accepted end-to-end regression result**.
+The prior `DEVOBJ(BCPLM6)` M5.5 panel is historical evidence.
+Source-only regression modes and older discussion further below are
+retained for architectural history, not the preferred rebuild route.
 
 Assembler-only probes may diagnose a failing contract, but they are not panel
 tests.
