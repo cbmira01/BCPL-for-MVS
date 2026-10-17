@@ -33,7 +33,9 @@ allocation_defaults:
   directory: 20
 
 # M3 namespace migration: previous HERC02.BCPL.* datasets are not deleted.
-# Generated workarea inputs are omitted until staged; they are not Git-backed.
+# Generated workarea inputs are mapped separately and populated when ready.
+# On the first 'populate all', missing generated members are reported as errors
+# after available Git-backed members have been installed.
 # Object and load libraries require rebuilding after a destructive purge.
 datasets:
   MR10_SOURCE:
@@ -395,6 +397,21 @@ datasets:
       SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
       TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
       CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
+      BOOTHOST: native-compiler/bootstrap-cambridge/bootstrap-host.bcpl
+      OPTIONS: native-compiler/bootstrap-cambridge/options-large-tree.txt
+      CAMBPARM: native-compiler/bootstrap-cambridge/cambridge-options.txt
+    generated_members:
+      BLIB: workarea/bootstrap-cambridge/demoted/blib
+      BCPL: workarea/bootstrap-cambridge/demoted/bcpl
+      SYN: workarea/bootstrap-cambridge/demoted/syn
+      LEX: workarea/bootstrap-cambridge/demoted/lex
+      TRNA: workarea/bootstrap-cambridge/demoted/trna
+      TRNB: workarea/bootstrap-cambridge/demoted/trnb
+      CGA: workarea/bootstrap-cambridge/demoted/cga
+      CGB: workarea/bootstrap-cambridge/demoted/cgb
+      CGC: workarea/bootstrap-cambridge/demoted/cgc
+      CGD: workarea/bootstrap-cambridge/demoted/cgd
+      CGE: workarea/bootstrap-cambridge/demoted/cge
 
   NATIVE_INTCODE:
     dsn: BCPL.NATIVE.INTCODE
@@ -407,7 +424,9 @@ datasets:
     recfm: FB
     lrecl: 80
     blksize: 800
-    populate: false
+    populate: true
+    generated_members:
+      TRNILRG: workarea/bootstrap-cambridge/trni-large-names.int
 
   NATIVE_ASM:
     dsn: BCPL.NATIVE.ASM
