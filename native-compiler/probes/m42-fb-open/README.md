@@ -1,8 +1,48 @@
 # M4.2.3 — invalid FB block size during QSAM OPEN
 
-**Status: PREPARED — RG892R exploratory JCL generated, NOT
-SUBMITTED (2026-10-17).** This remains a potentially
-abending diagnostic, **not a regression**.
+**Status: EXECUTED — RG892R JOB 7876 returned a HANDLE,
+not an unsuccessful OPEN (2026-10-17).** This was an
+exploratory diagnostic, **not a regression**.
+
+The operator submitted the prepared `RG892R` deck as
+**JOB 7876** and supplied the complete JES report.
+The report shows:
+
+```text
+//DD02     DD SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=81)
+IEF237I JES2 ALLOCATED TO DD02
+IEW0000     INCLUDE OBJ(BCPLM6)
+IEW0000     INCLUDE OBJ(BCPLIO)
+M42 BEFORE FIND DD02
+M42 DD02 RETURNED HANDLE
+M42 SURVIVED FIND DD02
+```
+
+IFOX `ASMAP`, IEWL `LKED` and `GO` each
+returned RC0000, without a reported IEC OPEN error
+or abend. The ordinary installed DEVOBJ BCPLIO
+was linked, not a fault-injected private version.
+
+The invalid FB `LRECL=80,BLKSIZE=81` **JCL**
+attributes did not cause a rejected `FINDINPUT`.
+No GET was attempted on the returned handle;
+the effective in-storage DCB BLKSIZE/LRECL and
+QSAM record behavior remain unmeasured. A
+returning handle shows that the canonical DIFIND
+path got past RDJFCB, DALLOC, DQOPEN/SVC19,
+and HNEW, and judged the DCB opened.
+
+**Disposition: complete exploratory job, actual failed-OPEN
+gate NOT MET.** After three separate DD-only probes
+returned valid handles (7874 SYSOUT; 7875 PDS without
+member; 7876 malformed FB SYSOUT), further blind
+JCL substitutions are not justified. Next inspect
+and instrument the effective in-storage DCB at
+the precise SVC19 call site, using a disposable
+private BCPLIO object, before proposing another
+live MVS test. Preserve installed PDS objects and
+deferred full regression.
+
 
 The operator pulled `main` through `19e658a`, then ran
 `tools/checks/prepare-m42-fb-open-jcl.py` with the required
