@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: synthetic OPEN-denial 138 ACCEPTED (source checker and MVS targeted PASS); actual failing MVS SVC 19 still UNTESTED; full regression panel owner-deferred.**
+**Status: 138 synthetic DQOPEN recovery ACCEPTED; M4.2.1 allocated-DD true-OPEN exploratory probe STAGED (not run); full panel owner-deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -103,7 +103,7 @@ preserve exact JES CC/job evidence.
 
 ## M4.2.1 — actual incompatible allocated DD exploratory job
 
-**NOT YET STAGED OR EXECUTED.** This requires a separate,
+**PROBE STAGED, NOT YET BUILT OR EXECUTED UNDER MVS.** This uses a separate,
 fail-closed experimental JCL deck with a DD for which
 `RDJFCB` succeeds but the requested QSAM input/output
 DCB attributes or mode cannot be satisfied. Possible
@@ -128,6 +128,75 @@ Do not turn an abending exploratory job into a normal
 regression PASS merely because the abend was anticipated.
 M4.3 must independently instrument CLOSE/FREEMAIN
 accounting and likely verify DCB open-state interpretation.
+
+## M4.2.1 source and JCL preparation — STAGED, NOT EXECUTED
+
+A separate, non-regression diagnostic program is now committed
+at `native-compiler/probes/m42-real-open/`. It compiles with the
+historical Cambridge compiler and links the **unmodified
+installed** `DEVOBJ(BCPLM6)` and `DEVOBJ(BCPLIO)`
+candidate objects. No synthetic DQOPEN bypass or SVC19
+interceptor is present.
+
+The GO step intentionally allocates `DD01` as ordinary
+instream DATA and `DD02` as `SYSOUT=*` with FB132
+DCB attributes. BCPL opens DD01 normally, flushes a
+diagnostic marker, and executes `FINDINPUT("DD02")`.
+Thus DD02 is JCL allocated but its intended SYSOUT
+direction is incompatible with the BCPL application's
+requested QSAM input. **It is not yet known whether
+RDJFCB rejects the DD first, whether the SVC 19 request
+returns unopened, or whether TK5 abends.** The
+experiment is designed to distinguish those outcomes
+when combined with actual JES/IEC/IEF evidence.
+
+`tools/checks/prepare-m42-real-open-jcl.py` creates
+the exploratory `RG890R` assembler/link/GO JCL from
+compiler-generated assembler using the existing
+`prepare-runtime-pds-regression.py` for base structure.
+It checks all relevant JCL anchors, requires the
+DEVOBJ/BCPLM6 candidate environment, inserts exactly one
+`//DD02 DD SYSOUT=*`, and **never submits** a job.
+The host-only checker
+`tools/checks/check-m42-real-open-jcl.py`
+validates the patcher with both correct and deliberately
+corrupted JCL fixture text. This checker **has not yet
+been executed**.
+
+The probe has its own source and instructions:
+[probes/m42-real-open/README.md](../native-compiler/probes/m42-real-open/README.md).
+
+### Operator commands — prepare, inspect, then optionally submit
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+python3 tools/checks/check-m42-real-open-jcl.py
+
+python3 tools/native/compile-mvs \
+  native-compiler/probes/m42-real-open/source.bcpl \
+  --job-name RG890C --listing light --timeout 180 \
+  --output workarea/m42-real-open/generated.s370.asm
+
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+python3 tools/checks/prepare-m42-real-open-jcl.py \
+  workarea/m42-real-open/generated.s370.asm \
+  workarea/m42-real-open/real-open.jcl
+```
+
+These commands produce the controlled diagnostic deck
+without submitting its GO step. **Review the
+`workarea/m42-real-open/real-open.jcl` deck** before
+the separate, potentially abending submission described
+in the probe README. Preserve JES job number, all step CCs,
+full report, IEC/IEF lines and exact ABEND reason. A
+GO-step abend is a diagnostic outcome, not a regression PASS.
+A zero FIND return alone does not prove SVC19 executed,
+since `DDVERIFY` can fail earlier. No real SVC19 outcome
+is claimed before operator evidence is supplied.
 
 ## Exit criteria
 
