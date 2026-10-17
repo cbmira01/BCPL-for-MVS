@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -19,13 +20,19 @@ def fixture(names=None):
         names = {n: f"{n:02d}" if n <= 52 else f"{n:03d}"
                  for n in range(146)}
     sections = ["NATIVE REGRESSION  00..145  (146 tests)"]
-    for n, name in names.items():
+    # The real discover() map is inserted in lexicographic directory order:
+    # 05-*, 053-*, ..., 059-*, 06-*. The runner itself emits tests in
+    # NUMERIC order. Always sort case numbers and print the number as the
+    # first column, with the descriptive directory name as the second.
+    for n in sorted(names):
+        name = names[n]
+        ident = f"{n:02d}" if n <= 52 else f"{n:03d}"
         if n == 83:
             sections.append(
-                f"SKIP  083  {name} (source-only instrumentation)")
+                f"SKIP  {ident}  {name} (source-only instrumentation)")
         else:
-            sections.extend((f"RUN   {name}  {name}",
-                             f"PASS  {name}  {name}"))
+            sections.extend((f"RUN   {ident}  {name}",
+                             f"PASS  {ident}  {name}"))
     sections += ["", "NATIVE REGRESSION COMPLETE", "PASS  145",
                  "FAIL  0", "SKIP  1", "TOTAL 146", ""]
     return names, "\n".join(sections)
@@ -40,6 +47,20 @@ class PanelTests(unittest.TestCase):
         # Use the real native runner discovery to catch formatting drift.
         names = gate.cases()
         _, report = fixture(names)
+        gate.parse_runner(report, names)
+
+    def test_lexical_case_order_and_numeric_identifier(self):
+        # Regression 053 alphabetically sorts between 05 and 06 in
+        # discover(), but the native runner visits 05, 06, ..., 052, 053.
+        names = gate.cases()
+        self.assertEqual(len(names), 146)
+        self.assertNotEqual(list(names), sorted(names))
+        _, report = fixture(names)
+        runs = re.findall(r"(?m)^RUN[ \\t]+(\\d{2,3})[ \\t]+", report)
+        self.assertEqual(runs[:7], [
+            "00", "01", "02", "03", "04", "05", "06"])
+        self.assertIn(f"RUN   053  {names[53]}", report)
+        self.assertNotIn(f"RUN   {names[53]}  {names[53]}", report)
         gate.parse_runner(report, names)
 
     def test_footer_pass_number_cannot_steal_next_line(self):

@@ -191,3 +191,47 @@ commit**, not the old `969acf8`. Only after the
 new offline tests and begin succeed should the
 single full 00..145 panel proceed. Historical
 M5.1/M5.2 proofs remain unchanged.
+
+## M5.5 second operator self-test correction — numeric case order
+
+At `eb7f14a`, the operator reran the 10-test
+offline suite. Nine tests passed; the added
+real-repository case-name test failed with
+`RUN lines do not identify all 145 cases in order`.
+Because the shell command used `&&`, it **stopped
+before archiving the old BEGIN and before any fresh
+`begin` or MVS 00..145 panel execution**.
+
+The remaining issue was in the test's fabricated
+transcript, not the production regression runner:
+`discover()` inserts directory names in
+**lexicographic** order (e.g. 05, 053, ..., 06).
+The actual runner visits **numeric** case order
+(05, 06, ..., 052, 053), printing the separate
+test ID first and the directory's full name
+second. The original fixture printed the
+directory name in both columns and preserved
+the lexicographic iteration order. Fix
+`fixture()` to sort numeric keys, derive the
+two/three-digit test ID, and retain the
+descriptive case name only in column two.
+Added a focused regression that asserts this
+difference with the actual 146 directory names.
+
+Locally reconstructed the parser and both
+synthetic+descriptive/lexicographically ordered
+fixture variants: **three positive** and
+**three corrupted-case rejection** checks
+passed. Checked the live Git tree's 146
+directory names: 145 ordered RUN records
+matched the expected IDs and names.
+The complete amended Python unit suite **still
+requires operator execution**. No BCPL
+runtime/runner/JCL/PDS change has been made.
+
+The original `m55-begin.json` created
+at `969acf8` should still be present because
+the shell short-circuited before `mv`.
+Follow the guarded archive-and-rebegin commands
+above after pulling this correction. Do not
+accept the old checkpoint for the new run.

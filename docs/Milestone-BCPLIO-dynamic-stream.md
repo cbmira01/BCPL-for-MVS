@@ -5,6 +5,31 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M5.5 second self-test correction — fixture fixed, panel still open (2026-10-17)
+
+The operator's second preflight at `eb7f14a`
+returned 9 successful offline tests and one
+fixture error. The real native runner discovery
+returns descriptive case names in filename
+order, while actual `RUN`/`PASS` lines contain
+a numeric test ID in numeric order and then
+the descriptive name. The self-test fixture
+mistakenly used the case name as both columns
+and retained filename order. The production
+runner and its true ordered output were correct.
+
+Fixed the fixture to sort numeric test numbers
+and render distinct ID/name columns, with one
+more test specifically covering filename
+sorting 05, 053, 06 vs numeric 05, 06, 053.
+The chained operator shell stopped on the
+unit-test error; therefore the original
+`m55-begin.json` checkpoint is intact and
+**no fresh M5.5 native panel has run**.
+M5.5 remains OPEN. See updated
+[M5.5 plan](Milestone-BCPLIO-dynamic-stream-M5.5-plan.md)
+for safe archival and restart.
+
 ## M5.5 first preflight parser issue — corrected, panel not yet run (2026-10-17)
 
 The operator's first M5.5 source preflight,
