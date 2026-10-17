@@ -1,8 +1,42 @@
 # M4.2.2 — read-only PDS without member: real QSAM OPEN probe
 
-**Status: EXECUTED — RG891R JOB 7875 completed with ASMAP/LKED/GO
-RC0000; detailed OPEN-path diagnosis awaits the extracted JES
-report (2026-10-17).**
+**Status: EXECUTED AND CHARACTERIZED — RG891R JOB 7875
+RETURNED HANDLE, not a failed OPEN (2026-10-17).**
+
+The operator supplied the complete JOB 7875 JES report. GO
+JCL allocated `DD02 DD DSN=SYS1.MACLIB,DISP=SHR`
+with no member. JES reported `390 ALLOCATED TO DD02`
+and retained `SYS1.MACLIB` as KEPT. ASMAP/LKED/GO
+all returned `RC0000`; the GO step recorded one
+device I/O operation on 390, not necessarily a GET.
+The linker includes `OBJ(BCPLM6)` and
+`OBJ(BCPLIO)` from the ordinary development library,
+not a test-only fault-injection module.
+
+Actual primary BCPL SYSOUT markers:
+
+```text
+M42 BEFORE FIND DD02
+M42 DD02 RETURNED HANDLE
+M42 SURVIVED FIND DD02
+```
+
+Thus, the allocated nonmember PDS was **accepted by
+BCPLIO's FINDINPUT OPEN path**. The canonical DIFIND
+requires success from DDVERIFY, DALLOC, DQOPEN
+(real SVC19), and HNEW to return the handle.
+The program deliberately performs **no RDCH on DD02**;
+no successful input data transfer, nor a subsequent
+GET-path error, has been demonstrated.
+
+**Disposition:** M4.2.2 experiment completed, but it
+did not supply the desired actual failed OPEN.
+Do not count it as a successful failed-OPEN recovery
+regression. Keep M4.2 OPEN. Next consider a deliberately
+invalid *record-format/length* DCB combination that
+should trigger an OPEN-time check, using a separate
+development-only probe and not modifying SYS1.MACLIB.
+
 
 The operator ran the non-submitting generator and then submitted
 `workarea/m42-real-open/pds-open.jcl` as RG891R JOB 7875.
