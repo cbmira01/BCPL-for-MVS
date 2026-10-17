@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 synthetic OPEN PASS; M4.2.1 JOB 7874 returned HANDLE, no real OPEN failure; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; M4.2.1 JOB 7874 returned HANDLE; M4.2.2 read-only PDS OPEN diagnostic staged; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -432,3 +432,23 @@ an allocated read-only PDS without a member, tried
 as an input QSAM sequential DD. The test must be
 separate, potentially abending, and use only read-only
 `DISP=SHR` allocation. Full regression stays deferred.
+
+## M4.2.2 read-only PDS-without-member probe STAGED
+
+Staged a controlled separate `RG891R` generator
+`tools/checks/prepare-m42-pds-open-jcl.py`
+and [operator procedure](../native-compiler/probes/m42-pds-open/README.md).
+The same BCPL source from JOB 7873 is reused without
+recompilation. The new DD02 is `SYS1.MACLIB,DISP=SHR`
+with no member, used by a QSAM FINDINPUT request.
+The system dataset is read-only. Neither the generator
+nor the preparation command submits the exploratory GO
+or modifies installed runtime/PDS objects.
+
+This is a candidate for **actual** QSAM OPEN incompatibility
+following the unexpected SYSOUT/input handle of JOB
+7874; no failure is guaranteed. **No execution evidence
+has yet been supplied.** A normal returned handle,
+RDJFCB rejection, recoverable failed SVC19 and an
+S013 are distinct outcomes. Keep M4.2 open pending
+the report; full regression remains deferred.
