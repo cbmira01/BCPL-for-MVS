@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; M4.2.0 synthetic 138 PASS; M4.2.1 real OPEN diagnostic staged, not run; M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; M4.2.1 source compiled as JOB 7873, RG890R GO JCL generated but not submitted; M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -391,6 +391,23 @@ reported yet.** The operator must review JCL before
 submitting and preserve exact JES/IEC/IEF diagnostics.
 See [M4.2 plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md).
 The full native regression panel remains owner-deferred.
+
+
+## M4.2.1 Cambridge compilation and exploratory JCL — PREPARED
+
+After pulling to `ab44dad`, the operator completed the
+standard Cambridge compilation, `JOB 7873`, saving
+`workarea/m42-real-open/generated.s370.asm`. The
+DEVOBJ/BCPLM6 candidate JCL generator then reported
+successful construction of
+`workarea/m42-real-open/real-open.jcl`.
+The generator printed `DD01=DATA; DD02=SYSOUT` and
+reported no JES submission of the exploratory deck.
+**This is a preparation checkpoint only.**
+The real `RG890R` GO job has **not** been run,
+and actual QSAM OPEN/IEC/IEF/S013 behavior remains unknown.
+Do not confuse Cambridge `JOB 7873` with the GO job.
+The user-directed full regression deferral is unchanged.
 
 ## Handoff / next-conversation prompt
 
