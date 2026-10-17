@@ -77,6 +77,21 @@ is retained above as the superseded, unsuccessful attempt.
 
 **M4.3.1 (ACCEPTED):** Focused candidate-only compiled-BCPL test 139 uses existing regression G151 to call a separate test-only NATIVEAD assembler shim. It queries private IOACCT. Under MVS, ASMAP assembles the compiled BCPL program, ASMFIO assembles isolated BCPLIO, ASMNAT assembles NATIVEAD, and IEWL links both temporary objects with DEVOBJ(BCPLM6), without installed DEVOBJ(BCPLIO). GO asserts two live opens, duplicate FIND no extra OPEN, explicit ENDREAD releases descriptor/region but not the tombstone, fresh reopened identity, and three closes. It never reads the reopened instream DD DATA, avoiding an unfounded rewind guarantee. Marker: `M43 PRE-DRAIN COUNTS OK`.
 
+## Checker correction after attempted 140/141 launch (2026-10-17)
+
+The operator pulled commit `74b0763` and tried the targeted
+`140 141` invocation. The source checker stopped with
+`AssertionError` at its expectation of eight `BNE M43TRAP`
+references. The generated terminal assertion path contains **two**
+`BNZ M43TRAP` list-nonempty checks and **six**
+`BNE M43TRAP` counter-comparison checks. The assertion expected
+the wrong mnemonic distribution, not an accounting failure.
+
+The checker now verifies **2 BNZ + 6 BNE = 8** independently.
+Because the invocation was chained with `&&`, **neither 140 nor
+141 was submitted to JES**. No IFOX/IEWL/GO result, counter
+observation or M4.3.2a acceptance is claimed. The canonical
+BCPLIO and test-private instrumented assembler are unchanged.
 ## M4.3.2a — post-IODRAIN tests 140/141 staged (not run)
 
 The private instrumentation supports an opt-in `--terminal-check`.

@@ -16,7 +16,11 @@ original = (
 generated = transform(original)
 terminal = transform(original, terminal_check=True)
 assert terminal.count("DRAINDN  L     1,=A(DHEAD)") == 1
-assert terminal.count("         BNE   M43TRAP") == 8
+assert terminal.count("         BNZ   M43TRAP") == 2
+assert terminal.count("         BNE   M43TRAP") == 6
+# Two list heads plus six counter-pair comparisons = eight guards.
+assert (terminal.count("         BNZ   M43TRAP") +
+        terminal.count("         BNE   M43TRAP")) == 8
 assert terminal.count("M43DONE  LM    0,10,DRSAVE") == 1
 assert terminal.count("M43TRAP  DC    X\x270000\x27") == 1
 assert terminal.count("         L     1,=A(M43TAB)") == 1
