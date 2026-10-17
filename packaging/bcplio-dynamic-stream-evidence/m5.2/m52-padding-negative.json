@@ -1,0 +1,19 @@
+{
+  "schema": "bcpl-m52-pad-negative-v1",
+  "job": "M52PAD",
+  "expected": {
+    "ASMAP": 0,
+    "LKED": 0,
+    "GO": 0,
+    "VASM": 0,
+    "VLINK": 0,
+    "VCHK": 12
+  },
+  "positive_deck_sha256": "ef84a46c701dca8c132ca7cf5711ed2b5587f5951ffe6dfadaabe7d57bf6a1de",
+  "positive_asm_sha256": "238407f315e6b9b131d13aa02ac6c73aa80e558634b5f465a01f7f4a9f484107",
+  "negative_deck_sha256": "cc21f0802af077a2c8c391d0a316926905be8f1aebe440503c6780a6b3eee1ed",
+  "negative_asm_sha256": "b452ea8c5843a4ba4404b8c17cffceb59fc8ff2cc623f0e9ccdf63118fcfdbba",
+  "fault": "verifier expected FB132 byte 132 changed from EBCDIC blank X40 to X",
+  "actual_bcpl_output": "unchanged",
+  "status": "PREPARED_NOT_SUBMITTED"
+}

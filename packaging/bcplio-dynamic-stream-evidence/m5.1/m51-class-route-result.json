@@ -1,0 +1,22 @@
+{
+  "schema": "bcpl-m51-class-route-result-v1",
+  "observed_utc": "2026-10-17T15:16:14.649628+00:00",
+  "job": 8184,
+  "jobname": "AT114R",
+  "prepared_sha": "31dbeaaeae4ed29a882919c641e0ce6cd22aac7d",
+  "results": {
+    "A": {
+      "relative_capture": "m51-printer-A-formatted.bin",
+      "formatted_bytes": 27461,
+      "sha256": "857a3ceb23152b0ceae51d44a8ec27b630d184f2355d7cbd298131095bccd159",
+      "start_offset": 74902995
+    },
+    "Z": {
+      "relative_capture": "m51-printer-Z-formatted.bin",
+      "formatted_bytes": 6359,
+      "sha256": "f3ffcfdce952a9eeefdcbb60bef0ba1d52661751b757bded320a32ee716476a4",
+      "start_offset": 91029
+    }
+  },
+  "status": "PRINTER_ROUTE_PASS_ONLY"
+}

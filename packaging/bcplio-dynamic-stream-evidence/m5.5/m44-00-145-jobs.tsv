@@ -1,0 +1,146 @@
+test	case	compiler_jobs	go_job	asmap	asmbio	asmnat	lked	go	expected_go	result
+000	00-most-degenerate-bcpl-program	8190	8191	0000			0000	0000	0000	PASS
+001	01-one-procedure-call	8192	8193	0000			0000	0000	0000	PASS
+002	02-local-zero-test	8194	8195	0000			0000	0000	0000	PASS
+003	03-single-character-output	8196	8197	0000			0000	0000	0000	PASS
+004	04-string-output	8198	8199	0000			0000	0000	0000	PASS
+005	05-variable-value-output	8200	8201	0000			0000	0000	0000	PASS
+006	06-mutable-local-readback	8202	8203	0000			0000	0000	0000	PASS
+007	07-global-state-visibility	8204	8205	0000			0000	0000	0000	PASS
+008	08-local-vector-store-load	8206	8207	0000			0000	0000	0000	PASS
+009	09-vector-nonzero-subscript	8208	8209	0000			0000	0000	0000	PASS
+010	10-vector-variable-subscript	8210	8211	0000			0000	0000	0000	PASS
+011	11-vector-procedure-argument	8212	8213	0000			0000	0000	0000	PASS
+012	12-vector-callee-mutation	8214	8215	0000			0000	0000	0000	PASS
+013	13-two-argument-linkage	8216	8217	0000			0000	0000	0000	PASS
+014	14-three-argument-linkage	8218	8219	0000			0000	0000	0000	PASS
+015	15-four-argument-linkage	8220	8221	0000			0000	0000	0000	PASS
+016	16-function-return-value	8222	8223	0000			0000	0000	0000	PASS
+017	17-nested-calls	8224	8225	0000			0000	0000	0000	PASS
+018	18-recursion	8226	8227	0000			0000	0000	0000	PASS
+019	19-local-scalars-across-call	8228	8229	0000			0000	0000	0000	PASS
+020	20-pointer-return	8230	8231	0000			0000	0000	0000	PASS
+021	21-pointer-store-reload	8232	8233	0000			0000	0000	0000	PASS
+022	22-signed-arithmetic	8234	8235	0000			0000	0000	0000	PASS
+023	23-control-flow	8236	8237	0000			0000	0000	0000	PASS
+024	24-callable-global-through-g	8238	8239	0000			0000	0000	0000	PASS
+025	25-separately-compiled-bcpl-library	8240,8241	8242	0000			0000	0000	0000	PASS
+026	26-separately-assembled-native-through-g	8243	8244	0000		0000	0000	0000	0000	PASS
+027	27-getvec	8245	8246	0000			0000	0000	0000	PASS
+028	28-freevec	8247	8248	0000			0000	0000	0000	PASS
+029	29-multiple-allocations	8249	8250	0000			0000	0000	0000	PASS
+030	30-getvec-failure	8251	8252	0000			0000	0000	0000	PASS
+031	31-dynamic-vector-across-calls	8253	8254	0000			0000	0000	0000	PASS
+032	32-dynamic-pointer-return	8255	8256	0000			0000	0000	0000	PASS
+033	33-caller-base-after-function-return	8257	8258	0000			0000	0000	0000	PASS
+034	34-valof-resultis	8259	8260	0000			0000	0000	0000	PASS
+035	35-conditional-resultis	8261	8262	0000			0000	0000	0000	PASS
+036	36-nested-valof-resultis	8263	8264	0000			0000	0000	0000	PASS
+037	37-multiple-exported-globals	8265	8266	0000			0000	0000	0000	PASS
+038	38-putbyte-getbyte-roundtrip	8267	8268	0000			0000	0000	0000	PASS
+039	39-freevec-storage-release	8269	8270	0000			0000	0000	0000	PASS
+040	40-static-scalar-persistence	8271	8272	0000			0000	0000	0000	PASS
+041	41-table-constant-vector	8273	8274	0000			0000	0000	0000	PASS
+042	42-manifest-constant-expression	8275	8276	0000			0000	0000	0000	PASS
+043	43-label-goto	8277	8278	0000			0000	0000	0000	PASS
+044	44-address-indirection	8279	8280	0000			0000	0000	0000	PASS
+045	45-shifts-bitwise	8281	8282	0000			0000	0000	0000	PASS
+046	46-multiply-divide-rem	8283	8284	0000			0000	0000	0000	PASS
+047	47-multiple-assignment	8285	8286	0000			0000	0000	0000	PASS
+048	48-stack-check-emission	8287						NOT RUN	NOT RUN	PASS
+049	49-checked-procedure-entry	8288	8289	0000			0000	0000	0000	PASS
+050	50-stack-frame-size	8290	8291	0000			0000	0000	0000	PASS
+051	51-checked-recursion	8292	8293	0000			0000	0000	0000	PASS
+052	52-controlled-stack-overflow	8294	8295	0000			0000	0000	0000	PASS
+053	053-basic-writef	8296	8297	0000			0000	0000	0000	PASS
+054	054-writef-integer	8298	8299	0000			0000	0000	0000	PASS
+055	055-writef-character-string	8300	8301	0000			0000	0000	0000	PASS
+056	056-writef-field-width	8302	8303	0000			0000	0000	0000	PASS
+057	057-writef-hex-width	8304	8305	0000			0000	0000	0000	PASS
+058	058-writef-octal-width	8306	8307	0000			0000	0000	0000	PASS
+059	059-normal-format-string-transport	8308	8309	0000			0000	0000	0000	PASS
+060	060-writef-alpha-width	8310	8311	0000			0000	0000	0000	PASS
+061	061-writef-unknown-conversion	8312	8313	0000			0000	0000	0000	PASS
+062	062-writef-skip-argument	8314	8315	0000			0000	0000	0000	PASS
+063	063-writef-hex-alpha-width	8316	8317	0000			0000	0000	0000	PASS
+064	064-writef-octal-alpha-width	8318	8319	0000			0000	0000	0000	PASS
+065	065-historical-blib-writes	8320	8321	0000			0000	0000	0000	PASS
+066	066-historical-blib-writen	8322	8323	0000			0000	0000	0000	PASS
+067	067-full-historical-blib-link	8324	8325	0000			0000	0000	0000	PASS
+068	068-historical-blib-formatted-output	8326	8327	0000			0000	0000	0000	PASS
+069	069-independent-blib-object	8328	8329	0000			0000	0000	0000	PASS
+070	070-blib-unpackstring-object	8330	8331	0000			0000	0000	0000	PASS
+071	071-blib-packstring-inplace-object	8332	8333	0000			0000	0000	0000	PASS
+072	072-blib-writed-width-object	8334	8335	0000			0000	0000	0000	PASS
+073	073-blib-writehex-width-object	8336	8337	0000			0000	0000	0000	PASS
+074	074-blib-writeo-object	8338	8339	0000			0000	0000	0000	PASS
+075	075-blib-writef-mixed-object	8340	8341	0000			0000	0000	0000	PASS
+076	076-blib-writef-argument-diagnostic	8342	8343	0000			0000	0000	0000	PASS
+077	077-address-of-formal-argument-vector	8344	8345	0000			0000	0000	0000	PASS
+078	078-fourth-formal-argument-vector	8346	8347	0000			0000	0000	0000	PASS
+079	079-long-formal-argument-vector	8348	8349	0000			0000	0000	0000	PASS
+080	080-long-formal-vector-nested-calls	8350	8351	0000			0000	0000	0000	PASS
+081	081-writef-nested-local-argument-cursor	8352	8353	0000			0000	0000	0000	PASS
+082	082-outstanding-vectors-at-termination	8354	8355	0000			0000	0000	0000	PASS
+084	084-finish-explicit-close-probe	8356	8357	0000			0000	0000	0000	PASS
+085	085-finish-close-empty-output	8358	8359	0000			0000	0000	0000	PASS
+086	086-stop-zero-completion	8360	8361	0000			0000	0000	0000	PASS
+087	087-stop-nonzero-completion	8362	8363	0000			0000	0100	0100	PASS
+088	088-stop-outstanding-vectors	8364	8365	0000			0000	0000	0000	PASS
+089	089-stop-buffered-nonzero	8366	8367	0000			0000	0008	0008	PASS
+090	090-high-global-capacity	8368	8369	0000			0000	0000	0000	PASS
+091	091-aptovec-nested-call	8370	8371	0000			0000	0000	0000	PASS
+092	092-large-aptovec	8372	8373	0000			0000	0000	0000	PASS
+093	093-aptovec-stack-overflow	8374	8375	0000			0000	0000	0000	PASS
+094	094-selected-input-first-character	8376	8377	0000			0000	0000	0000	PASS
+095	095-selected-input-record-boundary	8378	8379	0000			0000	0000	0000	PASS
+096	096-selected-input-eof	8380	8381	0000			0000	0000	0000	PASS
+097	097-selected-input-unrdch	8382	8383	0000			0000	0000	0000	PASS
+098	098-endread-reopen	8384	8385	0000			0000	0000	0000	PASS
+099	099-unrdch-after-eof	8386	8387	0000			0000	0000	0000	PASS
+100	100-blank-input-record	8388	8389	0000			0000	0000	0000	PASS
+101	101-two-open-output-destinations	8390	8391	0000			0000	0000	0000	PASS
+102	102-alternate-output-records	8392	8393	0000			0000	0000	0000	PASS
+103	103-endwrite-flush-close	8394	8395	0000			0000	0000	0000	PASS
+104	104-input-selected-handle	8396	8397	0000			0000	0000	0000	PASS
+105	105-output-selected-handle	8398	8399	0000			0000	0000	0000	PASS
+106	106-switch-buffered-output	8400	8401	0000			0000	0000	0000	PASS
+107	107-two-input-cursors	8402	8403	0000			0000	0000	0000	PASS
+108	108-findparm-stream	8404	8405	0000			0000	0000	0000	PASS
+109	109-wrapoutput-record	8406	8407	0000			0000	0000	0000	PASS
+110	110-default-output-newline	8408	8409	0000			0000	0000	0000	PASS
+111	111-consecutive-output-newlines	8410	8411	0000			0000	0000	0000	PASS
+112	112-exact-output-record-limit	8412	8413	0000			0000	0000	0000	PASS
+113	113-overlong-output-rejected	8414	8415	0000			0000	0012	0012	PASS
+114	114-interleaved-stream-records	8416	8417	0000			0000	0000	0000	PASS
+115	115-output-close-reopen	8418	8419	0000			0000	0000	0000	PASS
+116	116-unknown-stream-names	8420	8421	0000			0000	0000	0000	PASS
+117	117-independent-input-eof	8422	8423	0000			0000	0000	0000	PASS
+118	118-close-input-preserves-other	8424	8425	0000			0000	0000	0000	PASS
+119	119-termination-flushes-both	8426	8427	0000			0000	0000	0000	PASS
+120	120-stackhwm-initialized	8428	8429	0000			0000	0000	0000	PASS
+121	121-savearea-blib-consumers	8430	8431	0000			0000	0000	0000	PASS
+122	122-freebase-vector-list-experiment	8432	8433	0000			0000	0000	0000	PASS
+123	123-freebase-auto-publication	8434	8435	0000			0000	0000	0000	PASS
+124	124-dynamic-dd-selected-output	8436	8437	0000			0000	0000	0000	PASS
+125	125-dynamic-dd-two-input-streams	8438	8439	0000			0000	0000	0000	PASS
+126	126-dynamic-dd-twelve-input-streams	8440	8441	0000			0000	0000	0000	PASS
+127	127-dynamic-dd-duplicate-find-contract	8442	8443	0000			0000	0000	0000	PASS
+128	128-dynamic-dd-finish-drain	8444	8445	0000			0000	0000	0000	PASS
+129	129-dynamic-dd-stop-drain	8446	8447	0000			0000	0008	0008	PASS
+130	130-dynamic-dd-sixteen-input-streams	8448	8449	0000			0000	0000	0000	PASS
+131	131-dynamic-dd-output-reopen-identity	8450	8451	0000			0000	0000	0000	PASS
+132	132-dynamic-dd-input-reopen-identity	8452	8453	0000			0000	0000	0000	PASS
+133	133-dynamic-dd-mixed-stream-interleaving	8454	8455	0000			0000	0000	0000	PASS
+134	134-dynamic-dd-invalid-name-preservation	8456	8457	0000			0000	0000	0000	PASS
+135	135-dynamic-dd-fault-descriptor32	8458	8459	0000	0000		0000	0000	0000	PASS
+136	136-dynamic-dd-fault-buffer268	8460	8461	0000	0000		0000	0000	0000	PASS
+137	137-dynamic-dd-fault-handle16	8462	8463	0000	0000		0000	0000	0000	PASS
+138	138-dynamic-dd-open-denial-before-svc19	8464	8465	0000	0000		0000	0000	0000	PASS
+139	139-dynamic-dd-resource-accounting	8466	8467	0000	0000	0000	0000	0000	0000	PASS
+140	140-dynamic-dd-finish-accounting	8468	8469	0000	0000		0000	0000	0000	PASS
+141	141-dynamic-dd-stop-accounting	8470	8471	0000	0000		0000	0008	0008	PASS
+142	142-dynamic-dd-fault32-counted	8472	8473	0000	0000	0000	0000	0000	0000	PASS
+143	143-dynamic-dd-fault268-counted	8474	8475	0000	0000	0000	0000	0000	0000	PASS
+144	144-dynamic-dd-fault16-counted	8476	8477	0000	0000	0000	0000	0000	0000	PASS
+145	145-dynamic-dd-open-denial-counted	8478	8479	0000	0000	0000	0000	0000	0000	PASS

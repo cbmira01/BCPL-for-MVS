@@ -1,0 +1,29 @@
+{
+  "schema": "bcpl-m55-fresh-panel-receipt-v1",
+  "status": "VERIFIED_AWAITING_OWNER_ACCEPTANCE",
+  "git_sha": "57c7354cf728ba3a46aef7e8f140006e1d3e5aeb",
+  "candidate_profile": {
+    "BCPL_RUNTIME_PDS": "1",
+    "BCPL_RUNTIME_LIBRARY": "DEVOBJ",
+    "BCPL_RUNTIME_CANDIDATE": "1",
+    "BCPL_RUNTIME_CANDIDATE_MEMBER": "BCPLM6"
+  },
+  "started_ns": 1792254089442748957,
+  "verified_ns": 1792254724579704004,
+  "pass": 145,
+  "fail": 0,
+  "skip": [
+    83
+  ],
+  "per_case_fresh_logs": 145,
+  "runner_transcript_sha256": "5623d6949629ccfa38833b8f4765c42053bd18a54bed795e4ec989a80eff63fe",
+  "audit_manifest_sha256": "27292e3bd5cad815fbd40b3032f24b0629948778edbd87b11aa03b026012a7e5",
+  "jobs_manifest": "workarea/native-regression/m44-00-145-jobs.tsv",
+  "log_directory": "workarea/native-regression/logs",
+  "original_m5_qsam_evidence_jobs": [
+    8184,
+    8185,
+    8186
+  ],
+  "limitations": "Previously accepted case-124 QSAM physical proof does not establish original raw JES2 spool bytes; no DEVOBJ->OBJ promotion."
+}

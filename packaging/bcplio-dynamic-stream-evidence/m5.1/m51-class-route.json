@@ -1,0 +1,28 @@
+{
+  "schema": "bcpl-m51-class-route-v1",
+  "prepared_utc": "2026-10-17T15:15:36.617180+00:00",
+  "git_sha": "31dbeaaeae4ed29a882919c641e0ce6cd22aac7d",
+  "jobname": "AT114R",
+  "source": "workarea/native-regression/114-interleaved-stream-records/runtime-pds-go.jcl",
+  "source_sha256": "520b94098d520cef0c0b922130464c7cf0b96ed31d0085922ba012a85f0c42b3",
+  "deck": "workarea/native-regression/114-interleaved-stream-records/m51-class-route.jcl",
+  "deck_sha256": "750ea6a07b16e8623eb8b3e000a5e512e78603ee54f9f59e37d74c61a303f0cd",
+  "expected_a_sha256": "621fda268ceb981ddfbeec8bd0d0d8b182b00a9f359eb0b20bb1650137d377a7",
+  "expected_z_sha256": "a6e2b7a040683432de03a18fd8a1939a2fdf82585b364bfc874bdd4095c4cae1",
+  "printers": {
+    "A": {
+      "path": "mvs-state/prt/prt00e.txt",
+      "offset": 74902995,
+      "dev": 2096,
+      "ino": 40883
+    },
+    "Z": {
+      "path": "mvs-state/prt/prt00f.txt",
+      "offset": 91029,
+      "dev": 2096,
+      "ino": 42018
+    }
+  },
+  "status": "STAGED_ONLY_NOT_SUBMITTED",
+  "limit": "printer routing probe; no raw QSAM FB132 byte fidelity"
+}

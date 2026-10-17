@@ -1,0 +1,600 @@
+{
+  "schema": "bcpl-m55-fresh-panel-v1",
+  "git_sha": "57c7354cf728ba3a46aef7e8f140006e1d3e5aeb",
+  "started_ns": 1792254089442748957,
+  "started_utc": "2026-10-17T16:21:29.442749+00:00",
+  "candidate_profile": {
+    "BCPL_RUNTIME_PDS": "1",
+    "BCPL_RUNTIME_LIBRARY": "DEVOBJ",
+    "BCPL_RUNTIME_CANDIDATE": "1",
+    "BCPL_RUNTIME_CANDIDATE_MEMBER": "BCPLM6"
+  },
+  "expected_range": "00..145",
+  "expected_pass": 145,
+  "expected_skip": [
+    83
+  ],
+  "prior_logs": {
+    "00-most-degenerate-bcpl-program": {
+      "mtime_ns": 1792245632266582672,
+      "size": 1061
+    },
+    "01-one-procedure-call": {
+      "mtime_ns": 1792245635390732011,
+      "size": 1011
+    },
+    "02-local-zero-test": {
+      "mtime_ns": 1792245638538892536,
+      "size": 996
+    },
+    "03-single-character-output": {
+      "mtime_ns": 1792245641987068360,
+      "size": 1185
+    },
+    "04-string-output": {
+      "mtime_ns": 1792245645415240274,
+      "size": 1140
+    },
+    "05-variable-value-output": {
+      "mtime_ns": 1792245648875412145,
+      "size": 1176
+    },
+    "06-mutable-local-readback": {
+      "mtime_ns": 1792245652215567837,
+      "size": 1182
+    },
+    "07-global-state-visibility": {
+      "mtime_ns": 1792245655631701894,
+      "size": 1186
+    },
+    "08-local-vector-store-load": {
+      "mtime_ns": 1792245659019204596,
+      "size": 1186
+    },
+    "09-vector-nonzero-subscript": {
+      "mtime_ns": 1792245662391366565,
+      "size": 1191
+    },
+    "10-vector-variable-subscript": {
+      "mtime_ns": 1792245665767530855,
+      "size": 1196
+    },
+    "11-vector-procedure-argument": {
+      "mtime_ns": 1792245669215699616,
+      "size": 1196
+    },
+    "12-vector-callee-mutation": {
+      "mtime_ns": 1792245672571864590,
+      "size": 1182
+    },
+    "13-two-argument-linkage": {
+      "mtime_ns": 1792245676112038632,
+      "size": 1172
+    },
+    "14-three-argument-linkage": {
+      "mtime_ns": 1792245679528206650,
+      "size": 1182
+    },
+    "15-four-argument-linkage": {
+      "mtime_ns": 1792245683144384504,
+      "size": 1177
+    },
+    "16-function-return-value": {
+      "mtime_ns": 1792245686560254192,
+      "size": 1176
+    },
+    "17-nested-calls": {
+      "mtime_ns": 1792245690492444831,
+      "size": 1132
+    },
+    "18-recursion": {
+      "mtime_ns": 1792245694424636179,
+      "size": 1117
+    },
+    "19-local-scalars-across-call": {
+      "mtime_ns": 1792245698312825562,
+      "size": 1197
+    },
+    "20-pointer-return": {
+      "mtime_ns": 1792245702185014476,
+      "size": 1142
+    },
+    "21-pointer-store-reload": {
+      "mtime_ns": 1792245706069204081,
+      "size": 1171
+    },
+    "22-signed-arithmetic": {
+      "mtime_ns": 1792245709993392565,
+      "size": 1156
+    },
+    "23-control-flow": {
+      "mtime_ns": 1792245713869577352,
+      "size": 1132
+    },
+    "24-callable-global-through-g": {
+      "mtime_ns": 1792245717804444320,
+      "size": 1196
+    },
+    "25-separately-compiled-bcpl-library": {
+      "mtime_ns": 1792245723608696305,
+      "size": 1396
+    },
+    "26-separately-assembled-native-through-g": {
+      "mtime_ns": 1792245727588889927,
+      "size": 1289
+    },
+    "27-getvec": {
+      "mtime_ns": 1792245731517081021,
+      "size": 1101
+    },
+    "28-freevec": {
+      "mtime_ns": 1792245735653282252,
+      "size": 1107
+    },
+    "29-multiple-allocations": {
+      "mtime_ns": 1792245739605473892,
+      "size": 1176
+    },
+    "30-getvec-failure": {
+      "mtime_ns": 1792245743629659990,
+      "size": 1144
+    },
+    "31-dynamic-vector-across-calls": {
+      "mtime_ns": 1792245747693422499,
+      "size": 1207
+    },
+    "32-dynamic-pointer-return": {
+      "mtime_ns": 1792245751689576460,
+      "size": 1182
+    },
+    "33-caller-base-after-function-return": {
+      "mtime_ns": 1792245755877750086,
+      "size": 1237
+    },
+    "34-valof-resultis": {
+      "mtime_ns": 1792245759922003723,
+      "size": 1141
+    },
+    "35-conditional-resultis": {
+      "mtime_ns": 1792245763934253146,
+      "size": 1171
+    },
+    "36-nested-valof-resultis": {
+      "mtime_ns": 1792245767966489981,
+      "size": 1176
+    },
+    "37-multiple-exported-globals": {
+      "mtime_ns": 1792245772058724251,
+      "size": 1197
+    },
+    "38-putbyte-getbyte-roundtrip": {
+      "mtime_ns": 1792245776011560560,
+      "size": 1196
+    },
+    "39-freevec-storage-release": {
+      "mtime_ns": 1792245779923754718,
+      "size": 1187
+    },
+    "40-static-scalar-persistence": {
+      "mtime_ns": 1792245783887951265,
+      "size": 1196
+    },
+    "41-table-constant-vector": {
+      "mtime_ns": 1792245787920151168,
+      "size": 1176
+    },
+    "42-manifest-constant-expression": {
+      "mtime_ns": 1792245791876347205,
+      "size": 1211
+    },
+    "43-label-goto": {
+      "mtime_ns": 1792245795952548873,
+      "size": 1121
+    },
+    "44-address-indirection": {
+      "mtime_ns": 1792245799932743730,
+      "size": 1166
+    },
+    "45-shifts-bitwise": {
+      "mtime_ns": 1792245804040940315,
+      "size": 1142
+    },
+    "46-multiply-divide-rem": {
+      "mtime_ns": 1792245808156612700,
+      "size": 1166
+    },
+    "47-multiple-assignment": {
+      "mtime_ns": 1792245812088780252,
+      "size": 1170
+    },
+    "48-stack-check-emission": {
+      "mtime_ns": 1792245814152879544,
+      "size": 363
+    },
+    "49-checked-procedure-entry": {
+      "mtime_ns": 1792245818301079088,
+      "size": 1299
+    },
+    "50-stack-frame-size": {
+      "mtime_ns": 1792245822393277366,
+      "size": 1327
+    },
+    "51-checked-recursion": {
+      "mtime_ns": 1792245826689486116,
+      "size": 1404
+    },
+    "52-controlled-stack-overflow": {
+      "mtime_ns": 1792245830733682866,
+      "size": 1453
+    },
+    "053-basic-writef": {
+      "mtime_ns": 1792245834809881229,
+      "size": 1229
+    },
+    "054-writef-integer": {
+      "mtime_ns": 1792245838872965770,
+      "size": 1265
+    },
+    "055-writef-character-string": {
+      "mtime_ns": 1792245842841157724,
+      "size": 1338
+    },
+    "056-writef-field-width": {
+      "mtime_ns": 1792245846857353350,
+      "size": 1289
+    },
+    "057-writef-hex-width": {
+      "mtime_ns": 1792245850833547285,
+      "size": 1279
+    },
+    "058-writef-octal-width": {
+      "mtime_ns": 1792245854949747485,
+      "size": 1289
+    },
+    "059-normal-format-string-transport": {
+      "mtime_ns": 1792245859037946215,
+      "size": 1373
+    },
+    "060-writef-alpha-width": {
+      "mtime_ns": 1792245863122139550,
+      "size": 1295
+    },
+    "061-writef-unknown-conversion": {
+      "mtime_ns": 1792245867292870667,
+      "size": 1292
+    },
+    "062-writef-skip-argument": {
+      "mtime_ns": 1792245871401067145,
+      "size": 1326
+    },
+    "063-writef-hex-alpha-width": {
+      "mtime_ns": 1792245875389258036,
+      "size": 1315
+    },
+    "064-writef-octal-alpha-width": {
+      "mtime_ns": 1792245879389451453,
+      "size": 1325
+    },
+    "065-historical-blib-writes": {
+      "mtime_ns": 1792245883621656153,
+      "size": 1336
+    },
+    "066-historical-blib-writen": {
+      "mtime_ns": 1792245887645850251,
+      "size": 1339
+    },
+    "067-full-historical-blib-link": {
+      "mtime_ns": 1792245891834051939,
+      "size": 1358
+    },
+    "068-historical-blib-formatted-output": {
+      "mtime_ns": 1792245895913289564,
+      "size": 1482
+    },
+    "069-independent-blib-object": {
+      "mtime_ns": 1792245899949479985,
+      "size": 1196
+    },
+    "070-blib-unpackstring-object": {
+      "mtime_ns": 1792245903961672403,
+      "size": 1200
+    },
+    "071-blib-packstring-inplace-object": {
+      "mtime_ns": 1792245907993866077,
+      "size": 1230
+    },
+    "072-blib-writed-width-object": {
+      "mtime_ns": 1792245912074064661,
+      "size": 1210
+    },
+    "073-blib-writehex-width-object": {
+      "mtime_ns": 1792245916118261602,
+      "size": 1222
+    },
+    "074-blib-writeo-object": {
+      "mtime_ns": 1792245920154458872,
+      "size": 1177
+    },
+    "075-blib-writef-mixed-object": {
+      "mtime_ns": 1792245924082648994,
+      "size": 1207
+    },
+    "076-blib-writef-argument-diagnostic": {
+      "mtime_ns": 1792245928111436385,
+      "size": 1253
+    },
+    "077-address-of-formal-argument-vector": {
+      "mtime_ns": 1792245932179621035,
+      "size": 1248
+    },
+    "078-fourth-formal-argument-vector": {
+      "mtime_ns": 1792245936071806764,
+      "size": 1231
+    },
+    "079-long-formal-argument-vector": {
+      "mtime_ns": 1792245940027995821,
+      "size": 1221
+    },
+    "080-long-formal-vector-nested-calls": {
+      "mtime_ns": 1792245943912183758,
+      "size": 1246
+    },
+    "081-writef-nested-local-argument-cursor": {
+      "mtime_ns": 1792245947756369670,
+      "size": 1258
+    },
+    "082-outstanding-vectors-at-termination": {
+      "mtime_ns": 1792245951756560324,
+      "size": 1247
+    },
+    "084-finish-explicit-close-probe": {
+      "mtime_ns": 1792245955848755119,
+      "size": 1210
+    },
+    "085-finish-close-empty-output": {
+      "mtime_ns": 1792245959596378510,
+      "size": 1051
+    },
+    "086-stop-zero-completion": {
+      "mtime_ns": 1792245963580563585,
+      "size": 1175
+    },
+    "087-stop-nonzero-completion": {
+      "mtime_ns": 1792245967828770388,
+      "size": 21380
+    },
+    "088-stop-outstanding-vectors": {
+      "mtime_ns": 1792245971876967700,
+      "size": 1197
+    },
+    "089-stop-buffered-nonzero": {
+      "mtime_ns": 1792245976241181959,
+      "size": 21368
+    },
+    "090-high-global-capacity": {
+      "mtime_ns": 1792245980425386692,
+      "size": 1176
+    },
+    "091-aptovec-nested-call": {
+      "mtime_ns": 1792245984517583813,
+      "size": 1172
+    },
+    "092-large-aptovec": {
+      "mtime_ns": 1792245988569663311,
+      "size": 1142
+    },
+    "093-aptovec-stack-overflow": {
+      "mtime_ns": 1792245992681861308,
+      "size": 1199
+    },
+    "094-selected-input-first-character": {
+      "mtime_ns": 1792245996798059795,
+      "size": 1226
+    },
+    "095-selected-input-record-boundary": {
+      "mtime_ns": 1792246000966261616,
+      "size": 1228
+    },
+    "096-selected-input-eof": {
+      "mtime_ns": 1792246005054459375,
+      "size": 1169
+    },
+    "097-selected-input-unrdch": {
+      "mtime_ns": 1792246009142656751,
+      "size": 1186
+    },
+    "098-endread-reopen": {
+      "mtime_ns": 1792246013294855087,
+      "size": 1149
+    },
+    "099-unrdch-after-eof": {
+      "mtime_ns": 1792246017382449275,
+      "size": 1160
+    },
+    "100-blank-input-record": {
+      "mtime_ns": 1792246021506644099,
+      "size": 1169
+    },
+    "101-two-open-output-destinations": {
+      "mtime_ns": 1792246025558837154,
+      "size": 1314
+    },
+    "102-alternate-output-records": {
+      "mtime_ns": 1792246029667034368,
+      "size": 1293
+    },
+    "103-endwrite-flush-close": {
+      "mtime_ns": 1792246033799234423,
+      "size": 1273
+    },
+    "104-input-selected-handle": {
+      "mtime_ns": 1792246037899428025,
+      "size": 1182
+    },
+    "105-output-selected-handle": {
+      "mtime_ns": 1792246042039619049,
+      "size": 1284
+    },
+    "106-switch-buffered-output": {
+      "mtime_ns": 1792246046128716641,
+      "size": 1285
+    },
+    "107-two-input-cursors": {
+      "mtime_ns": 1792246050152907816,
+      "size": 1165
+    },
+    "108-findparm-stream": {
+      "mtime_ns": 1792246054441112475,
+      "size": 1151
+    },
+    "109-wrapoutput-record": {
+      "mtime_ns": 1792246058497306598,
+      "size": 1258
+    },
+    "110-default-output-newline": {
+      "mtime_ns": 1792246062509500114,
+      "size": 1187
+    },
+    "111-consecutive-output-newlines": {
+      "mtime_ns": 1792246066577697040,
+      "size": 1213
+    },
+    "112-exact-output-record-limit": {
+      "mtime_ns": 1792246070625892919,
+      "size": 1333
+    },
+    "113-overlong-output-rejected": {
+      "mtime_ns": 1792246074782093988,
+      "size": 22081
+    },
+    "114-interleaved-stream-records": {
+      "mtime_ns": 1792246078864994223,
+      "size": 1306
+    },
+    "115-output-close-reopen": {
+      "mtime_ns": 1792246083013196604,
+      "size": 1270
+    },
+    "116-unknown-stream-names": {
+      "mtime_ns": 1792246087009397056,
+      "size": 1179
+    },
+    "117-independent-input-eof": {
+      "mtime_ns": 1792246091201608769,
+      "size": 1184
+    },
+    "118-close-input-preserves-other": {
+      "mtime_ns": 1792246095181806277,
+      "size": 1214
+    },
+    "119-termination-flushes-both": {
+      "mtime_ns": 1792246099326011258,
+      "size": 1293
+    },
+    "120-stackhwm-initialized": {
+      "mtime_ns": 1792246103382209035,
+      "size": 1175
+    },
+    "121-savearea-blib-consumers": {
+      "mtime_ns": 1792246107500952471,
+      "size": 1191
+    },
+    "122-freebase-vector-list-experiment": {
+      "mtime_ns": 1792246111581150698,
+      "size": 1231
+    },
+    "123-freebase-auto-publication": {
+      "mtime_ns": 1792246115701350839,
+      "size": 1201
+    },
+    "124-dynamic-dd-selected-output": {
+      "mtime_ns": 1792246120461582819,
+      "size": 1415
+    },
+    "125-dynamic-dd-two-input-streams": {
+      "mtime_ns": 1792246125149811368,
+      "size": 1228
+    },
+    "126-dynamic-dd-twelve-input-streams": {
+      "mtime_ns": 1792246133690227629,
+      "size": 1196
+    },
+    "127-dynamic-dd-duplicate-find-contract": {
+      "mtime_ns": 1792246138374231727,
+      "size": 1359
+    },
+    "128-dynamic-dd-finish-drain": {
+      "mtime_ns": 1792246143006456905,
+      "size": 1399
+    },
+    "129-dynamic-dd-stop-drain": {
+      "mtime_ns": 1792246147422671630,
+      "size": 33340
+    },
+    "130-dynamic-dd-sixteen-input-streams": {
+      "mtime_ns": 1792246152606984725,
+      "size": 1256
+    },
+    "131-dynamic-dd-output-reopen-identity": {
+      "mtime_ns": 1792246157223255596,
+      "size": 1351
+    },
+    "132-dynamic-dd-input-reopen-identity": {
+      "mtime_ns": 1792246161903497261,
+      "size": 1255
+    },
+    "133-dynamic-dd-mixed-stream-interleaving": {
+      "mtime_ns": 1792246166658661718,
+      "size": 1470
+    },
+    "134-dynamic-dd-invalid-name-preservation": {
+      "mtime_ns": 1792246171386887492,
+      "size": 1371
+    },
+    "135-dynamic-dd-fault-descriptor32": {
+      "mtime_ns": 1792246176139116698,
+      "size": 1445
+    },
+    "136-dynamic-dd-fault-buffer268": {
+      "mtime_ns": 1792246180871345661,
+      "size": 1422
+    },
+    "137-dynamic-dd-fault-handle16": {
+      "mtime_ns": 1792246185663579300,
+      "size": 1413
+    },
+    "138-dynamic-dd-open-denial-before-svc19": {
+      "mtime_ns": 1792246190451811683,
+      "size": 1490
+    },
+    "139-dynamic-dd-resource-accounting": {
+      "mtime_ns": 1792246196335262057,
+      "size": 1545
+    },
+    "140-dynamic-dd-finish-accounting": {
+      "mtime_ns": 1792246200607463818,
+      "size": 1731
+    },
+    "141-dynamic-dd-stop-accounting": {
+      "mtime_ns": 1792246205439696634,
+      "size": 264432
+    },
+    "142-dynamic-dd-fault32-counted": {
+      "mtime_ns": 1792246210751963943,
+      "size": 1604
+    },
+    "143-dynamic-dd-fault268-counted": {
+      "mtime_ns": 1792246216100250479,
+      "size": 1608
+    },
+    "144-dynamic-dd-fault16-counted": {
+      "mtime_ns": 1792246221484538224,
+      "size": 1600
+    },
+    "145-dynamic-dd-open-denial-counted": {
+      "mtime_ns": 1792246226972714722,
+      "size": 1636
+    }
+  },
+  "status": "BEGIN_ONLY_NOT_EXECUTED"
+}

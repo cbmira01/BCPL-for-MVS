@@ -1,0 +1,15 @@
+{
+  "schema": "m51-dataset-readback-v2",
+  "git_sha": "57dac876031580567b9caf962afaafed7ab8d7f4",
+  "job": "M5D124B",
+  "writer": "GO",
+  "verifier": "VCHK",
+  "source_sha256": "d076fa709173dd7a90aa10b510e9224e0d5ee598333cd2190fa98acb53e1cb06",
+  "deck_sha256": "ef84a46c701dca8c132ca7cf5711ed2b5587f5951ffe6dfadaabe7d57bf6a1de",
+  "asm_sha256": "238407f315e6b9b131d13aa02ac6c73aa80e558634b5f465a01f7f4a9f484107",
+  "report_fixture_sha256": "74b81f4965189a3188629a17db1fae707fb091d45e427d3946ee7e0667b96952",
+  "report2_fixture_sha256": "1a215e355ae0d8ffacabfb210e75e828fa213999dcb7e3170b650692f553489d",
+  "claimed": "QSAM temporary dataset bytes IF verified",
+  "not_claimed": "original JES2 SYSOUT spool record bytes",
+  "state": "PREPARED_NOT_EXECUTED"
+}
