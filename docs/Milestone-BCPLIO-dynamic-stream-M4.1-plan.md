@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.1 deterministic allocation failures
 
-**Status: IMPLEMENTED AS TEST-ONLY HARNESS AND STAGED CASES 135–137; no MVS execution yet.**
+**Status: source-only checker PASS; targeted MVS regression 135 ACCEPTED; 136–137 STAGED and pending. Full regression panel deferred by owner.**
 Date: 2026-10-17
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 Predecessor: M4.0 regression 134 **targeted PASS**, M3 regression 133 **targeted PASS**.
@@ -155,3 +155,55 @@ full panel would now also include 135..137 and the
 expected source-only SKIP 083. Schedule the integration
 gate separately rather than implying it already passed.
 Production `HERC02.BCPL.NATIVE.OBJ` stays untouched.
+
+## First M4.1 runtime acceptance — regression 135
+
+The operator pulled repository changes through `175fc2e` and
+ran `python3 tools/checks/check-bcplio-m41-fault.py`.
+Output included separate PASS checks for descriptor32,
+buffer268, and handle16, followed by `M4.1 source-only checks:
+PASS (MVS execution NOT attempted)`. This is static validation
+of generator anchors, generated source structure and card width;
+it is not MVS execution evidence for 136 or 137.
+
+The operator next executed the single DEVOBJ-isolated
+`tools/native/run-regression 135 --show-output` case with
+the four standard BCPL_RUNTIME candidate variables, yielding:
+
+```text
+NATIVE REGRESSION  135..135  (1 tests)
+RUN   135  135-dynamic-dd-fault-descriptor32
+PASS  135  135-dynamic-dd-fault-descriptor32
+
+NATIVE REGRESSION COMPLETE
+PASS  1
+FAIL  0
+SKIP  0
+TOTAL 1
+```
+
+**ACCEPTED:** controlled second descriptor32 GETMAIN-site
+failure, zero return to BCPL, preservation of already-selected
+DD01 input and record cursor, and successful retry to open DD02.
+The isolated ASMFIO/object-link strategy did not require
+an installed PDS object change. The provided operator output
+does not identify JES job number or independently enumerate
+step return codes; record only the runner's PASS.
+
+**Remaining M4.1 gates:** 136 (268-byte QSAM buffer/DCB
+allocation failure) and 137 (16-byte stable handle failure
+after OPEN), each to run individually using unchanged isolation.
+Successful BCPL-level behavior will still not replace
+M4.3 instrumented GETMAIN/FREEMAIN and OPEN/CLOSE accounting.
+The owner's deferral of the complete 00..134 panel remains
+in effect; no replacement full panel has been run.
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 136 --show-output
+```
