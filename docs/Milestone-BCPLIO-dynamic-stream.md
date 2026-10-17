@@ -1,10 +1,36 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2 closed (M4.2 scope-limited, 2026-10-17); M4.3 all focused gates accepted, formal JES evidence record pending; M4.4/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M4.3 closed — scoped resource accounting (2026-10-17)
+
+**M4.3 is CLOSED.** Final JES details were supplied for all seven
+isolated candidate runs: GO jobs **7880, 7882, 7884,
+7887, 7889, 7891, 7893**; Cambridge compilation jobs
+**7879, 7881, 7883, 7886, 7888, 7890, 7892**.
+ASMAP and ASMFIO always returned RC0000; ASMNAT
+returned RC0000 in tests 139 and 142–145; LKED always
+returned RC0000. GO returned RC0000 for all except
+regression **141 / JOB 7884**, whose STOP(8) GO RC0008
+was expected and its regression outcome was PASS.
+Thus focused regressions **139–145: 7 PASS / 0 FAIL**
+across their targeted runs. M4.3 source checks also passed.
+
+Measured scope: private counter values through explicit close,
+simulated returned allocation/OPEN failure and later retry;
+post-IODRAIN empty resource lists and balanced
+GETMAIN/FREEMAIN and QSAM OPEN/CLOSE counts.
+This does not prove physical MVS reclamation or
+recoverability of actual abends. Isolated test-private
+BCPLIO was used, not installed into OBJ or DEVOBJ;
+the ABI and production modules remain untouched.
+**M4.4 and M5 remain OPEN; full regression remains
+owner-deferred.** The detailed run table and caveats
+are in the [M4.3 acceptance record]
+(Milestone-BCPLIO-dynamic-stream-M4.3-plan.md).
 ## M4.3.2b accepted — focused 142–145 PASS (2026-10-17)
 
 At source revision `ce8d3e1`, the owner reran the

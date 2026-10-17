@@ -1,5 +1,15 @@
 # 143 — M4.3 counted buffer268 denial and retry
 
+## Formal acceptance evidence — 2026-10-17
+
+**M4.3 CLOSED, regression 143 PASS.**
+Compiler JOB 7888; GO JOB 7889 (RG143R).
+ASMAP IFOX00 RC0000; ASMFIO IFOX00 RC0000; ASMNAT IFOX00 RC0000;
+LKED IEWL RC0000; GO RC0000.
+Job-level RESULT=SUCCESS; the regression runner reports PASS.
+Only test-private BCPLIO was linked; no installed runtime was changed.
+See `docs/Milestone-BCPLIO-dynamic-stream-M4.3-plan.md`.
+
 **FOCUSED TEST ACCEPTED 2026-10-17 (operator-reported PASS).** Reuses accepted regression 136 and the G151/private IOACCT helper from test 139. The synthetic denial occurs only on the second site visit; the successful third visit uses a genuine GETMAIN or SVC19. BCPL asserts exactly ten counters after the denial and after explicit closure of both streams; the test-private IODRAIN terminal check asserts balanced counters, DHEAD=0 and HHEAD=0 on FINISH. No production ABI, BCPLIO canonical assembler or installed PDS member changes.
 
 After denial: 2, 1, 1, 0, 1, 0, 1, 1, 0, 0.

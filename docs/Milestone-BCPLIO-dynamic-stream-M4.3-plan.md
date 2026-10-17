@@ -1,8 +1,69 @@
 # BCPLIO dynamic streams — M4.3 resource accountability
 
-**Status: M4.3.0, M4.3.1, M4.3.2a and M4.3.2b ACCEPTED (2026-10-17); focused 139–145 all PASS individually/in targeted groups. M4.3 formal closure awaits extraction of successful JES job IDs and per-step codes from existing local regression logs. Full panel remains owner-deferred.**
+**Status: M4.3 CLOSED (2026-10-17), scoped to returned-control resource accounting; M4.3.0 / .1 / .2a / .2b accepted, focused regressions 139–145 PASS with successful JES evidence recorded below. Full panel owner-deferred; M4.4 and M5 OPEN.**
 Date: 2026-10-17
 
+## M4.3 formal closure — ACCEPTED 2026-10-17
+
+**Scope:** Account for BCPLIO-owned dynamic descriptor (32-byte),
+record/DCB (268-byte), and stable-handle (16-byte) allocations;
+dynamic QSAM SVC19/SVC20 calls, explicit ENDREAD/ENDWRITE,
+FINISH and STOP(8), duplicate FIND, tombstone lifetime,
+and **returned-control** synthetic failure cleanup/retry.
+The signed-off measurements come from test-only instrumented BCPLIO,
+linked separately for each candidate GO job, using DEVOBJ(BCPLM6).
+The installed canonical BCPLIO and BCPLMAIN were not changed.
+
+### Operator-provided successful JES evidence
+
+| Regression | Compiler JOB | GO JOB | ASMAP | ASMFIO | ASMNAT | LKED | GO | Outcome |
+|---|---:|---:|---|---|---|---|---|---|
+| 139 (pre-drain accounting) | 7879 | 7880 | 0000 | 0000 | 0000 | 0000 | 0000 | PASS |
+| 140 (FINISH drain) | 7881 | 7882 | 0000 | 0000 | — | 0000 | 0000 | PASS |
+| 141 (STOP(8) drain) | 7883 | 7884 | 0000 | 0000 | — | 0000 | **0008** | **PASS (expected)** |
+| 142 (descriptor32 denial) | 7886 | 7887 | 0000 | 0000 | 0000 | 0000 | 0000 | PASS |
+| 143 (buffer268 denial) | 7888 | 7889 | 0000 | 0000 | 0000 | 0000 | 0000 | PASS |
+| 144 (handle16 denial) | 7890 | 7891 | 0000 | 0000 | 0000 | 0000 | 0000 | PASS |
+| 145 (pre-SVC19 denial) | 7892 | 7893 | 0000 | 0000 | 0000 | 0000 | 0000 | PASS |
+
+The compiler-job IDs above were reported by the operator's local
+regression logs; individual compiler job step condition codes were
+not included in this extract. The GO jobs' per-step codes and
+pass/expected-completion status were supplied verbatim in the
+2026-10-17 operator log extract.
+
+**Important distinction:** RG141R JOB 7884 reports `JOB RESULT:
+FAILURE` because STOP(8) deliberately sets GO RC=0008. The test
+runner reports `TERMINATION: GO RC=0008 (expected)` and `RESULT:
+PASS`. This is an accepted controlled completion, **not an
+unexpected resource-accounting failure**.
+
+### Acceptance and boundaries
+
+- M4.3.0: test-only source-instrumentation checks PASS.
+- M4.3.1: 139 PASS; live stream/duplicate FIND and pre-drain counts.
+- M4.3.2a: 140/141 PASS; both DHEAD and HHEAD empty and
+  dynamic GETMAIN/FREEMAIN and OPEN/CLOSE counts balanced
+  after IODRAIN on FINISH and STOP(8).
+- M4.3.2b: 142–145 PASS; isolated denied second operation,
+  matching intermediate counts, cleanup and genuine later
+  successful retry, and balanced FINISH cleanup.
+
+**M4.3 is CLOSED on its agreed returned-control accounting
+contract.** An SVC20 return and a FREEMAIN return are
+counter observations, not independent host-side confirmation
+of physical storage reclamation or all QSAM outcomes.
+Simulated pre-SVC19 denial is not a genuine failing OPEN.
+Unrecoverable S013 or other MVS abends are not BCPLIO recovery
+obligations in this accepted scope.
+
+**Unchanged decisions:** No public global-vector/API addition;
+no production or development PDS module replacement;
+no canonical BCPLIO edit; no OBJ promotion. The full
+native-regression panel remains owner-deferred.
+Further compatibility verification belongs to M4.4;
+per-DD attribution belongs to M5. Nothing here accepts
+those future milestones.
 ## Contract
 
 M4.3 measures BCPLIO-owned dynamic resource lifetime, without modifying canonical BCPLIO or installing any MVS object. M4.2's narrower returned-error recovery contract remains accepted. A real MVS abend is not an accounting regression PASS.
@@ -217,7 +278,7 @@ test sources for ASCII and the 80-column limit, and confirms
 20 private count assertions per case. **142..145 remain OPEN
 until actual MVS results are received.**
 
-## M4.3.2b — counted failure paths (accepted)
+## M4.3.2b — counted failure paths (accepted; see formal closure above)
 
 Regressions **142–145** combine the isolated 139 private counter
 query, 140/141 post-IODRAIN terminal assertions, and the original
@@ -249,12 +310,12 @@ Existing regression 135–138 modes remain untouched.
 A synthetic denied operation is **not a real MVS failure**,
 and source-only checks are not IFOX or JES evidence. No
 new QSAM interface, BCPL global, installed object or promoted
-runtime source is introduced. Focused tests 142..145 have now **PASSED**; formal M4.3
-closure evidence collection remains as specified above.
+runtime source is introduced. Focused tests 142..145 have now **PASSED**; the formal M4.3
+closure evidence has since been recorded above.
 
 **M4.3.2 (accepted under the returned-error contract):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
 
-**M4.3 CLOSE:** Record the MVS job IDs, Cambridge/IFOX/IEWL/GO outcomes, generated object/link isolation and count observations, identify remaining host-level limitations, then accept only after all supported paths are proven. The owner's full regression deferral, M4.4 compatibility, M5 per-DD attribution and no OBJ promotion remain unchanged.
+**M4.3 CLOSE (ACCEPTED):** Successful-run JES IDs and per-step IFOX/IEWL/GO outcomes are now recorded in the formal closure section above. Supported control-flow resource-accounting paths were proven by focused regressions 139–145. The owner's full regression deferral, M4.4 compatibility, M5 per-DD attribution and no OBJ promotion remain unchanged.
 
 ## First targeted operator check (no full regression)
 

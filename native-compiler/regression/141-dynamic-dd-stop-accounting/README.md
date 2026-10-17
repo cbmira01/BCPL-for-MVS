@@ -1,6 +1,16 @@
 # 141 — M4.3.2a terminal resource accounting
 
-STAGED, NOT EXECUTED. Test-only BCPLIO asserts zero DHEAD/HHEAD and balanced 32/268/16-byte GETMAIN/FREEMAIN and dynamic QSAM OPEN/CLOSE counters after IODRAIN. On mismatch it intentionally executes an invalid opcode (S0C1), so normal completion is required for PASS. Reuses the proven logical program and expected output fixtures of regression 129. No runtime object installation or new BCPL global.
+## Formal acceptance evidence — 2026-10-17
+
+**M4.3 CLOSED, regression 141 PASS.**
+Compiler JOB 7883; GO JOB 7884 (RG141R).
+ASMAP IFOX00 RC0000; ASMFIO IFOX00 RC0000;
+LKED IEWL RC0000; GO RC0008 (expected STOP(8)).
+Job-level RESULT=FAILURE is expected due to GO RC0008; the regression runner reports PASS.
+Only test-private BCPLIO was linked; no installed runtime was changed.
+See `docs/Milestone-BCPLIO-dynamic-stream-M4.3-plan.md`.
+
+Originally staged; now ACCEPTED after the 2026-10-17 operator run. Test-only BCPLIO asserts zero DHEAD/HHEAD and balanced 32/268/16-byte GETMAIN/FREEMAIN and dynamic QSAM OPEN/CLOSE counters after IODRAIN. On mismatch it intentionally executes an invalid opcode (S0C1), so normal completion is required for PASS. Reuses the proven logical program and expected output fixtures of regression 129. No runtime object installation or new BCPL global.
 
 ## First attempted run — source checker correction
 
