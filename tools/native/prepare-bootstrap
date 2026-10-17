@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Regenerate disposable MR10/Cambridge bootstrap inputs from Git sources.
 
-No dspal calls, dataset writes, or resident jobs occur here.
-The full TRNILRG INTCODE rebuild is deliberately opt-in because it
-requires the live MVS compiler workflow.
+No dspal calls or PDS population occurs here. The --with-trnilrg
+option runs resident MR10 jobs through the installed ICINT19 interpreter;
+it therefore requires a completed interpreter rebuild.
 """
 from __future__ import annotations
 
@@ -71,12 +71,18 @@ def main() -> int:
         print(f"READY: {len(INPUTS)} repository input paths present; no files written")
         return 0
 
+    BASE.mkdir(parents=True, exist_ok=True)
+    manifest = BASE / "prepare-bootstrap-manifest.json"
+    # A failed regeneration must never leave an old manifest looking current.
+    manifest.unlink(missing_ok=True)
     commands = [
         [sys.executable, "native-compiler/bootstrap-cambridge/make-demoted.py"],
-        [sys.executable, "native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py"],
     ]
     if args.with_trnilrg:
+        # The build script regenerates MR10 translator sections itself.
         commands.append(["bash", "native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh"])
+    else:
+        commands.append([sys.executable, "native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py"])
     for cmd in commands:
         print("+", " ".join(cmd), flush=True)
         subprocess.run(cmd, cwd=ROOT, check=True)
@@ -89,13 +95,11 @@ def main() -> int:
         return 3
     data = {
         "format": 1,
-        "generator": "tools/prepare-bootstrap",
+        "generator": "tools/native/prepare-bootstrap",
         "trnilrg_rebuilt": args.with_trnilrg,
         "inputs": {p: digest(ROOT / p) for p in INPUTS},
         "outputs": {str(p.relative_to(ROOT)): digest(p) for p in files},
     }
-    BASE.mkdir(parents=True, exist_ok=True)
-    manifest = BASE / "prepare-bootstrap-manifest.json"
     manifest.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"READY: {len(files)} generated outputs; SHA-256 inventory: {manifest.relative_to(ROOT)}")
     if not args.with_trnilrg:
