@@ -1,0 +1,49 @@
+// M4.2 true OPEN exploratory probe: DD02 allocated as SYSOUT.
+// This is NOT a regression PASS test; a host abend is possible.
+GLOBAL $( START:1; SELECTINPUT:11; RDCH:13; WRCH:14;
+          INPUT:16; STOP:30; FINDINPUT:42; ENDREAD:46;
+          WRITES:60 $)
+
+LET START() BE
+$(1
+    LET I = FINDINPUT("DD01")
+    LET J = 0
+    IF I=0 DO STOP(8)
+    SELECTINPUT(I)
+    IF INPUT() NE I DO STOP(8)
+    IF RDCH() NE 'A' DO STOP(8)
+
+    // Printed before the first attempted incompatible FIND.
+    WRITES("M42 BEFORE FIND DD02")
+    WRCH(10)
+
+    // DD02 has an intentional SYSOUT allocation in the GO JCL.
+    // This attempts real RDJFCB, DALLOC, and possibly SVC19.
+    J := FINDINPUT("DD02")
+
+    TEST J=0 THEN
+        WRITES("M42 DD02 RETURNED ZERO")
+    ELSE
+        WRITES("M42 DD02 RETURNED HANDLE")
+    WRCH(10)
+
+    IF INPUT() NE I DO STOP(8)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE 'B' DO STOP(8)
+    IF RDCH() NE 10 DO STOP(8)
+
+    // If a handle was returned, close it without attempting GET.
+    IF J NE 0 DO
+    $(1
+        SELECTINPUT(J)
+        IF INPUT() NE J DO STOP(8)
+        ENDREAD()
+    $)1
+
+    SELECTINPUT(I)
+    IF INPUT() NE I DO STOP(8)
+    ENDREAD()
+    WRITES("M42 SURVIVED FIND DD02")
+    WRCH(10)
+    FINISH
+$)1
