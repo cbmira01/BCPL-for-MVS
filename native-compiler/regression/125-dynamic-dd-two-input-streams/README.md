@@ -1,10 +1,14 @@
 # 125 — Compiled BCPL, two dynamic input DD streams
 
-**Status:** Test-first M1 gate, **not yet MVS-validated**. The existing
-BCPLIO FINDINPUT recognizes BCPIN and BCPINB but does not yet open
-arbitrary DD names. A first run against the currently accepted DEVOBJ
-runtime is expected to fail; this is an intentional capability gap, not
-permission to weaken the test or its expected success marker.
+**Status: ACCEPTED** for the modular DEVOBJ candidate. The initial
+test-first run was intentionally red (JOB 6275, GO RC0008); the
+implemented dynamic FINDINPUT and subsequent R10/R11 return correction
+made the same compiled-BCPL test pass after BCPLIO was rebuilt in
+JOB 6289 (IFOX/PUTIO RC0000, no assembler flags).
+The successful native regression 125 reported PASS 1/FAIL 0/SKIP 0.
+Subsequent compatibility runs also passed tests 113 and 124 and the
+complete 00..123 panel (123 PASS/0 FAIL/expected SKIP 083).
+See `docs/Milestone-BCPLIO-dynamic-stream-M1-progress.md`.
 
 Program: `source.bcpl`. JCL allocates two independent 80-column
 instream DDs via `input-dda.records` (DDA: AB / CD) and
@@ -40,5 +44,5 @@ count as a PASS. Operator must report the run and first failure.
 Input is limited here to JES instream DD DATA fixtures. In particular,
 this test does **not** assert that an MVS reopen of the same instream DD
 rewinds to the beginning. That needs a separately designed DASD-backed
-test. Test 126 should extend this architecture to 12 DD names. Combined
+test. Test 126 now stages the corresponding 12-DD concurrent-stream stress case. Combined
 JES output comparison does not independently prove SYSPRINT DD identity.
