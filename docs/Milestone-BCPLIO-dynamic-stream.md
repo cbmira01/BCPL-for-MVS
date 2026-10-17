@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; JOB 7874 and 7875 returned HANDLE rather than failed OPEN; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; jobs 7874/7875 returned HANDLE; M4.2.3 invalid FB probe staged; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -528,6 +528,27 @@ the next experiment is deliberate incompatibility
 of QSAM FB record length and block size at OPEN.
 The full regression panel remains owner-deferred;
 no canonical runtime or installed objects changed.
+
+
+## M4.2.3 malformed QSAM FB DCB probe staged
+
+The actual JFCB/OPEN experiments in JOB 7874
+and JOB 7875 both returned nonzero DD02
+handles despite unconventional allocations,
+so no real QSAM OPEN rejection has been
+observed. Staged standalone `RG892R`,
+a third **non-regression** JCL probe with
+`DD02 SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=81)`.
+For QSAM FB this block length is not a
+multiple of record length (a potential S013-20
+OPEN-time error). The result remains to be
+observed; JCL/DD validation might reject it
+before OPEN. Existing compiled BCPL output
+is reused; no canonical runtime objects
+are changed. See [M4.2 plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md)
+and [RG892R procedure](../native-compiler/probes/m42-fb-open/README.md).
+The full native regression panel is still
+owner-deferred.
 
 ## Handoff / next-conversation prompt
 
