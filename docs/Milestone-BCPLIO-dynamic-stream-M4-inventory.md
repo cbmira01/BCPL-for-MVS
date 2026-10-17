@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; 7874/7875 returned HANDLE; RG892R bad-FB diagnostic JCL PREPARED, GO unsubmitted; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; real OPEN explorations 7874/7875/7876 all returned HANDLE; M4.2 actual failure unproved; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -531,3 +531,29 @@ No MVS result or actual OPEN failure has been observed.
 Next: exploratory submission and complete JES spool;
 not a native regression PASS/FAIL gate. The owner's full
 panel deferral remains in force.
+
+## M4.2.3 full JES evidence: RG892R JOB 7876 returned a handle
+
+The operator supplied the complete JOB 7876 spool.
+GO JCL allocated `DD02 SYSOUT=*` with deliberately
+inconsistent FB `LRECL=80,BLKSIZE=81`.
+JES allocated DD02; link-editor INCLUDE entries
+show ordinary DEVOBJ BCPLM6 and BCPLIO.
+All three steps completed RC0000. BCPL emitted
+`M42 BEFORE FIND DD02`,
+`M42 DD02 RETURNED HANDLE`,
+`M42 SURVIVED FIND DD02`.
+No OPEN error or abend was reported; no
+BCPL RDCH/GET was attempted against DD02.
+
+Thus the suspect JCL attributes did **not**
+cause a failed QSAM OPEN. This is the third
+such finding: jobs 7874, 7875, 7876
+all returned valid handles. Further tests
+should first instrument **actual private
+DCB fields** at SVC19, verify offsets from
+the historical DCB mapping, and keep
+diagnostics confined to DD02 with DD01
+as a normal control. Do not repeat random
+JCL incompatibilities. M4.2 remains open;
+full panel still owner-deferred.
