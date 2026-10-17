@@ -24,6 +24,10 @@ FILES = {
         "124-dynamic-dd-selected-output/m51-fb132-dataset-v2.json",
     "m5.2/m52-padding-negative.json":
         "124-dynamic-dd-selected-output/m52-padding-negative.json",
+    "historical/m5.1/m51-fb132-dataset-v1.json":
+        "124-dynamic-dd-selected-output/m51-fb132-dataset.json",
+    "historical/m5.5/m55-begin-before-fix.json":
+        "m55-begin-before-fix.json",
     "m5.5/m55-verification.json": "m55-verification.json",
     "m5.5/m55-begin.json": "m55-begin.json",
     "m5.5/m44-00-145-jobs.tsv": "m44-00-145-jobs.tsv",
@@ -102,6 +106,22 @@ def main(apply: bool) -> int:
         print("Preview only. --apply copies selected evidence; never deletes originals.")
         return 0
 
+    # Before extending an existing archive, verify the entire prior inventory.
+    # Never bless altered archived evidence by silently refreshing its checksum.
+    sums = DEST / "sha256sums.txt"
+    if sums.exists():
+        if not sums.is_file() or sums.is_symlink():
+            raise ValueError("Checksum manifest is not a regular file")
+        for line in sums.read_text(encoding="utf-8").splitlines():
+            old_sha, sep, rel = line.partition("  ")
+            if not sep or len(old_sha) != 64 or any(c not in "0123456789abcdef" for c in old_sha):
+                raise ValueError("Invalid previous checksum manifest")
+            old_path = Path(rel)
+            if old_path.is_absolute() or ".." in old_path.parts:
+                raise ValueError("Unsafe entry in previous checksum manifest")
+            old_file = DEST / old_path
+            if not old_file.is_file() or old_file.is_symlink() or digest(old_file.read_bytes()) != old_sha:
+                raise ValueError(f"Archived file has changed: {old_path}")
     for dst, data in pending:
         dst.parent.mkdir(parents=True, exist_ok=True)
         with dst.open("xb") as fh:
@@ -109,15 +129,11 @@ def main(apply: bool) -> int:
     if not found:
         print("No matching evidence found; nothing archived.")
         return 0
-    sums = DEST / "sha256sums.txt"
     entries = sorted(p for p in DEST.rglob("*") if p.is_file() and p != sums)
     listing = "".join(f"{digest(p.read_bytes())}  {p.relative_to(DEST)}\n"
                       for p in entries)
-    if sums.exists():
-        if sums.read_text(encoding="utf-8") != listing:
-            raise ValueError("Existing checksum manifest differs; refusing overwrite")
-    else:
-        sums.write_text(listing, encoding="utf-8")
+    # The preexisting inventory has been verified; extend it to new evidence.
+    sums.write_text(listing, encoding="utf-8")
     print("Copied selected metadata into packaging; originals remain in workarea.")
     print("Review all archived files before staging or committing to Git.")
     return 0
