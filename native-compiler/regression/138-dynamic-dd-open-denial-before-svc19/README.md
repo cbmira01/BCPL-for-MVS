@@ -1,6 +1,36 @@
 # Regression 138 — M4.2 synthetic DQOPEN denial before SVC 19
 
-**Status: STAGED ONLY; not yet assembled, linked, or run under MVS.**
+**Status: ACCEPTED — focused synthetic DQOPEN-denial regression 138
+PASS (2026-10-17 project record). Actual MVS SVC 19 failure NOT tested.**
+
+The operator pulled `main` from `ccb0f1b` through `5c890d3`,
+ran `python3 tools/checks/check-bcplio-m42-open.py` and observed
+`M4.2 synthetic OPEN source-only checks: PASS` and
+`M4.2 actual MVS OPEN failure: NOT TESTED`. Then, with
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ
+BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`,
+ran `tools/native/run-regression 138 --show-output`.
+Observed:
+
+```text
+NATIVE REGRESSION  138..138  (1 tests)
+RUN   138  138-dynamic-dd-open-denial-before-svc19
+PASS  138  138-dynamic-dd-open-denial-before-svc19
+
+NATIVE REGRESSION COMPLETE
+PASS  1
+FAIL  0
+SKIP  0
+TOTAL 1
+```
+
+This accepts only the synthetic second-DQOPEN denial,
+cleanup and successful third-attempt retry, with non-destructive
+DD01 stream/cursor preservation. The second DQOPEN **does not
+execute an unsuccessful MVS SVC 19**. No individual JES job
+number or step condition codes were supplied by the console
+summary. Genuine MVS OPEN failure and x13 ABEND remain untested;
+no installed DEVOBJ or OBJ member changed.
 
 Candidate-only compiled BCPL verification of the **DQOPEN failure
 cleanup branch**, using the same isolated, inline-assembled, temporary
