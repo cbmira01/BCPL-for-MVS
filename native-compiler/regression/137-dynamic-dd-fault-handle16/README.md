@@ -1,6 +1,27 @@
 # 137 — M4.1 stable-handle GETMAIN 16 deterministic failure
 
-**Status: STAGED (MVS execution and acceptance pending).**
+**Status: ACCEPTED — targeted MVS regression 137 PASS (2026-10-17).**
+
+Operator fast-forwarded `main` from `831ee82` to `ccb0f1b`
+and executed `tools/native/run-regression 137 --show-output`
+with `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1`,
+`BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`. Console outcome:
+**PASS 137; PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**.
+The single-case runner passed with the inline-assembled,
+test-only BCPLIO linked to the unchanged development runtime;
+the supplied excerpt does not include JES job IDs or separately
+enumerate assembler/link/GO condition codes.
+
+Accepted scope: a synthetic HNEW second-visit 16-byte GETMAIN
+failure **after QSAM OPEN**, followed by zero-valued FINDINPUT,
+preservation of a live input handle/cursor, a successful DD02
+retry, and ordinary read/close behavior. Source-level control
+flow requires `DQCLOSE` then `DREL` on this branch; this
+regression is **not** an independent count of CLOSE/FREEMAIN,
+a real MVS storage-exhaustion test, or an OPEN-error test.
+Production and installed development object PDS members
+remain unchanged.
 
 Candidate-only compiled BCPL against an **INLINE-assembled test-only
 BCPLIO**, generated from canonical `native-compiler/asm/bcplio.asm`.
