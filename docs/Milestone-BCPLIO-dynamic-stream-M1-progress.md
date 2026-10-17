@@ -527,3 +527,20 @@ With `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`, `BCPL_RUNTIME_CANDIDAT
 All individual baseline cases except expected skip 083 passed, including 094..119 legacy streams and regression 113. The operator's three test reports are the acceptance evidence; no GO JES job numbers were supplied for this run. The same environment variables selected DEVOBJ(BCPLM6) and DEVOBJ(BCPLIO); no production object installation.
 
 **DECISION: M1 compiled two-input-stream regression 125 + full backward-compatibility gate accepted** for currently built DEVOBJ candidate, alongside regression 124 output. This closes the immediate compatibility gate opened by the dynamic-input implementation; it does not close all of M1. Pending scope: 12 simultaneous dynamic inputs (permanent case 126), descriptor lifecycle on FINISH/STOP, resource exhaustion and close/reopen, repeat-DD identities, and independent physical DD attribution. Do not alter production `HERC02.BCPL.NATIVE.OBJ`.
+
+## Regression 126 — twelve concurrent dynamic DD input streams STAGED (2026-10-17)
+
+Added the permanent **candidate-only** `native-compiler/regression/126-dynamic-dd-twelve-input-streams/` test case after the successful 125 + 113/124/00..123 compatibility gate. This includes `source.bcpl`, `expected.txt`, `candidate-only.txt`, a self-contained `README.md`, and twelve distinct `input-dd01.records` .. `input-dd12.records` fixtures. The existing `prepare-runtime-pds-regression.py` generic `input-dd*.records` mechanism supplies separate GO-step `DD01`.. `DD12` JCL DD DATA allocations (two records per stream). **No compiler, runtime assembler, PDS object, or harness changes** are needed for staging case 126.
+
+The ordinary Cambridge BCPL source opens all **12** streams **before reading from any**, asserts nonzero and all 66 pairwise-distinct handles, interleaves two independent record sequences across all 12, checks per-stream newline and EOF, performs UNRDCH on both a character and EOF, then ENDREADs in reverse order and verifies each handle can no longer be selected. Each assertion fails as `STOP(8)`; successful normal GO RC0000 emits exactly `BCPL TWELVE INPUT OK`. Local source-line length check: max 67 characters over 313 lines.
+
+**Status: STAGED ONLY, NOT RUN, NOT ACCEPTED.** Execute with the existing DEVOBJ candidate environment:
+```sh
+git pull --ff-only
+export BCPL_RUNTIME_PDS=1
+export BCPL_RUNTIME_LIBRARY=DEVOBJ
+export BCPL_RUNTIME_CANDIDATE=1
+export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+tools/native/run-regression 126 --show-output
+```
+Do not declare support for twelve concurrent streams until the operator's MVS output confirms Cambridge compilation, ASMAP+LKED success, GO normal RC0 and PASS 126. On any failure, inspect the first failing gate (especially JES job JCL/DD allocation or QSAM descriptor state), correct source or runtime with minimal scope, and preserve the acceptance of prior tests. Distinct closure, FINISH/STOP cleanup without explicit ENDREAD, repeated DD-name opens, insufficient resources, and independent JES DD attribution still need later tests.
