@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; real-OPEN probes 7874/7875 returned HANDLE (no failed OPEN); M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; 7874/7875 returned HANDLE; M4.2.3 bad-FB DCB probe RG892R staged; M4.3 open; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -502,3 +502,19 @@ not a regression PASS. An intentionally invalid
 FB BLKSIZE/LRECL OPEN-time DCB combination should
 be explored separately, with no writes to the
 system PDS. M4.2 remains open; full panel deferred.
+
+## M4.2.3 intentionally malformed FB DCB — STAGED
+
+Staged a third independent exploratory `RG892R`
+application GO job with invalid FB `LRECL=80`,
+`BLKSIZE=81` for a `DD02 SYSOUT=*`
+allocation. This is a direct QSAM OPEN
+DCB-validation candidate (possibly S013-20),
+unlike previously successful SYSOUT and PDS
+allocations in JOB 7874/7875. JES may reject
+the allocation before SVC19 and real TK5 behavior
+is not yet known. The builder and README are
+committed under `tools/checks/` and
+`native-compiler/probes/m42-fb-open/`.
+GO JCL not prepared or submitted; no installed
+runtime changes and no full regression requested.
