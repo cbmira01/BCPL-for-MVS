@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4.1 full candidate 00..145 PASS; M4.4 final JES-log audit pending; M5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4 runner 145 PASS; 052/093 GO-RC mismatch blocks formal closure; M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -17,6 +17,27 @@ This helper **has not yet been run by the operator**,
 and does not submit jobs. M4.4.1's full 145-PASS
 result stands; formal M4.4.2 audit remains pending.
 M5 physical DD attribution remains separate.
+
+## M4.4.2 audit discrepancy — 2026-10-17
+
+The full candidate runner reported 145 PASS / 0 FAIL /
+1 expected SKIP, but a stricter saved-log audit
+reported two GO-return-code discrepancies: **052
+and 093 returned RC0000 even though their
+`expected-go-rc.txt` files specify 0012**.
+Both are stack-overflow tests, outside BCPLIO.
+The three other initial findings concern test
+048, a deliberately compile-only test; the
+audit has been corrected for its absent GO/LKED.
+
+The native runner currently counts RC0000 as PASS
+without consulting a conflicting nonzero-RC fixture.
+The BCPLM6/D6 and BCPLM7/D7 stack-overflow
+expectations require explicit reconciliation; no
+test fixtures or runtime objects were modified.
+**M4.4 formal closure remains BLOCKED** despite
+the outer 145-PASS result. M5 remains separate.
+See the [M4.4 plan](Milestone-BCPLIO-dynamic-stream-M4.4-plan.md).
 
 ## M4.4.1 accepted — entire 00..145 DEVOBJ candidate PASS (2026-10-17)
 

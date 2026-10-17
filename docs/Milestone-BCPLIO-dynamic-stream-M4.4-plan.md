@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.4 compatibility verification
 
-**Status: M4.4.0 and M4.4.1 ACCEPTED (2026-10-17): full DEVOBJ candidate 00..145 145 PASS / 0 FAIL / 1 expected SKIP 083. M4.4.2 final log-level GO/JES audit pending; M4.4 OPEN.**
+**Status: Full DEVOBJ 00..145 runner reported 145 PASS / 0 FAIL / 1 SKIP; M4.4.2 uncovered two unresolved GO-RC discrepancies (052 and 093). Formal M4.4 closure BLOCKED pending contract reconciliation.**
 Date: 2026-10-17
 Predecessor: M4.3 CLOSED (returned-control resource accounting).
 
@@ -181,6 +181,45 @@ Audit existing per-test logs and explicitly report
 any S322/known-defect acceptance and unexpected step
 status *before formal M4.4 closure*. **No second
 full regression run is requested.**
+
+## M4.4.2 saved-log audit — initial reconciliation (2026-10-17)
+
+The operator's full-panel saved-log audit examined all
+145/145 existing logs and reported five findings:
+
+```text
+048: fewer than two compiler/GO job IDs
+048: GO RC=MISSING; expected 0000
+048: LKED RC=MISSING
+052: GO RC=0000; expected 0012
+093: GO RC=0000; expected 0012
+```
+
+**048 is an audit error, now corrected.** The test includes
+`compile-only.txt` and explicitly stops after Cambridge
+code generation. The revised audit requires its
+`TERMINATION: COMPILE-ONLY` marker and rejects
+unexpected GO or LKED instead of requiring them.
+
+**052 and 093 remain real fixture/GO mismatches**:
+both have `expected-go-rc.txt` of `0012`, but the
+full DEVOBJ(BCPLM6) GO steps completed with RC0000.
+The outer native runner's RC0000-success branch ignores
+nonzero GO-RC fixtures, so both were counted PASS.
+Their BCPL output fixtures expect `STACK OVERFLOW`.
+The 052 README distinguishes the older BCPLM6/D6
+RC0000 behavior from BCPLM7/D7 RC0012; the 093 README
+states RC0000 despite its 0012 fixture. This strongly
+suggests that the fixture requirement is conflating two
+candidate runtimes, but it is not resolved by assertion.
+
+**M4.4 cannot formally close until the correct BCPLM6
+stack-overflow RC contract is reconciled and the runner
+is made to enforce that contract.** No fixture, runtime
+object or production assembler was changed to hide the
+discrepancy. The revised audit should be rerun against
+the existing saved logs only; no MVS re-execution is
+required for this investigation.
 
 ## M4.4.2 — disposition and M5 boundary
 

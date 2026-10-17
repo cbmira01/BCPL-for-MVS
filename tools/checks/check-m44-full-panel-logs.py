@@ -64,19 +64,46 @@ def audit() -> int:
         if not re.search(r"^TEST:\s*" + re.escape(name) + r"\s*$", log, flags=re.M):
             problems.append(f"{number:03d}: TEST identity missing/mismatched")
         jobs = re.findall(r"^JOB\s+(\d+)\s*$", log, flags=re.M)
-        if len(jobs) < 2:
-            problems.append(f"{number:03d}: fewer than two compiler/GO job IDs")
+        case_dir = REG / name
+        compile_only = (case_dir / "compile-only.txt").is_file()
+        if len(jobs) < (1 if compile_only else 2):
+            problems.append(
+                f"{number:03d}: too few job IDs for "
+                + ("compile-only" if compile_only else "compiler/GO")
+            )
         step = {}
         for match in re.finditer(
             r"^\s*(ASMAP|ASMBCPL|ASM|ASMFIO|ASMNAT|LKED|GO)\s+.*?\bRC=(\d{4})\b",
             log, flags=re.M
         ):
             step[match.group(1)] = match.group(2)
-        wanted = expected_go(number, REG / name)
+        if compile_only:
+            # Regression 048 intentionally performs Cambridge codegen only.
+            if not re.search(r"^TERMINATION:\s*COMPILE-ONLY\s*$",
+                             log, flags=re.M):
+                problems.append(
+                    f"{number:03d}: missing COMPILE-ONLY termination"
+                )
+            if "GO" in step or "LKED" in step:
+                problems.append(
+                    f"{number:03d}: unexpected GO/LKED in compile-only test"
+                )
+            rows.append("\t".join((
+                f"{number:03d}", name, ",".join(jobs),
+                "", step.get("ASMAP", ""), step.get("ASMFIO", ""),
+                step.get("ASMNAT", ""), "", "NOT RUN", "NOT RUN",
+                "|".join(results) if results else "MISSING",
+            )))
+            continue
+
+        wanted = expected_go(number, case_dir)
         actual = step.get("GO", "MISSING")
         go_counts[actual] += 1
         if actual != wanted:
-            problems.append(f"{number:03d}: GO RC={actual}; expected {wanted}")
+            problems.append(
+                f"{number:03d}: GO RC={actual}; fixture requires {wanted}; "
+                "candidate-specific stack-overflow contract unresolved"
+            )
         if step.get("LKED") != "0000":
             problems.append(f"{number:03d}: LKED RC={step.get('LKED', 'MISSING')}")
         for asm in ("ASMAP", "ASMFIO", "ASMNAT"):
@@ -94,6 +121,7 @@ def audit() -> int:
     MANIFEST.write_text("\n".join(rows) + "\n", encoding="utf-8")
     print(f"M4.4 existing regression logs: {found}/145")
     print("Expected runner skip: 083 (source-only)")
+    print("Compile-only: 048 (no GO or LKED)")
     print("GO RC distribution: " +
           ", ".join(f"{code}={count}" for code, count in sorted(go_counts.items())))
     if first_time is not None:
