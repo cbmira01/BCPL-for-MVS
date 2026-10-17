@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: M4.2 OPEN-denial branch regression 138 STAGED, NOT YET MVS RUN; actual unsuccessful MVS SVC 19 OPEN remains UNTESTED.**
+**Status: synthetic OPEN-denial 138 ACCEPTED (source checker and MVS targeted PASS); actual failing MVS SVC 19 still UNTESTED; full regression panel owner-deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -143,3 +143,43 @@ claiming nonfatal behavior.
 The owner's deferral of the full regression panel remains
 in effect throughout this characterization. No DEVOBJ-to-OBJ
 promotion is authorized.
+
+## M4.2.0 accepted — focused regression 138 (2026-10-17)
+
+The operator fast-forwarded `main` from `ccb0f1b` through
+`5c890d3`, then executed the host-side
+`check-bcplio-m42-open.py`, which reported:
+
+```text
+M4.2 synthetic OPEN source-only checks: PASS
+M4.2 actual MVS OPEN failure: NOT TESTED
+```
+
+The operator subsequently ran the isolated BCPLIO
+`138-dynamic-dd-open-denial-before-svc19` regression
+under the standard four DEVOBJ/BCPLM6 candidate settings:
+
+```text
+NATIVE REGRESSION  138..138  (1 tests)
+RUN   138  138-dynamic-dd-open-denial-before-svc19
+PASS  138  138-dynamic-dd-open-denial-before-svc19
+
+NATIVE REGRESSION COMPLETE
+PASS  1
+FAIL  0
+SKIP  0
+TOTAL 1
+```
+
+**ACCEPTED M4.2.0:** source-generated private branch denies
+the second DQOPEN *before SVC 19*, returns failure, and
+correctly preserves an existing stream/cursor and allows
+retry/open/use/close. This is a BCPL-level behavior test
+with a synthetic DQOPEN return, **not a real MVS QSAM OPEN
+error**. No separate JES job number or assembler/link/GO
+step RCs were provided. No installed object was changed.
+
+M4.2 cannot close until **M4.2.1** actually attempts an
+incompatible, allocated-DD OPEN under TK5 and records
+JES/IEC/IEF/ABEND outcomes. Full 00..138 compatibility
+continues to be deferred per owner instruction.
