@@ -177,6 +177,23 @@ if [[ $runtime_pds == 1 ]]; then
         exit 65
     fi
     pds_args=(--case-dir "$case_dir")
+    # M4.1: assemble a private test-only BCPLIO CSECT into this GO job.
+    # No repository source/PDS overwrite; normal tests are unchanged.
+    if [[ -f "$case_dir/io-fault-mode.txt" ]]; then
+        if [[ ${BCPL_RUNTIME_CANDIDATE:-0} != 1 ||
+              ${BCPL_RUNTIME_LIBRARY:-} != DEVOBJ ||
+              ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} != BCPLM6 ]]; then
+            echo "run-test: M4.1 fault requires DEVOBJ BCPLM6" >&2
+            exit 64
+        fi
+        fault_mode=$(tr -d '\r\n' < "$case_dir/io-fault-mode.txt")
+        fault_asm="$work/bcplio-m41-fault.asm"
+        echo "=== Instrument private BCPLIO: $fault_mode ==="
+        python3 "$root/tools/checks/prepare-bcplio-m41-fault.py" \
+            "$root/native-compiler/asm/bcplio.asm" "$fault_asm" \
+            --mode "$fault_mode" || exit $?
+        pds_args+=(--test-io-asm "$fault_asm")
+    fi
     if [[ -f "$native" ]]; then
         pds_args+=(--native "$native")
     fi
