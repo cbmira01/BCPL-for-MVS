@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 import os
-import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -56,7 +55,8 @@ class PanelTests(unittest.TestCase):
         self.assertEqual(len(names), 146)
         self.assertNotEqual(list(names), sorted(names))
         _, report = fixture(names)
-        runs = re.findall(r"(?m)^RUN[ \\t]+(\\d{2,3})[ \\t]+", report)
+        runs = [line.split()[1] for line in report.splitlines()
+                if line.startswith("RUN   ")]
         self.assertEqual(runs[:7], [
             "00", "01", "02", "03", "04", "05", "06"])
         self.assertIn(f"RUN   053  {names[53]}", report)
