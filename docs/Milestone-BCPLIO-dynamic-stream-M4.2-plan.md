@@ -1,0 +1,145 @@
+# BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
+
+**Status: M4.2 OPEN-denial branch regression 138 STAGED, NOT YET MVS RUN; actual unsuccessful MVS SVC 19 OPEN remains UNTESTED.**
+Date: 2026-10-17
+Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
+Full native regression panel explicitly deferred by owner (last completed
+panel 00..132: 132 PASS / 0 FAIL / expected SKIP 083).
+
+## Scope and non-goals
+
+M4.2 asks what occurs when an ordinary, allocated MVS DD is
+incompatible with BCPLIO's requested QSAM OPEN, and whether
+BCPLIO can return a zero stream handle without leaking a
+partially built descriptor. A failed JCL DD allocation,
+an RDJFCB lookup failure, a deliberately denied DQOPEN
+call and a **real failing MVS SVC 19** are four distinct
+conditions. We must not use one as evidence of another.
+
+Do not change G numbers, canonical BCPLIO, installed
+`DEVOBJ`, production `OBJ`, or the existing stream
+records/handle contract merely to produce a negative result.
+
+## Canonical code inspection
+
+`native-compiler/asm/bcplio.asm` currently uses the
+following path (assembler source, not yet failure-probe evidence):
+
+1. `DIFIND` / `DQFIND`: normalize DD name, search
+   for already-open identity, and `DDVERIFY` with RDJFCB.
+2. `DALLOC`: acquire 32-byte descriptor and 268-byte
+   region and construct input/output QSAM DCB.
+3. `DQOPEN`: SVC 19 using private parameter list,
+   then consult DCB-derived state (`L 7,48(7)`);
+   return zero on apparent success or 8 on failure.
+4. If DQOPEN returns nonzero, `DIFCLEAN` /
+   `DFFCLEAN` calls `DREL` (without DQCLOSE),
+   expected when there is no opened DCB.
+5. Successful OPEN followed by HNEW handle allocation
+   failure takes `DQCLOSE` then `DREL`; covered
+   behaviorally by M4.1 regression 137.
+6. `DQCLOSE` issues SVC 20, clears the descriptor's
+   open-state field, and is not invoked on ordinary DQOPEN
+   failure paths.
+
+An MVS OPEN can return with an unopened DCB or can abend
+with an x13 system completion code, including S013. IBM's
+later z/OS OPEN documentation describes the DCB OPEN flag
+as a way to detect success, but it is **not evidence that
+this specific `L 7,48(7)` sequence and every failure
+case work identically in MVS 3.8J**. A contemporary
+OS/370 System Messages reference and actual TK5 JES
+trace should arbitrate observed cases.
+
+Reference starting points (not substituted for TK5 execution):
+- https://www.ibm.com/docs/en/zos/3.2.0?topic=nvmd-open-connect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam
+- https://bitsavers.org/pdf/ibm/370/MVS/GC28-1375-1_MVS_370_Message_Library_System_Messages_Volume_2_IEC-ISG_Jan85.pdf
+
+## M4.2.0 — isolated negative DQOPEN return (regression 138)
+
+A **test-only**, temporary source transform:
+`tools/checks/prepare-bcplio-m42-open.py`.
+
+It replaces only the unique BCPLIO DQOPEN SVC19 site.
+The first call (DD01) executes true SVC19, the second
+call (DD02) **returns R15=8 via DQBAD before any SVC19**,
+and the third retry DD02 executes true SVC19. On denied
+OPEN, descriptor +24 remains zero and DIFCLEAN frees
+the descriptor and region through DREL.
+
+Permanent compiled-BCPL case:
+`native-compiler/regression/138-dynamic-dd-open-denial-before-svc19/`.
+It checks failed FIND returned zero, DD01 selection/cursor
+unchanged, retry DD02 successful, read/close of both streams.
+The expected primary marker is `BCPL OPEN BRANCH OK`.
+
+JCL compiles the application normally, inline-assembles
+the test-only modified BCPLIO in ASMFIO into `&&IOOBJ`,
+omits the installed DEVOBJ(BCPLIO) INCLUDE for **this
+marked case only**, and links all other normal installed
+candidate objects. No PDS member is overwritten.
+
+**Evidence boundary:** PASS 138 would validate BCPLIO cleanup
+and retry *when DQOPEN returns 8*, not actual MVS SVC19 error
+status, S013 abend or system messages. It cannot close M4.2.
+
+### First operator gate (focused only)
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+python3 tools/checks/check-bcplio-m42-open.py
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 138 --show-output
+```
+
+Expected source transform audit PASS and, only after MVS execution,
+`PASS 138` with `BCPL OPEN BRANCH OK`. If assembler or
+link step fails, first triage private instrumentation and
+preserve exact JES CC/job evidence.
+
+## M4.2.1 — actual incompatible allocated DD exploratory job
+
+**NOT YET STAGED OR EXECUTED.** This requires a separate,
+fail-closed experimental JCL deck with a DD for which
+`RDJFCB` succeeds but the requested QSAM input/output
+DCB attributes or mode cannot be satisfied. Possible
+mismatches include a SYSOUT allocation requested for
+input or incompatible sequential dataset DCB attributes;
+**which combinations are admitted by JES and how OPEN
+reacts under TK5 must first be checked, not assumed**.
+
+A real exploratory job must report:
+- JCL DD allocation and RDJFCB evidence.
+- Whether SVC19 returned or the GO task terminated/abended.
+- Actual IEC/IEF, ABEND completion and DDNAME, if any.
+- Whether DCB was opened, whether a BCPL handle was produced,
+  and whether previously selected streams remained usable.
+- Resource cleanup only if the problem program retained
+  control; a system abend cannot be counted as graceful
+  failed FIND.
+- An exact distinction between expected-abend diagnostic
+  evidence and a successfully handled error.
+
+Do not turn an abending exploratory job into a normal
+regression PASS merely because the abend was anticipated.
+M4.3 must independently instrument CLOSE/FREEMAIN
+accounting and likely verify DCB open-state interpretation.
+
+## Exit criteria
+
+M4.2 can close only after documented TK5 evidence for at
+least one **actual** incompatible allocated-DD OPEN attempt,
+a characterized and accurate outcome (recoverable failure
+or host abend), and corresponding scope-limited cleanup
+contract. If recovering every host OPEN abend would
+require ESTAE/recovery design outside the milestone, record
+that explicitly as a limitation rather than silently
+claiming nonfatal behavior.
+
+The owner's deferral of the full regression panel remains
+in effect throughout this characterization. No DEVOBJ-to-OBJ
+promotion is authorized.
