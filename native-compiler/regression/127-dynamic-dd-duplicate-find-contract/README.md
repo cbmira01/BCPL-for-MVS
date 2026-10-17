@@ -1,7 +1,15 @@
 # 127 — Repeated FIND must preserve live handle identity
 
-**Status: STAGED RED contract test**, not yet run under MVS and not
-accepted. This is a permanent candidate-only compiled-BCPL regression.
+**Status: RED GATE CONFIRMED, FIX RETEST PENDING.** The initial
+candidate-only compiled-BCPL execution (Cambridge JOB 6794, native
+JOB 6795) assembled and linked successfully but GO abended **S013-C0**
+with `IEC141I 013-C0,IGG0199G,RG127R,GO,DD01`. This is a regression
+failure, **not** the expected controlled STOP(8). It is consistent
+with a duplicate OPEN of an already-open instream DD.
+
+Commit `9c9dcb4` adds pre-OPEN active handle/name lookup in both
+dynamic FIND paths. It has **not yet been rebuilt or run under MVS**.
+The same immutable fixture is the acceptance test for that fix.
 
 M0's approved duplicate-FIND contract explicitly requires multiple
 calls to `FINDINPUT` or `FINDOUTPUT` for the **same normalized DD name,
@@ -29,11 +37,11 @@ BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
 tools/native/run-regression 127 --show-output
 ```
 
-The current BCPLIO implementation of DIFIND and DQFIND appears to
-allocate/open a new descriptor on every otherwise valid FIND without
-an active-name-and-direction lookup. Thus **a controlled STOP(8) FAIL
-is expected** from this first run; record the red gate before changing
-the runtime. This test does not yet cover reopen-after-close using
-the same DD, nor FINISH/STOP cleanup of unclosed streams, both of
-which need distinct tests. The existing combined JES checker does not
-independently prove REPORT DD attribution.
+**Acceptance target after DEVOBJ-only BCPLIO rebuild:** clean IFOX
+and PUTIO RC0000; Cambridge/ASMAP/IEWL success; GO RC0000 without
+abend; exact primary and REPORT logical records; runner PASS 127.
+Until the MVS operator observes that result, do not declare duplicate
+FIND behavior accepted. This test does not yet cover reopen-after-close
+using the same DD, nor FINISH/STOP cleanup of unclosed streams. Those
+need separate cases. Combined JES output does not independently prove
+REPORT DD attribution.
