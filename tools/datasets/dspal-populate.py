@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Manifest-driven population of managed BCPL PDS libraries."""
+"""Manifest-driven population of ready managed PDS members.
+
+Absent generated bootstrap members are reported with nonzero status *after*
+ready static members have been written. Other preflight errors block writes.
+"""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import re
 import sys
@@ -59,19 +65,62 @@ def source_path(value: Any) -> Path:
     return ROOT / path
 
 
+def validate_generated_sources(paths: list[Path]) -> None:
+    """Verify present generated files against prepare-bootstrap's SHA-256 inventory.
+
+    Missing generated files are handled separately by preflight: a clean first
+    population is expected to be incomplete. A present generated file without
+    trustworthy provenance must never be installed.
+    """
+    if not paths:
+        return
+    manifest_path = ROOT / "workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json"
+    if not manifest_path.is_file():
+        raise DspalError(
+            "generated files exist but prepare-bootstrap-manifest.json is absent; "
+            "rerun tools/native/prepare-bootstrap --with-trnilrg"
+        )
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise DspalError(f"invalid generated bootstrap manifest: {exc}") from exc
+
+    if data.get("format") != 1 or not isinstance(data.get("inputs"), dict) \
+            or not isinstance(data.get("outputs"), dict):
+        raise DspalError("invalid generated bootstrap manifest structure")
+
+    for name, expected in data["inputs"].items():
+        path = source_path(name)
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise DspalError(f"bootstrap input changed since generation: {name}")
+
+    for path in paths:
+        rel = path.relative_to(ROOT).as_posix()
+        expected = data["outputs"].get(rel)
+        if not isinstance(expected, str) or \
+                hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise DspalError(
+                f"generated bootstrap output is stale or not inventoried: {rel}"
+            )
+
+
 def preflight(config: dict[str, Any], target: str):
     selected = selected_datasets(config, target)
     actions: list[dict[str, Any]] = []
     problems: list[str] = []
     unmapped: list[str] = []
+    missing_generated: list[str] = []
+    present_generated: list[Path] = []
 
     for logical, spec in selected:
-        members = spec.get("members")
-        if members is None:
+        static = spec.get("members", {})
+        generated = spec.get("generated_members", {})
+        if "members" not in spec and "generated_members" not in spec:
             unmapped.append(logical)
             continue
-        if not isinstance(members, dict):
-            problems.append(f"{logical}: members must be a mapping")
+
+        if not isinstance(static, dict) or not isinstance(generated, dict):
+            problems.append(f"{logical}: members and generated_members must be mappings")
             continue
 
         seen: set[str] = set()
@@ -80,47 +129,78 @@ def preflight(config: dict[str, Any], target: str):
             problems.append(f"{logical}: populate currently requires FB with positive LRECL")
             continue
 
-        for raw_member, raw_path in members.items():
-            member = str(raw_member).upper()
-            if not MEMBER_RE.fullmatch(member):
-                problems.append(f"{logical}: invalid member name {raw_member!r}")
-                continue
-            if member in seen:
-                problems.append(f"{logical}: duplicate member mapping for {member}")
-                continue
-            seen.add(member)
+        for group, mappings in (("tracked", static), ("generated", generated)):
+            for raw_member, raw_path in mappings.items():
+                member = str(raw_member).upper()
+                if not MEMBER_RE.fullmatch(member):
+                    problems.append(f"{logical}: invalid member name {raw_member!r}")
+                    continue
+                if member in seen:
+                    problems.append(f"{logical}: duplicate member mapping for {member}")
+                    continue
+                seen.add(member)
 
-            try:
-                path = source_path(raw_path)
-            except DspalError as exc:
-                problems.append(f"{logical}({member}): {exc}")
-                continue
-            if not path.is_file():
-                problems.append(f"{logical}({member}): source file not found: {path.relative_to(ROOT)}")
-                continue
+                try:
+                    path = source_path(raw_path)
+                except DspalError as exc:
+                    problems.append(f"{logical}({member}): {exc}")
+                    continue
+                if group == "generated" and not (
+                    str(raw_path).startswith("workarea/bootstrap-cambridge/")
+                ):
+                    problems.append(
+                        f"{logical}({member}): generated source must be in "
+                        "workarea/bootstrap-cambridge/"
+                    )
+                    continue
+                if not path.is_file():
+                    rel = path.relative_to(ROOT)
+                    if group == "generated":
+                        missing_generated.append(f"{logical}({member}) <- {rel}")
+                    else:
+                        problems.append(f"{logical}({member}): source file not found: {rel}")
+                    continue
 
-            try:
-                text = path.read_text(encoding=str(config["text"].get("host_encoding", "utf-8")))
-                records = io.normalize_input_text(config, text, lrecl)
-            except (OSError, UnicodeError, DspalError, IODspalError) as exc:
-                rel = path.relative_to(ROOT)
-                problems.append(f"{logical}({member}) <- {rel}: {exc}")
-                continue
+                try:
+                    text = path.read_text(encoding=str(config["text"].get("host_encoding", "utf-8")))
+                    records = io.normalize_input_text(config, text, lrecl)
+                except (OSError, UnicodeError, DspalError, IODspalError) as exc:
+                    rel = path.relative_to(ROOT)
+                    problems.append(f"{logical}({member}) <- {rel}: {exc}")
+                    continue
 
-            actions.append(
-                {
-                    "logical": logical,
-                    "spec": spec,
-                    "dsn": core.full_dsn(config, spec),
-                    "member": member,
-                    "path": path,
-                    "records": records,
-                }
-            )
+                if group == "generated":
+                    present_generated.append(path)
+                actions.append(
+                    {
+                        "logical": logical,
+                        "spec": spec,
+                        "dsn": core.full_dsn(config, spec),
+                        "member": member,
+                        "path": path,
+                        "records": records,
+                    }
+                )
 
+    # All errors except absent generated files remain atomic preflight failures.
     if problems:
         raise DspalError("populate preflight failed:\n  " + "\n  ".join(problems))
-    return selected, actions, unmapped
+    validate_generated_sources(present_generated)
+    return selected, actions, unmapped, missing_generated
+
+
+def report_missing_generated(missing: list[str]) -> bool:
+    if not missing:
+        return False
+    print(
+        f"dspal: {len(missing)} generated member(s) unavailable; "
+        "ready members were processed; run prepare-bootstrap --with-trnilrg "
+        "after installing ICINT19, then repeat 'dspal populate all':",
+        file=sys.stderr,
+    )
+    for item in missing:
+        print(f"  MISSING GENERATED: {item}", file=sys.stderr)
+    return True
 
 
 def display_plan(actions: list[dict[str, Any]], unmapped: list[str]) -> None:
@@ -192,21 +272,21 @@ def require_target_datasets(config: dict[str, Any], actions: list[dict[str, Any]
 def cmd_populate(
     config: dict[str, Any], target: str, dry_run: bool, show_jcl: bool
 ) -> int:
-    _, actions, unmapped = preflight(config, target)
+    _, actions, unmapped, missing_generated = preflight(config, target)
 
     if dry_run:
         display_plan(actions, unmapped)
-        print(f"Dry run: {len(actions)} member(s) would be written.")
-        return 0
+        print(f"Dry run: {len(actions)} ready member(s) would be written.")
+        return 2 if report_missing_generated(missing_generated) else 0
 
     if show_jcl:
         sys.stdout.write(combined_jcl(config, actions))
-        return 0
+        return 2 if report_missing_generated(missing_generated) else 0
 
     if not actions:
         display_plan(actions, unmapped)
-        print("No mapped members selected; nothing to populate.")
-        return 0
+        print("No mapped members ready; nothing to populate.")
+        return 2 if report_missing_generated(missing_generated) else 0
 
     core.require_reader_ready(config)
     require_target_datasets(config, actions)
@@ -222,14 +302,12 @@ def cmd_populate(
         job, _ = core.submit_and_wait(config, deck, max_rc=0)
         completed.append((job, action))
         rel = action["path"].relative_to(ROOT)
-        print(
-            f"JOB {job}: {action['logical']}({action['member']}) <- {rel}"
-        )
+        print(f"JOB {job}: {action['logical']}({action['member']}) <- {rel}")
 
     for logical in unmapped:
         print(f"{logical}: no population mappings defined; skipped")
-    print(f"populate completed: {len(completed)} member(s) written")
-    return 0
+    print(f"populate completed: {len(completed)} ready member(s) written")
+    return 2 if report_missing_generated(missing_generated) else 0
 
 
 def make_parser() -> argparse.ArgumentParser:
