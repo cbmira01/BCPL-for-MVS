@@ -16,7 +16,7 @@ $(1
     // Second site visit is injected as failed GETMAIN.
     B := FINDINPUT("DD02")
     IF B NE 0 DO STOP(8)
-    // M4.3 after synthetic failure: private counters 0..9, each asserted exactly.
+    // M4.3: check all counters after synthetic denial.
     IF NATIVEADD(0) NE 1 DO STOP(8)
     IF NATIVEADD(1) NE 0 DO STOP(8)
     IF NATIVEADD(2) NE 1 DO STOP(8)

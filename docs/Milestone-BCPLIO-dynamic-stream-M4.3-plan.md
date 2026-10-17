@@ -145,6 +145,26 @@ Do not replace canonical source or install any generated object.
 Source-only checks and targeted regression outcomes **PASS**.
 Counted synthetic failure modes (M4.3.2b), the complete
 compatibility panel, and production OBJ promotion remain separate.
+## M4.3.2b first attempted run — no MVS execution (2026-10-17)
+
+The operator pulled commit `5d204c3` and ran the source checker,
+which passed all private BCPLIO source checks. The focused panel
+142..145 then failed four times during host-side Cambridge source
+preparation, each at line 19:
+
+```text
+source record exceeds 80 columns
+PASS 0 / FAIL 4 / SKIP 0
+```
+
+The added BCPL comment occupied 82 columns. No IFOX/IEWL/GO
+resource-accounting execution occurred, and the four failures do
+not indicate a BCPLIO defect. The comments were shortened;
+the M4.3 source checker now explicitly scans all four BCPL
+test sources for ASCII and the 80-column limit, and confirms
+20 private count assertions per case. **142..145 remain OPEN
+until actual MVS results are received.**
+
 ## M4.3.2b — counted failure paths STAGED (not run)
 
 Regressions **142–145** combine the isolated 139 private counter

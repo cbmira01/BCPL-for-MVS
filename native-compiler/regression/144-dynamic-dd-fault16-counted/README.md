@@ -5,3 +5,13 @@
 After denial: 2, 1, 2, 1, 1, 0, 2, 2, 1, 1.
 After both explicit closes: 3, 3, 3, 3, 2, 0, 3, 3, 3, 3.
 See docs/Milestone-BCPLIO-dynamic-stream-M4.3-plan.md.
+
+## First M4.3.2b attempted run — source-card length
+
+On 2026-10-17 the operator ran the source checker successfully,
+but 144 failed in host-side Cambridge preparation
+before any MVS assembler or GO step. The inserted comment at
+source line 19 was 82 characters (maximum 80). The comment was
+shortened, and the repository M4.3 checker now inspects all four
+BCPL case files for the Cambridge source-record limit. No
+accounting result or MVS pass is claimed for this first attempt.

@@ -110,6 +110,24 @@ for fault in ("descriptor32", "buffer268", "handle16",
         pass
     else:
         raise AssertionError(f"re-instrumented fault: {fault}")
+# Source records are submitted to the historical Cambridge compiler,
+# which admits at most 80 columns. Fail before JCL is generated.
+cases = (
+    "142-dynamic-dd-fault32-counted",
+    "143-dynamic-dd-fault268-counted",
+    "144-dynamic-dd-fault16-counted",
+    "145-dynamic-dd-open-denial-counted",
+)
+for case in cases:
+    path = ROOT / "native-compiler/regression" / case / "source.bcpl"
+    bcpl = path.read_text(encoding="ascii")
+    for number, record in enumerate(bcpl.splitlines(), 1):
+        if len(record) > 80:
+            raise AssertionError(
+                f"{path}:{number}: {len(record)} columns exceeds 80"
+            )
+    assert bcpl.count("IF NATIVEADD(") == 20, case
+print("M4.3 counted BCPL source records: <=80 columns PASS")
 print("M4.3 combined counted failure/terminal source checks: PASS")
 
 print("M4.3 private source accounting checks: PASS")
