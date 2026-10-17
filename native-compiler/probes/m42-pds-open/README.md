@@ -1,6 +1,15 @@
 # M4.2.2 — read-only PDS without member: real QSAM OPEN probe
 
-**Status: STAGED; NOT PREPARED OR EXECUTED UNDER TK5.**
+**Status: PREPARED — RG891R exploratory JCL generated, GO NOT
+SUBMITTED (2026-10-17).**
+
+The operator pulled through `3235115` and generated
+`workarea/m42-real-open/pds-open.jcl` from the earlier
+Cambridge output. The generator confirmed
+`RG891R: DD01=DATA; DD02=SYS1.MACLIB,DISP=SHR (no member)`
+and printed that the GO job was NOT submitted and no PDS
+object was modified. This records preparation only;
+there is no RG891R JES/GO evidence yet.
 **Exploratory only, NOT a native-regression PASS/FAIL case.**
 
 M4.2.1 `RG890R` (JOB 7874) used `DD02 DD SYSOUT=*`
