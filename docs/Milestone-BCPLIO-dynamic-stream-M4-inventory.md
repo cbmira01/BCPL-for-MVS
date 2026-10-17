@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0 targeted invalid-DD regression 134 ACCEPTED; complete 00..134 compatibility sweep pending; M4.1–M4.3 open**
+Status: **M4.0 ACCEPTED; owner deferred full 00..134 suite; isolated M4.1 cases 135–137 STAGED, not MVS tested**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -178,3 +178,58 @@ fault-injection design and acceptance criteria for allocation
 failures in 32-, 268- and 16-byte GETMAIN and for incompatible
 QSAM OPEN before modifying any assembler. Keep instrumentation
 private, rebuildable and limited to DEVOBJ or isolated probes.
+
+## Owner decision: defer full regression, proceed to M4.1
+
+Following focused **PASS 134**, the owner explicitly elected to
+**defer** the proposed 00..134 full regression checkpoint and
+continue directly to M4.1. Do not treat deferral as a failed or
+completed panel and do not repeat the full-panel request as an
+M4.1 precondition. Last accepted full panel remains **00..132:
+132 PASS, 0 FAIL, one expected SKIP 083**. Focused regression
+133 and 134 each passed independently.
+
+## M4.1 implementation — test-only harness STAGED
+
+[Detailed M4.1 design and test plan](Milestone-BCPLIO-dynamic-stream-M4.1-plan.md)
+is now committed, together with a fail-closed source transformer
+`tools/checks/prepare-bcplio-m41-fault.py`,
+a marker-gated isolated assembler/link route in the native
+regression runner and PDS JCL generator, and three permanent
+candidate-only compiled BCPL regressions:
+
+| Test | Forced GETMAIN failure | Expected cleanup |
+|---|---|---|
+| 135 | DALLOC LV=32 descriptor | no partially registered descriptor |
+| 136 | DALLOC LV=268 QSAM region | free already acquired LV=32 |
+| 137 | HNEW LV=16 handle after OPEN | DQCLOSE + DREL of LV=268 and 32 |
+
+These tests synthesize nonzero R15 **on the second visit to
+the chosen GETMAIN site**, allowing the first stream to remain
+selected and a third allocation attempt to succeed. They do
+not claim genuine host low-storage exhaustion. The private
+BCPLIO object is assembled **within each GO JCL** as
+`ASMFIO` and linked from `&&IOOBJ`; installed
+`DEVOBJ(BCPLIO)`, `DEVOBJ(BCPLM6)` and production OBJ are
+unchanged. No live MVS job, assembler result, link result or
+BCPL assertion PASS has yet been supplied for cases 135–137.
+
+**Next operator test** (single targeted case, not full suite):
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 135 --show-output
+```
+
+Require Cambridge COMP/SVCODE, IFOX ASMAP and ASMFIO,
+IEWL LKED and GO normal completion with
+`BCPL FAULT 32 OK`. Inspect job spool before any change
+if the instrumented module has addressability/assembly issues.
+Do not change canonical runtime source or promote installed
+objects merely to fix test infrastructure. Then run 136 and
+137 separately after validating the first case.
