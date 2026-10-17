@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M5.1 acquisition feasibility
 
-**Status: M5.1.1 printer routing ACCEPTED (JOB 8184, 2026-10-17); M5.1.2 dual-dataset QSAM FB132 probe STAGED for offline review, not submitted; JES2 raw spool remains UNVERIFIED.**
+**Status: M5.1.1 printer routing ACCEPTED (JOB 8184); M5.1.2 exact FB132 sequential-dataset readback ACCEPTED (JOB 8185); M5.1.3 historical JES2 SYSOUT acquisition feasibility PROPOSED; original JES2 raw spool remains UNVERIFIED.**
 Predecessor: M5.0 evidence contract **ACCEPTED** by the owner.
 [M5.0 contract](Milestone-BCPLIO-dynamic-stream-M5.0-contract.md).
 
@@ -175,6 +175,134 @@ capture exists, its provenance and raw-byte limitations
 are recorded, and the chosen acquisition strategy is
 accepted. M5.0 approval does not authorize promotion to
 production OBJ or runtime/ABI changes.
+
+## M5.1.2 — ACCEPTED: physical FB132 QSAM dataset readback (JOB 8185, 2026-10-17)
+
+The operator pulled Git `07f536d` and ran the
+M5.1.2 offline fixture tests and exact generated-deck
+review against the v2 workarea artifacts:
+
+```text
+Ran 6 tests in 0.001s — OK
+M5.1.2 v2 offline artifact review: PASS
+  Job M5D124B, DEVOBJ BCPLM6 + BCPLIO
+  Step order ASMAP / LKED / GO / VASM / VLINK / VCHK
+  REPORT / REPORT2 distinct temporary FB132 dataset write/read
+  JCL, assembler and fixture SHA256 match staged manifest
+  Regenerated exact v2 assembler/JCL compare: PASS
+  MVS assembly/execution and JES raw SYSOUT: NOT VERIFIED
+```
+
+The operator then submitted **exactly the reviewed
+`m51-fb132-dataset-v2.jcl`** and received
+**JOB 8185**, job name `M5D124B`. The
+MVS/TK5 `tools/mvs/job-summary 8185` reported:
+
+| Step | Program | Return code |
+|---|---|---|
+| ASMAP | IFOX00 | 0000 |
+| LKED | IEWL | 0000 |
+| GO | compiled BCPL load module | 0000 |
+| VASM | IFOX00 | 0000 |
+| VLINK | IEWL | 0000 |
+| VCHK | independent FB132 GET/CLC verifier | 0000 |
+
+JES job result **SUCCESS**; highest RC0000;
+assembler statements flagged **0** and highest
+severity **0**; 334 cards and 888 reported
+SYSOUT print records. Neither runtime source
+nor PDS member was modified.
+
+**What the accepted VCHK result means:** the
+compiled BCPL program opened its named REPORT
+and REPORT2 DDs, which in this isolated job
+resolved to *distinct* temporary QSAM FB132
+sequential datasets. The subsequent independent
+MVS assembler verifier opened those datasets
+by their corresponding DDs and used QSAM
+`GET` followed by `CLC` over all 132 bytes
+of each expected record, including EBCDIC
+X'40' padding. It rejected missing/extra
+records by using EODAD plus explicit count
+checks. The resulting RC0000 proves this
+**specific positive dataset-level experiment**:
+REPORT has exactly two records
+(`BCPL REPORT A`, `BCPL REPORT B`);
+REPORT2 has exactly one
+(`BCPL REPORT2 PART`), each with byte-exact
+CL132 padded contents. The readback does not
+depend on right-trimmed printer output.
+
+**M5.1.2 ACCEPTED, scoped to distinct FB132
+sequential-dataset attribution, byte-for-byte
+readback, order, and EOF.** This is a
+positive integration probe; its verifier
+negative-control matrix is still an M5.2
+requirement, not claimed to have run here.
+The VCHK verifier's own success is inferred
+from its assembled source and RC; the individual
+raw records were not exported to the host.
+The report only covers the explicitly tested
+dataset-backed GO allocations, not every
+arbitrary DD.
+
+**No JES2 spool claim:** this job redirects
+REPORT/REPORT2 from SYSOUT to temporary
+physical datasets, and therefore cannot
+establish unchanged original JES2 SYSOUT
+data record bytes or metadata. The prior
+JOB 8184 showed A/Z printer routing,
+not raw spool. Both forms of evidence are
+preserved and not conflated.
+
+## M5.1.3 — inspect historical JES2 SYSOUT record extraction (PROPOSED)
+
+**Purpose:** investigate whether the actual
+MVS 3.8J/TK5 JES2 SYSOUT spool can provide
+DD-labelled raw record payloads (or a demonstrably
+lossless transform), without inferring such
+capability from the newer z/OS API.
+
+Historical Hercules/MVS JES2 documentation
+describes the writer transferring spooled output
+to emulated printer/punch devices on job completion.
+The MVS 3.8 TSO `OUTPUT` command can copy
+spooled SYSOUT to a dataset described as
+RECFM=VBA/LRECL=137; the QUEUE utility has
+a `SAVE` function described as producing
+RECFM=FBM/LRECL=133. Neither format, by its
+mere appearance, proves the unmodified
+FB132 bytes written by the BCPL QSAM DCB.
+Investigate original carriage-control and
+record representation **before** asserting that
+a conversion preserves all 132 bytes.
+[Historical JES2 FAQ](https://www.jaymoseley.com/hercules/faq/mvsfaq02.htm);
+[Historical TSO/QUEUE output FAQ](https://www.jaymoseley.com/hercules/faq/mvsfaq04.htm).
+
+Modern IBM `SPOOL Read Service` documentation
+describes SSI functions on *z/OS*. It **must
+not be assumed available on MVS 3.8J**.
+[IBM z/OS SPOOL Read Service](https://www.ibm.com/docs/en/zos/2.5.0?topic=71-spool-read-service).
+
+**Proposed gate:** inventory the live TK5
+JES2 writer/held-class setup, exact installed
+TSO OUTPUT and QUEUE behavior, existing
+printer/spool format and whether any
+**DD-specific** SYSOUT-record extraction is
+available. Preserve a source/target
+DD-to-queue record identity chain. Prefer a
+read-only inventory before any new spool
+job or destructive spool access. If no lossless
+DD-labelled extraction exists, document the
+technical barrier and obtain an explicit
+owner decision about satisfying the final
+SYSOUT obligation with combined A/Z route
+and QSAM dataset proof versus requiring
+additional native JES2 tooling.
+
+**M5.1.3 NOT EXECUTED. M5.1 remains OPEN.**
+There is no M5.1.3 acceptance merely because
+JOB 8185 succeeded.
 
 ## M5.1.2 — separate FB132 sequential dataset readback (STAGED)
 

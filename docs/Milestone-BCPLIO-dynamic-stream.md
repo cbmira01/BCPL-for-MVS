@@ -1,9 +1,37 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 CLOSED; M5.1.1 printer route ACCEPTED / FB132 raw acquisition OPEN; M5.2–M5.5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 CLOSED; M5.1.1 A/Z printer routing ACCEPTED; M5.1.2 FB132 QSAM dataset verification ACCEPTED; M5.1.3 raw JES2 SYSOUT feasibility OPEN; M5.2–M5.5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.1.2 accepted — JOB 8185 physical dataset FB132 verifier (2026-10-17)
+
+The operator's v2 offline test suite passed **6/6**, and
+the exact artifact review passed with matching hashes,
+JCL/ASM regeneration and step-order verification.
+The resulting isolated **M5D124B / JOB 8185**
+returned **RC0000 in every step**: ASMAP, LKED,
+GO, VASM, VLINK and the independent QSAM FB132
+**VCHK**. No assembler statements were flagged.
+
+Two distinct temporary sequential FB132 datasets
+were used as the physical GO REPORT and REPORT2
+destinations. The MVS assembler readback compared
+each complete 132-byte EBCDIC padded record and
+enforced exact EOF/record count: REPORT's two
+records and REPORT2's single record passed.
+**M5.1.2 ACCEPTED for this dataset-backed probe.**
+This evidence does not establish unmodified
+JES2 raw SYSOUT records, and the broad
+negative-control suite belongs to M5.2.
+
+**M5.1 stays OPEN** for DD-labelled original
+SYSOUT record acquisition/representation analysis
+(M5.1.3) and any resulting scope decision.
+See [M5.1 plan]
+(Milestone-BCPLIO-dynamic-stream-M5.1-plan.md).
+No BCPL runtime/PDS object or compiler change.
 
 ## M5.1.2 source-review hold — corrected assembler v2 (2026-10-17)
 
