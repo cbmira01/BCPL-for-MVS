@@ -1,8 +1,89 @@
 # BCPLIO dynamic streams — M4.4 compatibility verification
 
-**Status: Full DEVOBJ 00..145 runner reported 145 PASS / 0 FAIL / 1 SKIP; M4.4.2 uncovered two unresolved GO-RC discrepancies (052 and 093). Formal M4.4 closure BLOCKED pending contract reconciliation.**
+**Status: M4.4 CLOSED (2026-10-17). Full DEVOBJ(BCPLM6) 00..145: 145 PASS / 0 FAIL / 1 expected SKIP 083; 145/145 saved-log audit PASS with BCPLM6/D6 GO-RC expectations reconciled. M5 OPEN.**
 Date: 2026-10-17
 Predecessor: M4.3 CLOSED (returned-control resource accounting).
+
+## M4.4 formal closure — ACCEPTED 2026-10-17
+
+**M4.4.0 (preflight), M4.4.1 (full panel), and M4.4.2
+(saved-log reconciliation) are ACCEPTED.** This closes
+the M4 failure/lifecycle compatibility march for
+the independently linked **DEVOBJ(BCPLM6 + BCPLIO)**
+candidate. No production or development PDS object
+installation, runtime source modification, BCPL global
+ABI change, or object promotion was required.
+
+### Execution and saved-log evidence
+
+The operator pulled through `a572e77` and ran the
+full 00..145 native regression panel after the
+candidate-environment preflight passed:
+**145 PASS / 0 FAIL / 1 expected SKIP 083, TOTAL 146**.
+The individually accepted 133..145 tests all passed
+again in this same complete sweep. The user then
+pulled through `48c6012` and ran:
+
+```sh
+bash -n native-compiler/regression/run-test.sh
+python3 tools/checks/check-m44-compatibility.py
+python3 tools/checks/check-m44-full-panel-logs.py
+```
+
+Bash syntax check and compatibility source preflight
+passed. The corrected saved-log audit reported:
+
+```text
+M4.4 existing regression logs: 145/145
+Expected runner skip: 083 (source-only)
+Compile-only: 048 (no GO or LKED)
+GO-RC profile: DEVOBJ BCPLM6/D6; 052 and 093 expected RC0000
+GO RC distribution: 0000=139, 0008=3, 0012=1, 0100=1
+Log mtime UTC: 2026-10-17T14:00:32.266583+00:00 .. 2026-10-17T14:10:26.972715+00:00
+Saved JES job/step manifest: workarea/native-regression/m44-00-145-jobs.tsv
+M4.4 detailed log audit: PASS (no detected known-defect/abend exceptions)
+```
+
+Exactly **144 GO executions**, **one intentional
+compile-only case 048**, and **one intentional source-only
+SKIP 083** account for the 146 cases. The detailed audit
+checked saved per-case `RESULT: PASS`, normal versus
+expected nonzero GO codes, reported LKED codes, available
+assembler step codes, and abend/known-runtime-defect
+signatures. The locally generated 145-row TSV records
+the available job and step detail but is not committed as
+a source artifact.
+
+### Reconciled return-code contract
+
+The initially detected 048 missing-GO report was a
+checker error: 048 must terminate at Cambridge code
+generation, before link/edit or GO.
+
+Tests **052 and 093** generated `STACK OVERFLOW`
+and GO RC0000 under **BCPLM6/D6**; their historical
+generic fixtures require RC0012 for **BCPLM7/D7**.
+The separate `expected-go-rc-bcplm6.txt` fixtures
+retain the correct RC0000 candidate contract without
+changing the D7 fixtures. The runner was changed to
+enforce profile-appropriate GO RC on its normal
+success path, preventing the earlier false-positive
+acceptance. The saved-log audit passed *after* these
+corrections. Neither the changed harness nor the D7
+runtime was claimed to have been newly MVS-executed
+in this final verification; the prior full-run GO evidence
+was evaluated against the explicit BCPLM6 expectation.
+
+**M4.4 CLOSED.** The passing full suite and detailed
+audit establish compatibility under the tested candidate
+and current harness contracts. They do **not** prove
+lossless DD-specific physical record attribution,
+preservation of trailing FB132 blanks, or successful
+handling of genuinely unrecoverable host errors.
+Those remain outside this gate; **M5 is OPEN** and
+retains the lossless per-DD SYSOUT acceptance work.
+No overall dynamic-stream milestone completion or
+production OBJ promotion is implied.
 
 ## What M4.4 must prove
 
@@ -281,10 +362,9 @@ Keep the manifest for M4.4.2 evidence reconciliation.
 
 
 
-The new complete panel has passed and M4.4.1 is accepted.
-M4.4 formally closes after the existing per-test log
-exceptions and JES-step evidence are audited and any
-known-defect/abend outcomes reconciled.
+The new complete panel and its corrected saved-log audit
+both passed; **M4.4 is formally CLOSED** under the
+candidate-specific contracts recorded above.
 No canonical runtime, object PDS or public G-vector modification
 is required by this readiness stage.
 

@@ -1,9 +1,36 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped, 2026-10-17); M4.4 runner 145 PASS; 052/093 GO-RC mismatch blocks formal closure; M5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M4.4 formally closed — full DEVOBJ compatibility (2026-10-17)
+
+All M4.4 gates are accepted. Full 00..145 candidate
+regression (owner-executed at `a572e77`) was
+**145 PASS / 0 FAIL / 1 expected SKIP (083)**.
+After the candidate RC-fixture reconciliation in
+`48c6012`, the owner ran the stricter source and
+saved-log checks successfully: **145/145 existing
+logs audited, no detected abends/known-defect
+exceptions**. Compile-only 048 was accounted for.
+For BCPLM6/D6, stack-overflow cases 052 and 093
+correctly produced GO RC0000 and `STACK OVERFLOW`;
+the RC0012 D7/BCPLM7 expectations were preserved
+in separate original fixtures. The 144 actual GO
+steps have expected RC distribution:
+0000=139, 0008=3, 0012=1, 0100=1.
+
+**M4.4 CLOSED.** No runtime source, PDS objects
+or public ABI changed, and no production OBJ
+promotion occurred. The [M4.4 closure record]
+(Milestone-BCPLIO-dynamic-stream-M4.4-plan.md)
+contains the observed run/audit commands, caveats,
+and locally generated JES job manifest path.
+**M5 remains OPEN** for truly lossless per-DD
+physical SYSOUT and record-attribution verification;
+the dynamic-stream parent milestone is not closed.
 
 ## M4.4.2 — per-case log audit helper staged (2026-10-17)
 

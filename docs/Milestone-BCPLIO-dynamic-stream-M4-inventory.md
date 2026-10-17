@@ -1,9 +1,36 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1/M4.2/M4.3 CLOSED (M4.2 and M4.3 scoped); M4.3 focused 139–145 PASS and successful GO JES evidence recorded; genuine failed OPEN unobserved; M4.4 runner 145 PASS; 052/093 GO-RC mismatch blocks formal closure**
+Status: **M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ full-panel); full 00..145: 145 PASS / 0 FAIL / 1 expected SKIP, saved-log audit PASS; genuine failed OPEN unobserved; M5 remains open**
 Date: 2026-10-17
-Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
+Predecessor: **M2 CLOSED**. Previous full DEVOBJ baseline 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**; new M4.4 full compatibility checkpoint 00..145 **145 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
+
+## M4.4 formally closed — full DEVOBJ compatibility (2026-10-17)
+
+All M4.4 gates are accepted. Full 00..145 candidate
+regression (owner-executed at `a572e77`) was
+**145 PASS / 0 FAIL / 1 expected SKIP (083)**.
+After the candidate RC-fixture reconciliation in
+`48c6012`, the owner ran the stricter source and
+saved-log checks successfully: **145/145 existing
+logs audited, no detected abends/known-defect
+exceptions**. Compile-only 048 was accounted for.
+For BCPLM6/D6, stack-overflow cases 052 and 093
+correctly produced GO RC0000 and `STACK OVERFLOW`;
+the RC0012 D7/BCPLM7 expectations were preserved
+in separate original fixtures. The 144 actual GO
+steps have expected RC distribution:
+0000=139, 0008=3, 0012=1, 0100=1.
+
+**M4.4 CLOSED.** No runtime source, PDS objects
+or public ABI changed, and no production OBJ
+promotion occurred. The [M4.4 closure record]
+(Milestone-BCPLIO-dynamic-stream-M4.4-plan.md)
+contains the observed run/audit commands, caveats,
+and locally generated JES job manifest path.
+**M5 remains OPEN** for truly lossless per-DD
+physical SYSOUT and record-attribution verification;
+the dynamic-stream parent milestone is not closed.
 
 ## M4.4.2 audit discrepancy — 2026-10-17
 
