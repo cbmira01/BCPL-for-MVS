@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1 accepted; M2 focused gates 130–132 PASS; DEVOBJ 00..132 full sweep pending; M4–M5 open  
+Status: M0/M1/M2 accepted; DEVOBJ 00..132 full panel 132 PASS/0 FAIL/skip 083; M3 review and M4–M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -122,6 +122,29 @@ See `Milestone-BCPLIO-dynamic-stream-M1-progress.md` and
 
 Production `HERC02.BCPL.NATIVE.OBJ` is unchanged; no promotion is
 authorized by these test results.
+
+## M2 close gate — complete native regression (MVS 2026-10-17)
+
+**ACCEPTED AND CLOSED.** Development-only BCPLM6 + BCPLIO linked
+from `HERC02.BCPL.NATIVE.DEVOBJ` passed the complete
+`00..132` compiled-native-BCPL panel: **132 PASS, 0 FAIL,
+1 expected SKIP (083), 133 total**. The operator pulled through
+`c4f7a8d` before execution. Regressions 130, 131 and 132 passed
+within this full run, establishing 16 concurrently open dynamic
+input streams and fresh, nonrecycled same-DD output/input handle
+identities after ENDWRITE/ENDREAD. Duplicate FIND and stale
+selection semantics also passed.
+
+The accepted input-reopen guarantee concerns handle identity and
+successful repeated OPEN. The test deliberately does **not**
+read a reopened instream `DD DATA` allocation or promise any
+QSAM rewind behavior. The full M2 record is
+[Milestone-BCPLIO-dynamic-stream-M2-progress.md](Milestone-BCPLIO-dynamic-stream-M2-progress.md).
+
+**This closes only M2**, not the overall dynamic-stream milestone.
+M3 mixed input/output and strict physical DD attribution need an
+explicit exit review; M4 failure-path/accounting and M5 integration
+remain open. Production `NATIVE.OBJ` stays unchanged.
 
 ## Handoff / next-conversation prompt
 
