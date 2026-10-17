@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""Prepare a TEST-ONLY BCPLIO copy with private M4.3 counters.
+
+No installation, no JCL submission, and no change to canonical source.
+"""
+from __future__ import annotations
+import argparse
+from pathlib import Path
+import sys
+
+COUNTERS = (
+    "M43G32", "M43F32", "M43G268", "M43F268",
+    "M43G16", "M43F16", "M43OATT", "M43OSUC",
+    "M43CATT", "M43CRET",
+)
+
+def one(source: str, old: str, replacement: str) -> str:
+    count = source.count(old)
+    if count != 1:
+        raise ValueError(f"expected exactly one anchor ({count}): {old!r}")
+    return source.replace(old, replacement, 1)
+
+def bump(label: str) -> str:
+    assert label in COUNTERS
+    return "\n".join((
+        f"         L     0,{label}",
+        "         LA    0,1(0)",
+        f"         ST    0,{label}",
+    ))
+
+def transform(source: str) -> str:
+    if "         ENTRY IOACCT" in source or any(
+        f"{name:<8} DC    F'0'" in source for name in COUNTERS
+    ):
+        raise ValueError("test instrumentation already present")
+
+    # Conditional successful GETMAIN. Preserve existing R15 / branch.
+    for size, branch, name in (
+        (32, "DALFAIL", "M43G32"),
+        (268, "DALNOMEM", "M43G268"),
+        (16, "HNEWBAD", "M43G16"),
+    ):
+        anchor = (f"         GETMAIN RC,LV={size}\n"
+                  "         LTR   15,15\n" f"         BNZ   {branch}")
+        source = one(source, anchor, anchor + "\n" + bump(name))
+
+    # Count FREEMAIN calls that return. No claim of host free status.
+    for size, next_line, name in (
+        (32, "DALFAIL", "M43F32"),
+        (32, "         XC    DRESULT", "M43F32"),
+        (268, "         L     1,DTARGET", "M43F268"),
+        (16, "         L     1,=A(HHEAD)", "M43F16"),
+    ):
+        anchor = f"         FREEMAIN R,LV={size},A=(1)\n{next_line}"
+        source = one(source, anchor,
+                     f"         FREEMAIN R,LV={size},A=(1)\n"
+                     + bump(name) + "\n" + next_line)
+
+    # Count actual SVC19 attempts and source-observed open DCBs.
+    source = one(source, "         LA    1,228(6)\n         SVC   19",
+                 bump("M43OATT")
+                 + "\n         LA    1,228(6)\n         SVC   19")
+    source = one(source,
+                 "         LTR   7,7\n         BZ    DQBAD\n"
+                 "         L     1,DQARG",
+                 "         LTR   7,7\n         BZ    DQBAD\n"
+                 + bump("M43OSUC") + "\n         L     1,DQARG")
+
+    # SVC20 attempted versus returned control; not QSAM status.
+    source = one(source, "         LA    1,232(6)\n         SVC   20",
+                 bump("M43CATT")
+                 + "\n         LA    1,232(6)\n         SVC   20\n"
+                 + bump("M43CRET"))
+
+    # Keep counters near the routines whose USING bases access them.
+    for anchor, entries in (
+        ("DSAVE    DS    16F", COUNTERS[:4]),
+        ("DQSAVE   DS    16F", COUNTERS[6:]),
+        ("HSAVE    DS    16F", (COUNTERS[4],)),
+        ("DRSAVE   DS    16F", (COUNTERS[5],)),
+    ):
+        new = (anchor + "\n         DS    0F\n"
+               + "\n".join(f"{name:<8} DC    F'0'" for name in entries))
+        source = one(source, anchor, new)
+
+    # Private R14 linkage: R1 counter ID 0..9; R15 value/-1.
+    # Not a public BCPL global. Preserve R0-9 and R11-14.
+    accessor = "\n".join((
+        "* PRIVATE M4.3 TEST-ONLY QUERY. NEVER INSTALL THIS OBJECT.",
+        "         ENTRY IOACCT",
+        "IOACCT   BALR  10,0",
+        "         USING *,10",
+        "         STM   0,9,M43SAVE",
+        "         STM   11,14,M43SAVE+44",
+        "         LTR   1,1",
+        "         BM    M43BAD",
+        "         C     1,M43MAX",
+        "         BH    M43BAD",
+        "         SLL   1,2",
+        "         L     2,M43TAB(1)",
+        "         L     15,0(2)",
+        "         B     M43RET",
+        "M43BAD   L     15,M43NEG",
+        "M43RET   ST    15,M43RES",
+        "         LM    0,9,M43SAVE",
+        "         LM    11,14,M43SAVE+44",
+        "         L     15,M43RES",
+        "         BR    14",
+        "         DROP  10",
+        "         DS    0F",
+        "M43TAB   DC    A(M43G32),A(M43F32)",
+        "         DC    A(M43G268),A(M43F268)",
+        "         DC    A(M43G16),A(M43F16)",
+        "         DC    A(M43OATT),A(M43OSUC)",
+        "         DC    A(M43CATT),A(M43CRET)",
+        "M43MAX   DC    F'9'",
+        "M43NEG   DC    F'-1'",
+        "M43RES   DC    F'0'",
+        "M43SAVE  DS    16F",
+        "         LTORG",
+    ))
+    source = one(source, "         END   BCPLIO",
+                 accessor + "\n         END   BCPLIO")
+    for i, line in enumerate(source.splitlines(), 1):
+        if not line.isascii() or len(line) > 71 or \
+                line.startswith("//") or line == "/*":
+            raise ValueError(f"invalid IFOX card {i}: {line!r}")
+    return source.rstrip("\n") + "\n"
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("source", type=Path)
+    ap.add_argument("output", type=Path)
+    args = ap.parse_args()
+    if args.source.resolve() == args.output.resolve():
+        raise ValueError("must not overwrite source")
+    result = transform(args.source.read_text(encoding="ascii"))
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(result, encoding="ascii", newline="\n")
+    print("M4.3 test-only source prepared (MVS NOT RUN)")
+    print("Counter IDs: " + ", ".join(
+        f"{i}={name}" for i, name in enumerate(COUNTERS)))
+    print(args.output)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError) as exc:
+        sys.exit(f"prepare-bcplio-m43-account: {exc}")
