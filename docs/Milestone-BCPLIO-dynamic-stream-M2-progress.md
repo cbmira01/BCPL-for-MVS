@@ -1,6 +1,6 @@
 # Dynamic BCPLIO streams — M2 input multiplicity progress
 
-Status: **M2 16-stream and output reopen accepted; full DEVOBJ 00..131 panel ACCEPTED (131 PASS / 0 FAIL / SKIP 083); input reopen study pending**
+Status: **M2 functional gates through 132 ACCEPTED on DEVOBJ; full 00..132 compatibility sweep pending**
 Project: BCPL for MVS 3.8 reconstruction
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 
@@ -301,3 +301,61 @@ until the operator supplies compiled/link/GO and expected
 record PASS evidence. After 132, evaluate M4 deterministic
 OPEN/GETMAIN failure and resource accounting, and M5
 independent physical DD-specific output verification.
+
+## Regression 132 — dynamic INPUT same-DD reopen ACCEPTED (MVS 2026-10-17)
+
+Operator pulled `main` through `9486824` and ran the permanent
+compiled-BCPL test `132-dynamic-dd-input-reopen-identity` against the
+unchanged development candidate using:
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ BCPL_RUNTIME_CANDIDATE=1 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`.
+Observed:
+
+```text
+NATIVE REGRESSION 132..132 (1 tests)
+RUN   132 132-dynamic-dd-input-reopen-identity
+PASS  132 132-dynamic-dd-input-reopen-identity
+PASS 1
+FAIL 0
+SKIP 0
+TOTAL 1
+```
+
+**ACCEPTED:** the input close/reopen *handle-lifetime contract* under
+MVS 3.8J. DD01 (`DD DATA`) first opens and supplies A, is closed
+using ENDREAD, and successfully reopens via lowercase
+`FINDINPUT("dd01")` with a new distinct, nonrecycled handle.
+A subsequent uppercase duplicate FIND returns the active new
+identity, and stale-handle selection does not replace a live
+selection. The separately open DD02 stream still reads its own
+expected subsequent record. The test closes the reopened input
+without reading it. Therefore it **does not establish reopening
+DD DATA at its beginning, resuming at its former position, or any
+other read-position behavior on a second GET**. Such guarantees are
+not part of this gate.
+
+Alongside regressions 130 and 131, the M2 functional objectives
+of 16 simultaneous independent input streams and both input/output
+stable handle identity across close/reopen are now met by focused
+compiled-BCPL tests. The last **full** DEVOBJ sweep is 00..131,
+**131 PASS / 0 FAIL / 1 expected SKIP 083**. Regression 132 is an
+additional targeted PASS; do not claim full 00..132 compatibility
+until executed. No MVS rebuild, source change or production
+`NATIVE.OBJ` promotion occurred.
+
+**Next checkpoint** (run before opening M4 implementation):
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression
+```
+
+Expected `00..132`: **132 PASS, 0 FAIL, 1 expected SKIP
+(083), TOTAL 133**. Once accepted, M2 can be formally closed
+with the explicit DD DATA read-position limitation preserved
+and M4 failure handling, GETMAIN/FREEMAIN accounting and M5
+DD-specific attribution remaining separate.
