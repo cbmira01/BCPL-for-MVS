@@ -1644,7 +1644,9 @@ HACTIVE  BALR  10,0
          LR    7,1
          MVC   HAKEY(8),0(7)
          ST    2,HADIR
-         L     6,HHEAD
+* HHEAD predates HACTIVE; use relocated address literal.
+         L     1,=A(HHEAD)
+         L     6,0(1)
 HANEXT   LTR   6,6
          BZ    HAMISS
          L     8,4(6)
