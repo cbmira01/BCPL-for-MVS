@@ -187,8 +187,9 @@ python3 tools/checks/prepare-m42-real-open-jcl.py \
   workarea/m42-real-open/real-open.jcl
 ```
 
-These commands produce the controlled diagnostic deck
-without submitting its GO step. **Review the
+The `compile-mvs` command submits its **ordinary Cambridge compilation**
+job to MVS. The subsequent JCL generator produces the potentially
+abending GO deck **without submitting it**. **Review the
 `workarea/m42-real-open/real-open.jcl` deck** before
 the separate, potentially abending submission described
 in the probe README. Preserve JES job number, all step CCs,
