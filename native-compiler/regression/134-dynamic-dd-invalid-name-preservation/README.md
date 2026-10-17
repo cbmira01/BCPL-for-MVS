@@ -1,6 +1,19 @@
 # 134 — M4.0 invalid DD names, no selection side effects
 
-**Status: STAGED, NOT YET EXECUTED ON MVS OR ACCEPTED.**
+**Status: ACCEPTED — DEVOBJ targeted regression 134 PASS (MVS 2026-10-17).**
+
+The operator pulled repository `main` from `b25d643` through
+`3678e54`, then ran `tools/native/run-regression 134 --show-output`
+with `BCPL_RUNTIME_PDS=1`, `BCPL_RUNTIME_LIBRARY=DEVOBJ`,
+`BCPL_RUNTIME_CANDIDATE=1` and
+`BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`. Observed
+**PASS 134; 1 PASS, 0 FAIL, 0 SKIP, TOTAL 1**.
+All test assertions passed on the unchanged installed candidate.
+The combined JES checker accepted the expected logical records;
+physical REPORT DD attribution is not yet verified. The last
+accepted *complete* suite is still 00..132 (132 PASS,
+0 FAIL, one expected skip 083); 133 and 134 have passed as
+separate targeted cases, not yet in a full 00..134 sweep.
 
 This permanent candidate-only compiled Cambridge BCPL regression
 tests ordinary failing FINDINPUT and FINDOUTPUT without altering
