@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: 138 synthetic DQOPEN PASS; exploratory 7874/7875/7876 all returned HANDLE despite suspect DD allocations; real unsuccessful QSAM OPEN unproved; move to in-storage DCB/SVC19 observability; full panel deferred.**
+**Status: 138 synthetic PASS; JOB 7874/7875/7876 all returned HANDLE; actual failing OPEN unproved; historical OS/VS2 R3.8 manual identifies printer DCB normalization, so defer new GO until effective DCB/SVC19 observability is designed; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -700,3 +700,68 @@ accounting scope.
 No new operator job is requested at this stage;
 the next work is repository-side DCB verification
 and design, not speculative JCL reruns.
+
+## Release 3.8 IBM manual: SYSOUT/PR DCB normalization
+
+Read the **period-correct** `OS/VS2 MVS Data Management
+Services Guide`, `GC26-3875-0`, Release 3.8,
+revised June 29, 1979, page **86** (PDF page 104,
+zero-index page 103):
+
+https://bitsavers.trailing-edge.com/pdf/ibm/370/OS_VS2/Release_3.8_1978/GC26-3875-0_OS_VS2_MVS_Data_Management_Services_Guide_Rel_3.8_Jun79.pdf
+
+Under its printer-device section it specifies that
+QSAM **RECFM=FB printer data sets** have their
+DCB block size **adjusted to equal LRECL** and
+are treated as RECFM=F. The same statement appears
+for card punch data sets. This contemporaneous rule
+is a plausible reason the intentionally malformed
+`DD02 SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=81)`
+in JOB 7876 did not fail at OPEN: JES SYSOUT
+may have taken a printer-style path that rewrote
+or normalized the effective DCB values.
+
+**Do not overstate this inference.** The failed-OPEN
+attempt had `DD02 SYSOUT=*`, but we did not capture
+effective DCB RECFM/BLKSIZE/LRECL immediately before
+or after SVC19, and the actual JES output class and
+device-specific mapping to the documented PR case
+were not independently measured. We therefore
+cannot claim that DCBBLKSI was definitely corrected
+in this exact run. It is a historically supported
+hypothesis which should guide the next experiment.
+
+Source review of canonical `native-compiler/asm/bcplio.asm`
+reveals the actual diagnostic ownership and location:
+- `DALLOC` obtains 32-byte descriptor plus 268-byte area.
+- The QSAM DCB occupies **96 bytes at area +132**,
+  copied from `DQTIN`; DDNAME is installed at DCB+40.
+- The source `DQTIN` macro declares `DSORG=PS`,
+  `MACRF=GM`, `EODAD=INDYEOD`; it does **not**
+  specify `RECFM`, `LRECL`, or `BLKSIZE`.
+- The 4-byte SVC19 parameter list is at area +228;
+  `DQOPEN` issues `SVC 19` and probes the
+  DCB-derived word at offset DCB+48 afterward.
+- `DDVERIFY` first performs RDJFCB using a
+  separate scratch DCB, but its success does not
+  validate effective post-OPEN record-format semantics.
+- `DIFIND` only allocates the stable handle after
+  DQOPEN returns success.
+
+**Next source-only gate:** verify historical `DCBD`
+macro field labels/offsets from the actual MVS 3.8
+`SYS1.MACLIB` macro and IFOX expansions, then
+construct a private, disposable instrumented BCPLIO
+that records DD02's effective DCB fields just before
+and just after real SVC19. DD01 must remain the
+unmodified control. Choose a harmless sequential
+DASD dataset/record-format mismatch for a subsequent
+true negative OPEN probe **only after** this data
+is understood. No additional workstation checks
+or JCL runs are presently requested.
+
+This procedure avoids repeating speculative
+SYSOUT and PDS JCL variants, and preserves the
+owner's deferral of the complete native regression
+panel, M4.3 separate resource accounting, and
+unchanged installed runtime modules.
