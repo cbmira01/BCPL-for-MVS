@@ -1,9 +1,50 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0–M5.3 CLOSED under agreed QSAM boundary (JOBS 8184/8185/8186; M4.4 00..145 compatibility); M5.4 NEXT; M5.5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0–M5.4 CLOSED under agreed QSAM responsibility boundary (JOBS 8184/8185/8186; M4.4 00..145 compatibility); M5.5 fresh full panel/final acceptance OPEN  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.4 — CLOSED, current runtime contract and reconstruction runbook (2026-10-17)
+
+This gate reconciled the **canonical BCPLIO** and
+**DEVOBJ(BCPLM6)** sources, existing M0/M2/M4
+acceptance documents, M5.1/M5.2 output proof,
+and the authoritative M3 PDS clean-room runbook.
+
+Published [BCPLIO current dynamic-stream contract]
+(BCPLIO-dynamic-runtime-contract.md):
+historical G11–17/G30/G33/G39/G41/G42/G46/G47
+interfaces; default DDs and arbitrary normalized
+JCL-allocated DDs; FB80/FB132 and EBCDIC semantics;
+opaque stable handles, duplicate FIND and stale
+selection; ENDREAD/ENDWRITE, FINISH/STOP cleanup;
+M4.2 recoverable-failure/abend boundary; and
+M4.3 measurement limits. Explicitly separates
+BCPLIO QSAM record responsibilities from JES2
+internal spool behavior.
+
+Extended the **existing, single**
+[clean-room reconstruction runbook]
+(../packaging/clean-room-mvs-reconstruction.md)
+with the M5.4 DEVOBJ candidate build: after the
+MR10/ICINT19/TRNILRG/CAMBCOMP, production OBJ,
+BLIB, and service rebuild, explicitly install
+BCPLM6/BCPLIO sources and BLDDEVM6/BLDDEVI
+jobs, assemble both to NATIVE_DEVOBJ, then use
+the four profile flags for the 00..145 candidate
+preflight/run and saved-log audit. The old M3
+123/0/1 result is retained as dated history.
+
+**M5.4 CLOSED as a source-reviewed documentation
+gate.** No fresh destructive purge-to-DEVOBJ
+exercise, MVS/JES submission, regression rerun,
+runtime edit, PDS update, JCL implementation
+change, or OBJ promotion is claimed. The
+accepted past evidence remains as recorded.
+**M5.5 NEXT:** independently execute the current
+full DEVOBJ native panel and its audit, then seek
+formal acceptance.
 
 ## M5.3 — CLOSED on existing compiled-BCPL evidence (2026-10-17)
 

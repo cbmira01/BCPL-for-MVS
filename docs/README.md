@@ -23,6 +23,20 @@ The files in this directory are working briefings for people developing or revie
   regression coverage map, and evidence-driven feature backlog
 - `project-map.md` — repository and workflow map
 
+## Current BCPLIO developer contract (M5.4)
+
+- [BCPLIO dynamic streams — current DEVOBJ runtime contract]
+  (BCPLIO-dynamic-runtime-contract.md): historical BCPL globals,
+  arbitrary named DDs, QSAM FB80/FB132 translation, cleanup,
+  failure boundaries and M5 evidence.
+- [MVS clean-room reconstruction and DEVOBJ candidate runbook]
+  (../packaging/clean-room-mvs-reconstruction.md): complete
+  MR10/ICINT19/CAMBCOMP/PDS rebuild, plus M5.4 BCPLM6/BCPLIO
+  candidate steps and final 00–145 regression process.
+- [Original M4.2 JCL/QSAM responsibility note]
+  (BCPLIO-JCL-QSAM-stream-contract.md): detailed host OPEN/abend
+  distinction, kept for provenance.
+
 ## Source discipline
 
 For questions about the historical BCPL implementation, prefer primary evidence in `richards-bcpltape/` and contemporary manuals. For MVS and System/370 behavior, prefer IBM documentation and observable TK5 behavior. These notes summarize and connect those sources for this project and may contain mistakes.

@@ -1,6 +1,6 @@
 # BCPLIO on MVS — JCL, QSAM and character-stream contract
 
-Status: **M4.2 scoped contract accepted (2026-10-17); M4.3 accounting and M5 integration remain open.**
+Status: **M4.2 characterization retained; current M5.4 dynamic runtime contract published 2026-10-17. M4.3/M4.4 and M5.0–M5.3 later closed within their documented scopes.**
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 Evidence: [M4.2 characterization and acceptance](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md)
 
@@ -30,6 +30,25 @@ These are the current **stream translation expectations** and observed test fixt
 4. If MVS issues an S013 or other unrecovered system abend, BCPLIO cannot necessarily intercept it and **does not promise continued execution**. Nor does BCPLIO guarantee recovery from arbitrary QSAM GET, PUT or CLOSE errors. Do not convert an abend into a regression PASS.
 
 The source's post-SVC19 DCB-open-state interpretation remains a host detail requiring independent observation before broader claims. Failure to open a real dataset that MVS rejects does not by itself constitute a BCPLIO bug; incorrect BCPLIO handling **if it does receive a recoverable failure** would be a bug.
+
+## M5.4 current contract clarification (2026-10-17)
+
+This document remains the **M4.2 explanation** of how
+a BCPL stream interacts with JCL and MVS QSAM, including
+the crucial distinction between a returned OPEN failure
+and an MVS abend. The current implementation's complete
+dynamic-name, stable-handle, FB80/FB132, lifecycle and
+QSAM/JES2 responsibility contract is
+[BCPLIO dynamic streams — current DEVOBJ runtime contract]
+(BCPLIO-dynamic-runtime-contract.md).
+M4.3 subsequently accepted scoped returned-control
+resource accounting; M4.4 accepted 145/0/1 regression
+compatibility; M5.1 closed on printer-route and QSAM
+dataset-readback evidence, with JES2 internal spool
+validation explicitly removed from the BCPLIO gates.
+
+Historical "next gates" below are retained as dated
+provenance rather than current work requests.
 
 ## Evidence, limits, next gates
 

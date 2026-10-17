@@ -1,8 +1,8 @@
 # Clean-room MVS PDS reconstruction — MR10 through native BCPL
 
-**Scope:** reconstruct the complete **M3 executable stack** in a fresh managed PDS environment, starting from a clean host `workarea/`. This document is the single operator runbook for the reconstruction sequence. It is not an M4 native Cambridge compiler build.
+**Scope:** reconstruct the complete **M3 executable stack**, then reproduce the **M5.4 DEVOBJ(BCPLM6+BCPLIO)** candidate described in section 10, starting from a clean host `workarea/`. This document is the single operator runbook for the reconstruction sequence. It is not an M4 native Cambridge compiler build.
 
-**Status:** the individual stages and the final native panel have been demonstrated on TK5 (15 October 2026); **this exact all-in-one sequence has not yet been rerun as a single destructive clean-room acceptance exercise**. Record its results when executed. The final M3 panel demonstrated **123 PASS / 0 FAIL / 1 expected SKIP (083)**.
+**Status:** M3 stages and its earlier 00–123 suite were demonstrated on TK5 (15 October 2026); the independent DEVOBJ dynamic-stream candidate later passed M4.4 (00–145, 145 PASS/0 FAIL/expected SKIP 083) and M5.1/M5.2 focused evidence on 17 October. **This full destructive purge-to-DEVOBJ sequence has not been run anew as one clean-room acceptance exercise**. Record its results when executed. The final M3 panel demonstrated **123 PASS / 0 FAIL / 1 expected SKIP (083)**.
 
 ## Authorities, scope, and precautions
 
@@ -15,6 +15,8 @@
 - Allow each command to finish successfully before progressing. `dspal submit` prints the **launcher** and **payload** jobs; inspect the **payload** summary.
 
 ## The complete workflow at a glance
+
+**Historical gates 0–9 are the M3 base, not the current dynamic candidate.** The additional candidate build and fresh 00–145 run are documented below in **section 10**; use both parts when reconstructing the current BCPLIO runtime.
 
 | Gate | Rebuild action | Input authority | MVS result / evidence |
 | --- | --- | --- | --- |
@@ -226,3 +228,178 @@ Record the exact Git commit, TK5/MVS date, effective `dspal info` dataset list (
 The baseline stage-by-stage acceptance and representative historical JOB numbers are recorded in `packaging/m3-native-reconstruction-acceptance-20261015.md`. JES job IDs will differ on a fresh run and can wrap.
 
 **Stop condition:** all required members present; no stale retired dataset allocation; all interpreter programs return the expected interpreted status; all assembly/link/install steps complete; native panel 123/0/1. Until the complete sequence is exercised in one clean-room run, consider this a consolidated, source-audited procedure rather than independent proof of one-run reproducibility.
+
+---
+
+## 10. M5.4 addendum — reproduce the accepted dynamic BCPLIO candidate
+
+**Status (17 October 2026): source-documented extension to the
+historical M3 clean-room procedure above.** It is **not** a claim
+that the *entire* purge-to-candidate sequence has been newly
+executed end-to-end. Source and live-stage outcomes are recorded
+separately in [M4.4]
+(../docs/Milestone-BCPLIO-dynamic-stream-M4.4-plan.md),
+[M5.1]
+(../docs/Milestone-BCPLIO-dynamic-stream-M5.1-plan.md),
+[M5.2]
+(../docs/Milestone-BCPLIO-dynamic-stream-M5.2-plan.md)
+and [the current runtime contract]
+(../docs/BCPLIO-dynamic-runtime-contract.md).
+
+**This section extends, not replaces, gates 0–9 above.** Gates 0–9
+still explain the whole disposable MR10/ICINT19, demoted Cambridge
+compiler, production OBJ, BLIB and service-module bootstrap.
+The original gate 8 expected 123/0/1 was the **older M3
+acceptance result**, not the current candidate acceptance target.
+After following those gates, also do the following.
+
+### A. Know which objects are canonical vs candidate
+
+| Manifest alias | Relevant members | Authority |
+|---|---|---|
+| NATIVE_ASM | BCPLM6, BCPLIO and other assembler sources | Git, manifest population; re-stage with dspal put after any source change |
+| NATIVE_JCL | BLDDEVM6 and BLDDEVI build job bodies | BLDDEVI manifest-mapped; BLDDEVM6 must be **explicitly installed with dspal put** (not in the M3 JCL manifest listing) |
+| NATIVE_OBJ | BCPLMAIN, BCPLMEM, BLIB | Rebuild using BLDBMAIN and BLIBBLD in base gates; **no copying old object records** |
+| NATIVE_DEVOBJ | BCPLM6, BCPLIO, BCPLBYTE, BCPLAPT | Build through the resident IFOX/IEBGENER jobs; no PROD OBJ promotion |
+
+The candidate regression linker includes **BCPLM6 and BCPLIO
+from NATIVE_DEVOBJ**, **BCPLMEM and BLIB from NATIVE_OBJ**
+and **BCPLBYTE and BCPLAPT from NATIVE_DEVOBJ**.
+This mixed object resolution is intentional: the DEVOBJ flag
+names the candidate runtime *library profile*, not an instruction
+to migrate all accepted OBJ members.
+
+### B. Build and verify the two candidate modules in the clean PDS
+
+Only after the complete base compiler/runtime stack has been
+rebuilt as above, use the Git-controlled sources and job bodies:
+
+```sh
+# Review the checked-in source and target dataset identities first:
+git rev-parse HEAD
+tools/datasets/dspal info
+tools/datasets/dspal ls NATIVE_ASM
+tools/datasets/dspal ls NATIVE_JCL
+
+# Install source text (not binary object records):
+tools/datasets/dspal put NATIVE_ASM BCPLM6 \
+  native-compiler/asm/bcplmain-d6-candidate.asm
+tools/datasets/dspal put NATIVE_ASM BCPLIO \
+  native-compiler/asm/bcplio.asm
+
+# Explicitly install the current, approved build JCL bodies:
+tools/datasets/dspal put NATIVE_JCL BLDDEVM6 \
+  native-compiler/jcl/build-dev-bcplm6.jcl
+tools/datasets/dspal put NATIVE_JCL BLDDEVI \
+  native-compiler/jcl/build-dev-bcplio.jcl
+
+tools/datasets/dspal submit NATIVE_JCL BLDDEVM6
+tools/datasets/dspal submit NATIVE_JCL BLDDEVI
+tools/datasets/dspal ls NATIVE_DEVOBJ
+```
+
+**For BLDDEVM6:** require *payload* ASMMMAIN (IFOX)
+RC0000, PUTMAIN (IEBGENER) RC0000 and DEVOBJ(BCPLM6).
+**For BLDDEVI:** require *payload* ASMIO (IFOX)
+RC0000, PUTIO (IEBGENER) RC0000 and DEVOBJ(BCPLIO).
+Confirm zero flagged assembler errors, inspect the
+submitted job's real PDS source/output DSNs and do not
+accept a good RC from a stale job targeting retired
+libraries. Launcher job completion is not sufficient.
+
+The job sources write only **NATIVE_DEVOBJ**, not NATIVE_OBJ.
+Verify that `NATIVE_OBJ(BCPLMAIN,BCPLMEM,BLIB)` remains
+the base accepted runtime; never reassemble or silently
+promote BCPLM6 into NATIVE_OBJ at this gate.
+
+### C. Candidate preflight, focused smoke, and complete panel
+
+```sh
+export BCPL_RUNTIME_PDS=1
+export BCPL_RUNTIME_LIBRARY=DEVOBJ
+export BCPL_RUNTIME_CANDIDATE=1
+export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+
+# Does not submit MVS jobs:
+python3 tools/checks/check-m44-compatibility.py --candidate
+python3 tools/checks/check-bcplio-m43-account.py
+tools/native/run-regression --check-numbering
+
+# Actual MVS execution; verify the resulting job reports:
+tools/native/run-regression 124 --show-output
+tools/native/run-regression 128 129
+tools/native/run-regression 131 133
+
+# M5.5: run only when the final full-panel gate is authorized:
+tools/native/run-regression 0 145
+python3 tools/checks/check-m44-full-panel-logs.py
+```
+
+The `0 145` runner range is inclusive, covering
+146 numbered cases, of which 083 is a deliberate
+source-only skip and 048 is compile-only. The accepted
+M4.4 **historical measured result** was **145 PASS /
+0 FAIL / one expected SKIP 083**, and 145/145 saved
+logs passed the corrected read-only audit. Under the
+BCPLM6/D6 candidate, 052 and 093 have separate
+`expected-go-rc-bcplm6.txt` fixtures because
+their intended GO RC0000 differs from the D7 profile.
+Case 129 and case 141 use intentional nonzero STOP
+termination statuses; the harness determines acceptance
+against each case's profile, **not by demanding every
+GO step RC0000**.
+
+**Neither the documented commands nor the preceding
+M5.3 review counts as a fresh M5.5 run.** A newly
+performed full sweep must include its own JES job IDs,
+step RC and saved report/log evidence before M5.5 closes.
+
+### D. Physical QSAM proof and experimental JCL (existing results)
+
+The ordinary regression runner uses combined JES
+reports for *logical* fixture comparisons; this is
+not an exact byte-level observation of individual
+QSAM output datasets. The separate limited experiments
+verified the boundary once without adding an API:
+
+| Probe | Input and physical output | Actual evidence |
+|---|---|---|
+| M5.1.1 | Native case 114 and split SYSOUT A/Z classes | JOB 8184: two observed printer routes, RC0 |
+| M5.1.2 | Native case 124 linked to separate temporary REPORT and REPORT2 FB132 datasets, followed by assembler QSAM GET/CLC(132) | JOB 8185: all six steps RC0000, complete records/count/EOF |
+| M5.2 | Exact positive case-124 JCL with only one wrong **verifier expectation** at EBCDIC pad offset 131 | JOB 8186: first five steps RC0000, VCHK **RC0012 intentionally** |
+
+The source and offline review commands remain in
+`tools/checks/m51-fb132-dataset-probe.py` and
+`tools/checks/m52-padding-negative.py`
+and their plans. They generate files under
+`workarea/native-regression/124-dynamic-dd-selected-output/`;
+**never submit a negative probe without verifying
+its intended nonzero RC and JOB name**. Do not
+rerun the three already accepted jobs to count
+M5.4 as complete. Their experimental JCL is not
+part of the ordinary regression runner by default.
+
+### E. Capture a new full reconstruction or M5.5 acceptance record
+
+At minimum, keep the Git commit, effective manifest
+mapping (no secrets), whether workarea/PDS purging was
+actually performed, generated bootstrap SHA-256,
+ICINT19/MR10 suite JOB evidence, TRNILRG and
+CAMBCOMP rebuild and interpreted CODE=0 checks,
+BLIB and runtime build payload JOBs and RCs,
+DEVOBJ(BCPLM6/BCPLIO) member inventory,
+candidate environment, compiler/IFOX/IEWL/GO
+results, native test summary, 145/145 log audit,
+and known limitations.
+
+**Do not claim from-scratch completeness merely
+because a normal incremental rebuild works.**
+The base runbook's destructive purge has *not*
+been newly exercised as an M5.4 proof. In normal
+development **do not run purgebcpl** or delete
+`workarea/` just to validate documentation.
+When a truly clean-room reconstruction is desired,
+the operator must explicitly authorize and protect
+any non-reproducible managed PDS content first.
+M5.4 changes only documentation; M5.5 is the
+fresh candidate execution/final acceptance gate.

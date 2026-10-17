@@ -11,6 +11,27 @@ Canonical entry points for Cambridge/native compiler work:
 
 M3 uses the refactored `NATIVE_*` and `MR10_*` dataset namespace. Do not use `CAMB_*` datasets before M4.
 
+## M5.4 dynamic runtime DEVOBJ candidate
+
+After the base M3 compiler/accepted OBJ reconstruction,
+the current M5 native stream candidate consists of
+`NATIVE_DEVOBJ(BCPLM6)` and
+`NATIVE_DEVOBJ(BCPLIO)`, assembled via
+`NATIVE_JCL(BLDDEVM6)` and
+`NATIVE_JCL(BLDDEVI)`. BLDDEVM6 must be
+installed explicitly; it is not part of the
+original M3 `NATIVE_JCL` manifest members.
+Run candidate regressions with the four environment
+variables documented in the [complete clean-room
+runbook](../../packaging/clean-room-mvs-reconstruction.md#10-m54-addendum--reproduce-the-accepted-dynamic-bcplio-candidate).
+
+The [current dynamic BCPLIO stream contract]
+(../../docs/BCPLIO-dynamic-runtime-contract.md)
+describes the BCPL interface and supported QSAM
+record semantics. The accepted M4.4 result was
+145 PASS/0 FAIL/expected SKIP 083, while the
+fresh M5.5 execution gate remains open.
+
 ## M3 clean native-compiler bootstrap (not M4)
 
 This environment uses **only** `MR10_SOURCE`, `MR10_LOAD`, `NATIVE_SOURCE`,
