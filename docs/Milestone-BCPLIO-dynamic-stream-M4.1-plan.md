@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.1 deterministic allocation failures
 
-**Status: source-only checker PASS; targeted MVS regression 135 ACCEPTED; 136–137 STAGED and pending. Full regression panel deferred by owner.**
+**Status: source-only checker PASS; MVS regressions 135/136 individually ACCEPTED; 137 PENDING; full regression panel deferred by owner.**
 Date: 2026-10-17
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 Predecessor: M4.0 regression 134 **targeted PASS**, M3 regression 133 **targeted PASS**.
@@ -206,4 +206,51 @@ BCPL_RUNTIME_LIBRARY=DEVOBJ \
 BCPL_RUNTIME_CANDIDATE=1 \
 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
 tools/native/run-regression 136 --show-output
+```
+
+## Second M4.1 runtime acceptance — regression 136
+
+After pulling Git main through `831ee82` (starting from
+`175fc2e`), the operator ran targeted DEVOBJ-isolated regression
+`136-dynamic-dd-fault-buffer268` with the same four
+`BCPL_RUNTIME_*` candidate variables and observed:
+
+```text
+NATIVE REGRESSION  136..136  (1 tests)
+RUN   136  136-dynamic-dd-fault-buffer268
+PASS  136  136-dynamic-dd-fault-buffer268
+
+NATIVE REGRESSION COMPLETE
+PASS  1
+FAIL  0
+SKIP  0
+TOTAL 1
+```
+
+**ACCEPTED:** synthetic failure of the second 268-byte
+`DALLOC` QSAM DCB/buffer GETMAIN site, zero-valued FINDINPUT
+failure without perturbing a live DD01 stream/cursor, and
+successful subsequent DD02 FIND, reading and closure.
+The canonical `DALNOMEM` path calls FREEMAIN for its earlier
+32-byte descriptor. This test exercises observable recovery
+consistent with that path, but **does not provide separately
+instrumented FREEMAIN call counts**; exact reclamation and
+OPEN/CLOSE counts remain M4.3 responsibilities. Genuine host
+allocation exhaustion is not implied. The operator excerpt
+has no JES job ID or individual step CCs.
+
+**M4.1 focused gates:** 135 PASS; 136 PASS; 137 not yet run.
+The explicitly deferred full panel stays deferred. The next
+individual test is 137, which fails the 16-byte HNEW handle
+allocation **after successful QSAM OPEN**, exercising the
+DQCLOSE/DREL cleanup sequence:
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 137 --show-output
 ```
