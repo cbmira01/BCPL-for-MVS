@@ -621,3 +621,27 @@ The first invocation mistakenly attempted these from the `native-compiler/` subd
 The only skip was **083 source-only instrumentation**, as established previously. Regression 113 was also run in the 00..123 panel; there are **127 distinct passing test cases out of 128 numbered 00..127**, with **zero failures and one expected skip**. No newer assembler/source changes occurred between JOB 6799 and these regression runs. The operator's log reports the summary and individual PASS lines, not separate per-test JES job numbers; do not infer those numbers.
 
 **ACCEPTED: full DEVOBJ backward-compatibility gate after duplicate FIND.** Current source, accepted 125 (two dynamic inputs), 126 (twelve simultaneous inputs), 127 (duplicate FIND), 124 (dynamic output), and native 00..123 all pass. Production `HERC02.BCPL.NATIVE.OBJ` is still excluded. The M1 milestone remains OPEN: dynamic IOFIN cleanup on FINISH/STOP, >=13 simultaneous DDs, post-close/new-handle/reopen semantics, error handling, and independent physical DD output attribution are not established by this result.
+
+## Next lifecycle gates: 128 FINISH and 129 STOP drain STAGED (not run)
+
+After the accepted full post-6799 compatibility check (127 distinct PASS, one expected SKIP 083), added two permanent candidate-only compiled-BCPL tests with immutable normal-case and failure-case fixtures:
+
+- `128-dynamic-dd-finish-drain`: opens independent named output DDs REPORT and REPORT2 and input DD01; leaves all streams open and **both output records unterminated in BCPL buffers**; emits completed `FINISH MAIN OK` on primary SYSPRINT and invokes FINISH. Expect normal GO RC0000 plus named `FINISH REPORT PART` and `FINISH REPORT2 PART` records, which require IOFIN to flush the application-owned buffers.
+- `129-dynamic-dd-stop-drain`: the same pattern with `STOP(8)` (expected GO RC0008 via `expected-go-rc.txt`; assertions use STOP(12)); require primary `STOP MAIN OK` plus named partial records `STOP REPORT PART` and `STOP REPORT2 PART` before termination. Source does not call ENDREAD/ENDWRITE. Both tests include DD01 instream fixture and named REPORT/REPORT2 SYSOUT fixtures.
+
+**Important test-harness correctness repair:** review of `native-compiler/regression/run-test.sh` revealed that its accepted nonzero-GO-RC branch previously called `show_bcpl_output` but omitted `show_alt_output` and `show_named_output`, which could falsely pass 129 despite lost dynamic REPORT buffers. Commit `7155e13` extends this branch to check all available named and alternate expected-record fixtures after normal expected GO RC and primary output checks. The normal RC0 path already performed these checks. Existing controlled nonzero tests 087 and 089 have no named fixtures and should retain their historical results; recheck as part of full acceptance.
+
+The source-level IOFIN still closes/flushed only bootstrap fixed DCBs; it does **not** traverse DHEAD/HHEAD or release dynamic descriptors, buffers and retired stable-handle control blocks. Therefore **128 and 129 are intentionally expected RED on the current DEVOBJ candidate**. Neither test has been executed yet; no runtime modification is staged. Run both against the current installed DEVOBJ first and preserve actual JES data. A test PASS validates externally visible pending record flush and normal STOP/FINISH execution, **not independently** DCB CLOSE/FREEMAIN counts or per-DD physical attribution; further instrumentation/verification remains required before full lifecycle acceptance.
+
+Next operator command:
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+export BCPL_RUNTIME_PDS=1
+export BCPL_RUNTIME_LIBRARY=DEVOBJ
+export BCPL_RUNTIME_CANDIDATE=1
+export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+tools/native/run-regression 128 --show-output
+tools/native/run-regression 129 --show-output
+```
+Expect failures until the dynamic IOFIN sweep exists; distinguish ordinary missing output from JCL/compiler, assembler/link, or system abend. Production OBJ remains untouched.
