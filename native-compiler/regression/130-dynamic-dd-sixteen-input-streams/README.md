@@ -1,7 +1,20 @@
 # 130 — Sixteen simultaneous dynamic input DD streams
 
-**Status: CAMBRIDGE CODE RECOVERY BLOCKED ON FIRST TRY; COMPACT
-SOURCE RETEST STAGED, NOT YET ACCEPTED.** The first candidate-only
+**Status: ACCEPTED — M2 16-stream target passed on DEVOBJ.**
+The original unrolled source failed before native execution during
+Cambridge JOB 7328: COMP ICINT19 RC0000; SVCODE IEBGENER RC0012.
+Commit `ded524f` compacted only the BCPL test source, preserving
+all its sixteen simultaneous DD opens and all contract assertions.
+The operator pulled through `8247e98` and reran the unmodified
+candidate runtime with the revised test. The runner reported
+**PASS 130, PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**.
+
+The passing regression establishes independent state and selection
+for **sixteen simultaneously live** dynamic input DDs. It does not
+establish any artificial 16-stream ceiling. No further concurrency
+escalation is planned. The complete `00..129` candidate baseline
+was separately accepted previously (129 PASS, expected SKIP 083);
+a fresh full `00..130` sweep has not yet been supplied. The first candidate-only
 MVS run used the original 438-line unrolled BCPL source. Cambridge
 JOB **7328 RG130C** reported `COMP ICINT19 RC=0000` but the next
 `SVCODE IEBGENER RC=0012`; the driver could not recover generated
@@ -14,7 +27,7 @@ subscripts, reducing source from 438 to 121 nonterminal lines while
 retaining sixteen simultaneous FINDINPUTs, all 120 pairwise identity
 comparisons, independent data/newline/EOF tests, and stale-handle
 checks. The DD fixtures, expected record and DEVOBJ objects are
-unchanged. Its first MVS run is pending.
+unchanged. Its retest completed successfully as described above.
 
 The exact reason for IEBGENER RC0012 is **not yet established**.
 JOB 7328's detailed compiler/SVCODE report will be needed if the
