@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate 133 PASS; M4.0 test 134 staged; full 00..132 baseline 132 PASS/0 FAIL/skip 083; M4/M5 open  
+Status: M0/M1/M2 accepted; M3 logical 133 and M4.0 negative-DD 134 PASS individually; full 00..132 baseline 132 PASS/0 FAIL/skip 083; M4/M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -198,6 +198,32 @@ zero-valued and non-destructive to selected streams; it has
 M4 fault injection, CLOSE/FREEMAIN accounting and M5 physical
 record attribution still await acceptance. No DEVOBJ-to-OBJ
 promotion is authorized.
+
+
+## M4.0 validation after M3 mixed-mode regression (MVS 2026-10-17)
+
+The operator pulled through `3678e54` and ran the permanent
+compiled-BCPL candidate regression **134**, observing
+**PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**. The test exercises
+five invalid or unallocated DD names through both FINDINPUT and
+FINDOUTPUT, checks their zero returns, confirms preservation of
+selected input/output handles and an independent input cursor,
+and verifies subsequent valid normalized duplicate FINDs.
+This **accepts M4.0 ordinary negative-name behavior**. It is not
+evidence for true QSAM OPEN error recovery or resource exhaustion.
+
+Regressions **133 and 134 both passed individually** against
+unchanged DEVOBJ(BCPLM6 + BCPLIO), with no rebuild.
+The complete accepted compatibility panel remains `00..132`;
+the next required full checkpoint is `00..134`, expected
+**134 PASS, 0 FAIL, 1 expected SKIP 083, TOTAL 135**.
+
+Following this checkpoint, M4 requires design and isolated
+instrumentation for conditional GETMAIN failure, QSAM OPEN failure,
+matching FREEMAIN / CLOSE accounting and termination cleanup.
+M5 still owns lossless physical DD attribution and final
+integration acceptance. Neither candidate object promotion nor
+overall milestone closure is authorized.
 
 ## Handoff / next-conversation prompt
 
