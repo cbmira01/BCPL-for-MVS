@@ -1,6 +1,6 @@
 # Dynamic BCPLIO stream milestone — M4 failure/lifecycle inventory
 
-Status: **M4.0/M4.1 accepted; 138 PASS; real OPEN explorations 7874/7875/7876 all returned HANDLE; M4.2 actual failure unproved; M4.3 open; full panel deferred**
+Status: **M4.0/M4.1 accepted; 138 PASS; 7874/7875/7876 returned HANDLE; 1979 IBM R3.8 printer-DCB normalization identified; actual failed OPEN unproved; full panel deferred**
 Date: 2026-10-17
 Predecessor: **M2 CLOSED**, DEVOBJ native 00..132 **132 PASS / 0 FAIL / 1 expected SKIP 083**.
 Parallel prerequisite: [M3 focused review](Milestone-BCPLIO-dynamic-stream-M3-review.md), regression 133 PASSED individually; full panel through 133 not yet rerun.
@@ -557,3 +557,25 @@ diagnostics confined to DD02 with DD01
 as a normal control. Do not repeat random
 JCL incompatibilities. M4.2 remains open;
 full panel still owner-deferred.
+
+## Period-correct FB SYSOUT explanation (historical source review)
+
+IBM `GC26-3875-0`, `OS/VS2 MVS Data Management
+Services Guide`, Release 3.8, revised June 1979,
+page 86, explicitly describes QSAM FB printer
+datasets whose block size is normalized to LRECL
+and which are processed as RECFM=F. This helps
+explain why JOB 7876, with `DD02 SYSOUT` and
+invalid JCL FB `BLKSIZE=81/LRECL=80`, returned
+a handle rather than experiencing an OPEN failure.
+
+The exact effective DCB fields in JOB 7876
+have **not** been observed, so this is a plausible
+historically grounded mechanism, **not** a proven
+field-level trace. Do not stage another blind
+JCL variation. Review actual private DCB layout
+and instrument DD02 before/after real SVC19
+with isolated test-only BCPLIO. See the
+[M4.2 technical plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md).
+No new operator run is requested. Owner-deferred
+full regression and unchanged OBJ/DEVOBJ remain.
