@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M5.1 acquisition feasibility
 
-**Status: M5.1.0 A/Z printer-routing probe STAGED (2026-10-17); no MVS job executed; raw JES2 spool and FB132 fidelity UNKNOWN.**
+**Status: M5.1.1 printer routing ACCEPTED (JOB 8184, 2026-10-17); M5.1.2 lossless dynamic REPORT/REPORT2 FB132 feasibility NEXT; original JES2 raw spool remains UNVERIFIED.**
 Predecessor: M5.0 evidence contract **ACCEPTED** by the owner.
 [M5.0 contract](Milestone-BCPLIO-dynamic-stream-M5.0-contract.md).
 
@@ -40,6 +40,56 @@ The active /tk5/conf/tk5.cnf is **not** in the Git repository.
 The class-A/Z to PRINTER1/PRINTER2 mapping must be checked against
 the *live* operator environment and then observed through the
 isolated job. Do not infer it from file names alone.
+
+## M5.1.1 physical A/Z printer route — ACCEPTED 2026-10-17
+
+The operator updated Git through `31dbeaa`, ran
+`test-dd-attribution.py` **10/10 PASS** and
+`test-m51-route-probe.py` **6/6 PASS**. The
+read-only live-device inspection found:
+```text
+class A / PRINTER1: mvs-state/prt/prt00e.txt (74,902,995 bytes)
+class Z / PRINTER2: mvs-state/prt/prt00f.txt (91,029 bytes)
+000E 1403 prt/prt00e.txt ${TK5CRLF}
+000F 1403 prt/prt00f.txt ${TK5CRLF}
+```
+
+The checker separately noted that device definitions alone
+do not prove JES writer class routing. The operator then
+prepared the unchanged candidate regression-114 class
+probe, capturing offsets **A=74902995 and Z=91029**,
+submitted exactly one isolated GO deck `AT114R` via
+socket reader and received **JOB 8184**.
+The real MVS/JES job summary was:
+```text
+JOB 8184 AT114R
+ASMAP IFOX00 RC=0000
+LKED  IEWL   RC=0000
+GO    PGM=*.DD RC=0000
+JOB RESULT SUCCESS; highest RC 0000
+Statements flagged 0; highest assembler severity 0
+140 cards; 340 SYSOUT records
+```
+
+The independent printer image checker reported:
+```text
+PASS job 8184 AT114R: class A / PRINTER1 matched
+2 SYSPRINT records; class Z / PRINTER2 matched
+2 BCPALT records; cross-destination contamination absent
+M5.1 route evidence: PASS for separate A/Z printer images
+Saved: workarea/native-regression/
+  114-interleaved-stream-records/m51-class-route-result.json
+```
+
+**ACCEPTED, scoped to observed class A/Z physical
+printer routing under this JOB, plus absence of
+cross-class logical record contamination.** This is
+real runtime/JES evidence, beyond the offline
+tests. It is NOT proof of unmodified original FB132
+EBCDIC bytes, original JES2 spool substream format,
+or dynamic REPORT/REPORT2 DD routing. The two local
+formatted-printer captures and JSON manifest should
+be retained as operator evidence.
 
 ## M5.1.0 — read-only offline and live device checks
 

@@ -1,9 +1,31 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 CLOSED; M5.1 staged for TK5 acquisition; M5.2–M5.5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0 CLOSED; M5.1.1 printer route ACCEPTED / FB132 raw acquisition OPEN; M5.2–M5.5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.1.1 route evidence — accepted 2026-10-17
+
+After 10/10 existing attribution unit tests, 6/6 new
+probe unit tests and confirmed live 000E/000F 1403
+device definitions, operator submitted isolated
+`AT114R` **JOB 8184**.
+ASMAP, LKED, GO each returned **RC0000** and
+printer-section verification passed independently:
+SYSPRINT's two expected records in class A/PRINTER1,
+BCPALT's two expected records in class Z/PRINTER2,
+no cross-class contamination. Staged offsets were
+A=74902995 and Z=91029.
+The operator retained the formatted output evidence at
+`workarea/native-regression/114-interleaved-stream-records/`.
+
+**M5.1.1 ACCEPTED** for physical printer routing
+only. It does not prove raw FB132 bytes or
+dynamic REPORT/REPORT2 attribution. See the
+[M5.1 acquisition record]
+(Milestone-BCPLIO-dynamic-stream-M5.1-plan.md).
+M5.1 itself remains open.
 
 ## M5.0 ACCEPTED; M5.1.0 route-probe staging (2026-10-17)
 
