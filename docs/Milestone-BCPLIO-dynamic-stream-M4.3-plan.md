@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.3 resource accountability
 
-**Status: M4.3.0 source checker PASS; JOB 7878 partial assembly, ASMNAT IFOX RC=0008 (IFO209); isolated native helper fixed, M4.3.1 awaiting rerun.**
+**Status: M4.3.0 and M4.3.1 ACCEPTED (2026-10-17); focused regression 139 PASS on corrected helper; M4.3.2 terminal/failure accounting OPEN.**
 Date: 2026-10-17
 
 ## Contract
@@ -47,14 +47,35 @@ ASMNAT statement 9 failed with **IFO209 ADDRESSABILITY ERROR** on
 register for the address-literal load. Its source was corrected with
 `BALR 10,0` and `USING *,10` (with a subsequent `DROP 10`).
 This is a harness error, not a tested BCPLIO accounting imbalance.
-**M4.3.1 has not passed.** The corrected helper must undergo
-IFOX/IEWL/GO verification before any count-based conclusion.
+**That initial execution did not pass.** The corrected native helper was subsequently rerun; see acceptance evidence below.
+
+## M4.3.1 acceptance — 2026-10-17
+
+Operator-reported local rerun at commit `18a18f1`:
+
+```text
+M4.3 native counter shim base setup: source check PASS
+M4.3 private source accounting checks: PASS
+NATIVE REGRESSION 139..139 (1 tests)
+PASS 139 139-dynamic-dd-resource-accounting
+PASS 1 / FAIL 0 / SKIP 0
+```
+
+**M4.3.0 and M4.3.1 accepted** on that evidence. The supplied
+summary did **not** contain the latest JES job number, individual
+IFOX/IEWL GO codes, or a raw count trace. The deterministic
+BCPL-side assertions in regression 139 establish the passing
+pre-termination counter values and handle behavior within the
+isolated instrumented GO job. They do not establish MVS's physical
+FREEMAIN semantics, post-IODRAIN tombstone reclamation, or
+failure-path accounting. Those remain M4.3.2. JOB 7878
+is retained above as the superseded, unsuccessful attempt.
 
 ## Staged acceptance gates
 
 **M4.3.0:** Run the source-only audit `python3 tools/checks/check-bcplio-m43-account.py`. It validates the exact GETMAIN/FREEMAIN/SVC source sites and rejects source drift, repeat instrumentation and overwide IFOX cards. Only an observed PASS can accept this gate.
 
-**M4.3.1:** Focused candidate-only compiled-BCPL test 139 uses existing regression G151 to call a separate test-only NATIVEAD assembler shim. It queries private IOACCT. Under MVS, ASMAP assembles the compiled BCPL program, ASMFIO assembles isolated BCPLIO, ASMNAT assembles NATIVEAD, and IEWL links both temporary objects with DEVOBJ(BCPLM6), without installed DEVOBJ(BCPLIO). GO asserts two live opens, duplicate FIND no extra OPEN, explicit ENDREAD releases descriptor/region but not the tombstone, fresh reopened identity, and three closes. It never reads the reopened instream DD DATA, avoiding an unfounded rewind guarantee. Marker: `M43 PRE-DRAIN COUNTS OK`.
+**M4.3.1 (ACCEPTED):** Focused candidate-only compiled-BCPL test 139 uses existing regression G151 to call a separate test-only NATIVEAD assembler shim. It queries private IOACCT. Under MVS, ASMAP assembles the compiled BCPL program, ASMFIO assembles isolated BCPLIO, ASMNAT assembles NATIVEAD, and IEWL links both temporary objects with DEVOBJ(BCPLM6), without installed DEVOBJ(BCPLIO). GO asserts two live opens, duplicate FIND no extra OPEN, explicit ENDREAD releases descriptor/region but not the tombstone, fresh reopened identity, and three closes. It never reads the reopened instream DD DATA, avoiding an unfounded rewind guarantee. Marker: `M43 PRE-DRAIN COUNTS OK`.
 
 **M4.3.2 (not implemented yet):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
 

@@ -20,6 +20,20 @@ tombstone retention, and close/reopen. See the
 **M4.3 remains OPEN.** No static checker execution, IFOX/IEWL/GO
 PASS, final IODRAIN balance or failure-path accounting is claimed.
 Full regression remains owner-deferred; OBJ/DEVOBJ are unchanged.
+## M4.3.1 acceptance (2026-10-17)
+
+The owner supplied a fresh focused rerun: **139 PASS / 0 FAIL /
+0 SKIP**, plus **source accounting and native-helper audits PASS**.
+M4.3.0 and M4.3.1 are accepted. The successful rerun's individual
+JES job IDs and step codes were not included in the supplied output.
+The passing assertions cover GETMAIN/FREEMAIN and QSAM SVC
+counter observations **before IOFIN**, duplicate FIND, retired
+tombstones, and explicit close/reopen. The count checker
+is test-only and does not establish host reclamation independently.
+**M4.3.2 remains OPEN** for FINISH/STOP IODRAIN and synthetic
+fault accounting; no production code, PDS member or
+global-vector ABI change. See [M4.3 plan](Milestone-BCPLIO-dynamic-stream-M4.3-plan.md).
+
 ## M4.2 closure and remaining marches (2026-10-17)
 
 The owner accepted a narrower, historically appropriate responsibility
