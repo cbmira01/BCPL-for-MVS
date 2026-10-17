@@ -40,7 +40,7 @@ any PDS member. It uses `prepare-runtime-pds-regression.py`
 with `--test-number 890` solely to generate an assembler/link/GO
 deck; no regression 890 is registered.
 
-### Prepare the deck (non-submitting)
+### Compile source and prepare the dangerous GO deck (without submitting GO)
 
 ```sh
 cd ~/Source/Repos/BCPL-for-MVS
@@ -59,7 +59,7 @@ python3 tools/checks/prepare-m42-real-open-jcl.py \
   workarea/m42-real-open/real-open.jcl
 ```
 
-Inspect the generated JCL and run **only when ready to
+The `compile-mvs` step **submits the ordinary Cambridge compilation**\njob to MVS. The generated exploratory `RG890R` GO deck, which may\nabend, remains **unsubmitted** until the separate command below.\n\nInspect the generated JCL and run **only when ready to
 characterize a possible GO-step abend**:
 
 ```sh
