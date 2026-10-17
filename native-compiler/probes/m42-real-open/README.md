@@ -1,8 +1,44 @@
 # M4.2.1 — Real MVS OPEN exploratory probe
 
-**STATUS: EXECUTED — exploratory RG890R JOB 7874 normal completion
-(ASMAP, LKED, GO each RC0000); diagnostic report analysis pending.
-This is NOT a normal regression.**
+**STATUS: EXECUTED AND CHARACTERIZED — RG890R JOB 7874;
+real QSAM input FIND returned a HANDLE, not the intended
+OPEN failure. This was an exploratory job, not a regression.**
+
+The operator-provided complete `real-open-report.txt` for
+JOB 7874 establishes:
+
+```text
+M42 BEFORE FIND DD02
+M42 DD02 RETURNED HANDLE
+M42 SURVIVED FIND DD02
+```
+
+The job's printed JCL allocated `DD01 DD DATA` and
+`DD02 DD SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)`.
+JES shows `JES2 ALLOCATED TO DD02`, ASMAP/LKED/GO all
+`RC0000`, and the link editor explicitly included the
+unmodified `OBJ(BCPLM6)` and `OBJ(BCPLIO)` members
+from the DEVOBJ library. No IEC error or abend was
+reported. The program intentionally **did not issue RDCH
+on the returned DD02 handle**, so it does not prove that
+reading SYSOUT works.
+
+The canonical DIFIND path creates a nonzero new handle
+only after RDJFCB verification, descriptor allocation,
+DQOPEN (which performs real SVC 19) and handle
+allocation succeed. Since DD02 was not opened earlier,
+this observed HANDLE rules out a pre-OPEN RDJFCB rejection
+as the cause of a failed FIND. It provides source-guided
+evidence that DQOPEN was entered and regarded the DCB as
+opened. The alleged SYSOUT/input incompatibility was
+**not actually rejected under this TK5 experiment**.
+
+**Disposition:** M4.2.1 attempt completed, but its intended
+actual failing-OPEN acceptance criterion was NOT met.
+Keep M4.2 open and try a genuinely incompatible allocated
+dataset/DD in a new, separately tracked exploratory job.
+Do not call the SYSOUT allocation a demonstrated OPEN error.
+
 
 The operator compiled source using Cambridge `JOB 7873`,
 prepared `workarea/m42-real-open/real-open.jcl` and
