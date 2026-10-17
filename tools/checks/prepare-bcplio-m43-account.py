@@ -38,7 +38,34 @@ def bump(label: str) -> str:
         f"         ST    0,{label}",
     ))
 
-def transform(source: str) -> str:
+def terminal_assertions() -> str:
+    """Test-only resource comparison after all IODRAIN releases."""
+    lines = [
+        "DRAINDN  L     1,=A(DHEAD)",
+        "         L     2,0(1)",
+        "         LTR   2,2",
+        "         BNZ   M43TRAP",
+        "         L     1,=A(HHEAD)",
+        "         L     2,0(1)",
+        "         LTR   2,2",
+        "         BNZ   M43TRAP",
+        "         L     1,=A(M43TAB)",
+    ]
+    for first, second in ((0, 4), (8, 12), (16, 20),
+                          (24, 28), (24, 32), (32, 36)):
+        lines.extend((
+            f"         L     2,{first}(1)",
+            "         L     2,0(2)",
+            f"         L     3,{second}(1)",
+            "         L     3,0(3)",
+            "         CR    2,3",
+            "         BNE   M43TRAP",
+        ))
+    lines.append("M43DONE  LM    0,10,DRSAVE")
+    return "\n".join(lines)
+
+
+def transform(source: str, terminal_check: bool = False) -> str:
     if "         ENTRY IOACCT" in source or any(
         f"{name:<8} DC    F'0'" in source for name in COUNTERS
     ):
@@ -149,6 +176,20 @@ def transform(source: str) -> str:
     ))
     source = one(source, "         END   BCPLIO",
                  accessor + "\n         END   BCPLIO")
+    if terminal_check:
+        source = one(source, "DRAINDN  LM    0,10,DRSAVE",
+                     terminal_assertions())
+        source = one(
+            source,
+            "         BR    14\n         LTORG\n         DROP  11\n"
+            "         DS    0F\nDRDESC",
+            "         BR    14\n"
+            "* M4.3 TEST ONLY: invalid opcode flags resource mismatch.\n"
+            "M43TRAP  DC    X\x270000\x27\n"
+            "         LTORG\n         DROP  11\n"
+            "         DS    0F\nDRDESC",
+        )
+
     for i, line in enumerate(source.splitlines(), 1):
         if not line.isascii() or len(line) > 71 or \
                 line.startswith("//") or line == "/*":
@@ -159,13 +200,17 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("source", type=Path)
     ap.add_argument("output", type=Path)
+    ap.add_argument("--terminal-check", action="store_true")
     args = ap.parse_args()
     if args.source.resolve() == args.output.resolve():
         raise ValueError("must not overwrite source")
-    result = transform(args.source.read_text(encoding="ascii"))
+    result = transform(args.source.read_text(encoding="ascii"),
+                       terminal_check=args.terminal_check)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(result, encoding="ascii", newline="\n")
     print("M4.3 test-only source prepared (MVS NOT RUN)")
+    if args.terminal_check:
+        print("M4.3 post-IODRAIN terminal assertions armed")
     print("Counter IDs: " + ", ".join(
         f"{i}={name}" for i, name in enumerate(COUNTERS)))
     print(args.output)

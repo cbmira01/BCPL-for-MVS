@@ -230,18 +230,28 @@ if [[ $runtime_pds == 1 ]]; then
             echo "run-test: M4.3 needs DEVOBJ BCPLM6" >&2
             exit 64
         fi
-        grep -qx counters "$case_dir/io-accounting.txt" || {
-            echo "run-test: unknown M4.3 accounting mode" >&2
-            exit 64
-        }
-        [[ -f "$native" ]] || {
-            echo "run-test: M4.3 requires native.asm" >&2
-            exit 65
-        }
+        account_mode=$(tr -d "\r\n" < "$case_dir/io-accounting.txt")
+        account_args=()
+        case "$account_mode" in
+            counters)
+                [[ -f "$native" ]] || {
+                    echo "run-test: counter query requires native.asm" >&2
+                    exit 65
+                }
+                ;;
+            counters-terminal)
+                [[ ! -f "$native" ]] || {
+                    echo "run-test: terminal mode prohibits native.asm" >&2
+                    exit 65
+                }
+                account_args+=(--terminal-check)
+                ;;
+            *) echo "run-test: unknown accounting mode" >&2; exit 64 ;;
+        esac
         account_asm="$work/bcplio-m43-account.asm"
         python3 "$root/tools/checks/prepare-bcplio-m43-account.py" \
-            "$root/native-compiler/asm/bcplio.asm" "$account_asm" ||
-            exit $?
+            "$root/native-compiler/asm/bcplio.asm" "$account_asm" \
+            "${account_args[@]}" || exit $?
         pds_args+=(--test-io-asm "$account_asm")
     fi
     if [[ -f "$native" ]]; then

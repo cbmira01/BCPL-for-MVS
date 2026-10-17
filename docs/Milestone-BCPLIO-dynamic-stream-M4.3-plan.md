@@ -77,7 +77,30 @@ is retained above as the superseded, unsuccessful attempt.
 
 **M4.3.1 (ACCEPTED):** Focused candidate-only compiled-BCPL test 139 uses existing regression G151 to call a separate test-only NATIVEAD assembler shim. It queries private IOACCT. Under MVS, ASMAP assembles the compiled BCPL program, ASMFIO assembles isolated BCPLIO, ASMNAT assembles NATIVEAD, and IEWL links both temporary objects with DEVOBJ(BCPLM6), without installed DEVOBJ(BCPLIO). GO asserts two live opens, duplicate FIND no extra OPEN, explicit ENDREAD releases descriptor/region but not the tombstone, fresh reopened identity, and three closes. It never reads the reopened instream DD DATA, avoiding an unfounded rewind guarantee. Marker: `M43 PRE-DRAIN COUNTS OK`.
 
-**M4.3.2 (not implemented yet):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
+## M4.3.2a — post-IODRAIN tests 140/141 staged (not run)
+
+The private instrumentation supports an opt-in `--terminal-check`.
+At DRAINDN, after the last descriptor and handle have been
+processed, it requires DHEAD=HHEAD=0 and compares successful
+32/268/16-byte GETMAIN counts to returned corresponding FREEMAIN
+counts, as well as OPEN attempts, observed success, CLOSE attempts
+and CLOSE returns. A mismatch intentionally branches to an invalid
+opcode, generating S0C1 **in the private test-only module**.
+Normal GO completion therefore demonstrates execution of the
+assertions without mismatches; it is not independent proof of
+physical MVS storage reclamation.
+
+Cases 140 FINISH and 141 STOP(8) reuse the accepted regression
+128 and 129 input/program/output fixtures respectively, adding only
+the private terminal-check marker and isolated BCPLIO source.
+The latter retains expected GO RC=0008. Their existing fixture
+checks validate primary and named-output drain contents.
+Do not replace canonical source or install any generated object.
+
+Source-only checks and IFOX/IEWL/GO evidence are **pending**.
+Counted synthetic failure modes (M4.3.2b), the complete
+compatibility panel, and production OBJ promotion remain separate.
+**M4.3.2 (partially staged):** Add separately counted synthetic 32/268/16 and DQOPEN return-path failures and compare the count deltas to M4.1/M4.2 behavioral evidence. Add FINISH and STOP(8) termination checkpoints, including proof that IODRAIN leaves DHEAD and HHEAD empty and that G32=F32, G268=F268 and G16=F16, with open/close counts balanced on successful paths. Termination checks must execute *after* IODRAIN; pre-FINISH BCPL test 139 does not prove handle reclamation.
 
 **M4.3 CLOSE:** Record the MVS job IDs, Cambridge/IFOX/IEWL/GO outcomes, generated object/link isolation and count observations, identify remaining host-level limitations, then accept only after all supported paths are proven. The owner's full regression deferral, M4.4 compatibility, M5 per-DD attribution and no OBJ promotion remain unchanged.
 

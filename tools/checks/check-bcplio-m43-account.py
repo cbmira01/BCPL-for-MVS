@@ -14,6 +14,18 @@ original = (
     ROOT / "native-compiler/asm/bcplio.asm"
 ).read_text(encoding="ascii")
 generated = transform(original)
+terminal = transform(original, terminal_check=True)
+assert terminal.count("DRAINDN  L     1,=A(DHEAD)") == 1
+assert terminal.count("         BNE   M43TRAP") == 8
+assert terminal.count("M43DONE  LM    0,10,DRSAVE") == 1
+assert terminal.count("M43TRAP  DC    X\x270000\x27") == 1
+assert terminal.count("         L     1,=A(M43TAB)") == 1
+assert terminal.count("         END   BCPLIO") == 1
+assert "M43TRAP" not in generated
+assert terminal.count("         A     0,M43ONE") == 11
+assert all(row.isascii() and len(row) <= 71
+           for row in terminal.splitlines())
+print("M4.3 post-IODRAIN terminal assertions: source check PASS")
 
 for site, count in (
     ("GETMAIN RC,LV=32", 1),
