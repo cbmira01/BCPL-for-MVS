@@ -12,6 +12,11 @@ source hold. The complete source-based production reconstruction was accepted
 on 17 October 2026 against baseline commit 04c74af8b07b5cdc2aaec44d79f020a848cb7e65,
 with 145 PASS, 0 FAIL, and 1 expected SKIP (083).
 
+**Procedure revision:** the manifest-driven two-pass population sequence below
+replaces the procedure used for that acceptance run. The historical acceptance
+record remains valid, but this revised sequence has not yet been executed
+end-to-end on a freshly purged MVS environment.
+
 ## Scope and destructive boundary
 
 - `dspal purgebcpl` removes **the 24 datasets explicitly managed by
@@ -40,12 +45,12 @@ with 145 PASS, 0 FAIL, and 1 expected SKIP (083).
 | Stage | Work | Expected result |
 |---|---|---|
 | 0 | Check Git, TK5, source inputs and build contracts | Validated starting point |
-| 1 | Remove disposable `workarea/`, regenerate inputs | Fresh host-generated demotions |
-| 2 | Purge, initialize and repopulate managed PDSes | Empty binary libraries; tracked text staged |
+| 1 | Safely empty disposable `workarea/` | Clean host build directory; tracked placeholder retained |
+| 2 | Purge, initialize and run first manifest population | Tracked sources installed; missing generated sources reported with nonzero status |
 | 3 | Assemble/link ICINT19 from MR10 source | `MR10_LOAD(ICINT19)` |
 | 4 | Verify MR10 interpreted examples | Compiler and interpreter sanity |
-| 5 | Rebuild enlarged translator INTCODE | `NATIVE_INTCODE(TRNILRG)` |
-| 6 | Stage demoted Cambridge sources, build CAMBCOMP | `NATIVE_INTCODE(CAMBCOMP)` |
+| 5 | Generate all bootstrap artifacts and repeat manifest population | Demoted Cambridge sources and `NATIVE_INTCODE(TRNILRG)` installed |
+| 6 | Build CAMBCOMP from populated source and INTCODE | `NATIVE_INTCODE(CAMBCOMP)` |
 | 7 | Assemble all five latest canonical runtime modules | Five `NATIVE_OBJ` members |
 | 8 | Compile and assemble BLIB from BCPL source | `NATIVE_OBJ(BLIB)` |
 | 9 | Run production-only 00..145 regression panel | Target 145 PASS/0 FAIL/1 SKIP |
@@ -67,20 +72,19 @@ python3 tools/checks/check-native-production-build.py
 
 Do not continue after an unexpected Git modification, unavailable JES card reader, or incorrect target HLQ. Confirm the password is configured in `config/dspal.local.yaml`; do **not** paste credentials into a report. Starting an already-running container should not be treated as a demand to recreate its DASD.
 
-## 1. Clean only host-generated files; regenerate demoted sources
+## 1. Clean only disposable host-generated files
 
 ```sh
-# DESTRUCTIVE TO DISPOSABLE HOST BUILD OUTPUTS ONLY.
-# Check for anything worth preserving in workarea/ before removal.
-rm -rf -- workarea
-mkdir -p workarea
-tools/native/prepare-bootstrap
-cat workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json
+# Requires typing DELETE; preserves the Git-tracked workarea/.gitignore.
+tools/clean-workarea
 ```
 
-The host-side stage regenerates demoted `blib`, `bcpl`, `syn`, `lex`, `trna`, `trnb`, `cga`–`cge`, the diagnostic demotions, and seven large-name MR10 translator sections plus their header (24 generated output files total). This **reconstructs source inputs**, not an executable resident compiler. The enlarged `TRNILRG` INTCODE image is built **after** ICINT19 is available. Retain the generated SHA-256 manifest as host-side provenance.
+Do not delete the workarea placeholder: Git tracks `workarea/.gitignore`
+to create the directory on a fresh clone. The clean-room compiler artifacts
+will be generated after rebuilding the interpreter in stage 3. Retain any
+prior host-side evidence needed for review *before* authorizing cleanup.
 
-## 2. Purge, initialize, and populate managed PDSes
+## 2. Purge, initialize, and populate currently ready managed sources
 
 ```sh
 # INSPECT THE EXACT DELETE DECK BEFORE AUTHORIZING DELETION.
@@ -90,14 +94,29 @@ tools/datasets/dspal purgebcpl    # requires explicit YES
 tools/datasets/dspal initbcpl --show-jcl
 tools/datasets/dspal initbcpl
 tools/datasets/dspal stat
-tools/datasets/dspal populate all --dry-run
-tools/datasets/dspal populate all
+tools/datasets/dspal populate all --dry-run  # expected RC=2: generated files missing
+tools/datasets/dspal populate all            # expected RC=2: tracked members installed
 tools/datasets/dspal ls
 ```
 
-The purge includes `MR10_LOAD`, `MR10_OBJ`, `NATIVE_INTCODE`, `NATIVE_OBJ` and `NATIVE_DEVOBJ`; they are **empty after initialization by design**. Do not copy modules from old pre-M3 libraries. Text population intentionally excludes derived binary members and generated Cambridge demotions, which are staged later.
+**The first population is intentionally incomplete and returns RC=2.** Unlike
+ordinary preflight failures, *missing generated sources* are reported after
+the available tracked members have been populated. Confirm the summary says
+the expected generated files are missing, and verify that the tracked MR10
+and native source/JCL members exist. Do not suppress or ignore other error
+messages: invalid mappings, missing tracked sources, malformed FB80 records,
+or stale generated-file hashes stop population before writes. A failed JES
+installation is also a hard failure and must be investigated.
 
-The manifest lists **24 managed datasets**. Check the current number of mapped source members with `dspal info`; historical counts are not a reliable validation after source reorganization.
+The initial binary libraries (including `MR10_LOAD`, `MR10_OBJ`,
+`NATIVE_OBJ`, `NATIVE_DEVOBJ`, and `NATIVE_INTCODE`) remain empty.
+No old binary images may be copied into them. The manifest lists **24
+managed datasets**; both tracked and generated member mappings reside in
+`config/dspal.yaml`. The first pass installs the tracked mappings only.
+
+**Do not chain the first population to subsequent commands with `&&` or
+use a blanket `set -e` wrapper.** Its nonzero status is deliberate and
+must be inspected, not disguised as a successful complete population.
 
 ## 3. Rebuild the MR10 version-19 interpreter
 
@@ -146,31 +165,46 @@ tools/mr10/run-demo-suite
 
 These legacy host suite runners currently use `tools/mr10/current-icint` (assembler source) and may assemble/link their own interpreter per test; they are **additional tests, not proof that each case ran through the newly installed `MR10_LOAD(ICINT19)`**. The installed-interpreter smoke test above and the resident MVS suites supply that proof. Do not misstate the distinction.
 
-## 5. Recreate enlarged TRNI INTCODE
+## 5. Regenerate all bootstrap inputs and populate them through dspal
 
 ```sh
 tools/native/prepare-bootstrap --with-trnilrg
-tools/datasets/dspal put NATIVE_INTCODE TRNILRG \
-  workarea/bootstrap-cambridge/trni-large-names.int
+cat workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json
+tools/datasets/dspal populate all --dry-run
+tools/datasets/dspal populate all
+tools/datasets/dspal ls NATIVE_SOURCE
 tools/datasets/dspal ls NATIVE_INTCODE
 ```
 
-This reruns the demotions and compiles seven generated MR10 translator pieces through the **installed** interpreter, then assembles their INTCODE into `trni-large-names.int`. Require successful interpreted compilation, the host manifest's `trnilrg_rebuilt: true`, and `TRNILRG` in the target PDS. The installed member is rebuildable; it is not migrated from an old library.
+The single `prepare-bootstrap --with-trnilrg` invocation generates all
+11 demoted Cambridge sources, five diagnostic demotions, the enlarged
+MR10 translator sections, and the assembled `TRNILRG` INTCODE image
+using freshly installed `MR10_LOAD(ICINT19)`.
 
-## 6. Stage demoted Cambridge sources and rebuild CAMBCOMP
+The second `dspal populate all` must complete **RC=0**, restoring the
+tracked member mappings and installing the 11 demoted Cambridge members
+into `NATIVE_SOURCE` plus `NATIVE_INTCODE(TRNILRG)`. Generated source
+integrity is checked against the preparation SHA-256 inventory, including
+its tracked inputs. A missing or stale generated artifact is an error.
+There is no separate `stage-bootstrap` operation or manual `dspal put`
+for `TRNILRG`.
+
+## 6. Build CAMBCOMP from the manifest-populated sources
 
 ```sh
-tools/native/stage-bootstrap --dry-run
-tools/native/stage-bootstrap
-tools/datasets/dspal ls NATIVE_SOURCE
 python3 tools/checks/check-native-bootstrap-jcl.py
-tools/datasets/dspal put NATIVE_JCL CAMBBLD \
-  native-compiler/jcl/cambbld.jcl
 tools/datasets/dspal submit NATIVE_JCL CAMBBLD
 tools/datasets/dspal ls NATIVE_INTCODE
 ```
 
-`stage-bootstrap` puts 14 members: `BLIB`, 10 demoted Cambridge compiler units, `BOOTHOST`, `OPTIONS`, and `CAMBPARM`. Headers (`LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR`) were populated from Git in gate 2. The authoritative resident build is `native-compiler/jcl/cambbld.jcl`; it uses `MR10_LOAD(ICINT19)`, `MR10_SOURCE`, `NATIVE_INTCODE(TRNILRG)`, and `NATIVE_SOURCE`. It contains 22 interpreter executions plus a PACKCOMP step. Require `CODE=0` for **all 22** interpreted phases (not merely each step's `RC=0000`) and verify `NATIVE_INTCODE(CAMBCOMP)` and the constituent units. No `CAMB_*` library is used.
+`CAMBBLD` and the three tracked bootstrap inputs `BOOTHOST`,
+`OPTIONS` and `CAMBPARM` are already populated through the manifest.
+The resident build `native-compiler/jcl/cambbld.jcl` uses
+`MR10_LOAD(ICINT19)`, `MR10_SOURCE`, `NATIVE_INTCODE(TRNILRG)`
+and `NATIVE_SOURCE`. It contains 22 interpreter executions plus a
+PACKCOMP step. Require `CODE=0` for **all 22** interpreted phases
+(not merely each step's `RC=0000`) and verify `NATIVE_INTCODE(CAMBCOMP)`
+and its constituent units. No `CAMB_*` library is used.
 
 Smoke-test compilation using the resident image:
 
