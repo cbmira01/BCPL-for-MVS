@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; focused 133/134 and M4.1 cases 135/136 PASS; 137 pending; full panel deferred; M4/M5 open  
+Status: M0/M1/M2 accepted; M3 logical 133 PASS; M4.0/4.1 focused 134–137 PASS; full panel deferred; M4.2/M4.3 and M5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -289,6 +289,35 @@ or actual MVS low-storage failure.
 The owner's full-panel deferral remains in force. No installed
 DEVOBJ or production OBJ objects were promoted or modified
 by the isolated test harness. M4.2, M4.3 and M5 remain open.
+
+
+## M4.1 closure — all three targeted allocation failures PASS
+
+The operator pulled through `ccb0f1b` and ran focused
+regression **137**, observing `PASS 137` and
+**PASS 1 / FAIL 0 / SKIP 0 / TOTAL 1**.
+This completes the individually verified, test-only M4.1
+synthetic GETMAIN error-path matrix:
+
+- 135: 32-byte descriptor allocation failure — PASS.
+- 136: 268-byte QSAM region allocation failure — PASS.
+- 137: 16-byte stable-handle allocation failure after
+  successful OPEN — PASS.
+
+Each checked zero-valued FIND failure, preservation of an
+existing DD01 selected input/cursor, and successful subsequent
+DD02 allocation and stream operation. These do not establish
+real low-storage exhaustion or independently counted
+CLOSE/FREEMAIN calls. **M4.1 CLOSED** for synthetic
+fault-path recovery only. The complete regression panel
+remains **explicitly deferred by the owner**. The
+latest full accepted panel is still 00..132, 132 PASS,
+0 FAIL, source-only SKIP 083. No installed PDS objects
+or canonical BCPLIO assembler source were changed.
+
+Next milestones: M4.2 QSAM OPEN failure diagnostics,
+M4.3 independent resource accounting, and M5 physical DD
+output attribution and final integration.
 
 ## Handoff / next-conversation prompt
 
