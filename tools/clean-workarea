@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Clean disposable workarea contents while preserving the Git-tracked placeholder.
+# No noninteractive or force mode: deletions always require typed confirmation.
+set -euo pipefail
+
+fail() {
+    printf 'ERROR: %s\n' "$*" >&2
+    exit 1
+}
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+repo_root="$(cd -- "$script_dir/.." && pwd -P)"
+git_root="$(git -C "$repo_root" rev-parse --show-toplevel 2>/dev/null)" \
+    || fail 'Not inside a Git repository.'
+[[ "$git_root" == "$repo_root" ]] \
+    || fail 'Expected this script in the repository tools/ directory.'
+
+workarea="$repo_root/workarea"
+[[ -d "$workarea" && ! -L "$workarea" ]] \
+    || fail 'workarea/ is missing or is a symbolic link; refusing cleanup.'
+[[ -f "$workarea/.gitignore" && ! -L "$workarea/.gitignore" ]] \
+    || fail 'Tracked workarea/.gitignore is missing or unsafe; try: git restore -- workarea/.gitignore'
+git -C "$repo_root" ls-files --error-unmatch -- workarea/.gitignore >/dev/null 2>&1 \
+    || fail 'workarea/.gitignore is not tracked by Git.'
+
+# Never accidentally remove any other tracked material beneath workarea/.
+while IFS= read -r -d '' tracked; do
+    [[ "$tracked" == 'workarea/.gitignore' ]] \
+        || fail "Additional tracked file in workarea/: $tracked"
+done < <(git -C "$repo_root" ls-files -z -- workarea/)
+
+# The path identity must not change while the user reviews the delete list.
+workarea_id="$(stat -c '%d:%i' -- "$workarea")"
+
+# find -print0 handles whitespace, newlines, and leading dashes in filenames.
+mapfile -d '' -t entries < <(
+    find "$workarea" -mindepth 1 -maxdepth 1 ! -name .gitignore -print0
+)
+if (("${#entries[@]}" == 0)); then
+    printf 'workarea/ is already clean; tracked .gitignore preserved.\n'
+    exit 0
+fi
+
+printf 'About to PERMANENTLY DELETE %d top-level item(s) beneath:\n  %s\n' \
+    "${#entries[@]}" "$workarea"
+for entry in "${entries[@]}"; do
+    printf '  %q\n' "${entry##*/}"
+done
+printf '\nThe tracked workarea/.gitignore will be preserved.\n'
+[[ -t 0 ]] || fail 'Interactive terminal required; no files deleted.'
+printf 'Type DELETE to confirm, or anything else to cancel: '
+IFS= read -r reply || fail 'No confirmation received; no files deleted.'
+if [[ "$reply" != DELETE ]]; then
+    printf 'Cancelled; no files deleted.\n'
+    exit 0
+fi
+
+[[ -d "$workarea" && ! -L "$workarea" ]] \
+    || fail 'workarea/ changed during confirmation; refusing cleanup.'
+[[ "$(stat -c '%d:%i' -- "$workarea")" == "$workarea_id" ]] \
+    || fail 'workarea/ was replaced during confirmation; refusing cleanup.'
+[[ -f "$workarea/.gitignore" && ! -L "$workarea/.gitignore" ]] \
+    || fail 'workarea/.gitignore changed during confirmation; refusing cleanup.'
+
+rm -rf -- "${entries[@]}"
+printf 'Cleaned workarea/; preserved workarea/.gitignore.\n'
