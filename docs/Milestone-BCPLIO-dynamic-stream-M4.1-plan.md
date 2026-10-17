@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.1 deterministic allocation failures
 
-**Status: source-only checker PASS; MVS regressions 135/136 individually ACCEPTED; 137 PENDING; full regression panel deferred by owner.**
+**Status: M4.1 CLOSED — source-only checker PASS and focused MVS 135/136/137 individually PASS; full regression panel intentionally deferred.**
 Date: 2026-10-17
 Parent: [Milestone - BCPLIO dynamic stream](Milestone-BCPLIO-dynamic-stream.md)
 Predecessor: M4.0 regression 134 **targeted PASS**, M3 regression 133 **targeted PASS**.
@@ -254,3 +254,56 @@ BCPL_RUNTIME_CANDIDATE=1 \
 BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
 tools/native/run-regression 137 --show-output
 ```
+
+## M4.1 completion gate — regression 137 ACCEPTED
+
+The operator pulled `main` from `831ee82` to `ccb0f1b`
+and ran the **single** candidate-only compiled BCPL regression
+`137-dynamic-dd-fault-handle16`, with the four standard DEVOBJ/
+BCPLM6 candidate variables. The console reported:
+
+```text
+NATIVE REGRESSION  137..137  (1 tests)
+RUN   137  137-dynamic-dd-fault-handle16
+PASS  137  137-dynamic-dd-fault-handle16
+
+NATIVE REGRESSION COMPLETE
+PASS  1
+FAIL  0
+SKIP  0
+TOTAL 1
+```
+
+**ACCEPTED:** after the first genuine HNEW handle allocation
+succeeds, the isolated test-only BCPLIO forces a synthetic
+failure of the second `GETMAIN RC,LV=16` following
+successful DD02 OPEN. The failed FIND returns zero, leaves
+DD01 selected with its cursor unchanged, and permits a
+subsequent successful DD02 FIND and use/close of both streams.
+Canonical source control flow takes `DIFCLOSE` →
+`DQCLOSE` → `DIFCLEAN` → `DREL`. This is consistent with
+proper recovery, but the test does **not** independently
+observe/count the QSAM CLOSE or FREEMAIN calls.
+
+### M4.1 close decision
+
+**M4.1 CLOSED for deterministic synthetic GETMAIN failure-path
+behavior**, with targeted MVS PASS **135** (32-byte descriptor),
+**136** (268-byte QSAM/DCB region), and **137** (16-byte
+stable handle). All were separate single-case runs with
+**1 PASS, 0 FAIL, 0 SKIP** each, not a contiguous panel.
+The host-side generator-checker also passed for all three modes.
+
+Not proved by M4.1: genuine low-storage exhaustion, independent
+OPEN/CLOSE or GETMAIN/FREEMAIN counts, or actual QSAM OPEN
+failure recovery. These remain M4.2/M4.3 tasks. The owner
+explicitly deferred a full regression run; the last accepted
+complete panel remains **00..132, 132 PASS/0 FAIL/1 SKIP 083**.
+The test source is rebuildable and disposable workarea
+products may be deleted. **No DEVOBJ or production OBJ PDS
+modification or object promotion occurred.**
+
+The next march is **M4.2**: characterize what MVS 3.8 does
+for allocated DDs with incompatible QSAM OPEN requirements,
+using a controlled development-only probe and exact JES
+evidence before promising graceful BCPL failure semantics.
