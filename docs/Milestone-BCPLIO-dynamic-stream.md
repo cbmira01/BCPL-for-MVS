@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed (135–137 PASS); M4.2.0 synthetic 138 PASS, real OPEN pending; M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; M4.2.0 synthetic 138 PASS; M4.2.1 real OPEN diagnostic staged, not run; M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -366,6 +366,31 @@ M4.2.1 and M4.3 still require separate diagnostic evidence.
 The owner's full-panel deferral remains in force, with
 the most recent full acceptance 00..132. No installed
 development or production runtime PDS member was changed.
+
+
+## Real QSAM OPEN diagnostic — separate M4.2.1 probe STAGED
+
+After focused synthetic DQOPEN branch test 138 PASS,
+staged a **separate non-regression real OPEN diagnostic**
+under `native-compiler/probes/m42-real-open/`.
+A standalone `RG890R` GO job can be regenerated
+from the Cambridge BCPL source. It links the **normal
+installed DEVOBJ(BCPLM6 + BCPLIO)** without a synthetic
+fault and supplies `DD02 DD SYSOUT=*` while compiled
+BCPL requests `FINDINPUT("DD02")`.
+
+The staging includes a non-submitting deck generator and
+source-only JCL guard. This experiment deliberately
+allows an MVS S013 or other system abend as a possible
+diagnostic outcome; it does **not** designate an abend
+as a regression PASS. It can also return zero before
+SVC19 at RDJFCB, so diagnostic causation must not be
+assumed. **No source checker execution, generated-deck
+build, real GO job, or SVC19 failure result has been
+reported yet.** The operator must review JCL before
+submitting and preserve exact JES/IEC/IEF diagnostics.
+See [M4.2 plan](Milestone-BCPLIO-dynamic-stream-M4.2-plan.md).
+The full native regression panel remains owner-deferred.
 
 ## Handoff / next-conversation prompt
 
