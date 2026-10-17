@@ -1,6 +1,6 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M4.1 closed; 138 PASS; JOB 7874 returned HANDLE; RG891R PDS GO JCL prepared but unsubmitted; M4.2/M4.3/M5 open; full panel deferred  
+Status: M0/M1/M2 accepted; M4.1 closed; synthetic 138 PASS; JOB 7874 returned HANDLE; M4.2.2 JOB 7875 GO RC0000, JES report pending; M4.2/M4.3/M5 open; full panel deferred  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
@@ -488,6 +488,22 @@ DSN=SYS1.MACLIB,DISP=SHR` (PDS without member).
 **RG891R has not been submitted; no real OPEN failure
 was measured and no PDS member was changed.**
 M4.2 remains open and the full panel deferred.
+
+
+## M4.2.2 exploratory JOB 7875 — executed without abend
+
+The owner submitted the previously prepared RG891R
+read-only `SYS1.MACLIB` without-member QSAM input
+OPEN experiment as **JOB 7875**, on 17 October 2026.
+The supplied summary reports ASMAP/LKED/GO all
+`RC0000`, overall success, and no system abend.
+The operator saved the complete JES output as
+`workarea/m42-real-open/pds-open-report.txt`,
+but it is not yet attached. Until the BCPL diagnostic
+records and IEC/IEF messages are reviewed, a zero
+`FINDINPUT` versus returned handle, and RDJFCB versus
+SVC19 attribution remain unresolved. M4.2 does not
+close; full native regression remains owner-deferred.
 
 ## Handoff / next-conversation prompt
 
