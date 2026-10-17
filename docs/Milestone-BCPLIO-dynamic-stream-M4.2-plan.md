@@ -1,6 +1,6 @@
 # BCPLIO dynamic streams — M4.2 QSAM OPEN failure characterization
 
-**Status: 138 synthetic DQOPEN recovery ACCEPTED; M4.2.1 allocated-DD true-OPEN exploratory probe STAGED (not run); full panel owner-deferred.**
+**Status: 138 synthetic DQOPEN recovery ACCEPTED; M4.2.1 Cambridge compilation and exploratory JCL preparation SUCCESSFUL (RG890C JOB 7873); RG890R GO NOT SUBMITTED; full panel deferred.**
 Date: 2026-10-17
 Predecessor: **M4.1 CLOSED**, individual 135/136/137 targeted PASS.
 Full native regression panel explicitly deferred by owner (last completed
@@ -253,3 +253,36 @@ M4.2 cannot close until **M4.2.1** actually attempts an
 incompatible, allocated-DD OPEN under TK5 and records
 JES/IEC/IEF/ABEND outcomes. Full 00..138 compatibility
 continues to be deferred per owner instruction.
+
+## M4.2.1 prepared deck checkpoint — Cambridge JOB 7873
+
+The operator fast-forwarded the repository from `5c890d3`
+through `ab44dad`, compiled `native-compiler/probes/m42-real-open/source.bcpl`
+with `tools/native/compile-mvs`, and reported:
+
+```text
+JOB 7873
+saved Cambridge CODE: workarea/m42-real-open/generated.s370.asm
+Prepared DEVOBJ runtime PDS regression: workarea/m42-real-open/real-open.jcl.base
+Prepared non-submitting real-OPEN exploratory deck:
+workarea/m42-real-open/real-open.jcl
+DD01=DATA; DD02=SYSOUT; FINDINPUT(DD02) may ABEND.
+No JES submission and no MVS PDS modifications occurred.
+```
+
+**ACCEPTED PREPARATION ONLY.** Cambridge JOB 7873 produced the
+recovered assembler; it was not the experimental GO job.
+The temporary base JCL was prepared and transformed into
+the local `real-open.jcl` deck. Its **RG890R**
+assemble/link/GO job has not been submitted, and there is
+no real OPEN/IEC/IEF/ABEND evidence yet. The user-provided
+log confirms generator completion but does not expose the
+contents of the locally generated deck; do not assert its
+line-by-line contents have been reviewed.
+
+The next operation is an **explicitly exploratory,
+potentially abending GO submission** against the unchanged
+DEVOBJ(BCPLM6 + BCPLIO) candidate. Preserve the actual
+JES job number and complete report. Full native regression
+remains owner-deferred. Source and JCL generation are
+repeatable from version-controlled inputs.
