@@ -153,3 +153,40 @@ The compiled BCPL test opened **16 independent DD01..DD16 inputs simultaneously*
 **Decision:** concurrency stress testing stops at **16**, as agreed with the owner. Dynamic linked descriptors have no intentionally fixed 16-slot ceiling, but no guarantee of arbitrary concurrency in resource-limited MVS follows from this test. Last independently accepted full panel remains **00..129: 129 PASS, 0 FAIL, expected SKIP 083**; 130 is an additional passing targeted case. A full 00..130 panel remains pending.
 
 Next work: close/reopen the **same DD** after `ENDWRITE` first (QSAM SYSOUT), require a **fresh nonrecycled BCPL word handle**, old handle still rejected after reallocation and duplicate active FIND of that new handle returns the new identity. Do not presume input DD DATA can rewind on QSAM reopening; investigate separately.
+
+## Regression 131 — close/reopen of same dynamic OUTPUT DD STAGED
+
+Created permanent DEVOBJ-only
+`native-compiler/regression/131-dynamic-dd-output-reopen-identity/`,
+containing compiled BCPL source, primary/REPORT expected logical
+records, candidate marker and README. It opens `REPORT`, writes
+`REPORT FIRST`, invokes ENDWRITE, and proves the handle is stale.
+It then performs a **new `FINDOUTPUT("report")`** against the
+same DD, demands a *new nonzero handle different from the retired
+one*, checks duplicate active `FINDOUTPUT("REPORT")` returns that
+new handle, and confirms stale-handle SELECTOUTPUT cannot displace
+the live selected output. It writes `REPORT SECOND`, closes and
+verifies both identities remain invalid. Successful GO RC0000
+outputs primary `BCPL REOPEN OK`. Any assertion STOP(8) fails.
+
+**STAGED ONLY, NOT YET MVS EXECUTED OR ACCEPTED.** Test includes
+no BCPLIO or runner changes. The first MVS run must distinguish
+QSAM SYSOUT reopening restrictions, physical SYSOUT segmentation,
+record checker limitations and actual runtime handle errors.
+It is not a proof that instream `DD DATA` can be reopened from
+its beginning. This tests stable nonrecycled OUTPUT handle identity
+as a focused first slice of the broader M2 close/reopen contract.
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 131 --show-output
+```
+
+Upon acceptance, run a full `00..131` DEVOBJ regression sweep
+and proceed to M4 ordinary failure/resource accounting and M5
+lossless DD attribution work without escalating the stream count.
