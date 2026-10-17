@@ -1,9 +1,55 @@
 # Milestone - BCPLIO dynamic stream
 
-Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0/M5.1 CLOSED under QSAM responsibility boundary (JOBS 8184/8185); M5.2 IN PROGRESS; M5.3–M5.5 open  
+Status: M0/M1/M2 accepted; M3 logical gate accepted; M4.0/M4.1/M4.2/M4.3/M4.4 CLOSED (M4.2/M4.3 scoped, M4.4 DEVOBJ compatibility, 2026-10-17); M5.0/M5.1/M5.2 CLOSED under QSAM responsibility boundary (JOBS 8184/8185/8186); M5.3 coverage review IN PROGRESS; M5.4–M5.5 open  
 Date: 2026-10-15  
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
+
+## M5.2 — CLOSED, intentionally rejected padding byte (JOB 8186, 2026-10-17)
+
+Operator pulled through `0c2dddc`, ran the eight
+M5.2 offline negative-fixture tests (**8/8 PASS**),
+prepared isolated `M52PAD` and obtained
+**offline integrity review PASS**: M5.1.2 positive
+JCL and verifier exactly revalidated, with only a
+JOB-name change and one expected-padding-byte
+mutation in the IFOX checker. The unchanged compiled
+BCPL application wrote REPORT/REPORT2 records to
+separate QSAM FB132 temporary datasets as before.
+
+**JOB 8186 M52PAD** returned:
+
+| Step | RC | Expected? |
+|---|---:|---|
+| ASMAP (IFOX00) | 0000 | Yes |
+| LKED (IEWL) | 0000 | Yes |
+| GO (compiled BCPL) | 0000 | Yes |
+| VASM (IFOX00) | 0000 | Yes |
+| VLINK (IEWL) | 0000 | Yes |
+| VCHK (QSAM GET/CLC) | **0012** | **Yes: rejected intentionally false 132nd byte** |
+
+JES summary displayed **JOB RESULT: FAILURE**,
+highest RC0012. That is the *intended* job result
+for this negative control, not a production BCPL
+failure. No assembler statements were flagged;
+highest assembler severity 0; 335 cards,
+888 reported SYSOUT records. No abend was reported.
+
+**M5.2 CLOSED**, scoped to: a real MVS verifier
+rejecting an incorrect EBCDIC trailing pad byte;
+offline 132-byte record permutation/mutation
+checks; and previously passing ten class-separated
+printer attribution tests including swap/missing/
+cross-contamination controls. The offline
+mutation matrix is a **model**, not a claim that
+every malformed data case was physically injected
+through QSAM. Existing six-steps-RC0 positive
+control is JOB 8185. No runtime, ABI, compiler,
+PDS or production OBJ change.
+
+M5.3 starts as a minimal **coverage review** of the
+already accepted native regression set; only missing
+evidence may justify a new program or JES job.
 
 ## M5.2 — negative record-verifier control staged (2026-10-17)
 

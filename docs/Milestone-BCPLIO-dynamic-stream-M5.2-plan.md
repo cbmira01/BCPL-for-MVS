@@ -1,6 +1,6 @@
 # Milestone — BCPLIO dynamic streams: M5.2 negative record verifier
 
-Status: **M5.2 STAGED FOR OFFLINE AND ONE CONTROLLED MVS NEGATIVE TEST (2026-10-17); no M5.2 MVS job has yet run.**
+Status: **M5.2 CLOSED (2026-10-17): offline 8/8 PASS; M52PAD JOB 8186 returned intended VCHK RC0012, all other steps RC0000.**
 Prerequisites: [M5.1 closure](Milestone-BCPLIO-dynamic-stream-M5.1-plan.md), accepted JOB 8184 class-separated route, and JOB 8185 positive FB132 dataset readback.
 
 ## Purpose and scope
@@ -136,3 +136,50 @@ or physical DD assignments.
 
 Rerun the same offline commands after pulling the fix.
 No MVS job was submitted or an incorrect result accepted.
+
+## M5.2 acceptance evidence — JOB 8186, 17 October 2026
+
+**Accepted.** Operator ran updated M5.2 unit
+suite **8/8 PASS**, preparation **PASS**, and
+read-only artifact review **PASS** (byte-exact
+correspondence to original JOB 8185 positive
+M5.1.2 JCL, apart from JOB name and the single
+`MVI EXP11+131,C'X'` verifier injection).
+Submitted job `M52PAD` as **JES JOB 8186**.
+The MVS step codes were:
+
+```text
+JOB 8186 M52PAD
+ASMAP IFOX00     RC=0000
+LKED  IEWL       RC=0000
+GO    PGM=*.DD   RC=0000
+VASM  IFOX00     RC=0000
+VLINK IEWL       RC=0000
+VCHK  PGM=*.DD   RC=0012
+JOB RESULT FAILURE; HIGHEST RC 0012
+Assembler: statements flagged 0; severity 0
+Cards 335, SYSOUT 888 records
+```
+
+**This FAILURE is expected and proves the negative
+control:** the unchanged compiled BCPL application
+succeeded (GO RC0000); the independent native
+QSAM FB132 readback checker rejected the
+deliberately corrupted **expected** byte at
+offset 131 (132nd padding byte) in its first
+REPORT comparison, returning intentional RC0012.
+The reporter showed no abend. The accepted
+negative gate does not imply any fault in BCPLIO.
+
+The ordinary positive verifier already passed
+every step RC0000 in **JOB 8185**. Offline
+printer-attribution tests include swaps,
+missing records and cross contamination;
+offline record-sequence mutation checks model
+additional error classes without asserting
+that each ran as a distinct MVS job.
+
+**M5.2 CLOSED.** Proceed to M5.3 existing
+regression evidence inventory. No SYSOUT-spool
+internal-byte reconstruction, new runtime service,
+or OBJ promotion is required.
