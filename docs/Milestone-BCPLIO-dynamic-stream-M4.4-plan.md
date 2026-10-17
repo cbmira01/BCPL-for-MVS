@@ -221,6 +221,42 @@ discrepancy. The revised audit should be rerun against
 the existing saved logs only; no MVS re-execution is
 required for this investigation.
 
+## M4.4.2 candidate-specific GO-RC contract (2026-10-17)
+
+For this native stream milestone the tested candidate is
+**DEVOBJ(BCPLM6)**, not the separately developed BCPLM7/D7.
+The test 052 historical account explicitly distinguishes
+BCPLM6/D6's normal RC0000 controlled stack-overflow
+completion from BCPLM7/D7's GO RC0012 cleanup path.
+Test 093's original README expects RC0000, while its
+generic `expected-go-rc.txt` was later set to 0012.
+
+Accordingly, 052 and 093 now retain their original
+`expected-go-rc.txt` = 0012 **for the D7 profile**
+and each adds a separate
+`expected-go-rc-bcplm6.txt` = 0000.
+The candidate harness consults that override only when
+`BCPL_RUNTIME_CANDIDATE=1`,
+`BCPL_RUNTIME_LIBRARY=DEVOBJ`, and
+`BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6`.
+The ordinary runner now validates the expected GO
+code even on the normal success branch, eliminating
+the false-PASS loophole that concealed both discrepancies.
+The M4.4 saved-log audit explicitly audits the BCPLM6
+profile and requires both profiles' fixture values
+unchanged, plus a correctly marked compile-only 048.
+
+**Scope:** This is a regression harness/fixture correction,
+not a change to BCPLMAIN, BCPLIO, G slots, installed
+object libraries, or observed MVS behavior.
+The earlier reported complete runner result remains
+145 PASS / 0 FAIL / 1 SKIP. Post-hoc acceptance still
+requires **an actual rerun of the revised log audit
+against the existing 145 test logs**, not another
+MVS regression sweep. If that audit is clean, the
+GO RC evidence is reconciled for BCPLM6 alone;
+no BCPLM7/D7 acceptance is claimed.
+
 ## M4.4.2 — disposition and M5 boundary
 
 ### Audit existing per-case logs (without rerunning MVS)

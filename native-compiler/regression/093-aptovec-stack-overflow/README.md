@@ -16,3 +16,12 @@ Expected BCPL output: `STACK OVERFLOW` (and no `999`).
 
 This is a limit test of the current 16,384-word stack implementation,
 not a claim that 16,380 is a general historical APTOVEC limit.
+
+## M4.4 BCPLM6/D6 profile reconciliation (2026-10-17)
+
+The current description of GO RC0000 applies to the BCPLM6/D6
+profile. A later D7/BCPLM7 cleanup contract expects GO RC0012,
+recorded in the existing generic `expected-go-rc.txt`.
+The separate `expected-go-rc-bcplm6.txt` now specifies RC0000
+for the DEVOBJ(BCPLM6) compatibility panel. Both profiles retain
+the mandatory `STACK OVERFLOW` output without calling EXERCISE.

@@ -18,7 +18,10 @@ END = 145
 
 
 def expected_go(number: int, case_dir: Path) -> str:
-    fixture = case_dir / "expected-go-rc.txt"
+    # This M4.4 audit is pinned to the tested DEVOBJ BCPLM6 candidate.
+    # Preserve the existing 0012 D7/BCPLM7 default fixture.
+    profile = case_dir / "expected-go-rc-bcplm6.txt"
+    fixture = profile if profile.is_file() else case_dir / "expected-go-rc.txt"
     if fixture.exists():
         value = fixture.read_text(encoding="ascii").strip()
         if not re.fullmatch(r"\d{4}", value):
@@ -35,6 +38,16 @@ def audit() -> int:
     if highest != END or set(cases) != set(range(END + 1)):
         raise ValueError("corpus drift: expected exactly 00..145")
 
+    # Fail closed if either historical stack-overflow profile drifts.
+    for number in (52, 93):
+        case = REG / cases[number]
+        if ((case / "expected-go-rc.txt").read_text(
+                encoding="ascii").strip() != "0012"
+            or (case / "expected-go-rc-bcplm6.txt").read_text(
+                encoding="ascii").strip() != "0000"):
+            raise ValueError(
+                f"{number:03d}: D7 default / D6 BCPLM6 RC fixtures drifted"
+            )
     rows = ["test\tcase\tcompiler_jobs\tgo_job\tasmap\tasmbio\tasmnat\tlked\tgo\texpected_go\tresult"]
     problems: list[str] = []
     go_counts: Counter[str] = Counter()
@@ -122,6 +135,7 @@ def audit() -> int:
     print(f"M4.4 existing regression logs: {found}/145")
     print("Expected runner skip: 083 (source-only)")
     print("Compile-only: 048 (no GO or LKED)")
+    print("GO-RC profile: DEVOBJ BCPLM6/D6; 052 and 093 expected RC0000")
     print("GO RC distribution: " +
           ", ".join(f"{code}={count}" for code, count in sorted(go_counts.items())))
     if first_time is not None:

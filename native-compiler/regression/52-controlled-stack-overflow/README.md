@@ -84,3 +84,12 @@ unreconstructed.
 ## M2.1 D7 result (14 October 2026)
 
 The first complete D7 panel (00–123) exercised this checked-recursion overflow in payload **JOB 3101 RG052R**: ASMAP RC=0000, LKED RC=0000, **GO RC=0012**, and the expected `STACK OVERFLOW` record matched. The harness reported FAIL because this case still lacked the nonzero-RC fixture, not because the runtime malfunctioned. `expected-go-rc.txt` now specifies `0012`, consistently with regression 093. Re-run on DEVOBJ(BCPLM7) to obtain an automated PASS.
+
+## M4.4 BCPLM6/D6 profile reconciliation (2026-10-17)
+
+The earlier BCPLM6/D6 stack-overflow exit reports `STACK OVERFLOW`
+and ends GO RC0000. The D7/BCPLM7 path is documented above
+with RC0012. Keep the generic `expected-go-rc.txt` at 0012
+for D7, and use `expected-go-rc-bcplm6.txt` = 0000 only for
+an explicitly selected DEVOBJ(BCPLM6) compatibility run.
+The harness now checks GO RC even after normal job completion.

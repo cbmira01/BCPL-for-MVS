@@ -737,6 +737,30 @@ show_result() {
     echo "RESULT:      $overall"
 }
 
+# Resolve GO completion contract once for BOTH success and failure.
+# BCPLM6's older controlled-stack-overflow exit is RC0000; the
+# default nonzero fixture retains BCPLM7/D7 RC0012.
+expected_go_rc=""
+rc_fixture="$case_dir/expected-go-rc.txt"
+if [[ ${BCPL_RUNTIME_CANDIDATE:-0} == 1 &&
+      ${BCPL_RUNTIME_LIBRARY:-} == DEVOBJ &&
+      ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} == BCPLM6 &&
+      -f "$case_dir/expected-go-rc-bcplm6.txt" ]]; then
+    rc_fixture="$case_dir/expected-go-rc-bcplm6.txt"
+fi
+if [[ -f "$rc_fixture" ]]; then
+    expected_go_rc=$(tr -d '\r\n' < "$rc_fixture")
+    if ! [[ "$expected_go_rc" =~ ^[0-9]{4}$ ]]; then
+        echo "run-test: expected-go-rc must contain 4 digits" >&2
+        exit 66
+    fi
+fi
+if (( test_num == 87 )); then
+    expected_go_rc="0100"
+elif (( test_num == 89 )); then
+    expected_go_rc="0008"
+fi
+
 deadline=$((SECONDS + 30))
 while (( SECONDS <= deadline )); do
     summary=$("$root/tools/mvs/job-summary" "$job" 2>&1)
@@ -744,6 +768,15 @@ while (( SECONDS <= deadline )); do
 
     if (( rc == 0 )); then
         echo "$summary"
+
+        # An RC0000 job is not sufficient when the case explicitly
+        # expects a different GO RC. Enforce profiles in BOTH branches.
+        wanted_go_rc=${expected_go_rc:-0000}
+        if ! grep -Eq "^[[:space:]]*GO[[:space:]]+.*RC=$wanted_go_rc" <<<"$summary"; then
+            echo "run-test: GO RC conflicts with expected $wanted_go_rc" >&2
+            show_result "FAIL" "GO RC mismatch" "FAIL"
+            exit 1
+        fi
 
         if expected_output >/dev/null 2>&1; then
             if ! show_bcpl_output; then
@@ -794,22 +827,8 @@ while (( SECONDS <= deadline )); do
             cat "$work/job-report.txt"
         fi
 
-        # Controlled nonzero completion for the two STOP regressions.
+        # Controlled nonzero completion: same fixture as rc==0.
         # Keep all other failing GO steps in the ordinary failure path.
-        expected_go_rc=""
-        rc_fixture="$case_dir/expected-go-rc.txt"
-        if [[ -f "$rc_fixture" ]]; then
-            expected_go_rc=$(tr -d '\r\n' < "$rc_fixture")
-            if ! [[ "$expected_go_rc" =~ ^[0-9]{4}$ ]]; then
-                echo "run-test: expected-go-rc must contain 4 digits" >&2
-                exit 66
-            fi
-        fi
-        if (( test_num == 87 )); then
-            expected_go_rc="0100"
-        elif (( test_num == 89 )); then
-            expected_go_rc="0008"
-        fi
         if [[ -n "$expected_go_rc" ]] &&
            grep -Eq '^[[:space:]]*(ASM|ASMBCPL|ASMAP)[[:space:]]+.*RC=0000' <<<"$summary" &&
            grep -Eq '^[[:space:]]*LKED[[:space:]]+.*RC=0000' <<<"$summary" &&

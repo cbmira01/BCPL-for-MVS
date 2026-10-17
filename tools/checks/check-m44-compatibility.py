@@ -74,6 +74,12 @@ def check(require_candidate: bool) -> None:
             == "before-svc19", "regression 138 fault changed")
     require(read(REG / cases[141] / "expected-go-rc.txt").strip()
             == "0008", "regression 141 expected STOP(8) changed")
+    for number in (52, 93):
+        directory = REG / cases[number]
+        require(read(directory / "expected-go-rc.txt").strip() == "0012",
+                f"test {number}: BCPLM7/D7 RC contract changed")
+        require(read(directory / "expected-go-rc-bcplm6.txt").strip()
+                == "0000", f"test {number}: BCPLM6/D6 RC contract changed")
 
     runner_source = read(runner_path)
     require("if installed_pds and test_no == 83:" in runner_source,
@@ -85,6 +91,8 @@ def check(require_candidate: bool) -> None:
         'pds_args+=(--test-io-asm "$account_asm")',
         'account_args+=(--terminal-check)',
         'counters-fault-*',
+        'expected-go-rc-bcplm6.txt',
+        'wanted_go_rc=${expected_go_rc:-0000}',
     ):
         require(anchor in harness, f"M4.3 private harness changed: {anchor}")
     canonical = read(ROOT / "native-compiler/asm/bcplio.asm")
