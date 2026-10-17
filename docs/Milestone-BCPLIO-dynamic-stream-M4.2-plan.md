@@ -765,3 +765,36 @@ SYSOUT and PDS JCL variants, and preserves the
 owner's deferral of the complete native regression
 panel, M4.3 separate resource accounting, and
 unchanged installed runtime modules.
+
+### Historical DCBD technique — verified from the same manual
+
+Page **53** (PDF zero-index page **66**) of the same
+1979 IBM Release 3.8 `GC26-3875-0` manual,
+under *Modifying the Data Control Block*,
+specifies the correct symbolic method:
+
+- Use `DCBD DSORG=PS` to generate the
+  `IHADCB` DSECT field mapping. The manual
+  explicitly names the block-size field
+  `DCBBLKSI`; related names `DCBLRECL`
+  and `DCBRECFM` must be confirmed in the
+  actual macro expansion before use.
+- Load a base register with the actual
+  in-storage DCB address, then refer to
+  DCB fields symbolically using `IHADCB`.
+- `DCBD` is coded **once** per assembly;
+  it creates a DSECT and must be followed
+  by a CSECT/DSECT statement if the original
+  section is to resume.
+- The manual cautions that fields are not
+  always fullword-aligned; use the **assembly
+  listing** to determine field length and
+  alignment. Do not guess numerical offsets.
+
+These instructions are contemporaneous with MVS 3.8
+and directly applicable to building a disposable
+M4.2 DCB introspection probe. It remains necessary
+to validate actual IFOX/SYS1.MACLIB expansion
+before claiming the probe is assemblable. This
+is **source-study evidence only**; no assembler
+job or field observation is claimed.
