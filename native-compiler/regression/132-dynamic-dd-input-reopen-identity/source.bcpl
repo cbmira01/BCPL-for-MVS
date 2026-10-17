@@ -1,0 +1,67 @@
+// M2: same allocated DD input reopen must retire the old identity.
+// Do not assume DD DATA is seekable or resets to its first record.
+GLOBAL $( START:1; SELECTINPUT:11; RDCH:13; WRCH:14;
+          INPUT:16; STOP:30; FINDINPUT:42; ENDREAD:46;
+          WRITES:60 $)
+
+LET START() BE
+$(1
+    LET A = FINDINPUT("DD01")
+    LET S = FINDINPUT("DD02")
+    LET B = 0
+    LET C = 0
+
+    IF A=0 DO STOP(8)
+    IF S=0 DO STOP(8)
+    IF A=S DO STOP(8)
+
+    SELECTINPUT(A)
+    IF INPUT() NE A DO STOP(8)
+    IF RDCH() NE 'A' DO STOP(8)
+    ENDREAD()
+    IF INPUT() NE 0 DO STOP(8)
+    SELECTINPUT(A)
+    IF INPUT() NE 0 DO STOP(8)
+
+    SELECTINPUT(S)
+    IF INPUT() NE S DO STOP(8)
+    IF RDCH() NE 'Q' DO STOP(8)
+
+    // Reopen same DD without promising rewind of DD DATA.
+    B := FINDINPUT("dd01")
+    IF B=0 DO STOP(8)
+    IF B=A DO STOP(8)
+    IF B=S DO STOP(8)
+
+    SELECTINPUT(B)
+    IF INPUT() NE B DO STOP(8)
+    SELECTINPUT(A)
+    IF INPUT() NE B DO STOP(8)
+
+    C := FINDINPUT("DD01")
+    IF C NE B DO STOP(8)
+    IF INPUT() NE B DO STOP(8)
+
+    // Other live DD must retain its read cursor independently.
+    SELECTINPUT(S)
+    IF INPUT() NE S DO STOP(8)
+    IF RDCH() NE 10 DO STOP(8)
+    IF RDCH() NE 'R' DO STOP(8)
+
+    SELECTINPUT(B)
+    IF INPUT() NE B DO STOP(8)
+    ENDREAD()
+    IF INPUT() NE 0 DO STOP(8)
+    SELECTINPUT(A)
+    IF INPUT() NE 0 DO STOP(8)
+    SELECTINPUT(B)
+    IF INPUT() NE 0 DO STOP(8)
+
+    SELECTINPUT(S)
+    IF INPUT() NE S DO STOP(8)
+    ENDREAD()
+
+    WRITES("BCPL INPUT REOPEN OK")
+    WRCH(10)
+    FINISH
+$)1
