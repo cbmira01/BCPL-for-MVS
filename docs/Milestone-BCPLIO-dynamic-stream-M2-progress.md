@@ -258,3 +258,46 @@ The single skip was **083 — source-only storage instrumentation**, expected wi
 
 **ACCEPTED:** full backward-compatibility checkpoint 00..131, 131 distinct passing tests, zero failures, one expected skip, 132 total. The sixteen-stream target is final: do not increase it merely for a larger count. M2 still requires explicit evaluation of same-DD input reopening/identity; input `DD DATA` is not presumed rewindable. Failure injection, storage accounting and DD-specific lossless output attribution remain for M4–M5. Production `NATIVE.OBJ` unchanged.
 
+
+## Regression 132 — input DD close/reopen identity STAGED (not executed)
+
+After the accepted full `00..131` compatibility gate, staged a
+six-file candidate-only compiled-BCPL regression at
+`native-compiler/regression/132-dynamic-dd-input-reopen-identity/`.
+Two `DD DATA` allocations `DD01` (A/B records) and `DD02` (Q/R)
+are opened together. The program reads initial A from DD01,
+ENDREADs and retires that handle, reads Q from DD02, then attempts
+`FINDINPUT("dd01")` against DD01 again. It requires a *new
+nonzero handle* different from the retired DD01 and live DD02
+handle, rejects stale selection, checks uppercase duplicate
+FINDINPUT returns the new active handle, validates that DD02
+continues at newline then R, and closes remaining live streams.
+
+**No assumption is made that an instream DD DATA allocation rewinds.**
+The test *does not RDCH the reopened DD01*. It tests QSAM
+re-OPEN plus the BCPL handle-lifetime/selection contract only.
+If repeated OPEN of DD DATA itself fails or abends, retain
+the exact JES error code and investigate MVS data-set semantics
+before altering runtime or weakening assertions; disk-backed
+sequential allocation may be needed to establish a more
+portable input-reopen test. The expected primary output is
+`BCPL INPUT REOPEN OK`; GO must complete RC0000.
+This is **staged but not yet executed under MVS**; no BCPLIO,
+compiler, runtime-harness or PDS change was made.
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+BCPL_RUNTIME_PDS=1 \
+BCPL_RUNTIME_LIBRARY=DEVOBJ \
+BCPL_RUNTIME_CANDIDATE=1 \
+BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6 \
+tools/native/run-regression 132 --show-output
+```
+
+At present, **131 PASS / 0 FAIL / 1 expected SKIP** is the last
+accepted full panel. Regression 132 does not become accepted
+until the operator supplies compiled/link/GO and expected
+record PASS evidence. After 132, evaluate M4 deterministic
+OPEN/GETMAIN failure and resource accounting, and M5
+independent physical DD-specific output verification.
