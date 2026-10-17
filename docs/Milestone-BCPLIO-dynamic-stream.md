@@ -5,6 +5,27 @@ Date: 2026-10-15
 Project: BCPL for MVS 3.8 reconstruction  
 Target: native BCPL runtime (BCPLIO and its BCPLMAIN integration)
 
+## M5.5 — FINAL PANEL STAGED, NOT YET ACCEPTED (2026-10-17)
+
+The [M5.5 acceptance procedure]
+(Milestone-BCPLIO-dynamic-stream-M5.5-plan.md)
+uses the ordinary installed-runtime native regression
+runner (0..145), the accepted M4.4 per-case RC auditor,
+and a new minimal **offline freshness gate** that records
+the pre-run Git/profile/log snapshot and requires
+all 145 result logs to have been recreated in the
+new full panel. It also requires the complete
+145 PASS / 0 FAIL / 1 expected SKIP 083
+runner transcript, and writes a reviewable receipt.
+Unlike the existing M4.4 audit alone, old passing
+logs cannot fulfill the new M5.5 freshness gate.
+
+**No new MVS/JES execution evidence is present at
+this staging point**; no runtime or JCL change, PDS
+object promotion or production installation.
+M5.0–M5.4 remain CLOSED; M5.5 requires a fresh
+operator run, strict audit and owner acceptance.
+
 ## M5.4 — CLOSED, current runtime contract and reconstruction runbook (2026-10-17)
 
 This gate reconciled the **canonical BCPLIO** and

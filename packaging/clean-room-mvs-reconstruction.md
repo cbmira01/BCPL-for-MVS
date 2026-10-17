@@ -403,3 +403,17 @@ the operator must explicitly authorize and protect
 any non-reproducible managed PDS content first.
 M5.4 changes only documentation; M5.5 is the
 fresh candidate execution/final acceptance gate.
+
+
+## 11. M5.5 final fresh full panel (operator execution required)
+
+For the precise non-destructive final acceptance procedure, follow
+[M5.5 final acceptance gate]
+(../docs/Milestone-BCPLIO-dynamic-stream-M5.5-plan.md).
+Unlike the historical M4.4 log auditor alone, the
+M5.5 check snapshots prior logs **before** the full
+run and requires 145 new case logs plus an exact
+145 PASS / 0 FAIL / 1 expected SKIP 083 transcript.
+M5.5 is staged only until the new TK5 run succeeds
+and the owner accepts it. No clean-room PDS purge,
+OBJ promotion, or new runtime/JCL build is implied.

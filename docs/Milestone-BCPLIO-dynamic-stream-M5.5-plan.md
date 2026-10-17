@@ -1,0 +1,137 @@
+# BCPLIO dynamic streams — M5.5 final acceptance gate
+
+**Status: STAGED, NOT EXECUTED / NOT ACCEPTED (17 October 2026).**
+M5.0 through M5.4 are closed. The last **measured** full
+DEVOBJ BCPLM6+BCPLIO panel is still M4.4 (00..145:
+145 PASS, 0 FAIL, expected SKIP 083 and 145/145
+saved log audit). M5.5 must generate its **own fresh**
+execution evidence and obtain the owner's explicit
+acceptance. This is a final compatibility run,
+**not** a destructive purge-to-clean-room rebuild.
+
+## Frozen boundary
+
+- Candidate from **NATIVE_DEVOBJ(BCPLM6 + BCPLIO)**;
+  other service objects resolve as documented in
+  [current DEVOBJ runbook]
+  (../packaging/clean-room-mvs-reconstruction.md#10-m54-addendum--reproduce-the-accepted-dynamic-bcplio-candidate).
+- Do not promote any candidate to NATIVE_OBJ.
+- No new BCPL global numbers, QSAM/VSAM library,
+  compiler changes, JES2 spool investigation,
+  raw internal spool byte requirement or normal
+  runner/JCL change.
+- The three physical experiments already accepted
+  are **JOB 8184** (A/Z printer route),
+  **JOB 8185** (FB132 QSAM disk readback),
+  and **JOB 8186** (intentional RC0012 when
+  the verifier expects a wrong last padding byte).
+  Preserve these existing proofs; running the
+  full logical regression does **not** reproduce
+  them and need not do so.
+
+## Before submitting jobs
+
+Confirm the installed DEVOBJ(BCPLM6/BCPLIO)
+candidate and NATIVE_OBJ runtime state:
+
+```sh
+cd ~/Source/Repos/BCPL-for-MVS
+git pull --ff-only
+git status --short
+git rev-parse HEAD
+tools/datasets/dspal status --probe
+tools/datasets/dspal ls NATIVE_DEVOBJ
+tools/datasets/dspal ls NATIVE_OBJ
+
+export BCPL_RUNTIME_PDS=1
+export BCPL_RUNTIME_LIBRARY=DEVOBJ
+export BCPL_RUNTIME_CANDIDATE=1
+export BCPL_RUNTIME_CANDIDATE_MEMBER=BCPLM6
+
+python3 tools/checks/test-m55-final-evidence.py
+python3 tools/checks/m55-final-evidence.py begin
+```
+
+The **offline `begin` step** runs
+`check-m44-compatibility.py --candidate`,
+`check-bcplio-m43-account.py` and
+`tools/native/run-regression --check-numbering`.
+It requires a clean Git tree, records the current Git
+commit, candidate settings and all 145 old per-case log
+timestamps in `workarea/native-regression/m55-begin.json`.
+It refuses to overwrite existing M5.5 evidence files.
+**No job is submitted by the preparation tool.**
+
+If DEVOBJ members are missing or stale, follow the
+[M5.4 runbook](../packaging/clean-room-mvs-reconstruction.md)
+for the approved BLDDEVM6 and BLDDEVI rebuilds before
+beginning. Check the build *payload* RCs and the
+installed PDS members. Do not perform an automatic
+runtime/PDS rewrite in the preflight.
+
+## One complete operator run
+
+Use Bash so `pipefail` ensures that `tee`
+cannot hide a nonzero runner exit:
+
+```bash
+set -o pipefail
+tools/native/run-regression 0 145 \
+  | tee workarea/native-regression/m55-full-panel.log
+
+python3 tools/checks/m55-final-evidence.py verify
+```
+
+If the runner fails, **stop**; examine
+`workarea/native-regression/logs/` and
+the JES step reports. Do not call an incomplete
+suite accepted merely because old M4.4 logs
+still exist. If the runner completes, `verify`
+requires all of:
+
+1. Exactly one 00..145 banner, 145 distinct ordered
+   RUN and PASS entries, SKIP 083 only, final
+   **145 PASS / 0 FAIL / 1 SKIP / 146 TOTAL**.
+2. **Every one** of the 145 case logs has a
+   new mtime after the recorded `begin` timestamp,
+   later than the snapshot and is nonempty.
+3. Git commit and four candidate profile
+   variables agree with the initial checkpoint.
+4. The existing
+   `tools/checks/check-m44-full-panel-logs.py`
+   audits all 145 logs and confirms expected
+   JCL/IFOX/IEWL/GO return codes, including
+   compile-only 048, the BCPLM6 profiles for
+   052/093, intentional nonzero STOP, and
+   no accepted known-defect/abend results.
+5. The audit writes the job/step manifest
+   `workarea/native-regression/m44-00-145-jobs.tsv`
+   (existing audit naming retained for reuse).
+
+On successful verification, the *only new file*
+beyond the transcript/checkpoint and prior
+audit artifacts is
+`workarea/native-regression/m55-verification.json`,
+with SHA-256 of the complete transcript and the
+job/step TSV. Its state reads
+**VERIFIED_AWAITING_OWNER_ACCEPTANCE**.
+That receipt is **not** itself an owner
+decision to close the milestone.
+
+## Evidence and acceptance
+
+The operator should provide at least the M5.5
+runner's completion summary and
+`m55-final-evidence.py verify`
+output. For a failure, provide the first bad
+case's saved log and relevant job summary.
+Existing JOBS 8184/8185/8186 and their
+historical positive/negative proof do not
+require repetition.
+
+**M5.5 EXIT REQUIRES:** measured fresh
+candidate 145/0/1, all-new 145/145 audited logs,
+documented limits and owner's decision.
+Only then update the master milestone to
+**CLOSED**. DEVOBJ -> NATIVE_OBJ promotion
+is a **distinct later authorization**.
