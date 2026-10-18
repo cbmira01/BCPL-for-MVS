@@ -1,9 +1,28 @@
-* BCPLMEM runtime service: G87/G88 plus private teardown MEMDRAIN.
-* Static singleton allocator; intentionally not reentrant.
+*===================================================================
+* BCPLMEM -- BCPL HEAP VECTOR ALLOCATOR
+*
+* GETVEC and FREEVEC provide the BCPL G!87 and G!88 services.
+* Each allocation has a 12-byte link/length header, followed
+* by N+1 four-byte BCPL vector elements.
+* VECLIST links live allocations so exit cleanup can free them.
+* MEMBIND shares the list head with the BCPLMAIN save area.
+* MEMSTAT reports current and peak allocation counts and bytes.
+* This module keeps static state and is not reentrant.
+*===================================================================
+*
+*------------------------------------------------------------------
+* MODULE ENTRY
+* Export BCPL heap-vector services and private cleanup and
+* statistics entries.
+*------------------------------------------------------------------
 BCPLMEM  CSECT
          ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMSTAT
 *
-* GETVEC(N): R7=N. R10 is our private addressing base.
+*------------------------------------------------------------------
+* GETVEC(N) -- G!87
+* R7 is the largest valid element index N. Allocate N+1 words and a
+* header; return a BCPL word pointer, or zero on failure.
+*------------------------------------------------------------------
 GETVEC   BALR  10,0
          USING *,10
          LTR   7,7
@@ -31,13 +50,18 @@ GETVEC   BALR  10,0
          L     8,VECLIST
          ST    8,8(14)
          ST    14,VECLIST
-* Account only successfully linked allocations.
          L     8,MEMCURN
          LA    8,1(8)
          ST    8,MEMCURN
          C     8,MEMPEAKN
          BNH   GVNCPEAK
          ST    8,MEMPEAKN
+*
+*------------------------------------------------------------------
+* ALLOCATION COUNTERS
+* Track live vector count and allocated byte total, and preserve
+* their peak values.
+*------------------------------------------------------------------
 GVNCPEAK L     8,MEMCURB
          A     8,GVRLEN
          ST    8,MEMCURB
@@ -63,7 +87,11 @@ GVFAIL0  SR    7,7
          BCR   15,6
          DROP  10
 *
-* FREEVEC(V): R7=BCPL word pointer, unknown pointer is no-op.
+*------------------------------------------------------------------
+* FREEVEC(V) -- G!88
+* Find the vector in the live list, unlink its header, update
+* counts, and call FREEMAIN. A zero or unknown pointer is ignored.
+*------------------------------------------------------------------
 FREEVEC  BALR  10,0
          USING *,10
          LTR   7,7
@@ -114,8 +142,11 @@ FVNFOUND L     15,FVWSAVE
          B     FVRETURN
          DROP  10
 *
-* MEMDRAIN: private BCPLMAIN exit call, R14 linkage.
-* Preserve R0-R3, R15 and all BCPL fixed base registers.
+*------------------------------------------------------------------
+* SHUTDOWN CLEANUP
+* Free all remaining vectors before BCPLMAIN releases the main
+* allocation. Called with R14 linkage.
+*------------------------------------------------------------------
 MEMDRAIN BALR  10,0
          USING *,10
          ST    14,MEMRET
@@ -145,8 +176,11 @@ MEMDONE  LM    0,3,MEMSAV
          BR    14
          DROP  10
 *
-* MEMBIND: R1=address of writable G6!48 slot, or zero to unbind.
-* R14 linkage. Preserve R0-R3, R4-R12, R15 and R1 itself.
+*------------------------------------------------------------------
+* PUBLISH THE ALLOCATION LIST
+* R1 gives the address of the writable G6!48 list-head slot, or
+* zero to detach it.
+*------------------------------------------------------------------
 MEMBIND  BALR  10,0
          USING *,10
          ST    1,VECPUB
@@ -159,9 +193,11 @@ MEMBIND  BALR  10,0
 MBNRET   BR    14
          DROP  10
 *
-* Private snapshot: R1 addresses four fullwords (16 bytes).
-* Return R14 intact. R10 is clobbered, as in MEMBIND.
-* Call only in quiescent singleton allocator context.
+*------------------------------------------------------------------
+* READ ALLOCATION COUNTS
+* Write four fullwords at R1: current count, peak count, current
+* bytes, peak bytes.
+*------------------------------------------------------------------
 MEMSTAT  BALR  10,0
          USING *,10
          ST    14,MSRET
@@ -176,9 +212,13 @@ MEMSTAT  BALR  10,0
          L     14,MSRET
          BR    14
          DROP  10
-*
-* BCPLMEM owns all allocator storage.
          DS    0F
+*
+*------------------------------------------------------------------
+* PRIVATE ALLOCATOR DATA
+* List head, counters, published pointer, limits, saved registers
+* and MVS allocation controls.
+*------------------------------------------------------------------
 VECLIST  DC    F'0'
 MEMCURN  DC    F'0'
 MEMPEAKN DC    F'0'

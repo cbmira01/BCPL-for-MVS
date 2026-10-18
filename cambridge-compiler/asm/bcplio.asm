@@ -1,25 +1,38 @@
-***********************************************************************
-* BCPLIO -- INDEPENDENT BCPL STREAM I/O (M2.0 GATE D, D6)
+*===================================================================
+* BCPLIO -- BCPL STREAM I/O AND MVS QSAM SUPPORT
 *
-* Owns SYSPRINT/BCPALT output and BCPIN/BCPINB input QSAM DCBs,
-* buffers, selected handles, PARM pseudo-stream and I/O cleanup.
-* G11-17/G33/G39/G41-42/G46-47 services enter this CSECT.
-* Private native entry points: IOINIT, IOFIN, IOBIND, IOSTAT,
-* IODIAG, IOREPL and IOPMGET. No BCPLMAIN private-data refs.
+* PUBLIC BCPL SERVICES
+* G!11/G!12 Select input and output stream.
+* G!13/G!14 Read and write one character.
+* G!15 Push back the last input character.
+* G!16/G!17 Return the selected input/output handle.
+* G!33 Control output wrapping.
+* G!39 Read MVS EXEC PARM as a stream.
+* G!41/G!42 Find an output or input DD stream.
+* G!46/G!47 Close an input or output stream.
 *
-* BCPL entries use R6 return, R7 argument/result and R5 frame;
-* R4 is restored from 0(R5). R10 is a private scratch base.
-* Native entry contracts and exceptional results are documented in
-* packaging/m2-0-d3-bcplio-linkage-contract.md; that document
-* includes early candidate history and must be read with Gate D
-* closure evidence in m2-0-gate-d-bcplio-extraction-plan.md.
+* STREAM MODEL
+* Known built-in streams use SYSPRINT, BCPALT, BCPIN, and BCPINB.
+* Additional JCL DD names are handled by dynamic descriptors.
+* Input is record-oriented underneath the BCPL character stream.
+* Output is buffered as FB132 records. Input uses FB80 records.
+* Each live dynamic stream owns its DCB, buffer and state.
+* Handles are stable while a task runs; closed handles are not
+* reused. A missing or invalid stream yields a failure result.
 *
-* Not reentrant: QSAM and saved registers use static module state.
-* Historical-facing behavior is a tested MVS reconstruction,
-* not a claim of recovered original Cambridge machine code.
-* Accepted independently in DEVOBJ, including D6 regression 00-123:
-* 123 PASS, 0 FAIL, 1 expected source-only SKIP (083).
-***********************************************************************
+* LINKAGE AND OWNERSHIP
+* BCPL entries follow the CG370 R4-R12 calling convention.
+* R7 holds the first argument or return value. R6 is linkage.
+* Private helper entries use their documented R1/R14/R15 rules.
+* BCPLMAIN calls IOINIT at startup and IOFIN during shutdown.
+* This module uses static work areas and is not reentrant.
+* QSAM OPEN, GET, PUT and CLOSE happen within this module.
+*===================================================================
+*
+*------------------------------------------------------------------
+* MODULE ENTRY
+* Export stream services and private helpers used by BCPLMAIN.
+*------------------------------------------------------------------
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
          ENTRY IOFOUT,IOSOUT,IOOUT,IOWRAP,IOENDW
@@ -27,11 +40,15 @@ BCPLIO   CSECT
          ENTRY IOSELIN,IOINP,IOPARMST,IORDCH,IOUNRD,IOFINDIN
          ENTRY IOENDRD,IONORM
 *
+*------------------------------------------------------------------
+* START STREAM STATE
+* Save the original MVS EXEC parameter pointer and reset the
+* input/output stream descriptors and counters.
+*------------------------------------------------------------------
 IOINIT   BALR  10,0
          USING *,10
          STM   0,9,IOISAVE
          STM   11,15,IOISAVE+44
-* Second address base reaches static output buffers past 4K.
          LA    11,3584(10)
          USING IOINIT+3586,11
          CLI   IOACTIVE,X'01'
@@ -56,12 +73,15 @@ IOIDONE  LM    0,9,IOISAVE
          DROP  11
          DROP  10
 *
+*------------------------------------------------------------------
+* SHUT DOWN STREAMS
+* Flush output, close any open built-in QSAM streams, drain dynamic
+* descriptors, and clear input state.
+*------------------------------------------------------------------
 IOFIN    BALR  10,0
          USING *,10
          STM   0,9,IOFSAVE
          STM   11,15,IOFSAVE+44
-* Second base for DCBs beyond first 4K displacement.
-* R11 is already saved, and IOFIN restores it at return.
          LA    11,4095(10)
          LA    11,1(11)
          USING IOFIN+4098,11
@@ -95,7 +115,6 @@ IFDPARM  LR    9,10
          L     15,=A(IODRAIN)
          BALR  14,15
          LR    10,9
-* IODRAIN uses R11 as its private base; restore IOFIN high base.
          LA    11,4095(10)
          LA    11,1(11)
          XC    IOPARM(4),IOPARM
@@ -105,15 +124,17 @@ IFDPARM  LR    9,10
          DROP  11
          DROP  10
 *
-* BCPL-facing candidate: R7 holds a character code.
-* Save caller registers before all output paths, including PUT.
+*------------------------------------------------------------------
+* WRITE A CHARACTER -- G!14
+* Use R7 as the character. Buffer bytes in the selected output
+* stream and PUT complete records with QSAM.
+*------------------------------------------------------------------
 IOWRCH   LR    4,10
          BALR  10,0
          USING *,10
          ST    4,IOSAVE+40
          STM   0,9,IOSAVE
          STM   11,15,IOSAVE+44
-* Independent high base for IO2BUF, IO2DCB and IODCB.
          LA    11,3584(10)
          USING IOWRCH+3588,11
          CLI   IOSELCT,X'03'
@@ -140,17 +161,13 @@ IOWFULL  MVC   IOSTATUS(4),IOOVCODE
          L     14,IOOVHAND
          LTR   14,14
          BZ    IOWRET
-* Nonreturning STOP(12): restore BCPL context and branch to
-* installed callback. Load static operands before restoring R11.
          LA    11,3584(10)
          LM    0,9,IOSAVE
          LM    12,15,IOSAVE+48
          L     4,0(5)
          LA    7,12
-* IOOVHAND needs high R11 while IOSAVE now needs low R10.
          L     14,IOOVHAND
          L     11,IOSAVE+44
-* Keep R10 until the last IOSAVE access.
          L     10,IOSAVE+40
          BCR   15,14
 IOW2     C     7,IOLF
@@ -169,8 +186,6 @@ IOW2PUT  PUT   IO2DCB,IO2BUF
          MVI   IO2BUF,C' '
          MVC   IO2BUF+1(131),IO2BUF
          B     IOWRET
-* Dynamic stream buffer occupies descriptor-owned region +0..131;
-* current fill count at region +236. Handle never dereferenced.
 IOWDYN   LR    9,10
          L     1,IOCURH
          L     15,=A(HLOOK)
@@ -210,38 +225,36 @@ IOWRET   LA    11,3584(10)
          LM    0,9,IOSAVE
          LM    12,15,IOSAVE+48
          L     4,0(5)
-* IOSAVE moved within R10 reach; assembler selects R10.
-* Restore caller R11 before restoring the R10 address base.
          L     11,IOSAVE+44
          L     10,IOSAVE+40
          BCR   15,6
          LTORG
          DROP  11
          DROP  10
-*
-* Keep early entry save images within forward R10 reach.
-* Storage lies after IOWRCH, not before its BALR base.
          DS    0F
 IOSAVE   DS    16F
 IOISAVE  DS    16F
 IOFSAVE  DS    16F
 *
-* Native diagnostic accessor, not a BCPL global-vector service.
+*------------------------------------------------------------------
+* OUTPUT STATUS
+* Return a saved output status code to the private runtime caller.
+*------------------------------------------------------------------
 IOSTAT   BALR  10,0
          USING *,10
          L     15,IOSTATUS
          BR    14
          DROP  10
 *
-*
-* Native selected-stream control: R1=1 primary, 2 alternate.
-* R15=0 accepted, 8 invalid/inactive, same native ABI as IOINIT.
-* Secondary OPEN is lazy; a successful primary selection never OPENs.
+*------------------------------------------------------------------
+* LOW-LEVEL OUTPUT SELECTION
+* Choose the primary or alternate built-in output stream by numeric
+* selector.
+*------------------------------------------------------------------
 IOSEL    BALR  10,0
          USING *,10
          STM   0,9,IOESAVE
          STM   11,14,IOESAVE+44
-* Secondary base reaches IO2BUF after code expansion.
          LA    11,3584(10)
          USING IOSEL+3586,11
          LR    15,1
@@ -276,15 +289,11 @@ IOSERET  LM    0,9,IOESAVE
          DROP  11
          DROP  10
 *
-*
-* M1 STAGING: DD-name normalization; not yet wired to FIND.
-* Private R14 call: R1=BCPL counted-string byte address,
-* R2=eight-byte caller buffer, R15=0 success/8 invalid.
-* Uppercase ASCII-like BCPL names in host EBCDIC, then pad.
-* R10 clobbered. All other registers preserved except R15.
-* MVS DD first character is alphabetic/@/#/$; remaining
-* characters may also be decimal digits. Empty or >8 fails.
-*
+*------------------------------------------------------------------
+* NORMALIZE A JCL DD NAME
+* Check the name length and legal EBCDIC characters. Convert lower
+* case to upper case.
+*------------------------------------------------------------------
 IONORM   BALR  10,0
          USING *,10
          STM   0,9,IONMSAV
@@ -303,7 +312,6 @@ IONORM   BALR  10,0
          SR    6,6
 IONMLOOP SR    7,7
          IC    7,0(4)
-* Lowercase EBCDIC a-i, j-r, s-z => uppercase (OR X'40').
          CLI   0(4),X'81'
          BL    IONMUP
          CLI   0(4),X'89'
@@ -318,7 +326,6 @@ IONMLOOP SR    7,7
          BH    IONMUP
 IONMLOW  O     7,IONMCASE
 IONMUP   STC   7,0(5)
-* All positions allow A-I, J-R, S-Z and @/#/$.
          CLI   0(5),X'C1'
          BL    IONMSPEC
          CLI   0(5),X'C9'
@@ -364,10 +371,11 @@ IONMMAX  DC    H'8'
 IONMRC   DC    F'0'
 IONMSAV  DS    16F
 *
-* BCPL output-stream ABI. These five entries use R6 linkage, R7
-* argument/result, restore R4 from 0(R5), clobber R10.
-* Handles are the word addresses of private IOCTL1/IOCTL2.
-*
+*------------------------------------------------------------------
+* FINDOUTPUT -- G!41
+* Return a handle for a known output name or a verified dynamic JCL
+* DD allocation.
+*------------------------------------------------------------------
 IOFOUT   LR    4,10
          BALR  10,0
          USING *,10
@@ -400,9 +408,7 @@ IOFOK2   LA    7,IOCTL2
 IOFBAD   LR    1,14
          L     15,=A(DQFIND)
          BALR  14,15
-* DQFIND returns a word-address stable handle, or zero.
          LR    7,15
-* DQFIND uses independent R11 base and preserves caller R10.
 IOFRET   ST    7,IORESULT
          LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
@@ -413,6 +419,10 @@ IOFRET   ST    7,IORESULT
          LTORG
          DROP  10
 *
+*------------------------------------------------------------------
+* OUTPUT -- G!17
+* Return the current output stream handle.
+*------------------------------------------------------------------
 IOOUT    LR    4,10
          BALR  10,0
          USING *,10
@@ -423,6 +433,11 @@ IOOUT    LR    4,10
          BCR   15,6
          DROP  10
 *
+*------------------------------------------------------------------
+* SELECTOUTPUT -- G!12
+* Select a known or dynamic output handle without changing
+* unrelated stream state.
+*------------------------------------------------------------------
 IOSOUT   LR    4,10
          BALR  10,0
          USING *,10
@@ -464,7 +479,10 @@ IOSRET   LM    0,9,IOOSAVE
          LTORG
          DROP  10
 *
-* WRAPOUTPUT: only alternate stream emits an empty record on wrap.
+*------------------------------------------------------------------
+* WRAPOUTPUT -- G!33
+* Get or set the output wrapping behavior for the selected stream.
+*------------------------------------------------------------------
 IOWRAP   LR    4,10
          BALR  10,0
          USING *,10
@@ -486,7 +504,11 @@ IOWRRET  LM    0,9,IOOSAVE
          BCR   15,6
          DROP  10
 *
-* ENDWRITE: only alternate; flush/close and revert selection.
+*------------------------------------------------------------------
+* ENDWRITE -- G!47
+* Flush a pending output record, close the stream and release any
+* dynamic descriptor.
+*------------------------------------------------------------------
 IOENDW   LR    4,10
          BALR  10,0
          USING *,10
@@ -511,8 +533,6 @@ IOEWDONE MVI   IOSELCT,X'01'
          SRL   1,2
          ST    1,IOCURH
          B     IOEWRET
-* ENDWRITE on selected dynamic handle. If buffered, flush first;
-* then close, invalidate handle, free descriptor, select primary.
 IOEWDYN  LR    9,10
          L     1,IOCURH
          L     15,=A(HLOOK)
@@ -550,22 +570,21 @@ IOEWRET  LM    0,9,IOOSAVE
          LTORG
          DROP  10
 *
-*
-* Install a caller-owned NONRETURNING overflow exit. R1=entry or 0
-* (disable). This is a native R14-linked private setup API.
-* Caller must route to STOP(12) and cleanup without returning.
+*------------------------------------------------------------------
+* PRIVATE OVERFLOW CALLBACK
+* Install the runtime's nonreturning output-overflow handler.
+*------------------------------------------------------------------
 IOBIND   BALR  10,0
          USING *,10
          ST    1,IOOVHAND
          BR    14
          DROP  10
 *
-*
-* Private diagnostic append: R1=EBCDIC byte address, R2=length.
-* Appends to PRIMARY buffer regardless of selected output stream.
-* No PUT or callback here; R15=0 success, 12 if truncated/full.
-* Preserve R0-R9, R11-R14. R10 clobbered, R15 is result.
-* Source must not overlap IOBUF, and length must be nonnegative.
+*------------------------------------------------------------------
+* PRIVATE DIAGNOSTIC APPEND
+* Append message bytes to the output buffer, keeping its record
+* limits.
+*------------------------------------------------------------------
 IODIAG   BALR  10,0
          USING *,10
          STM   0,9,IODSAVE
@@ -586,7 +605,6 @@ IODIAG   BALR  10,0
 IODCOPY  SR    15,15
 IODWORK  LTR   2,2
          BZ    IODRET
-* MVC is limited to 256 bytes; primary free space <=132.
          LR    4,1
          LA    5,IOBUF
          AR    5,3
@@ -605,11 +623,10 @@ IODBAD   LA    15,8
 IODMOVE  MVC   0(1,5),0(4)
          DROP  10
 *
-*
-* Private primary record replacement for stack diagnostics.
-* R1=source bytes, R2=length (0..132); R15=0 or 8.
-* Discards pending primary record, does not PUT or invoke STOP.
-* This must not change BCPALT selection or contents.
+*------------------------------------------------------------------
+* PRIVATE DIAGNOSTIC REPLACEMENT
+* Replace buffered output with a diagnostic record.
+*------------------------------------------------------------------
 IOREPL   BALR  10,0
          USING *,10
          STM   0,9,IODSAVE
@@ -643,19 +660,22 @@ IORRET   ST    15,IODRC
 IORMOVE  MVC   0(1,5),0(4)
          DROP  10
 *
-* D4 private native accessor for original EXEC parameter list.
-* IOINIT captured R1 once; R15 returns that pointer (possibly zero).
-* R14-linked; preserve all registers except R10 and result R15.
+*------------------------------------------------------------------
+* ORIGINAL MVS PARAMETER POINTER
+* Return the pointer captured at IOINIT so the PARM stream can read
+* it.
+*------------------------------------------------------------------
 IOPMGET  BALR  10,0
          USING *,10
          L     15,IOPARM
          BR    14
          DROP  10
 *
-* D4 input services, PARM stream, and QSAM EODAD handlers.
-* Each external BCPL entry saves caller R10 before selecting the
-* independent BCPLIO base. R3 is local scratch on input paths.
-* This static implementation is nonreentrant, consistent with BCPLIO.
+*------------------------------------------------------------------
+* FINDINPUT -- G!42
+* Return a stream handle for a built-in input DD or a valid dynamic
+* input DD.
+*------------------------------------------------------------------
 IOFINDIN  LR    4,10
          BALR  10,0
          USING *,10
@@ -709,10 +729,11 @@ FRET     ST    7,IINRES
          L     4,0(5)
          BCR   15,6
 *
-* G39 opens a dedicated memory stream over the MVS EXEC PARM field.
-* R1 on entry to the load module points to the parameter-list word;
-* that word addresses the halfword length and following EBCDIC bytes.
-* Capture that original pointer before the BCPL startup reuses R1.
+*------------------------------------------------------------------
+* FINDPARM -- G!39
+* Use the original EXEC PARM bytes as an in-memory input stream, up
+* to 100 bytes.
+*------------------------------------------------------------------
 IOPARMST  LR    4,10
          BALR  10,0
          USING *,10
@@ -724,8 +745,6 @@ IOPARMST  LR    4,10
          XC    PMPOS(4),PMPOS
          XC    PMLEN(4),PMLEN
          XC    PMADDR(4),PMADDR
-* D4: retrieve MVS EXEC PARM owner pointer from BCPLIO.
-* R9 carries BCPLMAIN base across the private R14 service.
          L     14,IOPARM
          LTR   14,14
          BZ    PMREADY
@@ -736,7 +755,6 @@ IOPARMST  LR    4,10
          LH    3,0(14)
          LTR   3,3
          BNP   PMREADY
-* MVS EXEC PARM length is limited to 100 bytes.
          C     3,PMMAX
          BNH   PMSET
          LA    3,100
@@ -750,6 +768,10 @@ PMREADY  LM    0,15,IINSAVE
          L     4,0(5)
          BCR   15,6
 *
+*------------------------------------------------------------------
+* INPUT -- G!16
+* Return the currently selected input handle.
+*------------------------------------------------------------------
 IOINP      LR    4,10
          BALR  10,0
          USING *,10
@@ -759,6 +781,11 @@ IOINP      LR    4,10
          L     4,0(5)
          BCR   15,6
 *
+*------------------------------------------------------------------
+* SELECTINPUT -- G!11
+* Select an input handle. Keep each stream's record cursor and EOF
+* state separate.
+*------------------------------------------------------------------
 IOSELIN    LR    4,10
          BALR  10,0
          USING *,10
@@ -799,6 +826,11 @@ SELIRET  LM    0,15,IINSAVE
          L     4,0(5)
          BCR   15,6
 *
+*------------------------------------------------------------------
+* RDCH -- G!13
+* Read the next byte. Make record boundaries into newlines and
+* return the end-of-stream value at EOF.
+*------------------------------------------------------------------
 IORDCH    LR    4,10
          BALR  10,0
          USING *,10
@@ -829,7 +861,6 @@ IORDCH    LR    4,10
          CLI   INNL,X'01'
          BE    RDNEWLN
          GET   BCPIN,INBUF
-* Trim fixed-record padding; blanks inside records remain data.
          LA    14,80
          LA    3,INBUF+79
 RDTRIM   LTR   14,14
@@ -871,8 +902,11 @@ RDRETURN ST    7,IINRES
          L     4,0(5)
          BCR   15,6
 *
-* EXEC PARM stream: bytes, one newline, EOF. A private pushback slot
-* prevents UNRDCH on the PARM stream altering either QSAM stream.
+*------------------------------------------------------------------
+* READ FROM EXEC PARM
+* Read the in-memory parameter bytes, then one newline, then EOF.
+* Keep independent pushback state.
+*------------------------------------------------------------------
 RDPM     CLI   PMPUSH,X'01'
          BE    RDPMPUSH
          L     14,PMPOS
@@ -903,7 +937,11 @@ RDPMRET  ST    7,IINRES
          L     4,0(5)
          BCR   15,6
 *
-* Second input DCB has independent record, pushback, and EOF state.
+*------------------------------------------------------------------
+* SECOND BUILT-IN INPUT STREAM
+* BCPINB has a separate DCB, buffer, record cursor, pushback byte
+* and EOF flag.
+*------------------------------------------------------------------
 RD2START CLI   IN2PUSH,X'01'
          BE    RD2PUSH
          CLI   IN2EOF,X'01'
@@ -955,9 +993,11 @@ RD2RET   ST    7,IINRES
          L     4,0(5)
          BCR   15,6
 *
-* Dynamic input descriptors carry one FB80 record, cursor and
-* EOF/UNRDCH state independently at offsets +236..+251 in QSAM
-* region. R10 is the IORDCH base; HLOOK uses a private base.
+*------------------------------------------------------------------
+* READ FROM A DYNAMIC INPUT STREAM
+* Fetch FB80 records through the stream's own QSAM DCB and
+* descriptor.
+*------------------------------------------------------------------
 RDYDYN   LR    9,10
          LR    1,14
          L     15,=A(HLOOK)
@@ -980,14 +1020,12 @@ RDYDYN   LR    9,10
          BL    RDYCHAR
          CLI   244(3),X'01'
          BE    RDYNL
-* The live descriptor is saved for the QSAM EODAD exit.
          ST    2,INDESC
          L     1,20(2)
          LR    0,3
          GET   (1),(0)
          L     2,INDESC
          L     3,16(2)
-* Preserve historical trailing-FB80-padding trimming policy.
          LA    14,80
          LA    2,79(3)
 RDYTRIM  LTR   14,14
@@ -1023,14 +1061,20 @@ RDYRET   ST    7,248(3)
          MVI   246(3),X'01'
          B     RDRETURN
 *
-* QSAM EODAD is reached from the dynamic GET and does not
-* return to GET's next instruction. R10 stays IORDCH base.
+*------------------------------------------------------------------
+* DYNAMIC INPUT END-OF-DATA
+* Set the descriptor EOF flag when QSAM reaches its EODAD exit.
+*------------------------------------------------------------------
 INDYEOD  L     2,INDESC
          L     3,16(2)
          MVI   247(3),X'01'
          B     RDYEOF
 *
-* UNRDCH repeats the last RDCH result once for this selected stream.
+*------------------------------------------------------------------
+* UNRDCH -- G!15
+* Allow the last character to be returned once more by the selected
+* input stream.
+*------------------------------------------------------------------
 IOUNRD   LR    4,10
          BALR  10,0
          USING *,10
@@ -1079,7 +1123,11 @@ UNRDRET  LM    0,15,IINSAVE
          L     4,0(5)
          BCR   15,6
 *
-* ENDREAD closes the selected BCPIN input stream and clears state.
+*------------------------------------------------------------------
+* ENDREAD -- G!46
+* Close and deselect the current input stream. Release a dynamic
+* descriptor when needed.
+*------------------------------------------------------------------
 IOENDRD  LR    4,10
          BALR  10,0
          USING *,10
@@ -1127,7 +1175,6 @@ ENDR2CLR XC    INCURR(4),INCURR
          MVI   IN2PUSH,X'00'
          MVI   IN2SEEN,X'00'
          B     ENDRDONE
-* Close and invalidate the selected dynamic input handle.
 ENRDYN   LR    9,10
          L     1,INCURR
          L     15,=A(HLOOK)
@@ -1156,19 +1203,25 @@ ENDRDONE EQU   *
          L     10,IINBASE
          L     4,0(5)
          BCR   15,6
-*
-* EODAD receives control from QSAM GET during IORDCH.
-* Runtime R10 still addresses the IORDCH-local base after GET;
-* use that explicit USING rather than IOENDRD's later base.
          DROP  10
          USING IORDCH+4,10
+*
+*------------------------------------------------------------------
+* BUILT-IN INPUT END-OF-DATA
+* QSAM EODAD exits set EOF flags for BCPINB and BCPIN.
+*------------------------------------------------------------------
 IN2ATEND MVI   IN2EOF,X'01'
          B     RD2END
 INATEND  MVI   INEOF,X'01'
          B     RDEND
          DROP  10
-*
          DS    0F
+*
+*------------------------------------------------------------------
+* INPUT STREAM STATE
+* Keep EXEC PARM, built-in input buffers, current input, pushback
+* and EOF controls.
+*------------------------------------------------------------------
 IINBASE  DC    F'0'
 IINR3    DC    F'0'
 INDESC   DC    F'0'
@@ -1183,8 +1236,6 @@ PMPOS    DC    F'0'
 PMLEN    DC    F'0'
 PMADDR   DC    F'0'
 PMLAST   DC    F'0'
-*
-* One-stream bootstrap input controls for native regression 094.
          DS    0F
 IN2CTRL  DC    F'2'
 IN2NAME  DC    CL6'BCPINB'
@@ -1219,7 +1270,6 @@ IINSAVE   DS    16F
 INBUF    DS    CL80
 BCPIN    DCB   DDNAME=BCPIN,DSORG=PS,MACRF=GM,EODAD=INATEND
 
-*
          DS    0F
 IOPARM   DC    F'0'
 IOOBASE  DC    F'0'
@@ -1251,11 +1301,13 @@ IOBUF    DS    CL132
 IODCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=PM
 IO2BUF   DS    CL132
 IO2DCB   DCB   DDNAME=BCPALT,DSORG=PS,MACRF=PM
-*
-* M1 PRIVATE DIAGNOSTIC ONLY. IO2PTR R15=IO2DCB+48 contents.
-* Read-only snapshot of QSAM PUT exit pointer; R1/R10 clobbered.
-* Never called from BCPL entry points or normal I/O paths.
          ENTRY IO2PTR
+*
+*------------------------------------------------------------------
+* PRIVATE OUTPUT DCB INSPECTION
+* Return an internal pointer to the alternate output DCB's PUT exit
+* field.
+*------------------------------------------------------------------
 IO2PTR   BALR  10,0
          USING *,10
          L     1,=A(IO2DCB)
@@ -1263,20 +1315,13 @@ IO2PTR   BALR  10,0
          BR    14
          LTORG
          DROP  10
-*
-* M1 PRIVATE DESCRIPTOR REGISTRY (NOT WIRED TO FIND).
-* DALLOC: R2=normalized 8-byte DD name, R3=direction 1/2.
-*         R15=allocated descriptor byte address or zero.
-* DREL:   R1=descriptor byte address; R15=0 success/8 absent.
-* Native R14 linkage, R10 clobbered; static and nonreentrant.
-* Descriptor: +0 next, +4 direction, +8 name, +16 owned 268-byte
-* QSAM region, +20 DCB, +24 state, +28 reserved.
-* The descriptor is NOT a BCPL stream handle. It must never
-* escape to the BCPL program: stable handles come separately.
-* DALLOC allocates an unopened DCB+buffer region; DREL releases it.
-* OPEN/PUT/CLOSE are separate private DQ* calls (output only).
-*
          ENTRY DALLOC,DREL
+*
+*------------------------------------------------------------------
+* DYNAMIC STREAM DESCRIPTORS
+* Allocate a private QSAM descriptor, buffer and DD name. Each
+* descriptor has its own GETMAIN lifetime.
+*------------------------------------------------------------------
 DALLOC   BALR  10,0
          USING *,10
          STM   0,9,DSAVE
@@ -1294,16 +1339,12 @@ DALLOC   BALR  10,0
          ST    7,4(6)
          L     7,DNAMEP
          MVC   8(8,6),0(7)
-* Own 268 bytes: buffer 0..131, DCB 132..227,
-* SVC19 list 228..231, SVC20 list 232..235.
          GETMAIN RC,LV=268
          LTR   15,15
          BNZ   DALNOMEM
          LR    8,1
          XC    0(256,8),0(8)
          XC    256(12,8),256(8)
-* Input and output share the owned DCB/buffer lifetime,
-* but input needs GM mode and a dynamic EODAD exit.
          CLI   DTYPE+3,X'01'
          BNE   DALOUT
          MVC   132(96,8),DQTIN
@@ -1318,7 +1359,6 @@ DALDCB   MVC   172(8,8),8(6)
          LA    7,132(8)
          STCM  7,7,229(8)
          STCM  7,7,233(8)
-* SVC19 OPEN list: X'80' for INPUT, X'8F' for OUTPUT.
          MVI   228(8),X'8F'
          CLI   DTYPE+3,X'01'
          BNE   DALOMODE
@@ -1338,6 +1378,10 @@ DALRET   LM    0,9,DSAVE
          BR    14
          DROP  10
 *
+*------------------------------------------------------------------
+* RELEASE A DYNAMIC DESCRIPTOR
+* Unlink a closed descriptor and return its GETMAIN storage.
+*------------------------------------------------------------------
 DREL     BALR  10,0
          USING *,10
          STM   0,9,DSAVE
@@ -1376,14 +1420,13 @@ DTARGET  DC    F'0'
 DRESULT  DC    F'0'
 DERR8    DC    F'8'
 DSAVE    DS    16F
-*
-* Private QSAM stream operations: R1=descriptor byte pointer.
-* Only callers holding an active descriptor may invoke these;
-* output DD is assigned by JCL, FB132. R15 0 success/8 invalid.
-* DQPUT: R2 -> complete 132-byte record.
-* DQOPEN and DQCLOSE update descriptor +24 open state.
-* Uses DQ-owned save area; not reentrant.
          ENTRY DQOPEN,DQPUT,DQCLOSE
+*
+*------------------------------------------------------------------
+* DYNAMIC QSAM OPERATIONS
+* Open, write and close a descriptor's QSAM DCB. Helpers return
+* status codes.
+*------------------------------------------------------------------
 DQOPEN   BALR  10,0
          USING *,10
          STM   0,9,DQSAVE
@@ -1394,7 +1437,6 @@ DQOPEN   BALR  10,0
          L     6,16(1)
          LTR   6,6
          BZ    DQBAD
-* The +24 open-state is a fullword.
          L     7,24(1)
          LTR   7,7
          BNZ   DQBAD
@@ -1410,7 +1452,6 @@ DQOPEN   BALR  10,0
          ST    7,24(1)
          B     DQGOOD
          DROP  10
-*
 DQPUT    BALR  10,0
          USING *,10
          STM   0,9,DQSAVE
@@ -1433,7 +1474,6 @@ DQPUT    BALR  10,0
          BALR  14,15
          B     DQGOOD
          DROP  10
-*
 DQCLOSE  BALR  10,0
          USING *,10
          STM   0,9,DQSAVE
@@ -1451,7 +1491,6 @@ DQCLOSE  BALR  10,0
          XC    24(4,1),24(1)
          B     DQGOOD
          DROP  10
-*
 DQGOOD   BALR  10,0
          USING *,10
          SR    15,15
@@ -1473,14 +1512,13 @@ DQRESULT DC    F'0'
 DQSAVE   DS    16F
 DQTEMP   DCB   DDNAME=DUMMY,DSORG=PS,MACRF=PM
 DQTIN    DCB   DDNAME=DUMMY,DSORG=PS,MACRF=GM,EODAD=INDYEOD
-*
-* M1 programmer-visible FINDOUTPUT dynamic fallback.
-* R1 = BCPL counted string byte address, R15 = stable handle or 0.
-* R11 is local base, R14 is call return; nested private helpers
-* preserve R11 and R14. Native R10 remains caller-owned here.
-* DDVERIFY confirms JCL DD allocation before QSAM OPEN.
-* No selection, WRCH or ENDWRITE wiring at this gate.
          ENTRY DQFIND
+*
+*------------------------------------------------------------------
+* FIND A DYNAMIC OUTPUT DD
+* Normalize the caller's name, check the allocation, and reuse an
+* existing live handle when possible.
+*------------------------------------------------------------------
 DQFIND   BALR  11,0
          USING *,11
          STM   0,10,DFFSAV
@@ -1491,8 +1529,6 @@ DQFIND   BALR  11,0
          BALR  14,15
          LTR   15,15
          BNZ   DFFBAD
-* Duplicate live FIND returns the original stable word handle.
-* Do this before RDJFCB/OPEN to avoid a second QSAM OPEN.
          LA    1,DFFNAME
          LA    2,2
          L     15,=A(HACTIVE)
@@ -1544,18 +1580,13 @@ DFFARG   DC    F'0'
 DFFDESC  DC    F'0'
 DFFRES DC   F'0'
 DFFSAV   DS    16F
-*
-* M1 PRIVATE NON-REUSED HANDLE IDENTITIES (NOT WIRED TO FIND).
-* HNEW R1=descriptor, R15=BCPL word-address handle or 0.
-* HLOOK R1=handle, R15=live descriptor or 0.
-* HCLOSE R1=handle, R15=detached descriptor or 0.
-* Caller must DREL a nonzero HCLOSE result; HCLOSE itself
-* only invalidates the stable handle record. Tombstones are
-* retained until IOFIN cleanup is subsequently implemented.
-* The public handle names the fullword at record offset +4.
-* NEVER dereference the caller-provided handle before search.
-*
          ENTRY HNEW,HLOOK,HCLOSE
+*
+*------------------------------------------------------------------
+* STABLE STREAM HANDLES
+* Create a handle record that is not reused during this execution.
+* A closed handle becomes a tombstone.
+*------------------------------------------------------------------
 HNEW     BALR  10,0
          USING *,10
          STM   0,9,HSAVE
@@ -1584,6 +1615,10 @@ HRETURN  LM    0,9,HSAVE
          BR    14
          DROP  10
 *
+*------------------------------------------------------------------
+* LOOK UP A STREAM HANDLE
+* Resolve a valid handle to its live descriptor.
+*------------------------------------------------------------------
 HLOOK    BALR  10,0
          USING *,10
          STM   0,9,HSAVE
@@ -1608,6 +1643,10 @@ HLRET    LM    0,9,HSAVE
          BR    14
          DROP  10
 *
+*------------------------------------------------------------------
+* CLOSE A HANDLE IDENTITY
+* Mark a handle as closed while keeping its identity reserved.
+*------------------------------------------------------------------
 HCLOSE   BALR  10,0
          USING *,10
          STM   0,9,HSAVE
@@ -1639,11 +1678,11 @@ HTARGET  DC    F'0'
 HRESULT  DC    F'0'
 HSAVE    DS    16F
 *
-* Find a live identity by normalized DDNAME plus direction.
-* R1 -> EBCDIC CL8, R2=1 INPUT / 2 OUTPUT.
-* R15 = BCPL word handle, or 0. No DCB OPEN, no allocation.
-* The stable HHEAD chain retains retired records; skip +4=0.
-* Use an independent save area; R10 is private base/clobbered.
+*------------------------------------------------------------------
+* MATCH AN ACTIVE DD STREAM
+* Find a live stream with the same normalized DD name and
+* direction.
+*------------------------------------------------------------------
 HACTIVE  BALR  10,0
          USING *,10
          STM   0,9,HASAVE
@@ -1651,7 +1690,6 @@ HACTIVE  BALR  10,0
          LR    7,1
          MVC   HAKEY(8),0(7)
          ST    2,HADIR
-* HHEAD predates HACTIVE; use relocated address literal.
          L     1,=A(HHEAD)
          L     6,0(1)
 HANEXT   LTR   6,6
@@ -1667,7 +1705,6 @@ HANEXT   LTR   6,6
          BZ    HASKIP
          CLC   8(8,8),HAKEY
          BNE   HASKIP
-* The same record will be used by SELECT and ENDREAD/ENDWRITE.
          LA    7,4(6)
          SRL   7,2
          ST    7,HARES
@@ -1685,12 +1722,13 @@ HAKEY    DC    CL8'        '
 HADIR    DC    F'0'
 HARES    DC    F'0'
 HASAVE   DS    16F
-*
-* Dynamic FINDINPUT: same stable-handle registry as FINDOUTPUT,
-* separate input direction and QSAM GET DCB template.
-* R1=BCPL counted-string address, R15=word handle or zero.
-* R11 local base; the enclosing BCPL entry restores R11.
          ENTRY DIFIND
+*
+*------------------------------------------------------------------
+* FIND A DYNAMIC INPUT DD
+* Normalize and verify the DD, then obtain or reuse its input
+* descriptor and handle.
+*------------------------------------------------------------------
 DIFIND   BALR  11,0
          USING *,11
          STM   0,10,DIFSAV
@@ -1700,7 +1738,6 @@ DIFIND   BALR  11,0
          BALR  14,15
          LTR   15,15
          BNZ   DIFBAD
-* Return a live input identity without reopening the DD.
          LA    1,DIFNAME
          LA    2,1
          L     15,=A(HACTIVE)
@@ -1751,16 +1788,12 @@ DIFNAME  DC    CL8'        '
 DIFDESC  DC    F'0'
 DIFRES   DC    F'0'
 DIFSAV   DS    16F
-*
-* M1 DD ALLOCATION INQUIRY (PRIVATE, NOT WIRED TO FIND).
-* R1 -> normalized EBCDIC CL8 DD name; R15 0 allocated,
-* 8 otherwise. Nonreentrant: separate unopened scratch DCB.
-* This inquiry does not OPEN the DD, or allocate a stream.
-* JFCB exit list + 176-byte area are required by RDJFCB.
-* RDJFCB uses the DCB at R2; the offset of the DDNAME
-* field is verified against the IFOX DCB macro expansion.
-*
          ENTRY DDVERIFY
+*
+*------------------------------------------------------------------
+* CHECK JCL DD ALLOCATION
+* Use RDJFCB to confirm a DD exists before opening its QSAM DCB.
+*------------------------------------------------------------------
 DDVERIFY BALR  10,0
          USING *,10
          STM   0,9,DVSAVE
@@ -1788,13 +1821,11 @@ DVDCB    DCB   DDNAME=SYSPRINT,DSORG=PS,MACRF=GM,EXLST=DVEXL
 DVEXL    DC    X'87',AL3(DVJFCB)
 DVJFCB   DS    CL176
 *
-* M1 dynamic-stream termination drain; invoked from IOFIN only.
-* Flush pending FB132 records, CLOSE each live QSAM DCB, release
-* all owned descriptors, then free live and retired handle records.
-* No BCPL observable handle remains after FINISH or STOP.
-* This module is nonreentrant, like BCPLIO's existing QSAM paths.
-* R11 private base; R10 clobbered by nested helper calls.
-* DHEAD/HHEAD lie behind this base, so address via literals.
+*------------------------------------------------------------------
+* DRAIN DYNAMIC STREAMS
+* Flush buffered output, close QSAM DCBs and release descriptors
+* and handle records at shutdown.
+*------------------------------------------------------------------
 IODRAIN  BALR  11,0
          USING *,11
          STM   0,10,DRSAVE
@@ -1813,7 +1844,6 @@ DRAINDS  L     1,=A(DHEAD)
          L     7,236(7)
          LTR   7,7
          BZ    DRAINCL
-* QSAM buffer +0 is a complete, space-padded FB132 record.
          LR    1,6
          L     2,16(6)
          L     15,=A(DQPUT)
@@ -1825,9 +1855,6 @@ DRAINFR  L     1,DRDESC
          L     15,=A(DREL)
          BALR  14,15
          B     DRAINDS
-*
-* Each handle record is a separate 16-byte GETMAIN area.
-* Free tombstones too; never recycle word handles while running.
 DRAINHS  L     1,=A(HHEAD)
          L     6,0(1)
          LTR   6,6

@@ -1,23 +1,28 @@
-***********************************************************************
-* BCPLBYTE -- INDEPENDENT MACHINE-DEPENDENT BCPL SERVICE
+*===================================================================
+* BCPLBYTE -- BYTE ACCESS TO BCPL WORD STORAGE
 *
-* First object-module extraction from BCPLMAIN-WIP.
-* Public entry symbols: GETBYTE and PUTBYTE (LIBHDR G85 and G86).
-* No private BCPLMAIN storage is referenced.
+* GETBYTE (G!85) reads one unsigned byte.
+* PUTBYTE (G!86) stores the low eight bits of its value.
+* R7 carries the BCPL word pointer and returns the result.
+* R8 is the byte offset; PUTBYTE also uses R9 for the value.
+* Byte address = (word pointer * 4) + byte offset.
+* R5 is the current workspace; R6 is the return address.
+* Restore R4 from 0(R5) before return. R0-R3 stay unchanged.
+* No BCPLMAIN private storage is needed.
+*===================================================================
 *
-* BCPL entry register contract:
-* R5 current BCPL frame, R6 BCPL return address
-* R7 pointer argument / return result
-* R8 byte offset, R9 byte to write
-* R4 restored from 0(R5), R0 and R1-R3 retained unchanged.
-*
-* G85/G86 link to this independent CSECT (M2.0 Gate C accepted).
-***********************************************************************
+*------------------------------------------------------------------
+* MODULE ENTRY
+* Expose independent byte-access routines to the runtime linker.
+*------------------------------------------------------------------
 BCPLBYTE CSECT
          ENTRY GETBYTE,PUTBYTE
 *
-* GETBYTE(S,I) -> R7
-* S is a BCPL word pointer; I is an unrestricted byte offset.
+*------------------------------------------------------------------
+* GETBYTE(S,I) -- G!85
+* Shift the BCPL word pointer S by two, add byte offset I, and load
+* one unsigned byte into R7.
+*------------------------------------------------------------------
 GETBYTE  LR    14,7
          SLL   14,2
          AR    14,8
@@ -26,7 +31,10 @@ GETBYTE  LR    14,7
          L     4,0(5)
          BCR   15,6
 *
-* PUTBYTE(S,I,BYTE): stores low eight bits of R9.
+*------------------------------------------------------------------
+* PUTBYTE(S,I,B) -- G!86
+* Compute the same byte address and store the low byte of R9.
+*------------------------------------------------------------------
 PUTBYTE  LR    14,7
          SLL   14,2
          AR    14,8
