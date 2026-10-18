@@ -60,7 +60,7 @@ datasets:
   MR10_ASM:
     dsn: BCPL.MR10KIT.ASM
     description: MR10 ICINT assembler/interpreter milestones
-    primary: 100
+    primary: 160
     secondary: 20
     directory: 5
     type: pds
@@ -383,7 +383,7 @@ datasets:
   NATIVE_SOURCE:
     dsn: BCPL.NATIVE.SOURCE
     description: Native compiler/bootstrap BCPL headers
-    primary: 10
+    primary: 40
     secondary: 5
     directory: 5
     type: pds
