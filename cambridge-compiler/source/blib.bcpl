@@ -1,0 +1,474 @@
+SECTION "BLIB"
+
+GET "LIBHDR"
+
+GLOBAL   $(  G0:0  $)
+
+ //      THE ROUTINES FOR HANDLING STRINGS DEPEND ON TWO BASIC
+ //      CHARACTER ACCESS ROUTINES, 'GETBYTE' AND 'PUTBYTE' .
+ //      FOR EFFICIENCY THESE TWO ROUTINES ARE PROGRAMMED IN MACHINE
+ //      CODE AND FORM PART OF 'BCPLMAIN' .   THEY ARE NECESSARILY
+ //      MACHINE DEPENDENT, VARYING WITH THE NUMBER OF BYTES PER WORD
+ //      AND ALSO THE NUMBER OF BITS PER BYTE.
+ //
+ //            GETBYTE(S, I)  IS A FUNCTION RETURNING AS RESULT THE
+ //      CHARACTER FOUND AT OFFSET  I  FROM VECTOR  S .   THUS IF
+ //      S  IS A BCPL STRING RESULT OF  GETBYTE(S, 0)  WILL BE THE
+ //      STRING LENGTH.
+ //
+ //            PUTBYTE(S, I, BYTE)  SETS THE CHARACTER AT OFFSET  I
+ //      FROM VECTOR  S  TO (THE BOTTOM 8 BITS OF)  BYTE .
+ //
+ //      THERE IS NO RESTRICTION ON THE VALUE OF  I , AND THESE
+ //      ROUTINES MAY THEREFORE BE USED FOR GENERAL OPERATIONS THAT
+ //      INVOLVE THE PACKING OF BYTES IN VECTORS.
+
+
+ //      BCPL DEFINITIONS OF THESE ROUTINES FOR THE IBM/360 MIGHT BE
+ //
+ //            LET  GETBYTE(S, I)  =  (S!(I/4) >> 24-(I&3)*8) & #XFF
+ //
+ //
+ //            AND  PUTBYTE(S, I, BYTE)  BE
+ //
+ //                 $(PB  LET  SH,  P  =  24-(I&3)*8,  I/4
+ //                       LET  CH = BYTE & #XFF
+ //
+ //                       S!P := (S!P & NOT(#XFF<<SH)) + (CH<<SH)  $)PB
+
+ //      OF THE ROUTINES THAT DEPEND ON  GETBYTE  AND  PUTBYTE  ONLY
+ //      PACKSTRING  IS ITSELF MACHINE DEPENDENT.
+
+
+LET  WRITES(S)  BE
+       FOR  I = 1 TO GETBYTE(S,0)   DO   WRCH(GETBYTE(S,I))
+
+
+AND  UNPACKSTRING(S, V)  BE
+       FOR  I = 0 TO GETBYTE(S,0)   DO   V!I := GETBYTE(S,I)
+
+
+AND  PACKSTRING(V, S) = VALOF
+
+  $(1  LET  N = V!0 & #XFF
+       LET  I = N/4
+       LET  X = V!I                 //       SAVE IN CASE  S=V
+
+       S!I := 0
+       FOR  P = 0 TO N   DO   PUTBYTE(S,P,V!P)
+       PUTBYTE(S,I,X)
+       RESULTIS  I                               $)1
+
+
+
+AND WRITEF(FORMAT, A, B, C, D, E, F, G, H, I, J, K) BE
+
+$(1 LET T = @A
+
+    FOR  P = 1 TO GETBYTE(FORMAT,0)  DO
+      $(  LET  CH = GETBYTE(FORMAT, P)
+
+          TEST  CH='%'
+
+             THEN  $(2 LET F, ARG, N = 0, T!0, 0
+                       P := P + 1
+
+                    $( LET  TYPE = GETBYTE(FORMAT, P)
+
+// WARNING:  EBCDIC SPECIFIC!
+
+                       SWITCHON  TYPE | #X40  INTO
+
+                    $( DEFAULT:     WRCH(TYPE);  ENDCASE
+
+                       CASE '$':   T := T + 1;     ENDCASE
+                       CASE 'S':   F := WRITES;     GOTO L
+                       CASE 'C':   F := WRCH;       GOTO L
+                       CASE 'O':   F := WRITEOCT;   GOTO M
+                       CASE 'X':   F := WRITEHEX;   GOTO M
+                       CASE 'I':   F := WRITED;     GOTO M
+                       CASE 'N':   F := WRITED;     GOTO L
+
+                    M:     P := P+1;    N := GETBYTE(FORMAT, P) | #X40
+                                                            // EBCDIC AGAIN!
+                           N :=  ('0'<=N<='9') ->  N-'0',  N+10-'A'
+
+                    L:     F(ARG, N);     T := T+1      $)2
+
+               OR  WRCH(CH)                      $)1
+
+
+
+
+ //      THE ROUTINES THAT FOLLOW PROVIDE POST-MORTEM INFORMATION IN
+ //      THE SPECIFIC ENVIRONMENT OF O.S. FOR THE IBM/360-370.
+ //
+ //      THE ROUTINES ARE INTERDEPENDENT WITH ROUTINES IN 'BCPLMAIN'
+
+MANIFEST   $(  ENTRYMASK=#XFFF0FFFF;  ENTRYWORD=#X9040F000
+               MODULEWD0=#X90ECD00C;  MODULEWD1=#X5840F00C
+               GLOBWORD=#XC7D3F000;   GLOBCON79=GLOBWORD+4*79
+               EVENSTACK=#X5C40E2E3;  ODDSTACK=#XC3D2405C
+               TOPBITS=#XFF000000;    BCPLBIT=#X800000
+
+               OVERFLOW=0;   UNSET=1      //    STACKHWM()  RESULTS
+           $)
+
+
+LET  ABORT(CODE, ADDR, OLDSTACK, DATA)  BE
+
+$(AB  LET SYSPRINT = FINDOUTPUT("SYSPRINT")
+      LET MONITOR = SYSPRINT
+
+      IF  SYSPRINT=0   DO  MONITOR := FINDLOG()
+
+      TEST  MONITOR=0
+               THEN  WRITETOLOG("FATAL ERROR IN BCPL, NO SYSPRINT")
+
+      OR $(1  LET  SCC, UCC = (CODE>>12) & #XFFF, CODE & #XFFF
+              LET  USER = (SCC=0) ;   CODE := USER -> UCC, SCC
+              SELECTOUTPUT(MONITOR)
+
+              TEST  USER
+                  THEN   WRITEF("*N*NSTEP ABEND USER CODE %N*N", CODE)
+
+                  OR   SWITCHON  CODE  INTO
+
+         $(C  CASE #XC0:  CASE #XC1:  CASE #XC2:  CASE #XC3:
+              CASE #XC4:  CASE #XC5:  CASE #XC6:  CASE #XC7:
+              CASE #XC8:  CASE #XC9:  CASE #XCA:  CASE #XCB:
+              CASE #XCC:  CASE #XCD:  CASE #XCE:  CASE #XCF:
+
+              $(  LET GADDR = (ADDR-GLOBWORD & #XFFFFFF) >> 2
+                  WRITEF("*N*NPROGRAM INTERRUPT %X3 AT %N(%X6)*N",
+                                             CODE, ADDR>>2, ADDR)
+                  IF  0<GADDR<10000  DO
+                       WRITEF("*NIS G%N DEFINED?*N", GADDR)   $)
+                  ENDCASE
+
+              CASE #X0D1:
+
+              $(  LET SECS, FRACTION = DATA / 38400, DATA REM 38400
+                  LET HUNDREDS = FRACTION / 384
+                  LET TENS, UNITS = HUNDREDS / 10, HUNDREDS REM 10
+
+                  WRITEF("*N*NCOMP EXHAUSTED AT %N AFTER ", ADDR>>2)
+                  WRITEF("%N.%N%N SECS*N", SECS, TENS, UNITS)    $)
+
+              CASE #X0D2:    ENDCASE      //    FATAL I/O ERROR
+
+              CASE #X0D3:    WRITES("*N*NSTACK OVERFLOW*N")
+                             ENDCASE
+
+              DEFAULT:   WRITEF("*N*NSTEP ABEND SYSTEM CODE %X3*N",
+                                               CODE)                 $)C
+
+           TEST  OLDSTACK=!(@CODE-2)               //    CHECK VALID
+                  THEN   UNLESS SYSPRINT=0  DO BACKTRACE()
+                  OR     WRITES("*NSTACK POINTER CORRUPTED*N")
+
+           UNLESS  USERPOSTMORTEM=GLOBCON79  DO  USERPOSTMORTEM(CODE)
+
+           UNLESS  SYSPRINT=0  DO  MAPSTORE()        $)1
+
+      STOP(100)    $)AB
+
+
+
+AND  ERRORMESSAGE(FAULT, FORMAT, ROUTINE, DDNAME)  BE
+
+    $(   LET OSTREAM, TROUBLE, SYSPRINT = OUTPUT(), TRUE, 0
+
+         FOR I = 0 TO 8  DO
+                 UNLESS  GETBYTE(DDNAME,I)=GETBYTE("SYSPRINT",I)
+                        DO   $(  TROUBLE := FALSE;  BREAK   $)
+
+         UNLESS TROUBLE   DO SYSPRINT := FINDOUTPUT("SYSPRINT")
+         IF  SYSPRINT=0   DO SYSPRINT := FINDLOG()
+
+         IF  SYSPRINT=0  DO
+            $(  WRITETOLOG("ERROR MESSAGES REQUIRE SYSPRINT")
+                RETURN      $)
+
+         SELECTOUTPUT(SYSPRINT)
+         WRITEF("*N*NFAULT %N IN ROUTINE %S*N", FAULT, ROUTINE)
+         WRITEF(FORMAT, DDNAME);     WRITES("*N*N")
+         SELECTOUTPUT(OSTREAM)    $)
+
+
+
+AND  PRINTWIDTH()  =  VALOF
+
+  $(PW  MANIFEST   $(  DCBRECFM=9;  DCBLRECL=20
+                       MINWIDTH=72;  MAXWIDTH=132
+                       FBIT=#X80000000;  VBIT=#X40000000
+                       ABIT=#X04000000;  MBIT=#X02000000
+                       U=FBIT+VBIT;  CTL=ABIT+MBIT;  RHALF=#XFFFF
+                   $)
+
+        LET  DCB = (FINDOUTPUT("SYSPRINT")>>2)
+        LET  RECFORM, LRECL  =  0, 0
+
+        IF  DCB=0   RESULTIS MINWIDTH
+
+        LRECL := (DCB!DCBLRECL) & RHALF
+        RECFORM := (DCB!DCBRECFM)
+
+        IF  (RECFORM & FBIT)=0  DO  LRECL := LRECL-4
+        UNLESS  (RECFORM & CTL)=0  DO  LRECL := LRECL-1
+
+        RESULTIS   (LRECL<MINWIDTH)  ->   MINWIDTH,
+                   (LRECL<MAXWIDTH)  ->   LRECL,  MAXWIDTH
+
+  $)PW
+
+
+
+AND  STACKHWM() = VALOF
+
+   $(HWM   LET  Q = !(STACKEND-1)         //   INITIALISATION LIMIT
+
+           UNLESS  !(STACKEND-2) = EVENSTACK   RESULTIS OVERFLOW
+           UNLESS  STACKBASE <= Q < STACKEND   RESULTIS OVERFLOW
+
+           UNLESS  !Q=EVENSTACK    RESULTIS UNSET
+
+           FOR P = Q-2 TO STACKBASE BY -2  DO
+
+            $(   UNLESS  P!1=ODDSTACK    RESULTIS  P+2
+                 UNLESS  P!0=EVENSTACK   RESULTIS  P+1    $)HWM
+
+
+
+AND MAPSTORE() BE
+
+$(MS  LET TESTWRAP(N, J, WRAP) = VALOF
+      $(  TEST J+N>=WRAP THEN
+          $(  NEWLINE(); J:=0 $)
+          ELSE
+              WRITES("    ")
+          RESULTIS J+N+4
+      $)
+
+      LET MAPOUT(P1, P2, WRAP) BE
+        $(MO LET J = WRAP
+             AND COUNTWORD  = #X45EB0000 | 20
+             LET STCKWORD   = COUNTWORD  + 40
+             AND STCKCNTWD  = COUNTWORD  + 60
+             AND PROFILE = FALSE
+
+
+             WRITEF("*NMAP AND COUNTS FROM %N(%X6) TO %N*N",
+                                                   P1, P1<<2, P2)
+
+             FOR P = P1 TO (P2-10) DO
+              $( IF  (P!2&ENTRYMASK)=ENTRYWORD & (P!0>>24)=7  DO
+                 $( IF PROFILE DO $( J:=WRAP; PROFILE:=FALSE $)
+                    $( LET X = P!3
+                       TEST X = COUNTWORD | X = STCKCNTWD DO
+                       $(  J := TESTWRAP(23, J, WRAP)
+                           WRITEF("%I7/%S:%I7", P+2, P, P!4)
+                           P := P + 4
+                       $)
+                       OR
+                       $(  J := TESTWRAP(15, J, WRAP)
+                           WRITEF("%I7/%S", P+2, P)
+                       $)
+                    $)
+                $)
+
+                 IF  P!0=MODULEWD0 & P!1=MODULEWD1 &
+                         9<=(P!4>>24)<=11 & (P!7>>24)<=8  DO
+                      $(  WRITEF("*N*N%I7  SECTION %S   ", P, P+7)
+                          WRITEF("COMPILED ON%S   LENGTH %N WORDS*N",
+                                  P+4, (P!2 & #XFFFF)>>2)
+                          J := WRAP     $)
+
+                 IF  P!0=COUNTWORD DO
+                 $( UNLESS PROFILE DO $( J:=WRAP; PROFILE:=TRUE $)
+                    J := TESTWRAP(15, J, WRAP)
+                    WRITEF("%I7:%I7", P, P!1)
+                $)
+              $)
+        $)MO
+
+    LET J, G, HWM = 0, @G0, STACKHWM()
+    LET WIDTH = PRINTWIDTH()
+
+    LET GWRAP = (WIDTH+3) / 22
+    AND MWRAP = WIDTH
+
+    WRITES("*P*NEXTENT OF STACK AND MAXIMUM UTILISATION*N*N")
+    WRITEF("     LIMIT OF STACK      %I7*N", STACKEND)
+    WRITES("     HIGH WATER MARK   ")
+    TEST  HWM=OVERFLOW           THEN  WRITES(" OVERFLOW*N")
+          OR   TEST  HWM=UNSET   THEN  WRITES("    UNSET*N")
+                                   OR  WRITEF("%I9*N", HWM)
+    WRITEF("     BASE OF STACK       %I7*N*N*N", STACKBASE)
+
+
+    $(1  WRITEF("*NVALUES SET IN GLOBAL VECTOR(%N)          ", G)
+
+         TEST  80<=G0<=10000
+                 THEN   WRITEF("%N GLOBALS ALLOCATED*N", G0)
+                 OR     $(   G0 := 400
+                             WRITES("(GLOBAL ZERO CORRUPTED)*N")   $)
+
+         FOR T=1 TO G0 DO
+             UNLESS  G!T=GLOBWORD+(T<<2)  DO
+                 $( TEST J REM GWRAP = 0 THEN NEWLINE()
+                                           OR WRITES("   ")
+                    J := J+1
+                    WRITEF("  G%I4:", T);  WRITEARG(G!T)      $)
+
+         WRITES("*N*N*N")                 $)1
+
+
+    MAPOUT(LOADPOINT, ENDPOINT, MWRAP)     //   MAIN PROGRAM AREA
+
+    $(L   LET P = (SAVEAREA!29)>>2         //   HEAD OF LOAD LIST
+          UNTIL  P=0  DO
+             $(  IF  (P!9 & BCPLBIT)~=0  DO
+                       $(  WRITEF("*N*N*N*NLOADED MODULE *"%S*"*N", P+7)
+                           MAPOUT((P!3)>>2, (P!4)>>2, MWRAP)
+                       $)
+                 P := !P >> 2    $)
+    $)L
+
+    WRITES("*N*N")
+$)MS
+
+
+
+
+AND INPROGRAM(N) = (LOADPOINT<=N<ENDPOINT) | VALOF
+
+  $(  LET P = (SAVEAREA!29)>>2
+      AND X = (N<<2)                    //    BYTE POINTER
+
+      $(  IF  P=0  RESULTIS FALSE
+          IF  (P!9 & BCPLBIT)~=0  DO
+                IF  P!3<=X<P!4  RESULTIS TRUE
+          P := !P >> 2
+      $)   REPEAT
+  $)
+
+
+AND VALIDPOINTER(N) = (SAVEAREA<=N<STACKEND) | INPROGRAM(N) | VALOF
+
+  $(  LET P = (SAVEAREA!48) >> 2
+
+      $(  IF  P=0  RESULTIS FALSE
+          IF  !P <= N < P+(P!1>>2)  RESULTIS TRUE
+          P := (P!2 >> 2)
+      $)  REPEAT
+  $)
+
+
+
+AND BACKTRACE() BE
+
+$(1 LET P = LEVEL()>>2
+    LET Q, F = 0, 0
+
+    LET  WIDTH = PRINTWIDTH()
+    LET  MAXFRAME = 3 + (WIDTH-21)/11        //     MAXIMUM WORD OFFSET
+
+    WRITES("*N*NBACKTRACE CALLED*N")
+
+    WRITES("*N    P        FUNCTION      VAR1       VAR2    . . .*N*N")
+
+    FOR I = 1 TO 50 DO
+    $( Q := P
+       P := (P!1)>>2
+       F := P!0
+       IF  P=Q  DO    $( WRITES("*NBASE OF STACK*N")
+                         BREAK  $)
+
+       WRITEF("%I7:  ", P);  WRITEARG(F)
+
+       IF Q>P+MAXFRAME DO Q := P+MAXFRAME
+       FOR T=P+3 TO Q-1 DO WRITEARG(!T)
+
+       UNLESS  INPROGRAM(F>>2)  DO
+             $( WRITEF("*NIMPROPER LINK*N")
+                BREAK  $)
+
+       NEWLINE()      $)
+
+    WRITES("*NEND OF BACKTRACE*N*N")   $)1
+
+
+AND WRITEARG(N) BE
+
+$(1 LET F = (N>>2)-2
+
+    IF INPROGRAM(F) THEN IF (F!2&ENTRYMASK)=ENTRYWORD & (F!0>>24)=7
+         DO    $(   WRITEF("  '%S'", F);  RETURN   $)
+
+  $(  LET T = (N & TOPBITS)
+
+      TEST  (T=0) | (T=TOPBITS)
+          THEN  WRITED(N, 11)
+
+            OR  TEST  N=EVENSTACK | N=ODDSTACK
+                  THEN   WRITES("      STACK")
+
+                    OR   WRITEF(" #X%X8", N)         $)1
+
+
+// THE DEFINITIONS THAT FOLLOW ARE MACHINE INDEPENDENT
+
+AND WRITED(N, D) BE
+
+$(1 LET T = VEC 20
+    AND I, K = 0, -N
+    IF N<0 DO D, K := D-1, N
+    T!I, K, I := -(K REM 10), K/10, I+1    REPEATUNTIL K=0
+    FOR J = I+1 TO D DO WRCH('*S')
+    IF N<0 DO WRCH('-')
+    FOR J = I-1 TO 0 BY -1 DO WRCH(T!J+'0')  $)1
+
+
+AND WRITEN(N) BE WRITED(N, 0)
+
+AND NEWLINE() BE WRCH('*N')
+
+AND NEWPAGE() BE WRCH('*P')
+
+
+AND READN() = VALOF
+
+$(1 LET SUM = 0
+    AND NEG = FALSE
+
+L: TERMINATOR := RDCH()
+    SWITCHON TERMINATOR INTO
+    $(  CASE '*S':
+        CASE '*T':
+        CASE '*N':    GOTO L
+
+        CASE '-':     NEG := TRUE
+        CASE '+':     TERMINATOR := RDCH()   $)
+    WHILE '0'<=TERMINATOR<='9' DO
+                 $( SUM := 10*SUM + TERMINATOR - '0'
+                    TERMINATOR := RDCH()  $)
+    IF NEG DO SUM := -SUM
+    RESULTIS SUM   $)1
+
+
+AND WRITEOCT(N, D) BE
+    FOR I = 3*(D-1) TO 0 BY -3 DO
+       WRCH(((I>BITSPERWORD->0,N>>I)&7)+'0')
+
+AND WRITEHEX(N, D) BE
+    FOR I = 4*(D-1) TO 0 BY -4 DO
+        WRCH( GETBYTE(
+         (TABLE #XF0F1F2F3, #XF4F5F6F7, #XF8F9C1C2, #XC3C4C5C6),
+            (I>BITSPERWORD->0,N>>I)&#XF))
+
+AND WRITEO(N) BE WRITEOCT(N, 11)
+
+AND WRITEX(N) BE WRITEHEX(N, 8)
+
+

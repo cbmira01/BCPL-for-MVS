@@ -1,0 +1,2255 @@
+SECTION "CGA"
+
+GET "LIBHDR"
+GET "HEADERS(CGHDR)"
+
+LET CODEGEN() BE
+
+$(  OBUFB := 0
+    READOP, READN := GETBYTES, GETBYTES
+    CG370()
+$)
+
+AND GETBYTES() = VALOF
+
+$(  LET B = GETBYTE(WORKBASE, OBUFB)
+    OBUFB := OBUFB+1
+    TEST B<128 THEN RESULTIS B
+    OR  RESULTIS (GETBYTES() << 7) + B - 128
+$)
+
+AND READGN() = VALOF
+     $( LET GN = READN()
+        IF GN>MAXGN DO MAXGN := GN
+        RESULTIS GN  $)
+
+
+AND READL() = VALOF
+$(  LET L = READN()
+    IF L > MAXL DO
+    $(  MAXL := L
+        IF MAXL >= PARAMNUMBER DO CGREPORT(297)
+    $)
+    RESULTIS L
+$)
+LET CG370() BE
+$(1 LET V = VEC 500
+    TEMPV, TEMPT := V, V+500
+ $( LET V = VEC 100
+    BASE, BASELAB, BASEADDR, BASEOVRFLW := V, 0, 0, V+100
+$(  LET V = VEC 100
+    REGLIST := V
+    TXTV, TP, DP := CGWORKVEC, CGWORKVEC, WORKTOP-1001
+    LABV, PARAMNUMBER, MAXL := WORKTOP-1000, 1000, 0
+
+    OP := READOP()
+
+    INITSTACK(3)
+
+    BASELAB := NEXTPARAM()
+    ENDLAB := NEXTPARAM()
+    HLAB := NEXTPARAM()
+    FLAB := NEXTPARAM()
+    SLAB := NEXTPARAM()
+    FIXL, FLOATL := -1, -1
+    BLOCKLABEL := -1
+
+    INITDATALISTS()
+
+    MAXGN := 100
+    COUNTFLAG := FALSE
+    $(  LET T = TABLE
+            'B', 'C', 'P', 'L', 'M', 'A', 'I', 'N'
+        LET D = DATE()
+
+        LET W = VEC 256
+        AND N = VEC 2
+
+        CGSTART(W)
+        GENLAB(BASELAB, 0)
+        INCODE := TRUE
+        GENRS(F.STM, 14, 12, 13, 12)
+        GENRXA(F.L, R.B, 0, 15, 12)
+        GENRR(F.BCR, 15, R.B)
+        GENDCAL2(ENDLAB)
+        GENDCAX(T-1)
+        FOR I = 0 TO 2 DO GENDCX(I!D)
+        PACKSTRING(W, N)
+        FOR I = 0 TO 2 DO GENDCX(I!N)
+    $)
+
+    INCODE := FALSE
+    SCAN()
+    CGEND()
+$)1
+
+AND NEXTPARAM() = VALOF
+          $( PARAMNUMBER := PARAMNUMBER - 1
+             IF PARAMNUMBER <= MAXL DO CGREPORT(296)
+             RESULTIS PARAMNUMBER  $)
+
+AND INITSTACK(S) BE
+       $( ARG2, ARG1 := TEMPV, TEMPV + 5
+          SSP := S
+          IF STKCKING & SSP>BASEFRMSIZE DO BASEFRMSIZE := SSP
+          H1!ARG2,H2!ARG2,H3!ARG2 := LOC,-1,SSP-2
+          H4!ARG2,H5!ARG2 := 0,SSP-2
+          H1!ARG1,H2!ARG1,H3!ARG1 := LOC,-1,SSP-1
+          H4!ARG1,H5!ARG1 := 0,SSP-1  $)
+
+AND CGERRWRITE(N, A) BE
+          $( WRITEF("*NCG error %N at address %N: ", N, TXTP/4)
+             WRITEF(CGMESSAGE(N), A)
+                     WRITES("*NCOMPILATION ABORTED*N") $)
+
+AND CGREPORT(N, A) BE
+    $( REPORTCOUNT := REPORTCOUNT + 1
+
+       SELECTOUTPUT(SYSOPT)
+        IF QUIET & NOT PRSOURCE & REPORTCOUNT=1 &
+               GETBYTE(SECTIONNAME, 0) ~= 0 DO
+            WRITEF("Section *"%S*"*N", SECTIONNAME)
+       CGERRWRITE(N, A)
+       SELECTOUTPUT(CODESTREAM)
+
+       STOP(8)     $)
+
+AND CGMESSAGE(N) = VALOF SWITCHON N INTO
+    $( CASE 300: RESULTIS "Compiler error in %S*N"
+       CASE 314: RESULTIS "Compiler error, OP = %N*N"
+       CASE 317: RESULTIS "Code exceeds 4K words - section must be split*N"
+       CASE 298: RESULTIS "Procedure definitions too deeply nested*N"
+       CASE 296:
+       CASE 297: RESULTIS "Too many generated labels - section must be split*N"
+       DEFAULT: RESULTIS ""  $)
+
+AND LOAD(A, B) BE
+$(  ARG2 := ARG1
+    ARG1 := ARG1 + 5
+    H1!ARG1, H2!ARG1 := A, -1
+    H3!ARG1 := B
+    H4!ARG1 := 0
+    H5!ARG1 := SSP
+    SSP := SSP+1
+    IF STKCKING & SSP>BASEFRMSIZE DO BASEFRMSIZE := SSP
+$)
+
+AND STACK(N) BE
+      $(1 IF N GE SSP+4 DO
+                 $( STORE(0, SSP)
+                    INITSTACK(N)
+                    RETURN  $)
+
+          WHILE N > SSP DO LOAD(LOC, SSP)
+
+       L: IF N=SSP RETURN
+
+          UNLESS ARG2=TEMPV DO $( ARG1 := ARG2
+                                  ARG2 := ARG1 - 5
+                                  SSP := SSP - 1
+                                  GOTO L  $)
+
+          IF N=SSP-1 DO
+                 $( FOR H = H1 TO H5 DO H!ARG1 := H!ARG2
+                    SSP := N
+                    H1!ARG2, H2!ARG2, H3!ARG2 := LOC, -1, SSP-2
+                    H4!ARG2 := 0
+                    H5!ARG2 := SSP-2
+                    RETURN  $)
+
+          INITSTACK(N)   $)1
+
+
+AND STORE(P, R) BE FOR T = TEMPV TO ARG1 BY 5 DO
+                        $( LET S = H5!T
+                           IF S>R RETURN
+                           IF S>=P DO STORET(T)  $)
+
+
+AND STORET(X) BE
+$(  LET H5X = H5!X
+    UNLESS H1!X=LOC & H2!X<0 & H4!X=0 & H3!X=H5X THEN
+        $(  TEST H1!X=FREG THEN
+            $(  GENRXA(F.STE, MOVETOANYFR(X), R.P, 0, 4*H5X)
+                DISCARDADDRESS(LOC, H5X)
+            $)
+            OR  $(  LET N = MOVETOANYCR(X)
+                    GENRXA(F.ST, N, R.P, 0, 4*H5X)
+                    STORER(N, LOC, H5X)
+                $)
+             H1!X, H2!X, H3!X, H4!X := LOC, -1, H5X, 0 $)
+$)
+
+AND USING(R) = VALOF
+    $( FOR T = TEMPV TO ARG1 BY 5 IF H1!T=REG &H3!T=R RESULTIS T
+       RESULTIS 0  $)
+
+AND NEXTR() = VALOF
+$(  STATIC  $( RR = 0 $)
+
+    LET F(R) = VALOF
+    $(  LET X = REGLIST+5*R
+        IF USING(R)=0 THEN
+        $(  IF LOCKED(R) THEN RESULTIS FALSE
+            IF RR<0 THEN RR := R
+            IF H1!X=0 & H4!X=0 THEN RESULTIS TRUE
+        $)
+        RESULTIS FALSE
+    $)
+
+    RR := -1
+    IF F(R.A1) THEN RESULTIS R.A1
+    IF F(R.A2) THEN RESULTIS R.A2
+    IF F(R.A3) THEN RESULTIS R.A3
+    IF F(R.A4) THEN RESULTIS R.A4
+    IF F(R.L)  THEN RESULTIS R.L
+    // NEXTR MUST NEVER ALLOCATE REG R.W (USED IN CGAPPLY)
+
+    IF RR>=0 THEN $( DISCARDREG(RR); RESULTIS RR $)
+    FOR T = TEMPV TO ARG1 BY 5 IF H1!T=REG DO
+              $( LET R = H3!T
+                 STORET(T)
+                 RESULTIS R  $)
+
+    CGREPORT(300, "NEXTR")      $)
+
+AND LOSE(R) BE
+$(  SSP := SSP - 1
+    TEST ARG2=TEMPV
+    THEN $( H1!ARG2, H2!ARG2 := LOC, -1
+        H4!ARG2 := 0
+        H3!ARG2, H5!ARG2 := SSP-2, SSP-2   $)
+    OR ARG1, ARG2 := ARG2, ARG2 - 5
+    H1!ARG1, H2!ARG1, H3!ARG1, H4!ARG1 := REG, -1, R, 0
+    H5!ARG1 := SSP - 1
+    DISCARDREG(R)
+$)
+
+LET SCAN() BE
+$(1 LET L, BLOCKSTART = BLOCKLABEL, 0
+    IF NAMING THEN
+    $(  BLOCKLABEL := NEXTPARAM()
+        BLOCKSTART := NEXTPARAM()
+        GENLAB(BLOCKSTART, 0)
+    $)
+    GOTO SW
+
+  NEXT: OP := READOP()
+
+     SW: IF CGTRACE DO WRITEF("*NOP = %N  ", OP)
+
+        SWITCHON OP INTO
+       $( DEFAULT:    CGREPORT(314, OP)
+                      GOTO NEXT
+
+        CASE C.DEBUG:
+        DEBUG()
+            GOTO NEXT
+
+        CASE C.END: RETURN
+
+        CASE C.LG: LOAD(GLOB, READGN()); GOTO NEXT
+        CASE C.LP: LOAD(LOC, READN()); GOTO NEXT
+        CASE C.LL: LOAD(LAB, READL()); GOTO NEXT
+
+        CASE C.LN: LOAD(NUMBER, READN()); GOTO NEXT
+
+        CASE C.LSTR: CGSTRING(READN()); GOTO NEXT
+
+        CASE C.TRUE: LOAD(NUMBER, TRUE); GOTO NEXT
+        CASE C.FALSE: LOAD(NUMBER, FALSE); GOTO NEXT
+
+        CASE C.LLP: LOAD(LVLOC, READN()); GOTO NEXT
+        CASE C.LLG: LOAD(LVGLOB,READGN()); GOTO NEXT
+        CASE C.LLL: LOAD(LVLAB, READL()); GOTO NEXT
+
+        CASE C.SL:
+                GENSTORE(R.B, READL(), 0)
+                GOTO NEXT
+
+        CASE C.SG:
+                GENSTORE(R.G, 0, READGN())
+                GOTO NEXT
+
+        CASE C.SP:
+                GENSTORE(R.P, 0, READN())
+                GOTO NEXT
+
+        CASE C.STIND: CGSTIND(); GOTO NEXT
+
+        CASE C.MOD:
+            CGASSOP(); GOTO NEXT
+
+        CASE C.MULT: CGMULT(); GOTO NEXT
+
+        CASE C.REM:
+        CASE C.DIV:
+            MOVETOR(R.L, ARG2)
+            IF H1!ARG1=REG & H3!ARG1=R.A1 THEN MOVETOR(R.W, ARG1)
+            FREEREG(R.A1); DISCARDREG(R.L); LOCK(R.A1)
+            GENRXA(F.SRDA, R.L, 0, 0, 32)
+            GENRF(F.DR, R.L, ARG1)
+            TEST OP=C.REM THEN $( LOSE(R.L); UNLOCK(R.A1) $)
+                            OR LOSE(R.A1)
+            GOTO NEXT
+
+        CASE C.MINUS: TEST H1!ARG1=NUMBER & H2!ARG1<0
+                           THEN $( H3!ARG1 := -(H3!ARG1 + H4!ARG1)
+                                   H4!ARG1 := 0
+                                $)
+                             OR $( LET R = MOVETOANYR(ARG2)
+                                    GENRHF(F.SR, R, ARG1)
+                                    LOSE(R)
+                                    GOTO NEXT
+                                $)
+        CASE C.PLUS:  CGPLUS(); GOTO NEXT
+
+        CASE C.FEQ:CASE C.FNE:
+        CASE C.FLS:CASE C.FGR:CASE C.FLE:CASE C.FGE:
+        CASE C.EQ:CASE C.NE:
+        CASE C.LS:CASE C.GR:CASE C.LE:CASE C.GE:
+            CGRELOP(OP); GOTO SW
+
+
+        CASE C.LSHIFT: CGSHIFT(F.SLL); GOTO NEXT
+        CASE C.RSHIFT: CGSHIFT(F.SRL); GOTO NEXT
+
+        CASE C.LOGAND: CGLOGOP(OP, F.NR); GOTO NEXT
+        CASE C.LOGOR:  CGLOGOP(OP, F.OR); GOTO NEXT
+        CASE C.EQV:
+        CASE C.NEQV:   CGLOGOP(OP, F.XR); GOTO NEXT
+
+        CASE C.NOT:CASE C.NEG:CASE C.ABS:
+            $(  LET N = MOVETOANYR(ARG1)
+                TEST OP=C.NOT
+                    THEN GENRXL(F.X, N, R.B, FLAB, FDATA(-1))
+                      OR GENRR((OP=C.NEG -> F.LCR, F.LPR), N, N)
+                DISCARDREG(N)
+                GOTO NEXT       $)
+
+        CASE C.SLCTAP:
+            IF H2!ARG1>=0 THEN MOVETOANYR(ARG1)
+        $(  LET SIZE=READN()
+            LET SHIFT=READN()
+            IF  (SHIFT~=0) & (SIZE=0)  DO SIZE := MCWD-SHIFT
+            H4!ARG1 := H4!ARG1 + READN()
+            H2!ARG1 := 32*SIZE+SHIFT
+            GOTO NEXT
+        $)
+
+        CASE C.SLCTST:
+            CGSLCTST(); GOTO NEXT
+
+        CASE C.FIX:
+                CGFIX(); GOTO NEXT
+
+        CASE C.FLOAT:
+                CGFLOAT(); GOTO NEXT
+
+        CASE C.FDIV:
+                CGFASYM(F.DER); GOTO NEXT
+
+        CASE C.FMULT:
+                CGFSYM(F.MER); GOTO NEXT
+
+        CASE C.FPLUS:
+                CGFSYM(F.AER); GOTO NEXT
+
+        CASE C.FMINUS:
+                CGFASYM(F.SER); GOTO NEXT
+
+        CASE C.FNEG:CASE C.FABS:
+            $(  LET N = MOVETOANYFR(ARG1)
+                GENRR((OP=C.FNEG -> F.LCER, F.LPER), N, N)
+                GOTO NEXT
+            $)
+
+        CASE C.RV:
+            IF H2!ARG1>=0 THEN MOVETOANYR(ARG1)
+            H2!ARG1 := 0
+            GOTO NEXT
+
+        CASE C.JUMP: STORE(0,SSP)
+                       JUMP(READL())
+                       INCODE := FALSE
+                       GOTO NEXT
+
+        CASE C.JT:
+        CASE C.JF: STORE(0, SSP-2)
+                     GENRHF(F.CR, 0, ARG1)
+                     CONDJUMP((OP=C.JF->M.EQ,M.NE), READL())
+                     INITSTACK(SSP-1)
+                     COUNTFLAG := COUNTING
+                     GOTO NEXT
+
+        CASE C.GOTO: STORE(0, SSP-2)
+                       GENRR(F.BCR, M.ALL, MOVETOANYR(ARG1))
+                       INITSTACK(SSP-1)
+                       INCODE := FALSE
+                       GOTO NEXT
+
+        CASE C.LAB: STORE(0, SSP)
+                    DISCARDREGS()
+                    INITSTACK(SSP)
+                    INCODE := TRUE
+                    GENLAB(READL(), 0)
+                    COUNTFLAG := COUNTING
+                    GOTO NEXT
+
+        CASE C.STACK: STACK(READN())
+                        GOTO NEXT
+
+        CASE C.STORE: STORE(0, SSP)
+                        INITSTACK(SSP)
+                        GOTO NEXT
+
+        CASE C.ENTRY:
+            $(  LET N = READN()
+                LET M=READL()
+                INCODE := TRUE
+                CGENTRY(N,M)
+                GOTO NEXT
+            $)
+
+        CASE C.SAVE:
+            CGSAVE(READN())
+            GOTO NEXT
+
+        CASE C.FNAP:
+        CASE C.RTAP: CGAPPLY(OP, READN())
+                       GOTO NEXT
+
+        CASE C.FNRN: MOVETOR(R.A1, ARG1)
+                       SSP := SSP - 1
+
+        CASE C.RTRN: GENRR(F.BCR, M.ALL, R.S)
+                       INITSTACK(SSP)
+                       INCODE := FALSE
+                       GOTO NEXT
+
+        CASE C.STARTBLOCK:
+            IF NAMING THEN
+            $(  OP := READOP()
+                SCAN()  $)
+            GOTO NEXT
+
+        CASE C.ENDBLOCK:
+            TEST NAMING THEN
+            $(  READNAMES(BLOCKSTART, L)
+                BLOCKLABEL := L
+                RETURN
+            $)
+            OR IGNORENAMES()
+            GOTO NEXT
+
+        CASE C.ENDPROC:
+            TEST NAMING THEN READNAMES(BLOCKSTART, L)
+            OR IGNORENAMES()
+            CGENDPROC()
+            TEST NAMING THEN RETURN
+                OR GOTO NEXT
+
+        CASE C.RES: STORE(0, SSP-2)
+                      MOVETOR(R.A1, ARG1)
+                      JUMP(READL())
+                      INITSTACK(SSP-1)
+                      INCODE := FALSE
+                      GOTO NEXT
+
+        CASE C.RSTACK: STACK(READN())
+                         LOAD(REG, R.A1)
+                         GOTO NEXT
+
+        CASE C.FINISH: GENRXA(F.BC, M.ALL, R.S, 0, S.FIN)
+                         INCODE := FALSE
+                         GOTO NEXT
+
+        CASE C.SWITCHON: APTOVEC(CGSWITCH, 2*READN()); GOTO NEXT
+
+        CASE C.GETBYTE: CASE C.PUTBYTE:
+                       CGBYTEAP(OP); GOTO NEXT
+        CASE C.GLOBAL: CGGLOBAL(READN())
+                         RETURN  //GLOBAL IS THE LAST STATEMENT
+
+        CASE C.DATALAB: DATA(C.DATALAB, READL()); GOTO NEXT
+        CASE C.ITEMN:   DATA(C.ITEMN, READN());   GOTO NEXT
+        CASE C.ITEML:   DATA(C.ITEML, READL());   GOTO NEXT
+
+$)1
+
+AND GENSTORE(R, X, N) BE
+
+$(  LET S, T = 0, H1!ARG1
+    AND F, G = F.ST, MOVETOANYCR
+    AND GENAORL = GENRXA
+    IF T=FREG THEN
+        F, G := F.STE, MOVETOANYFR
+    S := G(ARG1)
+    IF R=R.B THEN GENAORL := GENRXL
+    GENAORL(F, S, R, X, 4*N)
+    $(  LET T = R=R.P -> LOC,
+                R=R.G -> GLOB,
+                         LAB
+
+        IF T=LAB THEN
+            TEST N=0 THEN N := X
+            OR GOTO L
+        TEST F=F.STE THEN DISCARDADDRESS(T, N)
+            OR STORER(S, T, N)
+    $)
+L:    STACK(SSP-1)
+$)
+
+AND IGNORENAMES() BE
+
+$(  LET I = READN()
+    FOR J = 1 TO I DO
+    $(  LET K = READN()
+        FOR L = 1 TO K+2 DO READN()
+    $)
+$)
+
+AND READNAMES(X, L) BE
+
+$(  LET V = VEC 256
+    LET P = NEXTPARAM()
+    AND K = READN()
+    GENLAB(P, 0)
+    !NAMET, 1!NAMET, 2!NAMET := BLOCKLABEL, X, P
+    NAMET := NAMET + 3
+    FOR J = 1 TO K DO
+    $(  LET M, L, N = 0, 0, READN()
+        LET OLDNAMET = NAMET
+        FOR I = 1 TO N DO V!I := READN()
+        V!0 := N
+        L := PACKSTRING(V, NAMET+2)
+        M := READN(); N := READN()
+        NAMET := NAMET+L+3
+        !OLDNAMET, 1!OLDNAMET := NAMET, M<<24|N
+    $)
+    !NAMET, 1!NAMET := -1, L
+    NAMET := NAMET + 2
+$)
+.
+SECTION "CGB"
+GET "LIBHDR"
+GET "HEADERS(CGHDR)"
+
+STATIC $( SWR=0; SWD=0 $)
+
+LET CGSWITCH(V, N2) BE
+      $(1 LET N = N2/2
+          LET A = V
+          AND B = V + N
+          SWD := READL()
+
+          CASEK, CASEL := A, B
+
+          FOR I = 1 TO N DO
+                 $( LET A = READN()
+                    LET L = READL()
+                    LET J = I-1
+                    UNTIL J=0 DO
+                           $( IF A>CASEK!J BREAK
+                              CASEK!(J+1) := CASEK!J
+                              CASEL!(J+1) := CASEL!J
+                              J := J - 1  $)
+                    CASEK!(J+1), CASEL!(J+1) := A, L  $)
+
+          STORE(0, SSP-2)
+          SWR := MOVETOANYR(ARG1)
+          INITSTACK(SSP-1)
+
+          IF 8+CASEK!N/2-CASEK!1/2 < 3*N DO  || Compare approx sizes
+                $( LABVECSWITCH(1, N)
+                   RETURN  $)
+
+          BINTREESWITCH(1, N)
+          JUMP(SWD)   $)1
+
+AND LABVECSWITCH(P, Q) BE
+    $( LET MIN, MAX = CASEK!P, CASEK!Q
+       AND OFFSET, S = 0, 0
+
+       IF MIN=1 DO MIN := 0
+
+       GENRHFK(F.SR, SWR, MIN)
+       CONDJUMP(M.LS, SWD)
+       GENRHFK(F.CR, SWR, MAX-MIN)
+       CONDJUMP(M.GR, SWD)
+
+       GENRR(F.AR, SWR, SWR)
+       OFFSET := 8 + TXTP - BASEADDR
+       TEST OFFSET<4096
+           THEN S := R.B
+             OR $( GENRR(F.AR, SWR, R.B); OFFSET := OFFSET + 2 $)
+       GENRXA(F.LH, SWR, SWR, S, OFFSET)
+       GENRXA(F.BC, M.ALL, R.B, SWR, 0)
+
+       FOR K = MIN TO MAX TEST CASEK!P=K
+           THEN $( GENDCAL2(CASEL!P); P := P+1  $)
+             OR    GENDCAL2(SWD)
+    $)
+
+
+AND BINTREESWITCH(P, Q) BE TEST Q-P > 6
+
+    THEN $( LET M = NEXTPARAM()
+            AND T = (P+Q)/2
+
+            GENRHFK(F.CR, SWR, CASEK!T)
+            CONDJUMP(M.GR, M)
+            CONDJUMP(M.EQ, CASEL!T)
+
+            BINTREESWITCH(P, T-1)
+
+            UNLESS CASEK!T=CASEK!(T-1)+1 DO JUMP(SWD)
+
+            GENLAB(M, 0)
+
+            BINTREESWITCH(T+1, Q)  $)
+
+      OR FOR I = P TO Q DO
+         $( GENRHFK(F.CR, SWR, CASEK!I)
+            CONDJUMP(M.EQ, CASEL!I)  $)
+
+AND CGENTRY(N, M) BE
+$(  LET V = VEC 50
+    LET P = 0
+    FOR I = 1 TO N DO V!I := READN()
+    FOR I = N+1 TO 7 DO V!I := 64  || EBCDIC space
+    V!0 := 7
+    CNOP(0, 4)
+    TEST NAMING THEN
+    $(  P := PROCLABEL; PROCLABEL := NEXTPARAM()
+        GENDCA(PROCLABEL, 0)
+    $)
+    OR GENDCF(-1)
+    GENDCX(V!0<<24|V!1<<16|V!2<<8|V!3)
+    GENDCX(V!4<<24|V!5<<16|V!6<<8|V!7)
+    GENLAB(M, " ENTRY TO ")
+    IF LISTING DO
+        $( FOR I = 1 TO N DO WRCH(V!I)
+           NEWLINE()  $)
+
+    BASE!0, BASE!1 := BASELAB, BASEADDR
+    IF STKCKING DO BASE!2, BASE!3, BASE!4 :=
+                      BASEFRMLAB, BASEFRMADDR, BASEFRMSIZE
+    BASE, BASELAB, BASEADDR := BASE+5, M, TXTP
+    IF BASE >= BASEOVRFLW DO $( CGREPORT(298); STOP(8) $)
+    DISCARDREGS()
+    INCODE := TRUE
+    IF NAMING THEN
+    $(  LET N, B = NAMEL, BLOCKLABEL
+        NAMEL, BLOCKLABEL := NAMET, -1
+        OP := READOP()
+        SCAN()
+        NAMET := NAMEL
+        NAMEL, BLOCKLABEL, PROCLABEL := N, B, P
+    $)
+$)
+
+AND CGSAVE(N) BE
+    $( LET A = R.A1 + N - 4
+       IF A > R.A4 DO A := R.A4
+       GENRS(F.STM, R.B, A, R.W, 0)
+
+       TEST STKCKING
+
+        THEN $( TEST CALLCOUNTING
+                   THEN $( GENRXA(F.BAL, R.A, R.S, 0, S.STKCKCOUNT)
+                           GENDCF(0)  $)
+                     OR GENRXA(F.BAL, R.A, R.S, 0, S.STKCK)
+                BASEFRMLAB := NEXTPARAM()
+                BASEFRMADDR := TP
+                BASEFRMSIZE := 0
+                GENSTKCK1()
+             $)
+
+          OR $( IF CALLCOUNTING
+                   THEN $( GENRXA(F.BAL, R.A, R.S, 0, S.COUNT)
+                           GENDCF(0)  $)
+                GENRR(F.LR, R.P, R.W)  $)
+
+       INITSTACK(N)
+       FOR R = R.A1 TO A DO MOVESTOR(R, LOC, 3-R.A1+R)
+    $)
+
+AND CGENDPROC() BE
+$(  BASE := BASE - 5
+    BASELAB, BASEADDR := BASE!0, BASE!1
+    IF STKCKING DO
+    $(  GENSTKCK2()
+        BASEFRMLAB, BASEFRMADDR, BASEFRMSIZE := BASE!2, BASE!3, BASE!4
+    $)
+    IF NAMING THEN WRITENAMES()
+$)
+
+AND CGAPPLY(OP, K) BE
+$(1 LET RMIN = R.A1 + H5!TEMPV - K - 3
+    AND RMAX = R.A1 + H5!ARG2  - K - 3
+    IF RMIN<R.A1 DO RMIN := R.A1
+    IF RMAX>R.A4 DO RMAX := R.A4
+
+    STORE(K+7, SSP-2) || Store args 5,6,... into stack
+
+    FOR T = TEMPV TO ARG2 BY 5 DO || Deal with non arg items
+             $( LET S = H5!T
+             IF S>K BREAK
+             IF H1!T=REG | H1!T=FREG DO STORET(T)  $)
+
+    IF H1!ARG1=REG & H3!ARG1<=RMAX DO MOVETOR(R.L, ARG1)
+
+    FOR T = ARG2 TO TEMPV BY -5 DO
+        $( LET R = R.A1 + H5!T - K - 3
+           IF R<RMIN BREAK
+           IF R<=RMAX DO $( MOVETOR(R, T)
+                            LOCK(R)  $)
+        $)
+
+    FREEREG(R.W)
+    TEST 0<=K<K4 THEN GENRXA(F.LA, R.W, R.P, 0, 4*K)
+                 OR $( GENRR(F.LR, R.W, R.P)
+                       GENRHFK(F.AR, R.W, 4*K)  $)
+    MOVETOR(R.B, ARG1)
+
+ IF H5!TEMPV > K+3 DO
+     $( LET R = R.A1 + H5!TEMPV - K - 3
+        IF R>R.A4 DO R := R.A4
+        TEST R=R.A1 THEN GENRXA(F.L, R.A1, R.W, 0, 12)
+                      OR GENRS(F.LM, R.A1, R, R.W, 12)   $)
+
+    GENRR(F.BALR, R.L, R.B)
+    DISCARDREGS()
+    STACK(K)
+    IF STKCKING DO
+    $(  // CORRECT FRAM FOR STORE MULTIPLE OF UP TO 4 ARGS
+        // IN CALLED ROUTINE
+        LET SAFEFRAME = K+7
+        IF BASEFRMSIZE<SAFEFRAME DO BASEFRMSIZE:=SAFEFRAME
+    $)
+    IF OP=C.FNAP DO LOAD(REG, R.A1)  $)1
+
+AND WRITENAMES() BE
+
+$(  MANIFEST $( TYPEBITS=#X07000000; STATICTYPE=#X03000000 $)
+    LET I, IC = NAMEL, INCODE
+    LET NAMEQ = 0
+    LET SLAB = NEXTPARAM()
+    INCODE := TRUE
+    CNOP(0, 4)
+    GENLAB(PROCLABEL, 0)
+    WHILE I<NAMET DO
+    $(  LET N = !I
+        AND ENDBLOCK = NEXTPARAM()
+        GENLAB(N, 0)
+        GENDCA(ENDBLOCK, 0)
+        GENDCA(1!I, 0); GENDCA(2!I, 0)
+        I := I + 3
+        UNTIL !I<0 DO
+        $(  LET Q = 1!I
+            LET P = Q & TYPEBITS
+            Q := Q & NOT TYPEBITS
+            GENDCA(SLAB, 4*NAMEQ)
+            TEST P=STATICTYPE THEN GENDCA(Q, P)
+              OR GENDCF(P + 4*Q)
+            $(  LET K = !I
+                I := I+2
+                $(  NAMEL!NAMEQ := !I
+                    I := I+1; NAMEQ := NAMEQ+1
+                $) REPEATUNTIL I=K
+            $)
+        $)
+    GENLAB(ENDBLOCK, 0)
+        GENDCF(-1); N := 1!I
+        I := I+2
+        TEST N<0 THEN $( GENDCF(-1); BREAK $)
+            OR GENDCA(N, 0)
+    $)
+    GENLAB(SLAB, '*SNAMES*N')
+    FOR I = 0 TO NAMEQ-1 DO GENDCX(NAMEL!I)
+    INCODE := IC
+$)
+
+LET CGSTRING(N) BE
+      $(1 LET V = VEC 3
+          LET I = 1
+          V!0, V!1, V!2, V!3 := N, 0, 0, 0
+
+          LOAD(LVLAB, SLAB)
+          H4!ARG1 := STRINGADDR
+
+          $( IF I=4 LOGOR N=0 DO
+                 $( SDATA(V!0<<24|V!1<<16|V!2<<8|V!3)
+                    STRINGADDR := STRINGADDR + 1
+                    IF N=0 BREAK
+                    I, V!1, V!2, V!3 := 0, 0, 0, 0  $)
+             V!I := READN()
+             I, N := I+1, N-1   $) REPEAT   $)1
+
+
+AND CGGLOBAL(N) BE
+    $(1 INCODE := TRUE
+        CNOP(0, 4)
+
+        MAP2(GENDATA, DATALIST)
+
+        UNLESS SDATALIST=0 DO
+          $( GENLAB(SLAB, " STRINGS*N")
+             MAP1(GENDCX, SDATALIST)  $)
+
+        UNLESS FDATALIST=0 DO
+          $( GENLAB(FLAB, " FULL WORD CONSTANTS*N")
+             MAP1(GENDCF, FDATALIST)  $)
+
+        IF FIXL>0 THEN
+            $(  CNOP(0, 8); GENLAB(FIXL, 0)
+                GENDCX(#X4F080000); GENDCX(0)
+            $)
+
+        UNLESS HDATALIST=0 DO
+          $( GENLAB(HLAB, " HALF WORD CONSTANTS*N")
+             MAP1(GENDCH, HDATALIST)  $)
+
+        CNOP(0, 8)
+        GENDCF(4*MAXGN)
+        GENDCF(0)
+        FOR I = 1 TO N DO
+             $( GENDCF(4*READN())
+                GENDCA(READL(), 0)  $)
+
+        GENLAB(ENDLAB, 0)  $)1
+
+
+
+AND GENDATA(K, A) BE SWITCHON K INTO
+    $( CASE C.DATALAB: GENLAB(A, 0); RETURN
+       CASE C.ITEMN:   GENDCF(A);    RETURN
+       CASE C.ITEML:   GENDCA(A, 0);    RETURN  $)
+
+
+AND DATA(K, N) BE $( DP := DP - 3
+                     DP!0, DP!1, DP!2 := 0, K, N
+                     DATAP!0 := DP
+                     DATAP := DP  $)
+
+AND SDATA(A) BE $( DP := DP - 2
+                   DP!0, DP!1 := 0, A
+                   SDATAP!0 := DP
+                   SDATAP := DP  $)
+
+AND FDATA(N) = VALOF
+    $( LET A = 0
+       AND P = FDATALIST
+
+       UNTIL P=0 DO $( IF N=P!1 RESULTIS A
+                       A, P := A+4, P!0  $)
+
+       DP := DP - 2
+       DP!0, DP!1 := 0, N
+       FDATAP!0 := DP
+       FDATAP := DP
+       RESULTIS A  $)
+
+AND HDATA(N) = VALOF
+    $( LET A = 0
+       AND P = HDATALIST
+
+       UNTIL P=0 TEST N=P!1 THEN RESULTIS A
+                              OR A, P := A+2, P!0
+
+       DP := DP - 2
+       DP!0, DP!1 := 0, N
+       HDATAP!0 := DP
+       HDATAP := DP
+       RESULTIS A  $)
+
+AND FREF(A, L) BE $( DP := DP - 3
+                     DP!0, DP!1, DP!2 := 0, A, L
+                     FREFP!0 := DP
+                     FREFP := DP  $)
+
+AND HREF(A, L) BE $( DP := DP - 3
+                     DP!0, DP!1, DP!2 := 0, A, L
+                     HREFP!0 := DP
+                     HREFP := DP  $)
+
+AND XREF(A, B, C) BE
+
+$(  LET P = NEEDSLIST
+    UNTIL P=0 DO
+    $(  IF B=1!P & C=2!P THEN
+        $(  DP := DP-3
+            !DP, 1!DP, 2!DP := 0, A, P
+            !XREFP := DP
+            XREFP := DP
+            RETURN
+        $)
+        P := !P
+    $)
+    CGREPORT(320)
+$)
+
+AND CGNEEDS(V) BE
+
+$(  LET B, C = CW(V), CW(V+4)
+
+    IF LISTING THEN
+    $(  WRITES("*SEXTRN*S")
+        FOR I = 1 TO 8 DO WRCH(V!I)
+        NEWLINE()
+    $)
+
+    DP := DP - 3
+    !DP, 1!DP, 2!DP := 0, B, C
+    !NEEDSP := DP
+    NEEDSP := DP
+$)
+
+AND INITDATALISTS() BE
+    $( DATAP, DATALIST := @DATALIST, 0
+       SDATAP, SDATALIST := @SDATALIST, 0
+       STRINGADDR := 0
+        XREFP, XREFLIST := @XREFLIST, 0
+        NEEDSP, NEEDSLIST := @NEEDSLIST, 0
+       FDATAP, FDATALIST := @FDATALIST, 0
+       HDATAP, HDATALIST := @HDATALIST, 0
+       FREFP, FREFLIST := @FREFLIST, 0
+       HREFP, HREFLIST := @HREFLIST, 0  $)
+
+AND MAP1(F, L) BE $( IF L=0 RETURN
+                     F(L!1)
+                     L := L!0  $) REPEAT
+
+AND MAP2(F, L) BE $( IF L=0 RETURN
+                     F(L!1, L!2)
+                     L := L!0  $) REPEAT
+
+
+LET CGSTART(V) BE
+
+$(  LET WORK = VEC 100
+
+    LET RWD(N, W) BE
+    $(  FOR I = 1 TO N DO W!I := READN()
+        FOR I = N+1 TO 8 DO W!I := '*S'
+    $)
+
+
+    LET N = 0
+
+    IF OP=C.SECTION DO N := READN()
+
+    RWD(N, V)
+    IF N>8 DO N := 8
+    V!0 := 8
+    CSECTFLAG := N NE 0
+    CSECTN1, CSECTN2 := CW(V), CW(V+4)
+    IF LISTING THEN
+    $(  FOR I = 1 TO N DO WRCH(V!I)
+        WRITES("*SCSECT*N")
+    $)
+    UNPACKSTRING("BCPLMAIN", WORK)
+    CGNEEDS(WORK)
+
+    IF OP=C.SECTION THEN OP := READOP()
+
+    WHILE OP=C.NEEDS DO
+    $(  RWD(READN(), WORK); CGNEEDS(WORK)
+        OP := READOP()
+    $)
+
+    IF LISTING THEN WRITES("*SUSING*S4096,1,2,3*N")
+
+    LEFTHW := TRUE
+    TXTP := 0
+$)
+
+AND CGEND() BE
+       $( IF LISTING DO
+                 $( WRITES('*SEND*N')  $)
+
+          IF BINING DO
+             $( MAP2(FNHREF, HREFLIST)
+                MAP2(FNFREF, FREFLIST)
+                DECKOUT()  $)
+
+          SELECTOUTPUT(SYSOPT)
+          UNLESS QUIET DO WRITEF("Length = %N words*N", TXTP/4)
+          IF TXTP>4*4095 DO CGREPORT(317)
+          SELECTOUTPUT(CODESTREAM)  $)
+
+AND FNHREF(T, L) BE
+    $(1 LET A = LABV!L
+        AND P = (T>>2) + TXTV
+
+        TEST (T&2)=0
+          THEN !P := !P + (A<<16)
+          OR $( LET W = !P
+                LET Q = W & HWBITS
+                !P := W - Q + (Q+A & HWBITS)  $)  $)1
+
+AND FNFREF(T, L) BE
+    $( LET P = (T>>2) + TXTV
+       !P := !P + LABV!L  $)
+
+AND PUTHW(X) BE TEST LEFTHW
+           THEN !TP, LEFTHW := X<<16, FALSE
+           OR $( !TP := !TP | X & HWBITS
+                 TP, LEFTHW := TP+1, TRUE
+                 IF TP>DP DO $( CGREPORT(317); STOP(8) $) $)
+
+AND PUTFW(X) BE $( !TP, TP := X, TP+1
+                   IF TP>DP DO $( CGREPORT(317); STOP(8)  $)  $)
+
+AND CW(V) = CARDWORD(1!V, 2!V, 3!V, 4!V)
+.
+SECTION "CGC"
+GET "LIBHDR"
+GET "HEADERS(CGHDR)"
+
+
+LET CGBYTEAP(OP) BE
+$(  LET A, S, X = 0, 0, 0
+
+    LET R = MOVETOANYR(ARG2)
+    GENRXA(F.SLL, R, 0, 0, 2)
+    DISCARDREG(R)
+
+    TEST H1!ARG1=NUMBER & H2!ARG1<0 DO
+    $(  LET N = H3!ARG1+H4!ARG1
+
+        TEST 0 <= N <= 4095 DO
+            A := N
+        OR
+            X := MOVETOANYR(ARG1)
+    $)
+    OR
+
+        X := MOVETOANYR(ARG1)
+
+    TEST OP = C.PUTBYTE DO
+    $(  LET ARG3 = ARG2-5
+
+        TEST ARG3<TEMPV DO
+        $(  S := NEXTR()
+            GENRXA(F.L, S, R.P, 0, 4*SSP-12)
+            DISCARDREG(S)
+        $)
+
+        OR  S := MOVETOANYR(ARG3)
+
+        GENRXA(F.STC, S, X, R, A)
+
+        DISCARDREGS()
+        STACK(SSP-3)
+    $)
+    OR
+    $(  S := NEXTR()
+        GENRR(F.XR, S, S)
+        GENRXA(F.IC, S, X, R, A)
+        DISCARDREG(S)
+        LOSE(S)
+    $)
+$)
+
+
+
+LET CGSTIND() BE F(-1, H1!ARG2=FREG -> MOVETOANYFR(ARG2),
+                                       MOVETOANYCR(ARG2))
+
+AND CGASSOP() BE
+
+$(  LET X = 0
+    OP := READOP()
+    SWITCHON OP INTO
+
+    $(  CASE C.FMINUS:CASE C.FDIV:
+            F(F.LE, NEXTFR())
+            ENDCASE
+
+        CASE C.FMULT:
+            X := F.ME
+            GOTO L
+
+        CASE C.FPLUS:
+            X := F.AE
+        L:  F(X, MOVETOANYFR(ARG2))
+            ENDCASE
+
+        CASE C.PLUS:
+            X := MOVETOANYR(ARG2)
+            F(F.A, X)
+            ENDCASE
+
+        CASE C.MINUS:
+            F(F.L, -1)
+            ENDCASE
+
+        CASE C.LOGOR: CASE C.LOGAND: CASE C.EQV: CASE C.NEQV:
+            X := MOVETOANYR(ARG2)
+            F(((OP-C.LOGAND)!TABLE
+                F.N, F.O, F.X, F.X),
+                X)
+            ENDCASE
+
+        CASE C.MULT:
+            MOVETOR(R.A1, ARG2)
+            FREEREG(R.L)
+            LOCK(R.A1)
+            F(F.M, R.L)
+            ENDCASE
+
+        CASE C.DIV: CASE C.REM:
+            FREEREG(R.L); FREEREG(R.A1)
+            LOCK(R.A1)
+            F(F.L, R.L)
+            ENDCASE
+
+        DEFAULT:
+            CGREPORT(320, OP)
+    $)
+$)
+
+AND F(X ,R) BE
+
+$(  LET GENAORL, S, M, A = GENRXA, 0, 0, 0
+    AND H1A, H2A, H3A, H4A = H1!ARG1, H2!ARG1, H3!ARG1, 4*H4!ARG1
+    AND TF = FALSE
+
+    TEST H1!ARG2=FREG THEN TF := TRUE
+                      OR IF R>0 DO LOCK(R)
+
+    TEST (LVLOC<=H1A<=LVLAB)& H2A<0
+    THEN TEST H1A=LVLAB THEN
+                GENAORL, S, M, A := GENRXL, R.B, H3A, H4A
+        OR  A, S := 4*H3A+H4A, H1A=LVLOC -> R.P, R.G
+
+    OR $( TEST H2A<0 THEN $( A := H4A; H4!ARG1 := 0 $)
+                       OR MOVETOANYR(ARG1)
+          S := LOADADDRESS(A, @M, ARG1)
+       $)
+    IF R<0 THEN R := NEXTR()
+    UNLESS X<0 THEN
+    $(  GENAORL(X, R, S, M, A)
+        SWITCHON OP INTO
+        $(  CASE C.EQV:
+                GENRXL(F.X, R, R.B, FLAB, FDATA(-1))
+                ENDCASE
+
+            CASE C.MINUS:
+                GENRHF(F.SR, R, ARG2)
+            ENDCASE
+
+            CASE C.FMINUS:
+                X := F.SER; GOTO L
+            CASE C.FDIV:
+                X := F.DER
+            L:  TF := TRUE
+                GENFRHF(X, R, ARG2)
+            ENDCASE
+
+            CASE C.MULT:
+                R := R.A1
+                ENDCASE
+
+            CASE C.DIV: CASE C.REM:
+                GENRXA(F.SRDA, R, 0, 0, 32)
+                GENRF(F.DR, R, ARG2)
+                IF OP=C.DIV THEN R := R.A1
+                ENDCASE
+
+            DEFAULT:
+        $)
+    $)
+    GENAORL((TF -> F.STE, F.ST), R, S, M, A)
+    DISCARDREGS()
+    STACK(SSP-2)
+$)
+
+AND CGMULT() BE
+    $(1 LET K, A, B = 0, 0, 0
+
+        IF H1!ARG1=NUMBER & H2!ARG1<0 DO
+        $( A, B := ARG1, ARG2
+           GOTO CON  $)
+
+        IF H1!ARG2=NUMBER & H2!ARG2<0 DO
+        $( A, B := ARG2, ARG1
+           GOTO CON  $)
+
+        GOTO GENCASE
+
+   CON: K := H3!A + H4!A
+        IF -K32 <= K < K32 DO
+          $( LET R = MOVETOANYR(B)
+             TEST K=2 | K=4
+                THEN TEST K=2
+                        THEN GENRR(F.AR, R, R)
+                          OR GENRXA(F.SLL, R, 0, 0, 2)
+                  OR GENRXL(F.MH, R, R.B, HLAB, HDATA(K))
+             LOSE(R)
+             RETURN  $)
+
+GENCASE:TEST H1!ARG1=REG & H3!ARG1=R.A1
+             THEN A, B := ARG1, ARG2
+               OR A, B := ARG2, ARG1
+
+     $( LET UL = USING(R.L)
+        MOVETOR(R.A1, A)
+        UNLESS UL=0 | UL=B DO STORET(UL)
+        GENRF(F.MR, R.L, B)
+        DISCARDREG(R.L)
+        LOSE(R.A1)  $)  $)1
+
+AND CGPLUS() BE
+$(1 IF H1!ARG2=NUMBER & H2!ARG2<0 DO
+      $( LET K2 = H3!ARG2 + H4!ARG2
+         AND T, IND, N, K = H1!ARG1, H2!ARG1, H3!ARG1, H4!ARG1
+         H1!ARG2, H2!ARG2, H3!ARG2, H4!ARG2 := T, IND, N, K
+         IF T=LOC & N=SSP-1 DO MOVETOANYR(ARG2)
+         H1!ARG1, H2!ARG1, H3!ARG1, H4!ARG1 := NUMBER, -1, K2, 0 $)
+
+    IF H1!ARG1=NUMBER & H2!ARG1<0 DO
+      $( LET K = H3!ARG1 + H4!ARG1
+         UNLESS K=0 DO
+            $( IF H2!ARG2>=0 DO MOVETOANYR(ARG2)
+               H4!ARG2 := H4!ARG2 + K  $)
+         STACK(SSP-1)
+         RETURN  $)
+
+ $( LET X, Y = ARG1, ARG2
+
+    IF CLASS(ARG1) < CLASS(ARG2) DO X, Y := ARG2, ARG1
+
+ $( LET R = MOVETOANYR(Y)
+    GENRHF(F.AR, R, X)
+    LOSE(R)  $)  $)  $)1
+
+AND CGRELOP(RELOP) BE
+$(1 OP := READOP()
+
+    TEST OP=C.JT | OP=C.JF
+
+    THEN $( STORE(0, SSP-3)
+            CONDJUMP(CONDITION(RELOP, OP=C.JT), READL())
+            COUNTFLAG := COUNTING
+            OP := READOP()
+            RETURN  $)
+
+      OR $( LET L = NEXTPARAM()
+            LET MASK = CONDITION(RELOP, FALSE)
+            LET R = NEXTR()
+            GENRR(F.LR, R, 0)
+            CONDJUMP(MASK, L)
+            GENRXL(F.LH, R, R.B, HLAB, HDATA(-1))
+            GENLAB(L, 0)
+            LOAD(REG, R)  $)  $)1
+
+
+AND CONDITION(RELOP, B) = VALOF
+$(1 LET X, Y = ARG1, ARG2
+    AND FLOP = RELOP>256
+    RELOP := RELOP&255
+
+    IF CLASS(ARG1) < CLASS(ARG2)
+    $(  X, Y := ARG2, ARG1              || reverse operands
+        RELOP := REVERSE(RELOP)
+    $)
+
+    TEST FLOP
+    THEN GENFRHF(F.CER, MOVETOANYFR(Y), X)
+      OR
+    $(  LET IND = H2!X
+        IF IND>0 THEN
+        $(  IF H1!Y=NUMBER & (RELOP=C.EQ | RELOP=C.NE) THEN
+            $(  LET SIZE = IND/32
+                AND SHIFT = IND REM 32
+                LET SHB = SHIFT REM 8
+                IF SHB<=(8-SIZE) THEN      || object lies within a byte
+                $(  LET MASK = (1<<SIZE) - 1
+                    AND T, N = H1!X, H3!Y
+                    IF (N=0 | N=MASK) & (T NE LVLAB) THEN
+                    $(  LET B, A = 0, 4*H4!X
+                        MASK := MASK<<SHB
+                        SWITCHON T INTO
+                        $(  CASE LVLOC: B := R.P; GOTO LX
+                            CASE LVGLOB: B := R.G
+                            LX: A := A+4*H3!X
+                                UNLESS 0<=A<K4 THEN
+                                $(  LET R = ADJUSTADDR(@A)
+                                    GENRXA(F.LA, R.A, B, R, 0)
+                                    B := R.A
+                                $)
+                            ENDCASE
+
+                            DEFAULT:
+                                TEST 0<=A<K4 THEN H4!X := 0
+                                               OR A := 0
+                                H2!X := -1         || hide the selection
+                                B := LOADADDRESS(K4, 0, X)
+                        $)
+                        GENSIA(F.TM, MASK, B, A+(32-SHIFT-SIZE)/8)
+                        UNLESS N=0 THEN RELOP := RELOP+6
+                        GOTO L
+                    $)
+                $)
+            $)
+            $(  LET TEMP = X
+                X := Y; Y := TEMP
+            $)
+            RELOP := REVERSE(RELOP)
+        $)
+        GENRHF(F.CR, MOVETOANYCR(Y), X)
+    $)
+
+L:  STACK(SSP-2)
+
+    SWITCHON RELOP INTO
+    $(  CASE C.NE: B := NOT B
+        CASE C.EQ: RESULTIS B -> M.EQ, M.NE
+
+        CASE C.LS: B := NOT B
+        CASE C.GE: RESULTIS B -> M.GE, M.LS
+
+        CASE C.GR: B := NOT B
+        CASE C.LE: RESULTIS B -> M.LE, M.GR
+
+        CASE C.NE+6: B := NOT B
+        CASE C.EQ+6: RESULTIS B -> 1, 12
+    $)
+$)1
+
+AND REVERSE(RELOP) = VALOF SWITCHON RELOP INTO
+$(  CASE C.LS: RESULTIS C.GR
+    CASE C.GR: RESULTIS C.LS
+    CASE C.LE: RESULTIS C.GE
+    CASE C.GE: RESULTIS C.LE
+    DEFAULT: RESULTIS RELOP
+$)
+
+AND CGSHIFT(F) BE
+       $( LET N = MOVETOANYR(ARG2)
+          TEST H1!ARG1=NUMBER & H2!ARG1<0
+               THEN GENRXA(F, N, 0, 0, H3!ARG1+H4!ARG1)
+                 OR GENRXA(F, N, 0, MOVETOANYR(ARG1), 0)
+          LOSE( N)   $)
+
+AND CGLOGOP(OP, F) BE
+      $(1 LET X, Y = ARG1, ARG2
+          IF CLASS(ARG1) < CLASS(ARG2) DO X, Y := ARG2, ARG1
+       $( LET N = MOVETOANYR(Y)
+          GENRF(F, N, X)
+          IF OP=C.EQV DO GENRXL(F.X, N, R.B, FLAB, FDATA(-1))
+          LOSE(N)  $)  $)1
+
+
+LET CGSLCTST() BE
+
+$(  LET SIZE = READN()
+    LET SHIFT = READN()
+    LET OFFSET = READN()
+
+    IF  (SHIFT~=0) & (SIZE=0)  DO SIZE := MCWD-SHIFT
+
+    IF H2!ARG1>=0 THEN MOVETOANYR(ARG1)
+    IF SIZE=0 THEN                              || just ordinary indirection
+    $(  H4!ARG1 := H4!ARG1 + OFFSET
+        CGSTIND()
+        RETURN
+    $)
+    $(  LET B, M = 0, 0
+        AND N, T, K = H3!ARG1, H1!ARG1, H4!ARG1
+        AND GENAORL = GENRXA
+        LET A = 4*(K+OFFSET)
+
+        SWITCHON T INTO
+        $(  CASE LVLOC: B, A := R.P, 4*(N+K); ENDCASE
+            CASE LVGLOB: B, A := R.G, 4*(N+K); ENDCASE
+            CASE LVLAB: B, M, A, GENAORL := R.B, N, 4*K, GENRXL
+                        ENDCASE
+            DEFAULT:
+                H4!ARG1 := 0
+                B := LOADADDRESS(A, @M, ARG1)
+        $)
+
+        TEST (SIZE=16 & SHIFT REM 16 = 0)|(SIZE=8 & SHIFT REM 8 = 0)
+        THEN GENAORL((SIZE=16 -> F.STH, F.STC), MOVETOANYCR(ARG2),
+                      B, M, A+(32-SHIFT-SIZE)/8)
+
+        OR  $(  LET MASK = (-1>>(MCWD-SIZE))<<SHIFT
+                TEST H1!ARG2 = NUMBER THEN
+                $(  LET R, N = NEXTR(), (H3!ARG2)<<SHIFT
+                    GENAORL(F.L, R, B, M, A)
+                    UNLESS N=MASK THEN GENRXL(F.N, R, R.B, FLAB,
+                                             FDATA(NOT MASK))
+                    UNLESS N=0 THEN GENRXL(F.O, R, R.B, FLAB,
+                                             FDATA(N&MASK))
+                    GENAORL(F.ST, R, B, M, A)
+                $)
+                OR
+                $(  LET R = MOVETOANYR(ARG2)
+                    UNLESS SHIFT=0 THEN GENRXA(F.SLL, R, 0, 0, SHIFT)
+                    GENAORL(F.X, R, B, M, A)
+                    GENRXL(F.N, R, R.B, FLAB, FDATA(MASK))
+                    GENAORL(F.X, R, B, M, A)
+                    GENAORL(F.ST, R, B, M, A)
+               $)
+            $)
+        DISCARDREGS()
+        STACK(SSP-2)
+    $)
+$)
+
+AND GENRHFK(F, R, K) BE TEST -K32 <= K < K32
+
+    THEN $( IF K=0 DO $( GENRR(F, R, 0); RETURN  $)
+            IF K=K4 DO $( GENRR(F, R, R.K4); RETURN  $)
+            IF K=K8 DO $( GENRR(F, R, R.K8); RETURN  $)
+            IF K=K12 DO $( GENRR(F, R, R.K12); RETURN  $)
+
+            GENRXL(F+#60, R, R.B, HLAB, HDATA(K)) $)
+
+      OR GENRXL(F+#100, R, R.B, FLAB, FDATA(K))
+
+AND GENRHF(F, R, X) BE
+   $( LOCK(R)
+      SWITCHON CLASS(X) INTO
+      $( CASE RTYPE: GENRR(F, R, MOVETOANYR(X)); ENDCASE
+         CASE KTYPE: GENRHFK(F, R, H3!X+H4!X); ENDCASE
+         CASE FRTYPE: STORET(X)
+         CASE ATYPE: COMPILE(F+#X40, R, X)
+      $)
+      UNLOCK(R)
+   $)
+
+AND GENRF(F, R, X) BE
+   $( LOCK(R)
+      SWITCHON CLASS(X) INTO
+      $( CASE RTYPE: GENRR(F, R, MOVETOANYR(X)); ENDCASE
+         CASE FRTYPE: STORET(X)
+         DEFAULT:    COMPILE(F+#X40, R, X)
+      $)
+      UNLOCK(R)
+   $)
+
+AND SETRTOK(R,K) BE
+$(  DISCARDREG(R)
+       TEST 0 <= K < K12+K12+K4
+
+           THEN TEST K=0
+                  THEN GENRR(F.XR, R, R)
+                    OR $( LET M = 0
+                          IF K>=K12 DO M, K := R.K12, K-K12
+                          GENRXA(F.LA, R, M, 0, K)  $)
+
+             OR GENRHFK(F.LR, R, K)
+$)
+.
+SECTION "CGD"
+
+GET "LIBHDR"
+GET "HEADERS(CGHDR)"
+
+LET WRCARD(V) BE
+    $(1 SEQNUMB := SEQNUMB + 1
+        V!18 := CSECTN1
+        V!19 := BINTOX(SEQNUMB, 4)
+        IF DECK DO
+               $( SELECTOUTPUT(SYSPCH)
+                  WRITEREC(V, 80)
+                  SELECTOUTPUT(CODESTREAM)  $)
+
+        IF LISTDECK DO
+               $( SELECTOUTPUT(SYSOPT)
+
+                  FOR I = 0 TO 10 BY 10 DO
+                     $( NEWLINE()
+                        FOR J = I TO I+9 DO
+                            $( WRITEX(V!J, 8)
+                               WRCH('*S')  $)
+                     $)
+
+                  WRITEF("  %I5*N", SEQNUMB)
+                  SELECTOUTPUT(CODESTREAM)  $)  $)1
+
+AND WRNAMECARD() BE
+$(  IF DECK DO
+    $(  SELECTOUTPUT(SYSPCH)
+        WRITEF(" NAME %S(R)*N", SECTIONNAME)
+        SELECTOUTPUT(CODESTREAM)
+    $)
+$)
+AND BINTOX(N, D) = VALOF
+      $( LET W = 0
+         IF D>1 DO W := BINTOX(N/10, D-1) << 8
+         RESULTIS W + N REM 10 + '0'  $)
+
+AND CARDWORD(A, B, C, D) = A<<24 | B<<16 | C<<8 | D
+
+AND DECKOUT() BE
+    $(1 LET V = VEC 19  || For card images
+        LET P, J, K = NEEDSLIST, 8, 1
+
+        AND BLANKS = CARDWORD('*S', '*S', '*S', '*S')
+
+        SEQNUMB := 0
+
+        V!0 := CARDWORD(2, 'E', 'S', 'D') || Make an ESD card
+        FOR I = 1 TO 19 DO V!I := BLANKS
+        IF CSECTFLAG THEN V!4, V!5 := CSECTN1, CSECTN2
+        V!6 := CARDWORD((CSECTFLAG -> 0, 4), 0, 0, 0)
+        V!7 := CARDWORD('*S',   0,  0, TXTP)
+
+        $(  UNTIL P=0 DO
+            $(  LET Q = !P
+                V!J, V!(J+1) := 1!P, 2!P
+                V!(J+2) := CARDWORD(2, 0, 0, 0)
+                V!(J+3) := CARDWORD('*S', 0, 0, 0)
+                J := J+4
+                !P := K + (J-8)/4
+                P := Q
+                IF J=16 THEN BREAK
+            $)
+
+            V!2 := CARDWORD('*S', '*S', 0, 4*(J-4))
+            V!3 := CARDWORD('*S', '*S', 0, K)
+            WRCARD(V)
+            FOR I = 1 TO 17 DO V!I := BLANKS
+            K := K + 3; J := 4
+        $) REPEATUNTIL P=0
+
+        V!0 := CARDWORD(2, 'T', 'X', 'T') || Make a TXT card
+        V!2 := CARDWORD('*S', '*S', 0, 56)
+        V!3 := CARDWORD('*S', '*S', 0, 1)
+
+        FOR I = TP TO TP+13 DO !I := BLANKS
+
+        FOR P = TXTV TO TP-1 BY 14 DO
+           $( V!1 := CARDWORD('*S', 0, 0, 4*(P-TXTV))
+
+              IF TP-P<14 DO V!2 := CARDWORD('*S', '*S', 0, 4*(TP-P))
+
+              FOR I = 0 TO 13 DO V!(I+4) := !(P+I)
+
+              WRCARD(V)  $)  || Write TXT cards
+
+        V!0 := CARDWORD(2, 'R', 'L', 'D') || make an RLD card
+        V!1 := BLANKS
+        V!2 := CARDWORD('*S', '*S', 0, 56)
+        V!3 := BLANKS
+
+     $( LET RPIDWORD = CARDWORD(0, 1, 0, 1)
+        AND FLAGS = CARDWORD(12, 0, 0, 0)
+                AND P, XDONE = FREFLIST, FALSE
+
+                UNTIL XDONE & P=0 DO
+                $(  LET BYTES, I = 0, 0
+                   UNTIL I>12 DO
+                    $(  TEST P=0 THEN
+                        $(  UNLESS XDONE THEN
+                            $(  XDONE := TRUE; P := XREFLIST
+                                LOOP
+                            $)
+
+                            V!(I+4), V!(I+5) := BLANKS, BLANKS
+                        $)
+                    OR  $(  V!(I+5) := 1!P + FLAGS
+                            V!(I+4) := XDONE -> CARDWORD(0, !(2!P), 0, 1),
+                                            RPIDWORD
+                            BYTES, P := BYTES+8, !P
+                        $)
+
+                        I := I + 2
+                    $)
+
+            V!2 := CARDWORD('*S', '*S', 0, BYTES)
+            WRCARD(V)  $)  || Write RLD cards
+
+        V!0 := CARDWORD(2, 'E', 'N', 'D')  || Make END card
+        FOR I = 1 TO 17 DO V!I := BLANKS
+        WRCARD(V)  || Write the END card
+
+        IF MEMBERNAMEING DO
+            UNLESS GETBYTE(SECTIONNAME, 0) = 0 DO
+                WRNAMECARD()
+
+        SELECTOUTPUT(CODESTREAM)   $)1
+
+
+LET USINGF(R)= VALOF
+$(  FOR T=TEMPV TO ARG1 BY 5 DO
+        IF H1!T=FREG & H3!T=R THEN RESULTIS T
+    RESULTIS 0
+$)
+
+AND NEXTFR() = VALOF
+
+$(  IF USINGF(FR.A)=0 THEN RESULTIS FR.A
+    IF USINGF(FR.B)=0 THEN RESULTIS FR.B
+    IF USINGF(FR.C)=0 THEN RESULTIS FR.C
+    IF USINGF(FR.D)=0 THEN RESULTIS FR.D
+
+    FOR T=TEMPV TO ARG1 BY 5 IF H1!T=FREG DO
+        $(  LET R=H3!T
+            STORET(T)
+            RESULTIS R
+        $)
+
+    CGREPORT(300, "NEXTFR")
+$)
+
+AND FREEFREG(R) BE
+
+    FOR T = TEMPV TO ARG1 BY 5 IF H1!T=FREG & H3!T=R DO
+        $(  STORET(T)
+            RETURN
+        $)
+
+AND MOVETOANYFR(X) = VALOF
+$(  LET T, R = H1!X, H3!X
+    TEST T=FREG THEN RESULTIS R
+    OR  $(  R:= NEXTFR()
+            MOVETOFR(R, X)
+            RESULTIS R
+        $)
+$)
+
+
+AND MOVETOFR(R, X) BE
+
+    $(  LET T, IND, N, K = H1!X, H2!X, H3!X, H4!X
+
+        UNLESS T=FREG & N=R THEN FREEFREG(R)
+
+        IF IND>=0 THEN
+            TEST IND=0 THEN $( COMPILE(F.LE, R, X); GOTO L $)
+                         OR $( MOVETOANYR(X); T := REG $)
+
+        SWITCHON T INTO
+
+        $(
+        CASE FREG:
+            UNLESS N=R THEN GENRR(F.LER, R, N); ENDCASE
+
+        CASE NUMBER:
+            GENRXL(F.LE, R, R.B, FLAB, FDATA(N+K)); ENDCASE
+
+        DEFAULT:
+            STORET(X); N := H3!X
+        CASE LOC:
+            GENRXA(F.LE, R, R.P, 0, 4*N); ENDCASE
+
+        CASE GLOB:
+            GENRXA(F.LE, R, R.G, 0, 4*N); ENDCASE
+
+        CASE LAB:
+            GENRXL(F.LE, R, R.B, N, 0)
+        $)
+
+    L: H1!X, H2!X, H3!X, H4!X := FREG, -1, R, 0
+    $)
+
+LET CGFSYM(F) BE
+
+$(  LET R, A, B = 0, 0, 0
+    TEST H1!ARG1=FREG
+        THEN A, B := ARG1, ARG2
+          OR A, B := ARG2, ARG1
+    R := MOVETOANYFR(A)
+    GENFRHF(F, R, B)
+    LOSEF(R)
+$)
+
+AND CGFASYM(F) BE
+
+$(  LET R = MOVETOANYFR(ARG2)
+    GENFRHF(F, R, ARG1)
+    LOSEF(R)
+$)
+
+AND GENFRHF(F, R, X) BE
+
+    SWITCHON CLASS(X) INTO
+    $(
+        CASE FRTYPE: GENRR(F, R, MOVETOANYFR(X)); RETURN
+        CASE RTYPE: STORET(X)
+        DEFAULT: COMPILE(F+#100, R, X)
+    $)
+
+AND LOSEF(R) BE
+
+$(  SSP := SSP-1
+    TEST ARG2=TEMPV
+        THEN  $(  H1!ARG2 , H2!ARG2 := LOC, -1
+                  H4!ARG2 := 0
+                  H3!ARG2, H5!ARG2 := SSP-2, SSP-2
+              $)
+          OR  ARG1, ARG2 := ARG2, ARG2-5
+
+    H1!ARG1, H2!ARG1, H3!ARG1, H4!ARG1 := FREG, -1, R, 0
+    H5!ARG1 := SSP-1
+$)
+
+AND CGFLOAT() BE
+
+$(  LET R = NEXTFR()
+    AND S = R.A3
+    IF H1!ARG1=REG & H2!ARG1<0 & R.L <= H3!ARG1 <= R.A3
+        THEN S := H3!ARG1
+    MOVETOR(S, ARG1); FREEREG(S+1)
+    GENRR(F.LPR, S+1, S)
+    GENRXL(F.N, S, R.B, FLAB, FDATA(#X80000000))
+    DISCARDREG(S)
+    GENRS(F.STM, S, S+1, 13, FWSP)
+    GENSIA(F.OI, #X4E, 13, FWSP)
+    GENRR(F.SDR, R, R)
+    GENRXA(F.AD, R, 13, 0, FWSP)
+    H1!ARG1, H3!ARG1 := FREG, R
+$)
+
+AND CGFIX() BE
+
+$(  LET R = NEXTR()
+    AND FR1 = MOVETOANYFR(ARG1)
+    LET FR = NEXTFR()
+    IF FIXL<0 THEN FIXL := NEXTPARAM()
+    GENRR(F.SDR, FR, FR)
+    GENRR(F.LER, FR, FR1)
+    GENRXL(F.AD, FR, R.B, FIXL, 0)
+    GENRXA(F.STD, FR, 13, 0, FWSP)
+    GENRXA(F.L, R, 13, 0, FWSP+4)
+    DISCARDREG(R)
+    H1!ARG1, H3!ARG1 := REG, R
+$)
+
+LET DISCARDREGS() BE
+    FOR I = R.L TO R.W DO DISCARDREG(I)
+
+AND DISCARDREG(R) BE
+$(  LET X = REGLIST+5*R
+    H1!X, H2!X, H4!X := 0, 0, 0
+$)
+
+AND LOADADDRESS(K, A, X) = VALOF
+$(  LET B, Y = LOOKFORADDR(X), 0
+    IF B=0 THEN B := MOVETOANYR(X)
+    Y := REGLIST+5*B
+    SWITCHON H2!Y INTO
+
+    $(  CASE 0:
+            TEST 0<=K<K4 THEN
+            $(  GENRR(F.AR, B, B); !A := B; H2!Y := 1  $)
+            OR $( GENRXA(F.SLL, B, 0, 0, 2); H2!Y := 2 $)
+            H4!Y := 0
+            ENDCASE
+
+        CASE 1:
+            TEST 0<=K<K4 THEN !A := B
+            OR $( GENRR(F.AR, B, B); H2!Y := 2 $)
+
+        CASE 2:
+    $)
+    RESULTIS B
+$)
+
+AND MOVESTOR(R, A, B) BE
+$(  LET X = REGLIST+5*R
+    H1!X, H2!X, H3!X, H4!X := A, 0, B, 0
+$)
+
+AND MOVERTOR(R, S) BE
+$(  LET X, Y = REGLIST+5*R , REGLIST+5*S
+    FOR I = H1 TO H5 DO Y!I := X!I
+$)
+
+AND STORER(R, A, B) BE
+$(  LET X = REGLIST+5*R
+    DISCARDADDRESS(A, B)
+    H4!X, H5!X := A, B
+    IF H1!X=0 THEN H1!X, H2!X, H3!X := A, 0, B
+$)
+
+AND DISCARDADDRESS(T, N) BE
+    FOR X = REGLIST+5*R.L TO REGLIST+5*R.W BY 5 DO
+    $(  IF H1!X=T & H3!X=N THEN H1!X := 0
+        IF H4!X=T & H5!X=N THEN H4!X := 0
+    $)
+
+AND PRINTREGLIST() BE
+    FOR X = REGLIST+5*R.L TO REGLIST+5*R.W BY 5 DO
+    $(  FOR I = H1 TO H5 DO WRITEF("*S%N", I!X)
+        NEWLINE()
+    $)
+
+AND LOOKFOR(X) = VALOF
+$(  LET T, N = H1!X, H3!X
+    FOR V = REGLIST+5*R.L TO REGLIST+5*R.W BY 5 DO
+    IF H2!V<=0 & ((T=H1!V & N=H3!V) | ( T=H4!V & N=H5!V)) THEN
+        RESULTIS (V-REGLIST)/5
+    RESULTIS -1
+$)
+
+AND LOOKFORADDR(X) = VALOF
+
+$(  LET T, N = H1!X, H3!X
+    FOR V = REGLIST+5*R.L TO REGLIST+5*R.W BY 5 DO
+    IF T=H1!V & N=H3!V & H2!V>0 THEN RESULTIS (V-REGLIST)/5
+    RESULTIS 0
+$)
+
+AND LOCK(R) BE REGLIST!(5*R) := -1
+
+AND UNLOCK(R) BE REGLIST!(5*R) := 0
+
+AND LOCKED(R) = REGLIST!(5*R)=-1
+
+AND DEBUG() BE
+
+$(  WRITEF("*NDEBUG %N*N", SSP)
+    FOR P = ARG1 TO TEMPV BY -5 DO
+    $(  FOR H = H1 TO H5 DO WRITEF("*S%I5", H!P)
+        NEWLINE()  $)
+    NEWLINE(); PRINTREGLIST()
+    NEWLINE()
+$)
+.
+SECTION "CGE"
+
+GET "LIBHDR"
+GET "HEADERS(CGHDR)"
+
+LET MOVETOANYCR(X) = VALOF
+    $( IF H1!X=NUMBER & H2!X<0 DO
+          $( LET K, R = H3!X + H4!X, 0
+             IF K=0   RESULTIS 0
+             IF K=K4  RESULTIS R.K4
+             IF K=K8  RESULTIS R.K8
+             IF K=K12 RESULTIS R.K12
+             R := NEXTR()
+             SETRTOK(R, K)
+             H1!X, H2!X, H3!X, H4!X := REG, -1, R, 0
+             RESULTIS R  $)
+
+       RESULTIS G(X, FALSE)  $)
+
+AND MOVETOANYR(X) = G(X, TRUE)
+
+AND G(X, COPYLOCKED) = VALOF
+
+$(  LET T, N = H1!X, -1
+    TEST T=REG THEN N := H3!X
+    OR IF H2!X<0 THEN
+        $(  UNLESS T=NUMBER THEN N := LOOKFOR(X)
+            IF N>=0 THEN
+                TEST LOCKED(N) & (COPYLOCKED | H4!X~=0)
+                    THEN N := NEXTR()
+                      OR H1!X, H3!X := REG, N
+        $)
+    MOVETOR(N, X)
+    RESULTIS H3!X
+$)
+
+AND FREEREG(R) BE $( F(R); DISCARDREG(R) $)
+
+AND F(R) BE
+    FOR T = TEMPV TO ARG1 BY 5 DO
+        IF H1!T=REG & H3!T=R THEN $( STORET(T); RETURN $)
+
+
+AND MOVETOR(R, X) BE
+$(1  IF H1!X=FREG THEN STORET(X)
+    $(  LET T, IND, N, K = H1!X, H2!X, H3!X, H4!X
+        AND GENAORL, B, M = GENRXA, 0, 0
+        LET NX4 = 4*N
+
+        IF IND<0 THEN $( LET R = LOOKFOR(X)
+                         IF R>=0 THEN T, N := REG, R
+                      $)
+
+        IF R>0 DO UNLESS T=REG & N=R DO F(R)
+
+        IF IND>=0 DO $( R := COMPILE(F.L, R, X)
+                        GOTO L  $)
+
+        IF R<0 THEN R := NEXTR()
+
+        SWITCHON T INTO
+
+        $(  CASE REG:
+                TEST N=R THEN
+                    TEST K=0 THEN GOTO LX
+                        OR GENRHFK(F.AR, R, K)
+                OR  TEST K=0 THEN
+                    $(  GENRR(F.LR, R, N); MOVERTOR(N, R); GOTO LX  $)
+                    OR
+                    $(  SETRTOK(R, K); GENRR(F.AR, R, N)  $)
+                GOTO L
+
+            CASE NUMBER:
+                SETRTOK(R, N+K); GOTO L
+
+            CASE LAB:
+                GENAORL, B, M, NX4 := GENRXL, R.B, N, 0
+                GOTO LA
+
+            CASE GLOB:
+                B := R.G
+                GOTO LA
+
+            CASE LOC:
+                B := R.P
+            LA: TEST K=0 THEN
+                $( GENAORL(F.L, R, B, M, NX4)
+                    MOVESTOR(R, T, T=LAB -> M, N)
+                    GOTO LX
+                $)
+                OR
+                $(  SETRTOK(R, K)
+                    GENAORL(F.A, R, B, M, NX4)
+                    GOTO L
+                $)
+
+        CASE LVLOC:  GENRXA(F.LA, R, R.P, 0, NX4); GOTO S
+        CASE LVGLOB: GENRXA(F.LA, R, R.G, 0, NX4); GOTO S
+        CASE LVLAB:  TEST  (N=SLAB) & (0<=K<=STRINGADDR)
+                         THEN   $(  GENRXL(F.LA, R, R.B, N, K*4)
+                                    K := 0
+                                $)
+                         ELSE       GENRXL(F.LA, R, R.B, N, 0)
+
+        S:   GENRXA(F.SRL, R, 0, 0, 2)
+             UNLESS K=0 DO GENRHFK(F.AR, R, K)
+
+
+        L:  DISCARDREG(R)
+        LX: H1!X, H2!X, H3!X, H4!X := REG, -1, R, 0  $)         $)1
+
+AND CLASS(X) = VALOF
+    TEST H2!X>=0 THEN RESULTIS ATYPE
+              OR SWITCHON H1!X INTO
+                 $( CASE NUMBER: RESULTIS KTYPE
+
+                    CASE LOC:
+                    CASE GLOB:
+                    CASE LAB: IF H4!X=0 & LOOKFOR(X)<0 THEN RESULTIS ATYPE
+
+                    DEFAULT: RESULTIS RTYPE
+
+                    CASE FREG: RESULTIS FRTYPE
+                $)
+
+AND COMPILE(F, R, X) = VALOF
+$(1 LET T, IND, N, K = H1!X, H2!X, H3!X, H4!X
+
+    IF IND>=0 THEN
+    $(  LET B, M, A, GENAORL = 0, 0, 4*K, GENRXA
+
+        SWITCHON T INTO
+
+        $(  CASE LVLAB:
+                B, M, GENAORL := R.B, N, GENRXL
+                ENDCASE
+
+            CASE LVLOC: B, A := R.P, A+4*N; ENDCASE
+
+            CASE LVGLOB: B, A := R.G, A+4*N; ENDCASE
+
+            DEFAULT:
+                H2!X, H4!X := -1, 0
+                B := LOADADDRESS(A, @M, X)
+        $)
+
+            IF R<0 THEN R := NEXTR()
+            TEST IND=0 THEN GENAORL(F, R, B, M, A)
+            OR  $(  LET SIZE = IND/32
+                    AND MASK = 0
+                    AND SHIFT = IND REM 32
+                    AND S = F=F.L -> R, NEXTR()
+                    LET MASKED = (SIZE+SHIFT~=32)
+                    TEST ((SHIFT REM 8)=0 & (SIZE=8)) |
+                         ((SHIFT REM 16)=0 & (SIZE=16))
+                    THEN
+                        $(  LET F = F.LH
+                            MASK, N := #XFFFF, 32
+                            IF SIZE=8 THEN F, MASK := F.IC, #XFF
+                            GENAORL(F, S, B, M, A + (32-SHIFT-SIZE)/8)
+                            SHIFT, MASKED := 0, TRUE
+                        $)
+                    OR  $(  MASK := (-1>>(MCWD-SIZE))<<SHIFT
+                            GENAORL(F.L, S, B, M, A)
+                        $)
+                    IF MASKED DO GENRXL(F.N, S, R.B, FLAB, FDATA(MASK))
+                    UNLESS SHIFT=0 THEN GENRXA(F.SRL, S, 0, 0, SHIFT)
+                    UNLESS F=F.L THEN
+                    $(  GENRR(F-#100, R, S); DISCARDREG(R) $)
+                    DISCARDREG(S)
+                $)
+            RESULTIS R
+    $)
+
+    IF K=0 SWITCHON T INTO
+    $(  CASE LOC:
+            K := R.P; GOTO LL
+
+        CASE GLOB:
+            K := R.G
+        LL: GENRXA(F, R, K, 0, 4*N)
+        LM: UNLESS F=F.C THEN
+                TEST F=F.L THEN MOVESTOR(R, T, N)
+                           OR DISCARDREG(R)
+            RETURN
+
+        CASE LAB:
+            GENRXL(F, R, R.B, N, 0)
+            GOTO LM
+
+        DEFAULT:    $)
+
+    IF T=NUMBER DO $( GENRXL(F, R, R.B, FLAB, FDATA(N+K))
+                      RETURN  $)
+
+    STORET(X)
+    GENRXA(F, R, R.P, 0, 4*H5!X)  $)1
+
+
+
+LET GENSIA(F, I, B, N) BE
+    IF INCODE THEN
+    $(  IF COUNTFLAG THEN INSERTCOUNT()
+
+        IF LISTING THEN WRITEF("*S%S*S%N(%N),X'%X2'*N",
+                                    OPCODE(F), N, B, I)
+
+        IF BINING THEN  $( PUTHW(F<<8|I); PUTHW(B<<12|N)  $)
+
+        TXTP := TXTP+4
+    $)
+
+LET GENRXA(F,R1,R2,R3,A) BE IF INCODE DO
+    $( IF COUNTFLAG DO INSERTCOUNT()
+
+       UNLESS 0<=A<K4 DO
+             $( UNLESS R3=0 DO CGREPORT(300, "GENRXA")
+                R3 := ADJUSTADDR(@A)  $)
+
+       IF LISTING DO
+         $( WRITEF("*S%S*S%N,%N(", OPCODE(F), R1,A)
+            TEST R2=0 THEN WRITEF("%N)*N", R3)
+                      OR TEST R3=0
+                         THEN WRITEF("%N)*N", R2)
+                           OR WRITEF("%N,%N)*N", R2, R3)  $)
+
+       IF BINING DO
+           $( PUTHW(F<<8 | R1<<4 | R2)
+              PUTHW(R3<<12 | A)  $)
+
+       TXTP:= TXTP+4   $)
+
+AND ADJUSTADDR(A) = VALOF
+    $( LET N = !A
+
+       IF N<0 DO
+         $( !A := 0
+            GENRHFK(F.LR, R.A, N)
+            RESULTIS R.A  $)
+
+       !A := N REM K4
+       N := N / K4
+       IF N<4 RESULTIS N
+       SETRTOK(R.A, N*K4)
+       RESULTIS R.A  $)
+
+AND GENRXL(F, X, B, L, A) BE IF INCODE DO
+    $( IF COUNTFLAG DO INSERTCOUNT()
+
+       IF LISTING DO
+        WRITEF("*S%S*S%N,%N+L%N-L%N(%N)*N", OPCODE(F),X,A,L,BASELAB,B)
+
+       IF BINING DO $( PUTHW(F<<8 | X<<4 | B)
+                       HREF(TXTP+2, L)
+                       PUTHW(A-BASEADDR)  $)
+
+       TXTP := TXTP + 4  $)
+
+AND GENRS(F, R1, R2, R3, A) BE IF INCODE DO
+    $( IF COUNTFLAG DO INSERTCOUNT()
+
+       IF LISTING DO
+        WRITEF("*S%S*S%N,%N,%N(%N)*N", OPCODE(F), R1, R2, A, R3)
+
+       IF BINING DO $( PUTHW(F<<8 | R1<<4 | R2)
+                       PUTHW(R3<<12 | A)  $)
+
+       TXTP := TXTP + 4  $)
+
+AND GENRR(F,R1,R2) BE IF INCODE DO
+     $( IF COUNTFLAG DO INSERTCOUNT()
+
+        IF LISTING DO WRITEF("*S%S*S%N,%N*N", OPCODE(F), R1, R2)
+
+        IF BINING DO PUTHW(F<<8 | R1<<4 | R2)
+
+        TXTP:= TXTP+2   $)
+
+AND JUMP(L) BE GENRXL(F.BC, M.ALL, R.B, L, 0)
+
+AND CONDJUMP(M, L) BE GENRXL(F.BC, M, R.B, L, 0)
+
+AND GENLAB(N, S) BE
+    $( IF LISTING DO
+           $( WRITEF("L%N*SEQU*S**", N)
+              TEST S=0 THEN NEWLINE()
+                         OR WRITES(S)  $)
+
+        LABV!N:=TXTP  $)
+
+AND CNOP(I,J) BE
+         UNTIL TXTP REM J = I DO GENRR(F.BCR,0,0)
+
+AND INSERTCOUNT() BE
+    $( COUNTFLAG := FALSE
+       CNOP(0, 4)
+       GENRXA(F.BAL, R.A, R.S, 0, S.COUNT)
+       GENDCF(0)  $)
+
+
+
+AND OPCODE(F) = VALOF SWITCHON F INTO
+$(      DEFAULT: RESULTIS "ERROR"
+        CASE F.AH: RESULTIS "AH"
+        CASE F.LPR: RESULTIS "LPR"
+        CASE F.AR: RESULTIS "AR"
+        CASE F.A: RESULTIS "A "
+        CASE F.NR: RESULTIS "NR"
+        CASE F.N: RESULTIS "N "
+        CASE F.BALR: RESULTIS "BALR"
+        CASE F.BAL: RESULTIS "BAL"
+        CASE F.CH:  RESULTIS "CH"
+        CASE F.BCR: RESULTIS "BCR"
+        CASE F.CR: RESULTIS "CR"
+        CASE F.C: RESULTIS "C "
+        CASE F.BC: RESULTIS "BC"
+        CASE F.DR: RESULTIS "DR"
+        CASE F.D: RESULTIS "D "
+        CASE F.XR: RESULTIS "XR"
+        CASE F.X: RESULTIS "X "
+        CASE F.LH: RESULTIS "LH"
+        CASE F.LR: RESULTIS "LR"
+        CASE F.L: RESULTIS "L "
+        CASE F.LA: RESULTIS "LA"
+        CASE F.LCR: RESULTIS "LCR"
+        CASE F.LM: RESULTIS "LM"
+        CASE F.MH: RESULTIS "MH"
+        CASE F.MR: RESULTIS "MR"
+        CASE F.M: RESULTIS "M "
+        CASE F.OR: RESULTIS "OR"
+        CASE F.O: RESULTIS "O "
+        CASE F.SH:  RESULTIS "SH"
+        CASE F.SLL: RESULTIS "SLL"
+        CASE F.SRDA: RESULTIS "SRDA"
+        CASE F.SRL: RESULTIS "SRL"
+        CASE F.SR: RESULTIS "SR"
+        CASE F.ST:  RESULTIS "ST"
+        CASE F.STM: RESULTIS "STM"
+        CASE F.STH: RESULTIS "STH"
+        CASE F.S: RESULTIS "S "
+        CASE F.TM: RESULTIS "TM"
+        CASE F.OI: RESULTIS "OI"
+        CASE F.IC: RESULTIS "IC"
+        CASE F.STC: RESULTIS "STC"
+
+        CASE F.LTER: RESULTIS "LTER"
+        CASE F.LER: RESULTIS "LER"
+        CASE F.LE: RESULTIS "LE"
+        CASE F.CER: RESULTIS "CER"
+        CASE F.CE: RESULTIS "CE"
+        CASE F.AER: RESULTIS "AER"
+        CASE F.AE: RESULTIS "AE"
+        CASE F.SER: RESULTIS "SER"
+        CASE F.SE: RESULTIS "SE"
+        CASE F.MER: RESULTIS "MER"
+        CASE F.ME: RESULTIS "ME"
+        CASE F.DER: RESULTIS "DER"
+        CASE F.DE: RESULTIS "DE"
+        CASE F.STE: RESULTIS "STE"
+        CASE F.STD: RESULTIS "STD"
+        CASE F.LCER: RESULTIS "LCER"
+        CASE F.LPER: RESULTIS "LPER"
+
+        CASE F.AW: RESULTIS "AW"
+        CASE F.SDR: RESULTIS "SDR"
+        CASE F.AD: RESULTIS "AD"
+$)
+
+
+AND GENDCF(N) BE
+    $(  IF LISTING DO WRITEF("*SDC*SF'%N'*N", N)
+
+       IF BINING DO PUTFW(N)
+
+       TXTP:= TXTP+4  $)
+
+AND GENDCA(L, N) BE
+     $( IF LISTING DO WRITEF("*SDC*SA(%N+L%N)*N", N, L)
+
+        IF BINING DO $( FREF(TXTP, L)
+                        PUTFW(N)  $)
+
+        TXTP:= TXTP+4  $)
+
+AND GENDCH(N) BE
+    $( IF LISTING DO WRITEF("*SDC*SH'%N'*N", N)
+
+       IF BINING DO PUTHW(N)
+
+       TXTP := TXTP + 2  $)
+
+AND GENDCAL2(L) BE
+    $( IF LISTING DO WRITEF("*SDC*SAL2(L%N-L%N)*N", L, BASELAB)
+
+       IF BINING DO $( HREF(TXTP, L)
+                       PUTHW(-BASEADDR)  $)
+
+       TXTP := TXTP + 2  $)
+
+AND GENDCX(A) BE
+     $( IF LISTING DO WRITEF("*SDC*SX'%X8'*N", A)
+
+        IF BINING THEN PUTFW(A)
+
+        TXTP:= TXTP+4  $)
+
+AND GENDCAX(V) BE
+
+$(  IF LISTING THEN
+    $(  WRITES("*SDC*SA(")
+        FOR I = 1 TO 8 DO WRCH(V!I)
+        WRITES(")*N")
+    $)
+
+    IF BINING THEN
+    $(  XREF(TXTP, CW(V), CW(V+4))
+        PUTFW(0)
+    $)
+
+    TXTP := TXTP+4
+$)
+AND GENSTKCK1() BE
+$(
+    IF LISTING DO WRITEF("*SDC*SA(L%N) STACK FRAME SIZE*N", BASEFRMLAB)
+
+    IF BINING DO PUTFW(#XAAAAAAAA)  // THIS IS GARBAGE, BUT THE CORRECT
+                                    // VALUE IS NOT YET AVAILABLE
+
+    TXTP := TXTP+4
+$)
+
+AND GENSTKCK2() BE
+$(
+    IF LISTING DO WRITEF("L%N*SEQU*S%N STACK FRAME SIZE*N",
+                                 BASEFRMLAB, BASEFRMSIZE*4)
+
+    IF BINING DO !BASEFRMADDR := BASEFRMSIZE*4  // CAN'T CORRECT BINARY OUTPUT
+                                              // BUT THIS MAKES THE CODE RIGHT
+$)

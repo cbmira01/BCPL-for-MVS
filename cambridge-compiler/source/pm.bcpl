@@ -1,0 +1,231 @@
+SECTION "PM"
+
+GET "LIBHDR"
+
+GLOBAL  $(  GLOBAL0:0  $)
+
+MANIFEST $( ENTRYMASK = #XFFF0FFFF       //    identify entry points
+            ENTRYWORD=#X9040F000
+
+            TOPBITS = #XFF000000         //    masks for senior byte
+            ADDRESSBITS = #XFFFFFF
+
+            STACKWORD1 = #X5C40E2E3      //    initial stack values
+            STACKWORD2 = #XC3D2405C
+            CLEARSTORE = #XAAAAAAAA      //    clear store at Cambridge
+
+            PROCEND = -3                 //    H-option secret info
+            PROCNAME = -2                //    procedure print name
+            PROCNAMELENGTH = 7           //    length of print name
+
+            TYPEBITS = #X07000000        //    variable type bits
+
+            PTYPE = #X02
+            LTYPE = #X03
+            GTYPE = #X01
+         $)
+
+STATIC   $( PROCDEPTH=-1; POINTERWIDTH=4; POINTERDEPTH=3
+            PPTR=0; CODEP=0 $)
+
+
+LET BACKTRACE(N) BE
+    $(  LET OLDPROCDEPTH = PROCDEPTH
+        LET Q = LEVEL()>>2                  //    local stack pointer
+        PPTR := (Q!1) >> 2                  //    one level back
+
+        TEST  !PPTR=ABORT                   //    call from ABORT ?
+            THEN  CODEP, PPTR := PPTR!4 & ADDRESSBITS, PPTR!1 >> 2
+              OR  CODEP, PROCDEPTH := Q!2 & ADDRESSBITS, N
+
+        APTOVEC(PM, POINTERDEPTH)
+        PROCDEPTH := OLDPROCDEPTH
+    $)
+
+
+AND SETPM(A, B, C) BE $( PROCDEPTH := A
+                         IF B>=0 THEN POINTERWIDTH := B
+                         IF C>=0 THEN POINTERDEPTH := C
+                      $)
+
+AND PM(V) BE
+
+$(  STATIC $(  W=0;   NONL=FALSE;   CHWIDTH=0
+               PTRVEC=0; PTRDEPTH=0; PDEPTH=0   $)
+
+    LET ISPROC(N) =  ~INPROGRAM(N) -> FALSE,
+                   (!N&ENTRYMASK)~=ENTRYWORD -> FALSE,
+                   (PROCNAME!N>>24)=PROCNAMELENGTH
+
+    AND NEWPOINTER(N) = VALIDPOINTER(N)  &  VALOF
+
+      $(  FOR I = 1 TO PTRDEPTH DO
+           $(  LET P = PTRVEC!I
+               IF  P<=N<(P+POINTERWIDTH)  RESULTIS FALSE
+           $)
+          RESULTIS TRUE
+      $)
+
+
+    AND WRITEVAR(N) BE
+
+    $( LET T = N & TOPBITS
+       LET M = N/4
+
+       TEST  (N=STACKWORD1) | (N=STACKWORD2) | (N=CLEARSTORE)
+          THEN WRITES("unset")
+            OR $( TEST  (T=0)|(T=TOPBITS)  THEN WRITEN(N)
+                                             OR WRITEF("#X%X8", N)
+
+                  TEST ISPROC(M) THEN
+                     $( LET V = PROCNAME+M
+                        WRITES(" [procedure ")
+                        FOR I = 1 TO PROCNAMELENGTH DO
+                           $( LET CH = GETBYTE(V,I)
+                              IF  CH='*S'  BREAK
+                              WRCH(CH)
+                           $)
+                        WRCH(']')
+                     $)
+                     OR IF NEWPOINTER(N) THEN
+                           TEST VALIDSTRING(N)
+                              THEN $( WRITES(" [*"")
+                                      FOR I = 1 TO GETBYTE(N,0) DO
+                                           WRCHN(GETBYTE(N,I))
+                                      WRITES("*"]")
+                                   $)
+                                OR $( PRINTPOINTER(N); RETURN $)
+               $)
+       UNLESS NONL THEN NEWLINE()
+    $)
+
+    AND PRINTPOINTER(N) BE
+
+    $( WRITES(" -> ")
+       TEST PTRDEPTH>=POINTERDEPTH
+          THEN WRITES("...*N")
+            OR $( LET C = CHWIDTH
+
+                  PTRDEPTH +:= 1
+                  PTRVEC!PTRDEPTH := N
+
+                  NONL := VALOF
+                      $( FOR I = 0 TO POINTERWIDTH-1 DO
+                            IF NEWPOINTER(I!N) THEN RESULTIS FALSE
+                         WRCH('('); RESULTIS TRUE
+                      $)
+
+                  FOR I = 0 TO POINTERWIDTH-1 DO
+                     $( WRITEVAR(I!N)
+                        IF I~=POINTERWIDTH-1 THEN
+                           TEST NONL THEN WRCH(',')
+                                       OR FOR I = 1 TO C DO WRC('*S')
+                     $)
+
+                  IF NONL THEN $( WRCH(')'); NEWLINE() $)
+                  PTRDEPTH -:= 1
+                  NONL := FALSE
+               $)
+    $)
+
+    AND WRCHN(CH) BE
+        $(  SWITCHON CH INTO
+            $(  DEFAULT:    GOTO L
+                CASE '*N':  CH := 'N';  ENDCASE
+                CASE '*E':  CH := 'E';  ENDCASE
+                CASE '*T':  CH := 'T';  ENDCASE
+                CASE '*P':  CH := 'P';  ENDCASE
+                CASE '**':  CH := '**';  ENDCASE
+                CASE '*B':  CH := 'B';  ENDCASE
+                CASE '*C':  CH := 'C'
+            $)
+            W('**')
+        L:  W(CH)
+        $)
+
+    AND WRC(CH) BE
+       $( TEST CH='*N' THEN CHWIDTH := 0
+                         OR CHWIDTH +:= 1
+          W(CH)
+       $)
+
+    AND VALIDSTRING(N) = VALOF
+
+    $(  LET M = !N
+        LET L = M >> 24
+        IF  (M=STACKWORD1) | (M=STACKWORD2) | (M=CLEARSTORE)
+                        THEN  RESULTIS FALSE
+        UNLESS VALIDPOINTER(N+L/4) THEN RESULTIS FALSE
+        FOR I = 1 TO L DO
+           $(  LET CH = GETBYTE(N,I)
+               IF  CH=0 | CH=#XFF  THEN RESULTIS FALSE  $)
+        RESULTIS  (L~=0)
+    $)
+
+
+    LET G0 = @GLOBAL0             //    start of main routine
+    PTRVEC := V                   //    vector for pointer trace
+
+    W := WRCH
+    WRCH, PDEPTH, PTRDEPTH, CHWIDTH := WRC, 1, 0, 0
+    WRITES("*NBacktrace called from ")
+
+
+    $(A LET R = (!PPTR & ADDRESSBITS) >> 2
+        UNLESS INPROGRAM(R) THEN $( WRITES("? (stack overwritten)*N")
+                                BREAK $)
+
+    $(  LET N = PROCEND!R
+        LET BCH = N>>2
+        LET DEPTH = 0
+        WRITES(R+PROCNAME); WRITES("*N*N")
+        IF INPROGRAM(BCH) THEN UNTIL N<0 DO
+            TEST 1!BCH<=CODEP<=2!BCH THEN
+ /* This block is in range - chain from it outwards, printing variables
+     as we go, then drop out at the end */
+            $(  BCH := BCH + 3
+                UNTIL !BCH<0 DO
+                $(  LET N = 1!BCH
+                    FOR I = 1 TO DEPTH DO WRCH('.')
+                    WRITES((!BCH)>>2); WRCH('*S')
+                    $(  LET TYPE = (N & TYPEBITS) >> 24
+                        N := (N & ADDRESSBITS) >> 2
+                        WRITEVAR((TYPE=PTYPE) -> PPTR!N,
+                                 (TYPE=GTYPE) -> G0!N,  !N)
+                    $)
+                    BCH := BCH + 2
+                $)
+                DEPTH := DEPTH + 1
+                N := 1!BCH; BCH := N>>2
+            $) REPEATUNTIL N<0
+
+            OR  /* It's not in range - repeat for the next block */
+            $(  BCH := (!BCH)>>2
+                N := 1!BCH
+                BCH := BCH + 2
+            $)
+        $)
+
+        IF PDEPTH=PROCDEPTH THEN BREAK
+        PDEPTH +:= 1
+        $(  LET OLDP = PPTR
+            CODEP := PPTR!2 & ADDRESSBITS
+            PPTR := (PPTR!1) >> 2
+            UNLESS  PPTR<=OLDP & (STACKBASE<=PPTR<STACKEND)  THEN
+             $( WRITES("*NStack apparently corrupted*N"); BREAK $)
+            WRITES("*Ncalled from ")
+            IF PPTR=OLDP THEN $( WRITES("entry sequence*N"); BREAK $)
+        $)
+    $)A REPEAT
+
+    WRITES("*N*NGLOBALS*N*N")
+
+    FOR I = 1 TO GLOBAL0 DO
+    $(  LET N = I!G0
+        UNLESS  N=(4*I+#XC7D3F000)  DO         //   unset global
+            UNLESS  ISPROC(N/4)  DO            //   procedure entry
+                 $( WRITEF("%I3  ", I); WRITEVAR(N) $)
+    $)
+
+    WRCH := W
+$)

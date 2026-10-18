@@ -1,0 +1,490 @@
+SECTION "BCPL"
+NEEDS "$LOAD$"
+
+GET "LIBHDR"
+
+
+GLOBAL $( CHBUF:102; PRSOURCE:110; PRLINE:111; STANDARDABORT:112
+    // STANDARDABORT IS PROVIDED BY THE NON-STANDARD BLIB CONCATENATED
+    // ON THE END OF THIS SECTION.  THIS BLIB DIFFERS ONLY IN THE
+    // GLOBAL NUMBER FOR ABORT.  THE ABORT DEFINED IN THIS SECTION MUST BE
+    // INSTALLED AT GLOBAL INITISALISATION TIME IF IT IS TO CATCH
+    // INITIALISATION ABENDS.  STANDARDABORT IS USED IF FULL POST-MORTEM
+    // IS REQUIRED.
+          PPTRACE:127; NOGET:128; QUIET:129; LEXTEST:130
+          LINECOUNT:133
+          FORMTREE:150; PLIST:152
+          COMPILEAE:245
+          DVEC:260; DVECS:261
+          TRNUNUSED:276
+          SAVESPACESIZE:282; BACKVEC:283; TRNLINE:288; OCODE:301
+          NUMOCODE:302
+          SYSOPT:320; SYSPCH:322; CODESTREAM:323
+          OCODESTREAM:324; SOURCESTREAM:325
+
+          CHARCODE:330; REPORTCOUNT:331; REPORTMAX:332
+
+         FORCEUPPERCASE:333;MEMBERNAMEING:334
+         UPPERCASE:335;SECTIONNAME:336;UPPERCASESTRING:337
+
+          WORKBASE:350; WORKTOP:351; TREEP:352
+          OBUFB:353; OBUFP:354; CGWORKVEC:355
+          CODEGEN:390
+          BINING:401; LISTING:403; DECK:405; CGTRACE:406
+          LISTDECK:407; CALLCOUNTING:416; COUNTING:417
+          STKCKING:419
+          DP:550
+          NAMING:570; NAMET:572; NAMEL:571; NAMES:574
+          TP:632
+          TOPGLOB:699  $)
+
+STATIC $( TIMING=FALSE; NOTRN=FALSE; NOCG=FALSE
+          ERRORS=FALSE; ERRORMAX=30
+          HARD=FALSE;  TREE=FALSE;  MAPPING=FALSE
+          ASCII=FALSE
+          LOADGO=FALSE
+          OVERLAYING = FALSE
+          STANDARDWRCH=0   $)
+
+MANIFEST $( S.NAME=2  $)
+
+LET ABORT(CODE) BE
+$(  LET SCC, UCC = (CODE>>12) & #XFFF, CODE & #XFFF
+    LET SYSPRINT = FINDOUTPUT("SYSPRINT")
+    IF SYSPRINT = 0 DO
+    $(   WRITETOLOG("BCPL compiler requires SYSPRINT")
+         STOP(16)
+    $)
+
+    SELECTOUTPUT(SYSPRINT)
+
+   WRITES("*NBCPL compiler abort, ")
+    TEST UCC=0 DO
+    $(  SWITCHON SCC INTO
+        $(  CASE #X0D1: WRITES("Comp time exhausted*N"); ENDCASE
+            CASE #X0D2: WRITES("Fatal I/O error*N"); ENDCASE
+            CASE #X0D3: WRITES("Stack overflow*N"); ENDCASE
+            DEFAULT:
+              WRITEF("system completion code %X3*N", SCC)
+        $)
+    $)
+    OR
+    $(  WRITEF("user completion code %N - COMPILER ERROR*N", UCC) $)
+    IF SCC = #001 DO
+        WRITES("Possibly missing membername for PDS input*N")
+    IF SCC = #X013 DO
+        WRITES("Member of PDS not found*N")
+    IF (SCC & #XFF) = #X37 DO
+        WRITES("Some limit exceeded on output file size*N")
+    IF SCC>>4 = #XC  | SCC=#X0D3 DO
+        WRITES("Try increasing stack with P compiler option*N*
+         *The default, P3000, gives 3000 words of stack*N")
+    IF SCC>>4 = #X80 DO
+        WRITES("Possibly insufficient i/o space. Use K run-time option*N")
+
+    IF SCC>>4 = #X8 DO     // This is local to the CAMBRIDGE 370 only
+        WRITES("Some resource limit has been exceeded*N")
+
+    ENDWRITE()
+
+    STOP(16)
+$)
+
+LET UPPERCASE(CH) = ('a' <= CH <= 'z') -> CH + 'A' - 'a', CH
+
+LET UPPERCASESTRING(S) BE
+    FOR I = 1 TO GETBYTE(S, 0) DO
+        PUTBYTE(S, I, UPPERCASE(GETBYTE(S, I)))
+
+GLOBAL $( COMPILE:1 $)  // START REALLY, BUT CALLED COMPILE
+                        // TO MAKE BACKTRACE FROM G OPTION NEATER
+LET COMPILE() BE
+$(1  LET WRITEUPPERCASE(CH) BE
+          $(  LET OSTREAM = OUTPUT()
+              IF OSTREAM=SYSOPT DO CH := UPPERCASE(CH)
+              STANDARDWRCH(CH)
+          $)
+
+LET STACKSIZE = STACKEND-STACKBASE
+LET OLDWRAP = TRUE
+LET SAVEABORT = STANDARDABORT  // LOADCODE WILL CLEAR GLOBAL
+
+OVERLAYING := CODEGEN < 0     //    TRUE IFF CODEGEN IS AN UNSET GLOBAL
+STANDARDWRCH := WRCH          //    FOR LOWER CASE FOLD OPTION
+TOPGLOB := 0                  //    ENSURE ENOUGH GLOBAL VECTOR
+
+SYSOPT := FINDOUTPUT("SYSPRINT")
+IF SYSOPT=0 DO $( WRITETOLOG("BCPL COMPILER NEEDS SYSPRINT"); STOP(8) $)
+SELECTOUTPUT(SYSOPT)
+OLDWRAP := WRAPOUTPUT(TRUE)
+
+$( LET WORKSPACESIZE = 0
+   AND FREESTACKSIZE = 0
+   LET SN = VEC 3
+   SECTIONNAME := SN
+
+   SAVESPACESIZE := 3
+   BACKVEC := FALSE
+   NOGET, LEXTEST := FALSE, FALSE
+   PPTRACE, TREE, OCODE := FALSE, FALSE, FALSE
+   NUMOCODE := FALSE
+   DECK, LISTDECK, BINING := TRUE, FALSE, TRUE
+   PRSOURCE, LISTING, CGTRACE := FALSE, FALSE, FALSE
+   STKCKING, CALLCOUNTING, COUNTING := FALSE, FALSE, FALSE
+   FORCEUPPERCASE, MEMBERNAMEING := TRUE, FALSE
+   QUIET := FALSE
+   NAMING, NAMES := FALSE, 0
+
+$(P LET CH = 0
+    SELECTINPUT(FINDPARM())
+
+    $( CH := UPPERCASE(RDCH())
+    SWITCHON CH INTO
+    $(
+        DEFAULT:  WRITEF("Unknown compilation option %C ignored*N", CH)
+                  READN(); UNRDCH()
+                  ENDCASE
+        CASE '/': CASE ENDSTREAMCH: CASE '*N': BREAK
+        CASE 'A': ASCII      := TRUE;  GOTO OPTWARN
+        CASE 'B': BACKVEC    := TRUE;  GOTO OPTWARN
+        CASE 'C': FORCEUPPERCASE  := FALSE; ENDCASE
+  //    CASE 'E': PPTRACE    := TRUE;  ENDCASE
+        CASE 'F': ABORT      := STANDARDABORT; ENDCASE
+        CASE 'H': HARD       := TRUE;  ENDCASE
+  //    CASE 'M': MAPPING    := TRUE;  ENDCASE
+        CASE 'N': NUMOCODE   := TRUE          // Set OCODE as well
+        CASE 'O': OCODE      := TRUE;  GOTO OPTWARN
+        CASE 'P': FREESTACKSIZE := READN(); UNRDCH(); ENDCASE
+        CASE 'Q': QUIET      := TRUE;  ENDCASE
+        CASE 'R': ERRORMAX := READN(); UNRDCH(); ENDCASE
+        CASE 'S': PRSOURCE   := TRUE;  ENDCASE
+  //    CASE 'T': TREE       := TRUE;  ENDCASE
+  //    CASE 'V': LEXTEST    := TRUE;  ENDCASE
+        CASE 'W': WRCH := WRITEUPPERCASE; ENDCASE
+        CASE 'X': TIMING     := TRUE;  ENDCASE
+  //    CASE 'Y': NOTRN      := TRUE;  ENDCASE
+        CASE 'Z': NOCG       := TRUE;  GOTO OPTWARN
+        CASE '1': CASE '2': CASE '3': CASE '4': CASE '5':
+        CASE '6': CASE '7': CASE '8': CASE '9':
+                  SAVESPACESIZE := CH-'0'
+   OPTWARN:
+      WRITEF("Warning, the %C option is only suitable for cross compilation*N",
+                                   CH)
+    $)
+                 $) REPEAT
+
+    UNLESS QUIET DO
+        WRITEF("BCPL 5th Mar 81  Stacksize = %I5  Parm = %S*N",
+               STACKSIZE, PARMS)
+    $( CH := UPPERCASE(RDCH())
+        SWITCHON CH INTO
+    $(
+        DEFAULT: WRITEF("Unknown code-generator option %C*N", CH)
+                 STOP(8)
+        CASE '/': ENDCASE   // DON'T MIND EXTRA /
+        CASE '*N': CASE ENDSTREAMCH: BREAK
+        CASE 'C':  STKCKING    := TRUE; ENDCASE
+  //    CASE 'D':  LISTDECK    := TRUE; ENDCASE
+        CASE 'G':  // G OPTION MUST BE LAST
+        $(  LET LENGTH = 0
+            $(  CH := RDCH()
+                IF CH = ENDSTREAMCH | CH = '*N' BREAK
+                LENGTH := LENGTH+1
+                PUTBYTE(PARMS, LENGTH, CH)
+             $) REPEAT
+             PUTBYTE(PARMS, 0, LENGTH)
+
+             LOADGO := TRUE
+             BREAK
+        $)
+        CASE 'H':
+            NAMING, NAMES := TRUE, READN()
+            UNRDCH()
+            IF NAMES=0 DO NAMES:=600
+            ENDCASE
+        CASE 'K':  CALLCOUNTING:= TRUE; ENDCASE
+        CASE 'L':  LISTING     := TRUE; ENDCASE
+        CASE 'M':  MEMBERNAMEING:=TRUE; ENDCASE
+        CASE 'N':  DECK       := FALSE; ENDCASE
+        CASE 'P':  CALLCOUNTING, COUNTING := TRUE, TRUE; ENDCASE
+  //    CASE 'T':  CGTRACE     := TRUE; ENDCASE
+     $)
+    $) REPEAT
+
+    ENDREAD()  $)P
+
+
+$( LET CHARCODE(CH) = CH
+
+   AND CODEA(CH) = CH!(TABLE
+      0,   0,   0,   0,   0, #11,   0,   0,
+      0,   0,   0, #13, #14, #15,   0,   0,
+      0,   0,   0,   0,   0, #12,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0, #12,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+    #40,   0,#133,#135,   0,   0,   0,   0,
+      0,   0,   0, #56, #74, #50, #53,#174,
+    #46,   0,   0,   0,   0,   0,   0,   0,
+      0,   0, #41, #44, #52, #51, #73,#176,
+    #55, #57,#134,   0,   0,#136,#137,   0,
+      0,   0,   0, #54, #45,#140, #76, #77,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0, #72, #43,#100, #47, #75, #42,
+      0,#141,#142,#143,#144,#145,#146,#147,
+   #150,#151,   0,   0,   0,   0,   0,   0,
+      0,#152,#153,#154,#155,#156,#157,#160,
+   #161,#162,   0,   0,   0,   0,   0,   0,
+      0,   0,#163,#164,#165,#166,#167,#170,
+   #171,#172,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,#101,#102,#103,#104,#105,#106,#107,
+   #110,#111,   0,   0,   0,   0,   0,   0,
+      0,#112,#113,#114,#115,#116,#117,#120,
+   #121,#122,   0,   0,   0,   0,   0,   0,
+      0,   0,#123,#124,#125,#126,#127,#130,
+   #131,#132,   0,   0,   0,   0,   0,   0,
+    #60, #61, #62, #63, #64, #65, #66, #67,
+    #70, #71,   0,   0,   0,   0,   0,   0
+                      )
+
+   IF ASCII THEN CHARCODE := CODEA
+
+
+
+   SOURCESTREAM := FINDINPUT("SYSIN")
+   IF SOURCESTREAM=0 DO $( WRITES("*NNO SYSIN*N")
+                           STOP(8)  $)
+   SELECTINPUT(SOURCESTREAM)
+   LINECOUNT, PRLINE := 1, 0
+   TRNLINE := 1
+
+$(2 LET COMP(V, SIZE) BE
+    $(  LET U = VEC 63
+        CHBUF := U
+      $(C WORKBASE, WORKTOP := V, V+SIZE
+          TREEP := WORKTOP
+
+          REPORTCOUNT, REPORTMAX := 0, ERRORMAX
+          !SECTIONNAME := 0    // NULL STRING
+          IF OVERLAYING DO LOADSEG("SYN")
+
+          WRTIME()
+
+        $( LET A = FORMTREE()
+
+           UNLESS LOADGO | SOURCESTREAM=0 DO
+               TEST RDCH()=ENDSTREAMCH
+                   THEN $( ENDREAD()
+                           SOURCESTREAM := 0  $)
+                   OR UNRDCH()
+
+           IF REPORTCOUNT>0 DO ERRORS := TRUE
+
+           IF A=0 DO
+           $(  UNLESS LOADGO LOOP
+               WRITES("NO PROGRAM TO EXECUTE*N")
+               STOP(8)
+           $)
+
+           UNLESS QUIET DO WRITEF("Tree size %N*N", WORKTOP-TREEP)
+           WRTIME()
+
+           IF TREE DO
+                  $( WRITES('AE tree*N')
+                     PLIST(A, 0, 30)
+                     NEWLINE()  $)
+
+
+
+           IF HARD&REPORTCOUNT>0 DO STOP(8)
+
+           IF NOTRN LOOP
+
+           IF OVERLAYING DO LOADSEG("TRN")
+
+           OCODESTREAM := FINDOUTPUT("OCODE")
+           TEST OCODESTREAM=0 THEN OCODESTREAM := SYSOPT
+                                OR OCODE := TRUE
+           SELECTOUTPUT(OCODESTREAM)
+
+           OBUFP, OBUFB := WORKBASE, 0
+           COMPILEAE(A)
+
+
+           SELECTOUTPUT(SYSOPT)
+           UNLESS QUIET DO WRITEF("OCODE size = %N*N", OBUFP-WORKBASE)
+           WRTIME()
+
+        $(
+           CGWORKVEC := OBUFP+1
+
+
+           IF HARD&REPORTCOUNT>0 DO STOP(8)
+
+           IF REPORTCOUNT>0 DO ERRORS := TRUE
+
+           IF NOCG LOOP
+
+           IF MAPPING DO MAPSTORE()
+
+           IF OVERLAYING DO $( UNLOAD("SYN")
+                               UNLOAD("TRN")
+                               LOADSEG("CG")  $)
+
+           CODESTREAM := FINDOUTPUT("CODE")
+           TEST CODESTREAM=0 THEN CODESTREAM := SYSOPT
+                             OR   LISTING := TRUE
+           IF DECK DO
+               $( SYSPCH := FINDOUTPUT("SYSGO")
+                  IF SYSPCH=0 DO $( WRITES("*NNO SYSGO*N")
+                                    STOP(8)  $)
+               $)
+
+           SELECTOUTPUT(CODESTREAM)
+            IF NAMING THEN
+            $( NAMET := CGWORKVEC
+               CGWORKVEC := CGWORKVEC+NAMES
+               NAMEL := CGWORKVEC  $)
+
+           CODEGEN()
+
+
+
+
+           SELECTOUTPUT(SYSOPT)
+
+        $( LET UNUSED = DP-TP       || space unused by CG
+           IF UNUSED > TRNUNUSED DO UNUSED := TRNUNUSED
+           UNLESS QUIET DO
+                 WRITEF("%N unused words of workspace(workspace size = %N)*N",
+                   TRNUNUSED, SIZE)     $)
+
+           IF MAPPING DO MAPSTORE()
+
+           IF OVERLAYING DO UNLOAD("CG")
+
+           IF REPORTCOUNT>0 DO ERRORS := TRUE
+
+           IF LOADGO DO
+           $(  IF ERRORS DO
+               $(  WRITES("COMPILATION FAILED*N"); STOP(8) $)
+               UNLESS QUIET DO
+                   WRITES("ENTERING COMPILED CODE NOW*P")
+
+           // CLOSE UNWANTED OUTPUTS
+               UNLESS OCODESTREAM = SYSOPT DO
+               $(  SELECTOUTPUT(OCODESTREAM)
+                   ENDWRITE()
+               $)
+               UNLESS CODESTREAM = SYSOPT DO
+               $(  SELECTOUTPUT(CODESTREAM)
+                   ENDWRITE()
+               $)
+               IF DECK DO
+               $(  SELECTOUTPUT(SYSPCH)
+                   ENDWRITE()
+               $)
+
+               SELECTOUTPUT(SYSOPT)
+               IF OVERLAYING DO LOADSEG("PROGRAM")
+               LOADCODE()
+               RETURN
+           $)
+
+       $)C REPEATUNTIL SOURCESTREAM=0
+      $)
+
+
+    IF FREESTACKSIZE = 0 DO FREESTACKSIZE := 3000
+    WORKSPACESIZE := STACKSIZE-FREESTACKSIZE
+    TEST WORKSPACESIZE >= 5000
+    THEN APTOVEC(COMP, WORKSPACESIZE)
+    ELSE $(  WRITES("*NINSUFFICIENT REGION SIZE*N")
+             STOP(8)
+                            $)
+
+   IF LOADGO DO
+   $(
+      WRAPOUTPUT(OLDWRAP)
+      WRCH := STANDARDWRCH
+      ABORT := SAVEABORT
+        // RESET THE FLAG WHICH ALLOWS TRIMMING TO BE TURNED
+        // OFF IF NEXT READ IS BY READREC
+
+      UNLESS INPUT() <= 0 DO
+      $( LET DCBKFLG1=INPUT()+117
+         LET ACCSW= #X10
+         PUTBYTE(0, DCBKFLG1, GETBYTE(0, DCBKFLG1) | ACCSW)
+      $)
+
+      START(PARMS); FINISH  $)
+
+   TEST ERRORS
+      THEN $( WRITES("COMPILATION FAILED*N")
+              STOP(8)  $)
+      ELSE UNLESS QUIET DO WRITES("COMPILATION SUCCESSFUL*N")
+
+   WRCH := STANDARDWRCH        //    RESTORE STANDARD WRCH
+
+
+   FINISH   $)1
+
+
+AND LOADSEG(S) BE
+    $( LET A = LOAD(S, 0)
+       UNLESS A=0 DO
+       $(  WRITEF("*NFAILED TO OVERLAY %S*N", S); STOP(8) $)  $)
+
+AND WRTIME() BE IF TIMING DO
+    $( STATIC $( LASTTIME=0  $)
+       LET T = TIME()
+       LET INCR = T - LASTTIME
+       LASTTIME := T
+       WRITEF("Time = %I6 msecs*N", 26*INCR/1000)  $)
+
+
+AND LOADCODE() BE
+
+$(1 GLOBAL $( GVECSIZE:0
+              BASEADDR:100
+              FREFLIST:566
+              TXTV:630; TP:632
+           $)
+
+    MANIFEST $( GLOBWORD=#XC7D3F000
+                H1=0; H2=1  $)
+
+    LET BASE = BASEADDR/4
+    LET SIZE = TP-TXTV
+
+    // COPY CORE IMAGE
+    FOR I = 0 TO SIZE-1 DO BASE!I := TXTV!I
+    FOR I = SIZE TO 4095 DO BASE!I := 0
+
+    // RELOCATE FULL WORD ADDRESS CONSTANTS
+ $( LET P = FREFLIST
+
+    UNTIL P=0 DO
+        $( LET A = H2!P>>2
+           BASE!A := BASE!A + 4*BASE
+           P := H1!P  $)
+ $)
+
+    // INITIALISE THE GLOBALS
+ $( LET INITG(N) BE (@GVECSIZE)!N := GLOBWORD+4*N
+
+    LET G = @GVECSIZE
+
+    INITG(1)
+
+    FOR I = 100 TO GVECSIZE DO INITG(I)
+
+    FOR P = BASE+SIZE-2 TO BASE BY -2 DO
+           $( IF P!1=0 BREAK
+              G!(P!0/4) := P!1  $)
+ $)
+$)1
