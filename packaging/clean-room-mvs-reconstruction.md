@@ -29,7 +29,7 @@ nothing. Those must already be set up.
 | **INTCODE** | The intermediate code used during the BCPL bootstrap. |
 | **`TRNILRG`** | A larger-name translator image needed to build the Cambridge compiler. |
 | **`CAMBCOMP`** | The rebuilt Cambridge compiler, stored as INTCODE. |
-| **`NATIVE_OBJ`** | The PDS that holds the six finished, native object modules. |
+| **`BOOT_OBJ`** | The PDS that holds the six finished, native object modules. |
 | **RC / CODE** | A job step's return code / the BCPL interpreter's own completion code. Check both. |
 
 ### What is kept, and what is erased?
@@ -41,8 +41,8 @@ This process **deletes data**. Read this table first.
 | `workarea/` on Linux | Its contents are deleted | Save any build logs or evidence you need first. |
 | `workarea/.gitignore` | **Kept** | Git tracks this file so `workarea/` exists after a fresh clone. |
 | 24 BCPL PDSes listed in `config/dspal.yaml` | **Deleted and rebuilt** | Any personal files in these managed PDSes will be lost. |
-| `NATIVE_OBJ` | Recreated empty, then rebuilt | Do not copy old binary objects into it. |
-| `NATIVE_DEVOBJ` | Recreated empty | Leave it empty during the production rebuild. |
+| `BOOT_OBJ` | Recreated empty, then rebuilt | Do not copy old binary objects into it. |
+| `BOOT_DEVOBJ` | Recreated empty | Leave it empty during the production rebuild. |
 | `mvs-state/`, DASD images, TK5 system files | **Kept** | Never erase these as part of this guide. |
 | Git source, `docker/`, `config/dspal.local.yaml` | **Kept** | The local config may contain credentials. Never paste them into logs or commits. |
 
@@ -79,8 +79,8 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 4 | Run the MR10 examples and tests | All resident suites pass |
 | 5 | Generate Cambridge sources and `TRNILRG`; second populate | All mapped members installed |
 | 6 | Build and test `CAMBCOMP` | Compiler produces System/370 assembler |
-| 7 | Assemble five native runtime modules | Five members in `NATIVE_OBJ` |
-| 8 | Compile and assemble `BLIB` | Six members in `NATIVE_OBJ` |
+| 7 | Assemble five native runtime modules | Five members in `BOOT_OBJ` |
+| 8 | Compile and assemble `BLIB` | Six members in `BOOT_OBJ` |
 | 9 | Run native regression tests | 145 PASS, 0 FAIL, 1 expected SKIP |
 | 10 | Save the evidence | Results and limits recorded |
 
@@ -185,8 +185,8 @@ tools/datasets/dspal populate all
 tools/datasets/dspal ls MR10_SOURCE
 tools/datasets/dspal ls MR10_JCL
 tools/datasets/dspal ls MR10_ASM
-tools/datasets/dspal ls NATIVE_SOURCE
-tools/datasets/dspal ls NATIVE_JCL
+tools/datasets/dspal ls BOOT_SOURCE
+tools/datasets/dspal ls BOOT_JCL
 ```
 
 **The first population is meant to end with RC=2.** That does **not** mean
@@ -313,8 +313,8 @@ empty. Inspect the interpreted jobs for success and `CODE=0`.
 tools/datasets/dspal populate all --dry-run
 tools/datasets/dspal populate all
 
-tools/datasets/dspal ls NATIVE_SOURCE
-tools/datasets/dspal ls NATIVE_INTCODE
+tools/datasets/dspal ls BOOT_SOURCE
+tools/datasets/dspal ls BOOT_INTCODE
 ```
 
 **This pass must return RC=0.** It installs every mapped source file
@@ -322,9 +322,9 @@ again, plus the generated members that were missing the first time.
 
 | PDS | What should now be there |
 | --- | --- |
-| `NATIVE_SOURCE` | Four headers, `BOOTHOST`, `OPTIONS`, `CAMBPARM`, and 11 demoted Cambridge source units |
-| `NATIVE_INTCODE` | `TRNILRG`; the compiler will be added next |
-| `NATIVE_JCL` | The Git-tracked `CAMBBLD` build job, already present from the first pass |
+| `BOOT_SOURCE` | Four headers, `BOOTHOST`, `OPTIONS`, `CAMBPARM`, and 11 demoted Cambridge source units |
+| `BOOT_INTCODE` | `TRNILRG`; the compiler will be added next |
+| `BOOT_JCL` | The Git-tracked `CAMBBLD` build job, already present from the first pass |
 
 `dspal` checks generated files against the saved hashes and checks the
 tracked inputs used to make them. If a file is missing, changed, or not
@@ -337,13 +337,13 @@ only source-to-PDS map for this stage.
 ## Step 6 — Build the Cambridge compiler
 
 ```sh
-tools/datasets/dspal submit NATIVE_JCL CAMBBLD
-tools/datasets/dspal ls NATIVE_INTCODE
+tools/datasets/dspal submit BOOT_JCL CAMBBLD
+tools/datasets/dspal ls BOOT_INTCODE
 ```
 
 This job uses `ICINT19` and `TRNILRG` to compile the demoted Cambridge
 source. It installs `CAMBCOMP` and its 11 compiler units in
-`NATIVE_INTCODE`.
+`BOOT_INTCODE`.
 
 **Check:** there are **22 interpreter phases** (compile and code generation
 for each unit) plus a `PACKCOMP` step. Every interpreted phase must report
@@ -365,29 +365,29 @@ test -s workarea/m3-clean-smoke.s370.asm
 interpreted completion `CODE=0`.
 
 **Note:** the historical `CAMB_*` data sets are managed but are not used
-by this reconstruction. The working compiler lives in `NATIVE_INTCODE`.
+by this reconstruction. The working compiler lives in `BOOT_INTCODE`.
 
 ## Step 7 — Build five native runtime modules
 
 The runtime provides the low-level services that native BCPL programs
-need. Its assembler sources are tracked in Git and mapped to `NATIVE_ASM`
+need. Its assembler sources are tracked in Git and mapped to `BOOT_ASM`
 by `config/dspal.yaml`.
 
 First check the source and object libraries:
 
 ```sh
-tools/datasets/dspal ls NATIVE_ASM
-tools/datasets/dspal ls NATIVE_JCL
-tools/datasets/dspal ls NATIVE_OBJ
+tools/datasets/dspal ls BOOT_ASM
+tools/datasets/dspal ls BOOT_JCL
+tools/datasets/dspal ls BOOT_OBJ
 ```
 
-Before the build, `NATIVE_OBJ` must be empty.
+Before the build, `BOOT_OBJ` must be empty.
 
 Then build and install the runtime:
 
 ```sh
-tools/datasets/dspal submit NATIVE_JCL BLDBMAIN
-tools/datasets/dspal ls NATIVE_OBJ
+tools/datasets/dspal submit BOOT_JCL BLDBMAIN
+tools/datasets/dspal ls BOOT_OBJ
 ```
 
 | Source in Git | PDS object member |
@@ -399,7 +399,7 @@ tools/datasets/dspal ls NATIVE_OBJ
 | `bootstrap-toolchain/asm/bcplio.asm` | `BCPLIO` |
 
 **Check:** the job has five assembler steps and five object-install steps.
-All ten must return `RC=0000`. The final `NATIVE_OBJ` must contain these
+All ten must return `RC=0000`. The final `BOOT_OBJ` must contain these
 five members and no old objects.
 
 The install job is **not all-or-nothing**. If a step fails, stop and find
@@ -415,9 +415,9 @@ rebuilt Cambridge compiler, repairs a few known assembler-card details,
 then assembles and installs it.
 
 ```sh
-tools/datasets/dspal submit NATIVE_JCL BLIBBLD
-tools/datasets/dspal ls NATIVE_OBJ
-tools/datasets/dspal ls NATIVE_DEVOBJ
+tools/datasets/dspal submit BOOT_JCL BLIBBLD
+tools/datasets/dspal ls BOOT_OBJ
+tools/datasets/dspal ls BOOT_DEVOBJ
 ```
 
 **Check:** all six job steps finish with `RC=0000`:
@@ -439,8 +439,8 @@ The final production PDS must have **exactly six** object members:
 BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BLIB
 ```
 
-`NATIVE_DEVOBJ` must remain empty. Do not use it to fill any gap in
-`NATIVE_OBJ`.
+`BOOT_DEVOBJ` must remain empty. Do not use it to fill any gap in
+`BOOT_OBJ`.
 
 ## Step 9 — Run the native production tests
 
@@ -450,7 +450,7 @@ Use the production launcher, not a development or candidate profile:
 tools/native/run-production-regression 0 145
 ```
 
-This tool selects **only** the rebuilt `NATIVE_OBJ` modules. It does not
+This tool selects **only** the rebuilt `BOOT_OBJ` modules. It does not
 select the older `DEVOBJ(BCPLM6)` development candidate. It compiles
 the tests with `CAMBCOMP`, then assembles, links, and runs the result
 on MVS.
@@ -512,7 +512,7 @@ PDS members, and jobs were used.
 | MR10 tests | Payload job numbers, suite pass results, output checked, comparison limits |
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Cambridge | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
-| Runtime | Five assembly and five install RCs; six final `NATIVE_OBJ` members including BLIB |
+| Runtime | Five assembly and five install RCs; six final `BOOT_OBJ` members including BLIB |
 | Native tests | Full 00–145 results, one expected skip, 145/145 report audit |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
@@ -575,15 +575,15 @@ that the rebuilt system works. Static checks remain useful when the
 
 | Item | Current status |
 | --- | --- |
-| `NATIVE_DEVOBJ` and historical `BCPLM6` candidate | Kept for development/history; **not used** in the production rebuild |
+| `BOOT_DEVOBJ` and historical `BCPLM6` candidate | Kept for development/history; **not used** in the production rebuild |
 | `CAMB_*` PDSes | Managed, but **not used** for the resident bootstrap above |
-| Instrumented `CG370D` compiler | Its generator and `NATIVE_JCL(CG370DB)` build job are still in Git; **not part of the normal build** |
+| Instrumented `CG370D` compiler | Its generator and `BOOT_JCL(CG370DB)` build job are still in Git; **not part of the normal build** |
 
 `make-demoted.py` still generates the five instrumented code-generator
 sources in `workarea/bootstrap-cambridge/demoted-diag/`.
 `bootstrap-toolchain/jcl/cg370db.jcl` can build the separate
-`NATIVE_INTCODE(CG370D)` image. At present those five diagnostic sources
-(`CGAD`–`CGED`) still need **explicit staging** into `NATIVE_SOURCE`:
+`BOOT_INTCODE(CG370D)` image. At present those five diagnostic sources
+(`CGAD`–`CGED`) still need **explicit staging** into `BOOT_SOURCE`:
 they are not in the normal `dspal populate all` mapping.
 Building `CG370D` does **not** replace `CAMBCOMP`.
 

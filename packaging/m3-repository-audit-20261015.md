@@ -8,10 +8,10 @@
 | --- | --- | --- |
 | Managed dataset manifest | 24 logical datasets: 9 `MR10_*`, 9 `CAMB_*`, 6 `NATIVE_*` | Consistent with accepted M3 topology |
 | Text mapping paths | 151 manifest source-to-member mappings; all corresponding paths found in Git tree at audit | No missing mapped source paths |
-| Native JCL authority | 13 `NATIVE_JCL` mapped JCL bodies reside in `bootstrap-toolchain/jcl/` | Correct |
+| Native JCL authority | 13 `BOOT_JCL` mapped JCL bodies reside in `bootstrap-toolchain/jcl/` | Correct |
 | Production M3 JCL | `CAMBBLD`, `BLDBMAIN`, `BLIBBLD`, `BLDDEVA`, `BLDDEVB`, `BLDDEVI` | Reconciled and exercised on TK5 |
-| Rebuildable binaries | `NATIVE_INTCODE`, `NATIVE_OBJ`, `NATIVE_DEVOBJ`, `MR10_OBJ`, `MR10_LOAD` are not text-populated | Build, do not migrate |
-| Production/dev acceptance boundary | `NATIVE_OBJ` has accepted main/memory/BLIB; `NATIVE_DEVOBJ` has service candidates | Preserve separation |
+| Rebuildable binaries | `BOOT_INTCODE`, `BOOT_OBJ`, `BOOT_DEVOBJ`, `MR10_OBJ`, `MR10_LOAD` are not text-populated | Build, do not migrate |
+| Production/dev acceptance boundary | `BOOT_OBJ` has accepted main/memory/BLIB; `BOOT_DEVOBJ` has service candidates | Preserve separation |
 | Optional diagnostic JCL | `CG370DB` retained old `SOURCE/LOAD/INTCODE` DSNs | Reconciled to MR10 + NATIVE; **not yet tested live** |
 | Host obsolete tooling | Deleted build-cambridge and build-blib in prior M3 marches; additional source bootstrap and one-shot relocation helpers were stale | Retired `tools/native/compile-bootstrap`, `packaging/finish-tools-refactor.py` |
 | Regression driver | Old fallback selected `compile-bootstrap`; M3 wrapper already selects `compile-mvs` | Fallback corrected to `compile-mvs` |
@@ -26,7 +26,7 @@ This procedure does not use the `CAMB_*` PDSes, although manifest-based init cre
 
 ## Items explicitly outside current M3 acceptance
 
-1. **Optional CG370 diagnostic rebuild**: `NATIVE_JCL(CG370DB)` now has correct dataset references but needs separate generated `CGAD` through `CGED` source staging from `workarea/bootstrap-cambridge/demoted-diag/` and a future live run if diagnostics are needed. It is **not** a prerequisite for `CAMBCOMP` or the 124-test panel.
+1. **Optional CG370 diagnostic rebuild**: `BOOT_JCL(CG370DB)` now has correct dataset references but needs separate generated `CGAD` through `CGED` source staging from `workarea/bootstrap-cambridge/demoted-diag/` and a future live run if diagnostics are needed. It is **not** a prerequisite for `CAMBCOMP` or the 124-test panel.
 2. **Historical source-mode regressions**: the accepted installed-object regression mode passes. Older source-instrumented and opt-in experimental test routes may still refer to pre-refactor paths. Keep them outside M3 acceptance unless separately audited and exercised; regression 083 is deliberately skipped for this reason.
 3. **Dataset portability**: the manifest supports installation-local overrides, but numerous authoritative job bodies use literal `HERC02` dataset names. The clean-room procedure is validated for the canonical TK5/HLQ environment, **not** arbitrary HLQs.
 4. **Installed JCL freshness**: `dspal populate all` or explicit `dspal put` must be performed after tracked JCL changes. The stale-JCL episode during development demonstrates that clean return codes alone are inadequate for verifying dataset target selection.

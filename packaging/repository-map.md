@@ -28,11 +28,11 @@ clean-room rebuild, see
 1. The reconstructed **ICINT19** interpreter is assembler code running
    on MVS; the demoted Cambridge compiler is **INTCODE executed under
    ICINT19**, not an S/370 native load module.
-2. `NATIVE_INTCODE(CAMBCOMP)` generates S/370 assembly for native BCPL
+2. `BOOT_INTCODE(CAMBCOMP)` generates S/370 assembly for native BCPL
    applications. IFOX assembles it, IEWL links it with runtime objects,
    and a GO step executes it under MVS.
 3. The current clean-room target rebuilds all five canonical runtime
-   assembler modules **plus BLIB** into `NATIVE_OBJ`, and runs all
+   assembler modules **plus BLIB** into `BOOT_OBJ`, and runs all
    146 numbered regression cases using the OBJ-only linker profile.
    This new production configuration is not yet MVS-validated.
 4. The previously accepted historical milestone used

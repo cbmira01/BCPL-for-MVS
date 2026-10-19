@@ -21,11 +21,11 @@ and [single clean-room rebuild runbook]
   produces native S/370 assembler; IFOX and IEWL
   assemble/link the application. It is not itself
   an S/370 native compiler load module.
-- Runtime: `NATIVE_DEVOBJ(BCPLM6, BCPLIO, BCPLBYTE, BCPLAPT)`
-  candidate; `NATIVE_OBJ(BCPLMEM, BLIB)` accepted
-  support, and `NATIVE_OBJ(BCPLMAIN)` remains
+- Runtime: `BOOT_DEVOBJ(BCPLM6, BCPLIO, BCPLBYTE, BCPLAPT)`
+  candidate; `BOOT_OBJ(BCPLMEM, BLIB)` accepted
+  support, and `BOOT_OBJ(BCPLMAIN)` remains
   the existing production runtime. The DEVOBJ
-  candidate was **not promoted** to NATIVE_OBJ.
+  candidate was **not promoted** to BOOT_OBJ.
 - Owner-accepted candidate native suite 00–145:
   **145 PASS, 0 FAIL, one expected SKIP 083**;
   145/145 fresh saved-log/step audit PASS at

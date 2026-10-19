@@ -35,11 +35,11 @@ INTCODE, object modules, or load modules.
 | Native compiler smoke test | JOB 8739, generated S/370 assembler |
 
 The enlarged translator and Cambridge compiler were
-regenerated from source and installed in NATIVE_INTCODE.
+regenerated from source and installed in BOOT_INTCODE.
 
 ## Production object build
 
-NATIVE_OBJ was confirmed empty before the build.
+BOOT_OBJ was confirmed empty before the build.
 
 | Job | Operation | Result |
 |---|---|---|
@@ -50,7 +50,7 @@ BLIB interpreted compilation reported:
 
     EXECUTION CYCLES = 9009776, CODE = 0
 
-Final NATIVE_OBJ members:
+Final BOOT_OBJ members:
 
     BCPLMAIN
     BCPLMEM
@@ -59,11 +59,11 @@ Final NATIVE_OBJ members:
     BCPLIO
     BLIB
 
-NATIVE_DEVOBJ was confirmed empty after regression testing.
+BOOT_DEVOBJ was confirmed empty after regression testing.
 
 ## Native production regression
 
-Production-only profile: NATIVE_OBJ, all six rebuilt modules.
+Production-only profile: BOOT_OBJ, all six rebuilt modules.
 
 - Numbering check: PASS, 00..145.
 - Focused cases 000, 052, 093, 124: PASS.

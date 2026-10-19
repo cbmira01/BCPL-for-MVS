@@ -76,9 +76,9 @@ Operator ran `tools/datasets/dspal ls` after population. The member inventory ma
 
 The project owner clarified that the four historical/bootstrap header members `LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR`, and the two bootstrap JCL members `CAMBBLD`, `CG370DB` belong to the **bootstrap-toolchain** phase of the project, not the as-yet-unbuilt Cambridge compiler.
 
-The manifest now assigns these four headers to `NATIVE_SOURCE` and the two jobs to `NATIVE_JCL`; all nine `CAMB_*` datasets have `populate: false` and no member mappings. The four source paths still reference retained `richards-bcpltape` evidence files; this is a PDS ownership correction, not a move of evidence in Git.
+The manifest now assigns these four headers to `BOOT_SOURCE` and the two jobs to `BOOT_JCL`; all nine `CAMB_*` datasets have `populate: false` and no member mappings. The four source paths still reference retained `richards-bcpltape` evidence files; this is a PDS ownership correction, not a move of evidence in Git.
 
-**Host follow-through required:** populate `NATIVE_SOURCE` and `NATIVE_JCL`, then explicitly delete only `CAMB_SOURCE` members `LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR` and `CAMB_JCL` members `CAMBBLD`, `CG370DB` using `dspal rm`. A manifest edit or a normal `populate` does **not** automatically delete existing PDS members. Verify with `tools/datasets/dspal ls`. This supersedes the earlier inventory-gate statement that Cambridge's populated members were correct; that claim was premature.
+**Host follow-through required:** populate `BOOT_SOURCE` and `BOOT_JCL`, then explicitly delete only `CAMB_SOURCE` members `LIBHDR`, `SYNHDR`, `TRNHDR`, `CGHDR` and `CAMB_JCL` members `CAMBBLD`, `CG370DB` using `dspal rm`. A manifest edit or a normal `populate` does **not** automatically delete existing PDS members. Verify with `tools/datasets/dspal ls`. This supersedes the earlier inventory-gate statement that Cambridge's populated members were correct; that claim was premature.
 
 ### PDS maintenance convention
 

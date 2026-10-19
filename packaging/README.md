@@ -22,7 +22,7 @@ human readers. Durable engineering records live here:
   — post-acceptance investigation, not a new active milestone.
 
 The accepted dynamic candidate links DEVOBJ(BCPLM6+BCPLIO+BCPLBYTE+
-BCPLAPT) with NATIVE_OBJ(BCPLMEM+BLIB). Its 00..145 panel passed 145,
+BCPLAPT) with BOOT_OBJ(BCPLMEM+BLIB). Its 00..145 panel passed 145,
 failed zero and skipped expected case 083. **No DEVOBJ-to-OBJ promotion**
 was authorized. Earlier milestone progress journals are available through
 Git history but were removed from the working tree.
@@ -62,7 +62,7 @@ Both are optional, proposed, and independent of M4 and Milestone QSAM.
 | `NATIVE_*` (6 datasets) | Reconstructed resident compiler INTCODE, native runtime ASM/JCL, objects | `bootstrap-toolchain/` and manifest |
 | `CAMB_*` (9 datasets) | Reserved for M4; **not used for M3 compiler reconstruction** | Manifest allocation only |
 
-`NATIVE_OBJ` contains the accepted BCPLMAIN, BCPLMEM, and BLIB objects. `NATIVE_DEVOBJ` contains independently assembled BCPLM6, BCPLAPT, BCPLBYTE, and BCPLIO candidate objects for the accepted dynamic-stream profile. No binary migration or implicit object promotion is permitted.
+`BOOT_OBJ` contains the accepted BCPLMAIN, BCPLMEM, and BLIB objects. `BOOT_DEVOBJ` contains independently assembled BCPLM6, BCPLAPT, BCPLBYTE, and BCPLIO candidate objects for the accepted dynamic-stream profile. No binary migration or implicit object promotion is permitted.
 
 A successful `dspal populate` updates explicitly mapped text members without pruning unlisted members. `dspal purgebcpl` is destructive to **all 24 manifest-managed datasets**; it does not delete datasets outside the manifest and prompts for explicit confirmation. Generated sources and binary outputs must be rebuilt after a purge. Keep local credentials in the ignored `config/dspal.local.yaml`.
 
