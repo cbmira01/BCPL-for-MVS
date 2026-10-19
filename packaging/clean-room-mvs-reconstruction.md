@@ -5,8 +5,14 @@
 This guide shows how to rebuild the BCPL tools and native runtime on a working
 MVS 3.8 system. Follow the steps in order. Check each result before moving on.
 
-**What you will get:** a working BCPL interpreter, a BCPL compiler that writes
-System/370 assembler, six native runtime object modules, and a tested system.
+**What you will get:** a working BCPL interpreter, the demoted Cambridge
+bootstrap compiler running under that interpreter, six native runtime object
+modules, and a tested system. The bootstrap compiler generates System/370
+assembler; it does not execute as native machine code.
+
+**Scope:** this guide rebuilds the interpreter-hosted bootstrap toolchain in
+`bootstrap-toolchain/`. It does **not** build the separate native Cambridge
+compiler being developed in `cambridge-compiler/`.
 
 **Important:** this is a clean rebuild of the **BCPL project data sets inside
 MVS**. It is not a guide to installing Linux, Docker, Hercules, or TK5 from
@@ -27,8 +33,10 @@ nothing. Those must already be set up.
 | **`dspal`** | Our tool for creating, filling, listing, and deleting the BCPL PDSes. |
 | **`ICINT19`** | The interpreter that runs the early BCPL compiler's INTCODE. |
 | **INTCODE** | The intermediate code used during the BCPL bootstrap. |
-| **`TRNILRG`** | A larger-name translator image needed to build the Cambridge compiler. |
-| **`CAMBCOMP`** | The rebuilt Cambridge compiler, stored as INTCODE. |
+| **`TRNILRG`** | A larger-name translator image needed to build the demoted Cambridge bootstrap compiler. |
+| **Demoted Cambridge compiler** | The interpreter-hosted bootstrap compiler that generates native System/370 assembler. |
+| **`CAMBCOMP`** | The demoted Cambridge compiler image, stored as INTCODE and executed by `ICINT19`. |
+| **Native Cambridge compiler** | The separate target in `cambridge-compiler/`: a compiler that itself executes as a native MVS program. This guide does not build it. |
 | **`BOOT_OBJ`** | The PDS that holds the six finished, native object modules. |
 | **RC / CODE** | A job step's return code / the BCPL interpreter's own completion code. Check both. |
 
@@ -77,8 +85,8 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 2 | Purge and recreate the BCPL PDSes; first populate | Tracked source installed; generated files still missing |
 | 3 | Build `ICINT19` | Installed, working interpreter |
 | 4 | Run the MR10 examples and tests | All resident suites pass |
-| 5 | Generate Cambridge sources and `TRNILRG`; second populate | All mapped members installed |
-| 6 | Build and test `CAMBCOMP` | Compiler produces System/370 assembler |
+| 5 | Generate demoted Cambridge bootstrap sources and `TRNILRG`; second populate | All mapped members installed |
+| 6 | Build and test interpreted `CAMBCOMP` | Bootstrap compiler produces System/370 assembler |
 | 7 | Assemble five native runtime modules | Five members in `BOOT_OBJ` |
 | 8 | Compile and assemble `BLIB` | Six members in `BOOT_OBJ` |
 | 9 | Run native regression tests | 145 PASS, 0 FAIL, 1 expected SKIP |
@@ -270,7 +278,7 @@ tools/datasets/dspal submit MR10_JCL MRREGRES
 
 **Check:** inspect the **payload** reports. Check step return codes,
 `CODE=0` lines, output, and error messages. All three suites must pass
-before you build the Cambridge compiler.
+before you build the demoted Cambridge bootstrap compiler.
 
 **Limit:** these resident suites do **not** automatically compare their
 output with every checked-in `.expected` file. Other host-side test runners
@@ -280,7 +288,7 @@ evidence; do not treat them as the same test.
 
 See `mr10-kit-compiler/jcl/README-SUITES.md` for more about the suites.
 
-## Step 5 — Make the Cambridge bootstrap files
+## Step 5 — Make the demoted Cambridge bootstrap files
 
 The full `TRNILRG` image needs a running `ICINT19`. That is why this step
 comes **after** Steps 3 and 4, not before the first population.
@@ -334,7 +342,7 @@ Do **not** copy an old image from another PDS.
 There is no second installation map in Python: `config/dspal.yaml` is the
 only source-to-PDS map for this stage.
 
-## Step 6 — Build the Cambridge compiler
+## Step 6 — Build the demoted Cambridge bootstrap compiler
 
 ```sh
 tools/datasets/dspal submit BOOT_JCL CAMBBLD
@@ -342,8 +350,12 @@ tools/datasets/dspal ls BOOT_INTCODE
 ```
 
 This job uses `ICINT19` and `TRNILRG` to compile the demoted Cambridge
-source. It installs `CAMBCOMP` and its 11 compiler units in
-`BOOT_INTCODE`.
+source. It installs the interpreter-hosted bootstrap compiler `CAMBCOMP` and
+its 11 compiler units in `BOOT_INTCODE`. `CAMBCOMP` generates native
+System/370 assembler, but runs as INTCODE under `ICINT19`.
+
+This step does **not** build the native Cambridge compiler in
+`cambridge-compiler/`.
 
 **Check:** there are **22 interpreter phases** (compile and code generation
 for each unit) plus a `PACKCOMP` step. Every interpreted phase must report
@@ -364,8 +376,9 @@ test -s workarea/m3-clean-smoke.s370.asm
 `CSECT`, `EXTRN BCPLMAIN`, and `END`. The compiler runner must report
 interpreted completion `CODE=0`.
 
-**Note:** the historical `CAMB_*` data sets are managed but are not used
-by this reconstruction. The working compiler lives in `BOOT_INTCODE`.
+**Note:** the `CAMB_*` data sets are reserved for the separate native
+Cambridge compiler effort and are not used by this reconstruction. The
+interpreter-hosted bootstrap compiler lives in `BOOT_INTCODE`.
 
 ## Step 7 — Build five native runtime modules
 
@@ -411,7 +424,8 @@ Fault-test instrumentation used by some regression cases is separate.
 ## Step 8 — Build BLIB, the sixth native object
 
 `BLIB` is BCPL library code. This stage compiles it with our newly
-rebuilt Cambridge compiler, repairs a few known assembler-card details,
+rebuilt demoted Cambridge bootstrap compiler (`CAMBCOMP`), repairs a few
+known assembler-card details,
 then assembles and installs it.
 
 ```sh
@@ -511,7 +525,7 @@ PDS members, and jobs were used.
 | Interpreter | Build payload job, `ASM`/`LKED`/`SAVEOBJ` RCs, smoke-test `CODE=0` |
 | MR10 tests | Payload job numbers, suite pass results, output checked, comparison limits |
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
-| Cambridge | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
+| Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Five assembly and five install RCs; six final `BOOT_OBJ` members including BLIB |
 | Native tests | Full 00–145 results, one expected skip, 145/145 report audit |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
