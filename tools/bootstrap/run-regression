@@ -144,6 +144,16 @@ def main() -> int:
         print(f"run-native-regression: missing runner: {RUNNER}", file=sys.stderr)
         return 66
 
+    compiler = ROOT / "tools/bootstrap/compile-mvs"
+    if not compiler.is_file():
+        print(f"run-native-regression: missing compiler driver: {compiler}",
+              file=sys.stderr)
+        return 66
+    required_driver = 'export CAMBRIDGE_COMPILE="$root/tools/bootstrap/compile-mvs"'
+    if required_driver not in RUNNER.read_text(encoding="utf-8"):
+        print("run-native-regression: MVS wrapper compiler path is stale",
+              file=sys.stderr)
+        return 65
     try:
         cases, highest = discover()
     except (OSError, RuntimeError) as exc:

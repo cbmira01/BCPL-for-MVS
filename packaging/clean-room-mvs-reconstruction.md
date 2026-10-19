@@ -458,7 +458,14 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BLIB
 
 ## Step 9 — Run the native production tests
 
-Use the production launcher, not a development or candidate profile:
+Check the production build and compiler-driver paths first:
+
+```sh
+python3 tools/checks/check-native-production-build.py
+```
+
+This is a host-side check; it does not submit MVS jobs.
+Then use the production launcher, not a development or candidate profile:
 
 ```sh
 tools/bootstrap/run-production-regression 0 145
