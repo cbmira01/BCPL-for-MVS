@@ -29,7 +29,7 @@ The current `bootstrap-toolchain/asm/bcplmain.asm` demonstrates the following:
 - The present importer writes into global slots directly; **do not assume duplicate-global detection or extension lifecycle management already exists**.
 - A conventional MVS linkage edit resolves external symbols and relocations, but it does **not** automatically fill `G`. Merely issuing `INCLUDE ... (BCPLQSAM)` does not make its procedures callable through BCPL globals.
 
-See `richards-bcpltape/sys3/bcpl/libhdr`: historical globals already assign `READREC:23`, `WRITEREC:24`, `TIMEOFDAY:27`, `TIME:28`, `DATE:29`, and document `FIRSTFREEGLOBAL=150`. Proposed QSAM and clock interfaces **must not silently replace these historical names and slots**. Existing G!150 is currently used by a provisional diagnostic in BCPLMAIN; `FIRSTFREEGLOBAL` is not an automatically safe allocator. Inventory every reserved and presently used slot before fixing an extension numbering policy.
+See the [Global Number Registry](global-number-registry.md) for recorded allocations and collisions. `richards-bcpltape/sys3/bcpl/libhdr` historical globals already assign `READREC:23`, `WRITEREC:24`, `TIMEOFDAY:27`, `TIME:28`, `DATE:29`, and document `FIRSTFREEGLOBAL=150`. Proposed QSAM and clock interfaces **must not silently replace these historical names and slots**. Existing G!150 is currently used by a provisional diagnostic in BCPLMAIN; `FIRSTFREEGLOBAL` is not an automatically safe allocator. Inventory every reserved and presently used slot before fixing an extension numbering policy.
 
 The prior runtime object library work with BLIB establishes *independent object building*, but not a generic optional-module registration protocol.
 
@@ -56,11 +56,11 @@ See [Cambridge runtime and library nomenclature](runtime-and-library-nomenclatur
 For example, **illustrative global number only**:
 
 ```bcpl
-GLOBAL $( TIMESVC:200 $)
+GLOBAL $( TIMESVC:201 $)
 MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2; T_DIFF=3 $)
 ```
 
-`G!200` is **not allocated** by this document. The central Global Number Registry owns the package's dispatcher slot; a package-specific API/header owns its *stable, local opcode numbers*. Compilation embeds the selected global and opcode constants; IEWL chooses which package is linked; BCPLREG (if adopted) installs its **single** dispatcher address into G before START. No dynamic global-number assignment is required.
+G!201 is now allocated to **BCPLTIME** by the [Global Number Registry](global-number-registry.md); the example's name `TIMESVC` is illustrative, not yet an approved public header symbol. G!200 is allocated to **BCPLQSAM**, and G!202 to **BCPLDEC**. The Global Number Registry owns the package's dispatcher slot; a package-specific API/header owns its *stable, local opcode numbers*. Compilation embeds the selected global and opcode constants; IEWL chooses which package is linked; BCPLREG (if adopted) installs its **single** dispatcher address into G before START. No dynamic global-number assignment is required.
 
 **Opcode 0 is reserved for `QUERY` in every participating optional package.** It must be side-effect free: no I/O, clock read, dataset OPEN, state-changing setup or allocation. It returns interface/capability information about a *linked and registered* package; it is **not** a package-discovery mechanism and cannot safely be called if that package's global remains unset. The build's link/registration and required-package checking must cover that case.
 

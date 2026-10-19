@@ -107,10 +107,10 @@ The BCPL global-vector slots are **statically numbered ABI locations**. A compil
 
 Two complementary registries are therefore required conceptually:
 
-1. **Global Number Registry — development/compile-time policy.** One authoritative Git-maintained catalog of allocated/reserved public slot numbers, names, package ownership, status and compatibility policy. Proposed future machine-readable form under `packaging/` or a designated configuration directory; **no such file is claimed to exist yet**. Existing `LIBHDR` is a historically authoritative declaration source, but not a complete multi-package allocation registry.
+1. **Global Number Registry — development/compile-time policy.** One authoritative Git-maintained catalog of allocated/reserved public slot numbers, names, package ownership, status and compatibility policy. Proposed future machine-readable form under `packaging/` or a designated configuration directory; the authoritative record now exists as [`global-number-registry.md`](global-number-registry.md). Existing `LIBHDR` is a historically authoritative declaration source, but not a complete multi-package allocation registry.
 2. **Module Registration Table — link-time/startup machinery.** A list of selected, linked packages and their exported addresses, possibly `BCPLREG`. Its layout, assembler interface and validation remain to be decided and tested in **Milestone Runtime Extensions, R.0**. It does not assign global numbers.
 
-**Global-number policy:** reserve historically assigned slots intact; allocate permanent non-conflicting slots/ranges for Cambridge-managed packages; retain released assignments as tombstones unless an explicit major compatibility break is approved. Do **not** publish provisional numbers such as `200` as real allocations.
+**Global-number policy:** reserve historically assigned slots intact; allocate permanent non-conflicting slots/ranges for Cambridge-managed packages; retain released assignments as tombstones unless an explicit major compatibility break is approved. G!200 (BCPLQSAM), G!201 (BCPLTIME), and G!202 (BCPLDEC) are officially allocated in the [Global Number Registry](global-number-registry.md); other illustrative numbers must not be treated as allocations.
 
 Historical `LIBHDR` already names `READREC:23`, `WRITEREC:24`, `TIMEOFDAY:27`, `TIME:28`, `DATE:29` and `FIRSTFREEGLOBAL=150`. The reconstructed BCPLMAIN currently uses `G!150` for provisional diagnostics. **The first-free constant does not mean every higher slot is presently unused.** R.0 must inventory the entire current/global historical occupancy, and assess present capacity before making assignments.
 
@@ -125,7 +125,7 @@ The preferred design under [Milestone Runtime Extensions](milestone-runtime-exte
 A package header can publish both its assigned dispatcher slot and its local opcode constants:
 
 ```bcpl
-GLOBAL $( TIMESVC:200 $)          // illustrative; not an allocation
+GLOBAL $( TIMESVC:201 $)          // illustrative name; G201 assigned to BCPLTIME
 MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2 $)
 ```
 

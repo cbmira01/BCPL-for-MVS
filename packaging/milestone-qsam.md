@@ -1,6 +1,6 @@
 # Milestone QSAM — native BCPL sequential-record I/O
 
-Status: **proposed, not started** (2026-10-15). Independent of M4, never a prerequisite for Cambridge self-hosting.
+Status: **Q.0 public-interface design in progress** (2026-10-19); Q.1 not started. Independent of M4, never a prerequisite for Cambridge self-hosting.
 
 ## Purpose and historical positioning
 
@@ -14,7 +14,7 @@ The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) def
 
 ### Shared optional-module dispatch architecture
 
-See [Milestone Runtime Extensions](milestone-runtime-extensions.md). The preferred R.0 design is *one* global-vector slot for a BCPLQSAM dispatcher with package-local stable opcodes, beginning with **opcode 0**, a side-effect-free numeric API/capability query into caller-owned BCPL words. The named OPENREC/READREC/WRITEREC/CLOSEREC operations below are logical services, not preallocated public global numbers. Neither package global slot nor opcodes are approved yet. A query reporting support for a record operation does not guarantee that a DD is allocated or OPEN succeeds. Keep any historical `READREC`/`WRITEREC` `LIBHDR` contracts distinct.
+See [Milestone Runtime Extensions](milestone-runtime-extensions.md). The preferred R.0 design is *one* global-vector slot for a BCPLQSAM dispatcher with package-local stable opcodes, beginning with **opcode 0**, a side-effect-free numeric API/capability query into caller-owned BCPL words. The named OPENREC/READREC/WRITEREC/CLOSEREC operations below are logical services, not preallocated public global numbers. G!200 is now assigned to `QSAMSVC` in the [Global Number Registry](global-number-registry.md); package-local opcodes remain subject to Q.0 validation. A query reporting support for a record operation does not guarantee that a DD is allocated or OPEN succeeds. Keep any historical `READREC`/`WRITEREC` `LIBHDR` contracts distinct.
 
 ## Non-negotiable architecture
 
@@ -36,7 +36,7 @@ CLOSEREC(handle)                       -> status
 RECSTATUS(handle or last-operation)    -> detailed status, if needed
 ```
 
-Names and global numbers are **unassigned** until ABI review. Prefer a separate BCPL declarations/manifest header and explicitly installed global entries. Do not presume linking an object automatically installs global slots. Define an unambiguous status scheme for EOF, zero-length logical records, oversize records, open failures, and EODAD/SYNAD or equivalent exceptional completion. Make close failure observable. Do not conflate a valid zero-length record with EOF. Define handling for all partially opened resources and DD allocation errors.
+The public dispatcher `QSAMSVC:200` is now allocated in the [Global Number Registry](global-number-registry.md). Package-local opcode numbers, error constants and wrapper names remain subject to Q.0 verification. Prefer a separate BCPL declarations/manifest header and explicitly installed global entries. Do not presume linking an object automatically installs global slots. Define an unambiguous status scheme for EOF, zero-length logical records, oversize records, open failures, and EODAD/SYNAD or equivalent exceptional completion. Make close failure observable. Do not conflate a valid zero-length record with EOF. Define handling for all partially opened resources and DD allocation errors.
 
 DDNAME contract: eight-character uppercased/padded DDNAME, explicit allowable characters and validation. DDs are allocated in JCL; no dynamic allocation in milestone. Describe file mode and close behavior. Reserve control-block storage in the assembler module; expose only opaque handles and BCPL buffer pointers. Protect against writing beyond capacity. Decide reentrancy/serial use clearly; no unverified claims of reentrancy.
 

@@ -35,17 +35,19 @@ Git history but were removed from the working tree.
 
 ## Runtime and library terminology
 
+[Global Number Registry](global-number-registry.md) inventories historical and compiler-specific globals, MR10-local numbering, documented collisions, and the approved System Extension assignments **G!200 BCPLQSAM**, **G!201 BCPLTIME**, and **G!202 BCPLDEC**. Allocations do not imply implementations or successful registration.
+
 [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) distinguishes the Compiler, Core Runtime, historical Base Library (BLIB/LIBHDR), System Extensions, Standard Libraries, and User/Site Libraries. It also defines module, package, header, object/load library, and the separate global-number allocation versus startup-registration responsibilities. This is a proposed packaging/ABI vocabulary, not a claim that new libraries are implemented.
 
 ## Proposed optional runtime registration architecture
 
 [Milestone Runtime Extensions](milestone-runtime-extensions.md) (R.0–R.3) proposes explicit IEWL selection of optional modules and general startup registration of their BCPL global-vector entries. It records the present BCPLMAIN/BLIB evidence, collision/absence considerations, and compatibility gates. **Proposed, not implemented; not a prerequisite for M4.** This is the shared registration foundation envisaged for the optional QSAM, Decimal Arithmetic and Date/Time modules.
 
-The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The actual ABI and global/opcode assignments remain subject to R.0 tests and registry approval.
+The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The global slots G!200–G!202 are assigned in the registry; the shared registration ABI and package-local opcodes still require R.0/Q.0 verification.
 
 ## Proposed optional native I/O milestone
 
-[Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. It is **proposed, not started**, and is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
+[Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. Its **Q.0 public-interface design is in progress**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
 ## Proposed optional numeric and clock milestones
 
