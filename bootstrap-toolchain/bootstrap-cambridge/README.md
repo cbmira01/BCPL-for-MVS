@@ -12,7 +12,7 @@ of exactly two `~=` operators with MR10 `NE`. It preserves `GET "LIBHDR"`
 and all BLIB definitions. Generate it alone with:
 
 ```sh
-python3 native-compiler/bootstrap-cambridge/make-demoted.py --blib-only
+python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only
 ```
 
 The regression runner invokes that command before compiling BLIB.
@@ -50,7 +50,7 @@ first `.` and never see `LEX` or `TRNB`.
 ## Bootstrap layout
 
 ```text
-native-compiler/bootstrap-cambridge/
+bootstrap-toolchain/bootstrap-cambridge/
     README.md
     make-demoted.py
     make-icintv18.py
@@ -163,7 +163,7 @@ assembler output must reproduce ordinary CG370 output exactly. Check two
 recovered CODE files with:
 
 ```sh
-python3 native-compiler/bootstrap-cambridge/check-cg370-diagnostic.py \
+python3 bootstrap-toolchain/bootstrap-cambridge/check-cg370-diagnostic.py \
     workarea/cg370-baseline.s370.asm \
     workarea/cg370-diagnostic.s370.asm
 ```
@@ -177,7 +177,7 @@ The MVS resident diagnostic image is kept separate as
 Run from repository root with:
 
 ```sh
-python3 native-compiler/bootstrap-cambridge/make-demoted.py
+python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py
 ```
 
 The generator asserts the expected historical section boundaries, `~=` counts,

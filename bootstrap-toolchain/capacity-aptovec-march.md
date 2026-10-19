@@ -73,7 +73,7 @@ enter its main compilation workspace under current defaults.
 The resident INTCODE bootstrap used a 700-word global vector
 and exercised `FORMTREE G!150`, `COMPILEAE G!245`,
 `CODEGEN G!390`, `CG370 G!450`, `CGSTART G!622`;
-see `native-compiler/bootstrap-cambridge/compiler-image-next.md`.
+see `bootstrap-toolchain/bootstrap-cambridge/compiler-image-next.md`.
 These demonstrate need for at least G!622 in that image, but do
 **not** yet prove the maximum global number in the independently
 linked native compiler sections.

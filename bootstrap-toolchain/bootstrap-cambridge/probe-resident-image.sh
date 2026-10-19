@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 
-BOOT=native-compiler/bootstrap-cambridge
+BOOT=bootstrap-toolchain/bootstrap-cambridge
 TRNI=workarea/bootstrap-cambridge/trni-large-names.int
 ICINT=asm/icintv19.asm
 

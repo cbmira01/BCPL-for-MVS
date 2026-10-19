@@ -27,7 +27,7 @@ unchanged.
 The bootstrap probe is:
 
 ```sh
-bash native-compiler/bootstrap-cambridge/probe-resident-image.sh
+bash bootstrap-toolchain/bootstrap-cambridge/probe-resident-image.sh
 ```
 
 It deterministically regenerates the demoted Cambridge source units.  If local
