@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-CASE = ROOT / "native-compiler/regression/124-dynamic-dd-selected-output"
+CASE = ROOT / "bootstrap-toolchain/regression/124-dynamic-dd-selected-output"
 WORK = ROOT / "workarea/native-regression/124-dynamic-dd-selected-output"
 SOURCE = WORK / "runtime-pds-go.jcl"
 TARGET = WORK / "m51-fb132-dataset-v2.jcl"

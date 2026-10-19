@@ -46,8 +46,8 @@ def validate(runtime: Path, injector: Path) -> list[str]:
 
 
 def main() -> int:
-    runtime = ROOT / "native-compiler/asm/history/bcplmain-wip.asm"
-    injector = (ROOT / "native-compiler/regression/"
+    runtime = ROOT / "bootstrap-toolchain/asm/history/bcplmain-wip.asm"
+    injector = (ROOT / "bootstrap-toolchain/regression/"
                 "069-independent-blib-object/prepare-stage2.py")
     try:
         problems = validate(runtime, injector)

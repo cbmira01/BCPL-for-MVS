@@ -10,8 +10,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-JCL = ROOT / "native-compiler/jcl"
-ASM = ROOT / "native-compiler/asm"
+JCL = ROOT / "bootstrap-toolchain/jcl"
+ASM = ROOT / "bootstrap-toolchain/asm"
 RUNTIME = (
     ("BCPLMAIN", "ASMMMAIN", "PUTMAIN"),
     ("BCPLMEM", "ASMMMEM", "PUTMEM"),

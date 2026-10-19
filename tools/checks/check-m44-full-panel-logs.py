@@ -10,7 +10,7 @@ import runpy
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "native-compiler/regression"
+REG = ROOT / "bootstrap-toolchain/regression"
 LOGS = ROOT / "workarea/native-regression/logs"
 MANIFEST = ROOT / "workarea/native-regression/m44-00-145-jobs.tsv"
 SKIP = 83

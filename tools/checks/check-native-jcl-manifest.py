@@ -6,7 +6,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/dspal.yaml"
-DIRECTORY = ROOT / "native-compiler/jcl"
+DIRECTORY = ROOT / "bootstrap-toolchain/jcl"
 MEMBERS = (
     "BLIBBLD",
     "BLDBMAIN",
@@ -27,10 +27,10 @@ def main() -> None:
     end = config.index("\n  NATIVE_OBJ:\n", begin)
     section = config[begin:end].split("    members:\n", 1)[1]
     entries = re.findall(
-        r"^      ([A-Z0-9]+): (native-compiler/jcl/[a-z0-9-]+\.jcl)\s*$",
+        r"^      ([A-Z0-9]+): (bootstrap-toolchain/jcl/[a-z0-9-]+\.jcl)\s*$",
         section, flags=re.M,
     )
-    expected = [(name, f"native-compiler/jcl/{name.lower()}.jcl")
+    expected = [(name, f"bootstrap-toolchain/jcl/{name.lower()}.jcl")
                 for name in MEMBERS]
     if entries != expected:
         raise ValueError(f"noncanonical NATIVE_JCL mapping:"

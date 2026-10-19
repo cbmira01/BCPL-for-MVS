@@ -9,7 +9,7 @@ import runpy
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "native-compiler" / "regression"
+REG = ROOT / "bootstrap-toolchain" / "regression"
 END = 145
 ACCOUNTING = {
     139: "counters",
@@ -103,7 +103,7 @@ def check(require_candidate: bool, require_production: bool = False) -> None:
         'wanted_go_rc=${expected_go_rc:-0000}',
     ):
         require(anchor in harness, f"M4.3 private harness changed: {anchor}")
-    canonical = read(ROOT / "native-compiler/asm/bcplio.asm")
+    canonical = read(ROOT / "bootstrap-toolchain/asm/bcplio.asm")
     require(not any(mark in canonical for mark in
                     ("M43G32", "M43TRAP", "IOACCT", "F43PH")),
             "private instrumentation leaked into canonical BCPLIO")
