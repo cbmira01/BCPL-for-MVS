@@ -76,7 +76,7 @@ records/handle contract merely to produce a negative result.
 
 ## Canonical code inspection
 
-`native-compiler/asm/bcplio.asm` currently uses the
+`bootstrap-toolchain/asm/bcplio.asm` currently uses the
 following path (assembler source, not yet failure-probe evidence):
 
 1. `DIFIND` / `DQFIND`: normalize DD name, search
@@ -122,7 +122,7 @@ OPEN, descriptor +24 remains zero and DIFCLEAN frees
 the descriptor and region through DREL.
 
 Permanent compiled-BCPL case:
-`native-compiler/regression/138-dynamic-dd-open-denial-before-svc19/`.
+`bootstrap-toolchain/regression/138-dynamic-dd-open-denial-before-svc19/`.
 It checks failed FIND returned zero, DD01 selection/cursor
 unchanged, retry DD02 successful, read/close of both streams.
 The expected primary marker is `BCPL OPEN BRANCH OK`.
@@ -186,7 +186,7 @@ accounting and likely verify DCB open-state interpretation.
 ## M4.2.1 source and JCL preparation — STAGED, NOT EXECUTED
 
 A separate, non-regression diagnostic program is now committed
-at `native-compiler/probes/m42-real-open/`. It compiles with the
+at `bootstrap-toolchain/probes/m42-real-open/`. It compiles with the
 historical Cambridge compiler and links the **unmodified
 installed** `DEVOBJ(BCPLM6)` and `DEVOBJ(BCPLIO)`
 candidate objects. No synthetic DQOPEN bypass or SVC19
@@ -218,7 +218,7 @@ corrupted JCL fixture text. This checker **has not yet
 been executed**.
 
 The probe has its own source and instructions:
-[probes/m42-real-open/README.md](../../native-compiler/probes/m42-real-open/README.md).
+[probes/m42-real-open/README.md](../../bootstrap-toolchain/probes/m42-real-open/README.md).
 
 ### Operator commands — prepare, inspect, then optionally submit
 
@@ -228,7 +228,7 @@ git pull --ff-only
 python3 tools/checks/check-m42-real-open-jcl.py
 
 python3 tools/native/compile-mvs \
-  native-compiler/probes/m42-real-open/source.bcpl \
+  bootstrap-toolchain/probes/m42-real-open/source.bcpl \
   --job-name RG890C --listing light --timeout 180 \
   --output workarea/m42-real-open/generated.s370.asm
 
@@ -311,7 +311,7 @@ continues to be deferred per owner instruction.
 ## M4.2.1 prepared deck checkpoint — Cambridge JOB 7873
 
 The operator fast-forwarded the repository from `5c890d3`
-through `ab44dad`, compiled `native-compiler/probes/m42-real-open/source.bcpl`
+through `ab44dad`, compiled `bootstrap-toolchain/probes/m42-real-open/source.bcpl`
 with `tools/native/compile-mvs`, and reported:
 
 ```text
@@ -481,7 +481,7 @@ abend, or a handle could still be returned. The
 intentional probe logs whichever behavior actually
 occurs and is not a regression PASS/FAIL test.
 
-[Complete operator procedure](../../native-compiler/probes/m42-pds-open/README.md)
+[Complete operator procedure](../../bootstrap-toolchain/probes/m42-pds-open/README.md)
 keeps the JCL-building command separate from the
 possibly abending GO submission. Only assembler/link
 JCL is generated; no MVS job, Python static checker,
@@ -648,7 +648,7 @@ It does not alter the canonical assembler,
 installed PDS members or system DASD.
 
 [Operator preparation and separately documented
-submission](../../native-compiler/probes/m42-fb-open/README.md)
+submission](../../bootstrap-toolchain/probes/m42-fb-open/README.md)
 are staged but **no RG892R GO JCL or MVS result
 has yet been produced**. Do not ask the operator
 to run host-side source checks or the full regression.
@@ -785,7 +785,7 @@ cannot claim that DCBBLKSI was definitely corrected
 in this exact run. It is a historically supported
 hypothesis which should guide the next experiment.
 
-Source review of canonical `native-compiler/asm/bcplio.asm`
+Source review of canonical `bootstrap-toolchain/asm/bcplio.asm`
 reveals the actual diagnostic ownership and location:
 - `DALLOC` obtains 32-byte descriptor plus 268-byte area.
 - The QSAM DCB occupies **96 bytes at area +132**,

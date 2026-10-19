@@ -31,9 +31,9 @@ is the Cambridge compiler system.
 
 The audit treats these source containers as the primary compiler corpus:
 
-- `native-compiler/bootstrap-cambridge/source/syn`
+- `bootstrap-toolchain/bootstrap-cambridge/source/syn`
   - historical sections SYN and LEX
-- `native-compiler/bootstrap-cambridge/source/trn`
+- `bootstrap-toolchain/bootstrap-cambridge/source/trn`
   - historical sections TRNA and TRNB
 - `richards-bcpltape/bcplib/bcpl/bcpl`
   - compiler master
