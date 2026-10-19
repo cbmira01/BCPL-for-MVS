@@ -22,7 +22,7 @@ combiner, or `BCPLMAIN-wip`.
 ## Prerequisites
 
 1. Regenerate the complete demoted BLIB using
-   `native-compiler/bootstrap-cambridge/make-demoted.py --blib-only`.
+   `bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only`.
 2. Run the existing separately compiled BLIB regression 067 far enough to
    obtain its `library-generated.s370.asm` artifact. The currently established
    path is `workarea/native-regression/067-full-historical-blib-link/library-generated.s370.asm`
@@ -43,7 +43,7 @@ combiner, or `BCPLMAIN-wip`.
 From repository root, allocate the object PDS **only if it does not exist**:
 
 ```sh
-python3 native-compiler/object-library/make-obj-allocation-job.py \
+python3 bootstrap-toolchain/object-library/make-obj-allocation-job.py \
   workarea/blib-object-allocate.jcl
 tools/mvs/submit-jcl workarea/blib-object-allocate.jcl
 # Check allocation job summary before proceeding.
@@ -52,7 +52,7 @@ tools/mvs/submit-jcl workarea/blib-object-allocate.jcl
 Then generate and submit the probe:
 
 ```sh
-python3 native-compiler/object-library/make-blib-object-job.py \
+python3 bootstrap-toolchain/object-library/make-blib-object-job.py \
   workarea/native-regression/067-full-historical-blib-link/library-generated.s370.asm \
   asm/bcplmain-wip.asm \
   workarea/blib-object-probe.jcl
@@ -219,7 +219,7 @@ the two text members:
 
 ```sh
 git pull --ff-only
-python3 native-compiler/object-library/test_packaging.py
+python3 bootstrap-toolchain/object-library/test_packaging.py
 tools/datasets/dspal put ASM BCMWIP asm/bcplmain-wip.asm
 tools/datasets/dspal put JCL BLIBLINK jcl/probe-blib-object-consumer.jcl
 tools/datasets/dspal submit JCL BLIBLINK --wait

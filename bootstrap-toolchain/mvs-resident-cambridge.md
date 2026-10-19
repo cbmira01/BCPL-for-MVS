@@ -25,8 +25,8 @@ The demoted Cambridge sources and enlarged-name MR10 TRNI are generated
 artifacts under `workarea/`:
 
 ```sh
-python3 native-compiler/bootstrap-cambridge/make-demoted.py
-bash native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh
+python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py
+bash bootstrap-toolchain/bootstrap-cambridge/build-mr10-trni-large-names.sh
 ```
 
 ## dspal population
@@ -99,7 +99,7 @@ A separate diagnostic build is available and does not replace it. Generate and
 populate the diagnostic source members with:
 
 ```sh
-python3 native-compiler/bootstrap-cambridge/make-demoted.py
+python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py
 tools/datasets/dspal populate SOURCE
 tools/datasets/dspal populate JCL
 ```
@@ -133,7 +133,7 @@ tools/native/compile-mvs program.bcpl \
     --compiler-image CG370D \
     --output workarea/cg370-diagnostic.s370.asm
 
-python3 native-compiler/bootstrap-cambridge/check-cg370-diagnostic.py \
+python3 bootstrap-toolchain/bootstrap-cambridge/check-cg370-diagnostic.py \
     workarea/cg370-baseline.s370.asm \
     workarea/cg370-diagnostic.s370.asm
 ```
@@ -166,7 +166,7 @@ The load library is RECFM=U, so `dspal cat` does not apply to LOAD; use
 Only after that inspection checkpoint should Test 24 be run through:
 
 ```sh
-bash native-compiler/regression/run-test-mvs.sh 24
+bash bootstrap-toolchain/regression/run-test-mvs.sh 24
 ```
 
 ## ICINT promotion policy

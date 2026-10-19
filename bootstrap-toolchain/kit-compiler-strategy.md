@@ -390,7 +390,7 @@ This keeps the implemented language tied to evidence from the compiler we actual
 
 ## What has been retired
 
-The previous active `native-compiler/` contents were removed as part of this reset, including:
+The previous active `bootstrap-toolchain/` contents were removed as part of this reset, including:
 
 - the staged duplicate Cambridge compiler tree;
 - the previous native ABI/OCODE planning documents;

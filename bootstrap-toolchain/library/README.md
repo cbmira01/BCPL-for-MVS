@@ -10,7 +10,7 @@ The original BLIB lives at
 `richards-bcpltape/bcplib/bcpl/blib`. The generated MR10-compatible
 whole-BLIB compilation unit is at
 `workarea/bootstrap-cambridge/demoted/blib` and is produced by
-`native-compiler/bootstrap-cambridge/make-demoted.py --blib-only`.
+`bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only`.
 Do **not** maintain another derivative of historical BLIB here.
 The tested native packaging strategy makes BLIB available as a
 link-edit object resource in `HERC02.BCPL.OBJ(BLIB)`.
