@@ -8,7 +8,7 @@ Identify **precisely which** surviving Cambridge compiler runtime contracts must
 
 ## Executable baseline and distinction of stages
 
-- The installed compiler **CAMBCOMP** still runs as INTCODE under **ICINT19**, per `native-compiler/mvs-resident-cambridge.md`. It generates native S/370 application code; it is **not** a native S/370 compiler load module.
+- The installed compiler **CAMBCOMP** still runs as INTCODE under **ICINT19**, per `bootstrap-toolchain/mvs-resident-cambridge.md`. It generates native S/370 application code; it is **not** a native S/370 compiler load module.
 - The approved D7 runtime DEVOBJ(BCPLM7) passed native application regressions 00–123 with **123 PASS, 0 FAIL, 1 expected SKIP (083)** after Gate B's stack overflow RC=12 correction; 052 and 093 both assert RC=0012.
 - Application regression success does not establish compiler-driver or compiler-phase compatibility.
 
@@ -31,7 +31,7 @@ Identify **precisely which** surviving Cambridge compiler runtime contracts must
 3. `richards-bcpltape/bcplib/bcpl/cg`, around lines 55–79: DATE result dereferenced as three words and emitted into generated module prefix.
 4. `richards-bcpltape/bcplib/bcpl/bcpl`: SECTION BCPL, NEEDS "$LOAD$", driver input/output names and conditional overlay paths.
 5. `asm/bcplio.asm`, IOFINDIN and static DCB/name data: supported MVS stream aliases; no generic DDNAME resolution implied.
-6. `native-compiler/mvs-resident-cambridge.md`: execution-stage boundary.
+6. `bootstrap-toolchain/mvs-resident-cambridge.md`: execution-stage boundary.
 7. `packaging/m2-1-gate-a-contract-reconciliation.md` and `packaging/m2-1-gate-b-termination-failure.md`: accepted baseline and Gate B evidence.
 
 **Important:** This is a call-site and native-publication crosswalk, not complete whole-program static analysis. In particular, lack of a detected G29/G31/G32 publisher in D7 must be resolved against potential BLIB/object providers and selected build variants before claiming absolute absence.

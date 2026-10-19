@@ -41,7 +41,7 @@ The **programmer** can use accepted character output/BLIB formatting, G150 DEBUG
 
 ## Documentation drift noticed
 
-`native-compiler/regression/120-stackhwm-initialized/README.md` retains an older suggestion to promote BCPLMAIN to production OBJ once source-mode testing passes. That suggestion predates the current strict production-promotion boundary and **is not authorized** for M2.1. Gate F should either fix this historical README or explicitly supersede the instruction in the versioned runtime contract.
+`bootstrap-toolchain/regression/120-stackhwm-initialized/README.md` retains an older suggestion to promote BCPLMAIN to production OBJ once source-mode testing passes. That suggestion predates the current strict production-promotion boundary and **is not authorized** for M2.1. Gate F should either fix this historical README or explicitly supersede the instruction in the versioned runtime contract.
 
 ## Gate D decision
 

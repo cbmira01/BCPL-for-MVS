@@ -240,7 +240,7 @@ Operator reran all five isolated probes against rebuilt DEVOBJ(BCPLIO): BCIOPRB 
 
 ### D3 candidate-only first integrated GO harness prepared — PENDING JES
 
-Native regression 00 will compile normally through Cambridge on MVS and assemble the generated application only, then link exclusively from HERC02.BCPL.DEVOBJ with **BCPLM3** (exports BCPLMAIN), **BCPLIO**, BCPLBYTE, BCPLAPT, BCPLMEM and BLIB. Implementation: `tools/checks/prepare-runtime-pds-regression.py` now accepts opt-in `BCPL_RUNTIME_CANDIDATE=1`, which requires `BCPL_RUNTIME_LIBRARY=DEVOBJ` and selects INCLUDE OBJ(BCPLM3), INCLUDE OBJ(BCPLIO) in that order instead of OBJ(BCPLMAIN). `native-compiler/regression/run-test.sh` rejects candidate use unless `BCPL_RUNTIME_PDS=1` and `BCPL_RUNTIME_LIBRARY=DEVOBJ`. Normal production regression configuration is unchanged. No production OBJ writes, and regression-generated JCL uses temporary SYSDA objects.
+Native regression 00 will compile normally through Cambridge on MVS and assemble the generated application only, then link exclusively from HERC02.BCPL.DEVOBJ with **BCPLM3** (exports BCPLMAIN), **BCPLIO**, BCPLBYTE, BCPLAPT, BCPLMEM and BLIB. Implementation: `tools/checks/prepare-runtime-pds-regression.py` now accepts opt-in `BCPL_RUNTIME_CANDIDATE=1`, which requires `BCPL_RUNTIME_LIBRARY=DEVOBJ` and selects INCLUDE OBJ(BCPLM3), INCLUDE OBJ(BCPLIO) in that order instead of OBJ(BCPLMAIN). `bootstrap-toolchain/regression/run-test.sh` rejects candidate use unless `BCPL_RUNTIME_PDS=1` and `BCPL_RUNTIME_LIBRARY=DEVOBJ`. Normal production regression configuration is unchanged. No production OBJ writes, and regression-generated JCL uses temporary SYSDA objects.
 
 Operator command (individual invocation, no shell &&):
 

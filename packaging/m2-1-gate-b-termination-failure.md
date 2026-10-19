@@ -26,9 +26,9 @@ Determine whether the accepted D6 candidate has an actionable mismatch between p
 
 ## Focused executable baseline probe
 
-The existing `native-compiler/regression/093-aptovec-stack-overflow/` case already triggers the independent G40 limit and asserts the diagnostic text `STACK OVERFLOW` without reaching its `DEBUGINT(999)` callee. Its dated README says it expects **GO RC=0000**; therefore it is historical evidence of the current behavior, not a policy specification for future nonzero status.
+The existing `bootstrap-toolchain/regression/093-aptovec-stack-overflow/` case already triggers the independent G40 limit and asserts the diagnostic text `STACK OVERFLOW` without reaching its `DEBUGINT(999)` callee. Its dated README says it expects **GO RC=0000**; therefore it is historical evidence of the current behavior, not a policy specification for future nonzero status.
 
-Current `native-compiler/regression/run-test.sh` uses `tools/mvs/job-summary` to distinguish completed GO status; its `expected-go-rc.txt` fixture only participates in the *nonzero failure* branch (RC=1 from job-summary). Merely adding an RC=0000 fixture to regression 093 would **not** assert RC=0. Instead capture the actual step summary from the baseline D6 candidate, including the GO RC and diagnostic.
+Current `bootstrap-toolchain/regression/run-test.sh` uses `tools/mvs/job-summary` to distinguish completed GO status; its `expected-go-rc.txt` fixture only participates in the *nonzero failure* branch (RC=1 from job-summary). Merely adding an RC=0000 fixture to regression 093 would **not** assert RC=0. Instead capture the actual step summary from the baseline D6 candidate, including the GO RC and diagnostic.
 
 Operator command (no rebuild or object changes):
 
@@ -88,7 +88,7 @@ The owner explicitly **approved RC=12 as the stack-overflow completion code**. T
 - `asm/bcplmain-d7-candidate.asm`: after `IOREPL` and restoring R10, `STKOVFL` now sets R7=12 and branches to existing `STOPENT`. This preserves `FINEXIT` IOFIN / MEMDRAIN / MEMBIND(0) / FREEMAIN and bypasses `FINIMPL`'s RC=0 reset. Shared checked-entry and BCPLAPT failures still converge on STKOVFL.
 - `jcl/build-dev-bcplmain-d7.jcl`: assemble SOURCE(BCPLM7), binary-safe install DEVOBJ(BCPLM7) only.
 - `jcl/bcplio-d7-integration-link.jcl`: D7 candidate linker MAP/XREF, without GO or production OBJ.
-- `native-compiler/regression/093-aptovec-stack-overflow/expected-go-rc.txt`: now asserts GO RC=0012 using the existing run-test.sh fixture machinery, in addition to `expected.txt` diagnostic. **This deliberately makes test 093 fail against the old D6 RC=0000 until D7 is selected.**
+- `bootstrap-toolchain/regression/093-aptovec-stack-overflow/expected-go-rc.txt`: now asserts GO RC=0012 using the existing run-test.sh fixture machinery, in addition to `expected.txt` diagnostic. **This deliberately makes test 093 fail against the old D6 RC=0000 until D7 is selected.**
 
 **Pending execution:** these Git edits do not constitute assembled, linked or executed proof. Run this sequence after `git pull --ff-only` while MVS is available:
 
@@ -143,7 +143,7 @@ The owner ran the full 00–123 panel with DEVOBJ(BCPLM7). Results: **122 PASS, 
 The single failing case, **052 controlled stack overflow**, demonstrated a *correct D7 runtime result*: payload JOB **3101 RG052R**, ASMAP IFOX00 RC=0000, LKED IEWL RC=0000, **GO RC=0012**; the `STACK OVERFLOW` output matched. It was classified FAIL because fixture 052 had not yet acquired `expected-go-rc.txt` and its README described the older D6 success-completion contract. Test 093 already verifies the same new policy via the fixture mechanism.
 
 Git-only remedy:
-- `native-compiler/regression/52-controlled-stack-overflow/expected-go-rc.txt`: `0012`.
+- `bootstrap-toolchain/regression/52-controlled-stack-overflow/expected-go-rc.txt`: `0012`.
 - Test 052 README updated to distinguish D6 RC=0000 from D7 RC=0012 and record JOB 3101.
 
 **This is a regression acceptance-contract update, not a new runtime code correction.** The first full D7 panel cannot be reported as 123 PASS; rerun 052 first and the full panel afterward before formal Gate B acceptance. D6 may no longer pass the updated 052 and 093 fixtures without an explicit baseline-specific fixture mechanism, which has not been introduced. Production OBJ and D6 remain unchanged.

@@ -57,9 +57,9 @@ Directly inspected tracked `richards-bcpltape/bcplib/bcpl/syn`, `trn`, `cg`, and
 
 ## Gate A completion review — compiler execution boundary (14 October 2026)
 
-The `native-compiler/mvs-resident-cambridge.md` record establishes that the **currently operating compiler is CAMBCOMP INTCODE executed by ICINT V19**. It is not yet a natively linked System/370 compiler. Therefore missing D6 services do **not** block today's 123-case compiler-to-native-application regression workflow; they become relevant when pursuing the later native compiler bootstrap.
+The `bootstrap-toolchain/mvs-resident-cambridge.md` record establishes that the **currently operating compiler is CAMBCOMP INTCODE executed by ICINT V19**. It is not yet a natively linked System/370 compiler. Therefore missing D6 services do **not** block today's 123-case compiler-to-native-application regression workflow; they become relevant when pursuing the later native compiler bootstrap.
 
-The historical native-compiler candidate is more than the three phases previously skimmed. `richards-bcpltape/bcplib/bcpl/bcpl` is the compiler's driver and contributes requirements beyond `syn`, `trn`, `cg`:
+The historical bootstrap-toolchain candidate is more than the three phases previously skimmed. `richards-bcpltape/bcplib/bcpl/bcpl` is the compiler's driver and contributes requirements beyond `syn`, `trn`, `cg`:
 
 | Candidate interface | Historical concrete use | D6 status / Gate C action |
 | --- | --- | --- |
