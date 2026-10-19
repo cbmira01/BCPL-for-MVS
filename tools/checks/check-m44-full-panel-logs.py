@@ -32,7 +32,7 @@ def expected_go(number: int, case_dir: Path) -> str:
 
 def audit() -> int:
     discover = runpy.run_path(
-        str(ROOT / "tools/native/run-regression"), run_name="m44_log_audit"
+        str(ROOT / "tools/bootstrap/run-regression"), run_name="m44_log_audit"
     )["discover"]
     cases, highest = discover()
     if highest != END or set(cases) != set(range(END + 1)):

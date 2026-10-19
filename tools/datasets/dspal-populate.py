@@ -78,7 +78,7 @@ def validate_generated_sources(paths: list[Path]) -> None:
     if not manifest_path.is_file():
         raise DspalError(
             "generated files exist but prepare-bootstrap-manifest.json is absent; "
-            "rerun tools/native/prepare-bootstrap --with-trnilrg"
+            "rerun tools/bootstrap/prepare-bootstrap --with-trnilrg"
         )
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))

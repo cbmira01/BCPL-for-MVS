@@ -45,7 +45,7 @@ def read(path: Path) -> str:
 
 def check(require_candidate: bool, require_production: bool = False) -> None:
     # Consult the real runner's numbering and test discovery rules.
-    runner_path = ROOT / "tools/native/run-regression"
+    runner_path = ROOT / "tools/bootstrap/run-regression"
     runner = runpy.run_path(str(runner_path), run_name="m44_preflight")
     cases, highest = runner["discover"]()
     require(highest == END, f"regression last test {highest}; expected {END}")

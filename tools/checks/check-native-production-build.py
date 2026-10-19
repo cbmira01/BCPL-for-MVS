@@ -64,10 +64,10 @@ def main() -> None:
             "INCLUDE OBJ(BCPLAPT)" in generator,
             "production BYTE/APT must link from OBJ")
     runner = (ROOT /
-        "tools/native/run-regression").read_text(encoding="utf-8")
+        "tools/bootstrap/run-regression").read_text(encoding="utf-8")
     require("candidate_env or production_env" in runner,
             "production dynamic-stream case gate not found")
-    wrapper = ROOT / "tools/native/run-production-regression"
+    wrapper = ROOT / "tools/bootstrap/run-production-regression"
     require(wrapper.is_file() and
             "BCPL_RUNTIME_LIBRARY=OBJ" in wrapper.read_text(
                 encoding="ascii"), "production runner missing")

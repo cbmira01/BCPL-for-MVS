@@ -53,7 +53,7 @@ def git(*args: str) -> str:
 
 
 def cases() -> dict[int, str]:
-    path = ROOT / "tools/native/run-regression"
+    path = ROOT / "tools/bootstrap/run-regression"
     found, end = runpy.run_path(str(path), run_name="m55_inspect")["discover"]()
     require(end == 145 and set(found) == set(range(146)),
             "regression case numbering drift (expected 00..145)")
@@ -152,7 +152,7 @@ def begin() -> None:
         [sys.executable, "tools/checks/test-m55-final-evidence.py"],
         [sys.executable, "tools/checks/check-m44-compatibility.py", "--candidate"],
         [sys.executable, "tools/checks/check-bcplio-m43-account.py"],
-        ["tools/native/run-regression", "--check-numbering"],
+        ["tools/bootstrap/run-regression", "--check-numbering"],
     ):
         result = subprocess.run(cmd, cwd=ROOT)
         require(result.returncode == 0, "preflight command failed: " + " ".join(cmd))

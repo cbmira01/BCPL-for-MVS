@@ -89,7 +89,7 @@ cp "$source" "$source_copy"
 
 compiler_job="${job_base}C"
 
-compiler_driver="${CAMBRIDGE_COMPILE:-$root/tools/native/compile-mvs}"
+compiler_driver="${CAMBRIDGE_COMPILE:-$root/tools/bootstrap/compile-mvs}"
 
 echo "=== Cambridge compile: $case_name ==="
 compile_args=(
