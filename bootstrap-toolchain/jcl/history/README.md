@@ -2,15 +2,15 @@
 
 These decks document earlier BCPLMAIN and BCPLIO development stages.
 They are preserved for engineering provenance, **not** populated by
-`dspal populate NATIVE_JCL`.
+`dspal populate BOOT_JCL`.
 
 - `build-dev-bcplm6.jcl` rebuilds the accepted M5.5 D6 object from
-  canonical `NATIVE_ASM(BCPLMAIN)` into **NATIVE_DEVOBJ(BCPLM6)** only.
+  canonical `BOOT_ASM(BCPLMAIN)` into **BOOT_DEVOBJ(BCPLM6)** only.
   To reproduce the accepted historical DEVOBJ profile, explicitly
-  install as `NATIVE_JCL(BLDDEVM6)` and submit after review.
+  install as `BOOT_JCL(BLDDEVM6)` and submit after review.
 - `build-native-bcplm7-for-dynamic.jcl` rebuilds the M2.1 D7
   object when historical D7 source has been explicitly staged as
-  `NATIVE_ASM(BCPLM7)`; it is not the current source mapping.
+  `BOOT_ASM(BCPLM7)`; it is not the current source mapping.
 - `bcplio-d6-integration-link.jcl` and
   `bcplio-d7-integration-link.jcl` are stage-specific historical
   linkage experiments, not maintained builds.
@@ -24,4 +24,4 @@ Some retained decks refer to **historical DSNs or PDS members**.
 Inspect them before manually staging or submitting.
 
 Current maintained JCL lives one directory above, with lowercase
-filenames matching their uppercase `NATIVE_JCL` member names.
+filenames matching their uppercase `BOOT_JCL` member names.
