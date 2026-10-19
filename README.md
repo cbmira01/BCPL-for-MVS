@@ -15,8 +15,8 @@ This project appears to be one of the few modern efforts to reconstruct a histor
 
 **Important:** The bootstrap toolchain *generates* native code but its
 compiler does **not** run natively. The native Cambridge compiler is a
-separate deliverable. `tools/native/` and the MVS `NATIVE_*` dataset
-names remain established interfaces to the bootstrap toolchain.
+separate deliverable. `tools/bootstrap/` operates the bootstrap toolchain; the MVS
+`BOOT_*` dataset aliases are its established interfaces.
 
 ## Compatibility scope
 
@@ -75,7 +75,7 @@ the previously observed acceptance evidence see [M3 reconstruction acceptance](p
 | `bootstrap-toolchain/` | Demoted Cambridge source machinery, S/370 runtime ASM, authoritative native build JCL, native regressions |
 | `tools/datasets/` | `dspal` manifest-driven MVS PDS access and lifecycle |
 | `tools/mr10/` | MR10 interpreter, interpreted compiler, demos, and regression runners |
-| `tools/native/` | Native bootstrap preparation, deployment, compilation, and regression runner |
+| `tools/bootstrap/` | Native bootstrap preparation, deployment, compilation, and regression runner |
 | `tools/mvs/` | TK5/Hercules, JES and assembler job tools |
 | `tools/checks/` | Repository-owned static and acceptance diagnostics |
 | `config/` | `dspal.yaml` and ignored machine-local overrides |
@@ -100,7 +100,7 @@ tools/datasets/dspal ls
 tools/mr10/run-regression-panel
 tools/mr10/run-demo-suite
 tools/mr10/run-language-demos
-tools/native/run-regression
+tools/bootstrap/run-regression
 ```
 
 These commands assume the environment has already been rebuilt. For a new

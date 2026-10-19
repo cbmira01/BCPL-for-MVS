@@ -56,7 +56,7 @@ and [single clean-room rebuild runbook]
 
 | Function | Paths | Questions |
 |---|---|---|
-| Suite orchestration | `tools/native/run-regression` | Case discovery, numeric naming, inclusive ranges, candidate-only requirements, SKIP 083 and log overwrites |
+| Suite orchestration | `tools/bootstrap/run-regression` | Case discovery, numeric naming, inclusive ranges, candidate-only requirements, SKIP 083 and log overwrites |
 | Compile/link/GO harness | `bootstrap-toolchain/regression/run-test-mvs.sh`, `run-test.sh` | Cambridge compilation, JCL generation, job submission, named DD fixtures, JES extraction, error handling |
 | Installed-PDS JCL generator | `tools/checks/prepare-runtime-pds-regression.py` | Explicit BCPLM6+BCPLIO DEVOBJ links, BCPLMEM/BLIB OBJ links and M4.3 test-only assembler injection |
 | Numbered cases and fixtures | `bootstrap-toolchain/regression/*/` | BCPL source, README, expected text and GO RC, DD records, candidate-only markers, compile-only test 048 |

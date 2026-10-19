@@ -97,7 +97,7 @@ Test explicitly against candidates, not production:
 
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/native/run-regression 27 --show-output
+  tools/bootstrap/run-regression 27 --show-output
 ```
 
 The regression generator validates that the logical library is a managed
@@ -143,7 +143,7 @@ execution have been demonstrated, run the full panel **once**:
 
 ```sh
 BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ \
-  tools/native/run-regression
+  tools/bootstrap/run-regression
 ```
 
 Expected baseline is 123 PASS / 0 FAIL / 1 expected SKIP (083).
@@ -169,7 +169,7 @@ IEBCOPY/IEBGENER return codes, link-editor report, and regression totals.
 ## March acceptance — CLOSED (13 October 2026)
 
 The operator ran the sole full panel for this development march with
-`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression`
+`BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/bootstrap/run-regression`
 after pulling commit 6529fcb. All numbered cases 00–123 were evaluated:
 **123 PASS, 0 FAIL, 1 expected SKIP, TOTAL 124**. Case 083 was skipped
 because it requires source-only FREEMAIN instrumentation. The operator's

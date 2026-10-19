@@ -11,7 +11,7 @@ The MR10 suite runners now live under `tools/mr10/`. Their former tools-root pat
 - `tools/mvs/` — Hercules/TK5 operation, JES reporting, JCL submission and IFOX job generation.
 - `tools/datasets/` — the `dspal` dispatcher and dataset-management modules.
 - `tools/mr10/` — MR10 INTCODE interpreter, compiler, and short-named suite runners.
-- `tools/native/` — Cambridge/native compilation, bootstrap source staging, native regressions, and resident-JCL build coordination.
+- `tools/bootstrap/` — Cambridge/native compilation, bootstrap source staging, native regressions, and resident-JCL build coordination.
 - `tools/checks/` — reusable static checks, test-only QSAM output probes, job/RC auditing, and final-run freshness evidence.
 
 Only this README and the five subsystem directories remain at the tools root. The M3 manifest now defines 24 managed MR10, reserved CAMB, and NATIVE datasets. See the clean-room runbook for the full reconstruction order.
@@ -29,13 +29,12 @@ Only this README and the five subsystem directories remain at the tools root. Th
 | `tools/mr10/current-icint` | Print the promoted ICINT source selected by `mr10-kit-compiler/asm/CURRENT`. |
 | `tools/mr10/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/mr10/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
-| `tools/native/prepare-bootstrap` | Regenerate disposable demoted Cambridge bootstrap sources and optional TRNILRG. |
-| `tools/native/stage-bootstrap` | Stage regenerated source members to `BOOT_SOURCE`. |
+| `tools/bootstrap/prepare-bootstrap` | Regenerate disposable demoted Cambridge bootstrap sources and optional TRNILRG. |
 | `BOOT_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `bootstrap-toolchain/jcl/`. |
 | `BOOT_JCL(BLIBBLD)` | Authoritative BLIB object build job in `bootstrap-toolchain/jcl/`. |
-| `tools/native/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
+| `tools/bootstrap/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
 | `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |
-| `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
+| `tools/bootstrap/run-regression` | Run the native regression panel from a selected start through the current test. |
 | `tools/mr10/run-demo-suite` | Run the 17 general BCPL demonstrations. |
 | `tools/mr10/run-language-demos` | Run the focused BCPL language demonstrations. |
 | `tools/datasets/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
@@ -258,16 +257,12 @@ HERC02.BCPL.INTCODE(CAMBCOMP)
 `CAMBCOMP` is the packed ICINT-runnable compiler image. The individual
 members are retained for diagnosis and inspection.
 
-Inspect the complete generated build JCL without submitting it:
-
-```sh
-python3 tools/native/build-cambridge --show-jcl
-```
+Inspect the checked-in resident build job at `bootstrap-toolchain/jcl/cambbld.jcl` before submission.
 
 After inspecting the PDSes, compile a source through that resident image with:
 
 ```sh
-python3 tools/native/compile-mvs path/to/program.bcpl
+python3 tools/bootstrap/compile-mvs path/to/program.bcpl
 ```
 
 For the native regression panel, use:

@@ -63,17 +63,17 @@ After `dspal initbcpl` and `dspal populate all`, rebuild
 Regenerate `TRNILRG` using `tools/bootstrap/prepare-bootstrap --with-trnilrg`
 and position it with `dspal put BOOT_INTCODE TRNILRG`.
 
-Stage the host-generated native bootstrap sources **only through dspal**:
+Stage the generated bootstrap sources using the `dspal populate` procedure in
+[the clean-room runbook](../../packaging/clean-room-mvs-reconstruction.md).
+The compiler build steps are:
 
 ```sh
-python3 tools/bootstrap/stage-bootstrap --dry-run
-python3 tools/bootstrap/stage-bootstrap
 python3 tools/checks/check-native-bootstrap-jcl.py
 tools/datasets/dspal put BOOT_JCL CAMBBLD bootstrap-toolchain/jcl/cambbld.jcl
 tools/datasets/dspal submit BOOT_JCL CAMBBLD
 ```
 
-The staging command transfers BLIB and ten demoted compiler units, `BOOTHOST`,
+The manifest-driven population transfers BLIB and ten demoted compiler units, `BOOTHOST`,
 `OPTIONS`, and `CAMBPARM` into `BOOT_SOURCE`; it never allocates a
 dataset. `BOOT_SOURCE` headers are populated directly by the manifest.
 The generated resident build uses MR10 INTCODE phases, the installed MR10

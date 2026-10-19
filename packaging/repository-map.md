@@ -14,7 +14,7 @@ clean-room rebuild, see
 | [`config/dspal.yaml`](../config/dspal.yaml) | Canonical inventory and Git-to-MVS dataset/member mappings |
 | [`tools/datasets/`](../tools/datasets/) | Manifest-driven `dspal` dataset management and text deployment |
 | [`tools/mr10/`](../tools/mr10/) | Interpreted compiler, demos and test runners |
-| [`tools/native/`](../tools/native/) | Demotion/bootstrap, resident compilation and native regression runner |
+| [`tools/bootstrap/`](../tools/bootstrap/) | Demotion/bootstrap, resident compilation and native regression runner |
 | [`tools/mvs/`](../tools/mvs/) | JES reader, print reports, TK5/Hercules and assembler job operations |
 | [`tools/checks/`](../tools/checks/) | Static validation, evidence checks and focused research probes |
 | [`docker/`](../docker/) | Hercules/TK5 container setup; MVS remains the target operating system |

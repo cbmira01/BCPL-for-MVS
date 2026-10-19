@@ -113,7 +113,7 @@ git rev-parse HEAD
 tools/mvs/start-tk5 --detached
 tools/datasets/dspal status --probe
 tools/datasets/dspal info
-tools/native/prepare-bootstrap --check-inputs
+tools/bootstrap/prepare-bootstrap --check-inputs
 ```
 
 **Check before going on:**
@@ -296,7 +296,7 @@ comes **after** Steps 3 and 4, not before the first population.
 ### 5A. Generate all bootstrap inputs in one pass
 
 ```sh
-tools/native/prepare-bootstrap --with-trnilrg
+tools/bootstrap/prepare-bootstrap --with-trnilrg
 cat workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json
 ```
 
@@ -365,7 +365,7 @@ for each unit) plus a `PACKCOMP` step. Every interpreted phase must report
 ### Test that the compiler writes assembler
 
 ```sh
-tools/native/compile-mvs \
+tools/bootstrap/compile-mvs \
   bootstrap-toolchain/regression/00-most-degenerate-bcpl-program/source.bcpl \
   --output workarea/m3-clean-smoke.s370.asm
 
@@ -461,7 +461,7 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BLIB
 Use the production launcher, not a development or candidate profile:
 
 ```sh
-tools/native/run-production-regression 0 145
+tools/bootstrap/run-production-regression 0 145
 ```
 
 This tool selects **only** the rebuilt `BOOT_OBJ` modules. It does not
@@ -489,7 +489,7 @@ A few cases are special:
 
 Each test saves a report under `workarea/native-regression/logs/`.
 For a failed test, read that case's log. You can rerun a single case,
-such as `tools/native/run-production-regression 124 --show-output`.
+such as `tools/bootstrap/run-production-regression 124 --show-output`.
 
 ### Audit the saved test reports
 
@@ -566,7 +566,7 @@ change the related scripts or JCL, or when you are investigating a problem.
 | `python3 tools/checks/test-dspal-generated-population.py` | Offline tests for first/second population behavior |
 | `python3 tools/checks/check-native-bootstrap-jcl.py` | Expected `CAMBBLD` job structure and PDS names |
 | `python3 tools/checks/check-native-production-build.py` | Canonical native build source and JCL contracts |
-| `tools/native/run-production-regression --check-numbering` | Test numbering and expected range |
+| `tools/bootstrap/run-production-regression --check-numbering` | Test numbering and expected range |
 | `check-m44-compatibility.py --production` | Harness fixtures, production linkage, and test-only fault settings |
 
 For the last check, the required production environment is:
