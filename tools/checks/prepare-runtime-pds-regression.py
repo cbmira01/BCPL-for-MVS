@@ -154,11 +154,11 @@ def main():
             raise ValueError("test-only BCPLIO requires exactly one marker")
 
     # OBJ is the explicit clean-room production profile: all six runtime
-    # objects (five assembler CSECTs plus BLIB) reside in NATIVE_OBJ.
+    # objects (five assembler CSECTs plus BLIB) reside in BOOT_OBJ.
     # MIXED and DEVOBJ remain for historical regression reproducibility.
     # Generating JCL cannot promote or modify an object library.
-    chosen = ("NATIVE_DEVOBJ" if library == "DEVOBJ" else "NATIVE_OBJ")
-    devchosen = ("NATIVE_OBJ" if library == "OBJ" else "NATIVE_DEVOBJ")
+    chosen = ("BOOT_DEVOBJ" if library == "DEVOBJ" else "BOOT_OBJ")
+    devchosen = ("BOOT_OBJ" if library == "OBJ" else "BOOT_DEVOBJ")
     def object_dsn(logical):
         spec = config["datasets"][logical]
         if (spec.get("content_type") != "object" or spec.get("recfm") != "FB"
@@ -166,9 +166,9 @@ def main():
             raise ValueError(f"{logical} must be a binary FB80 object PDS")
         return core.full_dsn(config, spec)
     main_dsn = object_dsn(chosen)
-    service_dsn = object_dsn("NATIVE_DEVOBJ" if candidate == "1"
+    service_dsn = object_dsn("BOOT_DEVOBJ" if candidate == "1"
                              else devchosen)
-    core_dsn = object_dsn("NATIVE_OBJ")
+    core_dsn = object_dsn("BOOT_OBJ")
     job = f"RG{n:03d}R"
     cards = [
         *core.authenticated_job_card(config, job, "BCPL PDS REG",
