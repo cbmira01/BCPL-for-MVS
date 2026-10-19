@@ -22,8 +22,8 @@ def main():
     ap.add_argument("--output", type=Path,
                     help="write a generated assembler file (never overwrite baseline)")
     args = ap.parse_args()
-    source = ROOT / "native-compiler/asm/history/bcplmain-wip.asm"
-    folder = ROOT / "native-compiler/asm/bcplmain-wip"
+    source = ROOT / "bootstrap-toolchain/asm/history/bcplmain-wip.asm"
+    folder = ROOT / "bootstrap-toolchain/asm/bcplmain-wip"
     try:
         combined = b"".join((folder / name).read_bytes() for name in PARTS)
         baseline = source.read_bytes()

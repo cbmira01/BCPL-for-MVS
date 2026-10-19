@@ -20,7 +20,7 @@ def main() -> None:
     instrument = namespace["instrument"]
     sites = namespace["SITES"]
     original = (
-        ROOT / "native-compiler/asm/bcplio.asm"
+        ROOT / "bootstrap-toolchain/asm/bcplio.asm"
     ).read_text(encoding="ascii")
     total_getmains = original.count("GETMAIN RC,LV=")
     for mode, (anchor, prefix, data_anchor) in sites.items():

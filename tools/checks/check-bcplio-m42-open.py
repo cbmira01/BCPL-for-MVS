@@ -4,7 +4,7 @@ from pathlib import Path
 import runpy
 
 ROOT = Path(__file__).resolve().parents[2]
-original = (ROOT / "native-compiler/asm/bcplio.asm").read_text(
+original = (ROOT / "bootstrap-toolchain/asm/bcplio.asm").read_text(
     encoding="ascii"
 )
 module = runpy.run_path(

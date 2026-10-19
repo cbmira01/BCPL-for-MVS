@@ -12,7 +12,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/dspal.yaml"
-ASM = ROOT / "native-compiler/asm"
+ASM = ROOT / "bootstrap-toolchain/asm"
 CANONICAL = ("BCPLMAIN", "BCPLIO", "BCPLMEM", "BCPLBYTE", "BCPLAPT")
 
 
@@ -24,7 +24,7 @@ def main() -> None:
     member_lines = section.split("    members:\n", 1)[1]
     entries = re.findall(r"^      ([A-Z0-9]+):\s+(\S+)\s*$",
                          member_lines, re.M)
-    expected = [(member, f"native-compiler/asm/{member.lower()}.asm")
+    expected = [(member, f"bootstrap-toolchain/asm/{member.lower()}.asm")
                 for member in CANONICAL]
     if entries != expected:
         raise ValueError(f"NATIVE_ASM mappings differ from canonical list:"
@@ -41,7 +41,7 @@ def main() -> None:
         main_source.count("         END   BCPLMAIN") != 1
     ):
         raise ValueError("unexpected BCPLMAIN CSECT/END structure")
-    candidate = (ROOT / "native-compiler/jcl/history/build-dev-bcplm6.jcl"
+    candidate = (ROOT / "bootstrap-toolchain/jcl/history/build-dev-bcplm6.jcl"
                  ).read_text(encoding="ascii")
     if "NATIVE.ASM(BCPLMAIN)" not in candidate:
         raise ValueError("historical BCPLM6 job does not read canonical source")

@@ -92,9 +92,9 @@ def main():
     p.add_argument("--a-offset",required=True,type=int,help="A file size before submission, bytes")
     p.add_argument("--z-offset",required=True,type=int,help="Z file size before submission, bytes")
     p.add_argument("--expected-a",type=Path,default=Path(
-        "native-compiler/regression/114-interleaved-stream-records/expected.txt"))
+        "bootstrap-toolchain/regression/114-interleaved-stream-records/expected.txt"))
     p.add_argument("--expected-z",type=Path,default=Path(
-        "native-compiler/regression/114-interleaved-stream-records/expected-alt.txt"))
+        "bootstrap-toolchain/regression/114-interleaved-stream-records/expected-alt.txt"))
     p.add_argument("--diagnose",action="store_true",help="show candidate raw printer lines on failure")
     args=p.parse_args()
     try:
