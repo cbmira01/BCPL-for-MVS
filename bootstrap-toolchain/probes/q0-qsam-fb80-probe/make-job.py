@@ -54,10 +54,9 @@ def make() -> Path:
                "Q0FIX002" + " " * 71 + "Y"]
     assert all(len(r) == 80 for r in records)
     cards[i:i] = [
-        "//QIN      DD DATA,DLM=QZ,",
-        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)",
+        "//QIN      DD DATA,DLM=QZ",
         *records, "QZ",
-        "//QOUT     DD SYSOUT=*",
+        "//QOUT     DD SYSOUT=*,",
         "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
     ]
     if any((len(line) > 71 and line not in records) or

@@ -1,6 +1,6 @@
 # Q.0 — MVS 3.8 QSAM fixed/blocked record behavior probe
 
-**Status:** prepared and statically checked; **not yet executed on MVS**.
+**Status:** **PASS** on MVS/TK5, JOB 2159 (MVS job date 20 October 2026).
 This is an isolated MVS assembler experiment, not the BCPLQSAM package.
 
 ## What it establishes, if successful
@@ -47,7 +47,17 @@ Expected step sequence: ASM 0000, LKED 0000, GO 0000. The QOUT SYSOUT should
 show two records. A failure at OPEN may abend rather than return RC8: this
 probe deliberately does **not** claim QSAM exception recovery.
 
-The first run must be reviewed before treating the probe as evidence.
+**Observed PASS:** JOB 2159 (ASM/IFOX RC=0000, LKED/IEWL RC=0000,
+GO RC=0000; zero assembler errors) emitted the two exact QOUT records.
+The preceding JOB 2158 was rejected by JES (IEF652I and IEF605I),
+before assembly, due to a DD DATA DCB conflict and missing continuation
+comma. The generator in Git now matches the fixed JOB 2159 configuration.
+See the [evidence record](../../../packaging/qsam-q0-fb80-evidence-20261020.md).
+
+The test does **not** independently prove QIN's effective RECFM or
+BLKSIZE, nor does its SYSOUT output demonstrate blocked DASD deblocking.
+That is the purpose of the subsequent
+[DASD probes](../q0-qsam-dasd-probes/README.md).
 
 ## Evidence basis
 

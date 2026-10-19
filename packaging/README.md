@@ -50,7 +50,9 @@ The preferred R.0 candidate is **one public global-vector entry per optional pac
 [Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. The [BCPLQSAM Public Interface Specification](bcplqsam-public-interface.md) records the reviewed Q.0 design baseline, including numeric constants and fixed-size vector contracts; MVS 3.8 and optional-registration verification remain. The [Q.0 ABI evidence](qsam-q0-dispatcher-abi-evidence-20261019.md)
 records observed JOB 2156/2157 **PASS** with permanent test sources.
 The standalone [FB80 QSAM probe](../bootstrap-toolchain/probes/q0-qsam-fb80-probe/README.md)
-is prepared but unexecuted. Its **Q.0 investigation remains in progress**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
+passed in **JOB 2159**: [execution evidence](qsam-q0-fb80-evidence-20261020.md).
+The [DASD FB/V/VB probes](../bootstrap-toolchain/probes/q0-qsam-dasd-probes/README.md)
+are prepared but unexecuted. Its **Q.0 investigation remains in progress**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
 ## Proposed optional numeric and clock milestones
 

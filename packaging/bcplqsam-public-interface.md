@@ -7,7 +7,7 @@
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Numeric contracts specified; test-only G!200 dispatcher ABI passed (JOB 2157); MVS 3.8 QSAM behavior and shared registration remain unverified  
+**Status:** Numeric contracts specified; G!200 test-only ABI passed (JOB 2157), and basic MVS QSAM fixed-record SYSOUT passed (JOB 2159); blocked DASD, V/VB and registration still unverified  
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---
@@ -780,4 +780,4 @@ These numbers are stable design-baseline declarations, **not** MVS DCB flags. Un
 - Current runtime evidence supports the native first-three-argument convention, global-vector access through G!N, length-prefixed BCPL strings, and byte address conversion. A test-only G!200 Q0DISP dispatcher was assembled and executed in JOB 2157; the production BCPLQSAM dispatcher has not been implemented.
 - The existing `BCPLIO` handles DD-name normalization and MVS QSAM internally; BCPLQSAM will reuse validated concepts but not the text-stream semantics.
 - IBM's later [data-record overview](https://www.ibm.com/docs/en/zos-basic-skills?topic=set-data-record-formats), [QSAM DCB specification](https://www.ibm.com/docs/en/zos/3.2.0?topic=descriptions-dcbconstruct-data-control-block-qsam), and [QSAM GET reference](https://www.ibm.com/docs/en/zos/3.2.0?topic=descriptions-getobtain-next-logical-record-qsam) explain RDW, LRECL and move-mode behavior. They are **not** evidence that all modern details are available in MVS 3.8J.
-- The test-only G!200 dispatcher ABI probe passed in JOB 2157. Q.0 still requires real MVS 3.8 QSAM experiments (the FB80 probe is prepared but not yet executed) and reconciliation with shared Runtime Extensions R.0. This document records **specification decisions**, not milestone gate acceptance.
+- The test-only G!200 dispatcher ABI probe passed in JOB 2157. The standalone FB80 JCL DD DATA/SYSOUT QSAM probe also passed in JOB 2159; see [evidence](qsam-q0-fb80-evidence-20261020.md). Q.0 still requires actual blocked DASD FB and V/VB experiments (prepared but not yet executed) and reconciliation with shared Runtime Extensions R.0. This document records **specification decisions**, not milestone gate acceptance.

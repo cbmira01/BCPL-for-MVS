@@ -65,13 +65,20 @@ R7/R8/R9, BCPL word-pointer vectors, G!200 at displacement 800, QUERY,
 and correct return to BCPL. The test-only generated-trailer export is
 **not** the Runtime Extensions registrar.
 
-A separate [Q.0 MVS FB80 GET/PUT probe](../bootstrap-toolchain/probes/q0-qsam-fb80-probe/README.md)
-is **prepared only** (not executed yet). It will establish initial
-MVS 3.8J QSAM logical-record behavior without BCPLQSAM or PDS changes.
-Its eventual job number, IFOX/IEWL/GO return codes and QOUT content must
-be reviewed before acceptance. V/VB, QSAM record limits and failure
-behavior, staging for buffer retries and R.0 registration remain open.
-**Do not close Q.0 or start Q.1 from ABI evidence alone.**
+The standalone [FB80 QSAM GET/PUT probe](../bootstrap-toolchain/probes/q0-qsam-fb80-probe/README.md)
+**passed on MVS/TK5 in JOB 2159** (ASM, LKED and GO each RC=0000).
+The [JOB 2159 evidence](qsam-q0-fb80-evidence-20261020.md) records two
+80-byte logical records, preserved blank bytes and trailing markers,
+QSAM OPEN/GET/PUT/CLOSE and EODAD. JOB 2158 was rejected for JCL errors
+before execution. Because JOB 2159 read a JCL DD DATA stream and wrote
+SYSOUT, it did **not** prove physical deblocking of an FB DASD dataset.
+
+[Further Q.0 DASD probes](../bootstrap-toolchain/probes/q0-qsam-dasd-probes/README.md)
+are **prepared, not run**: FB80 with BLKSIZE=800 across 23 disk records,
+followed by V and VB input/output with explicit RDW lengths. After those
+are executed and reviewed, investigate record limits, QSAM failure paths,
+read-ahead staging and shared Runtime Extensions R.0 registration.
+**Do not close Q.0 or start Q.1 from these partial tests alone.**
 
 ### Detailed test obligations
 
