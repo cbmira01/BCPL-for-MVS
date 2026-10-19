@@ -274,10 +274,10 @@ it does not validate combined BCPLBYTE/BCPLAPT/BLIB object builds or the
 
 ```sh
 git pull --ff-only
-bash -n native-compiler/regression/run-test.sh
+bash -n bootstrap-toolchain/regression/run-test.sh
 python3 -m py_compile tools/checks/externalize-bcplapt.py \
-    native-compiler/regression/make-two-object-job.py \
-    native-compiler/regression/069-independent-blib-object/prepare-stage2.py
+    bootstrap-toolchain/regression/make-two-object-job.py \
+    bootstrap-toolchain/regression/069-independent-blib-object/prepare-stage2.py
 BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/native/run-regression 91 --show-output
 BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/native/run-regression 93 --show-output
 ```
@@ -291,7 +291,7 @@ object steps and resolved `APTOVEC/APLIMIT/STKOVFL`.
 
 ## Checkpoint 6: combined external-object runner — full-suite acceptance
 
-Operator report (2026-10-10 local): after pulling through commit `5e69214`, `bash -n native-compiler/regression/run-test.sh` and `python3 -m py_compile` for the APTOVEC externalizer and both JCL generators completed without errors. The opt-in **combined** invocation
+Operator report (2026-10-10 local): after pulling through commit `5e69214`, `bash -n bootstrap-toolchain/regression/run-test.sh` and `python3 -m py_compile` for the APTOVEC externalizer and both JCL generators completed without errors. The opt-in **combined** invocation
 
 ```sh
 BCPLAPT_OBJECT=1 BCPLBYTE_OBJECT=1 tools/native/run-regression

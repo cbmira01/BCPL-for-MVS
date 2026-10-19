@@ -31,7 +31,7 @@ BCPL_RUNTIME_PDS=0 tools/native/run-regression 108 --show-output
 ```
 
 Regression 108's GO step now carries `PARM='P'` from
-`native-compiler/regression/108-findparm-stream/exec-parm.txt`,
+`bootstrap-toolchain/regression/108-findparm-stream/exec-parm.txt`,
 while an independent BCPIN DD provides `X`. Expected user output
 is P, demonstrating the PARM stream rather than BCPIN is selected.
 

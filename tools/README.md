@@ -31,8 +31,8 @@ Only this README and the five subsystem directories remain at the tools root. Th
 | `tools/mr10/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
 | `tools/native/prepare-bootstrap` | Regenerate disposable demoted Cambridge bootstrap sources and optional TRNILRG. |
 | `tools/native/stage-bootstrap` | Stage regenerated source members to `NATIVE_SOURCE`. |
-| `NATIVE_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `native-compiler/jcl/`. |
-| `NATIVE_JCL(BLIBBLD)` | Authoritative BLIB object build job in `native-compiler/jcl/`. |
+| `NATIVE_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `bootstrap-toolchain/jcl/`. |
+| `NATIVE_JCL(BLIBBLD)` | Authoritative BLIB object build job in `bootstrap-toolchain/jcl/`. |
 | `tools/native/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
 | `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |
 | `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
@@ -219,8 +219,8 @@ Host-to-MVS positioning is owned by `dspal`. First generate the host-side
 bootstrap derivatives:
 
 ```sh
-python3 native-compiler/bootstrap-cambridge/make-demoted.py
-bash native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh
+python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py
+bash bootstrap-toolchain/bootstrap-cambridge/build-mr10-trni-large-names.sh
 ```
 
 Then populate the managed MVS libraries:
@@ -273,7 +273,7 @@ python3 tools/native/compile-mvs path/to/program.bcpl
 For the native regression panel, use:
 
 ```sh
-bash native-compiler/regression/run-test-mvs.sh 24
+bash bootstrap-toolchain/regression/run-test-mvs.sh 24
 ```
 
 The original `run-test.sh` remains the bootstrap-from-source path and is
