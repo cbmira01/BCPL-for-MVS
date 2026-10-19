@@ -11,8 +11,8 @@ LIBHDR, or PDS changes. Keep the accepted 119/119 production-object and
 * `asm/bcplmain-wip/10-bootstrap-and-system.asmfrag`
 * `asm/bcplmain-wip/00-contract.asmfrag`
 * `docs/stack-check-contract.md`
-* `native-compiler/bootstrap-cambridge/compiler-options-and-parm.md`
-* `native-compiler/regression/108-findparm-stream/README.md`
+* `bootstrap-toolchain/bootstrap-cambridge/compiler-options-and-parm.md`
+* `bootstrap-toolchain/regression/108-findparm-stream/README.md`
 
 This is a targeted source/document examination, **not an exhaustive
 repository-wide consumer scan** or an installed-object symbol dump.

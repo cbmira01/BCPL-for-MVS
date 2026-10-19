@@ -59,7 +59,7 @@ not grounds for inventing new calling conventions.
 
 ## Checkpoint 2 — opt-in native regression build source
 
-`native-compiler/regression/run-test.sh` now supports `BCPLMAIN_MODULAR_SOURCE=1`.
+`bootstrap-toolchain/regression/run-test.sh` now supports `BCPLMAIN_MODULAR_SOURCE=1`.
 It reconstructs the assembler into the individual regression work directory,
 checks the fragments against the monolith byte-for-byte, then supplies the
 reconstructed file to **all three** existing runtime assembly preparation
@@ -71,7 +71,7 @@ original monolithic file. Invalid values fail closed.
 Targeted validation to perform on the running TK5 host:
 
 ```sh
-bash -n native-compiler/regression/run-test.sh
+bash -n bootstrap-toolchain/regression/run-test.sh
 BCPLMAIN_MODULAR_SOURCE=1 tools/native/run-regression 114 --show-output
 cmp asm/bcplmain-wip.asm workarea/native-regression/114-interleaved-stream-records/bcplmain-modular.asm
 ```
@@ -125,7 +125,7 @@ Reuse the existing proven two-object JCL generator; no changes to
 the regression runner are necessary:
 
 ```sh
-python3 native-compiler/regression/make-two-object-job.py \
+python3 bootstrap-toolchain/regression/make-two-object-job.py \
   tools/checks/bcplbyte-linkage-caller.asm \
   asm/bcplbyte.asm \
   workarea/bcplbyte-linkage.jcl \
@@ -223,7 +223,7 @@ Operator ran standard native regression 38 (PASS), generated and submitted the o
 
 ## Checkpoint 7 — opt-in normal-regression object linkage (pending MVS)
 
-The standard `native-compiler/regression/run-test.sh` now supports
+The standard `bootstrap-toolchain/regression/run-test.sh` now supports
 `BCPLBYTE_OBJECT=1`. It prepares the usual native regression as before,
 then strictly externalizes BCPLMAIN's two G85/G86 installation sites
 to `EXTRN GETBYTE,PUTBYTE`, removes those original routine bodies,
@@ -245,9 +245,9 @@ Initial validation, on the operator's TK5 environment:
 
 ```sh
 git pull --ff-only
-bash -n native-compiler/regression/run-test.sh
+bash -n bootstrap-toolchain/regression/run-test.sh
 python3 -m py_compile \
-  native-compiler/regression/make-two-object-job.py \
+  bootstrap-toolchain/regression/make-two-object-job.py \
   tools/checks/externalize-bcplbyte.py
 BCPLBYTE_OBJECT=1 tools/native/run-regression 38 --show-output
 BCPLBYTE_OBJECT=1 tools/native/run-regression 75 --show-output
@@ -262,7 +262,7 @@ installation or permanent default switch has occurred.
 
 ## Checkpoint 7 targeted validation accepted (2026-10-10)
 
-Operator ran `bash -n native-compiler/regression/run-test.sh`, Python byte-compilation of `make-two-object-job.py` and `externalize-bcplbyte.py`, and two opt-in live TK5 regressions: `BCPLBYTE_OBJECT=1 tools/native/run-regression 38 --show-output` **PASS 1/1**, and similarly regression **075 PASS 1/1**. Thus both the direct BCPL G85/G86 byte-operation path and the BLIB-linked path pass with separate BCPLBYTE object linkage. The full native regression suite under the opt-in flag remains the final acceptance gate before considering a default switch. Baseline path unchanged.
+Operator ran `bash -n bootstrap-toolchain/regression/run-test.sh`, Python byte-compilation of `make-two-object-job.py` and `externalize-bcplbyte.py`, and two opt-in live TK5 regressions: `BCPLBYTE_OBJECT=1 tools/native/run-regression 38 --show-output` **PASS 1/1**, and similarly regression **075 PASS 1/1**. Thus both the direct BCPL G85/G86 byte-operation path and the BLIB-linked path pass with separate BCPLBYTE object linkage. The full native regression suite under the opt-in flag remains the final acceptance gate before considering a default switch. Baseline path unchanged.
 
 ## Checkpoint 7 full-suite trial — fixture/JCL failure (2026-10-10)
 
@@ -287,7 +287,7 @@ Validation requested before repeating the full panel:
 
 ```sh
 git pull --ff-only
-bash -n native-compiler/regression/run-test.sh
+bash -n bootstrap-toolchain/regression/run-test.sh
 BCPLBYTE_OBJECT=1 tools/native/run-regression 94 --show-output
 BCPLBYTE_OBJECT=1 tools/native/run-regression 114 --show-output
 BCPLBYTE_OBJECT=1 tools/native/run-regression
@@ -297,7 +297,7 @@ Full 120-test acceptance is still pending a fresh run.
 
 ## Checkpoint 7 targeted fixture repair accepted (2026-10-10)
 
-After the JCL preparation correction in commit `243cceb`, operator ran `bash -n native-compiler/regression/run-test.sh` successfully and re-ran `BCPLBYTE_OBJECT=1` native regression **094** (selected input) and **114** (interleaved stream records), both **PASS 1/1**. These verify restoration of the BCPIN and BCPALT fixture paths in the two-object strategy. Full 120-regression run with the corrected harness remains pending and is required before accepting a default architecture switch.
+After the JCL preparation correction in commit `243cceb`, operator ran `bash -n bootstrap-toolchain/regression/run-test.sh` successfully and re-ran `BCPLBYTE_OBJECT=1` native regression **094** (selected input) and **114** (interleaved stream records), both **PASS 1/1**. These verify restoration of the BCPIN and BCPALT fixture paths in the two-object strategy. Full 120-regression run with the corrected harness remains pending and is required before accepting a default architecture switch.
 
 ## Checkpoint 7 accepted — full external-BCPLBYTE suite (2026-10-10)
 

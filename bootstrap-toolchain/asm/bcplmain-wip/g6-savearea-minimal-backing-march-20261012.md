@@ -49,7 +49,7 @@ No edits to R13 entry linkage, G6 initialization, runtime object library, BLIB, 
 
 - `check-bcplmain-modules.py`: PASS, four fragments byte-identical to canonical assembler; `check-asm-source.py`: OK.
 - Source-mode regression 120: PASS. Full mixed-mode regression 000..120: **121 PASS, 0 FAIL** before adding regression 121.
-- Added `native-compiler/regression/121-savearea-blib-consumers`, using actual historical BLIB object for G58 `INPROGRAM` and G59 `VALIDPOINTER`. After removing an invalid `FINISH:30` declaration, source-mode regression 121: PASS.
+- Added `bootstrap-toolchain/regression/121-savearea-blib-consumers`, using actual historical BLIB object for G58 `INPROGRAM` and G59 `VALIDPOINTER`. After removing an invalid `FINISH:30` declaration, source-mode regression 121: PASS.
 - `prepare-runtime-object-library.py --only-main` selected **BCPLMAIN** alone; `tools/datasets/dspal stat OBJ` confirmed `HERC02.BCPL.OBJ` on TSO003. Backup preservation was advised but is not independently verified by the provided output.
 - **JOB 8551 BCOBJBLD**: AMAIN (IFOX00) RC=0000; IMAIN (IEBGENER) RC=0000; assembler statements flagged 0, highest severity 0. Production BCPLMAIN installed in `HERC02.BCPL.OBJ(BCPLMAIN)`.
 - Installed-object `BCPL_RUNTIME_PDS=1 tools/native/run-regression 121 --show-output`: **PASS**.

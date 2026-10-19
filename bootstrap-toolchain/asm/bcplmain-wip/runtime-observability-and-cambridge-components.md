@@ -6,7 +6,7 @@ Status: **design discussion and historical-evidence inventory**, 12 October 2026
 
 Regression 083 verifies teardown by instrumenting temporary assembler source copies to count returns from `FREEMAIN`. Its expected output is `42` followed by `V=2 M=1`: two vector-release paths in `MEMDRAIN` and one combined global/stack-release path in BCPLMAIN. The counter proves execution returned from those macro expansions; it does **not** independently prove MVS storage-manager success. The MEMBIND-compatible source/object probe passed on TK5 on 12 October 2026 using `BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1`.
 
-Installed production objects in `HERC02.BCPL.OBJ` are already assembled and have no counter symbols or generic interception interface. Consequently 083's **installed-PDS mode remains deliberately excluded** pending a genuine mechanism for observing the same installed objects. No test should be relabeled PASS merely by substituting instrumented objects without disclosing that substitution. See `native-compiler/regression/083-instrumented-storage-reclamation/README.md`.
+Installed production objects in `HERC02.BCPL.OBJ` are already assembled and have no counter symbols or generic interception interface. Consequently 083's **installed-PDS mode remains deliberately excluded** pending a genuine mechanism for observing the same installed objects. No test should be relabeled PASS merely by substituting instrumented objects without disclosing that substitution. See `bootstrap-toolchain/regression/083-instrumented-storage-reclamation/README.md`.
 
 ## Historical component inventory: evidence versus inference
 

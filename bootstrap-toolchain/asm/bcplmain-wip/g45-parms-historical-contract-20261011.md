@@ -12,7 +12,7 @@
 | `km10/bcplmac` lines 632–642; `comacro` 761–771 | `PARMFLD` defines one-byte field followed by `PSTRING` | Supports length-prefixed parameter-field interpretation; precise external length encoding not established by macro alone |
 | `km10/bcplmac` 1084–1090; `comacro` 1320–1326 | Fullword-aligned user-save-area `PARM` byte field, explicitly called parameter-string length | Parameter bytes associated with runtime save area, but G45 value and unit not assigned here |
 | `km10/bcplmac` 603–630; `comacro` 732–759 | `PARMAREA` DSECT describes pseudo input stream from PARM string, with DCB-like fields | Historical FINDPARM pseudo-stream uses separate stream descriptor from raw parameter field |
-| `native-compiler/bootstrap-cambridge/compiler-options-and-parm.md` | `SELECTINPUT(FINDPARM())` consumes runtime-provided pseudo-stream; compiler option `G...` copied into `PARMS` according to earlier analysis | A parameter-string consumer path exists conceptually; *not* proof of identical G45 binding |
+| `bootstrap-toolchain/bootstrap-cambridge/compiler-options-and-parm.md` | `SELECTINPUT(FINDPARM())` consumes runtime-provided pseudo-stream; compiler option `G...` copied into `PARMS` according to earlier analysis | A parameter-string consumer path exists conceptually; *not* proof of identical G45 binding |
 | `asm/bcplmain-wip/10-bootstrap-and-system.asmfrag` | G39 installed as PARMENT; no direct G45 store | Current bootstrap does not furnish G45 |
 | `richards-bcpltape/bcplib/bcpl/cg`, `syn`, `trn` | No literal `PARMS`/`FINDPARM` occurrences in these particular files | Insufficient to claim absence of compiler consumers elsewhere |
 

@@ -7,7 +7,7 @@
 * `richards-bcpltape/sys3/bcpl/libhdr`: authoritative **names/numbers for this comparison**, not proof of implementation.
 * `richards-bcpltape/bcplib/bcpl/blib`: surviving historical portable library **source definitions**. 21 named LIBHDR entries have top-level `LET`/`AND` definitions. This is not an independent symbol-table or installed-PDS export dump.
 * `asm/bcplmain-wip/10-bootstrap-and-system.asmfrag`: startup **direct assignments** to the global vector (R12), including the conditional G76 fallback. Five objects installed in accepted MVS PDS: BCPLMAIN, BCPLBYTE, BCPLAPT, BCPLMEM, BLIB.
-* `native-compiler/regression/37-multiple-exported-globals/source.bcpl` and startup `GINST` loop: application-defined globals are imported from the compiler's global trailer; G1 START is an example.
+* `bootstrap-toolchain/regression/37-multiple-exported-globals/source.bcpl` and startup `GINST` loop: application-defined globals are imported from the compiler's global trailer; G1 START is an example.
 
 **Classification:** "Unresolved" means no matching BLIB routine definition and no direct BCPLMAIN startup write found **in these inspected sources**. It does not imply unimplemented or prove absent from other runtime sources, alternate library versions, or application exports. Source definitions are not proof of successful object export. Test-specific functionality requires independent evidence. Numeric cell G0 is global-vector metadata, outside LIBHDR G1–G99.
 
