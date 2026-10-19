@@ -16,7 +16,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "tools/checks/prepare-runtime-pds-regression.py"
-CASE = ROOT / "native-compiler/probes/m42-real-open"
+CASE = ROOT / "bootstrap-toolchain/probes/m42-real-open"
 GO = "//GO       EXEC PGM=*.LKED.SYSLMOD,TIME=(,1),"
 SYSUDUMP = "//SYSUDUMP DD SYSOUT=*"
 DD02 = "//DD02     DD SYSOUT=*,DCB=(RECFM=FB,LRECL=80,BLKSIZE=81)"

@@ -38,7 +38,7 @@ def main() -> None:
     deck.unlink(missing_ok=True)
 
     # Exact source transformations fail if BCPLMAIN's contract has drifted.
-    source = ROOT / "native-compiler/asm/history/bcplmain-wip.asm"
+    source = ROOT / "bootstrap-toolchain/asm/history/bcplmain-wip.asm"
     for name, script in (
         ("byte", "externalize-bcplbyte.py"),
         ("apt", "externalize-bcplapt.py"),
@@ -50,7 +50,7 @@ def main() -> None:
         source = dest
     # The installed BCPLMAIN object registers BLIB's globals on startup.
     # Reuse the proven source transformation from regression 069.
-    stage2 = ROOT / "native-compiler/regression/069-independent-blib-object/prepare-stage2.py"
+    stage2 = ROOT / "bootstrap-toolchain/regression/069-independent-blib-object/prepare-stage2.py"
     spec2 = importlib.util.spec_from_file_location("blib_stage2_obj", stage2)
     if spec2 is None or spec2.loader is None:
         raise RuntimeError("unable to load BLIB registration implementation")
@@ -63,9 +63,9 @@ def main() -> None:
     source = registered
     sources = [
         ("BCPLMAIN", source),
-        ("BCPLBYTE", ROOT / "native-compiler/asm/bcplbyte.asm"),
-        ("BCPLAPT", ROOT / "native-compiler/asm/bcplapt.asm"),
-        ("BCPLMEM", ROOT / "native-compiler/asm/bcplmem.asm"),
+        ("BCPLBYTE", ROOT / "bootstrap-toolchain/asm/bcplbyte.asm"),
+        ("BCPLAPT", ROOT / "bootstrap-toolchain/asm/bcplapt.asm"),
+        ("BCPLMEM", ROOT / "bootstrap-toolchain/asm/bcplmem.asm"),
     ]
     if args.only_main:
         sources = sources[:1]

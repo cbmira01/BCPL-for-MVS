@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURES = ROOT / "native-compiler/probes/m42-real-open"
+FIXTURES = ROOT / "bootstrap-toolchain/probes/m42-real-open"
 GENERATOR = ROOT / "tools/checks/prepare-runtime-pds-regression.py"
 SYSUDUMP = "//SYSUDUMP DD SYSOUT=*"
 DD02 = (

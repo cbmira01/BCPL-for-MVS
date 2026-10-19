@@ -26,7 +26,7 @@ def main():
     p.add_argument("output_jcl", type=Path)
     args = p.parse_args()
     args.output_jcl.unlink(missing_ok=True)
-    stage = module(ROOT / "native-compiler/regression/069-independent-blib-object/prepare-linkage.py",
+    stage = module(ROOT / "bootstrap-toolchain/regression/069-independent-blib-object/prepare-linkage.py",
                    "blib_app_cards")
     core = module(ROOT / "tools/datasets/dspal-core.py", "obj_consumer_dspal")
     cfg = core.load_config()

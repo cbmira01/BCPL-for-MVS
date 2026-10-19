@@ -47,7 +47,7 @@ def main():
         # must not read or manufacture that runtime text at all.
         if args.native:
             helper = load(
-                ROOT / "native-compiler/regression/prepare-native-global.py",
+                ROOT / "bootstrap-toolchain/regression/prepare-native-global.py",
                 "runtime_pds_native_global")
             csect = helper.one_index(lines, helper.CSECT, "generated CSECT")
             extrn = helper.one_index(
@@ -75,7 +75,7 @@ def main():
             lines[start:last] = values
         else:
             helper = load(
-                ROOT / "native-compiler/regression/combine-separate-bcpl.py",
+                ROOT / "bootstrap-toolchain/regression/combine-separate-bcpl.py",
                 "runtime_pds_separate_bcpl")
             app = helper.prepare_main(lines, f"BCRG{n:04d}")
             library = helper.read_generated(args.library_generated)

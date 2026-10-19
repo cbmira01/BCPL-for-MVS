@@ -15,7 +15,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "tools/checks/prepare-runtime-pds-regression.py"
-CASE = ROOT / "native-compiler/probes/m42-real-open"
+CASE = ROOT / "bootstrap-toolchain/probes/m42-real-open"
 SYSUDUMP = "//SYSUDUMP DD SYSOUT=*"
 DD02 = "//DD02     DD DSN=SYS1.MACLIB,DISP=SHR"
 BANNER = "//* M4.2.2 PDS WITHOUT MEMBER: MAY ABEND; NOT REGRESSION"

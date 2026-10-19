@@ -29,7 +29,7 @@ def main():
     main_src = OUT / "bcplmain-install-export.asm"
     main_src.write_text(original.replace(anchor, anchor + "         ENTRY STKOVFL\n", 1),
                         encoding="ascii", newline="\n")
-    mem_src = ROOT / "native-compiler/asm/bcplmem.asm"
+    mem_src = ROOT / "bootstrap-toolchain/asm/bcplmem.asm"
     for src in (main_src, mem_src):
         subprocess.run([sys.executable, str(ROOT / "tools/checks/check-asm-source.py"),
                         str(src)], check=True)
@@ -68,7 +68,7 @@ def main():
                                       text=True).strip()
     status = subprocess.check_output(["git", "status", "--short"], cwd=ROOT,
                                       text=True).strip()
-    tracked = [ROOT / "native-compiler/asm/history/bcplmain-wip.asm", mem_src,
+    tracked = [ROOT / "bootstrap-toolchain/asm/history/bcplmain-wip.asm", mem_src,
                ROOT / "tools/checks/externalize-bcplmem.py",
                ROOT / "tools/checks/prepare-runtime-object-candidates.py"]
     hashed = tracked + [main_src]

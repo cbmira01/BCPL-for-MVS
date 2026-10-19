@@ -53,8 +53,8 @@ def main():
     deck.unlink(missing_ok=True)
     mainasm.unlink(missing_ok=True)
     subprocess.run([sys.executable, str(ROOT/"tools/checks/externalize-bcplmem.py"),
-                    str(ROOT/"native-compiler/asm/history/bcplmain-wip.asm"), str(mainasm)], check=True)
-    memasm = ROOT/"native-compiler/asm/bcplmem.asm"
+                    str(ROOT/"bootstrap-toolchain/asm/history/bcplmain-wip.asm"), str(mainasm)], check=True)
+    memasm = ROOT/"bootstrap-toolchain/asm/bcplmem.asm"
     for source in (mainasm, memasm):
         subprocess.run([sys.executable,
                         str(ROOT/"tools/checks/check-asm-source.py"),
