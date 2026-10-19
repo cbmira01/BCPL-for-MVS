@@ -30,9 +30,9 @@ Only this README and the five subsystem directories remain at the tools root. Th
 | `tools/mr10/run-intcode` | Assemble ICINT and run existing INTCODE modules. |
 | `tools/mr10/compile-and-run` | Compile BCPL through SYN/TRN and CGI, then execute the result under ICINT. |
 | `tools/native/prepare-bootstrap` | Regenerate disposable demoted Cambridge bootstrap sources and optional TRNILRG. |
-| `tools/native/stage-bootstrap` | Stage regenerated source members to `NATIVE_SOURCE`. |
-| `NATIVE_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `bootstrap-toolchain/jcl/`. |
-| `NATIVE_JCL(BLIBBLD)` | Authoritative BLIB object build job in `bootstrap-toolchain/jcl/`. |
+| `tools/native/stage-bootstrap` | Stage regenerated source members to `BOOT_SOURCE`. |
+| `BOOT_JCL(CAMBBLD)` | Authoritative resident compiler image build job in `bootstrap-toolchain/jcl/`. |
+| `BOOT_JCL(BLIBBLD)` | Authoritative BLIB object build job in `bootstrap-toolchain/jcl/`. |
 | `tools/native/compile-mvs` | Compile one BCPL source using the persistent Cambridge compiler on MVS. |
 | `tools/mr10/run-regression-panel` | Run exact-output durable interpreted regressions. |
 | `tools/native/run-regression` | Run the native regression panel from a selected start through the current test. |
@@ -148,7 +148,7 @@ tools/datasets/dspal rm DATASET MEMBER
 tools/datasets/dspal compress DATASET
 tools/datasets/dspal initbcpl
 tools/datasets/dspal populate all
-tools/datasets/dspal submit NATIVE_JCL CAMBBLD
+tools/datasets/dspal submit BOOT_JCL CAMBBLD
 tools/datasets/dspal purgebcpl
 ```
 
@@ -175,13 +175,13 @@ tools/datasets/dspal submit JCL CAMBBLD
 To wait for the submitted payload and print its summary:
 
 ```sh
-tools/datasets/dspal submit NATIVE_JCL CAMBBLD --wait
+tools/datasets/dspal submit BOOT_JCL CAMBBLD --wait
 ```
 
 To inspect the launcher without submitting it:
 
 ```sh
-tools/datasets/dspal submit NATIVE_JCL CAMBBLD --show-jcl
+tools/datasets/dspal submit BOOT_JCL CAMBBLD --show-jcl
 ```
 
 Batch authentication comes from `config/dspal.local.yaml`, which is gitignored. `--show-jcl` redacts both launcher and payload passwords.

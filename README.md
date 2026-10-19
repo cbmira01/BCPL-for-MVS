@@ -30,26 +30,26 @@ The regression suite therefore demonstrates the behavior explicitly tested by th
 
 The historical MR10 kit compiler runs under reconstructed System/370 ICINT19,
 which is built on MVS as `MR10_LOAD(ICINT19)`. The resident demoted Cambridge
-compiler image is reconstructed into `NATIVE_INTCODE(CAMBCOMP)` and generates
+compiler image is reconstructed into `BOOT_INTCODE(CAMBCOMP)` and generates
 System/370 assembler code; **the compiler itself still runs as INTCODE**.
 Applications are assembled, link-edited, and executed natively on MVS.
 
 The complete native panel spanning 00–123 passed with **123 PASS, 0 FAIL,
-1 expected SKIP (083)** using rebuilt objects in `NATIVE_OBJ` and
-`NATIVE_DEVOBJ`. This is not a claim of full historical BCPL compatibility.
+1 expected SKIP (083)** using rebuilt objects in `BOOT_OBJ` and
+`BOOT_DEVOBJ`. This is not a claim of full historical BCPL compatibility.
 The separate native Cambridge compiler is developed under
 `cambridge-compiler/` using the reserved `CAMB_*` dataset namespace.
 
 **Current native-stream milestone:** BCPLIO dynamic stream
 **formally CLOSED** 17 October 2026 with owner acceptance of
-the candidate `NATIVE_DEVOBJ(BCPLM6+BCPLIO)` under the documented
+the candidate `BOOT_DEVOBJ(BCPLM6+BCPLIO)` under the documented
 QSAM stream contract. A fresh `00..145` native regression
 at Git `57c7354` returned **145 PASS, zero FAIL,
 one expected SKIP 083**, with independent audit
 of **145/145 fresh per-case logs**. JES/QSAM physical
 evidence is recorded for JOBS 8184–8186.
 The accepted DEVOBJ candidate has **not** been promoted
-to production `NATIVE_OBJ`; the Cambridge compiler still
+to production `BOOT_OBJ`; the Cambridge compiler still
 executes as INTCODE under ICINT19. The earlier
 00–123 acceptance above is the M3 *historical* baseline.
 

@@ -18,23 +18,23 @@ canonical paths as well.
 
 ## Canonical Git source = canonical MVS source member
 
-`config/dspal.yaml` maps only five `NATIVE_ASM` source members, each
+`config/dspal.yaml` maps only five `BOOT_ASM` source members, each
 matching the basename of the canonical assembler file above.
-For example, `bcplmain.asm` populates `NATIVE_ASM(BCPLMAIN)`.
+For example, `bcplmain.asm` populates `BOOT_ASM(BCPLMAIN)`.
 **BCPLM6, BCPLM7 and BCMWIP are no longer manifest-managed sources.**
 Earlier variants remain under [`history/`](history/) in Git.
 
 The canonical `bcplmain.asm` is the accepted D6/M5.5 candidate source.
 Source population alone does not change an object library. However,
-the revised `NATIVE_JCL(BLDBMAIN)` now deliberately assembles all
-five canonical runtime modules into `NATIVE_OBJ` under the owner's
+the revised `BOOT_JCL(BLDBMAIN)` now deliberately assembles all
+five canonical runtime modules into `BOOT_OBJ` under the owner's
 explicit clean-room production rebuild authorization. It includes
 the D6 `BCPLMAIN` and current `BCPLIO`; `BLIBBLD`
 separately builds BLIB into the same library. This new OBJ profile
 still requires actual MVS verification, and no binaries are preseeded.
 
 The optional historical [`build-dev-bcplm6.jcl`](../jcl/history/build-dev-bcplm6.jcl) reads the canonical
-`NATIVE_ASM(BCPLMAIN)` and writes only `NATIVE_DEVOBJ(BCPLM6)`.
+`BOOT_ASM(BCPLMAIN)` and writes only `BOOT_DEVOBJ(BCPLM6)`.
 It is **not in the manifest**; stage its JCL explicitly only when
 reproducing the accepted M5.5 development profile. The versioned
 DEVOBJ object name remains for regression compatibility and does

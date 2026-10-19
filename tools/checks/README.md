@@ -79,7 +79,7 @@ inherits this guard on the complete BCPLMAIN source.
 ## Native canonical JCL manifest
 
 `check-native-jcl-manifest.py` confirms that only the ten supported
-build jobs appear in `NATIVE_JCL`, that each JCL basename equals
+build jobs appear in `BOOT_JCL`, that each JCL basename equals
 the lowercase PDS member name, and that historical decks are excluded:
 
 ```sh
