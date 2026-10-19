@@ -4,7 +4,7 @@
 
 ## Boundary
 
-This records restoration of the **existing** native-compiler toolchain and its native application regression panel after repository and dataset refactoring. It is **not** acceptance of a native-implemented Cambridge compiler, and does **not** authorize M4 use of `CAMB_*` datasets.
+This records restoration of the **existing** bootstrap-toolchain toolchain and its native application regression panel after repository and dataset refactoring. It is **not** acceptance of a native-implemented Cambridge compiler, and does **not** authorize M4 use of `CAMB_*` datasets.
 
 - Git is canonical for source and JCL; `config/dspal.yaml` defines the MVS dataset layout.
 - Runtime assembler source is installed in `NATIVE_ASM`; BCPL compiler sources and headers in `NATIVE_SOURCE`; authoritative MVS build procedures in `NATIVE_JCL`.
@@ -41,7 +41,7 @@ Regressions 075 and 076 report PASS against their existing fixtures; this does n
 ## Lessons preserved
 
 - Updating tracked JCL does not update installed PDS members: install changed JCL with `dspal put` or repopulate `NATIVE_JCL` before execution. Earlier JOB 5037 used old `HERC02.BCPL.SOURCE/DEVOBJ` references despite RC=0000. After corrected JCL deployment, the expected `NATIVE_DEVOBJ` directory appeared.
-- The retired `tools/native/build-cambridge` and `tools/native/build-blib` duplicated MVS build responsibility; authoritative build jobs live under `native-compiler/jcl/`.
+- The retired `tools/native/build-cambridge` and `tools/native/build-blib` duplicated MVS build responsibility; authoritative build jobs live under `bootstrap-toolchain/jcl/`.
 - Generated compiler INTCODE and binary objects are rebuildable deliverables, not migration inputs.
 
 ## Acceptance scope and follow-on

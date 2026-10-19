@@ -18,7 +18,7 @@ This facility is a **project-designed extension** to reconstructed Cambridge, no
 
 ## 2. Actual reconstructed baseline
 
-The current `native-compiler/asm/bcplmain.asm` demonstrates the following:
+The current `bootstrap-toolchain/asm/bcplmain.asm` demonstrates the following:
 
 - Generated BCPL code addresses `G!N` at `R12 + 4*N`. `G!0` records the global-vector extent.
 - Startup obtains storage with MVS `GETMAIN`. At present it has 700 global-vector words, numbered 0..699; `GLOBCNT EQU 699`. Do not mistake this WIP extent for a historical or permanent limit.
@@ -224,4 +224,4 @@ The goal is **a stable, simple, historically intelligible extension pattern**, n
 
 ## 10. Immediate handoff
 
-Begin **R.0 only**. Read the current `native-compiler/asm/bcplmain.asm`, BLIB/object integration JCL, runtime ABI records, the compiled module trailer conventions, historical `LIBHDR`, the current dataset manifest and the native regression harness. Propose the simplest linker-relocatable table and a bounded global importer that leave core behavior intact. Present exact duplicate/absence/startup rules before implementing or changing existing accepted objects.
+Begin **R.0 only**. Read the current `bootstrap-toolchain/asm/bcplmain.asm`, BLIB/object integration JCL, runtime ABI records, the compiled module trailer conventions, historical `LIBHDR`, the current dataset manifest and the native regression harness. Propose the simplest linker-relocatable table and a bounded global importer that leave core behavior intact. Present exact duplicate/absence/startup rules before implementing or changing existing accepted objects.

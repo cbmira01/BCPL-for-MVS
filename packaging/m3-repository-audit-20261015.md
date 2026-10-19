@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | Managed dataset manifest | 24 logical datasets: 9 `MR10_*`, 9 `CAMB_*`, 6 `NATIVE_*` | Consistent with accepted M3 topology |
 | Text mapping paths | 151 manifest source-to-member mappings; all corresponding paths found in Git tree at audit | No missing mapped source paths |
-| Native JCL authority | 13 `NATIVE_JCL` mapped JCL bodies reside in `native-compiler/jcl/` | Correct |
+| Native JCL authority | 13 `NATIVE_JCL` mapped JCL bodies reside in `bootstrap-toolchain/jcl/` | Correct |
 | Production M3 JCL | `CAMBBLD`, `BLDBMAIN`, `BLIBBLD`, `BLDDEVA`, `BLDDEVB`, `BLDDEVI` | Reconciled and exercised on TK5 |
 | Rebuildable binaries | `NATIVE_INTCODE`, `NATIVE_OBJ`, `NATIVE_DEVOBJ`, `MR10_OBJ`, `MR10_LOAD` are not text-populated | Build, do not migrate |
 | Production/dev acceptance boundary | `NATIVE_OBJ` has accepted main/memory/BLIB; `NATIVE_DEVOBJ` has service candidates | Preserve separation |

@@ -57,9 +57,9 @@ and [single clean-room rebuild runbook]
 | Function | Paths | Questions |
 |---|---|---|
 | Suite orchestration | `tools/native/run-regression` | Case discovery, numeric naming, inclusive ranges, candidate-only requirements, SKIP 083 and log overwrites |
-| Compile/link/GO harness | `native-compiler/regression/run-test-mvs.sh`, `run-test.sh` | Cambridge compilation, JCL generation, job submission, named DD fixtures, JES extraction, error handling |
+| Compile/link/GO harness | `bootstrap-toolchain/regression/run-test-mvs.sh`, `run-test.sh` | Cambridge compilation, JCL generation, job submission, named DD fixtures, JES extraction, error handling |
 | Installed-PDS JCL generator | `tools/checks/prepare-runtime-pds-regression.py` | Explicit BCPLM6+BCPLIO DEVOBJ links, BCPLMEM/BLIB OBJ links and M4.3 test-only assembler injection |
-| Numbered cases and fixtures | `native-compiler/regression/*/` | BCPL source, README, expected text and GO RC, DD records, candidate-only markers, compile-only test 048 |
+| Numbered cases and fixtures | `bootstrap-toolchain/regression/*/` | BCPL source, README, expected text and GO RC, DD records, candidate-only markers, compile-only test 048 |
 | Existing preflight and audits | `tools/checks/check-m44-compatibility.py`, `check-m44-full-panel-logs.py` | 00..145 guard, 145 expected logs, nuanced RC tests, abend detection, generated job TSV |
 | Final fresh-run receipt | `tools/checks/m55-final-evidence.py` + unit tests | Snapshot `begin`, run transcript, timestamp-gated `verify`, 11 tests, immutable archive and repeat-run safety |
 | Physical QSAM probes | `tools/checks/m51-*.py`, `m52-padding-negative.py`, `test-dd-attribution.py` | Optional independent byte-accurate profile vs ordinary functional suite |
@@ -67,8 +67,8 @@ and [single clean-room rebuild runbook]
 
 ## Repository cleanup candidates — inventory only
 
-- Verify stale instruction files: `native-compiler/mvs-resident-cambridge.md`
-  references old dataset aliases; `native-compiler/asm/README.md`
+- Verify stale instruction files: `bootstrap-toolchain/mvs-resident-cambridge.md`
+  references old dataset aliases; `bootstrap-toolchain/asm/README.md`
   may still call ICINT17 current; other dated M3/M4
   documents conflict with today's navigation. Keep
   historical evidence clearly marked rather than deleting it.

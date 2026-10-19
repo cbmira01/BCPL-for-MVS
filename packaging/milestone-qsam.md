@@ -64,7 +64,7 @@ Each march is separately reviewable and committable. Do not start the next until
 ## Proposed source layout (adjust after reconnaissance)
 
 - `asm/bcplqsam.asm` **or** established runtime-source convention discovered in Q.0.
-- `native-compiler/qsam/` for BCPL demonstrations, declaration file, tests, and build JCL, if compatible with current layout.
+- `bootstrap-toolchain/qsam/` for BCPL demonstrations, declaration file, tests, and build JCL, if compatible with current layout.
 - `packaging/milestone-qsam.md` is the milestone authority; refer to it from `packaging/README.md`.
 - Use `tools/checks/` for any investigator/developer-specific disposable checks, without mixing them into official production tooling.
 - Document the effective compile–assemble–link–run and `dspal` command sequences from the **live** manifest, never guessed dataset names or commands.
