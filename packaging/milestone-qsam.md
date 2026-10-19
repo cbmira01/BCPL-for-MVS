@@ -53,6 +53,26 @@ DDNAME contract: eight-character uppercased/padded DDNAME, explicit allowable ch
 
 Each march is separately reviewable and committable. Do not start the next until gate evidence is in Git. A genuine blocker can stop the milestone without blocking M4.
 
+### Q.0 execution evidence and remaining gate (2026-10-19)
+
+The [test-only G!200 dispatcher ABI probe](../bootstrap-toolchain/probes/q0-dispatcher-abi-probe/README.md) **passed** with owner-provided JES evidence:
+[Q.0 dispatcher ABI evidence](qsam-q0-dispatcher-abi-evidence-20261019.md).
+The demoted Cambridge compiler produced the BCPL caller in **JOB 2156**.
+**JOB 2157** independently assembled the caller and Q0DISP (IFOX RC=0000
+each), link-edited with accepted BOOT_OBJ members (IEWL RC=0000), and
+executed (GO RC=0000; the BCPL test printed `42`). This demonstrated
+R7/R8/R9, BCPL word-pointer vectors, G!200 at displacement 800, QUERY,
+and correct return to BCPL. The test-only generated-trailer export is
+**not** the Runtime Extensions registrar.
+
+A separate [Q.0 MVS FB80 GET/PUT probe](../bootstrap-toolchain/probes/q0-qsam-fb80-probe/README.md)
+is **prepared only** (not executed yet). It will establish initial
+MVS 3.8J QSAM logical-record behavior without BCPLQSAM or PDS changes.
+Its eventual job number, IFOX/IEWL/GO return codes and QOUT content must
+be reviewed before acceptance. V/VB, QSAM record limits and failure
+behavior, staging for buffer retries and R.0 registration remain open.
+**Do not close Q.0 or start Q.1 from ABI evidence alone.**
+
 ### Detailed test obligations
 
 - Q.1: one/two/three simultaneous DDs, open failure (missing DD), read/write mode validation, repeat close, invalid handle, handle reuse, cleanup after partial open.

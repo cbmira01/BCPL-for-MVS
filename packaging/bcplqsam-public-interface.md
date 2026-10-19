@@ -2,12 +2,12 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Milestone:** Implementation of QSAM  
-**March:** Q.0 — Architecture and Interface  
+**March:** Q.0 — Reconnaissance & contract  
 **Target:** IBM System/370, MVS 3.8J under Hercules  
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Numeric constants and vector semantics specified; native ABI, MVS 3.8 behavior and shared registration remain unverified  
+**Status:** Numeric contracts specified; test-only G!200 dispatcher ABI passed (JOB 2157); MVS 3.8 QSAM behavior and shared registration remain unverified  
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---
@@ -103,7 +103,7 @@ The API uses the existing native BCPL calling convention:
 - R7 contains the function result.
 - The extension must preserve the native BCPL runtime's required register and workspace invariants.
 
-The R7/R8/R9 argument and R7 result registers and BCPL word-pointer representation agree with existing runtime source and focused regressions. The complete machine-code dispatcher entry/return discipline, including R0, workspace and register preservation, still requires an execution probe before Q.0 acceptance.
+The R7/R8/R9 argument and R7 result registers and BCPL word-pointer representation agree with existing runtime source and focused regressions. A separately assembled test-only Q0DISP dispatcher passed the G!200 calling-convention probe on MVS 3.8J (JOB 2157, RC=0000, output 42). That verifies the exercised entry, result-vector and return paths; unexercised register preservation, actual QSAM calls, and production extension registration still require verification. See [Q.0 ABI evidence](qsam-q0-dispatcher-abi-evidence-20261019.md).
 
 ### Optional wrappers
 
@@ -777,7 +777,7 @@ These numbers are stable design-baseline declarations, **not** MVS DCB flags. Un
 
 ### Limits of verification and follow-on gates
 
-- Current runtime evidence supports the native first-three-argument convention, global-vector access through G!N, length-prefixed BCPL strings, and byte address conversion. No actual G!200 dispatcher has been assembled or executed.
+- Current runtime evidence supports the native first-three-argument convention, global-vector access through G!N, length-prefixed BCPL strings, and byte address conversion. A test-only G!200 Q0DISP dispatcher was assembled and executed in JOB 2157; the production BCPLQSAM dispatcher has not been implemented.
 - The existing `BCPLIO` handles DD-name normalization and MVS QSAM internally; BCPLQSAM will reuse validated concepts but not the text-stream semantics.
 - IBM's later [data-record overview](https://www.ibm.com/docs/en/zos-basic-skills?topic=set-data-record-formats), [QSAM DCB specification](https://www.ibm.com/docs/en/zos/3.2.0?topic=descriptions-dcbconstruct-data-control-block-qsam), and [QSAM GET reference](https://www.ibm.com/docs/en/zos/3.2.0?topic=descriptions-getobtain-next-logical-record-qsam) explain RDW, LRECL and move-mode behavior. They are **not** evidence that all modern details are available in MVS 3.8J.
-- Q.0 still requires a small standalone assembler-dispatcher ABI probe, documented MVS 3.8 JCL/IFOX/QSAM tests, and reconciliation with shared Runtime Extensions R.0. This document records **specification decisions**, not milestone gate acceptance.
+- The test-only G!200 dispatcher ABI probe passed in JOB 2157. Q.0 still requires real MVS 3.8 QSAM experiments (the FB80 probe is prepared but not yet executed) and reconciliation with shared Runtime Extensions R.0. This document records **specification decisions**, not milestone gate acceptance.
