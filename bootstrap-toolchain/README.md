@@ -1,5 +1,10 @@
 # Bootstrap Toolchain
 
+The compiler here runs as INTCODE under `ICINT19`. It generates native
+System/370 assembler but is **not** itself a native MVS executable.
+The native-running compiler is being built separately under
+[`../cambridge-compiler/`](../cambridge-compiler/).
+
 The native target is built around the surviving BCPL kit compiler, not around a replacement front end.
 
 The working bootstrap compiler remains the historical MR10-family pipeline:

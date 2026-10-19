@@ -6,6 +6,18 @@ The primary historical evidence is the Martin Richards BCPL transport-tape mater
 
 This project appears to be one of the few modern efforts to reconstruct a historical BCPL system for IBM System/370 from surviving compiler and bootstrap materials.
 
+## The two compiler environments
+
+| Directory | Compiler execution | Purpose |
+| --- | --- | --- |
+| [`bootstrap-toolchain/`](bootstrap-toolchain/) | Interpreter-hosted under `ICINT19` | Runs the demoted Cambridge compiler and CG370 to produce native System/370 code, and holds the established runtime, build inputs and native regression suite. |
+| [`cambridge-compiler/`](cambridge-compiler/) | Native MVS executable (the new build target) | Holds the historical Cambridge compiler sources, its own runtime copies and the work to assemble, link, run and eventually self-compile the real compiler on MVS. |
+
+**Important:** The bootstrap toolchain *generates* native code but its
+compiler does **not** run natively. The native Cambridge compiler is a
+separate deliverable. `tools/native/` and the MVS `NATIVE_*` dataset
+names remain established interfaces to the bootstrap toolchain.
+
 ## Compatibility scope
 
 The goal is to reconstruct a usable BCPL compiler and runtime for MVS 3.8J from the surviving historical evidence. Success does **not** by itself establish complete compatibility with the original System/370 BCPL implementation.

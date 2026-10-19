@@ -1,6 +1,7 @@
-# Native compiler tools
+# Bootstrap toolchain tools
 
-Canonical entry points for Cambridge/native compiler work:
+Established entry points for the interpreter-hosted bootstrap compiler,
+its native-code output, and the regression suite:
 
 - `prepare-bootstrap`: reconstruct disposable bootstrap input files.
 - `NATIVE_JCL(CAMBBLD)`: authoritative M3 resident compiler build job, sourced from `bootstrap-toolchain/jcl/cambbld.jcl`.
@@ -49,7 +50,7 @@ record semantics. The accepted M4.4 result was
 145 PASS/0 FAIL/expected SKIP 083, while the
 fresh M5.5 DEVOBJ panel and strict 145/145 log audit **passed**, and the owner formally **closed** the BCPLIO dynamic-stream milestone on 2026-10-17. Production NATIVE_OBJ promotion remains a separate decision; see the [final acceptance](../../packaging/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
 
-## M3 clean bootstrap-toolchain bootstrap (not M4)
+## M3 clean bootstrap build (not M4)
 
 This environment uses **only** `MR10_SOURCE`, `MR10_LOAD`, `NATIVE_SOURCE`,
 `NATIVE_INTCODE`, and other `NATIVE_*` PDS definitions from
