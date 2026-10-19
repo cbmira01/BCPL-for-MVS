@@ -14,7 +14,7 @@ def main():
     main = OUT / "bcplmain-pds.asm"
     main.unlink(missing_ok=True)
     subprocess.run([sys.executable, str(ROOT / "tools/checks/externalize-bcplmem.py"),
-                    str(ROOT / "native-compiler/asm/history/bcplmain-wip.asm"), str(main)], check=True)
+                    str(ROOT / "bootstrap-toolchain/asm/history/bcplmain-wip.asm"), str(main)], check=True)
     src = main.read_text(encoding="ascii")
     needle = "BCPLMAIN CSECT\n"
     if src.count(needle) != 1 or "STKOVFL" not in src:
@@ -27,7 +27,7 @@ def main():
     if src.count(marker) != 1:
         raise RuntimeError("unexpected global trailer insertion point")
     from importlib.util import spec_from_file_location, module_from_spec
-    injector_path = (ROOT / "native-compiler/regression/"
+    injector_path = (ROOT / "bootstrap-toolchain/regression/"
                      "069-independent-blib-object/prepare-stage2.py")
     spec = spec_from_file_location("blib_stage2", injector_path)
     module = module_from_spec(spec)
@@ -37,8 +37,8 @@ def main():
     if src.count("EXTRN BLIB") != 1:
         raise RuntimeError("BLIB registration is missing")
     main.write_text(src, encoding="ascii", newline="\n")
-    files = [main, ROOT / "native-compiler/asm/bcplmem.asm",
-             ROOT / "native-compiler/jcl/bldbmain.jcl"]
+    files = [main, ROOT / "bootstrap-toolchain/asm/bcplmem.asm",
+             ROOT / "bootstrap-toolchain/jcl/bldbmain.jcl"]
     for path in files[:2]:
         subprocess.run([sys.executable, str(ROOT / "tools/checks/check-asm-source.py"),
                         str(path)], check=True)
