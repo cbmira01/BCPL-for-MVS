@@ -9,7 +9,7 @@ clean-room rebuild, see
 |---|---|
 | [`richards-bcpltape/`](../richards-bcpltape/) | Preserved historical BCPL source; primary evidence, not reconstructed code |
 | [`mr10-kit-compiler/`](../mr10-kit-compiler/) | MR10 INTCODE compiler phases, ICINT19, interpreted tests and demos, build JCL |
-| [`native-compiler/`](../native-compiler/) | Cambridge source bootstrap, System/370 runtime assembler and JCL, native regression cases; see [canonical module sources](../native-compiler/asm/README.md) |
+| [`bootstrap-toolchain/`](../bootstrap-toolchain/) | Cambridge source bootstrap, System/370 runtime assembler and JCL, native regression cases; see [canonical module sources](../bootstrap-toolchain/asm/README.md) |
 | [`cambridge-compiler/`](../cambridge-compiler/) | Reserved future compiler work, not the currently executing native compiler |
 | [`config/dspal.yaml`](../config/dspal.yaml) | Canonical inventory and Git-to-MVS dataset/member mappings |
 | [`tools/datasets/`](../tools/datasets/) | Manifest-driven `dspal` dataset management and text deployment |

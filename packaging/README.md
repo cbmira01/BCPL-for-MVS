@@ -59,7 +59,7 @@ Both are optional, proposed, and independent of M4 and Milestone QSAM.
 | Namespace | Current status | Authority |
 | --- | --- | --- |
 | `MR10_*` (9 datasets) | Reconstructed historical kit interpreter, tests, demos | `mr10-kit-compiler/` and manifest |
-| `NATIVE_*` (6 datasets) | Reconstructed resident compiler INTCODE, native runtime ASM/JCL, objects | `native-compiler/` and manifest |
+| `NATIVE_*` (6 datasets) | Reconstructed resident compiler INTCODE, native runtime ASM/JCL, objects | `bootstrap-toolchain/` and manifest |
 | `CAMB_*` (9 datasets) | Reserved for M4; **not used for M3 compiler reconstruction** | Manifest allocation only |
 
 `NATIVE_OBJ` contains the accepted BCPLMAIN, BCPLMEM, and BLIB objects. `NATIVE_DEVOBJ` contains independently assembled BCPLM6, BCPLAPT, BCPLBYTE, and BCPLIO candidate objects for the accepted dynamic-stream profile. No binary migration or implicit object promotion is permitted.
