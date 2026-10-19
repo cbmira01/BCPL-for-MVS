@@ -32,7 +32,7 @@ tests.
 Each regression test has its own numbered directory:
 
 ```text
-native-compiler/regression/
+bootstrap-toolchain/regression/
     README.md
     00-most-degenerate-bcpl-program/
         source.bcpl
@@ -152,7 +152,7 @@ With the TK5/Hercules container already running, invoke a numbered case from
 the repository root with:
 
 ```sh
-bash native-compiler/regression/run-test.sh 00
+bash bootstrap-toolchain/regression/run-test.sh 00
 ```
 
 The runner compiles the case through the Cambridge compiler, recovers CG370
@@ -1574,14 +1574,14 @@ demoted historical BLIB. `WRITEX`, `WRITEOCT`, `NEWLINE`, and
 The ordinary per-test runner retains the full Cambridge bootstrap path:
 
 ```sh
-bash native-compiler/regression/run-test.sh NN
+bash bootstrap-toolchain/regression/run-test.sh NN
 ```
 
 After the one-time resident compiler installation, the same regression can
 use the persistent MVS compiler image:
 
 ```sh
-bash native-compiler/regression/run-test-mvs.sh NN
+bash bootstrap-toolchain/regression/run-test-mvs.sh NN
 ```
 
 The two runners share the same downstream generated-S/370 assembly,
@@ -1589,4 +1589,4 @@ BCPLMAIN, native assemble/link/run, and output checks.  Only the Cambridge
 compile delivery path changes.  Test 24 is the initial A/B acceptance test
 for this resident workflow.
 
-See `native-compiler/mvs-resident-cambridge.md`.
+See `bootstrap-toolchain/mvs-resident-cambridge.md`.
