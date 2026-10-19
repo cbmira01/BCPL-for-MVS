@@ -21,7 +21,7 @@ import time
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "native-compiler/regression"
+REG = ROOT / "bootstrap-toolchain/regression"
 WORK = ROOT / "workarea/native-regression"
 LOGS = WORK / "logs"
 BEGIN = WORK / "m55-begin.json"

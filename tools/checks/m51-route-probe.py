@@ -32,8 +32,8 @@ STATE = WORK / "m51-class-route.json"
 EVIDENCE = WORK / "m51-class-route-result.json"
 A = ROOT / "mvs-state/prt/prt00e.txt"
 Z = ROOT / "mvs-state/prt/prt00f.txt"
-EXPECTED_A = ROOT / "native-compiler/regression/114-interleaved-stream-records/expected.txt"
-EXPECTED_Z = ROOT / "native-compiler/regression/114-interleaved-stream-records/expected-alt.txt"
+EXPECTED_A = ROOT / "bootstrap-toolchain/regression/114-interleaved-stream-records/expected.txt"
+EXPECTED_Z = ROOT / "bootstrap-toolchain/regression/114-interleaved-stream-records/expected-alt.txt"
 
 
 def digest(data: bytes) -> str:

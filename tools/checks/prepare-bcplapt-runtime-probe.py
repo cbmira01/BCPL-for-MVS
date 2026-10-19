@@ -61,7 +61,7 @@ def main() -> None:
     modified.write_text(text, encoding="ascii", newline="\n")
     deck = outdir / "aptovec-object-probe.jcl"
     cmd = ["python3",
-           str(root / "native-compiler/regression/make-two-object-job.py"),
+           str(root / "bootstrap-toolchain/regression/make-two-object-job.py"),
            str(modified),
            str(root / "tools/checks/bcplapt-linkage-probe.asm"),
            str(deck), "--entry", f"BCRG{a.test:04d}",

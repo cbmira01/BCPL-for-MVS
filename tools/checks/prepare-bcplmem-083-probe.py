@@ -34,7 +34,7 @@ def main():
     for file in (deck, clean, mainasm, memasm):
         file.unlink(missing_ok=True)
     from importlib.util import spec_from_file_location, module_from_spec
-    instrument = root / "native-compiler/regression/083-instrumented-storage-reclamation/instrument-reclaim.py"
+    instrument = root / "bootstrap-toolchain/regression/083-instrumented-storage-reclamation/instrument-reclaim.py"
     spec = spec_from_file_location("instrument_reclaim_083", instrument)
     module = module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -92,7 +92,7 @@ def main():
     checker=root/"tools/checks/check-asm-source.py"
     for path in (mainasm,memasm):
         subprocess.run([sys.executable,str(checker),str(path)],check=True)
-    subprocess.run([sys.executable,str(root/"native-compiler/regression/make-two-object-job.py"),
+    subprocess.run([sys.executable,str(root/"bootstrap-toolchain/regression/make-two-object-job.py"),
                     str(mainasm),str(memasm),str(deck),
                     "--entry","BCRG0083","--job-name","MM083R"],check=True)
     print(f"Prepared: {deck}")

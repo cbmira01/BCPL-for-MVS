@@ -43,7 +43,7 @@ def main():
     for path in (modified,memsrc):
         subprocess.run(["python3",str(checker),str(path)],check=True)
     subprocess.run(["python3",
-                    str(root/"native-compiler/regression/make-two-object-job.py"),
+                    str(root/"bootstrap-toolchain/regression/make-two-object-job.py"),
                     str(modified),str(memsrc),str(deck),
                     "--entry",f"BCRG{args.test:04d}",
                     "--job-name",f"MM{args.test:03d}R"],check=True)

@@ -42,7 +42,7 @@ def main():
     modified=args.outdir/"native-external-byte.asm"
     modified.write_text(raw,encoding="ascii",newline="\n")
     job=args.outdir/"byte-object-probe.jcl"
-    cmd=["python3","native-compiler/regression/make-two-object-job.py",
+    cmd=["python3","bootstrap-toolchain/regression/make-two-object-job.py",
          str(modified),"asm/bcplbyte.asm",str(job),
          "--entry","BCRG0114","--job-name","BY114R"]
     subprocess.run(cmd,check=True)
