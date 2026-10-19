@@ -419,7 +419,7 @@ M42 SURVIVED FIND DD02
 `ASMAP`, `LKED`, `GO` each returned `RC=0000`.
 No IEC OPEN error or abend is reported. The full report
 shows `OBJ` and `DEVOBJ` DD statements both resolving
-to `HERC02.BCPL.NATIVE.DEVOBJ`; the linked `BCPLIO`
+to `HERC02.BCPL.BOOT.DEVOBJ`; the linked `BCPLIO`
 was the installed unmodified development object, **not**
 the isolated synthetic fault module.
 

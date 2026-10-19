@@ -39,11 +39,11 @@ production OBJ promotion or new MVS tests authorized.
 
 ## Frozen boundary
 
-- Candidate from **NATIVE_DEVOBJ(BCPLM6 + BCPLIO)**;
+- Candidate from **BOOT_DEVOBJ(BCPLM6 + BCPLIO)**;
   other service objects resolve as documented in
   [current DEVOBJ runbook]
   (../clean-room-mvs-reconstruction.md#10-m54-addendum--reproduce-the-accepted-dynamic-bcplio-candidate).
-- Do not promote any candidate to NATIVE_OBJ.
+- Do not promote any candidate to BOOT_OBJ.
 - No new BCPL global numbers, QSAM/VSAM library,
   compiler changes, JES2 spool investigation,
   raw internal spool byte requirement or normal
@@ -60,7 +60,7 @@ production OBJ promotion or new MVS tests authorized.
 ## Before submitting jobs
 
 Confirm the installed DEVOBJ(BCPLM6/BCPLIO)
-candidate and NATIVE_OBJ runtime state:
+candidate and BOOT_OBJ runtime state:
 
 ```sh
 cd ~/Source/Repos/BCPL-for-MVS
@@ -68,8 +68,8 @@ git pull --ff-only
 git status --short
 git rev-parse HEAD
 tools/datasets/dspal status --probe
-tools/datasets/dspal ls NATIVE_DEVOBJ
-tools/datasets/dspal ls NATIVE_OBJ
+tools/datasets/dspal ls BOOT_DEVOBJ
+tools/datasets/dspal ls BOOT_OBJ
 
 export BCPL_RUNTIME_PDS=1
 export BCPL_RUNTIME_LIBRARY=DEVOBJ
@@ -161,7 +161,7 @@ require repetition.
 candidate 145/0/1, all-new 145/145 audited logs,
 documented limits and owner's decision.
 Only then update the master milestone to
-**CLOSED**. DEVOBJ -> NATIVE_OBJ promotion
+**CLOSED**. DEVOBJ -> BOOT_OBJ promotion
 is a **distinct later authorization**.
 
 ## M5.5 first operator preflight: parser correction and safe restart

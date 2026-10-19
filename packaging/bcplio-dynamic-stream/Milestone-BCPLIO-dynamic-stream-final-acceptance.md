@@ -4,7 +4,7 @@
 **Scope:** the native Cambridge BCPL character-stream runtime on MVS 3.8J,
 using independent BCPLIO and DEVOBJ(BCPLM6) candidate objects. This is a
 milestone sign-off, **not** authorization to promote a module into
-production NATIVE_OBJ.
+production BOOT_OBJ.
 
 ## Acceptance rationale and evidence ledger
 
@@ -87,7 +87,7 @@ could include: archiving/restoring exact post-run evidence,
 integrating independent QSAM verifiers into the ordinary
 regression runner, performing the complete destructive
 clean-room rebuild as a distinct reproduction exercise,
-a decision on NATIVE_OBJ production promotion, or
+a decision on BOOT_OBJ production promotion, or
 designing an optional BCPLQSAM/VSAM record-access library.
 None is a deferred acceptance criterion here.
 

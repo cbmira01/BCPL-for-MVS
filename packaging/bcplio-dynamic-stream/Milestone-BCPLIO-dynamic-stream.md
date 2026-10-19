@@ -8,9 +8,9 @@ The full chronological notes remain in Git history at
 ## Accepted result
 
 The DEVOBJ candidate consists of independently linked BCPLM6 and BCPLIO,
-with BCPLBYTE and BCPLAPT from DEVOBJ and BCPLMEM/BLIB from NATIVE_OBJ.
+with BCPLBYTE and BCPLAPT from DEVOBJ and BCPLMEM/BLIB from BOOT_OBJ.
 The Cambridge compiler remains INTCODE run by ICINT19. No production
-NATIVE_OBJ promotion was authorized.
+BOOT_OBJ promotion was authorized.
 
 The fresh native 00..145 run at `57c7354` completed with
 **145 PASS, zero FAIL and expected SKIP 083**; an independent auditor

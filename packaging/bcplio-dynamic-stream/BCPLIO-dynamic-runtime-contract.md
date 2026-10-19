@@ -202,5 +202,5 @@ The isolated M5.1/M5.2 experimental JCL and checkers under
 are **not** automatically incorporated into the standard
 `tools/native/run-regression` runner. Any future
 integration is a separate maintenance decision.
-**M5.4 documentation completed. M5.5 fresh native 00..145 candidate regression and independent audit PASSED and were formally accepted by the owner on 2026-10-17; the BCPLIO dynamic-stream milestone is CLOSED.** The accepted final evidence and post-success interrupted duplicate are recorded in the [final acceptance note](Milestone-BCPLIO-dynamic-stream-final-acceptance.md). Production NATIVE_OBJ promotion remains a separate explicit decision.
-Production NATIVE_OBJ promotion is a separate explicit decision.
+**M5.4 documentation completed. M5.5 fresh native 00..145 candidate regression and independent audit PASSED and were formally accepted by the owner on 2026-10-17; the BCPLIO dynamic-stream milestone is CLOSED.** The accepted final evidence and post-success interrupted duplicate are recorded in the [final acceptance note](Milestone-BCPLIO-dynamic-stream-final-acceptance.md). Production BOOT_OBJ promotion remains a separate explicit decision.
+Production BOOT_OBJ promotion is a separate explicit decision.
