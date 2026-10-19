@@ -101,8 +101,8 @@ No complete 124-case panel was run as part of this gate.
 
 `tools/checks/prepare-runtime-pds-regression.py` now calls pure
 application transformations from
-`native-compiler/regression/prepare-native-global.py` and
-`native-compiler/regression/combine-separate-bcpl.py`, rather than
+`bootstrap-toolchain/regression/prepare-native-global.py` and
+`bootstrap-toolchain/regression/combine-separate-bcpl.py`, rather than
 executing those legacy scripts and discarding an appended
 `asm/bcplmain-wip.asm` body. It inserts EXTRN BCPLMAIN and END on
 the resulting application section and retains existing assembler card

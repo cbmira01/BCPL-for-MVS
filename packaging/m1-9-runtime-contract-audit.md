@@ -594,7 +594,7 @@ contract with explicit tested versus source-observed evidence.
 
 The actual installed-object regression construction is now traced
 through `tools/native/run-regression` →
-`native-compiler/regression/run-test-mvs.sh` →
+`bootstrap-toolchain/regression/run-test-mvs.sh` →
 `run-test.sh` →
 `tools/checks/prepare-runtime-pds-regression.py`.
 
@@ -826,7 +826,7 @@ The previously accepted M1.8 full DEVOBJ panel
 (123 PASS, 0 FAIL, one source-instrumentation SKIP) includes
 focused normal-I/O and exit scenarios; e.g. regression 093
 specifically describes `STACK OVERFLOW` with GO RC=0000.
-The runner in `native-compiler/regression/run-test.sh`
+The runner in `bootstrap-toolchain/regression/run-test.sh`
 compares against each case's `expected.txt` (at line 579),
 but the **individual expected fixtures for the ranges
 previously cited have not been exhaustively re-read in this

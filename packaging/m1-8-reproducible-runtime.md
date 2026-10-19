@@ -42,7 +42,7 @@ before claiming clean-checkout rebuildability.
 
 **Gate A finding (refined):** the four assembler modules are tracked
 in Git. BLIB is *derivable* from Git: run
-`python3 native-compiler/bootstrap-cambridge/make-demoted.py --blib-only`.
+`python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only`.
 Its input is tracked historical `richards-bcpltape/bcplib/bcpl/blib`;
 the generator validates the SECTION header, two inequality tokens,
 LIBHDR use and an 80-column limit before creating the ignored output.
@@ -101,9 +101,9 @@ Generated Cambridge demoted and diagnostic source directories were
 also present. This is file-presence evidence, not regenerated equivalence.
 
 The tracked producer
-`native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh`
+`bootstrap-toolchain/bootstrap-cambridge/build-mr10-trni-large-names.sh`
 first runs
-`native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py`.
+`bootstrap-toolchain/bootstrap-cambridge/make-mr10-trn-large-names.py`.
 The Python generator splits tracked historical
 `richards-bcpltape/mr10/bcplkit/trn`, increasing the TRN0
 declaration-vector capacity from 1200 to 2400 words with strict
@@ -126,9 +126,9 @@ chain: `intcode/syni.int`, `intcode/cgi.int`,
 `asm/icintv19.asm`, historical MR10 translator source
 `richards-bcpltape/mr10/bcplkit/trn`, target LIBHDR
 `richards-bcpltape/sys3/bcpl/libhdr`, and the
-`native-compiler/bootstrap-cambridge/options-large-tree.txt`
+`bootstrap-toolchain/bootstrap-cambridge/options-large-tree.txt`
 option file. The Cambridge demotion inputs
-`native-compiler/bootstrap-cambridge/source/syn`,
+`bootstrap-toolchain/bootstrap-cambridge/source/syn`,
 `source/trn`, historical `bcplib/bcpl/bcpl` and `cg`,
 plus `bootstrap-host.bcpl` and `cambridge-options.txt`
 are tracked as well.
