@@ -3,7 +3,7 @@ set -u
 set -o pipefail
 
 usage() {
-    echo "Usage: bash native-compiler/regression/run-test.sh N" >&2
+    echo "Usage: bash bootstrap-toolchain/regression/run-test.sh N" >&2
     exit 64
 }
 
@@ -68,7 +68,7 @@ if [[ -f "$library_ref" ]]; then
         echo "run-test: unsupported shared library $library_name" >&2
         exit 65
     fi
-    python3 "$root/native-compiler/bootstrap-cambridge/make-demoted.py" --blib-only || exit $?
+    python3 "$root/bootstrap-toolchain/bootstrap-cambridge/make-demoted.py" --blib-only || exit $?
     library="$root/workarea/bootstrap-cambridge/demoted/blib"
 fi
 native="$case_dir/native.asm"
@@ -197,7 +197,7 @@ if [[ $runtime_pds == 1 ]]; then
         fault_asm="$work/bcplio-m41-fault.asm"
         echo "=== Instrument private BCPLIO: $fault_mode ==="
         python3 "$root/tools/checks/prepare-bcplio-m41-fault.py" \
-            "$root/native-compiler/asm/bcplio.asm" "$fault_asm" \
+            "$root/bootstrap-toolchain/asm/bcplio.asm" "$fault_asm" \
             --mode "$fault_mode" || exit $?
         pds_args+=(--test-io-asm "$fault_asm")
     fi
@@ -218,7 +218,7 @@ if [[ $runtime_pds == 1 ]]; then
         fault_asm="$work/bcplio-m42-open.asm"
         echo "=== Instrument private BCPLIO: M4.2 before SVC 19 ==="
         python3 "$root/tools/checks/prepare-bcplio-m42-open.py" \
-            "$root/native-compiler/asm/bcplio.asm" "$fault_asm" ||
+            "$root/bootstrap-toolchain/asm/bcplio.asm" "$fault_asm" ||
             exit $?
         pds_args+=(--test-io-asm "$fault_asm")
     fi
@@ -261,7 +261,7 @@ if [[ $runtime_pds == 1 ]]; then
         esac
         account_asm="$work/bcplio-m43-account.asm"
         python3 "$root/tools/checks/prepare-bcplio-m43-account.py" \
-            "$root/native-compiler/asm/bcplio.asm" "$account_asm" \
+            "$root/bootstrap-toolchain/asm/bcplio.asm" "$account_asm" \
             "${account_args[@]}" || exit $?
         pds_args+=(--test-io-asm "$account_asm")
     fi
@@ -362,12 +362,12 @@ fi
 
 combined="$work/native-test.asm"
 # Opt-in only: the standard native regression runtime remains the baseline.
-runtime_source="$root/native-compiler/asm/history/bcplmain-wip.asm"
+runtime_source="$root/bootstrap-toolchain/asm/history/bcplmain-wip.asm"
 if [[ ${BCPLMAIN_MODULAR_SOURCE:-0} == 1 ]]; then
     runtime_source="$work/bcplmain-modular.asm"
     python3 "$root/tools/checks/check-bcplmain-modules.py" \
         --output "$runtime_source" || exit $?
-    cmp -s "$root/native-compiler/asm/history/bcplmain-wip.asm" "$runtime_source" || {
+    cmp -s "$root/bootstrap-toolchain/asm/history/bcplmain-wip.asm" "$runtime_source" || {
         echo "run-test: modular BCPLMAIN differs from baseline" >&2
         exit 66
     }
@@ -534,9 +534,9 @@ if [[ $apt_object == 1 ]]; then
 fi
 if [[ $byte_object == 1 ]]; then
     python3 "$root/tools/checks/check-asm-source.py" \
-        "$root/native-compiler/asm/bcplbyte.asm" || exit $?
+        "$root/bootstrap-toolchain/asm/bcplbyte.asm" || exit $?
 fi
-mem_source="$root/native-compiler/asm/bcplmem.asm"
+mem_source="$root/bootstrap-toolchain/asm/bcplmem.asm"
 if [[ $mem_object == 1 && $test_num == 83 ]]; then
     mem_source="$work/bcplmem-object-probe/bcplmem-083-instrumented.asm"
 fi
@@ -553,7 +553,7 @@ if [[ -f "$native" ]]; then
     objects+=("$native")
 fi
 if [[ $byte_object == 1 ]]; then
-    objects+=("$root/native-compiler/asm/bcplbyte.asm")
+    objects+=("$root/bootstrap-toolchain/asm/bcplbyte.asm")
 fi
 if [[ $apt_object == 1 ]]; then
     objects+=("$root/tools/checks/bcplapt-linkage-probe.asm")
@@ -602,9 +602,9 @@ if text.count(plain) + text.count(timed) != 1:
 text = text.replace(plain if plain in text else timed, new, 1)
 # Resolve the actual case directory from the test identity, not JCL path.
 root = path.parents[3]
-cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):03d}-*"))
+cases = sorted((root / "bootstrap-toolchain" / "regression").glob(f"{int(test_no):03d}-*"))
 if not cases and int(test_no) < 53:
-    cases = sorted((root / "native-compiler" / "regression").glob(f"{int(test_no):02d}-*"))
+    cases = sorted((root / "bootstrap-toolchain" / "regression").glob(f"{int(test_no):02d}-*"))
 if len(cases) != 1:
     raise SystemExit(f"fixture lookup: expected one test {test_no}")
 exec_parm = cases[0] / "exec-parm.txt"
