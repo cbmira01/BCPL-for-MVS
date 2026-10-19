@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify canonical native assembler member mapping without PDS changes.
 
-Each NATIVE_ASM member must correspond to exactly one maintained .asm file.
+Each BOOT_ASM member must correspond to exactly one maintained .asm file.
 Historical D3-D7 variants are not manifest members. This tool does not
 assemble, submit jobs, or promote any production object.
 """
@@ -18,8 +18,8 @@ CANONICAL = ("BCPLMAIN", "BCPLIO", "BCPLMEM", "BCPLBYTE", "BCPLAPT")
 
 def main() -> None:
     yaml = MANIFEST.read_text(encoding="utf-8")
-    start = yaml.index("\n  NATIVE_ASM:\n")
-    end = yaml.index("\n  NATIVE_JCL:\n", start)
+    start = yaml.index("\n  BOOT_ASM:\n")
+    end = yaml.index("\n  BOOT_JCL:\n", start)
     section = yaml[start:end]
     member_lines = section.split("    members:\n", 1)[1]
     entries = re.findall(r"^      ([A-Z0-9]+):\s+(\S+)\s*$",
@@ -27,7 +27,7 @@ def main() -> None:
     expected = [(member, f"bootstrap-toolchain/asm/{member.lower()}.asm")
                 for member in CANONICAL]
     if entries != expected:
-        raise ValueError(f"NATIVE_ASM mappings differ from canonical list:"
+        raise ValueError(f"BOOT_ASM mappings differ from canonical list:"
                          f"\n  actual: {entries}\n  wanted: {expected}")
     for _, path in expected:
         source = ROOT / path
@@ -49,7 +49,7 @@ def main() -> None:
         "NATIVE.OBJ(BCPLM6)" in candidate
     ):
         raise ValueError("historical BCPLM6 job targets unexpected library")
-    jcl = yaml[end:yaml.index("\n  NATIVE_OBJ:\n", end)]
+    jcl = yaml[end:yaml.index("\n  BOOT_OBJ:\n", end)]
     if "BLDDEVM6:" in jcl:
         raise ValueError("historical versioned JCL is still manifest-mapped")
     print("PASS: 5 canonical ASM sources, 5 matching PDS members;"
