@@ -20,7 +20,7 @@ See [Milestone Runtime Extensions](milestone-runtime-extensions.md). The preferr
 
 - Keep `BCPLMAIN` as coordinator and preserve `BCPLIO` character-stream semantics; do not rewrite BCPLIO to depend on QSAM. Add a separate, selectively linkable `BCPLQSAM` and, only if necessary, minimal startup/global registration integration consistent with the *actual* ABI.
 - Use the current repo manifest and tooling: `config/dspal.yaml`, `tools/datasets/dspal`, `NATIVE_*`. Do not revive superseded `HERC02.BCPL.OBJ` or legacy SOURCE/JCL/DEVOBJ commands. Do not modify CAMB_* in this milestone.
-- Git source is authoritative. Object decks, generated JCL, listings and dataset contents are rebuildable, not migrated. Candidate objects stay in `NATIVE_DEVOBJ` until separately accepted. Never silently replace accepted `NATIVE_OBJ`.
+- Git source is authoritative. Object decks, generated JCL, listings and dataset contents are rebuildable, not migrated. Candidate objects stay in `BOOT_DEVOBJ` until separately accepted. Never silently replace accepted `BOOT_OBJ`.
 - Determine and document existing native BCPL->assembler call/return, parameter representation, pointer/byte-address rules, register discipline, global-vector allocation/initialization, and module-link behavior **before** allocating numbers or writing entry stubs.
 - Avoid hidden compiler changes, dependence on unreconstructed M4 components, new background processes, or broad refactoring.
 - Target a table of **16 concurrently open handles** initially, private to BCPLQSAM, with a handle encoding/table organization that can expand without API change. Validate stale/invalid handles. DDNAME is a dataset allocation name, not necessarily the handle and not necessarily a unique open dataset.

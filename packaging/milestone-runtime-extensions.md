@@ -216,7 +216,7 @@ A historical BCPL system already exposed global names `READREC`, `WRITEREC`, `TI
 
 ## 9. Reproduction, evidence and repository layout
 
-Authoritative namespace: `config/dspal.yaml` and `tools/datasets/dspal`. Candidate assembler objects: `NATIVE_DEVOBJ`; accepted core objects: `NATIVE_OBJ`. Do not use superseded historical `HERC02.BCPL.OBJ` conventions, do not populate `CAMB_*` for this work, and do not migrate prebuilt objects.
+Authoritative namespace: `config/dspal.yaml` and `tools/datasets/dspal`. Candidate assembler objects: `BOOT_DEVOBJ`; accepted core objects: `BOOT_OBJ`. Do not use superseded historical `HERC02.BCPL.OBJ` conventions, do not populate `CAMB_*` for this work, and do not migrate prebuilt objects.
 
 Proposed deliverables (paths provisional pending R.0): an assembler registration-table template, a minimal `BCPLREG` consumer, two miniature optional services, BCPL declaration headers/examples, link-edit JCL, regression checks, and gate records under `packaging/`. Document exact observed MVS job IDs, condition codes, map/cross-reference excerpts and commands; never mark a test PASS by inspection alone.
 

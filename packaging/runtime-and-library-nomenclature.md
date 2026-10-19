@@ -32,7 +32,7 @@ Preserve historical names and interfaces where recoverable. Do not retrofit mode
 
 **Classification describes responsibility, not the language in which a member is implemented.** A System Extension can have a portable BCPL wrapper over assembler, while a Standard Library can use machine-specific optimizations behind a portable contract.
 
-The named optional modules and standard libraries are **proposals**, not accepted deliverables. The current M3 manifest distinguishes accepted `NATIVE_OBJ` members from development candidates in `NATIVE_DEVOBJ`; e.g. `BCPLIO` is currently a development candidate, so listing it as a possible core role is **not** a claim of accepted/core installation.
+The named optional modules and standard libraries are **proposals**, not accepted deliverables. The current M3 manifest distinguishes accepted `BOOT_OBJ` members from development candidates in `BOOT_DEVOBJ`; e.g. `BCPLIO` is currently a development candidate, so listing it as a possible core role is **not** a claim of accepted/core installation.
 
 ### Core Runtime
 
@@ -67,7 +67,7 @@ A User Library is produced outside the Cambridge distribution and is owned by a 
 | **Source module** | Independently maintained translation or assembly unit, generally producing relocatable code/data | A multi-module package |
 | **Object module** | Relocatable output consumed by MVS IEWL, possibly containing one or more control sections | An executable load module |
 | **Package** | Named distribution unit: public contract/header, implementation module(s), dependencies, build/link instructions, examples/tests and version information | Necessarily one object/PDS member |
-| **Object library** | An MVS partitioned dataset holding relocatable object members, e.g. manifest's `NATIVE_OBJ` or `NATIVE_DEVOBJ` | The logical Base/Standard Library |
+| **Object library** | An MVS partitioned dataset holding relocatable object members, e.g. manifest's `BOOT_OBJ` or `BOOT_DEVOBJ` | The logical Base/Standard Library |
 | **Load library** | MVS library of link-edited executable load-module members | An object library or BCPL source package |
 | **Global Number Registry** | Source-controlled authority that assigns and reserves BCPL `G!N` numbers to exported symbols/packages | The startup registration table or `LIBHDR` |
 | **Module Registration Table** (provisional `BCPLREG`) | Per-application, link-time selected table telling the startup runtime which linked optional modules/exports to install | Global-number allocator, header or dynamic loader |
@@ -157,7 +157,7 @@ For a package, documentation should answer in order:
 - Which optional dependencies and MVS DD allocations does it require?
 - How is it linked, registered, rebuilt from Git, tested on TK5/MVS and cleanly excluded?
 
-Use the manifest `config/dspal.yaml` for actual MVS datasets; do not confuse example `OBJLIB` / `EXTLIB` DD labels with real DSNs. Candidate objects remain in `NATIVE_DEVOBJ` until accepted; `NATIVE_OBJ` is an accepted object library, **not** the entire Cambridge runtime. Do not migrate binaries into future Cambridge namespaces: rebuild from tracked sources and preserve JES/IFOX/IEWL evidence.
+Use the manifest `config/dspal.yaml` for actual MVS datasets; do not confuse example `OBJLIB` / `EXTLIB` DD labels with real DSNs. Candidate objects remain in `BOOT_DEVOBJ` until accepted; `BOOT_OBJ` is an accepted object library, **not** the entire Cambridge runtime. Do not migrate binaries into future Cambridge namespaces: rebuild from tracked sources and preserve JES/IFOX/IEWL evidence.
 
 ## 9. Examples of how to speak about the system
 
@@ -167,7 +167,7 @@ Use the manifest `config/dspal.yaml` for actual MVS datasets; do not confuse exa
 - "The optional **BCPLMATH Standard Library** provides numerical routines independent of the application."
 - "The accountant's **User Library** or the installation's **Site Library** is distributed and linked using the same conventions."
 - "`LIBHDR` is a **header**, not the BLIB object."
-- "`NATIVE_OBJ` is an **object library PDS**, not a semantic collection of 'standard library functions'."
+- "`BOOT_OBJ` is an **object library PDS**, not a semantic collection of 'standard library functions'."
 - "The **Global Number Registry** allocates permanent slot numbers; `BCPLREG` (if adopted) registers addresses in a particular executable."
 
 ## 10. Status and follow-up
