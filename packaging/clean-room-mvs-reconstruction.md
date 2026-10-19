@@ -423,10 +423,10 @@ Fault-test instrumentation used by some regression cases is separate.
 
 ## Step 8 — Build BLIB, the sixth native object
 
-`BLIB` is BCPL library code. This stage compiles it with our newly
-rebuilt demoted Cambridge bootstrap compiler (`CAMBCOMP`), repairs a few
-known assembler-card details,
-then assembles and installs it.
+`BLIB` is BCPL library code. This stage uses the rebuilt demoted Cambridge
+bootstrap compiler (`CAMBCOMP`) to generate System/370 assembler. It then
+applies the known assembler-card fixes, assembles the code, and installs
+the resulting native object.
 
 ```sh
 tools/datasets/dspal submit BOOT_JCL BLIBBLD
@@ -445,7 +445,7 @@ tools/datasets/dspal ls BOOT_DEVOBJ
 | `ASMBLIB` | Assemble BLIB |
 | `INSTALL` | Save the native BLIB object |
 
-The compiler's interpreted run must also report `CODE=0`.
+The interpreted `CAMBCOMP` run must also report `CODE=0`.
 
 The final production PDS must have **exactly six** object members:
 
