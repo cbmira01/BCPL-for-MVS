@@ -59,7 +59,7 @@ the previously observed acceptance evidence see [M3 reconstruction acceptance](p
 | Directory | Purpose |
 | --- | --- |
 | `mr10-kit-compiler/` | ICINT19 assembler, preserved compiler phases, test panels, interpreted demos, and MVS JCL |
-| `native-compiler/` | Demoted Cambridge source machinery, S/370 runtime ASM, authoritative native build JCL, native regressions |
+| `bootstrap-toolchain/` | Demoted Cambridge source machinery, S/370 runtime ASM, authoritative native build JCL, native regressions |
 | `tools/datasets/` | `dspal` manifest-driven MVS PDS access and lifecycle |
 | `tools/mr10/` | MR10 interpreter, interpreted compiler, demos, and regression runners |
 | `tools/native/` | Native bootstrap preparation, deployment, compilation, and regression runner |

@@ -397,9 +397,9 @@ datasets:
       SYNHDR: richards-bcpltape/bcplib/bcpl/synhdr
       TRNHDR: richards-bcpltape/bcplib/bcpl/trnhdr
       CGHDR: richards-bcpltape/bcplib/bcpl/cghdr
-      BOOTHOST: native-compiler/bootstrap-cambridge/bootstrap-host.bcpl
-      OPTIONS: native-compiler/bootstrap-cambridge/options-large-tree.txt
-      CAMBPARM: native-compiler/bootstrap-cambridge/cambridge-options.txt
+      BOOTHOST: bootstrap-toolchain/bootstrap-cambridge/bootstrap-host.bcpl
+      OPTIONS: bootstrap-toolchain/bootstrap-cambridge/options-large-tree.txt
+      CAMBPARM: bootstrap-toolchain/bootstrap-cambridge/cambridge-options.txt
     generated_members:
       BLIB: workarea/bootstrap-cambridge/demoted/blib
       BCPL: workarea/bootstrap-cambridge/demoted/bcpl
@@ -415,7 +415,7 @@ datasets:
 
   NATIVE_INTCODE:
     dsn: BCPL.NATIVE.INTCODE
-    description: Rebuildable native-compiler bootstrap and Cambridge INTCODE images
+    description: Rebuildable bootstrap-toolchain bootstrap and Cambridge INTCODE images
     primary: 40
     secondary: 10
     directory: 20
@@ -442,11 +442,11 @@ datasets:
     populate: true
     members:
       # Only canonical sources; prior candidate variants stay in Git.
-      BCPLMAIN: native-compiler/asm/bcplmain.asm
-      BCPLIO: native-compiler/asm/bcplio.asm
-      BCPLMEM: native-compiler/asm/bcplmem.asm
-      BCPLBYTE: native-compiler/asm/bcplbyte.asm
-      BCPLAPT: native-compiler/asm/bcplapt.asm
+      BCPLMAIN: bootstrap-toolchain/asm/bcplmain.asm
+      BCPLIO: bootstrap-toolchain/asm/bcplio.asm
+      BCPLMEM: bootstrap-toolchain/asm/bcplmem.asm
+      BCPLBYTE: bootstrap-toolchain/asm/bcplbyte.asm
+      BCPLAPT: bootstrap-toolchain/asm/bcplapt.asm
 
   NATIVE_JCL:
     dsn: BCPL.NATIVE.JCL
@@ -461,16 +461,16 @@ datasets:
     blksize: 800
     populate: true
     members:
-      BLIBBLD: native-compiler/jcl/blibbld.jcl
-      BLDBMAIN: native-compiler/jcl/bldbmain.jcl
-      BLDDEVM: native-compiler/jcl/blddevm.jcl
-      BLDDEVN: native-compiler/jcl/blddevn.jcl
-      BLDDEVB: native-compiler/jcl/blddevb.jcl
-      BLDDEVI: native-compiler/jcl/blddevi.jcl
-      BLDDEVA: native-compiler/jcl/blddeva.jcl
-      BLDDEVL: native-compiler/jcl/blddevl.jcl
-      CAMBBLD: native-compiler/jcl/cambbld.jcl
-      CG370DB: native-compiler/jcl/cg370db.jcl
+      BLIBBLD: bootstrap-toolchain/jcl/blibbld.jcl
+      BLDBMAIN: bootstrap-toolchain/jcl/bldbmain.jcl
+      BLDDEVM: bootstrap-toolchain/jcl/blddevm.jcl
+      BLDDEVN: bootstrap-toolchain/jcl/blddevn.jcl
+      BLDDEVB: bootstrap-toolchain/jcl/blddevb.jcl
+      BLDDEVI: bootstrap-toolchain/jcl/blddevi.jcl
+      BLDDEVA: bootstrap-toolchain/jcl/blddeva.jcl
+      BLDDEVL: bootstrap-toolchain/jcl/blddevl.jcl
+      CAMBBLD: bootstrap-toolchain/jcl/cambbld.jcl
+      CG370DB: bootstrap-toolchain/jcl/cg370db.jcl
 
   NATIVE_OBJ:
     dsn: BCPL.NATIVE.OBJ

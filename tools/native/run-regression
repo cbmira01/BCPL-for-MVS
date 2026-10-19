@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-REGRESSION = ROOT / "native-compiler" / "regression"
+REGRESSION = ROOT / "bootstrap-toolchain" / "regression"
 RUNNER = REGRESSION / "run-test-mvs.sh"
 LOG_DIR = ROOT / "workarea" / "native-regression" / "logs"
 CASE_RE = re.compile(r"^(\d{2,3})-")
