@@ -16,7 +16,7 @@ Current contractual statements supersede dated planning notes.
 - [Complete clean-room reconstruction procedure](../clean-room-mvs-reconstruction.md)
 
 The DEVOBJ BCPLM6+BCPLIO candidate is accepted, **not promoted** to
-production NATIVE_OBJ. Independent FB132 QSAM dataset validation is
+production BOOT_OBJ. Independent FB132 QSAM dataset validation is
 not the same as raw JES2 spool-byte proof. Dated files can include
 historical statements that were subsequently superseded.
 
