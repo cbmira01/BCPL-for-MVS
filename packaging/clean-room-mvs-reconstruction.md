@@ -354,7 +354,7 @@ for each unit) plus a `PACKCOMP` step. Every interpreted phase must report
 
 ```sh
 tools/native/compile-mvs \
-  native-compiler/regression/00-most-degenerate-bcpl-program/source.bcpl \
+  bootstrap-toolchain/regression/00-most-degenerate-bcpl-program/source.bcpl \
   --output workarea/m3-clean-smoke.s370.asm
 
 test -s workarea/m3-clean-smoke.s370.asm
@@ -392,11 +392,11 @@ tools/datasets/dspal ls NATIVE_OBJ
 
 | Source in Git | PDS object member |
 | --- | --- |
-| `native-compiler/asm/bcplmain.asm` | `BCPLMAIN` |
-| `native-compiler/asm/bcplmem.asm` | `BCPLMEM` |
-| `native-compiler/asm/bcplbyte.asm` | `BCPLBYTE` |
-| `native-compiler/asm/bcplapt.asm` | `BCPLAPT` |
-| `native-compiler/asm/bcplio.asm` | `BCPLIO` |
+| `bootstrap-toolchain/asm/bcplmain.asm` | `BCPLMAIN` |
+| `bootstrap-toolchain/asm/bcplmem.asm` | `BCPLMEM` |
+| `bootstrap-toolchain/asm/bcplbyte.asm` | `BCPLBYTE` |
+| `bootstrap-toolchain/asm/bcplapt.asm` | `BCPLAPT` |
+| `bootstrap-toolchain/asm/bcplio.asm` | `BCPLIO` |
 
 **Check:** the job has five assembler steps and five object-install steps.
 All ten must return `RC=0000`. The final `NATIVE_OBJ` must contain these
@@ -581,7 +581,7 @@ that the rebuilt system works. Static checks remain useful when the
 
 `make-demoted.py` still generates the five instrumented code-generator
 sources in `workarea/bootstrap-cambridge/demoted-diag/`.
-`native-compiler/jcl/cg370db.jcl` can build the separate
+`bootstrap-toolchain/jcl/cg370db.jcl` can build the separate
 `NATIVE_INTCODE(CG370D)` image. At present those five diagnostic sources
 (`CGAD`–`CGED`) still need **explicit staging** into `NATIVE_SOURCE`:
 they are not in the normal `dspal populate all` mapping.

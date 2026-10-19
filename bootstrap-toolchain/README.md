@@ -1,4 +1,4 @@
-# Native System/370 compiler work
+# Bootstrap Toolchain
 
 The native target is built around the surviving BCPL kit compiler, not around a replacement front end.
 
@@ -74,3 +74,11 @@ This is intentionally deferred. The native regression panel should first establi
 ## Working rule
 
 Keep the runnable kit compiler as the reference path. Change historical code only when the MVS host, IFOX, or an observed incompatibility requires it, and preserve evidence for each such change.
+
+
+## Purpose
+
+The compiler here runs under `ICINT19` and produces native System/370
+assembler code. This is the **interpreter-hosted bootstrap toolchain**.
+The historical compiler that will itself run natively under MVS is
+built separately in [`../cambridge-compiler/`](../cambridge-compiler/).

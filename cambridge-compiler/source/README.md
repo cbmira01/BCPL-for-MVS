@@ -4,7 +4,7 @@ This folder holds the original Cambridge BCPL source files copied
 unchanged from [`richards-bcpltape/bcplib/bcpl/`](../../richards-bcpltape/bcplib/bcpl/).
 These are the historical sources for the **native Cambridge compiler**
 project, not the MR10-compatible, interpreter-hosted derivatives in
-`native-compiler/`.
+`bootstrap-toolchain/`.
 
 ## Folder contents
 

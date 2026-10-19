@@ -2,7 +2,7 @@
 
 This folder holds the assembler sources for the native Cambridge compiler
 runtime. The five `bcpl*.asm` files began as exact copies of the accepted
-runtime modules in [`native-compiler/asm/`](../../native-compiler/asm/).
+runtime modules in [`bootstrap-toolchain/asm/`](../../bootstrap-toolchain/asm/).
 They are now separate working sources for the native Cambridge compiler.
 Changing a file here does **not** change the interpreter-hosted bootstrap
 toolchain or its accepted runtime objects.
@@ -22,7 +22,7 @@ toolchain or its accepted runtime objects.
 ## Working rules
 
 The five runtime files are **Cambridge-owned copies**, not a live mirror
-of `native-compiler/asm/`. We can adapt them for the native compiler
+of `bootstrap-toolchain/asm/`. We can adapt them for the native compiler
 without altering the accepted bootstrap runtime.
 
 `program.asm` is kept as historical reference unless its original
