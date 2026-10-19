@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static contract for authoritative M3 NATIVE_JCL(CAMBBLD) source."""
+"""Static contract for authoritative M3 BOOT_JCL(CAMBBLD) source."""
 from pathlib import Path
 import re
 
@@ -15,7 +15,7 @@ assert "HERC02.BCPL.MR10KIT.LOAD,DISP=SHR" in deck
 for member in ("SYNI", "CGI", "BLIBI", "ICLIB"):
     assert f"HERC02.BCPL.MR10KIT.SOURCE({member})" in deck
 for member in ("TRNILRG", "CAMBCOMP"):
-    assert f"HERC02.BCPL.NATIVE.INTCODE({member})" in deck
+    assert f"HERC02.BCPL.BOOT.INTCODE({member})" in deck
 for member in ("BCPL", "SYN", "LEX", "TRNA", "TRNB", "CGA", "CGB", "CGC", "CGD", "CGE", "BOOTHOST"):
-    assert f"HERC02.BCPL.NATIVE.SOURCE({member})" in deck
+    assert f"HERC02.BCPL.BOOT.SOURCE({member})" in deck
 print("PASS: authoritative M3 CAMBBLD JCL stays within MR10_* and NATIVE_* PDSes")

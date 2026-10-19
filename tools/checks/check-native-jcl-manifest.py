@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check canonical NATIVE_JCL manifest/source names; never submit MVS jobs."""
+"""Check canonical BOOT_JCL manifest/source names; never submit MVS jobs."""
 from pathlib import Path
 import re
 import sys
@@ -23,8 +23,8 @@ MEMBERS = (
 
 def main() -> None:
     config = MANIFEST.read_text(encoding="utf-8")
-    begin = config.index("\n  NATIVE_JCL:\n")
-    end = config.index("\n  NATIVE_OBJ:\n", begin)
+    begin = config.index("\n  BOOT_JCL:\n")
+    end = config.index("\n  BOOT_OBJ:\n", begin)
     section = config[begin:end].split("    members:\n", 1)[1]
     entries = re.findall(
         r"^      ([A-Z0-9]+): (bootstrap-toolchain/jcl/[a-z0-9-]+\.jcl)\s*$",
@@ -33,7 +33,7 @@ def main() -> None:
     expected = [(name, f"bootstrap-toolchain/jcl/{name.lower()}.jcl")
                 for name in MEMBERS]
     if entries != expected:
-        raise ValueError(f"noncanonical NATIVE_JCL mapping:"
+        raise ValueError(f"noncanonical BOOT_JCL mapping:"
                          f"\n  actual: {entries}\n  expected: {expected}")
     other_mappings = [
         line for line in section.splitlines()
@@ -42,7 +42,7 @@ def main() -> None:
                     for name in MEMBERS)
     ]
     if other_mappings:
-        raise ValueError(f"unexpected NATIVE_JCL member: {other_mappings}")
+        raise ValueError(f"unexpected BOOT_JCL member: {other_mappings}")
     actual_files = sorted(p.name for p in DIRECTORY.glob("*.jcl"))
     expected_files = sorted(f"{name.lower()}.jcl" for name in MEMBERS)
     if actual_files != expected_files:
@@ -61,7 +61,7 @@ def main() -> None:
         data.decode("ascii")
         if any(len(line) > 80 for line in data.splitlines()):
             raise ValueError(f"JCL record exceeds FB80: {path}")
-    print("PASS: 10 canonical NATIVE_JCL members and same-named JCL sources")
+    print("PASS: 10 canonical BOOT_JCL members and same-named JCL sources")
     print("No MVS jobs were submitted; production OBJ remains unchanged.")
 
 

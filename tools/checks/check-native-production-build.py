@@ -38,13 +38,13 @@ def main() -> None:
         require(bool(re.search(
             rf"^//{asm_step}\s+EXEC PGM=IFOX00,", build, re.M
         )), f"missing assembly step {asm_step}")
-        require(f"//SYSIN    DD DSN=HERC02.BCPL.NATIVE.ASM({member}),"
+        require(f"//SYSIN    DD DSN=HERC02.BCPL.BOOT.ASM({member}),"
                 in build, f"wrong source for {member}")
         require(bool(re.search(
             rf"^//{put_step}\s+EXEC PGM=IEBGENER,COND=\(0,NE\)$",
             build, re.M,
         )), f"{put_step} must gate binary install on prior RC=0")
-        require(f"//SYSUT2   DD DSN=HERC02.BCPL.NATIVE.OBJ({member}),"
+        require(f"//SYSUT2   DD DSN=HERC02.BCPL.BOOT.OBJ({member}),"
                 in build, f"wrong production target for {member}")
     require(build.count(" EXEC PGM=IFOX00,") == 5,
             "BLDBMAIN must assemble exactly five modules")
@@ -71,7 +71,7 @@ def main() -> None:
     require(wrapper.is_file() and
             "BCPL_RUNTIME_LIBRARY=OBJ" in wrapper.read_text(
                 encoding="ascii"), "production runner missing")
-    print("PASS: five canonical ASM modules + BLIB target NATIVE_OBJ")
+    print("PASS: five canonical ASM modules + BLIB target BOOT_OBJ")
     print("PASS: all-OBJ native regression profile staged")
     print("NOT EXECUTED: no MVS assembly, link, GO, or PDS purge")
 

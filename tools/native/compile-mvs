@@ -48,8 +48,8 @@ def build_deck(
     cambridge_parm_path: Path | None = None,
     compiler_image: str = "CAMBCOMP",
 ) -> str:
-    source = core.full_dsn(config, config["datasets"]["NATIVE_SOURCE"])
-    intcode = core.full_dsn(config, config["datasets"]["NATIVE_INTCODE"])
+    source = core.full_dsn(config, config["datasets"]["BOOT_SOURCE"])
+    intcode = core.full_dsn(config, config["datasets"]["BOOT_INTCODE"])
     load = core.full_dsn(config, config["datasets"]["MR10_LOAD"])
 
     lines = core.authenticated_job_card(

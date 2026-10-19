@@ -33,8 +33,8 @@ class GeneratedPopulationTests(unittest.TestCase):
             "mvs": {"hlq": "TEST"},
             "text": {"host_encoding": "utf-8"},
             "datasets": {
-                "NATIVE_SOURCE": {
-                    "dsn": "BCPL.NATIVE.SOURCE",
+                "BOOT_SOURCE": {
+                    "dsn": "BCPL.BOOT.SOURCE",
                     "populate": True,
                     "recfm": "FB",
                     "lrecl": 80,
@@ -108,7 +108,7 @@ class GeneratedPopulationTests(unittest.TestCase):
             pop.preflight(self.config, "all")
 
     def test_duplicate_static_generated_member_rejected(self):
-        self.config["datasets"]["NATIVE_SOURCE"]["generated_members"] = {
+        self.config["datasets"]["BOOT_SOURCE"]["generated_members"] = {
             "STATIC": self.generated_rel
         }
         with self.assertRaisesRegex(pop.DspalError, "duplicate member"):

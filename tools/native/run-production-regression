@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the complete native BCPL panel against ONLY NATIVE_OBJ objects.
+# Run the complete native BCPL panel against ONLY BOOT_OBJ objects.
 # Requires a successful clean-room BLDBMAIN + BLIBBLD build first.
 set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -8,6 +8,6 @@ export BCPL_RUNTIME_LIBRARY=OBJ
 export BCPL_RUNTIME_CANDIDATE=0
 unset BCPL_RUNTIME_CANDIDATE_MEMBER
 unset BCPLMEM_OBJECT BCPLBYTE_OBJECT BCPLAPT_OBJECT
-echo "NATIVE PRODUCTION REGRESSION: NATIVE_OBJ" >&2
+echo "NATIVE PRODUCTION REGRESSION: BOOT_OBJ" >&2
 echo "Required: BCPLMAIN BCPLIO BCPLMEM BCPLBYTE BCPLAPT BLIB" >&2
 exec "$root/tools/native/run-regression" "$@"
