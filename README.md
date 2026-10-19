@@ -37,7 +37,8 @@ Applications are assembled, link-edited, and executed natively on MVS.
 The complete native panel spanning 00–123 passed with **123 PASS, 0 FAIL,
 1 expected SKIP (083)** using rebuilt objects in `NATIVE_OBJ` and
 `NATIVE_DEVOBJ`. This is not a claim of full historical BCPL compatibility.
-The M4 native Cambridge compiler and `CAMB_*` datasets remain out of scope.
+The separate native Cambridge compiler is developed under
+`cambridge-compiler/` using the reserved `CAMB_*` dataset namespace.
 
 **Current native-stream milestone:** BCPLIO dynamic stream
 **formally CLOSED** 17 October 2026 with owner acceptance of

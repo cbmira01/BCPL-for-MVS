@@ -10,7 +10,9 @@ its native-code output, and the regression suite:
 - `run-regression`: run the native regression panel.
 - `capture-writef-cg370`: capture CG370 diagnostics.
 
-M3 uses the refactored `NATIVE_*` and `MR10_*` dataset namespace. Do not use `CAMB_*` datasets before M4.
+The `NATIVE_*` and `MR10_*` dataset names remain in use by this bootstrap
+toolchain. The `CAMB_*` names belong to the separate native compiler work
+in `cambridge-compiler/`.
 
 ## Current complete NATIVE_OBJ clean-room runtime
 
