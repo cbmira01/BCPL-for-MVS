@@ -3,12 +3,12 @@
 # verify the IEWL map manually. NO GO and NO BLIB recompilation.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../../.." && pwd)"
-case_dir="$root/native-compiler/regression/069-independent-blib-object"
+case_dir="$root/bootstrap-toolchain/regression/069-independent-blib-object"
 work="$root/workarea/native-regression/069-independent-blib-object"
 mkdir -p "$work"
 cp "$case_dir/source.bcpl" "$work/069-independent-blib-object.bcpl"
 cd "$root"
-python3 tools/native/compile-mvs \
+python3 tools/bootstrap/compile-mvs \
     "$work/069-independent-blib-object.bcpl" \
     --job-name RG069C --listing light --timeout 180
 recovered="$root/workarea/069-independent-blib-object.s370.asm"

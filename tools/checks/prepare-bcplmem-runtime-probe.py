@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepare a standalone BCPLMEM linkage job from a successful normal test.
 
-Run tools/native/run-regression N first. The script reads its generated
+Run tools/bootstrap/run-regression N first. The script reads its generated
 workarea/native-test.asm and produces a separate, noncanonical assembly.
 This proof deliberately excludes regression 083's inline RELMEM instrumentation.
 """

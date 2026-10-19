@@ -34,7 +34,7 @@ def main():
         raise ValueError(
             "Missing compiled regression 28 code. Run "
             "BCPL_RUNTIME_PDS=0 BCPLMEM_OBJECT=1 "
-            "tools/native/run-regression 28 first."
+            "tools/bootstrap/run-regression 28 first."
         )
     if not (OUT / "bcplmain-external-mem.asm").is_file():
         raise ValueError("Run prepare-runtime-object-candidates.py first")
@@ -69,7 +69,7 @@ def main():
     start = cards.index("//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',")
     prefix = [
         *assembler.asm("ASMMMAIN", "MAINOBJ", linked_main),
-        *assembler.asm("ASMMMEM", "MEMOBJ", ROOT / "asm/bcplmem.asm",
+        *assembler.asm("ASMMMEM", "MEMOBJ", ROOT / "bootstrap-toolchain/asm/bcplmem.asm",
                        "ASMMMAIN"),
     ]
     cards[start:start] = prefix

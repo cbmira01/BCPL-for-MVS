@@ -27,7 +27,7 @@ def main() -> None:
     deck.unlink(missing_ok=True)
     generated = ROOT / "workarea" / f"{NAME}.s370.asm"
     generated.unlink(missing_ok=True)
-    run(ROOT / "tools/native/compile-mvs", source,
+    run(ROOT / "tools/bootstrap/compile-mvs", source,
         "--job-name", "RG120C", "--listing", "light", "--timeout", "180")
     if not generated.is_file():
         raise RuntimeError(f"expected Cambridge CODE at {generated}")

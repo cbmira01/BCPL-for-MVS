@@ -50,11 +50,11 @@ def main() -> None:
             "BLDBMAIN must assemble exactly five modules")
     require(build.count(" EXEC PGM=IEBGENER,COND=(0,NE)") == 5,
             "BLDBMAIN must install exactly five modules")
-    require("NATIVE.DEVOBJ" not in build, "BLDBMAIN must not use DEVOBJ")
+    require("HERC02.BCPL.BOOT.DEVOBJ" not in build, "BLDBMAIN must not use DEVOBJ")
     blib = (JCL / "blibbld.jcl").read_text(encoding="ascii")
-    require("NATIVE.SOURCE(BLIB)" in blib, "BLIB source missing")
-    require("NATIVE.OBJ(BLIB)" in blib, "BLIB production target missing")
-    require("NATIVE.DEVOBJ" not in blib, "BLIBBLD must not use DEVOBJ")
+    require("HERC02.BCPL.BOOT.SOURCE(BLIB)" in blib, "BLIB source missing")
+    require("HERC02.BCPL.BOOT.OBJ(BLIB)" in blib, "BLIB production target missing")
+    require("HERC02.BCPL.BOOT.DEVOBJ" not in blib, "BLIBBLD must not use DEVOBJ")
     generator = (ROOT /
         "tools/checks/prepare-runtime-pds-regression.py"
     ).read_text(encoding="ascii")
@@ -71,6 +71,19 @@ def main() -> None:
     require(wrapper.is_file() and
             "BCPL_RUNTIME_LIBRARY=OBJ" in wrapper.read_text(
                 encoding="ascii"), "production runner missing")
+    compiler_driver = ROOT / "tools/bootstrap/compile-mvs"
+    require(compiler_driver.is_file(), "bootstrap compiler driver missing")
+    mvs_runner = (ROOT / "bootstrap-toolchain/regression/run-test-mvs.sh"
+                  ).read_text(encoding="ascii")
+    require('export CAMBRIDGE_COMPILE="$root/tools/bootstrap/compile-mvs"'
+            in mvs_runner, "MVS test wrapper has stale compiler driver")
+    case_runner = (ROOT / "bootstrap-toolchain/regression/run-test.sh"
+                   ).read_text(encoding="ascii")
+    require('$root/tools/bootstrap/compile-mvs' in case_runner,
+            "test harness has stale compiler fallback")
+    for source in (mvs_runner, case_runner):
+        require("tools/native/" not in source,
+                "obsolete tools/native/ reference in regression harness")
     print("PASS: five canonical ASM modules + BLIB target BOOT_OBJ")
     print("PASS: all-OBJ native regression profile staged")
     print("NOT EXECUTED: no MVS assembly, link, GO, or PDS purge")
