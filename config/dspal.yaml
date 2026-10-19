@@ -380,8 +380,8 @@ datasets:
     blksize: 6144
     populate: false
 
-  NATIVE_SOURCE:
-    dsn: BCPL.NATIVE.SOURCE
+  BOOT_SOURCE:
+    dsn: BCPL.BOOT.SOURCE
     description: Native compiler/bootstrap BCPL headers
     primary: 40
     secondary: 5
@@ -413,8 +413,8 @@ datasets:
       CGD: workarea/bootstrap-cambridge/demoted/cgd
       CGE: workarea/bootstrap-cambridge/demoted/cge
 
-  NATIVE_INTCODE:
-    dsn: BCPL.NATIVE.INTCODE
+  BOOT_INTCODE:
+    dsn: BCPL.BOOT.INTCODE
     description: Rebuildable bootstrap-toolchain bootstrap and Cambridge INTCODE images
     primary: 40
     secondary: 10
@@ -428,8 +428,8 @@ datasets:
     generated_members:
       TRNILRG: workarea/bootstrap-cambridge/trni-large-names.int
 
-  NATIVE_ASM:
-    dsn: BCPL.NATIVE.ASM
+  BOOT_ASM:
+    dsn: BCPL.BOOT.ASM
     description: Native System/370 runtime assembler sources
     primary: 40
     secondary: 10
@@ -448,8 +448,8 @@ datasets:
       BCPLBYTE: bootstrap-toolchain/asm/bcplbyte.asm
       BCPLAPT: bootstrap-toolchain/asm/bcplapt.asm
 
-  NATIVE_JCL:
-    dsn: BCPL.NATIVE.JCL
+  BOOT_JCL:
+    dsn: BCPL.BOOT.JCL
     description: Canonical native build JCL (source file basename equals member)
     primary: 15
     secondary: 5
@@ -472,8 +472,8 @@ datasets:
       CAMBBLD: bootstrap-toolchain/jcl/cambbld.jcl
       CG370DB: bootstrap-toolchain/jcl/cg370db.jcl
 
-  NATIVE_OBJ:
-    dsn: BCPL.NATIVE.OBJ
+  BOOT_OBJ:
+    dsn: BCPL.BOOT.OBJ
     description: Accepted native relocatable object modules
     primary: 15
     secondary: 5
@@ -486,8 +486,8 @@ datasets:
     content_type: object
     populate: false
 
-  NATIVE_DEVOBJ:
-    dsn: BCPL.NATIVE.DEVOBJ
+  BOOT_DEVOBJ:
+    dsn: BCPL.BOOT.DEVOBJ
     description: Native development candidates (gate accepted where documented; not production promoted)
     primary: 15
     secondary: 5
