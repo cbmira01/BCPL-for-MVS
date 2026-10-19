@@ -32,7 +32,7 @@ not individually extracted BCPL routines:
 
 Historical evidence is
 `richards-bcpltape/bcplib/bcpl/blib`, which should remain untouched.
-`native-compiler/bootstrap-cambridge/make-demoted.py --blib-only`
+`bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only`
 produces `workarea/bootstrap-cambridge/demoted/blib`, removing the
 unsupported `SECTION "BLIB"` directive and changing the two `~=`
 tokens to MR10-compatible `NE`. The original `GET "LIBHDR"` and
@@ -50,7 +50,7 @@ regression source.bcpl          historical BLIB source
         |                               |
         +------------+------------------+
                      |
- native-compiler/regression/combine-separate-bcpl.py
+ bootstrap-toolchain/regression/combine-separate-bcpl.py
                      |
      one joined generated assembly CSECT
            + BCPLMAIN-wip CSECT
@@ -161,7 +161,7 @@ services.
 
 > Resume the BCPL-for-MVS project from the completed historical BLIB
 > static-integration march, documented in
-> `native-compiler/blib-integration-march-checkpoint.md`. The user
+> `bootstrap-toolchain/blib-integration-march-checkpoint.md`. The user
 > executed `tools/native/run-regression 0 68 --show-output` under
 > MVS 3.8J TK5 with **69 PASS, 0 FAIL**. Tests 065–068 use the
 > complete demoted Cambridge BLIB. **Do not restart this march or

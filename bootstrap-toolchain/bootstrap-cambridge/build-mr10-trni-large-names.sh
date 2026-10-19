@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 
-python3 native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py
+python3 bootstrap-toolchain/bootstrap-cambridge/make-mr10-trn-large-names.py
 
 srcdir=workarea/bootstrap-cambridge/mr10-trn-large-names
 mapfile -t sections < <(printf '%s\n' "$srcdir"/trn[0-9]* | sort -V)
@@ -19,7 +19,7 @@ for section in "${sections[@]:1}"; do
 done
 
 tools/mr10/compile-and-run --installed-icint MR10_LOAD --save-intcode \
-    --dd OPTIONS=native-compiler/bootstrap-cambridge/options-large-tree.txt \
+    --dd OPTIONS=bootstrap-toolchain/bootstrap-cambridge/options-large-tree.txt \
     --dd LIBHDR=richards-bcpltape/sys3/bcpl/libhdr \
     --dd TRNHDR="$srcdir/trnhdr" \
     "${modules[@]}"

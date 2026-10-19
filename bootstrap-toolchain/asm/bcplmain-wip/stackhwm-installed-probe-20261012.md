@@ -65,7 +65,7 @@ STACKHWM 0
 
 BCPLMAIN startup in `10-bootstrap-and-system.asmfrag` and synchronized `asm/bcplmain-wip.asm` now paints the 16,384-word safe stack before invoking the BCPL START routine: 8,192 consecutive pairs of `#X5C40E2E3` and `#XC3D2405C`. It stores `EVENSTACK` at `STACKEND-2` and stores `(STKLIM-8)/4` as the BCPL-word Q at `STACKEND-1`. The top two metadata words remain inside the 256-byte clearance, not the checked working stack. No changes to G54/G55 values, STKLIM, or BLIB itself.
 
-`native-compiler/regression/120-stackhwm-initialized` tests that BLIB's G56 returns an in-range word address rather than the 0/1 historical diagnostic result. It does not assert an absolute address or claim accurate usage under every path.
+`bootstrap-toolchain/regression/120-stackhwm-initialized` tests that BLIB's G56 returns an in-range word address rather than the 0/1 historical diagnostic result. It does not assert an absolute address or claim accurate usage under every path.
 
 **Source-mode verification gate (before promotion):**
 

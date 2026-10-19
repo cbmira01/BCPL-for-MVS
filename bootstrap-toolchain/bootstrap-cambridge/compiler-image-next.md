@@ -76,7 +76,7 @@ DVECT 1200 -> DVECT 2400
 `build-mr10-trni-large-names.sh` rebuilds it as:
 
 ```text
-native-compiler/bootstrap-cambridge/trni-large-names.int
+bootstrap-toolchain/bootstrap-cambridge/trni-large-names.int
 ```
 
 This derivative is proven sufficient for CGA-CGE. The historical MR10 source is

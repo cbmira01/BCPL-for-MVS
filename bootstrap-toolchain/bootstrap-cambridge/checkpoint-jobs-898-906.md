@@ -91,7 +91,7 @@ DVECT 1200 -> DVECT 2400
 `build-mr10-trni-large-names.sh` rebuilds its sections and concatenates them as:
 
 ```text
-native-compiler/bootstrap-cambridge/trni-large-names.int
+bootstrap-toolchain/bootstrap-cambridge/trni-large-names.int
 ```
 
 The historical MR10 source remains untouched.  This derivative is now proven

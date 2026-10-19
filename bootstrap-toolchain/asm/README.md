@@ -53,7 +53,7 @@ are not the source of new BCPLMAIN development.
 The obsolete standalone M1-era `*-probe.asm` experiments and matching
 JCL decks were removed after the 00..145 regression and focused M4/M5
 verification became the retained tests. Git history preserves the
-older experiments. M4.2 and M5 verification under `native-compiler/probes/`
+older experiments. M4.2 and M5 verification under `bootstrap-toolchain/probes/`
 and `tools/checks/` remain available.
 
 Run `python3 tools/checks/check-bcplmain-canonical.py` to check the
