@@ -29,7 +29,7 @@ MR10's header has `ENDSTREAMCH=-1` and `BYTESPERWORD=2`. This describes kit-targ
 
 ## Cambridge System/370 BCPL
 
-Evidence: `richards-bcpltape/sys3/bcpl/libhdr` and `richards-bcpltape/bcplib/bcpl/{bcpl,syn,trn,cg,blib}` and compiler headers. Consult `native-compiler/runtime-dependency-audit.md` for source-traced compiler dependencies; `asm/bcplmain-wip.asm` is our reconstruction, **not historical specification**.
+Evidence: `richards-bcpltape/sys3/bcpl/libhdr` and `richards-bcpltape/bcplib/bcpl/{bcpl,syn,trn,cg,blib}` and compiler headers. Consult `bootstrap-toolchain/runtime-dependency-audit.md` for source-traced compiler dependencies; `asm/bcplmain-wip.asm` is our reconstruction, **not historical specification**.
 
 Cambridge keeps key global slots including `START:1`, `RDCH:13`, `WRCH:14`, `STOP:30`, `APTOVEC:40`, `FINDINPUT:42`, `WRITEF:76`, `GETBYTE:85`, and `PUTBYTE:86`. It expands the interface to module loading, diagnostics, richer streams and dataset I/O, time/date, parameters, stack bounds, byte/word utilities, allocation, FORTRAN bridging and block-file operations. Some globals are runtime **data**, not procedures.
 

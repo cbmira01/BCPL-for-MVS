@@ -72,13 +72,13 @@ initialize or use BLIB as an independently linked BCPL section.
 
 ## Work implemented (isolated branch)
 
-`native-compiler/object-library/make-obj-allocation-job.py` generates
+`bootstrap-toolchain/object-library/make-obj-allocation-job.py` generates
 an authenticated one-time allocation deck using the existing `dspal`
 configuration. An earlier static unauthenticated allocation deck failed
 as **JOB 2393** due to RAKF denying the default `PROD` identity.
 The corrected authenticated job succeeded as JOB 2394.
 
-`native-compiler/object-library/make-blib-object-job.py`:
+`bootstrap-toolchain/object-library/make-blib-object-job.py`:
 - accepts the independently generated BLIB assembler source from the
   established regression-067 Cambridge compilation path;
 - normalizes non-ASCII printer-recovery bytes in generated assembler
@@ -119,7 +119,7 @@ the global-vector section initialization contract. Begin with the
 behavior of regression 067 as a parallel acceptance test.
 
 Do not replace the 69 passing regressions or remove
-`native-compiler/regression/combine-separate-bcpl.py` before that
+`bootstrap-toolchain/regression/combine-separate-bcpl.py` before that
 behavior is demonstrated. Treat changes to `dspal` object-library
 manifest/deployment semantics as a separate, narrowly scoped packaging
 task, not a reason to redesign BCPLMAIN prematurely.

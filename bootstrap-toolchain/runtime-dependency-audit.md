@@ -19,9 +19,9 @@ Evidence examined in this checkpoint:
   SYN/LEX, TRNA/TRNB, CGA–CGE, historical BLIB
 - `richards-bcpltape/bcplib/bcpl/{cghdr,synhdr,trnhdr}`
 - `asm/bcplmain-wip.asm` — current runtime responsibilities and code
-- `native-compiler/bootstrap-cambridge/{bootstrap-host.bcpl,
+- `bootstrap-toolchain/bootstrap-cambridge/{bootstrap-host.bcpl,
   native-codegen-checkpoint.md,compiler-image-next.md}`
-- `native-compiler/regression/runtime-stream-io-march.md` and
+- `bootstrap-toolchain/regression/runtime-stream-io-march.md` and
   closed `runtime-exit-semantics-march.md`
 
 ### Evidence quality
@@ -92,7 +92,7 @@ a proof that every unnamed/internal BCPLMAIN service is identified.
 | Recovery STAE/SPIE, ABORT bridge | BCPLMAC and BLIB | Not reconstructed | Compatibility/reliability; not initial successful compile |
 | Floating point and R13 FWSP area | CGHDR/BCPLMAIN note, LEX READFLOAT demotion | Incomplete | Required for full language support, not initial integer-only probe |
 | LIBHDR G89–G99 extended facilities | LIBHDR | Not established in BCPLMAIN | Historical compatibility; must classify per source |
-| General native extension modules | `native-compiler/library/` | Sources staged only; no native object validation | **After native compiler bootstrap** |
+| General native extension modules | `bootstrap-toolchain/library/` | Sources staged only; no native object validation | **After native compiler bootstrap** |
 
 ### Concrete capacity warning
 

@@ -100,7 +100,7 @@ deck; no regression 890 is registered.
 cd ~/Source/Repos/BCPL-for-MVS
 git pull --ff-only
 python3 tools/native/compile-mvs \
-  native-compiler/probes/m42-real-open/source.bcpl \
+  bootstrap-toolchain/probes/m42-real-open/source.bcpl \
   --job-name RG890C --listing light --timeout 180 \
   --output workarea/m42-real-open/generated.s370.asm
 

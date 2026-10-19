@@ -81,7 +81,7 @@ genuinely unsuccessful SVC 19.
 
 M4.2.2 changes only the DD allocation. The existing
 version-controlled Cambridge BCPL application and `DD01`
-fixture under `native-compiler/probes/m42-real-open/`
+fixture under `bootstrap-toolchain/probes/m42-real-open/`
 are reused. Its **previously generated** assembler at
 `workarea/m42-real-open/generated.s370.asm` from compiler
 JOB 7873 is also reusable. No new Cambridge compilation

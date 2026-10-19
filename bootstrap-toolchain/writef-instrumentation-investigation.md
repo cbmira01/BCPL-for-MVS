@@ -24,10 +24,10 @@ data-argument corruption remains unknown.
   `HERC02.BCPL.INTCODE(CG370D)` independently of `CAMBCOMP`.
 - `tools/native/compile-mvs` supports `--compiler-image`, `--output`
   and `--job-name` to compile without changing the default image.
-- `native-compiler/bootstrap-cambridge/check-cg370-diagnostic.py`
+- `bootstrap-toolchain/bootstrap-cambridge/check-cg370-diagnostic.py`
   checks that removing lines beginning `* CG370-DIAG:` from the diagnostic
   assembler reproduces the baseline output **exactly**.
-- `native-compiler/bootstrap-cambridge/make-demoted.py --blib-only`
+- `bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only`
   prepares the canonical historical BLIB source for the resident
   compiler, without modifying historical originals.
 
@@ -41,7 +41,7 @@ if necessary, use the existing diagnostic build/deployment procedure
 Then execute:
 
 ```sh
-python3 native-compiler/bootstrap-cambridge/make-demoted.py --blib-only
+python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only
 python3 tools/native/capture-writef-cg370 --cases 75 76 79 80 81 --include-blib
 ```
 
