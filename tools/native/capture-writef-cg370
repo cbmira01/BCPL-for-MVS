@@ -14,8 +14,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPILER = ROOT / "tools/cambridge-compile-mvs"
-CHECK = ROOT / "native-compiler/bootstrap-cambridge/check-cg370-diagnostic.py"
-CASE_ROOT = ROOT / "native-compiler/regression"
+CHECK = ROOT / "bootstrap-toolchain/bootstrap-cambridge/check-cg370-diagnostic.py"
+CASE_ROOT = ROOT / "bootstrap-toolchain/regression"
 BLIB_SOURCE = ROOT / "workarea/bootstrap-cambridge/demoted/blib"
 
 
@@ -64,7 +64,7 @@ def main() -> int:
         if not BLIB_SOURCE.is_file():
             raise RuntimeError(
                 f"missing {BLIB_SOURCE}; run "
-                "python3 native-compiler/bootstrap-cambridge/make-demoted.py --blib-only"
+                "python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only"
             )
         sources.append(("historical-blib", BLIB_SOURCE))
     manifest = [

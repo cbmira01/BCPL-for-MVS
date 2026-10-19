@@ -21,18 +21,18 @@ DEMOTED = ("blib", "bcpl", "syn", "lex", "trna", "trnb",
 DIAG = ("cga", "cgb", "cgc", "cgd", "cge")
 MR10 = ("trnhdr", "trn0", "trn1", "trn2", "trn3", "trn4", "trn5", "trn6")
 INPUTS = (
-    "native-compiler/bootstrap-cambridge/make-demoted.py",
-    "native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py",
-    "native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh",
-    "native-compiler/bootstrap-cambridge/source/syn",
-    "native-compiler/bootstrap-cambridge/source/trn",
-    "native-compiler/bootstrap-cambridge/bootstrap-host.bcpl",
+    "bootstrap-toolchain/bootstrap-cambridge/make-demoted.py",
+    "bootstrap-toolchain/bootstrap-cambridge/make-mr10-trn-large-names.py",
+    "bootstrap-toolchain/bootstrap-cambridge/build-mr10-trni-large-names.sh",
+    "bootstrap-toolchain/bootstrap-cambridge/source/syn",
+    "bootstrap-toolchain/bootstrap-cambridge/source/trn",
+    "bootstrap-toolchain/bootstrap-cambridge/bootstrap-host.bcpl",
     "richards-bcpltape/bcplib/bcpl/bcpl",
     "richards-bcpltape/bcplib/bcpl/blib",
     "richards-bcpltape/bcplib/bcpl/cg",
     "richards-bcpltape/mr10/bcplkit/trn",
     "richards-bcpltape/sys3/bcpl/libhdr",
-    "native-compiler/bootstrap-cambridge/options-large-tree.txt",
+    "bootstrap-toolchain/bootstrap-cambridge/options-large-tree.txt",
     "mr10-kit-compiler/asm/icintv19.asm",
     "tools/mr10/compile-and-run",
     "mr10-kit-compiler/source/syni.int",
@@ -76,13 +76,13 @@ def main() -> int:
     # A failed regeneration must never leave an old manifest looking current.
     manifest.unlink(missing_ok=True)
     commands = [
-        [sys.executable, "native-compiler/bootstrap-cambridge/make-demoted.py"],
+        [sys.executable, "bootstrap-toolchain/bootstrap-cambridge/make-demoted.py"],
     ]
     if args.with_trnilrg:
         # The build script regenerates MR10 translator sections itself.
-        commands.append(["bash", "native-compiler/bootstrap-cambridge/build-mr10-trni-large-names.sh"])
+        commands.append(["bash", "bootstrap-toolchain/bootstrap-cambridge/build-mr10-trni-large-names.sh"])
     else:
-        commands.append([sys.executable, "native-compiler/bootstrap-cambridge/make-mr10-trn-large-names.py"])
+        commands.append([sys.executable, "bootstrap-toolchain/bootstrap-cambridge/make-mr10-trn-large-names.py"])
     for cmd in commands:
         print("+", " ".join(cmd), flush=True)
         subprocess.run(cmd, cwd=ROOT, check=True)
