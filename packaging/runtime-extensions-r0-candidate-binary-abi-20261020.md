@@ -6,6 +6,14 @@ progress; R.1 — Generic registration foundation has not started.
 No `BCPLREG` assembler module, core runtime patch, or test job
 is implemented by this document.
 
+**Follow-up review (2026-10-20):** [Three unresolved R.0 questions](runtime-extensions-r0-three-design-questions-review-20261020.md)
+propose independently relocated begin/end bounds, package-local
+transitive dependency entries and a source-derived global-owner
+ledger. If accepted, those refinements would **revise** this
+initial candidate's 28-byte-table/40-byte-descriptor formulas.
+Do not implement the offsets in this earlier draft as an approved ABI.
+See the [partial native owner inventory](runtime-extensions-r0-native-global-owner-inventory-20261020.md).
+
 **Governing authorities:** [Milestone Runtime Extensions](milestone-runtime-extensions.md),
 [approved Q.0 error/finalizer model](qsam-q0-error-and-r0-design-decisions-20261020.md),
 [Global Number Registry](global-number-registry.md), and

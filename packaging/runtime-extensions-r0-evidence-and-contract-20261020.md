@@ -77,6 +77,14 @@ allocated by this review.
 startup/finalizer diagnostics.** No extra milestone/march numbers
 have been introduced.
 
+The [three-question follow-up review](runtime-extensions-r0-three-design-questions-review-20261020.md)
+addresses independently checked descriptor extents, transitive
+package dependencies and collision checking with legacy import
+precedence. It is **engineering recommendation, not owner-approved
+ABI**. The [partial BCPLMAIN native global-owner inventory](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
+records actual direct assignments; application and BLIB trailer
+exports remain to be decoded from the final linked program.
+
 ## 4. Next R.0 work package
 
 1. Extract precise actual System/370 assembler linkage and register
