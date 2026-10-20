@@ -135,11 +135,18 @@ The [Q.0 resource allocation evidence](qsam-q0-resource-evidence-20261020.md)
 records **JOB 2175 / QS0RES**: ASM/LKED/GO all RC=0000 and
 three successful small conditional GETMAIN acquisitions matched by three
 FREEMAIN releases. An injected failure exercised the *explicit*
-rollback sequence, but not the general FAILED cleanup branch and
-not a real MVS storage shortage. The separate
-[QS0FAIL failure-handler probe](../bootstrap-toolchain/probes/q0-qsam-resource-probes/README.md)
-is prepared and locally checked (230-card deck); its MVS execution is
-pending. Neither is production BCPLQSAM.
+rollback sequence. The [JOB 2176 / QS0FAIL evidence](qsam-q0-failure-path-evidence-20261020.md)
+records ASM/LKED/GO all RC=0000 and the shared ROLLBACK handler with
+injected nonzero R15: C-before-B release, surviving A, renewed D and
+four acquisitions/four frees. **Neither test caused actual MVS
+storage shortage**, nor implemented the public BCPLQSAM API.
+
+The [one-shot real conditional GETMAIN-refusal probe](../bootstrap-toolchain/probes/q0-qsam-resource-probes/README-shortage.md)
+is prepared and locally checked; its opt-in MVS execution is pending.
+The [Q.0 remaining-gate inventory](qsam-q0-remaining-gate-review-20261020.md)
+lists unresolved INFO, error-path, storage-ceiling and Runtime Extensions
+R.0 dependencies. Do not treat standalone assembler results as gate
+acceptance.
 
 Remaining Q.0 verification includes further variable-record size and
 binary-data boundaries, recoverable OPEN/GET/PUT/CLOSE failures,

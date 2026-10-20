@@ -1,6 +1,6 @@
 # Milestone QSAM — Q.0 resource allocation and rollback probe
 
-**Status: `QS0RES` PASSED on MVS in JOB 2175 (2026-10-20); new `QS0FAIL` probe is locally checked but not yet run.** The
+**Status: `QS0RES` PASSED on MVS in JOB 2175 and `QS0FAIL` PASSED in JOB 2176 (2026-10-20). The guarded `QS0NOMEM` test remains unexecuted.** The
 standalone `QS0RES` experiment uses IFOX and MVS `GETMAIN RC` /
 `FREEMAIN R` to test resource ownership, rollback, and continuation
 after an intentionally injected failure. It does **not** implement
@@ -99,4 +99,12 @@ Q0 RESOURCE FAILED PATH 4 ALLOC 4 FREE PASS
 The generator's safe `--check` produces no authenticated JCL and
 validated a 230-card deck locally. The ordinary generated deck is
 mode 0600 under ignored `workarea/`; it may contain JOB card secrets
-and must never be committed. **Do not claim MVS PASS before JES evidence.**
+and must never be committed. **JOB 2176 PASSED in MVS, but the
+failure was deliberately injected, not a genuine storage shortage.**
+
+[JOB 2176 evidence](../../../packaging/qsam-q0-failure-path-evidence-20261020.md)
+records the tested shared rollback handler, reverse-order C/B release,
+and preservation of independent storage A. The new
+[QS0NOMEM bounded conditional-refusal experiment](README-shortage.md)
+is opt-in and **has not run on MVS**. Never claim that a source/JCL
+check establishes real returned-control allocation failure.
