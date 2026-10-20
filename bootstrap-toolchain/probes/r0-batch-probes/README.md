@@ -44,7 +44,7 @@ From repository root:
 bash bootstrap-toolchain/probes/r0-batch-probes/run-batch.sh
 ```
 
-The runner checks the clean Git worktree; runs **five Python unit tests**
+The runner checks the clean Git worktree; runs **seven Python unit tests**
 and a credential-free generator dry-run; generates one authenticated,
 mode-0600 JCL deck under ignored `workarea/runtime-extensions-r0-batch/`;
 submits it to JES; retrieves the actual JOB number/report; verifies
@@ -66,6 +66,23 @@ LKED and GO, each `RC=0000` (eight steps). The runner
 checks the whole step summary. Expected QOUT records all start `R0 Dnn`
 or `R0 Fnn`. The numbered case titles are embedded in the generated
 ignored file `expected-markers.txt` and independently checked.
+
+## Correction after the first Morkies dry run
+
+The first batch execution passed five Python tests and the 824-card
+credential-free dry-run, but stopped **before JES submission** with
+`ValueError: wrong job card`. The authenticated JOB helper pads the
+seven-character name `R0BATCH` to eight columns, producing two spaces
+before `JOB`. The generator had matched only the one-space synthetic
+card. It now parses the first two JOB-card tokens, and the unit suite
+includes a synthetic three-line authenticated card (no real credentials).
+
+The report verifier also now accepts trailing blanks on the actual
+80-byte FB QOUT records while requiring each complete expected marker
+at the start of its own line. The prior exact-line grep could reject a
+legitimate padded record. Both corrections were exercised locally:
+**seven unit tests PASS**, both dry-run and synthetic authenticated
+paths accepted, and `bash -n` passed. **The MVS batch is still unrun**.
 
 ## Explicit evidence boundaries
 

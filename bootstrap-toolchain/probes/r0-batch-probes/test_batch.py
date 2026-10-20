@@ -82,6 +82,40 @@ class R0Batch(unittest.TestCase):
             self.assertTrue(line.isascii())
             self.assertLessEqual(len(line),71)
 
+    def test_authenticated_job_card_with_padded_name(self):
+        # dspal-core.authenticated_job_card emits two spaces before JOB
+        # for the seven-character name R0BATCH. No real secrets needed.
+        cards = [
+            "//R0BATCH  JOB (BCPL),'R0 BATCH',CLASS=A,MSGCLASS=A,",
+            "//             USER=TESTUSER,PASSWORD=TESTPASS,",
+            "//             MSGLEVEL=(1,1)",
+        ]
+        deck = batch.make_deck(cards)
+        self.assertEqual(deck.splitlines()[:3], cards)
+        self.assertEqual(deck.splitlines().count('/*'), 7)
+        self.assertEqual(len(batch.expected_markers()), 20)
+
+    def test_fb80_qout_padding_accepted_by_runner(self):
+        # Check the exact grep predicate that the runner uses.
+        from subprocess import run
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as tmp:
+            report = Path(tmp) / "report.txt"
+            marker = batch.expected_markers()[0]
+            report.write_text(marker.ljust(80) + "\n")
+            predicate = 'grep -Eq "^${marker}[[:space:]]*$" "$report"'
+            runner = (HERE / 'run-batch.sh').read_text()
+            self.assertIn(predicate, runner)
+            p = run(['bash', '-c', predicate],
+                    env={'marker': marker, 'report': str(report)},
+                    capture_output=True)
+            self.assertEqual(p.returncode, 0, p.stderr.decode())
+            report.write_text('X' + marker.ljust(80) + "\n")
+            p = run(['bash', '-c', predicate],
+                    env={'marker': marker, 'report': str(report)},
+                    capture_output=True)
+            self.assertNotEqual(p.returncode, 0)
+
     def test_bad_job_rejected(self):
         with self.assertRaises(ValueError):
             batch.make_deck(["//WRONG   JOB (BCPL),'X'"])

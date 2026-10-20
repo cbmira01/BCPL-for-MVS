@@ -142,7 +142,10 @@ def asm_step(name: str, obj: str, src: str) -> list[str]:
 
 
 def make_deck(job_card: list[str]) -> str:
-    if not job_card or not job_card[0].startswith('//R0BATCH JOB'):
+    # Authenticated JOB cards pad the seven-character name to eight
+    # columns; synthetic --check cards historically used one space.
+    # Validate tokens, rather than depending on that whitespace width.
+    if not job_card or job_card[0].split()[:2] != ['//R0BATCH', 'JOB']:
         raise ValueError('wrong job card')
     inputs = (
         ('ASMM', 'R0MOBJ', input_source('master.asm')),

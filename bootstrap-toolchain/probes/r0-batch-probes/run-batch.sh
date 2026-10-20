@@ -33,7 +33,9 @@ tools/mvs/job-summary "$job" --max-rc 0
 
 count=0
 while IFS= read -r marker; do
-    if ! grep -Fqx -- "$marker" "$report"; then
+    # QOUT uses FB80 records: ignore trailing record-padding blanks,
+    # but require the complete expected marker at column one.
+    if ! grep -Eq "^${marker}[[:space:]]*$" "$report"; then
         echo "ERROR: Actual QOUT marker missing: $marker" >&2
         echo "Report: $report" >&2
         exit 1
