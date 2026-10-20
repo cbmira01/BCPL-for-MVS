@@ -19,6 +19,10 @@ Existing public API remains unchanged: `QSAMSVC:200`, the v1 opcodes, four-word 
 7. **CLOSE and finalization.** On successful explicit CLOSE, invoke QSAM CLOSE first, then dispose of the pending record/staging area, DCB/control allocation and public handle. A returned CLOSE error remains visible as `QS_ERR_CLOSE` and requires conservative ownership accounting; no speculative safe retry is promised. A linked stateful BCPLQSAM package must be finalized on normal `FINISH` and `STOP(n)` even if handles were left open. Use a *generic* termination hook supplied by Milestone Runtime Extensions, before BCPLMAIN's final storage reclamation, not a QSAM-specific permanent edit to BCPLMAIN. It should attempt all live-handle closures, continue cleanup of unrelated handles after a returned failure, release resources when safely possible, and preserve the intended STOP code. Exact diagnostic and termination-RC policy for implicit CLOSE failure requires separate approval and evidence.
 8. **Accounting and allocation errors.** Keep explicit counts of live DCB/control blocks, stages, handles and pending records; use conditional MVS storage requests and report `QS_ERR_RESOURCE` on a returned allocation failure without consuming an input record or losing another handle's state. MVS may still issue unrecovered abends. The initial module is nonreentrant, with all mutable state private to BCPLQSAM.
 
+See also the [Q.0 period-limit, conditional-allocation and generic-finalization review](qsam-q0-record-limits-failures-finalization-review.md).
+It distinguishes documented MVS maxima from any *tested BCPLQSAM ceiling*
+and proposes (without approving) R.0 finalizer sequencing.
+
 ## What is not approved as a fixed numeric value
 
 - A universal MVS logical-record maximum, initial BCPLQSAM application-data ceiling, or region-dependent guarantee that 16 *maximum-size* handles can always OPEN. Test period MVS constraints and available GETMAIN capacity; select and document the actual ceiling before Q.2/Q.3 feature acceptance.

@@ -194,6 +194,17 @@ The BCPL application separately imports a library-specific `GLOBAL` declaration/
 9. **ABI/versioning and opcode 0:** module/descriptor signature and version; shared QUERY prefix, API major/minor, opcode-support bitmap, capacity/size inquiry, failure behavior, and client consumption; rejection of incompatible extension descriptors.
 10. **Testing:** preserving existing BLIB and native service behavior without modifying current accepted artifacts ahead of gates.
 
+### Q.0 finalization sequencing proposal awaiting R.0 decision
+
+The [Q.0 limits/failure/finalization review](qsam-q0-record-limits-failures-finalization-review.md)
+proposes descriptor-carried **optional finalizer entry points**, called
+exactly once in reverse-registration order on normal `FINISH` and
+`STOP(n)` **before** the existing `BCPLIO.IOFIN` and
+`BCPLMEM.MEMDRAIN` cleanup. The ordering and descriptor linkage are
+**recommendations for owner review**, not an implemented or accepted
+R.0 ABI. `STOP(n)` must retain its requested status. Error reporting
+for a failed implicit CLOSE and the `FINISH` status remain open.
+
 ## 7. March roadmap with explicit gates
 
 | March | Objective | Deliverable and exit gate |

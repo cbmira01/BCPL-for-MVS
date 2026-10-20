@@ -82,6 +82,12 @@ expected PASS records. See [JOB 2160–2162 execution evidence](qsam-q0-dasd-evi
 These experiments establish supported behavior at the tested record
 sizes, **not** an unrestricted MVS record-size limit.
 
+The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)
+documents general Release 3.8 limits and the accepted BCPLIO `GETMAIN RC` precedent.
+It proposes a *generic* optional-module finalizer ordering for owner review;
+the R.0 ABI, tested BCPLQSAM record ceiling and exceptional CLOSE semantics
+remain open, not approved or implemented.
+
 The [Q.0 design review](qsam-q0-design-review-20261020.md) separates
 existing public-interface commitments from proposed implementation
 policies. The [approved staging and resource-management decision](qsam-q0-staging-resource-design-decision.md)
