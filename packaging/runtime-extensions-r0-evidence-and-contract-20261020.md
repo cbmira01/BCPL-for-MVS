@@ -103,11 +103,15 @@ exports remain to be decoded from the final linked program.
 bounds/dependency/collision design for **R.0 testing**, not final ABI.
 A [six-profile isolated descriptor/linkage experiment](../bootstrap-toolchain/probes/r0-registration-probes/README.md)
 is prepared, with a valid profile and five targeted rejection fixtures.
-Initial Morkies validation found a **test-generator syntax error**
-(`test_generator.py` line 62, missing `)`), before generation or
-JES submission. A source correction has been prepared; all Python
-unit/dry-run checks need re-verification. **No MVS execution or
-IEWL evidence is claimed**. See the
+The initial Morkies validation found a **test-generator syntax
+error** (`test_generator.py`, missing `)`) before submission.
+After the correction the owner ran the four Python tests, all six
+JCL profile dry-runs, and [JOBs 2187–2192](runtime-extensions-r0-first-probes-evidence-20261020.md)
+with **six RC=0000 steps and the required actual QOUT marker in
+every job**. A new [20-case one-JOB dependency/finalizer
+batch](../bootstrap-toolchain/probes/r0-batch-probes/README.md)
+remains **unrun under MVS**; no production importer/finalizer is
+implemented. See the
 [decision record](runtime-extensions-r0-testing-decision-20261020.md).
 
 **The parallel Q.0 concurrent-DCB probe has now passed** in

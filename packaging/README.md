@@ -54,9 +54,11 @@ and [source-derived native owner ledger](runtime-extensions-r0-native-global-own
 examine bounded descriptors, dependencies and historical global
 ownership. The revised design is [approved for R.0
 experiments](runtime-extensions-r0-testing-decision-20261020.md);
-[test-only link/descriptor probes](../bootstrap-toolchain/probes/r0-registration-probes/README.md)
-are ready for Morkies but **have not yet run under MVS**. Exact byte
-offsets and finalizer ABI remain **unapproved**.
+[first test-only link/descriptor probes](runtime-extensions-r0-first-probes-evidence-20261020.md)
+**passed in MVS JOBs 2187–2192**. A [batched next probe](../bootstrap-toolchain/probes/r0-batch-probes/README.md)
+prepares **14 dependency and 6 simulated finalizer cases in one JES
+job**, pending MVS execution. Exact byte offsets, production
+registration and finalizer ABI remain **unapproved**.
 R is not a prerequisite for M4.
 
 The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The global slots G!200–G!202 are assigned in the registry; the shared registration ABI and package-local opcodes still require R.0/Q.0 verification.

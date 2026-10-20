@@ -1,6 +1,7 @@
 # Milestone Runtime Extensions — R.0 link-resolved descriptor probes
 
-**March:** **R.0 — Evidence and contract** (open). **Test-only, not MVS-executed.**
+**March:** **R.0 — Evidence and contract** (open). **Test-only
+PASS on MVS 3.8J/TK5 (JOBs 2187–2192, 20 October 2026).**
 The owner approved the revised bounds/dependency/collision design **for
 testing**, not as an exact accepted binary ABI. R.1 has not started.
 Do not install objects into BOOT_OBJ or BOOT_DEVOBJ.
@@ -52,6 +53,14 @@ QOUT marker. If rejected for a different reason or erroneously accepted,
 GO should return RC=0008 with no actual QOUT PASS record.
 The internal validator status is **not** the JES GO condition code.
 
+## Reproduce the completed JOBs 2187–2192
+
+The commands below are retained for reproduction of the **already
+completed** first-probe tests. The owner's newer batched R.0 work
+should use the [single-JOB dependency and finalizer package](../r0-batch-probes/README.md)
+instead of rerunning all six individual jobs unless diagnosing a
+specific regression.
+
 ## Run on Morkies, from repository root
 
 ~~~bash
@@ -89,7 +98,11 @@ parenthesis in `test_generator.py` caused `SyntaxError` at line 62.
 That source typo has been corrected. Earlier text claiming four unit
 tests had passed was incorrect. Re-run syntax, unit and generator
 checks on Morkies; **their passing results are not yet confirmed**.
-**IFOX, IEWL and MVS GO have NOT run** for these sources. Dependency transitivity/ordering,
+**After correction, the owner re-ran all four Python tests, six
+dry-run profiles and actual JOBs 2187–2192. All passed with RC=0000
+on each step and actual QOUT markers.** See the
+[recorded MVS evidence](../../../packaging/runtime-extensions-r0-first-probes-evidence-20261020.md).
+Dependency transitivity/ordering,
 complete collision ownership, trusted module extents, finalizer
 invocation, FINISH/STOP integration and R.0 closure remain future gates.
 See the [approved R.0 testing scope](../../../packaging/runtime-extensions-r0-testing-decision-20261020.md).

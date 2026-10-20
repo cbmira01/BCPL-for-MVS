@@ -12,9 +12,11 @@ identify proposed trusted extents, dependency encoding and
 collision-validation gates. The owner subsequently **approved the
 revised design for isolated R.0 testing**, recorded in the
 [R.0 testing decision](runtime-extensions-r0-testing-decision-20261020.md).
-The [test-only link/descriptor generator](../bootstrap-toolchain/probes/r0-registration-probes/README.md)
-is prepared and **not yet MVS-tested**; the exact wire ABI remains
-**unapproved**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+The [first linked-descriptor probes](runtime-extensions-r0-first-probes-evidence-20261020.md)
+**PASSED under MVS in JOBs 2187–2192**, including all five precise
+negative rejection markers. A [one-JOB remaining-case batch](../bootstrap-toolchain/probes/r0-batch-probes/README.md)
+is locally tested, **not yet MVS-executed**. The exact byte-level
+ABI and real BCPLMAIN/finalizer integration remain **unapproved**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
 

@@ -42,7 +42,11 @@ was missing a closing parenthesis after `unittest.main(verbosity=2)`.
 Therefore the earlier claim that all four unit tests passed was
 **incorrect**. A one-character source correction is committed; the
 full suite and six generated decks require re-verification on Morkies.
-**MVS status:** NOT RUN; no JES return codes or actual QOUT exist.
+**Subsequent MVS results:** The corrected suite **PASSED** on Morkies,
+then [JOBs 2187–2192](runtime-extensions-r0-first-probes-evidence-20261020.md)
+all passed, each with six RC=0000 steps and its actual expected
+QOUT marker. This supersedes the initial unrun status without
+erasing the earlier syntax correction record.
 
 The fixtures use the test-local placeholder PACKA/G!299 but do
 not register an actual BCPL global. G!299 remains **unallocated**
@@ -55,9 +59,11 @@ pre-START app/BLIB/native collision ledger, trusted load-module
 span bounds, finalizer register/save-area ABI, and FINISH/STOP
 end-to-end behavior are **not established** by this first probe.
 
-First run only the valid profile (R0VALID), inspect all six
-assembly/link/GO steps and the **actual QOUT marker**, then decide
-whether to run the negative fixtures. A failed probe is a reason to
+The original R0VALID and five negative fixtures have **now all run
+and passed**. The owner requested batching subsequent R.0 probes:
+see the [one-JOB, 20-case package](../bootstrap-toolchain/probes/r0-batch-probes/README.md).
+That new package has passed offline tests only; its actual MVS
+assembler/link/GO results are still pending. A failed probe is a reason to
 fix the isolated test, not to change accepted BCPLMAIN, BOOT_OBJ,
 BOOT_DEVOBJ, or the demoted Cambridge compiler. Q.0 remains open
 and neither Q.1 nor R.1 has started.
