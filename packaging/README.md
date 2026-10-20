@@ -55,6 +55,10 @@ The [DASD FB/V/VB probes](../bootstrap-toolchain/probes/q0-qsam-dasd-probes/READ
 also passed: **JOB 2160** (FB80), **JOB 2161** (V) and **JOB 2162**
 (VB). See [MVS execution evidence](qsam-q0-dasd-evidence-20261020.md)
 and [remaining Q.0 design questions](qsam-q0-design-review-20261020.md).
+The [approved Q.0 staging and resource-management decision](qsam-q0-staging-resource-design-decision.md)
+establishes per-handle private buffering, stale-handle protection, and
+normal FINISH/STOP finalization requirements, while record limits and
+exceptional error policy still require investigation.
 **Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
 ## Proposed optional numeric and clock milestones

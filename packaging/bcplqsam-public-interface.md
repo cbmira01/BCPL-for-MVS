@@ -353,7 +353,7 @@ Repeated undersized retries leave it pending.
 
 CLOSE discards any pending record belonging to that handle.
 
-This requires private record staging storage. The extension must report resource failures rather than silently discard oversized data.
+This requires private record staging storage. The extension must report resource failures rather than silently discard oversized data. The approved [Q.0 staging and resource-management decision](qsam-q0-staging-resource-design-decision.md) selects checked per-handle allocation before the first GET/PUT, with an explicit pending-record state and no second GET on an undersized retry. The implementation and limits have not yet been MVS-tested.
 
 There is no fixed public limit of 80 or 132 bytes. The applicable limits come from MVS dataset attributes, QSAM capabilities, and the extension's documented supported maximum.
 
@@ -421,6 +421,8 @@ Closing an invalid or previously closed handle is an error.
 A CLOSE error must be reported if MVS returns control with an identifiable failure.
 
 The exact handle and resource disposition following exceptional CLOSE failure requires an explicitly tested implementation policy; it must not be represented as successful cleanup without evidence.
+
+On normal BCPL `FINISH` and `STOP(n)`, a *linked* BCPLQSAM instance must attempt to close every outstanding handle and safely release extension-owned resources before final program memory reclamation. This is an approved design requirement, not implemented functionality. The intended mechanism is a **generic termination/finalization hook** from [Milestone Runtime Extensions](milestone-runtime-extensions.md), not a QSAM-specific permanent BCPLMAIN edit. Preserve the requested `STOP(n)` code. Normal termination cleanup does not guarantee recovery from unrecovered MVS abends, and the diagnostic/exit policy for an implicit CLOSE failure remains to be verified. See [Q.0 decision](qsam-q0-staging-resource-design-decision.md).
 
 ## 13. INFO — opcode 5
 

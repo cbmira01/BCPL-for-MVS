@@ -1,8 +1,12 @@
 # Milestone QSAM — Q.0 outstanding contract and implementation design review
 
-**Status:** Engineering recommendations **for owner review**.
-No new public API assignments or production implementation are approved
-by this note. Governing march: **Q.0 — Reconnaissance & contract**.
+**Status:** The private staging, handle lifetime, allocation and normal
+termination resource-management policies in this review were subsequently
+approved for design planning in the
+[Q.0 staging/resource decision](qsam-q0-staging-resource-design-decision.md).
+Other proposals remain subject to the indicated tests and owner approval.
+No production implementation is authorized by this note.
+Governing march: **Q.0 — Reconnaissance & contract**.
 **Q.1 — Linkage & OPEN/CLOSE skeleton has not started.**
 
 ## Established evidence and existing API decisions
@@ -26,7 +30,13 @@ by this note. Governing march: **Q.0 — Reconnaissance & contract**.
   bytes. The public BCPL buffer and its reported length exclude the
   RDW. The BDW is never part of the public logical record.
 
-## Recommended implementation policies — not yet accepted
+## Implementation policies: approved directions and outstanding verification
+
+The linked [decision record](qsam-q0-staging-resource-design-decision.md)
+takes precedence over this earlier recommendation table wherever it
+approves staging, handle allocation/retirement and normal finalization.
+Numeric ceilings, exceptional CLOSE policy, and the precise R.0
+registrar/finalizer representation remain unresolved.
 
 | Subject | Proposal | Required evidence or owner decision |
 | --- | --- | --- |

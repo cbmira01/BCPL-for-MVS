@@ -45,7 +45,7 @@ DDNAME contract: eight-character uppercased/padded DDNAME, explicit allowable ch
 | March | Objective | Concrete deliverables | Gate to close |
 | --- | --- | --- | --- |
 | **Q.0 — Reconnaissance & contract** | Verify the actual native runtime/linkage and MVS QSAM constraints | API/ABI spec, global-number allocation plan, buffer/string representation, DCB/DDNAME and error semantics, examples, test matrix, MVS 3.8 references | Evidence-backed design approved; no speculative ABI or record-size claims |
-| **Q.1 — Linkage & OPEN/CLOSE skeleton** | Link a separate service into a native BCPL program | Candidate `BCPLQSAM` assembler module, optional BCPL wrappers/declarations, 16-slot handle table, OPEN/CLOSE, JCL and first demo | BCPL calls assembler reliably; 3 DDs independently open/close; clean failures and no regression |
+| **Q.1 — Linkage & OPEN/CLOSE skeleton** | Link a separate service into a native BCPL program | Candidate `BCPLQSAM` assembler module, optional BCPL wrappers/declarations, 16-slot handle table, OPEN/CLOSE, JCL and first demo | BCPL calls assembler reliably; 3 DDs independently open/close; clean failures; linked extension auto-closes outstanding handles on FINISH/STOP via approved generic finalization; no regression |
 | **Q.2 — Fixed logical records** | Make deterministic QSAM GET/PUT useful | RECFM F/FB read/write, bounds and padding rules, copy demo, EOF/error tests, round-trip checks | Byte-accurate read/write and observed EOF; overflow/invalid handle tests; all baseline regressions still pass |
 | **Q.3 — Variable logical records** | Safely handle V/VB | RDW handling contract, logical data-length conversions, zero-length/limit behavior, documentation and tests | Variable lengths preserved; RDW not leaked to BCPL unless explicitly designed; error/status checks pass |
 | **Q.4 — SYSOUT devices** | Prove non-disk record output | `SYSPRINT` FBA carriage-control demo; `SYSPUNCH` 80-column card-image demo; corresponding JES/JCL evidence | Generated printed and punched records verified, including carriage control and padding |
@@ -84,15 +84,19 @@ sizes, **not** an unrestricted MVS record-size limit.
 
 The [Q.0 design review](qsam-q0-design-review-20261020.md) separates
 existing public-interface commitments from proposed implementation
-policies. Remaining work includes record-size boundaries, variable
+policies. The [approved staging and resource-management decision](qsam-q0-staging-resource-design-decision.md)
+establishes private per-handle GET/PUT areas, eager checked allocation,
+non-recycled handle identities, pending-record retry invariants, and
+normal termination cleanup via a generic optional-extension finalizer.
+Remaining Q.0 verification includes record-size boundaries, variable
 zero-data-length cases, recoverable OPEN/GET/PUT/CLOSE failures, a
 demonstration of pending-record retry, exact effective INFO fields,
-and the shared Runtime Extensions R.0 registrar.
+and the shared Runtime Extensions R.0 registrar/finalizer ABI.
 **Q.0 remains open; do not start Q.1 before its gate is reviewed.**
 
 ### Detailed test obligations
 
-- Q.1: one/two/three simultaneous DDs, open failure (missing DD), read/write mode validation, repeat close, invalid handle, handle reuse, cleanup after partial open.
+- Q.1: one/two/three simultaneous DDs, then 16 live handles; open failure (missing DD), read/write mode validation, repeat close, invalid and stale handles after slot reuse, cleanup after partial OPEN; resource accounting and a generic finalizer demonstrating automatic CLOSE on FINISH and STOP(8) without changing the requested termination code.
 - Q.2: F and FB records, first/last record, EOF twice, precise length/padding, maximum buffer boundary, undersized buffer, failed writes/read-after-close, empty dataset.
 - Q.3: V/VB record lengths (including edge values permitted by MVS), RDW/BDW handling delegated to correct QSAM interface, buffer overrun and status behavior.
 - Q.4: SYSOUT print control FBA and conventional 80-byte punch records; distinguish program-supplied control/data from spool presentation.
