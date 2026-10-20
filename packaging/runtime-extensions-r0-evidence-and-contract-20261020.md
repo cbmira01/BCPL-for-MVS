@@ -99,6 +99,14 @@ exports remain to be decoded from the final linked program.
    ABI after inspection of test evidence, then decide whether
    the R.0 gate is satisfied. **R.1 remains unstarted**.
 
+**R.0 experiment added (test-only):** The owner approved the revised
+bounds/dependency/collision design for **R.0 testing**, not final ABI.
+A [six-profile isolated descriptor/linkage experiment](../bootstrap-toolchain/probes/r0-registration-probes/README.md)
+is prepared, with a valid profile and five targeted rejection fixtures.
+Offline Python/JCL structural checks passed; **no MVS execution or
+IEWL evidence is claimed**. See the
+[decision record](runtime-extensions-r0-testing-decision-20261020.md).
+
 **The parallel Q.0 concurrent-DCB probe has now passed** in
 [JOBs 2183–2186](qsam-q0-concurrent-dcb-evidence-20261020.md),
 including sixteen simultaneously OPEN DCBs at GO REGION=256K.

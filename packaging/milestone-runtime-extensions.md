@@ -9,8 +9,12 @@ and [proposed byte-level registrar and finalizer ABI](runtime-extensions-r0-cand
 The [three-question R.0 refinement review](runtime-extensions-r0-three-design-questions-review-20261020.md)
 and [BCPLMAIN native owner inventory](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
 identify proposed trusted extents, dependency encoding and
-collision-validation gates; these details remain **unapproved**
-and the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+collision-validation gates. The owner subsequently **approved the
+revised design for isolated R.0 testing**, recorded in the
+[R.0 testing decision](runtime-extensions-r0-testing-decision-20261020.md).
+The [test-only link/descriptor generator](../bootstrap-toolchain/probes/r0-registration-probes/README.md)
+is prepared and **not yet MVS-tested**; the exact wire ABI remains
+**unapproved**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
 
