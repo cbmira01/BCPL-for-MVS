@@ -165,16 +165,22 @@ V/VB up to 1020 data bytes). The source/JCL and reproducibility details
 are in the [Q.0 probe README](../bootstrap-toolchain/probes/q0-qsam-ceiling-probes/README.md).
 
 The 16-stage test did **not** OPEN sixteen QSAM DCBs or establish a
-full-job memory budget. The
-[Q.0 remaining-gate inventory](qsam-q0-remaining-gate-review-20261020.md)
-retains exceptional error-path, complete region budget and shared
-Runtime Extensions R.0 obligations. These standalone programs are not
-production BCPLQSAM acceptance.
+full-job memory budget. The owner has now separately **approved the
+[Q.0 error/finalization policy and concurrent-DCB experiment](qsam-q0-error-and-r0-design-decisions-20261020.md)**.
+The [new test-only 1/3/8/16 DCB generator](../bootstrap-toolchain/probes/q0-qsam-16-dcb-probes/README.md)
+is locally checked but **not yet run on MVS**; it includes a
+16-DCB `REGION=512K` fallback if the 256K probe fails.
+The shared Milestone Runtime Extensions
+[R.0 — Evidence and contract review](runtime-extensions-r0-evidence-and-contract-20261020.md)
+has started as a source/ABI investigation, not as implementation.
+These standalone programs are not production BCPLQSAM acceptance.
 
-Remaining Q.0 verification includes recoverable versus abending
-OPEN/GET/PUT/CLOSE diagnostics, the production INFO mapping,
-whole-handle/resource budgets, and shared Runtime Extensions R.0
-registration/finalizer lifecycle decisions. The tested GETMAIN R15=4
+Remaining Q.0 verification includes **testing the approved error and
+returned-CLOSE ownership rules**, the production INFO mapping,
+the 16-DCB/whole-handle resource budget, and **confirming the exact
+R.0 registration/finalizer ABI**. The architectural R.0 model,
+reverse finalizer ordering and normal FINISH RC=8 returned-error
+policy are now approved; no working implementation exists. The tested GETMAIN R15=4
 return, binary boundary data and valid zero-payload V/VB records are
 established as standalone MVS evidence, **not** as final BCPL API tests.
 The numeric stage ceiling has been decided, not yet implemented.

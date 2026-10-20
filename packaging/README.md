@@ -41,7 +41,13 @@ Git history but were removed from the working tree.
 
 ## Proposed optional runtime registration architecture
 
-[Milestone Runtime Extensions](milestone-runtime-extensions.md) (R.0–R.3) proposes explicit IEWL selection of optional modules and general startup registration of their BCPL global-vector entries. It records the present BCPLMAIN/BLIB evidence, collision/absence considerations, and compatibility gates. **Proposed, not implemented; not a prerequisite for M4.** This is the shared registration foundation envisaged for the optional QSAM, Decimal Arithmetic and Date/Time modules.
+[Milestone Runtime Extensions](milestone-runtime-extensions.md) (R.0–R.3)
+proposes explicit IEWL selection and general startup registration.
+**R.0 — Evidence and contract is in progress**; R.1 has not started.
+The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
+documents current `BCPLMAIN` export and FINISH/STOP paths and the
+owner-approved shared `BCPLREG`/finalizer *model*. The exact assembler
+ABI and implementation remain open, and R is not a prerequisite for M4.
 
 The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The global slots G!200–G!202 are assigned in the registry; the shared registration ABI and package-local opcodes still require R.0/Q.0 verification.
 
@@ -56,12 +62,16 @@ also passed: **JOB 2160** (FB80), **JOB 2161** (V) and **JOB 2162**
 (VB). See [MVS execution evidence](qsam-q0-dasd-evidence-20261020.md)
 and [remaining Q.0 design questions](qsam-q0-design-review-20261020.md).
 The [Q.0 record-size/failure/finalization review](qsam-q0-record-limits-failures-finalization-review.md)
-records historical MVS limits and proposes a shared finalizer ABI for
-owner review (not implemented).
-The [approved Q.0 staging and resource-management decision](qsam-q0-staging-resource-design-decision.md)
-establishes per-handle private buffering, stale-handle protection, and
-normal FINISH/STOP finalization requirements, while record limits and
-exceptional error policy still require investigation.
+separates historical MVS limits from a tested implementation ceiling.
+The [approved Q.0 staging and resource decision](qsam-q0-staging-resource-design-decision.md)
+and [JOBs 2180–2182 evidence](qsam-q0-1024-byte-stage-evidence-20261020.md)
+establish **1024 total private stage bytes per handle** as the
+version-1 BCPLQSAM design limit. The
+[approved error/R.0 finalizer decisions](qsam-q0-error-and-r0-design-decisions-20261020.md)
+specify conservative CLOSE ownership and FINISH/STOP diagnostics.
+The [test-only 1/3/8/16-DCB generator](../bootstrap-toolchain/probes/q0-qsam-16-dcb-probes/README.md)
+is prepared for the outstanding whole-handle storage measurements;
+**no new MVS jobs have been run**.
 **Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
 ## Proposed optional numeric and clock milestones

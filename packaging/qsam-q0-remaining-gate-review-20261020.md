@@ -2,8 +2,11 @@
 
 **March:** Q.0 — Reconnaissance & contract. **Not closed.**
 **Next March:** Q.1 — Linkage & OPEN/CLOSE skeleton (**not started**).
-This is an evidence inventory and risk register; no new public API,
-numeric maximum, or Runtime Extensions decision is approved here.
+This is an evidence inventory and risk register; the owner approved
+the Q.0 conservative error policy, shared Runtime Extensions R.0
+architectural/finalization model, and 16-DCB experiment on
+2026-10-20. This does not approve any new public opcode or change
+the separately accepted 1024-byte private-stage ceiling.
 The authorities are `packaging/milestone-qsam.md`,
 `packaging/bcplqsam-public-interface.md`, the Q.0 approved staging
 record, and `packaging/milestone-runtime-extensions.md`.
@@ -41,6 +44,8 @@ record, and `packaging/milestone-runtime-extensions.md`.
    A complete region budget for **16 actual OPEN handles**, including
    DCBs, QSAM buffers, core runtime and application, is **not yet
    established**; the stage-only experiment is not sufficient.
+   The approved [1/3/8/16-DCB test-only plan](../bootstrap-toolchain/probes/q0-qsam-16-dcb-probes/README.md)
+   has been prepared and locally checked; **no MVS run is reported**.
    Production over-limit rejection also remains to be tested.
 3. **Effective INFO attributes — V/VB test geometry confirmed.**
    [JOBs 2178/2179](qsam-q0-post-open-info-evidence-20261020.md)
@@ -49,19 +54,23 @@ record, and `packaging/milestone-runtime-extensions.md`.
    `INFO.result!7` as the dataset-specific application-data maximum:
    F/FB=LRECL; V/VB=LRECL minus four. Actual BCPL `QSAMSVC` INFO,
    exceptional formats and negative geometry remain unverified.
-4. **Error semantics — still an open Q.0 gate.** Distinguish cases
-   that safely return a status (for example, tested non-opening missing
-   DD inquiries) from cases that abend (JOB 2171: S013-20 for
-   incompatible OPEN). Determine where pre-OPEN validation is required;
-   define return/diagnostic policy for SYNAD, GET, PUT and exceptional
-   CLOSE. Do **not** assume generic MVS abend recovery.
-5. **Shared optional-module lifecycle (Milestone Runtime Extensions).**
-   The R.0 registrar/descriptor format, duplicate/missing package
-   behavior, exact finalizer entry ABI, ordering and exceptional implicit
-   CLOSE policy remain **proposals needing separate owner decisions**.
-   On STOP(n), the accepted Q.0 staging design preserves n. Whether a
-   failing implicit CLOSE changes ordinary FINISH completion still
-   requires evidence and a decision. Do not add QSAM-only hooks.
+4. **Error semantics — design approved, failure evidence still open.**
+   The [owner-approved Q.0 policy](qsam-q0-error-and-r0-design-decisions-20261020.md)
+   preserves the v1 numeric codes, uses reliable pre-OPEN validation,
+   and marks a returned CLOSE failure unusable with **uncertain
+   resource ownership**, rather than blindly retrying or freeing
+   live structures. JOB 2171 still proves an S013-20 abend path;
+   no generic MVS abend recovery is promised. SYNAD/GET/PUT and
+   exceptional CLOSE behavior still require targeted MVS evidence.
+5. **Shared optional-module lifecycle — model approved; R.0 in progress.**
+   The owner approved linker-selected bounded `BCPLREG`,
+   duplicate/missing package rejection before START, optional
+   descriptor-carried finalizers called once in reverse order
+   **before BCPLIO.IOFIN and BCPLMEM.MEMDRAIN**. `STOP(n)` retains n;
+   a returned finalizer failure on ordinary `FINISH` emits a
+   diagnostic and sets **RC=8**. The **exact assembler layout,
+   register ABI and error report format** still need R.0 evidence,
+   testing and further approval. No generic finalizer is implemented.
 6. **Owner Q.0 gate review.** Reconcile the accepted version-1
    BCPLQSAM Public Interface Specification with supported evidence,
    record permitted deferrals, and explicitly approve Q.0 before Q.1.

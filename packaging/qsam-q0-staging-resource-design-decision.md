@@ -3,8 +3,11 @@
 **Status:** Approved Q.0 staging and resource-management design. The owner
 also approved a **1024-byte total private logical-record stage per
 handle** after standalone MVS JOBs 2180–2182. **Not implemented as
-BCPLQSAM.** Exceptional CLOSE outcomes, full 16-handle region budget,
-and exact generic Runtime Extensions finalization ABI remain open. Q.0 — Reconnaissance & contract remains in progress; Q.1 — Linkage & OPEN/CLOSE skeleton has not started.
+BCPLQSAM.** The owner has additionally approved the conservative
+returned-CLOSE error and generic R.0 finalizer architecture, including
+ordinary FINISH RC=8 on a returned finalizer failure. Exceptional
+CLOSE MVS outcomes, full 16-handle region budget and the exact
+generic Runtime Extensions assembler ABI remain open. Q.0 — Reconnaissance & contract remains in progress; Q.1 — Linkage & OPEN/CLOSE skeleton has not started.
 
 ## Authority and boundaries
 
@@ -20,12 +23,20 @@ Existing public API remains unchanged: `QSAMSVC:200`, the v1 opcodes, four-word 
 4. **READ state machine.** Each input handle independently tracks `READY`, `PENDING`, or `EOF`; pending presence is an explicit Boolean, never inferred from a nonzero record length. A READ in `READY` issues at most one GET into private storage. For V/VB, check the RDW and strip its four bytes from the public copy and `result!1` length. If capacity is insufficient, set `PENDING`, return `QS_ERR_CAPACITY` and required *data* length in `result!1`, and leave the destination buffer untouched. Any number of short retries return the same required length without another GET. The first sufficient retry copies exactly the logical data bytes and clears `PENDING`. EODAD sets persistent `EOF`; repeated READ calls report `QS_EOF` without GET. A legal zero-data-length variable record, if validated in MVS, succeeds with length zero and is not EOF.
 5. **WRITE from private staging.** Validate mode and exact application data length *before* copying or calling PUT. F/FB requires data length equal to effective LRECL. V/VB uses private storage for the internally constructed RDW plus data; it reports only user data bytes. For a valid call, copy from BCPL byte buffer into the private staging area, then PUT. A successful PUT is not a guarantee that the physical output has been flushed; CLOSE remains consequential.
 6. **16 active handles and stale-handle prevention.** Keep at least 16 simultaneous active entries. Each handle is a distinct positive BCPL signed integer, issued from a monotonically increasing non-recycled sequence for the life of the program; the internal slot may be reused after successful CLOSE, but its former handle value is never valid again. Reject exhaustion rather than wrap the counter or alias an old handle. Each entry tracks open/close state, mode, DCB/storage ownership, allocated lengths, input state, pending length, effective attributes and QSAM errors.
-7. **CLOSE and finalization.** On successful explicit CLOSE, invoke QSAM CLOSE first, then dispose of the pending record/staging area, DCB/control allocation and public handle. A returned CLOSE error remains visible as `QS_ERR_CLOSE` and requires conservative ownership accounting; no speculative safe retry is promised. A linked stateful BCPLQSAM package must be finalized on normal `FINISH` and `STOP(n)` even if handles were left open. Use a *generic* termination hook supplied by Milestone Runtime Extensions, before BCPLMAIN's final storage reclamation, not a QSAM-specific permanent edit to BCPLMAIN. It should attempt all live-handle closures, continue cleanup of unrelated handles after a returned failure, release resources when safely possible, and preserve the intended STOP code. Exact diagnostic and termination-RC policy for implicit CLOSE failure requires separate approval and evidence.
+7. **CLOSE and finalization.** On successful explicit CLOSE, invoke QSAM CLOSE first, then dispose of the pending record/staging area, DCB/control allocation and public handle. A returned CLOSE error reports `QS_ERR_CLOSE`, retires the handle
+from application I/O and retains **uncertain ownership** of
+resources MVS may still reference; do not blindly retry or free. A linked stateful BCPLQSAM package must be finalized on normal `FINISH` and `STOP(n)` even if handles were left open. Use a *generic* termination hook supplied by Milestone Runtime Extensions, before BCPLMAIN's final storage reclamation, not a QSAM-specific permanent edit to BCPLMAIN. It should attempt all live-handle closures, continue cleanup of unrelated handles after a returned failure, release resources when safely possible, and preserve the intended STOP code. The owner approved diagnostic reporting and **FINISH RC=8**
+on a returned implicit-finalizer failure, with `STOP(n)` still n.
+The diagnostic format, exact assembler finalizer ABI, and
+exceptional MVS CLOSE behavior still require R.0/Q.0 tests.
 8. **Accounting and allocation errors.** Keep explicit counts of live DCB/control blocks, stages, handles and pending records; use conditional MVS storage requests and report `QS_ERR_RESOURCE` on a returned allocation failure without consuming an input record or losing another handle's state. MVS may still issue unrecovered abends. The initial module is nonreentrant, with all mutable state private to BCPLQSAM.
 
 See also the [Q.0 period-limit, conditional-allocation and generic-finalization review](qsam-q0-record-limits-failures-finalization-review.md).
-It distinguishes documented MVS maxima from any *tested BCPLQSAM ceiling*
-and proposes (without approving) R.0 finalizer sequencing.
+It distinguishes documented MVS maxima from the approved private
+stage ceiling. The owner has now approved the R.0 **finalizer
+sequencing model** separately: see
+[Q.0 error and R.0 decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+No generic finalizer has yet been implemented.
 
 ## Approved initial record-stage limit (2026-10-20)
 
@@ -54,8 +65,10 @@ handle** for the first implementation, supported by
 **Still not approved or verified:** a guarantee that **16 fully open
 maximum-sized handles** fit within `REGION=256K` (JOB 2182 held only
 sixteen private stages); the completed public implementation; abnormal
-QSAM CLOSE behavior and unrecovered abends; the R.0/R.1 generic
-registration/finalizer ABI and final error/exit diagnostic policy.
+QSAM CLOSE behavior and unrecovered abends; the *exact* R.0/R.1
+generic registration/finalizer byte layout and calling convention.
+The observable normal FINISH/STOP returned-error policy is approved,
+but its diagnostic format and MVS behavior are not yet tested.
 The approved handle count remains **16 concurrently open handles as a
 functional target**, with region budgeting and Q.1 validation pending.
 

@@ -1,6 +1,12 @@
 # Milestone QSAM — Q.0 record limits, resource failures and finalization review
 
-**Status:** Q.0 — Reconnaissance & contract; engineering findings and **proposed R.0 design for owner approval**. No BCPLQSAM or Runtime Extensions implementation has been performed. **Q.1 — Linkage & OPEN/CLOSE skeleton has not started.**
+**Status:** Q.0 — Reconnaissance & contract; original evidence review,
+subsequently followed by **owner approval of the R.0 model** on
+2026-10-20. The approved model is documented in
+[the decision record](qsam-q0-error-and-r0-design-decisions-20261020.md).
+**No BCPLQSAM or Runtime Extensions implementation has been performed.**
+Q.1 — Linkage & OPEN/CLOSE skeleton has not started; R.0 —
+Evidence and contract is in progress.
 
 **Source-of-truth references:** `packaging/milestone-qsam.md`; `packaging/bcplqsam-public-interface.md`; `packaging/qsam-q0-staging-resource-design-decision.md`; `packaging/milestone-runtime-extensions.md`; `packaging/runtime-and-library-nomenclature.md`; `packaging/global-number-registry.md`; `packaging/bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md`. Source repository: `cbmira01/BCPL-for-MVS` on `main` (reviewed at `2afb81a972fe5668c5ef587ffa015ef779a039e6`).
 
@@ -46,21 +52,31 @@ These are not tests of the production module or sixteen opened DCBs.
 Still unproven: a complete 16-handle region budget, safe recovery after
 exceptional CLOSE, and behavior across all devices/record formats.
 
-## 3. Proposed Runtime Extensions finalization contract (owner decision needed)
+## 3. Runtime Extensions finalization contract (original proposal, now approved as model)
 
 Current `BCPLMAIN` calls `IOFIN` from its shared `FINEXIT` on both `FINISH` and `STOP(n)`, then releases memory through `MEMDRAIN`. `BCPLIO.IOFIN` calls `IODRAIN`, which drains and closes the core character streams. The accepted staging design requires BCPLQSAM to close outstanding record-oriented handles too, **without hard-coding a QSAM-specific call into BCPLMAIN**.
 
-**Recommended minimum generic model (not yet adopted as the R.0 ABI):**
+**Historical recommendation in this review.** The owner has since
+approved the **model and lifecycle policy**; the precise assembler
+R.0 byte layout, register ABI and diagnostics remain open:
 
 - Each explicitly selected optional module's linker-resolved registration descriptor contains its dispatcher export and an **optional finalization entry pointer** (zero/absent for stateless modules); no additional public `G!N` is allocated for cleanup.
 - At startup, the common Runtime Extensions registrar validates the table and saves an ordered list of finalizers for that executable. Unlinked packages have no entries and no work. Duplicate/invalid descriptors must be rejected before START.
-- At the normal `FINEXIT` common path, invoke all registered finalizers **once**, in **reverse registration order**, **before** the existing `IOFIN` and **before** `MEMDRAIN`, while MVS services and package private state are still valid. This is a proposed ordering; verify that it preserves existing BCPLIO output and register invariants.
+- At the normal `FINEXIT` common path, invoke all registered finalizers **once**, in **reverse registration order**, **before** the existing `IOFIN` and **before** `MEMDRAIN`, while MVS services and package private state are still valid. This ordering is now **owner approved**, but still requires
+tests to preserve BCPLIO output and register invariants.
 - A finalizer uses an assembler-compatible entry convention and reports a status to its caller. **Exact register/descriptor/diagnostic layout remains to be specified and tested in R.0**; do not present any illustrative register assignment as an accepted ABI.
 - A BCPLQSAM finalizer tries to CLOSE each still-open DCB, proceeding to other independent handles after a returned-control error, and frees resources only when safe. Multiple finalizer invocations must be harmless at the internal state level, although the registrar calls it once.
-- `STOP(n)` retains its requested completion code, including `STOP(8)`. For `FINISH`, if an implicit CLOSE fails, **do not silently claim success**; choose a concrete return-code and diagnostic policy after targeted evidence and owner approval. No normal-finalizer guarantee is made on unrecovered MVS abends.
+- `STOP(n)` retains its requested completion code, including `STOP(8)`. For ordinary `FINISH`, a **returned finalizer failure generates a
+diagnostic and RC=8** by owner decision; exact diagnostic layout
+still needs R.0 verification. No normal-finalizer guarantee is made on unrecovered MVS abends.
 - Test `FINISH` and `STOP(8)` with several unclosed input and output files, including an unterminated output buffer and a staged pending input record. Confirm resulting record completeness, handle retirement, the same STOP code, no leaks, and no regressions in core BCPLIO.
 
-**Decision point for owner:** Accept this *generic descriptor-carried optional finalizer* model and reverse-order-before-IOFIN timing for R.0 design, or choose an alternative after targeted ABI review. The existence of a module in IEWL does not on its own imply G!200 installation or a finalizer entry.
+**Decision recorded:** The owner accepted the generic
+descriptor-carried optional finalizer and reverse-order-before-IOFIN
+timing for R.0 design, plus `STOP(n)` preservation and ordinary
+`FINISH` RC=8 on a returned finalizer failure. Exact descriptor
+and finalizer ABI require R.0 evidence before implementation.
+A module's IEWL presence alone never installs G!200 or a finalizer.
 
 ## 4. Recommended Q.0 evidence plan (safe, staged)
 

@@ -420,9 +420,29 @@ Closing an invalid or previously closed handle is an error.
 
 A CLOSE error must be reported if MVS returns control with an identifiable failure.
 
-The exact handle and resource disposition following exceptional CLOSE failure requires an explicitly tested implementation policy; it must not be represented as successful cleanup without evidence.
+**Owner-approved returned-error policy (Q.0):** If CLOSE
+returns an identifiable failure, report `QS_ERR_CLOSE=-14`,
+make that handle unusable to further BCPL I/O, and preserve
+an explicit **uncertain resource-ownership state** for diagnosis
+and safe finalization. Do **not** retry CLOSE blindly, free memory
+that MVS may still reference, or claim the DCB definitely
+closed or definitely remained OPEN. The actual exceptional
+MVS outcomes and safe recovery paths still require tests.
 
-On normal BCPL `FINISH` and `STOP(n)`, a *linked* BCPLQSAM instance must attempt to close every outstanding handle and safely release extension-owned resources before final program memory reclamation. This is an approved design requirement, not implemented functionality. The intended mechanism is a **generic termination/finalization hook** from [Milestone Runtime Extensions](milestone-runtime-extensions.md), not a QSAM-specific permanent BCPLMAIN edit. Preserve the requested `STOP(n)` code. Normal termination cleanup does not guarantee recovery from unrecovered MVS abends, and the diagnostic/exit policy for an implicit CLOSE failure remains to be verified. See [Q.0 decision](qsam-q0-staging-resource-design-decision.md).
+On normal BCPL `FINISH` and `STOP(n)`, a *linked* BCPLQSAM
+instance must attempt to close outstanding handles through the
+**generic descriptor-carried Runtime Extensions finalizer**.
+The owner approved reverse-registration finalizer invocation
+**before BCPLIO.IOFIN and BCPLMEM.MEMDRAIN**, not a
+QSAM-specific BCPLMAIN edit. A returned implicit-finalizer
+error generates a diagnostic and **RC=8 on ordinary FINISH**;
+`STOP(n)` always preserves the requested n, while still reporting
+any returned finalizer error. This is an **approved design
+contract, not implemented functionality**. The exact finalizer
+assembler linkage, diagnostic format and exceptional CLOSE
+behavior still need R.0/Q.0 evidence. Normal cleanup is not
+guaranteed on unrecovered MVS abends. See
+[owner-approved policy](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 13. INFO — opcode 5
 

@@ -1,6 +1,11 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status:** Proposed architectural milestone; not started (2026-10-15). This document records decisions, evidence, hypotheses, and a staged investigation. It does **not** claim an implemented facility.
+**Status:** **R.0 — Evidence and contract in progress** (owner-approved
+architectural/finalization policy, 2026-10-20); R.1 — Generic registration
+foundation has **not started**. No generic registrar, descriptor parser,
+or finalizer is implemented. See the
+[R.0 source audit and outstanding ABI tests](runtime-extensions-r0-evidence-and-contract-20261020.md)
+and the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
 
@@ -194,16 +199,21 @@ The BCPL application separately imports a library-specific `GLOBAL` declaration/
 9. **ABI/versioning and opcode 0:** module/descriptor signature and version; shared QUERY prefix, API major/minor, opcode-support bitmap, capacity/size inquiry, failure behavior, and client consumption; rejection of incompatible extension descriptors.
 10. **Testing:** preserving existing BLIB and native service behavior without modifying current accepted artifacts ahead of gates.
 
-### Q.0 finalization sequencing proposal awaiting R.0 decision
+### Owner-approved R.0 registration/finalization model; exact ABI pending
 
 The [Q.0 limits/failure/finalization review](qsam-q0-record-limits-failures-finalization-review.md)
-proposes descriptor-carried **optional finalizer entry points**, called
-exactly once in reverse-registration order on normal `FINISH` and
-`STOP(n)` **before** the existing `BCPLIO.IOFIN` and
-`BCPLMEM.MEMDRAIN` cleanup. The ordering and descriptor linkage are
-**recommendations for owner review**, not an implemented or accepted
-R.0 ABI. `STOP(n)` must retain its requested status. Error reporting
-for a failed implicit CLOSE and the `FINISH` status remain open.
+now records an **owner-approved architectural decision**: a
+versioned, bounded, linker-selected `BCPLREG` table with
+relocated package descriptors, each with an optional finalizer
+address; finalizers run exactly once in reverse registration order
+on normal `FINISH` and `STOP(n)`, **before** `BCPLIO.IOFIN` and
+`BCPLMEM.MEMDRAIN`. Duplicate/malformed exports or unsatisfied
+declared package requirements are rejected before `START`.
+A returned finalizer error produces a diagnostic and **RC=8 on
+ordinary FINISH**; `STOP(n)` retains n. The **exact byte-level
+descriptor, register/save-area hook ABI, diagnostic mechanisms, and
+failure probes remain unresolved R.0 evidence tasks**. This model is
+not implemented; the existing `BCPLMAIN` remains unchanged.
 
 ## 7. March roadmap with explicit gates
 
