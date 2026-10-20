@@ -56,6 +56,7 @@ The internal validator status is **not** the JES GO condition code.
 
 ~~~bash
 PROBE=bootstrap-toolchain/probes/r0-registration-probes
+python3 -B -c 'import ast,pathlib; p=pathlib.Path("bootstrap-toolchain/probes/r0-registration-probes/test_generator.py"); ast.parse(p.read_text()); print("Syntax OK:",p)'
 python3 -B -m unittest discover -s "$PROBE" -p test_generator.py -v
 for profile in valid badlen badversion duplicate corecollision missingreq; do
     python3 -B "$PROBE/make-jobs.py" "$profile" --check
@@ -82,8 +83,13 @@ credentials or raw JES reports.
 
 ## Evidence boundary
 
-Offline Python source/JCL checks passed, but **IFOX, IEWL and MVS GO
-have NOT run** for these sources. Dependency transitivity/ordering,
+**Validation correction (2026-10-20):** The first Morkies run
+stopped before any deck generation or submission: a missing closing
+parenthesis in `test_generator.py` caused `SyntaxError` at line 62.
+That source typo has been corrected. Earlier text claiming four unit
+tests had passed was incorrect. Re-run syntax, unit and generator
+checks on Morkies; **their passing results are not yet confirmed**.
+**IFOX, IEWL and MVS GO have NOT run** for these sources. Dependency transitivity/ordering,
 complete collision ownership, trusted module extents, finalizer
 invocation, FINISH/STOP integration and R.0 closure remain future gates.
 See the [approved R.0 testing scope](../../../packaging/runtime-extensions-r0-testing-decision-20261020.md).

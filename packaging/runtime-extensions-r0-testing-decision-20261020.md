@@ -36,8 +36,12 @@ native G!14 export and missing application required package.
 Negative profiles must reject for their **specific expected internal
 error code**, not merely abend or fail for unrelated reasons.
 
-**Offline checks:** Python syntax and structure checks passed for
-all six generated JCL decks; all four unit tests passed.
+**Validation correction (2026-10-20):** The initial Morkies attempt
+stopped at Python unittest discovery: `test_generator.py` line 62
+was missing a closing parenthesis after `unittest.main(verbosity=2)`.
+Therefore the earlier claim that all four unit tests passed was
+**incorrect**. A one-character source correction is committed; the
+full suite and six generated decks require re-verification on Morkies.
 **MVS status:** NOT RUN; no JES return codes or actual QOUT exist.
 
 The fixtures use the test-local placeholder PACKA/G!299 but do

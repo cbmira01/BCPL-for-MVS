@@ -103,7 +103,10 @@ exports remain to be decoded from the final linked program.
 bounds/dependency/collision design for **R.0 testing**, not final ABI.
 A [six-profile isolated descriptor/linkage experiment](../bootstrap-toolchain/probes/r0-registration-probes/README.md)
 is prepared, with a valid profile and five targeted rejection fixtures.
-Offline Python/JCL structural checks passed; **no MVS execution or
+Initial Morkies validation found a **test-generator syntax error**
+(`test_generator.py` line 62, missing `)`), before generation or
+JES submission. A source correction has been prepared; all Python
+unit/dry-run checks need re-verification. **No MVS execution or
 IEWL evidence is claimed**. See the
 [decision record](runtime-extensions-r0-testing-decision-20261020.md).
 
