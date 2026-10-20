@@ -7,7 +7,7 @@
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Public version-1 numeric contract reviewed; standalone ABI/QSAM jobs 2157, 2159–2163, 2165–2169 passed at their tested parameters, including zero-data-length V/VB records (2168/2169). Production BCPLQSAM and R.0 registration remain unimplemented  
+**Status:** Public version-1 numeric contract reviewed; standalone ABI/QSAM jobs 2157, 2159–2163, 2165–2170 passed at their tested parameters. JOB 2171 demonstrated an unrecovered S013-20 on an incompatible QSAM OPEN. Production BCPLQSAM and R.0 registration remain unimplemented  
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---

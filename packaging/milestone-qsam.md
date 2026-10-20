@@ -98,10 +98,13 @@ not a completed BCPLQSAM READ implementation.
 The [Q.0 non-opening DD inquiry evidence](qsam-q0-dd-inquiry-evidence-20261020.md)
 records **JOB 2170 / QS0DDCHK**: ASM/LKED/GO all RC=0000;
 RDJFCB R15=0 for allocated QPRES and R15=4 for unallocated QMISS,
-with neither DD opened. An isolated
-[incompatible-OPEN reconnaissance probe](../bootstrap-toolchain/probes/q0-qsam-error-path-probes/README.md)
-is **prepared but not executed**; it may abend and is not a claim
-of recoverable OPEN failure. Q.0 remains open.
+with neither DD opened. The [incompatible-OPEN negative experiment](qsam-q0-open-incompatible-evidence-20261020.md)
+**JOB 2171** ended with **S013-20** at QSAM OPEN for temporary
+FB80/801 geometry; ASM/LKED both RC=0000. MVS did not return a
+recoverable result to the caller. The test-only follow-up
+[pre-OPEN geometry and empty-EOF probes](../bootstrap-toolchain/probes/q0-qsam-followup-probes/README.md)
+are prepared, **not executed on MVS**. They introduce no BCPLQSAM
+implementation. Q.0 remains open.
 
 
 The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)
