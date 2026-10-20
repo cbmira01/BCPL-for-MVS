@@ -95,6 +95,14 @@ Record 15 contained a four-byte RDW and zero data bytes; EODAD occurred
 after that record. This establishes the tested QSAM zero-payload behavior,
 not a completed BCPLQSAM READ implementation.
 
+The [Q.0 non-opening DD inquiry evidence](qsam-q0-dd-inquiry-evidence-20261020.md)
+records **JOB 2170 / QS0DDCHK**: ASM/LKED/GO all RC=0000;
+RDJFCB R15=0 for allocated QPRES and R15=4 for unallocated QMISS,
+with neither DD opened. An isolated
+[incompatible-OPEN reconnaissance probe](../bootstrap-toolchain/probes/q0-qsam-error-path-probes/README.md)
+is **prepared but not executed**; it may abend and is not a claim
+of recoverable OPEN failure. Q.0 remains open.
+
 
 The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)
 documents general Release 3.8 limits and the accepted BCPLIO `GETMAIN RC` precedent.
