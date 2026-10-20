@@ -148,18 +148,26 @@ The program rolled back its unpublished setup, preserved independent
 storage, and resumed small allocations (3 acquired, 3 released, 0 live).
 This closes resource-refusal reconnaissance, **not** the Q.0 gate.
 
-The [Q.0 effective INFO and record-ceiling review](qsam-q0-info-and-record-ceiling-review-20261020.md)
-proposes further post-OPEN V/VB attribute probes and a **candidate**
-1024-byte per-handle private stage, not an approved numeric ceiling.
-The [Q.0 remaining-gate inventory](qsam-q0-remaining-gate-review-20261020.md)
-retains INFO, error-path, storage-ceiling and Runtime Extensions R.0
-requirements. Standalone assembler results are not production acceptance.
+The [post-OPEN INFO execution evidence](qsam-q0-post-open-info-evidence-20261020.md)
+records **JOBs 2178 / QS0INFV and 2179 / QS0INFVB PASS**: six steps
+RC=0000 for each and effective V/VB DCB fields mapped to enum 3/4 and
+96 payload bytes at LRECL=100. These are standalone, not public QSINFO.
 
-Remaining Q.0 verification includes further variable-record size and
-binary-data boundaries, recoverable OPEN/GET/PUT/CLOSE failures,
-actual storage-shortage behavior, exact effective INFO fields,
-resource ceilings, and the shared Runtime Extensions R.0
-registrar/finalizer ABI. The isolated zero-data-length V/VB probes
+The [candidate 1024-byte stage probes](../bootstrap-toolchain/probes/q0-qsam-ceiling-probes/README.md)
+are locally source/JCL checked but not yet run under MVS. They test
+full V/VB RDW lengths 4/16/1024, byte-exact data and 16 live private
+GETMAIN regions. **The ceiling is not approved**, and 16 live storage
+regions are not the same as 16 open QSAM handles. The
+[Q.0 remaining-gate inventory](qsam-q0-remaining-gate-review-20261020.md)
+retains error-path, record ceiling and Runtime Extensions R.0 obligations.
+Standalone assembler evidence is not production acceptance.
+
+Remaining Q.0 verification includes V/VB 1024-byte record boundaries,
+full binary-data fidelity, recoverable OPEN/GET/PUT/CLOSE diagnostics,
+larger-geometry INFO fields, complete per-handle resource budgets,
+and the shared Runtime Extensions R.0 registrar/finalizer ABI.
+The returned-control GETMAIN R15=4 case is already proven in JOB 2177;
+this does not guarantee recovery from all MVS abends. The isolated zero-data-length V/VB probes
 have passed, but are not evidence of the final BCPL API.
 **Q.0 remains open; do not start Q.1 before its gate is reviewed.**
 

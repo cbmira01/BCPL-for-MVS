@@ -15,11 +15,11 @@ not started. No maximum record size or public API change is approved.
 | JOB 2177 | -- | -- | -- | one 1 MiB GETMAIN refusal, R15=4, at REGION=256K |
 
 The fixed-record boundary tests checked effective post-OPEN DCB values.
-The earlier V/VB readers checked effective LRECL but did not check
-post-OPEN RECFM or BLKSIZE. New **unexecuted** Q.0 test-only INFO probes
-`QS0INFV` and `QS0INFVB` fill those two observational gaps for the
-already-tested record geometry; they check raw DCB fields and the
-proposed public format mapping `3/4` without implementing `QSAMSVC`.
+The earlier V/VB readers checked effective LRECL but not post-OPEN
+RECFM/BLKSIZE. **JOBs 2178 / QS0INFV and 2179 / QS0INFVB PASSED**,
+observing effective RECFM, LRECL, BLKSIZE, enum mapping 3/4 and
+96 dataset payload bytes. See [MVS INFO evidence](qsam-q0-post-open-info-evidence-20261020.md).
+Neither implements `QSAMSVC` or a public `QSINFO` result vector.
 
 The public INFO contract is already specified: `result!4` is a
 project-defined record-format enum, `!5` the effective DCB LRECL,
@@ -48,11 +48,12 @@ REGION. The limit and memory budget require explicit approval and tests.
 
 ## Remaining Q.0 gate
 
-1. Execute the new post-OPEN V/VB INFO probes and inspect all six JES
-   step codes and markers. This remains independent of production BCPLQSAM.
-2. For the 1024-byte candidate, separately verify V/VB records with
-   effective LRECL=1024, including RDW-only and near-maximum payloads;
-   select a region budget for 16 simultaneously staged handles.
+1. Post-OPEN V/VB INFO for effective LRECL=100: **passed JOBs 2178/2179**.
+   Public BCPLQSAM INFO remains unimplemented.
+2. For the 1024-byte candidate, run the isolated
+   [record boundary and 16-stage probes](../bootstrap-toolchain/probes/q0-qsam-ceiling-probes/README.md).
+   They are prepared but **not MVS-tested**; 16 simultaneous regions
+   are not 16 actual QSAM DCBs, so the full region budget remains open.
 3. Resolve the error-path and exceptional CLOSE contracts, and the
    separate Milestone Runtime Extensions R.0 registration/finalizer
    design. The known S013-20 OPEN abend must remain documented.

@@ -1,6 +1,7 @@
 # Milestone QSAM — March Q.0 effective DCB INFO probes
 
-**Status: prepared and locally checked; NOT yet run on MVS.** Two isolated
+**Status: JOBs 2178 / QS0INFV and 2179 / QS0INFVB PASSED on MVS
+(2026-10-20), six steps RC=0000 each.** Two isolated
 IFOX/QSAM jobs (`QS0INFV` and `QS0INFVB`) extend the accepted V/VB DASD
 reader with post-OPEN checks. They do **not** implement BCPLQSAM, `QSAMSVC:200`,
 public BCPL vectors, or Runtime Extensions registration.
@@ -26,7 +27,7 @@ A separate final BCPLQSAM implementation must validate its own bounds.
 
 ## Operation
 
-From repository root, after applying the checked patch:
+From repository root, after pulling the accepted GitHub main:
 
 ```sh
 PROBE=bootstrap-toolchain/probes/q0-qsam-info-probes
@@ -54,3 +55,11 @@ job. The normal generator writes mode-0600 authenticated decks under
 ignored `workarea/`; never commit them. No BOOT_OBJ, BOOT_DEVOBJ, core
 runtime, or compiler source changes are required. Do not report MVS PASS
 until the owner supplies the actual JES output.
+
+## Observed execution
+
+See [MVS JOBs 2178/2179 evidence](../../../packaging/qsam-q0-post-open-info-evidence-20261020.md).
+The two QOUT markers appeared; the owner's working tree stayed clean.
+The tests do not implement public QSINFO or approve a record-size
+ceiling. Follow-up test-only jobs are in the
+[candidate 1024-byte stage probes](../q0-qsam-ceiling-probes/README.md).

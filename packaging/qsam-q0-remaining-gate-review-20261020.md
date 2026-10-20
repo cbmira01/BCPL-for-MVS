@@ -23,6 +23,7 @@ record, and `packaging/milestone-runtime-extensions.md`.
 | Conditional storage ownership | JOB 2175 | Real GETMAIN/FREEMAIN; injected explicit rollback |
 | Shared rollback handler | JOB 2176 | Real small allocations, injected failure through handler |
 | Real conditional allocation refusal | JOB 2177 | Single 1 MiB GETMAIN returned R15=4 under REGION=256K; recovered |
+| Post-OPEN V/VB INFO attributes | JOBs 2178–2179 | DCB RECFM, LRECL=100, BLKSIZE=104/404, enum 3/4, data maximum 96 |
 
 ## Remaining questions before owner accepts Q.0
 
@@ -31,16 +32,17 @@ record, and `packaging/milestone-runtime-extensions.md`.
    observed actual R15=4, rollback and later successful allocation after
    one bounded 1 MiB GETMAIN under REGION=256K. No general guarantee
    of abend recovery or record-size support follows.
-2. **Exact practical record and storage limits.** Establish relevant
-   TK5 DASD device type and dataset geometry; choose a *tested*
-   supported per-handle stage maximum. An MVS-documented numeric ceiling
-   is not automatically the BCPLQSAM limit. Verify what 16
-   simultaneous handles imply for the selected stage size and job region.
-3. **Effective INFO attributes.** F/FB post-OPEN DCB values have
-   been checked; V/VB readers previously checked only effective LRECL.
-   Execute the [test-only V/VB INFO probes](../bootstrap-toolchain/probes/q0-qsam-info-probes/README.md)
-   for effective RECFM, LRECL and BLKSIZE plus public enum/data-length
-   mapping. This is not yet public `QSAMSVC` implementation evidence.
+2. **Exact practical record and storage limits.** Existing WORK DASD
+   volumes were confirmed as Hercules 3390, but 1024 bytes is an
+   **unapproved** private-stage ceiling candidate. Run the isolated
+   [V/VB and 16-stage probes](../bootstrap-toolchain/probes/q0-qsam-ceiling-probes/README.md)
+   before reviewing it; then account for actual DCBs, QSAM block
+   buffers, core runtime and 16 handles to select a region budget.
+3. **Effective INFO attributes — V/VB test geometry confirmed.**
+   [JOBs 2178/2179](qsam-q0-post-open-info-evidence-20261020.md)
+   verified post-OPEN RECFM, LRECL, BLKSIZE and the format/payload
+   mapping at LRECL=100. Larger supported geometries, exceptional
+   formats and production `QSAMSVC` INFO remain unverified.
 4. **Error semantics.** Document which missing DD, incompatible mode,
    SYNAD/GET/PUT and exceptional CLOSE conditions can return safely
    and which can abend. An S013-20 was observed; no promise of generic

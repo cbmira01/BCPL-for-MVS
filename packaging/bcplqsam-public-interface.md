@@ -7,7 +7,7 @@
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Public version-1 numeric contract reviewed; standalone ABI/QSAM jobs 2157, 2159–2163, 2165–2170 and 2172–2177 passed within their tested scope. JOB 2171 showed unrecovered S013-20 on incompatible QSAM OPEN. JOB 2174 verified static pending-record staging; JOBs 2175–2176 verified injected rollback paths; JOB 2177 demonstrated a real returned R15=4 from conditional GETMAIN and successful cleanup. Production BCPLQSAM and R.0 registration remain unimplemented
+**Status:** Public version-1 numeric contract reviewed; standalone ABI/QSAM jobs 2157, 2159–2163, 2165–2170 and 2172–2179 passed within their tested scope. JOB 2171 showed unrecovered S013-20 on incompatible QSAM OPEN; JOB 2177 verified genuine conditional GETMAIN R15=4; JOBs 2178–2179 verified post-OPEN V/VB attributes at LRECL=100. A 1024-byte private record-stage ceiling is proposed but not approved or fully tested. Production BCPLQSAM and R.0 registration remain unimplemented
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---
