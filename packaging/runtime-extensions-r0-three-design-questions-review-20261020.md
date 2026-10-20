@@ -25,6 +25,14 @@ pre-START collision rejection, reverse-order finalizers,
 ordinary FINISH RC=8 for a returned finalizer failure, and
 STOP(n) preservation. The **exact** representation remains open.
 
+**Subsequent owner disposition:** Decisions A–H, including the three
+refinements proposed below, are approved in the
+[R.0 owner ABI record](runtime-extensions-r0-owner-abi-decisions.md).
+The original "UNAPPROVED" and "still required" phrases below preserve
+this *historical proposal's* initial state, not current project status.
+R.0 is still open for actual trailer evidence and numerical limits;
+R.1 has not started.
+
 ## 1. Can the startup code safely read a descriptor?
 
 **Source evidence:** `bootstrap-toolchain/asm/bcplmain.asm` imports

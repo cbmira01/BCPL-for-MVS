@@ -15,6 +15,13 @@ and [direct native-write inventory](runtime-extensions-r0-native-global-owner-in
 The `cambridge-compiler/asm/bcplmain.asm` file is a **different
 compiler target**, not substituted for the bootstrap runtime audited here.
 
+**Decision E is now owner-approved** under the
+[R.0 owner ABI record](runtime-extensions-r0-owner-abi-decisions.md):
+this effective-ledger and transactional-collision policy is required,
+while actual application/BLIB trailer decoding and verified legacy
+exceptions remain incomplete. This approval does not turn a
+source-derived candidate into measured executable evidence.
+
 ## Current actual startup writer order
 
 | Stage | Source location in canonical BCPLMAIN | Observed action / consequence |

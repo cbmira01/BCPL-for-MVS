@@ -1,9 +1,10 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status:** **R.0 — Evidence and contract in progress** (owner-approved
-architectural/finalization policy, 2026-10-20); R.1 — Generic registration
-foundation has **not started**. No generic registrar, descriptor parser,
-or finalizer is implemented. See the
+**Status:** **R.0 — Evidence and contract in progress**. Owner-approved
+architectural/finalization policy and **A–H ABI decisions** are recorded
+in the [owner decision record](runtime-extensions-r0-owner-abi-decisions.md).
+R.1 — Generic registration foundation has **not started**. No generic
+registrar, descriptor parser, or finalizer is implemented. See the
 [R.0 source audit and outstanding ABI tests](runtime-extensions-r0-evidence-and-contract-20261020.md)
 and [proposed byte-level registrar and finalizer ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md).
 The [three-question R.0 refinement review](runtime-extensions-r0-three-design-questions-review-20261020.md)
@@ -21,8 +22,11 @@ RC=0000 with actual QOUT markers. Combined with JOBs 2187–2192,
 **26 test-only cases passed**. The [application/BLIB/Core Runtime
 ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
 and [owner ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
-identify remaining R.0 gates. The exact byte-level ABI and real
-BCPLMAIN/finalizer integration remain **unapproved/unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+identify remaining R.0 gates. The 28-byte registry, 48-byte descriptor,
+8-byte finalizer parameter block and A–H policies are **owner-approved**,
+but numerical maxima/diagnostics, actual app/BLIB trailer evidence and
+the gate review remain open. Real BCPLMAIN/finalizer integration is
+**unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
 
@@ -216,7 +220,7 @@ The BCPL application separately imports a library-specific `GLOBAL` declaration/
 9. **ABI/versioning and opcode 0:** module/descriptor signature and version; shared QUERY prefix, API major/minor, opcode-support bitmap, capacity/size inquiry, failure behavior, and client consumption; rejection of incompatible extension descriptors.
 10. **Testing:** preserving existing BLIB and native service behavior without modifying current accepted artifacts ahead of gates.
 
-### Owner-approved R.0 registration/finalization model; exact ABI pending
+### Owner-approved R.0 registration/finalization model; A–H accepted
 
 The [Q.0 limits/failure/finalization review](qsam-q0-record-limits-failures-finalization-review.md)
 now records an **owner-approved architectural decision**: a
@@ -227,9 +231,10 @@ on normal `FINISH` and `STOP(n)`, **before** `BCPLIO.IOFIN` and
 `BCPLMEM.MEMDRAIN`. Duplicate/malformed exports or unsatisfied
 declared package requirements are rejected before `START`.
 A returned finalizer error produces a diagnostic and **RC=8 on
-ordinary FINISH**; `STOP(n)` retains n. The **exact byte-level
-descriptor, register/save-area hook ABI, diagnostic mechanisms, and
-failure probes remain unresolved R.0 evidence tasks**. This model is
+ordinary FINISH**; `STOP(n)` retains n. The byte-level descriptors and 8-byte public finalizer ABI were
+**subsequently approved** in [A–H](runtime-extensions-r0-owner-abi-decisions.md).
+Numerical limits, diagnostic values and remaining evidence/tests are
+still R.0 tasks; real integration is unimplemented. This model is
 not implemented; the existing `BCPLMAIN` remains unchanged.
 
 ## 7. March roadmap with explicit gates

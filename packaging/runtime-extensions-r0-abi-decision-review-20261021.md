@@ -2,9 +2,10 @@
 
 **Date:** 21 October 2026. **March:** R.0 — Evidence and contract
 (**open**); R.1 — Generic registration foundation **not started**.
-**Purpose:** Present **engineering recommendations requiring owner
-approval**, not install a production binary contract or mark R.0
-closed. Read with the [three-question review](runtime-extensions-r0-three-design-questions-review-20261020.md),
+**Owner disposition:** Decisions **A–H approved** (20 October 2026),
+recorded in the [owner decision record](runtime-extensions-r0-owner-abi-decisions.md).
+This preserves the original engineering review and JOB 2195 evidence;
+approval does not install a production binary contract or close R.0. Read with the [three-question review](runtime-extensions-r0-three-design-questions-review-20261020.md),
 [earlier candidate ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md),
 [global-owner audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
 and [actual JOB 2195 evidence](runtime-extensions-r0-batch-job-2195-evidence-20261021.md).
@@ -23,7 +24,7 @@ and [actual JOB 2195 evidence](runtime-extensions-r0-batch-job-2195-evidence-202
   and returned statuses. It **did not invoke actual BCPLMAIN**
   `FINIMPL`, `STOPENT`, `FINEXIT`, `IOFIN` or `MEMDRAIN`.
 
-## Recommended v1 wire contract — owner decision requested
+## Approved v1 wire layout — outstanding R.0 verification
 
 All numeric and pointer fields are System/370 **fullword byte
 addresses** (not BCPL word pointers). Character IDs are uppercase,
@@ -82,8 +83,8 @@ had **4-byte single references** and **40-byte package headers**.
 The revised fixtures demonstrate independently linked begin/end
 **pairs** and dependency-bearing **48-byte headers**. These
 previously published layouts must not both be called v1.
-Accepting this review would supersede the older draft, with new
-final ABI macro/source definitions still required in R.1.
+Owner approval **supersedes** that older draft; final ABI
+macro/source definitions still belong to R.1.
 
 ### Pointer/extent safety is a build-plus-runtime contract
 
@@ -113,7 +114,7 @@ In contrast, **JOB 2195 uses a test-only 16-byte block**:
 injected_error_mask)`. The final two fields are instrumentation
 for verification and **must not silently become production ABI**.
 
-**Recommendation requiring owner decision:** Public v1 requires only
+**Owner-approved version-1 decision:** Public v1 requires only
 the **8-byte prefix** (`reason`, `stop_code`). Keep test trace
 and fault injection private to the fixture. Maintain conventional
 R1/R13/R14/R15 MVS linkage; caller preserves live BCPL registers,
@@ -128,7 +129,7 @@ abends remain outside ordinary returned-error policy.
 discipline, exactly-once integration in FINEXIT, preserving STOPRC
 and preexisting stream close behavior.
 
-## Proposed global-owner validation rule
+## Approved global-owner validation rule (actual-trailer evidence pending)
 
 Prior to optional publication, construct an effective per-executable
 ledger containing **actual** application and BLIB trailer exports,
@@ -140,22 +141,22 @@ the transitive dependency closure transactionally; install zero
 optional G!N entries upon any rejection. See the [separate audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
 for why a complete actual-export ledger is still pending.
 
-## R.0 owner decision checklist (all currently open)
+## R.0 owner decisions A–H (approved; evidence gates remain)
 
-| Decision | Engineering recommendation | Acceptance status |
+| Decision | Owner disposition | Outstanding evidence / detail |
 | --- | --- | --- |
-| A. Trusted extent model | Mandatory begin/end linker symbols + source-controlled build/link verification | **Not yet owner-approved as final ABI** |
-| B. Table format | `BCRG` 28-byte header, 8-byte selected pair, 8-byte required ID; real empty object | **Open** |
-| C. Package format | `BCEX` 48-byte header + `8*K` exports + `16*D` dependencies; version rule above | **Open** |
-| D. Dependency/lifecycle | Application + package requirements; strict dependency-first order, lazy initialization, reverse teardown | **Open for exact ABI** (general lifecycle policy approved) |
-| E. Collision policy | Effective legacy-owner ledger, exact historical waivers only, transactional no-new-overwrite rule | **Open for exact ABI** |
-| F. Finalizer register/parameter ABI | MVS linkage, public 8-byte block; fixture-only extra trace/error words | **Open** |
-| G. Defensive limits/diagnostics | Choose maximum counts/bytes and stable error diagnostics after bounded evidence | **Open** |
-| H. Startup integration boundary | One generic BCPLMAIN adaptation; parse/check before START; finalizer before IOFIN/MEMDRAIN; no accepted-object change during R.0 | **Open** |
+| **A** — Trusted extent model | **Approved** — linked begin/end plus build/link verification | Independently verify true source/extent; relocated forged symbols not general protection |
+| **B** — Registry format | **Approved** — 28-byte `BCRG`, 8-byte pairs, 8-byte required IDs, real empty object | Verify complete bounded validation |
+| **C** — Package format | **Approved** — 48-byte `BCEX`, 8-byte exports, 16-byte dependencies, version rule | Test production-sized bounds and dependencies |
+| **D** — Dependency/lifecycle | **Approved** — app/package requirements, transitive preflight, dependency-first, lazy, reverse finalization | Real finalizer lifecycle integration is R.1 |
+| **E** — Global ownership/collision | **Approved** — Global Number Registry authority, effective ledger, no new optional overwrites, transactional validation | Decode actual app/BLIB trailers and verify historic precedence |
+| **F** — Finalizer ABI | **Approved** — 8-byte public block and MVS linkage; JOB 2195 extras private | Verify real `BCPLMAIN` bridge in R.1 |
+| **G** — Defensive limits/diagnostics | **Approved in principle** | **Exact maxima and diagnostic codes still require R.0 selection/verification** |
+| **H** — Startup integration boundary | **Approved** — one generic `BCPLMAIN` adaptation, before-`START` validation, finalization before IOFIN/MEMDRAIN | Production implementation in R.1; current core unchanged |
 
-**R.0 closure is not requested by this review.** An owner decision
-on A–H, actual app/BLIB export and legacy-overlap evidence,
-and the R.0 gate review must precede declaring an accepted ABI.
+**R.0 remains open.** Owner approvals A–H are recorded, but exact
+G maxima/diagnostics, actual app/BLIB export and legacy-overlap evidence,
+and the R.0 gate review remain. Approval is not implementation.
 Actual integrated registration/finalizer code and demonstrations
 belong to **R.1 — Generic registration foundation** and later
 marches, not to this documentation package.

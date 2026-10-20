@@ -20,7 +20,9 @@ passed. The [updated exact-ABI decision review](runtime-extensions-r0-abi-decisi
 describes the **revised** paired-extent `28+8*N+8*M` table and
 dependency-bearing `48+8*K+16*D` package candidate. The
 single-pointer/40-byte design below is an **earlier superseded
-candidate, not accepted v1**. A final owner ABI decision is pending.
+candidate, not accepted v1**. The owner has since approved decisions
+A–H in the [R.0 ABI decision record](runtime-extensions-r0-owner-abi-decisions.md).
+Numeric limits, diagnostic codes and actual trailer evidence remain open.
 
 **Governing authorities:** [Milestone Runtime Extensions](milestone-runtime-extensions.md),
 [approved Q.0 error/finalizer model](qsam-q0-error-and-r0-design-decisions-20261020.md),

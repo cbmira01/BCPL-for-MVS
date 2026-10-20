@@ -47,8 +47,11 @@ proposes explicit IEWL selection and general startup registration.
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
 owner-approved shared `BCPLREG`/finalizer *model*. The
-[candidate exact R.0 binary layout and finalizer ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md)
-is **a proposal for owner review**, not approved or implemented.
+[earlier candidate ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md)
+is a **historical superseded proposal**, not an implemented layout.
+The [owner-approved R.0 decisions A–H](runtime-extensions-r0-owner-abi-decisions.md)
+select the revised 28-byte `BCRG`, 48-byte `BCEX` and 8-byte public
+finalizer block; exact G limits/diagnostics and the R.0 gate remain open.
 The [R.0 three-question review](runtime-extensions-r0-three-design-questions-review-20261020.md)
 and [source-derived native owner ledger](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
 examine bounded descriptors, dependencies and historical global
@@ -61,8 +64,8 @@ simulated-finalizer probe](runtime-extensions-r0-batch-job-2195-evidence-2026102
 RC=0000. Together these establish **26 test-only cases**.
 The [source-derived ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
 and [owner ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
-record remaining requirements; production registration and the exact
-finalizer ABI remain **unapproved**.
+record remaining evidence; **production registration is not implemented**.
+The exact public finalizer ABI is **owner-approved**, not MVS-integrated.
 R is not a prerequisite for M4.
 
 The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The global slots G!200–G!202 are assigned in the registry; the shared registration ABI and package-local opcodes still require R.0/Q.0 verification.

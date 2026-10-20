@@ -17,6 +17,13 @@
 - When a slot is retired, keep a tombstone. Future allocations and any User/Site Library ranges require recorded collision review; unlisted does not automatically mean free.
 - Collision checking for a real executable must inspect its **effective combined** source/header/registration set. No universal User/Site Library range is assigned yet.
 
+**R.0 ownership decision E (approved):** This document allocates
+public slots; the per-executable owner ledger must separately verify
+actual application, BLIB, native and optional writers before any
+optional registration. Preserve only verified historical precedence
+and reject new optional overwrites transactionally. See
+[owner ABI decisions A–H](runtime-extensions-r0-owner-abi-decisions.md).
+
 ## Newly approved System Extension allocations
 
 | Global | Public name | Owner | Allocation | Implementation |

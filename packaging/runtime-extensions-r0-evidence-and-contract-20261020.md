@@ -130,6 +130,8 @@ descriptors and a separate assembler finalizer ABI. The earlier
 single-pointer/40-byte proposal was refined through successful
 bounded test-only MVS evidence; the [21 October ABI review](runtime-extensions-r0-abi-decision-review-20261021.md)
 now requests the owner's decision on the revised paired-extent
-48-byte package candidate. **No exact ABI has been accepted**.
+48-byte package candidate. **Subsequently, decisions A–H were owner-approved** in the
+[R.0 decision record](runtime-extensions-r0-owner-abi-decisions.md);
+G's numeric values and actual application/BLIB trailer evidence remain open.
 The approved higher-level registration/finalization model and
 FINISH RC=8/STOP(n) policy have not changed.
