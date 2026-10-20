@@ -62,8 +62,13 @@ end-to-end behavior are **not established** by this first probe.
 The original R0VALID and five negative fixtures have **now all run
 and passed**. The owner requested batching subsequent R.0 probes:
 see the [one-JOB, 20-case package](../bootstrap-toolchain/probes/r0-batch-probes/README.md).
-That new package has passed offline tests only; its actual MVS
-assembler/link/GO results are still pending. A failed probe is a reason to
-fix the isolated test, not to change accepted BCPLMAIN, BOOT_OBJ,
+**Subsequent result, 21 October 2026:** After diagnostic and
+test-only harness fixes in JOBs 2193 and 2194, the new package
+**PASSED in JOB 2195**, with all eight IFOX/IEWL/GO steps
+RC=0000 and **20 actual GO/QOUT PASS records**. See the
+[full evidence record](runtime-extensions-r0-batch-job-2195-evidence-20261021.md).
+This validates isolated fixture behavior, not a real BCPLMAIN
+registrar/finalizer. A failed probe is a reason to fix the
+isolated test, not to change accepted BCPLMAIN, BOOT_OBJ,
 BOOT_DEVOBJ, or the demoted Cambridge compiler. Q.0 remains open
 and neither Q.1 nor R.1 has started.

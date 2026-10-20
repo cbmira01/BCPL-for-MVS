@@ -1,6 +1,9 @@
 # Milestone Runtime Extensions — R.0 batched dependency/finalizer probes
 
-**March:** R.0 — Evidence and contract (open). **Unexecuted on MVS.**
+**March:** R.0 — Evidence and contract (open).
+**MVS-validated test-only batch: JOB 2195, 21 October 2026.**
+See the [verified evidence](../../../packaging/runtime-extensions-r0-batch-job-2195-evidence-20261021.md).
+No production registrar or finalizer was installed.
 Owner requested batching remaining test-only R.0 probes after JOBs 2187–2192
 passed. This package submits **one JES job**, with six independent IFOX
 assemblies, one IEWL link-edit, and one GO step; that GO reports **20**
@@ -44,7 +47,7 @@ From repository root:
 bash bootstrap-toolchain/probes/r0-batch-probes/run-batch.sh
 ```
 
-The runner checks the clean Git worktree; runs **seven Python unit tests**
+The runner checks the clean Git worktree; runs **nine Python unit tests**
 and a credential-free generator dry-run; generates one authenticated,
 mode-0600 JCL deck under ignored `workarea/runtime-extensions-r0-batch/`;
 submits it to JES; retrieves the actual JOB number/report; verifies
@@ -82,7 +85,8 @@ The report verifier also now accepts trailing blanks on the actual
 at the start of its own line. The prior exact-line grep could reject a
 legitimate padded record. Both corrections were exercised locally:
 **seven unit tests PASS**, both dry-run and synthetic authenticated
-paths accepted, and `bash -n` passed. **The MVS batch is still unrun**.
+paths accepted, and `bash -n` passed. **That historical failed attempt preceded JOBs 2193–2195; the batch
+subsequently passed on MVS in JOB 2195.**
 
 ## Explicit evidence boundaries
 
@@ -102,9 +106,12 @@ paths accepted, and `bash -n` passed. **The MVS batch is still unrun**.
    malformed-span tests, and runtime startup publication are separate
    R.0 gates. The prior JOBs 2187–2192 cover bounded single-descriptor
    tests; they did not close R.0.
-5. IFOX/IEWL/GO outcomes for this new batch are **not yet observed**.
-   Local Python unit tests/dry-run have passed; successful MVS behavior
-   must not be inferred from a source inspection.
+5. **Actual IFOX/IEWL/GO outcomes are observed and recorded** in
+   [JOB 2195 evidence](../../../packaging/runtime-extensions-r0-batch-job-2195-evidence-20261021.md):
+   all eight steps RC=0000, zero flagged statements and all 20 exact
+   GO/QOUT markers. This is isolated-harness evidence only; no
+   application/BLIB ledger, BCPLMAIN startup importer or true
+   FINISH/STOP runtime path was exercised.
 
 Sources: [R.0 testing decision](../../../packaging/runtime-extensions-r0-testing-decision-20261020.md),
 [three-question review](../../../packaging/runtime-extensions-r0-three-design-questions-review-20261020.md),

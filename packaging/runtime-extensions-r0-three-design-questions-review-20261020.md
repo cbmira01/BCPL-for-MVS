@@ -6,6 +6,15 @@ result.** R.0 — Evidence and contract remains open; R.1 — Generic
 registration foundation has not started. No compiler, runtime, object
 PDS, assembler or JCL is changed by this review.
 
+**Evidence update (21 October 2026):** The first six standalone
+descriptor experiments and the 20-case JOB 2195
+[dependency/finalizer fixture](runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
+have **passed**. The proposals and older "future tests" language
+below preserve this 20 October review's original decision state.
+The [current ABI decision record](runtime-extensions-r0-abi-decision-review-20261021.md)
+supersedes that test status, **not** the need for owner approval
+or actual BLIB/BCPLMAIN integration evidence.
+
 Read with [Milestone Runtime Extensions](milestone-runtime-extensions.md),
 [official nomenclature](runtime-and-library-nomenclature.md),
 [Global Number Registry](global-number-registry.md), the

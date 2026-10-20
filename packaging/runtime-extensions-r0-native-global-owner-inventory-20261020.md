@@ -7,6 +7,13 @@ inventory of current direct writes in the **bootstrap-toolchain**
 a verified CG370/BLIB trailer decode, or new global assignments.
 Nothing is implemented or approved by this record.
 
+**Follow-up (21 October 2026):** The
+[combined source-derived ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
+reconciles this direct-write map with application/BLIB precedence,
+21 BLIB source-name candidates and the official reservations.
+It explicitly lists remaining actual object-trailer evidence needed
+before an effective load-module owner ledger is called verified.
+
 **Source:** `bootstrap-toolchain/asm/bcplmain.asm` in the GitHub
 repository reviewed at `0bc9245`. The importer walks the
 application CG370 trailer, then the BLIB trailer, then installs

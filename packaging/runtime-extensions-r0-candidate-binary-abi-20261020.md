@@ -14,6 +14,14 @@ initial candidate's 28-byte-table/40-byte-descriptor formulas.
 Do not implement the offsets in this earlier draft as an approved ABI.
 See the [partial native owner inventory](runtime-extensions-r0-native-global-owner-inventory-20261020.md).
 
+**Later evidence and current review, 21 October 2026:** The
+[JOB 2195 batched R.0 probes](runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
+passed. The [updated exact-ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
+describes the **revised** paired-extent `28+8*N+8*M` table and
+dependency-bearing `48+8*K+16*D` package candidate. The
+single-pointer/40-byte design below is an **earlier superseded
+candidate, not accepted v1**. A final owner ABI decision is pending.
+
 **Governing authorities:** [Milestone Runtime Extensions](milestone-runtime-extensions.md),
 [approved Q.0 error/finalizer model](qsam-q0-error-and-r0-design-decisions-20261020.md),
 [Global Number Registry](global-number-registry.md), and

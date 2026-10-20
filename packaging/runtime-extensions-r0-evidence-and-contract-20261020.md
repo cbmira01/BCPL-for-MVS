@@ -108,10 +108,11 @@ error** (`test_generator.py`, missing `)`) before submission.
 After the correction the owner ran the four Python tests, all six
 JCL profile dry-runs, and [JOBs 2187–2192](runtime-extensions-r0-first-probes-evidence-20261020.md)
 with **six RC=0000 steps and the required actual QOUT marker in
-every job**. A new [20-case one-JOB dependency/finalizer
-batch](../bootstrap-toolchain/probes/r0-batch-probes/README.md)
-remains **unrun under MVS**; no production importer/finalizer is
-implemented. See the
+every job**. The [20-case dependency/simulated-finalizer batch](runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
+**PASSED as JOB 2195** with six IFOX steps, IEWL and GO all
+RC=0000 and twenty actual QOUT records (14 D, 6 F). No
+production importer/finalizer has been implemented; the
+standalone test's FINISH/STOP simulations are not BCPLMAIN execution. See the
 [decision record](runtime-extensions-r0-testing-decision-20261020.md).
 
 **The parallel Q.0 concurrent-DCB probe has now passed** in
@@ -125,7 +126,10 @@ See [R.0 candidate exact byte layout and finalizer calling convention](runtime-e
 It inventories current BCPLMAIN application-trailer and BLIB
 imports, the G!0..699 capacity and FINEXIT cleanup sequence.
 It proposes a relocatable `BCPLREG` header, explicit package
-descriptors and a separate assembler finalizer ABI, all explicitly
-**unapproved** pending owner review and MVS test-only evidence.
+descriptors and a separate assembler finalizer ABI. The earlier
+single-pointer/40-byte proposal was refined through successful
+bounded test-only MVS evidence; the [21 October ABI review](runtime-extensions-r0-abi-decision-review-20261021.md)
+now requests the owner's decision on the revised paired-extent
+48-byte package candidate. **No exact ABI has been accepted**.
 The approved higher-level registration/finalization model and
 FINISH RC=8/STOP(n) policy have not changed.

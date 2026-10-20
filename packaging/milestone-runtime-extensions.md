@@ -14,9 +14,15 @@ revised design for isolated R.0 testing**, recorded in the
 [R.0 testing decision](runtime-extensions-r0-testing-decision-20261020.md).
 The [first linked-descriptor probes](runtime-extensions-r0-first-probes-evidence-20261020.md)
 **PASSED under MVS in JOBs 2187–2192**, including all five precise
-negative rejection markers. A [one-JOB remaining-case batch](../bootstrap-toolchain/probes/r0-batch-probes/README.md)
-is locally tested, **not yet MVS-executed**. The exact byte-level
-ABI and real BCPLMAIN/finalizer integration remain **unapproved**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+negative rejection markers. The [one-JOB batched dependency/finalizer probes](runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
+**PASSED under MVS in JOB 2195**: 14 dependency/ownership cases and
+six simulated finalizer-policy cases, all eight IFOX/IEWL/GO steps
+RC=0000 with actual QOUT markers. Combined with JOBs 2187–2192,
+**26 test-only cases passed**. The [application/BLIB/Core Runtime
+ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
+and [owner ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
+identify remaining R.0 gates. The exact byte-level ABI and real
+BCPLMAIN/finalizer integration remain **unapproved/unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
 
