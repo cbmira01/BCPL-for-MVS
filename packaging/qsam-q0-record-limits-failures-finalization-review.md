@@ -34,7 +34,17 @@ https://bitsavers.org/pdf/ibm/370/OS_VS2/Release_3.8_1978/GC26-3873-0_OS_VS2_MVS
 4. A live handle identifier is a positive, monotonically issued non-recycled BCPL integer for the program lifetime. Slot reuse never revalidates a stale handle. Reject identifier exhaustion rather than wrapping.
 5. All actual MVS allocations have recorded address and length. Release exactly once. Track live DCB/control regions, stages, handle records, and pending records independently, for diagnostics and tests.
 
-**Still unproven:** exact maximum successful conditional GETMAIN size in the target job region; real shortage return behavior; safe cleanup after an MVS failure to close an opened DCB; whether a particular effective DCB record format/size remains usable across device categories.
+**Updated with subsequent Q.0 evidence (2026-10-20):** JOB 2177
+observed a genuine conditional 1 MiB GETMAIN refusal (R15=4) at GO
+REGION=256K and successful rollback. JOB 2182 acquired and freed
+sixteen independent 1024-byte areas. Jobs 2180/2181 verified V/VB
+LRECL=1024 on TK5 3390 DASD; the owner then approved **1024 bytes
+total private staging per BCPLQSAM handle**. See
+[the execution record](qsam-q0-1024-byte-stage-evidence-20261020.md)
+and [approved staging design](qsam-q0-staging-resource-design-decision.md).
+These are not tests of the production module or sixteen opened DCBs.
+Still unproven: a complete 16-handle region budget, safe recovery after
+exceptional CLOSE, and behavior across all devices/record formats.
 
 ## 3. Proposed Runtime Extensions finalization contract (owner decision needed)
 
@@ -67,6 +77,12 @@ Keep job sources, generated decks and reproducible instructions isolated under `
 
 ## 5. Q.0 gate recommendation
 
-The period documentation settles the *general* numeric MVS rules above. It does **not** select the tested BCPLQSAM implementation ceiling or prove resource exhaustion/exceptional CLOSE recovery. R.0's generic finalizer pointer, ordering and ABI remain a **design proposal**, not a working facility.
+The period documentation supplies the *general* MVS numeric rules.
+**After this review was written**, Q.0 JOBs 2180–2182 and owner
+approval separately established the initial **1024-byte private-stage
+implementation ceiling**, not an MVS maximum. JOB 2177 established one
+real recoverable GETMAIN-refusal path, not generic resource or abend
+recovery. Exceptional CLOSE recovery and R.0 finalizer pointer, order
+and entry ABI remain **unaccepted proposals**, not a working facility.
 
 **Keep Q.0 open**. Request owner choice on R.0 finalizer design and perform the targeted MVS probes before closing this march. Do not begin Q.1, modify accepted `BOOT_OBJ`/`BOOT_DEVOBJ`, or mark BCPLQSAM functional from the standalone assembler JOB 2157/2159–2162 evidence.

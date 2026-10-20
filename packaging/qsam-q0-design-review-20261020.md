@@ -35,8 +35,13 @@ Governing march: **Q.0 — Reconnaissance & contract**.
 The linked [decision record](qsam-q0-staging-resource-design-decision.md)
 takes precedence over this earlier recommendation table wherever it
 approves staging, handle allocation/retirement and normal finalization.
-Numeric ceilings, exceptional CLOSE policy, and the precise R.0
-registrar/finalizer representation remain unresolved.
+**Update (2026-10-20):** The owner approved **1024 total private
+record-staging bytes per handle**, supported by
+[JOBs 2180–2182](qsam-q0-1024-byte-stage-evidence-20261020.md).
+F/FB support up to 1024 application bytes; V/VB up to 1020 data bytes
+(four RDW bytes private). This supersedes the *numeric ceiling proposal*
+row below, but does not approve exceptional CLOSE policy, 16 fully
+open-handle region budget, or the precise R.0 registrar/finalizer ABI.
 
 | Subject | Proposal | Required evidence or owner decision |
 | --- | --- | --- |

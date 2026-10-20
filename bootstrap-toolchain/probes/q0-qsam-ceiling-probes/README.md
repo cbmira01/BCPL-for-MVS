@@ -1,16 +1,18 @@
 # Milestone QSAM — March Q.0 candidate 1024-byte stage probes
 
-**Status:** locally source/JCL checked; **not run on MVS**. These are
-independent IFOX/IEWL experiments, not production `BCPLQSAM`, not public
-`QSAMSVC:200` and not an approved BCPLQSAM size ceiling.
+**Status:** **PASS on MVS 3.8J/TK5, 20 October 2026** (JOBs 2180,
+2181 and 2182). These are independent IFOX/IEWL experiments, not
+production `BCPLQSAM` or public `QSAMSVC:200`. The owner subsequently
+**approved a 1024-byte total private stage per handle** as an initial
+BCPLQSAM design limit, not a universal MVS record maximum.
 
-## What the profiles prove if they pass on MVS
+## Executed Q.0 probe profiles
 
 | Profile | Job | Dataset / experiment | PASS marker |
 | --- | --- | --- | --- |
-| `v` | `QS0C102V` | V, effective LRECL=1024, BLKSIZE=1028 | `Q0 V1024 RDW4/16/1024 BINARY 15 PASS` |
-| `vb` | `QS0C10VB` | VB, effective LRECL=1024, BLKSIZE=2052 | `Q0 VB1024 RDW4/16/1024 BINARY 15 PASS` |
-| `stage16` | `QS0S16` | 16 simultaneous conditional GETMAIN areas of 1024 bytes | `Q0 16 STAGES 1024 GETMAIN FREEMAIN PASS` |
+| `v` | `QS0C102V` (JOB 2180) | V, effective LRECL=1024, BLKSIZE=1028 | `Q0 V1024 RDW4/16/1024 BINARY 15 PASS` |
+| `vb` | `QS0C10VB` (JOB 2181) | VB, effective LRECL=1024, BLKSIZE=2052 | `Q0 VB1024 RDW4/16/1024 BINARY 15 PASS` |
+| `stage16` | `QS0S16` (JOB 2182) | 16 simultaneous conditional GETMAIN areas of 1024 bytes | `Q0 16 STAGES 1024 GETMAIN FREEMAIN PASS` |
 
 V/VB jobs independently assemble writer and reader, link separately,
 write and read 15 records through a temporary `&&Q0CEIL` dataset and
@@ -30,7 +32,10 @@ pointer-guarded drain; an unexpected outcome returns RC=8. It does
 
 A candidate 1024-byte *total private stage* permits F/FB 1024-byte
 logical data or V/VB at most 1020 data bytes (four RDW bytes private).
-These tests are a prerequisite to, **not approval of**, that policy.
+The owner **approved** that initial stage policy after JOBs 2180–2182;
+see [the MVS execution evidence](../../../packaging/qsam-q0-1024-byte-stage-evidence-20261020.md).
+Neither the public BCPLQSAM implementation nor sixteen complete OPEN
+QSAM handles have been verified.
 
 ## Running the tests
 
@@ -47,10 +52,19 @@ done
 tools/mvs/dump-report-for-job JOBNUMBER
 ```
 
-Expected V/VB results: ASMWR, ASMRD, LKWR, LKRD, WGO and RGO at RC=0000.
-Expected stage16 results: ASM, LKED and GO at RC=0000. Verify the
-individual PASS marker; the parser must not confuse the assembler's
-source listing PASSREC constant with an actual QOUT record.
+Observed V/VB results: ASMWR, ASMRD, LKWR, LKRD, WGO and RGO each
+RC=0000 in JOBs 2180/2181. Observed stage16 results: ASM, LKED and
+GO each RC=0000 in JOB 2182. The actual QOUT PASS markers appeared.
+Keep testing the markers as output records, not merely the assembler
+listing's PASSREC constants.
+
+**JOB-card padding fix:** The original generator's `stage16 --check`
+passed but normal generation rejected the authenticated `QS0S16  JOB`
+card, because it expected the word JOB after exactly one name-space.
+The owner ran JOB 2182 using an ignored-`workarea` deck generated
+through a one-time workaround. The generator now checks the full
+eight-column job-name field and constructs identically padded
+`--check` cards, so both paths handle six- and eight-character names.
 
 `--check` does not load credentials or write JCL. Normal generated
 JCL is mode 0600 in ignored `workarea/`, can contain JOB credentials,

@@ -1,6 +1,10 @@
 # Milestone QSAM — Q.0 staging and resource-management decision
 
-**Status:** Approved Q.0 staging and resource-management design decision. **Not implemented or MVS-tested as BCPLQSAM.** Numeric record-size ceilings, exceptional CLOSE outcomes, and the exact generic finalization ABI remain open. Q.0 — Reconnaissance & contract remains in progress; Q.1 — Linkage & OPEN/CLOSE skeleton has not started.
+**Status:** Approved Q.0 staging and resource-management design. The owner
+also approved a **1024-byte total private logical-record stage per
+handle** after standalone MVS JOBs 2180–2182. **Not implemented as
+BCPLQSAM.** Exceptional CLOSE outcomes, full 16-handle region budget,
+and exact generic Runtime Extensions finalization ABI remain open. Q.0 — Reconnaissance & contract remains in progress; Q.1 — Linkage & OPEN/CLOSE skeleton has not started.
 
 ## Authority and boundaries
 
@@ -23,17 +27,43 @@ See also the [Q.0 period-limit, conditional-allocation and generic-finalization 
 It distinguishes documented MVS maxima from any *tested BCPLQSAM ceiling*
 and proposes (without approving) R.0 finalizer sequencing.
 
-## What is not approved as a fixed numeric value
+## Approved initial record-stage limit (2026-10-20)
 
-- A universal MVS logical-record maximum, initial BCPLQSAM application-data ceiling, or region-dependent guarantee that 16 *maximum-size* handles can always OPEN. Test period MVS constraints and available GETMAIN capacity; select and document the actual ceiling before Q.2/Q.3 feature acceptance.
-- Whether a zero-data-length V/VB record is accepted by the exact MVS/TK5 path, and the failure/recovery behavior of an anomalous RDW or exceptional CLOSE.
-- Specific optional-module `BCPLREG` descriptor layout, generic finalizer ordering and how implicit-close errors affect a `FINISH` completion code. These require R.0/R.1 design and MVS testing; do not add a QSAM-only registration/finalization facility.
+The owner approved **1024 total private staging bytes per open BCPLQSAM
+handle** for the first implementation, supported by
+[JOBs 2180–2182](qsam-q0-1024-byte-stage-evidence-20261020.md).
+
+- F/FB: support only an effective DCB LRECL of **1 through 1024**
+  logical data bytes; a record's public data length is the LRECL.
+- V/VB: support an effective DCB LRECL of **4 through 1024 bytes**,
+  including the **four-byte RDW inside the stage**, giving **0 through
+  LRECL-4 application data bytes** per logical record. A zero-length
+  data record is not EOF. The QSAM BDW is never part of this stage.
+- Reject unsupported effective LRECL/RECFM or inconsistent BLKSIZE
+  before the first GET/PUT. Use non-opening preflight where necessary
+  to avoid known incompatible-OPEN abends; do not claim every invalid
+  DCB can be recovered from OPEN. This does not change the existing
+  Q.0 transactional OPEN and error-return policy.
+- For supported opened datasets, `INFO.result!7` is the **effective
+  dataset-specific supported data-byte maximum**: F/FB = LRECL,
+  V/VB = LRECL-4. It is **not** always 1024 or 1020.
+- This is a **BCPLQSAM version-1 implementation policy**, not the
+  maximum permitted by MVS 3.8 and not an automatic acceptance of any
+  job region's storage budget.
+
+**Still not approved or verified:** a guarantee that **16 fully open
+maximum-sized handles** fit within `REGION=256K` (JOB 2182 held only
+sixteen private stages); the completed public implementation; abnormal
+QSAM CLOSE behavior and unrecovered abends; the R.0/R.1 generic
+registration/finalizer ABI and final error/exit diagnostic policy.
+The approved handle count remains **16 concurrently open handles as a
+functional target**, with region budgeting and Q.1 validation pending.
 
 ## Required evidence before accepting the implementation
 
 | Stage | Minimum targeted tests |
 | --- | --- |
-| Q.0 remaining | MVS record boundaries and resource-ceiling determination; conditional storage failure/cleanup; zero-data-length V/VB; error-path reconnaissance; generic finalizer/registration contract design |
+| Q.0 remaining | **Size-stage design approved** after MVS JOBs 2180–2182; error-path reconnaissance, full region budgeting and generic finalizer/registration contract still need resolution |
 | Q.1 — Linkage & OPEN/CLOSE skeleton | Three concurrent DDs and ultimately 16 active handles; allocation counts; invalid/closed/stale IDs and slot reuse; failed OPEN cleanup; normal `FINISH` and `STOP(8)` auto-close through a generic finalizer |
 | Q.2 — Fixed logical records | FB/F exact bytes, two independent handles, short-READ / repeated short-READ / successful retry with no extra GET; output flushing at explicit CLOSE and termination; binary 00/FF/trailing-byte fidelity |
 | Q.3 — Variable logical records | V/VB sizes, RDW isolation, payload-only `result!1`, smallest/maximum supported payload, repeated undersized retries, no buffer overwrite |

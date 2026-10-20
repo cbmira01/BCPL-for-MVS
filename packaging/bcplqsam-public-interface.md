@@ -7,7 +7,7 @@
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Public version-1 numeric contract reviewed; standalone ABI/QSAM jobs 2157, 2159–2163, 2165–2170 and 2172–2179 passed within their tested scope. JOB 2171 showed unrecovered S013-20 on incompatible QSAM OPEN; JOB 2177 verified genuine conditional GETMAIN R15=4; JOBs 2178–2179 verified post-OPEN V/VB attributes at LRECL=100. A 1024-byte private record-stage ceiling is proposed but not approved or fully tested. Production BCPLQSAM and R.0 registration remain unimplemented
+**Status:** Public version-1 numeric contract reviewed; standalone Q.0 evidence includes JOBs 2157, 2159–2163, 2165–2170 and 2172–2182 within their tested scope. JOB 2171 demonstrated unrecovered S013-20 on incompatible OPEN. JOB 2177 verified conditional GETMAIN R15=4; JOBs 2178–2179 confirmed post-OPEN V/VB DCB attributes; JOBs 2180–2182 established 1024-byte V/VB logical records and 16 independent 1024-byte stages. **Owner-approved version-1 private stage ceiling: 1024 total bytes per handle.** Production BCPLQSAM and R.0 registration remain unimplemented.
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---
@@ -451,6 +451,34 @@ On success `result!1=0`, `result!2=0`, `result!3=0`, `result!4` is the enum, `re
 INFO reports attributes established by the actual OPEN processing, not merely values copied from source JCL.
 
 For variable records, the public maximum data length must distinguish application data bytes from internal MVS record-control bytes.
+
+### Approved initial BCPLQSAM implementation ceiling (Q.0)
+
+The owner approved **1024 total private logical-record staging bytes per
+open handle** following MVS [JOBs 2180–2182](qsam-q0-1024-byte-stage-evidence-20261020.md).
+This is the initial implementation policy, **not** a system-wide MVS
+limit or proof that the public dispatcher is implemented.
+
+| Supported effective RECFM | Effective DCB LRECL allowed | `INFO.result!7` data bytes |
+| --- | --- | --- |
+| F / FB | 1–1024 bytes | effective LRECL |
+| V / VB | 4–1024 bytes, including four-byte RDW | effective LRECL minus 4 |
+
+For V/VB the internal four-byte RDW shares the 1024-byte staging area,
+and a valid RDW-only logical record has **zero application bytes**.
+The QSAM BDW is not part of this stage. Effective record format, LRECL,
+BLKSIZE, and dataset/device constraints must be validated; unsupported
+geometry is rejected before any GET/PUT. Appropriate pre-OPEN
+validation is required for cases where an invalid OPEN may abend;
+the known S013-20 does not become a recoverable return simply because
+a size ceiling has been chosen. INFO reports actual post-OPEN DCB values
+and the dataset-specific supported data maximum, never a flat 1024 or
+1020 for smaller LRECL datasets.
+
+The 16-handle **functional goal** remains separate from the
+**16-stage allocation test** in JOB 2182: it did not OPEN sixteen DCBs
+or measure full runtime/OS storage overhead. The complete memory budget,
+error paths and R.0 finalizer lifecycle remain Q.0/Q.1 obligations.
 
 INFO does not expose mutable DCB structures or permit the application to change dataset attributes.
 

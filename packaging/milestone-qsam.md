@@ -114,9 +114,10 @@ Q.0 remains open.
 
 The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)
 documents general Release 3.8 limits and the accepted BCPLIO `GETMAIN RC` precedent.
-It proposes a *generic* optional-module finalizer ordering for owner review;
-the R.0 ABI, tested BCPLQSAM record ceiling and exceptional CLOSE semantics
-remain open, not approved or implemented.
+It proposes a *generic* optional-module finalizer ordering for owner
+review; the R.0 ABI and exceptional CLOSE semantics remain open.
+The separate **1024-byte total private stage ceiling is now approved
+as an initial implementation policy**, not yet implemented in BCPLQSAM.
 
 The [Q.0 design review](qsam-q0-design-review-20261020.md) separates
 existing public-interface commitments from proposed implementation
@@ -153,22 +154,30 @@ records **JOBs 2178 / QS0INFV and 2179 / QS0INFVB PASS**: six steps
 RC=0000 for each and effective V/VB DCB fields mapped to enum 3/4 and
 96 payload bytes at LRECL=100. These are standalone, not public QSINFO.
 
-The [candidate 1024-byte stage probes](../bootstrap-toolchain/probes/q0-qsam-ceiling-probes/README.md)
-are locally source/JCL checked but not yet run under MVS. They test
-full V/VB RDW lengths 4/16/1024, byte-exact data and 16 live private
-GETMAIN regions. **The ceiling is not approved**, and 16 live storage
-regions are not the same as 16 open QSAM handles. The
-[Q.0 remaining-gate inventory](qsam-q0-remaining-gate-review-20261020.md)
-retains error-path, record ceiling and Runtime Extensions R.0 obligations.
-Standalone assembler evidence is not production acceptance.
+The [1024-byte stage experiments](qsam-q0-1024-byte-stage-evidence-20261020.md)
+**PASSED on MVS/TK5 in JOBs 2180–2182**. The V/VB tests exercised
+RDW-inclusive logical lengths 4/16/1024 and the complete 1020-byte
+full-record payload; the storage test held sixteen separate 1024-byte
+private GETMAIN areas and released them. Based on these results the
+owner **approved 1024 total private staging bytes per BCPLQSAM handle**
+as the initial implementation limit (F/FB up to 1024 data bytes,
+V/VB up to 1020 data bytes). The source/JCL and reproducibility details
+are in the [Q.0 probe README](../bootstrap-toolchain/probes/q0-qsam-ceiling-probes/README.md).
 
-Remaining Q.0 verification includes V/VB 1024-byte record boundaries,
-full binary-data fidelity, recoverable OPEN/GET/PUT/CLOSE diagnostics,
-larger-geometry INFO fields, complete per-handle resource budgets,
-and the shared Runtime Extensions R.0 registrar/finalizer ABI.
-The returned-control GETMAIN R15=4 case is already proven in JOB 2177;
-this does not guarantee recovery from all MVS abends. The isolated zero-data-length V/VB probes
-have passed, but are not evidence of the final BCPL API.
+The 16-stage test did **not** OPEN sixteen QSAM DCBs or establish a
+full-job memory budget. The
+[Q.0 remaining-gate inventory](qsam-q0-remaining-gate-review-20261020.md)
+retains exceptional error-path, complete region budget and shared
+Runtime Extensions R.0 obligations. These standalone programs are not
+production BCPLQSAM acceptance.
+
+Remaining Q.0 verification includes recoverable versus abending
+OPEN/GET/PUT/CLOSE diagnostics, the production INFO mapping,
+whole-handle/resource budgets, and shared Runtime Extensions R.0
+registration/finalizer lifecycle decisions. The tested GETMAIN R15=4
+return, binary boundary data and valid zero-payload V/VB records are
+established as standalone MVS evidence, **not** as final BCPL API tests.
+The numeric stage ceiling has been decided, not yet implemented.
 **Q.0 remains open; do not start Q.1 before its gate is reviewed.**
 
 ### Detailed test obligations

@@ -56,7 +56,10 @@ def make_deck(profile: str, jobcard: list[str]) -> str:
     if profile not in PROFILES:
         raise ValueError(f"unknown Q.0 ceiling profile {profile!r}")
     job, recfm, _, blksize, marker = PROFILES[profile]
-    if not jobcard or not jobcard[0].startswith(f"//{job} JOB "):
+    if (not jobcard or
+            not jobcard[0].startswith("//") or
+            jobcard[0][2:10].rstrip() != job or
+            not jobcard[0][10:].startswith(" JOB ")):
         raise ValueError("unexpected JOB card")
     base = harness()
     if profile == "stage16":
@@ -131,7 +134,7 @@ def main() -> None:
     args = parser.parse_args()
     jobname = PROFILES[args.profile][0]
     if args.check:
-        card = [f"//{jobname} JOB (BCPL),'Q0 LIMIT',CLASS=A,MSGCLASS=A"]
+        card = [f"//{jobname:<8} JOB (BCPL),'Q0 LIMIT',CLASS=A,MSGCLASS=A"]
     else:
         core = harness().config_module()
         settings = core.load_config()
