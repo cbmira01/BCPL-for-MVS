@@ -52,7 +52,10 @@ records observed JOB 2156/2157 **PASS** with permanent test sources.
 The standalone [FB80 QSAM probe](../bootstrap-toolchain/probes/q0-qsam-fb80-probe/README.md)
 passed in **JOB 2159**: [execution evidence](qsam-q0-fb80-evidence-20261020.md).
 The [DASD FB/V/VB probes](../bootstrap-toolchain/probes/q0-qsam-dasd-probes/README.md)
-are prepared but unexecuted. Its **Q.0 investigation remains in progress**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
+also passed: **JOB 2160** (FB80), **JOB 2161** (V) and **JOB 2162**
+(VB). See [MVS execution evidence](qsam-q0-dasd-evidence-20261020.md)
+and [remaining Q.0 design questions](qsam-q0-design-review-20261020.md).
+**Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
 ## Proposed optional numeric and clock milestones
 

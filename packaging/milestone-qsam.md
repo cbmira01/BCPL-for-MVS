@@ -1,6 +1,6 @@
 # Milestone QSAM — native BCPL sequential-record I/O
 
-Status: **Q.0 public-interface design in progress** (2026-10-19); Q.1 not started. Independent of M4, never a prerequisite for Cambridge self-hosting.
+Status: **Q.0 — Reconnaissance & contract in progress** (latest JES evidence dated 2026-10-20); Q.1 not started. Independent of M4, never a prerequisite for Cambridge self-hosting.
 
 ## Purpose and historical positioning
 
@@ -73,12 +73,22 @@ QSAM OPEN/GET/PUT/CLOSE and EODAD. JOB 2158 was rejected for JCL errors
 before execution. Because JOB 2159 read a JCL DD DATA stream and wrote
 SYSOUT, it did **not** prove physical deblocking of an FB DASD dataset.
 
-[Further Q.0 DASD probes](../bootstrap-toolchain/probes/q0-qsam-dasd-probes/README.md)
-are **prepared, not run**: FB80 with BLKSIZE=800 across 23 disk records,
-followed by V and VB input/output with explicit RDW lengths. After those
-are executed and reviewed, investigate record limits, QSAM failure paths,
-read-ahead staging and shared Runtime Extensions R.0 registration.
-**Do not close Q.0 or start Q.1 from these partial tests alone.**
+The [standalone DASD QSAM probes](../bootstrap-toolchain/probes/q0-qsam-dasd-probes/README.md)
+have now **passed** on MVS/TK5: **JOB 2160** (FB80 DASD, 23 records,
+BLKSIZE=800), **JOB 2161** (RECFM=V, 15 variable records), and
+**JOB 2162** (RECFM=VB, 15 variable records). All six steps in
+each job returned RC=0000; the independent readers emitted the
+expected PASS records. See [JOB 2160–2162 execution evidence](qsam-q0-dasd-evidence-20261020.md).
+These experiments establish supported behavior at the tested record
+sizes, **not** an unrestricted MVS record-size limit.
+
+The [Q.0 design review](qsam-q0-design-review-20261020.md) separates
+existing public-interface commitments from proposed implementation
+policies. Remaining work includes record-size boundaries, variable
+zero-data-length cases, recoverable OPEN/GET/PUT/CLOSE failures, a
+demonstration of pending-record retry, exact effective INFO fields,
+and the shared Runtime Extensions R.0 registrar.
+**Q.0 remains open; do not start Q.1 before its gate is reviewed.**
 
 ### Detailed test obligations
 

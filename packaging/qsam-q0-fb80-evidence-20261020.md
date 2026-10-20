@@ -45,7 +45,9 @@ exactly the local correction that produced JOB 2159.
 
 The follow-on [DASD QSAM probes](../bootstrap-toolchain/probes/q0-qsam-dasd-probes/README.md)
 exercise genuinely blocked fixed-format records and V/VB behavior.
-Those probes were **not yet executed** when this record was written.
+Those probes were **not yet executed when this earlier record was written**;
+they later passed in JOBs 2160–2162. See the separate
+[Q.0 DASD evidence](qsam-q0-dasd-evidence-20261020.md).
 
 **Q.0 — Reconnaissance & contract remains open.** The global-vector
 registrar, error semantics, V/VB edge cases, buffer retry staging and

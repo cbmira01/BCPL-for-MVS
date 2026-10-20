@@ -7,7 +7,7 @@
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Numeric contracts specified; G!200 test-only ABI passed (JOB 2157), and basic MVS QSAM fixed-record SYSOUT passed (JOB 2159); blocked DASD, V/VB and registration still unverified  
+**Status:** Public version-1 numeric contract reviewed; G!200 ABI passed (2157), fixed SYSOUT (2159), blocked FB DASD (2160), V (2161), and VB (2162) standalone probes passed; production BCPLQSAM and R.0 registration remain unimplemented  
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---
@@ -647,12 +647,12 @@ The test should include both blocked and unblocked fixed datasets.
 
 | March | Responsibility |
 |---|---|
-| **Q.0 — Architecture and Interface** | Verify ABI, public contracts, dataset limits, error semantics, and registration requirements |
-| **Q.1 — Integration and Dataset Lifecycle** | Independent module, dispatcher integration, OPEN/CLOSE, 16 handles, cleanup |
-| **Q.2 — Fixed-Length Records** | F/FB READ/WRITE, exact binary fidelity, buffer retry, object-deck round trip |
-| **Q.3 — Variable-Length Records** | V/VB support, actual record lengths, RDW handling and boundary tests |
-| **Q.4 — MVS Output Devices** | SYSOUT, printer carriage control, card-punch record demonstrations |
-| **Q.5 — Integration, Regression, and Release** | Full verification, reproducible build and installation, optional-link demonstration, documentation and acceptance |
+| **Q.0 — Reconnaissance & contract** | Verify ABI, public contracts, dataset limits, error semantics, and registration requirements |
+| **Q.1 — Linkage & OPEN/CLOSE skeleton** | Independent module, dispatcher integration, OPEN/CLOSE, 16 handles, cleanup |
+| **Q.2 — Fixed logical records** | F/FB READ/WRITE, exact binary fidelity, buffer retry, object-deck round trip |
+| **Q.3 — Variable logical records** | V/VB support, actual record lengths, RDW handling and boundary tests |
+| **Q.4 — SYSOUT devices** | SYSOUT, printer carriage control, card-punch record demonstrations |
+| **Q.5 — Hardening & release** | Full verification, reproducible build and installation, optional-link demonstration, documentation and acceptance |
 
 Q.0 is a specification and investigation march. Functional implementation begins only after the relevant design and shared registration prerequisites have been approved.
 
@@ -677,9 +677,9 @@ These may be considered as future system extensions.
 
 The following items remain open before declaring Q.0 complete:
 
-1. Validate the precise assembler dispatcher ABI, register discipline, and argument-vector handling.
+1. Extend the passed test-only G!200 ABI probe (JOB 2157) to verify actual production dispatcher register preservation, system-service calls and argument bounds.
 2. Verify the explicit public mode, record-format and error constants proposed in sections 5, 8, 13 and 24 with native test callers.
-3. Verify MVS 3.8 QSAM record limits, OPEN/DCB behavior, variable-record edge cases, and retrievable diagnostics.
+3. Extend standalone QSAM evidence from JOBs 2159–2162 to the remaining actual MVS record-size limits, OPEN/DCB failure paths, V/VB zero-data-length and boundary cases, and retrievable diagnostics.
 4. Verify the per-handle pending-record mechanism for an undersized READ.
 5. Validate the explicit INFO fields and QUERY version rules against effective DCB attributes and a native capability-query probe.
 6. Verify the common Runtime Extensions registration mechanism and its error handling.
@@ -687,7 +687,7 @@ The following items remain open before declaring Q.0 complete:
 
 The Global Number Registry owns the approved G!200 allocation. The package specification owns the BCPLQSAM operation-number namespace.
 
-**No successful BCPLQSAM assembly, link-edit, or MVS execution is claimed by this document.**
+**The standalone ABI and QSAM probes passed; no production BCPLQSAM assembly, link-edit, or MVS execution is claimed.** See [Q.0 DASD evidence](qsam-q0-dasd-evidence-20261020.md) and the [Q.0 design review](qsam-q0-design-review-20261020.md).
 
 ---
 
@@ -703,7 +703,7 @@ The Global Number Registry owns the approved G!200 allocation. The package speci
 - `bootstrap-toolchain/asm/bcplbyte.asm`
 - `bootstrap-toolchain/asm/bcplio.asm`
 
-GitHub is authoritative for the reviewed specification. The Project Source from October 19, 2026 supplies the base text. The decisions above and the enumerated constants below are Q.0 design outcomes. **No IFOX assembly, IEWL link, MVS executable probe or regression test is claimed, and Q.0 is not closed.**
+GitHub is authoritative for the reviewed specification. The Project Source from October 19, 2026 supplies the base text. The decisions above and the enumerated constants below are Q.0 design outcomes. **Test-only IFOX/IEWL/MVS probes passed in JOBs 2157 and 2159–2162; no BCPLQSAM implementation, Runtime Extensions registration or regression acceptance is claimed, and Q.0 is not closed.**
 
 ## 24. Version 1 numeric interface assignments and operation results
 
@@ -780,4 +780,4 @@ These numbers are stable design-baseline declarations, **not** MVS DCB flags. Un
 - Current runtime evidence supports the native first-three-argument convention, global-vector access through G!N, length-prefixed BCPL strings, and byte address conversion. A test-only G!200 Q0DISP dispatcher was assembled and executed in JOB 2157; the production BCPLQSAM dispatcher has not been implemented.
 - The existing `BCPLIO` handles DD-name normalization and MVS QSAM internally; BCPLQSAM will reuse validated concepts but not the text-stream semantics.
 - IBM's later [data-record overview](https://www.ibm.com/docs/en/zos-basic-skills?topic=set-data-record-formats), [QSAM DCB specification](https://www.ibm.com/docs/en/zos/3.2.0?topic=descriptions-dcbconstruct-data-control-block-qsam), and [QSAM GET reference](https://www.ibm.com/docs/en/zos/3.2.0?topic=descriptions-getobtain-next-logical-record-qsam) explain RDW, LRECL and move-mode behavior. They are **not** evidence that all modern details are available in MVS 3.8J.
-- The test-only G!200 dispatcher ABI probe passed in JOB 2157. The standalone FB80 JCL DD DATA/SYSOUT QSAM probe also passed in JOB 2159; see [evidence](qsam-q0-fb80-evidence-20261020.md). Q.0 still requires actual blocked DASD FB and V/VB experiments (prepared but not yet executed) and reconciliation with shared Runtime Extensions R.0. This document records **specification decisions**, not milestone gate acceptance.
+- The test-only G!200 dispatcher ABI probe passed in JOB 2157. Standalone QSAM tests passed for FB80 JCL DD DATA/SYSOUT (JOB 2159), blocked FB80 DASD (JOB 2160), V (JOB 2161) and VB (JOB 2162). See [fixed SYSOUT evidence](qsam-q0-fb80-evidence-20261020.md) and [DASD execution evidence](qsam-q0-dasd-evidence-20261020.md). Q.0 still requires additional boundary/error tests, a validated pending-record strategy and reconciliation with shared Runtime Extensions R.0. This document records **specification decisions**, not milestone gate acceptance.

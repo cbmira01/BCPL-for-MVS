@@ -1,6 +1,9 @@
 # Q.0 — standalone QSAM DASD probes (FB, V, VB)
 
-**Status:** Prepared and statically checked; **no new DASD job has executed**.
+**Status:** Executed successfully under MVS 3.8J/TK5 on JES job date
+20 October 2026: FB **JOB 2160**, V **JOB 2161**, VB **JOB 2162**.
+Each completed all six assembly/link/execute steps with RC=0000.
+See [Q.0 DASD execution evidence](../../../packaging/qsam-q0-dasd-evidence-20261020.md).
 These are Q.0 reconnaissance tests, **not** BCPLQSAM implementation and not
 Q.1 code. They compile and link two native S/370 programs from source with
 IFOX and IEWL, creating only temporary object/load modules and DASD datasets.
@@ -77,7 +80,11 @@ reader checks LRECL and each returned RDW, with data and order. The
 variable probes do **not** yet check every possible RECFM, record-size
 limit or unusual zero-data-length case.
 
-A resulting PASS validates the specified format, sizes and observed TK5
-behavior only. It does not implement the optional Runtime Extensions
-registrar, buffering, error recovery, or per-handle pending-record retry.
-Q.0 remains open pending review and acceptance.
+The observed PASS results validate the specified format, sizes and
+observed TK5 behavior only. FB reader verified effective RECFM=FB,
+LRECL=80 and BLKSIZE=800. The V/VB reader verified LRECL=100,
+the individual RDW lengths and reserved bytes, identifiers, sequence
+and EOF; it did not inspect effective V/VB RECFM/BLKSIZE or every
+payload byte. No largest-size or zero-data-length case was tested.
+The tests do not implement an optional registrar, buffering, error
+recovery or pending-record retry. Q.0 remains open.
