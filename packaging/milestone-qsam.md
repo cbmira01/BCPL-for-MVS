@@ -124,10 +124,16 @@ policies. The [approved staging and resource-management decision](qsam-q0-stagin
 establishes private per-handle GET/PUT areas, eager checked allocation,
 non-recycled handle identities, pending-record retry invariants, and
 normal termination cleanup via a generic optional-extension finalizer.
+The [Q.0 isolated pending-record retry probe](../bootstrap-toolchain/probes/q0-qsam-retry-probes/README.md)
+is prepared, with locally checked 282-card IFOX/JCL generation. It
+models a private FB80 staging area and verifies capacity retries,
+record order and persistent EOF; **it has not run on MVS and is
+not BCPLQSAM implementation evidence**.
+
 Remaining Q.0 verification includes further variable-record size and
 binary-data boundaries, recoverable OPEN/GET/PUT/CLOSE failures,
-a demonstration of pending-record retry, exact effective INFO fields,
-resource ceilings, and the shared Runtime Extensions R.0
+MVS execution of the staged pending-record retry probe, exact effective
+INFO fields, resource ceilings, and the shared Runtime Extensions R.0
 registrar/finalizer ABI. The isolated zero-data-length V/VB probes
 have passed, but are not evidence of the final BCPL API.
 **Q.0 remains open; do not start Q.1 before its gate is reviewed.**
