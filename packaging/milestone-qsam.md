@@ -141,12 +141,19 @@ injected nonzero R15: C-before-B release, surviving A, renewed D and
 four acquisitions/four frees. **Neither test caused actual MVS
 storage shortage**, nor implemented the public BCPLQSAM API.
 
-The [one-shot real conditional GETMAIN-refusal probe](../bootstrap-toolchain/probes/q0-qsam-resource-probes/README-shortage.md)
-is prepared and locally checked; its opt-in MVS execution is pending.
+The [real conditional GETMAIN refusal evidence](qsam-q0-real-getmain-refusal-evidence-20261020.md)
+records **JOB 2177 / QS0NOMEM**: ASM/LKED/GO RC=0000; with
+GO REGION=256K a single 1 MiB conditional GETMAIN returned **R15=4**.
+The program rolled back its unpublished setup, preserved independent
+storage, and resumed small allocations (3 acquired, 3 released, 0 live).
+This closes resource-refusal reconnaissance, **not** the Q.0 gate.
+
+The [Q.0 effective INFO and record-ceiling review](qsam-q0-info-and-record-ceiling-review-20261020.md)
+proposes further post-OPEN V/VB attribute probes and a **candidate**
+1024-byte per-handle private stage, not an approved numeric ceiling.
 The [Q.0 remaining-gate inventory](qsam-q0-remaining-gate-review-20261020.md)
-lists unresolved INFO, error-path, storage-ceiling and Runtime Extensions
-R.0 dependencies. Do not treat standalone assembler results as gate
-acceptance.
+retains INFO, error-path, storage-ceiling and Runtime Extensions R.0
+requirements. Standalone assembler results are not production acceptance.
 
 Remaining Q.0 verification includes further variable-record size and
 binary-data boundaries, recoverable OPEN/GET/PUT/CLOSE failures,

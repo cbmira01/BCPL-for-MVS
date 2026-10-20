@@ -1,7 +1,8 @@
 # Milestone QSAM — Q.0 bounded actual GETMAIN RC refusal experiment
 
-**Status:** PROPOSED / SOURCE CHECKED; **NOT RUN ON MVS**.
-This standalone IFOX `Q0NOMEM` probe attempts a **genuine returned-control failure**
+**Status:** MVS PASS in **JOB 2177** (20 October 2026), all three
+steps RC=0000 and observed R15=4 from a real conditional GETMAIN.
+This standalone IFOX `Q0NOMEM` probe demonstrates a **genuine returned-control failure**
 from one conditional MVS `GETMAIN RC` call. It adds no BCPLQSAM
 implementation, private handle API, or changes to accepted PDSes.
 
@@ -13,7 +14,7 @@ when insufficient storage is available, while an unconditional request
 may terminate the job. A 256K REGION with **one** 1,048,576-byte
 conditional request tests the supported refusal path without repeatedly
 consuming memory. It is an investigation, **not** a claim of an MVS-wide
-storage bound. The actual 3.8J/TK5 behavior remains unverified.
+storage bound. The actual 3.8J/TK5 result is [documented](../../../packaging/qsam-q0-real-getmain-refusal-evidence-20261020.md).
 
 Period documentation: IBM, *OS/VS2 System Programming Library:
 Supervisor*, Release 3.7, GC28-0628-2, see the GETMAIN section:

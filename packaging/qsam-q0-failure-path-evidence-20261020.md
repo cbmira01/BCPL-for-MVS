@@ -52,12 +52,12 @@ probe had no real QSAM file handle, pending record, BCPL request/result
 vectors, or production per-handle allocation. It is not sufficient to
 accept the optional BCPLQSAM implementation.
 
-## Subsequent guarded experiment (not executed)
+## Subsequent guarded experiment — executed and passed
 
-The separate [one-shot conditional GETMAIN refusal design](../bootstrap-toolchain/probes/q0-qsam-resource-probes/README-shortage.md)
-requests 1 MiB with a bounded GO region of 256K, in order to observe
-an actual conditional return without repeated allocations. A real
-MVS result has **not** yet been supplied, and the possibility of
-an unexpected system failure remains an experimental risk.
+The separate [one-shot conditional GETMAIN refusal experiment](qsam-q0-real-getmain-refusal-evidence-20261020.md)
+**passed in JOB 2177**. Its real 1 MiB conditional request, under a
+256K GO region, returned R15=4 to the program. This was a genuine MVS
+return, unlike JOB 2176's injected failure. It did not establish
+BCPLQSAM's maximum record size or automatic extension finalization.
 
 **Q.0 remains open; Q.1 has not started.**

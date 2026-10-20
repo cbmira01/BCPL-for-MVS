@@ -22,22 +22,25 @@ record, and `packaging/milestone-runtime-extensions.md`.
 | Staged pending READ retry | JOB 2174 | Single statically staged FB80 reader |
 | Conditional storage ownership | JOB 2175 | Real GETMAIN/FREEMAIN; injected explicit rollback |
 | Shared rollback handler | JOB 2176 | Real small allocations, injected failure through handler |
+| Real conditional allocation refusal | JOB 2177 | Single 1 MiB GETMAIN returned R15=4 under REGION=256K; recovered |
 
 ## Remaining questions before owner accepts Q.0
 
-1. **Real conditional allocation refusal and error return.** Observe
-   an actual nonzero R15 from a bounded, single `GETMAIN RC` request,
-   then cleanup and continued small allocation. The guarded experiment
-   is **prepared, not run**. Do not equate a failing job with a safe
-   returned-control failure.
+1. **Real conditional allocation refusal — resolved for tested case.**
+   [JOB 2177](qsam-q0-real-getmain-refusal-evidence-20261020.md)
+   observed actual R15=4, rollback and later successful allocation after
+   one bounded 1 MiB GETMAIN under REGION=256K. No general guarantee
+   of abend recovery or record-size support follows.
 2. **Exact practical record and storage limits.** Establish relevant
    TK5 DASD device type and dataset geometry; choose a *tested*
    supported per-handle stage maximum. An MVS-documented numeric ceiling
    is not automatically the BCPLQSAM limit. Verify what 16
    simultaneous handles imply for the selected stage size and job region.
-3. **Effective INFO attributes.** Exercise the opened-DCB values and
-   public mapping for RECFM, LRECL, BLKSIZE and supported *data-byte*
-   maximum. JFCB pre-OPEN evidence alone does not prove post-OPEN INFO.
+3. **Effective INFO attributes.** F/FB post-OPEN DCB values have
+   been checked; V/VB readers previously checked only effective LRECL.
+   Execute the [test-only V/VB INFO probes](../bootstrap-toolchain/probes/q0-qsam-info-probes/README.md)
+   for effective RECFM, LRECL and BLKSIZE plus public enum/data-length
+   mapping. This is not yet public `QSAMSVC` implementation evidence.
 4. **Error semantics.** Document which missing DD, incompatible mode,
    SYNAD/GET/PUT and exceptional CLOSE conditions can return safely
    and which can abend. An S013-20 was observed; no promise of generic
