@@ -88,6 +88,13 @@ failed in IFOX before correction and is recorded separately.
 The [corrected probe source](../bootstrap-toolchain/probes/q0-qsam-boundary-probes/README.md)
 is in Git. Q.0 remains open, and Q.1 has not started.
 
+The [zero-payload V/VB DASD evidence](qsam-q0-zero-record-evidence-20261020.md)
+records **JOB 2168 (VZERO)** and **JOB 2169 (VBZERO)**, both PASS with
+six RC=0000 steps and independent readback of fifteen logical records.
+Record 15 contained a four-byte RDW and zero data bytes; EODAD occurred
+after that record. This establishes the tested QSAM zero-payload behavior,
+not a completed BCPLQSAM READ implementation.
+
 
 The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)
 documents general Release 3.8 limits and the accepted BCPLIO `GETMAIN RC` precedent.
@@ -101,10 +108,12 @@ policies. The [approved staging and resource-management decision](qsam-q0-stagin
 establishes private per-handle GET/PUT areas, eager checked allocation,
 non-recycled handle identities, pending-record retry invariants, and
 normal termination cleanup via a generic optional-extension finalizer.
-Remaining Q.0 verification includes record-size boundaries, variable
-zero-data-length cases, recoverable OPEN/GET/PUT/CLOSE failures, a
-demonstration of pending-record retry, exact effective INFO fields,
-and the shared Runtime Extensions R.0 registrar/finalizer ABI.
+Remaining Q.0 verification includes further variable-record size and
+binary-data boundaries, recoverable OPEN/GET/PUT/CLOSE failures,
+a demonstration of pending-record retry, exact effective INFO fields,
+resource ceilings, and the shared Runtime Extensions R.0
+registrar/finalizer ABI. The isolated zero-data-length V/VB probes
+have passed, but are not evidence of the final BCPL API.
 **Q.0 remains open; do not start Q.1 before its gate is reviewed.**
 
 ### Detailed test obligations
