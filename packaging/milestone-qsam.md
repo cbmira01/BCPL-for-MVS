@@ -101,10 +101,15 @@ RDJFCB R15=0 for allocated QPRES and R15=4 for unallocated QMISS,
 with neither DD opened. The [incompatible-OPEN negative experiment](qsam-q0-open-incompatible-evidence-20261020.md)
 **JOB 2171** ended with **S013-20** at QSAM OPEN for temporary
 FB80/801 geometry; ASM/LKED both RC=0000. MVS did not return a
-recoverable result to the caller. The test-only follow-up
-[pre-OPEN geometry and empty-EOF probes](../bootstrap-toolchain/probes/q0-qsam-followup-probes/README.md)
-are prepared, **not executed on MVS**. They introduce no BCPLQSAM
-implementation. Q.0 remains open.
+recoverable result to the caller. The [Q.0 JFCB geometry and empty-EOF evidence](qsam-q0-geometry-empty-eof-evidence-20261020.md)
+records **JOB 2172 / QS0GEOM** (ASM/LKED/GO all RC=0000) and
+**JOB 2173 / QS0EMPTY** (all six ASM/link/run steps RC=0000).
+JOB 2172 validated non-opening RDJFCB JFCB fields for FB80/800
+and FB80/801 and rejected the incompatible allocation *before OPEN*.
+JOB 2173 observed EODAD once on an empty FB80 dataset, with two
+application-level read requests but no second QSAM GET. These are
+standalone probes, **not an implemented BCPLQSAM READ/OPEN**.
+Q.0 remains open.
 
 
 The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)

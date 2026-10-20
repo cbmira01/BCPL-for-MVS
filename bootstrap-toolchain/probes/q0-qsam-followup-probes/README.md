@@ -1,12 +1,14 @@
 # Milestone QSAM — Q.0 geometry precheck and empty-EOF probes
 
-**Status: locally generated and statically checked; not yet executed in MVS.** These are isolated assembler reconnaissance jobs, not a BCPLQSAM module. They do not install or modify object-library PDS members. All data sets are temporary; JCL is generated under ignored `workarea/`.
+**Status: MVS PASS — JOB 2172 (GEOMETRY) and JOB 2173 (EMPTY), 20 October 2026.** These are isolated assembler reconnaissance jobs, not a BCPLQSAM module. They do not install or modify object-library PDS members. All data sets are temporary; JCL is generated under ignored `workarea/`.
+
+[Execution evidence for both jobs](../../../packaging/qsam-q0-geometry-empty-eof-evidence-20261020.md).
 
 ## GEOMETRY: `QS0GEOM`
 
 `geometry-check.asm` invokes non-opening `RDJFCB` on two JCL-allocated temporary DDs: `QGOOD` (FB, LRECL=80, BLKSIZE=800) and `QBAD` (FB, LRECL=80, BLKSIZE=801). It checks the returned 176-byte JFCB fields before dividing BLKSIZE by LRECL. **No OPEN is issued on either input DCB.** The only QSAM OPEN/PUT/CLOSE serves `QOUT` to emit the marker.
 
-The JFCB offsets are **provisional for MVS 3.8J** and are specifically being tested: `JFCRECFM` +100 (X'64'), `JFCBLKSI` +102 (X'66'), `JFCLRECL` +104 (X'68'). IBM documents these for a later JFCB layout; applicability to MVS 3.8J remains to be demonstrated. The probe checks X'90' for FB and the actual expected values 800/80 versus 801/80. An unexpected result is useful evidence, **not** proof the DD lacks its JCL attributes.
+The JFCB offsets were **verified on the tested MVS 3.8J JFCB layout**: `JFCRECFM` +100 (X'64'), `JFCBLKSI` +102 (X'66'), `JFCLRECL` +104 (X'68'). IBM documents these for a later JFCB layout; JOB 2172 established their applicability to its two FB allocations on MVS 3.8J, not to every JFCB variant or allocation type. The probe checks X'90' for FB and the actual expected values 800/80 versus 801/80. An unexpected result is useful evidence, **not** proof the DD lacks its JCL attributes.
 
 Expected three RC=0000 steps (`ASM`, `LKED`, `GO`) and marker:
 
@@ -14,7 +16,7 @@ Expected three RC=0000 steps (`ASM`, `LKED`, `GO`) and marker:
 Q0 JFCB FB80/800 OK FB80/801 REJECT PASS
 ```
 
-This is a narrow **pre-OPEN guard** proof, not generic abend recovery and not implemented BCPLQSAM.
+**Observed JOB 2172:** all three steps RC=0000 with the marker above. This is a narrow **pre-OPEN guard** proof, not generic abend recovery and not implemented BCPLQSAM.
 
 ## EMPTY: `QS0EMPTY`
 
@@ -26,7 +28,7 @@ Expected six RC=0000 steps (`ASMWR`, `ASMRD`, `LKWR`, `LKRD`, `WGO`, `RGO`) and 
 Q0 EMPTY FB EOF2 EODAD1 PASS
 ```
 
-This tests a standalone persistent-EOF policy. It does **not** prove an operational BCPLQSAM READ API.
+**Observed JOB 2173:** all six steps RC=0000 with the marker above. This tests a standalone persistent-EOF policy. It does **not** prove an operational BCPLQSAM READ API.
 
 ## Run from repository root, one job at a time
 
