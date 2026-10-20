@@ -1,7 +1,11 @@
 # Milestone QSAM — March Q.0 concurrent-DCB storage probes
 
-**Status:** Test-only IFOX/IEWL source/JCL generators prepared and locally
-structure-checked; **NOT executed on MVS**. Do not treat these probes as
+**Status:** Test-only IFOX/IEWL source/JCL generators prepared.
+The initial Morkies dry run failed before submission because the
+generator counted link-editor temporary-object DELETE DDs along with
+QSAM DELETE DDs. The check has been corrected to verify each `Qnn`
+QSAM input DD exactly once; **re-run --check on Morkies before any MVS
+submission**. **NOT executed on MVS**. Do not treat these probes as
 production `BCPLQSAM`, 16 published BCPL handles, or Runtime Extensions.
 
 ## What is tested
@@ -81,3 +85,15 @@ inferring capacity from the standalone 16-stage JOB 2182.
 
 See [Q.0 owner-approved error and R.0 policy](../../../packaging/qsam-q0-error-and-r0-design-decisions-20261020.md).
 **March Q.0 remains open; Q.1 has not started.**
+
+## Corrected dry-run validation
+
+The original `make-jobs.py --check` mistakenly required a raw
+count of `DISP=(OLD,DELETE)` equal to the number of QSAM DCBs.
+The assembler-link steps also delete **two temporary object datasets**,
+so the expected raw count was N+2, not N. This caused
+`ValueError: temporary dataset cleanup missing` before any job
+submission. The corrected check verifies every exact
+`//Qnn DD DSN=&&Q0Hnn,DISP=(OLD,DELETE)` card once and does
+not count the two linker cleanup DDs. Full generator/IFOX/MVS
+execution remains unverified until the owner's next JES run.

@@ -197,8 +197,13 @@ def make_deck(profile: str, jobcard: list[str]) -> str:
     deck = '\n'.join(cards) + '\n'
     if deck.count('//SYSIN    DD  *') != 2 or deck.splitlines().count('/*') != 4:
         raise ValueError('unexpected number of assembler/linker inputs')
-    if deck.count('DISP=(OLD,DELETE)') != count:
-        raise ValueError('temporary dataset cleanup missing')
+    # Restrict the check to the N QSAM input DDs. The two link-edit
+    # SYSLIN object DDs also use DISP=(OLD,DELETE).
+    for i in range(count):
+        expected = (f'//Q{i:02d}      DD  DSN=&&Q0H{i:02d},'
+                    'DISP=(OLD,DELETE)')
+        if cards.count(expected) != 1:
+            raise ValueError(f'temporary QSAM DD Q{i:02d} cleanup missing')
     return deck
 
 
