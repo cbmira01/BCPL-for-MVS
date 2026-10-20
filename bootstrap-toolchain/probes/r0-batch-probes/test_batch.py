@@ -75,6 +75,14 @@ class R0Batch(unittest.TestCase):
         self.assertIn('R0PBM', sections)
         self.assertEqual(len(sections), len(batch.PACKAGES))
 
+    def test_job_2194_multiselection_index_advances(self):
+        # On System/370, R0 cannot be used as a base/index register.
+        # LA 0,1(0) loads a constant 1 and stalls three-package cases.
+        source = batch.input_source('dependency.asm')
+        self.assertIn("NEXTPK   L     0,IDX\n         A     0,=F'1'\n"
+                      "         ST    0,IDX", source)
+        self.assertNotIn('LA    0,1(0)', source)
+
     def test_all_asm_columns(self):
         for name in ('master.asm','dependency.asm','finalizer.asm','hooks.asm'):
             with self.subTest(name=name):

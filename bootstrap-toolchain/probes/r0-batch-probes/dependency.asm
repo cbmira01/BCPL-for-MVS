@@ -142,7 +142,7 @@ GOTDEP   L     0,64(8)
          C     3,IDX
          BNL   BADORDER
 NEXTPK   L     0,IDX
-         LA    0,1(0)
+         A     0,=F'1'
          ST    0,IDX
          C     0,CTN
          BL    PKLOOP
