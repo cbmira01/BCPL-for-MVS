@@ -124,16 +124,22 @@ policies. The [approved staging and resource-management decision](qsam-q0-stagin
 establishes private per-handle GET/PUT areas, eager checked allocation,
 non-recycled handle identities, pending-record retry invariants, and
 normal termination cleanup via a generic optional-extension finalizer.
-The [Q.0 isolated pending-record retry probe](../bootstrap-toolchain/probes/q0-qsam-retry-probes/README.md)
-is prepared, with locally checked 282-card IFOX/JCL generation. It
-models a private FB80 staging area and verifies capacity retries,
-record order and persistent EOF; **it has not run on MVS and is
-not BCPLQSAM implementation evidence**.
+The [Q.0 pending logical-record retry evidence](qsam-q0-pending-retry-evidence-20261020.md)
+records **JOB 2174 / QS0RETRY**: six MVS steps RC=0000, a valid
+private FB80 pending-record retry with unchanged caller buffers on
+capacity error, correct record order, and persistent EOF. This was a
+standalone assembler test with **static** staging, not a completed
+BCPLQSAM READ implementation.
+
+The [Q.0 resource allocation and rollback probe](../bootstrap-toolchain/probes/q0-qsam-resource-probes/README.md)
+is prepared and locally checked (177-card generator). It tests real
+conditional GETMAIN/FREEMAIN and uses an **injected**, not real MVS,
+allocation failure to exercise rollback. MVS execution is pending.
 
 Remaining Q.0 verification includes further variable-record size and
 binary-data boundaries, recoverable OPEN/GET/PUT/CLOSE failures,
-MVS execution of the staged pending-record retry probe, exact effective
-INFO fields, resource ceilings, and the shared Runtime Extensions R.0
+actual storage-shortage behavior, exact effective INFO fields,
+resource ceilings, and the shared Runtime Extensions R.0
 registrar/finalizer ABI. The isolated zero-data-length V/VB probes
 have passed, but are not evidence of the final BCPL API.
 **Q.0 remains open; do not start Q.1 before its gate is reviewed.**
