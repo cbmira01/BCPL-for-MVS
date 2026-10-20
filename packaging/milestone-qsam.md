@@ -81,6 +81,13 @@ each job returned RC=0000; the independent readers emitted the
 expected PASS records. See [JOB 2160–2162 execution evidence](qsam-q0-dasd-evidence-20261020.md).
 These experiments establish supported behavior at the tested record
 sizes, **not** an unrestricted MVS record-size limit.
+The [four fixed-record boundary tests](qsam-q0-fixed-boundary-evidence-20261020.md)
+subsequently passed: JOB 2163 (F80), JOB 2165 (F1024), JOB 2166
+(FB8K) and JOB 2167 (FB16K), all six steps RC=0000. JOB 2164
+failed in IFOX before correction and is recorded separately.
+The [corrected probe source](../bootstrap-toolchain/probes/q0-qsam-boundary-probes/README.md)
+is in Git. Q.0 remains open, and Q.1 has not started.
+
 
 The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)
 documents general Release 3.8 limits and the accepted BCPLIO `GETMAIN RC` precedent.
