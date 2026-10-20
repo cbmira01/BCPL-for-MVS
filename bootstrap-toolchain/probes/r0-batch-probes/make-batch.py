@@ -62,14 +62,16 @@ def cards_ok(source: str, what: str) -> str:
 
 def package_source() -> str:
     cards = ['* R.0 TEST ONLY: RELOCATED PER-PACKAGE DESCRIPTORS.']
-    for tag, (name, major, minor, global_number, dep) in PACKAGES.items():
+    for ordinal, (tag, values) in enumerate(PACKAGES.items()):
+        name, major, minor, global_number, dep = values
         begin, end = 'R0' + tag + 'B', 'R0' + tag + 'E'
-        section = 'R0' + tag
+        # The BM fixture must not collide with master CSECT R0BM.
+        section = 'R0PBM' if tag == 'BM' else 'R0' + tag
         count = 1 if dep else 0
         cards.extend([
             f'{section:<8} CSECT',
             f'         ENTRY {begin},{end}',
-            '         EXTRN R0HOOK',
+            *(['         EXTRN R0HOOK'] if ordinal == 0 else []),
             f"{begin:<8} DC    CL4'BCEX'",
             "         DC    F'1'",
             "         DC    F'48'",

@@ -60,6 +60,21 @@ class R0Batch(unittest.TestCase):
         self.assertEqual(reg.count("CL80'R0 D"),len(batch.CASES))
         self.assertEqual(reg.count('A(R0'), 2 * sum(len(sel) for _,sel,_,_,_ in batch.CASES))
 
+    def test_job_2193_assembler_diagnostics_do_not_regress(self):
+        # ASMM IFO217: RR OR cannot use a storage operand.
+        master = batch.input_source('master.asm')
+        self.assertIn('         O     15,DEPSTAT', master)
+        self.assertNotIn('         OR    15,DEPSTAT', master)
+        # ASMP: IFOX EXTRN applies to whole assembly, not per CSECT.
+        pkg = batch.package_source()
+        self.assertEqual(pkg.splitlines().count('         EXTRN R0HOOK'), 1)
+        sections = [line.split()[0] for line in pkg.splitlines()
+                    if len(line.split()) >= 2 and line.split()[1] == 'CSECT']
+        self.assertEqual(len(sections), len(set(sections)))
+        self.assertNotIn('R0BM', sections)
+        self.assertIn('R0PBM', sections)
+        self.assertEqual(len(sections), len(batch.PACKAGES))
+
     def test_all_asm_columns(self):
         for name in ('master.asm','dependency.asm','finalizer.asm','hooks.asm'):
             with self.subTest(name=name):

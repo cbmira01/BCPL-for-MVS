@@ -20,7 +20,7 @@ R0BM     CSECT
          ST    15,DEPSTAT
          L     15,=A(R0FCHK)
          BALR  14,15
-         OR    15,DEPSTAT
+         O     15,DEPSTAT
          L     13,4(13)
          L     13,4(13)
          LM    14,14,12(13)
