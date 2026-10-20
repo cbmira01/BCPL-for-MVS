@@ -1,6 +1,6 @@
 # Milestone QSAM — Q.0 resource allocation and rollback probe
 
-**Status: prepared and locally checked; NOT YET RUN ON MVS.** The
+**Status: `QS0RES` PASSED on MVS in JOB 2175 (2026-10-20); new `QS0FAIL` probe is locally checked but not yet run.** The
 standalone `QS0RES` experiment uses IFOX and MVS `GETMAIN RC` /
 `FREEMAIN R` to test resource ownership, rollback, and continuation
 after an intentionally injected failure. It does **not** implement
@@ -40,7 +40,7 @@ a separately reviewed, opt-in real-shortage test. It does not exercise
 QSAM `OPEN` or `GET`, dynamically allocated DCBs, or recovery of a
 pending record after a true allocation failure.
 
-## MVS execution (after adding these sources to the GitHub repository)
+## MVS execution (QS0RES observed in JOB 2175)
 
 ```sh
 cd ~/Source/Repos/BCPL-for-MVS
@@ -52,7 +52,7 @@ bash tools/mvs/submit-jcl workarea/qsam-q0-resource/q0-resource.jcl
 tools/mvs/dump-report-for-job JOBNUMBER
 ```
 
-Expected steps: `ASM`, `LKED`, `GO`, each RC=0000; expected `QOUT`:
+Observed JOB 2175: `ASM`, `LKED`, `GO` each RC=0000; `QOUT` contained:
 
 ```text
 Q0 GETMAIN RC ROLLBACK 3 ALLOC 3 FREE PASS
@@ -61,4 +61,42 @@ Q0 GETMAIN RC ROLLBACK 3 ALLOC 3 FREE PASS
 Generation produces a private 0600 JCL file in ignored `workarea/`.
 Do **not** commit generated decks; they may embed local job-card
 credentials. No accepted PDS objects or native runtime components
-are changed by this job. **JES execution proof is still pending.**
+were changed by JOB 2175. [Execution evidence](../../../packaging/qsam-q0-resource-evidence-20261020.md) records the precise limits of that PASS.
+
+## QS0FAIL — actual rollback-handler path (prepared, not run)
+
+The separate `failure-path.asm` / `make-failure-job.py` pair tests
+the failure-specific `ROLLBACK` branch used when a conditional
+`GETMAIN RC` returns nonzero during an unpublished setup. This
+experiment *deliberately injects* a nonzero `R15` **after** small,
+real allocations of A (80 bytes), B (96 bytes), and C (64 bytes).
+
+It must enter `ROLLBACK` exactly once, free C before B, and keep A
+and its sentinel bytes intact. The test checks two releases and one
+remaining live allocation, then acquires D (80 bytes), validates both
+A/D, releases D and A, and checks **4 acquisitions, 4 frees, 0 live**.
+This test runs the rollback-handler branch, unlike JOB 2175, but
+does **not** produce a real storage shortage or exercise the separate
+fatal `FAILED` routine. An unexpected allocation error causes RC=8.
+
+Run from repository root, after pulling `main`:
+
+```sh
+PROBE=bootstrap-toolchain/probes/q0-qsam-resource-probes
+python3 "$PROBE/make-failure-job.py" --check
+python3 "$PROBE/make-failure-job.py"
+bash tools/mvs/submit-jcl workarea/qsam-q0-resource/q0-failure-path.jcl
+tools/mvs/dump-report-for-job JOBNUMBER
+```
+
+Expected for `QS0FAIL`: three steps `ASM`, `LKED`, `GO`
+at RC=0000 and the SYSOUT marker:
+
+```text
+Q0 RESOURCE FAILED PATH 4 ALLOC 4 FREE PASS
+```
+
+The generator's safe `--check` produces no authenticated JCL and
+validated a 230-card deck locally. The ordinary generated deck is
+mode 0600 under ignored `workarea/`; it may contain JOB card secrets
+and must never be committed. **Do not claim MVS PASS before JES evidence.**

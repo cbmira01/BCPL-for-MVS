@@ -7,7 +7,7 @@
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Public version-1 numeric contract reviewed; standalone ABI/QSAM jobs 2157, 2159–2163, 2165–2170 and 2172–2174 passed at their tested parameters. JOB 2171 demonstrated an unrecovered S013-20 on an incompatible QSAM OPEN. JOB 2172 confirmed non-opening JFCB geometry checks, JOB 2173 empty-dataset persistent EOF, and JOB 2174 static-stage pending-record retry. Production BCPLQSAM and R.0 registration remain unimplemented
+**Status:** Public version-1 numeric contract reviewed; standalone ABI/QSAM jobs 2157, 2159–2163, 2165–2170 and 2172–2175 passed within their tested scope. JOB 2171 showed unrecovered S013-20 on incompatible QSAM OPEN. JOB 2174 verified a static pending-record stage and JOB 2175 verified checked MVS storage acquisitions and an injected explicit rollback, not actual storage shortage. Production BCPLQSAM and R.0 registration remain unimplemented
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---

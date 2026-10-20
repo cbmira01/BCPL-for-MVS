@@ -131,10 +131,15 @@ capacity error, correct record order, and persistent EOF. This was a
 standalone assembler test with **static** staging, not a completed
 BCPLQSAM READ implementation.
 
-The [Q.0 resource allocation and rollback probe](../bootstrap-toolchain/probes/q0-qsam-resource-probes/README.md)
-is prepared and locally checked (177-card generator). It tests real
-conditional GETMAIN/FREEMAIN and uses an **injected**, not real MVS,
-allocation failure to exercise rollback. MVS execution is pending.
+The [Q.0 resource allocation evidence](qsam-q0-resource-evidence-20261020.md)
+records **JOB 2175 / QS0RES**: ASM/LKED/GO all RC=0000 and
+three successful small conditional GETMAIN acquisitions matched by three
+FREEMAIN releases. An injected failure exercised the *explicit*
+rollback sequence, but not the general FAILED cleanup branch and
+not a real MVS storage shortage. The separate
+[QS0FAIL failure-handler probe](../bootstrap-toolchain/probes/q0-qsam-resource-probes/README.md)
+is prepared and locally checked (230-card deck); its MVS execution is
+pending. Neither is production BCPLQSAM.
 
 Remaining Q.0 verification includes further variable-record size and
 binary-data boundaries, recoverable OPEN/GET/PUT/CLOSE failures,
