@@ -167,18 +167,27 @@ are in the [Q.0 probe README](../bootstrap-toolchain/probes/q0-qsam-ceiling-prob
 The 16-stage test did **not** OPEN sixteen QSAM DCBs or establish a
 full-job memory budget. The owner has now separately **approved the
 [Q.0 error/finalization policy and concurrent-DCB experiment](qsam-q0-error-and-r0-design-decisions-20261020.md)**.
-The [new test-only 1/3/8/16 DCB generator](../bootstrap-toolchain/probes/q0-qsam-16-dcb-probes/README.md)
-is locally checked but **not yet run on MVS**; it includes a
-16-DCB `REGION=512K` fallback if the 256K probe fails.
+The [test-only 1/3/8/16 DCB experiments](qsam-q0-concurrent-dcb-evidence-20261020.md)
+**PASSED on MVS/TK5 in JOBs 2183–2186**: every ASMWR, ASMRD,
+LKWR, LKRD, WGO and RGO returned RC=0000, and each reader emitted
+the corresponding QOUT PASS marker. The 16-DCB `Q0H16` job held
+sixteen OPEN F1024 DCBs plus sixteen independent 1024-byte stages
+under **GO REGION=256K**; the 512K fallback was not needed.
+The linked writer and reader operated on independent temporary
+datasets, interleaved records and performed normal cleanup.
+These are standalone assembler tests, **not** the completed BCPLQSAM
+handle-table or an end-to-end BCPL application memory budget.
 The shared Milestone Runtime Extensions
 [R.0 — Evidence and contract review](runtime-extensions-r0-evidence-and-contract-20261020.md)
 has started as a source/ABI investigation, not as implementation.
+A [candidate exact table/finalizer ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md)
+has been proposed **for owner review**, not approved or implemented.
 These standalone programs are not production BCPLQSAM acceptance.
 
 Remaining Q.0 verification includes **testing the approved error and
 returned-CLOSE ownership rules**, the production INFO mapping,
-the 16-DCB/whole-handle resource budget, and **confirming the exact
-R.0 registration/finalizer ABI**. The architectural R.0 model,
+the complete **BCPLQSAM + core runtime/application** handle budget,
+and **confirming the exact R.0 registration/finalizer ABI**. The architectural R.0 model,
 reverse finalizer ordering and normal FINISH RC=8 returned-error
 policy are now approved; no working implementation exists. The tested GETMAIN R15=4
 return, binary boundary data and valid zero-payload V/VB records are

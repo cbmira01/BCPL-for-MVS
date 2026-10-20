@@ -29,6 +29,7 @@ record, and `packaging/milestone-runtime-extensions.md`.
 | Post-OPEN V/VB INFO attributes | JOBs 2178–2179 | DCB RECFM, LRECL=100, BLKSIZE=104/404, enum 3/4, data maximum 96 |
 | V/VB initial stage boundary | JOBs 2180–2181 | Effective LRECL=1024; 4/16/1024 RDW-inclusive lengths, 1020-byte data and binary sentinels |
 | Sixteen concurrent stage allocations | JOB 2182 | **Sixteen** independent 1024-byte GETMAIN areas acquired, checked and freed; no DCB OPEN |
+| Concurrent live QSAM DCBs | **JOBs 2183–2186** | F1024 1/3/8/16 simultaneously OPEN DCBs, private stage per DCB, two interleaved records, REGION=256K; all six steps RC=0000 in each |
 
 ## Remaining questions before owner accepts Q.0
 
@@ -41,12 +42,14 @@ record, and `packaging/milestone-runtime-extensions.md`.
    [JOBs 2180–2182](qsam-q0-1024-byte-stage-evidence-20261020.md)
    passed, and the owner approved a **1024-byte total private stage per
    BCPLQSAM handle** (F/FB up to 1024 data; V/VB up to 1020).
-   A complete region budget for **16 actual OPEN handles**, including
-   DCBs, QSAM buffers, core runtime and application, is **not yet
-   established**; the stage-only experiment is not sufficient.
-   The approved [1/3/8/16-DCB test-only plan](../bootstrap-toolchain/probes/q0-qsam-16-dcb-probes/README.md)
-   has been prepared and locally checked; **no MVS run is reported**.
-   Production over-limit rejection also remains to be tested.
+   The isolated [JOBs 2183–2186](qsam-q0-concurrent-dcb-evidence-20261020.md)
+   have **passed on MVS**, including **16 simultaneously OPEN F1024
+   QSAM DCBs and sixteen 1024-byte stages at GO REGION=256K**.
+   This closes the **standalone concurrency experiment**, not the
+   production BCPLQSAM handle-table or complete BCPL
+   runtime/application budget. The 512K fallback was not needed.
+   Production over-limit rejection and end-to-end resource accounting
+   remain to be tested.
 3. **Effective INFO attributes — V/VB test geometry confirmed.**
    [JOBs 2178/2179](qsam-q0-post-open-info-evidence-20261020.md)
    verified post-OPEN RECFM/LRECL/BLKSIZE at LRECL=100; JOBs 2180/2181
@@ -70,7 +73,11 @@ record, and `packaging/milestone-runtime-extensions.md`.
    a returned finalizer failure on ordinary `FINISH` emits a
    diagnostic and sets **RC=8**. The **exact assembler layout,
    register ABI and error report format** still need R.0 evidence,
-   testing and further approval. No generic finalizer is implemented.
+   testing and further approval. The
+   [candidate R.0 binary layout review](runtime-extensions-r0-candidate-binary-abi-20261020.md)
+   distinguishes source-supported facts from **new, unapproved**
+   byte offsets, package IDs and finalizer register conventions.
+   No generic finalizer is implemented.
 6. **Owner Q.0 gate review.** Reconcile the accepted version-1
    BCPLQSAM Public Interface Specification with supported evidence,
    record permitted deferrals, and explicitly approve Q.0 before Q.1.

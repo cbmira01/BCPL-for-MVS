@@ -1,12 +1,29 @@
 # Milestone QSAM — March Q.0 concurrent-DCB storage probes
 
-**Status:** Test-only IFOX/IEWL source/JCL generators prepared.
-The initial Morkies dry run failed before submission because the
-generator counted link-editor temporary-object DELETE DDs along with
-QSAM DELETE DDs. The check has been corrected to verify each `Qnn`
-QSAM input DD exactly once; **re-run --check on Morkies before any MVS
-submission**. **NOT executed on MVS**. Do not treat these probes as
-production `BCPLQSAM`, 16 published BCPL handles, or Runtime Extensions.
+**Status:** Q.0 test-only 1/3/8/16-DCB profiles **PASSED on
+MVS 3.8J/TK5 (JOBs 2183–2186, 20 October 2026)**. Each had six
+RC=0000 steps and the actual expected QOUT marker. The 512K fallback
+is prepared but **not run**. No production BCPLQSAM or Runtime
+Extensions code was implemented.
+
+## Observed MVS results (20 October 2026)
+
+**Owner-confirmed PASS on MVS 3.8J/TK5:**
+
+| Profile | JES JOB | Simultaneous DCBs | GO REGION | Actual QOUT |
+| --- | --- | ---: | --- | --- |
+| `one` | 2183 / `Q0H1` | 1 | 256K | `Q0 01 DCB F1024 2 RECORDS PASS` |
+| `three` | 2184 / `Q0H3` | 3 | 256K | `Q0 03 DCB F1024 2 RECORDS PASS` |
+| `eight` | 2185 / `Q0H8` | 8 | 256K | `Q0 08 DCB F1024 2 RECORDS PASS` |
+| `sixteen` | 2186 / `Q0H16` | 16 | 256K | `Q0 16 DCB F1024 2 RECORDS PASS` |
+
+Each job's **ASMWR, ASMRD, LKWR, LKRD, WGO and RGO**
+steps returned **RC=0000**. The optional `sixteen-512` fallback
+was not needed or run. For the evidence scope and limitations see
+[JOBs 2183–2186](../../../packaging/qsam-q0-concurrent-dcb-evidence-20261020.md).
+
+The old planning guidance below is retained as a
+**reproduction procedure**, not an unexecuted work plan.
 
 ## What is tested
 
@@ -40,10 +57,9 @@ production transactional handle-table implementation.
 | `sixteen` | `Q0H16` | 16 | 256K | `Q0 16 DCB F1024 2 RECORDS PASS` |
 | `sixteen-512` | `Q0H16B` | 16 | 512K | Same 16-DCB marker |
 
-**Order:** first run `one`, `three`, `eight`. Run `sixteen`
-after those are inspected; `sixteen-512` is a deliberate fallback
-if the 256K experiment exposes a region limitation. Do not treat
-the fallback as evidence the 256K case passed.
+**For reproduction:** Run `one`, `three`, `eight`, then
+`sixteen`. All four have already **passed at 256K**; the
+`sixteen-512` fallback is optional and was **not executed**.
 
 ## From repository root
 
@@ -95,5 +111,5 @@ so the expected raw count was N+2, not N. This caused
 `ValueError: temporary dataset cleanup missing` before any job
 submission. The corrected check verifies every exact
 `//Qnn DD DSN=&&Q0Hnn,DISP=(OLD,DELETE)` card once and does
-not count the two linker cleanup DDs. Full generator/IFOX/MVS
-execution remains unverified until the owner's next JES run.
+not count the two linker cleanup DDs. After this correction, the owner executed the 1/3/8/16 profiles
+and all returned actual RC=0000 and QOUT PASS markers in JOBs 2183–2186.

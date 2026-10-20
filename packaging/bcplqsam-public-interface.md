@@ -7,7 +7,7 @@
 **Package:** BCPLQSAM  
 **Public global:** `QSAMSVC:200`  
 **API:** Version 1 public interface — Q.0 reviewed design baseline  
-**Status:** Public version-1 numeric contract reviewed; standalone Q.0 evidence includes JOBs 2157, 2159–2163, 2165–2170 and 2172–2182 within their tested scope. JOB 2171 demonstrated unrecovered S013-20 on incompatible OPEN. JOB 2177 verified conditional GETMAIN R15=4; JOBs 2178–2179 confirmed post-OPEN V/VB DCB attributes; JOBs 2180–2182 established 1024-byte V/VB logical records and 16 independent 1024-byte stages. **Owner-approved version-1 private stage ceiling: 1024 total bytes per handle.** Production BCPLQSAM and R.0 registration remain unimplemented.
+**Status:** Public version-1 numeric contract reviewed. Standalone Q.0 evidence includes JOBs 2157, 2159–2163, 2165–2170 and 2172–2186 within their tested scope. JOB 2171 demonstrated unrecovered S013-20 on incompatible OPEN. JOB 2177 verified conditional GETMAIN R15=4; JOBs 2178–2179 confirmed post-OPEN V/VB DCB attributes; JOBs 2180–2182 established 1024-byte V/VB logical records and 16 independent stages; JOBs 2183–2186 established **1/3/8/16 simultaneously OPEN F1024 DCBs with 1024-byte private stages at GO REGION=256K**. **Owner-approved version-1 private stage ceiling: 1024 total bytes per handle.** Production BCPLQSAM and R.0 registration remain unimplemented.
 **Provenance:** Based on the Project Source `BCPLQSAM — Public Interface Specification`, dated October 19, 2026.
 
 ---
@@ -496,9 +496,15 @@ and the dataset-specific supported data maximum, never a flat 1024 or
 1020 for smaller LRECL datasets.
 
 The 16-handle **functional goal** remains separate from the
-**16-stage allocation test** in JOB 2182: it did not OPEN sixteen DCBs
-or measure full runtime/OS storage overhead. The complete memory budget,
-error paths and R.0 finalizer lifecycle remain Q.0/Q.1 obligations.
+**16-stage allocation test** in JOB 2182: that job alone did not
+OPEN sixteen DCBs. The subsequent
+[JOBs 2183–2186](qsam-q0-concurrent-dcb-evidence-20261020.md)
+did verify **sixteen simultaneously OPEN F1024 DCBs with independent
+stages at GO REGION=256K in standalone assembler programs**. Those
+tests did not measure the full BCPL application, BCPLQSAM handle table
+and dispatcher, generic registration or finalizer. Their memory
+budget, failure paths and finalizer lifecycle remain Q.0/Q.1
+obligations.
 
 INFO does not expose mutable DCB structures or permit the application to change dataset attributes.
 

@@ -96,8 +96,10 @@ Run first under **GO REGION=256K**; include a **512K fallback for
 system messages, and QOUT markers—not the mere existence of
 generated JCL—will determine what is supported.
 
-The [test-only generator](../bootstrap-toolchain/probes/q0-qsam-16-dcb-probes/README.md)
-is now prepared but **unrun under MVS**. It does not implement BCPL
+The [test-only generator and standalone job results](qsam-q0-concurrent-dcb-evidence-20261020.md)
+have now **PASSED under MVS in JOBs 2183–2186** for
+1/3/8/16 simultaneously OPEN F1024 DCBs at GO REGION=256K;
+the 512K fallback was not needed. It does not implement BCPL
 handles, process public request vectors, invoke R.0 finalizers, or
 establish a complete production program memory budget. Account for
 actual DCBs, QSAM-owned buffers, stages, BCPL runtime and application
@@ -105,9 +107,11 @@ before promising that 16 production handles fit a particular REGION.
 
 ## 4. Milestone boundaries and next review
 
-- **Q.0 remains open:** test 16 DCBs; characterize returned errors and
-  exceptional CLOSE; reconcile R.0 contract and request explicit owner
-  Q.0 gate approval or documented deferral before beginning Q.1.
+- **Q.0 remains open:** the **standalone 16-DCB test passed in
+  JOB 2186**; characterize returned errors and exceptional CLOSE,
+  verify the full BCPLQSAM/application storage budget, reconcile
+  R.0 and request explicit owner Q.0 gate approval or a documented
+  deferral before beginning Q.1.
 - **R.0 — Evidence and contract is in progress:** verify actual
   `BCPLMAIN` startup, exports, runtime termination, and minimal
   `BCPLREG`/descriptor ABI. **R.1 not started**.

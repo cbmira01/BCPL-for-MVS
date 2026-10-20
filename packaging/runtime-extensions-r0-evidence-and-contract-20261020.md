@@ -91,5 +91,18 @@ have been introduced.
    ABI after inspection of test evidence, then decide whether
    the R.0 gate is satisfied. **R.1 remains unstarted**.
 
-**The parallel Q.0 concurrent-DCB probe** may run independently; it
-does not implement or validate the R.0 contract.
+**The parallel Q.0 concurrent-DCB probe has now passed** in
+[JOBs 2183–2186](qsam-q0-concurrent-dcb-evidence-20261020.md),
+including sixteen simultaneously OPEN DCBs at GO REGION=256K.
+Those jobs do **not** implement or validate the R.0 contract.
+
+## 5. Candidate binary ABI review now available
+
+See [R.0 candidate exact byte layout and finalizer calling convention](runtime-extensions-r0-candidate-binary-abi-20261020.md).
+It inventories current BCPLMAIN application-trailer and BLIB
+imports, the G!0..699 capacity and FINEXIT cleanup sequence.
+It proposes a relocatable `BCPLREG` header, explicit package
+descriptors and a separate assembler finalizer ABI, all explicitly
+**unapproved** pending owner review and MVS test-only evidence.
+The approved higher-level registration/finalization model and
+FINISH RC=8/STOP(n) policy have not changed.

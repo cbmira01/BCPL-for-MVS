@@ -56,10 +56,15 @@ still apply; invalid or unsupported geometry must be rejected without
 issuing GET/PUT. Avoid known incompatible-OPEN abends through
 preflight where practicable, not through unproven general recovery.
 
-The sixteen 1024-byte stages alone total **16,384 bytes**. JOB 2182
-does **not** account for sixteen DCB/control regions, MVS QSAM block
-buffers or the BCPL runtime/application. It is **not** proof that
-sixteen complete BCPLQSAM handles fit into `REGION=256K`.
+The sixteen private 1024-byte stages alone total **16,384 bytes**.
+JOB 2182 did **not** account for sixteen DCBs or QSAM buffers.
+**Subsequent [JOBs 2183–2186](qsam-q0-concurrent-dcb-evidence-20261020.md)
+passed the 1/3/8/16-OPEN-DCB standalone test, with a private stage
+per DCB at GO REGION=256K.** These programs include real QSAM DCBs
+and access-method buffering, but not the completed BCPLQSAM
+dispatcher/handle table or native BCPL runtime and application.
+They are **not** proof that sixteen complete BCPLQSAM handles
+fit into `REGION=256K`.
 
 ## Remaining Q.0 gate
 
@@ -67,8 +72,10 @@ sixteen complete BCPLQSAM handles fit into `REGION=256K`.
    Public BCPLQSAM INFO remains unimplemented.
 2. Candidate 1024-byte stage investigations: **passed JOBs 2180–2182
    and owner approved the initial implementation limit**. Separately
-   verify the production private-stage implementation, negative
-   over-limit behavior and full region budget for 16 live DCBs.
+   verify the production private-stage implementation and negative
+   over-limit behavior. The **standalone 16-live-DCB** test passed
+   in JOB 2186, but the complete BCPLQSAM/BCPL application
+   region budget is still unverified.
 3. Resolve the error-path and exceptional CLOSE contracts, and the
    separate Milestone Runtime Extensions R.0 registration/finalizer
    design. The known S013-20 OPEN abend must remain documented.

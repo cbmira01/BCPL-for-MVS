@@ -62,11 +62,16 @@ handle** for the first implementation, supported by
   maximum permitted by MVS 3.8 and not an automatic acceptance of any
   job region's storage budget.
 
-**Still not approved or verified:** a guarantee that **16 fully open
-maximum-sized handles** fit within `REGION=256K` (JOB 2182 held only
-sixteen private stages); the completed public implementation; abnormal
-QSAM CLOSE behavior and unrecovered abends; the *exact* R.0/R.1
-generic registration/finalizer byte layout and calling convention.
+**Subsequent standalone evidence:** [JOBs 2183–2186](qsam-q0-concurrent-dcb-evidence-20261020.md)
+passed 1/3/8/16 simultaneously OPEN F1024 QSAM DCBs with private
+1024-byte stages at GO `REGION=256K`; all steps RC=0000.
+**Still not approved or verified:** a guarantee that sixteen complete
+**BCPLQSAM handles inside a native BCPL executable** fit the same
+256K region (the tested assembler program did not include the
+BCPL runtime, BCPLQSAM handle table, dispatcher or R.0 registration);
+the production implementation; abnormal QSAM CLOSE behavior and
+unrecovered abends; the *exact* R.0/R.1 generic registration/finalizer
+byte layout and calling convention.
 The observable normal FINISH/STOP returned-error policy is approved,
 but its diagnostic format and MVS behavior are not yet tested.
 The approved handle count remains **16 concurrently open handles as a
@@ -76,7 +81,7 @@ functional target**, with region budgeting and Q.1 validation pending.
 
 | Stage | Minimum targeted tests |
 | --- | --- |
-| Q.0 remaining | **Size-stage design approved** after MVS JOBs 2180–2182; error-path reconnaissance, full region budgeting and generic finalizer/registration contract still need resolution |
+| Q.0 remaining | **Size-stage design approved** after JOBs 2180–2182, and **standalone 16-open-DCB experiment PASSED** in JOB 2186; exceptional error evidence, full BCPLQSAM/application region budgeting and exact generic R.0 finalizer/registration ABI remain open |
 | Q.1 — Linkage & OPEN/CLOSE skeleton | Three concurrent DDs and ultimately 16 active handles; allocation counts; invalid/closed/stale IDs and slot reuse; failed OPEN cleanup; normal `FINISH` and `STOP(8)` auto-close through a generic finalizer |
 | Q.2 — Fixed logical records | FB/F exact bytes, two independent handles, short-READ / repeated short-READ / successful retry with no extra GET; output flushing at explicit CLOSE and termination; binary 00/FF/trailing-byte fidelity |
 | Q.3 — Variable logical records | V/VB sizes, RDW isolation, payload-only `result!1`, smallest/maximum supported payload, repeated undersized retries, no buffer overwrite |

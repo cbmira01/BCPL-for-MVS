@@ -46,8 +46,10 @@ proposes explicit IEWL selection and general startup registration.
 **R.0 — Evidence and contract is in progress**; R.1 has not started.
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
-owner-approved shared `BCPLREG`/finalizer *model*. The exact assembler
-ABI and implementation remain open, and R is not a prerequisite for M4.
+owner-approved shared `BCPLREG`/finalizer *model*. The
+[candidate exact R.0 binary layout and finalizer ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md)
+is **a proposal for owner review**, not approved or implemented.
+R is not a prerequisite for M4.
 
 The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The global slots G!200–G!202 are assigned in the registry; the shared registration ABI and package-local opcodes still require R.0/Q.0 verification.
 
@@ -70,8 +72,12 @@ version-1 BCPLQSAM design limit. The
 [approved error/R.0 finalizer decisions](qsam-q0-error-and-r0-design-decisions-20261020.md)
 specify conservative CLOSE ownership and FINISH/STOP diagnostics.
 The [test-only 1/3/8/16-DCB generator](../bootstrap-toolchain/probes/q0-qsam-16-dcb-probes/README.md)
-is prepared for the outstanding whole-handle storage measurements;
-**no new MVS jobs have been run**.
+**PASSED on MVS in JOBs 2183–2186**; see
+[concurrent-DCB evidence](qsam-q0-concurrent-dcb-evidence-20261020.md).
+The 16-DCB standalone job used **GO REGION=256K**, held sixteen
+private 1024-byte stages and checked interleaved F1024 records.
+The 512K fallback was not run. Full BCPLQSAM runtime/application
+storage accounting remains open.
 **Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
 ## Proposed optional numeric and clock milestones
