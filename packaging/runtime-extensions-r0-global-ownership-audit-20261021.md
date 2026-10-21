@@ -1,10 +1,10 @@
 # Milestone Runtime Extensions — R.0 application/BLIB/Core Runtime ownership audit
 
 **Date:** 21 October 2026. **March:** R.0 — Evidence and contract (open).
-**Scope:** Git-source audit and an explicit list of still-missing
-**executable** evidence. This is **not** a full verified final
-load-module slot ledger, an approved slot-waiver policy or a registry
-implementation.
+**Scope:** Git-source inventory combined with the **actual linked
+application and installed BLIB export evidence** from JOB 2197.
+This is still **not** a complete effective owner ledger, approved
+slot-waiver implementation, or executable package registrar.
 
 Source authority: [Global Number Registry](global-number-registry.md),
 [historical LIBHDR](../richards-bcpltape/sys3/bcpl/libhdr),
@@ -21,6 +21,13 @@ this effective-ledger and transactional-collision policy is required,
 while actual application/BLIB trailer decoding and verified legacy
 exceptions remain incomplete. This approval does not turn a
 source-derived candidate into measured executable evidence.
+
+**New actual MVS evidence:** [JOBs 2196–2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
+verified the relocated exports of a sample application (**G!1**) and
+installed `BOOT_OBJ(BLIB)` (**21 globals**). No application/BLIB
+collision was observed. BLIB's only overlap with source-derived
+Core Runtime direct stores is **G!76**. The probe did not execute
+`BCPLMAIN`, so conditional WRITEF precedence still needs a runtime test.
 
 ## Current actual startup writer order
 
@@ -64,7 +71,7 @@ The precise R12 displacements are `4*N`; see the
 non-sentinel after the BLIB pass, not published by a direct native
 store. `G!30` STOP is a native entry, not a selected finalizer.
 
-## BLIB source-derived export *candidates* (21 LIBHDR names)
+## BLIB source-derived export names (21, now cross-checked with JOB 2197)
 
 The current [reconstructed BLIB source](../cambridge-compiler/source/blib.bcpl)
 contains top-level routine definitions matching these LIBHDR slots.
@@ -80,10 +87,11 @@ object trailer:
 | 74, 75, 76, 77, 78 | WRITEX, WRITEHEX, WRITEF, WRITEOCT, MAPSTORE |
 
 `PRINTWIDTH` is a source-local helper and not a named historical
-LIBHDR global. **Do not turn the above candidate list into an
-assertion that every corresponding `G!N` was exported by the current
-linked BLIB.** That requires its real generated export trailer
-(or a verifiable translated assembly/object listing). The earlier
+LIBHDR global. **JOB 2197 now verifies that the current installed and linked BLIB
+exports exactly those 21 global numbers.** The original source-name
+association remains source-derived: the GO program measured relocated
+slot/address pairs, not original BCPL procedure names. Build provenance
+for the installed BLIB object is still unverified. The earlier
 G1–G99 reconciliation remains the per-slot historical table.
 
 ## Unresolved or deliberately reserved ownership
@@ -105,7 +113,7 @@ Compiler `CGHDR` and MR10-local allocations have additional
 contexts; the [registry](global-number-registry.md) must be
 consulted for every real application or compiler load.
 
-## Proposed pre-START collision ledger (owner approval still needed)
+## Owner-approved pre-START collision policy (not yet implemented)
 
 1. At reproducible **link preparation**, decode the **actual**
    application's CG370 global trailer and the **actual installed**
@@ -132,9 +140,11 @@ consulted for every real application or compiler load.
 
 ## Remaining R.0 evidence before calling this a *complete* ledger
 
-- Capture and decode actual export-pair tables from a reproducible
-  **native CG370 application** and the separately linked **BLIB**
-  object; enumerate the resulting slots and all real overlaps.
+- **Completed for one representative application and installed BLIB:**
+  JOB 2197 recorded G!1 plus 21 BLIB slots and zero application/BLIB
+  overlaps. Larger applications and compiler programs still need their
+  own per-executable ledger. Installed BLIB object-build provenance
+  remains an explicit evidence gap.
 - Reconcile possible other runtime binding writers and confirmed
   historical exceptions; test unchanged G!76 behavior.
 - Demonstrate a selected extension's attempted G!N collision with
@@ -148,7 +158,9 @@ confirms internal duplicate/required/known G!14 and G!200 fixture
 rejections. It **does not** perform this effective legacy ledger
 audit or demonstrate transactional installation in BCPLMAIN.
 
-**Finding:** Native direct-owner inventory and source-derived BLIB
-owner candidates are now reconciled in one place. The **final
-effective load-module ledger remains unverified** until the actual
-trailers and historical overlap tests are collected. R.0 stays open.
+**Finding:** JOB 2197 establishes actual application/installed-BLIB
+export ownership **for the linked sample only**. G!76 is the only
+observed BLIB versus source-derived native direct-store overlap.
+The complete effective load-module ledger and historical precedence
+behavior remain unverified until those runtime tests and object
+provenance are reviewed. R.0 stays open.

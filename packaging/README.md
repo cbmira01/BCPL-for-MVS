@@ -62,9 +62,14 @@ experiments](runtime-extensions-r0-testing-decision-20261020.md);
 simulated-finalizer probe](runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
 **passed in JOB 2195**: 14+6 actual GO records, all eight steps
 RC=0000. Together these establish **26 test-only cases**.
-The [source-derived ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
-and [owner ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
-record remaining evidence; **production registration is not implemented**.
+The [ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md),
+[actual application/installed BLIB trailer evidence, JOB 2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md),
+and [owner ABI review](runtime-extensions-r0-abi-decision-review-20261021.md)
+record the observed G!1 application and 21 BLIB exports with only a
+potential historical G!76 native overlap. The
+[test-only actual-runtime G!76 probe](../bootstrap-toolchain/probes/r0-g76-precedence-probe/README.md)
+is prepared but **not yet MVS-tested**. Production registration
+is **not implemented**.
 The exact public finalizer ABI is **owner-approved**, not MVS-integrated.
 R is not a prerequisite for M4.
 

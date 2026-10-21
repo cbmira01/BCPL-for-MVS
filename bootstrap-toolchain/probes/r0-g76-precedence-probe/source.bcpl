@@ -1,0 +1,10 @@
+// R.0 test-only: G!151 is injected by the generated-JCL adapter.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63; CHECK76:151 $)
+
+LET START () BE
+$(1
+    IF CHECK76() NE 0 DO STOP(8)
+    WRITES("R0 G76 INSTALLED BLIB PASS")
+    NEWLINE()
+    FINISH
+$)1

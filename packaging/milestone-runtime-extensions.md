@@ -24,8 +24,12 @@ ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
 and [owner ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
 identify remaining R.0 gates. The 28-byte registry, 48-byte descriptor,
 8-byte finalizer parameter block and A–H policies are **owner-approved**,
-but numerical maxima/diagnostics, actual app/BLIB trailer evidence and
-the gate review remain open. Real BCPLMAIN/finalizer integration is
+but numerical maxima/diagnostics, broader per-executable ownership
+and the gate review remain open. [JOB 2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
+verified G!1 for a test application and 21 globals exported by the
+installed BLIB; G!76 precedence needs actual-runtime verification.
+The [test-only G!76 probe](../bootstrap-toolchain/probes/r0-g76-precedence-probe/README.md)
+is prepared, with MVS testing pending. Real BCPLMAIN/finalizer integration is
 **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
