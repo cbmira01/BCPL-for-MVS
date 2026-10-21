@@ -93,8 +93,11 @@ RC=12 on real startup rejection remains an approved **future** policy.
    R.0 scope; a BLIB linker symbol is still mandatory. See
    [JOB 2220 evidence](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md).
    The [G!150 owner review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md)
-   identifies the outstanding startup conflict and an
-   unapproved isolated measurement design.
+   identifies the outstanding startup conflict. The
+   [owner-approved test-only observer](../bootstrap-toolchain/probes/r0-g150-startup-probe/README.md)
+   has passed 24 offline tests and synthetic JCL validation;
+   real MVS execution, owner-address reporting and reviewed IEWL
+   MAP/XREF are **pending**. No G!150 resolution is approved.
 
  Extend the per-executable
    ownership method beyond JOB 2197's single START application,

@@ -54,8 +54,10 @@ has passed 18 host tests and synthetic 82-card JCL checks;
 **MVS JOB 2220 PASSED** (ASMA/ASMB/LKED/GO RC=0000,
    actual formatted GO output, and independent IEWL MAP/XREF review);
    see the [JOB 2220 record](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md).
-   The [G!150 owner review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md) proposes a
-   separate test; no G!150 change is approved. The
+   The [G!150 owner review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md)
+   now records the approved [test-only startup observer](../bootstrap-toolchain/probes/r0-g150-startup-probe/README.md):
+   24 host tests passed and 143-card synthetic JCL generated;
+   **actual MVS execution remains pending**, and no G!150 fix is approved. The
 [approved Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
 **PASSED actual MVS JOBs 2207–2216**: ten expected QOUT
 markers and all six IFOX/IEWL/GO steps RC=0000 per job,

@@ -1,9 +1,12 @@
 # Milestone Runtime Extensions — R.0 G!150 startup owner review
 
 **Date:** 21 October 2026. **March:** **R.0 — Evidence and contract (open)**.
-**State:** Reviewed **source-level conflict** and **proposed test-only
-measurement**. No runtime change or MVS G!150 probe is approved or
-executed. **R.1 — Generic registration foundation** not started.
+**State:** Owner-approved **test-only G!150 startup observer**
+[implemented](../bootstrap-toolchain/probes/r0-g150-startup-probe/README.md)
+and verified by **24 offline tests** plus a 143-card synthetic JCL check.
+**Actual MVS G!150 execution and IEWL MAP/XREF remain pending**.
+No runtime change or G!150 resolution policy is authorized.
+**R.1 — Generic registration foundation** not started.
 **Authority:** [Global Number Registry](global-number-registry.md),
 [Decision E](runtime-extensions-r0-owner-abi-decisions.md) and
 [ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md).
@@ -74,6 +77,15 @@ against an **actual** app/BLIB/core writer also remains distinct
 from this observer. Neither is already verified in production
 BCPLREG, which belongs to R.1.
 
-**Requested decision:** approve this bounded **G!150 startup
-observer** before implementation. Choose any future G!150
-**resolution policy separately**. R.0 open; R.1 not started.
+**Owner disposition:** the bounded **G!150 startup observer** was
+approved for test-only implementation and is now prepared in the
+[tracked probe](../bootstrap-toolchain/probes/r0-g150-startup-probe/README.md).
+It compiles a synthetic application under the demoted Cambridge compiler,
+adds relocatable G!150 and G!151 exports, checks the installed BLIB
+trailer, prints runtime G!150 and marker byte addresses, and links
+installed `BOOT_OBJ` only as `DISP=SHR` input. It does **not** prove
+the final `DEBUGINT` address identity, any full-compiler/LOADSEG behavior,
+or startup collision rejection by a real registrar. Inspect real
+MVS IFOX/IEWL/GO output before accepting the result. Choose any
+future **G!150 resolution policy separately**.
+**R.0 open; R.1 not started.**

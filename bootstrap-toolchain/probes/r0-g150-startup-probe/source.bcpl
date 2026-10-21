@@ -1,0 +1,11 @@
+// R.0 test only: synthetic application owner for G!150.
+// CHECK150:151 is injected by the guarded CG370 trailer adapter.
+GLOBAL $( START:1; STOP:30; WRITEF:76; CHECK150:151 $)
+
+LET START () BE
+$(1
+    IF CHECK150(0) NE 0 DO STOP(8)
+    WRITEF("R0 G150 OVERWRITE ACT=%X8 APP=%X8 PASS*N",
+           CHECK150(1), CHECK150(2))
+    FINISH
+$)1
