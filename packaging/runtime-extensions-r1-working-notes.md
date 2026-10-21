@@ -49,3 +49,20 @@ and full native regression must still be executed and reviewed.
 No changes or promotion to accepted `BOOT_OBJ` are authorized by this
 candidate. Keep R.2 Selective interoperability and R.3 Packaging and
 acceptance unchanged.
+
+## MVS test evidence and register-zero defect
+
+- **JOB 2223:** demoted Cambridge compiler generated the empty-registry
+  BCPL test application.
+- **JOB 2224:** R1EMPTY: ASMA/ASMN/ASMG RC=0000, ASMR RC=0008
+  (IFO196 from local REGCOUNT/REGFINTB re-declared EXTRN).
+- **JOB 2225:** R1EMPTY: all four IFOX assemblies and IEWL RC=0000;
+  GO ended **S0C4**. PSW X'000A6646', INTC 0004, identifies
+  `ST 13,4(0)` in the RGINIT prologue. On S/370, B=0 specifies
+  no base register; the attempted store was to absolute address 4.
+  The same save-area error existed in RGFINI; optional-export
+  validation also used `L 2,0(0)` with R0 as a putative base.
+
+All three instructions are corrected in the next candidate. The new
+host test guards against register-zero storage-base operands. **A
+successful GO run remains required; no MVS success is asserted.**

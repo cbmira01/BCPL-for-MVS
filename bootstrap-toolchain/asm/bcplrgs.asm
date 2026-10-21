@@ -17,10 +17,10 @@ RGINIT   CSECT
          LA    11,4095(12)
          LA    11,1(11)
          USING RGINIT+4096,11
-         LA    0,RSAVE
-         ST    13,4(0)
-         ST    0,8(13)
-         LR    13,0
+         LA    2,RSAVE
+         ST    13,4(2)
+         ST    2,8(13)
+         LR    13,2
          XC    REGCOUNT(4),REGCOUNT
          XC    RGONCE(4),RGONCE
          XC    RGERR(4),RGERR
@@ -181,9 +181,9 @@ EXNEXT   L     6,RGEXI
          BNZ   ERR1008
 * TEST CURRENT EFFECTIVE G SLOT, INCLUDING ACTUAL APP/BLIB/CORE.
          SLL   1,2
-         LR    0,10
-         AR    0,1
-         L     2,0(0)
+         LR    2,10
+         AR    2,1
+         L     2,0(2)
          L     4,=X'C7D3F000'
          AR    4,1
          CR    2,4
@@ -458,10 +458,10 @@ RGFINI   CSECT
          STM   14,12,12(13)
          LR    12,15
          USING RGFINI,12
-         LA    0,FSAVE
-         ST    13,4(0)
-         ST    0,8(13)
-         LR    13,0
+         LA    2,FSAVE
+         ST    13,4(2)
+         ST    2,8(13)
+         LR    13,2
          ST    1,FPARAM
          XC    FERROR(4),FERROR
          L     5,=A(REGCOUNT)

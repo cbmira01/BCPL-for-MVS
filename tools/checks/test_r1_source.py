@@ -62,6 +62,19 @@ class SourceContract(unittest.TestCase):
         self.assertIn('L     1,RGDEPTR', span)
         self.assertIn('CLC   0(8,8),0(1)', span)
 
+    def test_no_register_zero_as_storage_base(self):
+        # JOB 2225: ST 13,4(0) accessed absolute address 4, not
+        # R0+4. In System/370 RX addressing, B=0 means no base.
+        src = (ASM / 'bcplrgs.asm').read_text('ascii')
+        for lineno, line in enumerate(src.splitlines(), 1):
+            if not line.strip() or line.startswith('*'):
+                continue
+            with self.subTest(lineno=lineno):
+                self.assertNotRegex(line, r'\b\d+\(0\)(?=\s|,|$)')
+        self.assertEqual(src.count('LA    2,RSAVE'), 1)
+        self.assertEqual(src.count('LA    2,FSAVE'), 1)
+        self.assertIn('L     2,0(2)', src)
+
     def test_local_symbols_not_redeclared_extern(self):
         # IFOX diagnoses IFO196 when a symbol defined in an earlier
         # CSECT is declared EXTRN in the same assembly (JOB 2224).
