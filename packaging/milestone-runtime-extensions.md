@@ -85,9 +85,9 @@ See [Cambridge runtime and library nomenclature](runtime-and-library-nomenclatur
 - **Source authority:** Git-controlled text sources and JCL are authoritative. All module objects, registration objects and load modules are rebuildable; no binary migration.
 - **Incremental work:** preserve `BCPLIO` and existing stream semantics. No change to accepted objects until individually validated.
 
-### Preferred R.0 candidate: one global slot per optional package, opcode dispatcher
+### Approved R.0 shared dispatcher and QUERY interface (implementation pending)
 
-**Design preference (not an implemented or accepted ABI):** An optional System Extension, Standard Library or User/Site Library normally occupies **one allocated BCPL global-vector slot** containing the address of a single **dispatcher procedure**. The caller passes an operation number as the first argument. Internal procedures remain private and do not consume additional public `G!N` slots. Only justified exceptions should use multiple public slots.
+**Owner-approved version-1 interface design (not yet implemented):** An optional System Extension, Standard Library or User/Site Library normally occupies **one allocated BCPL global-vector slot** containing the address of a single **dispatcher procedure**. The caller passes an operation number as the first argument. Internal procedures remain private and do not consume additional public `G!N` slots. Only justified exceptions should use multiple public slots.
 
 For example, **illustrative global number only**:
 
@@ -96,13 +96,13 @@ GLOBAL $( TIMESVC:201 $)
 MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2; T_DIFF=3 $)
 ```
 
-G!201 is now allocated to **BCPLTIME** by the [Global Number Registry](global-number-registry.md); the example's name `TIMESVC` is illustrative, not yet an approved public header symbol. G!200 is allocated to **BCPLQSAM**, and G!202 to **BCPLDEC**. The Global Number Registry owns the package's dispatcher slot; a package-specific API/header owns its *stable, local opcode numbers*. Compilation embeds the selected global and opcode constants; IEWL chooses which package is linked; BCPLREG (if adopted) installs its **single** dispatcher address into G before START. No dynamic global-number assignment is required.
+G!201 is now allocated to **BCPLTIME** by the [Global Number Registry](global-number-registry.md); the example's name `TIMESVC` is illustrative, not yet an approved public header symbol. G!200 is allocated to **BCPLQSAM**, and G!202 to **BCPLDEC**. The Global Number Registry owns the package's dispatcher slot; a package-specific API/header owns its *stable, local opcode numbers*. Compilation embeds the selected global and opcode constants; IEWL chooses which package is linked; the approved BCPLREG mechanism will install its **single** dispatcher address into G before START when implemented in R.1. No dynamic global-number assignment is required.
 
 **Opcode 0 is reserved for `QUERY` in every participating optional package.** It must be side-effect free: no I/O, clock read, dataset OPEN, state-changing setup or allocation. It returns interface/capability information about a *linked and registered* package; it is **not** a package-discovery mechanism and cannot safely be called if that package's global remains unset. The build's link/registration and required-package checking must cover that case.
 
 #### Capability query: caller-owned numeric descriptor, not a string
 
-**Recommended signature (provisional):**
+**Owner-approved version-1 signature** (see [shared QUERY contract](runtime-extensions-r0-query-abi-decision-20261021.md); MVS cross-package validation pending):
 
 ```text
 PACKAGE_SVC(0, info_vector, capacity_words) -> positive_required_words | negative_error
@@ -111,7 +111,7 @@ PACKAGE_SVC(0, 0, 0)                       -> positive_required_words  (size inq
 
 The vector is writable BCPL word storage, capacity is in **32-bit BCPL words**, and `capacity_words` includes the *entire* descriptor. Query with a null vector and zero capacity returns the required size without writing. A sufficiently large buffer is filled, and the function returns the required word count. An undersized or invalid buffer produces a documented negative error and **must not write partially**. No pointer to an extension-owned lifetime-sensitive table is returned. An immutable static table can still be an *internal* implementation detail copied into the client's vector. Exact argument-register and pointer validation remain R.0 obligations.
 
-**Illustrative six-word, version-1 prefix** (the field numbering and flags are a candidate contract, not a tested ABI):
+**Owner-approved six-word version-1 prefix** (native cross-package tests pending):
 
 | BCPL word | Field | Meaning |
 | --- | --- | --- |
@@ -122,9 +122,9 @@ The vector is writable BCPL word storage, capacity is in **32-bit BCPL words**, 
 | `info!4` | supported operations | 32-bit bitmap: bit 0 means opcode 1 supported; bit N-1 means opcode N supported for 1..32 |
 | `info!5` | capability flags | Versioned, package-defined secondary capabilities; initially zero if none |
 
-Proposed initial required size is **6 words**, so `VEC 5` is the BCPL allocation shape. Extra capability words (additional opcode maps or documented feature fields) may be appended in future versions *without altering this prefix*. Query-format and API-version compatibility rules must be recorded separately. A capability flag or advertised opcode indicates **implemented support**, not necessarily that an environmental resource (such as a particular DDNAME or clock state) will work when invoked. A feature can also be absent from an older compatible implementation.
+Approved minimum descriptor size is **6 words**, so `VEC 5` is the BCPL allocation shape for packages whose entire descriptor requires only six words. Extra capability words (additional opcode maps or documented feature fields) may be appended in future versions *without altering this prefix*. Query-format and API-version compatibility rules must be recorded separately. A capability flag or advertised opcode indicates **implemented support**, not necessarily that an environmental resource (such as a particular DDNAME or clock state) will work when invoked. A feature can also be absent from an older compatible implementation.
 
-**Possible standardized query errors** (numbers provisional): `-1` insufficient capacity, `-2` unsupported opcode (for calls other than opcode 0), `-3` invalid query arguments. Each package must document operation-specific status/result semantics without collisions or ambiguity.
+**Approved common errors:** `-1` insufficient capacity (including a nonnull vector with zero capacity), `-2` unsupported nonzero opcode, and `-3` invalid QUERY argument pairing or negative capacity. No partial writes. Only a null vector with zero capacity is a valid size inquiry. A vector smaller than the *entire* returned descriptor length is rejected. The [shared QUERY contract](runtime-extensions-r0-query-abi-decision-20261021.md) governs first-error precedence, append-only semantics and API version matching; each package documents its other operation-specific statuses.
 
 #### How client BCPL would consume the query
 
@@ -140,7 +140,7 @@ LET RC = TIMESVC(0, INFO, 6)       // valid only when NEED <= 6
 // Then use TIMESVC(T_ADD, date, delta, output), as defined by BCPLTIME.
 ```
 
-A production example must perform the indicated branches and reserve the complete returned size. A simpler known-version client can allocate the documented fixed prefix directly and treat a larger required size conservatively; whether a prefix-only request can succeed is an R.0 contract decision. Do **not** copy a partial descriptor or rely on a query to discover an unlinked module.
+A production example must check the returned required length and reserve the **entire** descriptor before calling QUERY with a nonnull pointer. **Prefix-only success is not supported**; a six-word buffer must fail without modification when a compatible package needs more words. Do not rely on QUERY to discover an unlinked or unregistered module.
 
 **Why a numeric descriptor:** BCPL applications can inspect version and feature bits directly, with no EBCDIC parsing, storage ownership/lifetime ambiguity, or host-dependent text formatting. A human-readable module name or release string could be an *optional separate opcode*, not required for ABI negotiation. A flat version integer alone would not efficiently report optional functions.
 
@@ -148,7 +148,7 @@ A production example must perform the indicated branches and reserve the complet
 
 A function-address table in the single slot is an alternate design, but it would require verified native BCPL procedure-pointer and indirect-call semantics and more lifetime guarantees. Prefer the **dispatcher** for the first implementation because it uses the proven BCPL call path; measure its overhead only if later workloads justify optimization. The shared query protocol and local opcodes remain stable if an implementation changes its private procedure layout.
 
-**R.0 verification:** verify integer/bitwise conventions, BCPL VEC and pointer ABI, supported call argument registers, query return and error semantics, version negotiation, missing/duplicate module checks, IEWL startup registration and global allocations. Do not reserve illustrative `G!200` or commit candidate opcodes as permanent assignments without the authoritative registry.
+**R.0 evidence:** Q.0 JOB 2157 verified one synthetic dispatcher under MVS. The [two-dispatcher R.0 probe](../bootstrap-toolchain/probes/r0-query-probe/README.md) has passed offline checks; its MVS run remains pending. R.0 still requires the other evidence listed in the [gate review](runtime-extensions-r0-gate-review-20261021.md). The fixture's G!298/G!299 are **not global-number allocations**; official G!200/201/202 ownership remains with BCPLQSAM/TIME/DEC.
 
 ## 4. Proposed general registration model
 
@@ -227,7 +227,7 @@ The BCPL application separately imports a library-specific `GLOBAL` declaration/
 6. **Dependencies:** what happens when QSAM depends on a core service or another optional module, and how the link and registration table express it.
 7. **Initialization and finalization:** entries alone versus optional init/finalization hook, sequencing, failure cleanup, and correct MVS save-area/register discipline. Prefer no hooks for stateless facilities. The approved [BCPLQSAM Q.0 staging/resource decision](qsam-q0-staging-resource-design-decision.md) establishes a requirement for **generic normal-termination finalization** of linked stateful extensions on FINISH and STOP(n), before final core storage reclamation. R.0 must specify safe descriptor/hook representation, sequencing, failure reporting and absence of a linked optional module; it does not yet implement this facility.
 8. **Missing optional functions:** a BCPL `GLOBAL` reference is indirect through `G`, so omission can escape the linkage editor; define a preflight declared-requirements check or reliable failure mode. Never claim ordinary link-edit checks all missing globals.
-9. **ABI/versioning and opcode 0:** module/descriptor signature and version; shared QUERY prefix, API major/minor, opcode-support bitmap, capacity/size inquiry, failure behavior, and client consumption; rejection of incompatible extension descriptors.
+9. **ABI/versioning and opcode 0:** the [shared QUERY v1 contract](runtime-extensions-r0-query-abi-decision-20261021.md) is **owner-approved**; independent two-dispatcher MVS execution remains pending, as does the later integrated rejection of incompatible extension descriptors.
 10. **Testing:** preserving existing BLIB and native service behavior without modifying current accepted artifacts ahead of gates.
 
 ### Owner-approved R.0 registration/finalization model; A–H accepted

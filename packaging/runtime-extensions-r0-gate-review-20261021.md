@@ -3,7 +3,7 @@
 **Review date:** 21 October 2026.
 **March under review:** **R.0 — Evidence and contract**.
 **Next march:** **R.1 — Generic registration foundation** (**not started**).
-**Gate disposition:** **NOT READY TO CLOSE R.0**. Record the validated
+**Gate disposition:** **NOT READY TO CLOSE R.0**. The shared QUERY contract was subsequently [owner-approved](runtime-extensions-r0-query-abi-decision-20261021.md) on 21 October; its two-dispatcher MVS verification remains pending. This review retains its original open-item descriptions as the historical gate snapshot. Record the validated
 contracts and completed isolated tests, but keep the specific remaining
 R.0 evidence/decisions below open. No approval to change accepted runtime
 objects follows from this review.

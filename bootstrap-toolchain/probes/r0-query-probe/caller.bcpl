@@ -1,0 +1,61 @@
+// R.0 isolated shared QUERY; G!298/299 are test-local, not assignments.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          R0QA:298; R0QB:299 $)
+
+LET START() BE
+$(1
+    LET A = VEC 7
+    LET B = VEC 7
+    LET RC = 0
+
+    IF R0QA(0, 0, 0) NE 6 DO STOP(8)
+    IF R0QB(0, 0, 0) NE 8 DO STOP(8)
+    IF R0QA(0, 0, 6) NE -3 DO STOP(8)
+    IF R0QB(0, 0, -1) NE -3 DO STOP(8)
+
+    A!0 := 777
+    A!5 := 777
+    A!6 := 777
+    A!7 := 777
+    IF R0QA(0, A, 0) NE -1 DO STOP(8)
+    IF A!0 NE 777 | A!5 NE 777 DO STOP(8)
+    IF R0QA(0, A, -1) NE -3 DO STOP(8)
+    IF A!0 NE 777 | A!5 NE 777 DO STOP(8)
+    IF R0QA(0, A, 5) NE -1 DO STOP(8)
+    IF A!0 NE 777 | A!5 NE 777 DO STOP(8)
+    RC := R0QA(0, A, 8)
+    IF RC NE 6 DO STOP(8)
+    IF A!0 NE 1 | A!1 NE 1 DO STOP(8)
+    IF A!2 NE 0 | A!3 NE 6 DO STOP(8)
+    IF A!4 NE 1 | A!5 NE 0 DO STOP(8)
+    IF A!6 NE 777 | A!7 NE 777 DO STOP(8)
+
+    B!0 := 777
+    B!1 := 777
+    B!6 := 777
+    B!7 := 777
+    IF R0QB(0, B, 0) NE -1 DO STOP(8)
+    IF B!0 NE 777 | B!7 NE 777 DO STOP(8)
+    IF R0QB(0, B, -1) NE -3 DO STOP(8)
+    IF B!0 NE 777 | B!7 NE 777 DO STOP(8)
+    IF R0QB(0, B, 6) NE -1 DO STOP(8)
+    IF B!0 NE 777 | B!7 NE 777 DO STOP(8)
+    RC := R0QB(0, B, 8)
+    IF RC NE 8 DO STOP(8)
+    IF B!0 NE 1 | B!1 NE 3 DO STOP(8)
+    IF B!2 NE 2 | B!3 NE 8 DO STOP(8)
+    IF B!4 NE 5 | B!5 NE 2 DO STOP(8)
+    IF B!6 NE 77 | B!7 NE 99 DO STOP(8)
+
+    IF R0QA(1, 0, 0) NE 101 DO STOP(8)
+    IF R0QB(1, 0, 0) NE 201 DO STOP(8)
+    IF R0QB(3, 0, 0) NE 203 DO STOP(8)
+    IF R0QA(2, 0, 0) NE -2 DO STOP(8)
+    IF R0QB(2, 0, 0) NE -2 DO STOP(8)
+    IF R0QA(99, 0, 0) NE -2 DO STOP(8)
+    IF R0QB(99, 0, 0) NE -2 DO STOP(8)
+
+    WRITES("R0 QUERY TWO DISPATCHERS PASS")
+    NEWLINE()
+    FINISH
+$)1

@@ -7,6 +7,9 @@ A–H in the [exact ABI review](runtime-extensions-r0-abi-decision-review-202610
 It supersedes incompatible *design proposals*, not observed test evidence.
 The approval does **not** declare R.0 closed, install a registrar, accept
 MVS objects, or authorize production implementation.
+The separate [shared QUERY v1 contract](runtime-extensions-r0-query-abi-decision-20261021.md)
+was approved by the owner on 21 October 2026; its generic two-dispatcher
+MVS test remains pending and is not part of the earlier A–H approval.
 
 The approved design uses MVS/System/370 **byte addresses** in linked
 assembler structures, not BCPL word pointers. Identifiers are

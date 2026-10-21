@@ -179,7 +179,7 @@ The declared record-data capacity is in **bytes** and is enforceable assuming th
 
 ## 7. QUERY — opcode 0
 
-QUERY follows the proposed shared Runtime Extensions convention.
+QUERY follows the [owner-approved shared Runtime Extensions version-1 convention](runtime-extensions-r0-query-abi-decision-20261021.md). Its production BCPLQSAM implementation and registration remain pending.
 
 ```text
 QSAMSVC(0, info_vector, capacity_words)
@@ -197,7 +197,7 @@ It returns the required descriptor size in 32-bit words without allocating stora
 
 ### Initial capability descriptor
 
-The proposed version 1 descriptor contains six words.
+The shared version-1 prefix is **approved** and contains six words. The BCPLQSAM package API remains a reviewed Q.0 design baseline pending production implementation.
 
 | Word | Contents |
 |---|---|
@@ -208,7 +208,7 @@ The proposed version 1 descriptor contains six words.
 | `info!4` | Bitmap of supported operation numbers |
 | `info!5` | Package capability flags |
 
-The shared descriptor format is **1**; the initial BCPLQSAM API version is **1.0**, and `info!3` initially equals **6**. `QSAMSVC(0,0,0)` returns 6 without touching memory. With a sufficient capacity, QUERY copies the entire descriptor and returns its required word count (not status zero). With insufficient capacity, it returns `QS_ERR_CAPACITY=-1` and copies **no** descriptor words; invalid combinations return `QS_ERR_ARGUMENT=-3`. If a compatible future descriptor appends fields, the required-size probe reports the larger size; an undersized caller must allocate accordingly.
+The shared descriptor format is **1**; the initial BCPLQSAM API version is **1.0**, and `info!3` initially equals **6**. `QSAMSVC(0,0,0)` returns 6 without touching memory. With a sufficient capacity, QUERY copies the entire descriptor and returns its required word count (not status zero). With insufficient capacity, it returns `QS_ERR_CAPACITY=-1` and copies **no** descriptor words; invalid combinations return `QS_ERR_ARGUMENT=-3`. If a compatible future descriptor appends fields, the required-size probe reports the larger size; an undersized caller must allocate accordingly. Prefix-only success is **not allowed**; a nonnull pointer with zero capacity returns `-1`, and a negative capacity returns `-3` without writing.
 
 For version 1, `info!5` capability flags are: `QS_CAP_FIXED=1` (tested F/FB support), `QS_CAP_VARIABLE=2` (tested V/VB support), and `QS_CAP_CARRIAGE=4` (tested carriage-control support). Unassigned bits are zero. `info!4` lists **currently implemented** supported opcodes, not anticipated Q.2–Q.4 features.
 
