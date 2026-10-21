@@ -43,9 +43,11 @@ confirms the **BLIB-present** WRITEF precedence rule. The BLIB-absent
 fallback and exact object-build provenance remain unverified.
 The [effective ownership source follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
 confirms the G!150 FORMTREE/DEBUGINT source conflict and
-proposes a temporary linked BLIB with **no G!76 export**
-as a bounded fallback-branch test. That design is not yet
-accepted or MVS-executed. The
+now records the owner's approval of a temporary linked BLIB
+with **no G!76 export** as a bounded branch test. The [test-only
+probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
+has passed 18 host tests and synthetic 82-card JCL checks;
+**no MVS result has yet been observed**. The
 [approved Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
 **PASSED actual MVS JOBs 2207–2216**: ten expected QOUT
 markers and all six IFOX/IEWL/GO steps RC=0000 per job,

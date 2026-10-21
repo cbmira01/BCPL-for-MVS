@@ -2,9 +2,10 @@
 
 **Date:** 21 October 2026.
 **March:** **R.0 — Evidence and contract (open)**.
-**Scope:** follow-up source audit and *proposed* isolated ownership
-experiments. **No runtime implementation, MVS probe, or installed
-object mutation is claimed by this record.** Next march **R.1 —
+**Scope:** source audit and now **approved, host-tested test-only**
+G!76 no-export fallback fixture. The [probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
+is prepared; **actual MVS execution and IEWL MAP inspection remain
+pending**. No accepted object mutation is claimed. Next march **R.1 —
 Generic registration foundation** remains not started.
 **Git review revision:** `7c101d9fd1796a3729551ad6c650e1faa0791469`.
 
@@ -45,7 +46,7 @@ distinct propositions:
    **G!76 sentinel/fallback branch**, **not** a proof that the
    system can run with no `BLIB` symbol at all.
 
-**Proposed test (design approval still needed):** Assemble the
+**Owner-approved test (implemented as a host-tested fixture; MVS pending):** Assemble the
 no-export `BLIB` CSECT into a temporary object; compile a minimal
 BCPL START with the installed interpreter-hosted **demoted Cambridge
 compiler**; keep the installed BCPLMAIN/BCPLIO/BCPLMEM/BCPLBYTE/
@@ -106,11 +107,13 @@ no optional-package ownership waiver.
 
 ## Next decision and proposed R.0 tests
 
-1. **Owner design choice:** accept the temporary **no-G!76-export
-   BLIB CSECT** as a faithful, bounded test of the existing
-   sentinel/fallback *branch* (distinct from physically absent
-   BLIB linkage). If approved, implement the isolated positive
-   MVS fixture and its negative/marker checks only.
+1. **Owner-approved no-G!76-export BLIB CSECT:** the [test-only
+   probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
+   is now committed with a fixed 24-byte temporary prefix/trailer,
+   one START/WRITEF numeric-format application and 18 host tests
+   passing. **MVS job numbers/step RCs and temporary BLIB IEWL
+   symbol ownership remain to be observed.** This tests the branch,
+   not physically missing BLIB linkage.
 2. **Per-executable owner proof:** build a separate link/read-only
    observer with an actual application export at G!150, an
    independently decoded installed BLIB trailer, and the
@@ -131,6 +134,6 @@ no optional-package ownership waiver.
 
 **Disposition:** This source follow-up has identified the exact
 absence/linkage distinction and confirmed G!150 as an unresolved
-cross-component declaration conflict. No MVS fallback probe
-has run and no new legacy precedence exception is accepted.
+cross-component declaration conflict. A no-G!76-export fallback probe is **prepared but has not run on
+MVS**. No new legacy precedence exception is accepted.
 **R.0 remains open; R.1 has not started.**

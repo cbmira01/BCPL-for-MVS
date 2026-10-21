@@ -94,8 +94,9 @@ RC=12 on real startup rejection remains an approved **future** policy.
    untested. The [21 October ownership follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
    distinguishes missing BLIB linkage from **a linked module
    exporting no G!76**; a temporary no-export BLIB fixture is
-   proposed for the latter, subject to owner agreement before
-   implementation. Source review distinguishes G6!48 save-area
+   owner-approved and prepared for the latter. The [fixed,
+   test-only probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
+   passes 18 host tests; actual MVS/IEWL verification is pending. Source review distinguishes G6!48 save-area
    binding from G!48 publication and confirms FORMTREE:150
    versus DEBUGINT:150 as an unresolved compiler/core conflict.
 4. **R.0 collision/transactionality evidence.** The source audit

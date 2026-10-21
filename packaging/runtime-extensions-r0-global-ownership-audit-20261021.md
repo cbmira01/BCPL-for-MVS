@@ -34,8 +34,9 @@ The BLIB-absent fallback remains untested. The [targeted
 source/indirect-writer follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
 shows that the installed BCPLMAIN requires a linked `BLIB`
 symbol even when no G!76 export is supplied; its proposed
-test-only no-export `BLIB` substitute awaits separate design
-agreement. The same review confirms source-declared FORMTREE:150
+test-only no-export `BLIB` substitute is **owner-approved, host-tested
+and prepared** at [the probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md);
+actual MVS execution is still pending. The same review confirms source-declared FORMTREE:150
 and BCPLMAIN DEBUGINT:150 as an unresolved cross-component conflict.
 
 ## Current actual startup writer order
