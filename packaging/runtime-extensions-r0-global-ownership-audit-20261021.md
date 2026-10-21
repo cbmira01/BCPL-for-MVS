@@ -30,7 +30,8 @@ Core Runtime direct stores is **G!76**. JOB 2197 did not execute
 `BCPLMAIN`; a subsequent [actual-runtime JOB 2199
 probe](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
 **PASSED** and established the BLIB-present G!76 precedence at START.
-The BLIB-absent fallback remains untested. The [targeted
+The no-G!76-export fallback branch subsequently PASSED JOB 2220;
+physically unlinked BLIB remains unsupported. The [targeted
 source/indirect-writer follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
 shows that the installed BCPLMAIN requires a linked `BLIB`
 symbol even when no G!76 export is supplied; its proposed
@@ -112,7 +113,7 @@ G1–G99 reconciliation remains the per-slot historical table.
 | 23–29 | Historical record I/O and time/date names | Do not silently repurpose for QSAM or clock extension |
 | 50, 73 | Historical unnamed/spare positions | Not freely assignable |
 | 57 | Commented OS/CMS marker in LIBHDR | Historical data slot, precise current representation unresolved |
-| 76 | BLIB WRITEF versus BCPLMAIN fallback | **BLIB-present precedence passed JOB 2199**; BLIB-absent fallback remains untested; no general waiver |
+| 76 | BLIB WRITEF versus BCPLMAIN fallback | **JOB 2199** verified imported WRITEF precedence; **JOB 2220** verified WRITEST with a linked, no-export BLIB; no general waiver |
 | 94 | Historical LIBHDR assigns both OPENBLOCKFILE and UPDATEBLOCKFILE | Ambiguous **header alias**, not proof of two linked writers |
 | 150 | BCPLMAIN DEBUGINT versus full Cambridge compiler FORMTREE use | Known cross-component conflict, not an available extension slot |
 | 200, 201, 202 | Officially allocated BCPLQSAM, BCPLTIME, BCPLDEC dispatchers | **Reserved for those owners**; not installed by allocation |
@@ -136,7 +137,9 @@ consulted for every real application or compiler load.
    precedence` (with listing, exact winner and regression) or
    `unresolved`. **BLIB-present G!76 precedence** is verified by
    JOB 2199 and is the narrow historical exception; this is not a
-   general override waiver. The BLIB-absent fallback is still open.
+   general override waiver. Both approved G!76 branches have
+   JOB 2199/2220 MVS evidence; a completely absent BLIB linker
+   symbol is a separate unsupported scenario.
 4. For selected optional packages, require matching registered
    owner for each slot, no two selected owners, no duplicate within
    a package, and no collision with application/BLIB/core (including

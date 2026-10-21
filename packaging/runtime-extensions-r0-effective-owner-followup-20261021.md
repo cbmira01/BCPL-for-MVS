@@ -46,7 +46,7 @@ distinct propositions:
    **G!76 sentinel/fallback branch**, **not** a proof that the
    system can run with no `BLIB` symbol at all.
 
-**Owner-approved test (implemented as a host-tested fixture; MVS pending):** Assemble the
+**Owner-approved test (implemented, JOB 2220 MVS PASS with inspected IEWL MAP/XREF):** Assemble the
 no-export `BLIB` CSECT into a temporary object; compile a minimal
 BCPL START with the installed interpreter-hosted **demoted Cambridge
 compiler**; keep the installed BCPLMAIN/BCPLIO/BCPLMEM/BCPLBYTE/
@@ -110,8 +110,8 @@ no optional-package ownership waiver.
 1. **Owner-approved no-G!76-export BLIB CSECT:** the [test-only
    probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
    is now committed with a fixed 24-byte temporary prefix/trailer,
-   one START/WRITEF numeric-format application and 18 host tests
-   passing. **JOB 2220 has all four steps RC=0000 and independent
+   one START/WRITEF numeric-format application, 18 passing host tests,
+   and actual MVS JOB 2220 PASS. **JOB 2220 has all four steps RC=0000 and independent
    temporary-BLIB symbol ownership evidence.** This tests the branch,
    not physically missing BLIB linkage.
 2. **Per-executable owner proof:** build a separate link/read-only

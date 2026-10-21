@@ -39,8 +39,12 @@ R.1 has **not started**. [JOB 2197](runtime-extensions-r0-trailer-job-2197-evide
 verified G!1 for a test application and 21 globals exported by the
 installed BLIB. The [installed-runtime JOB 2199 G!76 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
 **PASSED**: ASMA/ASMP/LKED/GO all RC=0000 and the actual GO marker
-confirms the **BLIB-present** WRITEF precedence rule. The BLIB-absent
-fallback and exact object-build provenance remain unverified.
+confirms the **BLIB-present** WRITEF precedence rule. The
+[JOB 2220](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md)
+verified the complementary **no-G!76-export** fallback branch with
+a temporary, link-compatible BLIB. Historical installed-object build
+provenance remains unresolved; physically omitting the BLIB linker
+symbol is not supported by accepted BCPLMAIN.
 The [effective ownership source follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
 confirms the G!150 FORMTREE/DEBUGINT source conflict and
 now records the owner's approval of a temporary linked BLIB

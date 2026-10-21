@@ -31,7 +31,7 @@ belong in R.1 and subsequent marches**, not in this review.
 | Linked descriptor extent | **JOBs 2187–2192**, six isolated IFOX/IEWL/GO passes including five negative cases | Tight test-only formats, not a general pointer-safety guarantee |
 | Dependency/owner/finalizer policy | **JOB 2195**, fourteen validator cases plus six simulated finalizer cases, all 20 actual GO markers, eight steps RC=0000 | Three-package fixture limit; simulated finalizer, not BCPLMAIN |
 | Application and installed BLIB exports | **JOB 2197**, one application G!1 and exactly 21 relocated installed BLIB exports, no overlap between the two; link MAP examined | One small application, not a compiler-load ownership census |
-| Historical G!76 | **JOB 2199**, real installed Core Runtime START compared BLIB's relocated WRITEF address with runtime G!76, RC=0000 and actual PASS marker | BLIB-present branch only; absent-BLIB WRITEST fallback not exercised |
+| Historical G!76 | **JOBs 2199 and 2220**: real installed Core Runtime START preserves BLIB WRITEF when exported, and supplies WRITEST with no BLIB G!76 export | Both branches passed; JOB 2220 still links a temporary BLIB symbol, not a wholly BLIB-free runtime |
 | Decision G | Owner-approved N/M=32, K=8, D=16, BCRG/BCEX maxima 540/368 bytes, diagnostic IDs 1001–1014/2001, proposed startup RC=12 | **JOB 2203** verified 14 numerical count/size scenarios; host tests cover more fields, not live registrar |
 | Shared opcode-0 QUERY | Six-word prefix and -1/-2/-3 rules owner-approved; **JOB 2206** five steps RC=0000, ten host tests, two independently assembled dispatchers and actual GO marker | Test-local G!298/G!299 export bindings, not `BCPLREG` or matching production `BCEX` descriptors |
 | Installed binary inventory | **JOB 2200**, `BOOT_OBJ` FB80 PDS lists BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT, BCPLIO, BLIB | A PDS directory listing does not prove member bytes or build date |
@@ -100,8 +100,9 @@ RC=12 on real startup rejection remains an approved **future** policy.
    ownership method beyond JOB 2197's single START application,
    review possible indirect Core Runtime writers and compiler
    allocations (including G!150), and record exact historical
-   precedence exceptions. The **BLIB-absent G!76 fallback** remains
-   untested. The [21 October ownership follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
+   precedence exceptions. **JOB 2220 verifies G!76 when
+   the linked temporary BLIB exports no G!76** (but does not
+   demonstrate operation without a BLIB linker symbol). The [21 October ownership follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
    distinguishes missing BLIB linkage from **a linked module
    exporting no G!76**; a temporary no-export BLIB fixture is
    owner-approved and prepared for the latter. The [fixed,
