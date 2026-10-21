@@ -46,7 +46,7 @@ fallback and exact object-build provenance remain unverified. The
 markers and all six IFOX/IEWL/GO steps RC=0000 per job,
 with JOB 2207 MAP/XREF independently inspected.
 See the [stage-1 evidence](runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
-and the now-approved [stage-2 read-only object comparison design](runtime-extensions-r0-decision-a-stage2-design-20261021.md). Its [test-only `IEBCOMPR` probe](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) is prepared and has passed fifteen host tests, but **MVS calibration and installed object comparison remain pending**.
+and the now-approved [stage-2 read-only object comparison design](runtime-extensions-r0-decision-a-stage2-design-20261021.md). Its [test-only `IEBCOMPR` probe](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) subsequently **PASSED calibration JOB 2217**; installed-member **JOB 2218** found one END run-day metadata byte different (RC=0008, 18 records). The owner-approved [strict-vs-date-only evidence](runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md) keeps strict binary identity **false**, records qualified object-content equivalence, and leaves installed-member build provenance unresolved.
 No accepted objects were modified. Real BCPLMAIN/finalizer integration
 is **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 

@@ -76,7 +76,16 @@ RC=12 on real startup rejection remains an approved **future** policy.
    Installed `BOOT_OBJ` byte identity remains open; its
    [stage-2 review](runtime-extensions-r0-decision-a-stage2-design-20261021.md)
    recommends a calibrated **read-only** object-deck comparison,
-   with the method now **owner-approved and test-only JCL prepared**. The [stage-2 runner](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) passed fifteen host tests and synthetic JCL checks; **no real MVS `IEBCOMPR` test or installed member comparison has yet been accepted**.
+   and was then executed: **JOB 2217** calibrated IEBCOMPR
+   (SAME RC=0000, expected DIFFER RC=0008), and **JOB 2218**
+   compared the actual installed `BOOT_OBJ(BCPLMEM)` read-only
+   against a fresh temporary 18-record object. The comparison
+   **failed strict byte identity** due solely to the OBJ END
+   run-day field; the separately owner-approved date-only
+   [content-equivalence evidence](runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md)
+   and its guarded report auditor distinguish this from a strict
+   binary match. The incumbent's original Git build identity
+   remains unproven.
 3. **Effective global ownership scope.** Extend the per-executable
    ownership method beyond JOB 2197's single START application,
    review possible indirect Core Runtime writers and compiler

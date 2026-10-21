@@ -1,7 +1,7 @@
 # Milestone Runtime Extensions — R.0 Decision A stage-2 design review
 
 **Date:** 21 October 2026. **March:** **R.0 — Evidence and contract (open)**.
-**Disposition:** **Owner-approved implementation prepared**. The [stage-2 test-only probe](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) now implements the planned calibrated `IEBCOMPR` workflow. **Fifteen host tests, two synthetic JCL checks and shell/Python syntax checks passed**. No stage-2 MVS job has yet been run, and installed object equality has **not** been established. The existing accepted `BOOT_OBJ` members remain untouched.
+**Disposition:** **Stage-2 MVS evidence observed**. Calibration **JOB 2217 PASSED** with IEBCOMPR SAME RC=0000, DIFFER RC=0008 and independently reviewed IEB221I inequality. Member comparison **JOB 2218** assembled 18 records and returned IEBCOMPR RC=0008: **strict binary inequality**, caused solely by one EBCDIC day digit in the OBJ END record. The owner approved a *separate, narrow* END run-day exception (columns 50–52 only); the [reproducible report audit and evidence](runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md) classifies **object content equivalent except assembler run-day**. This does **not** establish historical build-source provenance. `BOOT_OBJ` remains read-only.
 
 ## Question and distinction
 
@@ -100,4 +100,4 @@ Load-module comparison is out of scope.
 - [IBM IEBCOMPR examples](https://www.ibm.com/docs/en/zos/2.5.0?topic=program-iebcompr-examples)
 - [IBM DFSMSdfp utility return codes](https://www.ibm.com/docs/SSLTBW_3.2.0/pdf/idau100_v3r2.pdf)
 
-**R.0 remains open; R.1 has not started.**
+**R.0 remains open; R.1 has not started.** Strict byte identity remains false for JOB 2218; the narrow date-field content-equivalence decision is independent of binary hashing.

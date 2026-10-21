@@ -1,7 +1,7 @@
 # Milestone Runtime Extensions — R.0 Decision A stage-2 object identity
 
 **March:** **R.0 — Evidence and contract (open)**. **R.1 — Generic registration foundation has not started.**
-**Status:** **MVS tests pending.** The owner approved a narrow, read-only
+**Status:** **MVS calibration JOB 2217 PASS; member comparison JOB 2218 has a date-only END mismatch** (strict binary identity is false; object content equivalence is separately accepted under a narrow END-field exception). The owner approved a narrow, read-only
 `BCPLMEM` rebuild/compare workflow after stage-1 JOBs 2207–2216 passed.
 See [stage-2 design](../../../packaging/runtime-extensions-r0-decision-a-stage2-design-20261021.md).
 
@@ -91,6 +91,48 @@ configuration**. The generator writes per-run source hashes and
 current Git SHA there. The verifier checks actual `IEF142I` step
 results and IFOX `TOTAL RECORDS PUNCHED` counts; the operator
 retains the utility report for independent comparison.
+
+## Date-only END record interpretation (approved)
+
+The [JOBs 2217–2218 evidence record](../../../packaging/runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md)
+retains two results separately: **strict FB/80 binary comparison RC=0008
+(unequal)**, and **content equivalence excluding only the assembler's
+Julian run-day field in one OBJ END record** (columns **50–52**, 1-based).
+The earlier JOB 2218 report contains exactly one IEB221I mismatch at
+logical record **18 of 18**, physical block 2/record 8, with a single
+unequal byte (column **52**, EBCDIC F2 versus F4; year 26, days 292
+and 294). All other compared records passed IEBCOMPR.
+
+A **read-only report auditor** makes the date exception narrow and
+repeatable, without changing IEBCOMPR, the original return-code
+verifier, object files or installed datasets:
+
+```sh
+python3 -B bootstrap-toolchain/probes/r0-object-identity-probe/audit-end-date.py \
+  workarea/runtime-extensions-r0-object-identity/job-2218.txt
+```
+
+The auditor checks the original job's RC=0008, nonempty IFOX
+records, one completed sequential IEBCOMPR comparison with exactly
+one IEB221I report, identical physical/logical positions for the final
+record, both complete 80-byte END records and no differences except
+columns 50–52. Run year, assembler ID/version, other END fields and
+all non-END records are **never normalized**. Utility errors,
+additional differences and incomplete dumps fail the audit.
+It returns `CONTENT_EQUAL_EXCEPT_END_RUN_DAY` while explicitly
+reporting `strict_binary_identity: false`. This classification relies
+on IEBCOMPR's discrepancy report; it is not an independent raw
+binary export/byte-stream hash.
+
+Run tests with:
+```sh
+python3 -B -m unittest discover -s \
+  bootstrap-toolchain/probes/r0-object-identity-probe -p 'test_*.py' -v
+```
+
+**No new MVS job is needed** to reclassify the retained JOB 2218
+report, and this does not prove the installed member's original
+Git commit or clean-room rebuild date.
 
 ## Evidence boundary
 
