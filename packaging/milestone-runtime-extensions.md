@@ -40,8 +40,12 @@ verified G!1 for a test application and 21 globals exported by the
 installed BLIB. The [installed-runtime JOB 2199 G!76 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
 **PASSED**: ASMA/ASMP/LKED/GO all RC=0000 and the actual GO marker
 confirms the **BLIB-present** WRITEF precedence rule. The BLIB-absent
-fallback and exact object-build provenance remain unverified. Real
-BCPLMAIN/finalizer integration is **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+fallback and exact object-build provenance remain unverified. The
+[approved Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
+is prepared: 11 host tests and ten 263-card JCL dry-runs passed;
+**actual MVS/IEWL MAP/XREF verification remains pending**. No
+accepted objects are modified. Real BCPLMAIN/finalizer integration
+is **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
 

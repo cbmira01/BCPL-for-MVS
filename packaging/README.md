@@ -79,7 +79,11 @@ potential historical G!76 native overlap. The
 BLIB-present G!76 precedence is verified at START. See the
 [JOB 2199 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md).
 The BLIB-absent fallback and installed object provenance remain open;
-production registration is **not implemented**.
+production registration is **not implemented**. The
+[Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
+is prepared and passed 11 host tests and ten credential-free JCL checks;
+**actual MVS link MAP/XREF evidence remains pending**. See the
+[probe README](../bootstrap-toolchain/probes/r0-trusted-link-probe/README.md).
 The exact public finalizer ABI is **owner-approved**, not MVS-integrated.
 R is not a prerequisite for M4.
 

@@ -66,7 +66,11 @@ RC=12 on real startup rejection remains an approved **future** policy.
    clean-room build ledger with any subsequent `BOOT_OBJ` replacement
    before asserting the current installed members' exact source revision.
    Do not mistake JOB 2200 inventory or JOB 2197 relocation for a
-   binary hash.
+   binary hash. The [approved stage-1 trusted-link probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
+   has passed host tests and JCL checks; it still **requires actual
+   MVS execution, IEWL MAP/XREF inspection, and recorded source-hash
+   matches**. Installed `BOOT_OBJ` byte identity is a **separate
+   stage-2 comparison**, not accomplished here.
 3. **Effective global ownership scope.** Extend the per-executable
    ownership method beyond JOB 2197's single START application,
    review possible indirect Core Runtime writers and compiler
