@@ -46,7 +46,7 @@ fallback and exact object-build provenance remain unverified. The
 markers and all six IFOX/IEWL/GO steps RC=0000 per job,
 with JOB 2207 MAP/XREF independently inspected.
 See the [stage-1 evidence](runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
-and the separate [stage-2 read-only object comparison proposal](runtime-extensions-r0-decision-a-stage2-design-20261021.md).
+and the now-approved [stage-2 read-only object comparison design](runtime-extensions-r0-decision-a-stage2-design-20261021.md). Its [test-only `IEBCOMPR` probe](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) is prepared and has passed fifteen host tests, but **MVS calibration and installed object comparison remain pending**.
 No accepted objects were modified. Real BCPLMAIN/finalizer integration
 is **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 

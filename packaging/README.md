@@ -85,8 +85,8 @@ production registration is **not implemented**. The
 verified QOUT markers, six step RC=0000 results per job,
 and independent JOB 2207 IEWL MAP/XREF inspection.
 See the [stage-1 evidence](runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
-and [stage-2 design review](runtime-extensions-r0-decision-a-stage2-design-20261021.md).
-Binary identity of the installed object PDS is still unknown.
+and [stage-2 approved design](runtime-extensions-r0-decision-a-stage2-design-20261021.md).
+The [stage-2 `IEBCOMPR` test-only probe](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) has passed fifteen host tests and two credential-free JCL checks, but MVS calibration and installed-member comparison have **not** yet run. Binary identity of the installed object PDS is still unknown.
 The exact public finalizer ABI is **owner-approved**, not MVS-integrated.
 R is not a prerequisite for M4.
 

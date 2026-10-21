@@ -1,10 +1,7 @@
 # Milestone Runtime Extensions — R.0 Decision A stage-2 design review
 
 **Date:** 21 October 2026. **March:** **R.0 — Evidence and contract (open)**.
-**Disposition:** **Proposal only**. No stage-2 comparator, JCL or MVS
-test has been implemented or executed. The earlier owner approval
-covered investigating a binary-safe object identity test, not final
-selection of the utility and comparison workflow.
+**Disposition:** **Owner-approved implementation prepared**. The [stage-2 test-only probe](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) now implements the planned calibrated `IEBCOMPR` workflow. **Fifteen host tests, two synthetic JCL checks and shell/Python syntax checks passed**. No stage-2 MVS job has yet been run, and installed object equality has **not** been established. The existing accepted `BOOT_OBJ` members remain untouched.
 
 ## Question and distinction
 
@@ -43,7 +40,7 @@ project's historical **MVS 3.8J/TK5** environment. In particular,
 availability, actual return codes and treating `PDS(member)`
 as sequential IEBCOMPR input are **still unverified**.
 
-## Staged, read-only verification (not executable instructions yet)
+## Staged, read-only verification (implemented for MVS testing)
 
 1. **Record provenance and datasets.** Save Git HEAD, clean/dirty
    status, exact Git source revision and SHA-256, assembler/options,
@@ -95,11 +92,7 @@ accepted-OBJ DD remains input-only, and the resulting job has no
 load-module PDS output there. Preserve binary data on MVS.
 Load-module comparison is out of scope.
 
-**Owner design decision before implementation:** approve or adjust
-the narrow **BCPLMEM + calibrated IEBCOMPR + temporary rebuild +
-read-only installed-member comparison** approach. No new march
-number is created and no stage-2 code is approved by writing
-this proposal.
+**Owner decision:** the narrow **BCPLMEM + calibrated IEBCOMPR + temporary rebuild + read-only installed-member comparison** approach was approved for implementation. The probe stages separate `R0BICAL` and `R0BIMEM` jobs. `R0BIMEM` cannot be submitted through the runner until `R0BICAL` has actually run and its IEBCOMPR `SYSPRINT` has been reviewed. Compare equal is expected RC=0000, intentionally different RC=0008; the runner checks the step codes and nonempty punched objects but **does not automatically interpret RC=0008 as proof of unequal bytes**. User-confirmed calibration remains required. No new march number was created; actual MVS acceptance and installed binary identity remain pending.
 
 ## External utility references (modern IBM; not evidence of TK5 support)
 

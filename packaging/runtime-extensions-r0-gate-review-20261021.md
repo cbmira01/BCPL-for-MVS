@@ -76,7 +76,7 @@ RC=12 on real startup rejection remains an approved **future** policy.
    Installed `BOOT_OBJ` byte identity remains open; its
    [stage-2 review](runtime-extensions-r0-decision-a-stage2-design-20261021.md)
    recommends a calibrated **read-only** object-deck comparison,
-   with the exact method still awaiting owner approval.
+   with the method now **owner-approved and test-only JCL prepared**. The [stage-2 runner](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) passed fifteen host tests and synthetic JCL checks; **no real MVS `IEBCOMPR` test or installed member comparison has yet been accepted**.
 3. **Effective global ownership scope.** Extend the per-executable
    ownership method beyond JOB 2197's single START application,
    review possible indirect Core Runtime writers and compiler
