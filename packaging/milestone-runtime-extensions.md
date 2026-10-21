@@ -40,7 +40,12 @@ verified G!1 for a test application and 21 globals exported by the
 installed BLIB. The [installed-runtime JOB 2199 G!76 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
 **PASSED**: ASMA/ASMP/LKED/GO all RC=0000 and the actual GO marker
 confirms the **BLIB-present** WRITEF precedence rule. The BLIB-absent
-fallback and exact object-build provenance remain unverified. The
+fallback and exact object-build provenance remain unverified.
+The [effective ownership source follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
+confirms the G!150 FORMTREE/DEBUGINT source conflict and
+proposes a temporary linked BLIB with **no G!76 export**
+as a bounded fallback-branch test. That design is not yet
+accepted or MVS-executed. The
 [approved Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
 **PASSED actual MVS JOBs 2207–2216**: ten expected QOUT
 markers and all six IFOX/IEWL/GO steps RC=0000 per job,

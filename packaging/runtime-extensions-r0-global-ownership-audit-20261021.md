@@ -30,7 +30,13 @@ Core Runtime direct stores is **G!76**. JOB 2197 did not execute
 `BCPLMAIN`; a subsequent [actual-runtime JOB 2199
 probe](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
 **PASSED** and established the BLIB-present G!76 precedence at START.
-The BLIB-absent fallback remains untested.
+The BLIB-absent fallback remains untested. The [targeted
+source/indirect-writer follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
+shows that the installed BCPLMAIN requires a linked `BLIB`
+symbol even when no G!76 export is supplied; its proposed
+test-only no-export `BLIB` substitute awaits separate design
+agreement. The same review confirms source-declared FORMTREE:150
+and BCPLMAIN DEBUGINT:150 as an unresolved cross-component conflict.
 
 ## Current actual startup writer order
 

@@ -91,8 +91,13 @@ RC=12 on real startup rejection remains an approved **future** policy.
    review possible indirect Core Runtime writers and compiler
    allocations (including G!150), and record exact historical
    precedence exceptions. The **BLIB-absent G!76 fallback** remains
-   untested; determine and execute a safe isolated test if this branch
-   is to be claimed verified.
+   untested. The [21 October ownership follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
+   distinguishes missing BLIB linkage from **a linked module
+   exporting no G!76**; a temporary no-export BLIB fixture is
+   proposed for the latter, subject to owner agreement before
+   implementation. Source review distinguishes G6!48 save-area
+   binding from G!48 publication and confirms FORMTREE:150
+   versus DEBUGINT:150 as an unresolved compiler/core conflict.
 4. **R.0 collision/transactionality evidence.** The source audit
    requests an isolated rejection against an **actual**
    app/BLIB/native owner, before START with no optional publication.
