@@ -36,6 +36,20 @@ class QueryProbeTests(unittest.TestCase):
         self.assertIn("DC F'4'", text)
         self.assertIn('END   R0APP', text)
 
+    def test_real_maximum_matches_g299_export_offset(self):
+        # Actual compiler JOB 2204 emitted global-vector max 1196,
+        # matching G!299's export offset. This must not look duplicate.
+        fixture = self.source().replace("         DC    F'2796'",
+                                        "         DC    F'1196'")
+        self.assertNotEqual(fixture, self.source())
+        rows = self.make.application_source(fixture)
+        helper = self.make.load(self.make.HELPER, 'r0query_regression')
+        _, maximum, pairs = helper.find_trailer(rows)
+        self.assertEqual(maximum, 1196)
+        self.assertEqual(pairs[-2:],
+                         [(1192, 'R0QAA'), (1196, 'R0QBB')])
+        self.assertEqual(len(pairs), 3)
+
     def test_source_must_export_only_start(self):
         other = self.source().replace("         DC    F'4'", "         DC    F'8'")
         with self.assertRaises(ValueError):

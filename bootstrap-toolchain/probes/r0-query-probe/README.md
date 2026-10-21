@@ -77,6 +77,19 @@ bash -n "$probe/run.sh"
 No credentials or JES reports are created by `--check`. Do not commit
 generated authenticated JCL, full printer reports or local credentials.
 
+## JOB 2204 host-generator correction
+
+The initial Morkies attempt compiled the BCPL client successfully as
+**JOB 2204** (COMP and SVCODE both RC=0000) but stopped before the
+R0QUERY MVS job: a text-count check falsely rejected G!299 because
+the real generated trailer's maximum-offset header and its final
+export pair legitimately both contained `DC F'1196'`. The generator
+now decodes and checks **actual export pairs**, instead of counting
+literal appearances. A regression test covers the G!299 = 1196
+maximum. The owner-supplied JOB 2204 generated-source excerpt
+was checked locally and generated 715 synthetic JCL cards after the
+fix, without credentials. **No R0QUERY MVS GO result exists yet**.
+
 ## Evidence boundary
 
 This test is **not** production `BCPLREG` registration, package

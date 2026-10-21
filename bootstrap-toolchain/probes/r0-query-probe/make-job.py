@@ -49,11 +49,16 @@ def application_source(generated: str) -> list[str]:
         replacement += [f"         DC F'{4 * g}'", f'         DC A({symbol})']
     rows[start:end] = replacement
     verified = base.checked_asm('\n'.join(rows), 'R.0 QUERY BCPL')
-    for g, symbol in BINDINGS:
-        if verified.count(f"         DC F'{4 * g}'") != 1:
-            raise ValueError(f'no unique G!{g} export')
-        if verified.count(f'         DC A({symbol})') != 1:
-            raise ValueError(f'no unique {symbol} address')
+    # Inspect decoded export pairs, not raw textual appearances.  The
+    # trailer's maximum offset can legitimately equal the last export
+    # offset (G!299 = 1196), so counting DC F'1196' misidentifies it
+    # as a duplicate even when the export occurs exactly once.
+    _, final_maximum, final_pairs = helper.find_trailer(verified)
+    expected_pairs = [*pairs, *((4 * g, symbol) for g, symbol in BINDINGS)]
+    if final_maximum != max(maximum, 4 * BINDINGS[-1][0]):
+        raise ValueError('altered global-vector trailer maximum')
+    if final_pairs != expected_pairs:
+        raise ValueError('missing, duplicated or reordered export pair')
     return verified
 
 
