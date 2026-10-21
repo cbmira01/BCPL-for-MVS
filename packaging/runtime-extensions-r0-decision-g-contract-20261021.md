@@ -93,9 +93,12 @@ not proof that BCPLIO is available before initialization.
 ## Testing and evidence
 
 [Isolated R.0 G test harness](../bootstrap-toolchain/probes/r0-g-limits-probe/README.md)
-checks host-side binary-layout boundary/negative cases and prepares a
-**separately linked IFOX numeric-envelope batch** for MVS. Tests are
-**not** a production registrar, cannot establish general pointer safety,
-and must not alter accepted BOOT_OBJ members. The actual MVS job must be
-observed before it is claimed to PASS. This decision record is approval
-of the contract; **R.0 remains open, R.1 not started**.
+checks host-side binary-layout boundary/negative cases and runs a
+**separately linked IFOX numeric-envelope batch** under MVS. The
+[14-case actual JOB 2203 result](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
+**PASSED**, including expected numeric statuses 1003 and 1006.
+This experiment is **not** a production registrar, does not establish
+all diagnostic categories or general pointer safety, and did not
+modify accepted BOOT_OBJ objects. See the
+[R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
+The contract is approved, but **R.0 remains open; R.1 not started**.

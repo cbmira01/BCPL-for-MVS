@@ -23,10 +23,14 @@ RC=0000 with actual QOUT markers. Combined with JOBs 2187–2192,
 ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
 and [owner ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
 identify remaining R.0 gates. The 28-byte registry, 48-byte descriptor,
-8-byte finalizer parameter block and A–H policies are **owner-approved**,
-and the [Decision G exact numerical contract](runtime-extensions-r0-decision-g-contract-20261021.md)
-are **owner-approved**. Decision G isolated MVS verification, broader
-per-executable ownership and the R.0 gate review remain open. [JOB 2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
+8-byte finalizer parameter block, A–H decisions and the
+[Decision G exact numerical contract](runtime-extensions-r0-decision-g-contract-20261021.md)
+are **owner-approved**. The 14-case count/size
+[Decision G JOB 2203 probe](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
+**PASSED** under MVS with all four steps RC=0000. The
+[formal R.0 gate review](runtime-extensions-r0-gate-review-20261021.md)
+found **remaining contract and evidence gaps**, so R.0 is **open**;
+R.1 has **not started**. [JOB 2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
 verified G!1 for a test application and 21 globals exported by the
 installed BLIB. The [installed-runtime JOB 2199 G!76 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
 **PASSED**: ASMA/ASMP/LKED/GO all RC=0000 and the actual GO marker
@@ -239,9 +243,12 @@ declared package requirements are rejected before `START`.
 A returned finalizer error produces a diagnostic and **RC=8 on
 ordinary FINISH**; `STOP(n)` retains n. The byte-level descriptors and 8-byte public finalizer ABI were
 **subsequently approved** in [A–H](runtime-extensions-r0-owner-abi-decisions.md).
-Numerical limits, diagnostic values and remaining evidence/tests are
-still R.0 tasks; real integration is unimplemented. This model is
-not implemented; the existing `BCPLMAIN` remains unchanged.
+Decision G's numerical limits and diagnostic values were subsequently
+**approved** and its isolated 14-case MVS count/size test **PASSED**
+(JOB 2203). Remaining contract/evidence tasks are listed in the
+[R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
+Real integration is unimplemented; existing `BCPLMAIN` remains
+unchanged.
 
 ## 7. March roadmap with explicit gates
 

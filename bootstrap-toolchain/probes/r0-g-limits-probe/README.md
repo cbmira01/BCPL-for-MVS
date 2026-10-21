@@ -3,7 +3,9 @@
 **March:** R.0 — Evidence and contract (open). **Decision G numeric
 limits and diagnostics: owner approved 21 October 2026.**
 [R.0 Decision G contract](../../../packaging/runtime-extensions-r0-decision-g-contract-20261021.md).
-**Status:** host tests passed; MVS IFOX/IEWL/GO not yet executed.
+**Status:** **MVS PASS, JOB 2203**, ASMC/ASMD/LKED/GO RC=0000;
+14 expected GO markers verified; 14 host tests PASS. See the
+[actual MVS evidence](../../../packaging/runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md).
 **R.1:** Generic registration foundation not started.
 
 Two layers of deliberately isolated evidence:
@@ -49,10 +51,10 @@ python3 -B "$probe/make-job.py" --check
 bash -n "$probe/run.sh"
 ```
 
-Expected MVS job **R0GLIMIT**: ASMC/ASMD IFOX RC=0000, LKED IEWL
-RC=0000, GO RC=0000, and 14 exact `R0 Gnn ... PASS` lines from actual
-GO output. **These are expectations, not observations** until the job
-runs. Do not commit password-bearing JCL or full JES printer output.
+The **actual** MVS `R0GLIMIT` JOB 2203 completed: ASMC/ASMD IFOX
+RC=0000, LKED IEWL RC=0000, GO RC=0000, with 14 exact
+`R0 Gnn ... PASS` markers verified in the GO report.
+Do not commit password-bearing JCL or full JES printer output.
 
 ### Acceptance boundaries
 

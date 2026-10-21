@@ -54,7 +54,11 @@ select the revised 28-byte `BCRG`, 48-byte `BCEX` and 8-byte public
 finalizer block. [Decision G's exact v1 limits/diagnostics](runtime-extensions-r0-decision-g-contract-20261021.md)
 were approved 21 October 2026. The
 [isolated G boundary probe](../bootstrap-toolchain/probes/r0-g-limits-probe/README.md)
-has passed host checks; MVS execution and the R.0 gate remain open.
+**passed MVS JOB 2203**, including 14 verified GO markers and
+four RC=0000 steps. See the
+[Decision G MVS evidence](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
+and [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
+**R.0 remains open; R.1 has not started.**
 The [R.0 three-question review](runtime-extensions-r0-three-design-questions-review-20261020.md)
 and [source-derived native owner ledger](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
 examine bounded descriptors, dependencies and historical global
