@@ -27,8 +27,13 @@ identify remaining R.0 gates. The 28-byte registry, 48-byte descriptor,
 [Decision G exact numerical contract](runtime-extensions-r0-decision-g-contract-20261021.md)
 are **owner-approved**. The 14-case count/size
 [Decision G JOB 2203 probe](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
-**PASSED** under MVS with all four steps RC=0000. The
-[formal R.0 gate review](runtime-extensions-r0-gate-review-20261021.md)
+**PASSED** under MVS with all four steps RC=0000. The approved
+[shared QUERY ABI](runtime-extensions-r0-query-abi-decision-20261021.md)
+also now has [two-dispatcher MVS JOB 2206 evidence](runtime-extensions-r0-query-job-2206-evidence-20261021.md):
+ASMA/ASMB/ASMC/LKED/GO all RC=0000, ten host tests passed, and
+the BCPL actual GO marker verified. This completes the **isolated
+R.0 shared QUERY/client test**, not `BCPLREG` or production `BCEX`
+validation. The [formal R.0 gate review](runtime-extensions-r0-gate-review-20261021.md)
 found **remaining contract and evidence gaps**, so R.0 is **open**;
 R.1 has **not started**. [JOB 2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
 verified G!1 for a test application and 21 globals exported by the

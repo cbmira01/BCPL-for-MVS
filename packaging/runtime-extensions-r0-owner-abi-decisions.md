@@ -8,8 +8,10 @@ It supersedes incompatible *design proposals*, not observed test evidence.
 The approval does **not** declare R.0 closed, install a registrar, accept
 MVS objects, or authorize production implementation.
 The separate [shared QUERY v1 contract](runtime-extensions-r0-query-abi-decision-20261021.md)
-was approved by the owner on 21 October 2026; its generic two-dispatcher
-MVS test remains pending and is not part of the earlier A–H approval.
+was approved by the owner on 21 October 2026. Its separate
+two-dispatcher **JOB 2206 MVS test PASSED**; see the
+[evidence record](runtime-extensions-r0-query-job-2206-evidence-20261021.md). It is not part of the earlier
+A–H approval, and it does not implement `BCPLREG` or close R.0.
 
 The approved design uses MVS/System/370 **byte addresses** in linked
 assembler structures, not BCPL word pointers. Identifiers are

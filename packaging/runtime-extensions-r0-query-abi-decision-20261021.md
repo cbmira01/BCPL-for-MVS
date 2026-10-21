@@ -93,7 +93,7 @@ package-specific non-QUERY opcodes own their own arguments and status
 semantics; this contract does not impose an ordinary-operation result
 vector on every package.
 
-## Evidence, scope and outstanding test
+## Evidence, scope and verified isolated test
 
 [Q.0 JOB 2157](qsam-q0-dispatcher-abi-evidence-20261019.md)
 **passed** test-only native G!200 caller/dispatcher linkage, R7/R8/R9
@@ -105,13 +105,17 @@ or extended descriptors.
 
 The [R.0 isolated shared QUERY probe](../bootstrap-toolchain/probes/r0-query-probe/README.md)
 adds two separately assembled test dispatchers, a native BCPL caller,
-short-buffer sentinels and an eight-word descriptor. **Local offline
-checks passed; an actual MVS execution has not yet been observed.**
+short-buffer sentinels and an eight-word descriptor. **The isolated
+test PASSED in actual MVS JOB 2206**, with 10 host tests passing and
+ASMA/ASMB/ASMC/LKED/GO each RC=0000. The separate report verifier
+confirmed the actual BCPL `R0 QUERY TWO DISPATCHERS PASS` output.
+See the [JOB 2206 evidence](runtime-extensions-r0-query-job-2206-evidence-20261021.md).
 The probe's **G!298/G!299 are local fixture bindings**, not Global
 Number Registry assignments, and it does not implement BCPLQSAM,
 BCPLTIME, BCPLDEC, or the `BCPLREG` registrar. IEWL resolves their
-addresses in the temporary test load module. MVS test results must be
-recorded separately before being claimed verified.
+addresses in the temporary test load module. This is **not** proof
+of linked `BCEX` version consistency or production registration.
+The independently inspected IEWL MAP/XREF was not provided.
 
 **R.0 remains open; R.1 has not started.** The remaining gate items
 are listed in the [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).

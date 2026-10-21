@@ -3,10 +3,14 @@
 **Review date:** 21 October 2026.
 **March under review:** **R.0 — Evidence and contract**.
 **Next march:** **R.1 — Generic registration foundation** (**not started**).
-**Gate disposition:** **NOT READY TO CLOSE R.0**. The shared QUERY contract was subsequently [owner-approved](runtime-extensions-r0-query-abi-decision-20261021.md) on 21 October; its two-dispatcher MVS verification remains pending. This review retains its original open-item descriptions as the historical gate snapshot. Record the validated
-contracts and completed isolated tests, but keep the specific remaining
-R.0 evidence/decisions below open. No approval to change accepted runtime
-objects follows from this review.
+**Gate disposition:** **NOT READY TO CLOSE R.0**. The shared QUERY
+contract was [owner-approved](runtime-extensions-r0-query-abi-decision-20261021.md);
+its isolated two-dispatcher native client test subsequently **PASSED
+as JOB 2206**. See [verified JOB 2206 evidence](runtime-extensions-r0-query-job-2206-evidence-20261021.md).
+The common QUERY ABI/client gate is **complete within the isolated R.0
+scope**; the remaining provenance, ownership, actual-owner collision
+and negative-validation obligations stay open. No permission to change
+accepted runtime objects follows from this review.
 
 **Authority:** [Milestone Runtime Extensions](milestone-runtime-extensions.md),
 [official nomenclature](runtime-and-library-nomenclature.md),
@@ -29,6 +33,7 @@ belong in R.1 and subsequent marches**, not in this review.
 | Application and installed BLIB exports | **JOB 2197**, one application G!1 and exactly 21 relocated installed BLIB exports, no overlap between the two; link MAP examined | One small application, not a compiler-load ownership census |
 | Historical G!76 | **JOB 2199**, real installed Core Runtime START compared BLIB's relocated WRITEF address with runtime G!76, RC=0000 and actual PASS marker | BLIB-present branch only; absent-BLIB WRITEST fallback not exercised |
 | Decision G | Owner-approved N/M=32, K=8, D=16, BCRG/BCEX maxima 540/368 bytes, diagnostic IDs 1001–1014/2001, proposed startup RC=12 | **JOB 2203** verified 14 numerical count/size scenarios; host tests cover more fields, not live registrar |
+| Shared opcode-0 QUERY | Six-word prefix and -1/-2/-3 rules owner-approved; **JOB 2206** five steps RC=0000, ten host tests, two independently assembled dispatchers and actual GO marker | Test-local G!298/G!299 export bindings, not `BCPLREG` or matching production `BCEX` descriptors |
 | Installed binary inventory | **JOB 2200**, `BOOT_OBJ` FB80 PDS lists BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT, BCPLIO, BLIB | A PDS directory listing does not prove member bytes or build date |
 | Source rebuild lineage | [17 October clean-room acceptance](clean-room-mvs-reconstruction-acceptance-2026-10-17.md), baseline `04c74af8`, BLDBMAIN JOB 8744 and BLIBBLD JOB 8748; 145 production regression PASS | Does not establish byte identity of today's installed objects |
 
@@ -48,13 +53,13 @@ RC=12 on real startup rejection remains an approved **future** policy.
 
 ## Remaining R.0 gate items (require explicit disposition)
 
-1. **Shared opcode-0 QUERY contract and client verification.**
-   The milestone still calls its six-word shared capability layout and
-   return/error semantics **provisional**. QSAM Q.0 **JOB 2157**
-   exercised a six-word test-only QUERY over G!200, but did not accept
-   the generic cross-package contract. Decide the shared signature,
-   size/prefix behavior, version/bitmap/error rules and demonstrate a
-   generic caller/test without claiming BCPLQSAM implementation.
+1. **Shared opcode-0 QUERY contract and isolated client verification —
+   COMPLETE for R.0.** The
+   [approved ABI](runtime-extensions-r0-query-abi-decision-20261021.md)
+   fixes the six-word prefix, append-only size rules, version/bitmap
+   semantics and errors. The [JOB 2206 two-dispatcher experiment](runtime-extensions-r0-query-job-2206-evidence-20261021.md)
+   **PASSED** under actual MVS. Production `BCEX` matching, optional
+   startup registration and BCPLQSAM remain outside this isolated test.
 2. **Trusted build/link evidence for descriptor extents and deployed
    objects.** Require reproducible trusted begin/end and code-address
    provenance/MAP evidence under Decision A. Reconcile the 17 October
@@ -107,8 +112,11 @@ RC=12 on real startup rejection remains an approved **future** policy.
 
 **Decision G: approved and isolated boundary evidence PASSED
 (JOB 2203).** R.0 has made substantial, repeatable progress,
-but its specified ABI/ownership/QUERY evidence and scope review
-are **not yet complete**. **Keep R.0 open; do not start R.1 or change
+and JOB 2206 verified the approved shared QUERY ABI using two
+independent test dispatchers. The R.0 QUERY/client gate is complete,
+but provenance, effective ownership, actual-owner collision rejection,
+remaining negative validations and the final owner gate decision
+remain outstanding. **Keep R.0 open; do not start R.1 or change
 accepted `BOOT_OBJ` objects.** Avoid inventing new milestone
 or march numbers. GitHub is the source of the contract and evidence,
 and credential-bearing JCL/full JES dumps remain in ignored

@@ -2,8 +2,10 @@
 
 **March:** R.0 — Evidence and contract (**open**).
 **Contract:** [Owner-approved shared `QUERY` ABI](../../../packaging/runtime-extensions-r0-query-abi-decision-20261021.md)
-(21 October 2026). **Status: offline tests passed; MVS execution
-pending.** R.1 — Generic registration foundation has not started.
+(21 October 2026). **Status: PASS under actual MVS — JOB 2206**,
+five steps RC=0000, ten host tests PASS and the exact BCPL GO
+marker verified. See [JOB 2206 evidence](../../../packaging/runtime-extensions-r0-query-job-2206-evidence-20261021.md).
+R.1 — Generic registration foundation has not started.
 
 The probe demonstrates the shared version-1 `QUERY` ABI over **two
 independently assembled test-only native dispatcher objects** called
@@ -51,10 +53,11 @@ The runner first executes host unit tests and a synthetic generator
 check, then compiles the BCPL client, checks the real generated-source
 JCL, and writes an authenticated deck under
 `workarea/runtime-extensions-r0-query/r0-query.jcl` (private mode
-0600). The MVS job name is **R0QUERY**. Expected steps: **ASMA**
+0600). The MVS job name is **R0QUERY**. In **actual JOB 2206**, **ASMA**
 (BCPL-generated application), **ASMB** (dispatcher A), **ASMC**
-(dispatcher B), **LKED** and **GO**, each expected RC=0000. A separate
-compiler job may run first. Expected verified GO output:
+(dispatcher B), **LKED** and **GO** each returned RC=0000.
+The BCPL caller was compiled earlier in **JOB 2205**.
+The verified actual GO output:
 
 ```text
 R0 QUERY TWO DISPATCHERS PASS
@@ -88,7 +91,8 @@ now decodes and checks **actual export pairs**, instead of counting
 literal appearances. A regression test covers the G!299 = 1196
 maximum. The owner-supplied JOB 2204 generated-source excerpt
 was checked locally and generated 715 synthetic JCL cards after the
-fix, without credentials. **No R0QUERY MVS GO result exists yet**.
+fix, without credentials. That was the earlier failed host preparation
+attempt; the subsequent **R0QUERY JOB 2206 passed**.
 
 ## Evidence boundary
 
@@ -98,7 +102,8 @@ full register-preservation verification, or implementation of QSAM,
 TIME or DEC. It tests two known synthetic packages through direct
 *test-only* CG370 trailer entries, not absent-module discovery.
 An eight-word descriptor preserves the approved six-word prefix but
-is not itself a public appended-field allocation. A successful MVS
-result will verify the **specific exercised native caller/dispatcher
-behaviors only**; record observed job numbers and link map separately.
+is not itself a public appended-field allocation. JOB 2206 verifies
+**only the exercised native caller/dispatcher behaviors**. Full
+`BCEX` version consistency and actual registrar integration remain
+unverified. The complete IEWL MAP/XREF was not supplied here.
 The R.0 gate review still has other open items, and R.1 has not started.

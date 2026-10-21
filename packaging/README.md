@@ -58,7 +58,7 @@ were approved 21 October 2026. The
 four RC=0000 steps. See the
 [Decision G MVS evidence](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
 and [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
-**R.0 remains open; R.1 has not started.** The [shared version-1 QUERY ABI](runtime-extensions-r0-query-abi-decision-20261021.md) was separately **owner-approved** on 21 October 2026, with six-word prefix, three standard errors and no partial copies. The [two-dispatcher QUERY probe](../bootstrap-toolchain/probes/r0-query-probe/README.md) has passed offline checks; its MVS execution is pending.
+**R.0 remains open; R.1 has not started.** The [shared version-1 QUERY ABI](runtime-extensions-r0-query-abi-decision-20261021.md) was separately **owner-approved** on 21 October 2026, with six-word prefix, three standard errors and no partial copies. The [two-dispatcher QUERY probe](../bootstrap-toolchain/probes/r0-query-probe/README.md) **PASSED actual MVS JOB 2206**: all five steps RC=0000, ten host tests, and the verified BCPL GO marker. See [JOB 2206 evidence](runtime-extensions-r0-query-job-2206-evidence-20261021.md). The [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) retains the remaining open obligations.
 The [R.0 three-question review](runtime-extensions-r0-three-design-questions-review-20261020.md)
 and [source-derived native owner ledger](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
 examine bounded descriptors, dependencies and historical global
