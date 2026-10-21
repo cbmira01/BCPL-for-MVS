@@ -27,10 +27,11 @@ identify remaining R.0 gates. The 28-byte registry, 48-byte descriptor,
 but numerical maxima/diagnostics, broader per-executable ownership
 and the gate review remain open. [JOB 2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
 verified G!1 for a test application and 21 globals exported by the
-installed BLIB; G!76 precedence needs actual-runtime verification.
-The [test-only G!76 probe](../bootstrap-toolchain/probes/r0-g76-precedence-probe/README.md)
-is prepared, with MVS testing pending. Real BCPLMAIN/finalizer integration is
-**unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+installed BLIB. The [installed-runtime JOB 2199 G!76 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
+**PASSED**: ASMA/ASMP/LKED/GO all RC=0000 and the actual GO marker
+confirms the **BLIB-present** WRITEF precedence rule. The BLIB-absent
+fallback and exact object-build provenance remain unverified. Real
+BCPLMAIN/finalizer integration is **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose
 

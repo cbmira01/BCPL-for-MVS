@@ -1,8 +1,8 @@
 # Milestone Runtime Extensions — R.0 application/BLIB/Core Runtime ownership audit
 
 **Date:** 21 October 2026. **March:** R.0 — Evidence and contract (open).
-**Scope:** Git-source inventory combined with the **actual linked
-application and installed BLIB export evidence** from JOB 2197.
+**Scope:** Git-source inventory plus actual application/BLIB exported
+slots from JOB 2197 and installed-runtime G!76 precedence from JOB 2199.
 This is still **not** a complete effective owner ledger, approved
 slot-waiver implementation, or executable package registrar.
 
@@ -26,8 +26,11 @@ source-derived candidate into measured executable evidence.
 verified the relocated exports of a sample application (**G!1**) and
 installed `BOOT_OBJ(BLIB)` (**21 globals**). No application/BLIB
 collision was observed. BLIB's only overlap with source-derived
-Core Runtime direct stores is **G!76**. The probe did not execute
-`BCPLMAIN`, so conditional WRITEF precedence still needs a runtime test.
+Core Runtime direct stores is **G!76**. JOB 2197 did not execute
+`BCPLMAIN`; a subsequent [actual-runtime JOB 2199
+probe](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
+**PASSED** and established the BLIB-present G!76 precedence at START.
+The BLIB-absent fallback remains untested.
 
 ## Current actual startup writer order
 
@@ -102,7 +105,7 @@ G1–G99 reconciliation remains the per-slot historical table.
 | 23–29 | Historical record I/O and time/date names | Do not silently repurpose for QSAM or clock extension |
 | 50, 73 | Historical unnamed/spare positions | Not freely assignable |
 | 57 | Commented OS/CMS marker in LIBHDR | Historical data slot, precise current representation unresolved |
-| 76 | BLIB WRITEF versus BCPLMAIN fallback | **One documented conditional precedence rule**; preserve and regression-test |
+| 76 | BLIB WRITEF versus BCPLMAIN fallback | **BLIB-present precedence passed JOB 2199**; BLIB-absent fallback remains untested; no general waiver |
 | 94 | Historical LIBHDR assigns both OPENBLOCKFILE and UPDATEBLOCKFILE | Ambiguous **header alias**, not proof of two linked writers |
 | 150 | BCPLMAIN DEBUGINT versus full Cambridge compiler FORMTREE use | Known cross-component conflict, not an available extension slot |
 | 200, 201, 202 | Officially allocated BCPLQSAM, BCPLTIME, BCPLDEC dispatchers | **Reserved for those owners**; not installed by allocation |
@@ -124,9 +127,9 @@ consulted for every real application or compiler load.
    and the official System Extension allocation table.
 3. Record **every actual duplicate** as `historical/verified
    precedence` (with listing, exact winner and regression) or
-   `unresolved`. The current **G!76 fallback** is a verified
-   *source rule* but still needs explicit installed BLIB/export
-   regression proof for its production waiver.
+   `unresolved`. **BLIB-present G!76 precedence** is verified by
+   JOB 2199 and is the narrow historical exception; this is not a
+   general override waiver. The BLIB-absent fallback is still open.
 4. For selected optional packages, require matching registered
    owner for each slot, no two selected owners, no duplicate within
    a package, and no collision with application/BLIB/core (including
@@ -145,8 +148,9 @@ consulted for every real application or compiler load.
   overlaps. Larger applications and compiler programs still need their
   own per-executable ledger. Installed BLIB object-build provenance
   remains an explicit evidence gap.
-- Reconcile possible other runtime binding writers and confirmed
-  historical exceptions; test unchanged G!76 behavior.
+- **Completed (BLIB-present path only):** JOB 2199 verified that the
+  installed runtime's G!76 matches the installed BLIB export at START.
+  Still review the BLIB-absent fallback and possible indirect writers.
 - Demonstrate a selected extension's attempted G!N collision with
   an **actual** application/BLIB/native writer, rejecting before
   START and publishing **no** optional entry.
@@ -161,6 +165,7 @@ audit or demonstrate transactional installation in BCPLMAIN.
 **Finding:** JOB 2197 establishes actual application/installed-BLIB
 export ownership **for the linked sample only**. G!76 is the only
 observed BLIB versus source-derived native direct-store overlap.
-The complete effective load-module ledger and historical precedence
-behavior remain unverified until those runtime tests and object
-provenance are reviewed. R.0 stays open.
+BLIB-present historical G!76 precedence is **verified in JOB 2199**.
+The complete effective ownership ledger, BLIB-absent fallback,
+other indirect owners, and installed object provenance remain
+unverified. R.0 stays open.

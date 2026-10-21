@@ -72,8 +72,8 @@ particular source revision.
 
 - The observer deliberately does **not run `BCPLMAIN`**, so a BLIB G!76
   export is **not itself a test** that the Core Runtime preserves WRITEF.
-  The next [separate G!76 precedence probe](../bootstrap-toolchain/probes/r0-g76-precedence-probe/README.md)
-  tests that condition using the actual installed runtime at START.
+  The later [G!76 installed-runtime JOB 2199 probe](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
+  **PASSED** for the BLIB-present path under actual `BCPLMAIN` at START.
 - A one-export application does not establish noncollision for every
   application or compiler program; dynamic ownership is per executable.
 - The full runtime effective ownership ledger still needs any indirect

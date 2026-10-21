@@ -68,8 +68,11 @@ and [owner ABI review](runtime-extensions-r0-abi-decision-review-20261021.md)
 record the observed G!1 application and 21 BLIB exports with only a
 potential historical G!76 native overlap. The
 [test-only actual-runtime G!76 probe](../bootstrap-toolchain/probes/r0-g76-precedence-probe/README.md)
-is prepared but **not yet MVS-tested**. Production registration
-is **not implemented**.
+**passed in actual MVS JOB 2199** with four step RCs=0000;
+BLIB-present G!76 precedence is verified at START. See the
+[JOB 2199 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md).
+The BLIB-absent fallback and installed object provenance remain open;
+production registration is **not implemented**.
 The exact public finalizer ABI is **owner-approved**, not MVS-integrated.
 R is not a prerequisite for M4.
 
