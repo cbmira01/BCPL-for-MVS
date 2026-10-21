@@ -62,6 +62,28 @@ class SourceContract(unittest.TestCase):
         self.assertIn('L     1,RGDEPTR', span)
         self.assertIn('CLC   0(8,8),0(1)', span)
 
+    def test_local_symbols_not_redeclared_extern(self):
+        # IFOX diagnoses IFO196 when a symbol defined in an earlier
+        # CSECT is declared EXTRN in the same assembly (JOB 2224).
+        src = (ASM / 'bcplrgs.asm').read_text('ascii')
+        definitions = set()
+        externals = set()
+        for line in src.splitlines():
+            if not line or line.startswith('*'):
+                continue
+            fields = line.split()
+            if not fields:
+                continue
+            if not line[0].isspace() and len(fields) >= 2:
+                definitions.add(fields[0])
+            elif fields[0] == 'EXTRN' and len(fields) >= 2:
+                externals.update(fields[1].split(','))
+        self.assertEqual(definitions & externals, set())
+        self.assertIn('REGCOUNT', definitions)
+        self.assertIn('REGFINTB', definitions)
+        self.assertNotIn('REGCOUNT', externals)
+        self.assertNotIn('REGFINTB', externals)
+
     def test_core_patch_anchors_and_effects(self):
         patcher = load('r1_patchcheck',ROOT/'tools/checks/r1_prepare_candidate.py')
         baseline = '''         EXTRN BLIB

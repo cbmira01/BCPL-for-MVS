@@ -454,7 +454,7 @@ REGFINTB DS    32F
 ***********************************************************************
 RGFINI   CSECT
          ENTRY RGFINI
-         EXTRN REGCOUNT,REGFINTB
+* REGCOUNT/REGFINTB ARE DEFINED IN THE EARLIER RGINIT CSECT.
          STM   14,12,12(13)
          LR    12,15
          USING RGFINI,12
