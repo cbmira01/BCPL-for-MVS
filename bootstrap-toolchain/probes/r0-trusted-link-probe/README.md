@@ -3,9 +3,12 @@
 **March:** **R.0 — Evidence and contract (open)**.
 **Purpose:** Gather isolated, read-only build/link evidence for the
 owner-approved **Decision A — Trusted extents**.
-**Status:** Source and dry-run host checks prepared. **MVS executions
-not yet observed**. **R.1 — Generic registration foundation has not
-started**. Do not treat the probe as a production registrar.
+**Status:** **actual MVS PASS: JOBs 2207–2216** (ten fixture
+profiles; each six steps RC=0000 and exact QOUT verified). The
+[stage-1 MVS evidence](../../../packaging/runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
+includes the examined JOB 2207 IEWL MAP/XREF; nine other full maps
+and literal SHA-256 manifest values were not supplied.
+**R.1 — Generic registration foundation has not started**. Do not treat the probe as a production registrar.
 
 ## What is linked
 
@@ -122,7 +125,8 @@ The test's pre-submit source-owner guard deliberately rejects a wrong
 CSECT, missing definition or duplicate declaration. **Neither it nor
 IEWL alone proves an arbitrary pointer is safe, validates hostile
 objects, or establishes an installed `BOOT_OBJ` member's build identity.**
-Actual installed-object byte identity is a separate **second stage**:
-first agree on a binary-safe MVS record comparison method, then rebuild
-to temporary storage and compare without replacing accepted members.
-This probe does not undertake that stage.
+Actual installed-object byte identity is a separate **second stage**.
+The [stage-2 design review](../../../packaging/runtime-extensions-r0-decision-a-stage2-design-20261021.md)
+recommends calibrating IEBCOMPR on temporary FB/80 objects before
+a read-only comparison with a freshly assembled `BCPLMEM`.
+That method is not yet approved or run; this probe does not undertake it.

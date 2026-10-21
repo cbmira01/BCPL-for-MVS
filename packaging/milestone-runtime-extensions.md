@@ -42,9 +42,12 @@ installed BLIB. The [installed-runtime JOB 2199 G!76 evidence](runtime-extension
 confirms the **BLIB-present** WRITEF precedence rule. The BLIB-absent
 fallback and exact object-build provenance remain unverified. The
 [approved Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
-is prepared: 11 host tests and ten 263-card JCL dry-runs passed;
-**actual MVS/IEWL MAP/XREF verification remains pending**. No
-accepted objects are modified. Real BCPLMAIN/finalizer integration
+**PASSED actual MVS JOBs 2207–2216**: ten expected QOUT
+markers and all six IFOX/IEWL/GO steps RC=0000 per job,
+with JOB 2207 MAP/XREF independently inspected.
+See the [stage-1 evidence](runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
+and the separate [stage-2 read-only object comparison proposal](runtime-extensions-r0-decision-a-stage2-design-20261021.md).
+No accepted objects were modified. Real BCPLMAIN/finalizer integration
 is **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
 
 ## 1. Purpose

@@ -67,10 +67,16 @@ RC=12 on real startup rejection remains an approved **future** policy.
    before asserting the current installed members' exact source revision.
    Do not mistake JOB 2200 inventory or JOB 2197 relocation for a
    binary hash. The [approved stage-1 trusted-link probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
-   has passed host tests and JCL checks; it still **requires actual
-   MVS execution, IEWL MAP/XREF inspection, and recorded source-hash
-   matches**. Installed `BOOT_OBJ` byte identity is a **separate
-   stage-2 comparison**, not accomplished here.
+   **PASSED ten actual MVS jobs (2207–2216)**; the
+   [stage-1 evidence](runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
+   includes reviewed JOB 2207 IEWL MAP/XREF, all step results
+   and exact QOUT verification. The host rendered-source SHA-256
+   manifest values were not supplied, and the remaining nine
+   full IEWL MAP listings were not independently reviewed.
+   Installed `BOOT_OBJ` byte identity remains open; its
+   [stage-2 review](runtime-extensions-r0-decision-a-stage2-design-20261021.md)
+   recommends a calibrated **read-only** object-deck comparison,
+   with the exact method still awaiting owner approval.
 3. **Effective global ownership scope.** Extend the per-executable
    ownership method beyond JOB 2197's single START application,
    review possible indirect Core Runtime writers and compiler
@@ -86,12 +92,13 @@ RC=12 on real startup rejection remains an approved **future** policy.
    the actual integrated registrar and transactional writes are
    explicitly **R.1 implementation and acceptance**.
 5. **Remaining negative validation and diagnostic coverage.**
-   JOB 2203 establishes the **1003/1006 count envelope**, not
-   all IDs. Document the expected validation order and produce
-   separately bounded evidence for wrong extents, corrupt lengths,
-   invalid nonzero finalizer targets, overflow, and identifier or
-   dependency faults to the extent feasible without modifying
-   accepted code. Document what must wait for integrated R.1.
+   JOB 2203 establishes the **1003/1006 count envelope**.
+   JOBs 2207–2216 now verify isolated fixture rejection of
+   1001–1006 (selected header/extent/length conditions) and
+   1013 (a wrong-but-linked finalizer target), **not all variants
+   or the production registrar**. Identity, dependency, collision,
+   overflow and runtime pointer provenance checks still need
+   bounded disposition; record what must wait for integrated R.1.
 6. **R.0 gate decision and scope of deferral.** After items above,
    obtain an explicit owner acceptance of the documented R.0
    evidence and any precise deferrals. A contract may be accepted
@@ -117,7 +124,9 @@ RC=12 on real startup rejection remains an approved **future** policy.
 **Decision G: approved and isolated boundary evidence PASSED
 (JOB 2203).** R.0 has made substantial, repeatable progress,
 and JOB 2206 verified the approved shared QUERY ABI using two
-independent test dispatchers. The R.0 QUERY/client gate is complete,
+independent test dispatchers. JOBs 2207–2216 passed the isolated
+Decision A trusted-link panel; installed object identity remains
+separate. The R.0 QUERY/client gate is complete,
 but provenance, effective ownership, actual-owner collision rejection,
 remaining negative validations and the final owner gate decision
 remain outstanding. **Keep R.0 open; do not start R.1 or change
