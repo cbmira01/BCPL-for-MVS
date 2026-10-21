@@ -51,7 +51,10 @@ owner-approved shared `BCPLREG`/finalizer *model*. The
 is a **historical superseded proposal**, not an implemented layout.
 The [owner-approved R.0 decisions A–H](runtime-extensions-r0-owner-abi-decisions.md)
 select the revised 28-byte `BCRG`, 48-byte `BCEX` and 8-byte public
-finalizer block; exact G limits/diagnostics and the R.0 gate remain open.
+finalizer block. [Decision G's exact v1 limits/diagnostics](runtime-extensions-r0-decision-g-contract-20261021.md)
+were approved 21 October 2026. The
+[isolated G boundary probe](../bootstrap-toolchain/probes/r0-g-limits-probe/README.md)
+has passed host checks; MVS execution and the R.0 gate remain open.
 The [R.0 three-question review](runtime-extensions-r0-three-design-questions-review-20261020.md)
 and [source-derived native owner ledger](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
 examine bounded descriptors, dependencies and historical global

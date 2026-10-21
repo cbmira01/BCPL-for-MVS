@@ -151,12 +151,14 @@ for why a complete actual-export ledger is still pending.
 | **D** — Dependency/lifecycle | **Approved** — app/package requirements, transitive preflight, dependency-first, lazy, reverse finalization | Real finalizer lifecycle integration is R.1 |
 | **E** — Global ownership/collision | **Approved** — Global Number Registry authority, effective ledger, no new optional overwrites, transactional validation | Decode actual app/BLIB trailers and verify historic precedence |
 | **F** — Finalizer ABI | **Approved** — 8-byte public block and MVS linkage; JOB 2195 extras private | Verify real `BCPLMAIN` bridge in R.1 |
-| **G** — Defensive limits/diagnostics | **Approved in principle** | **Exact maxima and diagnostic codes still require R.0 selection/verification** |
+| **G** — Defensive limits/diagnostics | **Exact values subsequently owner-approved 21 October** | [Numerical contract](runtime-extensions-r0-decision-g-contract-20261021.md): N/M=32, K=8, D=16, ID 1001–1014/2001; MVS boundary validation pending |
 | **H** — Startup integration boundary | **Approved** — one generic `BCPLMAIN` adaptation, before-`START` validation, finalization before IOFIN/MEMDRAIN | Production implementation in R.1; current core unchanged |
 
 **R.0 remains open.** Owner approvals A–H are recorded, but exact
-G maxima/diagnostics, actual app/BLIB export and legacy-overlap evidence,
-and the R.0 gate review remain. Approval is not implementation.
+Decision G **MVS verification** (its numeric values are approved),
+remaining ownership/provenance evidence and the R.0 gate review remain.
+JOBs 2197 and 2199 have since verified one linked application's actual
+BLIB exports and BLIB-present G!76 precedence respectively. Approval is not implementation.
 Actual integrated registration/finalizer code and demonstrations
 belong to **R.1 — Generic registration foundation** and later
 marches, not to this documentation package.
