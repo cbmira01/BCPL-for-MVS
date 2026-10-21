@@ -1,7 +1,8 @@
 # Milestone Runtime Extensions — R.1 candidate
 
-**Status:** Development candidate on GitHub main. Not assembled, linked, or
-executed under MVS. It does not modify accepted BOOT_OBJ objects.
+**Status:** R.1 development candidate. Positive MVS jobs 2226 (empty) and
+2228 (selected) PASSED on 22 October 2026. Integrated negative tests
+remain unexecuted. Accepted BOOT_OBJ objects are unchanged.
 
 The owner closed R.0, began R.1, and approved separation of the generic
 assembler registrar from the application-specific BCPLREG table and the
@@ -12,7 +13,7 @@ single BCPLMAIN integration on 21 October 2026.
 Run from the repository root:
 
 ```sh
-python3 -m unittest discover -s tools/checks -p test_r1_source.py -v
+python3 -m unittest discover -s tools/checks -p 'test_r1*.py' -v
 python3 tools/checks/r1_prepare_candidate.py --check
 python3 bootstrap-toolchain/probes/r1-registration/make-jobs.py empty --check
 python3 bootstrap-toolchain/probes/r1-registration/make-jobs.py selected --check
@@ -76,7 +77,11 @@ All candidate objects and the load module are temporary. The generator
 reads BOOT_OBJ but does not update it. G!298 is test-local only; G!200
 remains allocated to BCPLQSAM.
 
-The next R.1 tasks are integrated negative tests, effective-owner ledger,
-source-trusted callable address checks, live finalizer coverage and
-the existing native regression panel. R.2 and R.3 retain their official
-march names and scope.
+The [15-case integrated negative harness](NEGATIVE-TESTS.md) is now
+available for host validation and subsequent MVS testing. Positive-path
+evidence is recorded in the [JOBs 2226 and 2228 record](../../../packaging/runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
+
+Remaining R.1 obligations include **executing** the integrated negatives,
+effective-owner ledger, source-trusted callable address checks,
+reverse-order and STOP(n) finalizers, and native regression. R.2 and
+R.3 retain their official march names and scope.

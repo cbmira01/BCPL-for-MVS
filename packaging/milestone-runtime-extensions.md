@@ -2,7 +2,14 @@
 
 **Status (owner decision, 21 October 2026):** **R.0 — Evidence and contract CLOSED.** **R.1 — Generic registration foundation ACTIVE.** R.2 remains Selective interoperability; R.3 remains Packaging and acceptance.
 
-R.0 adopted ABI Decisions A–H and the approved shared QUERY contract. Its isolated jobs are evidence for their stated test scope only. R.1 must still prove integrated pre-START validation, actual owner checks, transactional publication, finalizer ordering and error behavior, and the native regression baseline. The G!150 FORMTREE/DEBUGINT compatibility issue remains separate and unresolved. No BOOT_OBJ object promotion is authorized by this disposition. See the [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) for its historical evidence assessment and the superseding owner-disposition notice.
+R.0 adopted ABI Decisions A–H and the approved shared QUERY contract. Its isolated jobs are evidence for their stated test scope only. R.1 must still prove integrated pre-START validation, actual owner checks, transactional publication, finalizer ordering and error behavior, and the native regression baseline. The G!150 FORMTREE/DEBUGINT compatibility issue remains separate and unresolved. **R.1 positive-path update (22 October 2026):** MVS JOB 2226
+(empty BCPLREG) and JOB 2228 (selected R1TEST dispatcher) both passed
+all IFOX, IEWL, and GO steps at RC=0000. See the
+[R.1 positive-path evidence](runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
+The 1001–1014/2001 integrated negative-test harness is prepared but
+not yet tested on MVS. Neither these positive runs nor host-generated
+negative fixtures close R.1. No BOOT_OBJ object promotion is
+authorized by this disposition. See the [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) for its historical evidence assessment and the superseding owner-disposition notice.
 
 ## 1. Purpose
 

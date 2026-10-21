@@ -33,23 +33,30 @@ def asm(source: str, desc: str, trail):
 
 
 def make_deck(profile: str, jobcard: list[str], generated: str,
-              source: str, obj_dsn: str) -> str:
+              source: str, obj_dsn: str, *, jobname_override=None,
+              registry_override=None, descriptor_override=None,
+              extra_asm=(), core_override=None) -> str:
     trail = load(BASE, 'r1_jcl_base')
     patcher = load(PATCHER, 'r1_jcl_patcher')
     selected = profile == 'selected'
-    jobname = 'R1SELECT' if selected else 'R1EMPTY'
+    jobname = jobname_override or ('R1SELECT' if selected else 'R1EMPTY')
     if not jobcard or jobcard[0].split()[:2] != [f'//{jobname}', 'JOB']:
         raise ValueError('wrong authenticated job-card identity')
     inputs = [
         ('ASMA', 'R1AOBJ', trail.application_source(generated)),
-        ('ASMN', 'R1NOBJ', asm(patcher.adapt(source), 'BCPLMAIN', trail)),
+        ('ASMN', 'R1NOBJ', asm(core_override or patcher.adapt(source), 'BCPLMAIN', trail)),
         ('ASMR', 'R1ROBJ', asm((ROOT / 'bootstrap-toolchain/asm/bcplrgs.asm').read_text('ascii'), 'registrar', trail)),
-        ('ASMG', 'R1GOBJ', asm((HERE / ('selected-registry.asm' if selected else '../../asm/bcplreg-empty.asm')).resolve().read_text('ascii'), 'BCPLREG', trail)),
+        ('ASMG', 'R1GOBJ', asm(registry_override or (HERE / ('selected-registry.asm' if selected else '../../asm/bcplreg-empty.asm')).resolve().read_text('ascii'), 'BCPLREG', trail)),
     ]
     if selected:
         for step, obj, name in [('ASMD','R1DOBJ','descriptor.asm'),
                                 ('ASMS','R1SOBJ','dispatcher.asm')]:
-            inputs.append((step,obj,asm((HERE / name).read_text('ascii'),name,trail)))
+            inputs.append((step,obj,asm(
+                descriptor_override if name == 'descriptor.asm'
+                and descriptor_override is not None else
+                (HERE / name).read_text('ascii'), name, trail)))
+    for step, obj, source_asm in extra_asm:
+        inputs.append((step, obj, asm(source_asm, step, trail)))
     cards = [*jobcard, f'//* R.1 {profile.upper()} BCPLREG CANDIDATE',
              '//* ALL TEST OBJECTS TEMPORARY; BOOT_OBJ READ ONLY']
     for step, obj, rows in inputs:

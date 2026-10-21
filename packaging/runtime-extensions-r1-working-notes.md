@@ -3,7 +3,8 @@
 **Owner disposition, 21 October 2026:** R.0 closed; R.1 Generic
 registration foundation active. The owner approved a separate generic
 assembler registrar and application-specific BCPLREG table, integrated
-through BCPLMAIN. This record does not assert MVS execution success.
+through BCPLMAIN. Positive MVS integration JOBs 2226 and 2228 passed, but the complete
+R.1 exit gate remains open.
 
 ## Candidate structure
 
@@ -40,11 +41,11 @@ compatibility problem. No historical FORMTREE assignment is altered.
 
 ## Evidence and acceptance
 
-Five host-only source-contract checks passed during preparation.
-No actual IFOX assembly, IEWL linkage, or GO execution is claimed.
-The two temporary MVS tests, integrated 1001–1014 and 2001 evidence,
+Seven host source-contract checks and two additional negative-harness
+tests passed at preparation. The positive MVS IFOX/IEWL/GO runs
+**JOBs 2226 and 2228 passed**. Integrated 1001–1014 and 2001 evidence,
 source-trusted address verification, reverse-order FINISH/STOP behavior,
-and full native regression must still be executed and reviewed.
+and full native regression still require MVS execution and review.
 
 No changes or promotion to accepted `BOOT_OBJ` are authorized by this
 candidate. Keep R.2 Selective interoperability and R.3 Packaging and
@@ -63,6 +64,11 @@ acceptance unchanged.
   The same save-area error existed in RGFINI; optional-export
   validation also used `L 2,0(0)` with R0 as a putative base.
 
-All three instructions are corrected in the next candidate. The new
-host test guards against register-zero storage-base operands. **A
-successful GO run remains required; no MVS success is asserted.**
+All three instructions were corrected before successful GO executions
+in JOBs 2226 and 2228. The host test guards against R0 storage bases.
+
+## Verified R.1 positive runs and integrated harness
+
+- [JOB 2226 and JOB 2228 positive evidence](runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
+- [R.1 integrated negative-test plan and harness](../bootstrap-toolchain/probes/r1-registration/NEGATIVE-TESTS.md): 1001–1014 and 2001 each require MVS evidence.
+- No accepted BOOT_OBJ promotion; R.1 remains ACTIVE.
