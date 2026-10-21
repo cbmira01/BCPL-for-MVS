@@ -44,7 +44,7 @@ G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design do
 | 57 | `LIBHDR`: OS/CMS marker comment | Historical data slot; representation unresolved |
 | 73 | `LIBHDR`: explicitly spare | Historical spare, do not silently allocate |
 | 94 | `LIBHDR`: `OPENBLOCKFILE` **and** `UPDATEBLOCKFILE` | **Duplicate historical assignment**; document, do not change evidence |
-| 150 | `DEBUGINT` in current bootstrap `BCPLMAIN`; `FORMTREE` compiler use described in `cambridge-compiler/asm/bcplmain.asm` | **Known cross-component conflict; unresolved** |
+| 150 | Bootstrap `BCPLMAIN` startup DEBUGINT conflicts with historical full Cambridge compiler `FORMTREE:150` in `cambridge-compiler/source/bcpl.bcpl` and `synhdr.bcpl` | **Known cross-component conflict; unresolved**; see [G!150 review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md) |
 | 699 | `HIGHMARK` in native regression 090 | Test-local assignment; not a permanent public package slot |
 
 Historical `LIBHDR` also declares `FIRSTFREEGLOBAL=150`. That is **not** a current vacancy guarantee. The Cambridge compiler's `CGHDR` uses compiler globals in the 100s and above; the reconstructed runtime has an existing G!150 diagnostic collision.

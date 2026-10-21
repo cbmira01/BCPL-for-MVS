@@ -1,8 +1,9 @@
 # Milestone Runtime Extensions — R.0 G!76 no-export fallback probe
 
 **March:** R.0 — Evidence and contract (**open**). Next march R.1 — Generic
-registration foundation (**not started**). **Status: host-tested, MVS
-execution pending.** Owner approved this specific isolated fixture on
+registration foundation (**not started**). **Status: actual MVS JOB 2220 PASS**, including IEWL
+MAP/XREF proof of the temporary BLIB owner. See the
+[accepted JOB 2220 evidence](../../../packaging/runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md). Owner approved this specific isolated fixture on
 21 October 2026 after the [effective ownership follow-up]
 (../../../packaging/runtime-extensions-r0-effective-owner-followup-20261021.md).
 
@@ -68,7 +69,7 @@ The script first runs unit tests and a synthetic JCL check. It then:
    GO output marker.
 4. Retains the full IEWL MAP/XREF for operator review.
 
-**Do not call it MVS PASS until the actual report is inspected.** In
+**JOB 2220 MVS PASS: the actual report and linker map were reviewed.** In
 particular, verify that `BLIB` is defined by `ASMB`'s *temporary*
 object, length `000018` (hex), has no exported G!76 global pair, and
 that the five included core CSECTs resolve from installed `BOOT_OBJ`.
@@ -94,7 +95,7 @@ engineering record after MVS execution.
 
 ## Interpretation limits
 
-This is an actual installed `BCPLMAIN` **branch test** if MVS passes,
+This is a verified installed `BCPLMAIN` **branch test**,
 not production registration or proof that a physically absent BLIB
 can link. It does not resolve G!150 (`DEBUGINT`/`FORMTREE`) or
 prove collision transactionality. The accepted `BOOT_OBJ` remains

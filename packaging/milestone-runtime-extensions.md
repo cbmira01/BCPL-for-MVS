@@ -47,7 +47,11 @@ now records the owner's approval of a temporary linked BLIB
 with **no G!76 export** as a bounded branch test. The [test-only
 probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
 has passed 18 host tests and synthetic 82-card JCL checks;
-**no MVS result has yet been observed**. The
+**MVS JOB 2220 PASSED** (ASMA/ASMB/LKED/GO RC=0000,
+   actual formatted GO output, and independent IEWL MAP/XREF review);
+   see the [JOB 2220 record](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md).
+   The [G!150 owner review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md) proposes a
+   separate test; no G!150 change is approved. The
 [approved Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
 **PASSED actual MVS JOBs 2207–2216**: ten expected QOUT
 markers and all six IFOX/IEWL/GO steps RC=0000 per job,

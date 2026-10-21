@@ -157,7 +157,9 @@ consulted for every real application or compiler load.
   remains an explicit evidence gap.
 - **Completed (BLIB-present path only):** JOB 2199 verified that the
   installed runtime's G!76 matches the installed BLIB export at START.
-  Still review the BLIB-absent fallback and possible indirect writers.
+  The no-G!76-export fallback **PASSED JOB 2220** with
+  [IEWL provenance](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md); indirect writers
+  and true BLIB-link absence are separate questions.
 - Demonstrate a selected extension's attempted G!N collision with
   an **actual** application/BLIB/native writer, rejecting before
   START and publishing **no** optional entry.
@@ -173,6 +175,8 @@ audit or demonstrate transactional installation in BCPLMAIN.
 export ownership **for the linked sample only**. G!76 is the only
 observed BLIB versus source-derived native direct-store overlap.
 BLIB-present historical G!76 precedence is **verified in JOB 2199**.
-The complete effective ownership ledger, BLIB-absent fallback,
-other indirect owners, and installed object provenance remain
-unverified. R.0 stays open.
+The no-G!76-export branch was independently verified in
+[JOB 2220](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md); the G!150 compiler/core
+conflict and its [proposed owner test](runtime-extensions-r0-g150-startup-ownership-review-20261021.md)
+remain open, along with effective ownership of larger programs,
+indirect behavior and historical installed-object provenance. R.0 stays open.

@@ -4,8 +4,8 @@
 **March:** **R.0 — Evidence and contract (open)**.
 **Scope:** source audit and now **approved, host-tested test-only**
 G!76 no-export fallback fixture. The [probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
-is prepared; **actual MVS execution and IEWL MAP inspection remain
-pending**. No accepted object mutation is claimed. Next march **R.1 —
+is prepared; **actual MVS JOB 2220 PASS with IEWL MAP/XREF reviewed**.
+See the [evidence](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md). No accepted object mutation is claimed. Next march **R.1 —
 Generic registration foundation** remains not started.
 **Git review revision:** `7c101d9fd1796a3729551ad6c650e1faa0791469`.
 
@@ -111,8 +111,8 @@ no optional-package ownership waiver.
    probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
    is now committed with a fixed 24-byte temporary prefix/trailer,
    one START/WRITEF numeric-format application and 18 host tests
-   passing. **MVS job numbers/step RCs and temporary BLIB IEWL
-   symbol ownership remain to be observed.** This tests the branch,
+   passing. **JOB 2220 has all four steps RC=0000 and independent
+   temporary-BLIB symbol ownership evidence.** This tests the branch,
    not physically missing BLIB linkage.
 2. **Per-executable owner proof:** build a separate link/read-only
    observer with an actual application export at G!150, an
@@ -134,6 +134,6 @@ no optional-package ownership waiver.
 
 **Disposition:** This source follow-up has identified the exact
 absence/linkage distinction and confirmed G!150 as an unresolved
-cross-component declaration conflict. A no-G!76-export fallback probe is **prepared but has not run on
-MVS**. No new legacy precedence exception is accepted.
+cross-component declaration conflict. The no-G!76-export fallback **PASSED JOB 2220**.
+See [G!150 next owner design](runtime-extensions-r0-g150-startup-ownership-review-20261021.md). No new legacy precedence exception is accepted.
 **R.0 remains open; R.1 has not started.**

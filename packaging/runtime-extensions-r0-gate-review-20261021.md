@@ -86,7 +86,17 @@ RC=12 on real startup rejection remains an approved **future** policy.
    and its guarded report auditor distinguish this from a strict
    binary match. The incumbent's original Git build identity
    remains unproven.
-3. **Effective global ownership scope.** Extend the per-executable
+3. **Effective global ownership scope.** **JOB 2220 now PASSED**
+   the approved no-G!76-export fallback, with the temporary
+   BLIB owner confirmed by actual IEWL MAP/XREF. With JOB 2199,
+   both G!76 precedence branches are complete in the isolated
+   R.0 scope; a BLIB linker symbol is still mandatory. See
+   [JOB 2220 evidence](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md).
+   The [G!150 owner review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md)
+   identifies the outstanding startup conflict and an
+   unapproved isolated measurement design.
+
+ Extend the per-executable
    ownership method beyond JOB 2197's single START application,
    review possible indirect Core Runtime writers and compiler
    allocations (including G!150), and record exact historical
@@ -96,7 +106,7 @@ RC=12 on real startup rejection remains an approved **future** policy.
    exporting no G!76**; a temporary no-export BLIB fixture is
    owner-approved and prepared for the latter. The [fixed,
    test-only probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
-   passes 18 host tests; actual MVS/IEWL verification is pending. Source review distinguishes G6!48 save-area
+   passed 18 host tests and actual MVS/IEWL verification in JOB 2220. Source review distinguishes G6!48 save-area
    binding from G!48 publication and confirms FORMTREE:150
    versus DEBUGINT:150 as an unresolved compiler/core conflict.
 4. **R.0 collision/transactionality evidence.** The source audit
