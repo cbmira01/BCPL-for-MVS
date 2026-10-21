@@ -1,5 +1,8 @@
 # Milestone Runtime Extensions — R.0 shared QUERY ABI decision
 
+**Later owner disposition (21 October 2026): R.0 CLOSED; R.1 — Generic registration foundation ACTIVE.** The earlier open-gate and not-started language below records the state when this historical R.0 document was prepared. Uncompleted integrated validation, ownership, finalization and regression evidence are explicit R.1 or later obligations, not completed R.0 tests. No BOOT_OBJ promotion is implied.
+
+
 **Owner approval:** 21 October 2026. **March:** **R.0 — Evidence and contract (open)**.
 **Next march:** **R.1 — Generic registration foundation (not started)**.
 **Authority:** [Milestone Runtime Extensions](milestone-runtime-extensions.md),

@@ -1,5 +1,8 @@
 # Milestone Runtime Extensions — R.0 Decision G approved contract
 
+**Later owner disposition (21 October 2026): R.0 CLOSED; R.1 — Generic registration foundation ACTIVE.** The earlier open-gate and not-started language below records the state when this historical R.0 document was prepared. Uncompleted integrated validation, ownership, finalization and regression evidence are explicit R.1 or later obligations, not completed R.0 tests. No BOOT_OBJ promotion is implied.
+
+
 **March:** **R.0 — Evidence and contract (open)**.
 **Decision:** The owner **approved Decision G numerical limits and
 numeric diagnostic assignments on 21 October 2026**. This freezes

@@ -1,71 +1,8 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status:** **R.0 — Evidence and contract in progress**. Owner-approved
-architectural/finalization policy and **A–H ABI decisions** are recorded
-in the [owner decision record](runtime-extensions-r0-owner-abi-decisions.md).
-R.1 — Generic registration foundation has **not started**. No generic
-registrar, descriptor parser, or finalizer is implemented. See the
-[R.0 source audit and outstanding ABI tests](runtime-extensions-r0-evidence-and-contract-20261020.md)
-and [proposed byte-level registrar and finalizer ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md).
-The [three-question R.0 refinement review](runtime-extensions-r0-three-design-questions-review-20261020.md)
-and [BCPLMAIN native owner inventory](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
-identify proposed trusted extents, dependency encoding and
-collision-validation gates. The owner subsequently **approved the
-revised design for isolated R.0 testing**, recorded in the
-[R.0 testing decision](runtime-extensions-r0-testing-decision-20261020.md).
-The [first linked-descriptor probes](runtime-extensions-r0-first-probes-evidence-20261020.md)
-**PASSED under MVS in JOBs 2187–2192**, including all five precise
-negative rejection markers. The [one-JOB batched dependency/finalizer probes](runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
-**PASSED under MVS in JOB 2195**: 14 dependency/ownership cases and
-six simulated finalizer-policy cases, all eight IFOX/IEWL/GO steps
-RC=0000 with actual QOUT markers. Combined with JOBs 2187–2192,
-**26 test-only cases passed**. The [application/BLIB/Core Runtime
-ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md)
-and [owner ABI decision review](runtime-extensions-r0-abi-decision-review-20261021.md)
-identify remaining R.0 gates. The 28-byte registry, 48-byte descriptor,
-8-byte finalizer parameter block, A–H decisions and the
-[Decision G exact numerical contract](runtime-extensions-r0-decision-g-contract-20261021.md)
-are **owner-approved**. The 14-case count/size
-[Decision G JOB 2203 probe](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
-**PASSED** under MVS with all four steps RC=0000. The approved
-[shared QUERY ABI](runtime-extensions-r0-query-abi-decision-20261021.md)
-also now has [two-dispatcher MVS JOB 2206 evidence](runtime-extensions-r0-query-job-2206-evidence-20261021.md):
-ASMA/ASMB/ASMC/LKED/GO all RC=0000, ten host tests passed, and
-the BCPL actual GO marker verified. This completes the **isolated
-R.0 shared QUERY/client test**, not `BCPLREG` or production `BCEX`
-validation. The [formal R.0 gate review](runtime-extensions-r0-gate-review-20261021.md)
-found **remaining contract and evidence gaps**, so R.0 is **open**;
-R.1 has **not started**. [JOB 2197](runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
-verified G!1 for a test application and 21 globals exported by the
-installed BLIB. The [installed-runtime JOB 2199 G!76 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md)
-**PASSED**: ASMA/ASMP/LKED/GO all RC=0000 and the actual GO marker
-confirms the **BLIB-present** WRITEF precedence rule. The
-[JOB 2220](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md)
-verified the complementary **no-G!76-export** fallback branch with
-a temporary, link-compatible BLIB. Historical installed-object build
-provenance remains unresolved; physically omitting the BLIB linker
-symbol is not supported by accepted BCPLMAIN.
-The [effective ownership source follow-up](runtime-extensions-r0-effective-owner-followup-20261021.md)
-confirms the G!150 FORMTREE/DEBUGINT source conflict and
-now records the owner's approval of a temporary linked BLIB
-with **no G!76 export** as a bounded branch test. The [test-only
-probe](../bootstrap-toolchain/probes/r0-g76-noexport-probe/README.md)
-has passed 18 host tests and synthetic 82-card JCL checks;
-**MVS JOB 2220 PASSED** (ASMA/ASMB/LKED/GO RC=0000,
-   actual formatted GO output, and independent IEWL MAP/XREF review);
-   see the [JOB 2220 record](runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md).
-   The [G!150 owner review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md)
-   now records the approved [test-only startup observer](../bootstrap-toolchain/probes/r0-g150-startup-probe/README.md):
-   24 host tests passed and 143-card synthetic JCL generated;
-   **actual MVS execution remains pending**, and no G!150 fix is approved. The
-[approved Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
-**PASSED actual MVS JOBs 2207–2216**: ten expected QOUT
-markers and all six IFOX/IEWL/GO steps RC=0000 per job,
-with JOB 2207 MAP/XREF independently inspected.
-See the [stage-1 evidence](runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
-and the now-approved [stage-2 read-only object comparison design](runtime-extensions-r0-decision-a-stage2-design-20261021.md). Its [test-only `IEBCOMPR` probe](../bootstrap-toolchain/probes/r0-object-identity-probe/README.md) subsequently **PASSED calibration JOB 2217**; installed-member **JOB 2218** found one END run-day metadata byte different (RC=0008, 18 records). The owner-approved [strict-vs-date-only evidence](runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md) keeps strict binary identity **false**, records qualified object-content equivalence, and leaves installed-member build provenance unresolved.
-No accepted objects were modified. Real BCPLMAIN/finalizer integration
-is **unimplemented**. See also the [Q.0 owner decisions](qsam-q0-error-and-r0-design-decisions-20261020.md).
+**Status (owner decision, 21 October 2026):** **R.0 — Evidence and contract CLOSED.** **R.1 — Generic registration foundation ACTIVE.** R.2 remains Selective interoperability; R.3 remains Packaging and acceptance.
+
+R.0 adopted ABI Decisions A–H and the approved shared QUERY contract. Its isolated jobs are evidence for their stated test scope only. R.1 must still prove integrated pre-START validation, actual owner checks, transactional publication, finalizer ordering and error behavior, and the native regression baseline. The G!150 FORMTREE/DEBUGINT compatibility issue remains separate and unresolved. No BOOT_OBJ object promotion is authorized by this disposition. See the [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) for its historical evidence assessment and the superseding owner-disposition notice.
 
 ## 1. Purpose
 
