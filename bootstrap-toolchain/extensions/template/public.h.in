@@ -1,0 +1,6 @@
+// Replace @SERVICE@, @GLOBAL@ after checking global number ownership.
+// This header declares a compile-time reference, not a linked module.
+GLOBAL $( @SERVICE@:@GLOBAL@ $)
+MANIFEST $( TEMPLATE_QUERY=0; TEMPLATE_GETVALUES=1;
+           TEMPLATE_API_MAJOR=1; TEMPLATE_API_MINOR=0;
+           TEMPLATE_QUERY_WORDS=6; TEMPLATE_VALUES_WORDS=3 $)

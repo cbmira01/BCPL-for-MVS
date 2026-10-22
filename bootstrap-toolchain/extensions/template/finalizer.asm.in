@@ -1,0 +1,24 @@
+***********************************************************************
+* OPTIONAL FINALIZER, CONVENTIONAL MVS LINKAGE (R.0 DECISION F).
+* R1 -> TWO FULLWORDS: REASON 0 FINISH / 1 STOP; STOP CODE.
+* R15 RETURNS ZERO ON SUCCESS. PRESERVE R2-R12/R13.
+* REPLACE TMFIN WITH YOUR OWN SYMBOL WHEN INSTANTIATING.
+***********************************************************************
+TMFIN    CSECT
+         ENTRY TMFIN
+         STM   14,12,12(13)
+         LR    12,15
+         USING TMFIN,12
+         LA    2,FNSAVE
+         ST    13,4(2)
+         ST    2,8(13)
+         LR    13,2
+* READ (IF NEEDED) 0(1) REASON AND 4(1) STOP CODE.
+* RELEASE PACKAGE-OWNED RESOURCES HERE; DO NOT CALL FINISH/STOP.
+         SR    15,15
+         L     13,4(13)
+         LM    14,14,12(13)
+         LM    0,12,20(13)
+         BR    14
+FNSAVE   DS    18F
+         END   TMFIN

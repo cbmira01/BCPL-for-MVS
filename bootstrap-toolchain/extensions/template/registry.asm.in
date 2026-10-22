@@ -1,0 +1,14 @@
+***********************************************************************
+* APPLICATION-OWNED BCRG V1: ONE SELECTED AND REQUIRED PACKAGE.
+* ASSEMBLE AND LINK EXACTLY ONE BCPLREG PER APPLICATION.
+***********************************************************************
+BCPLREG  CSECT
+         ENTRY BCRGBEG,BCRGEND
+         EXTRN TMBEG,TMEND
+BCRGBEG  DS    0F
+         DC    CL4'BCRG'
+         DC    F'1',F'28',F'44',F'1',F'1',F'0'
+         DC    A(TMBEG),A(TMEND)
+         DC    CL8'@PACKAGE@'
+BCRGEND  EQU   *
+         END   BCPLREG

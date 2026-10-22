@@ -1,0 +1,18 @@
+***********************************************************************
+* OPTIONAL PACKAGE BCEX V1. REPLACE @...@ BEFORE ASSEMBLY.
+* EXACTLY ONE DISPATCHER EXPORT.  48+8=56 BYTES, D=0.
+* ZERO FINALIZER: @FINADR@ = F'0' (NO HOOK).
+* HOOK FINALIZER: @FINADR@ = A(TMFIN) (EXTRN REQUIRED).
+***********************************************************************
+TMDSC    CSECT
+         ENTRY TMBEG,TMEND
+         EXTRN TMDISP
+@FINEX@
+TMBEG    DS    0F
+         DC    CL4'BCEX'
+         DC    F'1',F'48',F'56'
+         DC    CL8'@PACKAGE@'
+         DC    F'1',F'0',F'1',@FINADR@,F'0',F'0'
+         DC    F'@GLOBAL@',A(TMDISP)
+TMEND    EQU   *
+         END   TMDSC

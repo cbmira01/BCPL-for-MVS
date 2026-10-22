@@ -1,0 +1,49 @@
+***********************************************************************
+* EXAMPLE DISPATCHER, SAME BCPL R7/R8/R9 ABI AS BCPLDEMO.
+* OP0 QUERY (SIX WORDS), OP1 GETVALUES (THREE WORDS).
+* VALIDATE CAPACITY BEFORE CONVERTING WORD POINTER OR WRITING.
+* THIS EXAMPLE IS NONREENTRANT AND STATELESS.
+***********************************************************************
+TMDISP   CSECT
+         ENTRY TMDISP
+         USING TMDISP,4
+         STM   4,9,0(15)
+         LR    5,15
+         LTR   7,7
+         BNZ   OTHEROP
+         LTR   8,8
+         BNZ   QPTR
+         LTR   9,9
+         BNZ   BADARG
+         LA    7,6
+         BCR   15,11
+QPTR     LTR   9,9
+         BM    BADARG
+         C     9,=F'6'
+         BL    SHORT
+         SLL   8,2
+         MVC   0(24,8),QDATA
+         LA    7,6
+         BCR   15,11
+OTHEROP  C     7,=F'1'
+         BNE   BADOP
+         LTR   8,8
+         BZ    BADARG
+         LTR   9,9
+         BM    BADARG
+         C     9,=F'3'
+         BL    SHORT
+         SLL   8,2
+         MVC   0(12,8),VDATA
+         LA    7,3
+         BCR   15,11
+BADOP    L     7,=F'-2'
+         BCR   15,11
+SHORT    L     7,=F'-1'
+         BCR   15,11
+BADARG   L     7,=F'-3'
+         BCR   15,11
+QDATA    DC    F'1',F'1',F'0',F'6',F'1',F'0'
+VDATA    DC    F'10',F'20',F'30'
+         LTORG
+         END   TMDISP
