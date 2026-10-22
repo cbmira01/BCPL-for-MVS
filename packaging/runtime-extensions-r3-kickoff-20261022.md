@@ -70,6 +70,16 @@ proves START did not execute and that expected IEWL MAP/XREF ownership
 was inspected; retain source provenance and exact JES job identities.
 This strengthens release-quality evidence without reopening R.2.
 
+## Subsequent development and machine evidence (22 October 2026)
+
+After this initial kickoff, the R.3 developer-template, declaration
+and linkage-guide candidate was committed at `424463a`. The operator
+executed MVS JOBs **3094** (no finalizer) and **3095** (with
+finalizer); both assembled, linked and ran at RC=0000. Their
+scope, IEWL MAP/XREF, observed markers and remaining limits are
+recorded in the [R.3 developer-template evidence](runtime-extensions-r3-template-jobs-3093-3095-evidence-20261022.md).
+These results do not approve installed-object promotion or close R.3.
+
 ## Implementation boundary
 
 Only the march transition and this design proposal are approved at

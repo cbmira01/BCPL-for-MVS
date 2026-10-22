@@ -59,6 +59,10 @@ for evidence limits and the local campaign receipt.
 defines user-facing headers, link-edit recipes, developer examples,
 rebuild, fresh regression and separate installed-object authorization.
 No accepted runtime-PDS object was promoted.
+The [R.3 developer-template MVS evidence](runtime-extensions-r3-template-jobs-3093-3095-evidence-20261022.md)
+records two actual IFOX/IEWL/GO PASS jobs (3094 without and 3095
+with an optional finalizer), using temporary objects and test-only G!299.
+This evidence does not close R.3 or replace its fresh regression gate.
 
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
