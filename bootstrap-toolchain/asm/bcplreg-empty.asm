@@ -1,7 +1,15 @@
 ***********************************************************************
-* R.1 EMPTY APPLICATION-SPECIFIC BCPLREG TABLE.  BCRG VERSION 1.
-* INCLUDE EXACTLY ONE BCPLREG TABLE WITH EVERY BCPL APPLICATION.
+* BCPL FOR MVS 3.8 RECONSTRUCTION - BCPLREG (EMPTY)
+*
+* Empty application-specific BCRG version-1 table.
+* Selects zero optional packages and has zero requirements.
+*
+* LINKAGE:
+* Link exactly one BCPLREG table per application.
+* Select a different BCRG table when extensions are required.
+* The generic registrar is implemented in BCPLRGS.
 ***********************************************************************
+
 BCPLREG  CSECT
          ENTRY BCRGBEG,BCRGEND
 BCRGBEG  DS    0F

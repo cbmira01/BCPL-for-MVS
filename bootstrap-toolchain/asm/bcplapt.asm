@@ -1,8 +1,14 @@
-* BCPLAPT -- independent G40 APTOVEC runtime service.
-* M2.0 Gate B accepted: DEVOBJ link/XREF and 091-093 execution.
-* APLIMIT is an exported data word set from BCPLMAIN STKLIM.
-* BCPL entry observes the generated caller-register convention.
-* Uses a private R10 base and transfers limit errors to STKOVFL.
+***********************************************************************
+* BCPL FOR MVS 3.8 RECONSTRUCTION - BCPLAPT
+*
+* Core Runtime argument-vector and workspace support.
+* APTOVEC builds a vector from procedure arguments.
+*
+* LINKAGE:
+* APLIMIT is exported here and initialized by BCPLMAIN.
+* Stack/workspace bounds errors transfer to STKOVFL.
+***********************************************************************
+
 BCPLAPT  CSECT
          ENTRY APTOVEC,APLIMIT
          EXTRN STKOVFL

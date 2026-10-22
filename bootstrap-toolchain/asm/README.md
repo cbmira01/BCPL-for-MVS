@@ -1,64 +1,67 @@
-# Native System/370 assembler runtime sources
+# Canonical native System/370 Core Runtime sources
 
-This directory holds the **one maintained source per native runtime module**:
+These are maintained assembler sources for the **native BCPL application
+runtime used with the demoted Cambridge bootstrap compiler**. The demoted
+compiler executes under `ICINT19`; its compiled applications execute as
+native System/370 code. This is distinct from the separate native
+Cambridge compiler reconstruction.
 
-| Canonical Git file | CSECT / responsibility |
-|---|---|
-| [`bcplmain.asm`](bcplmain.asm) | BCPLMAIN bootstrap, termination and service dispatch |
-| [`bcplio.asm`](bcplio.asm) | Independent BCPL character-stream / QSAM interface |
-| [`bcplmem.asm`](bcplmem.asm) | Runtime memory services |
-| [`bcplbyte.asm`](bcplbyte.asm) | Byte operations |
-| [`bcplapt.asm`](bcplapt.asm) | Argument vectors and stack support |
+| Canonical Git source | Module | Responsibility |
+| --- | --- | --- |
+| `bcplmain.asm` | `BCPLMAIN` | Startup, global/system vectors, Base Library imports, registration and termination |
+| `bcplio.asm` | `BCPLIO` | BCPL character streams implemented using MVS QSAM |
+| `bcplmem.asm` | `BCPLMEM` | BCPL vector allocation and cleanup |
+| `bcplbyte.asm` | `BCPLBYTE` | Byte-access primitives |
+| `bcplapt.asm` | `BCPLAPT` | Argument-vector and workspace-limit service |
+| `bcplrgs.asm` | `RGINIT` / `RGFINI` | Optional package registration and finalization |
+| `bcplreg-empty.asm` | `BCPLREG` | Empty, application-specific registration table |
 
-**Current BCPLMAIN source:** `bcplmain.asm` contains the unchanged D6
-candidate that was accepted with dynamic-stream M5.5 as DEVOBJ(BCPLM6).
-Further BCPLMAIN development belongs in this file, not in another
-`bcplmain-dN-candidate.asm` beside it. Keep other modules on their
-canonical paths as well.
+## Shared runtime and application-selected table
 
-## Canonical Git source = canonical MVS source member
+The five established modules plus `BCPLRGS` form the **Core Runtime**
+source set. The **Base Library** `BLIB` is separately compiled BCPL.
+Every application linking the registration-enabled Core Runtime must
+select **exactly one** `BCPLREG` table: the empty table, or a table
+naming selected optional packages. The selected table is application
+data, not the generic registrar itself.
 
-`config/dspal.yaml` maps only five `BOOT_ASM` source members, each
-matching the basename of the canonical assembler file above.
-For example, `bcplmain.asm` populates `BOOT_ASM(BCPLMAIN)`.
-**BCPLM6, BCPLM7 and BCMWIP are no longer manifest-managed sources.**
-Earlier variants remain under [`history/`](history/) in Git.
+Optional System Extensions are separate packages under
+`bootstrap-toolchain/extensions/`. The maintained reference example
+`BCPLDEMO` uses G!203. It is not a mandatory Core Runtime module.
 
-The canonical `bcplmain.asm` is the accepted D6/M5.5 candidate source.
-Source population alone does not change an object library. However,
-the revised `BOOT_JCL(BLDBMAIN)` now deliberately assembles all
-five canonical runtime modules into `BOOT_OBJ` under the owner's
-explicit clean-room production rebuild authorization. It includes
-the D6 `BCPLMAIN` and current `BCPLIO`; `BLIBBLD`
-separately builds BLIB into the same library. This new OBJ profile
-still requires actual MVS verification, and no binaries are preseeded.
+## Acceptance versus installed objects
 
-The optional historical [`build-dev-bcplm6.jcl`](../jcl/history/build-dev-bcplm6.jcl) reads the canonical
-`BOOT_ASM(BCPLMAIN)` and writes only `BOOT_DEVOBJ(BCPLM6)`.
-It is **not in the manifest**; stage its JCL explicitly only when
-reproducing the accepted M5.5 development profile. The versioned
-DEVOBJ object name remains for regression compatibility and does
-not imply a second assembler source.
+Milestone Runtime Extensions R.0-R.3 closed on 22 October 2026.
+Registration integration and selective extension linkage were tested
+with **temporary** MVS objects. The owner explicitly deferred
+installation to `BOOT_OBJ` and `BOOT_DEVOBJ`. Incorporating the accepted
+R.1 integration into this canonical source does not promote any object.
 
-The accepted M2.1 D7 source is retained as
-[`history/bcplmain-d7-candidate.asm`](history/bcplmain-d7-candidate.asm).
-Its stack-overflow RC=0012 differs from D6's RC=0000 and it is not
-populated by the current manifest.
+**INSTALLATION HOLD:** `BOOT_JCL(BLDBMAIN)` is still the legacy
+five-module production object-PDS writer and does not prepare the
+complete registration-enabled runtime. Do not submit it until the
+installation procedure and object membership are separately approved.
+`BOOT_JCL(BLDRGCHK)` is a non-installing IFOX check of the canonical
+BCPLMAIN, BCPLRGS and empty BCPLREG sources; it creates only
+temporary object datasets and does not link or execute an application.
 
-Earlier D3–D5, pre-D6, and WIP sources are retained in
-[`history/`](history/). The WIP fragments remain in
-[`bcplmain-wip/`](bcplmain-wip/) for historical reconstruction; they
-are not the source of new BCPLMAIN development.
+## Source layout and checks
 
-The obsolete standalone M1-era `*-probe.asm` experiments and matching
-JCL decks were removed after the 00..145 regression and focused M4/M5
-verification became the retained tests. Git history preserves the
-older experiments. M4.2 and M5 verification under `bootstrap-toolchain/probes/`
-and `tools/checks/` remain available.
+Use ASCII IFOX source records with text in columns 1-71, asterisks
+for comments in column 1, no tabs, and symbols of at most eight
+characters. Historical sources remain under `history/`; working
+fragments remain under `bcplmain-wip/` for reference only.
 
-Run `python3 tools/checks/check-bcplmain-canonical.py` to check the
-manifest/source relationship and IFOX card formatting without installing
-or running any MVS program.
+Host verification (no MVS installation):
 
-For the authoritative clean-room build and candidate reproduction see
-[`packaging/clean-room-mvs-reconstruction.md`](../../packaging/clean-room-mvs-reconstruction.md).
+```sh
+python3 tools/checks/check-bcplmain-canonical.py
+python3 tools/checks/check-native-jcl-manifest.py
+python3 tools/checks/r1_prepare_candidate.py --check
+python3 -m unittest discover -s tools/checks -p 'test_r1*.py' -v
+```
+
+Consult `packaging/milestone-runtime-extensions.md`,
+`packaging/runtime-extensions-r3-closure-20261022.md`, and
+`packaging/runtime-and-library-nomenclature.md` for the accepted
+architecture and nomenclature.

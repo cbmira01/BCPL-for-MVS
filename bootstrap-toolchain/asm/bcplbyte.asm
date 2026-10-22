@@ -1,16 +1,15 @@
 ***********************************************************************
-* BCPLBYTE -- INDEPENDENT MACHINE-DEPENDENT BCPL SERVICE
+* BCPL FOR MVS 3.8 RECONSTRUCTION - BCPLBYTE
 *
-* First object-module extraction from BCPLMAIN-WIP.
-* Public entry symbols: GETBYTE and PUTBYTE (LIBHDR G85 and G86).
-* No private BCPLMAIN storage is referenced.
+* Core Runtime byte access using native System/370 code.
+* GETBYTE(S,I) reads a byte; PUTBYTE(S,I,B) writes one.
 *
-* BCPL entry register contract:
-* R5 current BCPL frame, R6 BCPL return address
-* R7 pointer argument / return result
-* R8 byte offset, R9 byte to write
-* R4 restored from 0(R5), R0 and R1-R3 retained unchanged.
-*
+* CALLING CONVENTION:
+* BCPL pointer S is word-addressed, converted to bytes.
+* R7 holds pointer/result, R8 offset, R9 write byte.
+* R5 is the BCPL frame, R6 return linkage.
+***********************************************************************
+
 * G85/G86 link to this independent CSECT (M2.0 Gate C accepted).
 ***********************************************************************
 BCPLBYTE CSECT

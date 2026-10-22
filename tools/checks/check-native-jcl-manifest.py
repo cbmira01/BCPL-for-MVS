@@ -18,6 +18,7 @@ MEMBERS = (
     "BLDDEVL",
     "CAMBBLD",
     "CG370DB",
+    "BLDRGCHK",
 )
 
 
@@ -61,7 +62,7 @@ def main() -> None:
         data.decode("ascii")
         if any(len(line) > 80 for line in data.splitlines()):
             raise ValueError(f"JCL record exceeds FB80: {path}")
-    print("PASS: 10 canonical BOOT_JCL members and same-named JCL sources")
+    print("PASS: 11 canonical BOOT_JCL members and same-named JCL sources")
     print("No MVS jobs were submitted; production OBJ remains unchanged.")
 
 

@@ -13,7 +13,15 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/dspal.yaml"
 ASM = ROOT / "bootstrap-toolchain/asm"
-CANONICAL = ("BCPLMAIN", "BCPLIO", "BCPLMEM", "BCPLBYTE", "BCPLAPT")
+CANONICAL = (
+    ("BCPLMAIN", "bcplmain.asm"),
+    ("BCPLIO", "bcplio.asm"),
+    ("BCPLMEM", "bcplmem.asm"),
+    ("BCPLBYTE", "bcplbyte.asm"),
+    ("BCPLAPT", "bcplapt.asm"),
+    ("BCPLRGS", "bcplrgs.asm"),
+    ("BCPLREG", "bcplreg-empty.asm"),
+)
 
 
 def main() -> None:
@@ -24,8 +32,8 @@ def main() -> None:
     member_lines = section.split("    members:\n", 1)[1]
     entries = re.findall(r"^      ([A-Z0-9]+):\s+(\S+)\s*$",
                          member_lines, re.M)
-    expected = [(member, f"bootstrap-toolchain/asm/{member.lower()}.asm")
-                for member in CANONICAL]
+    expected = [(member, f"bootstrap-toolchain/asm/{filename}")
+                for member, filename in CANONICAL]
     if entries != expected:
         raise ValueError(f"BOOT_ASM mappings differ from canonical list:"
                          f"\n  actual: {entries}\n  wanted: {expected}")
@@ -52,7 +60,7 @@ def main() -> None:
     jcl = yaml[end:yaml.index("\n  BOOT_OBJ:\n", end)]
     if "BLDDEVM6:" in jcl:
         raise ValueError("historical versioned JCL is still manifest-mapped")
-    print("PASS: 5 canonical ASM sources, 5 matching PDS members;"
+    print("PASS: 7 canonical ASM sources, 7 matching PDS members;"
           " historical versions unmapped")
 
 

@@ -1,5 +1,14 @@
 # Rebuild BCPL for MVS from source
 
+> **Runtime source packaging hold (22 October 2026):** Canonical
+> bootstrap `BCPLMAIN` contains the accepted optional registrar calls.
+> The production `BLDBMAIN` install procedure is not yet reconciled
+> or authorized for the revised runtime source. Do not use this
+> runbook to install new Core Runtime objects into `BOOT_OBJ` or
+> `BOOT_DEVOBJ` until object membership, link selection, and recovery
+> are approved. The accepted R.3 test path uses temporary objects.
+> See `bootstrap-toolchain/asm/README.md`.
+
 **Operator guide — Hercules / MVS 3.8J / TK5**
 
 This guide shows how to rebuild the BCPL tools and native runtime on a working

@@ -1,5 +1,20 @@
-* BCPLMEM runtime service: G87/G88 plus private teardown MEMDRAIN.
-* Static singleton allocator; intentionally not reentrant.
+***********************************************************************
+* BCPL FOR MVS 3.8 RECONSTRUCTION - BCPLMEM
+*
+* Core Runtime BCPL vector allocation and reclamation.
+* GETVEC/FREEVEC use MVS GETMAIN/FREEMAIN.
+*
+* INTERFACE:
+* GETVEC, FREEVEC: native BCPL calling convention.
+* MEMBIND: publish allocation-list head to caller-owned slot.
+* MEMDRAIN: reclaim remaining allocations during termination.
+* MEMSTAT: private four-word allocation statistics snapshot.
+*
+* LIMITATIONS:
+* Static singleton allocator; not reentrant.
+* BCPL vector pointers are word addresses.
+***********************************************************************
+
 BCPLMEM  CSECT
          ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMSTAT
 *

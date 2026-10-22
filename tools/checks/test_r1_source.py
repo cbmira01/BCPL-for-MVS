@@ -186,8 +186,7 @@ BLIDONE  L     4,4(12)
         self.assertIn('ST    1,STOPRC', output)
         self.assertLess(output.index('L     15,=A(RGFINI)'),
                         output.index('R1FINOK  L     15,=A(IOFIN)'))
-        with self.assertRaises(ValueError):
-            patcher.adapt(output)
+        self.assertEqual(patcher.adapt(output), output)
 
 
 if __name__ == '__main__':

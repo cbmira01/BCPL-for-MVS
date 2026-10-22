@@ -1,13 +1,22 @@
 ***********************************************************************
-* R.1 GENERIC REGISTRATION FOUNDATION - DEVELOPMENT CANDIDATE.
-* RGINIT: R1 -> G BASE,OWNER LEDGER POINTERS; R15=ID/0.
-* RGFINI: R1 -> REASON,STOPCODE; R15=0 OR 8 ON RETURNED FAILURE.
-* VERSION 1 BCRG/BCEX. NEVER PUBLISH BEFORE FULL VALIDATION.
-* LINK A REAL BCPLREG OBJECT FOR EVERY APPLICATION.
-* LINK TRUST: EACH PAIR MUST COME FROM DC A(BEGIN),A(END) IN
-* SOURCE-REVIEWED REGISTRY; IEWL MAP/XREF MUST VERIFY REFERENCES.
-* A BOGUS RELOCATABLE POINTER IS NOT GENERAL MEMORY PROTECTION.
+* BCPL FOR MVS 3.8 RECONSTRUCTION - BCPLRGS
+*
+* Generic optional package registrar and finalizer.
+* RGINIT checks selected BCRG/BCEX descriptors and publishes
+* optional globals only after complete validation.
+*
+* INTERFACE:
+* RGINIT runs before START; detects descriptor, ownership,
+* version, and dependency errors.
+* RGFINI runs finalizers in reverse order before IOFIN.
+* Uses approved BCRG/BCEX version 1 and R.0 A-H ABI.
+*
+* LIMITATIONS:
+* Selected package linker addresses require source review;
+* the registrar does not protect against malicious pointers.
+* Accepted MVS evidence used temporary objects.
 ***********************************************************************
+
 RGINIT   CSECT
          ENTRY RGINIT,REGCOUNT,REGFINTB
          EXTRN BCRGBEG,BCRGEND

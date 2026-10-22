@@ -447,6 +447,8 @@ datasets:
       BCPLMEM: bootstrap-toolchain/asm/bcplmem.asm
       BCPLBYTE: bootstrap-toolchain/asm/bcplbyte.asm
       BCPLAPT: bootstrap-toolchain/asm/bcplapt.asm
+      BCPLRGS: bootstrap-toolchain/asm/bcplrgs.asm
+      BCPLREG: bootstrap-toolchain/asm/bcplreg-empty.asm
 
   BOOT_JCL:
     dsn: BCPL.BOOT.JCL
@@ -471,6 +473,7 @@ datasets:
       BLDDEVL: bootstrap-toolchain/jcl/blddevl.jcl
       CAMBBLD: bootstrap-toolchain/jcl/cambbld.jcl
       CG370DB: bootstrap-toolchain/jcl/cg370db.jcl
+      BLDRGCHK: bootstrap-toolchain/jcl/bldrgchk.jcl
 
   BOOT_OBJ:
     dsn: BCPL.BOOT.OBJ

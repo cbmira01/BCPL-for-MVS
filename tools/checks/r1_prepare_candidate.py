@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare an R.1 BCPLMAIN candidate without touching tracked source.
+"""Read accepted R.1 BCPLMAIN or adapt a historical base source.
 
 Requires the Git checkout at repository root, exactly the R.1 handoff
 revision's BCPLMAIN anchors, and explicit --output. No Git writes or
@@ -85,6 +85,14 @@ def add_owner_ledger(result: str) -> str:
 
 
 def adapt(source: str) -> str:
+    # Canonical BCPLMAIN includes the accepted R.1 integration.
+    # Continue to support historical pre-integration source fixtures.
+    if '         EXTRN RGINIT,RGFINI\n' in source:
+        for marker in ('R1GVEC   DC', 'R1OWNB   DS',
+                       'R1BAD    LR', 'R1FINOK  L'):
+            if source.count(marker) != 1:
+                raise ValueError('partially integrated BCPLMAIN: '+marker)
+        return source
     result = replace_once(
         source,
         '         EXTRN BLIB\n',
@@ -174,7 +182,7 @@ def main():
     data = SOURCE.read_text(encoding='ascii')
     candidate = adapt(data)
     if args.check:
-        print('R.1 BCPLMAIN six-anchored adaptation: valid, no files written')
+        print('R.1 BCPLMAIN integration: valid, no files written')
     if args.output:
         target = args.output.resolve()
         if target == SOURCE.resolve():

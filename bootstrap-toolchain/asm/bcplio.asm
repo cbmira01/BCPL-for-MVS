@@ -1,8 +1,20 @@
 ***********************************************************************
-* BCPLIO -- INDEPENDENT BCPL STREAM I/O (M2.0 GATE D, D6)
+* BCPL FOR MVS 3.8 RECONSTRUCTION - BCPLIO
 *
-* Owns SYSPRINT/BCPALT output and BCPIN/BCPINB input QSAM DCBs,
-* buffers, selected handles, PARM pseudo-stream and I/O cleanup.
+* Core Runtime character-stream input and output.
+* Handles stream selection, dynamic handles, EXEC PARM,
+* buffering, and cleanup using MVS QSAM internally.
+*
+* INTERFACE:
+* Provides BCPL stream entries and private native IOINIT,
+* IOFIN, IOBIND, diagnostics, and helper entries.
+*
+* LIMITATIONS:
+* Static, nonreentrant implementation. Character streams
+* are distinct from optional logical-record BCPLQSAM.
+* See the accepted BCPLIO dynamic-stream contracts.
+***********************************************************************
+
 * G11-17/G33/G39/G41-42/G46-47 services enter this CSECT.
 * Private native entry points: IOINIT, IOFIN, IOBIND, IOSTAT,
 * IODIAG, IOREPL and IOPMGET. No BCPLMAIN private-data refs.
