@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""Consolidated R.2 host/MVS acceptance: positive four-link and negatives."""
+from __future__ import annotations
+import argparse
+import datetime as dt
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import subprocess
+import time
+
+ROOT = Path(__file__).resolve().parents[2]
+PROBE = ROOT/'bootstrap-toolchain/probes/r2-interoperability'
+BASE = ROOT/'workarea/runtime-extensions-r2'
+
+
+def load(path,name):
+    spec=importlib.util.spec_from_file_location(name,path)
+    obj=importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(obj)
+    return obj
+
+
+def call(*args, timeout=300, tolerate=False):
+    args=list(map(str,args))
+    p=subprocess.run(args,cwd=ROOT,stdout=subprocess.PIPE,
+                     stderr=subprocess.STDOUT,text=True,errors='replace',
+                     timeout=timeout)
+    if p.returncode and not tolerate:
+        raise RuntimeError(f'rc={p.returncode}: {" ".join(args)}\n{p.stdout[-2500:]}')
+    return p.stdout
+
+
+def preflight():
+    for command in (
+        ('python3','-B','-m','unittest','discover','-s',PROBE,
+         '-p','test_*.py','-v'),
+        ('python3','-B',PROBE/'make-matrix.py','--check'),
+        ('python3','-B',PROBE/'make-negatives.py','--check'),
+        ('python3','-B','tools/checks/r1_prepare_candidate.py','--check'),
+    ):
+        call(*command,timeout=120)
+        print('PREFLIGHT PASS:', ' '.join(map(str,command)),flush=True)
+
+
+def steps(summary):
+    entries=re.findall(r'^([A-Z][A-Z0-9]*)\s+\S+\s+RC=(\d{4})$',
+                       summary,re.M)
+    if len({x for x,_ in entries})!=len(entries):
+        raise ValueError('duplicate JES step')
+    return {x:int(y) for x,y in entries}
+
+
+def maps(report):
+    return [x.split('ENTRY ADDRESS',1)[0]
+            for x in report.split('CROSS REFERENCE TABLE')[1:]]
+
+
+def verify_matrix(summary,report):
+    errors=[]
+    have=steps(summary)
+    wanted=('AS0','ASA','ASB','ASAB','ASMN','ASMR','ASG0','ASGA',
+            'ASGB','ASGX','ASDA','ASSA','ASDB','ASSB','L0','LA',
+            'LB','LX','G0','GA','GB','GX')
+    if set(have)!=set(wanted):errors.append('missing or unexpected JES steps')
+    for step in wanted:
+        if have.get(step)!=0:errors.append(f'{step} RC {have.get(step)} not 0')
+    for marker in ('R2 MATRIX ZERO PASS','R2 BCPLDEMO G203 PASS',
+                   'R2 MATRIX B PASS','R2 MATRIX AB PASS'):
+        n=len(re.findall(r'(?m)^'+re.escape(marker)+r'\s*$',report))
+        if n!=1:errors.append(f'{marker} count={n}')
+    allmaps=maps(report)
+    if len(allmaps)!=4:errors.append(f'IEWL maps={len(allmaps)} instead of 4')
+    else:
+        for mode,body,expect_a,expect_b in zip(('0','A','B','AB'),allmaps,
+                                                (0,1,0,1),(0,0,1,1)):
+            for symbol in ('BCPLMAIN','RGINIT','BCPLREG'):
+                if not re.search(r'(?m)^  '+symbol+r'\s+',body):
+                    errors.append(f'{mode}: missing {symbol}')
+            for symbol,expected in (('DMODESC',expect_a),('DMODISP',expect_a),
+                                    ('R2BDSC',expect_b),('R2BDISP',expect_b)):
+                if bool(re.search(r'(?m)^  '+symbol+r'\s+',body))!=bool(expected):
+                    errors.append(f'{mode}: wrong {symbol} selection')
+    if 'ABEND:' in summary or 'JCL ERROR:' in summary:errors.append('ABEND/JCL ERROR')
+    return errors,have
+
+
+def live_go(report,step):
+    begin=re.search(r'(?m)^IEF236I ALLOC\. FOR R2NEG '+step+r'\s*$',report)
+    if not begin:return ''
+    end=re.search(r'(?m)^IEF142I R2NEG '+step+r' ',report[begin.end():])
+    return report[begin.end():begin.end()+end.start()] if end else ''
+
+
+def verify_negatives(summary,report):
+    cases=load(PROBE/'make-negatives.py','r2_verify_cases').CASES
+    found=steps(summary)
+    errors=[]
+    assembled=[k for k in found if k.startswith(('AS','AG','AD'))]
+    if not assembled:errors.append('no assembler results')
+    for step in assembled:
+        if found[step]!=0:errors.append(f'{step} RC {found[step]}')
+    if len([s for s in found if s.startswith('L')])!=len(cases):
+        errors.append('missing IEWL steps')
+    for ix,c in enumerate(cases,1):
+        num=f'{ix:02d}'
+        rc=found.get('L'+num)
+        go=found.get('G'+num)
+        if c.name=='linkmiss':
+            if rc is None or rc==0:errors.append('linkmiss IEWL did not reject')
+            if go is not None:errors.append('linkmiss GO executed')
+            continue
+        if rc!=0:errors.append(f'{c.name}: IEWL RC {rc}')
+        wanted=0 if c.diagnostic is None else 12
+        if go!=wanted:errors.append(f'{c.name}: GO RC {go} expected {wanted}')
+        output=live_go(report,'G'+num)
+        if not output:errors.append(f'{c.name}: no GO output section')
+        if c.diagnostic is not None:
+            marker=f'BCPLREG {c.diagnostic}'
+            matches=re.findall(r'(?m)^\+?'+re.escape(marker)+r'(?:\s+.*)?$',output)
+            if len(matches)!=1:errors.append(f'{c.name}: live {marker} count {len(matches)}')
+            if re.search(r'(?m)^\+?R2 PARTIAL GLOBAL PUBLICATION',output):
+                errors.append(f'{c.name}: partial global publication')
+    if len(re.findall(r'(?m)^R2 MATRIX AB PASS\s*$',report))!=1:
+        errors.append('successful dependency START marker count wrong')
+    if 'ABEND:' in summary or 'JCL ERROR:' in summary:errors.append('ABEND/JCL ERROR')
+    return errors,found
+
+
+def await_job(num,timeout):
+    until=time.monotonic()+timeout
+    while time.monotonic()<until:
+        result=call('tools/mvs/job-summary','--max-rc','12',num,
+                    timeout=30,tolerate=True)
+        if 'JOB RESULT:' in result:return result
+        time.sleep(2)
+    raise RuntimeError(f'JOB {num} completion timed out')
+
+
+def submit(deck,run,name,timeout):
+    response=call('bash','tools/mvs/submit-jcl',deck,timeout=160)
+    match=re.search(r'(?m)^JOB (\d+)\s*$',response)
+    if not match:raise RuntimeError(f'no JES number in: {response[-500:]}')
+    num=int(match.group(1))
+    print(f'{name}: JOB {num} submitted',flush=True)
+    summary=await_job(num,timeout)
+    (run/'summaries'/f'{name}.txt').write_text(summary)
+    report=call('tools/mvs/dump-report-for-job',num,timeout=240)
+    (run/'reports'/f'{name}.txt').write_text(report)
+    return num,summary,report
+
+
+def save(run,revision,results):
+    ok=len(results)==2 and all(x['result']=='PASS' for x in results)
+    (run/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+    rows=['# R.2 - Selective interoperability acceptance campaign',
+          '',f'Git revision: `{revision}`',
+          'Disposition: **'+('READY FOR OWNER REVIEW' if ok else 'INCOMPLETE / FAILED')+'**',
+          '', '| Batch | JES job | Result | Issues |','| --- | --- | --- | --- |']
+    for res in results:
+        rows.append(f"| {res['batch']} | {res.get('job') or '-'} | "
+                    f"{res['result']} | {'; '.join(res['issues']) or 'none'} |")
+    rows+=['','R.2 remains ACTIVE pending owner acceptance. R.3 has not started.',
+           'No accepted BOOT_OBJ or BOOT_DEVOBJ object promotion.',
+           'Private JCL and raw JES evidence are local under workarea/.','']
+    (run/'SUMMARY.md').write_text('\n'.join(rows))
+    return ok
+
+
+def run(args):
+    preflight()
+    if args.check:return 0
+    revision=call('git','rev-parse','HEAD').strip()
+    stamp=dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    run=BASE/'acceptance'/stamp
+    for part in ('generated','jcl','reports','summaries'):
+        (run/part).mkdir(parents=True,exist_ok=False)
+    results=[]
+    try:
+        for profile,src,job in (('zero','zero.bcpl','R2CZERO'),
+                                ('a','demo.bcpl','R2CA'),
+                                ('b','onlyb.bcpl','R2CB'),
+                                ('both','both.bcpl','R2CBOTH')):
+            output=run/'generated'/f'{profile}.s370.asm'
+            call('tools/bootstrap/compile-mvs',PROBE/src,
+                 '--job-name',job,'--output',output,timeout=args.compile_timeout)
+            if not output.is_file() or not output.stat().st_size:
+                raise RuntimeError(f'missing generated {profile}')
+            print('COMPILED',profile,flush=True)
+        call('python3','-B',PROBE/'make-matrix.py',
+             '--generated-dir',run/'generated')
+        matrix=run/'jcl/matrix.jcl'
+        matrix.write_bytes((BASE/'r2-matrix.jcl').read_bytes())
+        matrix.chmod(0o600)
+        neg=run/'jcl/negatives.jcl'
+        call('python3','-B',PROBE/'make-negatives.py',
+             '--generated-dir',run/'generated','--output',neg)
+        spec=load(PROBE/'make-negatives.py','r2_case_manifest')
+        (run/'cases.json').write_text(json.dumps({x.name:x.diagnostic
+                       for x in spec.CASES},indent=2)+'\n')
+        (run/'sha256.json').write_text(json.dumps({p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+                       for p in (matrix,neg)},indent=2)+'\n')
+        for name,deck,verify in (('matrix',matrix,verify_matrix),
+                                 ('negatives',neg,verify_negatives)):
+            res={'batch':name,'job':None,'result':'FAIL','issues':[]}
+            try:
+                job,summary,report=submit(deck,run,name,args.job_timeout)
+                res['job']=job
+                issues,scores=verify(summary,report)
+                res['issues']=issues
+                res['steps']=scores
+                res['result']='PASS' if not issues else 'FAIL'
+            except (RuntimeError,ValueError,OSError,subprocess.TimeoutExpired) as exc:
+                res['issues']=[str(exc)]
+            results.append(res)
+            save(run,revision,results)
+            print(f"{name.upper()} {res['result']} JOB {res['job']} "
+                  +'; '.join(res['issues'])[:400],flush=True)
+    except (RuntimeError,ValueError,OSError,subprocess.TimeoutExpired) as exc:
+        results.append({'batch':'preparation','job':None,'result':'FAIL',
+                        'issues':[str(exc)]})
+    ok=save(run,revision,results)
+    print('Campaign report:',run/'SUMMARY.md',flush=True)
+    return 0 if ok else 1
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--execute',action='store_true')
+    p.add_argument('--check',action='store_true')
+    p.add_argument('--job-timeout',type=int,default=900)
+    p.add_argument('--compile-timeout',type=int,default=300)
+    a=p.parse_args()
+    if a.check==a.execute:p.error('choose exactly one of --check or --execute')
+    raise SystemExit(run(a))

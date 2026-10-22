@@ -3,7 +3,7 @@
 **Status:** R.2 ACTIVE, not accepted. **First increment:** real MVS
 BCPLDEMO G!203 demonstrated in JOB 3075. **Second increment:** a
 separate test-only extension B and four-link selection matrix have
-candidate source; their actual MVS execution is pending.
+candidate source; their actual MVS execution **passed JOB 3080**. The consolidated negative and dependency campaign remains unverified.
 
 The first test uses `demo.bcpl` (a separately compiled BCPL caller),
 `registry-demo.asm` (real BCRG selection and required-package declaration),
@@ -25,7 +25,7 @@ MVS job passed (JOB 3075);** see [the reviewed JES/IEWL evidence](../../../packa
 and matrix remain pending. Do not reuse G!203
 for the second test extension; it remains BCPLDEMO's permanent assignment.
 
-## Four-link R.2 candidate matrix (MVS verification pending)
+## Four-link R.2 matrix (actual MVS JOB 3080 PASS)
 
 Extension A is project-maintained `BCPLDEMO` at permanent G!203.
 Extension B is **test-only** `R2TESTB` at temporary fixture G!299,
@@ -85,3 +85,11 @@ Every candidate object/load dataset is `&&` temporary and `BOOT_OBJ`
 is linked read-only. Missing-dependency, collision, malformed descriptor
 and absent-module rejection tests remain separate R.2 obligations.
 No R.2 closure, object promotion, or R.3 start is implied.
+
+## Consolidated R.2 remaining acceptance checks
+
+The [consolidated runner](ACCEPTANCE.md) provides a single operator
+command, `python3 tools/bootstrap/run-r2-acceptance --execute`, for a
+fresh positive matrix plus one 21-case negative/dependency batch.
+This new campaign is an unverified candidate until actual MVS JES
+and IEWL evidence is reviewed. R.2 remains ACTIVE.

@@ -1,8 +1,7 @@
 # Milestone Runtime Extensions — R.2 four-link matrix candidate
 
 **March:** R.2 — Selective interoperability (ACTIVE)  
-**Status:** Source and credential-free candidate tests prepared; **real MVS
-execution and acceptance pending**. **No R.2 closure.**
+**Status:** Positive 0/A/B/A+B source tested and verified in **actual MVS JOB 3080**; the consolidated R.2 negative/dependency campaign remains unverified. **No R.2 closure.**
 
 ## Second independent optional extension: B
 
