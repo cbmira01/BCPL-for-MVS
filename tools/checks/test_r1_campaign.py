@@ -150,6 +150,24 @@ class CampaignHostChecks(unittest.TestCase):
             self.assertIn('DONE     LA    15,8' if profile.endswith('-error')
                           else 'DONE     LA    15,0',extra[1][2])
 
+    def test_finalizer_status_loaded_before_restoring_r12(self):
+        # R12 still bases the finalizer when RCELL is referenced.
+        # Reloading RCELL after LM 0,12 uses the caller's R12: corrupt RC.
+        for profile in self.life.PROFILES:
+            _, _, extras = self.life.sources(profile)
+            for step, _, source in extras[1:]:
+                with self.subTest(profile=profile, step=step):
+                    self.assertIn(
+                        '         L     15,RCELL\n'
+                        '         LM    0,12,20(13)\n'
+                        '         BR    14',
+                        source)
+                    self.assertNotIn(
+                        '         LM    0,12,20(13)\n'
+                        '         L     15,RCELL',
+                        source)
+                    self.assertEqual(source.count('L     15,RCELL'), 1)
+
     def test_jcl_profile_is_temporary_and_card_bounded(self):
         source=(ROOT/'bootstrap-toolchain/asm/bcplmain.asm').read_text('ascii')
         r=module(HERE.parent/'r0-export-trailer-probe/make-job.py',
