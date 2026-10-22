@@ -96,6 +96,19 @@ class SourceContract(unittest.TestCase):
         self.assertNotIn('REGCOUNT', externals)
         self.assertNotIn('REGFINTB', externals)
 
+    def test_start_address_r4_survives_owner_instrumentation(self):
+        # In the accepted BCPLMAIN, BLIDONE loads START into R4 and
+        # BC 15,4 invokes it.  Ledger instrumentation must not overwrite R4.
+        patcher=load('r1_owner_r4_guard',
+                     ROOT/'tools/checks/r1_prepare_candidate.py')
+        source=(ASM/'bcplmain.asm').read_text('ascii')
+        adapted=patcher.adapt(source)
+        startup=adapted.split('BLIDONE  L     4,4(12)',1)[1].split(
+            '         BC    15,4',1)[0]
+        self.assertNotRegex(startup, r'(?m)^         [A-Z]+ +4,')
+        self.assertEqual(startup.count('L     8,=A(R1OWNB)'),26)
+        self.assertNotIn('OI    30(4)',startup)
+
     def test_core_patch_anchors_and_effects(self):
         patcher = load('r1_patchcheck',ROOT/'tools/checks/r1_prepare_candidate.py')
         baseline = '''         EXTRN BLIB

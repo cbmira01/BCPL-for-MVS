@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -257,22 +258,96 @@ def run_jobs(run: Path, timeout: int):
     return results
 
 
+def regression_progress(line: str) -> str | None:
+    """Emit just the native panel's case progress, not the full JES listing."""
+    line = line.rstrip('\r\n')
+    if re.match(r'^(?:RUN|PASS|FAIL|SKIP)\s+\d{2,3}\b', line):
+        return 'REGRESSION ' + line
+    if line.startswith(('NATIVE REGRESSION COMPLETE',
+                        'NATIVE REGRESSION  ',
+                        'NATIVE PRODUCTION REGRESSION:')):
+        return line
+    return None
+
+
+def stream_native_run(command: list[str], env: dict, transcript: Path,
+                      timeout: int, *, poll_seconds: float = 1.0,
+                      heartbeat_seconds: float = 30.0) -> int:
+    """Watch a child-managed transcript and keep the console informative.
+
+    A separate process group lets a timed-out campaign stop its entire
+    native-regression subprocess tree, not just the parent Python process.
+    The transcript and case logs stay in this campaign's unique run folder.
+    """
+    with transcript.open('w', encoding='utf-8') as output:
+        proc = subprocess.Popen(command, cwd=ROOT, env=env, stdout=output,
+                                stderr=subprocess.STDOUT,
+                                start_new_session=True)
+        start = time.monotonic()
+        last_heartbeat = start
+        last_case = '(starting)'
+        partial = ''
+        def consume(chunk: str):
+            nonlocal partial, last_case
+            partial += chunk
+            while '\n' in partial:
+                line, partial = partial.split('\n', 1)
+                message = regression_progress(line)
+                if message:
+                    print(message, flush=True)
+                    if message.startswith('REGRESSION RUN '):
+                        last_case = line.strip()
+        try:
+            with transcript.open('r', encoding='utf-8', errors='replace') as watch:
+                while True:
+                    consume(watch.read())
+                    if proc.poll() is not None:
+                        consume(watch.read())
+                        if partial:
+                            message = regression_progress(partial)
+                            if message:
+                                print(message, flush=True)
+                        break
+                    now = time.monotonic()
+                    if now - start >= timeout:
+                        raise subprocess.TimeoutExpired(command, timeout)
+                    if now - last_heartbeat >= heartbeat_seconds:
+                        elapsed = int(now - start)
+                        print(f'REGRESSION ACTIVE {elapsed}s; {last_case}',
+                              flush=True)
+                        last_heartbeat = now
+                    time.sleep(poll_seconds)
+        finally:
+            if proc.poll() is None:
+                # A timeout or interruption must not orphan the JES runner.
+                os.killpg(proc.pid, signal.SIGTERM)
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                    proc.wait()
+        return proc.returncode
+
+
 def regress(run: Path, timeout: int):
     env = os.environ.copy()
     env['R1_ACCEPTANCE'] = '1'
     env['R1_REGRESSION_LOG_DIR'] = str(run/'regression-logs')
     env['R1_ACCEPTANCE_WORKDIR'] = str(run/'regression-cases')
-    with (run/'regression-transcript.txt').open('w') as output:
-        p = subprocess.run(['bash', 'tools/bootstrap/run-production-regression'],
-                           cwd=ROOT, env=env, text=True, stdout=output,
-                           stderr=subprocess.STDOUT, timeout=timeout)
-    text = (run/'regression-transcript.txt').read_text(errors='replace')
+    env['PYTHONUNBUFFERED'] = '1'
+    transcript = run/'regression-transcript.txt'
+    print('REGRESSION PHASE: native 00..145; '
+          f'full transcript at {transcript}', flush=True)
+    process_rc = stream_native_run(
+        ['bash', 'tools/bootstrap/run-production-regression'], env,
+        transcript, timeout)
+    text = transcript.read_text(errors='replace')
     values = dict(re.findall(r'(?m)^(PASS|FAIL|SKIP|TOTAL)\s+(\d+)\s*$', text))
-    verdict = ('PASS' if p.returncode == 0 and values.get('PASS') == '145'
+    verdict = ('PASS' if process_rc == 0 and values.get('PASS') == '145'
                and values.get('FAIL') == '0' and values.get('SKIP') == '1'
                and values.get('TOTAL') == '146' else 'FAIL')
     return {'case': 'candidate-native-regression', 'result': verdict,
-            'values': values, 'process_rc': p.returncode,
+            'values': values, 'process_rc': process_rc,
             'issues': [] if verdict == 'PASS' else
             ['expected 145 fresh PASS, zero FAIL, one expected SKIP 083']}
 

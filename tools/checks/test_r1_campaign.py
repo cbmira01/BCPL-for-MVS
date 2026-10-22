@@ -3,6 +3,10 @@
 import importlib.util
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
+import contextlib
+import io
+import os
+import sys
 import tempfile
 import unittest
 
@@ -65,6 +69,28 @@ class CampaignHostChecks(unittest.TestCase):
                          {f'neg-{n}' for n in (*range(1001,1015),2001)})
         self.assertEqual([s[2] for s in cases if s[0].startswith('life-')],
                          [0,7,8,7])
+
+    def test_native_regression_progress_and_preserved_transcript(self):
+        self.assertEqual(self.campaign.regression_progress(
+            'RUN   087 087-stop-nonzero-completion'),
+            'REGRESSION RUN   087 087-stop-nonzero-completion')
+        self.assertIsNone(self.campaign.regression_progress(
+            'BCPL SAMPLE OUTPUT'))
+        script=("print('RUN   000 000-example',flush=True);"
+                "print('PASS  000 000-example',flush=True);"
+                "print('NATIVE REGRESSION COMPLETE',flush=True)")
+        with tempfile.TemporaryDirectory() as td:
+            transcript=Path(td)/'regression-transcript.txt'
+            out=io.StringIO()
+            with contextlib.redirect_stdout(out):
+                rc=self.campaign.stream_native_run(
+                    [sys.executable,'-u','-c',script],os.environ.copy(),
+                    transcript,timeout=4,poll_seconds=0.02,
+                    heartbeat_seconds=2)
+            self.assertEqual(rc,0)
+            self.assertIn('REGRESSION RUN',out.getvalue())
+            self.assertIn('REGRESSION PASS',out.getvalue())
+            self.assertIn('NATIVE REGRESSION COMPLETE',transcript.read_text())
 
     def test_real_prior_owner_probe_roster(self):
         owner=module(HERE/'make-owner-jobs.py','r1_owner_host')

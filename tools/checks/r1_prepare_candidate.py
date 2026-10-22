@@ -67,8 +67,8 @@ def add_owner_ledger(result: str) -> str:
             raise ValueError(f'invalid native owner slot: {offset}')
         matches.append(offset//4)
         return (match.group(0) + '\n'
-                '         L     4,=A(R1OWNB)\n'
-                f"         OI    {offset//4}(4),X'04'")
+                '         L     8,=A(R1OWNB)\n'
+                f"         OI    {offset//4}(8),X'04'")
     block = re.sub(r'^         ST    ([0-9]+),([0-9]+)\(12\)$',
                    rewrite, block, flags=re.M)
     required = {6,52,53,54,55,11,16,17,39,33,13,15,42,41,
