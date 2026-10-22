@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance ACTIVE.** See the [R.2 owner closure](runtime-extensions-r2-closure-20261022.md) and [R.3 kickoff/design review](runtime-extensions-r3-kickoff-20261022.md).
+**Status (owner decision, 22 October 2026): MILESTONE CLOSED.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** See the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md) and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md). Object-PDS installation remains **DEFERRED**; no R.4 march is defined in this approved roadmap.
 
 **R.1 owner closure:** The consolidated MVS acceptance campaign passed
 24/24 integrated jobs (2760–2783), all five gates, and the 00..145
@@ -232,7 +232,7 @@ This paragraph records the former R.0 design stage. R.1 has since verified integ
 | **R.0 — Evidence and contract** | Inventory the actual CG370 trailer, global initialization/import ordering, BLIB and native binders, link-editor behavior, and slot map; evaluate dispatcher/opcode-0 capability ABI | Recorded verified ABI; static global-number registry policy, one-slot dispatcher decision, candidate six-word QUERY descriptor and client tests, chosen registrar/descriptor formats, collision and empty-table rules; **no speculative source refactor** |
 | **R.1 — Generic registration foundation (CLOSED 22 October 2026)** | Implement one minimal, linker-driven registration path with an empty registry and one trivial optional assembler service | Gate accepted: 24 integrated MVS jobs PASS, all five gates PASS, fresh 145 PASS / 0 FAIL / 1 expected SKIP 083 ([closure record](runtime-extensions-r1-closure-20261022.md)) |
 | **R.2 — Selective interoperability (CLOSED 22 October 2026)** | Link two independent optional extension *probes*, individually and together; if practical one compiled BCPL extension export plus one assembler export | 0/A/B/A+B combinations work without BCPLMAIN rebuild; each linked dispatcher answers opcode 0 and rejects unsupported calls, client inspects version/opcode bitmap; collisions, invalid descriptor, missing dependency/slot, absent module diagnosed deterministically; inspect linkage maps |
-| **R.3 — Packaging and acceptance (ACTIVE 22 October 2026)** | Stable user-facing link-edit recipe, BCPL declaration conventions, developer template and reproducible rebuild from Git | Full native regression baseline; separately accepted object PDS installation decision; documented accepted startup contract and actual JES/IEWL evidence |
+| **R.3 — Packaging and acceptance (CLOSED 22 October 2026)** | Stable user-facing link-edit recipe, BCPL declaration conventions, developer template and reproducible rebuild from Git | Full native regression baseline; separately accepted object PDS installation decision; documented accepted startup contract and actual JES/IEWL evidence |
 
 The probes should be *tiny*, not premature implementations of QSAM/DEC/TIME. Subsequent feature milestones own their APIs and behavior. A failed gate can suspend R without blocking M4.
 
@@ -253,23 +253,28 @@ Proposed deliverables (paths provisional pending R.0): an assembler registration
 
 The goal is **a stable, simple, historically intelligible extension pattern**, not a plugin loader, dependency manager, or dynamic linker.
 
-## 10. Current march — R.3 — Packaging and acceptance
+## 10. Final march — R.3 — Packaging and acceptance (CLOSED)
 
 **R.2 closed by owner direction on 22 October 2026.** The consolidated
 operator campaign passed JOB 3091 (positive matrix) and JOB 3092
 (negative/dependency matrix). The [R.2 acceptance record](runtime-extensions-r2-closure-20261022.md)
 gives the observed evidence and its independent-audit limits.
 
-**R.3 ACTIVE — successful acceptance campaign recorded; formal closure
-decision pending.** The owner-supplied campaign at Git `a246063` passed
-developer-template JOBs 3101/3102, the 0/A/B/A+B matrix JOB 3103,
-negative/dependency JOB 3104, and a fresh native 00..145 panel with
-**145 PASS / 0 FAIL / 1 expected SKIP 083**. The owner explicitly
-**deferred object-PDS installation** on 22 October 2026; neither
-`BOOT_OBJ` nor `BOOT_DEVOBJ` is authorized for modification. The
-[R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)
-records the gate assessment, operator-local evidence limitations and
-recommendation to close **only upon explicit owner approval**. See also
-the [source-controlled R.3 workflow](runtime-extensions-r3-acceptance-workflow.md)
-and [R.3 kickoff/design review](runtime-extensions-r3-kickoff-20261022.md).
-No object promotion, new ABI, or GLOBAL-number allocation was authorized.
+**R.3 CLOSED by explicit owner direction, 22 October 2026.** The
+operator-supplied campaign at Git `a246063` passed developer-template
+JOBs **3101/3102**, the 0/A/B/A+B matrix JOB **3103**,
+negative/dependency JOB **3104**, and a fresh native 00..145 panel:
+**145 PASS / 0 FAIL / 1 expected SKIP 083**. The
+[R.3 review](runtime-extensions-r3-acceptance-review-20261022.md)
+records the gate assessment and operator-local raw-evidence limits.
+The [R.3 owner closure](runtime-extensions-r3-closure-20261022.md)
+accepts the source-distributed temporary-link registration foundation,
+and formally completes **Milestone Runtime Extensions (R.0–R.3)**.
+
+The owner separately **DEFERRED installation** of all registration
+objects in `BOOT_DEVOBJ` or `BOOT_OBJ`. No object promotion,
+ABI revision or GLOBAL-number allocation is authorized. The official
+milestone ends at R.3. **R.4** has no approved objective or exit gate;
+a separately authorized change to milestone scope would be required
+before treating it as an active march. Related QSAM, Decimal Arithmetic,
+and Date/Time implementation belongs to their own milestones.

@@ -1,13 +1,13 @@
 # Runtime Extensions — R.3 reproducible acceptance workflow
 
 **Milestone:** Runtime Extensions  
-**March:** R.3 — Packaging and acceptance (**ACTIVE**)  
-**Status:** Source-controlled development candidate; first full operator
-MVS campaign **PASSED on 22 October 2026** at Git `a246063`
+**March:** R.3 — Packaging and acceptance (**CLOSED 22 October 2026**)  
+**Status:** Source-controlled and owner-accepted acceptance procedure;
+operator MVS campaign **PASSED on 22 October 2026** at Git `a246063`
 (JOBs 3101–3104; native 145 PASS / 0 FAIL / 1 expected SKIP 083).
-The owner deferred object-PDS installation. See the
-[R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md).
-R.3 remains **ACTIVE pending explicit owner closure**.
+The owner deferred object-PDS installation and then **CLOSED R.3**.
+See the [formal owner closure](runtime-extensions-r3-closure-20261022.md)
+and [acceptance review](runtime-extensions-r3-acceptance-review-20261022.md).
 
 ## Why this runner exists
 
@@ -94,8 +94,9 @@ never silently substitutes a previous result or invents JES job IDs.
 - No creation of a public G!299 allocation or System Extension implementation.
 - No claim of separately compiled BCPL *extension implementation/export*;
   the template implementation remains assembler with a compiled BCPL caller.
-- No automatic owner acceptance or closure of R.3. Even a complete
-  passing run is **READY FOR OWNER REVIEW**, not CLOSED.
+- No **automatic** owner acceptance or closure of R.3. A complete
+  passing run is **READY FOR OWNER REVIEW**; the owner subsequently
+  approved closure on 22 October 2026.
 
 This consolidated runner reuses the R.2 verifier; independent negative
 IEWL MAP owner inspection for every malformed case and a hard

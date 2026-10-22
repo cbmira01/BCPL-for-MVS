@@ -54,21 +54,24 @@ interoperability passed JOB 3080; consolidated JOBs **3091 and 3092**
 passed the positive and 21-case negative/dependency acceptance batches.
 See the [R.2 closure record](runtime-extensions-r2-closure-20261022.md)
 for evidence limits and the local campaign receipt.
-**R.3 — Packaging and acceptance ACTIVE.** The
-[R.3 kickoff/design review](runtime-extensions-r3-kickoff-20261022.md)
-defines user-facing headers, link-edit recipes, developer examples,
-rebuild, fresh regression and separate installed-object authorization.
-No accepted runtime-PDS object was promoted.
+**R.3 — Packaging and acceptance CLOSED by owner decision on
+22 October 2026; Milestone Runtime Extensions CLOSED (R.0–R.3).**
+The [R.3 owner closure](runtime-extensions-r3-closure-20261022.md)
+accepts source-distributed temporary-link registration, developer
+templates, reproducible rebuild/test and the startup contract.
+The [R.3 kickoff/design review](runtime-extensions-r3-kickoff-20261022.md)
+is historical. No accepted runtime-PDS object was promoted; owner
+deferred installation into `BOOT_OBJ` and `BOOT_DEVOBJ`.
 The [R.3 developer-template MVS evidence](runtime-extensions-r3-template-jobs-3093-3095-evidence-20261022.md)
 records two actual IFOX/IEWL/GO PASS jobs (3094 without and 3095
 with an optional finalizer), using temporary objects and test-only G!299.
 The [consolidated R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)
 records the later source-controlled campaign at `a246063`: **JOBs
 3101–3104 PASS** and fresh **145 PASS / 0 FAIL / 1 expected SKIP 083**.
-The owner accepted the campaign as successful and explicitly **deferred
-object-PDS installation**. R.3 remains **ACTIVE pending explicit owner
-closure**, with raw JES evidence retained locally and stated verification
-limits.
+The owner accepted the campaign as successful, explicitly **deferred
+object-PDS installation**, then approved **R.3 closure**. Raw JES
+evidence remains operator-local, with stated verification limits.
+No R.4 objective or exit gate has been approved.
 
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the

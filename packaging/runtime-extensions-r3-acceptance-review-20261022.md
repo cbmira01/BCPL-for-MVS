@@ -1,13 +1,13 @@
 # Milestone Runtime Extensions — R.3 campaign acceptance and closure review
 
-**March:** R.3 — Packaging and acceptance (**ACTIVE; closure under owner review**)  
+**March:** R.3 — Packaging and acceptance (**CLOSED by owner, 22 October 2026**)  
 **Owner decisions, 22 October 2026:** Record the consolidated campaign
-as **successful**; **defer object-PDS installation**; conduct the R.3
-closure review. These instructions are **not** an explicit decision
-to mark the march CLOSED.  
+as **successful**; **defer object-PDS installation**; review the R.3
+exit gates; then explicitly **CLOSE R.3** and complete Milestone Runtime
+Extensions. See the [owner closure](runtime-extensions-r3-closure-20261022.md).  
 **Tested Git revision:** [`a24606328810187c85f9e680eb82d7380b53c55c`](https://github.com/cbmira01/BCPL-for-MVS/commit/a24606328810187c85f9e680eb82d7380b53c55c)  
 **Operator-local campaign:** `20261022T185250588162Z`  
-**Review disposition:** **READY FOR OWNER CLOSURE DECISION**, with
+**Review disposition:** **APPROVED BY OWNER — R.3 CLOSED**, with
 the limitations below retained.
 
 ## Successful consolidated R.3 campaign
@@ -137,25 +137,28 @@ remain test-only. No ABI change or new GLOBAL allocation follows.
 | Rebuild from Git and authentic MVS JES/IEWL evidence | **MET for candidate workflow** | Fixed Git SHA, fresh five-client compile, four PASS MVS batches; source/JCL digests operator-local |
 | Fresh native 00–145 panel | **MET** | 145 PASS / 0 FAIL / 1 expected SKIP 083 on temporary registration overlay |
 | Separate object-PDS installation decision | **MET: DEFER** | Owner decision above; no installation conducted or authorized |
-| Consolidated review and reproducible operator procedure | **MET for documentation; owner closure pending** | This record, tracked runner and workflow guide, local evidence path |
+| Consolidated review and reproducible operator procedure | **MET; owner closure approved** | This record, tracked runner and workflow guide, local evidence path; explicit closure decision |
 
-### Closure recommendation
+### Owner closure decision
 
-**Recommend approval to close R.3 — Packaging and acceptance as
-a verified source-distributed, temporary-link registration
-foundation**, expressly *without* claiming installed runtime
-objects, an empty-PDS clean-room rebuild, full original historical
-compatibility, or exhaustive negative-case provenance assurance.
+After this review, the owner explicitly directed **"Close R.3"** on
+22 October 2026. The recommendation is **accepted**: R.3 —
+Packaging and acceptance is **CLOSED**, and the originally defined
+R.0–R.3 **Milestone Runtime Extensions is complete**.
 
-The project owner's instruction was to record the successful
-campaign, defer object-PDS installation and **review for closure**.
-It did not explicitly approve **closing R.3**. Accordingly **R.3
-remains ACTIVE** and the official milestone status must stay
-unchanged until the owner explicitly directs closure. No new R
-march is proposed.
+The closure is limited to a verified source-distributed,
+temporary-link registration foundation. It does **not** claim
+installed runtime objects, an empty-PDS clean-room rebuild, full
+original historical compatibility, or exhaustive negative-case
+provenance assurance. The previously approved object-PDS
+installation **DEFER** decision remains in force.
+
+See the [formal R.3 owner closure](runtime-extensions-r3-closure-20261022.md).
+No official R.4 march is defined by this decision.
 
 ## Related authoritative records
 
+- [R.3 owner closure](runtime-extensions-r3-closure-20261022.md)
 - [Milestone Runtime Extensions](milestone-runtime-extensions.md)
 - [R.3 kickoff and design review](runtime-extensions-r3-kickoff-20261022.md)
 - [R.3 reproducible acceptance workflow](runtime-extensions-r3-acceptance-workflow.md)

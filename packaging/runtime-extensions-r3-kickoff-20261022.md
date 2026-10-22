@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — R.3 kickoff and design review
 
-**March:** **R.3 — Packaging and acceptance (ACTIVE)**  
+**March:** **R.3 — Packaging and acceptance (CLOSED 22 October 2026)**  
 **Owner instruction:** "Proceed to R.3", 22 October 2026  
 **Previous:** [R.2 — Selective interoperability CLOSED](runtime-extensions-r2-closure-20261022.md)  
 **Implementation:** Design review only; **no accepted PDS object promotion**.
@@ -83,8 +83,10 @@ The later consolidated campaign, JOBs **3101–3104** and fresh 00..145
 native regression, passed on Git `a246063`. The owner explicitly
 **deferred object-PDS installation** and requested closure review.
 The [R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)
-records the results and limits; R.3 remains ACTIVE until explicit
-owner closure.
+records the results and limits. The owner subsequently **CLOSED R.3**
+on 22 October 2026, completing the approved R.0–R.3 milestone;
+see the [R.3 closure record](runtime-extensions-r3-closure-20261022.md).
+The R.4 handoff request does not yet define any new official march.
 
 ## Implementation boundary
 
