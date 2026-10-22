@@ -1,7 +1,9 @@
 # Milestone Runtime Extensions — R.1 integrated negative-test candidates
 
-**Status:** 15 host-generated fixtures, **not yet run on MVS**. This
-is an R.1 candidate test harness, not an accepted Core Runtime change.
+**Status:** 15 host-generated fixtures. Diagnostic 1001 was exercised
+in MVS JOBs 2229 and 2230 and correctly issued its WTO, but both jobs
+ended with GO ABEND S322 instead of the required RC=0012. **No
+integrated negative has passed**. This remains a candidate harness.
 It follows the owner-approved [Decision G contract](../../../packaging/runtime-extensions-r0-decision-g-contract-20261021.md).
 
 All jobs link the same compiled BCPL caller used by JOB 2228, the
@@ -50,7 +52,8 @@ python3 -m unittest discover -s tools/checks -p 'test_r1*.py' -v
 python3 bootstrap-toolchain/probes/r1-registration/make-negative-jobs.py all --check
 ```
 
-Generate and submit **one case at a time**. Start with 1001:
+**Do not submit additional negative cases until 1001 termination is
+corrected.** The following reproduces the unresolved case:
 
 ```sh
 python3 bootstrap-toolchain/probes/r1-registration/make-negative-jobs.py \
@@ -68,3 +71,8 @@ pass from generated JCL alone. `--check` does **not** execute IFOX.
 The generated JCL reads `BOOT_OBJ` with `DISP=SHR` and uses temporary
 assembly objects/load modules only. JCL with machine-local credentials
 is generated only under ignored `workarea`, mode 0600; do not commit it.
+
+See the [failure evidence for JOBs 2229 and 2230](../../../packaging/runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md).
+The [R1NOOUT isolation probe](README.md) must first determine whether
+ordinary no-output FINISH also hangs in BCPLIO.IOFIN. Repeating 1001
+with a still-higher GO CPU limit is not a fix.

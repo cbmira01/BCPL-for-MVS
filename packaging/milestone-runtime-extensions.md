@@ -6,8 +6,10 @@ R.0 adopted ABI Decisions A–H and the approved shared QUERY contract. Its isol
 (empty BCPLREG) and JOB 2228 (selected R1TEST dispatcher) both passed
 all IFOX, IEWL, and GO steps at RC=0000. See the
 [R.1 positive-path evidence](runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
-The 1001–1014/2001 integrated negative-test harness is prepared but
-not yet tested on MVS. Neither these positive runs nor host-generated
+The 1001–1014/2001 integrated negative-test harness is prepared.
+The first diagnostic 1001 ran in JOBs 2229 and 2230: correct WTO,
+but GO ended S322 rather than RC=0012. A no-output FINISH probe
+is prepared to isolate the early-rejection cleanup problem. Neither these positive runs nor host-generated
 negative fixtures close R.1. No BOOT_OBJ object promotion is
 authorized by this disposition. See the [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) for its historical evidence assessment and the superseding owner-disposition notice.
 

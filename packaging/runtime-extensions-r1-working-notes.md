@@ -43,7 +43,11 @@ compatibility problem. No historical FORMTREE assignment is altered.
 
 Seven host source-contract checks and two additional negative-harness
 tests passed at preparation. The positive MVS IFOX/IEWL/GO runs
-**JOBs 2226 and 2228 passed**. Integrated 1001–1014 and 2001 evidence,
+**JOBs 2226 and 2228 passed**. The first integrated negative, 1001,
+ran in JOBs 2229 and 2230 and emitted the correct WTO but both GO
+steps ended S322, not RC=0012. No negative case is accepted yet.
+The [no-output isolation probe](../bootstrap-toolchain/probes/r1-registration/README.md)
+is ready for MVS execution. Remaining diagnostic coverage,
 source-trusted address verification, reverse-order FINISH/STOP behavior,
 and full native regression still require MVS execution and review.
 
@@ -72,3 +76,14 @@ in JOBs 2226 and 2228. The host test guards against R0 storage bases.
 - [JOB 2226 and JOB 2228 positive evidence](runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
 - [R.1 integrated negative-test plan and harness](../bootstrap-toolchain/probes/r1-registration/NEGATIVE-TESTS.md): 1001–1014 and 2001 each require MVS evidence.
 - No accepted BOOT_OBJ promotion; R.1 remains ACTIVE.
+
+## Registration-rejection cleanup issue
+
+JOBs 2229 and 2230 both ended S322 after `BCPLREG 1001` (two-
+second and thirty-second GO limits respectively), with a saved PSW
+consistent with incomplete `BCPLIO.IOFIN` output CLOSE. Source analysis
+alone does not establish root cause. See the
+[failed rejection evidence](runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md).
+The temporary R1NOOUT application exercises ordinary FINISH with no
+application output and the real empty BCPLREG. Await its MVS result
+before changing startup ordering or accepted runtime components.

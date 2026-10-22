@@ -39,7 +39,10 @@ def make_deck(profile: str, jobcard: list[str], generated: str,
     trail = load(BASE, 'r1_jcl_base')
     patcher = load(PATCHER, 'r1_jcl_patcher')
     selected = profile == 'selected'
-    jobname = jobname_override or ('R1SELECT' if selected else 'R1EMPTY')
+    jobname = jobname_override or {
+        'empty':'R1EMPTY', 'selected':'R1SELECT',
+        'no-output':'R1NOOUT',
+    }[profile]
     if not jobcard or jobcard[0].split()[:2] != [f'//{jobname}', 'JOB']:
         raise ValueError('wrong authenticated job-card identity')
     inputs = [
@@ -102,7 +105,7 @@ def make_deck(profile: str, jobcard: list[str], generated: str,
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('profile', choices=('empty','selected'))
+    p.add_argument('profile', choices=('empty','selected','no-output'))
     p.add_argument('--generated', type=Path)
     p.add_argument('--check', action='store_true')
     args = p.parse_args()
@@ -112,7 +115,8 @@ def main():
     source = (ROOT / 'bootstrap-toolchain/asm/bcplmain.asm').read_text('ascii')
     generated = (args.generated.read_bytes().decode('latin-1') if args.generated
                  else trail.sample_generated())
-    job = 'R1SELECT' if args.profile == 'selected' else 'R1EMPTY'
+    job = {'empty':'R1EMPTY', 'selected':'R1SELECT',
+           'no-output':'R1NOOUT'}[args.profile]
     if args.check:
         # Avoid requiring authenticated machine-local configuration.
         jobcard = [f'//{job} JOB (BCPL),\'R1 VERIFY\',CLASS=A,MSGCLASS=A']
