@@ -1,5 +1,10 @@
 # Milestone Runtime Extensions - R.2 consolidated acceptance design
 
+**Subsequent owner disposition (22 October 2026): R.2 CLOSED.** The
+campaign later passed actual MVS JOBs 3091/3092, and R.3 began. See
+[the closure record](runtime-extensions-r2-closure-20261022.md).
+The ACTIVE/not-started statements below describe the earlier design stage.
+
 **March:** R.2 - Selective interoperability (ACTIVE).  
 **Owner decision:** Approved one consolidated runner and batched remaining
 checks, 22 October 2026. **R.3 has not started.**

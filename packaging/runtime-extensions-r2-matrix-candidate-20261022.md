@@ -1,5 +1,10 @@
 # Milestone Runtime Extensions — R.2 four-link matrix candidate
 
+**Subsequent owner disposition (22 October 2026): R.2 CLOSED.** The
+positive matrix passed JOBs 3080 and 3091; the consolidated negatives
+passed JOB 3092. See the [R.2 closure](runtime-extensions-r2-closure-20261022.md).
+The candidate/pending language below is historical.
+
 **March:** R.2 — Selective interoperability (ACTIVE)  
 **Status:** Positive 0/A/B/A+B source tested and verified in **actual MVS JOB 3080**; the consolidated R.2 negative/dependency campaign remains unverified. **No R.2 closure.**
 

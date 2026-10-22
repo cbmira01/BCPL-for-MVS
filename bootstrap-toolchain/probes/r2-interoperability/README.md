@@ -1,9 +1,10 @@
 # Milestone Runtime Extensions — R.2 interoperability probes
 
-**Status:** R.2 ACTIVE, not accepted. **First increment:** real MVS
-BCPLDEMO G!203 demonstrated in JOB 3075. **Second increment:** a
-separate test-only extension B and four-link selection matrix have
-candidate source; their actual MVS execution **passed JOB 3080**. The consolidated negative and dependency campaign remains unverified.
+**Status:** **R.2 CLOSED 22 October 2026.** BCPLDEMO G!203 passed
+JOB 3075; test-only R2TESTB and the 0/A/B/A+B matrix passed JOB 3080.
+The consolidated campaign passed JOBs **3091/3092**. See the
+[R.2 acceptance and owner closure](../../../packaging/runtime-extensions-r2-closure-20261022.md).
+R.3 — Packaging and acceptance is now ACTIVE.
 
 The first test uses `demo.bcpl` (a separately compiled BCPL caller),
 `registry-demo.asm` (real BCRG selection and required-package declaration),

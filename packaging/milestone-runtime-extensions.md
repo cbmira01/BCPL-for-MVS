@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED.** **R.2 — Selective interoperability ACTIVE (positive 0/A/B/A+B matrix PASS in actual JOB 3080; consolidated negative campaign candidate awaiting actual MVS verification); R.3 — Packaging and acceptance is not started.**
+**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance ACTIVE.** See the [R.2 owner closure](runtime-extensions-r2-closure-20261022.md) and [R.3 kickoff/design review](runtime-extensions-r3-kickoff-20261022.md).
 
 **R.1 owner closure:** The consolidated MVS acceptance campaign passed
 24/24 integrated jobs (2760–2783), all five gates, and the 00..145
@@ -12,7 +12,7 @@ the current gate status. The G!150 FORMTREE/DEBUGINT issue remains
 separate and unresolved. **No BOOT_OBJ or BOOT_DEVOBJ promotion** was
 authorized by R.1 closure.
 
-**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **Extension A passed its first actual MVS demonstration in JOB 3075** (six IFOX assemblies, IEWL, GO all RC=0000; expected BCPL marker and MAP verified). See [JOB 3075 evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). **Extension B and the 0/A/B/A+B positive matrix PASSED actual MVS JOB 3080 (22 steps RC=0000).** The owner-approved [R.2 consolidated acceptance campaign](runtime-extensions-r2-consolidated-acceptance-design-20261022.md) is implemented as a candidate; remaining negative/dependency batch MVS verification is pending.
+**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **Extension A passed its first actual MVS demonstration in JOB 3075** (six IFOX assemblies, IEWL, GO all RC=0000; expected BCPL marker and MAP verified). See [JOB 3075 evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). **Extension B and the 0/A/B/A+B positive matrix PASSED actual MVS JOB 3080 (22 steps RC=0000).** The owner-approved [R.2 consolidated acceptance campaign](runtime-extensions-r2-consolidated-acceptance-design-20261022.md) then reported **JOBs 3091/3092 PASS**. The owner closed R.2 on 22 October 2026; details and limits are recorded in the [closure evidence](runtime-extensions-r2-closure-20261022.md).
 
 ## 1. Purpose
 
@@ -231,8 +231,8 @@ This paragraph records the former R.0 design stage. R.1 has since verified integ
 | --- | --- | --- |
 | **R.0 — Evidence and contract** | Inventory the actual CG370 trailer, global initialization/import ordering, BLIB and native binders, link-editor behavior, and slot map; evaluate dispatcher/opcode-0 capability ABI | Recorded verified ABI; static global-number registry policy, one-slot dispatcher decision, candidate six-word QUERY descriptor and client tests, chosen registrar/descriptor formats, collision and empty-table rules; **no speculative source refactor** |
 | **R.1 — Generic registration foundation (CLOSED 22 October 2026)** | Implement one minimal, linker-driven registration path with an empty registry and one trivial optional assembler service | Gate accepted: 24 integrated MVS jobs PASS, all five gates PASS, fresh 145 PASS / 0 FAIL / 1 expected SKIP 083 ([closure record](runtime-extensions-r1-closure-20261022.md)) |
-| **R.2 — Selective interoperability** | Link two independent optional extension *probes*, individually and together; if practical one compiled BCPL extension export plus one assembler export | 0/A/B/A+B combinations work without BCPLMAIN rebuild; each linked dispatcher answers opcode 0 and rejects unsupported calls, client inspects version/opcode bitmap; collisions, invalid descriptor, missing dependency/slot, absent module diagnosed deterministically; inspect linkage maps |
-| **R.3 — Packaging and acceptance** | Stable user-facing link-edit recipe, BCPL declaration conventions, developer template and reproducible rebuild from Git | Full native regression baseline; separately accepted object PDS installation decision; documented accepted startup contract and actual JES/IEWL evidence |
+| **R.2 — Selective interoperability (CLOSED 22 October 2026)** | Link two independent optional extension *probes*, individually and together; if practical one compiled BCPL extension export plus one assembler export | 0/A/B/A+B combinations work without BCPLMAIN rebuild; each linked dispatcher answers opcode 0 and rejects unsupported calls, client inspects version/opcode bitmap; collisions, invalid descriptor, missing dependency/slot, absent module diagnosed deterministically; inspect linkage maps |
+| **R.3 — Packaging and acceptance (ACTIVE 22 October 2026)** | Stable user-facing link-edit recipe, BCPL declaration conventions, developer template and reproducible rebuild from Git | Full native regression baseline; separately accepted object PDS installation decision; documented accepted startup contract and actual JES/IEWL evidence |
 
 The probes should be *tiny*, not premature implementations of QSAM/DEC/TIME. Subsequent feature milestones own their APIs and behavior. A failed gate can suspend R without blocking M4.
 
@@ -253,15 +253,16 @@ Proposed deliverables (paths provisional pending R.0): an assembler registration
 
 The goal is **a stable, simple, historically intelligible extension pattern**, not a plugin loader, dependency manager, or dynamic linker.
 
-## 10. Next review — R.2 — Selective interoperability
+## 10. Current march — R.3 — Packaging and acceptance
 
-R.0 and R.1 are closed. BCPLDEMO design and permanent G!203 allocation are owner approved; extension A code is a candidate awaiting MVS testing. Before the complete R.2 acceptance campaign, review the two small
-independent optional extension probe designs (A and B), including their
-BCEX descriptors, BCPLREG selection, opcode-0 QUERY results, and the
-0/A/B/A+B link/edit matrix. Reuse the R.1 registration core rather than
-rebuilding BCPLMAIN per selection. Plan expected failures for collisions,
-malformed descriptors, missing required dependencies and absent modules,
-plus IEWL MAP and MVS output verification. If practical, include one
-compiled BCPL export alongside an assembler export. Keep the probes
-small; QSAM/DEC/TIME functionality is owned by their separate milestones.
-Do not promote BOOT_OBJ or BOOT_DEVOBJ without an independent owner decision.
+**R.2 closed by owner direction on 22 October 2026.** The consolidated
+operator campaign passed JOB 3091 (positive matrix) and JOB 3092
+(negative/dependency matrix). The [R.2 acceptance record](runtime-extensions-r2-closure-20261022.md)
+gives the observed evidence and its independent-audit limits.
+
+**R.3 ACTIVE.** Consult the [R.3 kickoff and design review](runtime-extensions-r3-kickoff-20261022.md)
+before implementing packaging and installation tooling. The remaining
+official exit gate is a stable public linking/declaration template,
+reconstruction from Git, a fresh full native regression, JES/IEWL
+acceptance evidence and a separately authorized object-PDS installation
+decision. No object promotion follows from starting R.3.

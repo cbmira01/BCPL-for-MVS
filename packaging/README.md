@@ -48,8 +48,18 @@ and contract CLOSED; R.1 — Generic registration foundation CLOSED**
 reports 24/24 integrated MVS jobs PASS, all five acceptance gates PASS,
 and a fresh 145 PASS / 0 FAIL / 1 expected SKIP 083 native regression
 under the temporary R.1 runtime overlay.
-**R.2 — Selective interoperability is ACTIVE**, with [BCPLDEMO G!203 owner approval](runtime-extensions-r2-bcpldemo-decision-20261022.md) and a [first source candidate](../bootstrap-toolchain/extensions/bcpldemo/README.md). The first real BCPLDEMO end-to-end demonstration passed MVS JOB 3075 (six IFOX steps, IEWL, and GO at RC=0000; see [JOB 3075 evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md)). Test-only extension B (G!299) and the 0/A/B/A+B positive matrix PASSED actual MVS JOB 3080; see [the R.2 matrix design](runtime-extensions-r2-matrix-candidate-20261022.md) and [probe instructions](../bootstrap-toolchain/probes/r2-interoperability/README.md). Actual MVS matrix evidence and negative registration gates remain pending. **R.3 — Packaging and acceptance is not started.** No accepted runtime PDS
-promotion was authorized.
+**R.2 — Selective interoperability CLOSED by owner decision on
+22 October 2026.** BCPLDEMO (G!203) passed JOB 3075; 0/A/B/A+B
+interoperability passed JOB 3080; consolidated JOBs **3091 and 3092**
+passed the positive and 21-case negative/dependency acceptance batches.
+See the [R.2 closure record](runtime-extensions-r2-closure-20261022.md)
+for evidence limits and the local campaign receipt.
+**R.3 — Packaging and acceptance ACTIVE.** The
+[R.3 kickoff/design review](runtime-extensions-r3-kickoff-20261022.md)
+defines user-facing headers, link-edit recipes, developer examples,
+rebuild, fresh regression and separate installed-object authorization.
+No accepted runtime-PDS object was promoted.
+
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
 owner-approved shared `BCPLREG`/finalizer *model*. The
@@ -109,9 +119,8 @@ The approved model uses **one public global-vector entry per optional
 package**, with stable package-local opcodes. The shared opcode-0 QUERY
 contract describes a side-effect-free, versioned numeric capability
 query into caller-owned BCPL words. The global slots G!200–G!202 are
-allocated; allocation alone does not imply implementation. R.2 will
-verify two independent optional dispatchers under integrated BCPLREG
-selection and test their QUERY interoperability.
+allocated; allocation alone does not imply implementation. R.2 verified two independent optional dispatchers under integrated
+BCPLREG selection and tested their QUERY interoperability.
 
 ## Proposed optional native I/O milestone
 
