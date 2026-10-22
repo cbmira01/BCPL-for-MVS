@@ -10,12 +10,17 @@ from __future__ import annotations
 import argparse
 import importlib.util
 from pathlib import Path
+import os
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 BASE = HERE.parent / 'r0-export-trailer-probe/make-job.py'
 PATCHER = ROOT / 'tools/checks/r1_prepare_candidate.py'
-WORK = ROOT / 'workarea/runtime-extensions-r1'
+WORK = Path(os.environ['R1_CAMPAIGN_STAGE']) if os.environ.get(
+    'R1_CAMPAIGN_STAGE') else ROOT / 'workarea/runtime-extensions-r1'
+STEPS = [('ASMA','R1AOBJ'), ('ASMN','R1NOBJ'),
+         ('ASMR','R1ROBJ'), ('ASMG','R1GOBJ'),
+         ('ASMD','R1DOBJ'), ('ASMS','R1SOBJ')]
 CORE = ('BCPLIO','BCPLMEM','BCPLBYTE','BCPLAPT','BLIB')
 
 
@@ -35,7 +40,8 @@ def asm(source: str, desc: str, trail):
 def make_deck(profile: str, jobcard: list[str], generated: str,
               source: str, obj_dsn: str, *, jobname_override=None,
               registry_override=None, descriptor_override=None,
-              extra_asm=(), core_override=None) -> str:
+              extra_asm=(), core_override=None,
+              allow_untrusted_fixture=False) -> str:
     trail = load(BASE, 'r1_jcl_base')
     patcher = load(PATCHER, 'r1_jcl_patcher')
     selected = profile == 'selected'
@@ -54,12 +60,20 @@ def make_deck(profile: str, jobcard: list[str], generated: str,
     if selected:
         for step, obj, name in [('ASMD','R1DOBJ','descriptor.asm'),
                                 ('ASMS','R1SOBJ','dispatcher.asm')]:
-            inputs.append((step,obj,asm(
-                descriptor_override if name == 'descriptor.asm'
-                and descriptor_override is not None else
-                (HERE / name).read_text('ascii'), name, trail)))
+            inputs.append((step,obj,asm(descriptor_override if name == 'descriptor.asm' and descriptor_override is not None else (HERE / name).read_text('ascii'),name,trail)))
     for step, obj, source_asm in extra_asm:
         inputs.append((step, obj, asm(source_asm, step, trail)))
+    if selected:
+        provenance = load(ROOT / 'tools/checks/r1_provenance.py',
+                          'r1_source_provenance')
+        registry_source = (registry_override if registry_override is not None
+                           else (HERE/'selected-registry.asm').read_text('ascii'))
+        descriptor_source = (descriptor_override if descriptor_override is not None
+                             else (HERE/'descriptor.asm').read_text('ascii'))
+        linked_sources = [(HERE/'dispatcher.asm').read_text('ascii')]
+        linked_sources.extend(text for _step,_obj,text in extra_asm)
+        provenance.check(registry_source,descriptor_source,linked_sources,
+                         allow_untrusted_fixture=allow_untrusted_fixture)
     cards = [*jobcard, f'//* R.1 {profile.upper()} BCPLREG CANDIDATE',
              '//* ALL TEST OBJECTS TEMPORARY; BOOT_OBJ READ ONLY']
     for step, obj, rows in inputs:

@@ -13,7 +13,14 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 REGRESSION = ROOT / "bootstrap-toolchain" / "regression"
 RUNNER = REGRESSION / "run-test-mvs.sh"
-LOG_DIR = ROOT / "workarea" / "native-regression" / "logs"
+# Optional R.1 isolated evidence directory; ordinary behavior unchanged.
+if os.environ.get("R1_ACCEPTANCE") == "1":
+    location = os.environ.get("R1_REGRESSION_LOG_DIR")
+    if not location or not Path(location).is_absolute():
+        raise SystemExit("R.1 needs an absolute regression log directory")
+    LOG_DIR = Path(location)
+else:
+    LOG_DIR = ROOT / "workarea" / "native-regression" / "logs"
 CASE_RE = re.compile(r"^(\d{2,3})-")
 
 

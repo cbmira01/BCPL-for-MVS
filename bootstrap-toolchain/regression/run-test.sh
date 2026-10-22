@@ -81,7 +81,23 @@ compile_only="$case_dir/compile-only.txt"
     exit 66
 }
 
-work="$root/workarea/native-regression/$case_name"
+# R.1 uses a unique run-scoped work directory. No existing logs touched.
+if [[ ${R1_ACCEPTANCE:-0} == 1 ]]; then
+    [[ ${BCPL_RUNTIME_PDS:-} == 1 &&
+       ${BCPL_RUNTIME_LIBRARY:-} == OBJ &&
+       ${BCPL_RUNTIME_CANDIDATE:-0} == 0 ]] || {
+        echo "run-test: R.1 needs production OBJ link inputs" >&2
+        exit 64
+    }
+    [[ -n ${R1_ACCEPTANCE_WORKDIR:-} &&
+       ${R1_ACCEPTANCE_WORKDIR} == /* ]] || {
+        echo "run-test: R.1 requires an absolute work directory" >&2
+        exit 64
+    }
+    work="$R1_ACCEPTANCE_WORKDIR/$case_name"
+else
+    work="$root/workarea/native-regression/$case_name"
+fi
 mkdir -p "$work"
 
 source_copy="$work/$case_name.bcpl"
@@ -101,17 +117,24 @@ compile_args=(
 if [[ -f "$cambridge_parm" ]]; then
     compile_args+=(--cambridge-parm "$cambridge_parm")
 fi
-python3 "$compiler_driver" "${compile_args[@]}" || exit $?
-
+# During R.1 compile directly to the run-scoped file, not shared workarea.
 generated_root="$root/workarea/$case_name.s370.asm"
 generated="$work/generated.s370.asm"
-
-[[ -f "$generated_root" ]] || {
-    echo "run-test: Cambridge CODE was not recovered: $generated_root" >&2
+if [[ ${R1_ACCEPTANCE:-0} == 1 ]]; then
+    compile_args+=(--output "$generated")
+fi
+python3 "$compiler_driver" "${compile_args[@]}" || exit $?
+if [[ ${R1_ACCEPTANCE:-0} != 1 ]]; then
+    [[ -f "$generated_root" ]] || {
+        echo "run-test: Cambridge CODE was not recovered: $generated_root" >&2
+        exit 66
+    }
+    mv -f "$generated_root" "$generated"
+fi
+[[ -s "$generated" ]] || {
+    echo "run-test: missing generated BCPL source $generated" >&2
     exit 66
 }
-
-mv -f "$generated_root" "$generated"
 
 if [[ -f "$generated_regex" ]]; then
     echo
@@ -278,11 +301,17 @@ if [[ $runtime_pds == 1 ]]; then
         if [[ -f "$cambridge_parm" ]]; then
             library_args+=(--cambridge-parm "$cambridge_parm")
         fi
-        python3 "$compiler_driver" "${library_args[@]}" || exit $?
         library_generated_root="$root/workarea/$case_name-library.s370.asm"
         library_generated="$work/library-generated.s370.asm"
-        [[ -f "$library_generated_root" ]] || exit 66
-        mv -f "$library_generated_root" "$library_generated"
+        if [[ ${R1_ACCEPTANCE:-0} == 1 ]]; then
+            library_args+=(--output "$library_generated")
+        fi
+        python3 "$compiler_driver" "${library_args[@]}" || exit $?
+        if [[ ${R1_ACCEPTANCE:-0} != 1 ]]; then
+            [[ -f "$library_generated_root" ]] || exit 66
+            mv -f "$library_generated_root" "$library_generated"
+        fi
+        [[ -s "$library_generated" ]] || exit 66
         pds_args+=(--library-generated "$library_generated")
     fi
     echo
@@ -293,6 +322,13 @@ if [[ $runtime_pds == 1 ]]; then
         "$generated" "$jcl" --test-number "$test_num" \
         "${pds_args[@]}" || exit $?
     [[ -s "$jcl" ]] || exit 66
+    if [[ ${R1_ACCEPTANCE:-0} == 1 ]]; then
+        r1_jcl="$work/runtime-pds-r1.jcl"
+        python3 "$root/tools/checks/r1-overlay-regression-jcl.py" \
+            "$jcl" "$r1_jcl" || exit $?
+        [[ -s "$r1_jcl" ]] || exit 66
+        jcl="$r1_jcl"
+    fi
 else
 mem_object=${BCPLMEM_OBJECT:-0}
 if [[ $mem_object != 0 && $mem_object != 1 ]]; then

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'bootstrap-toolchain/asm/bcplmain.asm'
@@ -19,6 +20,68 @@ def replace_once(text: str, old: str, new: str) -> str:
     if count != 1:
         raise ValueError(f'expected one BCPLMAIN anchor, found {count}: {old[:66]!r}')
     return text.replace(old, new)
+
+
+# R.1-private provenance tags: 1=application, 2=BLIB, 4=Core.
+# The bitmap is an internal witness, not a new public registration ABI.
+CORE_START = 'BLIDONE  L     4,4(12)\n'
+CORE_END = '         ST    1,120(12)\n'
+
+
+def add_owner_ledger(result: str) -> str:
+    result = replace_once(
+        result,
+        '         BCT   1,GINIT\n',
+        '         BCT   1,GINIT\n'
+        '* ZERO ALL PRIVATE PER-GLOBAL OWNER BITS BEFORE IMPORTING.\n'
+        '         L     4,=A(R1OWNB)\n'
+        '         XC    0(256,4),0(4)\n'
+        '         XC    256(256,4),256(4)\n'
+        '         XC    512(188,4),512(4)\n',
+    )
+    for label, tag in [('GINST', '01'), ('BLIMP', '02')]:
+        # Unique importing store; leave both original trailer walkers intact.
+        if label == 'GINST':
+            old = '         ST    9,0(2)\n         BC    15,GINST\n'
+        else:
+            old = '         ST    9,0(2)\n         B     BLIMP\n'
+        result = replace_once(result, old,
+            '         ST    9,0(2)\n'
+            '         LR    4,1\n'
+            '         SRL   4,2\n'
+            '         L     2,=A(R1OWNB)\n'
+            '         AR    2,4\n'
+            f"         OI    0(2),X'{tag}'\n" +
+            ('         BC    15,GINST\n' if label=='GINST' else
+             '         B     BLIMP\n'))
+    # Each native direct store is recorded, including conditional G!76.
+    if result.count(CORE_START) != 1 or result.count(CORE_END) != 1:
+        raise ValueError('expected exact core ownership boundary')
+    before, body = result.split(CORE_START, 1)
+    core, after = body.split(CORE_END, 1)
+    block = CORE_START + core + CORE_END
+    matches = []
+    def rewrite(match):
+        offset = int(match.group(2))
+        if offset % 4 or offset == 0 or offset > 2796:
+            raise ValueError(f'invalid native owner slot: {offset}')
+        matches.append(offset//4)
+        return (match.group(0) + '\n'
+                '         L     4,=A(R1OWNB)\n'
+                f"         OI    {offset//4}(4),X'04'")
+    block = re.sub(r'^         ST    ([0-9]+),([0-9]+)\(12\)$',
+                   rewrite, block, flags=re.M)
+    required = {6,52,53,54,55,11,16,17,39,33,13,15,42,41,
+                12,47,46,14,76,85,86,87,88,150,40,30}
+    if set(matches) != required:
+        raise ValueError(f'native owner writer census changed: '
+                         f'{set(matches)^required}')
+    result = before + block + after
+    return replace_once(result,
+        "R1CODE   DC    F'0'\n",
+        "R1CODE   DC    F'0'\n"
+        '         DS    0F\n'
+        'R1OWNB   DS    CL700\n')
 
 
 def adapt(source: str) -> str:
@@ -91,9 +154,11 @@ def adapt(source: str) -> str:
         "STOPRC   DC    F'0'\n",
         "STOPRC   DC    F'0'\n"
         "R1GVEC   DC    F'0'\n"
+        "R1OWNP   DC    A(R1OWNB)\n"
         "R1REAS   DC    F'0'\n"
         "R1CODE   DC    F'0'\n",
     )
+    result = add_owner_ledger(result)
     if any(not line.isascii() or len(line) > 71 for line in result.splitlines()):
         raise ValueError('candidate BCPLMAIN contains non-IFOX-compatible cards')
     return result

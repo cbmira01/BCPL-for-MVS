@@ -13,12 +13,14 @@ from __future__ import annotations
 import argparse
 import importlib.util
 from pathlib import Path
+import os
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 BASE = HERE / 'make-jobs.py'
 PATCHER = ROOT / 'tools/checks/r1_prepare_candidate.py'
-WORK = ROOT / 'workarea/runtime-extensions-r1'
+WORK = Path(os.environ['R1_CAMPAIGN_STAGE']) if os.environ.get(
+    'R1_CAMPAIGN_STAGE') else ROOT / 'workarea/runtime-extensions-r1'
 CASES = tuple(range(1001, 1015)) + (2001,)
 
 
@@ -185,7 +187,8 @@ def make_case(case: int, generated: str, baseline: str, jobcard: list[str],
                              obj_dsn, jobname_override=job,
                              registry_override=reg,
                              descriptor_override=desc,
-                             extra_asm=extra, core_override=core)
+                             extra_asm=extra, core_override=core,
+                             allow_untrusted_fixture=(case==1013))
 
 
 def main():

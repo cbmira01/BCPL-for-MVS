@@ -50,6 +50,7 @@ class SourceContract(unittest.TestCase):
         for n in range(1001, 1015):
             self.assertRegex(reg, rf"ERR{n}\s+WTO\s+'BCPLREG {n} ")
         self.assertIn('BCPLREG 2001', reg)
+        # Publication must be after the entire validation+required phase.
         self.assertLess(reg.index('REQLIST'), reg.index('PUBLISH  '))
         self.assertLess(reg.index('PUBLISH  '), reg.index('ST    0,REGCOUNT'))
         self.assertIn('LTR   15,15', reg)
@@ -63,8 +64,7 @@ class SourceContract(unittest.TestCase):
         self.assertIn('CLC   0(8,8),0(1)', span)
 
     def test_no_register_zero_as_storage_base(self):
-        # JOB 2225: ST 13,4(0) accessed absolute address 4, not
-        # R0+4. In System/370 RX addressing, B=0 means no base.
+        # JOB 2225: ST 13,4(0) accessed absolute address 4, not R0+4.
         src = (ASM / 'bcplrgs.asm').read_text('ascii')
         for lineno, line in enumerate(src.splitlines(), 1):
             if not line.strip() or line.startswith('*'):
@@ -73,11 +73,10 @@ class SourceContract(unittest.TestCase):
                 self.assertNotRegex(line, r'\b\d+\(0\)(?=\s|,|$)')
         self.assertEqual(src.count('LA    2,RSAVE'), 1)
         self.assertEqual(src.count('LA    2,FSAVE'), 1)
-        self.assertIn('L     2,0(2)', src)
+        self.assertIn('LR    4,10\n         AR    4,1\n         L     2,0(4)', src)
+        self.assertNotIn('LR    0,10\n         AR    0,1\n         L     2,0(2)', src)
 
     def test_local_symbols_not_redeclared_extern(self):
-        # IFOX diagnoses IFO196 when a symbol defined in an earlier
-        # CSECT is declared EXTRN in the same assembly (JOB 2224).
         src = (ASM / 'bcplrgs.asm').read_text('ascii')
         definitions = set()
         externals = set()
@@ -109,6 +108,38 @@ STOPENT  ST    7,STOPRC
 FINEXIT  LR    9,10
          L     15,=A(IOFIN)
 STOPRC   DC    F'0'
+         BCT   1,GINIT
+         ST    9,0(2)
+         BC    15,GINST
+         ST    9,0(2)
+         B     BLIMP
+BLIDONE  L     4,4(12)
+         ST    1,24(12)
+         ST    1,208(12)
+         ST    1,212(12)
+         ST    1,216(12)
+         ST    1,220(12)
+         ST    1,44(12)
+         ST    1,64(12)
+         ST    1,68(12)
+         ST    1,156(12)
+         ST    1,132(12)
+         ST    1,52(12)
+         ST    1,60(12)
+         ST    1,168(12)
+         ST    1,164(12)
+         ST    1,48(12)
+         ST    1,188(12)
+         ST    1,184(12)
+         ST    1,56(12)
+         ST    1,304(12)
+         ST    1,340(12)
+         ST    1,344(12)
+         ST    1,348(12)
+         ST    1,352(12)
+         ST    1,600(12)
+         ST    1,160(12)
+         ST    1,120(12)
 '''
         output=patcher.adapt(baseline)
         self.assertIn('EXTRN RGINIT,RGFINI', output)

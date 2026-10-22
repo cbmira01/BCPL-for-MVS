@@ -1,6 +1,6 @@
 ***********************************************************************
 * R.1 GENERIC REGISTRATION FOUNDATION - DEVELOPMENT CANDIDATE.
-* RGINIT: R1 -> F'G BASE' (MVS BYTE POINTER), RETURN R15=ID/0.
+* RGINIT: R1 -> G BASE,OWNER LEDGER POINTERS; R15=ID/0.
 * RGFINI: R1 -> REASON,STOPCODE; R15=0 OR 8 ON RETURNED FAILURE.
 * VERSION 1 BCRG/BCEX. NEVER PUBLISH BEFORE FULL VALIDATION.
 * LINK A REAL BCPLREG OBJECT FOR EVERY APPLICATION.
@@ -26,6 +26,8 @@ RGINIT   CSECT
          XC    RGERR(4),RGERR
          L     10,0(1)
          ST    10,RGGBASE
+         L     2,4(1)
+         ST    2,RGOWNER
          L     9,=A(BCRGBEG)
          L     4,=A(BCRGEND)
 * BOUNDS FIRST; NEVER READ AN INVALID FIXED HEADER.
@@ -181,12 +183,20 @@ EXNEXT   L     6,RGEXI
          BNZ   ERR1008
 * TEST CURRENT EFFECTIVE G SLOT, INCLUDING ACTUAL APP/BLIB/CORE.
          SLL   1,2
-         LR    2,10
-         AR    2,1
-         L     2,0(2)
+         LR    4,10
+         AR    4,1
+         L     2,0(4)
          L     4,=X'C7D3F000'
          AR    4,1
          CR    2,4
+         BNE   ERR1009
+* VERIFY THE PRIVATE PRIOR-WRITER LEDGER, NOT ONLY LAST G VALUE.
+         L     4,RGOWNER
+         LTR   4,4
+         BZ    ERR1009
+         SRL   1,2
+         AR    4,1
+         CLI   0(4),X'00'
          BNE   ERR1009
 * CHECK EARLIER EXPORTS IN THIS DESCRIPTOR.
          XC    RGSCAN(4),RGSCAN
@@ -207,7 +217,7 @@ EXSAME   L     4,RGSCAN
          ST    4,RGSCAN
          B     EXSAME
 EXOTHER  XC    RGSCAN(4),RGSCAN
-EXOPKG   L     4,RGSCAN
+EXOPKG  L     4,RGSCAN
          C     4,RGIDX
          BNL   EXDONE
          L     8,RGSELECT
@@ -428,6 +438,7 @@ REGRET   L     15,RGERR
          DS    0F
 RSAVE    DS    18F
 RGGBASE  DC    F'0'
+RGOWNER  DC    F'0'
 RGSELECT DC    F'0'
 RGCNT    DC    F'0'
 RGREQN   DC    F'0'
@@ -454,7 +465,6 @@ REGFINTB DS    32F
 ***********************************************************************
 RGFINI   CSECT
          ENTRY RGFINI
-* REGCOUNT/REGFINTB ARE DEFINED IN THE EARLIER RGINIT CSECT.
          STM   14,12,12(13)
          LR    12,15
          USING RGFINI,12
