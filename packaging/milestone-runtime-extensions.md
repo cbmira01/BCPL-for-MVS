@@ -260,9 +260,16 @@ operator campaign passed JOB 3091 (positive matrix) and JOB 3092
 (negative/dependency matrix). The [R.2 acceptance record](runtime-extensions-r2-closure-20261022.md)
 gives the observed evidence and its independent-audit limits.
 
-**R.3 ACTIVE.** Consult the [R.3 kickoff and design review](runtime-extensions-r3-kickoff-20261022.md)
-before implementing packaging and installation tooling. The remaining
-official exit gate is a stable public linking/declaration template,
-reconstruction from Git, a fresh full native regression, JES/IEWL
-acceptance evidence and a separately authorized object-PDS installation
-decision. No object promotion follows from starting R.3.
+**R.3 ACTIVE — successful acceptance campaign recorded; formal closure
+decision pending.** The owner-supplied campaign at Git `a246063` passed
+developer-template JOBs 3101/3102, the 0/A/B/A+B matrix JOB 3103,
+negative/dependency JOB 3104, and a fresh native 00..145 panel with
+**145 PASS / 0 FAIL / 1 expected SKIP 083**. The owner explicitly
+**deferred object-PDS installation** on 22 October 2026; neither
+`BOOT_OBJ` nor `BOOT_DEVOBJ` is authorized for modification. The
+[R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)
+records the gate assessment, operator-local evidence limitations and
+recommendation to close **only upon explicit owner approval**. See also
+the [source-controlled R.3 workflow](runtime-extensions-r3-acceptance-workflow.md)
+and [R.3 kickoff/design review](runtime-extensions-r3-kickoff-20261022.md).
+No object promotion, new ABI, or GLOBAL-number allocation was authorized.

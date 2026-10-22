@@ -2,8 +2,12 @@
 
 **Milestone:** Runtime Extensions  
 **March:** R.3 — Packaging and acceptance (**ACTIVE**)  
-**Status:** Source-controlled development candidate; fresh operator MVS
-execution and review remain pending. This is **not** R.3 closure.
+**Status:** Source-controlled development candidate; first full operator
+MVS campaign **PASSED on 22 October 2026** at Git `a246063`
+(JOBs 3101–3104; native 145 PASS / 0 FAIL / 1 expected SKIP 083).
+The owner deferred object-PDS installation. See the
+[R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md).
+R.3 remains **ACTIVE pending explicit owner closure**.
 
 ## Why this runner exists
 

@@ -79,6 +79,12 @@ finalizer); both assembled, linked and ran at RC=0000. Their
 scope, IEWL MAP/XREF, observed markers and remaining limits are
 recorded in the [R.3 developer-template evidence](runtime-extensions-r3-template-jobs-3093-3095-evidence-20261022.md).
 These results do not approve installed-object promotion or close R.3.
+The later consolidated campaign, JOBs **3101–3104** and fresh 00..145
+native regression, passed on Git `a246063`. The owner explicitly
+**deferred object-PDS installation** and requested closure review.
+The [R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)
+records the results and limits; R.3 remains ACTIVE until explicit
+owner closure.
 
 ## Implementation boundary
 

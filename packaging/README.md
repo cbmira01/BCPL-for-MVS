@@ -62,7 +62,13 @@ No accepted runtime-PDS object was promoted.
 The [R.3 developer-template MVS evidence](runtime-extensions-r3-template-jobs-3093-3095-evidence-20261022.md)
 records two actual IFOX/IEWL/GO PASS jobs (3094 without and 3095
 with an optional finalizer), using temporary objects and test-only G!299.
-This evidence does not close R.3 or replace its fresh regression gate.
+The [consolidated R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)
+records the later source-controlled campaign at `a246063`: **JOBs
+3101–3104 PASS** and fresh **145 PASS / 0 FAIL / 1 expected SKIP 083**.
+The owner accepted the campaign as successful and explicitly **deferred
+object-PDS installation**. R.3 remains **ACTIVE pending explicit owner
+closure**, with raw JES evidence retained locally and stated verification
+limits.
 
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
