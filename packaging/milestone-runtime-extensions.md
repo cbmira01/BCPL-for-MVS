@@ -1,19 +1,16 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 21 October 2026):** **R.0 — Evidence and contract CLOSED.** **R.1 — Generic registration foundation ACTIVE.** R.2 remains Selective interoperability; R.3 remains Packaging and acceptance.
+**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED.** **R.2 — Selective interoperability is next for planning; R.3 — Packaging and acceptance is not started.**
 
-R.0 adopted ABI Decisions A–H and the approved shared QUERY contract. Its isolated jobs are evidence for their stated test scope only. R.1 must still prove integrated pre-START validation, actual owner checks, transactional publication, finalizer ordering and error behavior, and the native regression baseline. The G!150 FORMTREE/DEBUGINT compatibility issue remains separate and unresolved. **R.1 positive-path update (22 October 2026):** MVS JOB 2226
-(empty BCPLREG) and JOB 2228 (selected R1TEST dispatcher) both passed
-all IFOX, IEWL, and GO steps at RC=0000. See the
-[R.1 positive-path evidence](runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
-The 1001–1014/2001 integrated negative-test harness is prepared.
-The first diagnostic 1001 ran in JOBs 2229 and 2230: correct WTO,
-but GO ended S322 rather than RC=0012. The no-output FINISH probe **JOB 2232 passed** with GO RC=0000.
-A source-confirmed R10 preservation defect in the test-only R1BAD
-cleanup was corrected in the candidate; a new MVS diagnostic-1001
-run is still required for acceptance. Neither these positive runs nor host-generated
-negative fixtures close R.1. No BOOT_OBJ object promotion is
-authorized by this disposition. See the [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) for its historical evidence assessment and the superseding owner-disposition notice.
+**R.1 owner closure:** The consolidated MVS acceptance campaign passed
+24/24 integrated jobs (2760–2783), all five gates, and the 00..145
+candidate-runtime panel (145 PASS / 0 FAIL / 1 expected SKIP 083).
+See the [R.1 closure and acceptance record](runtime-extensions-r1-closure-20261022.md).
+R.0's approved A–H ABI decisions and shared QUERY contract remain binding.
+Earlier R.1 development and failed-run evidence remains historical, not
+the current gate status. The G!150 FORMTREE/DEBUGINT issue remains
+separate and unresolved. **No BOOT_OBJ or BOOT_DEVOBJ promotion** was
+authorized by R.1 closure.
 
 ## 1. Purpose
 
@@ -125,7 +122,7 @@ A production example must check the returned required length and reserve the **e
 
 A function-address table in the single slot is an alternate design, but it would require verified native BCPL procedure-pointer and indirect-call semantics and more lifetime guarantees. Prefer the **dispatcher** for the first implementation because it uses the proven BCPL call path; measure its overhead only if later workloads justify optimization. The shared query protocol and local opcodes remain stable if an implementation changes its private procedure layout.
 
-**R.0 evidence:** Q.0 JOB 2157 verified one synthetic dispatcher under MVS. The [two-dispatcher R.0 probe](../bootstrap-toolchain/probes/r0-query-probe/README.md) has passed offline checks; its MVS run remains pending. R.0 still requires the other evidence listed in the [gate review](runtime-extensions-r0-gate-review-20261021.md). The fixture's G!298/G!299 are **not global-number allocations**; official G!200/201/202 ownership remains with BCPLQSAM/TIME/DEC.
+**Historical R.0 evidence:** Q.0 JOB 2157 verified one synthetic dispatcher under MVS; the [two-dispatcher R.0 probe](../bootstrap-toolchain/probes/r0-query-probe/README.md) subsequently passed actual MVS JOB 2206. The fixture's G!298/G!299 are **not global-number allocations**; official G!200/201/202 ownership remains with BCPLQSAM/TIME/DEC. R.2 must repeat the two-dispatcher behavior under actual optional BCPLREG selection, not only isolated synthetic linkage.
 
 ## 4. Proposed general registration model
 
@@ -224,15 +221,14 @@ Decision G's numerical limits and diagnostic values were subsequently
 **approved** and its isolated 14-case MVS count/size test **PASSED**
 (JOB 2203). Remaining contract/evidence tasks are listed in the
 [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
-Real integration is unimplemented; existing `BCPLMAIN` remains
-unchanged.
+This paragraph records the former R.0 design stage. R.1 has since verified integrated registration through temporary BCPLMAIN/registrar/link overlays; the accepted `BOOT_OBJ` objects remain unchanged.
 
 ## 7. March roadmap with explicit gates
 
 | March | Objective | Deliverable and exit gate |
 | --- | --- | --- |
 | **R.0 — Evidence and contract** | Inventory the actual CG370 trailer, global initialization/import ordering, BLIB and native binders, link-editor behavior, and slot map; evaluate dispatcher/opcode-0 capability ABI | Recorded verified ABI; static global-number registry policy, one-slot dispatcher decision, candidate six-word QUERY descriptor and client tests, chosen registrar/descriptor formats, collision and empty-table rules; **no speculative source refactor** |
-| **R.1 — Generic registration foundation** | Implement one minimal, linker-driven registration path with an empty registry and one trivial optional assembler service | Compile/link/run demonstrations prove `START` runs with empty registry and a chosen extension's global is installed; core BLIB regression evidence preserved |
+| **R.1 — Generic registration foundation (CLOSED 22 October 2026)** | Implement one minimal, linker-driven registration path with an empty registry and one trivial optional assembler service | Gate accepted: 24 integrated MVS jobs PASS, all five gates PASS, fresh 145 PASS / 0 FAIL / 1 expected SKIP 083 ([closure record](runtime-extensions-r1-closure-20261022.md)) |
 | **R.2 — Selective interoperability** | Link two independent optional extension *probes*, individually and together; if practical one compiled BCPL extension export plus one assembler export | 0/A/B/A+B combinations work without BCPLMAIN rebuild; each linked dispatcher answers opcode 0 and rejects unsupported calls, client inspects version/opcode bitmap; collisions, invalid descriptor, missing dependency/slot, absent module diagnosed deterministically; inspect linkage maps |
 | **R.3 — Packaging and acceptance** | Stable user-facing link-edit recipe, BCPL declaration conventions, developer template and reproducible rebuild from Git | Full native regression baseline; separately accepted object PDS installation decision; documented accepted startup contract and actual JES/IEWL evidence |
 
@@ -255,6 +251,15 @@ Proposed deliverables (paths provisional pending R.0): an assembler registration
 
 The goal is **a stable, simple, historically intelligible extension pattern**, not a plugin loader, dependency manager, or dynamic linker.
 
-## 10. Immediate handoff
+## 10. Next review — R.2 — Selective interoperability
 
-Begin **R.0 only**. Read the current `bootstrap-toolchain/asm/bcplmain.asm`, BLIB/object integration JCL, runtime ABI records, the compiled module trailer conventions, historical `LIBHDR`, the current dataset manifest and the native regression harness. Propose the simplest linker-relocatable table and a bounded global importer that leave core behavior intact. Present exact duplicate/absence/startup rules before implementing or changing existing accepted objects.
+R.0 and R.1 are closed. Before R.2 implementation, review the two small
+independent optional extension probe designs (A and B), including their
+BCEX descriptors, BCPLREG selection, opcode-0 QUERY results, and the
+0/A/B/A+B link/edit matrix. Reuse the R.1 registration core rather than
+rebuilding BCPLMAIN per selection. Plan expected failures for collisions,
+malformed descriptors, missing required dependencies and absent modules,
+plus IEWL MAP and MVS output verification. If practical, include one
+compiled BCPL export alongside an assembler export. Keep the probes
+small; QSAM/DEC/TIME functionality is owned by their separate milestones.
+Do not promote BOOT_OBJ or BOOT_DEVOBJ without an independent owner decision.

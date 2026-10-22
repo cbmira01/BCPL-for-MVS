@@ -39,11 +39,18 @@ Git history but were removed from the working tree.
 
 [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) distinguishes the Compiler, Core Runtime, historical Base Library (BLIB/LIBHDR), System Extensions, Standard Libraries, and User/Site Libraries. It also defines module, package, header, object/load library, and the separate global-number allocation versus startup-registration responsibilities. This is a proposed packaging/ABI vocabulary, not a claim that new libraries are implemented.
 
-## Proposed optional runtime registration architecture
+## Runtime Extensions — optional module registration
 
 [Milestone Runtime Extensions](milestone-runtime-extensions.md) (R.0–R.3)
-proposes explicit IEWL selection and general startup registration.
-**R.0 — Evidence and contract is in progress**; R.1 has not started.
+uses explicit IEWL selection and startup registration. **R.0 — Evidence
+and contract CLOSED; R.1 — Generic registration foundation CLOSED**
+(owner approval 22 October 2026). The [R.1 acceptance and closure record](runtime-extensions-r1-closure-20261022.md)
+reports 24/24 integrated MVS jobs PASS, all five acceptance gates PASS,
+and a fresh 145 PASS / 0 FAIL / 1 expected SKIP 083 native regression
+under the temporary R.1 runtime overlay.
+**R.2 — Selective interoperability is next for design review; R.3 —
+Packaging and acceptance is not started.** No accepted runtime PDS
+promotion was authorized.
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
 owner-approved shared `BCPLREG`/finalizer *model*. The
@@ -58,7 +65,7 @@ were approved 21 October 2026. The
 four RC=0000 steps. See the
 [Decision G MVS evidence](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
 and [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
-**R.0 remains open; R.1 has not started.** The [shared version-1 QUERY ABI](runtime-extensions-r0-query-abi-decision-20261021.md) was separately **owner-approved** on 21 October 2026, with six-word prefix, three standard errors and no partial copies. The [two-dispatcher QUERY probe](../bootstrap-toolchain/probes/r0-query-probe/README.md) **PASSED actual MVS JOB 2206**: all five steps RC=0000, ten host tests, and the verified BCPL GO marker. See [JOB 2206 evidence](runtime-extensions-r0-query-job-2206-evidence-20261021.md). The [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) retains the remaining open obligations.
+**Historical R.0 evidence (superseded gate status):** The [shared version-1 QUERY ABI](runtime-extensions-r0-query-abi-decision-20261021.md) was separately **owner-approved** on 21 October 2026, with six-word prefix, three standard errors and no partial copies. The [two-dispatcher QUERY probe](../bootstrap-toolchain/probes/r0-query-probe/README.md) **PASSED actual MVS JOB 2206**: all five steps RC=0000, ten host tests, and the verified BCPL GO marker. See [JOB 2206 evidence](runtime-extensions-r0-query-job-2206-evidence-20261021.md). The [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md) retains the remaining open obligations.
 The [R.0 three-question review](runtime-extensions-r0-three-design-questions-review-20261020.md)
 and [source-derived native owner ledger](runtime-extensions-r0-native-global-owner-inventory-20261020.md)
 examine bounded descriptors, dependencies and historical global
@@ -78,8 +85,10 @@ potential historical G!76 native overlap. The
 **passed in actual MVS JOB 2199** with four step RCs=0000;
 BLIB-present G!76 precedence is verified at START. See the
 [JOB 2199 evidence](runtime-extensions-r0-g76-job-2199-evidence-20261021.md).
-The BLIB-absent fallback and installed object provenance remain open;
-production registration is **not implemented**. The
+At that R.0 evidence stage the BLIB-absent fallback and installed
+object provenance were unresolved; those historical source/provenance
+qualifications must not be confused with later R.1 acceptance.
+The
 [Decision A trusted-link stage-1 probe](runtime-extensions-r0-decision-a-stage1-20261021.md)
 **PASSED under MVS in JOBs 2207–2216**, including all ten
 verified QOUT markers, six step RC=0000 results per job,
@@ -93,10 +102,17 @@ identity **fails (RC=0008)**, while the separately approved
 [date-only content-equivalence audit](runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md)
 passes within its narrow evidence scope. Original installed-object
 source/build provenance remains open.
-The exact public finalizer ABI is **owner-approved**, not MVS-integrated.
-R is not a prerequisite for M4.
+The R.1 campaign subsequently verified the approved public finalizer ABI
+in actual integrated MVS jobs 2780–2783. No BOOT_OBJ/BOOT_DEVOBJ
+installation was performed. R is not a prerequisite for M4.
 
-The preferred R.0 candidate is **one public global-vector entry per optional package**, dispatching on stable package-local operation numbers. **Opcode 0** would provide a side-effect-free, versioned numeric capability query into caller-owned BCPL words, with API version, supported-operation bitmap, and feature flags. The global slots G!200–G!202 are assigned in the registry; the shared registration ABI and package-local opcodes still require R.0/Q.0 verification.
+The approved model uses **one public global-vector entry per optional
+package**, with stable package-local opcodes. The shared opcode-0 QUERY
+contract describes a side-effect-free, versioned numeric capability
+query into caller-owned BCPL words. The global slots G!200–G!202 are
+allocated; allocation alone does not imply implementation. R.2 will
+verify two independent optional dispatchers under integrated BCPLREG
+selection and test their QUERY interoperability.
 
 ## Proposed optional native I/O milestone
 

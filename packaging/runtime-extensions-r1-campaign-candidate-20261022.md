@@ -1,8 +1,12 @@
 # Milestone Runtime Extensions — R.1 consolidated acceptance campaign
 
-**Status:** Unaccepted development candidate. R.1 — Generic registration
-foundation remains ACTIVE. R.2 — Selective interoperability and R.3 —
-Packaging and acceptance retain their official march names and gates.
+**Historical status:** This document describes the R.1 candidate and
+its original acceptance gate, not the current milestone disposition.
+**Superseded 22 October 2026:** R.1 — Generic registration foundation
+**CLOSED by explicit owner approval** after the 24-job MVS campaign
+and 145 PASS / 0 FAIL / 1 expected SKIP 083 native panel.
+See [R.1 closure evidence](runtime-extensions-r1-closure-20261022.md).
+R.2 — Selective interoperability is next for planning; R.3 remains separate.
 
 ## Purpose and evidence already obtained
 
