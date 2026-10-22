@@ -216,7 +216,7 @@ def build(generated, jobcard, dsn):
                 objs.append('NADISP' if p=='a' else 'NBDISP')
         cards += [
             f'//{lid:<8} EXEC PGM=IEWL,REGION=256K,',
-            "//             PARM='NCAL,LIST,XREF,MAP',",
+            "//             PARM='NCAL,LIST,XREF,MAP'",
             f'//OBJ      DD  DSN={dsn},DISP=SHR',
         ]
         for j,obj in enumerate(objs):

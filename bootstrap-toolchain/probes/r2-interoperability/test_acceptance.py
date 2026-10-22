@@ -44,6 +44,14 @@ class BatchTests(unittest.TestCase):
         self.assertNotIn('BOOT.DEVOBJ',deck)
         self.assertNotIn('DISP=MOD',deck)
         self.assertIn('DISP=SHR',deck)
+        # Every IEWL EXEC PARM is a complete statement. A trailing comma
+        # immediately before //OBJ causes JES2 to reject the whole job.
+        link_parm="//             PARM='NCAL,LIST,XREF,MAP'"
+        self.assertEqual(lines.count(link_parm),21)
+        self.assertNotIn(link_parm+',',lines)
+        for k, row in enumerate(lines[:-1]):
+            if row == link_parm:
+                self.assertTrue(lines[k+1].startswith('//OBJ      DD  '))
         self.assertTrue(all(row.isascii() and len(row)<=71 for row in lines))
         self.assertTrue(all('COND=(0,NE,L' in row for row in lines
                             if 'TIME=(,2),COND=' in row))
