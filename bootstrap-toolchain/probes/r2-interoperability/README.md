@@ -19,6 +19,7 @@ python3 bootstrap-toolchain/probes/r2-interoperability/make-job.py --check
 ```
 
 For the end-to-end MVS candidate procedure, expected GO marker, and
-resource guarantees, see the BCPLDEMO README. **No evidence is claimed
-until actual MVS JES and IEWL results are reviewed.** Do not reuse G!203
+resource guarantees, see the BCPLDEMO README. **The first extension-A
+MVS job passed (JOB 3075);** see [the reviewed JES/IEWL evidence](../../../packaging/runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). The second extension
+and matrix remain pending. Do not reuse G!203
 for the second test extension; it remains BCPLDEMO's permanent assignment.

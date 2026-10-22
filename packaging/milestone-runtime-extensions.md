@@ -12,7 +12,7 @@ the current gate status. The G!150 FORMTREE/DEBUGINT issue remains
 separate and unresolved. **No BOOT_OBJ or BOOT_DEVOBJ promotion** was
 authorized by R.1 closure.
 
-**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **This is only extension A: MVS verification and the two-extension 0/A/B/A+B acceptance matrix remain pending.**
+**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **Extension A passed its first actual MVS demonstration in JOB 3075** (six IFOX assemblies, IEWL, GO all RC=0000; expected BCPL marker and MAP verified). See [JOB 3075 evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). **The two-extension 0/A/B/A+B acceptance matrix remains pending.**
 
 ## 1. Purpose
 

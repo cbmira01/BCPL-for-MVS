@@ -1,6 +1,6 @@
 # BCPLDEMO — example optional extension
 
-**Status:** R.2 development candidate. **MVS execution not yet verified.**
+**Status:** R.2 development candidate. **First actual MVS execution PASS: JOB 3075 (22 October 2026).** The complete R.2 matrix remains pending.
 **Owner-approved:** Permanent `DEMOSVC:203` global; package `BCPLDEMO`.
 
 BCPLDEMO is a maintained, deliberately simple reference example for people
@@ -82,9 +82,11 @@ exactly one live application output marker:
 R2 BCPLDEMO G203 PASS
 ```
 
-This is an **expected** result, not an observed MVS result. Verify IFOX
-and IEWL return codes, MAP ownership for `DMODISP`, `DMOBEG`, `DMOEND`,
-and `BCPLREG`, and no unwanted application-trailer export of G!203.
+This result was **observed exactly once in MVS JOB 3075**. All six IFOX
+steps, IEWL, and GO returned 0000. The real MAP shows `BCPLREG`,
+`DMOBEG`, `DMOEND`, and `DMODISP`, with no application-trailer G!203
+registration. See [the reviewed JOB 3075 evidence](../../../packaging/runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md).
+Further R.2 acceptance tests remain pending.
 All assembled candidates and the load module use temporary `&&` datasets;
 `BOOT_OBJ` is read-only and `BOOT_DEVOBJ` is not modified. The generator
 writes authenticated JCL only under ignored `workarea/` with mode 0600.

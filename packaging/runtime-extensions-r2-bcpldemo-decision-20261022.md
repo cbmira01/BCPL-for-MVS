@@ -16,7 +16,7 @@ G!203 only after an application-specific link/edit selects the extension.
 It is a project-owned reference example, not a claim of historical Cambridge
 BCPL functionality and not a substitute for site/library slot policy.
 
-**Initial version-1.0 API** (implementation candidate, not yet MVS-proven):
+**Initial version-1.0 API** (approved candidate, first exercised in MVS JOB 3075; not yet R.2-accepted):
 
 | Opcode | Behavior | Return |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ matrix, QUERY/version/capability checks, rejection of collisions and malformed
 or absent dependencies, and real IEWL MAP evidence. The initial
 [BCPLDEMO source](../bootstrap-toolchain/extensions/bcpldemo/README.md)
 and [R.2 one-extension probe](../bootstrap-toolchain/probes/r2-interoperability/README.md)
-are **only the first increment** of that work. R.2 will remain ACTIVE until
+are **only the first increment** of that work. The first real MVS run of extension A **passed JOB 3075**; see [the reviewed execution evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). R.2 will remain ACTIVE until
 all exit criteria pass and the owner authorizes closure.
 
 R.3 — Packaging and acceptance will turn the validated implementation into
