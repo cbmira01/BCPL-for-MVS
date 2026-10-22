@@ -96,18 +96,36 @@ class SourceContract(unittest.TestCase):
         self.assertNotIn('REGCOUNT', externals)
         self.assertNotIn('REGFINTB', externals)
 
+    def assert_start_register_preserved(self, adapted):
+        # The real START transfer is BCR 15,4, not BC 15,4.  Fail closed
+        # if either boundary disappears; later runtime procedures reuse R4.
+        first = 'BLIDONE  L     4,4(12)'
+        last = '         BCR   15,4'
+        self.assertEqual(adapted.count(first), 1)
+        self.assertEqual(adapted.count(last), 1)
+        startup = adapted.split(first, 1)[1].split(last, 1)[0]
+        # C 4,... only *reads* START while checking the sentinel.  Do
+        # not confuse such reads with instructions that change R4.
+        r4_writers = [line for line in startup.splitlines()
+                      if re.match(r'^         (?:L|LA|LR|LH|IC|A|AR|S|SR|'
+                                  r'AH|SH|N|NR|O|OR|X|XR|SLL|SRL|SLA|SRA)'
+                                  r' +4,', line)]
+        self.assertEqual(r4_writers, [], 'R4 clobbered before START')
+        self.assertEqual(startup.count('L     8,=A(R1OWNB)'), 26)
+        self.assertNotIn('OI    30(4)', startup)
+
     def test_start_address_r4_survives_owner_instrumentation(self):
-        # In the accepted BCPLMAIN, BLIDONE loads START into R4 and
-        # BC 15,4 invokes it.  Ledger instrumentation must not overwrite R4.
-        patcher=load('r1_owner_r4_guard',
-                     ROOT/'tools/checks/r1_prepare_candidate.py')
-        source=(ASM/'bcplmain.asm').read_text('ascii')
-        adapted=patcher.adapt(source)
-        startup=adapted.split('BLIDONE  L     4,4(12)',1)[1].split(
-            '         BC    15,4',1)[0]
-        self.assertNotRegex(startup, r'(?m)^         [A-Z]+ +4,')
-        self.assertEqual(startup.count('L     8,=A(R1OWNB)'),26)
-        self.assertNotIn('OI    30(4)',startup)
+        patcher = load('r1_owner_r4_guard',
+                       ROOT/'tools/checks/r1_prepare_candidate.py')
+        source = (ASM/'bcplmain.asm').read_text('ascii')
+        adapted = patcher.adapt(source)
+        self.assert_start_register_preserved(adapted)
+        # Prove the guard detects the exact original R4-clobber defect.
+        broken = adapted.replace('         L     8,=A(R1OWNB)',
+                                 '         L     4,=A(R1OWNB)', 1)
+        self.assertNotEqual(broken, adapted)
+        with self.assertRaises(AssertionError):
+            self.assert_start_register_preserved(broken)
 
     def test_core_patch_anchors_and_effects(self):
         patcher = load('r1_patchcheck',ROOT/'tools/checks/r1_prepare_candidate.py')
