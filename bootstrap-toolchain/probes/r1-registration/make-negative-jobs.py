@@ -143,11 +143,12 @@ def fixture(case: int) -> tuple[str, str, tuple]:
 
 def rejection_witness(adapted: str) -> str:
     """Add test-only no-partial-publish checks at the R1BAD path."""
-    old = 'R1BAD    L     15,=A(IOFIN)\n'
+    old = 'R1BAD    LR    9,10\n         L     15,=A(IOFIN)\n'
     # Address offsets 4*298 and 4*299. Compare original sentinels.
     # LEAK returns RC=16, not the required registration-reject RC=12.
     insertion = (
-        'R1BAD    L     1,1192(12)\n'
+        'R1BAD    LR    9,10\n'
+        '         L     1,1192(12)\n'
         "         C     1,=X'C7D3F4A8'\n"
         '         BNE   R1LEAK\n'
         '         L     1,1196(12)\n'
@@ -157,6 +158,7 @@ def rejection_witness(adapted: str) -> str:
         "R1LEAK   WTO   'R1 NEGATIVE PARTIAL GLOBAL PUBLICATION'\n"
         '         L     15,=A(IOFIN)\n'
         '         BALR  14,15\n'
+        '         LR    10,9\n'
         '         BAL   14,RELMEM\n'
         '         L     13,4(13)\n'
         '         LM    14,12,12(13)\n'

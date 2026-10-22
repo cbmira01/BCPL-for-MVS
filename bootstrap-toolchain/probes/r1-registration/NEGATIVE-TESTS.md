@@ -52,8 +52,9 @@ python3 -m unittest discover -s tools/checks -p 'test_r1*.py' -v
 python3 bootstrap-toolchain/probes/r1-registration/make-negative-jobs.py all --check
 ```
 
-**Do not submit additional negative cases until 1001 termination is
-corrected.** The following reproduces the unresolved case:
+**MVS rerun required for candidate R10 correction.** JOBs 2229
+and 2230 failed with S322. No negative has yet passed. The following
+regenerates and submits the corrected first case:
 
 ```sh
 python3 bootstrap-toolchain/probes/r1-registration/make-negative-jobs.py \
@@ -73,6 +74,11 @@ assembly objects/load modules only. JCL with machine-local credentials
 is generated only under ignored `workarea`, mode 0600; do not commit it.
 
 See the [failure evidence for JOBs 2229 and 2230](../../../packaging/runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md).
-The [R1NOOUT isolation probe](README.md) must first determine whether
-ordinary no-output FINISH also hangs in BCPLIO.IOFIN. Repeating 1001
-with a still-higher GO CPU limit is not a fix.
+**JOB 2232 R1NOOUT passed** with GO RC=0000, proving ordinary
+no-output FINISH does not hang. Review of the R.1 rejection adapter
+found it failed to restore R10 around IOFIN; the ordinary FINISH
+path already restores R10. A temporary candidate now preserves R10
+in both the R1BAD and test-only R1LEAK cleanup paths. This is a
+host-tested correction, **not yet an MVS pass**. Re-run 1001 at the
+original GO CPU limit, verify RC=0012, and only then proceed with
+the other diagnostics. See the [JOB 2232 evidence](../../../packaging/runtime-extensions-r1-no-output-job-2232-evidence-20261022.md).

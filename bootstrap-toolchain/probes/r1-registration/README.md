@@ -2,8 +2,9 @@
 
 **Status:** R.1 development candidate. Positive MVS jobs 2226 (empty) and
 2228 (selected) PASSED on 22 October 2026. Integrated negative tests
-have begun: JOBs 2229 and 2230 emitted 1001 but ended S322. The
-cause of the rejection cleanup timeout is under investigation.
+have begun: JOBs 2229/2230 emitted 1001 but ended S322.
+JOB 2232 R1NOOUT passed normal no-output FINISH. The candidate
+rejection cleanup now restores R10 around IOFIN; MVS retest is pending.
 Accepted BOOT_OBJ objects are unchanged.
 
 The owner closed R.0, began R.1, and approved separation of the generic
@@ -42,8 +43,9 @@ tools/bootstrap/compile-mvs \
 
 ## Isolate a normal FINISH without any application output
 
-**Before changing startup ordering**, compare the failed rejection
-jobs 2229/2230 against the new ordinary no-output application.
+**Isolation completed:** JOB 2232 passed GO RC=0000, excluding a
+broad BCPLIO no-output CLOSE defect. The commands below reproduce
+that isolation test if necessary.
 This uses the empty BCPLREG and the same candidate Core Runtime.
 
 ```sh
@@ -61,20 +63,32 @@ bash tools/mvs/submit-jcl workarea/runtime-extensions-r1/r1-no-output.jcl
 Use the returned JES number (not the literal word JOBNUMBER) with:
 
 ```sh
-tools/mvs/job-summary 2231
-tools/mvs/dump-report-for-job 2231
+tools/mvs/job-summary JOBNUMBER
+tools/mvs/dump-report-for-job JOBNUMBER
 ```
 
-**Replace 2231 with the actual JES job number.** The normal result is
-all IFOX/IEWL steps RC=0000, GO RC=0000, with **no BCPL application
-output**. S322 at the same PSW as the earlier negative jobs indicates
-the no-output CLOSE problem is reproducible without registration
-rejection. RC=0000 instead points to the rejection-specific cleanup
-path. This is a diagnostic test; no acceptance or production
-promotion follows automatically.
+**Replace JOBNUMBER with the actual JES job number** (JOB 2232
+for the first verified execution). All IFOX/IEWL steps and GO passed at
+RC=0000, with no BCPL application output. The rejection-specific
+R10 save/restore correction is now ready for MVS retesting.
 
 The [2229/2230 failure record](../../../packaging/runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md)
-contains the exact evidence.
+and [2232 no-output evidence](../../../packaging/runtime-extensions-r1-no-output-job-2232-evidence-20261022.md)
+explain the isolation and the candidate R10 correction.
+
+**Next MVS test:** recompile nothing; reuse
+`workarea/runtime-extensions-r1/selected.s370.asm` and regenerate
+`R1N1001` after pulling the new candidate:
+
+```sh
+python3 bootstrap-toolchain/probes/r1-registration/make-negative-jobs.py \
+  1001 --generated workarea/runtime-extensions-r1/selected.s370.asm
+bash tools/mvs/submit-jcl workarea/runtime-extensions-r1/r1-neg-1001.jcl
+```
+
+Require all IFOX/IEWL RC=0000, diagnostic 1001, no START output,
+GO RC=0012, and no partial G!298/G!299 publication. The JCL must
+retain the normal `TIME=(,2)`.
 
 ## Create and submit the first test job
 

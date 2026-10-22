@@ -84,6 +84,16 @@ second and thirty-second GO limits respectively), with a saved PSW
 consistent with incomplete `BCPLIO.IOFIN` output CLOSE. Source analysis
 alone does not establish root cause. See the
 [failed rejection evidence](runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md).
-The temporary R1NOOUT application exercises ordinary FINISH with no
-application output and the real empty BCPLREG. Await its MVS result
-before changing startup ordering or accepted runtime components.
+**JOB 2232 R1NOOUT passed**: four IFOX steps, IEWL and GO all
+RC=0000, with no application output. This excludes ordinary no-output
+FINISH as the failure mechanism. See the [JOB 2232 evidence](runtime-extensions-r1-no-output-job-2232-evidence-20261022.md).
+
+The R.1 R1BAD rejection adapter was then found not to preserve R10
+around IOFIN. IOFIN uses R10 as a private base; the ordinary FINEXIT
+path already has LR 9,10 / LR 10,9 bracketing. R1BAD subsequently
+branches to RELMEM using R10 as its base, so the missing restore is
+an actual register-linkage defect. The temporary candidate adapter
+and test-only R1LEAK cleanup now preserve R10, with host checks
+passing. **MVS retest of diagnostic 1001 remains outstanding.**
+Do not reorder IOINIT and RGINIT or alter accepted runtime objects
+based solely on the prior S322 dumps.

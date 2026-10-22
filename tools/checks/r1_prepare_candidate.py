@@ -45,8 +45,11 @@ def adapt(source: str) -> str:
         result,
         'BADRETN  BAL   14,RELMEM\n',
         '* REGISTRATION REJECTION: IOINIT HAS RUN, BUT START HAS NOT.\n'
-        'R1BAD    L     15,=A(IOFIN)\n'
+        '* IOFIN USES R10 AS A PRIVATE BASE. PRESERVE OUR BASE IN R9.\n'
+        'R1BAD    LR    9,10\n'
+        '         L     15,=A(IOFIN)\n'
         '         BALR  14,15\n'
+        '         LR    10,9\n'
         '         BAL   14,RELMEM\n'
         '         L     13,4(13)\n'
         '         LM    14,12,12(13)\n'

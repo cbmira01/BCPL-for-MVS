@@ -114,6 +114,12 @@ STOPRC   DC    F'0'
         self.assertIn('EXTRN RGINIT,RGFINI', output)
         self.assertIn('BNZ   R1BAD', output)
         self.assertIn('LA    15,12', output)
+        self.assertIn('R1BAD    LR    9,10\n'
+                      '         L     15,=A(IOFIN)\n'
+                      '         BALR  14,15\n'
+                      '         LR    10,9\n'
+                      '         BAL   14,RELMEM', output)
+        self.assertIn('FINEXIT  LR    9,10', output)
         self.assertIn('LA    1,R1REAS', output)
         self.assertIn('ST    1,STOPRC', output)
         self.assertLess(output.index('L     15,=A(RGFINI)'),

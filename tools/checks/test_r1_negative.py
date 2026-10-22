@@ -49,7 +49,7 @@ class NegativeFixtures(unittest.TestCase):
         self.assertEqual(len(neg.fixture(1011)[2]), 1)
         self.assertEqual(len(neg.fixture(1012)[2]), 1)
         self.assertEqual(len(neg.fixture(2001)[2]), 1)
-        adapted = 'R1BAD    L     15,=A(IOFIN)\n'
+        adapted = 'R1BAD    LR    9,10\n         L     15,=A(IOFIN)\n'
         witness = neg.rejection_witness(adapted)
         self.assertIn('1192(12)', witness)
         self.assertIn('1196(12)', witness)
@@ -57,6 +57,12 @@ class NegativeFixtures(unittest.TestCase):
         self.assertIn("=X'C7D3F4AC'", witness)
         self.assertIn('R1 NEGATIVE PARTIAL GLOBAL PUBLICATION', witness)
         self.assertIn('LA    15,16', witness)
+        self.assertIn('R1BAD    LR    9,10', witness)
+        self.assertIn('R1LEAK   WTO', witness)
+        self.assertIn('R1CLEAN  L     15,=A(IOFIN)', witness)
+        self.assertIn('         BALR  14,15\n'
+                      '         LR    10,9\n'
+                      '         BAL   14,RELMEM', witness)
 
     def test_each_deck_uses_temporary_objects_and_correct_job(self):
         neg = self.negative
