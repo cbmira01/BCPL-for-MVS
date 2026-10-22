@@ -35,7 +35,7 @@ Git history but were removed from the working tree.
 
 ## Runtime and library terminology
 
-[Global Number Registry](global-number-registry.md) inventories historical and compiler-specific globals, MR10-local numbering, documented collisions, and the approved System Extension assignments **G!200 BCPLQSAM**, **G!201 BCPLTIME**, and **G!202 BCPLDEC**. Allocations do not imply implementations or successful registration.
+[Global Number Registry](global-number-registry.md) inventories historical and compiler-specific globals, MR10-local numbering, documented collisions, and the approved System Extension assignments **G!200 BCPLQSAM**, **G!201 BCPLTIME**, and **G!202 BCPLDEC**, plus the permanent **G!203 BCPLDEMO / DEMOSVC** teaching/reference extension allocation. Allocations do not imply implementations or successful registration.
 
 [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) distinguishes the Compiler, Core Runtime, historical Base Library (BLIB/LIBHDR), System Extensions, Standard Libraries, and User/Site Libraries. It also defines module, package, header, object/load library, and the separate global-number allocation versus startup-registration responsibilities. This is a proposed packaging/ABI vocabulary, not a claim that new libraries are implemented.
 
@@ -48,8 +48,7 @@ and contract CLOSED; R.1 — Generic registration foundation CLOSED**
 reports 24/24 integrated MVS jobs PASS, all five acceptance gates PASS,
 and a fresh 145 PASS / 0 FAIL / 1 expected SKIP 083 native regression
 under the temporary R.1 runtime overlay.
-**R.2 — Selective interoperability is next for design review; R.3 —
-Packaging and acceptance is not started.** No accepted runtime PDS
+**R.2 — Selective interoperability is ACTIVE**, with [BCPLDEMO G!203 owner approval](runtime-extensions-r2-bcpldemo-decision-20261022.md) and a [first source candidate](../bootstrap-toolchain/extensions/bcpldemo/README.md). MVS verification, the second independent extension and 0/A/B/A+B matrix remain pending. **R.3 — Packaging and acceptance is not started.** No accepted runtime PDS
 promotion was authorized.
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the

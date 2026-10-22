@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED.** **R.2 — Selective interoperability is next for planning; R.3 — Packaging and acceptance is not started.**
+**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED.** **R.2 — Selective interoperability ACTIVE (initial BCPLDEMO increment); R.3 — Packaging and acceptance is not started.**
 
 **R.1 owner closure:** The consolidated MVS acceptance campaign passed
 24/24 integrated jobs (2760–2783), all five gates, and the 00..145
@@ -11,6 +11,8 @@ Earlier R.1 development and failed-run evidence remains historical, not
 the current gate status. The G!150 FORMTREE/DEBUGINT issue remains
 separate and unresolved. **No BOOT_OBJ or BOOT_DEVOBJ promotion** was
 authorized by R.1 closure.
+
+**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **This is only extension A: MVS verification and the two-extension 0/A/B/A+B acceptance matrix remain pending.**
 
 ## 1. Purpose
 
@@ -253,7 +255,7 @@ The goal is **a stable, simple, historically intelligible extension pattern**, n
 
 ## 10. Next review — R.2 — Selective interoperability
 
-R.0 and R.1 are closed. Before R.2 implementation, review the two small
+R.0 and R.1 are closed. BCPLDEMO design and permanent G!203 allocation are owner approved; extension A code is a candidate awaiting MVS testing. Before the complete R.2 acceptance campaign, review the two small
 independent optional extension probe designs (A and B), including their
 BCEX descriptors, BCPLREG selection, opcode-0 QUERY results, and the
 0/A/B/A+B link/edit matrix. Reuse the R.1 registration core rather than

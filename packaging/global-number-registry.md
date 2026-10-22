@@ -1,9 +1,9 @@
 # Global Number Registry
 
 **Project:** BCPL for MVS 3.8 Reconstruction
-**Effective date:** 2026-10-19
+**Effective date:** 2026-10-22
 **Authority:** Official repository record of BCPL GLOBAL-number ownership.
-**Status:** Historical and existing project slots inventoried; G!200–G!202 allocated for three optional System Extensions. Implementation is **not** implied by allocation.
+**Status:** Historical and existing project slots inventoried; G!200–G!202 are assigned to System Extensions, and **G!203 is permanently assigned to the BCPLDEMO reference optional extension** (owner approval 22 October 2026). Allocation does **not** imply successful MVS execution or deployment.
 
 ## Rules and interpretation
 
@@ -24,15 +24,18 @@ optional registration. Preserve only verified historical precedence
 and reject new optional overwrites transactionally. See
 [owner ABI decisions A–H](runtime-extensions-r0-owner-abi-decisions.md).
 
-## Newly approved System Extension allocations
+## Project-approved optional package allocations
 
 | Global | Public name | Owner | Allocation | Implementation |
 |---:|---|---|---|---|
 | **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.0 design; not implemented |
 | **201** | Public name to be chosen | **BCPLTIME**, date/time services | **Assigned** | Proposed; not implemented |
 | **202** | Public name to be chosen | **BCPLDEC**, decimal arithmetic | **Assigned** | Proposed; not implemented |
+| **203** | **`DEMOSVC`** | **BCPLDEMO**, project-maintained teaching/reference extension | **Permanently assigned** (22 Oct 2026) | R.2 source candidate; MVS verification pending |
 
 G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; any illustrative BCPLTIME dispatcher is associated with its new assignment **G!201**. Neither BCPLTIME nor BCPLDEC has an approved public dispatcher spelling yet.
+
+**G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the example demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. [Owner decision and R.2 boundary](runtime-extensions-r2-bcpldemo-decision-20261022.md). Other applications and extensions must not reuse G!203. The package does not bypass ordinary R.1 per-executable collision and missing-package validation.
 
 ## Specific existing positions and conflicts
 
@@ -422,7 +425,7 @@ This is an independent, reconstruction-local numbering convention. It has numeri
 
 ## Scope limitations and reference order
 
-This is a source-grounded inventory of the preserved `LIBHDR`, `CGHDR`, the separate MR10-local map, the observed G!150 conflict, and the three now-allocated optional extension slots. It is **not an exhaustive scan** of arbitrary GLOBAL declarations in every application or historical fragment. An application's own GLOBAL exports may occupy additional slots.
+This is a source-grounded inventory of the preserved `LIBHDR`, `CGHDR`, the separate MR10-local map, the observed G!150 conflict, the three assigned System Extension slots, and the permanently assigned BCPLDEMO G!203 reference slot. It is **not an exhaustive scan** of arbitrary GLOBAL declarations in every application or historical fragment. An application's own GLOBAL exports may occupy additional slots.
 
 - **Historical name/number evidence:** `richards-bcpltape/sys3/bcpl/libhdr`; `richards-bcpltape/bcplib/bcpl/cghdr`.
 - **MR10-local library contract:** `mr10-kit-compiler/library/GLOBALS.md`.
