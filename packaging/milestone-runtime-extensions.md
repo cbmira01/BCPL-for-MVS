@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED.** **R.2 — Selective interoperability ACTIVE (initial BCPLDEMO increment); R.3 — Packaging and acceptance is not started.**
+**Status (owner decision, 22 October 2026):** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED.** **R.2 — Selective interoperability ACTIVE (JOB 3075 extension A proven; test-only extension B and 0/A/B/A+B matrix candidate pending MVS verification); R.3 — Packaging and acceptance is not started.**
 
 **R.1 owner closure:** The consolidated MVS acceptance campaign passed
 24/24 integrated jobs (2760–2783), all five gates, and the 00..145
@@ -12,7 +12,7 @@ the current gate status. The G!150 FORMTREE/DEBUGINT issue remains
 separate and unresolved. **No BOOT_OBJ or BOOT_DEVOBJ promotion** was
 authorized by R.1 closure.
 
-**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **Extension A passed its first actual MVS demonstration in JOB 3075** (six IFOX assemblies, IEWL, GO all RC=0000; expected BCPL marker and MAP verified). See [JOB 3075 evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). **The two-extension 0/A/B/A+B acceptance matrix remains pending.**
+**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **Extension A passed its first actual MVS demonstration in JOB 3075** (six IFOX assemblies, IEWL, GO all RC=0000; expected BCPL marker and MAP verified). See [JOB 3075 evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). **A separate test-only extension B and four-link matrix candidate are prepared; real MVS verification and remaining R.2 rejection gates are pending.** See [R.2 matrix candidate design](runtime-extensions-r2-matrix-candidate-20261022.md).
 
 ## 1. Purpose
 

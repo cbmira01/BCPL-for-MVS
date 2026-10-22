@@ -1,0 +1,9 @@
+// R.2 zero-selection control: no optional package globals.
+GLOBAL $( START:1; WRITES:60; NEWLINE:63 $)
+
+LET START() BE
+$(1
+    WRITES("R2 MATRIX ZERO PASS")
+    NEWLINE()
+    FINISH
+$)1

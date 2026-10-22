@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Effective date:** 2026-10-22
 **Authority:** Official repository record of BCPL GLOBAL-number ownership.
-**Status:** Historical and existing project slots inventoried; G!200–G!202 are assigned to System Extensions, and **G!203 is permanently assigned to the BCPLDEMO reference optional extension** (owner approval 22 October 2026). Allocation does **not** imply successful MVS execution or deployment.
+**Status:** Historical and existing project slots inventoried; G!200–G!202 are assigned to System Extensions, and **G!203 is permanently assigned to the BCPLDEMO reference optional extension** (owner approval 22 October 2026). Allocation does **not** imply successful MVS execution or deployment. BCPLDEMO first passed its actual MVS demonstration in JOB 3075; that is not complete R.2 acceptance.
 
 ## Rules and interpretation
 
@@ -31,7 +31,7 @@ and reject new optional overwrites transactionally. See
 | **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.0 design; not implemented |
 | **201** | Public name to be chosen | **BCPLTIME**, date/time services | **Assigned** | Proposed; not implemented |
 | **202** | Public name to be chosen | **BCPLDEC**, decimal arithmetic | **Assigned** | Proposed; not implemented |
-| **203** | **`DEMOSVC`** | **BCPLDEMO**, project-maintained teaching/reference extension | **Permanently assigned** (22 Oct 2026) | R.2 source candidate; MVS verification pending |
+| **203** | **`DEMOSVC`** | **BCPLDEMO**, project-maintained teaching/reference extension | **Permanently assigned** (22 Oct 2026) | First MVS demonstration PASS in JOB 3075; R.2 matrix pending |
 
 G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; any illustrative BCPLTIME dispatcher is associated with its new assignment **G!201**. Neither BCPLTIME nor BCPLDEC has an approved public dispatcher spelling yet.
 
@@ -48,6 +48,7 @@ G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design do
 | 73 | `LIBHDR`: explicitly spare | Historical spare, do not silently allocate |
 | 94 | `LIBHDR`: `OPENBLOCKFILE` **and** `UPDATEBLOCKFILE` | **Duplicate historical assignment**; document, do not change evidence |
 | 150 | Bootstrap `BCPLMAIN` startup DEBUGINT conflicts with historical full Cambridge compiler `FORMTREE:150` in `cambridge-compiler/source/bcpl.bcpl` and `synhdr.bcpl` | **Known cross-component conflict; unresolved**; see [G!150 review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md) |
+| 299 | R.0 and R.2 independent dispatcher probes | **Test-local fixture only; not a permanent public package allocation.** |
 | 699 | `HIGHMARK` in native regression 090 | Test-local assignment; not a permanent public package slot |
 
 Historical `LIBHDR` also declares `FIRSTFREEGLOBAL=150`. That is **not** a current vacancy guarantee. The Cambridge compiler's `CGHDR` uses compiler globals in the 100s and above; the reconstructed runtime has an existing G!150 diagnostic collision.
