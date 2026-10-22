@@ -73,7 +73,7 @@ class DemoHostTests(unittest.TestCase):
         self.assertNotIn(' INCLUDE OBJ(BCPLMAIN)', jcl)
         self.assertNotIn('DISP=MOD', jcl)
         self.assertNotIn('BOOT.DEVOBJ', jcl)
-        self.assertEqual(jcl.count('/*'), 7)
+        self.assertEqual(jcl.splitlines().count('/*'), 7)
         self.assertTrue(all(row.isascii() and len(row) <= 71
                             for row in jcl.splitlines()))
 
