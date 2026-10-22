@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+"""R.3 reproducible candidate campaign; no persistent MVS object writes.
+
+--check: offline host preflight only, no JES submissions or secret reads.
+--execute: compile fresh BCPL callers, build temporary IFOX/IEWL/GO jobs,
+check IEWL maps and live markers, then run a fresh 00..145 regression
+through the previously accepted temporary R.1 BCPLMAIN/registrar overlay.
+
+All raw reports, authenticated decks, and generated CODE remain ignored
+in a unique workarea directory. A PASS is evidence, not R.3 closure.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import hashlib
+import importlib.util
+import importlib.machinery
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+BASE = ROOT / 'workarea/runtime-extensions-r3/acceptance'
+TEMPLATE = ROOT / 'bootstrap-toolchain/extensions/template'
+R2 = ROOT / 'bootstrap-toolchain/probes/r2-interoperability'
+R1 = ROOT / 'bootstrap-toolchain/probes/r1-registration'
+
+
+def load(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None:
+        spec = importlib.util.spec_from_loader(
+            name, importlib.machinery.SourceFileLoader(name, str(path)))
+    if not spec or not spec.loader:
+        raise RuntimeError(f'cannot load project helper: {path}')
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def call(*command, timeout=300, env=None, output=None):
+    args = list(map(str, command))
+    proc = subprocess.run(args, cwd=ROOT, env=env,
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          encoding='utf-8', errors='replace', timeout=timeout)
+    if output is not None:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(proc.stdout, encoding='utf-8')
+    if proc.returncode:
+        raise RuntimeError(f'command failed rc={proc.returncode}: '
+                           f'{" ".join(args)}\n{proc.stdout[-1800:]}')
+    return proc.stdout
+
+
+def preflight():
+    commands = [
+        ('python3', '-B', '-m', 'unittest', 'discover', '-s', TEMPLATE,
+         '-p', 'test_*.py', '-v'),
+        ('python3', '-B', '-m', 'unittest', 'discover', '-s', R2,
+         '-p', 'test_*.py', '-v'),
+        ('python3', '-B', R2/'make-matrix.py', '--check'),
+        ('python3', '-B', R2/'make-negatives.py', '--check'),
+        ('python3', '-B', R1/'make-jobs.py', 'empty', '--check'),
+        ('python3', '-B', 'tools/checks/r1_prepare_candidate.py', '--check'),
+        ('python3', '-B', 'tools/bootstrap/run-regression', '--check-numbering'),
+        ('python3', '-B', '-m', 'unittest', 'discover', '-s',
+         'tools/checks', '-p', 'test_r3*.py', '-v'),
+    ]
+    for cmd in commands:
+        call(*cmd, timeout=150)
+        print('HOST PASS:', ' '.join(map(str, cmd)), flush=True)
+
+
+def render(name: str, *, with_finalizer: bool = False) -> str:
+    value = (TEMPLATE/name).read_text('ascii')
+    for old, new in {'@PACKAGE@': 'R3TMPL', '@GLOBAL@': '299',
+                     '@SERVICE@': 'TMSVC'}.items():
+        value = value.replace(old, new)
+    value = value.replace('@FINEX@', '         EXTRN TMFIN'
+                          if with_finalizer else '*')
+    value = value.replace('@FINADR@', 'A(TMFIN)' if with_finalizer
+                          else "F'0'")
+    return value
+
+
+def sources(with_finalizer=False):
+    registry = render('registry.asm.in')
+    descriptor = render('descriptor.asm.in', with_finalizer=with_finalizer)
+    dispatcher = render('dispatcher.asm.in')
+    finalizer = None
+    if with_finalizer:
+        finalizer = render('finalizer.asm.in')
+        needle = '         SR    15,15\n'
+        if finalizer.count(needle) != 1:
+            raise ValueError('finalizer return anchor changed')
+        finalizer = finalizer.replace(needle,
+            "         WTO   'R3 TEMPLATE FINALIZER CALLED'\n" + needle)
+    for title, value in [('registry',registry), ('descriptor',descriptor),
+                         ('dispatcher',dispatcher), ('finalizer',finalizer)]:
+        if value is not None:
+            if not all(line.isascii() and len(line) <= 71 and '\t' not in line
+                       for line in value.splitlines()):
+                raise ValueError(f'{title} has invalid IFOX cards')
+            if re.search(r'@(?:PACKAGE|GLOBAL|SERVICE|FINEX|FINADR)@',
+                         '\n'.join(row for row in value.splitlines()
+                                   if not row.startswith('*'))):
+                raise ValueError(f'{title} has unresolved placeholders')
+    return registry, descriptor, dispatcher, finalizer
+
+
+def verify_template(summary, report, *, with_finalizer=False):
+    from_names = ('ASMA','ASMN','ASMR','ASMG','ASMD','ASMS','LKED','GO')
+    wanted = set(from_names)
+    if with_finalizer:
+        wanted.add('ASMF')
+    found = dict((step, int(code)) for step, code in re.findall(
+        r'(?m)^([A-Z][A-Z0-9]*)\s+\S+\s+RC=(\d{4})\s*$', summary))
+    problems = []
+    if set(found) != wanted:
+        problems.append(f'wrong JES step set: {sorted(found)}')
+    problems.extend(f'{step} RC={found.get(step)}' for step in sorted(wanted)
+                    if found.get(step) != 0)
+    if any(bad in summary for bad in ('ABEND:', 'JCL ERROR:', 'BYPASSED:')):
+        problems.append('ABEND/JCL error/bypassed step')
+    maps = report.split('CROSS REFERENCE TABLE')
+    if len(maps) != 2:
+        problems.append(f'IEWL maps={len(maps)-1} expected 1')
+    else:
+        map_body = maps[1].split('LOCATION  REFERS TO SYMBOL', 1)[0]
+        for sym in ('R0APP','BCPLMAIN','RGINIT','RGFINI','BCPLREG',
+                    'TMDSC','TMDISP','BLIB'):
+            if not re.search(r'(?m)^  '+sym+r'\s+[0-9A-F]+\s+[0-9A-F]+\s*$',
+                             map_body):
+                problems.append(f'IEWL map missing {sym}')
+        for sym, bytes_ in (('BCPLREG','2C'),('TMDSC','38')):
+            if not re.search(r'(?m)^  '+sym+r'\s+[0-9A-F]+\s+0*'+
+                             bytes_+r'\s*$',map_body):
+                problems.append(f'IEWL wrong {sym} byte length')
+        fin = bool(re.search(r'(?m)^  TMFIN\s+[0-9A-F]+\s+[0-9A-F]+\s*$',
+                             map_body))
+        if fin != with_finalizer:
+            problems.append('IEWL wrong TMFIN inclusion')
+    for symbol, section in [('BCRGBEG','BCPLREG'),('BCRGEND','BCPLREG'),
+                            ('TMBEG','TMDSC'),('TMEND','TMDSC'),
+                            ('TMDISP','TMDISP')]:
+        if not re.search(r'\b'+symbol+r'\s+'+section+r'\b',
+                         report.split('LOCATION  REFERS TO SYMBOL',1)[-1]):
+            problems.append(f'IEWL XREF missing {symbol}->{section}')
+    if with_finalizer and not re.search(
+            r'\bTMFIN\s+TMFIN\b',
+            report.split('LOCATION  REFERS TO SYMBOL',1)[-1]):
+        problems.append('IEWL XREF missing TMFIN relocation')
+    pass_count = len(re.findall(r'(?m)^R3 TEMPLATE CLIENT PASS\s*$', report))
+    if pass_count != 1:
+        problems.append(f'BCPL client marker count={pass_count}')
+    # A bare macro source listing also contains the WTO literal, so use
+    # the live JES log prefix, not a simple substring count.
+    fin_count = len(re.findall(
+        r'(?m)^\d\d\.\d\d\.\d\d JOB \d+\s+\+R3 TEMPLATE FINALIZER CALLED\s*$',
+        report))
+    if fin_count != int(with_finalizer):
+        problems.append(f'live finalizer WTO count={fin_count}')
+    return problems, found
+
+
+def manifest(run: Path, revision: str, paths: list[Path]):
+    data = {'git_revision': revision,
+            'files': {str(path.relative_to(ROOT)): hashlib.sha256(
+                path.read_bytes()).hexdigest() for path in paths}}
+    (run/'sha256.json').write_text(json.dumps(data,indent=2)+'\n')
+
+
+def save(run, results, revision, *, ready=False):
+    (run/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+    lines = ['# Runtime Extensions — R.3 candidate acceptance campaign', '',
+             f'Git commit: `{revision}`', '',
+             '**'+('READY FOR OWNER REVIEW' if ready else 'INCOMPLETE / FAILED')+
+             '** — R.3 remains ACTIVE pending explicit owner closure.', '',
+             '| Phase | JES job | Result | Issues |',
+             '| --- | --- | --- | --- |']
+    for res in results:
+        issues = '; '.join(res.get('issues',[]))[:300].replace('|','/')
+        lines.append(f"| {res['phase']} | {res.get('job') or '—'} | "
+                     f"{res['result']} | {issues or 'none'} |")
+    lines += ['', 'Only generated JCL and temporary `&&` MVS objects are used.',
+              'No installed BOOT_OBJ / BOOT_DEVOBJ write or promotion.',
+              'JCL, JES reports, maps, source hashes and native case logs are',
+              'operator-local, under this ignored `workarea/` directory.',
+              'A PASS does not authorize MVS object installation or R.3 closure.', '']
+    (run/'SUMMARY.md').write_text('\n'.join(lines))
+
+
+def fresh_regression(run: Path, r1_campaign, timeout: int):
+    """Exactly 00..145, using the accepted temporary R.1 OBJ overlay.
+
+    Source path/overlay are project code; this adds no new runtime ABI.
+    """
+    env=os.environ.copy()
+    env.update({'R1_ACCEPTANCE':'1',
+                'R1_REGRESSION_LOG_DIR':str(run/'regression-logs'),
+                'R1_ACCEPTANCE_WORKDIR':str(run/'regression-cases'),
+                'PYTHONUNBUFFERED':'1'})
+    transcript=run/'regression-transcript.txt'
+    rc=r1_campaign.stream_native_run(
+        ['bash','tools/bootstrap/run-production-regression','0','145'],
+        env,transcript,timeout)
+    body=transcript.read_text(encoding='utf-8',errors='replace')
+    totals=dict(re.findall(r'(?m)^(PASS|FAIL|SKIP|TOTAL)\s+(\d+)\s*$',body))
+    skip_083=len(re.findall(r'(?m)^SKIP\s+083\b',body))
+    issues=[]
+    if rc!=0:
+        issues.append(f'regression process RC={rc}')
+    if totals != {'PASS':'145','FAIL':'0','SKIP':'1','TOTAL':'146'}:
+        issues.append(f'wrong native panel totals: {totals}')
+    if skip_083!=1:
+        issues.append(f'expected exactly one SKIP 083; observed {skip_083}')
+    return {'result':'PASS' if not issues else 'FAIL','issues':issues,
+            'process_rc':rc,'values':totals,'skip_083':skip_083}
+
+
+def execute(args):
+    # Fail closed on uncommitted tracked changes. Untracked workarea is fine.
+    revision = call('git','rev-parse','HEAD').strip()
+    call('git','diff','--quiet')
+    call('git','diff','--cached','--quiet')
+    run = BASE/dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    for folder in ('generated','jcl','reports','summaries','compiler-logs',
+                   'regression-logs','regression-cases'):
+        (run/folder).mkdir(parents=True,exist_ok=False)
+    results=[]
+    try:
+        r1 = load(R1/'make-jobs.py','r3_r1_jobs')
+        r2 = load(ROOT/'tools/bootstrap/run-r2-acceptance','r3_r2_verify')
+        matrix = load(R2/'make-matrix.py','r3_matrix')
+        neg = load(R2/'make-negatives.py','r3_neg')
+        reg = load(ROOT/'tools/bootstrap/run-r1-acceptance','r3_r1_campaign')
+        prov = load(ROOT/'tools/checks/r1_provenance.py','r3_provenance')
+        trail = load(r1.BASE,'r3_trail')
+        core = trail.load_core()
+        cfg = core.load_config()
+        spec = cfg['datasets']['BOOT_OBJ']
+        if not (spec.get('content_type')=='object' and
+                spec.get('dsorg')=='PO' and spec.get('recfm')=='FB' and
+                int(spec.get('lrecl',0))==80):
+            raise ValueError('BOOT_OBJ must be an FB80 object PDS')
+        obj_dsn = core.full_dsn(cfg,spec)
+        main = (ROOT/'bootstrap-toolchain/asm/bcplmain.asm').read_text('ascii')
+        generated = run/'generated'
+        client_src = generated/'client.bcpl'
+        client_src.write_text(render('client.bcpl.in'),'ascii')
+        for name, src, job in [('client',client_src,'R3TCOMP'),
+                               ('zero',R2/'zero.bcpl','R3CZERO'),
+                               ('a',R2/'demo.bcpl','R3CONLA'),
+                               ('b',R2/'onlyb.bcpl','R3CONLB'),
+                               ('both',R2/'both.bcpl','R3CONAB')]:
+            outfile = generated/f'{name}.s370.asm'
+            call('tools/bootstrap/compile-mvs',src,'--job-name',job,
+                 '--output',outfile,timeout=args.compile_timeout,
+                 output=run/'compiler-logs'/f'{name}.txt')
+            if not outfile.is_file() or not outfile.stat().st_size:
+                raise RuntimeError(f'compiler generated no source: {name}')
+            print('COMPILED',name,flush=True)
+        client = (generated/'client.s370.asm').read_bytes().decode('latin-1')
+        for with_finalizer, tag, jobname in (
+                (False,'no','R3TNFIN'),(True,'fin','R3TFIN')):
+            registry, descriptor, dispatcher, finalizer = sources(with_finalizer)
+            extras = [('ASMD','R3DSC',descriptor),
+                      ('ASMS','R3DISP',dispatcher)]
+            linked = [dispatcher]
+            if finalizer:
+                extras.append(('ASMF','R3FINS',finalizer))
+                linked.append(finalizer)
+            attestation=prov.check(registry,descriptor,linked)
+            if attestation != {'descriptor_spans':1,
+                'finalizers':['TMFIN'] if with_finalizer else []}:
+                raise ValueError('unexpected BCEX/BCRG provenance')
+            card = core.authenticated_job_card(cfg,jobname,
+                                                'R3 TEMPLATE',redact_password=False)
+            deck = r1.make_deck('empty',card,client,main,obj_dsn,
+                    jobname_override=jobname,registry_override=registry,
+                    extra_asm=tuple(extras))
+            marker='//* R.1 EMPTY BCPLREG CANDIDATE'
+            if deck.count(marker)!=1:
+                raise ValueError('unexpected R.1 builder annotation')
+            deck=deck.replace(marker,'//* R.3 SELECTED TEMPLATE BCPLREG')
+            path = run/'jcl'/f'{tag}.jcl'
+            path.write_text(deck,'ascii',newline='\n')
+            path.chmod(0o600)
+        generated_r2={p:(generated/f'{p}.s370.asm').read_bytes().decode('latin-1')
+                      for p in ('zero','a','b','both')}
+        matrix_deck=matrix.make_deck(generated_r2,
+            core.authenticated_job_card(cfg,'R2MATRIX','R3 FOUR LINK',
+                                        redact_password=False),obj_dsn)
+        neg_deck=neg.build({p:generated_r2[p] for p in ('zero','both')},
+            core.authenticated_job_card(cfg,'R2NEG','R3 NEGATIVES',
+                                        redact_password=False),obj_dsn)
+        for name,deck in (('matrix',matrix_deck),('negatives',neg_deck)):
+            path=run/'jcl'/f'{name}.jcl'
+            path.write_text(deck,encoding='ascii',newline='\n')
+            path.chmod(0o600)
+        (run/'cases.json').write_text(json.dumps(
+            {c.name:c.diagnostic for c in neg.CASES},indent=2)+'\n')
+        sources_for_hash = [p for p in TEMPLATE.glob('*') if p.is_file()]
+        sources_for_hash += [ROOT/'bootstrap-toolchain/asm/bcplmain.asm',
+                             ROOT/'bootstrap-toolchain/asm/bcplrgs.asm',
+                             ROOT/'tools/checks/r1_prepare_candidate.py',
+                             ROOT/'tools/checks/r1-overlay-regression-jcl.py',
+                             ROOT/'tools/bootstrap/run-production-regression',
+                             ROOT/'tools/bootstrap/run-r3-acceptance']
+        sources_for_hash += [p for p in R2.glob('*.py')]
+        sources_for_hash += [p for p in R2.glob('*.bcpl')]
+        sources_for_hash += [ROOT/'bootstrap-toolchain/probes/r1-registration/make-jobs.py',
+                             ROOT/'bootstrap-toolchain/probes/r0-export-trailer-probe/make-job.py',
+                             ROOT/'tools/bootstrap/run-r1-acceptance',
+                             ROOT/'tools/bootstrap/run-r2-acceptance',
+                             ROOT/'tools/bootstrap/compile-mvs',
+                             ROOT/'tools/bootstrap/run-regression',
+                             ROOT/'bootstrap-toolchain/regression/run-test.sh',
+                             ROOT/'tools/checks/prepare-runtime-pds-regression.py',
+                             ROOT/'config/dspal.yaml']
+        sources_for_hash += [run/'jcl'/f'{name}.jcl' for name in
+                             ('no','fin','matrix','negatives')]
+        sources_for_hash += list(generated.glob('*.s370.asm'))
+        manifest(run,revision,sources_for_hash)
+        for name,with_finalizer,verify in (
+            ('no',False,lambda sm,r: verify_template(sm,r)),
+            ('fin',True,lambda sm,r: verify_template(sm,r,with_finalizer=True)),
+            ('matrix',False,r2.verify_matrix),
+            ('negatives',False,r2.verify_negatives)):
+            result={'phase':name,'job':None,'result':'FAIL','issues':[]}
+            try:
+                num, sm, report=r2.submit(run/'jcl'/f'{name}.jcl',run,name,
+                                         args.job_timeout)
+                result['job']=num
+                errors,steps=verify(sm,report)
+                if name=='negatives':
+                    # No rejected zero-selection client may reach START.
+                    leaked=len(re.findall(r'(?m)^R2 MATRIX ZERO PASS\s*$',report))
+                    if leaked:
+                        errors.append(f'rejected START marker count={leaked}')
+                result['issues']=errors
+                result['steps']=steps
+                result['result']='PASS' if not errors else 'FAIL'
+            except (OSError,ValueError,RuntimeError,subprocess.TimeoutExpired) as exc:
+                result['issues']=[str(exc)]
+            results.append(result)
+            save(run,results,revision)
+            print(f'{name.upper()}: {result["result"]} JOB '
+                  f'{result["job"] or "-"}',flush=True)
+            if result['result']!='PASS':
+                return 1
+        # Reuse the accepted per-case R.1 temporary regression overlay;
+        # this *does not* read candidate objects from a persistent PDS.
+        try:
+            native=fresh_regression(run,reg,args.regression_timeout)
+        except (OSError,RuntimeError,subprocess.TimeoutExpired) as exc:
+            native={'result':'FAIL','issues':[str(exc)]}
+        results.append({'phase':'native-00-145','job':None,**native})
+    except (OSError,ValueError,RuntimeError,subprocess.TimeoutExpired) as exc:
+        results.append({'phase':'preparation','result':'FAIL','issues':[str(exc)]})
+    finally:
+        ready=len(results)==5 and all(x['result']=='PASS' for x in results)
+        save(run,results,revision,ready=ready)
+        print('R.3 evidence:',run/'SUMMARY.md',flush=True)
+    return 0 if ready else 1
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    opts=parser.add_mutually_exclusive_group(required=True)
+    opts.add_argument('--check',action='store_true')
+    opts.add_argument('--execute',action='store_true')
+    parser.add_argument('--job-timeout',type=int,default=900)
+    parser.add_argument('--compile-timeout',type=int,default=300)
+    parser.add_argument('--regression-timeout',type=int,default=10800)
+    args=parser.parse_args()
+    preflight()
+    if args.check:
+        print('R.3 CHECK PASS — no MVS jobs submitted',flush=True)
+        return 0
+    return execute(args)
+
+
+if __name__=='__main__':
+    try:
+        raise SystemExit(main())
+    except (RuntimeError,ValueError,OSError,subprocess.TimeoutExpired) as exc:
+        print(f'R.3 campaign failed: {exc}',file=sys.stderr)
+        raise SystemExit(2)
