@@ -95,6 +95,27 @@ class R5Tests(unittest.TestCase):
         self.assertEqual(self.v.verify(self.fake_map(44), 147), [])
         self.assertEqual(self.v.verify(self.fake_map(44), 157), [])
 
+    def test_report_entry_before_or_after_xref(self):
+        # A successful entry can appear outside the CSECT table.
+        body = self.fake_map(44).replace(
+            " ENTRY ADDRESS       000000\\n", "")
+        self.assertEqual(self.v.verify(
+            " ENTRY ADDRESS       000000\\n" + body, 147), [])
+        self.assertEqual(self.v.verify(
+            body + "1 ENTRY ADDRESS 00\\n", 147), [])
+
+    def test_report_entry_uniqueness_and_nonzero(self):
+        body = self.fake_map(44).replace(
+            " ENTRY ADDRESS       000000\\n", "")
+        self.assertIn("expected exactly one IEWL entry address; found 0",
+                      self.v.verify(body, 147))
+        self.assertIn("expected exactly one IEWL entry address; found 2",
+                      self.v.verify("ENTRY ADDRESS 000000\\n" + body +
+                                    "ENTRY ADDRESS 000000\\n", 147))
+        self.assertIn("IEWL entry address 0000B0 is not zero",
+                      self.v.verify(body + "ENTRY ADDRESS 0000B0\\n",
+                                    147))
+
     def test_report_rejects_unexpected_selection(self):
         self.assertTrue(self.v.verify(self.fake_map(28, False), 147))
         self.assertTrue(self.v.verify(self.fake_map(44), 158))

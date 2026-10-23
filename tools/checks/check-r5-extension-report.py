@@ -5,6 +5,14 @@ from pathlib import Path
 import re
 
 
+# The IEWL entry-address field need not occur within the XREF slice.
+# An ASA carriage-control character may precede the field in a report.
+ENTRY_LINE = re.compile(
+    r"(?im)^[ \t\f]*[01+]?[ \t\f]*ENTRY[ \t]+ADDRESS[ \t]+"
+    r"([0-9A-F]{1,8})[ \t]*$"
+)
+
+
 def verify(text, number):
     if number < 146 or number > 158:
         raise ValueError("number outside R.5 range")
@@ -30,8 +38,12 @@ def verify(text, number):
         found = csect(name) is not None
         if found != selected:
             problems.append("wrong " + name + " inclusion")
-    if not re.search(r"ENTRY ADDRESS\s+0+\s", mapping + "\n"):
-        problems.append("entry address was not zero")
+    entries = ENTRY_LINE.findall(text)
+    if len(entries) != 1:
+        problems.append("expected exactly one IEWL entry address; found " +
+                        str(len(entries)))
+    elif int(entries[0], 16) != 0:
+        problems.append("IEWL entry address " + entries[0] + " is not zero")
     return problems
 
 

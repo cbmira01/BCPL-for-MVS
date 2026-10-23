@@ -136,3 +136,42 @@ combined source plus BCXREQ selection (147). If either fails, preserve
 its JES/IFOX/IEWL report before attempting all 146-158 cases. Tests
 compile through the resident demoted Cambridge compiler under MVS;
 no R.5 PASS may be asserted from host preflight alone.
+
+## First live R.5 regression attempt, 23 October 2026
+
+The owner ran the original six host unit tests (all PASS), generated
+synthetic JCL for all thirteen cases, checked numbering and Bash
+syntax, then executed R.5 regression 146 and 147 on MVS:
+
+| Case | Compile job | Native job | Executed results |
+| --- | --- | --- | --- |
+| 146 | 3723 | 3724 | IFOX/IEWL/GO RC=0000; `R5 EXT 146 PASS` printed |
+| 147 | 3725 | 3726 | IFOX/IEWL/GO RC=0000; `R5 EXT 147 PASS` printed |
+
+**The runner nevertheless reported FAIL for both cases**, solely
+because its R.5 IEWL MAP verifier reported `entry address was not zero`.
+Code review found that the verifier sought the entry-address field
+only inside a truncated cross-reference-table slice. It now searches
+the complete JES report for exactly one zero-valued IEWL entry, and
+retains the existing CSECT/BCPLREG size and package inclusion checks.
+Two additional offline tests cover alternative entry-field positions,
+missing entries, duplicates and nonzero entries.
+
+The actual full IEWL MAP was not included in the operator's pasted
+console report. **Neither 146 nor 147 is yet formally accepted.**
+Confirm the correction against the saved real reports without
+resubmitting jobs:
+
+```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_r5*.py' -v
+python3 -B tools/checks/check-r5-extension-report.py \
+  workarea/native-regression/146-optional-empty/job-report.txt \
+  --test-number 146
+python3 -B tools/checks/check-r5-extension-report.py \
+  workarea/native-regression/147-bcpldemo-query-size/job-report.txt \
+  --test-number 147
+```
+
+If a report still fails, inspect the true IEWL `ENTRY ADDRESS`
+line rather than assuming zero. Preserve the original failed-run
+results in the evidence record.
