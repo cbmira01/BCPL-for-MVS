@@ -37,10 +37,13 @@ with **temporary** MVS objects. The owner explicitly deferred
 installation to `BOOT_OBJ` and `BOOT_DEVOBJ`. Incorporating the accepted
 R.1 integration into this canonical source does not promote any object.
 
-**INSTALLATION HOLD:** `BOOT_JCL(BLDBMAIN)` is still the legacy
-five-module production object-PDS writer and does not prepare the
-complete registration-enabled runtime. Do not submit it until the
-installation procedure and object membership are separately approved.
+**INSTALLATION HOLD:** The revised seven-assembler-object
+`BOOT_JCL(BLDBMAIN)` procedure targets eight production members:
+six Core Runtime objects, the default empty `BCPLREG` table, and the
+separately built Base Library `BLIB`. Design and source approval does
+**not** authorize permanent `BOOT_OBJ` installation. Do not submit
+`BLDBMAIN` until the owner separately authorizes the MVS PDS writes
+and reviews the reconstruction/recovery procedure.
 `BOOT_JCL(BLDRGCHK)` is a non-installing IFOX check of the canonical
 BCPLMAIN, BCPLRGS and empty BCPLREG sources; it creates only
 temporary object datasets and does not link or execute an application.

@@ -1,12 +1,12 @@
 # Rebuild BCPL for MVS from source
 
-> **Runtime source packaging hold (22 October 2026):** Canonical
-> bootstrap `BCPLMAIN` contains the accepted optional registrar calls.
-> The production `BLDBMAIN` install procedure is not yet reconciled
-> or authorized for the revised runtime source. Do not use this
-> runbook to install new Core Runtime objects into `BOOT_OBJ` or
-> `BOOT_DEVOBJ` until object membership, link selection, and recovery
-> are approved. The accepted R.3 test path uses temporary objects.
+> **Core Runtime installation hold (R.5):** The revised seven-assembler-
+> object `BLDBMAIN` and the production linker recipe implement the
+> approved registration-enabled eight-member `BOOT_OBJ` design.
+> Design and source approval does **not** authorize installation.
+> Do not submit `BLDBMAIN` to update `BOOT_OBJ` until the owner
+> separately approves those permanent MVS writes and reviews the
+> reconstruction/recovery procedure. `BOOT_DEVOBJ` remains untouched.
 > See `bootstrap-toolchain/asm/README.md`.
 
 **Operator guide — Hercules / MVS 3.8J / TK5**
@@ -15,8 +15,8 @@ This guide shows how to rebuild the BCPL tools and native runtime on a working
 MVS 3.8 system. Follow the steps in order. Check each result before moving on.
 
 **What you will get:** a working BCPL interpreter, the demoted Cambridge
-bootstrap compiler running under that interpreter, six native runtime object
-modules, and a tested system. The bootstrap compiler generates System/370
+bootstrap compiler running under that interpreter, eight production object
+members, and a tested system. The bootstrap compiler generates System/370
 assembler; it does not execute as native machine code.
 
 **Scope:** this guide rebuilds the interpreter-hosted bootstrap toolchain in
@@ -96,8 +96,8 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 4 | Run the MR10 examples and tests | All resident suites pass |
 | 5 | Generate demoted Cambridge bootstrap sources and `TRNILRG`; second populate | All mapped members installed |
 | 6 | Build and test interpreted `CAMBCOMP` | Bootstrap compiler produces System/370 assembler |
-| 7 | Assemble five native runtime modules | Five members in `BOOT_OBJ` |
-| 8 | Compile and assemble `BLIB` | Six members in `BOOT_OBJ` |
+| 7 | Assemble six Core Runtime modules and empty BCPLREG | Seven members in `BOOT_OBJ` |
+| 8 | Compile and assemble `BLIB` | Eight members in `BOOT_OBJ` |
 | 9 | Run native regression tests | 145 PASS, 0 FAIL, 1 expected SKIP |
 | 10 | Save the evidence | Results and limits recorded |
 
@@ -399,7 +399,7 @@ interpreted completion `CODE=0`.
 Cambridge compiler effort and are not used by this reconstruction. The
 interpreter-hosted bootstrap compiler lives in `BOOT_INTCODE`.
 
-## Step 7 — Build five native runtime modules
+## Step 7 — Build the six Core Runtime modules and empty BCPLREG
 
 The runtime provides the low-level services that native BCPL programs
 need. Its assembler sources are tracked in Git and mapped to `BOOT_ASM`
@@ -415,6 +415,11 @@ tools/datasets/dspal ls BOOT_OBJ
 
 Before the build, `BOOT_OBJ` must be empty.
 
+**Installation authorization:** The source/JCL correction does not, by
+itself, authorize persistent object-library writes. The installation
+hold at the start of this guide remains effective until the owner
+explicitly approves installation into `BOOT_OBJ`.
+
 Then build and install the runtime:
 
 ```sh
@@ -429,10 +434,14 @@ tools/datasets/dspal ls BOOT_OBJ
 | `bootstrap-toolchain/asm/bcplbyte.asm` | `BCPLBYTE` |
 | `bootstrap-toolchain/asm/bcplapt.asm` | `BCPLAPT` |
 | `bootstrap-toolchain/asm/bcplio.asm` | `BCPLIO` |
+| `bootstrap-toolchain/asm/bcplrgs.asm` | `BCPLRGS` |
+| `bootstrap-toolchain/asm/bcplreg-empty.asm` | `BCPLREG` |
 
-**Check:** the job has five assembler steps and five object-install steps.
-All ten must return `RC=0000`. The final `BOOT_OBJ` must contain these
-five members and no old objects.
+**Check:** the job has seven assembler steps and seven object-install
+steps. All fourteen must return `RC=0000`. The final `BOOT_OBJ` must
+contain these seven members and no old objects. `BCPLRGS` supplies
+`RGINIT`/`RGFINI`; `BCPLREG` supplies the default empty registry.
+An executable must link exactly one application registration table.
 
 The install job is **not all-or-nothing**. If a step fails, stop and find
 the cause; do not claim all five were installed.
@@ -466,10 +475,10 @@ tools/datasets/dspal ls BOOT_DEVOBJ
 
 The interpreted `CAMBCOMP` run must also report `CODE=0`.
 
-The final production PDS must have **exactly six** object members:
+The final production PDS must have **exactly eight** object members:
 
 ```text
-BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BLIB
+BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 ```
 
 `BOOT_DEVOBJ` must remain empty. Do not use it to fill any gap in
@@ -477,8 +486,8 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BLIB
 
 ## Step 9 — Install BCPLDEMO and run the native production tests
 
-Step 8 must have produced the six accepted Core Runtime/Base Library
-members in `BOOT_OBJ`. The runtime source packaging hold at the top of
+Step 8 must have produced eight production object members (six Core
+Runtime, default empty `BCPLREG`, and Base Library `BLIB`) in `BOOT_OBJ`. The runtime source packaging hold at the top of
 this guide remains in force until separately resolved; this section does
 not authorize or bypass the `BLDBMAIN` installation hold.
 
@@ -574,8 +583,12 @@ Check the production build and compiler-driver paths:
 python3 tools/checks/check-native-production-build.py
 ```
 
-This is a host-side check; it does not submit MVS jobs. Set the
-optional-extension installed-mode inputs and invoke the established
+This is a host-side check; it does not submit MVS jobs. For ordinary
+tests 00–145 the production linker explicitly includes installed
+`BOOT_OBJ(BCPLRGS)` and `BOOT_OBJ(BCPLREG)`. Tests 146–158 instead
+assemble their application-specific registry and temporary registrar;
+they must not link the default `BCPLREG` as a second table.
+Set the optional-extension installed-mode inputs and invoke the established
 production launcher:
 
 ```sh
@@ -651,7 +664,7 @@ PDS members, and jobs were used.
 | MR10 tests | Payload job numbers, suite pass results, output checked, comparison limits |
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
-| Runtime | Five assembly and five install RCs; six final `BOOT_OBJ` members including BLIB |
+| Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
 | Optional extension | `EXT_MAC`/`EXT_ASM`/`EXT_SOURCE` membership; `EXT_OBJ(BCPLDEMO)` install job; `ASMDEMO`, `PUTDEMO`, `READBACK`, and `VERIFY` RCs; binary comparison and IEWL MAP/XREF evidence |
 | Native tests | Full installed-mode 00–158 result (158 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers; historical 00–145 audit limitation recorded |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |

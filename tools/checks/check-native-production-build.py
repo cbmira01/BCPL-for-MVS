@@ -12,12 +12,16 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 JCL = ROOT / "bootstrap-toolchain/jcl"
 ASM = ROOT / "bootstrap-toolchain/asm"
+# Six Core Runtime assembler modules plus the empty BCPLREG table.
+# The Base Library BLIB is compiled and installed separately.
 RUNTIME = (
-    ("BCPLMAIN", "ASMMMAIN", "PUTMAIN"),
-    ("BCPLMEM", "ASMMMEM", "PUTMEM"),
-    ("BCPLBYTE", "ASMMBYTE", "PUTBYTE"),
-    ("BCPLAPT", "ASMMAPT", "PUTAPT"),
-    ("BCPLIO", "ASMMIO", "PUTIO"),
+    ("BCPLMAIN", "bcplmain.asm", "ASMMMAIN", "PUTMAIN"),
+    ("BCPLMEM", "bcplmem.asm", "ASMMMEM", "PUTMEM"),
+    ("BCPLBYTE", "bcplbyte.asm", "ASMMBYTE", "PUTBYTE"),
+    ("BCPLAPT", "bcplapt.asm", "ASMMAPT", "PUTAPT"),
+    ("BCPLIO", "bcplio.asm", "ASMMIO", "PUTIO"),
+    ("BCPLRGS", "bcplrgs.asm", "ASMRGS", "PUTRGS"),
+    ("BCPLREG", "bcplreg-empty.asm", "ASMREG", "PUTREG"),
 )
 
 
@@ -32,8 +36,8 @@ def main() -> None:
     subprocess.run([sys.executable, str(ROOT /
         "tools/checks/check-bcplmain-canonical.py")], check=True)
     build = (JCL / "bldbmain.jcl").read_text(encoding="ascii")
-    for member, asm_step, put_step in RUNTIME:
-        asm = ASM / (member.lower() + ".asm")
+    for member, filename, asm_step, put_step in RUNTIME:
+        asm = ASM / filename
         require(asm.is_file(), f"missing source {asm}")
         require(bool(re.search(
             rf"^//{asm_step}\s+EXEC PGM=IFOX00,", build, re.M
@@ -46,10 +50,10 @@ def main() -> None:
         )), f"{put_step} must gate binary install on prior RC=0")
         require(f"//SYSUT2   DD DSN=HERC02.BCPL.BOOT.OBJ({member}),"
                 in build, f"wrong production target for {member}")
-    require(build.count(" EXEC PGM=IFOX00,") == 5,
-            "BLDBMAIN must assemble exactly five modules")
-    require(build.count(" EXEC PGM=IEBGENER,COND=(0,NE)") == 5,
-            "BLDBMAIN must install exactly five modules")
+    require(build.count(" EXEC PGM=IFOX00,") == 7,
+            "BLDBMAIN must assemble six Core Runtime modules plus BCPLREG")
+    require(build.count(" EXEC PGM=IEBGENER,COND=(0,NE)") == 7,
+            "BLDBMAIN must install seven assembler object members")
     require("HERC02.BCPL.BOOT.DEVOBJ" not in build, "BLDBMAIN must not use DEVOBJ")
     blib = (JCL / "blibbld.jcl").read_text(encoding="ascii")
     require("HERC02.BCPL.BOOT.SOURCE(BLIB)" in blib, "BLIB source missing")
@@ -63,6 +67,10 @@ def main() -> None:
     require("INCLUDE OBJ(BCPLBYTE)" in generator and
             "INCLUDE OBJ(BCPLAPT)" in generator,
             "production BYTE/APT must link from OBJ")
+    require("INCLUDE OBJ(BCPLRGS)" in generator and
+            "INCLUDE OBJ(BCPLREG)" in generator and
+            'os.environ.get("R1_ACCEPTANCE") != "1"' in generator,
+            "production requires registrar and exactly one empty table")
     runner = (ROOT /
         "tools/bootstrap/run-regression").read_text(encoding="utf-8")
     require("candidate_env or production_env" in runner,
@@ -84,7 +92,7 @@ def main() -> None:
     for source in (mvs_runner, case_runner):
         require("tools/native/" not in source,
                 "obsolete tools/native/ reference in regression harness")
-    print("PASS: five canonical ASM modules + BLIB target BOOT_OBJ")
+    print("PASS: six Core Runtime ASM modules, BCPLREG and BLIB target BOOT_OBJ")
     print("PASS: all-OBJ native regression profile staged")
     print("NOT EXECUTED: no MVS assembly, link, GO, or PDS purge")
 

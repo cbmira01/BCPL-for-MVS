@@ -205,6 +205,12 @@ def main():
             else " INCLUDE DEVOBJ(BCPLAPT)",
         " INCLUDE COREOBJ(BCPLMEM)" if candidate == "1" else " INCLUDE OBJ(BCPLMEM)",
         " INCLUDE COREOBJ(BLIB)" if candidate == "1" else " INCLUDE OBJ(BLIB)",
+        # Production applications link the installed generic registrar
+        # and exactly one default empty table; the historical R.1
+        # temporary overlay supplies its own copies instead.
+        *([" INCLUDE OBJ(BCPLRGS)", " INCLUDE OBJ(BCPLREG)"]
+          if library == "OBJ" and os.environ.get("R1_ACCEPTANCE") != "1"
+          else []),
         f" ENTRY {entry}",
         f" NAME RG{n:03d}OBJ(R)",
         "/*",
