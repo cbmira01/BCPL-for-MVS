@@ -1,10 +1,9 @@
 # R.4 — MVS-native BCXSEL / BCXREQ assembler macro probe
 
-**Status:** JOB 3719 (23 October 2026) ran the first candidate: the
-five registration IFOX steps returned RC=0008 from illegal macro
-placement; IEWL and GO were not exercised. This corrected test-only
-source awaits another MVS execution. Static source/JCL checks do not
-establish IFOX, IEWL, or GO acceptance.
+**Status:** JOB 3720 (23 October 2026) **PASSED** all five test-only
+macro/PUNCH/IEWL selections after the JOB 3719 IFOX macro fix. See
+[`JOB 3720 evidence`](../../../packaging/runtime-extensions-r4-job-3720-evidence-20261023.md).
+Actual BCPL startup integration is still unverified; R.4 remains open.
 This is **R.4 — IEWL-Driven Extension Selection**, not a new march.
 
 ## Purpose and boundary
@@ -116,3 +115,41 @@ assembler macros, global `SET` variables, and `PUNCH` control cards.
 PUNCH output before the first CSECT precedes the object module's
 records. This is a **historical language rule**, not yet a test result
 for our MVS 3.8J TK5 IFOX/IEWL pairing.
+
+## Next isolated compiled-BCPL integration test
+
+The standalone [`r4-bcx-integrated-mvs.jcl`](r4-bcx-integrated-mvs.jcl)
+probes the next boundary using **only MVS steps**. `COMP` runs the
+resident **demoted Cambridge compiler** image `CAMBCOMP` under
+`ICINT19` and writes its System/370 assembler output directly to
+`&&R4CODE`; `ASMA` assembles that dataset in place. `ASMN` and
+`ASMR` assemble exact committed `BCPLMAIN`/`BCPLRGS` sources into
+new temporary objects. `ASMP` assembles the canonical BCPLDEMO
+BCEX descriptor/dispatcher together (removing only the now-redundant
+intermediate `EXTRN` and `END` cards). `ASMG` uses the same
+prefix/catalog/postfix with one `BCXREQ BCPLDEMO` selection.
+
+IEWL links the compiled client first, the Core Runtime and registrar,
+the generated registry deck, the real BCPLDEMO package through the
+punched `INCLUDE PKGA`, and the existing mandatory `BOOT_OBJ`
+members **read-only**. CG370 emits an unnamed first CSECT; the test
+intentionally uses the historical IEWL first-control-section default
+entry rule instead of pretending that a named `R0APP` exists. The
+actual IEWL MAP must confirm the entry address before interpreting GO.
+The compiled BCPL `START` calls `DEMOSVC(0,0,0)`, checks result 6,
+and prints exactly `R4 BCX BCPL START PASS` before normal FINISH.
+
+Expected successful steps: `COMP`, `PREP`, `CATP`, `POSTP`,
+`ASMA`, `ASMN`, `ASMR`, `ASMP`, `ASMG`, `LINK`, `GO`
+all RC=0000, one BCPL marker, `RGINIT` and `DMODISP` in the MAP,
+no unresolved references. This **new deck has not been run on MVS**;
+JCL/compile/link semantics remain subject to actual JES evidence.
+It assumes the documented resident compiler, ICINT19, headers, and
+accepted BOOT_OBJ Core/Base members already exist in this MVS image.
+
+Submit the tracked JCL directly to the 3505 reader; do **not** run
+a host-based compilation or application-build generator:
+
+```sh
+bash tools/mvs/submit-jcl bootstrap-toolchain/probes/r4-bcx-macros/r4-bcx-integrated-mvs.jcl
+```

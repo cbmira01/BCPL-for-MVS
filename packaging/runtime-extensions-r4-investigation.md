@@ -86,8 +86,10 @@ version-1 `BCPLREG` object and matching IEWL `INCLUDE` cards.
 
 The [source and standalone MVS-only test JCL](../bootstrap-toolchain/probes/r4-bcx-macros/README.md)
 cover no extensions, A only, B only, selected-only A plus required B,
-and upgrading a selection to required. The candidate is **not yet run
-under MVS**; static JCL/source checks alone are not acceptance.
+and upgrading a selection to required. The macro/PUNCH/IEWL candidate **PASSED JOB 3720** (23 October 2026),
+all 21 steps with expected results. See the [JOB 3720 evidence](runtime-extensions-r4-job-3720-evidence-20261023.md).
+An integrated real BCPL startup test remains pending; see the
+[test-only MVS-native candidate](../bootstrap-toolchain/probes/r4-bcx-macros/r4-bcx-integrated-mvs.jcl).
 The first catalog knows BCPLDEMO and test-only R2TESTB; this does not
 claim discovery of unknown packages or automatic transitive dependencies.
 No production BCPLMAIN/BCPLRGS, BCEX/BCRG ABI, or persistent MVS object
