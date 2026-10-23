@@ -475,67 +475,166 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BLIB
 `BOOT_DEVOBJ` must remain empty. Do not use it to fill any gap in
 `BOOT_OBJ`.
 
-## Step 9 — Run the native production tests
+## Step 9 — Install BCPLDEMO and run the native production tests
 
-Check the production build and compiler-driver paths first:
+Step 8 must have produced the six accepted Core Runtime/Base Library
+members in `BOOT_OBJ`. The runtime source packaging hold at the top of
+this guide remains in force until separately resolved; this section does
+not authorize or bypass the `BLDBMAIN` installation hold.
+
+### Install the optional extension object
+
+The first `dspal populate all` installed the Git-controlled text members
+in `EXT_MAC`, `EXT_ASM`, and `EXT_SOURCE`. It did **not** populate
+`EXT_OBJ`: binary object records must be assembled on MVS. Check the
+required members before installing:
+
+```sh
+tools/datasets/dspal ls EXT_MAC
+tools/datasets/dspal ls EXT_ASM
+tools/datasets/dspal ls EXT_SOURCE
+tools/datasets/dspal ls EXT_OBJ
+```
+
+Require `BCXPRE`, `BCXCAT`, `BCXPOST`, `BCPLDEMO` (assembler source),
+and `DEMOHDR` in their respective text libraries. On a new clean-room
+build, `EXT_OBJ` must still be empty. The approved installation target
+is `HERC02.BCPL.EXT.OBJ(BCPLDEMO)` (FB80 relocatable object records);
+the tracked assembler input is `HERC02.BCPL.EXT.ASM(BCPLDEMO)`. Check
+the effective HLQ before using this site-specific installation deck.
+
+**Permanent PDS write:** Obtain the required owner authorization before
+running the install job. The job's only permanent write is the
+`PUTDEMO` installation of `EXT_OBJ(BCPLDEMO)`. The project treats
+optional package objects as disposable, reproducible build products;
+there is no backup or member-level rollback PDS. Consult
+[the R.5 installation design](runtime-extensions-r5-installation-design.md).
+
+The committed `bootstrap-toolchain/extensions/bcpldemo/install-bcpldemo.jcl`
+is a JOB-body deck without an authenticated JOB card. Prepare a
+private, untracked copy from the configured batch credentials:
+
+```sh
+python3 - <<'PY'
+import importlib.util
+from pathlib import Path
+
+path = Path("tools/datasets/dspal-core.py")
+spec = importlib.util.spec_from_file_location("clean_room_dspal", path)
+core = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(core)
+
+config = core.load_config()
+card = core.authenticated_job_card(config, "R5DINST", "R5 BCPLDEMO", False)
+source = Path(
+    "bootstrap-toolchain/extensions/bcpldemo/install-bcpldemo.jcl"
+).read_text(encoding="ascii")
+
+output = Path("workarea/runtime-extensions-r5/install-bcpldemo.jcl")
+output.parent.mkdir(parents=True, exist_ok=True)
+output.write_text("\n".join(card) + "\n" + source, encoding="ascii")
+output.chmod(0o600)
+print("Prepared:", output)
+PY
+```
+
+Submit the deck, recording the actual JES job number:
+
+```sh
+tools/mvs/submit-jcl workarea/runtime-extensions-r5/install-bcpldemo.jcl
+```
+
+Use the returned integer job number with `tools/mvs/job-summary` and
+`tools/mvs/dump-report-for-job`. **Do not enter a literal placeholder**
+in place of the number. Verify all four steps on the real MVS report:
+
+| Step | Program | Required result |
+| --- | --- | --- |
+| `ASMDEMO` | IFOX00 | RC=0000; no assembler diagnostics |
+| `PUTDEMO` | IEBGENER | RC=0000; binary object member installed |
+| `READBACK` | IEBGENER | RC=0000; installed records copied back |
+| `VERIFY` | IEBCOMPR | RC=0000; all object records match |
+
+Then confirm the installed member:
+
+```sh
+tools/datasets/dspal ls EXT_OBJ
+```
+
+It must contain `BCPLDEMO`. Do not begin installed-mode regression
+if assembly, installation, read-back, comparison, or membership fails.
+Never transfer binary object records using `dspal put` or a text
+encoding conversion.
+
+### Run the complete production panel
+
+Check the production build and compiler-driver paths:
 
 ```sh
 python3 tools/checks/check-native-production-build.py
 ```
 
-This is a host-side check; it does not submit MVS jobs.
-Then use the production launcher, not a development or candidate profile:
+This is a host-side check; it does not submit MVS jobs. Set the
+optional-extension installed-mode inputs and invoke the established
+production launcher:
 
 ```sh
-tools/bootstrap/run-production-regression 0 145
+export BCPL_R5_EXTENSION_MODE=installed
+export BCPL_R5_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ
+export BCPL_R5_MACRO_DSN=HERC02.BCPL.EXT.MAC
+
+tools/bootstrap/run-production-regression 0 158
 ```
 
-This tool selects **only** the rebuilt `BOOT_OBJ` modules. It does not
-select the older `DEVOBJ(BCPLM6)` development candidate. It compiles
-the tests with `CAMBCOMP`, then assembles, links, and runs the result
-on MVS.
+The production launcher selects the accepted `BOOT_OBJ` Core
+Runtime/Base Library objects (`BCPL_RUNTIME_PDS=1`,
+`BCPL_RUNTIME_LIBRARY=OBJ`, `BCPL_RUNTIME_CANDIDATE=0`).
+It does **not** select the historical `MIXED` or `DEVOBJ`
+profile. The extension settings independently direct cases 146–158
+to the installed read-only `EXT_OBJ` and resident `EXT_MAC` libraries.
+The interpreted `CAMBCOMP` compiles each BCPL client; IFOX, IEWL,
+and GO run on MVS.
 
 **Target result:**
 
 | Result | Count | Meaning |
 | --- | ---: | --- |
-| PASS | **145** | Tests completed as expected |
-| FAIL | **0** | No failed tests |
-| SKIP | **1** | Case 083 needs source-only instrumentation and is not run in this installed-PDS mode |
-| TOTAL | **146** | Numbered cases 00 through 145 |
+| PASS | **158** | Every executed regression passed |
+| FAIL | **0** | No failed regressions |
+| SKIP | **1** | Case 083 needs source-only instrumentation |
+| TOTAL | **159** | Numbered cases 00 through 158 |
 
 A few cases are special:
 
 | Case | Expected behavior |
 | --- | --- |
-| `048` | Compile-only test; a successful compile counts as PASS |
-| `052` and `093` | In the production D6 profile, the GO return code should be `0000` |
-| `124`–`145` | Dynamic-stream and fault/accounting cases run in the all-OBJ production profile |
-| `139`–`145` | The harness uses private test-only accounting; production `BCPLIO` is not replaced |
+| `048` | Compile-only test; successful compile counts as PASS |
+| `052` and `093` | In the production D6 profile, GO RC should be 0000 |
+| `124`–`145` | Dynamic-stream and fault/accounting cases use all-OBJ production objects |
+| `139`–`145` | Private test-only accounting does not replace production `BCPLIO` |
+| `146` and `158` | BCPLDEMO excluded from the linked module |
+| `147`–`157` | Installed BCPLDEMO selection, registration, and dispatcher behavior |
 
-Each test saves a report under `workarea/native-regression/logs/`.
-For a failed test, read that case's log. You can rerun a single case,
-such as `tools/bootstrap/run-production-regression 124 --show-output`.
+Each case saves its log in `workarea/native-regression/logs/`.
+Inspect the saved report for any failure, including the actual
+compiler, IFOX, IEWL MAP/XREF, and GO results. Re-run a single case,
+for example `tools/bootstrap/run-production-regression 147 --show-output`.
+Record the full-panel console summary and relevant JES job numbers.
+Do not use `set -e` in the interactive operator shell: a failing
+command should not terminate that shell.
 
 ### Audit the saved test reports
 
-After the full 00–145 panel has run, use:
-
-```sh
-python3 tools/checks/check-m44-full-panel-logs.py
-```
-
-**Check:** the audit finds **145/145** executed-case logs, expected job
-steps and return codes, and no known-defect or ABEND signatures. It writes
-a job/step summary here:
-
-```text
-workarea/native-regression/m44-00-145-jobs.tsv
-```
-
-This is a check of **saved harness reports**. It does not read each
-physical MVS DD record independently. The log audit adds useful evidence,
-but it does not replace the full run.
+The historical `tools/checks/check-m44-full-panel-logs.py` audits
+**00–145 only** and writes
+`workarea/native-regression/m44-00-145-jobs.tsv`. Its current corpus
+check requires the highest regression number to be 145; it therefore
+**rejects the expanded 00–158 corpus** and is **not an R.5
+acceptance gate**. Do not report it as an audit of tests 146–158.
+For R.5, retain the full 00–158 runner result, each case's saved log,
+and representative JES/IFOX/IEWL/GO evidence for the installed
+extension. A harness log does not independently verify every physical
+MVS DD record.
 
 ## Step 10 — Save what you proved
 
@@ -553,7 +652,8 @@ PDS members, and jobs were used.
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Five assembly and five install RCs; six final `BOOT_OBJ` members including BLIB |
-| Native tests | Full 00–145 results, one expected skip, 145/145 report audit |
+| Optional extension | `EXT_MAC`/`EXT_ASM`/`EXT_SOURCE` membership; `EXT_OBJ(BCPLDEMO)` install job; `ASMDEMO`, `PUTDEMO`, `READBACK`, and `VERIFY` RCs; binary comparison and IEWL MAP/XREF evidence |
+| Native tests | Full installed-mode 00–158 result (158 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers; historical 00–145 audit limitation recorded |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;
