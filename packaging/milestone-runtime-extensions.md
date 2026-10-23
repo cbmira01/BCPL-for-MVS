@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 22 October 2026): R.4 — IEWL-Driven Extension Selection INVESTIGATION APPROVED.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 milestone was closed by the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md); that closure and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md) remain intact. Object-PDS installation is still **DEFERRED**. R.4 reopens the milestone solely for research and controlled experiments, not a replacement implementation.
+**Status (owner decision, 23 October 2026): R.5 — Optional Extension Packaging and Regression APPROVED, IN PROGRESS; R.4 — IEWL-Driven Extension Selection acceptance evidence recorded but formal closure remains pending.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 milestone was closed by the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md); that closure and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md) remain intact. Object-PDS installation is still **DEFERRED**. R.4 reopens the milestone solely for research and controlled experiments, not a replacement implementation.
 
 ## R.4 — IEWL-Driven Extension Selection (investigation approved)
 
@@ -304,3 +304,16 @@ accepted scope. The owner subsequently approved the separate
 no replacement architecture or production implementation has been approved.
 Related QSAM, Decimal Arithmetic, and Date/Time implementation belongs
 to their own milestones.
+
+## R.5 — Optional Extension Packaging and Regression (owner-approved 23 October 2026)
+
+The owner approved the nine R.5 goals: consolidate BCPLDEMO into
+one two-CSECT assembler source/object; define reversible optional PDS
+installation; make BCXSEL/BCXREQ catalog reusable; deliver a programmer
+package; add MVS-compiled/executed regression tests 146–158 integrated
+with the existing numbered runner; verify installed mode; reproduce
+from Git; and record MVS acceptance. See the [R.5 execution plan](runtime-extensions-r5-packaging-and-regression.md).
+
+**R.5 is in progress**, not accepted. R.4's technical PASS records
+remain intact; R.4 is not silently marked CLOSED. Persistent PDS
+installation requires a separate explicit destination/recovery decision.

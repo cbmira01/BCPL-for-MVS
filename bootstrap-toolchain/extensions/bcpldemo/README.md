@@ -1,6 +1,6 @@
 # BCPLDEMO — example optional extension
 
-**Status:** R.2 development candidate. **First actual MVS execution PASS: JOB 3075 (22 October 2026).** The complete R.2 matrix remains pending.
+**Status:** Functional R.2/R.3 and R.4 acceptance PASS (JOBs 3075, 3103, 3722). R.5 single-object packaging IN PROGRESS; its new source still awaits a separate MVS run.
 **Owner-approved:** Permanent `DEMOSVC:203` global; package `BCPLDEMO`.
 
 BCPLDEMO is a maintained, deliberately simple reference example for people
@@ -45,8 +45,9 @@ cannot be made safe through this interface.
 | File | Purpose |
 | --- | --- |
 | `bcpldemo.h` | Public BCPL declaration and package-local opcode constants |
-| `descriptor.asm` | Linker-relocatable `BCEX` export of G!203, no dependencies |
-| `dispatcher.asm` | Assembler implementation and the two example opcodes |
+| `bcpldemo.asm` | R.5 two-CSECT, one-object source (not yet live-tested) |
+| `descriptor.asm` | Retained R.2/R.3 single-descriptor compatibility source |
+| `dispatcher.asm` | Retained R.2/R.3 standalone dispatcher compatibility source |
 | `../../probes/r2-interoperability/registry-demo.asm` | Application-selected registration example (see actual path below) |
 
 The executable BCPL demonstration currently repeats the header's GLOBAL
@@ -109,3 +110,13 @@ names, publish an ABI, update selected BCEX/BCRG tables, and add collision,
 absence, and independent-linkage tests. A site-private slot is not a
 portable, universally reserved number. R.3 will provide the polished
 end-user tutorial and distribution recipe after R.2 acceptance.
+
+## R.5 candidate (not yet installed)
+
+The owner approved a single MVS object member containing DMODESC and
+DMODISP, assembled from [bcpldemo.asm](bcpldemo.asm). The old two-file
+sources are kept for existing R.2/R.3 regression reproducibility until
+migration. R.5 introduces new native regression cases 146–158 and
+separate source-mode and installed-mode gates. See
+[the R.5 plan](../../../packaging/runtime-extensions-r5-packaging-and-regression.md).
+No MVS object-library installation or R.5 acceptance has occurred.

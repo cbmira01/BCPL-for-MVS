@@ -1,0 +1,101 @@
+# Milestone Runtime Extensions — R.5 — Optional Extension Packaging and Regression
+
+**Owner authorization:** 23 October 2026 — "Approve, proceed" to the nine stated R.5 goals.
+**Status:** R.5 IN PROGRESS; no MVS R.5 acceptance yet.
+**R.4:** JOB 3720 macro/PUNCH/IEWL and JOB 3722 integrated startup passed. Formal R.4 closure is **not** assumed or changed.
+
+## Objective
+
+Deliver **BCPLDEMO** as a fully packaged, documented and regression-tested
+optional extension: one IFOX assembler source/object containing the
+BCEX descriptor and dispatcher CSECTs; BCPL header; MVS-native selection
+macros; install/rebuild/recovery JCL; user documentation; independent
+numbered native BCPL regressions 146–158; and clean-room reproduction.
+
+## Owner-approved goals
+
+1. Consolidate BCPLDEMO into a single assembler source with both CSECTs.
+2. Specify and verify installation of the optional object in an agreed PDS.
+3. Package MVS-native BCXSEL, BCXREQ and a known-package catalog.
+4. Document public API, headers, globals, builds, links and usage.
+5. Add native numbered regression cases **146 through 158**, one BCPL source per case.
+6. Integrate those cases into the existing individual/range/full runners;
+   preserve existing tests **00–145**.
+7. Repeat relevant tests against the installed member, not only
+   temporary development objects.
+8. Rebuild from a clean Git checkout with MVS tools and retained evidence.
+9. Require JES, IFOX, IEWL MAP/XREF, GO and regression gate evidence.
+
+## Design decisions
+
+- **Two CSECTs, one IFOX assembly:** DMODESC carries BCEX v1,
+  DMODISP carries the G!203 dispatcher. One END, no artificial
+  EXTRN between CSECTs in the same assembly.
+- Retain the separate descriptor.asm and dispatcher.asm as historical
+  R.2/R.3 regression inputs until their consumers are adapted and
+  revalidated. Their semantics must remain equivalent to bcpldemo.asm.
+- Test paths compile source **on MVS** with the resident **demoted
+  Cambridge compiler**, assemble via IFOX and link via IEWL;
+  no host compilation or host registration generation.
+  Local runner orchestration may submit JCL and verify reports,
+  as in the established 00–145 test system.
+- Application source declarations, IEWL object inclusion, and
+  BCPLRGS startup registration remain three independent obligations.
+- Maintain BCEX/BCRG v1 and accepted BCPLMAIN/BCPLRGS;
+  no changes to the compiler or shared ABI.
+- No migration of compiler, runtime, or package binaries into a
+  PDS merely by copying prebuilt material.
+
+## Numbered regression obligations
+
+| Case | Contract |
+| --- | --- |
+| 146 | Zero optional packages, empty BCRG, normal START/FINISH |
+| 147 | BCPLDEMO QUERY size inquiry |
+| 148 | Six-word QUERY descriptor content |
+| 149 | Short QUERY capacity, unchanged buffer |
+| 150 | Invalid QUERY arguments, no writes |
+| 151 | GETVALUES returns 10,20,30 |
+| 152 | Short GETVALUES buffer unchanged |
+| 153 | Invalid GETVALUES arguments |
+| 154 | Unsupported opcode returns -2 |
+| 155 | Repeat dispatcher calls without state corruption |
+| 156 | BCXSEL selects/registers without direct required ID |
+| 157 | BCXSEL upgraded by BCXREQ, only one INCLUDE/descriptor |
+| 158 | Excluded BCPLDEMO absent from linked module |
+
+Each has source.bcpl, expected.txt, README.md and an extension-selection
+fixture. A single regression number must be runnable independently,
+with numbered RUN/GO jobs, reliable PASS/FAIL diagnostics and saved
+operator-local evidence. Extension-selection fixtures are consumed by
+IFOX on MVS; they are not BCPL code.
+
+## Two build/acceptance modes
+
+- **Source mode:** compile BCPL and assemble the consolidated BCPLDEMO
+  from Git-controlled sources to **temporary MVS datasets**.
+- **Installed mode:** link the same compiled BCPL clients against the
+  explicitly installed BCPLDEMO object PDS member, using a
+  member-qualified IEWL INCLUDE and MVS-resident BCX catalog.
+
+An installed-mode success is required for R.5 acceptance.
+A passing source-mode test is useful developmental evidence only.
+
+## Persistent-data safety gate
+
+Candidate objects belong only in a **separately approved** optional
+extension destination; do not silently overwrite BOOT_OBJ or BOOT_DEVOBJ.
+Before the first persistent write, present the exact manifest-managed
+target, initial membership, install/replace authority, read-back
+validation, backup and rollback steps, and obtain an explicit decision
+from the owner. Preparing an installation procedure is not authority
+to execute it.
+
+## R.5 exit
+
+Document successful individual and contiguous 146–158 MVS runs,
+preservation of 00–145 (including expected 083 skip), installed
+member MAP/XREF proof, no regression, fresh Git-based rebuild and
+operator-approved recovery procedure. Mark R.5 CLOSED only on an
+explicit owner disposition. Until then preserve failures and
+unverified status honestly.
