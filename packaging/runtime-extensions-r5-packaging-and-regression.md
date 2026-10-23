@@ -175,3 +175,25 @@ python3 -B tools/checks/check-r5-extension-report.py \
 If a report still fails, inspect the true IEWL `ENTRY ADDRESS`
 line rather than assuming zero. Preserve the original failed-run
 results in the evidence record.
+    
+## R.5 design decision and source-mode evidence — 23 October 2026
+
+The owner approved the dedicated, manifest-managed EXT_OBJ, EXT_MAC,
+EXT_ASM, and EXT_SOURCE PDS architecture and initial BCPLDEMO/BCX
+membership, **without authorizing creation or modification of MVS
+permanent datasets**. GitHub source is authoritative; optional MVS
+binaries may be destroyed and reconstructed. No backup PDS, binary
+promotion history, or member-level rollback mechanism is required.
+See [R.5 installation design](runtime-extensions-r5-installation-design.md).
+
+The owner reports the consolidated **source-mode native regressions
+146–158: 13 PASS, 0 FAIL, 0 SKIP**. This result supersedes the stale
+"not yet performed" statements above **only for source mode**. Preserve
+the original JOB 3724/3726 report-verifier false negatives, subsequent
+correction, and saved-report revalidation. Full individual-job artifacts
+are not reproduced in this design record.
+
+**Not yet accepted:** installed BCPLDEMO object PDS, MVS-resident BCX
+macro PDS, member-qualified IEWL INCLUDE EXTLIB(BCPLDEMO), installed
+146–158 regressions, complete 00–158 panel, clean-room reconstruction,
+and owner R.5 closure. R.4 formal closure remains pending.
