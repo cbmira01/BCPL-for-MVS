@@ -75,3 +75,20 @@ Deliver a technical recommendation identifying the exact IEWL/IFOX
 mechanism, proof results, compatibility with BCEX v1 and R.0 A–H,
 and the minimum future changes. A negative finding is valid.
 No production code may change merely because the investigation passes.
+
+## Owner-approved MVS-native BCX macro candidate (23 October 2026)
+
+The owner rejected a WSL/Python/host-side application-build tool and
+approved a **test-only MVS-native** IFOX macro/PUNCH experiment.
+The short programmer interface is `BCXSEL package` or `BCXREQ package`;
+MVS assembler prefix/catalog/postfix sources produce the existing BCRG
+version-1 `BCPLREG` object and matching IEWL `INCLUDE` cards.
+
+The [source and standalone MVS-only test JCL](../bootstrap-toolchain/probes/r4-bcx-macros/README.md)
+cover no extensions, A only, B only, selected-only A plus required B,
+and upgrading a selection to required. The candidate is **not yet run
+under MVS**; static JCL/source checks alone are not acceptance.
+The first catalog knows BCPLDEMO and test-only R2TESTB; this does not
+claim discovery of unknown packages or automatic transitive dependencies.
+No production BCPLMAIN/BCPLRGS, BCEX/BCRG ABI, or persistent MVS object
+library is changed. Prior R.0-R.3 closure remains intact.

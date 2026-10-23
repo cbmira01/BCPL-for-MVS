@@ -16,8 +16,13 @@ developed packages unknown to the registrar.
 
 **Boundaries:** Keep the accepted BCEX/BCRG v1 ABI and BCPLRGS baseline.
 Do not modify production `BCPLMAIN`/`BCPLRGS`, install object members,
-add compiler dependencies, or create a registry-generation utility.
-Use temporary MVS datasets; allow a negative technical conclusion.
+add compiler dependencies, or create a host-side/production registry-
+generation utility. **Owner-approved R.4 refinement (23 October 2026):**
+an isolated MVS-native IFOX macro/PUNCH proof using short
+`BCXSEL`/`BCXREQ` selections may construct BCRG v1 and IEWL `INCLUDE`
+cards entirely within JCL. This is a test authorization only, not an
+accepted registrar or runtime deployment. Use temporary MVS datasets;
+allow a negative technical conclusion.
 
 See the [R.4 investigation](runtime-extensions-r4-investigation.md).
 
