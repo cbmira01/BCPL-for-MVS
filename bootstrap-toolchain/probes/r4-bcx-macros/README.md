@@ -1,7 +1,10 @@
 # R.4 — MVS-native BCXSEL / BCXREQ assembler macro probe
 
-**Status:** Test-only source candidate; static source/JCL inspection done;
-**IFOX, IEWL, and GO have NOT yet been run for this candidate.**
+**Status:** JOB 3719 (23 October 2026) ran the first candidate: the
+five registration IFOX steps returned RC=0008 from illegal macro
+placement; IEWL and GO were not exercised. This corrected test-only
+source awaits another MVS execution. Static source/JCL checks do not
+establish IFOX, IEWL, or GO acceptance.
 This is **R.4 — IEWL-Driven Extension Selection**, not a new march.
 
 ## Purpose and boundary
