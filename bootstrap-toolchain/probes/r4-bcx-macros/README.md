@@ -3,7 +3,9 @@
 **Status:** JOB 3720 (23 October 2026) **PASSED** all five test-only
 macro/PUNCH/IEWL selections after the JOB 3719 IFOX macro fix. See
 [`JOB 3720 evidence`](../../../packaging/runtime-extensions-r4-job-3720-evidence-20261023.md).
-Actual BCPL startup integration is still unverified; R.4 remains open.
+JOB 3722 (23 October 2026) PASSED integrated BCPL startup and G!203
+BCPLDEMO dispatch; see the linked evidence below. R.4 remains open
+for owner disposition.
 This is **R.4 — IEWL-Driven Extension Selection**, not a new march.
 
 ## Purpose and boundary
@@ -26,9 +28,9 @@ The selected extension and required package counts are different:
   selected-only to selected-and-required without a second INCLUDE or
   descriptor entry.
 
-The prototype **does not infer dependencies**, register packages with
-`BCPLRGS` in a real BCPL program, or handle arbitrary unknown
-package names. Selection is dependency-first, under the established
+The prototype **does not infer dependencies** or handle arbitrary
+unknown package names. JOB 3722 passed with real BCPLRGS and BCPLDEMO;
+it does not establish automatic transitive dependency selection. Selection is dependency-first, under the established
 BCRG contract. `BCXCAT` maps **only two test names** to their
 link-editor DD names and independently relocated BCEX symbols:
 
@@ -116,7 +118,7 @@ PUNCH output before the first CSECT precedes the object module's
 records. This is a **historical language rule**, not yet a test result
 for our MVS 3.8J TK5 IFOX/IEWL pairing.
 
-## Next isolated compiled-BCPL integration test
+## Integrated compiled-BCPL test — JOB 3722 PASS
 
 The standalone [`r4-bcx-integrated-mvs.jcl`](r4-bcx-integrated-mvs.jcl)
 probes the next boundary using **only MVS steps**. `COMP` runs the
@@ -137,8 +139,8 @@ IEWL selected `BCPLMAIN` at `B0` as the entry, causing GO S0C1.
 The revised test uses a zero-length inline IFOX prefix in the same
 unnamed CSECT to export `R4APP` at offset zero, then specifies
 `ENTRY R4APP` to IEWL. CG370's output is unchanged. The new IEWL MAP
-must show `R4APP` at zero and `ENTRY ADDRESS 0`. This correction
-has not been tested on MVS.
+must show `R4APP` at zero and `ENTRY ADDRESS 0`. JOB 3722
+confirmed both in its assembler and IEWL listings.
 The compiled BCPL `START` calls `DEMOSVC(0,0,0)`, checks result 6,
 and prints exactly `R4 BCX BCPL START PASS` before normal FINISH.
 
@@ -148,8 +150,9 @@ all RC=0000, one BCPL marker, `RGINIT` and `DMODISP` in the MAP,
 no unresolved references. The prior version ran as JOB 3721:
 compiler, IFOX and IEWL all returned RC=0000, but GO **ABEND S0C1**
 because IEWL started BCPLMAIN rather than the compiled client prefix.
-The **revised entry-point fix is untested**; real JES evidence is
-required before claiming integrated BCPL acceptance.
+JOB 3722 subsequently passed all eleven EXEC steps at RC=0000,
+including native BCPL GO and the exact marker R4 BCX BCPL START PASS.
+See [JOB 3722 evidence](../../../packaging/runtime-extensions-r4-job-3722-evidence-20261023.md).
 It assumes the documented resident compiler, ICINT19, headers, and
 accepted BOOT_OBJ Core/Base members already exist in this MVS image.
 

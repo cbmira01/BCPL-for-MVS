@@ -91,11 +91,33 @@ all 21 steps with expected results. See the [JOB 3720 evidence](runtime-extensio
 Integrated JOB 3721 (23 October 2026) compiled and linked all
 inputs at RC=0000 but GO **ABEND S0C1**: IEWL chose `BCPLMAIN`
 at offset `B0`, bypassing the unnamed compiled client at zero.
-The test-only JCL now exports a named label from the unnamed client
-CSECT and specifies it explicitly to IEWL; the correction has **not
-been rerun**. See the
+The test-only JCL exports R4APP from the anonymous client CSECT
+and specifies it explicitly to IEWL. JOB 3722 (23 October 2026)
+**PASSED**: all eleven EXEC steps RC=0000; IEWL entry 0; the native
+BCPL START verified BCPLDEMO G!203 and printed the expected marker.
+See [JOB 3722 evidence](runtime-extensions-r4-job-3722-evidence-20261023.md). See the
 [test-only MVS-native candidate](../bootstrap-toolchain/probes/r4-bcx-macros/r4-bcx-integrated-mvs.jcl).
 The first catalog knows BCPLDEMO and test-only R2TESTB; this does not
 claim discovery of unknown packages or automatic transitive dependencies.
 No production BCPLMAIN/BCPLRGS, BCEX/BCRG ABI, or persistent MVS object
 library is changed. Prior R.0-R.3 closure remains intact.
+
+## Technical recommendation after JOB 3722 (23 October 2026)
+
+IEWL INCLUDE alone does not enumerate entirely unknown package
+BCEX descriptor pairs. The documented WXTRN and common/DXD/CXD
+experiments did not produce an automatic, extensible descriptor list.
+
+The owner-approved alternative has now been demonstrated on MVS:
+short BCXSEL / BCXREQ statements select *known* packages through an
+MVS-resident catalog, IFOX generates both BCRG v1 and PUNCH-based
+IEWL INCLUDE cards, and the accepted BCPLMAIN/BCPLRGS startup
+registers an actual BCPLDEMO package (JOB 3722).
+
+Recommendation: retain BCEX/BCRG v1 and the accepted generic
+registrar. Treat the macro method as a proven concise known-package
+selection workflow, not as arbitrary package discovery. Automatic
+dependency selection, independently developed User/Site Library
+catalog entries, and production deployment remain distinct decisions.
+No runtime or compiler changes were necessary. R.4 remains OPEN
+until the owner formally disposes of the investigation.
