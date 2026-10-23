@@ -88,7 +88,12 @@ The [source and standalone MVS-only test JCL](../bootstrap-toolchain/probes/r4-b
 cover no extensions, A only, B only, selected-only A plus required B,
 and upgrading a selection to required. The macro/PUNCH/IEWL candidate **PASSED JOB 3720** (23 October 2026),
 all 21 steps with expected results. See the [JOB 3720 evidence](runtime-extensions-r4-job-3720-evidence-20261023.md).
-An integrated real BCPL startup test remains pending; see the
+Integrated JOB 3721 (23 October 2026) compiled and linked all
+inputs at RC=0000 but GO **ABEND S0C1**: IEWL chose `BCPLMAIN`
+at offset `B0`, bypassing the unnamed compiled client at zero.
+The test-only JCL now exports a named label from the unnamed client
+CSECT and specifies it explicitly to IEWL; the correction has **not
+been rerun**. See the
 [test-only MVS-native candidate](../bootstrap-toolchain/probes/r4-bcx-macros/r4-bcx-integrated-mvs.jcl).
 The first catalog knows BCPLDEMO and test-only R2TESTB; this does not
 claim discovery of unknown packages or automatic transitive dependencies.

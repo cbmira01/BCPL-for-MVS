@@ -132,18 +132,24 @@ prefix/catalog/postfix with one `BCXREQ BCPLDEMO` selection.
 IEWL links the compiled client first, the Core Runtime and registrar,
 the generated registry deck, the real BCPLDEMO package through the
 punched `INCLUDE PKGA`, and the existing mandatory `BOOT_OBJ`
-members **read-only**. CG370 emits an unnamed first CSECT; the test
-intentionally uses the historical IEWL first-control-section default
-entry rule instead of pretending that a named `R0APP` exists. The
-actual IEWL MAP must confirm the entry address before interpreting GO.
+members **read-only**. CG370 emits an unnamed CSECT. In JOB 3721,
+IEWL selected `BCPLMAIN` at `B0` as the entry, causing GO S0C1.
+The revised test uses a zero-length inline IFOX prefix in the same
+unnamed CSECT to export `R4APP` at offset zero, then specifies
+`ENTRY R4APP` to IEWL. CG370's output is unchanged. The new IEWL MAP
+must show `R4APP` at zero and `ENTRY ADDRESS 0`. This correction
+has not been tested on MVS.
 The compiled BCPL `START` calls `DEMOSVC(0,0,0)`, checks result 6,
 and prints exactly `R4 BCX BCPL START PASS` before normal FINISH.
 
 Expected successful steps: `COMP`, `PREP`, `CATP`, `POSTP`,
 `ASMA`, `ASMN`, `ASMR`, `ASMP`, `ASMG`, `LINK`, `GO`
 all RC=0000, one BCPL marker, `RGINIT` and `DMODISP` in the MAP,
-no unresolved references. This **new deck has not been run on MVS**;
-JCL/compile/link semantics remain subject to actual JES evidence.
+no unresolved references. The prior version ran as JOB 3721:
+compiler, IFOX and IEWL all returned RC=0000, but GO **ABEND S0C1**
+because IEWL started BCPLMAIN rather than the compiled client prefix.
+The **revised entry-point fix is untested**; real JES evidence is
+required before claiming integrated BCPL acceptance.
 It assumes the documented resident compiler, ICINT19, headers, and
 accepted BOOT_OBJ Core/Base members already exist in this MVS image.
 
