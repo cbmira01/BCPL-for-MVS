@@ -853,6 +853,14 @@ while (( SECONDS <= deadline )); do
             show_result "FAIL" "NORMAL" "FAIL"
             exit 1
         fi
+        # R.5: BCPL output PASS alone does not prove IEWL selection.
+        if [[ -f "$case_dir/extension-selection.asm" ]]; then
+            python3 "$root/tools/checks/check-r5-extension-report.py" \
+                "$work/job-report.txt" --test-number "$test_num" || {
+                show_result "FAIL" "R.5 IEWL MAP mismatch" "FAIL"
+                exit 1
+            }
+        fi
         show_result "PASS" "NORMAL" "PASS"
         exit 0
     fi

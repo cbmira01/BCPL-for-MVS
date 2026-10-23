@@ -112,6 +112,31 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
+## R.5 optional-extension regressions (146-158)
+
+R.5 adds thirteen individually numbered BCPL tests with
+`extension-selection.asm` fixtures. The existing
+`tools/bootstrap/run-regression` command remains the entry point.
+The resident demoted Cambridge compiler compiles each BCPL program on
+MVS; IFOX assembles accepted BCPLMAIN/BCPLRGS sources, the candidate
+two-CSECT BCPLDEMO source (when selected) and the macro-generated
+BCRG/IEWL records. IEWL links and GO executes on MVS.
+
+```sh
+python3 -B tools/checks/prepare-r5-extension-regression.py --check
+tools/bootstrap/run-regression 146
+tools/bootstrap/run-regression 146 158
+```
+
+These use temporary objects and load modules, plus read-only BOOT_OBJ.
+They do NOT install an object PDS or establish R.5 release acceptance.
+They require MVS/IFOX/IEWL results before being marked passing.
+The per-case checker verifies BCPLREG length, correct optional CSECT
+presence/exclusion and IEWL entry address, not just a BCPL marker.
+Regressions 00-145 retain their original generator path.
+Installed-package testing and reusable PDS macro-catalog installation
+remain separate R.5 obligations.
+
 ## Running the native regression panel
 
 With the resident Cambridge compiler installed on MVS, the canonical full-panel
