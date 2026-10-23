@@ -22,11 +22,13 @@ class R5Tests(unittest.TestCase):
             ROOT / "tools/checks/check-r5-extension-report.py")
         cls.trail = cls.p.trail_module()
 
-    def make(self, n, mode="source", extlib=None):
+    def make(self, n, mode="source", extlib=None,
+             maclib="HERC02.BCPL.EXT.MAC"):
         return self.p.make_deck(
             n, self.trail.sample_generated(),
             [f"//RG{n:03d}R JOB (BCPL),'R5 TEST',CLASS=A"],
-            "HERC02.BCPL.BOOT.OBJ", mode, extlib)
+            "HERC02.BCPL.BOOT.OBJ", mode, extlib,
+            maclib if mode == "installed" else None)
 
     def test_all_thirteen_cases_are_buildable(self):
         for n in range(146, 159):
@@ -56,8 +58,14 @@ class R5Tests(unittest.TestCase):
         self.assertIn(
             "//EXTLIB   DD  DSN=HERC02.BCPL.EXT.OBJ,DISP=SHR", deck)
         self.assertNotIn("//PKGA", deck)
+        for member in ("BCXPRE", "BCXCAT", "BCXPOST"):
+            self.assertIn(
+                f"DSN=HERC02.BCPL.EXT.MAC({member}),DISP=SHR", deck)
         with self.assertRaises(ValueError):
             self.make(147, "installed", "BAD..DSN")
+        with self.assertRaises(ValueError):
+            self.make(147, "installed", "HERC02.BCPL.EXT.OBJ",
+                      maclib="BAD..DSN")
 
     def test_combined_descriptor_and_dispatcher(self):
         path = (ROOT / "bootstrap-toolchain/extensions/bcpldemo/"
