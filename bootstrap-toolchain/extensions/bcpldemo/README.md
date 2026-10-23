@@ -1,6 +1,6 @@
 # BCPLDEMO — example optional extension
 
-**Status:** Functional R.2/R.3 and R.4 acceptance PASS (JOBs 3075, 3103, 3722). R.5 single-object packaging IN PROGRESS; its new source still awaits a separate MVS run.
+**Status:** Functional R.2/R.3 and R.4 acceptance PASS (JOBs 3075, 3103, 3722). R.5 source-mode 146-158 PASS; installed-mode MVS verification pending.
 **Owner-approved:** Permanent `DEMOSVC:203` global; package `BCPLDEMO`.
 
 BCPLDEMO is a maintained, deliberately simple reference example for people
@@ -45,7 +45,7 @@ cannot be made safe through this interface.
 | File | Purpose |
 | --- | --- |
 | `bcpldemo.h` | Public BCPL declaration and package-local opcode constants |
-| `bcpldemo.asm` | R.5 two-CSECT, one-object source (not yet live-tested) |
+| `bcpldemo.asm` | R.5 two-CSECT, one-object source (source-mode MVS verified) |
 | `descriptor.asm` | Retained R.2/R.3 single-descriptor compatibility source |
 | `dispatcher.asm` | Retained R.2/R.3 standalone dispatcher compatibility source |
 | `../../probes/r2-interoperability/registry-demo.asm` | Application-selected registration example (see actual path below) |
@@ -120,3 +120,17 @@ migration. R.5 introduces new native regression cases 146–158 and
 separate source-mode and installed-mode gates. See
 [the R.5 plan](../../../packaging/runtime-extensions-r5-packaging-and-regression.md).
 No MVS object-library installation or R.5 acceptance has occurred.
+
+## R.5 packaging follow-up (owner decision 23 October 2026)
+
+The owner reports a **source-mode** consolidated native regression
+146–158 result of **13 PASS, 0 FAIL, 0 SKIP**. This does **not**
+establish installed object-PDS success. The approved design uses
+EXT_ASM(BCPLDEMO) as assembly source and installs one binary
+EXT_OBJ(BCPLDEMO) member, with public header EXT_SOURCE(DEMOHDR).
+GitHub is authoritative, and MVS objects are rebuildable. No backup PDS
+or rollback is required. The separate owner decision required before
+any permanent installation has **not** been given.
+
+Refer to [the R.5 installation design](../../../packaging/runtime-extensions-r5-installation-design.md)
+for the proposed, unexecuted install JCL and verification gates.
