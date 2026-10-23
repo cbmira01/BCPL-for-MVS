@@ -57,7 +57,7 @@ This process **deletes data**. Read this table first.
 | --- | --- | --- |
 | `workarea/` on Linux | Its contents are deleted | Save any build logs or evidence you need first. |
 | `workarea/.gitignore` | **Kept** | Git tracks this file so `workarea/` exists after a fresh clone. |
-| 24 BCPL PDSes listed in `config/dspal.yaml` | **Deleted and rebuilt** | Any personal files in these managed PDSes will be lost. |
+| 28 BCPL PDSes listed in `config/dspal.yaml` | **Deleted and rebuilt** | Any personal files in these managed PDSes will be lost. |
 | `BOOT_OBJ` | Recreated empty, then rebuilt | Do not copy old binary objects into it. |
 | `BOOT_DEVOBJ` | Recreated empty | Leave it empty during the production rebuild. |
 | `mvs-state/`, DASD images, TK5 system files | **Kept** | Never erase these as part of this guide. |
@@ -185,7 +185,7 @@ tools/datasets/dspal initbcpl
 tools/datasets/dspal stat
 ```
 
-**Check:** all **24** managed data sets exist with the expected record
+**Check:** all **28** managed data sets exist with the expected record
 formats. The binary libraries start empty. The MVS system data sets and
 the host's DASD images are unchanged.
 
@@ -204,7 +204,17 @@ tools/datasets/dspal ls MR10_JCL
 tools/datasets/dspal ls MR10_ASM
 tools/datasets/dspal ls BOOT_SOURCE
 tools/datasets/dspal ls BOOT_JCL
+tools/datasets/dspal ls EXT_MAC
+tools/datasets/dspal ls EXT_ASM
+tools/datasets/dspal ls EXT_SOURCE
+tools/datasets/dspal ls EXT_OBJ
 ```
+
+**R.5 extension check:** `EXT_MAC` contains `BCXPRE`, `BCXCAT`, and
+`BCXPOST`; `EXT_ASM` contains `BCPLDEMO`; and `EXT_SOURCE` contains
+`DEMOHDR`. `EXT_OBJ` must still be empty at this stage: its binary
+`BCPLDEMO` object is built and installed separately on MVS, not by
+`dspal populate all`.
 
 **The first population is meant to end with RC=2.** That does **not** mean
 it installed nothing. At this point, the 11 demoted Cambridge sources and
