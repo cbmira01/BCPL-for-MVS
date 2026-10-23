@@ -503,3 +503,64 @@ datasets:
     content_type: object
     populate: false
 
+  EXT_OBJ:
+    dsn: BCPL.EXT.OBJ
+    description: Installed optional System Extension relocatable objects
+    primary: 15
+    secondary: 5
+    directory: 10
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    content_type: object
+    populate: false
+
+  EXT_MAC:
+    dsn: BCPL.EXT.MAC
+    description: MVS-native optional package selection macro sources
+    primary: 10
+    secondary: 5
+    directory: 5
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      BCXPRE: bootstrap-toolchain/extensions/bcx/BCXPRE.asm
+      BCXCAT: bootstrap-toolchain/extensions/bcx/BCXCAT.asm
+      BCXPOST: bootstrap-toolchain/extensions/bcx/BCXPOST.asm
+
+  EXT_ASM:
+    dsn: BCPL.EXT.ASM
+    description: Git-backed optional System Extension assembler sources
+    primary: 10
+    secondary: 5
+    directory: 5
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      BCPLDEMO: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm
+
+  EXT_SOURCE:
+    dsn: BCPL.EXT.SOURCE
+    description: Git-backed optional System Extension public headers
+    primary: 10
+    secondary: 5
+    directory: 5
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      DEMOHDR: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.h
+
