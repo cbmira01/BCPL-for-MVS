@@ -57,3 +57,16 @@ The original R.4 standalone proof remains at
 [probes/r4-bcx-macros](../../probes/r4-bcx-macros/README.md).
 It retains a **test-only** R2TESTB catalog entry; that entry must not
 be installed as a permanent public extension or global allocation.
+
+## R.5 owner-approved installed layout (design only)
+
+The manifest-managed text members are EXT_MAC(BCXPRE),
+EXT_MAC(BCXCAT), and EXT_MAC(BCXPOST) under
+HERC02.BCPL.EXT.MAC. Installed regressions will concatenate these
+MVS-resident members with the application's selection cards, rather than
+embed host copies of the macro definitions. The extension object is
+EXT_OBJ(BCPLDEMO) under HERC02.BCPL.EXT.OBJ.
+
+See [the approved installation design](../../../packaging/runtime-extensions-r5-installation-design.md).
+Neither permanent dataset creation nor MVS linkage acceptance has been
+authorized or performed by this design work.
