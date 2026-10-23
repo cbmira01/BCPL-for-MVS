@@ -123,6 +123,7 @@ two-CSECT BCPLDEMO source (when selected) and the macro-generated
 BCRG/IEWL records. IEWL links and GO executes on MVS.
 
 ```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_r5*.py' -v
 python3 -B tools/checks/prepare-r5-extension-regression.py --check
 tools/bootstrap/run-regression 146
 tools/bootstrap/run-regression 146 158

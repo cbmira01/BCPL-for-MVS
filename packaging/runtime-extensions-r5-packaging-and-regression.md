@@ -99,3 +99,40 @@ member MAP/XREF proof, no regression, fresh Git-based rebuild and
 operator-approved recovery procedure. Mark R.5 CLOSED only on an
 explicit owner disposition. Until then preserve failures and
 unverified status honestly.
+
+## Implementation status (23 October 2026)
+
+**GitHub main sources prepared; R.5 is not accepted.**
+
+- The combined bcpldemo.asm candidate contains DMODESC and DMODISP.
+- Numbered cases 146-158 now have source.bcpl, expected.txt,
+  extension-selection.asm and README files.
+- The existing numbered runner selects test-only MVS IFOX/IEWL/GO
+  construction only for these marked cases; 00-145 retain their path.
+- Source mode assembles BCPLDEMO into temporary MVS objects.
+- Installed mode links a read-only EXTLIB(BCPLDEMO) PDS member,
+  but **no destination PDS or member installation is approved**.
+- JCL preparation and IEWL MAP verifier have host-only unit tests.
+
+**Not yet performed:** execute the new offline tests on the operator's
+checkout; MVS source-mode job results; member-qualified IEWL PUNCH
+confirmation; physical object-PDS installation/read-back/recovery;
+full native regression; clean-room R.5 package acceptance.
+
+### First verification commands (from repository root)
+
+```sh
+git pull --ff-only
+python3 -B -m unittest discover -s tools/checks -p 'test_r5*.py' -v
+python3 -B tools/checks/prepare-r5-extension-regression.py --check
+bash -n bootstrap-toolchain/regression/run-test.sh
+tools/bootstrap/run-regression --check-numbering
+# Only after all preparation checks PASS:
+tools/bootstrap/run-regression 146 147 --show-output
+```
+
+The first MVS run should establish no-extension startup (146) and the
+combined source plus BCXREQ selection (147). If either fails, preserve
+its JES/IFOX/IEWL report before attempting all 146-158 cases. Tests
+compile through the resident demoted Cambridge compiler under MVS;
+no R.5 PASS may be asserted from host preflight alone.
