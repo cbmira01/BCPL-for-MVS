@@ -1,0 +1,73 @@
+* R.5 BCXSEL/BCXREQ. CATALOG IS A SEPARATE MVS MACRO SOURCE.
+* NO CSECT IS EMITTED UNTIL BCXEND IN BCXPOST.
+* BCXSEL SELECTS AN OPTIONAL PACKAGE; BCXREQ ALSO REQUIRES IT.
+* ALL IEWL PUNCH CARDS PRECEDE THE FIRST OBJECT CSECT.
+         MACRO
+         BCXSEL &PKG
+         BCXADD &PKG,0
+         MEND
+         MACRO
+         BCXREQ &PKG
+         BCXADD &PKG,1
+         MEND
+         MACRO
+         BCXADD &PKG,&REQ
+         GBLA  &BXN,&BXM,&BXR(32),&BXGOOD
+         GBLC  &BXID(32),&BXBEG(32),&BXFIN(32)
+         GBLC  &BXCLIB,&BXCBEG,&BXCFIN
+         LCLA  &I
+&BXGOOD SETA  0
+         BCXCAT &PKG
+         AIF   (&BXGOOD EQ 0).EXIT
+&I       SETA  1
+.FIND    AIF   (&I GT &BXN).NEW
+         AIF   ('&BXID(&I)' EQ '&PKG').FOUND
+&I       SETA  &I+1
+         AGO   .FIND
+.FOUND   AIF   (&REQ EQ 0).EXIT
+         AIF   (&BXR(&I) EQ 1).EXIT
+&BXR(&I) SETA  1
+&BXM     SETA  &BXM+1
+         AGO   .EXIT
+.NEW     AIF   (&BXN GE 32).FULL
+&BXN     SETA  &BXN+1
+&BXID(&BXN)  SETC '&PKG'
+&BXBEG(&BXN) SETC '&BXCBEG'
+&BXFIN(&BXN) SETC '&BXCFIN'
+         AIF   (&REQ EQ 0).SEL
+&BXR(&BXN) SETA  1
+&BXM     SETA  &BXM+1
+.SEL     ANOP
+         PUNCH ' INCLUDE &BXCLIB'
+         AGO   .EXIT
+.FULL    MNOTE 8,'BCX SELECTED PACKAGE LIMIT 32'
+.EXIT    ANOP
+         MEND
+         MACRO
+         BCXEND
+         GBLA  &BXN,&BXM,&BXR(32)
+         GBLC  &BXID(32),&BXBEG(32),&BXFIN(32)
+         LCLA  &I,&BYTES
+&BYTES   SETA  28+8*(&BXN+&BXM)
+BCPLREG  CSECT
+         ENTRY BCRGBEG,BCRGEND
+BCRGBEG  DS    0F
+         DC    CL4'BCRG'
+         DC    F'1',F'28',F'&BYTES',F'&BXN',F'&BXM',F'0'
+&I       SETA  1
+.DESC    AIF   (&I GT &BXN).REQS
+         EXTRN &BXBEG(&I),&BXFIN(&I)
+         DC    A(&BXBEG(&I)),A(&BXFIN(&I))
+&I       SETA  &I+1
+         AGO   .DESC
+.REQS    ANOP
+&I       SETA  1
+.REQLOOP AIF   (&I GT &BXN).DONE
+         AIF   (&BXR(&I) EQ 0).NEXT
+         DC    CL8'&BXID(&I)'
+.NEXT    ANOP
+&I       SETA  &I+1
+         AGO   .REQLOOP
+.DONE    ANOP
+BCRGEND  EQU   *
+         MEND
