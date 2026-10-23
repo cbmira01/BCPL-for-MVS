@@ -172,6 +172,13 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
+# R.5: branch only for explicitly marked optional extension tests.
+if [[ -f "$case_dir/extension-selection.asm" ]]; then
+    jcl="$work/r5-extension.jcl"
+    python3 "$root/tools/checks/prepare-r5-extension-regression.py" \
+        "$generated" "$jcl" --test-number "$test_num" || exit $?
+    [[ -s "$jcl" ]] || exit 66
+else
 # Accepted production runtime objects are the default. 083 requires private
 # FREEMAIN counters and therefore retains the source-instrumented mode when
 # no explicit runtime selection was supplied.
@@ -698,6 +705,7 @@ PY
 
 fi # end regular static/native assembly strategy
 fi # end source-object strategy vs installed-runtime PDS
+fi # end R.5 branch vs unchanged 00..145 path
 
 echo
 echo "=== Submit native run ==="

@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""R.5 source-mode regression JCL; the BCPL compiler and IFOX run on MVS."""
+import argparse
+import importlib.util
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+REG = ROOT / "bootstrap-toolchain/regression"
+PROBE = ROOT / "bootstrap-toolchain/probes/r4-bcx-macros"
+TRAIL = ROOT / "bootstrap-toolchain/probes/r0-export-trailer-probe/make-job.py"
+
+
+def trail_module():
+    spec = importlib.util.spec_from_file_location("r5_trail", TRAIL)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def selection(n):
+    dirs = list(REG.glob(f"{n:03d}-*"))
+    if not 146 <= n <= 158 or len(dirs) != 1:
+        raise ValueError("invalid R.5 test number or directory")
+    rows = (dirs[0] / "extension-selection.asm").read_text("ascii").splitlines()
+    actual = [x for x in rows if not x.startswith("*")]
+    expected = ([] if n in (146, 158) else
+                ["         BCXSEL BCPLDEMO"] if n == 156 else
+                ["         BCXSEL BCPLDEMO", "         BCXREQ BCPLDEMO"]
+                if n == 157 else ["         BCXREQ BCPLDEMO"])
+    if actual != expected:
+        raise ValueError(f"wrong selection fixture in case {n}")
+    return rows, bool(actual)
+
+
+def make_deck(n, generated, jobcard, obj):
+    t = trail_module()
+    selects, included = selection(n)
+    app = t.application_source(generated)
+    main = t.checked_asm((ROOT / "bootstrap-toolchain/asm/bcplmain.asm")
+                         .read_text("ascii"), "BCPLMAIN")
+    rgs = t.checked_asm((ROOT / "bootstrap-toolchain/asm/bcplrgs.asm")
+                        .read_text("ascii"), "BCPLRGS")
+    macro_source = []
+    for name in ("BCXPRE.asm", "BCXCAT.asm"):
+        macro_source += t.checked_asm((PROBE / name).read_text("ascii"), name)
+    macro_source += selects
+    macro_source += t.checked_asm((PROBE / "BCXPOST.asm")
+                                  .read_text("ascii"), "post")
+    cards = [*jobcard,
+             "//* R.5 OPTIONAL REGRESSION; BOOT_OBJ READ ONLY",
+             *t.asm_step("ASMA", "R5APOBJ", app),
+             *t.asm_step("ASMN", "R5NMOBJ", main),
+             *t.asm_step("ASMR", "R5RGOBJ", rgs)]
+    if included:
+        pkg = t.checked_asm(
+            (ROOT / "bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm")
+            .read_text("ascii"), "combined BCPLDEMO")
+        cards += t.asm_step("ASMD", "R5DEOBJ", pkg)
+    cards += [
+        "//ASMG     EXEC PGM=IFOX00,REGION=256K,",
+        "//             PARM='OBJECT,DECK,LIST,XREF(FULL),ESD,RLD',",
+        "//             COND=(0,NE)",
+        "//SYSLIB   DD  DSN=SYS1.MACLIB,DISP=SHR",
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1700,(600,100))",
+        "//SYSUT2   DD  UNIT=SYSDA,SPACE=(1700,(300,50))",
+        "//SYSUT3   DD  UNIT=SYSDA,SPACE=(1700,(300,50))",
+        "//SYSPRINT DD  SYSOUT=*",
+        "//SYSPUNCH DD  DSN=&&R5REGD,UNIT=SYSDA,",
+        "//             SPACE=(80,(100,20)),DISP=(NEW,PASS),",
+        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
+        "//SYSGO    DD  DUMMY",
+        "//SYSIN    DD  *", *macro_source, "/*",
+        "//LKED     EXEC PGM=IEWL,REGION=256K,",
+        "//             PARM='NCAL,LIST,XREF,MAP',",
+        "//             COND=(0,NE)",
+        f"//OBJ      DD  DSN={obj},DISP=SHR",
+    ]
+    if included:
+        cards += ["//PKGA     DD  DSN=&&R5DEOBJ,DISP=(OLD,PASS)"]
+    cards += [
+        "//SYSLIN   DD  DSN=&&R5APOBJ,DISP=(OLD,PASS)",
+        "//         DD  DSN=&&R5NMOBJ,DISP=(OLD,PASS)",
+        "//         DD  DSN=&&R5RGOBJ,DISP=(OLD,PASS)",
+        "//         DD  DSN=&&R5REGD,DISP=(OLD,PASS)",
+        "//         DD  *",
+        " INCLUDE OBJ(BCPLIO)",
+        " INCLUDE OBJ(BCPLMEM)",
+        " INCLUDE OBJ(BCPLBYTE)",
+        " INCLUDE OBJ(BCPLAPT)",
+        " INCLUDE OBJ(BLIB)",
+        " ENTRY R0APP",
+        f" NAME R5X{n:03d}(R)",
+        "/*",
+        f"//SYSLMOD  DD  DSN=&&R5LOAD(R5X{n:03d}),",
+        "//             UNIT=SYSDA,SPACE=(1024,(50,20,1)),",
+        "//             DISP=(NEW,PASS)",
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))",
+        "//SYSPRINT DD  SYSOUT=*",
+        "//GO       EXEC PGM=*.LKED.SYSLMOD,REGION=256K,",
+        "//             TIME=(,2),COND=(0,NE,LKED)",
+        "//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,",
+        "//             BLKSIZE=132)",
+        "//SYSUDUMP DD  SYSOUT=*",
+        "//",
+    ]
+    for i, line in enumerate(cards, 1):
+        if not line.isascii() or len(line) > 71 or "\t" in line:
+            raise ValueError(f"bad JCL/IFOX card {i}: {line!r}")
+    if cards.count("/*") != (6 if included else 5):
+        raise ValueError("wrong in-stream terminator count")
+    if any("DISP=MOD" in line or "DISP=(NEW,CATLG)" in line
+           for line in cards):
+        raise ValueError("persistent MVS dataset write forbidden")
+    return "\n".join(cards) + "\n"
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("generated", nargs="?", type=Path)
+    p.add_argument("output", nargs="?", type=Path)
+    p.add_argument("--test-number", type=int)
+    p.add_argument("--check", action="store_true")
+    a = p.parse_args()
+    t = trail_module()
+    if a.check:
+        for n in range(146, 159):
+            job = [f"//RG{n:03d}R JOB (BCPL),'R5 CHECK',CLASS=A"]
+            value = make_deck(n, t.sample_generated(), job,
+                              "HERC02.BCPL.BOOT.OBJ")
+            print(f"CHECK R5 {n}: {len(value.splitlines())} cards")
+        return
+    if a.generated is None or a.output is None or a.test_number is None:
+        p.error("generated, output and --test-number required")
+    core = t.load_core()
+    cfg = core.load_config()
+    spec = cfg["datasets"]["BOOT_OBJ"]
+    if (spec.get("content_type") != "object" or
+        spec.get("dsorg") != "PO" or spec.get("recfm") != "FB" or
+        int(spec.get("lrecl", 0)) != 80):
+        raise ValueError("BOOT_OBJ must be a binary FB80 object PDS")
+    obj = core.full_dsn(cfg, spec)
+    job = core.authenticated_job_card(cfg, f"RG{a.test_number:03d}R",
+                                       "R5 NATIVE REG", redact_password=False)
+    generated = a.generated.read_bytes().decode("latin-1")
+    value = make_deck(a.test_number, generated, job, obj)
+    a.output.parent.mkdir(parents=True, exist_ok=True)
+    a.output.write_text(value, encoding="ascii", newline="\n")
+    a.output.chmod(0o600)
+    print("Prepared R.5 MVS source-mode regression:", a.output)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError, UnicodeError) as exc:
+        raise SystemExit("R.5 regression preparation FAILED: " + str(exc))
