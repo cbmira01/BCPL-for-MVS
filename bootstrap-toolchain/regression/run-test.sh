@@ -182,7 +182,12 @@ if [[ -f "$case_dir/extension-selection.asm" ]]; then
             echo "run-test: specify approved installed PDS DSN" >&2
             exit 64
         }
-        r5_args+=(--extension-dsn "$BCPL_R5_EXTENSION_DSN")
+        [[ -n ${BCPL_R5_MACRO_DSN:-} ]] || {
+            echo "run-test: specify approved installed macro PDS DSN" >&2
+            exit 64
+        }
+        r5_args+=(--extension-dsn "$BCPL_R5_EXTENSION_DSN"
+                  --macro-dsn "$BCPL_R5_MACRO_DSN")
     fi
     python3 "$root/tools/checks/prepare-r5-extension-regression.py" \
         "$generated" "$jcl" "${r5_args[@]}" || exit $?
