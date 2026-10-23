@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""R.5 source-mode regression JCL; the BCPL compiler and IFOX run on MVS."""
+"""R.5 source/installed regressions; BCPL compiler and IFOX run on MVS."""
 import argparse
 import importlib.util
 from pathlib import Path
@@ -33,29 +33,41 @@ def selection(n):
     return rows, bool(actual)
 
 
-def make_deck(n, generated, jobcard, obj, mode="source", extension_dsn=None):
+def make_deck(n, generated, jobcard, obj, mode="source", extension_dsn=None, macro_dsn=None):
     t = trail_module()
     selects, included = selection(n)
     if mode not in ("source", "installed"):
         raise ValueError("mode must be source or installed")
     if mode == "installed":
-        if (not extension_dsn or len(extension_dsn) > 44 or
-            not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}"
-                             r"(?:\.[A-Z@$#][A-Z0-9@$#]{0,7})+",
-                             extension_dsn)):
-            raise ValueError("installed mode needs approved object PDS DSN")
+        for value, meaning in ((extension_dsn, "object"),
+                               (macro_dsn, "macro")):
+            if (not value or len(value) > 44 or
+                not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}"
+                                 r"(?:\.[A-Z@$#][A-Z0-9@$#]{0,7})+",
+                                 value)):
+                raise ValueError(f"installed mode needs approved {meaning} PDS DSN")
     app = t.application_source(generated)
     main = t.checked_asm((ROOT / "bootstrap-toolchain/asm/bcplmain.asm")
                          .read_text("ascii"), "BCPLMAIN")
     rgs = t.checked_asm((ROOT / "bootstrap-toolchain/asm/bcplrgs.asm")
                         .read_text("ascii"), "BCPLRGS")
-    macro_source = []
-    macro_dir = PROBE if mode == "source" else (ROOT / "bootstrap-toolchain/extensions/bcx")
-    for name in ("BCXPRE.asm", "BCXCAT.asm"):
-        macro_source += t.checked_asm((macro_dir / name).read_text("ascii"), name)
-    macro_source += selects
-    macro_source += t.checked_asm((macro_dir / "BCXPOST.asm")
-                                  .read_text("ascii"), "post")
+    if mode == "source":
+        # Preserve the accepted source-mode deck exactly.
+        macro_source = []
+        for name in ("BCXPRE.asm", "BCXCAT.asm"):
+            macro_source += t.checked_asm((PROBE / name).read_text("ascii"), name)
+        macro_source += selects
+        macro_source += t.checked_asm((PROBE / "BCXPOST.asm")
+                                      .read_text("ascii"), "post")
+        macro_input = ["//SYSIN    DD  *", *macro_source, "/*"]
+    else:
+        # Native IFOX reads installed macro members; no embedded definitions.
+        macro_input = [
+            f"//SYSIN    DD  DSN={macro_dsn}(BCXPRE),DISP=SHR",
+            f"//         DD  DSN={macro_dsn}(BCXCAT),DISP=SHR",
+            "//         DD  *", *selects, "/*",
+            f"//         DD  DSN={macro_dsn}(BCXPOST),DISP=SHR",
+        ]
     cards = [*jobcard,
              "//* R.5 OPTIONAL REGRESSION; BOOT_OBJ READ ONLY",
              *t.asm_step("ASMA", "R5APOBJ", app),
@@ -79,7 +91,7 @@ def make_deck(n, generated, jobcard, obj, mode="source", extension_dsn=None):
         "//             SPACE=(80,(100,20)),DISP=(NEW,PASS),",
         "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
         "//SYSGO    DD  DUMMY",
-        "//SYSIN    DD  *", *macro_source, "/*",
+        *macro_input,
         "//LKED     EXEC PGM=IEWL,REGION=256K,",
         "//             PARM='NCAL,LIST,XREF,MAP',",
         "//             COND=(0,NE)",
@@ -134,6 +146,7 @@ def main():
     p.add_argument("--mode", choices=("source", "installed"),
                    default="source")
     p.add_argument("--extension-dsn")
+    p.add_argument("--macro-dsn")
     p.add_argument("--check", action="store_true")
     a = p.parse_args()
     t = trail_module()
@@ -146,9 +159,14 @@ def main():
         installed = make_deck(147, t.sample_generated(),
             ["//RG147R JOB (BCPL),'R5 CHECK',CLASS=A"],
             "HERC02.BCPL.BOOT.OBJ", "installed",
-            "HERC02.BCPL.EXT.OBJ")
+            "HERC02.BCPL.EXT.OBJ", "HERC02.BCPL.EXT.MAC")
         if "//EXTLIB   DD  DSN=HERC02.BCPL.EXT.OBJ,DISP=SHR" not in installed:
             raise ValueError("installed-mode DD not generated")
+        for member in ("BCXPRE", "BCXCAT", "BCXPOST"):
+            if f"DSN=HERC02.BCPL.EXT.MAC({member}),DISP=SHR" not in installed:
+                raise ValueError(f"installed-mode macro member {member} missing")
+        if "BCXADD &PKG" in installed or "BCXCAT &PKG" in installed:
+            raise ValueError("installed mode must not embed BCX macro definitions")
         print("CHECK installed-mode synthetic JCL PASS (not executed)")
         return
     if a.generated is None or a.output is None or a.test_number is None:
@@ -161,15 +179,26 @@ def main():
         int(spec.get("lrecl", 0)) != 80):
         raise ValueError("BOOT_OBJ must be a binary FB80 object PDS")
     obj = core.full_dsn(cfg, spec)
+    if a.mode == "installed":
+        for alias, supplied in (("EXT_OBJ", a.extension_dsn),
+                                ("EXT_MAC", a.macro_dsn)):
+            ext = cfg["datasets"].get(alias)
+            if ext is None or core.full_dsn(cfg, ext) != supplied:
+                raise ValueError(f"{alias} must match the approved manifest DSN")
+            if (ext.get("dsorg") != "PO" or ext.get("recfm") != "FB" or
+                int(ext.get("lrecl", 0)) != 80):
+                raise ValueError(f"{alias} must be an FB80 PDS")
+        if cfg["datasets"]["EXT_OBJ"].get("content_type") != "object":
+            raise ValueError("EXT_OBJ must be an object library")
     job = core.authenticated_job_card(cfg, f"RG{a.test_number:03d}R",
                                        "R5 NATIVE REG", redact_password=False)
     generated = a.generated.read_bytes().decode("latin-1")
     value = make_deck(a.test_number, generated, job, obj,
-                      a.mode, a.extension_dsn)
+                      a.mode, a.extension_dsn, a.macro_dsn)
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(value, encoding="ascii", newline="\n")
     a.output.chmod(0o600)
-    print("Prepared R.5 MVS source-mode regression:", a.output)
+    print(f"Prepared R.5 MVS {a.mode}-mode regression:", a.output)
 
 
 if __name__ == "__main__":
