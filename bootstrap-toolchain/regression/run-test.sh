@@ -175,8 +175,17 @@ fi
 # R.5: branch only for explicitly marked optional extension tests.
 if [[ -f "$case_dir/extension-selection.asm" ]]; then
     jcl="$work/r5-extension.jcl"
+    r5_mode=${BCPL_R5_EXTENSION_MODE:-source}
+    r5_args=(--test-number "$test_num" --mode "$r5_mode")
+    if [[ $r5_mode == installed ]]; then
+        [[ -n ${BCPL_R5_EXTENSION_DSN:-} ]] || {
+            echo "run-test: specify approved installed PDS DSN" >&2
+            exit 64
+        }
+        r5_args+=(--extension-dsn "$BCPL_R5_EXTENSION_DSN")
+    fi
     python3 "$root/tools/checks/prepare-r5-extension-regression.py" \
-        "$generated" "$jcl" --test-number "$test_num" || exit $?
+        "$generated" "$jcl" "${r5_args[@]}" || exit $?
     [[ -s "$jcl" ]] || exit 66
 else
 # Accepted production runtime objects are the default. 083 requires private

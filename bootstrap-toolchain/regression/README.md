@@ -1615,3 +1615,22 @@ compile delivery path changes.  Test 24 is the initial A/B acceptance test
 for this resident workflow.
 
 See `bootstrap-toolchain/mvs-resident-cambridge.md`.
+
+### R.5 read-only installed-member mode (not accepted yet)
+
+After *separate owner authorization* to install BCPLDEMO into the
+manifest-managed optional object PDS, the regression harness can
+link the **installed** object rather than reassembling bcpldemo.asm:
+
+```sh
+BCPL_R5_EXTENSION_MODE=installed \
+BCPL_R5_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ \
+tools/bootstrap/run-regression 147 157
+```
+
+The DSN shown is **illustrative**, not a dataset to create or assume
+exists. The installed path uses the candidate BCXCAT to PUNCH an IEWL
+`INCLUDE EXTLIB(BCPLDEMO)` card. This mode is source-controlled but
+**not validated on MVS**, and must not be used to claim installation
+acceptance without documented member, MAP/XREF and rollback evidence.
+No build step in this regression path writes an object PDS.

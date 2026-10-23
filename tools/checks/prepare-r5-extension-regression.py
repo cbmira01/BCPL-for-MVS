@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 REG = ROOT / "bootstrap-toolchain/regression"
@@ -32,26 +33,35 @@ def selection(n):
     return rows, bool(actual)
 
 
-def make_deck(n, generated, jobcard, obj):
+def make_deck(n, generated, jobcard, obj, mode="source", extension_dsn=None):
     t = trail_module()
     selects, included = selection(n)
+    if mode not in ("source", "installed"):
+        raise ValueError("mode must be source or installed")
+    if mode == "installed":
+        if (not extension_dsn or len(extension_dsn) > 44 or
+            not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}"
+                             r"(?:\.[A-Z@$#][A-Z0-9@$#]{0,7})+",
+                             extension_dsn)):
+            raise ValueError("installed mode needs approved object PDS DSN")
     app = t.application_source(generated)
     main = t.checked_asm((ROOT / "bootstrap-toolchain/asm/bcplmain.asm")
                          .read_text("ascii"), "BCPLMAIN")
     rgs = t.checked_asm((ROOT / "bootstrap-toolchain/asm/bcplrgs.asm")
                         .read_text("ascii"), "BCPLRGS")
     macro_source = []
+    macro_dir = PROBE if mode == "source" else (ROOT / "bootstrap-toolchain/extensions/bcx")
     for name in ("BCXPRE.asm", "BCXCAT.asm"):
-        macro_source += t.checked_asm((PROBE / name).read_text("ascii"), name)
+        macro_source += t.checked_asm((macro_dir / name).read_text("ascii"), name)
     macro_source += selects
-    macro_source += t.checked_asm((PROBE / "BCXPOST.asm")
+    macro_source += t.checked_asm((macro_dir / "BCXPOST.asm")
                                   .read_text("ascii"), "post")
     cards = [*jobcard,
              "//* R.5 OPTIONAL REGRESSION; BOOT_OBJ READ ONLY",
              *t.asm_step("ASMA", "R5APOBJ", app),
              *t.asm_step("ASMN", "R5NMOBJ", main),
              *t.asm_step("ASMR", "R5RGOBJ", rgs)]
-    if included:
+    if included and mode == "source":
         pkg = t.checked_asm(
             (ROOT / "bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm")
             .read_text("ascii"), "combined BCPLDEMO")
@@ -76,7 +86,9 @@ def make_deck(n, generated, jobcard, obj):
         f"//OBJ      DD  DSN={obj},DISP=SHR",
     ]
     if included:
-        cards += ["//PKGA     DD  DSN=&&R5DEOBJ,DISP=(OLD,PASS)"]
+        cards += (["//PKGA     DD  DSN=&&R5DEOBJ,DISP=(OLD,PASS)"]
+                  if mode == "source" else
+                  [f"//EXTLIB   DD  DSN={extension_dsn},DISP=SHR"])
     cards += [
         "//SYSLIN   DD  DSN=&&R5APOBJ,DISP=(OLD,PASS)",
         "//         DD  DSN=&&R5NMOBJ,DISP=(OLD,PASS)",
@@ -106,7 +118,7 @@ def make_deck(n, generated, jobcard, obj):
     for i, line in enumerate(cards, 1):
         if not line.isascii() or len(line) > 71 or "\t" in line:
             raise ValueError(f"bad JCL/IFOX card {i}: {line!r}")
-    if cards.count("/*") != (6 if included else 5):
+    if cards.count("/*") != (6 if included and mode == "source" else 5):
         raise ValueError("wrong in-stream terminator count")
     if any("DISP=MOD" in line or "DISP=(NEW,CATLG)" in line
            for line in cards):
@@ -119,6 +131,9 @@ def main():
     p.add_argument("generated", nargs="?", type=Path)
     p.add_argument("output", nargs="?", type=Path)
     p.add_argument("--test-number", type=int)
+    p.add_argument("--mode", choices=("source", "installed"),
+                   default="source")
+    p.add_argument("--extension-dsn")
     p.add_argument("--check", action="store_true")
     a = p.parse_args()
     t = trail_module()
@@ -128,6 +143,13 @@ def main():
             value = make_deck(n, t.sample_generated(), job,
                               "HERC02.BCPL.BOOT.OBJ")
             print(f"CHECK R5 {n}: {len(value.splitlines())} cards")
+        installed = make_deck(147, t.sample_generated(),
+            ["//RG147R JOB (BCPL),'R5 CHECK',CLASS=A"],
+            "HERC02.BCPL.BOOT.OBJ", "installed",
+            "HERC02.BCPL.EXT.OBJ")
+        if "//EXTLIB   DD  DSN=HERC02.BCPL.EXT.OBJ,DISP=SHR" not in installed:
+            raise ValueError("installed-mode DD not generated")
+        print("CHECK installed-mode synthetic JCL PASS (not executed)")
         return
     if a.generated is None or a.output is None or a.test_number is None:
         p.error("generated, output and --test-number required")
@@ -142,7 +164,8 @@ def main():
     job = core.authenticated_job_card(cfg, f"RG{a.test_number:03d}R",
                                        "R5 NATIVE REG", redact_password=False)
     generated = a.generated.read_bytes().decode("latin-1")
-    value = make_deck(a.test_number, generated, job, obj)
+    value = make_deck(a.test_number, generated, job, obj,
+                      a.mode, a.extension_dsn)
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(value, encoding="ascii", newline="\n")
     a.output.chmod(0o600)
