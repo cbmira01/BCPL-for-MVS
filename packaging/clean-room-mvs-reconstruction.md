@@ -46,7 +46,7 @@ nothing. Those must already be set up.
 | **Demoted Cambridge compiler** | The interpreter-hosted bootstrap compiler that generates native System/370 assembler. |
 | **`CAMBCOMP`** | The demoted Cambridge compiler image, stored as INTCODE and executed by `ICINT19`. |
 | **Native Cambridge compiler** | The separate target in `cambridge-compiler/`: a compiler that itself executes as a native MVS program. This guide does not build it. |
-| **`BOOT_OBJ`** | The PDS that holds the six finished, native object modules. |
+| **`BOOT_OBJ`** | The PDS containing six Core Runtime objects, the empty `BCPLREG` table, and the Base Library `BLIB`. |
 | **RC / CODE** | A job step's return code / the BCPL interpreter's own completion code. Check both. |
 
 ### What is kept, and what is erased?
@@ -98,7 +98,7 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 6 | Build and test interpreted `CAMBCOMP` | Bootstrap compiler produces System/370 assembler |
 | 7 | Assemble six Core Runtime modules and empty BCPLREG | Seven members in `BOOT_OBJ` |
 | 8 | Compile and assemble `BLIB` | Eight members in `BOOT_OBJ` |
-| 9 | Run native regression tests | 145 PASS, 0 FAIL, 1 expected SKIP |
+| 9 | Install `BCPLDEMO`; run native regression 00–158 | 158 PASS, 0 FAIL, 1 expected SKIP |
 | 10 | Save the evidence | Results and limits recorded |
 
 > **Status:** A full clean-room rebuild was accepted on **17 October 2026**
@@ -267,14 +267,10 @@ tools/mr10/compile-and-run --installed-icint MR10_LOAD --results \
 `dspal submit` runs a short **launcher job** and then the real **payload
 job**. It prints both job numbers. The payload is the one to inspect.
 
-Use the payload number shown on your machine in place of `NNNN`:
-
-```sh
-tools/mvs/job-summary NNNN
-tools/mvs/dump-report-for-job NNNN
-```
-
-Check the steps and their RC values. In the full report, also look for
+Use the actual payload job number printed by `dspal submit` with
+`tools/mvs/job-summary` and `tools/mvs/dump-report-for-job`. Do not
+paste a literal placeholder into the shell. Check the steps and their
+RC values. In the full report, also look for
 interpreter `CODE=0` messages and the program's actual output. Do not
 assume that the launcher completing means that the real job passed.
 
@@ -444,12 +440,12 @@ contain these seven members and no old objects. `BCPLRGS` supplies
 An executable must link exactly one application registration table.
 
 The install job is **not all-or-nothing**. If a step fails, stop and find
-the cause; do not claim all five were installed.
+the cause; do not claim all seven were installed.
 
 The canonical `BCPLIO` is the uninstrumented production I/O module.
 Fault-test instrumentation used by some regression cases is separate.
 
-## Step 8 — Build BLIB, the sixth native object
+## Step 8 — Build BLIB, the eighth production object
 
 `BLIB` is BCPL library code. This stage uses the rebuilt demoted Cambridge
 bootstrap compiler (`CAMBCOMP`) to generate System/370 assembler. It then
@@ -486,10 +482,10 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 
 ## Step 9 — Install BCPLDEMO and run the native production tests
 
-Step 8 must have produced eight production object members (six Core
-Runtime, default empty `BCPLREG`, and Base Library `BLIB`) in `BOOT_OBJ`. The runtime source packaging hold at the top of
-this guide remains in force until separately resolved; this section does
-not authorize or bypass the `BLDBMAIN` installation hold.
+Step 8 must have produced all eight production objects in `BOOT_OBJ`:
+six Core Runtime members, the empty default `BCPLREG`, and `BLIB`.
+The separate installation authorization required in Step 7 still applies;
+this section does not override it.
 
 ### Install the optional extension object
 
@@ -520,32 +516,20 @@ there is no backup or member-level rollback PDS. Consult
 [the R.5 installation design](runtime-extensions-r5-installation-design.md).
 
 The committed `bootstrap-toolchain/extensions/bcpldemo/install-bcpldemo.jcl`
-is a JOB-body deck without an authenticated JOB card. Prepare a
-private, untracked copy from the configured batch credentials:
+contains the IFOX, install, read-back, and compare steps, but no
+authenticated JOB card. Prepare a private deck using the maintained
+tool, which reads your local `dspal` credentials and checks that the
+install JCL targets the configured `EXT_ASM` and `EXT_OBJ` datasets:
 
 ```sh
-python3 - <<'PY'
-import importlib.util
-from pathlib import Path
-
-path = Path("tools/datasets/dspal-core.py")
-spec = importlib.util.spec_from_file_location("clean_room_dspal", path)
-core = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(core)
-
-config = core.load_config()
-card = core.authenticated_job_card(config, "R5DINST", "R5 BCPLDEMO", False)
-source = Path(
-    "bootstrap-toolchain/extensions/bcpldemo/install-bcpldemo.jcl"
-).read_text(encoding="ascii")
-
-output = Path("workarea/runtime-extensions-r5/install-bcpldemo.jcl")
-output.parent.mkdir(parents=True, exist_ok=True)
-output.write_text("\n".join(card) + "\n" + source, encoding="ascii")
-output.chmod(0o600)
-print("Prepared:", output)
-PY
+tools/mvs/prepare-bcpldemo-install
 ```
+
+The prepared deck is
+`workarea/runtime-extensions-r5/install-bcpldemo.jcl`.
+It contains the batch password, is restricted to owner-only access,
+and is ignored by Git. **Do not commit, publish, or paste its contents.**
+Preparation does not submit the job or modify MVS.
 
 Submit the deck, recording the actual JES job number:
 
@@ -583,12 +567,14 @@ Check the production build and compiler-driver paths:
 python3 tools/checks/check-native-production-build.py
 ```
 
-This is a host-side check; it does not submit MVS jobs. For ordinary
-tests 00–145 the production linker explicitly includes installed
-`BOOT_OBJ(BCPLRGS)` and `BOOT_OBJ(BCPLREG)`. Tests 146–158 instead
-assemble their application-specific registry and temporary registrar;
-they must not link the default `BCPLREG` as a second table.
-Set the optional-extension installed-mode inputs and invoke the established
+This is a host-side check; it does not submit MVS jobs. In the
+core-panel cases 00–145, the production linker includes installed
+`BOOT_OBJ(BCPLRGS)` and the default empty `BOOT_OBJ(BCPLREG)`.
+The R.5 extension cases 146–158 instead assemble an application-specific
+registry and temporary registrar. They must not link a second
+`BCPLREG` table.
+
+Set the optional-extension installed-mode inputs and invoke the
 production launcher:
 
 ```sh
@@ -636,18 +622,13 @@ Record the full-panel console summary and relevant JES job numbers.
 Do not use `set -e` in the interactive operator shell: a failing
 command should not terminate that shell.
 
-### Audit the saved test reports
+### Verify the full-panel evidence
 
-The historical `tools/checks/check-m44-full-panel-logs.py` audits
-**00–145 only** and writes
-`workarea/native-regression/m44-00-145-jobs.tsv`. Its current corpus
-check requires the highest regression number to be 145; it therefore
-**rejects the expanded 00–158 corpus** and is **not an R.5
-acceptance gate**. Do not report it as an audit of tests 146–158.
-For R.5, retain the full 00–158 runner result, each case's saved log,
-and representative JES/IFOX/IEWL/GO evidence for the installed
-extension. A harness log does not independently verify every physical
-MVS DD record.
+Keep the complete 00–158 regression summary, individual case logs,
+and relevant JES/IFOX/IEWL MAP/XREF/GO reports, especially for cases
+146–158. The regression harness checks saved job reports; it does not
+independently verify every physical MVS DD record. Do not claim a
+separate report audit was performed unless one was actually run.
 
 ## Step 10 — Save what you proved
 
@@ -666,7 +647,7 @@ PDS members, and jobs were used.
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
 | Optional extension | `EXT_MAC`/`EXT_ASM`/`EXT_SOURCE` membership; `EXT_OBJ(BCPLDEMO)` install job; `ASMDEMO`, `PUTDEMO`, `READBACK`, and `VERIFY` RCs; binary comparison and IEWL MAP/XREF evidence |
-| Native tests | Full installed-mode 00–158 result (158 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers; historical 00–145 audit limitation recorded |
+| Native tests | Full installed-mode 00–158 result (158 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;
@@ -705,6 +686,7 @@ change the related scripts or JCL, or when you are investigating a problem.
 | `python3 tools/checks/test-dspal-generated-population.py` | Offline tests for first/second population behavior |
 | `python3 tools/checks/check-native-bootstrap-jcl.py` | Expected `CAMBBLD` job structure and PDS names |
 | `python3 tools/checks/check-native-production-build.py` | Canonical native build source and JCL contracts |
+| `python3 -m unittest discover -s tools/checks -p 'test_clean_room_install_prep.py' -v` | Offline BCPLDEMO install-deck preparation and full-panel documentation checks |
 | `tools/bootstrap/run-production-regression --check-numbering` | Test numbering and expected range |
 | `check-m44-compatibility.py --production` | Harness fixtures, production linkage, and test-only fault settings |
 
@@ -731,6 +713,7 @@ that the rebuilt system works. Static checks remain useful when the
 | `BOOT_DEVOBJ` and historical `BCPLM6` candidate | Kept for development/history; **not used** in the production rebuild |
 | `CAMB_*` PDSes | Managed, but **not used** for the resident bootstrap above |
 | Instrumented `CG370D` compiler | Its generator and `BOOT_JCL(CG370DB)` build job are still in Git; **not part of the normal build** |
+| Historical `check-m44-full-panel-logs.py` audit | Restricted to the former 00–145 corpus; fails its corpus check on 00–158 and is **not** the current full-panel acceptance gate |
 
 `make-demoted.py` still generates the five instrumented code-generator
 sources in `workarea/bootstrap-cambridge/demoted-diag/`.
