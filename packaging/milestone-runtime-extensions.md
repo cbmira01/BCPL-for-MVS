@@ -1,6 +1,25 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 22 October 2026): MILESTONE CLOSED.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** See the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md) and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md). Object-PDS installation remains **DEFERRED**; no R.4 march is defined in this approved roadmap.
+**Status (owner decision, 22 October 2026): R.4 — IEWL-Driven Extension Selection INVESTIGATION APPROVED.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 milestone was closed by the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md); that closure and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md) remain intact. Object-PDS installation is still **DEFERRED**. R.4 reopens the milestone solely for research and controlled experiments, not a replacement implementation.
+
+## R.4 — IEWL-Driven Extension Selection (investigation approved)
+
+**Objective:** Determine whether an application programmer can select
+precompiled optional extensions with IEWL `INCLUDE` alone, without
+preparing a separate application-specific `BCPLREG` table.
+
+**Experiment:** Try combined BCEX/dispatcher objects, documented `WXTRN`
+references, and period-correct IEWL control-section facilities.
+Require real MVS 3.8J IFOX/IEWL/GO evidence for 0/A/B/A+B and examine
+the difference between discovering *known* packages and independently
+developed packages unknown to the registrar.
+
+**Boundaries:** Keep the accepted BCEX/BCRG v1 ABI and BCPLRGS baseline.
+Do not modify production `BCPLMAIN`/`BCPLRGS`, install object members,
+add compiler dependencies, or create a registry-generation utility.
+Use temporary MVS datasets; allow a negative technical conclusion.
+
+See the [R.4 investigation](runtime-extensions-r4-investigation.md).
 
 **R.1 owner closure:** The consolidated MVS acceptance campaign passed
 24/24 integrated jobs (2760–2783), all five gates, and the 00..145
@@ -273,8 +292,10 @@ and formally completes **Milestone Runtime Extensions (R.0–R.3)**.
 
 The owner separately **DEFERRED installation** of all registration
 objects in `BOOT_DEVOBJ` or `BOOT_OBJ`. No object promotion,
-ABI revision or GLOBAL-number allocation is authorized. The official
-milestone ends at R.3. **R.4** has no approved objective or exit gate;
-a separately authorized change to milestone scope would be required
-before treating it as an active march. Related QSAM, Decimal Arithmetic,
-and Date/Time implementation belongs to their own milestones.
+ABI revision or GLOBAL-number allocation is authorized. The original
+R.0–R.3 milestone was formally completed and remains closed in its
+accepted scope. The owner subsequently approved the separate
+**R.4 — IEWL-Driven Extension Selection** investigation described above;
+no replacement architecture or production implementation has been approved.
+Related QSAM, Decimal Arithmetic, and Date/Time implementation belongs
+to their own milestones.

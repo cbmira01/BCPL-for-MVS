@@ -71,7 +71,11 @@ records the later source-controlled campaign at `a246063`: **JOBs
 The owner accepted the campaign as successful, explicitly **deferred
 object-PDS installation**, then approved **R.3 closure**. Raw JES
 evidence remains operator-local, with stated verification limits.
-No R.4 objective or exit gate has been approved.
+**R.4 — IEWL-Driven Extension Selection: owner-approved investigation.**
+The prior R.0–R.3 closure is retained. The
+[R.4 investigation scope](runtime-extensions-r4-investigation.md)
+tests whether explicit IEWL selection can replace per-application
+`BCPLREG` preparation, without changing the accepted registrar.
 
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
