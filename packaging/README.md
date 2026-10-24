@@ -42,7 +42,7 @@ with the remaining independent per-case raw-map audit limitation disclosed. The 
 
 ## Runtime and library terminology
 
-[Global Number Registry](global-number-registry.md) inventories historical and compiler-specific globals, MR10-local numbering, documented collisions, and the approved System Extension assignments **G!200 BCPLQSAM**, **G!201 BCPLTIME**, **G!202 BCPLDEC**, and permanent **G!203 BCPLDEMO / DEMOSVC**. **BCPLDEMO is a supported reference System Extension**, installed and regression-accepted in R.5; see the [24 October owner decision](bcpldemo-supported-reference-decision-20261024.md). Global allocation alone does not demonstrate deployment of the other packages.
+[Global Number Registry](global-number-registry.md) inventories historical and compiler-specific globals, MR10-local numbering, documented collisions, and the approved System Extension assignments **G!200 BCPLQSAM**, **G!201 BCPLTIME / TIMESVC**, **G!202 BCPLDEC**, and permanent **G!203 BCPLDEMO / DEMOSVC**. **BCPLDEMO** is the installed supported reference System Extension ([owner decision](bcpldemo-supported-reference-decision-20261024.md)), and **BCPLTIME** is installed and accepted after T.1 closure ([owner acceptance](bcpltime-t1-closure-20261024.md)). Assignments to BCPLQSAM and BCPLDEC do not themselves imply deployment.
 
 [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) distinguishes the Compiler, Core Runtime, historical Base Library (BLIB/LIBHDR), System Extensions, Standard Libraries, and User/Site Libraries. It also defines module, package, header, object/load library, and the separate global-number allocation versus startup-registration responsibilities. This is a proposed packaging/ABI vocabulary, not a claim that new libraries are implemented.
 
@@ -187,9 +187,9 @@ storage accounting remains open.
 ## Optional numeric and clock milestones
 
 - [Milestone Decimal Arithmetic](milestone-decimal-arithmetic.md): packed-decimal fixed-point arithmetic and business-record interoperability, proposed D.0–D.4.
-- [Milestone BCPLTIME](milestone-date-and-time-services.md): ACTIVE System Extension at G!201; **T.0 — Descriptor, Dispatcher, and Native Execution CLOSED** (MVS JOB 5436 PASS); **T.1 — Packaging and Acceptance IN PROGRESS**. Native source-mode cases **159–162 passed 4/4**; [T.0 closure](bcpltime-t0-closure-20261024.md) and [approved T.1 packaging/install plan](bcpltime-t1-installation-design.md). The Git-controlled BCXCAT/manifest/install job is **not installed on MVS**, and installed-mode acceptance is outstanding. The superseded broad T.0–T.4 proposal remains historical.
+- [Milestone BCPLTIME](milestone-date-and-time-services.md): **CLOSED — 24 October 2026**, with **T.0 — Descriptor, Dispatcher, and Native Execution CLOSED** (JOB 5436) and **T.1 — Packaging and Acceptance CLOSED** (installed payload JOB 5455; catalog publication JOB 5457). The native production 00–162 panel returned **162 PASS, 0 FAIL, 1 expected SKIP 083**. See [T.0 closure](bcpltime-t0-closure-20261024.md), [T.1 closure](bcpltime-t1-closure-20261024.md), and the [rebuild/install procedure](bcpltime-t1-installation-design.md). The superseded broad T.0–T.4 proposal remains historical.
 
-Both are optional and independent of M4 and Milestone QSAM. Decimal Arithmetic remains proposed; BCPLTIME is under active T.1 development.
+Both remain optional and independent of M4 and Milestone QSAM. Decimal Arithmetic remains proposed; BCPLTIME has completed its two accepted marches.
 
 ## Dataset ownership
 

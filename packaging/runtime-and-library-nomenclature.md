@@ -32,7 +32,7 @@ Preserve historical names and interfaces where recoverable. Do not retrofit mode
 
 **Classification describes responsibility, not the language in which a member is implemented.** A System Extension can have a portable BCPL wrapper over assembler, while a Standard Library can use machine-specific optimizations behind a portable contract.
 
-The taxonomy originated as proposed terminology; individual packages now have different verified states. **BCPLDEMO is an accepted, installed, supported reference System Extension** (R.5 and owner reaffirmation 24 October 2026), whereas BCPLTIME has source-mode T.0 acceptance and T.1 packaging in progress, and BCPLQSAM/BCPLDEC remain governed by their own milestones. The historical M3 manifest distinguished accepted `BOOT_OBJ` members from `BOOT_DEVOBJ` candidates; logical classification alone never promotes a development object to accepted Core Runtime.
+The taxonomy originated as proposed terminology; individual packages have different verified states. **BCPLDEMO is an accepted, installed, supported reference System Extension** (R.5 and owner reaffirmation 24 October 2026). **BCPLTIME is also accepted and installed** as an optional System Extension (T.0 and T.1 closed 24 October 2026); its [T.1 closure](bcpltime-t1-closure-20261024.md) records full native 00–162 acceptance. BCPLQSAM and BCPLDEC remain governed by their own milestones. The historical M3 manifest distinguished accepted `BOOT_OBJ` members from `BOOT_DEVOBJ` candidates; logical classification alone never promotes a development object to accepted Core Runtime.
 
 ### Core Runtime
 
@@ -125,7 +125,7 @@ The preferred design under [Milestone Runtime Extensions](milestone-runtime-exte
 A package header can publish both its assigned dispatcher slot and its local opcode constants:
 
 ```bcpl
-GLOBAL $( TIMESVC:201 $)          // illustrative name; G201 assigned to BCPLTIME
+GLOBAL $( TIMESVC:201 $)          // accepted BCPLTIME public global
 MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2 $)
 ```
 

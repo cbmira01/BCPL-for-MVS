@@ -637,9 +637,13 @@ T.1 procedure does not retroactively change the R.5 evidence.
 | SKIP | **1** | Case 083 needs source-only instrumentation |
 | TOTAL | **163** | Numbered cases 00 through 162 |
 
-These are **T.1 acceptance targets**, not achieved installed-mode
-results. The historical R.5 00–158 result (158 PASS, 0 FAIL, one
-expected SKIP) remains documented in the R.5 closure.
+These figures are the **T.1 acceptance target and achieved installed-mode
+results** on 24 October 2026: 162 PASS, 0 FAIL, 1 expected SKIP 083.
+That acceptance was an incremental package installation and native full-panel
+run, **not a separate fresh end-to-end clean-room reconstruction**.
+See the [T.1 closure](bcpltime-t1-closure-20261024.md). The historical
+R.5 00–158 result (158 PASS, 0 FAIL, 1 expected SKIP) remains documented
+in the independent R.5 closure.
 
 A few cases are special:
 
@@ -687,7 +691,7 @@ PDS members, and jobs were used.
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
 | Optional extension | `BOOT_JCL(R5DINST)` and `BOOT_JCL(T1TINST)`; source/header/catalog inventory; separate `EXT_OBJ(BCPLDEMO)` and `EXT_OBJ(BCPLTIME)` IFOX/install/read-back/comparison receipts; selected/absent IEWL MAP/XREF evidence |
-| Native tests | Full installed-mode 00–162 result (target: 162 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
+| Native tests | Full installed-mode 00–162 result (accepted 24 October 2026: 162 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;

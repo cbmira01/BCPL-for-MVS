@@ -29,11 +29,11 @@ and reject new optional overwrites transactionally. See
 | Global | Public name | Owner | Allocation | Implementation |
 |---:|---|---|---|---|
 | **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.0 design; not implemented |
-| **201** | **`TIMESVC`** (T.0 tested spelling; T.1 distribution pending) | **BCPLTIME**, raw System/370 and MVS time primitives | **Assigned** | T.0 MVS JOB 5436 PASS; not installed; T.1 IN PROGRESS |
+| **201** | **`TIMESVC`** (accepted published spelling) | **BCPLTIME**, raw System/370 and MVS time primitives | **Assigned** | T.0 JOB 5436 PASS; T.1 installed JOB 5455 / catalog JOB 5457; owner-accepted 00–162 panel, 162 PASS, 0 FAIL, 1 expected SKIP 083 |
 | **202** | Public name to be chosen | **BCPLDEC**, decimal arithmetic | **Assigned** | Proposed; not implemented |
 | **203** | **`DEMOSVC`** | **BCPLDEMO**, supported reference System Extension | **Permanently assigned** (22 Oct 2026); support reaffirmed 24 Oct 2026 | Installed MVS JOB 5108; accepted R.5 native regression 146–158 within 00–158 panel |
 
-G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; any illustrative BCPLTIME dispatcher is associated with its new assignment **G!201**. BCPLTIME's T.0 passing native caller uses `TIMESVC:201`; T.1 will finalize distributed header/package acceptance. BCPLDEC still has no approved public dispatcher spelling. See the [BCPLTIME T.0 owner closure](bcpltime-t0-closure-20261024.md).
+G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; the accepted public BCPLTIME dispatcher is **`TIMESVC:201`**, published via `EXT_SOURCE(TIMEHDR)` and linked through the installed BCPLTIME System Extension. BCPLDEC still has no approved public dispatcher spelling. See the [BCPLTIME T.0 closure](bcpltime-t0-closure-20261024.md) and [T.1 acceptance](bcpltime-t1-closure-20261024.md).
 
 **G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the reference demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. See the [initial R.2 allocation](runtime-extensions-r2-bcpldemo-decision-20261022.md), [R.5 installed-mode acceptance](runtime-extensions-r5-closure-20261024.md), and [permanent supported-reference decision](bcpldemo-supported-reference-decision-20261024.md). Other applications and extensions must not reuse G!203. BCPLDEMO remains optional and does not bypass per-executable collision and missing-package validation.
 

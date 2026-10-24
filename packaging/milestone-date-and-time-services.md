@@ -1,11 +1,11 @@
 # Milestone BCPLTIME — primitive System/370 and MVS time access
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** ACTIVE — T.0 CLOSED; T.1 IN PROGRESS (owner decision 24 October 2026). T.0 MVS JOB 5436 PASS; installed-mode acceptance pending  
+**Status:** **CLOSED — 24 October 2026**; T.0 and T.1 both CLOSED by explicit owner decisions. T.1 installed-mode 00–162 panel: 162 PASS, 0 FAIL, 1 expected SKIP 083  
 **Package:** `BCPLTIME` — optional System Extension  
 **Target:** IBM System/370, MVS 3.8J TK5 under Hercules  
 **Governing registration architecture:** BCEX/BCRG version 1, using the existing optional System Extension mechanisms  
-**Public BCPL GLOBAL:** G!201, assigned to BCPLTIME in the Global Number Registry; proposed dispatcher spelling `TIMESVC`  
+**Public BCPL GLOBAL:** G!201 / `TIMESVC`, accepted BCPLTIME dispatcher and published public header  
 **Historical predecessor:** *Milestone Date and Time Services*, proposed 15 October 2026 (see historical record below)
 
 ## 1. Owner decision and objective
@@ -22,7 +22,7 @@ Use the established three-argument BCPL dispatcher pattern:
 TIMESVC(operation, output_vector, capacity_words)
 ```
 
-`TIMESVC` is the proposed public spelling for G!201. A BCPL pointer is a 32-bit **word address**, and capacities are counts of 32-bit words. All output storage is owned by the caller. The dispatcher should check a null pointer, negative capacity, and insufficient capacity **before writing anything**. Caller-supplied pointers must designate accessible storage; the extension cannot authenticate arbitrary machine addresses.
+`TIMESVC` is the accepted public spelling for G!201. A BCPL pointer is a 32-bit **word address**, and capacities are counts of 32-bit words. All output storage is owned by the caller. The dispatcher should check a null pointer, negative capacity, and insufficient capacity **before writing anything**. Caller-supplied pointers must designate accessible storage; the extension cannot authenticate arbitrary machine addresses.
 
 | Opcode | Operation | Version-1 output | Ordinary successful return |
 | ---: | --- | --- | ---: |
@@ -60,8 +60,8 @@ The positive returns above are word counts, following the BCPLDEMO teaching conv
 
 ## 3. Packaging and implementation boundaries
 
-- Implement **one independently linkable package** named `BCPLTIME`, preferably using the R.5 **single-object/two-CSECT** BCPLDEMO pattern: a BCEX v1 descriptor with one exported dispatcher at **G!201**, and assembler dispatch code. No initializer, finalizer, dynamic allocation, or private persistent state is required.
-- Reuse the accepted BCEX/BCRG v1 registration and the MVS-native `BCXSEL`/`BCXREQ`/`BCXCAT` known-package selection arrangement. A future accepted `BCXCAT` entry may select `BCPLTIME`; adding it is **not** authorization to write any resident MVS dataset.
+- **Accepted implementation:** one independently linkable `BCPLTIME` object with two CSECTs (`TIMDESC`, `TIMDISP`), a BCEX v1 descriptor and one exported dispatcher at **G!201**. No initializer, finalizer, dynamic allocation or persistent application-level state. The private STCK scratch area is non-reentrant.
+- **Accepted packaging:** existing BCEX/BCRG v1 registration and MVS-native `BCXSEL`/`BCXREQ`/production `BCXCAT` known-package selection; both BCPLDEMO and BCPLTIME are independently linkable. Later resident PDS changes continue to require separate explicit owner authorization.
 - Provide a minimal BCPL public declaration header (GLOBAL and opcode constants), which is **not** a wrapper library. As with BCPLDEMO, an explicit GLOBAL in the initial test caller is acceptable if the bootstrap compilation path cannot consume the header directly.
 - Preserve existing `BCPLMAIN`, `BCPLRGS`, `BCPLIO`, historical `BLIB`, compiler sources, and BCEX/BCRG contracts. Do not change the native compiler or the interpreter-hosted demoted Cambridge compiler.
 - Retain GitHub `main` as the official source. Use temporary object datasets for development; permanent `EXT_*`, `BOOT_OBJ`, or `BOOT_DEVOBJ` writes require separate explicit owner authorization.
@@ -81,7 +81,7 @@ The owner has explicitly authorized a **new, accelerated two-march structure** f
 | March | Current status | Work | Exit gate |
 | --- | --- | --- | --- |
 | **T.0 — Descriptor, Dispatcher, and Native Execution** | **CLOSED — 24 October 2026** | Write actual single-object BCPLTIME BCEX descriptor, dispatcher opcodes 0/1/2, public declaration header, and one direct native BCPL caller. Debug the production-intended assembler against IFOX/IEWL/GO rather than running a preliminary probe campaign. | Actual MVS 3.8J IFOX + IEWL + GO PASS, G!201 registered via BCEX/BCRG v1, QUERY/STCK/TIME and basic error/no-partial-write behavior confirmed, observed clock data and any OS-specific caveats recorded. |
-| **T.1 — Packaging and Acceptance** | **IN PROGRESS — 24 October 2026** | Add approved known-package selection/catalog and safe installation path, verify absence/presence on link, run the installed-mode tests and existing native production panel, document rebuild and package usage. | Owner reviews JES/IEWL evidence, regression and installation receipts, and explicitly accepts the optional extension. No permanent dataset writes without separate authorization. |
+| **T.1 — Packaging and Acceptance** | **CLOSED — 24 October 2026** | Add approved known-package selection/catalog and safe installation path, verify absence/presence on link, run the installed-mode tests and existing native production panel, document rebuild and package usage. | Owner reviews JES/IEWL evidence, regression and installation receipts, and explicitly accepts the optional extension. No permanent dataset writes without separate authorization. |
 
 **Formal owner decision (24 October 2026): CLOSE T.0; OPEN T.1.**
 The [T.0 owner closure](bcpltime-t0-closure-20261024.md) records
@@ -91,28 +91,29 @@ prior S0C4 in JOB 5434 was resolved by preserving permanent R0/R1
 across MVS `TIME DEC`. The record check matched the expected logical
 output but independently verifying JES DD attribution remains open.
 
-**T.1 design gate:** Before any permanent deployment, review the
-BCXCAT catalog changes, object/macro member names, installation and
-rollback procedure, and acceptance matrix with the owner. Starting
-T.1 does **not** authorize modifications of resident MVS PDSes.
-Preserve BCEX/BCRG v1, BCPLDEMO, and accepted Runtime/Base Library
-objects. Temporary T.0 linkage is still a valid development path.
+**T.1 design and installation gates completed (24 October 2026):** The owner
+approved the catalog, object/macro member names, member-level installation,
+recovery and acceptance matrix, and separately authorized the specific
+resident PDS writes subsequently reported as JOBs 5446–5448, 5455 and
+5457. The accepted BCEX/BCRG v1, BCPLDEMO, Core Runtime and Base
+Library objects were preserved. This completed authorization is **not**
+blanket permission for future permanent PDS changes.
 
-**T.1 numbered regression candidates:** New cases **159–162** are
-specified for BCPLTIME alone and for BCPLDEMO+BCPLTIME selection,
-reverse-order inclusion, and requirement-upgrade/deduplication.
-Cases 00–158 remain unchanged, including the accepted R.5 no-extension
-and BCPLDEMO-alone coverage. See the
-[T.1 regression design](../bootstrap-toolchain/extensions/bcpltime/T1-REGRESSION.md).
-**Operator-reported source-mode acceptance:** All four native cases
-159–162 PASS, 0 FAIL, 0 SKIP (24 October 2026); 15 T.1 offline tests
-also PASS. The console excerpt did not expose individual JES payload
-job numbers. The approved [T.1 installation design](bcpltime-t1-installation-design.md)
-now specifies EXT_ASM(BCPLTIME), EXT_SOURCE(TIMEHDR), EXT_OBJ(BCPLTIME),
-a revised production BCXCAT, and BOOT_JCL(T1TINST). These are Git
-source changes, not resident PDS installation. Installed-mode tests,
-full regression and owner acceptance remain open. **This design approval
-does not authorize permanent MVS dataset writes.**
+**T.1 accepted native regression coverage:** Cases **159–162** exercise
+BCPLTIME alone and BCPLDEMO+BCPLTIME selection, reverse-order inclusion
+and requirement-upgrade/deduplication. All four cases passed in both
+source-mode and installed-mode MVS execution. The accepted R.5 cases
+00–158 remained intact; **full native production panel 00–162: 162
+PASS, 0 FAIL, 1 expected SKIP (083)**. Installation payload JOB
+**5455** assembled, installed and read back the object with four
+RC=0000 steps and 12 records compared; production BCXCAT publication
+JOB **5457** was read back from MVS. The operator also reported 30
+successful offline unit tests. See the [T.1 installation/recovery procedure]
+(bcpltime-t1-installation-design.md), [regression instructions]
+(../bootstrap-toolchain/extensions/bcpltime/T1-REGRESSION.md), and
+[formal T.1 owner closure](bcpltime-t1-closure-20261024.md) for the
+source revision, job receipts, remaining evidence limitations and
+acceptance decision.
 
 **T.0 began with implementation, not reconnaissance.** The first MVS job should assemble the BCPLTIME candidate and exercise the actual dispatcher from the native BCPL caller using temporary datasets. A working local source tree is not equivalent to an accepted MVS build. No march closes automatically or without owner review.
 
@@ -155,9 +156,9 @@ Keeping the existing file path preserves current repository links while the **ti
 
 - [Runtime Extensions milestone and R.0–R.5 closure records](milestone-runtime-extensions.md): accepted BCEX/BCRG v1, optional selection, and registration.
 - [BCPLDEMO reference implementation](../bootstrap-toolchain/extensions/bcpldemo/README.md): reusable single-object package and dispatcher model.
-- [Global Number Registry](global-number-registry.md): reserved G!201, proposed `TIMESVC` spelling.
+- [Global Number Registry](global-number-registry.md): permanently assigned BCPLTIME G!201 / accepted `TIMESVC` spelling.
 - [Runtime and Library Nomenclature](runtime-and-library-nomenclature.md): System Extension versus Standard Library distinction.
 - IBM *System/370 Principles of Operation*: `STCK` and condition-code semantics.
 - Period IBM OS/VS2 MVS *Supervisor Services and Macro Instructions*: actual `TIME` macro layout, register effects, and operating-system behavior.
 
-**Source of truth:** GitHub `main` after an explicitly approved commit. A proposed design and a local document draft do not establish verified MVS behavior or authorize installation.
+**Source of truth:** GitHub `main` after the explicitly approved closure commit. The accepted MVS installation and regression evidence is recorded in [the T.1 owner closure](bcpltime-t1-closure-20261024.md). Closure does not authorize further resident PDS writes.

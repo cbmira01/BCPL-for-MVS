@@ -1,6 +1,6 @@
 # T.1 — BCPLTIME optional-extension native regressions
 
-**Status:** Source-mode MVS cases 159–162 reported PASS (4/4) on 24 October 2026; installed-mode and installation pending.
+**Status:** **T.1 CLOSED — 24 October 2026**, explicit owner approval; source-mode and installed-mode MVS cases 159–162 each PASS (4/4), full 00–162 production panel 162 PASS, 0 FAIL, 1 expected SKIP 083.
 **Milestone:** BCPLTIME; **march:** T.1 — Packaging and Acceptance.
 **Prior evidence:** T.0 JOB 5436 native PASS. Existing R.5 cases 146–158
 continue to cover no extensions and BCPLDEMO alone.
@@ -41,32 +41,35 @@ macros plus source-only t1-catalog.asm to produce a native BCPLREG and
 IEWL INCLUDE cards. All PDS inputs are read-only; authenticated JCL
 and full JES output remain in ignored workarea/.
 
-## Installed-mode gate — explicit owner authorization still required
+## Installed-mode operation — accepted on MVS 3.8J
 
-The identical four tests also have a read-only installed-mode JCL
-path using manifest-managed EXT_OBJ and EXT_MAC members. That mode
-cannot pass until BCPLTIME's PDS installation and production BCXCAT
-catalog entry have been designed, approved and verified separately.
-Do not install the source-only t1-catalog.asm as EXT_MAC(BCXCAT).
+The identical four tests have a read-only installed-mode JCL path
+using the manifest-managed `EXT_OBJ` and `EXT_MAC` libraries. It
+passed under the owner-approved installation in JOB 5455 and resident
+catalog publication in JOB 5457. Do not install the source-only
+`t1-catalog.asm` as `EXT_MAC(BCXCAT)`.
 
-After approved installation and read-back, export local
-manifest-resolved settings and run 159–162:
+Use these existing, manifest-resolved settings for **read-only**
+installed-mode linkage of 159–162:
 
     BCPL_T1_EXTENSION_MODE=installed
     BCPL_T1_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ
     BCPL_T1_MACRO_DSN=HERC02.BCPL.EXT.MAC
 
-Environment variables select read-only linkage; their presence
-does not grant permission to install. The production 00–162 panel,
-the expected case 083 skip and installation evidence are needed for
-T.1 acceptance. All existing 00–158 sources and tests are unchanged.
+Environment variables select read-only linkage; their presence never
+authorizes a future resident PDS installation. All existing 00–158
+sources and test numbers remain unchanged.
 
-**T.1 source-mode operator evidence:** 15 offline tests PASS and all four
-native regressions 159–162 PASS, 0 FAIL, 0 SKIP. Individual JES payload
-job numbers were not in the supplied console excerpt and should be
-recorded from saved workarea reports for the acceptance receipt.
+**Accepted evidence, 24 October 2026:** 15 original T.1 offline tests
+PASS (with a further 15 packaging/R.5 compatibility unit tests PASS).
+Source-mode **159–162: 4 PASS, 0 FAIL, 0 SKIP**. Installed-mode
+**159–162: 4 PASS, 0 FAIL, 0 SKIP**. Full
+`tools/bootstrap/run-production-regression 0 162`: **162 PASS,
+0 FAIL, 1 expected SKIP (083), TOTAL 163**. The runner checks
+expected BCPL output and the actual IEWL MAP/XREF for each extension
+test. Individual payload JOB IDs and every raw per-case report were
+not independently audited in the supplied final-panel transcript.
 
-**Pending:** owner-authorized resident installation, binary object
-readback, installed-mode matrix, full 00–162 production regression and
-owner acceptance. See [the approved packaging design](../../../packaging/bcpltime-t1-installation-design.md).
-No milestone/march closure is implied.
+See the [T.1 owner closure](../../../packaging/bcpltime-t1-closure-20261024.md)
+and [installation/recovery procedure](../../../packaging/bcpltime-t1-installation-design.md).
+**Milestone BCPLTIME is CLOSED.**

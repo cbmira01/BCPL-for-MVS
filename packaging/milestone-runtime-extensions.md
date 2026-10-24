@@ -89,14 +89,14 @@ See [Cambridge runtime and library nomenclature](runtime-and-library-nomenclatur
 
 **Owner-approved version-1 interface design (not yet implemented):** An optional System Extension, Standard Library or User/Site Library normally occupies **one allocated BCPL global-vector slot** containing the address of a single **dispatcher procedure**. The caller passes an operation number as the first argument. Internal procedures remain private and do not consume additional public `G!N` slots. Only justified exceptions should use multiple public slots.
 
-For example, **illustrative global number only**:
+**Historical R.0 illustration (not the accepted BCPLTIME API):**
 
 ```bcpl
 GLOBAL $( TIMESVC:201 $)
 MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2; T_DIFF=3 $)
 ```
 
-G!201 is now allocated to **BCPLTIME** by the [Global Number Registry](global-number-registry.md); the example's name `TIMESVC` is illustrative, not yet an approved public header symbol. G!200 is allocated to **BCPLQSAM**, and G!202 to **BCPLDEC**. The Global Number Registry owns the package's dispatcher slot; a package-specific API/header owns its *stable, local opcode numbers*. Compilation embeds the selected global and opcode constants; IEWL chooses which package is linked; the approved BCPLREG mechanism will install its **single** dispatcher address into G before START when implemented in R.1. No dynamic global-number assignment is required.
+G!201 is allocated to **BCPLTIME** by the [Global Number Registry](global-number-registry.md). The example above predates the accepted implementation: its `T_NOW`/`T_ADD`/`T_DIFF` opcodes are **not** BCPLTIME operations. T.1 accepted the public spelling **`TIMESVC:201`** and exactly three package-local opcodes: QUERY (0), STCK (1), and raw MVS TIME (2), as declared by `TIMEHDR`. G!200 is allocated to **BCPLQSAM** and G!202 to **BCPLDEC**. The Global Number Registry owns dispatcher slots; a package-specific API/header owns its stable opcodes. Compilation embeds numeric globals and opcodes; IEWL selects packages; the accepted BCPLREG mechanism installs linked dispatchers before START. No dynamic global-number assignment is required.
 
 **Opcode 0 is reserved for `QUERY` in every participating optional package.** It must be side-effect free: no I/O, clock read, dataset OPEN, state-changing setup or allocation. It returns interface/capability information about a *linked and registered* package; it is **not** a package-discovery mechanism and cannot safely be called if that package's global remains unset. The build's link/registration and required-package checking must cover that case.
 
@@ -264,7 +264,7 @@ The probes should be *tiny*, not premature implementations of QSAM/DEC/TIME. Sub
 
 - **Milestone QSAM:** depends on a stable optional-registration mechanism for *automatic* global installation; it may continue isolated linkage/ABI experiments without R, but should not invent its own registrar.
 - **Milestone Decimal Arithmetic:** uses the shared registration architecture for `BCPLDEC`; decimal descriptors, arithmetic semantics and rounding remain that milestone's responsibility.
-- **Milestone Date and Time Services:** uses the same architecture for `BCPLTIME`; calendar and MVS TIME semantics remain separate.
+- **Milestone BCPLTIME:** uses the same architecture for the accepted `BCPLTIME` optional System Extension; raw MVS TIME access is separate from calendar services. Its historical predecessor was the proposed *Milestone Date and Time Services*.
 - **M4 self-hosting:** **not blocked** by R. Reconstructing the compiler remains higher priority if schedule conflicts arise.
 
 A historical BCPL system already exposed global names `READREC`, `WRITEREC`, `TIME`, and `DATE`. New optional modules must either choose distinct names/globals or deliberately implement proven historical contracts as an entirely separate acceptance decision. Do not quietly reinterpret legacy symbols.
@@ -316,7 +316,17 @@ from Git; and record MVS acceptance. See the [R.5 execution plan](runtime-extens
 
 **R.5 CLOSED by owner approval, 24 October 2026.** The original installation safety and recovery requirements were reviewed; this closure does not authorize future PDS writes. At the time of R.5 closure, R.4 remained pending; R.4 was subsequently CLOSED by separate owner decision. See the [R.5 closure](runtime-extensions-r5-closure-20261024.md) and [R.4 closure](runtime-extensions-r4-closure-20261024.md).
 
-**Subsequent BCPLDEMO support decision (24 October 2026):** The owner confirmed that BCPLDEMO is to be retained **permanently as a supported reference System Extension**, not discarded as temporary regression scaffolding. G!203/DEMOSVC remains exclusive; BCEX/BCRG v1 and optional linkage remain unchanged; numbered regressions 146–158 retain their accepted coverage. BCPLDEMO is an interoperability reference for future optional packages, including BCPLTIME. See the [formal supported-reference decision](bcpldemo-supported-reference-decision-20261024.md). This is **not** a new R march, a reopening of R.5, or authority for further permanent MVS dataset writes.
+**Subsequent BCPLDEMO support decision (24 October 2026):** The owner confirmed that BCPLDEMO is to be retained **permanently as a supported reference System Extension**, not discarded as temporary regression scaffolding. G!203/DEMOSVC remains exclusive; BCEX/BCRG v1 and optional linkage remain unchanged; numbered regressions 146–158 retain their accepted coverage. BCPLDEMO is an interoperability reference for other optional packages, including BCPLTIME. See the [formal supported-reference decision](bcpldemo-supported-reference-decision-20261024.md). This is **not** a new R march, a reopening of R.5, or authority for further permanent MVS dataset writes.
+
+**BCPLTIME interoperability acceptance (24 October 2026):** The separate
+[Milestone BCPLTIME](milestone-date-and-time-services.md) completed T.0
+and T.1. The installed System Extension `BCPLTIME` (G!201 /
+`TIMESVC`) was linked independently and alongside the supported
+BCPLDEMO (G!203 / `DEMOSVC`) in native cases 159–162, followed by
+00–162 production panel acceptance **162 PASS, 0 FAIL, 1 expected SKIP
+083**. This is **not** a new Runtime Extensions R march and does not
+alter the accepted R.5 closure. See the
+[BCPLTIME T.1 closure](bcpltime-t1-closure-20261024.md).
 
 ## R.5 clean-room acceptance evidence — 23 October 2026
 

@@ -1,9 +1,12 @@
 # Milestone BCPLTIME — T.1 packaging and installation design
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**March:** **T.1 — Packaging and Acceptance (IN PROGRESS)**  
+**March:** **T.1 — Packaging and Acceptance (CLOSED 24 October 2026)**  
 **Owner design approval:** 24 October 2026  
-**Authority:** Design and Git-controlled implementation approved; **no permanent MVS PDS write has been authorized**.  
+**Authority chronology:** Design approved, then five specific permanent
+member writes separately authorized and completed 24 October 2026.
+**No further permanent PDS writes are authorized by this record.**  
+**Acceptance:** [T.1 owner closure](bcpltime-t1-closure-20261024.md)  
 **Official source:** GitHub `main`; resident MVS objects are rebuildable products, not canonical sources.
 
 ## Package and exact member mapping
@@ -58,10 +61,12 @@ installation job. **Incremental installation must not use
 member, including BCPLDEMO. Use member-level `dspal put` only after
 separate approval.
 
-## Live incremental installation — requires separate owner approval
+## Live incremental installation — requires separate owner approval for any future run
 
-**Do not execute the commands in this section until the owner explicitly
-authorizes these permanent PDS writes.** First confirm the existing
+**The owner separately authorized this exact installation on 24 October
+2026; it completed successfully. These commands are a repeatable
+operator procedure, not standing authority for a future MVS write.**
+Before any future run, obtain explicit approval and confirm the existing
 `EXT_*`, `BOOT_JCL` and `BOOT_OBJ` inventories; save the accepted
 resident `BCXCAT` contents and the source revision for recovery.
 
@@ -151,15 +156,21 @@ from Git with a controlled member-level put after review. No backup
 PDS, binary-versioning facility or wholesale Core Runtime rebuild is
 required. Do not purge unrelated datasets as a recovery shortcut.
 
-## Evidence and acceptance status
+## Completed installation and owner acceptance — 24 October 2026
 
-The operator reported **four source-mode PASS** results for native
-cases 159–162 on 24 October 2026 and 15 offline tests PASS.
-Individual payload JES job IDs were not present in the console excerpt.
-Source-mode success is **not** installed-mode acceptance. The installed
-object, readback, published catalog, selected/excluded links, full
-00–162 panel, and owner closure review are still pending. **T.1 remains
-IN PROGRESS.**
+The owner approved the design, then separately approved the specified
+live incremental installation. Staging JOBs **5446–5448** installed
+the BCPLTIME source, header and job body; launcher **5454** submitted
+payload **5455**. The four `ASMTIME`/`PUTTIME`/`READBACK`/
+`VERIFY` steps all returned **RC=0000**, with zero flagged
+assembler statements, 12 object records punched and 12 records
+compared. `EXT_OBJ` held both BCPLDEMO and BCPLTIME. JOB **5457**
+published the revised `BCXCAT`, whose resident readback confirmed
+both independent package mappings.
 
-This design approval authorizes preparation of Git-controlled files,
-**not** resident MVS PDS installation or T.1 closure.
+Focused installed-mode 159–162: **4 PASS, 0 FAIL, 0 SKIP**.
+Full production 00–162: **162 PASS, 0 FAIL, 1 expected SKIP 083**,
+TOTAL 163. The owner explicitly approved **T.1 closure** after
+reviewing this evidence. See the [formal acceptance record]
+(bcpltime-t1-closure-20261024.md) for tested revision, jobs and
+limitations. **No new resident PDS writes are authorized by closure.**

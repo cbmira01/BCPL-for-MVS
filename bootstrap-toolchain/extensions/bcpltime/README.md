@@ -1,11 +1,13 @@
-# BCPLTIME — T.0 MVS-verified candidate; T.1 packaging in progress
+# BCPLTIME — accepted optional MVS System Extension
 
-Milestone BCPLTIME, **T.0 — Descriptor, Dispatcher, and Native Execution CLOSED**;
-**T.1 — Packaging and Acceptance IN PROGRESS** (24 October 2026).
-JOB 5436 verified source-mode native MVS operation, but **BCPLTIME is
-not yet installed or accepted for installed-mode production use**.
-The governing document is packaging/milestone-date-and-time-services.md.
-See [the T.0 owner closure](../../../packaging/bcpltime-t0-closure-20261024.md).
+**Milestone BCPLTIME CLOSED — 24 October 2026.**
+**T.0 — Descriptor, Dispatcher, and Native Execution CLOSED** (JOB 5436);
+**T.1 — Packaging and Acceptance CLOSED** (installed JOB 5455,
+BCXCAT publication JOB 5457, full 00–162 production panel:
+**162 PASS, 0 FAIL, one expected SKIP 083**).
+See the [milestone](../../../packaging/milestone-date-and-time-services.md),
+[T.0 closure](../../../packaging/bcpltime-t0-closure-20261024.md),
+and [T.1 closure](../../../packaging/bcpltime-t1-closure-20261024.md).
 
 ## Contents
 
@@ -53,10 +55,15 @@ encoding is not independently decoded; later documentation is not proof.
    no-partial-write checks; fix the **real package** instead of creating
    additional throwaway probe implementations.
 
-The accepted BCXCAT production catalog currently selects BCPLDEMO only.
-BCPLTIME's catalog entry, installation JCL, MVS member mapping and
-installed-mode acceptance are T.1 work requiring owner authorization
-before any permanent PDS write. Do not overwrite the existing BCPLDEMO.
+The accepted production BCXCAT independently selects **BCPLDEMO** or
+**BCPLTIME**. The accepted T.1 installation maps assembler source to
+`EXT_ASM(BCPLTIME)`, header to `EXT_SOURCE(TIMEHDR)`, and the native
+relocatable object to `EXT_OBJ(BCPLTIME)` using
+`BOOT_JCL(T1TINST)`. JOB 5455 read back and compared all 12 object
+records. BCPLDEMO and BOOT_OBJ remain unchanged. For a future
+installation or clean-room rebuild, see the
+[T.1 installation/recovery procedure](../../../packaging/bcpltime-t1-installation-design.md);
+the earlier owner authorization does not permit new permanent writes.
 
 ## Offline validation
 
@@ -76,7 +83,8 @@ ASMA/ASMN/ASMR/ASMT/ASMG, IEWL and GO all RC=0000; IEWL MAP PASS;
 `BCPLTIME T0 PASS` emitted with STCK CC=0 and two raw TIME words.
 The record checker reported that JES DD attribution was NOT VERIFIED;
 see the [T.0 owner closure](../../../packaging/bcpltime-t0-closure-20261024.md).
-T.1 installed-mode linkage and full regression are still outstanding.
+T.1 subsequently installed and verified the object (JOB 5455);
+see the [T.1 closure](../../../packaging/bcpltime-t1-closure-20261024.md).
 
 ## T.1 numbered native interoperability regressions
 
@@ -84,14 +92,15 @@ Cases **159–162** extend the existing native regression suite without
 changing R.5's 00–158 cases. They cover BCPLTIME alone, BCPLDEMO with
 BCPLTIME, reversed selection order, and repeated BCXREQ/BCXSEL
 requirement upgrades. See [T.1 regression design and commands](T1-REGRESSION.md).
-The candidate generator builds source-mode temporary objects and a
-read-only installed-mode route. **All four source-mode cases 159–162
-PASS on MVS** (owner report 24 October 2026; individual payload JOB IDs
-not supplied). The [T.1 approved installation design](../../../packaging/bcpltime-t1-installation-design.md)
-now defines the production BCXCAT, EXT_ASM(BCPLTIME),
-EXT_SOURCE(TIMEHDR), EXT_OBJ(BCPLTIME), and BOOT_JCL(T1TINST).
-These changes are Git-controlled only until separately authorized
-resident MVS member updates.
+The regression generator retains both temporary source-mode assembly
+and read-only installed-mode linkage. **All four cases 159–162 PASS
+in each mode**, including when they ran again as part of the full
+00–162 production panel. The resident production BCXCAT and
+`EXT_OBJ(BCPLTIME)` were installed and verified under separately
+approved JOBs. See the [T.1 closure](../../../packaging/bcpltime-t1-closure-20261024.md)
+and [installation procedure](../../../packaging/bcpltime-t1-installation-design.md).
+Individual regression payload JOB IDs were not included in the owner
+console excerpt; the automated IEWL MAP/GO verdicts are retained.
 
 ## T.0 direct execution command (source mode, temporary datasets only)
 
@@ -126,8 +135,8 @@ python3 -m unittest discover -s tools/checks \
 python3 tools/checks/prepare-bcpltime-t0.py --check
 ```
 
-No installed `EXT_OBJ`, `EXT_MAC`, or `BOOT_OBJ` members are overwritten.
-T.0 is CLOSED on actual IFOX/IEWL/GO JOB 5436 evidence; offline checks
-alone would not have met the acceptance gate. T.1 requires approved
-installation design, selected/unselected linkage, installed-mode
-acceptance, and full native production regression.
+The **T.0 source-mode example above** writes no installed `EXT_OBJ`,
+`EXT_MAC`, or `BOOT_OBJ` members. T.0 is CLOSED on actual MVS
+IFOX/IEWL/GO JOB 5436 evidence; T.1 is also CLOSED after separately
+approved installation and complete installed-mode regression.
+A package header does not link or register the extension by itself.
