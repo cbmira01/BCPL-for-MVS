@@ -29,7 +29,7 @@ and reject new optional overwrites transactionally. See
 | Global | Public name | Owner | Allocation | Implementation |
 |---:|---|---|---|---|
 | **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.0 design; not implemented |
-| **201** | Public name to be chosen | **BCPLTIME**, date/time services | **Assigned** | Proposed; not implemented |
+| **201** | Public name to be chosen | **BCPLTIME**, raw System/370 and MVS time primitives | **Assigned** | Milestone BCPLTIME ACTIVE; not implemented |
 | **202** | Public name to be chosen | **BCPLDEC**, decimal arithmetic | **Assigned** | Proposed; not implemented |
 | **203** | **`DEMOSVC`** | **BCPLDEMO**, project-maintained teaching/reference extension | **Permanently assigned** (22 Oct 2026) | First MVS demonstration PASS in JOB 3075; R.2 matrix pending |
 

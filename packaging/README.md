@@ -184,10 +184,10 @@ The 512K fallback was not run. Full BCPLQSAM runtime/application
 storage accounting remains open.
 **Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
-## Proposed optional numeric and clock milestones
+## Optional numeric and clock milestones
 
 - [Milestone Decimal Arithmetic](milestone-decimal-arithmetic.md): packed-decimal fixed-point arithmetic and business-record interoperability, proposed D.0–D.4.
-- [Milestone Date and Time Services](milestone-date-and-time-services.md): Gregorian calendar helpers and MVS clock adapter, proposed T.0–T.4.
+- [Milestone BCPLTIME](milestone-date-and-time-services.md): ACTIVE accelerated System Extension at G!201; QUERY, raw STCK and MVS TIME only. Its earlier broad T.0–T.4 plan is preserved as historical material.
 
 Both are optional, proposed, and independent of M4 and Milestone QSAM.
 

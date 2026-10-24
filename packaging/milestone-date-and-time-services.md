@@ -1,92 +1,121 @@
-# Milestone Date and Time Services
+# Milestone BCPLTIME — primitive System/370 and MVS time access
 
-**Status:** Proposed, not started (2026-10-15). Optional native BCPL runtime service, independent of M4, QSAM and Milestone Decimal Arithmetic.
+**Project:** BCPL for MVS 3.8 Reconstruction  
+**Status:** ACTIVE — owner-directed accelerated scope, 24 October 2026; no implementation or MVS execution claimed  
+**Package:** `BCPLTIME` — optional System Extension  
+**Target:** IBM System/370, MVS 3.8J TK5 under Hercules  
+**Governing registration architecture:** BCEX/BCRG version 1, using the existing optional System Extension mechanisms  
+**Public BCPL GLOBAL:** G!201, assigned to BCPLTIME in the Global Number Registry; proposed dispatcher spelling `TIMESVC`  
+**Historical predecessor:** *Milestone Date and Time Services*, proposed 15 October 2026 (see historical record below)
 
-## Objective and scope
+## 1. Owner decision and objective
 
-Provide programs compiled with the existing native System/370 BCPL compiler with predictable calendar arithmetic and a small documented interface to MVS 3.8J date/time facilities. The proposed module is `BCPLTIME` (name subject to repository inventory), optionally supported by BCPL-only calendar helpers. This is an **MVS-specific extension**, not a claim of historical Cambridge BCPL support.
+This revision replaces the original broad date/time-library proposal with **Milestone BCPLTIME**. The owner has directed **accelerated development**: proceed directly to a real optional-package descriptor and assembler dispatcher, then diagnose behavior through actual native BCPL execution under MVS. Do not start with a lengthy sequence of preliminary experiments or standalone probes.
 
-**Included:** current date/time; date validation; leap years; ordinal dates; addition/difference of days; weekday; civil date parsing/formatting; time-of-day conversion; simple elapsed-time measurement if supportable.
+BCPLTIME exposes only the primitive clock and date/time information supplied by the processor and operating system. **It is not a calendar, scheduling, or general timing library.** Its interface must not imply historical Cambridge BCPL provenance: this is a project-created System Extension for the reference MVS implementation.
 
-**Excluded:** modern IANA timezone database, daylight-saving rules/historical conversion, leap-second tables, scheduling/alarms, OS clock setting, high-resolution/monotonic promises not established on TK5, universal POSIX epoch semantics, and cross-address-space synchronization.
+## 2. Version-1 public API — exactly three opcodes
 
-## Optional module integration dependency
+Use the established three-argument BCPL dispatcher pattern:
 
-The proposed [Milestone Runtime Extensions](milestone-runtime-extensions.md) supplies a shared design for linking BCPLTIME optionally and registering its global functions. This is separate from investigating MVS timing macros and BCPL calendar routines. Do not create a BCPLTIME-specific startup registrar. Neither milestone blocks M4.
-
-### Shared optional-module dispatch architecture
-
-See [Milestone Runtime Extensions](milestone-runtime-extensions.md). **The preferred R.0 direction** is to allocate *one* global slot for a BCPLTIME dispatcher (provisional name `TIMESVC`), rather than one global per listed date/time function. **Opcode 0** would return the standard numeric capability descriptor: API major/minor, supported opcode bitmap and other defined features in a caller-owned BCPL vector. The following named functions remain *logical operations*; whether implemented as dispatcher opcodes, private routines or optional later wrappers is not yet fixed. Assign neither global number nor opcode numbers before the common registry/ABI decision. A capability query describes implemented functions, not clock validity or availability at any particular moment.
-
-## Values and semantics (provisional)
-
-- `DATE` is an ordinary BCPL signed integer `YYYYMMDD`; e.g. `20261015`. Year policy initially `0001..9999`, strictly Gregorian **proleptic** calendar, pending verification of numeric range/word behavior. Calendar arithmetic does not require MVS.
-- `TIME` is integer `HHMMSS` (24-hour form, `000000..235959`). Optional hundredths returned separately, never ambiguously embedded in `HHMMSS`.
-- `DATENOW(datevec, timevec)` writes date and time components to separate caller-owned output vectors (details pending ABI review). Treat one call as a single snapshot as far as the underlying MVS interface allows.
-- The OS clock's **local time** is the default; it may differ from real-world wall time because Hercules/TK5 operator/system configuration controls it. No implied UTC conversion. If GMT service is available in this MVS release, document it separately and test.
-- Do not derive four-digit years from the legacy two-digit year returned by some `TIME` forms without an explicit **century policy**. Locate and test contemporary MVS 3.8 `TIME` macro forms, including any `ZONE` and full-year capabilities, before accepting `DATENOW` across century boundaries.
-- The MVS `TIME` service is a credible starting point. A fine-resolution clock/interval interface using `STCK` or MVS timing services is a separately verified capability, **not** an assumed monotonic or precise clock. Clock wrap, system clock changes, midnight crossings and timer units need explicit documentation.
-- No dynamic storage allocation is required. Parsing/formatting must use actual BCPL string and byte-buffer conventions and EBCDIC, not unverified C-style strings.
-
-## Provisional BCPL interface
-
-| Procedure | Meaning |
-| --- | --- |
-| `DATENOW(dateout, timeout)` | Read system-local civil date and time into outputs; return status |
-| `DATEVALID(ymd)` | True for a supported valid calendar date |
-| `DATELEAP(year)` | Gregorian leap-year predicate |
-| `DATEORDINAL(ymd)` | Day-of-year 1..365/366, with error handling |
-| `DATEADD(ymd, days)` | Add signed number of calendar days; report invalid/range failure |
-| `DATEDIFF(first, second)` | Signed day difference (second minus first) |
-| `DATEWEEKDAY(ymd)` | 1=Monday through 7=Sunday, or error |
-| `TIMEVALID(hhmmss)` | Validate 24-hour time |
-| `TIMESECONDS(hhmmss)` | Seconds since midnight; status on invalid input |
-| `DATEFORMAT(ymd, buffer, capacity)` | Render ISO `YYYY-MM-DD` |
-| `DATEPARSE(text)` | Parse ISO `YYYY-MM-DD` with explicit failure contract |
-| `CLOCKREAD(out)` | Optional raw/normalized timer sample; availability decided in T.0 |
-| `CLOCKELAPSED(start, end)` | Optional elapsed duration with defined clock assumptions |
-
-Prefer an **output parameter plus status** whenever a numeric return value could be confused with a valid date/day count. Function signatures above are conceptual; T.0 must settle error contracts, outputs, global numbers and exported names consistently. Example signatures `DATEADD` and `DATEDIFF` may change to explicit output parameters.
-
-## Illustrative BCPL (not yet compiled)
-
-```bcpl
-// Proposed date API. DATEADD and DATEDIFF use provisional returns.
-LET START() BE
-$(
-    LET TODAY = VEC 0
-    LET NOW   = VEC 0
-    LET NEXT  = 0
-    LET DAYS  = 0
-
-    IF DATENOW(TODAY, NOW) ~= 0 RETURN
-
-    // TODAY!0 holds YYYYMMDD; NOW!0 holds HHMMSS.
-    IF ~DATEVALID(TODAY!0) RETURN
-
-    NEXT := DATEADD(TODAY!0, 30)
-    DAYS := DATEDIFF(TODAY!0, NEXT)
-
-    // Use the current runtime's integer output convention.
-    WRITEF("DATE %N TIME %N*N", TODAY!0, NOW!0)
-    WRITEF("PLUS30 %N DAYS %N*N", NEXT, DAYS)
-$)
+```text
+TIMESVC(operation, output_vector, capacity_words)
 ```
 
-This illustrates intended application logic only. The real source must adapt to accepted syntax, integer formatting, global declarations, error semantics, and installed native ABI. Especially do not treat a numeric result of zero as both a valid date and an error without an explicit contract.
+`TIMESVC` is the proposed public spelling for G!201. A BCPL pointer is a 32-bit **word address**, and capacities are counts of 32-bit words. All output storage is owned by the caller. The dispatcher should check a null pointer, negative capacity, and insufficient capacity **before writing anything**. Caller-supplied pointers must designate accessible storage; the extension cannot authenticate arbitrary machine addresses.
 
-## Marches and gates
+| Opcode | Operation | Version-1 output | Ordinary successful return |
+| ---: | --- | --- | ---: |
+| **0** | `QUERY` | Standard six-word, shared Runtime Extensions capability descriptor | 6 |
+| **1** | `STCK` | Raw 64-bit TOD value as two words, followed by the instruction condition code | 3 |
+| **2** | `TIME` | Raw fullword contents of MVS `TIME DEC` R0 (time) and R1 (date), without interpretation | 2 |
 
-| March | Scope | Exit gate |
+These are the **only** initial operations. They are direct calls; no BCPL wrappers or library procedures are in scope.
+
+### QUERY — opcode 0
+
+Follow the existing shared QUERY version-1 contract, not a BCPLTIME-specific replacement:
+
+- `TIMESVC(0, 0, 0)` returns 6 without writing storage.
+- With a valid six-word output vector, return descriptor format 1, package API version 1.0, required length 6, supported-opcode bitmap **3** (opcodes 1 and 2), and initially no additional capability flags.
+- Preserve the common standard errors: `-1` insufficient capacity; `-2` unknown opcode; `-3` invalid arguments. Never write a partial QUERY descriptor.
+
+### STCK — opcode 1
+
+Execute the problem-state System/370 `STCK` instruction directly, preserving the resulting 64-bit value without calendar or arithmetic conversion. Return the high-order 32 bits in `output_vector!0`, low-order 32 bits in `output_vector!1`, and the **STCK condition code (0–3)** in `output_vector!2`.
+
+The TOD value is treated as a **64-bit unsigned bit pattern** with the conventional epoch of 00:00:00 GMT, 1 January 1900. Bit positions and counter units must be documented against the System/370 Principles of Operation. Do not treat the two words as a signed 64-bit BCPL integer or claim that reading the value guarantees a valid or monotonic clock.
+
+The hardware condition code is essential: CC=0 indicates a set clock; CC=1 indicates a running but not-set clock; CC=2 indicates a clock error; CC=3 indicates an unusable/not-operational condition under the applicable period architecture. Preserve the raw words even when the clock condition makes them unsuitable for time measurement; the BCPL caller decides whether to use them. The wrapper-free dispatcher return counts words written; it is **not** a replacement for the hardware condition code.
+
+### TIME — opcode 2
+
+Invoke the **MVS 3.8** `TIME DEC` macro. Copy the returned 32-bit R0 time word and 32-bit R1 date word into `output_vector!0` and `output_vector!1`, in that order. Do not convert the values into `YYYYMMDD`, ISO text, Unix time, seconds, or BCPL strings.
+
+The exact MVS 3.8 `TIME DEC` bit layout, date/century convention, time precision, available return diagnostics, and macro register effects must be checked against period documentation and the **first actual MVS invocation**. Later z/OS or VM definitions must not silently substitute for this release's behavior. Document any observed Hercules/TK5 operator-clock discrepancies. The two returned words constitute one `TIME` invocation; they are not guaranteed to be simultaneous with a separate STCK read.
+
+### Return/error policy
+
+The positive returns above are word counts, following the BCPLDEMO teaching convention. Use only the shared `-1`/`-2`/`-3` argument/opcode errors initially. Do not invent extra error statuses without observed need and owner review. A successful raw hardware read does not assert that the timestamp represents valid wall time; inspect the returned STCK condition code.
+
+## 3. Packaging and implementation boundaries
+
+- Implement **one independently linkable package** named `BCPLTIME`, preferably using the R.5 **single-object/two-CSECT** BCPLDEMO pattern: a BCEX v1 descriptor with one exported dispatcher at **G!201**, and assembler dispatch code. No initializer, finalizer, dynamic allocation, or private persistent state is required.
+- Reuse the accepted BCEX/BCRG v1 registration and the MVS-native `BCXSEL`/`BCXREQ`/`BCXCAT` known-package selection arrangement. A future accepted `BCXCAT` entry may select `BCPLTIME`; adding it is **not** authorization to write any resident MVS dataset.
+- Provide a minimal BCPL public declaration header (GLOBAL and opcode constants), which is **not** a wrapper library. As with BCPLDEMO, an explicit GLOBAL in the initial test caller is acceptable if the bootstrap compilation path cannot consume the header directly.
+- Preserve existing `BCPLMAIN`, `BCPLRGS`, `BCPLIO`, historical `BLIB`, compiler sources, and BCEX/BCRG contracts. Do not change the native compiler or the interpreter-hosted demoted Cambridge compiler.
+- Retain GitHub `main` as the official source. Use temporary object datasets for development; permanent `EXT_*`, `BOOT_OBJ`, or `BOOT_DEVOBJ` writes require separate explicit owner authorization.
+
+## 4. Explicit exclusions
+
+No calendar arithmetic or Gregorian date validation; leap years; weekday, ordinal-date, or month/day conversion; text formatting/parsing; TOD arithmetic; elapsed-time library; BCPL wrapper procedures; automatic date/time data types; storage allocation; MVS `STIMER`/`TTIMER`; wait, alarm, interrupt, timeout, periodic callback, or timer exit; MVS clock setting; privileged `STCKC` or `STPT`; CPU accounting APIs; dynamic loading; or portability emulation for System/360.
+
+Portable BCPL Standard Library code may eventually perform calendar and elapsed-time calculations, but is a **separate, unapproved future effort**, not a BCPLTIME exit condition.
+
+## 5. Accelerated execution and minimal acceptance
+
+**Start with actual source, not preliminary probes.** Adapt the accepted BCPLDEMO descriptor/dispatcher and package-selection method to implement the three opcodes. The first test should be a single integrated IFOX/IEWL/native BCPL job that exercises QUERY (including size and invalid-capacity checks), STCK (raw words plus condition code), and TIME (raw R0/R1 words). Debug the same production-intended dispatcher from JES and assembler evidence, rather than constructing many disposable experiments.
+
+Minimum acceptance:
+
+1. **Real integration:** IFOX, IEWL, and native BCPL GO succeed under MVS 3.8J; correct G!201 registration and effective IEWL map are observed. A selected BCPLTIME package must be genuinely optional.
+2. **Three-opcode contract:** QUERY returns the shared descriptor; STCK returns two unchanged words and its CC; TIME returns the two macro result words. Null, undersized, and unsupported-opcode calls return the documented errors with no partial writes.
+3. **Reproducibility:** Build the package from Git-controlled source and document the minimal installation/link instructions. No permanent MVS dataset change without owner authorization.
+4. **Regression:** Run the existing native production regression panel at the acceptance gate and preserve its known outcomes. Record real JOB IDs, step return codes, output observations, and any limitations. Do **not** require a complete new clean-room rebuild as a prerequisite to the first implementation or each correction.
+
+Document only decisions, failures, or observations that materially change the public contract. No separate broad reconnaissance campaign, multi-job probe matrix, or wrapper/library development is required.
+
+## 6. Historical record: superseded 15 October 2026 proposal
+
+The original repository file, titled **Milestone Date and Time Services**, was proposed on **15 October 2026**, marked **Proposed, not started**, and outlined a considerably larger optional service: Gregorian calendar arithmetic, validation, leap years, ordinal dates, weekdays, addition/difference of days, ISO presentation and parsing, plus MVS `TIME` and optional clock/elapsed-time functions.
+
+Its former provisional API included `DATENOW`, `DATEVALID`, `DATELEAP`, `DATEORDINAL`, `DATEADD`, `DATEDIFF`, `DATEWEEKDAY`, `TIMEVALID`, `TIMESECONDS`, `DATEFORMAT`, `DATEPARSE`, `CLOCKREAD`, and `CLOCKELAPSED`. These names were concepts, **not implemented or accepted exports**.
+
+The original **proposed, unstarted** march outline was:
+
+| Historical march | Original scope | Current disposition |
 | --- | --- | --- |
-| **T.0 — Evidence and contract** | Inspect native ABI and current MVS 3.8 timing macros; settle date representation, century, local/GMT, snapshot, status and optional timer policy | Written API and source-backed MVS capability inventory |
-| **T.1 — Pure calendar core** | Leap years, date/time validation, day-of-year, weekday, add/difference of calendar days | Deterministic tests over leap centuries, month/year boundaries and invalid inputs |
-| **T.2 — MVS clock adapter** | Separate assembler clock service with actual MVS `TIME` behavior, local date/time extraction and errors | Repeatable MVS job evidence; test around midnight/clock settings where feasible |
-| **T.3 — Presentation and optional timing** | ISO formatting/parsing and, only if verified, interval/elapsed-time API | Exact string/buffer tests and documented timer limitations; otherwise timer deferred explicitly |
-| **T.4 — Packaging and acceptance** | BCPL demo, global registrations, optional object linkage, full native regression, clean rebuild and examples | Accepted non-invasive release; no new regression failures, independent of M4 |
+| **T.0 — Evidence and contract** | MVS interfaces, ABI, century/zone policy | Historical proposal; not activated here |
+| **T.1 — Pure calendar core** | Leap years, validation, weekday, date arithmetic | Superseded by minimal scope |
+| **T.2 — MVS clock adapter** | Assembler `TIME` service and date extraction | Superseded by raw `STCK`/`TIME` dispatcher |
+| **T.3 — Presentation and optional timing** | Formatting/parsing and elapsed timing | Superseded; excluded |
+| **T.4 — Packaging and acceptance** | Library demonstration, registration, regression, release | Superseded by accelerated single acceptance gate |
 
-## Engineering discipline
+**Do not silently reuse or renumber historical T.0–T.4.** They were part of the earlier planning document; this revision introduces no replacement march numbers or artificial intermediate closure gates. The active milestone is governed by Sections 1–5 and the owner's accelerated implementation direction.
 
-Pure calendar arithmetic may be written in BCPL; prefer assembler only at the MVS supervisor-service boundary and where justified by the ABI. Keep `BCPLTIME` independently linkable; never replace historical BCPL time or I/O functions without proof and approval. Candidate assembler objects are built into `BOOT_DEVOBJ` and only promoted with separate acceptance. Track authoritative source via Git; use the live `config/dspal.yaml` dataset manifest and `tools/datasets/dspal`. Record actual tested job IDs, return codes and expected outputs. Document any clock inaccuracies in Hercules/TK5 rather than masking them.
+The original full proposal remains permanently recoverable through Git history, at the exact pre-revision commit:
 
-**Primary technical references to verify during T.0:** IBM OS/VS2 MVS *Supervisor Services and Macro Instructions* for the applicable MVS release, particularly `TIME`, `ZONE`, timer units and optional `STCK` forms; actual TK5 behavior. Do not import modern z/OS timing guarantees without evidence.
+[`fc7f12d3a541f22c07528ac7c7161d3e18eafafa:packaging/milestone-date-and-time-services.md`](https://github.com/cbmira01/BCPL-for-MVS/blob/fc7f12d3a541f22c07528ac7c7161d3e18eafafa/packaging/milestone-date-and-time-services.md).
+
+Keeping the existing file path preserves current repository links while the **title and current scope** become *Milestone BCPLTIME*. No evidence from the original plan is erased; it remains explicitly distinguishable from the newly approved direction.
+
+## 7. References and authority
+
+- [Runtime Extensions milestone and R.0–R.5 closure records](milestone-runtime-extensions.md): accepted BCEX/BCRG v1, optional selection, and registration.
+- [BCPLDEMO reference implementation](../bootstrap-toolchain/extensions/bcpldemo/README.md): reusable single-object package and dispatcher model.
+- [Global Number Registry](global-number-registry.md): reserved G!201, proposed `TIMESVC` spelling.
+- [Runtime and Library Nomenclature](runtime-and-library-nomenclature.md): System Extension versus Standard Library distinction.
+- IBM *System/370 Principles of Operation*: `STCK` and condition-code semantics.
+- Period IBM OS/VS2 MVS *Supervisor Services and Macro Instructions*: actual `TIME` macro layout, register effects, and operating-system behavior.
+
+**Source of truth:** GitHub `main` after an explicitly approved commit. A proposed design and a local document draft do not establish verified MVS behavior or authorize installation.
