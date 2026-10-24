@@ -187,7 +187,7 @@ storage accounting remains open.
 ## Optional numeric and clock milestones
 
 - [Milestone Decimal Arithmetic](milestone-decimal-arithmetic.md): packed-decimal fixed-point arithmetic and business-record interoperability, proposed D.0–D.4.
-- [Milestone BCPLTIME](milestone-date-and-time-services.md): ACTIVE System Extension at G!201; **T.0 — Descriptor, Dispatcher, and Native Execution CLOSED**, with actual MVS JOB 5436 PASS; **T.1 — Packaging and Acceptance IN PROGRESS**. See [T.0 owner closure](bcpltime-t0-closure-20261024.md). Source mode is verified; permanent installation remains unapproved. The original broad T.0–T.4 proposal is historical.
+- [Milestone BCPLTIME](milestone-date-and-time-services.md): ACTIVE System Extension at G!201; **T.0 — Descriptor, Dispatcher, and Native Execution CLOSED** (MVS JOB 5436 PASS); **T.1 — Packaging and Acceptance IN PROGRESS**. Native source-mode cases **159–162 passed 4/4**; [T.0 closure](bcpltime-t0-closure-20261024.md) and [approved T.1 packaging/install plan](bcpltime-t1-installation-design.md). The Git-controlled BCXCAT/manifest/install job is **not installed on MVS**, and installed-mode acceptance is outstanding. The superseded broad T.0–T.4 proposal remains historical.
 
 Both are optional and independent of M4 and Milestone QSAM. Decimal Arithmetic remains proposed; BCPLTIME is under active T.1 development.
 

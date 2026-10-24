@@ -24,7 +24,7 @@ class R5InstalledJobMember(unittest.TestCase):
         self.assertTrue(JCL.is_file())
         checker = (ROOT / "tools/checks/check-native-jcl-manifest.py").read_text()
         self.assertIn('"R5DINST",', checker)
-        self.assertIn("PASS: 12 canonical BOOT_JCL members", checker)
+        self.assertIn("PASS: 13 canonical BOOT_JCL members", checker)
 
     def test_job_is_a_clean_fb80_body(self):
         body = JCL.read_text(encoding="ascii")
@@ -74,9 +74,9 @@ class R5InstalledJobMember(unittest.TestCase):
     def test_runbook_uses_single_resident_submit_command(self):
         guide = RUNBOOK.read_text(encoding="utf-8")
         self.assertIn("tools/datasets/dspal submit BOOT_JCL R5DINST", guide)
-        self.assertIn("tools/bootstrap/run-production-regression 0 158", guide)
-        self.assertIn("| PASS | **158**", guide)
-        self.assertIn("| TOTAL | **159**", guide)
+        self.assertIn("tools/bootstrap/run-production-regression 0 162", guide)
+        self.assertIn("| PASS | **162**", guide)
+        self.assertIn("| TOTAL | **163**", guide)
         for obsolete in (
             "python3 - <<",
             "tools/mvs/prepare-bcpldemo-install",

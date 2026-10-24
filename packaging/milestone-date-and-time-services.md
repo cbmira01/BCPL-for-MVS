@@ -104,9 +104,15 @@ reverse-order inclusion, and requirement-upgrade/deduplication.
 Cases 00–158 remain unchanged, including the accepted R.5 no-extension
 and BCPLDEMO-alone coverage. See the
 [T.1 regression design](../bootstrap-toolchain/extensions/bcpltime/T1-REGRESSION.md).
-This is source-mode regression implementation work only; MVS tests,
-installed BCPLTIME catalog/member mapping and full acceptance remain
-outstanding. It does not authorize permanent MVS dataset writes.
+**Operator-reported source-mode acceptance:** All four native cases
+159–162 PASS, 0 FAIL, 0 SKIP (24 October 2026); 15 T.1 offline tests
+also PASS. The console excerpt did not expose individual JES payload
+job numbers. The approved [T.1 installation design](bcpltime-t1-installation-design.md)
+now specifies EXT_ASM(BCPLTIME), EXT_SOURCE(TIMEHDR), EXT_OBJ(BCPLTIME),
+a revised production BCXCAT, and BOOT_JCL(T1TINST). These are Git
+source changes, not resident PDS installation. Installed-mode tests,
+full regression and owner acceptance remain open. **This design approval
+does not authorize permanent MVS dataset writes.**
 
 **T.0 began with implementation, not reconnaissance.** The first MVS job should assemble the BCPLTIME candidate and exercise the actual dispatcher from the native BCPL caller using temporary datasets. A working local source tree is not equivalent to an accepted MVS build. No march closes automatically or without owner review.
 

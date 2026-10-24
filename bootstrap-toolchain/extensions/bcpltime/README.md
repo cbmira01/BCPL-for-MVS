@@ -85,9 +85,13 @@ changing R.5's 00–158 cases. They cover BCPLTIME alone, BCPLDEMO with
 BCPLTIME, reversed selection order, and repeated BCXREQ/BCXSEL
 requirement upgrades. See [T.1 regression design and commands](T1-REGRESSION.md).
 The candidate generator builds source-mode temporary objects and a
-read-only installed-mode route; **no new MVS execution has yet been
-reported**, and the installed BCXCAT/catalog change remains an owner
-review and separate installation approval item.
+read-only installed-mode route. **All four source-mode cases 159–162
+PASS on MVS** (owner report 24 October 2026; individual payload JOB IDs
+not supplied). The [T.1 approved installation design](../../../packaging/bcpltime-t1-installation-design.md)
+now defines the production BCXCAT, EXT_ASM(BCPLTIME),
+EXT_SOURCE(TIMEHDR), EXT_OBJ(BCPLTIME), and BOOT_JCL(T1TINST).
+These changes are Git-controlled only until separately authorized
+resident MVS member updates.
 
 ## T.0 direct execution command (source mode, temporary datasets only)
 

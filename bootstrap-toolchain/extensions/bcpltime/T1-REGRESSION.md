@@ -1,6 +1,6 @@
 # T.1 — BCPLTIME optional-extension native regressions
 
-**Status:** Source-mode test candidates only; IFOX/IEWL/GO not yet run.
+**Status:** Source-mode MVS cases 159–162 reported PASS (4/4) on 24 October 2026; installed-mode and installation pending.
 **Milestone:** BCPLTIME; **march:** T.1 — Packaging and Acceptance.
 **Prior evidence:** T.0 JOB 5436 native PASS. Existing R.5 cases 146–158
 continue to cover no extensions and BCPLDEMO alone.
@@ -61,6 +61,12 @@ does not grant permission to install. The production 00–162 panel,
 the expected case 083 skip and installation evidence are needed for
 T.1 acceptance. All existing 00–158 sources and tests are unchanged.
 
-**Pending:** real MVS execution of cases 159–162, installed BCPLTIME
-readback, installed-mode matrix, full-panel regression and owner
-acceptance. No milestone/march closure is implied.
+**T.1 source-mode operator evidence:** 15 offline tests PASS and all four
+native regressions 159–162 PASS, 0 FAIL, 0 SKIP. Individual JES payload
+job numbers were not in the supplied console excerpt and should be
+recorded from saved workarea reports for the acceptance receipt.
+
+**Pending:** owner-authorized resident installation, binary object
+readback, installed-mode matrix, full 00–162 production regression and
+owner acceptance. See [the approved packaging design](../../../packaging/bcpltime-t1-installation-design.md).
+No milestone/march closure is implied.

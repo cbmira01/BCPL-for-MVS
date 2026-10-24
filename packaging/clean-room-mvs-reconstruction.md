@@ -214,11 +214,13 @@ tools/datasets/dspal ls EXT_SOURCE
 tools/datasets/dspal ls EXT_OBJ
 ```
 
-**R.5 extension check:** `BOOT_JCL` contains `R5DINST`;
-`EXT_MAC` contains `BCXPRE`, `BCXCAT`, and `BCXPOST`;
-`EXT_ASM` contains `BCPLDEMO`; and `EXT_SOURCE` contains `DEMOHDR`.
-`EXT_OBJ` must still be empty: its binary `BCPLDEMO` object is built
-and installed separately on MVS, not by `dspal populate all`.
+**R.5 and T.1 extension check:** `BOOT_JCL` contains both `R5DINST`
+and `T1TINST`; `EXT_MAC` contains `BCXPRE`, `BCXCAT`, and
+`BCXPOST`; `EXT_ASM` contains `BCPLDEMO` and `BCPLTIME`;
+`EXT_SOURCE` contains `DEMOHDR` and `TIMEHDR`. On a fresh
+clean-room build `EXT_OBJ` must initially be empty: its binary
+`BCPLDEMO` and `BCPLTIME` members are separately assembled and
+installed on MVS, never by text-oriented `dspal populate all`.
 
 **The first population is meant to end with RC=2.** That does **not** mean
 it installed nothing. At this point, the 11 demoted Cambridge sources and
@@ -558,6 +560,34 @@ if assembly, installation, read-back, comparison, or membership fails.
 Never transfer binary object records using `dspal put` or a text
 encoding conversion.
 
+### Add BCPLTIME in the current T.1 clean-room procedure
+
+The R.5 steps above remain required: `R5DINST` first rebuilds
+`EXT_OBJ(BCPLDEMO)` and verifies its binary records. Under the
+**separately authorized** T.1 installation operation, the populated
+`BOOT_JCL(T1TINST)` then builds and installs **only**
+`EXT_OBJ(BCPLTIME)` from `EXT_ASM(BCPLTIME)`:
+
+```sh
+tools/datasets/dspal submit BOOT_JCL T1TINST
+```
+
+Review actual JES payload evidence for `ASMTIME`, `PUTTIME`,
+`READBACK` and `VERIFY`, each RC=0000, zero flagged IFOX statements,
+and matching IEBCOMPR records. Confirm both `EXT_OBJ(BCPLDEMO)`
+and `EXT_OBJ(BCPLTIME)` are present. The Git-populated production
+`BCXCAT` recognizes both packages; in a fresh clean-room rebuild,
+the catalog may precede binary installation, so do not run optional
+regressions until **both** installed objects verify.
+
+For an *incremental installation* in an existing accepted MVS
+environment, **do not use `populate EXT_ASM`**: it rewrites BCPLDEMO.
+Follow the [T.1 member-level installation procedure](bcpltime-t1-installation-design.md)
+to stage only the new text members, install/read back the time object,
+and update `BCXCAT` **last**. Neither sequence is authorized solely
+by the existence of this runbook; permanent PDS writes require explicit
+owner approval.
+
 ### Run the complete production panel
 
 Check the production build and compiler-driver paths:
@@ -580,27 +610,36 @@ production launcher:
 export BCPL_R5_EXTENSION_MODE=installed
 export BCPL_R5_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ
 export BCPL_R5_MACRO_DSN=HERC02.BCPL.EXT.MAC
+export BCPL_T1_EXTENSION_MODE=installed
+export BCPL_T1_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ
+export BCPL_T1_MACRO_DSN=HERC02.BCPL.EXT.MAC
 
-tools/bootstrap/run-production-regression 0 158
+tools/bootstrap/run-production-regression 0 162
 ```
 
 The production launcher selects the accepted `BOOT_OBJ` Core
 Runtime/Base Library objects (`BCPL_RUNTIME_PDS=1`,
 `BCPL_RUNTIME_LIBRARY=OBJ`, `BCPL_RUNTIME_CANDIDATE=0`).
 It does **not** select the historical `MIXED` or `DEVOBJ`
-profile. The extension settings independently direct cases 146–158
-to the installed read-only `EXT_OBJ` and resident `EXT_MAC` libraries.
-The interpreted `CAMBCOMP` compiles each BCPL client; IFOX, IEWL,
-and GO run on MVS.
+profile. The extension settings independently direct cases **146–162**
+to the installed read-only `EXT_OBJ` and resident `EXT_MAC`
+libraries. The interpreter-hosted **demoted Cambridge compiler**
+compiles each BCPL client; IFOX, IEWL and GO run on MVS.
+The previously accepted R.5 panel covered 00–158 only; this updated
+T.1 procedure does not retroactively change the R.5 evidence.
 
 **Target result:**
 
 | Result | Count | Meaning |
 | --- | ---: | --- |
-| PASS | **158** | Every executed regression passed |
+| PASS | **162** | Every executed regression passes |
 | FAIL | **0** | No failed regressions |
 | SKIP | **1** | Case 083 needs source-only instrumentation |
-| TOTAL | **159** | Numbered cases 00 through 158 |
+| TOTAL | **163** | Numbered cases 00 through 162 |
+
+These are **T.1 acceptance targets**, not achieved installed-mode
+results. The historical R.5 00–158 result (158 PASS, 0 FAIL, one
+expected SKIP) remains documented in the R.5 closure.
 
 A few cases are special:
 
@@ -611,7 +650,9 @@ A few cases are special:
 | `124`–`145` | Dynamic-stream and fault/accounting cases use all-OBJ production objects |
 | `139`–`145` | Private test-only accounting does not replace production `BCPLIO` |
 | `146` and `158` | BCPLDEMO excluded from the linked module |
-| `147`–`157` | Installed BCPLDEMO selection, registration, and dispatcher behavior |
+| `147`–`157` | Installed BCPLDEMO selection, registration, and dispatcher behavior; BCPLTIME excluded |
+| `159` | BCPLTIME selected, BCPLDEMO absent |
+| `160`–`162` | Installed BCPLDEMO+BCPLTIME combined, reversed, and duplicate/upgrade selection |
 
 Each case saves its log in `workarea/native-regression/logs/`.
 Inspect the saved report for any failure, including the actual
@@ -623,7 +664,7 @@ command should not terminate that shell.
 
 ### Verify the full-panel evidence
 
-Keep the complete 00–158 regression summary, individual case logs,
+Keep the complete 00–162 regression summary, individual case logs,
 and relevant JES/IFOX/IEWL MAP/XREF/GO reports, especially for cases
 146–158. The regression harness checks saved job reports; it does not
 independently verify every physical MVS DD record. Do not claim a
@@ -645,8 +686,8 @@ PDS members, and jobs were used.
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
-| Optional extension | `BOOT_JCL(R5DINST)` and extension source-member inventory; `R5DINST` payload job; `EXT_OBJ(BCPLDEMO)` installation, `ASMDEMO`/`PUTDEMO`/`READBACK`/`VERIFY` RCs, binary comparison, and IEWL MAP/XREF evidence |
-| Native tests | Full installed-mode 00–158 result (158 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
+| Optional extension | `BOOT_JCL(R5DINST)` and `BOOT_JCL(T1TINST)`; source/header/catalog inventory; separate `EXT_OBJ(BCPLDEMO)` and `EXT_OBJ(BCPLTIME)` IFOX/install/read-back/comparison receipts; selected/absent IEWL MAP/XREF evidence |
+| Native tests | Full installed-mode 00–162 result (target: 162 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;
@@ -689,6 +730,8 @@ change the related scripts or JCL, or when you are investigating a problem.
 | `python3 tools/checks/check-native-bootstrap-jcl.py` | Expected `CAMBBLD` job structure and PDS names |
 | `python3 tools/checks/check-native-production-build.py` | Canonical native build source and JCL contracts |
 | `python3 -m unittest discover -s tools/checks -p 'test_r5_install_jcl_member.py' -v` | Offline resident R5DINST installation JCL and clean-room documentation checks |
+| `python3 -m unittest discover -s tools/checks -p 'test_t1_install_packaging.py' -v` | T.1 manifest, BCXCAT, T1TINST and binary-install safety checks |
+| `python3 -m unittest discover -s tools/checks -p 'test_r5_time_absence.py' -v` | R.5 BCPLDEMO-only/empty links must not drag in BCPLTIME |
 | `tools/bootstrap/run-production-regression --check-numbering` | Test numbering and expected range |
 | `check-m44-compatibility.py --production` | Harness fixtures, production linkage, and test-only fault settings |
 

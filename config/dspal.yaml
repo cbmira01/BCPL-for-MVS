@@ -475,6 +475,7 @@ datasets:
       CG370DB: bootstrap-toolchain/jcl/cg370db.jcl
       BLDRGCHK: bootstrap-toolchain/jcl/bldrgchk.jcl
       R5DINST: bootstrap-toolchain/jcl/r5dinst.jcl
+      T1TINST: bootstrap-toolchain/jcl/t1tinst.jcl
 
   BOOT_OBJ:
     dsn: BCPL.BOOT.OBJ
@@ -549,6 +550,7 @@ datasets:
     populate: true
     members:
       BCPLDEMO: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm
+      BCPLTIME: bootstrap-toolchain/extensions/bcpltime/bcpltime.asm
 
   EXT_SOURCE:
     dsn: BCPL.EXT.SOURCE
@@ -564,4 +566,5 @@ datasets:
     populate: true
     members:
       DEMOHDR: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.h
+      TIMEHDR: bootstrap-toolchain/extensions/bcpltime/bcpltime.h
 

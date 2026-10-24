@@ -38,6 +38,11 @@ def verify(text, number):
         found = csect(name) is not None
         if found != selected:
             problems.append("wrong " + name + " inclusion")
+    # R.5 contains no BCPLTIME in any selection, including 146/158.
+    # A resident BCXCAT now knows BCPLTIME but must not auto-include it.
+    for name in ("TIMDESC", "TIMDISP"):
+        if csect(name) is not None:
+            problems.append("unexpected BCPLTIME section: " + name)
     entries = ENTRY_LINE.findall(text)
     if len(entries) != 1:
         problems.append("expected exactly one IEWL entry address; found " +
