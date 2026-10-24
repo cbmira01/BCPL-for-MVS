@@ -63,7 +63,12 @@ This is a source-structure check, not an MVS execution test.
 
 Source checked for strict 71-column card width, 8-character assembler
 symbols, descriptor field constants and expected BCPL declarations.
-**No actual System/370 assembly or MVS execution has been performed here.**
+JOB 5434 (24 October 2026): all five IFOX assemblies and IEWL returned
+RC=0000; GO ABEND S0C4. Dump evidence showed MVS TIME DEC left R0/R1
+changed on return to generated BCPL, preceding failure in BLIB WRITED.
+The T.0 correction saves R0/R1 in call-frame words +24/+28, captures
+raw TIME results, and restores R0/R1 before returning. The correction
+has passed offline checks but **has not yet been retested under MVS**.
 
 ## T.0 direct execution command (source mode, temporary datasets only)
 

@@ -90,6 +90,8 @@ SAVETOD  ST    14,8(8)
          BCR   15,11
 *
 * OP 2 - RAW MVS TIME DEC: STORE RETURNED R0/R1 FULLWORDS.
+* R0 AND R1 ARE PERMANENT CG370 REGISTERS; PRESERVE BOTH.
+* CALL FRAME +24,+28 FOLLOW THE SAVED R4-R9 AT +0..+23.
 * SYS1.MACLIB TIME MACRO REQUIRED; EXPANSION VERIFIED ON MVS.
 *
 DOTIME   LTR   8,8
@@ -99,9 +101,11 @@ DOTIME   LTR   8,8
          C     9,=F'2'
          BL    SHORT
          SLL   8,2
+         STM   0,1,24(5)
          TIME  DEC
          ST    0,0(8)
          ST    1,4(8)
+         LM    0,1,24(5)
          LA    7,2
          BCR   15,11
 *

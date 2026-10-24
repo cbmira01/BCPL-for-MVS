@@ -17,6 +17,26 @@ for token in ("CL8'BCPLTIME'", "F'201',A(TIMDISP)", 'ENTRY TIMBEG,TIMEND',
               'ENTRY TIMDISP','STCK  CLKBUF','TIME  DEC','BC    8,CCZERO',
               'BC    4,CCONE','BC    2,CCTWO',"LA    14,3", 'CLKBUF   DS    0D'):
     assert token in asm,token
+# The MVS TIME macro overwrites CG370's permanent R0/R1 bases.
+# Keep the save, raw-result stores, and restore in one exact sequence.
+dotime = asm.split('DOTIME   LTR   8,8',1)
+assert len(dotime) == 2, 'missing TIME dispatch entry'
+body = dotime[1].split('BADOP    L',1)
+assert len(body) == 2, 'TIME dispatch exit boundary missing'
+sequence = (
+    'SLL   8,2',
+    'STM   0,1,24(5)',
+    'TIME  DEC',
+    'ST    0,0(8)',
+    'ST    1,4(8)',
+    'LM    0,1,24(5)',
+    'LA    7,2',
+    'BCR   15,11',
+)
+lines = [line.strip() for line in body[0].splitlines()
+         if line.strip() and not line.startswith('*')]
+assert lines[-len(sequence):] == list(sequence), (
+    'TIME DEC must preserve R0/R1 across the service call')
 assert 'GLOBAL $( TIMESVC:201 $)' in hdr
 assert 'TIME_QUERY=0; TIME_STCK=1; TIME_MVS=2' in hdr
 assert 'TIMESVC:201' in client
