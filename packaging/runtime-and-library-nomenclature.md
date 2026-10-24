@@ -26,13 +26,13 @@ Preserve historical names and interfaces where recoverable. Do not retrofit mode
 | --- | --- | --- | --- |
 | 1 | **Core Runtime** | `BCPLMAIN`, `BCPLMEM`, and core stream facilities (potentially `BCPLIO`) | Startup/termination, global vector, workspace, essential machine-dependent ABI/runtime; mandatory insofar as required by the accepted execution contract |
 | 2 | **Base Library** | Historical `BLIB` | Essential historical BCPL-callable support routines. Preserve the source/name and recovered global assignments |
-| 3 | **System Extensions** | `BCPLQSAM`, `BCPLTIME`, `BCPLDEC` | Optional facilities exposing MVS/System/370 services or strongly host-specific implementations |
+| 3 | **System Extensions** | `BCPLDEMO` (supported reference), `BCPLQSAM`, `BCPLTIME`, `BCPLDEC` | Optional MVS/System/370 facilities or project-maintained reference implementations using the same extension contracts |
 | 4 | **Standard Libraries** | Prospective `BCPLMATH`, `BCPLCHAR`, `BCPLSTR` | Optional, generally useful, documented programming APIs distributed by the Cambridge project |
 | 5 | **User Libraries** | `MYUTIL`, `ACCOUNT`, local mathematics or application packages | Reusable code owned by an individual programmer; a team's shared libraries may be called **Site Libraries** |
 
 **Classification describes responsibility, not the language in which a member is implemented.** A System Extension can have a portable BCPL wrapper over assembler, while a Standard Library can use machine-specific optimizations behind a portable contract.
 
-The named optional modules and standard libraries are **proposals**, not accepted deliverables. The current M3 manifest distinguishes accepted `BOOT_OBJ` members from development candidates in `BOOT_DEVOBJ`; e.g. `BCPLIO` is currently a development candidate, so listing it as a possible core role is **not** a claim of accepted/core installation.
+The taxonomy originated as proposed terminology; individual packages now have different verified states. **BCPLDEMO is an accepted, installed, supported reference System Extension** (R.5 and owner reaffirmation 24 October 2026), whereas BCPLTIME has source-mode T.0 acceptance and T.1 packaging in progress, and BCPLQSAM/BCPLDEC remain governed by their own milestones. The historical M3 manifest distinguished accepted `BOOT_OBJ` members from `BOOT_DEVOBJ` candidates; logical classification alone never promotes a development object to accepted Core Runtime.
 
 ### Core Runtime
 
@@ -46,7 +46,7 @@ Owns the executable's mandatory ABI and environment: MVS entry and exit, save-ar
 
 ### System Extensions
 
-A System Extension is an optional package primarily intended to expose platform facilities. `BCPLQSAM` (MVS record I/O), `BCPLTIME` (MVS clock bridge) and `BCPLDEC` (initial System/370 packed-decimal implementation) are the first candidates. None is intrinsically part of BCPLMAIN or a prerequisite for M4.
+A System Extension is an optional package primarily intended to expose platform facilities. `BCPLQSAM` (MVS record I/O), `BCPLTIME` (MVS clock bridge) and `BCPLDEC` (initial System/370 packed-decimal implementation) are examples under their respective milestones. **BCPLDEMO** is the deliberately simple, project-created **permanent supported reference System Extension**. It is retained to teach and regression-test BCEX/BCRG v1, BCX/IEWL selection, and interoperability; its demonstration service does not claim to be a historical Cambridge platform API. See its [formal owner support decision](bcpldemo-supported-reference-decision-20261024.md). All System Extensions, including BCPLDEMO, remain optional: none is built into BCPLMAIN or required for M4.
 
 Category boundaries may change without ABI disruption as functionality matures. For example, **pure Gregorian calendar arithmetic** might eventually become a portable standard package while the MVS clock adapter remains a System Extension. Likewise, a decimal API could become portable even if its initial implementation is System/370 assembler. Avoid using "standard" as a claim of cross-platform availability until its contract and distribution policy are defined.
 
@@ -110,7 +110,7 @@ Two complementary registries are therefore required conceptually:
 1. **Global Number Registry — development/compile-time policy.** One authoritative Git-maintained catalog of allocated/reserved public slot numbers, names, package ownership, status and compatibility policy. Proposed future machine-readable form under `packaging/` or a designated configuration directory; the authoritative record now exists as [`global-number-registry.md`](global-number-registry.md). Existing `LIBHDR` is a historically authoritative declaration source, but not a complete multi-package allocation registry.
 2. **Module Registration Table — link-time/startup machinery.** A list of selected, linked packages and their exported addresses, possibly `BCPLREG`. Its layout, assembler interface and validation remain to be decided and tested in **Milestone Runtime Extensions, R.0**. It does not assign global numbers.
 
-**Global-number policy:** reserve historically assigned slots intact; allocate permanent non-conflicting slots/ranges for Cambridge-managed packages; retain released assignments as tombstones unless an explicit major compatibility break is approved. G!200 (BCPLQSAM), G!201 (BCPLTIME), and G!202 (BCPLDEC) are officially allocated in the [Global Number Registry](global-number-registry.md); other illustrative numbers must not be treated as allocations.
+**Global-number policy:** reserve historically assigned slots intact; allocate permanent non-conflicting slots/ranges for Cambridge-managed packages; retain released assignments as tombstones unless an explicit major compatibility break is approved. G!200 (BCPLQSAM), G!201 (BCPLTIME), G!202 (BCPLDEC), and permanent G!203 (BCPLDEMO/DEMOSVC) are officially allocated in the [Global Number Registry](global-number-registry.md); other illustrative numbers must not be treated as allocations.
 
 Historical `LIBHDR` already names `READREC:23`, `WRITEREC:24`, `TIMEOFDAY:27`, `TIME:28`, `DATE:29` and `FIRSTFREEGLOBAL=150`. The reconstructed BCPLMAIN currently uses `G!150` for provisional diagnostics. **The first-free constant does not mean every higher slot is presently unused.** R.0 must inventory the entire current/global historical occupancy, and assess present capacity before making assignments.
 

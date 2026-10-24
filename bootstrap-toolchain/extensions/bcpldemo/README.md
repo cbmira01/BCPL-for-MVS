@@ -1,12 +1,38 @@
-# BCPLDEMO — example optional extension
+# BCPLDEMO — permanent supported reference System Extension
 
-**Status:** Functional R.2/R.3 and R.4 acceptance PASS (JOBs 3075, 3103, 3722). R.5 source-mode 146-158 PASS; installed-mode MVS verification pending.
-**Owner-approved:** Permanent `DEMOSVC:203` global; package `BCPLDEMO`.
+**Status:** **SUPPORTED, PERMANENT REFERENCE SYSTEM EXTENSION** (owner decision 24 October 2026). The installed-mode R.5 acceptance passed: JOB 5108 installed/read back the object; the native 00–158 regression reported 158 PASS, 0 FAIL, one expected SKIP 083, including BCPLDEMO cases 146–158.
+**Owner-approved:** Permanent `DEMOSVC:203` global; package `BCPLDEMO`. See the [supported-reference owner decision](../../../packaging/bcpldemo-supported-reference-decision-20261024.md).
 
 BCPLDEMO is a maintained, deliberately simple reference example for people
 building their own System Extension, Standard Library, or User/Site Library.
+It is an **officially supported project-created System Extension**, not
+historical Cambridge functionality or disposable development scaffolding.
 It is not a special case in BCPLMAIN and is never linked automatically.
-The same `BCPLREG` and `BCEX` rules apply to real packages.
+The same `BCPLREG` and `BCEX` rules apply to all conforming packages.
+
+## Permanent support obligations
+
+- Maintain the Git-controlled single-object, two-CSECT implementation,
+  public `bcpldemo.h` header, MVS packaging/reconstruction recipe and
+  user-facing API documentation.
+- Preserve `BCPLDEMO` as the BCEX/BCRG package identity, `DEMOSVC` as
+  the BCPL public spelling and **G!203** as its exclusive global slot.
+  API/ABI changes require explicit compatibility review and owner approval.
+- Retain native tests **146–158** in the production regression panel,
+  including selected and excluded links and their IEWL MAP checks.
+  Future regression refactoring must preserve their accepted coverage.
+- Use BCPLDEMO as the stable interoperability partner for other
+  optional extensions, including BCPLTIME, without coupling either
+  package to the other's implementation.
+- Remain independently selectable through accepted BCX/IEWL machinery.
+  Support does not mean implicit linkage, Core Runtime/Base Library
+  membership, automatic global registration or permanent preservation
+  of a particular rebuilt MVS object instance.
+
+These commitments apply prospectively; the earlier R.2/R.5 sections
+below preserve the chronology of candidate and acceptance checkpoints.
+The [owner decision](../../../packaging/bcpldemo-supported-reference-decision-20261024.md)
+is the controlling record for this support status.
 
 ## Distinguish the three names
 
@@ -21,7 +47,7 @@ The application-specific `BCPLREG` includes an explicit requirement for
 `BCPLDEMO` and lists its `BCEX` extent; the link-editor includes the actual
 objects. The R.1 registrar validates everything before calling `START`.
 
-## Published teaching API (version 1.0 candidate)
+## Published reference API (version 1.0)
 
 | Opcode | BCPL call | Successful result | Errors |
 | --- | --- | --- | --- |
@@ -164,6 +190,8 @@ checks are a required condition of every numbered R.5 PASS.
 The owner approved **CLOSE R.5 — Optional Extension Packaging and
 Regression** with the individual raw MAP/XREF report audit limitation
 documented. See the [formal R.5 closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
-Earlier "pending" statements are historical checkpoints. Future
-persistent PDS writes still require authorization; R.4 remains
-pending formal closure.
+Earlier "pending" statements are historical checkpoints. R.4 was
+subsequently closed by a separate owner decision on 24 October 2026.
+Future persistent PDS writes still require explicit authorization.
+The later supported-reference decision confirms ongoing maintenance
+without changing any accepted R.5 tests or installed object members.

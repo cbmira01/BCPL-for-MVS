@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Effective date:** 2026-10-22
 **Authority:** Official repository record of BCPL GLOBAL-number ownership.
-**Status:** Historical and existing project slots inventoried; G!200–G!202 are assigned to System Extensions, and **G!203 is permanently assigned to the BCPLDEMO reference optional extension** (owner approval 22 October 2026). Allocation does **not** imply successful MVS execution or deployment. BCPLDEMO first passed its actual MVS demonstration in JOB 3075; that is not complete R.2 acceptance.
+**Status:** Historical and existing project slots inventoried; G!200–G!202 are assigned to System Extensions, and **G!203 / DEMOSVC belongs permanently to BCPLDEMO**, an **owner-confirmed supported reference System Extension** (initial allocation 22 October; continued-support decision 24 October 2026). G!203's installed package passed R.5 acceptance; allocation by itself does not imply deployment for other packages.
 
 ## Rules and interpretation
 
@@ -31,11 +31,11 @@ and reject new optional overwrites transactionally. See
 | **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.0 design; not implemented |
 | **201** | **`TIMESVC`** (T.0 tested spelling; T.1 distribution pending) | **BCPLTIME**, raw System/370 and MVS time primitives | **Assigned** | T.0 MVS JOB 5436 PASS; not installed; T.1 IN PROGRESS |
 | **202** | Public name to be chosen | **BCPLDEC**, decimal arithmetic | **Assigned** | Proposed; not implemented |
-| **203** | **`DEMOSVC`** | **BCPLDEMO**, project-maintained teaching/reference extension | **Permanently assigned** (22 Oct 2026) | First MVS demonstration PASS in JOB 3075; R.2 matrix pending |
+| **203** | **`DEMOSVC`** | **BCPLDEMO**, supported reference System Extension | **Permanently assigned** (22 Oct 2026); support reaffirmed 24 Oct 2026 | Installed MVS JOB 5108; accepted R.5 native regression 146–158 within 00–158 panel |
 
 G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; any illustrative BCPLTIME dispatcher is associated with its new assignment **G!201**. BCPLTIME's T.0 passing native caller uses `TIMESVC:201`; T.1 will finalize distributed header/package acceptance. BCPLDEC still has no approved public dispatcher spelling. See the [BCPLTIME T.0 owner closure](bcpltime-t0-closure-20261024.md).
 
-**G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the example demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. [Owner decision and R.2 boundary](runtime-extensions-r2-bcpldemo-decision-20261022.md). Other applications and extensions must not reuse G!203. The package does not bypass ordinary R.1 per-executable collision and missing-package validation.
+**G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the reference demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. See the [initial R.2 allocation](runtime-extensions-r2-bcpldemo-decision-20261022.md), [R.5 installed-mode acceptance](runtime-extensions-r5-closure-20261024.md), and [permanent supported-reference decision](bcpldemo-supported-reference-decision-20261024.md). Other applications and extensions must not reuse G!203. BCPLDEMO remains optional and does not bypass per-executable collision and missing-package validation.
 
 ## Specific existing positions and conflicts
 

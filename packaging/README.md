@@ -38,11 +38,11 @@ reconstruction and 00–158 regression: **158 PASS, 0 FAIL, 1 expected
 SKIP**. The [R.5 evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md)
 records the preliminary result; the later [R.5 closure](runtime-extensions-r5-closure-20261024.md)
 accepted the original JOB 5108 report and the automated JES/IEWL MAP checks,
-with the remaining independent per-case raw-map audit limitation disclosed.
+with the remaining independent per-case raw-map audit limitation disclosed. The later [supported-reference owner decision](bcpldemo-supported-reference-decision-20261024.md) retains BCPLDEMO permanently and requires continued coverage of native cases 146–158.
 
 ## Runtime and library terminology
 
-[Global Number Registry](global-number-registry.md) inventories historical and compiler-specific globals, MR10-local numbering, documented collisions, and the approved System Extension assignments **G!200 BCPLQSAM**, **G!201 BCPLTIME**, and **G!202 BCPLDEC**, plus the permanent **G!203 BCPLDEMO / DEMOSVC** teaching/reference extension allocation. Allocations do not imply implementations or successful registration.
+[Global Number Registry](global-number-registry.md) inventories historical and compiler-specific globals, MR10-local numbering, documented collisions, and the approved System Extension assignments **G!200 BCPLQSAM**, **G!201 BCPLTIME**, **G!202 BCPLDEC**, and permanent **G!203 BCPLDEMO / DEMOSVC**. **BCPLDEMO is a supported reference System Extension**, installed and regression-accepted in R.5; see the [24 October owner decision](bcpldemo-supported-reference-decision-20261024.md). Global allocation alone does not demonstrate deployment of the other packages.
 
 [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) distinguishes the Compiler, Core Runtime, historical Base Library (BLIB/LIBHDR), System Extensions, Standard Libraries, and User/Site Libraries. It also defines module, package, header, object/load library, and the separate global-number allocation versus startup-registration responsibilities. This is a proposed packaging/ABI vocabulary, not a claim that new libraries are implemented.
 

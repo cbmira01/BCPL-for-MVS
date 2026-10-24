@@ -316,6 +316,8 @@ from Git; and record MVS acceptance. See the [R.5 execution plan](runtime-extens
 
 **R.5 CLOSED by owner approval, 24 October 2026.** The original installation safety and recovery requirements were reviewed; this closure does not authorize future PDS writes. At the time of R.5 closure, R.4 remained pending; R.4 was subsequently CLOSED by separate owner decision. See the [R.5 closure](runtime-extensions-r5-closure-20261024.md) and [R.4 closure](runtime-extensions-r4-closure-20261024.md).
 
+**Subsequent BCPLDEMO support decision (24 October 2026):** The owner confirmed that BCPLDEMO is to be retained **permanently as a supported reference System Extension**, not discarded as temporary regression scaffolding. G!203/DEMOSVC remains exclusive; BCEX/BCRG v1 and optional linkage remain unchanged; numbered regressions 146–158 retain their accepted coverage. BCPLDEMO is an interoperability reference for future optional packages, including BCPLTIME. See the [formal supported-reference decision](bcpldemo-supported-reference-decision-20261024.md). This is **not** a new R march, a reopening of R.5, or authority for further permanent MVS dataset writes.
+
 ## R.5 clean-room acceptance evidence — 23 October 2026
 
 The operator reported following the Git-controlled clean-room
