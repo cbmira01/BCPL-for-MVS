@@ -1,7 +1,7 @@
 # Milestone BCPLTIME — primitive System/370 and MVS time access
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** ACTIVE — owner-directed accelerated scope, 24 October 2026; no implementation or MVS execution claimed  
+**Status:** ACTIVE — T.0 IN PROGRESS; T.1 NOT STARTED (24 October 2026). Source candidate is unverified on MVS  
 **Package:** `BCPLTIME` — optional System Extension  
 **Target:** IBM System/370, MVS 3.8J TK5 under Hercules  
 **Governing registration architecture:** BCEX/BCRG version 1, using the existing optional System Extension mechanisms  
@@ -74,6 +74,17 @@ Portable BCPL Standard Library code may eventually perform calendar and elapsed-
 
 ## 5. Accelerated execution and minimal acceptance
 
+### Active march structure — owner authorization, 24 October 2026
+
+The owner has explicitly authorized a **new, accelerated two-march structure** for **Milestone BCPLTIME**. These are the current designations. The 15 October proposal's T.0–T.4 names and scopes remain preserved in Section 6 **as historical material only**; numbering is consciously reassigned by this new decision, not silently edited.
+
+| March | Current status | Work | Exit gate |
+| --- | --- | --- | --- |
+| **T.0 — Descriptor, Dispatcher, and Native Execution** | **IN PROGRESS** | Write actual single-object BCPLTIME BCEX descriptor, dispatcher opcodes 0/1/2, public declaration header, and one direct native BCPL caller. Debug the production-intended assembler against IFOX/IEWL/GO rather than running a preliminary probe campaign. | Actual MVS 3.8J IFOX + IEWL + GO PASS, G!201 registered via BCEX/BCRG v1, QUERY/STCK/TIME and basic error/no-partial-write behavior confirmed, observed clock data and any OS-specific caveats recorded. |
+| **T.1 — Packaging and Acceptance** | **NOT STARTED** | Add approved known-package selection/catalog and safe installation path, verify absence/presence on link, run the installed-mode tests and existing native production panel, document rebuild and package usage. | Owner reviews JES/IEWL evidence, regression and installation receipts, and explicitly accepts the optional extension. No permanent dataset writes without separate authorization. |
+
+**T.0 begins with implementation, not reconnaissance.** The first MVS job should assemble the BCPLTIME candidate and exercise the actual dispatcher from the native BCPL caller using temporary datasets. A working local source tree is not equivalent to an accepted MVS build. No march closes automatically or without owner review.
+
 **Start with actual source, not preliminary probes.** Adapt the accepted BCPLDEMO descriptor/dispatcher and package-selection method to implement the three opcodes. The first test should be a single integrated IFOX/IEWL/native BCPL job that exercises QUERY (including size and invalid-capacity checks), STCK (raw words plus condition code), and TIME (raw R0/R1 words). Debug the same production-intended dispatcher from JES and assembler evidence, rather than constructing many disposable experiments.
 
 Minimum acceptance:
@@ -101,7 +112,7 @@ The original **proposed, unstarted** march outline was:
 | **T.3 — Presentation and optional timing** | Formatting/parsing and elapsed timing | Superseded; excluded |
 | **T.4 — Packaging and acceptance** | Library demonstration, registration, regression, release | Superseded by accelerated single acceptance gate |
 
-**Do not silently reuse or renumber historical T.0–T.4.** They were part of the earlier planning document; this revision introduces no replacement march numbers or artificial intermediate closure gates. The active milestone is governed by Sections 1–5 and the owner's accelerated implementation direction.
+The historical T.0–T.4 entries above are **superseded proposals**, not active gates. On 24 October 2026, the owner explicitly authorized the replacement two-march T.0/T.1 structure in Section 5. The **reuse of T.0 and T.1 is deliberate and documented**, not an alteration of historical evidence. No other marches are established.
 
 The original full proposal remains permanently recoverable through Git history, at the exact pre-revision commit:
 
