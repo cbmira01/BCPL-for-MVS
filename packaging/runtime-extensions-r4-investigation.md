@@ -1,8 +1,6 @@
 # Milestone Runtime Extensions — R.4 — IEWL-Driven Extension Selection
 
-**Status:** Investigation approved by owner (22 October 2026); no
-replacement implementation, object-PDS installation, or acceptance
-result is implied.
+**Status:** **R.4 CLOSED by explicit owner approval, 24 October 2026.** The original investigation was approved 22 October and the MVS-native macro/PUNCH refinement was approved 23 October. See the [formal closure and technical disposition](runtime-extensions-r4-closure-20261024.md). No compiler/runtime ABI replacement or permanent PDS write is implied by R.4.
 
 ## Objective
 
@@ -121,3 +119,21 @@ dependency selection, independently developed User/Site Library
 catalog entries, and production deployment remain distinct decisions.
 No runtime or compiler changes were necessary. R.4 remains OPEN
 until the owner formally disposes of the investigation.
+
+## Final owner disposition — 24 October 2026
+
+The owner explicitly **CLOSED R.4 — IEWL-Driven Extension Selection**
+after considering the original negative IEWL-only discovery finding,
+JOB 3720's five-profile macro/PUNCH/IEWL PASS, JOB 3721's documented
+ENTRY-related S0C1, and JOB 3722's successful native BCPL startup.
+
+The accepted technical recommendation is to preserve BCEX/BCRG v1
+and BCPLMAIN/BCPLRGS while using the MVS-native BCXSEL/BCXREQ
+known-package catalog mechanism. Independent unknown-package
+discovery and transitive dependency selection are not claimed and
+are not outstanding R.4 exit criteria. No new JES job was needed.
+
+See [R.4 owner closure](runtime-extensions-r4-closure-20261024.md).
+The earlier "R.4 remains OPEN" statement above records the state
+*before* owner disposition; it is superseded by this closure.
+R.5 is also CLOSED under its [separate accepted scope](runtime-extensions-r5-closure-20261024.md).

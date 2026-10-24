@@ -4,8 +4,9 @@
 macro/PUNCH/IEWL selections after the JOB 3719 IFOX macro fix. See
 [`JOB 3720 evidence`](../../../packaging/runtime-extensions-r4-job-3720-evidence-20261023.md).
 JOB 3722 (23 October 2026) PASSED integrated BCPL startup and G!203
-BCPLDEMO dispatch; see the linked evidence below. R.4 remains open
-for owner disposition.
+BCPLDEMO dispatch; see the linked evidence below. **R.4 CLOSED by
+owner decision, 24 October 2026**; see the
+[formal closure](../../../packaging/runtime-extensions-r4-closure-20261024.md).
 This is **R.4 — IEWL-Driven Extension Selection**, not a new march.
 
 ## Purpose and boundary
@@ -162,3 +163,20 @@ a host-based compilation or application-build generator:
 ```sh
 bash tools/mvs/submit-jcl bootstrap-toolchain/probes/r4-bcx-macros/r4-bcx-integrated-mvs.jcl
 ```
+
+## R.4 formal owner closure — 24 October 2026
+
+The owner accepted the technical conclusion that IEWL INCLUDE alone
+did not enumerate arbitrary previously unknown BCEX descriptors,
+and accepted MVS-native BCXSEL/BCXREQ plus the known-package BCXCAT
+and PUNCH-generated BCRG/IEWL control records as the documented
+alternative. JOBs 3720 and 3722 supply the stand-alone and
+integrated-BCPL evidence; failed JOB 3721 remains part of the
+investigation history.
+
+**R.4 CLOSED** under the
+[owner closure](../../../packaging/runtime-extensions-r4-closure-20261024.md).
+Installed production packaging was subsequently accepted under the
+separate [R.5 closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
+R.4 did not promise unknown-package discovery or transitive
+dependency selection.

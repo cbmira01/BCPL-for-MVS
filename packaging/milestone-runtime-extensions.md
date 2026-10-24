@@ -1,8 +1,8 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decisions through 24 October 2026): R.5 — Optional Extension Packaging and Regression CLOSED, owner-approved; R.4 — IEWL-Driven Extension Selection technical evidence accepted but formal closure remains pending.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 closure remains intact. R.5 is accepted under the [24 October owner closure](runtime-extensions-r5-closure-20261024.md), including the documented two-revision clean-room chronology, JOB 5108 binary read-back and 158 PASS / 0 FAIL / one expected SKIP 083. Prior R.3 object-installation deferral and future-write authorization requirements are not retrospectively waived. R.4 still requires a separate formal closure decision.
+**Status (owner decisions through 24 October 2026): R.0 — Evidence and contract CLOSED; R.1 — Generic registration foundation CLOSED; R.2 — Selective interoperability CLOSED; R.3 — Packaging and acceptance CLOSED; R.4 — IEWL-Driven Extension Selection CLOSED; R.5 — Optional Extension Packaging and Regression CLOSED.** See the [R.4 owner closure](runtime-extensions-r4-closure-20261024.md) and [R.5 owner closure](runtime-extensions-r5-closure-20261024.md). The historical R.0–R.3 closure remains intact. All approved Runtime Extensions marches are individually closed; **formal owner disposition of the expanded milestone as a whole has not yet been recorded**. The accepted BCEX/BCRG v1 ABI, object library safety boundaries and separate authorization for future MVS writes remain binding.
 
-## R.4 — IEWL-Driven Extension Selection (investigation approved)
+## R.4 — IEWL-Driven Extension Selection (CLOSED 24 October 2026)
 
 **Objective:** Determine whether an application programmer can select
 precompiled optional extensions with IEWL `INCLUDE` alone, without
@@ -24,7 +24,7 @@ cards entirely within JCL. This is a test authorization only, not an
 accepted registrar or runtime deployment. Use temporary MVS datasets;
 allow a negative technical conclusion.
 
-See the [R.4 investigation](runtime-extensions-r4-investigation.md).
+See the [R.4 investigation](runtime-extensions-r4-investigation.md) and [owner-approved R.4 closure](runtime-extensions-r4-closure-20261024.md). The original experiment scope and restrictions below remain historical evidence; the approved result is the negative IEWL-only discovery finding and the MVS-native known-package BCXSEL/BCXREQ macro/PUNCH method.
 
 **R.1 owner closure:** The consolidated MVS acceptance campaign passed
 24/24 integrated jobs (2760–2783), all five gates, and the 00..145
@@ -314,7 +314,7 @@ package; add MVS-compiled/executed regression tests 146–158 integrated
 with the existing numbered runner; verify installed mode; reproduce
 from Git; and record MVS acceptance. See the [R.5 execution plan](runtime-extensions-r5-packaging-and-regression.md).
 
-**R.5 CLOSED by owner approval, 24 October 2026.** The original installation safety and recovery requirements were reviewed; this closure does not authorize future PDS writes. R.4 technical PASS records remain intact, but R.4 is not formally CLOSED. See the [R.5 closure](runtime-extensions-r5-closure-20261024.md).
+**R.5 CLOSED by owner approval, 24 October 2026.** The original installation safety and recovery requirements were reviewed; this closure does not authorize future PDS writes. At the time of R.5 closure, R.4 remained pending; R.4 was subsequently CLOSED by separate owner decision. See the [R.5 closure](runtime-extensions-r5-closure-20261024.md) and [R.4 closure](runtime-extensions-r4-closure-20261024.md).
 
 ## R.5 clean-room acceptance evidence — 23 October 2026
 
@@ -352,3 +352,26 @@ not the current disposition.
 
 **R.5 CLOSED. R.4 formal closure remains pending.** This action does
 not re-open R.0–R.3 or establish R.6.
+
+## R.4 owner closure — 24 October 2026
+
+The owner explicitly approved **CLOSE R.4 — IEWL-Driven Extension
+Selection**. The [formal closure record](runtime-extensions-r4-closure-20261024.md)
+accepts the investigated limitation of IEWL-only arbitrary-package
+discovery and the tested MVS-native BCXSEL/BCXREQ macro/PUNCH alternative.
+
+- **JOB 3720:** Five stand-alone selection profiles passed; all 21
+  EXEC steps had their expected RCs, including deliberate BCRG-size
+  GO codes.
+- **JOB 3721:** Initial integrated GO S0C1 due to entry selection;
+  documented and corrected through test-only explicit ENTRY R4APP.
+- **JOB 3722:** Eleven EXEC steps RC=0000, entry address zero,
+  real BCPL START and G!203 BCPLDEMO dispatch.
+- R.4 made no permanent runtime/compiler/ABI replacement. R.5
+  separately accepted packaged, installed and clean-room-tested BCX
+  known-package selection.
+
+Earlier "R.4 pending" statements above refer to their historical
+record dates, not this final status. **All approved R.0–R.5 marches
+are now CLOSED; separate expanded-milestone closure awaits an explicit
+owner disposition.** No R.6 has been defined or authorized.

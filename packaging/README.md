@@ -78,17 +78,22 @@ records the later source-controlled campaign at `a246063`: **JOBs
 The owner accepted the campaign as successful, explicitly **deferred
 object-PDS installation**, then approved **R.3 closure**. Raw JES
 evidence remains operator-local, with stated verification limits.
-**R.4 — IEWL-Driven Extension Selection: owner-approved investigation.**
-The prior R.0–R.3 closure is retained. The
-[R.4 investigation scope](runtime-extensions-r4-investigation.md)
-tests whether explicit IEWL selection can replace per-application
-`BCPLREG` preparation, without changing the accepted registrar.
+**R.4 — IEWL-Driven Extension Selection CLOSED by owner decision,
+24 October 2026.** The [formal R.4 closure](runtime-extensions-r4-closure-20261024.md)
+accepts the negative IEWL-only arbitrary-descriptor discovery finding
+and the proved MVS-native `BCXSEL`/`BCXREQ` macro/PUNCH method.
+The [original investigation](runtime-extensions-r4-investigation.md)
+and JOBs 3720–3722 retain the evidence and limitations. No
+compiler/runtime ABI change was required.
 **R.5 — Optional Extension Packaging and Regression CLOSED by owner
 approval, 24 October 2026.** The [formal closure record](runtime-extensions-r5-closure-20261024.md)
 accepts the clean-room R5DINST JOB 5108, binary-object read-back and
 installed-mode full 00–158 regression (158 PASS, 0 FAIL, expected SKIP 083).
 The [earlier preliminary evidence](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md)
-is retained for its audit trail. R.4 formal closure remains pending.
+is retained for its audit trail. R.4 subsequently closed under a
+separate owner decision. **All R.0–R.5 marches are CLOSED**; the
+expanded Milestone Runtime Extensions as a whole awaits an explicit
+separate owner closure decision.
 
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the
