@@ -210,11 +210,11 @@ tools/datasets/dspal ls EXT_SOURCE
 tools/datasets/dspal ls EXT_OBJ
 ```
 
-**R.5 extension check:** `EXT_MAC` contains `BCXPRE`, `BCXCAT`, and
-`BCXPOST`; `EXT_ASM` contains `BCPLDEMO`; and `EXT_SOURCE` contains
-`DEMOHDR`. `EXT_OBJ` must still be empty at this stage: its binary
-`BCPLDEMO` object is built and installed separately on MVS, not by
-`dspal populate all`.
+**R.5 extension check:** `BOOT_JCL` contains `R5DINST`;
+`EXT_MAC` contains `BCXPRE`, `BCXCAT`, and `BCXPOST`;
+`EXT_ASM` contains `BCPLDEMO`; and `EXT_SOURCE` contains `DEMOHDR`.
+`EXT_OBJ` must still be empty: its binary `BCPLDEMO` object is built
+and installed separately on MVS, not by `dspal populate all`.
 
 **The first population is meant to end with RC=2.** That does **not** mean
 it installed nothing. At this point, the 11 demoted Cambridge sources and
@@ -515,31 +515,26 @@ optional package objects as disposable, reproducible build products;
 there is no backup or member-level rollback PDS. Consult
 [the R.5 installation design](runtime-extensions-r5-installation-design.md).
 
-The committed `bootstrap-toolchain/extensions/bcpldemo/install-bcpldemo.jcl`
-contains the IFOX, install, read-back, and compare steps, but no
-authenticated JOB card. Prepare a private deck using the maintained
-tool, which reads your local `dspal` credentials and checks that the
-install JCL targets the configured `EXT_ASM` and `EXT_OBJ` datasets:
+The tracked `bootstrap-toolchain/jcl/r5dinst.jcl` is populated
+into `BOOT_JCL(R5DINST)` by Step 2C. It contains a JCL job body,
+not a JOB card. `dspal submit` supplies the authenticated card from
+the local configuration, submits through JES INTRDR, and reports both
+the launcher and payload job numbers.
+
+Once the permanent installation has been authorized, submit the
+resident job:
 
 ```sh
-tools/mvs/prepare-bcpldemo-install
+tools/datasets/dspal submit BOOT_JCL R5DINST
 ```
 
-The prepared deck is
-`workarea/runtime-extensions-r5/install-bcpldemo.jcl`.
-It contains the batch password, is restricted to owner-only access,
-and is ignored by Git. **Do not commit, publish, or paste its contents.**
-Preparation does not submit the job or modify MVS.
+The command waits for the payload result. It does not create or
+require a private host-side installation deck. Record the payload
+job number and inspect its detailed report.
 
-Submit the deck, recording the actual JES job number:
-
-```sh
-tools/mvs/submit-jcl workarea/runtime-extensions-r5/install-bcpldemo.jcl
-```
-
-Use the returned integer job number with `tools/mvs/job-summary` and
-`tools/mvs/dump-report-for-job`. **Do not enter a literal placeholder**
-in place of the number. Verify all four steps on the real MVS report:
+Use the reported payload job number with `tools/mvs/job-summary` and
+`tools/mvs/dump-report-for-job`. Verify all four steps in the real
+MVS report:
 
 | Step | Program | Required result |
 | --- | --- | --- |
@@ -646,7 +641,7 @@ PDS members, and jobs were used.
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
-| Optional extension | `EXT_MAC`/`EXT_ASM`/`EXT_SOURCE` membership; `EXT_OBJ(BCPLDEMO)` install job; `ASMDEMO`, `PUTDEMO`, `READBACK`, and `VERIFY` RCs; binary comparison and IEWL MAP/XREF evidence |
+| Optional extension | `BOOT_JCL(R5DINST)` and extension source-member inventory; `R5DINST` payload job; `EXT_OBJ(BCPLDEMO)` installation, `ASMDEMO`/`PUTDEMO`/`READBACK`/`VERIFY` RCs, binary comparison, and IEWL MAP/XREF evidence |
 | Native tests | Full installed-mode 00–158 result (158 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
@@ -686,7 +681,7 @@ change the related scripts or JCL, or when you are investigating a problem.
 | `python3 tools/checks/test-dspal-generated-population.py` | Offline tests for first/second population behavior |
 | `python3 tools/checks/check-native-bootstrap-jcl.py` | Expected `CAMBBLD` job structure and PDS names |
 | `python3 tools/checks/check-native-production-build.py` | Canonical native build source and JCL contracts |
-| `python3 -m unittest discover -s tools/checks -p 'test_clean_room_install_prep.py' -v` | Offline BCPLDEMO install-deck preparation and full-panel documentation checks |
+| `python3 -m unittest discover -s tools/checks -p 'test_r5_install_jcl_member.py' -v` | Offline resident R5DINST installation JCL and clean-room documentation checks |
 | `tools/bootstrap/run-production-regression --check-numbering` | Test numbering and expected range |
 | `check-m44-compatibility.py --production` | Harness fixtures, production linkage, and test-only fault settings |
 

@@ -474,6 +474,7 @@ datasets:
       CAMBBLD: bootstrap-toolchain/jcl/cambbld.jcl
       CG370DB: bootstrap-toolchain/jcl/cg370db.jcl
       BLDRGCHK: bootstrap-toolchain/jcl/bldrgchk.jcl
+      R5DINST: bootstrap-toolchain/jcl/r5dinst.jcl
 
   BOOT_OBJ:
     dsn: BCPL.BOOT.OBJ

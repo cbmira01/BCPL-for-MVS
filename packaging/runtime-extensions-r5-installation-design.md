@@ -29,8 +29,11 @@ DMODISP. Its public dispatcher is DEMOSVC at G!203. BCEX/BCRG v1 is unchanged.
 1. Record the Git revision. After explicit authorization create the four
    manifest-managed PDSes and populate their Git-backed text members.
    Verify member names, 80-column cards and EBCDIC conversion.
-2. Supply a site-approved JOB card to
-   bootstrap-toolchain/extensions/bcpldemo/install-bcpldemo.jcl.
+2. Verify that `BOOT_JCL(R5DINST)` was populated from
+   `bootstrap-toolchain/jcl/r5dinst.jcl`. After separate installation
+   authorization, run `tools/datasets/dspal submit BOOT_JCL R5DINST`.
+   `dspal submit` generates the authenticated JOB card from the local
+   configuration and submits the resident body through JES INTRDR.
    Never commit authenticated JOB credentials.
 3. ASMDEMO runs IFOX on EXT_ASM(BCPLDEMO), writes its binary object
    through SYSGO to a temporary FB80 sequential dataset, and must return 0000.

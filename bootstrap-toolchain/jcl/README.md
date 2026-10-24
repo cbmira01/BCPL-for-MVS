@@ -1,84 +1,78 @@
 # Native MVS JCL — canonical builds
 
-> **Core Runtime source consolidation (22 October 2026):** Canonical
-> `BCPLMAIN` now contains the accepted R.1 registrar integration.
-> The existing `BLDBMAIN` is the legacy five-member `BOOT_OBJ` writer
-> and is **on hold** pending separate installation approval. The new
-> `BLDRGCHK` checks three assembler sources using temporary objects;
-> it does not install, link, or execute the runtime.
+`config/dspal.yaml` maps one Git-controlled JCL job body to each
+same-named member of `BOOT_JCL`. Git filenames are lowercase and
+MVS member names are uppercase (maximum eight characters). The
+`dspal submit` command generates authenticated JOB cards; stored
+job bodies must not contain credentials.
 
-`config/dspal.yaml` maps **one canonical Git `.jcl` file to each
-same-named `BOOT_JCL` PDS member**. Filenames are lowercase; MVS
-member names are uppercase, each within the eight-character limit.
+| Git JCL file | `BOOT_JCL` member | Purpose |
+| --- | --- | --- |
+| `blibbld.jcl` | `BLIBBLD` | Build Base Library `BLIB` into `BOOT_OBJ` |
+| `bldbmain.jcl` | `BLDBMAIN` | Assemble/install six Core Runtime objects and the empty `BCPLREG` table |
+| `blddeva.jcl` | `BLDDEVA` | Development `BCPLAPT` object |
+| `blddevb.jcl` | `BLDDEVB` | Development `BCPLBYTE` object |
+| `blddevi.jcl` | `BLDDEVI` | Development `BCPLIO` object |
+| `blddevm.jcl` | `BLDDEVM` | Development `BCPLMEM` object |
+| `blddevn.jcl` | `BLDDEVN` | Development `BCPLMAIN` object |
+| `blddevl.jcl` | `BLDDEVL` | Development `BLIB` object |
+| `cambbld.jcl` | `CAMBBLD` | Build the demoted Cambridge compiler INTCODE |
+| `cg370db.jcl` | `CG370DB` | Optional diagnostic compiler image |
+| `bldrgchk.jcl` | `BLDRGCHK` | Non-installing registrar source assembly checks |
+| `r5dinst.jcl` | `R5DINST` | Assemble, install, read back and compare `EXT_OBJ(BCPLDEMO)` |
 
-| Git JCL file | PDS member | Role |
-|---|---|---|
-| `cambbld.jcl` | CAMBBLD | Rebuild demoted Cambridge compiler INTCODE |
-| `cg370db.jcl` | CG370DB | Optional diagnostic compiler image |
-| `blibbld.jcl` | BLIBBLD | Build BLIB into production BOOT_OBJ |
-| `bldbmain.jcl` | BLDBMAIN | Legacy five-module `BOOT_OBJ` writer, currently on hold |
-| `bldrgchk.jcl` | BLDRGCHK | Non-installing IFOX source-assembly checks |
-| `blddeva.jcl` | BLDDEVA | Development BCPLAPT object |
-| `blddevb.jcl` | BLDDEVB | Development BCPLBYTE object |
-| `blddevi.jcl` | BLDDEVI | Development BCPLIO object |
-| `blddevm.jcl` | BLDDEVM | Development BCPLMEM object |
-| `blddevn.jcl` | BLDDEVN | Development BCPLMAIN object |
-| `blddevl.jcl` | BLDDEVL | Development BLIB object |
+`tools/datasets/dspal populate BOOT_JCL` installs the twelve
+tracked FB80 JCL *bodies*; it does not submit any of them.
+`dspal submit BOOT_JCL <MEMBER>` uses the configured MVS batch
+identity and JES internal reader, reports both launcher and payload
+job numbers, and waits for the payload result.
 
-`dspal populate BOOT_JCL` installs the eleven tracked job *bodies*.
-They do not execute until submitted. Use `dspal submit BOOT_JCL
-<MEMBER>` only after checking the job's source/output datasets and
-whether its target is BOOT_OBJ or BOOT_DEVOBJ.
+## Installation boundaries
 
-## Historical clean-room production rebuild (installation on hold)
+The approved production target consists of six Core Runtime objects,
+the empty default `BCPLREG` table, and the Base Library `BLIB`:
+**eight members in `BOOT_OBJ`**. The revised `BLDBMAIN` installs
+the seven assembler-built members; `BLIBBLD` installs `BLIB`
+separately. The R.1–R.3 registration acceptance used temporary
+objects. The corrected `BOOT_OBJ` installation remains subject to
+separate owner authorization.
 
-**The following describes the earlier accepted five-module production
-rebuild. Do not execute `BLDBMAIN` against the consolidated canonical
-sources until the deployment procedure is separately approved.**
+`R5DINST` builds the optional System Extension `BCPLDEMO` from
+`EXT_ASM(BCPLDEMO)`, installs only `EXT_OBJ(BCPLDEMO)`, and
+verifies the binary records by read-back and IEBCOMPR. It does
+**not** modify `BOOT_OBJ` or `BOOT_DEVOBJ`. Permanent object
+installation requires the owner's authorization. The operation is
+not atomic; inspect all four payload return codes before acceptance.
 
-The owner authorized a fresh source rebuild of all project-managed PDSes
-and installation of the latest runtime into `BOOT_OBJ`.
-`BLDBMAIN` now assembles and installs `BCPLMAIN`, `BCPLMEM`,
-`BCPLBYTE`, `BCPLAPT` and `BCPLIO` from the five canonical
-`BOOT_ASM` members. `BLIBBLD` separately compiles and installs
-`BLIB` into `BOOT_OBJ` using the rebuilt resident Cambridge
-compiler. The target is a complete **six-member BOOT_OBJ** without
-any binary copying or DEVOBJ seeding.
+After permission and successful PDS population, the documented
+R.5 installation command is:
 
-Each BLDBMAIN assembler and install is gated on zero return codes.
-The job is not atomic: inspect every payload step before accepting
-the output. Build from a freshly purged/initialized PDS environment
-using the [current clean-room runbook](../../packaging/clean-room-mvs-reconstruction.md).
-The all-OBJ full-panel runner is `tools/native/run-production-regression`.
+```sh
+tools/datasets/dspal submit BOOT_JCL R5DINST
+```
 
-`BLDDEV*` jobs remain available for later isolated experiments,
-but are **not required** by the full production reconstruction.
+See the [clean-room reconstruction runbook](../../packaging/clean-room-mvs-reconstruction.md)
+and [R.5 installation design](../../packaging/runtime-extensions-r5-installation-design.md)
+for preconditions, recovery and MVS acceptance evidence.
 
-## Historical builds, probes and source names
+## Historical builds and diagnostics
 
-Useful earlier D6/D7 reproducibility decks are isolated under
-[`history/`](history/), **not manifest-mapped**. In particular,
-`history/build-dev-bcplm6.jcl` can be explicitly staged as
-`BOOT_JCL(BLDDEVM6)` to build canonical
-`BOOT_ASM(BCPLMAIN)` into historical
-`BOOT_DEVOBJ(BCPLM6)`. That object-member name remains relevant
-to the accepted 145-pass BCPLIO regression profile.
+Prior five-module production builds and D6/D7 candidate experiments
+remain historical, not the current eight-member clean-room target.
+Retained `BLDDEV*` jobs are not required for the production rebuild.
+Historical JCL and probes are under [`history/`](history/) and are
+not mapped by the canonical manifest. For example,
+`history/build-dev-bcplm6.jcl` may be explicitly staged to
+reproduce the historical `BOOT_DEVOBJ(BCPLM6)` profile.
+`dspal populate` does not remove previously installed, now-unmapped
+members from an existing MVS PDS.
 
-The obsolete `BLIBLINK` consumer, `BLDGFMEM` standalone job and
-`SEEDDEV` binary-copy job are removed from the manifest. The
-first and third are retired from the working tree; the
-single-member F1 job remains only in history.
-Other one-off D3–D5 link/assemble decks and test probes were retired;
-Git history retains them. Do not assume `dspal populate` deletes
-previously installed but now-unmapped members in MVS.
-
-## Verification
+## Host verification (no MVS submission)
 
 ```sh
 python3 tools/checks/check-native-jcl-manifest.py
 tools/datasets/dspal populate BOOT_JCL --dry-run
 ```
 
-This check only validates source layout and manifest agreement.
-It does not assemble programs, execute jobs, or verify MVS runtime
-compatibility.
+These checks validate the Git-to-PDS source inventory and planned
+population, not runtime execution or installation success.

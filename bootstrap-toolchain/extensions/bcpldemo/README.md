@@ -132,5 +132,10 @@ GitHub is authoritative, and MVS objects are rebuildable. No backup PDS
 or rollback is required. The separate owner decision required before
 any permanent installation has **not** been given.
 
-Refer to [the R.5 installation design](../../../packaging/runtime-extensions-r5-installation-design.md)
-for the proposed, unexecuted install JCL and verification gates.
+The Git-controlled `bootstrap-toolchain/jcl/r5dinst.jcl` body is
+populated as `BOOT_JCL(R5DINST)`. After separate authorization,
+`tools/datasets/dspal submit BOOT_JCL R5DINST` assembles the
+installed object and compares its binary records. See
+[the R.5 installation design](../../../packaging/runtime-extensions-r5-installation-design.md)
+for prerequisites and verification gates; this documentation does not
+claim a new clean-room installation was performed.
