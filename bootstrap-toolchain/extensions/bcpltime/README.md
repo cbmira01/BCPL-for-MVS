@@ -78,6 +78,17 @@ The record checker reported that JES DD attribution was NOT VERIFIED;
 see the [T.0 owner closure](../../../packaging/bcpltime-t0-closure-20261024.md).
 T.1 installed-mode linkage and full regression are still outstanding.
 
+## T.1 numbered native interoperability regressions
+
+Cases **159–162** extend the existing native regression suite without
+changing R.5's 00–158 cases. They cover BCPLTIME alone, BCPLDEMO with
+BCPLTIME, reversed selection order, and repeated BCXREQ/BCXSEL
+requirement upgrades. See [T.1 regression design and commands](T1-REGRESSION.md).
+The candidate generator builds source-mode temporary objects and a
+read-only installed-mode route; **no new MVS execution has yet been
+reported**, and the installed BCXCAT/catalog change remains an owner
+review and separate installation approval item.
+
 ## T.0 direct execution command (source mode, temporary datasets only)
 
 After a clean Git pull, on the machine running Hercules/TK5:

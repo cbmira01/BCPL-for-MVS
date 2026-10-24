@@ -172,8 +172,24 @@ if [[ -f "$compile_only" ]]; then
     exit 0
 fi
 
-# R.5: branch only for explicitly marked optional extension tests.
-if [[ -f "$case_dir/extension-selection.asm" ]]; then
+# T.1: only the four BCPLTIME interoperability cases.
+if [[ -f "$case_dir/time-selection.asm" ]]; then
+    jcl="$work/t1-time.jcl"
+    t1_mode=${BCPL_T1_EXTENSION_MODE:-source}
+    t1_args=(--test-number "$test_num" --mode "$t1_mode")
+    if [[ $t1_mode == installed ]]; then
+        [[ -n ${BCPL_T1_EXTENSION_DSN:-} &&
+           -n ${BCPL_T1_MACRO_DSN:-} ]] || {
+            echo "run-test: T.1 installed mode needs EXT_OBJ/EXT_MAC DSNs" >&2
+            exit 64
+        }
+        t1_args+=(--extension-dsn "$BCPL_T1_EXTENSION_DSN"
+                  --macro-dsn "$BCPL_T1_MACRO_DSN")
+    fi
+    python3 "$root/tools/checks/prepare-t1-time-regression.py" \
+        "$generated" "$jcl" "${t1_args[@]}" || exit $?
+    [[ -s "$jcl" ]] || exit 66
+elif [[ -f "$case_dir/extension-selection.asm" ]]; then
     jcl="$work/r5-extension.jcl"
     r5_mode=${BCPL_R5_EXTENSION_MODE:-source}
     r5_args=(--test-number "$test_num" --mode "$r5_mode")
@@ -867,8 +883,14 @@ while (( SECONDS <= deadline )); do
             show_result "FAIL" "NORMAL" "FAIL"
             exit 1
         fi
-        # R.5: BCPL output PASS alone does not prove IEWL selection.
-        if [[ -f "$case_dir/extension-selection.asm" ]]; then
+        # Native output alone does not prove optional link selection.
+        if [[ -f "$case_dir/time-selection.asm" ]]; then
+            python3 "$root/tools/checks/check-t1-time-report.py" \
+                "$work/job-report.txt" --test-number "$test_num" || {
+                show_result "FAIL" "T.1 IEWL MAP mismatch" "FAIL"
+                exit 1
+            }
+        elif [[ -f "$case_dir/extension-selection.asm" ]]; then
             python3 "$root/tools/checks/check-r5-extension-report.py" \
                 "$work/job-report.txt" --test-number "$test_num" || {
                 show_result "FAIL" "R.5 IEWL MAP mismatch" "FAIL"

@@ -98,6 +98,16 @@ T.1 does **not** authorize modifications of resident MVS PDSes.
 Preserve BCEX/BCRG v1, BCPLDEMO, and accepted Runtime/Base Library
 objects. Temporary T.0 linkage is still a valid development path.
 
+**T.1 numbered regression candidates:** New cases **159–162** are
+specified for BCPLTIME alone and for BCPLDEMO+BCPLTIME selection,
+reverse-order inclusion, and requirement-upgrade/deduplication.
+Cases 00–158 remain unchanged, including the accepted R.5 no-extension
+and BCPLDEMO-alone coverage. See the
+[T.1 regression design](../bootstrap-toolchain/extensions/bcpltime/T1-REGRESSION.md).
+This is source-mode regression implementation work only; MVS tests,
+installed BCPLTIME catalog/member mapping and full acceptance remain
+outstanding. It does not authorize permanent MVS dataset writes.
+
 **T.0 began with implementation, not reconnaissance.** The first MVS job should assemble the BCPLTIME candidate and exercise the actual dispatcher from the native BCPL caller using temporary datasets. A working local source tree is not equivalent to an accepted MVS build. No march closes automatically or without owner review.
 
 **Start with actual source, not preliminary probes.** Adapt the accepted BCPLDEMO descriptor/dispatcher and package-selection method to implement the three opcodes. The first test should be a single integrated IFOX/IEWL/native BCPL job that exercises QUERY (including size and invalid-capacity checks), STCK (raw words plus condition code), and TIME (raw R0/R1 words). Debug the same production-intended dispatcher from JES and assembler evidence, rather than constructing many disposable experiments.
