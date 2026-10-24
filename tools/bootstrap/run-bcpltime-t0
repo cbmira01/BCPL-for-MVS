@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# BCPLTIME T.0: compile using MVS, build temp-only IFOX/IEWL/GO JCL,
+# submit once, and check real JES reports. Never installs MVS objects.
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+work="$root/workarea/bcpltime-t0"
+source="$root/bootstrap-toolchain/extensions/bcpltime"
+prepare="$root/tools/checks/prepare-bcpltime-t0.py"
+
+if [[ $# -eq 1 && $1 == --check ]]; then
+    python3 "$root/tools/checks/check-bcpltime-t0.py"
+    python3 "$prepare" --check
+    exit 0
+fi
+if (( $# != 0 )); then
+    echo "Usage: tools/bootstrap/run-bcpltime-t0 [--check]" >&2
+    exit 64
+fi
+
+mkdir -p "$work"
+python3 "$root/tools/bootstrap/compile-mvs" "$source/test.bcpl" \
+    --job-name T0TCOMP --output "$work/test-generated.asm"
+python3 "$prepare" "$work/test-generated.asm" "$work/t0time.jcl"
+
+submission=$(bash "$root/tools/mvs/submit-jcl" --timeout 120 \
+    "$work/t0time.jcl")
+if ! [[ $submission =~ ^JOB[[:space:]]+([0-9]+)$ ]]; then
+    echo "Unexpected JES submission response: $submission" >&2
+    exit 65
+fi
+job=${BASH_REMATCH[1]}
+echo "BCPLTIME T.0 native execution: JOB $job"
+echo "$job" > "$work/last-job.txt"
+
+# job-summary returns 2 while incomplete, 0 for success and 1 on failure.
+deadline=$((SECONDS + 180))
+while :; do
+    set +e
+    summary=$("$root/tools/mvs/job-summary" "$job" --max-rc 0 2>&1)
+    status=$?
+    set -e
+    if (( status != 2 )); then
+        printf '%s\n' "$summary" > "$work/job-summary.txt"
+        printf '%s\n' "$summary"
+        break
+    fi
+    if (( SECONDS >= deadline )); then
+        echo "JOB $job: report not complete; inspect JES directly" >&2
+        exit 75
+    fi
+    sleep 1
+done
+
+# Preserve real evidence even when the job failed to assemble or execute.
+if bash "$root/tools/mvs/dump-report-for-job" "$job" \
+    > "$work/job-report.txt"; then
+    echo "Saved JES report: $work/job-report.txt"
+else
+    echo "Could not extract full JOB $job report" >&2
+    exit 1
+fi
+if (( status != 0 )); then
+    echo "T.0 MVS job failed; inspect assembler/IEWL/GO report above" >&2
+    exit 1
+fi
+for step in ASMA ASMN ASMR ASMT ASMG LKED GO; do
+    if ! grep -Eq "^${step}[[:space:]]+.*RC=0000$" \
+        "$work/job-summary.txt"; then
+        echo "T.0 missing successful step $step RC=0000" >&2
+        exit 1
+    fi
+done
+python3 "$root/tools/checks/check-bcpltime-t0-report.py" \
+    "$work/job-report.txt"
+python3 "$root/tools/checks/check-combined-jes-records.py" \
+    "$source/expected.txt" "$work/job-report.txt" --destination SYSPRINT
+printf 'BCPLTIME T.0 integrated test: PASS (JOB %s)\n' "$job"

@@ -64,3 +64,40 @@ This is a source-structure check, not an MVS execution test.
 Source checked for strict 71-column card width, 8-character assembler
 symbols, descriptor field constants and expected BCPL declarations.
 **No actual System/370 assembly or MVS execution has been performed here.**
+
+## T.0 direct execution command (source mode, temporary datasets only)
+
+After a clean Git pull, on the machine running Hercules/TK5:
+
+```sh
+bash tools/bootstrap/run-bcpltime-t0 --check
+bash tools/bootstrap/run-bcpltime-t0
+```
+
+The second command runs the existing `tools/bootstrap/compile-mvs` driver
+against `test.bcpl`, generates authenticated JCL in ignored, locally owned
+`workarea/bcpltime-t0/t0time.jcl` (mode 0600), submits it once to JES, and
+waits for the seven expected IFOX/IEWL/GO step results. It checks a real
+IEWL cross-reference map for `R0APP`, `BCPLMAIN`, `RGINIT`, `TIMDESC`,
+`TIMDISP`, and a 44-byte `BCPLREG` with zero application entry address;
+then checks for the exact `BCPLTIME T0 PASS` logical record in the JES GO
+suffix. The test also prints raw STCK and TIME return words.
+
+Evidence is saved under `workarea/bcpltime-t0/`:
+`test-generated.asm`, `t0time.jcl`, `last-job.txt`, `job-summary.txt`,
+`job-report.txt`. These generated/operator-local files are **not** Git
+sources; the job card may include local credentials and must not be committed.
+A nonzero step, missing MAP, or missing PASS marker fails the runner;
+inspect the complete report and debug the actual dispatcher source.
+
+Offline tests (do not contact MVS):
+
+```sh
+python3 -m unittest discover -s tools/checks \
+  -p 'test_*bcpltime_t0*.py' -v
+python3 tools/checks/prepare-bcpltime-t0.py --check
+```
+
+No installed `EXT_OBJ`, `EXT_MAC`, or `BOOT_OBJ` members are overwritten.
+Do not claim T.0 passed until the real IFOX, IEWL and GO report has been
+reviewed; the generated JCL and offline tests are not that evidence.
