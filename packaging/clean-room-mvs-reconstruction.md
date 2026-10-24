@@ -654,9 +654,12 @@ its generated logs, images, and manifests will **not** be saved by a
 normal `git commit`.
 
 The [17 October 2026 acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md)
-proves the **earlier** accepted procedure. When this revised two-pass
-procedure is tested end-to-end, record that result separately. Do not
-change the old record to make it look as if the new procedure was used.
+proves the **earlier** procedure. The revised two-pass/R.5 procedure
+subsequently passed a new full end-to-end clean-room test on 24 October
+2026, with **158 PASS / 0 FAIL / 1 expected SKIP (083)**. See the
+[24 October owner-approved R.5 closure](runtime-extensions-r5-closure-20261024.md)
+for MVS payload jobs, installation read-back and the documented 7fff89f
+-> 00379e0 source transition. Keep the earlier record historically intact.
 
 ## When something goes wrong
 

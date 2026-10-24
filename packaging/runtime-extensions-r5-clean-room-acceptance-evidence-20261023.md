@@ -132,3 +132,22 @@ resolution/documentation of the raw-evidence limitations above.
 **R.4 — IEWL-Driven Extension Selection:** technical evidence remains
 accepted on its own terms; formal closure is still pending. The
 R.0–R.3 closures are unaffected.
+
+## Subsequent evidence review and owner disposition — 24 October 2026
+
+This document records the **23 October preliminary status**. The
+operator subsequently supplied the complete original clean-room
+terminal transcript. Review identified the exact checkout sequence,
+MVS payload build jobs, final PDS inventories, and the original
+`R5DINST` JOB 5108 report with all four RC=0000 and IEBCOMPR
+comparing ten binary records. All 158 expected PASS case numbers
+appeared in the installed-mode regression transcript; the runner
+applies automated IEWL MAP gates for cases 146–158.
+
+The owner subsequently **approved R.5 closure** accepting the
+explicit limitation that individual raw R.5 IEWL MAP/XREF reports
+were not independently audited. The authoritative final disposition
+is the [24 October R.5 closure](runtime-extensions-r5-closure-20261024.md).
+Statements above describing missing evidence and a pending owner
+decision are preserved as an accurate record of the *earlier* review,
+not the current state. R.4 remains pending formal closure.

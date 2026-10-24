@@ -150,3 +150,20 @@ SKIP 083**. The record is
 Individual `R5DINST` JES/IFOX/IEBCOMPR reports and IEWL MAP/XREF
 receipts still require review. This result does not, by itself,
 close R.5 or formally close R.4.
+
+## R.5 final acceptance — 24 October 2026
+
+Subsequent to the earlier proposal/implementation notes above, the
+operator's complete clean-room transcript supplied the original
+`R5DINST` installation record (**JOB 5108**, all four steps RC=0000,
+ten binary object records compared), resident optional-member
+inventory, and **158 PASS, 0 FAIL, one expected SKIP 083** from
+the installed-mode native 00–158 panel. R.5's automated IEWL MAP
+checks are a required condition of every numbered R.5 PASS.
+
+The owner approved **CLOSE R.5 — Optional Extension Packaging and
+Regression** with the individual raw MAP/XREF report audit limitation
+documented. See the [formal R.5 closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
+Earlier "pending" statements are historical checkpoints. Future
+persistent PDS writes still require authorization; R.4 remains
+pending formal closure.

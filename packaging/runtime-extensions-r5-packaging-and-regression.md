@@ -1,7 +1,7 @@
 # Milestone Runtime Extensions — R.5 — Optional Extension Packaging and Regression
 
 **Owner authorization:** 23 October 2026 — "Approve, proceed" to the nine stated R.5 goals.
-**Status:** R.5 IN PROGRESS. A successful full clean-room 00–158 regression result was reported on 23 October 2026 (158 PASS, 0 FAIL, 1 expected SKIP 083); detailed MVS evidence review and formal owner closure remain pending.
+**Status:** **R.5 CLOSED by owner decision, 24 October 2026.** The [formal closure record](runtime-extensions-r5-closure-20261024.md) accepts JOB 5108, the documented two-revision Git-based clean-room rebuild, and the full installed-mode 00–158 panel (158 PASS, 0 FAIL, 1 expected SKIP 083). Raw individual IEWL MAP/XREF reports were not separately audited; R.4 formal closure remains pending.
 **R.4:** JOB 3720 macro/PUNCH/IEWL and JOB 3722 integrated startup passed. Formal R.4 closure is **not** assumed or changed.
 
 ## Objective
@@ -216,3 +216,20 @@ to be attached or reviewed before the final owner disposition.
 
 **Status remains R.5 IN PROGRESS.** This record does not close R.5,
 does not close R.4, and does not revise accepted R.0–R.3 closures.
+
+## Formal R.5 closure — 24 October 2026
+
+**Owner disposition: CLOSE R.5 — Optional Extension Packaging and
+Regression.** The [R.5 closure record](runtime-extensions-r5-closure-20261024.md)
+establishes MVS JOB 5108 (IFOX/IEBGENER/IEBCOMPR all RC=0000,
+10 binary records compared), installed PDS inventory, all 158
+passing native regression cases (expected SKIP 083), and automated
+IEWL MAP checks on the real JES reports. The accepted clean-room
+workflow began at 7fff89f and installed/ran the extension after
+updating to 00379e0; d38cf60 was pulled afterwards.
+
+The earlier pending/not-yet-executed checkpoints in this file are
+**historical**, not the final R.5 status. The owner accepted the
+stated limitation that raw per-case IEWL maps were not each manually
+audited. The 24 October closure does not close R.4, change the
+accepted R.0–R.3 ABIs, or authorize future permanent PDS writes.

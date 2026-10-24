@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 23 October 2026): R.5 — Optional Extension Packaging and Regression APPROVED, IN PROGRESS; R.4 — IEWL-Driven Extension Selection acceptance evidence recorded but formal closure remains pending.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 milestone was closed by the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md); that closure and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md) remain intact. Object-PDS installation was **DEFERRED through R.3**; a fresh R.5 clean-room reconstruction and full native regression were reported successful on 23 October 2026, with detailed installation/JES evidence still to be reviewed. R.4 reopens the milestone solely for research and controlled experiments, not a replacement implementation.
+**Status (owner decisions through 24 October 2026): R.5 — Optional Extension Packaging and Regression CLOSED, owner-approved; R.4 — IEWL-Driven Extension Selection technical evidence accepted but formal closure remains pending.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 closure remains intact. R.5 is accepted under the [24 October owner closure](runtime-extensions-r5-closure-20261024.md), including the documented two-revision clean-room chronology, JOB 5108 binary read-back and 158 PASS / 0 FAIL / one expected SKIP 083. Prior R.3 object-installation deferral and future-write authorization requirements are not retrospectively waived. R.4 still requires a separate formal closure decision.
 
 ## R.4 — IEWL-Driven Extension Selection (investigation approved)
 
@@ -314,9 +314,7 @@ package; add MVS-compiled/executed regression tests 146–158 integrated
 with the existing numbered runner; verify installed mode; reproduce
 from Git; and record MVS acceptance. See the [R.5 execution plan](runtime-extensions-r5-packaging-and-regression.md).
 
-**R.5 is in progress**, not accepted. R.4's technical PASS records
-remain intact; R.4 is not silently marked CLOSED. Persistent PDS
-installation requires a separate explicit destination/recovery decision.
+**R.5 CLOSED by owner approval, 24 October 2026.** The original installation safety and recovery requirements were reviewed; this closure does not authorize future PDS writes. R.4 technical PASS records remain intact, but R.4 is not formally CLOSED. See the [R.5 closure](runtime-extensions-r5-closure-20261024.md).
 
 ## R.5 clean-room acceptance evidence — 23 October 2026
 
@@ -335,3 +333,22 @@ complete final evidence review.
 
 **R.5 remains IN PROGRESS** pending explicit owner closure.
 **R.4 formal closure is still pending**; R.0–R.3 remain CLOSED.
+
+## R.5 formal owner closure — 24 October 2026
+
+Following the complete original clean-room transcript review, the
+owner explicitly approved **CLOSE R.5 — Optional Extension Packaging
+and Regression**. The [formal closure record](runtime-extensions-r5-closure-20261024.md)
+establishes the original 7fff89f -> 00379e0 construction revision
+sequence, `R5DINST` JOB 5108 (all four RC=0000 and 10 binary records
+compared), 28 managed PDSes recreated, final eight-member production
+`BOOT_OBJ`, and all 158 native PASS results with expected SKIP 083.
+
+The operator's automated R.5 IEWL MAP checks passed on the real JES
+reports. Raw per-case IEWL MAP/XREF documents were not separately
+audited; the owner accepted this stated limitation. The 23 October
+pre-closure receipt above remains preserved as historical evidence,
+not the current disposition.
+
+**R.5 CLOSED. R.4 formal closure remains pending.** This action does
+not re-open R.0–R.3 or establish R.6.

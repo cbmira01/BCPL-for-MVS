@@ -36,7 +36,9 @@ records the historical **123 PASS / 0 FAIL / 1 expected SKIP** panel.
 On 23 October 2026, the operator reported a full clean-room
 reconstruction and 00–158 regression: **158 PASS, 0 FAIL, 1 expected
 SKIP**. The [R.5 evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md)
-records the result and the remaining raw JES/IEWL audit requirements.
+records the preliminary result; the later [R.5 closure](runtime-extensions-r5-closure-20261024.md)
+accepted the original JOB 5108 report and the automated JES/IEWL MAP checks,
+with the remaining independent per-case raw-map audit limitation disclosed.
 
 ## Runtime and library terminology
 
@@ -81,10 +83,12 @@ The prior R.0–R.3 closure is retained. The
 [R.4 investigation scope](runtime-extensions-r4-investigation.md)
 tests whether explicit IEWL selection can replace per-application
 `BCPLREG` preparation, without changing the accepted registrar.
-**R.5 — Optional Extension Packaging and Regression: IN PROGRESS.**
-The operator-reported full clean-room result is recorded in the
-[R.5 evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
-R.5 owner closure and R.4 formal closure remain pending.
+**R.5 — Optional Extension Packaging and Regression CLOSED by owner
+approval, 24 October 2026.** The [formal closure record](runtime-extensions-r5-closure-20261024.md)
+accepts the clean-room R5DINST JOB 5108, binary-object read-back and
+installed-mode full 00–158 regression (158 PASS, 0 FAIL, expected SKIP 083).
+The [earlier preliminary evidence](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md)
+is retained for its audit trail. R.4 formal closure remains pending.
 
 The [R.0 source and ABI audit](runtime-extensions-r0-evidence-and-contract-20261020.md)
 documents current `BCPLMAIN` export and FINISH/STOP paths and the

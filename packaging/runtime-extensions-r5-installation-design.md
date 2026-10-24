@@ -109,3 +109,22 @@ The operator subsequently reported a successful full clean-room
 Individual `R5DINST` job steps, PDS inventories and actual MAP/XREF/GO
 reports have not yet been provided for independent review.
 R.4 formal closure is pending; R.5 remains **IN PROGRESS**.
+
+## Installation and owner acceptance — 24 October 2026
+
+The *design-only/no-installation-authority* status above describes the
+23 October proposal, not the subsequent MVS reconstruction. The
+owner's original full clean-room transcript establishes installed
+`EXT_OBJ(BCPLDEMO)`, submitted via `BOOT_JCL(R5DINST)`:
+
+- Payload JOB 5108: ASMDEMO, PUTDEMO, READBACK and VERIFY each
+  RC=0000; ten object records independently compared by IEBCOMPR.
+- The installed-mode 00–158 native panel: 158 PASS, 0 FAIL,
+  one expected SKIP 083, including automated IEWL MAP checks.
+- The final extension PDS membership matched the manifest.
+- The revision transition 7fff89f -> 00379e0 was documented.
+
+R.5 was **CLOSED by explicit owner approval**. See the
+[formal closure record](runtime-extensions-r5-closure-20261024.md).
+This does not imply permission for further permanent writes.
+R.4 formal closure remains pending.

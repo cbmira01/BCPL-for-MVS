@@ -1,7 +1,6 @@
 # R.5 - MVS-native BCX package-selection sources
 
-**Status:** Candidate for R.5 packaging; installed-PDS linkage has NOT
-been run on MVS and is NOT an accepted production release.
+**Status:** **R.5 optional package-selection sources CLOSED and accepted by owner, 24 October 2026** following resident-MVS installed-mode regression. See the [formal closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
 
 These three IFOX source members provide the native BCXSEL and BCXREQ
 application-selection interface. They run *entirely on MVS*. The
@@ -70,3 +69,20 @@ EXT_OBJ(BCPLDEMO) under HERC02.BCPL.EXT.OBJ.
 See [the approved installation design](../../../packaging/runtime-extensions-r5-installation-design.md).
 Neither permanent dataset creation nor MVS linkage acceptance has been
 authorized or performed by this design work.
+
+## R.5 closure and installed proof — 24 October 2026
+
+The earlier catalog/PDS notes above preserve the R.4/R.5 *design*
+history. The subsequent full clean-room build installed
+`EXT_MAC(BCXPRE/BCXCAT/BCXPOST)` and `EXT_OBJ(BCPLDEMO)`,
+then ran native installed-mode 00–158: **158 PASS, 0 FAIL,
+one expected SKIP 083**. For numbered cases 146–158, the
+regression harness checked actual JES/IEWL MAP contents before PASS,
+including optional member inclusion and exclusion.
+
+The owner formally **CLOSED R.5** on this evidence, accepting the
+recorded limitation that per-case raw IEWL reports were not each
+manually audited. See [R.5 owner closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
+The catalog is still intentionally limited to known BCPLDEMO;
+no general package discovery or transitive dependency resolution
+is claimed. R.4 remains pending *formal* closure.
