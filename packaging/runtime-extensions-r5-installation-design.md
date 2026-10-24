@@ -102,5 +102,10 @@ evidence and recovery procedure.
 **Owner-reported source-mode result, 23 October 2026:** 146–158
 returned 13 PASS, 0 FAIL, 0 SKIP. Preserve the earlier verifier
 false negatives for JOBs 3724/3726 and the correction/revalidation.
-Installed-mode results and clean-room acceptance remain unverified.
-R.4 formal closure is pending. R.5 remains **IN PROGRESS**.
+The operator subsequently reported a successful full clean-room
+00–158 panel on 23 October 2026: **158 PASS, 0 FAIL, 1 expected SKIP
+083**. This is documented in the
+[R.5 evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+Individual `R5DINST` job steps, PDS inventories and actual MAP/XREF/GO
+reports have not yet been provided for independent review.
+R.4 formal closure is pending; R.5 remains **IN PROGRESS**.

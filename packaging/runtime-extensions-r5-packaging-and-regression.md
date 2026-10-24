@@ -1,7 +1,7 @@
 # Milestone Runtime Extensions — R.5 — Optional Extension Packaging and Regression
 
 **Owner authorization:** 23 October 2026 — "Approve, proceed" to the nine stated R.5 goals.
-**Status:** R.5 IN PROGRESS; no MVS R.5 acceptance yet.
+**Status:** R.5 IN PROGRESS. A successful full clean-room 00–158 regression result was reported on 23 October 2026 (158 PASS, 0 FAIL, 1 expected SKIP 083); detailed MVS evidence review and formal owner closure remain pending.
 **R.4:** JOB 3720 macro/PUNCH/IEWL and JOB 3722 integrated startup passed. Formal R.4 closure is **not** assumed or changed.
 
 ## Objective
@@ -197,3 +197,22 @@ are not reproduced in this design record.
 macro PDS, member-qualified IEWL INCLUDE EXTLIB(BCPLDEMO), installed
 146–158 regressions, complete 00–158 panel, clean-room reconstruction,
 and owner R.5 closure. R.4 formal closure remains pending.
+
+## R.5 clean-room full-panel result — operator report, 23 October 2026
+
+The owner reports completing the published clean-room reconstruction
+procedure and its **full native production regression 00–158**:
+**158 PASS, 0 FAIL, 1 expected SKIP (083)**. The supplied terminal
+excerpt shows cases 156–158 passing and the complete panel tally.
+The report is recorded in the
+[R.5 clean-room acceptance evidence](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+
+This is a material advancement beyond the earlier *source-mode only*
+and *not yet performed* checkpoints above. The clean-room procedure
+calls for installed `BCPLDEMO` and resident BCX macros, but this
+report alone does not independently verify each installation step,
+IEWL MAP/XREF artifact, or the executed Git SHA. Those details remain
+to be attached or reviewed before the final owner disposition.
+
+**Status remains R.5 IN PROGRESS.** This record does not close R.5,
+does not close R.4, and does not revise accepted R.0–R.3 closures.

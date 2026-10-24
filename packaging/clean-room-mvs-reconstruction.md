@@ -101,12 +101,16 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 9 | Install `BCPLDEMO`; run native regression 00–158 | 158 PASS, 0 FAIL, 1 expected SKIP |
 | 10 | Save the evidence | Results and limits recorded |
 
-> **Status:** A full clean-room rebuild was accepted on **17 October 2026**
-> using source baseline `04c74af8b07b5cdc2aaec44d79f020a848cb7e65`.
-> See the [acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md).
-> The *two-pass manifest procedure in this guide* was added **after** that
-> acceptance. It has **not yet passed a new end-to-end clean-room test**.
-> Do not claim it has until that test is done.
+> **Acceptance history:** A previous clean-room rebuild was accepted
+> on **17 October 2026** at source baseline
+> `04c74af8b07b5cdc2aaec44d79f020a848cb7e65`; see the
+> [historical acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md).
+> On **23 October 2026**, the operator reported a successful fresh
+> end-to-end run of this updated two-pass/R.5 procedure, including
+> **158 PASS, 0 FAIL, 1 expected SKIP** across cases 00–158. See the
+> [R.5 evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+> The latter result is operator-reported; detailed job numbers and
+> independent raw JES/IEWL audit have not yet been supplied.
 
 ## Step 0 — Check the system
 

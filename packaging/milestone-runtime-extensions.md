@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decision, 23 October 2026): R.5 — Optional Extension Packaging and Regression APPROVED, IN PROGRESS; R.4 — IEWL-Driven Extension Selection acceptance evidence recorded but formal closure remains pending.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 milestone was closed by the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md); that closure and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md) remain intact. Object-PDS installation is still **DEFERRED**. R.4 reopens the milestone solely for research and controlled experiments, not a replacement implementation.
+**Status (owner decision, 23 October 2026): R.5 — Optional Extension Packaging and Regression APPROVED, IN PROGRESS; R.4 — IEWL-Driven Extension Selection acceptance evidence recorded but formal closure remains pending.** **R.0 — Evidence and contract CLOSED. R.1 — Generic registration foundation CLOSED. R.2 — Selective interoperability CLOSED. R.3 — Packaging and acceptance CLOSED.** The original R.0–R.3 milestone was closed by the [R.3 owner closure](runtime-extensions-r3-closure-20261022.md); that closure and [accepted R.3 evidence](runtime-extensions-r3-acceptance-review-20261022.md) remain intact. Object-PDS installation was **DEFERRED through R.3**; a fresh R.5 clean-room reconstruction and full native regression were reported successful on 23 October 2026, with detailed installation/JES evidence still to be reviewed. R.4 reopens the milestone solely for research and controlled experiments, not a replacement implementation.
 
 ## R.4 — IEWL-Driven Extension Selection (investigation approved)
 
@@ -317,3 +317,21 @@ from Git; and record MVS acceptance. See the [R.5 execution plan](runtime-extens
 **R.5 is in progress**, not accepted. R.4's technical PASS records
 remain intact; R.4 is not silently marked CLOSED. Persistent PDS
 installation requires a separate explicit destination/recovery decision.
+
+## R.5 clean-room acceptance evidence — 23 October 2026
+
+The operator reported following the Git-controlled clean-room
+reconstruction runbook and completing the full native production
+regression 00–158: **158 PASS, 0 FAIL, 1 expected SKIP (083)**.
+The visible terminal excerpt confirms PASS on cases 156, 157 and 158
+and the full-panel summary. See the
+[R.5 clean-room evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+
+This satisfies the numerical full-panel acceptance target as an
+**operator-reported result**. Executed Git revision, JES payload
+numbers, final PDS member listings, installed object read-back and
+representative IEWL MAP/XREF/GO records remain outstanding for a
+complete final evidence review.
+
+**R.5 remains IN PROGRESS** pending explicit owner closure.
+**R.4 formal closure is still pending**; R.0–R.3 remain CLOSED.

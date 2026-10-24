@@ -139,3 +139,14 @@ installed object and compares its binary records. See
 [the R.5 installation design](../../../packaging/runtime-extensions-r5-installation-design.md)
 for prerequisites and verification gates; this documentation does not
 claim a new clean-room installation was performed.
+
+## R.5 clean-room execution report — 23 October 2026
+
+After the source-mode and installation-design checkpoints above, the
+operator reported completing the published clean-room procedure and
+native production regressions **00–158: 158 PASS, 0 FAIL, 1 expected
+SKIP 083**. The record is
+[R.5 clean-room acceptance evidence](../../../packaging/runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+Individual `R5DINST` JES/IFOX/IEBCOMPR reports and IEWL MAP/XREF
+receipts still require review. This result does not, by itself,
+close R.5 or formally close R.4.
