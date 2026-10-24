@@ -29,11 +29,11 @@ and reject new optional overwrites transactionally. See
 | Global | Public name | Owner | Allocation | Implementation |
 |---:|---|---|---|---|
 | **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.0 design; not implemented |
-| **201** | Public name to be chosen | **BCPLTIME**, raw System/370 and MVS time primitives | **Assigned** | Milestone BCPLTIME ACTIVE; not implemented |
+| **201** | **`TIMESVC`** (T.0 tested spelling; T.1 distribution pending) | **BCPLTIME**, raw System/370 and MVS time primitives | **Assigned** | T.0 MVS JOB 5436 PASS; not installed; T.1 IN PROGRESS |
 | **202** | Public name to be chosen | **BCPLDEC**, decimal arithmetic | **Assigned** | Proposed; not implemented |
 | **203** | **`DEMOSVC`** | **BCPLDEMO**, project-maintained teaching/reference extension | **Permanently assigned** (22 Oct 2026) | First MVS demonstration PASS in JOB 3075; R.2 matrix pending |
 
-G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; any illustrative BCPLTIME dispatcher is associated with its new assignment **G!201**. Neither BCPLTIME nor BCPLDEC has an approved public dispatcher spelling yet.
+G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; any illustrative BCPLTIME dispatcher is associated with its new assignment **G!201**. BCPLTIME's T.0 passing native caller uses `TIMESVC:201`; T.1 will finalize distributed header/package acceptance. BCPLDEC still has no approved public dispatcher spelling. See the [BCPLTIME T.0 owner closure](bcpltime-t0-closure-20261024.md).
 
 **G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the example demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. [Owner decision and R.2 boundary](runtime-extensions-r2-bcpldemo-decision-20261022.md). Other applications and extensions must not reuse G!203. The package does not bypass ordinary R.1 per-executable collision and missing-package validation.
 

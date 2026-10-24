@@ -1,7 +1,7 @@
 # Milestone BCPLTIME — primitive System/370 and MVS time access
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** ACTIVE — T.0 IN PROGRESS; T.1 NOT STARTED (24 October 2026). Source candidate is unverified on MVS  
+**Status:** ACTIVE — T.0 CLOSED; T.1 IN PROGRESS (owner decision 24 October 2026). T.0 MVS JOB 5436 PASS; installed-mode acceptance pending  
 **Package:** `BCPLTIME` — optional System Extension  
 **Target:** IBM System/370, MVS 3.8J TK5 under Hercules  
 **Governing registration architecture:** BCEX/BCRG version 1, using the existing optional System Extension mechanisms  
@@ -80,10 +80,25 @@ The owner has explicitly authorized a **new, accelerated two-march structure** f
 
 | March | Current status | Work | Exit gate |
 | --- | --- | --- | --- |
-| **T.0 — Descriptor, Dispatcher, and Native Execution** | **IN PROGRESS** | Write actual single-object BCPLTIME BCEX descriptor, dispatcher opcodes 0/1/2, public declaration header, and one direct native BCPL caller. Debug the production-intended assembler against IFOX/IEWL/GO rather than running a preliminary probe campaign. | Actual MVS 3.8J IFOX + IEWL + GO PASS, G!201 registered via BCEX/BCRG v1, QUERY/STCK/TIME and basic error/no-partial-write behavior confirmed, observed clock data and any OS-specific caveats recorded. |
-| **T.1 — Packaging and Acceptance** | **NOT STARTED** | Add approved known-package selection/catalog and safe installation path, verify absence/presence on link, run the installed-mode tests and existing native production panel, document rebuild and package usage. | Owner reviews JES/IEWL evidence, regression and installation receipts, and explicitly accepts the optional extension. No permanent dataset writes without separate authorization. |
+| **T.0 — Descriptor, Dispatcher, and Native Execution** | **CLOSED — 24 October 2026** | Write actual single-object BCPLTIME BCEX descriptor, dispatcher opcodes 0/1/2, public declaration header, and one direct native BCPL caller. Debug the production-intended assembler against IFOX/IEWL/GO rather than running a preliminary probe campaign. | Actual MVS 3.8J IFOX + IEWL + GO PASS, G!201 registered via BCEX/BCRG v1, QUERY/STCK/TIME and basic error/no-partial-write behavior confirmed, observed clock data and any OS-specific caveats recorded. |
+| **T.1 — Packaging and Acceptance** | **IN PROGRESS — 24 October 2026** | Add approved known-package selection/catalog and safe installation path, verify absence/presence on link, run the installed-mode tests and existing native production panel, document rebuild and package usage. | Owner reviews JES/IEWL evidence, regression and installation receipts, and explicitly accepts the optional extension. No permanent dataset writes without separate authorization. |
 
-**T.0 begins with implementation, not reconnaissance.** The first MVS job should assemble the BCPLTIME candidate and exercise the actual dispatcher from the native BCPL caller using temporary datasets. A working local source tree is not equivalent to an accepted MVS build. No march closes automatically or without owner review.
+**Formal owner decision (24 October 2026): CLOSE T.0; OPEN T.1.**
+The [T.0 owner closure](bcpltime-t0-closure-20261024.md) records
+JOB 5436: five IFOX assemblies, IEWL and GO all RC=0000; IEWL MAP
+PASS; raw STCK/TIME output and `BCPLTIME T0 PASS` observed. The
+prior S0C4 in JOB 5434 was resolved by preserving permanent R0/R1
+across MVS `TIME DEC`. The record check matched the expected logical
+output but independently verifying JES DD attribution remains open.
+
+**T.1 design gate:** Before any permanent deployment, review the
+BCXCAT catalog changes, object/macro member names, installation and
+rollback procedure, and acceptance matrix with the owner. Starting
+T.1 does **not** authorize modifications of resident MVS PDSes.
+Preserve BCEX/BCRG v1, BCPLDEMO, and accepted Runtime/Base Library
+objects. Temporary T.0 linkage is still a valid development path.
+
+**T.0 began with implementation, not reconnaissance.** The first MVS job should assemble the BCPLTIME candidate and exercise the actual dispatcher from the native BCPL caller using temporary datasets. A working local source tree is not equivalent to an accepted MVS build. No march closes automatically or without owner review.
 
 **Start with actual source, not preliminary probes.** Adapt the accepted BCPLDEMO descriptor/dispatcher and package-selection method to implement the three opcodes. The first test should be a single integrated IFOX/IEWL/native BCPL job that exercises QUERY (including size and invalid-capacity checks), STCK (raw words plus condition code), and TIME (raw R0/R1 words). Debug the same production-intended dispatcher from JES and assembler evidence, rather than constructing many disposable experiments.
 

@@ -1,8 +1,11 @@
-# BCPLTIME — T.0 assembler candidate (not MVS verified)
+# BCPLTIME — T.0 MVS-verified candidate; T.1 packaging in progress
 
-Milestone BCPLTIME, T.0 — Descriptor, Dispatcher, and Native Execution.
-Do not confuse this source candidate with installed or tested MVS code.
+Milestone BCPLTIME, **T.0 — Descriptor, Dispatcher, and Native Execution CLOSED**;
+**T.1 — Packaging and Acceptance IN PROGRESS** (24 October 2026).
+JOB 5436 verified source-mode native MVS operation, but **BCPLTIME is
+not yet installed or accepted for installed-mode production use**.
 The governing document is packaging/milestone-date-and-time-services.md.
+See [the T.0 owner closure](../../../packaging/bcpltime-t0-closure-20261024.md).
 
 ## Contents
 
@@ -23,9 +26,10 @@ STCK returns high/low raw words and instruction condition code, using
 private doubleword-aligned scratch to avoid assuming the BCPL vector
 starts at a doubleword boundary. This means the candidate is **not
 reentrant**; it introduces no persistent application-level state.
-TIME DEC copies the MVS macro's R0 and R1 fullwords. The actual MVS 3.8
-macro expansion/register behavior and date layout require real IFOX/GO
-evidence; modern documentation is not proof.
+TIME DEC copies the MVS macro's R0 and R1 fullwords. JOB 5436's IFOX
+listing verifies the period macro's SVC 11 expansion, and GO passes
+after preservation of permanent R0/R1. The raw words' calendar/date
+encoding is not independently decoded; later documentation is not proof.
 
 ## First integrated MVS check (T.0)
 
@@ -67,8 +71,12 @@ JOB 5434 (24 October 2026): all five IFOX assemblies and IEWL returned
 RC=0000; GO ABEND S0C4. Dump evidence showed MVS TIME DEC left R0/R1
 changed on return to generated BCPL, preceding failure in BLIB WRITED.
 The T.0 correction saves R0/R1 in call-frame words +24/+28, captures
-raw TIME results, and restores R0/R1 before returning. The correction
-has passed offline checks but **has not yet been retested under MVS**.
+raw TIME results, and restores R0/R1 before returning. **JOB 5436 PASS**:
+ASMA/ASMN/ASMR/ASMT/ASMG, IEWL and GO all RC=0000; IEWL MAP PASS;
+`BCPLTIME T0 PASS` emitted with STCK CC=0 and two raw TIME words.
+The record checker reported that JES DD attribution was NOT VERIFIED;
+see the [T.0 owner closure](../../../packaging/bcpltime-t0-closure-20261024.md).
+T.1 installed-mode linkage and full regression are still outstanding.
 
 ## T.0 direct execution command (source mode, temporary datasets only)
 
@@ -104,5 +112,7 @@ python3 tools/checks/prepare-bcpltime-t0.py --check
 ```
 
 No installed `EXT_OBJ`, `EXT_MAC`, or `BOOT_OBJ` members are overwritten.
-Do not claim T.0 passed until the real IFOX, IEWL and GO report has been
-reviewed; the generated JCL and offline tests are not that evidence.
+T.0 is CLOSED on actual IFOX/IEWL/GO JOB 5436 evidence; offline checks
+alone would not have met the acceptance gate. T.1 requires approved
+installation design, selected/unselected linkage, installed-mode
+acceptance, and full native production regression.
