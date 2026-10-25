@@ -85,7 +85,7 @@ class NativeQ0Batch(unittest.TestCase):
                 ('Q0TFRET', 'FRESULT')):
             with self.subTest(label=label):
                 sequence = '\n'.join((
-                    f'{label}   ST    15,{result_cell}',
+                    f'{label:<8} ST    15,{result_cell}',
                     '         L     13,4(13)',
                     '         LM    14,14,12(13)',
                     f'         L     15,{result_cell}',

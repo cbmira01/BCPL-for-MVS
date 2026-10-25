@@ -5,6 +5,10 @@ root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
 source="$root/bootstrap-toolchain/probes/q0-integrated-16-dcb"
 work="$root/workarea/qsam-q0-integrated"
 generator="$source/make-jobs.py"
+# Host syntax and unit gates apply even to direct --execute invocations.
+python3 -m py_compile "$source/make-jobs.py" \
+    "$source/verify-report.py" "$source/test_q0_integrated.py"
+python3 -m unittest discover -s "$source" -p 'test_*.py' -v
 if [[ $# -eq 1 && $1 == --check ]]; then
     for profile in finish stop finish-512 stop-512; do
         python3 "$generator" "$profile" --check
