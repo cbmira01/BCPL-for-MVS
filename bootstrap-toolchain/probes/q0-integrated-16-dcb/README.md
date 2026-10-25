@@ -1,6 +1,16 @@
 # Milestone QSAM — Q.0 integrated native 16-DCB batch
 
-**PREPARED, NOT MVS EXECUTED.** Q.0 — Reconnaissance & contract remains **IN PROGRESS**. Q.1 — Linkage & OPEN/CLOSE skeleton remains **NOT STARTED**.
+**INITIAL MVS JOB 6595 EXECUTED WITH AN ABI FIXTURE FAILURE; CORRECTED RETEST PENDING.** Q.0 — Reconnaissance & contract remains **IN PROGRESS**. Q.1 — Linkage & OPEN/CLOSE skeleton remains **NOT STARTED**.
+
+## First integrated MVS run and diagnostic — 25 October 2026
+
+The owner executed the offline host suite (**four tests OK**) and all four synthetic 1618-card JCL profiles (**PASS**). The demoted Cambridge compiler generated the native FINISH and STOP callers in **JOBs 6593 and 6594**, respectively. The first temporary integrated job, **Q0NFIN / JOB 6595**, passed all six IFOX/IEWL assembly/link steps and WGO at RC=0000 with assembler severity zero. Native GO returned **RC=0008**, not the expected FINISH RC=0000. The batch stopped before submitting Q0NSTP.
+
+The actual GO messages were `Q0 NATIVE 16 OPEN READ PASS`, `Q0 FINALIZER STOP 16 CLOSE FREE PASS` and `BCPLREG 2001 FINALIZER RETURNED NONZERO`. The expected native BCPL FINISH marker was absent. This confirms the 16-open-DCB / 16-stage / verified-READ **execution path** in the integrated native program under 256K, but **does not** establish an accepted FINISH/finalizer outcome or a complete 256K production BCPLQSAM resource limit.
+
+Source review identified the two test-only MVS ABI defects: the helper exit restored its entry R15 (code address) rather than returning the intended zero/8 status, causing the native caller to run STOP(8); the finalizer loaded its saved status **after** restoring R12, losing the correct CSECT base and causing a spurious nonzero finalizer return. Both now use the tested R.1-style sequence (save result, restore R13 and R14, reload R15 while R12 is still valid, restore R0–R12, return). A new offline regression checks both sequences; the JES verifier also rejects live `BCPLREG 2001` diagnostics even for STOP(8).
+
+JOB 6595 is a **failed pilot**, retained as evidence; no post-correction MVS PASS is claimed. Retest in a single batch after host preflight.
 
 ## Purpose and scope
 

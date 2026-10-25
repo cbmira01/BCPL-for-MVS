@@ -13,9 +13,13 @@
 | 16 simultaneously OPEN QSAM DCBs/stages | JOBs 2183–2186: standalone 256K | Full native BCPL/coexisting process resource test below |
 | BCEX/BCRG v1, registration/finalization | Accepted Runtime Extensions R.0/R.1, including JOBs 2760–2783 | QSAM finalizer implements approved R1 ABI; no new registrar |
 | Optional source/installed selection | Accepted R.2–R.5; BCPLDEMO and BCPLTIME T.0–T.1 | QSAM-specific packaging later, without touching accepted references |
-| Full native BCPL process with 16 staged DCBs and finalizer | `q0-integrated-16-dcb` batch prepared | **MVS NOT YET RUN:** FINISH and STOP(8) JES IDs, IFOX/IEWL/GO RCs, MAP, GO markers, cleanup |
+| Full native BCPL process with 16 staged DCBs and finalizer | JOB 6595: integrated 16 OPEN/READ marker, all six IFOX/IEWL and WGO RC=0000 | GO RC=0008 due test-only helper/finalizer ABI defects; **FINISH/STOP acceptance NOT MET**. Corrected pair must be rerun and verified |
 | Returned-CLOSE error ownership and exceptional MVS outcomes | Approved conservative `qsam-q0-error-and-r0-design-decisions-20261020.md` | Returned CLOSE failure remains unverified in QSAM. Decide explicitly at Q.0 gate whether to defer implementation-specific tests to Q.1/Q.5 |
 | Public QUERY, modes, formats, errors | `bcplqsam-public-interface.md` approved design | Native BCPL caller/examples and production status vector tests after Q.0 approval, in Q.1–Q.3 |
+
+## 25 October initial native MVS evidence and fix boundary
+
+Host tests: 4 OK; four synthetic profiles PASS. Compilation JOBs **6593** and **6594** generated FINISH/STOP assembler. **JOB 6595 Q0NFIN** assembled/linked/wrote successfully and printed `Q0 NATIVE 16 OPEN READ PASS`, proving the live integrated 16-DCB read path at REGION=256K. However it printed `Q0 FINALIZER STOP 16 CLOSE FREE PASS` and `BCPLREG 2001 FINALIZER RETURNED NONZERO`; native GO RC=0008, expected BCPL FINISH marker absent. Therefore JOB 6595 is **not an accepted FINISH lifecycle pass**; STOP(8) was not submitted by the fail-fast runner. Source audit found wrong R15 restore and wrong finalizer return/base restoration order; a consolidated test-only correction and host regression has been prepared. Preserve JOB 6595 as negative diagnostic evidence, and obtain new actual JES receipts for both profiles before Q.0 closure.
 
 ## New batch acceptance and evidence checklist
 

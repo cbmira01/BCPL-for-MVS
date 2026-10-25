@@ -76,6 +76,25 @@ class NativeQ0Batch(unittest.TestCase):
         self.assertIn("F'1',F'48',F'56'", src)
         g.checked(src.splitlines())
 
+    def test_mvs_return_status_survives_register_restore(self):
+        # JOB 6595 reached all 16 staged DCBs but helper restoration
+        # overwrote R15 and wrongly directed FINISH to STOP(8).
+        src = g.extension()
+        for label, result_cell in (
+                ('Q0TRET', 'IRESULT'),
+                ('Q0TFRET', 'FRESULT')):
+            with self.subTest(label=label):
+                sequence = '\n'.join((
+                    f'{label}   ST    15,{result_cell}',
+                    '         L     13,4(13)',
+                    '         LM    14,14,12(13)',
+                    f'         L     15,{result_cell}',
+                    '         LM    0,12,20(13)',
+                    '         BR    14'))
+                self.assertIn(sequence, src)
+        self.assertNotIn('         LM    14,12,12(13)', src)
+        self.assertIn("IRESULT  DC    F'0'", src)
+
     def test_live_go_only_and_step_codes(self):
         for profile in ('finish', 'stop'):
             s, report = sample_evidence(profile)
@@ -91,6 +110,9 @@ class NativeQ0Batch(unittest.TestCase):
                 v.verify(profile, s, report.replace(
                     'Q0 NATIVE 16 OPEN READ PASS\n',
                     'Q0 FINALIZER BAD STATE\n'))
+            with self.assertRaises(ValueError):
+                v.verify(profile, s, report +
+                         'BCPLREG 2001 FINALIZER RETURNED NONZERO\n')
 
     def test_go_marker_in_listing_not_sufficient(self):
         s, report = sample_evidence('finish')

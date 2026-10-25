@@ -30,6 +30,7 @@ def verify(profile, summary, report):
     for bad in ('Q0 FINALIZER BAD STATE',
                 'Q0 NATIVE STAGE ALLOCATION FAILED',
                 'Q0 NATIVE RECORD VERIFICATION FAILED',
+                'BCPLREG 2001 FINALIZER RETURNED NONZERO',
                 'ABEND S0', 'ABEND S1'):
         if bad in actual_go:
             raise ValueError(f'failure in GO report: {bad}')
