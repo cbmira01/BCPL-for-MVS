@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
+import subprocess
 from pathlib import Path
 import tempfile
 import unittest
@@ -44,6 +46,28 @@ class PrepareQ1ASMTest(unittest.TestCase):
             self.assertTrue(output.is_file())
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
             self.assertIn('         END\n/*\n//', output.read_text())
+
+
+    def test_wsl_runbook_uses_python_and_bounded_one_shot_reporting(self):
+        """Documented operator blocks must not exit WSL or call Python with Bash."""
+        readme = (HERE / 'README.md').read_text(encoding='utf-8')
+        blocks = re.findall(r'```bash\n(.*?)\n```', readme, re.S)
+        self.assertEqual(len(blocks), 3)
+        for index, script in enumerate(blocks, 1):
+            self.assertTrue(script.startswith(
+                'set +e\nset +u\nset +o pipefail\n'), index)
+            self.assertNotRegex(script, r'(?m)^\s*set\s+-')
+            self.assertNotRegex(script, r'(?m)^\s*exit\b')
+            syntax = subprocess.run(
+                ['bash', '-n'], input=script, text=True,
+                capture_output=True, check=False)
+            self.assertEqual(syntax.returncode, 0, syntax.stderr)
+        report = blocks[2]
+        self.assertIn('python3 tools/mvs/job-summary', report)
+        self.assertNotIn('bash tools/mvs/job-summary', report)
+        self.assertIn('timeout -k 2s 15s', report)
+        self.assertNotIn('for attempt in', report)
+        self.assertEqual(report.count('python3 tools/mvs/job-summary'), 1)
 
 
 if __name__ == '__main__':

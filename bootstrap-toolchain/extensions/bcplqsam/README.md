@@ -200,7 +200,13 @@ else
 fi
 ```
 
-### WSL 3: collect JES evidence on success or failure
+### WSL 3: inspect one JES job, without polling or fail-fast
+
+This block checks the current recorded job **once**, using the Python
+`job-summary` program (not Bash). Each inspection has a bounded
+15-second execution time. It saves the JES report on both assembler
+success and failure, when the printer report is available. Run it
+again manually if the job is still in progress.
 
 ```bash
 set +e
@@ -213,35 +219,49 @@ if [ ! -r "$work/last-job.txt" ]; then
 else
     job=$(cat "$work/last-job.txt")
     if [[ "$job" =~ ^[0-9]+$ ]]; then
-        summary_rc=2
-        for attempt in {1..90}; do
-            bash tools/mvs/job-summary "$job" --max-rc 0 \
-                > "$work/q1asm-summary.txt" 2>&1
-            summary_rc=$?
-            if [ "$summary_rc" -ne 2 ]; then break; fi
-            sleep 2
-        done
+        printf 'Checking Q1QSASM JOB %s\n' "$job"
 
+        timeout -k 2s 15s \
+            python3 tools/mvs/job-summary "$job" --max-rc 0 \
+            > "$work/q1asm-summary.txt" 2>&1
+        summary_rc=$?
         cat "$work/q1asm-summary.txt"
-        bash tools/mvs/dump-report-for-job "$job" \
+        printf 'Summary command RC=%s\n' "$summary_rc"
+
+        timeout -k 2s 15s \
+            bash tools/mvs/dump-report-for-job "$job" \
             > "$work/q1asm-report.txt"
         report_rc=$?
-        printf 'Report collection rc=%s\n' "$report_rc"
+        printf 'Report collection RC=%s\n' "$report_rc"
+
+        if [ "$report_rc" -eq 0 ]; then
+            printf 'IFOX/JES diagnostic excerpts:\n'
+            grep -Ein 'HIGHEST SEVERITY|STATEMENTS FLAGGED|ERROR|WARNING|ASMQ|RC=' \
+                "$work/q1asm-report.txt" | head -80
+        else
+            echo 'JES report unavailable or collection failed.'
+        fi
 
         if [ "$summary_rc" -eq 0 ] &&
            grep -Eq '^ASMQ[[:space:]]+.*RC=0000$' \
                "$work/q1asm-summary.txt"; then
-            echo 'ASMQ RC=0000; inspect full IFOX listing.'
+            echo 'ASMQ RC=0000 in job summary; inspect full listing.'
         else
-            echo 'Failed/incomplete: inspect JES diagnostics.'
+            echo 'ASMQ not yet confirmed RC=0000; inspect diagnostics.'
         fi
+
         printf 'Summary: %s/q1asm-summary.txt\n' "$work"
-        printf 'Report: %s/q1asm-report.txt\n' "$work"
+        printf 'Report:  %s/q1asm-report.txt\n' "$work"
     else
-        echo 'Invalid recorded JOB number; report not requested.'
+        echo 'Invalid or pending JOB number; report not requested.'
     fi
 fi
 ```
+
+`job-summary` exit code 2 can mean the job is incomplete, missing, or
+the printer cannot be read; **it must not trigger repeated automatic
+polling**. A timeout may return 124. Report extraction RC=0 confirms
+only that the printer report was obtained, not that assembly passed.
 
 The job must complete with `ASMQ RC=0000` and no IFOX errors to
 pass this initial gate. IEWL linkage, 16-handle native execution at
