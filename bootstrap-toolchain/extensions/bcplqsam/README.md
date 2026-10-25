@@ -93,3 +93,35 @@ and MVS validation. Offline source checks cannot prove those behaviors.
 
 This candidate is not a Q.1 closure or approval of permanent object
 installation, native regression changes, record I/O, or Q.2.
+
+
+## First executable gate: IFOX assembly only (Q.1)
+
+The repository-owned `prepare-q1-asm.py` emits a **single-step** test
+job, `Q1QSASM`. It assembles the actual `bcplqsam.asm` with
+`IFOX00` and `SYS1.MACLIB`, requesting an OBJECT deck in a disposable
+`&&Q1QSOBJ` sequential dataset, `DISP=(NEW,DELETE)`. It does not
+link, execute a native BCPL application, or modify permanent PDS
+members. This first test must pass before integration or 16-handle GO.
+
+From the Git checkout on the authorized WSL/MVS operator machine:
+
+```sh
+python3 bootstrap-toolchain/extensions/bcplqsam/check-q1-offline.py
+python3 -m unittest -v \
+  bootstrap-toolchain/extensions/bcplqsam/test_prepare_q1_asm.py
+python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q1-asm.py --check
+python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q1-asm.py --prepare
+bash tools/mvs/submit-jcl --timeout 120 \
+  workarea/bcplqsam-q1/q1asm.jcl
+```
+
+The **last command explicitly submits** to MVS JES. Record the returned
+JOB ID, then inspect its IFOX `ASMQ` completion code and full listing
+using the established `tools/mvs/job-summary` and
+`tools/mvs/dump-report-for-job` utilities. An RC=0000 alone does not
+certify the BCEX relocation, link, register, FINISH/STOP, QSAM behavior,
+or full-native 16-handle memory budget. Failure should result in source
+fixes on the candidate branch and another isolated assembly test.
+Generated authenticated JCL is local `workarea/` data (mode 0600),
+never Git content.
