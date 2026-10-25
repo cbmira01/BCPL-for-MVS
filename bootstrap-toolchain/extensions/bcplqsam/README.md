@@ -4,7 +4,9 @@
 UNACCEPTED candidate.** The separately approved Q.0 gate and four Q.1
 implementation decisions permit source work, not MVS deployment or march
 closure. Actual IFOX, IEWL, native BCPL, JES/QSAM, and REGION=256K
-execution are **not yet verified**.
+execution are **not yet verified** as an integrated Q.1 service.
+IFOX assembly alone **passed JOB 6600** (ASMQ RC=0000, severity 0;
+see `packaging/qsam-q1-ifox-job-6600-evidence-20261025.md`).
 
 ## Scope and files
 
@@ -267,3 +269,173 @@ The job must complete with `ASMQ RC=0000` and no IFOX errors to
 pass this initial gate. IEWL linkage, 16-handle native execution at
 REGION=256K, QSAM and returned-CLOSE semantics remain separate
 validation steps. Preserve and review JES reports on failure.
+
+## Second executable gate: temporary IEWL linkage (Q.1)
+
+The **IFOX-only gate passed** in MVS JOB 6600. This next gate
+assembles the same source to `&&Q1QSOBJ`, passes the object to IEWL,
+and writes the load module only to `&&Q1LOAD(Q1QSAM)`. It uses
+`ENTRY QSMBEG` to link the BCEX descriptor and its dependent
+relocatable sections, **never runs that entry**, and never modifies
+`BOOT_OBJ`, `BOOT_DEVOBJ`, installed extensions, or production BCXCAT.
+
+Each operator block below is non-fail-fast. All execution is on
+`main`; temporary JCL stays in ignored `workarea/`. The
+`q1link` JOB number is separate from the previously observed
+`Q1QSASM JOB 6600`.
+
+### WSL A: verify main and prepare linked-job JCL
+
+```bash
+set +e
+set +u
+set +o pipefail
+
+work=workarea/bcplqsam-q1
+q1=bootstrap-toolchain/extensions/bcplqsam
+
+if git switch main; then
+    rm -f "$work/.ready-link-main-sha"
+    if git pull --ff-only origin main; then
+        mkdir -p "$work"
+        failures=0
+
+        python3 "$q1/check-q1-offline.py"
+        rc=$?
+        printf 'Q.1 source invariants RC=%s\n' "$rc"
+        if [ "$rc" -ne 0 ]; then failures=$((failures + 1)); fi
+
+        python3 "$q1/test_prepare_q1_asm.py" -v
+        rc=$?
+        printf 'IFOX preparer tests RC=%s\n' "$rc"
+        if [ "$rc" -ne 0 ]; then failures=$((failures + 1)); fi
+
+        python3 "$q1/test_prepare_q1_link.py" -v
+        rc=$?
+        printf 'IEWL preparer tests RC=%s\n' "$rc"
+        if [ "$rc" -ne 0 ]; then failures=$((failures + 1)); fi
+
+        python3 "$q1/prepare-q1-link.py" --check
+        rc=$?
+        printf 'Linked JCL card checks RC=%s\n' "$rc"
+        if [ "$rc" -ne 0 ]; then failures=$((failures + 1)); fi
+
+        if [ "$failures" -eq 0 ]; then
+            python3 "$q1/prepare-q1-link.py" --prepare
+            prep_rc=$?
+            printf 'JCL preparation RC=%s\n' "$prep_rc"
+            if [ "$prep_rc" -eq 0 ]; then
+                git rev-parse HEAD > "$work/.ready-link-main-sha"
+                printf 'Link-ready marker RC=%s\n' "$?"
+            fi
+        else
+            echo 'Offline failures: no linked-JCL preparation.'
+        fi
+    else
+        echo 'Git pull failed; checks and preparation skipped.'
+    fi
+else
+    echo 'Could not switch to main; nothing else executed.'
+fi
+```
+
+### WSL B: submit a single disposable IFOX/IEWL job
+
+This is the **only block here that submits a JES job**. A
+submission timeout is not proof of failure; do not retry blindly.
+
+```bash
+set +e
+set +u
+set +o pipefail
+
+work=workarea/bcplqsam-q1
+if [ "$(git branch --show-current)" != main ]; then
+    echo 'Not on main; nothing submitted.'
+elif [ ! -r "$work/q1link.jcl" ] ||
+     [ ! -r "$work/.ready-link-main-sha" ]; then
+    echo 'No prepared linked JCL and matching readiness marker.'
+elif [ "$(cat "$work/.ready-link-main-sha")" != "$(git rev-parse HEAD)" ]; then
+    echo 'Prepared linked JCL belongs to another commit.'
+elif ! git diff --quiet HEAD -- bootstrap-toolchain/extensions/bcplqsam; then
+    echo 'Uncommitted Q.1 source changes; no submission.'
+else
+    if [ -r "$work/q1link-last-job.txt" ]; then
+        cp "$work/q1link-last-job.txt" "$work/q1link-previous-job.txt"
+    fi
+
+    if printf 'PENDING\n' > "$work/q1link-last-job.txt"; then
+        submission=$(timeout -k 2s 100s \
+            bash tools/mvs/submit-jcl --timeout 90 "$work/q1link.jcl")
+        submit_rc=$?
+        printf 'Q1QSLNK submission RC=%s; response=%s\n' \
+            "$submit_rc" "$submission"
+
+        if [ "$submit_rc" -eq 0 ] &&
+           [[ "$submission" =~ ^JOB[[:space:]]+[0-9]+$ ]]; then
+            job=$(printf '%s\n' "$submission" | awk '{print $2}')
+            printf '%s\n' "$job" > "$work/q1link-last-job.txt"
+            printf 'Q1QSLNK submitted as JOB %s\n' "$job"
+        else
+            echo 'No confirmed JOB ID; inspect JES before resubmitting.'
+        fi
+    else
+        echo 'Could not reset current JOB marker; nothing submitted.'
+    fi
+fi
+```
+
+### WSL C: inspect the latest link job once, without polling
+
+```bash
+set +e
+set +u
+set +o pipefail
+
+work=workarea/bcplqsam-q1
+if [ ! -r "$work/q1link-last-job.txt" ]; then
+    echo 'No recorded Q1QSLNK job.'
+else
+    job=$(cat "$work/q1link-last-job.txt")
+    if [[ "$job" =~ ^[0-9]+$ ]]; then
+        timeout -k 2s 15s \
+            python3 tools/mvs/job-summary "$job" --max-rc 0 \
+            > "$work/q1link-summary.txt" 2>&1
+        summary_rc=$?
+        cat "$work/q1link-summary.txt"
+        printf 'Summary command RC=%s\n' "$summary_rc"
+
+        timeout -k 2s 15s \
+            bash tools/mvs/dump-report-for-job "$job" \
+            > "$work/q1link-report.txt"
+        report_rc=$?
+        printf 'JES report RC=%s\n' "$report_rc"
+
+        if [ "$report_rc" -eq 0 ]; then
+            grep -Ein 'ASMQ|LKED|RC=|MAP|XREF|UNRESOLVED|SEVERITY|ERROR|WARNING' \
+                "$work/q1link-report.txt" | head -80
+        fi
+
+        if [ "$summary_rc" -eq 0 ] &&
+           grep -Eq '^ASMQ[[:space:]]+.*RC=0000$' \
+               "$work/q1link-summary.txt" &&
+           grep -Eq '^LKED[[:space:]]+.*RC=0000$' \
+               "$work/q1link-summary.txt"; then
+            echo 'IFOX+IEWL RC=0000; inspect full MAP/XREF.'
+        else
+            echo 'Link gate not confirmed; examine saved JES output.'
+        fi
+
+        printf 'Summary: %s/q1link-summary.txt\n' "$work"
+        printf 'Report:  %s/q1link-report.txt\n' "$work"
+    else
+        echo 'Invalid/pending JOB ID; no report requested.'
+    fi
+fi
+```
+
+An `ASMQ RC=0000` and `LKED RC=0000` with a verified MAP/XREF
+establishes the **temporary object linkage** only. Native BCPL
+execution, 16 concurrent handles at GO REGION=256K, registration,
+returned-CLOSE tests, and FINISH/STOP finalization remain separate
+gates.

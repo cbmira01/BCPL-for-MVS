@@ -52,7 +52,7 @@ class PrepareQ1ASMTest(unittest.TestCase):
         """Documented operator blocks must not exit WSL or call Python with Bash."""
         readme = (HERE / 'README.md').read_text(encoding='utf-8')
         blocks = re.findall(r'```bash\n(.*?)\n```', readme, re.S)
-        self.assertEqual(len(blocks), 3)
+        self.assertGreaterEqual(len(blocks), 3)
         for index, script in enumerate(blocks, 1):
             self.assertTrue(script.startswith(
                 'set +e\nset +u\nset +o pipefail\n'), index)
