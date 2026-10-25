@@ -38,8 +38,11 @@ def sample_evidence(profile):
               'Q0TFIN BCPLREG\n'
               + f'IEF236I ALLOC. FOR {job} GO\n'
               + 'Q0 NATIVE 16 OPEN READ PASS\n'
-              + f'Q0 NATIVE BCPL {profile.upper()} PASS\n'
-              + f'Q0 FINALIZER {profile.upper()} 16 CLOSE FREE PASS\n')
+              + f'Q0 FINALIZER {profile.upper()} 16 CLOSE FREE PASS\n'
+              + f'IEF142I {job} GO - STEP WAS EXECUTED - COND CODE '
+              + ('0000' if profile == 'finish' else '0008') + '\n'
+              + "1291 Q0TBAD WTO 'Q0 FINALIZER BAD STATE'\n"
+              + f'Q0 NATIVE BCPL {profile.upper()} PASS\n')
     return summary, report
 
 
@@ -98,6 +101,7 @@ class NativeQ0Batch(unittest.TestCase):
     def test_live_go_only_and_step_codes(self):
         for profile in ('finish', 'stop'):
             s, report = sample_evidence(profile)
+            job = {'finish': 'Q0NFIN', 'stop': 'Q0NSTP'}[profile]
             v.verify(profile, s, report)
             with self.assertRaises(ValueError):
                 v.verify(profile, s, report.replace(
@@ -111,8 +115,38 @@ class NativeQ0Batch(unittest.TestCase):
                     'Q0 NATIVE 16 OPEN READ PASS\n',
                     'Q0 FINALIZER BAD STATE\n'))
             with self.assertRaises(ValueError):
-                v.verify(profile, s, report +
-                         'BCPLREG 2001 FINALIZER RETURNED NONZERO\n')
+                v.verify(profile, s, report.replace(
+                    f'IEF142I {job} GO',
+                    'BCPLREG 2001 FINALIZER RETURNED NONZERO\n'
+                    + f'IEF142I {job} GO'))
+
+    def test_assembler_listing_failure_literals_not_live(self):
+        # JOB 6598: source listings after IEF142I contain every unexecuted
+        # error message. None of these is an actual GO failure.
+        s, report = sample_evidence('finish')
+        report += "DC C'BCPLREG 2001 FINALIZER RETURNED NONZERO'\n"
+        v.verify('finish', s, report)
+
+    def test_missing_actual_go_completion_fails(self):
+        s, report = sample_evidence('finish')
+        report = report.replace(
+            'IEF142I Q0NFIN GO - STEP WAS EXECUTED - COND CODE 0000\n', '')
+        with self.assertRaises(ValueError):
+            v.verify('finish', s, report)
+
+    def test_bcpl_marker_only_in_assembler_listing_fails(self):
+        s, report = sample_evidence('finish')
+        report = report.replace('Q0 NATIVE BCPL FINISH PASS\n',
+                                "100 DC C'Q0 NATIVE BCPL FINISH PASS'\n")
+        with self.assertRaises(ValueError):
+            v.verify('finish', s, report)
+
+    def test_real_bad_state_within_go_fails(self):
+        s, report = sample_evidence('finish')
+        report = report.replace('IEF142I Q0NFIN GO',
+                                'Q0 FINALIZER BAD STATE\nIEF142I Q0NFIN GO')
+        with self.assertRaises(ValueError):
+            v.verify('finish', s, report)
 
     def test_go_marker_in_listing_not_sufficient(self):
         s, report = sample_evidence('finish')
