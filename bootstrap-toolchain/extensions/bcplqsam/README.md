@@ -5,8 +5,10 @@ UNACCEPTED candidate.** The separately approved Q.0 gate and four Q.1
 implementation decisions permit source work, not MVS deployment or march
 closure. Actual IFOX, IEWL, native BCPL, JES/QSAM, and REGION=256K
 execution are **not yet verified** as an integrated Q.1 service.
-IFOX assembly alone **passed JOB 6600** (ASMQ RC=0000, severity 0;
-see `packaging/qsam-q1-ifox-job-6600-evidence-20261025.md`).
+IFOX assembly **passed JOB 6600** (ASMQ RC=0000, severity 0), and
+standalone IEWL linkage **passed JOB 6601** (ASMQ/LKED RC=0000).
+See `packaging/qsam-q1-ifox-job-6600-evidence-20261025.md` and
+`packaging/qsam-q1-iewl-job-6601-evidence-20261026.md`.
 
 ## Scope and files
 
@@ -439,3 +441,20 @@ establishes the **temporary object linkage** only. Native BCPL
 execution, 16 concurrent handles at GO REGION=256K, registration,
 returned-CLOSE tests, and FINISH/STOP finalization remain separate
 gates.
+
+## Third executable gate: native BCPL QUERY-only integration
+
+Follow [`q1-query-runbook.md`](q1-query-runbook.md) for the next
+controlled test: compile the BCPL `test-q1-query.bcpl` using the
+demoted Cambridge compiler under ICINT19, then assemble, link and
+execute a temporary-only native application at GO REGION=256K. Its
+`QSAMSVC:200` QUERY and unsupported-opcode calls exercise generic
+BCX registration without allocating or OPENing QSAM DCBs. A successful
+run requires all IFOX/IEWL/GO steps RC=0000 and the post-linker
+`BCPLQSAM Q1 QUERY PASS` output record; the record must not be
+inferred from the assembly source listing. No installed MVS PDS objects
+or permanent BCXCAT macros are changed.
+
+After QUERY-only integration, review OPEN rollback ownership and
+returned-CLOSE semantics before 3-DD and 16-handle native testing.
+Q.1 remains **open** until its own accepted integration evidence.

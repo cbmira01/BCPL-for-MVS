@@ -1,0 +1,23 @@
+// Q.1 first integrated native BCPL registration/QUERY only.
+// No QSAM DDs, OPEN, CLOSE, stage allocation or record transfers.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63; QSAMSVC:200 $)
+LET START() BE
+$(1
+    LET I = VEC 6
+    I!0 := 707
+    I!6 := 909
+    IF QSAMSVC(0,0,0) NE 6 DO STOP(8)
+    IF QSAMSVC(0,I,5) NE -1 DO STOP(8)
+    IF I!0 NE 707 | I!6 NE 909 DO STOP(8)
+    IF QSAMSVC(0,0,6) NE -3 DO STOP(8)
+    IF QSAMSVC(0,I,6) NE 6 DO STOP(8)
+    IF I!0 NE 1 | I!1 NE 1 | I!2 NE 0 DO STOP(8)
+    IF I!3 NE 6 | I!4 NE 25 | I!5 NE 0 DO STOP(8)
+    IF I!6 NE 909 DO STOP(8)
+    IF QSAMSVC(2,0,0) NE -2 DO STOP(8)
+    IF QSAMSVC(3,0,0) NE -2 DO STOP(8)
+    IF QSAMSVC(99,0,0) NE -2 DO STOP(8)
+    WRITES("BCPLQSAM Q1 QUERY PASS")
+    NEWLINE()
+    FINISH
+$)1
