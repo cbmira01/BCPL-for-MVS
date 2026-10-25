@@ -112,8 +112,10 @@ def make_deck(generated: str, jobcard: list[str], obj_dsn: str) -> str:
         raise ValueError('unapproved MVS dataset or output')
     if cards.count(' INCLUDE OBJ(BCPLIO)') != 1:
         raise ValueError('accepted BCPLIO import missing')
-    if 'BCXREQ BCPLQSAM' not in cards:
-        raise ValueError('temporary BCPLQSAM requirement missing')
+    # IFOX assembler operations occupy columns 10 onward; preserve the
+    # actual fixed-column card instead of matching an unindented token.
+    if cards.count('         BCXREQ BCPLQSAM') != 1:
+        raise ValueError('expected one temporary BCPLQSAM requirement')
     if not any(row.startswith('//QSMOBJ   DD  DSN=&&Q1QSOBJ')
                for row in cards):
         raise ValueError('no temporary QSMOBJ object import')

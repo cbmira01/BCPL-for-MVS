@@ -12,6 +12,14 @@ This reuses the **demoted Cambridge compiler under ICINT19** to
 *generate* System/370 assembler; the compiler itself is not the
 separately reconstructed native Cambridge compiler.
 
+**Offline preparation correction:** The first Q1QUERY attempt on `main`
+at `ba222b77` stopped safely before compilation. The generator
+mistakenly matched an unindented `BCXREQ BCPLQSAM` token, whereas the
+actual IFOX selection card is `         BCXREQ BCPLQSAM`.
+The fixed-column check now requires exactly one such card; regression
+tests explicitly reject zero or two. That operator log is **not**
+MVS/JES evidence and no Q1QUERY job was submitted in that attempt.
+
 All development remains on `main`. No downloads. JCL uses
 temporary object, registry, and load data sets only. **None of these
 blocks enables Bash fail-fast or issues top-level `exit`.** The

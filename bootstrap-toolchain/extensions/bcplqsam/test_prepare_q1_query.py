@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 import subprocess
 import unittest
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location(
@@ -31,7 +32,7 @@ class NativeQueryTest(unittest.TestCase):
                      'GO'):
             self.assertEqual(sum(c.startswith(f'//{step:<8} EXEC')
                                  for c in cards), 1, step)
-        self.assertIn('BCXREQ BCPLQSAM', cards)
+        self.assertEqual(cards.count('         BCXREQ BCPLQSAM'), 1)
         self.assertIn(' ENTRY R0APP', cards)
         self.assertIn(' NAME Q1QUERY(R)', cards)
         self.assertIn('//QSMOBJ   DD  DSN=&&Q1QSOBJ,DISP=(OLD,PASS)',
@@ -51,6 +52,27 @@ class NativeQueryTest(unittest.TestCase):
         for row in cards:
             self.assertTrue(row.isascii())
             self.assertLessEqual(len(row), 71)
+
+    def test_required_bcxreq_card_missing_or_duplicated(self):
+        """Reject missing/duplicated real fixed-column selection cards."""
+        t0 = QUERY.time_helper()
+        read_cards = t0.read_cards
+        for copies in (0, 2):
+            with self.subTest(selection_copies=copies):
+                def altered_cards(helper, path):
+                    rows = read_cards(helper, path)
+                    if path.name == 'q1-selection.asm':
+                        original = '         BCXREQ BCPLQSAM'
+                        self.assertEqual(rows.count(original), 1)
+                        rows = [r for r in rows if r != original]
+                        rows.extend([original] * copies)
+                    return rows
+                with (patch.object(QUERY, 'time_helper', return_value=t0),
+                      patch.object(t0, 'read_cards',
+                                   side_effect=altered_cards)):
+                    with self.assertRaisesRegex(ValueError,
+                                                'BCPLQSAM requirement'):
+                        self.make()
 
     def test_no_query_of_or_open_of_qsam_dcb(self):
         src = (HERE / 'test-q1-query.bcpl').read_text('ascii')
