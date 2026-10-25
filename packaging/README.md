@@ -182,7 +182,8 @@ The 16-DCB standalone job used **GO REGION=256K**, held sixteen
 private 1024-byte stages and checked interleaved F1024 records.
 The 512K fallback was not run. Full BCPLQSAM runtime/application
 storage accounting remains open.
-**Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
+**Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started.
+The [25 October Q.0 consolidated gate matrix](qsam-q0-consolidated-gate-review.md) and [temporary-only integrated native 16-DCB/FINISH/STOP probe](../bootstrap-toolchain/probes/q0-integrated-16-dcb/README.md) prepare the remaining Q.0 resource/lifecycle evidence for a single MVS batch. They are **not yet MVS-executed or Q.0 acceptance**, and do not change accepted Runtime Extensions or BCPLTIME marches. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
 ## Optional numeric and clock milestones
 

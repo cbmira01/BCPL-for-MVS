@@ -222,3 +222,29 @@ VSAM (ESDS/KSDS/RRDS), PDS directory/member creation and STOW, dynamic allocatio
 3. Report explicit interface decisions (especially byte buffers, record sizes, return/status contract, initialization/global registration and linkage) and a precise implementation/test map before modifying runtime source.
 4. Keep scope independent of M4. Preserve baseline and candidate-object separation, and keep evidence and decisions in `packaging/`.
 5. Once Q.0 is accepted, implement one march at a time, compile and test on TK5, record JES job IDs/condition codes and reproducible commands, commit each accepted march. Never claim a test passed without observed output.
+
+## Q.0 current dependency reconciliation and consolidated probe (25 October 2026)
+
+The paragraphs above describing Runtime Extensions R.0 as unimplemented reflect
+the **historical 20 October Q.0 evidence state**, not GitHub's accepted
+25 October baseline. The approved R.0–R.5 Runtime Extensions marches are now
+individually CLOSED; R.1 provides actual BCEX/BCRG version-1 startup
+registration, reverse-order finalization and verified FINISH/STOP error
+handling. R.4/R.5 provide known-package IEWL/BCX selection and installed
+optional-package production patterns. BCPLDEMO and BCPLTIME are the accepted
+reference installations. Overall expanded Runtime Extensions milestone owner
+disposition remains separate from closure of its individual marches.
+
+The [Q.0 consolidated gate review](qsam-q0-consolidated-gate-review.md)
+reconciles the earlier obligations. The [test-only integrated 16-DCB
+native BCPL/FINISH/STOP batch](../bootstrap-toolchain/probes/q0-integrated-16-dcb/README.md)
+is now PREPARED, **not MVS executed**. It uses the accepted BCEX/BCRG
+and Core Runtime without implementing public QSAMSVC:200, altering the compiler
+or modifying MVS object PDSes. Historic Q.0 jobs 2157 and 2159–2186 remain
+standalone evidence, not a production BCPLQSAM acceptance.
+
+The specific resource-coexistence gate remains subject to the actual batch
+JES/IEWL/GO evidence, and returned/exceptional QSAM CLOSE ownership remains
+an explicitly acknowledged limitation requiring owner Q.0 disposition and
+later implementation validation. **Q.0 remains IN PROGRESS; Q.1 has not
+started.** No Q.1 authorization or Q.0 closure is implied by this update.

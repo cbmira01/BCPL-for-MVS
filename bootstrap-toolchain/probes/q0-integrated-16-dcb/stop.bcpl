@@ -1,0 +1,9 @@
+// Q.0 native BCPL integration fixture; G!299 is test-only.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63; Q0TSVC:299 $)
+LET START() BE
+$(1
+    IF Q0TSVC(1,0,0) NE 0 DO STOP(8)
+    WRITES("Q0 NATIVE BCPL STOP PASS")
+    NEWLINE()
+    STOP(8)
+$)1
