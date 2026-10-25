@@ -64,7 +64,6 @@ def extension():
         '         STM   4,9,0(15)',
         '         LR    5,15',
         '         STM   0,1,24(5)',
-        '         LR    4,15',
         '         USING Q0TDISP,4',
         "         C     7,=F'1'",
         '         BNE   Q0TBOP',

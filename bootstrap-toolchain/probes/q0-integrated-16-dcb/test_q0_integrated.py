@@ -48,7 +48,7 @@ class NativeQ0Batch(unittest.TestCase):
         for profile in g.PROFILES:
             with self.subTest(profile=profile):
                 deck = example(profile)
-                self.assertEqual(deck.count('/*'), 6)
+                self.assertEqual(deck.splitlines().count('/*'), 6)
                 self.assertIn(' ENTRY R0APP', deck)
                 self.assertIn('//OBJ      DD  DSN=HERC02.BCPL.BOOT.OBJ,DISP=SHR',
                               deck)
@@ -60,6 +60,10 @@ class NativeQ0Batch(unittest.TestCase):
     def test_test_only_package_and_allocation(self):
         src = g.extension()
         self.assertIn("F'299',A(Q0TDISP)", src)
+        # Native dispatcher must retain R4 as its CSECT base;
+        # R15 points at the BCPL argument/result frame.
+        self.assertIn('         USING Q0TDISP,4', src)
+        self.assertNotIn('         LR    4,15', src)
         self.assertNotIn("F'200',", src)
         self.assertEqual(src.count('         GETMAIN RC,LV=1024'), 16)
         self.assertEqual(src.count('         FREEMAIN R,LV=1024,A=(1)'),
