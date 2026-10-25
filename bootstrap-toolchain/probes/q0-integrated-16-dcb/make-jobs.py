@@ -233,7 +233,9 @@ def deck(profile, generated, jobcard, objdsn):
     base = q.harness()
     t = load(TRAIL, 'q0_native')
     writer = q.make_source(COUNT, False)
-    app = t.application_source(generated)
+    # application_source returns a list of complete IFOX cards, while
+    # the established Q.0 asm_step adapter accepts source text.
+    app = '\n'.join(t.application_source(generated)) + '\n'
     ext, reg = extension(), registry()
     for source in (writer, app, ext, reg):
         checked(source.splitlines())
