@@ -1,0 +1,779 @@
+***********************************************************************
+* BCPLQSAM Q.1 CANDIDATE -- OFFLINE ONLY, NOT MVS ACCEPTED.
+* ONE RELOCATABLE ASSEMBLY: BCEX + DISPATCHER + FINALIZER + QSAM.
+* OWNER: BCPL FOR MVS 3.8 RECONSTRUCTION; G!200 QSAMSVC.
+* OPERATIONS: QUERY=0 OPEN=1 CLOSE=4 INFO=5; 2/3 UNSUPPORTED.
+* REQUIRES IFOX / SYS1.MACLIB AND R.1 GENERIC BCPLREG.
+* NONREENTRANT, SINGLE-TASK; NO ACCEPTED MVS EXECUTION EVIDENCE.
+***********************************************************************
+QSMDESC  CSECT
+         ENTRY QSMBEG,QSMEND
+QSMBEG   DS    0F
+         DC    CL4'BCEX'
+         DC    F'1',F'48',F'56'
+         DC    CL8'BCPLQSAM'
+         DC    F'1',F'0',F'1',A(QSMFIN),F'0',F'0'
+         DC    F'200',A(QSMDISP)
+QSMEND   EQU   *
+***********************************************************************
+* NATIVE BCPL ENTRY. R7 OP/RESULT, R8/R9 WORD POINTERS.
+* R11 RETURN, R4 EXECUTION BASE, R15 CALLER WORKSPACE.
+* PRESERVE R0/R1 THROUGH MVS MACROS (CG370 PERMANENT REGISTERS).
+***********************************************************************
+QSMDISP  CSECT
+         ENTRY QSMDISP
+         USING QSMDISP,4
+         STM   4,9,0(15)
+         LR    5,15
+         STM   0,1,24(5)
+         LTR   7,7
+         BZ    QSQUERY
+         C     7,=F'1'
+         BE    QSORD
+         C     7,=F'4'
+         BE    QSORD
+         C     7,=F'5'
+         BNE   QSBADOP
+QSORD    LTR   8,8
+         BNP   QSBADARG
+         LTR   9,9
+         BNP   QSBADARG
+         SLL   8,2
+         SLL   9,2
+         XC    0(32,9),0(9)
+         L     15,=A(QSMCORE)
+         BALR  14,15
+         LR    7,15
+         ST    7,0(9)
+         LM    0,1,24(5)
+         BCR   15,11
+* SIDE-EFFECT-FREE SIX-WORD QUERY; MASK=19 HEX; FLAGS ZERO.
+QSQUERY  LTR   8,8
+         BNZ   QSQPTR
+         LTR   9,9
+         BNZ   QSBADARG
+         LA    7,6
+         B     QSRET
+QSQPTR   LTR   9,9
+         BM    QSBADARG
+         C     9,=F'6'
+         BL    QSSHORT
+         SLL   8,2
+         LA    14,1
+         ST    14,0(8)
+         ST    14,4(8)
+         SR    14,14
+         ST    14,8(8)
+         LA    14,6
+         ST    14,12(8)
+         LA    14,25
+         ST    14,16(8)
+         SR    14,14
+         ST    14,20(8)
+         LA    7,6
+         B     QSRET
+QSBADOP  L     7,=F'-2'
+         B     QSRET
+QSSHORT  L     7,=F'-1'
+         B     QSRET
+QSBADARG L     7,=F'-3'
+QSRET    LM    0,1,24(5)
+         BCR   15,11
+         LTORG
+***********************************************************************
+* PRIVATE CONVENTIONAL-MVS CORE. R7=OP; R8 REQUEST BYTE PTR;
+* R9 RESULT BYTE PTR; R15 RETURNS STATUS. ALL R2-R12 PRESERVED.
+* SAVE AREA IS PACKAGE PRIVATE; THIS MODULE IS NOT REENTRANT.
+***********************************************************************
+QSMCORE  CSECT
+         STM   14,12,12(13)
+         LR    12,15
+         USING QSMCORE,12
+         LA    10,4095(12)
+         LA    10,1(10)
+         USING QSMCORE+4096,10
+         LA    2,QCSSAVE
+         ST    13,4(2)
+         ST    2,8(13)
+         LR    13,2
+         L     11,=A(QSMCTRL)
+         USING QSMCTRL,11
+         ST    8,QCREQ
+         ST    9,QCRES
+         C     7,=F'1'
+         BE    QCOPEN
+         C     7,=F'4'
+         BE    QCCLOSE
+         C     7,=F'5'
+         BE    QCINFO
+         L     15,=F'-2'
+         B     QCRET
+* CHECK RESERVED WORDS FOR ALL THREE ORDINARY OPERATIONS.
+QCOPEN   L     8,QCREQ
+         L     7,12(8)
+         LTR   7,7
+         BNZ   QCARG
+         L     7,8(8)
+         LTR   7,7
+         BNZ   QCARG
+         L     7,4(8)
+         C     7,=F'1'
+         BE    QCMODE
+         C     7,=F'2'
+         BNE   QCARG
+QCMODE   ST    7,QCMOD
+         L     7,0(8)
+         LTR   7,7
+         BNP   QCARG
+         SLL   7,2
+* FORMAT NORMALIZED EBCDIC DDNAME IN PRIVATE EIGHT-BYTE SCRATCH.
+         SR    3,3
+         IC    3,0(7)
+         LTR   3,3
+         BZ    QCNAMEER
+         C     3,=F'8'
+         BH    QCNAMEER
+         MVI   QCNAME,C' '
+         MVC   QCNAME+1(7),QCNAME
+         LA    7,1(7)
+         LA    5,QCNAME
+         SR    6,6
+QNLOOP   SR    0,0
+         IC    0,0(7)
+         CLI   0(7),X'81'
+         BL    QNUP
+         CLI   0(7),X'89'
+         BNH   QNLOW
+         CLI   0(7),X'91'
+         BL    QNUP
+         CLI   0(7),X'99'
+         BNH   QNLOW
+         CLI   0(7),X'A2'
+         BL    QNUP
+         CLI   0(7),X'A9'
+         BH    QNUP
+QNLOW    O     0,=X'00000040'
+QNUP     STC   0,0(5)
+         CLI   0(5),X'C1'
+         BL    QNSPEC
+         CLI   0(5),X'C9'
+         BNH   QNOK
+         CLI   0(5),X'D1'
+         BL    QNSPEC
+         CLI   0(5),X'D9'
+         BNH   QNOK
+         CLI   0(5),X'E2'
+         BL    QNSPEC
+         CLI   0(5),X'E9'
+         BNH   QNOK
+QNSPEC   CLI   0(5),X'7C'
+         BE    QNOK
+         CLI   0(5),X'7B'
+         BE    QNOK
+         CLI   0(5),X'5B'
+         BE    QNOK
+         LTR   6,6
+         BZ    QCNAMEER
+         CLI   0(5),X'F0'
+         BL    QCNAMEER
+         CLI   0(5),X'F9'
+         BH    QCNAMEER
+QNOK     LA    6,1(6)
+         LA    5,1(5)
+         LA    7,1(7)
+         CR    6,3
+         BL    QNLOOP
+* NONRECYCLED SIGNED HANDLE COUNTER: NEGATIVE MEANS EXHAUSTED.
+         L     7,QSNEXT
+         LTR   7,7
+         BNP   QCRESERR
+         LA    4,QSSLOTS
+         LA    3,16
+QCFREE   L     0,0(4)
+         LTR   0,0
+         BZ    QCRESERV
+         LA    4,44(4)
+         BCT   3,QCFREE
+         B     QCRESERR
+QCRESERV LA    0,1
+         ST    0,0(4)
+         L     0,QSLIVE
+         LA    0,1(0)
+         ST    0,QSLIVE
+         ST    4,QCCUR
+         L     7,QCMOD
+         ST    7,8(4)
+         C     7,=F'1'
+         BE    QCIN
+         L     2,20(4)
+         B     QCSETDC
+QCIN     L     2,16(4)
+QCSETDC  ST    2,QCDC
+* STATIC DCBs ARE REUSED; RESTORE THE PRE-OPEN DCB IMAGE EACH TIME.
+* ONE SAVED 96-BYTE TEMPLATE PER SLOT PER MODE, LAZILY SNAPSHOTTED.
+* THIS PRESERVES PER-SLOT EXLST RELOCATION THROUGH QSAM CLOSE/OPEN.
+         BAL   14,QCDBCOPY
+         MVC   40(8,2),QCNAME
+         L     5,24(4)
+         ST    5,QCJFCB
+* RDJFCB PRECHECK: R15 4 DENOTES CONFIRMED MISSING DD.
+         RDJFCB ((2))
+         C     15,=F'4'
+         BE    QCNOTDD
+         LTR   15,15
+         BNZ   QCNOPEN
+         L     5,QCJFCB
+         SR    3,3
+         IC    3,100(5)
+         LH    5,104(5)
+         L     2,QCJFCB
+         LH    6,102(2)
+         BAL   14,QCVFORM
+         LTR   15,15
+         BNZ   QCPREBAD
+         L     2,QCDC
+         L     7,QCMOD
+         C     7,=F'1'
+         BE    QCOPENIN
+         OPEN  ((2),(OUTPUT))
+         B     QCOPENCK
+QCOPENIN OPEN  ((2),(INPUT))
+QCOPENCK ST    15,QCOSRC
+         L     2,QCDC
+* DCB +48 IS THE QSAM ACCESS-METHOD ENTRY, NOT AN OPEN BIT.
+* USE THE ACCEPTED BCPLIO POST-OPEN NONZERO POINTER CHECK.
+* R15 OPEN-MACRO RETURN SEMANTICS NEED TARGET MVS VALIDATION.
+         L     0,48(2)
+         LTR   0,0
+         BZ    QCNOPEN
+         L     4,QCCUR
+         LA    0,2
+         ST    0,0(4)
+         L     0,QSDCBS
+         LA    0,1(0)
+         ST    0,QSDCBS
+* CHECK EFFECTIVE DCB FIELDS AGAINST PREFLIGHT AND CEILING.
+         SR    3,3
+         IC    3,36(2)
+         LH    5,82(2)
+         LH    6,62(2)
+         BAL   14,QCVFORM
+         LTR   15,15
+         BNZ   QCPOSTER
+         L     4,QCCUR
+         ST    0,28(4)
+         ST    5,32(4)
+         ST    6,36(4)
+         ST    1,40(4)
+* ONE INDEPENDENT, CONDITIONALLY CHECKED 1024-BYTE STAGE.
+         GETMAIN RC,LV=1024
+         LTR   15,15
+         BNZ   QCSTFAIL
+         L     4,QCCUR
+         ST    1,12(4)
+         L     0,QSSTAGES
+         LA    0,1(0)
+         ST    0,QSSTAGES
+* PUBLIC HANDLE IS ISSUED ONLY AFTER ALL ACQUISITIONS SUCCEED.
+         L     7,QSNEXT
+         ST    7,4(4)
+         L     8,QCRES
+         ST    7,4(8)
+* ISSUE THE FINAL POSITIVE ID WITHOUT SIGNED ADD OVERFLOW.
+* ZERO IS A PERMANENT EXHAUSTION SENTINEL, NEVER RECYCLED.
+         C     7,=X'7FFFFFFF'
+         BE    QCEXHAUS
+         A     7,=F'1'
+         ST    7,QSNEXT
+         B     QCHDONE
+QCEXHAUS XC    QSNEXT(4),QSNEXT
+QCHDONE  SR    15,15
+         B     QCRET
+QCNOTDD L   7,=F'-5'
+         B     QCROLL
+QCNOPEN  L     7,=F'-6'
+         B     QCROLL
+QCPREBAD LR    7,15
+         B     QCROLL
+* Q.1 CLEANUP ERROR PRECEDENCE NOT OWNER-APPROVED.
+* RETAIN THE ORIGINAL PRIMARY ERROR FOR THE OFFLINE CANDIDATE.
+* ANY FAILED ROLLBACK CLOSE IS QUARANTINED; MVS GATE REQUIRED.
+QCPOSTER LR    7,15
+         LTR   7,7
+         BM    QCCLEAN
+         L     7,=F'-6'
+         B     QCCLEAN
+QCSTFAIL L     7,=F'-11'
+QCCLEAN  ST    7,QCERRPRI
+         L     4,QCCUR
+         L     15,=A(QSMCLS1)
+         BALR  14,15
+         L     7,QCERRPRI
+QCROLL   L     4,QCCUR
+         CLC   0(4,4),=F'1'
+         BNE   QCROLLRT
+         XC    0(16,4),0(4)
+         XC    28(16,4),28(4)
+         L     0,QSLIVE
+         BCTR  0,0
+         ST    0,QSLIVE
+QCROLLRT LR    15,7
+         B     QCRET
+* CLOSE / INFO REQUIRE A LIVE, POSITIVE, EXACT HANDLE MATCH.
+QCCLOSE  BAL   14,QCFIND
+         LTR   15,15
+         BNZ   QCRET
+         L     15,=A(QSMCLS1)
+         BALR  14,15
+         B     QCRET
+QCINFO   BAL   14,QCFIND
+         LTR   15,15
+         BNZ   QCRET
+         L     8,QCRES
+         L     0,28(4)
+         ST    0,16(8)
+         L     0,32(4)
+         ST    0,20(8)
+         L     0,36(4)
+         ST    0,24(8)
+         L     0,40(4)
+         ST    0,28(8)
+         SR    15,15
+         B     QCRET
+QCFIND   L     8,QCREQ
+         L     7,12(8)
+         LTR   7,7
+         BNZ   QCFARG
+         L     7,4(8)
+         LTR   7,7
+         BNZ   QCFARG
+         L     7,8(8)
+         LTR   7,7
+         BNZ   QCFARG
+         L     7,0(8)
+         LTR   7,7
+         BNP   QCFBAD
+         LA    4,QSSLOTS
+         LA    3,16
+QCFLOOP  CLC   0(4,4),=F'2'
+         BNE   QCFNEXT
+         CLC   4(4,4),0(8)
+         BE    QCFGOOD
+QCFNEXT  LA    4,44(4)
+         BCT   3,QCFLOOP
+QCFBAD   L     15,=F'-7'
+         BR    14
+QCFGOOD  SR    15,15
+         BR    14
+QCFARG   L     15,=F'-3'
+         BR    14
+* ONE PRIVATE PRISTINE 96-BYTE DCB IMAGE PER SLOT AND MODE.
+* ON FIRST OPEN SNAPSHOT STATIC IFOX-INITIALIZED DCB; ON REUSE
+* RESTORE IT BEFORE PLACING THE NEW DDNAME. R4/R2 REMAIN INTACT.
+QCDBCOPY LR    7,4
+         LA    6,QSSLOTS
+         SR    7,6
+         SR    6,6
+         D     6,=F'44'
+* R7 IS ZERO-BASED SLOT INDEX; TWO COPIES PER SLOT.
+         SLL   7,1
+         L     6,QCMOD
+         BCTR  6,0
+         AR    7,6
+* SAVED IMAGE OFFSET = 96 * (2*SLOT + MODE-1).
+         LR    6,7
+         SLL   6,6
+         SLL   7,5
+         AR    6,7
+         LA    5,QSDCOPY
+         AR    5,6
+* EACH SAVED IMAGE STARTS ZERO; TEST ONLY ITS FIRST-USE FLAG.
+         LR    7,4
+         LA    6,QSSLOTS
+         SR    7,6
+         SR    6,6
+         D     6,=F'44'
+         SLL   7,1
+         L     6,QCMOD
+         BCTR  6,0
+         AR    7,6
+         LA    6,QSFIRST
+         AR    6,7
+         CLI   0(6),X'00'
+         BNE   QCDREST
+         MVC   0(96,5),0(2)
+         MVI   0(6),X'01'
+         BR    14
+QCDREST  MVC   0(96,2),0(5)
+         BR    14
+* INPUTS R3=RAW RECFM, R5=LRECL, R6=BLKSIZE.
+* OUTPUT R15 STATUS, R0 ENUM, R1 MAX APPLICATION DATA.
+QCVFORM  LTR   5,5
+         BNP   QCVSIZE
+         C     5,=F'1024'
+         BH    QCVSIZE
+         LTR   6,6
+         BNP   QCVSIZE
+         C     6,=F'32760'
+         BH    QCVSIZE
+         C     3,=F'128'
+         BE    QCVFIX
+         C     3,=F'144'
+         BE    QCVFB
+         C     3,=F'64'
+         BE    QCVVAR
+         C     3,=F'80'
+         BE    QCVVB
+         L     15,=F'-9'
+         BR    14
+QCVFIX   CR    6,5
+         BNE   QCVSIZE
+         LA    0,1
+         LR    1,5
+         B     QCVOK
+QCVFB    CR    6,5
+         BL    QCVSIZE
+         SR    0,0
+         LR    1,6
+         DR    0,5
+         LTR   0,0
+         BNZ   QCVSIZE
+         LA    0,2
+         LR    1,5
+         B     QCVOK
+QCVVAR   LA    0,3
+         B     QCVVCK
+QCVVB    LA    0,4
+QCVVCK   C     5,=F'4'
+         BL    QCVSIZE
+         LR    1,5
+         LA    1,4(1)
+         CR    6,1
+         BL    QCVSIZE
+         LR    1,5
+         BCTR  1,0
+         BCTR  1,0
+         BCTR  1,0
+         BCTR  1,0
+QCVOK    SR    15,15
+         BR    14
+QCVSIZE  L     15,=F'-6'
+         BR    14
+QCNAMEER L     15,=F'-4'
+         B     QCRET
+QCRESERR L   15,=F'-11'
+         B     QCRET
+QCARG    L     15,=F'-3'
+QCRET    ST    15,QCSTATUS
+         L     13,4(13)
+         LM    14,14,12(13)
+         L     15,QCSTATUS
+         LM    0,12,20(13)
+         BR    14
+         LTORG
+* PRIVATE CORE FIELDS (NO OS-MODULE WRITE OWNERSHIP).
+QCSSAVE  DS    18F
+QCSTATUS DC    F'0'
+QCNAME   DC    CL8' '
+QCREQ    DC    F'0'
+QCRES    DC    F'0'
+QCMOD    DC    F'0'
+QCCUR    DC    F'0'
+QCDC     DC    F'0'
+QCJFCB   DC    F'0'
+QCOSRC   DC    F'0'
+QCERRPRI DC   F'0'
+***********************************************************************
+* PER-HANDLE SAFE CLOSE. CALLED BY QSMCORE AND QSMFIN.
+* R4 -> SLOT; R15=0 OR -14. NEVER RETRIES AN UNCERTAIN CLOSE.
+* RETURNED-CLOSE TEST PATH REQUIRES SEPARATE OWNER GATE REVIEW.
+***********************************************************************
+QSMCLS1  CSECT
+         USING QSMCLS1,12
+         STM   14,12,12(13)
+         LR    12,15
+         LA    2,QSCSAVE
+         ST    13,4(2)
+         ST    2,8(13)
+         LR    13,2
+         L     11,=A(QSMCTRL)
+         USING QSMCTRL,11
+         ST    4,QSCCUR
+         CLC   0(4,4),=F'2'
+         BNE   QSCBAD
+         LA    0,3
+         ST    0,0(4)
+         L     0,8(4)
+         C     0,=F'1'
+         BE    QSCIND
+         L     2,20(4)
+         B     QSCEXEC
+QSCIND   L     2,16(4)
+QSCEXEC  ST    2,QSCDCB
+         CLOSE ((2))
+* Q.1 PROVISIONAL RETURNED-CLOSE RULE; MVS GATE STILL OPEN.
+* DCB +48 IS NOT A TESTED POST-CLOSE OWNERSHIP/OPEN BIT.
+         LTR   15,15
+         BNZ   QSCQUAR
+         L     4,QSCCUR
+         L     1,12(4)
+         LTR   1,1
+         BZ    QSCFREE
+         FREEMAIN R,LV=1024,A=(1)
+         L     0,QSSTAGES
+         BCTR  0,0
+         ST    0,QSSTAGES
+QSCFREE  L     4,QSCCUR
+         XC    0(16,4),0(4)
+         XC    28(16,4),28(4)
+         L     0,QSDCBS
+         BCTR  0,0
+         ST    0,QSDCBS
+         L     0,QSLIVE
+         BCTR  0,0
+         ST    0,QSLIVE
+         SR    15,15
+         B     QSCRET
+QSCQUAR  L     4,QSCCUR
+         LA    0,4
+         ST    0,0(4)
+         XC    4(4,4),4(4)
+         L     0,QSQUAR
+         LA    0,1(0)
+         ST    0,QSQUAR
+QSCBAD   L     15,=F'-14'
+QSCRET   ST    15,QSCSTAT
+         L     13,4(13)
+         LM    14,14,12(13)
+         L     15,QSCSTAT
+         LM    0,12,20(13)
+         BR    14
+         LTORG
+QSCSAVE  DS    18F
+QSCSTAT  DC    F'0'
+QSCCUR   DC    F'0'
+QSCDCB   DC    F'0'
+***********************************************************************
+* R.0-FINALIZER ABI. R1 -> TWO WORDS REASON / STOP CODE.
+* R15 RETURNS ZERO OR NONZERO. R2-R12/R13 PRESERVED.
+* REGISTRAR HANDLES BCPLREG 2001 / FINISH 8 / STOP(n).
+***********************************************************************
+QSMFIN   CSECT
+         ENTRY QSMFIN
+         USING QSMFIN,12
+         STM   14,12,12(13)
+         LR    12,15
+         LA    2,QFSAVE
+         ST    13,4(2)
+         ST    2,8(13)
+         LR    13,2
+         L     11,=A(QSMCTRL)
+         USING QSMCTRL,11
+         XC    QFSTAT(4),QFSTAT
+         XC    QFCOUNT(4),QFCOUNT
+         LTR   1,1
+         BZ    QFFAIL
+         L     0,0(1)
+         LTR   0,0
+         BZ    QFSTART
+         C     0,=F'1'
+         BNE   QFFAIL
+QFSTART  LA    4,QSSLOTS
+         LA    5,16
+QFNEXT   CLC   0(4,4),=F'2'
+         BNE   QFOTHER
+         L     15,=A(QSMCLS1)
+         BALR  14,15
+         LTR   15,15
+         BNZ   QFMARK
+         L     0,QFCOUNT
+         LA    0,1(0)
+         ST    0,QFCOUNT
+         B     QFSTEP
+QFOTHER  L     0,0(4)
+         LTR   0,0
+         BZ    QFSTEP
+QFMARK   LA    0,8
+         ST    0,QFSTAT
+QFSTEP   LA    4,44(4)
+         BCT   5,QFNEXT
+         B     QFRET
+QFFAIL   LA    0,8
+         ST    0,QFSTAT
+QFRET    L     0,QFCOUNT
+         C     0,=F'16'
+         BNE   QFEXIT
+         CLC   QFSTAT(4),=F'0'
+         BNE   QFEXIT
+         CLC   QSLIVE(4),=F'0'
+         BNE   QFEXIT
+         CLC   QSDCBS(4),=F'0'
+         BNE   QFEXIT
+         CLC   QSSTAGES(4),=F'0'
+         BNE   QFEXIT
+* TEST-ONLY TRACE, NOT A VERSION-1 PUBLIC INTERFACE GUARANTEE.
+         WTO   'BCPLQSAM Q1 FINALIZER 16 CLOSE PASS'
+QFEXIT   L     15,QFSTAT
+         L     13,4(13)
+         LM    14,14,12(13)
+         LM    0,12,20(13)
+         BR    14
+         LTORG
+QFSAVE   DS    18F
+QFSTAT   DC    F'0'
+QFCOUNT  DC    F'0'
+***********************************************************************
+* PRIVATE NONREENTRANT HANDLE TABLE; 16 INDEPENDENT PER-SLOT DCBs
+* IN THE SAME RELOCATABLE OBJECT. JFCBs ARE 176 BYTES EACH.
+* SLOT: STATE,ID,MODE,STAGE,INPUT_DCB,OUTPUT_DCB,JFCB,
+*       FORMAT,LRECL,BLKSIZE,DATA_MAX (44 BYTES).
+* STATES: 0 FREE; 1 RESERVED; 2 OPEN; 3 CLOSING; 4 QUARANTINE.
+***********************************************************************
+QSMCTRL  CSECT
+QSNEXT   DC    F'1'
+QSLIVE   DC    F'0'
+QSDCBS   DC    F'0'
+QSSTAGES DC    F'0'
+QSQUAR   DC    F'0'
+QSSLOTS  DS    0F
+QS00     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI00),A(QO00),A(QJ00)
+         DC    F'0',F'0',F'0',F'0'
+QS01     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI01),A(QO01),A(QJ01)
+         DC    F'0',F'0',F'0',F'0'
+QS02     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI02),A(QO02),A(QJ02)
+         DC    F'0',F'0',F'0',F'0'
+QS03     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI03),A(QO03),A(QJ03)
+         DC    F'0',F'0',F'0',F'0'
+QS04     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI04),A(QO04),A(QJ04)
+         DC    F'0',F'0',F'0',F'0'
+QS05     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI05),A(QO05),A(QJ05)
+         DC    F'0',F'0',F'0',F'0'
+QS06     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI06),A(QO06),A(QJ06)
+         DC    F'0',F'0',F'0',F'0'
+QS07     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI07),A(QO07),A(QJ07)
+         DC    F'0',F'0',F'0',F'0'
+QS08     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI08),A(QO08),A(QJ08)
+         DC    F'0',F'0',F'0',F'0'
+QS09     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI09),A(QO09),A(QJ09)
+         DC    F'0',F'0',F'0',F'0'
+QS10     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI10),A(QO10),A(QJ10)
+         DC    F'0',F'0',F'0',F'0'
+QS11     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI11),A(QO11),A(QJ11)
+         DC    F'0',F'0',F'0',F'0'
+QS12     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI12),A(QO12),A(QJ12)
+         DC    F'0',F'0',F'0',F'0'
+QS13     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI13),A(QO13),A(QJ13)
+         DC    F'0',F'0',F'0',F'0'
+QS14     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI14),A(QO14),A(QJ14)
+         DC    F'0',F'0',F'0',F'0'
+QS15     DC    F'0',F'0',F'0',F'0'
+         DC    A(QI15),A(QO15),A(QJ15)
+         DC    F'0',F'0',F'0',F'0'
+         DS    0F
+QJ00     DS    CL176
+QJ01     DS    CL176
+QJ02     DS    CL176
+QJ03     DS    CL176
+QJ04     DS    CL176
+QJ05     DS    CL176
+QJ06     DS    CL176
+QJ07     DS    CL176
+QJ08     DS    CL176
+QJ09     DS    CL176
+QJ10     DS    CL176
+QJ11     DS    CL176
+QJ12     DS    CL176
+QJ13     DS    CL176
+QJ14     DS    CL176
+QJ15     DS    CL176
+* LAZY SNAPSHOTS: TWO DCBs PER SLOT, EACH 96 BYTES.
+* THE FIRST-USE FLAGS AND COPIES MUST NOT BE RESET ON CLOSE.
+QSFIRST  DC    32X'00'
+QSDCOPY  DS    CL3072
+***********************************************************************
+* PHYSICAL QSAM DCBs: ONE INPUT AND ONE OUTPUT TEMPLATE PER SLOT.
+* ONLY ONE MODE MAY BE OPEN IN A SLOT AT ANY TIME.
+* DCB +40 DDNAME, +36 RECFM, +62 BLKSIZE, +82 LRECL:
+* ALL OFFSETS GROUNDED IN PROJECT Q.0 IFOX / BCPLIO EVIDENCE.
+***********************************************************************
+QSMDCBS  CSECT
+QI00     DCB   DDNAME=Q00,DSORG=PS,MACRF=GM,EXLST=QE00
+QO00     DCB   DDNAME=Q00,DSORG=PS,MACRF=PM,EXLST=QE00
+         DS    0F
+QE00     DC    X'87',AL3(QJ00)
+QI01     DCB   DDNAME=Q01,DSORG=PS,MACRF=GM,EXLST=QE01
+QO01     DCB   DDNAME=Q01,DSORG=PS,MACRF=PM,EXLST=QE01
+         DS    0F
+QE01     DC    X'87',AL3(QJ01)
+QI02     DCB   DDNAME=Q02,DSORG=PS,MACRF=GM,EXLST=QE02
+QO02     DCB   DDNAME=Q02,DSORG=PS,MACRF=PM,EXLST=QE02
+         DS    0F
+QE02     DC    X'87',AL3(QJ02)
+QI03     DCB   DDNAME=Q03,DSORG=PS,MACRF=GM,EXLST=QE03
+QO03     DCB   DDNAME=Q03,DSORG=PS,MACRF=PM,EXLST=QE03
+         DS    0F
+QE03     DC    X'87',AL3(QJ03)
+QI04     DCB   DDNAME=Q04,DSORG=PS,MACRF=GM,EXLST=QE04
+QO04     DCB   DDNAME=Q04,DSORG=PS,MACRF=PM,EXLST=QE04
+         DS    0F
+QE04     DC    X'87',AL3(QJ04)
+QI05     DCB   DDNAME=Q05,DSORG=PS,MACRF=GM,EXLST=QE05
+QO05     DCB   DDNAME=Q05,DSORG=PS,MACRF=PM,EXLST=QE05
+         DS    0F
+QE05     DC    X'87',AL3(QJ05)
+QI06     DCB   DDNAME=Q06,DSORG=PS,MACRF=GM,EXLST=QE06
+QO06     DCB   DDNAME=Q06,DSORG=PS,MACRF=PM,EXLST=QE06
+         DS    0F
+QE06     DC    X'87',AL3(QJ06)
+QI07     DCB   DDNAME=Q07,DSORG=PS,MACRF=GM,EXLST=QE07
+QO07     DCB   DDNAME=Q07,DSORG=PS,MACRF=PM,EXLST=QE07
+         DS    0F
+QE07     DC    X'87',AL3(QJ07)
+QI08     DCB   DDNAME=Q08,DSORG=PS,MACRF=GM,EXLST=QE08
+QO08     DCB   DDNAME=Q08,DSORG=PS,MACRF=PM,EXLST=QE08
+         DS    0F
+QE08     DC    X'87',AL3(QJ08)
+QI09     DCB   DDNAME=Q09,DSORG=PS,MACRF=GM,EXLST=QE09
+QO09     DCB   DDNAME=Q09,DSORG=PS,MACRF=PM,EXLST=QE09
+         DS    0F
+QE09     DC    X'87',AL3(QJ09)
+QI10     DCB   DDNAME=Q10,DSORG=PS,MACRF=GM,EXLST=QE10
+QO10     DCB   DDNAME=Q10,DSORG=PS,MACRF=PM,EXLST=QE10
+         DS    0F
+QE10     DC    X'87',AL3(QJ10)
+QI11     DCB   DDNAME=Q11,DSORG=PS,MACRF=GM,EXLST=QE11
+QO11     DCB   DDNAME=Q11,DSORG=PS,MACRF=PM,EXLST=QE11
+         DS    0F
+QE11     DC    X'87',AL3(QJ11)
+QI12     DCB   DDNAME=Q12,DSORG=PS,MACRF=GM,EXLST=QE12
+QO12     DCB   DDNAME=Q12,DSORG=PS,MACRF=PM,EXLST=QE12
+         DS    0F
+QE12     DC    X'87',AL3(QJ12)
+QI13     DCB   DDNAME=Q13,DSORG=PS,MACRF=GM,EXLST=QE13
+QO13     DCB   DDNAME=Q13,DSORG=PS,MACRF=PM,EXLST=QE13
+         DS    0F
+QE13     DC    X'87',AL3(QJ13)
+QI14     DCB   DDNAME=Q14,DSORG=PS,MACRF=GM,EXLST=QE14
+QO14     DCB   DDNAME=Q14,DSORG=PS,MACRF=PM,EXLST=QE14
+         DS    0F
+QE14     DC    X'87',AL3(QJ14)
+QI15     DCB   DDNAME=Q15,DSORG=PS,MACRF=GM,EXLST=QE15
+QO15     DCB   DDNAME=Q15,DSORG=PS,MACRF=PM,EXLST=QE15
+         DS    0F
+QE15     DC    X'87',AL3(QJ15)
+         END
