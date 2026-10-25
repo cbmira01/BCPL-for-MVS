@@ -178,17 +178,24 @@ elif [ "$(cat "$work/.ready-main-sha")" != "$(git rev-parse HEAD)" ]; then
 elif ! git diff --quiet HEAD -- bootstrap-toolchain/extensions/bcplqsam; then
     echo 'Uncommitted Q.1 changes present; no JES submission.'
 else
-    submission=$(bash tools/mvs/submit-jcl --timeout 120 \
-        "$work/q1asm.jcl")
-    rc=$?
-    printf 'Submission rc=%s; response=%s\n' "$rc" "$submission"
-    if [ "$rc" -eq 0 ] &&
-       [[ "$submission" =~ ^JOB[[:space:]]+[0-9]+$ ]]; then
-        job=$(printf '%s\n' "$submission" | awk '{print $2}')
-        printf '%s\n' "$job" > "$work/last-job.txt"
-        printf 'Q1QSASM JOB %s submitted.\n' "$job"
+    if [ -r "$work/last-job.txt" ]; then
+        cp "$work/last-job.txt" "$work/previous-job.txt"
+    fi
+    if printf 'PENDING\n' > "$work/last-job.txt"; then
+        submission=$(bash tools/mvs/submit-jcl --timeout 120 \
+            "$work/q1asm.jcl")
+        rc=$?
+        printf 'Submission rc=%s; response=%s\n' "$rc" "$submission"
+        if [ "$rc" -eq 0 ] &&
+           [[ "$submission" =~ ^JOB[[:space:]]+[0-9]+$ ]]; then
+            job=$(printf '%s\n' "$submission" | awk '{print $2}')
+            printf '%s\n' "$job" > "$work/last-job.txt"
+            printf 'Q1QSASM JOB %s submitted.\n' "$job"
+        else
+            echo 'Submission not confirmed; no current JOB number.'
+        fi
     else
-        echo 'Submission not confirmed; last JOB number unchanged.'
+        echo 'Could not reset JOB status; nothing submitted.'
     fi
 fi
 ```
