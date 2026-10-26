@@ -27,7 +27,7 @@ class Q13DDDiagnosticTest(unittest.TestCase):
                          original.count('STOP(8)'))
         self.assertEqual(
             diagnostic.count('WRITES("Q13D CALL '), 22)
-        self.assertEqual(diagnostic.count('WRITES("Q13D ASSERT '), 5)
+        self.assertEqual(diagnostic.count(' BEFORE")'), 5)
         self.assertIn('WRITEN:62', diagnostic)
         self.assertIn('WRITES("Q13D START")', diagnostic)
         self.assertIn('BCPLQSAM Q1 THREE DD PASS', diagnostic)
@@ -41,6 +41,23 @@ class Q13DDDiagnosticTest(unittest.TestCase):
         self.assertIn('LET Q = VEC 3', diagnostic)
         self.assertIn('LET R = VEC 7', diagnostic)
         self.assertEqual(diagnostic.count('Q!0 := "Q0'), 3)
+
+    def test_six_word_query_dump_before_failed_assertion(self):
+        source = (HERE / 'test-q1-3dd-diag.bcpl').read_text('ascii')
+        self.assertIn('LET I = VEC 5', source)
+        dump_start = source.index('WRITES("Q13D QUERY I0/I1/I2=")')
+        dump_end = source.index('WRITES("Q13D ASSERT 02 BEFORE")')
+        dump = source[dump_start:dump_end]
+        self.assertEqual(
+            re.findall(r'WRITEN\(I!(\d)\)', dump),
+            ['0', '1', '2', '3', '4', '5'])
+        self.assertIn('WRITES("Q13D QUERY I3/I4/I5=")', dump)
+        after = source.index('WRITES("Q13D ASSERT 02 AFTER")')
+        condition = source.index(
+            'IF I!0 NE 1 | I!1 NE 1 | I!2 NE 0 DO STOP(8)')
+        self.assertLess(dump_end, condition)
+        self.assertLess(condition, after)
+        self.assertIn('Q13D ASSERT 03 BEFORE', source[after:])
 
     def test_diagnostic_requires_no_new_jcl_or_permanent_writes(self):
         run = (HERE / 'q1-three-diagnostic-runbook.md').read_text('utf-8')

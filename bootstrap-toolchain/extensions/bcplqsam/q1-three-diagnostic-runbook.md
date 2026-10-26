@@ -22,6 +22,18 @@ assigns a new numeric JOB ID and we store it in a **separate**
 this diagnostic caller, while the prior JOB 6605 report and
 `q13dd-last-job.txt` remain untouched.
 
+**JOB 6607 diagnostic finding:** All nine prerequisite MVS steps
+returned zero but native GO returned RC=0012. Runtime traces ended at
+`Q13D ASSERT 02 BEFORE` after QUERY returned 6, before the first
+OPEN. The subsequent condition checks descriptor words `I!0..I!2`.
+The diagnostic caller now also prints all six descriptor words
+(`Q13D QUERY I0/I1/I2=` and `Q13D QUERY I3/I4/I5=`) and an
+`ASSERT 02 AFTER` marker, while leaving the vector size, 14
+QSAMSVC calls, and every original STOP(8) assertion unchanged.
+See `packaging/qsam-q1-go-6607-query-descriptor-diagnostic-20261026.md`.
+Use the existing three WSL blocks below to generate **a new job**;
+the previous JOB 6607 report remains in workarea.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,

@@ -473,8 +473,14 @@ See `packaging/qsam-q1-native-three-dd-jobs-6604-6605-negative-evidence-20261026
 The subsequent post-failure output check **was performed** and did
 not find the expected logical record; see
 `packaging/qsam-q1-go-6605-diagnostic-review-20261026.md`.
-The native GO RC=8 source assertion or internal return is
-not yet isolated. The next **diagnostic-only** source is
+The native GO RC=8 source assertion or internal return was
+subsequently narrowed by diagnostic **JOB 6607** (native GO
+RC=0012): QUERY returned 6, but output stopped at the check of
+`I!0`, `I!1`, and `I!2`, **before the first QSAM OPEN**.
+See `packaging/qsam-q1-go-6607-query-descriptor-diagnostic-20261026.md`.
+A diagnostic-only follow-up now prints all six returned QUERY words,
+without altering the API, original vector allocation, or QSAM core.
+The next **diagnostic-only** source is
 `test-q1-3dd-diag.bcpl`; use
 [`q1-three-diagnostic-runbook.md`](q1-three-diagnostic-runbook.md)
 to preserve every service call while emitting numeric return codes.
