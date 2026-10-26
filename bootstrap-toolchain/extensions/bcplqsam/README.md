@@ -473,19 +473,23 @@ See `packaging/qsam-q1-native-three-dd-jobs-6604-6605-negative-evidence-20261026
 The subsequent post-failure output check **was performed** and did
 not find the expected logical record; see
 `packaging/qsam-q1-go-6605-diagnostic-review-20261026.md`.
-The native GO RC=8 source assertion or internal return was
-subsequently narrowed by diagnostic **JOB 6607** (native GO
-RC=0012): QUERY returned 6, but output stopped at the check of
-`I!0`, `I!1`, and `I!2`, **before the first QSAM OPEN**.
-See `packaging/qsam-q1-go-6607-query-descriptor-diagnostic-20261026.md`.
-A diagnostic-only follow-up now prints all six returned QUERY words,
-without altering the API, original vector allocation, or QSAM core.
-The next **diagnostic-only** source is
-`test-q1-3dd-diag.bcpl`; use
+Diagnostic JOB 6607 (native GO RC=0012) displayed
+`Q13D ASSERT 02 BEFORE`, without proving which condition failed.
+Follow-up compiler JOB 6608 and native **JOB 6609** again passed
+all assembler/link/writer steps; native GO returned **RC=0012**.
+The runtime report correctly displayed QUERY fields
+`I!0/I!1/I!2 = 1 1 0`, but the filtered diagnostic trace
+contained no subsequent `I!3/I!4/I!5` record. This no longer
+supports attributing the failure to the first-three-word QUERY
+comparison. See
+`packaging/qsam-q1-go-6609-query-prefix-diagnostic-20261026.md`.
+
+**Before any new native job**, inspect the complete saved JOB 6609
+GO suffix, including partial records and non-`Q13D` messages.
 [`q1-three-diagnostic-runbook.md`](q1-three-diagnostic-runbook.md)
-to preserve every service call while emitting numeric return codes.
-Do not change `bcplqsam.asm` or resubmit the uninstrumented
-JOB 6605 test until the failure is understood.
+now reads existing per-JOB reports and shows the raw GO suffix.
+No `bcplqsam.asm`, live-handle ownership, or installed MVS dataset
+change is justified by this trace.
 
 Returned-CLOSE fault injection and cleanup-error precedence still
 require a separate owner decision; no higher-region GO or finalizer

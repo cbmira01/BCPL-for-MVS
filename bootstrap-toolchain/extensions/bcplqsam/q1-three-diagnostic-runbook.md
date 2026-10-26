@@ -36,6 +36,19 @@ The inspection block writes its summary/report under the numeric JOB
 ID, preserving both the original JOB 6607 report and the next result.
 Do not overwrite the prior unnumbered diagnostic report.
 
+**JOB 6609 diagnostic finding:** QUERY reports descriptor words
+`I!0..I!2 = 1 1 0`, the correct values, but GO again returned
+RC=0012 and the filtered report showed no subsequent
+`Q13D QUERY I3/I4/I5=` marker. The supplied trace is **not**
+proof that the source assertion failed; it could omit partial
+or non-`Q13D` runtime/JES output. See
+`packaging/qsam-q1-go-6609-query-prefix-diagnostic-20261026.md`.
+**Inspect the already saved JOB 6609 report first; do not immediately
+compile or submit another job.** The third block now preserves
+existing per-JOB report files, prints matching diagnostic records,
+and displays the raw trailing GO suffix, including non-matching
+lines. No new JES submission is required for this inspection.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,
@@ -191,16 +204,24 @@ else
         summary="$work/q13dd-diag-${job}-summary.txt"
         report="$work/q13dd-diag-${job}-report.txt"
 
-        timeout -k 2s 15s python3 tools/mvs/job-summary \
-            "$job" --max-rc 0 > "$summary" 2>&1
-        summary_rc=$?
+        if [ -s "$summary" ]; then
+            echo "Using preserved summary: $summary"
+        else
+            timeout -k 2s 15s python3 tools/mvs/job-summary \
+                "$job" --max-rc 0 > "$summary" 2>&1
+            echo "Summary collection RC=$?"
+        fi
         cat "$summary"
-        echo "Summary command RC=$summary_rc"
 
-        timeout -k 2s 15s bash tools/mvs/dump-report-for-job \
-            "$job" > "$report"
-        report_rc=$?
-        echo "JES report collection RC=$report_rc"
+        if [ -s "$report" ]; then
+            echo "Using preserved JES report: $report"
+            report_rc=0
+        else
+            timeout -k 2s 15s bash tools/mvs/dump-report-for-job \
+                "$job" > "$report"
+            report_rc=$?
+            echo "JES report collection RC=$report_rc"
+        fi
 
         if [ "$report_rc" -eq 0 ]; then
             python3 - "$report" <<'PY'
@@ -210,17 +231,22 @@ rows = Path(sys.argv[1]).read_text(encoding='latin-1').splitlines()
 cuts = [i for i, row in enumerate(rows)
         if 'AUTHORIZATION CODE IS' in row]
 if not cuts:
-    print('No IEWL authorization boundary found.')
+    print('No IEWL authorization boundary found; inspect report manually.')
 else:
     suffix = rows[cuts[-1] + 1:]
-    print('===== Actual native GO output (Q13D diagnostics) =====')
+    first = cuts[-1] + 2
+    print('===== GO suffix diagnostic records =====')
     found = 0
-    for no, row in enumerate(suffix, cuts[-1] + 2):
-        if row.lstrip().startswith('Q13D') or 'BCPLREG 2001' in row:
-            print(f'{no}: {row}')
+    for no, row in enumerate(suffix, first):
+        if ('Q13D' in row or 'BCPLREG 2001' in row or
+                'ABEND' in row or 'S0C' in row):
+            print(f'{no}: {row!r}')
             found += 1
-    if found == 0:
-        print('No Q13D runtime trace found in GO suffix.')
+    if not found:
+        print('No expected native diagnostic records found.')
+    print('===== Raw GO suffix: last 100 lines =====')
+    for no in range(max(0, len(suffix) - 100), len(suffix)):
+        print(f'{first + no}: {suffix[no]!r}')
 PY
             echo "===== Native output verification ====="
             python3 tools/checks/check-combined-jes-records.py \
@@ -239,9 +265,9 @@ PY
 fi
 ```
 
-Paste the **native GO output (Q13D diagnostics)** with the JOB
-summary. The last emitted `Q13D CALL NN RC=` or `ASSERT NN` record
-should isolate a failing public operation or assertion. If no
-`Q13D START` appears, investigate startup and JES output collection
-before touching the QSAM core. This diagnostic result, by itself,
-does not close Q.1.
+For JOB 6609, use the third block above **without running
+WSL 1 or WSL 2**. It reads preserved per-JOB report files where
+available. Inspect the raw suffix for partial lines and independent
+GO/JES errors, then decide whether another instrumented MVS run is
+needed. Do not infer an incorrect QUERY descriptor from its
+correct `I!0..I!2` prefix. Q.1 is still open.

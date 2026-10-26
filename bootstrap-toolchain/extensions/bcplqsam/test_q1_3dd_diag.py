@@ -91,6 +91,11 @@ class Q13DDDiagnosticTest(unittest.TestCase):
         self.assertIn('q13dd-diag-${job}-summary.txt', blocks[2])
         self.assertIn('q13dd-diag-${job}-report.txt', blocks[2])
         self.assertNotIn('"$work/q13dd-diag-report.txt"', blocks[2])
+        self.assertIn('Using preserved JES report', blocks[2])
+        self.assertIn('Using preserved summary', blocks[2])
+        self.assertIn('Raw GO suffix: last 100 lines', blocks[2])
+        self.assertIn("'ABEND' in row", blocks[2])
+        self.assertIn('suffix[no]!r', blocks[2])
 
 
 if __name__ == '__main__':
