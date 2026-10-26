@@ -470,9 +470,16 @@ attempted in **JOB 6605**: all assemblies, link-edits and the
 temporary-data writer passed, but native **GO returned RC=0008**.
 The failing Q.1 service operation has **not** yet been identified.
 See `packaging/qsam-q1-native-three-dd-jobs-6604-6605-negative-evidence-20261026.md`.
-Inspect the saved JOB 6605 JES report before modifying source or
-resubmitting; the skipped post-failure marker check is not evidence
-that the expected marker was absent.
+The subsequent post-failure output check **was performed** and did
+not find the expected logical record; see
+`packaging/qsam-q1-go-6605-diagnostic-review-20261026.md`.
+The native GO RC=8 source assertion or internal return is
+not yet isolated. The next **diagnostic-only** source is
+`test-q1-3dd-diag.bcpl`; use
+[`q1-three-diagnostic-runbook.md`](q1-three-diagnostic-runbook.md)
+to preserve every service call while emitting numeric return codes.
+Do not change `bcplqsam.asm` or resubmit the uninstrumented
+JOB 6605 test until the failure is understood.
 
 Returned-CLOSE fault injection and cleanup-error precedence still
 require a separate owner decision; no higher-region GO or finalizer
