@@ -72,6 +72,33 @@ unchanged. This source/test preparation is **not** authorization to
 submit WSL 2, change installed MVS datasets, or accept Q.1.
 Run offline checks before any separately authorized MVS compile/GO.
 
+**JOBs 6612–6613 (26 October 2026):** The revised caller compiled in
+JOB 6612 (host RC=0) and ran as Q13DD JOB 6613. All nine prerequisite
+MVS steps returned RC=0000 (IFOX highest severity 0, no flagged
+statements); native GO returned RC=0012. The collected report
+`workarea/bcplqsam-q1/q13dd-diag-6613-report.txt` has 8,999 lines;
+the last IEWL authorization boundary is line 8959. The same seven
+flushed Q13D records appear, ending with correct QUERY I0/I1/I2=1 1 0
+at line 8969. Neither the new post-newline marker nor a partial
+following record appears. The expected final PASS marker is absent.
+This does not prove that a fixed record count caused GO RC=0012.
+
+**Approved next diagnostic — record-count shift:** Insert exactly two
+short, independently flushed records, `Q13D SHIFT 01` and
+`Q13D SHIFT 02`, immediately after `Q13D START` and before the
+first QSAMSVC call. All existing QUERY instrumentation, the original
+14 QSAMSVC calls, STOP(8) assertions, QSAM assembler and temporary
+JCL generator remain unchanged. If exactly seven records are again
+emitted, the seventh should now be `Q13D CALL 03 RC=-3` in the
+expected path. If the last visible record remains the QUERY I0/I1/I2
+triplet, nine records should be visible including the two SHIFT
+markers. Other outcomes need independent interpretation and do not
+by themselves distinguish an output-buffer error from runtime or
+code-generation faults. Compile into a new revision-specific local
+filename; preserve earlier JOB 6613 and compiler evidence. One
+separately owner-approved temporary Q13DD run may use the existing
+REGION=256K generator; no permanent MVS changes or Q.1 acceptance.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,

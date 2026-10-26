@@ -79,6 +79,20 @@ class Q13DDDiagnosticTest(unittest.TestCase):
         self.assertEqual(block.count('Q13D QUERY 012 NL RETURNED'), 1)
         self.assertEqual(block.count('Q13D QUERY I3/I4/I5='), 1)
 
+    def test_record_count_shift_before_first_qsamsvc(self):
+        diagnostic = (HERE / 'test-q1-3dd-diag.bcpl').read_text('ascii')
+        start = diagnostic.index('WRITES("Q13D START")')
+        first_call = diagnostic.index('S := QSAMSVC(0,0,0)')
+        prefix = diagnostic[start:first_call]
+        self.assertRegex(
+            prefix,
+            r'WRITES\("Q13D START"\)\s*NEWLINE\(\)\s*'
+            r'WRITES\("Q13D SHIFT 01"\)\s*NEWLINE\(\)\s*'
+            r'WRITES\("Q13D SHIFT 02"\)\s*NEWLINE\(\)')
+        self.assertEqual(diagnostic.count('Q13D SHIFT 01'), 1)
+        self.assertEqual(diagnostic.count('Q13D SHIFT 02'), 1)
+        self.assertEqual(diagnostic.count('WRITES("Q13D SHIFT'), 2)
+
     def test_diagnostic_requires_no_new_jcl_or_permanent_writes(self):
         run = (HERE / 'q1-three-diagnostic-runbook.md').read_text('utf-8')
         self.assertIn('prepare-q1-3dd.py', run)

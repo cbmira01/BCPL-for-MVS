@@ -9,6 +9,10 @@ $(1
     LET S = 0
     WRITES("Q13D START")
     NEWLINE()
+    WRITES("Q13D SHIFT 01")
+    NEWLINE()
+    WRITES("Q13D SHIFT 02")
+    NEWLINE()
     I!0 := 707
     I!5 := 909
     S := QSAMSVC(0,0,0)
