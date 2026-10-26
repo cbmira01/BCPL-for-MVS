@@ -59,6 +59,26 @@ class Q13DDDiagnosticTest(unittest.TestCase):
         self.assertLess(condition, after)
         self.assertIn('Q13D ASSERT 03 BEFORE', source[after:])
 
+    def test_query_stage_boundaries_flush_independent_records(self):
+        source = (HERE / 'test-q1-3dd-diag.bcpl').read_text('ascii')
+        begin = source.index('WRITES("Q13D QUERY I0/I1/I2=")')
+        end = source.index('WRITES("Q13D ASSERT 02 BEFORE")')
+        block = source[begin:end]
+        self.assertRegex(
+            block,
+            r'WRITEN\(I!2\)\s*NEWLINE\(\)\s*'
+            r'WRITES\("Q13D QUERY 012 NL RETURNED"\)\s*NEWLINE\(\)')
+        self.assertRegex(
+            block,
+            r'WRITES\("Q13D QUERY I3/I4/I5="\)\s*NEWLINE\(\)')
+        for word in (3, 4, 5):
+            self.assertRegex(
+                block,
+                rf'WRITES\("Q13D QUERY I{word}="\)\s*'
+                rf'WRITEN\(I!{word}\)\s*NEWLINE\(\)')
+        self.assertEqual(block.count('Q13D QUERY 012 NL RETURNED'), 1)
+        self.assertEqual(block.count('Q13D QUERY I3/I4/I5='), 1)
+
     def test_diagnostic_requires_no_new_jcl_or_permanent_writes(self):
         run = (HERE / 'q1-three-diagnostic-runbook.md').read_text('utf-8')
         self.assertIn('prepare-q1-3dd.py', run)

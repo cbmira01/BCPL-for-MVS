@@ -49,6 +49,29 @@ existing per-JOB report files, prints matching diagnostic records,
 and displays the raw trailing GO suffix, including non-matching
 lines. No new JES submission is required for this inspection.
 
+**JOB 6609 read-only follow-up (26 October 2026):** The operator's
+preserved full JES report contains 8,959 lines. The final IEWL
+authorization boundary is line 8919; native diagnostic records are
+lines 8923–8929, ending with correct QUERY words 0–2 (1 1 0).
+The remaining GO suffix contains JES banners but no second QUERY
+record, partial diagnostic, or explicit abend message. Read-only
+inspection of JOB 6608's preserved generated assembler found both
+20-byte EBCDIC QUERY label literals and generated calls for the two
+groups, separated by NEWLINE. No QSAM OPEN was reached in the
+observable trace. GO RC=0012 still has no uniquely identified cause;
+BCPLIO's output-buffer STOP(12) path is only a hypothesis.
+
+The diagnostic-only caller now emits Q13D QUERY 012 NL RETURNED
+after the first QUERY newline, flushes the second QUERY prefix by
+itself, and emits separate flushed Q13D QUERY I3=, I4=, and I5=
+records. These markers distinguish the last completed output
+boundary if a subsequent call does not return. The original 14
+QSAMSVC calls and all STOP(8) assertions are retained, and
+bcplqsam.asm, the original caller, and the JCL generator are
+unchanged. This source/test preparation is **not** authorization to
+submit WSL 2, change installed MVS datasets, or accept Q.1.
+Run offline checks before any separately authorized MVS compile/GO.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,
