@@ -66,16 +66,16 @@ class Q13DDDiagnosticTest(unittest.TestCase):
         block = source[begin:end]
         self.assertRegex(
             block,
-            r'WRITEN\(I!2\)\s*NEWLINE\(\)\s*'
-            r'WRITES\("Q13D QUERY 012 NL RETURNED"\)\s*NEWLINE\(\)')
+            r'WRITEN\(I!2\)\s*WRCH\(10\)\s*'
+            r'WRITES\("Q13D QUERY 012 NL RETURNED"\)\s*WRCH\(10\)')
         self.assertRegex(
             block,
-            r'WRITES\("Q13D QUERY I3/I4/I5="\)\s*NEWLINE\(\)')
+            r'WRITES\("Q13D QUERY I3/I4/I5="\)\s*WRCH\(10\)')
         for word in (3, 4, 5):
             self.assertRegex(
                 block,
                 rf'WRITES\("Q13D QUERY I{word}="\)\s*'
-                rf'WRITEN\(I!{word}\)\s*NEWLINE\(\)')
+                rf'WRITEN\(I!{word}\)\s*WRCH\(10\)')
         self.assertEqual(block.count('Q13D QUERY 012 NL RETURNED'), 1)
         self.assertEqual(block.count('Q13D QUERY I3/I4/I5='), 1)
 
@@ -86,12 +86,28 @@ class Q13DDDiagnosticTest(unittest.TestCase):
         prefix = diagnostic[start:first_call]
         self.assertRegex(
             prefix,
-            r'WRITES\("Q13D START"\)\s*NEWLINE\(\)\s*'
-            r'WRITES\("Q13D SHIFT 01"\)\s*NEWLINE\(\)\s*'
-            r'WRITES\("Q13D SHIFT 02"\)\s*NEWLINE\(\)')
+            r'WRITES\("Q13D START"\)\s*WRCH\(10\)\s*'
+            r'WRITES\("Q13D SHIFT 01"\)\s*WRCH\(10\)\s*'
+            r'WRITES\("Q13D SHIFT 02"\)\s*WRCH\(10\)')
         self.assertEqual(diagnostic.count('Q13D SHIFT 01'), 1)
         self.assertEqual(diagnostic.count('Q13D SHIFT 02'), 1)
         self.assertEqual(diagnostic.count('WRITES("Q13D SHIFT'), 2)
+
+    def test_explicit_core_runtime_newline_without_other_caller_changes(self):
+        source = (HERE / 'test-q1-3dd-diag.bcpl').read_text('ascii')
+        self.assertIn('WRCH:14', source)
+        self.assertNotIn('NEWLINE:63', source)
+        self.assertNotIn('NEWLINE()', source)
+        self.assertEqual(source.count('WRCH(10)'), 40)
+        self.assertRegex(
+            source,
+            r'WRITES\("Q13D START"\)\s*WRCH\(10\)\s*'
+            r'WRITES\("Q13D SHIFT 01"\)\s*WRCH\(10\)\s*'
+            r'WRITES\("Q13D SHIFT 02"\)\s*WRCH\(10\)')
+        self.assertRegex(
+            source,
+            r'WRITEN\(I!2\)\s*WRCH\(10\)\s*'
+            r'WRITES\("Q13D QUERY 012 NL RETURNED"\)\s*WRCH\(10\)')
 
     def test_diagnostic_requires_no_new_jcl_or_permanent_writes(self):
         run = (HERE / 'q1-three-diagnostic-runbook.md').read_text('utf-8')

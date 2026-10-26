@@ -8,8 +8,8 @@ The original test caller `test-q1-3dd.bcpl` and the Q.1 assembler
 `test-q1-3dd-diag.bcpl` preserves every original `QSAMSVC` call,
 assertion and `STOP(8)` condition, but captures return status in a
 local BCPL word and emits flushed `Q13D` stage/return-code records
-using the already-established Base Library `WRITES:60`,
-`WRITEN:62` and `NEWLINE:63` functions. The first native report
+using Base Library `WRITES:60` and `WRITEN:62`; the current
+newline experiment calls Core Runtime `WRCH:14` with value 10. The first native report
 containing `Q13D` lines should identify the first unexpected
 status or assertion. Diagnostics are printed **before** the existing
 stop on assertion failure; GO may still return 8.
@@ -98,6 +98,33 @@ code-generation faults. Compile into a new revision-specific local
 filename; preserve earlier JOB 6613 and compiler evidence. One
 separately owner-approved temporary Q13DD run may use the existing
 REGION=256K generator; no permanent MVS changes or Q.1 acceptance.
+
+**JOBs 6614–6615 (26 October 2026) — record-count-shift result:**
+JOB 6614 successfully compiled the two-marker caller (host RC=0).
+Q13DD JOB 6615 completed all nine prerequisite steps at RC=0000;
+native GO returned RC=0012. Its report,
+`workarea/bcplqsam-q1/q13dd-shift-6615-report.txt`, has 9,017
+lines and the final IEWL authorization boundary at line 8976. After
+`Q13D START`, both `Q13D SHIFT` records appeared. GO output
+stopped with the partial text `Q13D CALL 04 RC` (missing `=6`),
+not at the same logical QUERY statement. The visible output matches
+a 132-character accumulation before the next attempted character,
+consistent with BCPLIO's 132-byte buffer and STOP(12) overflow
+path. This supports, but does not conclusively prove, a newline
+character-code mismatch: the historical Base Library's NEWLINE()
+uses WRCH('*N'), while the Core Runtime's IOWRCH flushes on
+the integer character code 10.
+
+**Approved diagnostic — explicit numeric newline:** The diagnostic
+caller only now uses `WRCH(10)` (Core Runtime global G!14)
+where it formerly called `NEWLINE()` (Base Library global G!63).
+The original QSAM caller and QSAM assembler remain untouched;
+the 14 service calls, every STOP(8) assertion, and the SHIFT/QUERY
+markers are preserved. A new offline check enforces the newline
+substitution. The next controlled temporary Q13DD run uses the
+same JCL generator, 256K GO region, and fresh evidence filenames;
+no installed MVS dataset changes or milestone acceptance are
+authorized.
 
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
