@@ -126,6 +126,31 @@ same JCL generator, 256K GO region, and fresh evidence filenames;
 no installed MVS dataset changes or milestone acceptance are
 authorized.
 
+**JOB 6617 OPEN-stage investigation (26 October 2026):** The WRCH(10)
+caller was compiled in JOB 6616 and ran as Q13DD JOB 6617. All
+nine prerequisite MVS steps returned zero. GO RC=0008 followed the
+first OPEN returning QS_ERR_OPEN=-6 with result (-6,0,0); QUERY
+and unsupported-opcode tests passed. The preserved full report
+workarea/bcplqsam-q1/q13dd-wrch-6617-report.txt has IEF237I messages
+confirming Q00/Q01/Q02 allocated in both WGO and GO. No operating
+system message identifies which internal OPEN path returned -6.
+
+**Approved diagnostic-only ASMQ variant:** The source-controlled helper
+prepare-q1-3dd-open-diag.py replaces ONLY the ASMQ SYSIN body of a
+locally prepared temporary Q13DD deck. Baseline bcplqsam.asm, the
+existing generator, the original caller, and all public QS_ERR_*
+statuses remain unchanged. On recoverable failures, the variant
+uses private BCPLIO IODIAG to prepend one short primary-buffer
+marker: Q1O:RDJFCB, Q1O:PREFORM, Q1O:DCBPTR, or Q1O:POSTFORM.
+These distinguish a nonzero RDJFCB return, failed preflight
+geometry, zero DCB+48 after OPEN, or failed post-OPEN geometry.
+The private call preserves R0-R9/R11-R14 and clobbers R10/R15;
+the variant rebuilds the R10 high base and leaves R7 carrying
+the original error. IODIAG does not flush by itself; inspect full
+GO records, including lines combining Q1O and Q13D prefixes.
+Compilation and native execution remain unverified. No permanent
+MVS dataset update or Q.1 acceptance follows from preparation.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,
