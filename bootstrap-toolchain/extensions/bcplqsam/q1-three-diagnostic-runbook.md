@@ -174,6 +174,33 @@ GO suffix because `Q1O:GEOM`, `Q1O:PREFORM` and `Q13D` may share
 one record. No bypass of QCVFORM, error-contract revision,
 permanent MVS writes or Q.1 acceptance is authorized.
 
+**Q.0-to-Q.1 JFCB discrepancy (after JOB 6619):**
+The Q.0 geometry probe (QS0GEOM JOB 2172) supplied explicit DCB
+attributes on QGOOD/QBAD in the *same* GO step issuing RDJFCB.
+Q.1's Q13DD WGO created F1024 temporary datasets using DCB=
+(RECFM=F,LRECL=1024,BLKSIZE=1024), but the subsequent GO step
+allocated Q00/Q01/Q02 with DISP=(OLD,DELETE) and *no DCB*.
+JOB 6619 returned RDJFCB R15=0 but all three geometry inputs
+(RECFM/LRECL/BLKSIZE) were zero. RDJFCB delivers the current
+job's JFCB; dataset-label/DSCB attributes may be merged at OPEN,
+which the existing preflight blocked. This is the leading cause
+of the zero fields, not proof of incorrect EXLST relocation.
+
+**Opt-in temporary-only comparison:**
+`prepare-q1-3dd-go-dcb.py` modifies only the Q00/Q01/Q02 GO reader
+DD statements in a previously prepared Q13DD geometry diagnostic
+deck. It adds the same `DCB=(RECFM=F,LRECL=1024,BLKSIZE=1024)`
+that the writer already used, matching the explicit-JCL-attribute
+pattern demonstrated by Q.0. The earlier ASMQ geometry trace and
+four OPEN stage markers, original Q.1 generator, assembler and
+BCPL caller remain intact; GO REGION=256K and temporary-only
+allocations are unchanged. The tool refuses overwrites.
+**This is an experiment, not a general API requirement.**
+Whether an ordinary DD lacking DCB= must be supported, and how
+pre-OPEN validation can safely determine its DSCB geometry,
+requires separate owner-reviewed design before changing
+`bcplqsam.asm`. No MVS execution or Q.1 acceptance is implied.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,
