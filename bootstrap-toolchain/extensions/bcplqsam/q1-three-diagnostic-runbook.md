@@ -151,6 +151,29 @@ GO records, including lines combining Q1O and Q13D prefixes.
 Compilation and native execution remain unverified. No permanent
 MVS dataset update or Q.1 acceptance follows from preparation.
 
+**JOB 6618 (26 October 2026) — pre-OPEN geometry failure:**
+Q13DD JOB 6618 assembled and linked successfully (all prerequisite
+steps RC=0000) but GO returned RC=0008 at the first OPEN.
+The single private trace `Q1O:PREFORM Q13D CALL 07 RC=-6`
+identifies failure in QCVFORM, before MVS OPEN. The current
+F1024 input DDs request RECFM=F, LRECL=1024, BLKSIZE=1024.
+The accepted Q.0 JOB 2172 confirmed JFCB geometry offsets for FB80
+only; these F1024 raw input values have not yet been measured.
+
+**Approved raw preflight diagnostic:** The isolated ASMQ variant
+adds a QDGTRACE call just before the original QCVFORM, saving and
+restoring R0–R15 while formatting the live R3, R5 and R6 values
+into one 45-byte `Q1O:GEOM R3=hhhhhhhh R5=hhhhhhhh R6=hhhhhhhh `
+buffer with EBCDIC hexadecimal digits. R3 is raw RECFM from JFCB
++100; R5 is signed-halfword LRECL from +104; R6 is signed-halfword
+BLKSIZE from +102. The nominal F1024 values in registers would be
+`00000080 / 00000400 / 00000400` respectively. The emitter uses
+private BCPLIO.IODIAG to append the trace to primary SYSPRINT;
+the existing four failure markers remain. Capture the full
+GO suffix because `Q1O:GEOM`, `Q1O:PREFORM` and `Q13D` may share
+one record. No bypass of QCVFORM, error-contract revision,
+permanent MVS writes or Q.1 acceptance is authorized.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,

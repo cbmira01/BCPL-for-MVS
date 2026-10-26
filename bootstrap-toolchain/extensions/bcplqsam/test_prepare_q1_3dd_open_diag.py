@@ -17,7 +17,7 @@ class OpenStageTest(unittest.TestCase):
     def test_exact_failure_sites(self):
         original = (HERE / 'bcplqsam.asm').read_text('ascii')
         variant = mod.instrument_asm(original)
-        self.assertEqual(variant.count('L     15,=A(IODIAG)'), 4)
+        self.assertEqual(variant.count('L     15,=A(IODIAG)'), 5)
         self.assertEqual(variant.count('LA    10,4095(12)'), 5)
         self.assertIn("QCNOPEN  L     7,=F'-6'", variant)
         for label in ('Q1O:RDJFCB ', 'Q1O:PREFORM ',
@@ -31,6 +31,29 @@ class OpenStageTest(unittest.TestCase):
                          (HERE / 'bcplqsam.asm').read_text('ascii'))
         with self.assertRaises(ValueError):
             mod.instrument_asm(variant)
+
+    def test_preflight_geometry_capture_before_qcvform(self):
+        source = (HERE / 'bcplqsam.asm').read_text('ascii')
+        variant = mod.instrument_asm(source)
+        self.assertRegex(
+            variant,
+            r'LH\s+6,102\(2\)\s*BAL\s+14,QDGTRACE\s*'
+            r'BAL\s+14,QCVFORM\s*LTR\s+15,15\s*BNZ\s+QCPREBAD')
+        for ins in (
+            'QDGTRACE STM   0,15,QDGSAVE',
+            'ST    3,QDGVALS', 'ST    5,QDGVALS+4',
+            'ST    6,QDGVALS+8', 'LA    5,QDGBUF+12',
+            'LA    9,3', 'LA    4,8',
+            'IC    0,0(7,1)', 'SLL   2,4',
+            'LA    2,45', 'LM    0,15,QDGSAVE'):
+            self.assertIn(ins, variant)
+        self.assertIn("QDGBUF   DC    C'Q1O:GEOM R3=',8C'0'", variant)
+        self.assertIn("DC    C' R5=',8C'0',C' R6=',8C'0',C' '",
+                      variant)
+        self.assertIn("QDGHEXT  DC    C'0123456789ABCDEF'", variant)
+        self.assertEqual(variant.count('BAL   14,QDGTRACE'), 1)
+        self.assertEqual(variant.count('BAL   14,QCVFORM'), 2)
+        self.assertEqual(variant.count('Q1O:GEOM R3='), 1)
 
     def test_temporary_jcl_only_changes_as_mq(self):
         spec = importlib.util.spec_from_file_location(

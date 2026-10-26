@@ -19,6 +19,8 @@ PATCHES = (
     ("QCHDONE  SR    15,15\n         B     QCRET\nQCNOTDD L   7,=F'-5'", "QCHDONE  SR    15,15\n         B     QCRET\nQDNRJ    L     1,=A(QDMRJ)\n         LA    2,11\n         L     15,=A(IODIAG)\n         BALR  14,15\n         LA    10,4095(12)\n         LA    10,1(10)\n         B     QCNOPEN\nQDNPT    L     1,=A(QDMDP)\n         LA    2,11\n         L     15,=A(IODIAG)\n         BALR  14,15\n         LA    10,4095(12)\n         LA    10,1(10)\n         B     QCNOPEN\nQCNOTDD L   7,=F'-5'"),
     ("QCPREBAD LR    7,15\n         B     QCROLL", "QCPREBAD LR    7,15\n         L     1,=A(QDMPR)\n         LA    2,12\n         L     15,=A(IODIAG)\n         BALR  14,15\n         LA    10,4095(12)\n         LA    10,1(10)\n         B     QCROLL"),
     ("QCPOSTER LR    7,15\n         LTR   7,7\n         BM    QCCLEAN\n         L     7,=F'-6'\n         B     QCCLEAN", "QCPOSTER LR    7,15\n         LTR   7,7\n         BM    QDPST\n         L     7,=F'-6'\nQDPST    L     1,=A(QDMPF)\n         LA    2,13\n         L     15,=A(IODIAG)\n         BALR  14,15\n         LA    10,4095(12)\n         LA    10,1(10)\n         B     QCCLEAN"),
+    ("         BAL   14,QCVFORM\n         LTR   15,15\n         BNZ   QCPREBAD", "         BAL   14,QDGTRACE\n         BAL   14,QCVFORM\n         LTR   15,15\n         BNZ   QCPREBAD"),
+    ("QCVFORM  LTR   5,5", "QDGTRACE STM   0,15,QDGSAVE\n         ST    3,QDGVALS\n         ST    5,QDGVALS+4\n         ST    6,QDGVALS+8\n         LA    6,QDGVALS\n         LA    5,QDGBUF+12\n         LA    9,3\nQDGWORD  L     2,0(6)\n         LA    1,QDGHEXT\n         LA    4,8\nQDGHEX   LR    7,2\n         SRL   7,28\n         SR    0,0\n         IC    0,0(7,1)\n         STC   0,0(5)\n         SLL   2,4\n         LA    5,1(5)\n         BCT   4,QDGHEX\n         LA    5,4(5)\n         LA    6,4(6)\n         BCT   9,QDGWORD\n         LA    1,QDGBUF\n         LA    2,45\n         L     15,=A(IODIAG)\n         BALR  14,15\n         LM    0,15,QDGSAVE\n         BR    14\nQDGSAVE  DS    16F\nQDGVALS  DS    3F\nQDGHEXT  DC    C'0123456789ABCDEF'\nQDGBUF   DC    C'Q1O:GEOM R3=',8C'0'\n         DC    C' R5=',8C'0',C' R6=',8C'0',C' '\nQCVFORM  LTR   5,5"),
     ("QCERRPRI DC   F'0'\n***********************************************************************", "QCERRPRI DC   F'0'\nQDMRJ    DC    C'Q1O:RDJFCB '\nQDMPR    DC    C'Q1O:PREFORM '\nQDMDP    DC    C'Q1O:DCBPTR '\nQDMPF    DC    C'Q1O:POSTFORM '\n***********************************************************************"),
 )
 
@@ -31,7 +33,7 @@ def instrument_asm(source: str) -> str:
             len(c) > 71 or not c.isascii() or '\t' in c
             for c in source.splitlines()):
         raise ValueError('invalid IFOX card')
-    if source.count('L     15,=A(IODIAG)') != 4:
+    if source.count('L     15,=A(IODIAG)') != 5:
         raise ValueError('expected four diagnostic calls')
     return source
 
