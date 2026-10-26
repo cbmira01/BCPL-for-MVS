@@ -455,6 +455,16 @@ run requires all IFOX/IEWL/GO steps RC=0000 and the post-linker
 inferred from the assembly source listing. No installed MVS PDS objects
 or permanent BCXCAT macros are changed.
 
-After QUERY-only integration, review OPEN rollback ownership and
-returned-CLOSE semantics before 3-DD and 16-handle native testing.
-Q.1 remains **open** until its own accepted integration evidence.
+Native QUERY-only integration **passed JOB 6603**, using compiler
+JOB 6602 (five IFOX steps, IEWL and GO all RC=0000; expected marker
+matched once). See
+`packaging/qsam-q1-native-query-jobs-6602-6603-evidence-20261026.md`.
+The next bounded application is the Q.1 three-DD OPEN/INFO/CLOSE
+exercise with three initialized temporary F1024 datasets. Follow
+[`q1-three-runbook.md`](q1-three-runbook.md). It reuses the previously
+tested Q.0 temporary QSAM writer and keeps the production PDS and
+BCXCAT unchanged.
+
+**Q.1 remains OPEN**. Returned-CLOSE fault injection and cleanup-error
+precedence still require a separate owner decision; no higher-region
+GO or finalizer acceptance is implied by JOB 6603.
