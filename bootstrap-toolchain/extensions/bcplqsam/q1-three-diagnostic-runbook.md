@@ -31,8 +31,10 @@ The diagnostic caller now also prints all six descriptor words
 `ASSERT 02 AFTER` marker, while leaving the vector size, 14
 QSAMSVC calls, and every original STOP(8) assertion unchanged.
 See `packaging/qsam-q1-go-6607-query-descriptor-diagnostic-20261026.md`.
-Use the existing three WSL blocks below to generate **a new job**;
-the previous JOB 6607 report remains in workarea.
+Use the existing three WSL blocks below to generate **a new job**.
+The inspection block writes its summary/report under the numeric JOB
+ID, preserving both the original JOB 6607 report and the next result.
+Do not overwrite the prior unnumbered diagnostic report.
 
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
@@ -186,19 +188,22 @@ if [ ! -r "$work/q13dd-diag-last-job.txt" ]; then
 else
     job=$(cat "$work/q13dd-diag-last-job.txt")
     if [[ "$job" =~ ^[0-9]+$ ]]; then
+        summary="$work/q13dd-diag-${job}-summary.txt"
+        report="$work/q13dd-diag-${job}-report.txt"
+
         timeout -k 2s 15s python3 tools/mvs/job-summary \
-            "$job" --max-rc 0 > "$work/q13dd-diag-summary.txt" 2>&1
+            "$job" --max-rc 0 > "$summary" 2>&1
         summary_rc=$?
-        cat "$work/q13dd-diag-summary.txt"
+        cat "$summary"
         echo "Summary command RC=$summary_rc"
 
         timeout -k 2s 15s bash tools/mvs/dump-report-for-job \
-            "$job" > "$work/q13dd-diag-report.txt"
+            "$job" > "$report"
         report_rc=$?
         echo "JES report collection RC=$report_rc"
 
         if [ "$report_rc" -eq 0 ]; then
-            python3 - "$work/q13dd-diag-report.txt" <<'PY'
+            python3 - "$report" <<'PY'
 from pathlib import Path
 import sys
 rows = Path(sys.argv[1]).read_text(encoding='latin-1').splitlines()
@@ -220,14 +225,14 @@ PY
             echo "===== Native output verification ====="
             python3 tools/checks/check-combined-jes-records.py \
                 "$q1/expected-q1-3dd.txt" \
-                "$work/q13dd-diag-report.txt" --destination SYSPRINT
+                "$report" --destination SYSPRINT
             echo "Expected final marker RC=$?"
         else
             echo "JES report missing; no runtime trace available."
         fi
 
-        echo "Summary: $work/q13dd-diag-summary.txt"
-        echo "Report:  $work/q13dd-diag-report.txt"
+        echo "Summary: $summary"
+        echo "Report:  $report"
     else
         echo "Invalid or pending diagnostic JOB ID."
     fi

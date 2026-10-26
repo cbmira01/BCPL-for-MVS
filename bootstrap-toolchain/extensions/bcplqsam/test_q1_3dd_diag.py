@@ -88,6 +88,9 @@ class Q13DDDiagnosticTest(unittest.TestCase):
         self.assertIn('python3 tools/mvs/job-summary', blocks[2])
         self.assertIn('timeout -k 2s 15s', blocks[2])
         self.assertIn('Q13D', blocks[2])
+        self.assertIn('q13dd-diag-${job}-summary.txt', blocks[2])
+        self.assertIn('q13dd-diag-${job}-report.txt', blocks[2])
+        self.assertNotIn('"$work/q13dd-diag-report.txt"', blocks[2])
 
 
 if __name__ == '__main__':
