@@ -115,6 +115,14 @@ class Q1ThreeDDTest(unittest.TestCase):
         self.assertNotIn('for attempt in', blocks[2])
         self.assertIn('python3 tools/mvs/job-summary', blocks[2])
         self.assertIn('timeout -k 2s 15s', blocks[2])
+        self.assertIn('===== MVS/JES diagnostic messages =====', blocks[2])
+        self.assertIn('===== Last 100 JES report lines =====', blocks[2])
+        self.assertIn('records_rc=99', blocks[2])
+        self.assertIn('if [ "$report_rc" -eq 0 ]; then', blocks[2])
+        self.assertIn('check-combined-jes-records.py', blocks[2])
+        self.assertNotIn(
+            'if [ "$summary_rc" -eq 0 ] && [ "$report_rc" -eq 0 ]; then',
+            blocks[2])
 
 
 if __name__ == '__main__':

@@ -465,6 +465,15 @@ exercise with three initialized temporary F1024 datasets. Follow
 tested Q.0 temporary QSAM writer and keeps the production PDS and
 BCXCAT unchanged.
 
-**Q.1 remains OPEN**. Returned-CLOSE fault injection and cleanup-error
-precedence still require a separate owner decision; no higher-region
-GO or finalizer acceptance is implied by JOB 6603.
+**Q.1 remains OPEN**. The native three-DD `Q13DD` gate was
+attempted in **JOB 6605**: all assemblies, link-edits and the
+temporary-data writer passed, but native **GO returned RC=0008**.
+The failing Q.1 service operation has **not** yet been identified.
+See `packaging/qsam-q1-native-three-dd-jobs-6604-6605-negative-evidence-20261026.md`.
+Inspect the saved JOB 6605 JES report before modifying source or
+resubmitting; the skipped post-failure marker check is not evidence
+that the expected marker was absent.
+
+Returned-CLOSE fault injection and cleanup-error precedence still
+require a separate owner decision; no higher-region GO or finalizer
+acceptance is implied by any of these jobs.

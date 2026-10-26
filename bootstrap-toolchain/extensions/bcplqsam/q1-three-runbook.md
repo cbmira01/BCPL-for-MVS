@@ -163,29 +163,38 @@ else
         report_rc=$?
         echo "JES report RC=$report_rc"
 
-        if [ "$summary_rc" -eq 0 ] && [ "$report_rc" -eq 0 ]; then
-            steps_ok=1
-            for step in ASMWR LKWR ASMA ASMN ASMR ASMQ ASMG LKED WGO GO; do
-                if ! grep -Eq "^$step[[:space:]]+.*RC=0000$" \
-                    "$work/q13dd-summary.txt"; then
-                    echo "Missing successful $step step."
-                    steps_ok=0
-                fi
-            done
+        steps_ok=1
+        for step in ASMWR LKWR ASMA ASMN ASMR ASMQ ASMG LKED WGO GO; do
+            if ! grep -Eq "^$step[[:space:]]+.*RC=0000$" \
+                "$work/q13dd-summary.txt"; then
+                echo "Missing successful $step step."
+                steps_ok=0
+            fi
+        done
 
+        # Collect negative evidence even when native GO returned RC=8.
+        records_rc=99
+        if [ "$report_rc" -eq 0 ]; then
+            echo "===== MVS/JES diagnostic messages ====="
+            grep -Ein \
+                'BCPLQSAM|BCPLREG|FINALIZER|ABEND|S0C|STOP|GO |IEF142I' \
+                "$work/q13dd-report.txt" | tail -90
+            echo "===== Last 100 JES report lines ====="
+            tail -100 "$work/q13dd-report.txt"
             python3 tools/checks/check-combined-jes-records.py \
                 "$q1/expected-q1-3dd.txt" \
                 "$work/q13dd-report.txt" --destination SYSPRINT
             records_rc=$?
-            echo "Native output marker RC=$records_rc"
-
-            if [ "$steps_ok" -eq 1 ] && [ "$records_rc" -eq 0 ]; then
-                echo "Q.1 three-DD native OPEN/INFO/CLOSE gate PASS."
-            else
-                echo "Three-DD gate NOT confirmed; preserve JES diagnostics."
-            fi
+            echo "Native output marker check RC=$records_rc"
         else
-            echo "JES job incomplete or failed; preserve full report."
+            echo "JES report unavailable; marker not checked."
+        fi
+
+        if [ "$summary_rc" -eq 0 ] && [ "$steps_ok" -eq 1 ] &&
+           [ "$report_rc" -eq 0 ] && [ "$records_rc" -eq 0 ]; then
+            echo "Q.1 three-DD native OPEN/INFO/CLOSE gate PASS."
+        else
+            echo "Three-DD gate NOT confirmed; preserve JES diagnostics."
         fi
         echo "Summary: $work/q13dd-summary.txt"
         echo "Report:  $work/q13dd-report.txt"
@@ -194,6 +203,12 @@ else
     fi
 fi
 ```
+
+**Negative-evidence policy (JOB 6605):** GO RC=0008 was observed
+despite successful assembler/linker/writer steps. Even when GO fails,
+inspect the saved full report and run the output-marker check. A
+marker-check failure does not identify the failing BCPL assertion,
+and a matching marker cannot override an unsuccessful GO RC.
 
 A GO RC=0000 and matching logical output establish the exercised
 three-DD OPEN/INFO/CLOSE and explicit successful-close path. The
