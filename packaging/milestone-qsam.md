@@ -1,6 +1,6 @@
 # Milestone QSAM — native BCPL sequential-record I/O
 
-Status: **Q.0 — Reconnaissance & contract in progress** (latest JES evidence dated 2026-10-20); Q.1 not started. Independent of M4, never a prerequisite for Cambridge self-hosting.
+Status (26 October 2026): **Q.1 — Linkage & OPEN/CLOSE skeleton IN PROGRESS; OPEN and NOT ACCEPTED.** JOB 6620 passed the scoped explicit-GO-DCB three-DD integration case; omitted-DCB policy and remaining gates are open. Earlier Q.0 status notes below are historical, not a new Q.0 closure decision. Independent of M4, never a prerequisite for Cambridge self-hosting.
 
 ## Purpose and historical positioning
 
@@ -248,3 +248,17 @@ JES/IEWL/GO evidence, and returned/exceptional QSAM CLOSE ownership remains
 an explicitly acknowledged limitation requiring owner Q.0 disposition and
 later implementation validation. **Q.0 remains IN PROGRESS; Q.1 has not
 started.** No Q.1 authorization or Q.0 closure is implied by this update.
+
+## Q.1 JOB 6620 scoped integration result (26 October 2026)
+
+The [JOB 6620 evidence record](qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md) documents all ten
+`Q13DD` steps RC=0000, three valid F1024 non-opening JFCB preflights,
+three successful OPEN/INFO/CLOSE handles (1–3), expected
+`QS_ERR_HANDLE=-7` for repeated CLOSE, and
+`BCPLQSAM Q1 THREE DD PASS`. This **opt-in** comparison supplied
+explicit GO reader DD geometry. It establishes the three-DD
+demonstration only in that configuration; behavior without reader
+`DCB=` is unverified. Production geometry policy needs owner approval
+before modifying `bcplqsam.asm`. The native 16-handle, resource
+cleanup, FINISH/STOP(8), and regression acceptance gates remain.
+**Q.1 remains OPEN and NOT ACCEPTED; do not start Q.2.**

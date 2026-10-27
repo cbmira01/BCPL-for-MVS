@@ -182,8 +182,19 @@ The 16-DCB standalone job used **GO REGION=256K**, held sixteen
 private 1024-byte stages and checked interleaved F1024 records.
 The 512K fallback was not run. Full BCPLQSAM runtime/application
 storage accounting remains open.
-**Q.0 — Reconnaissance & contract remains open**; Q.1 code implementation has not started.
+**Historical 25 October note:** Q.0 was then recorded open; Q.1 code implementation had not yet started. Subsequent Q.1 evidence is linked below.
 The [25 October Q.0 consolidated gate matrix](qsam-q0-consolidated-gate-review.md) and [temporary-only integrated native 16-DCB/FINISH/STOP probe](../bootstrap-toolchain/probes/q0-integrated-16-dcb/README.md) prepare the remaining Q.0 resource/lifecycle evidence for a single MVS batch. They are **not yet MVS-executed or Q.0 acceptance**, and do not change accepted Runtime Extensions or BCPLTIME marches. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
+
+### Q.1 native three-DD integration evidence (26 October 2026)
+
+[JOB 6620 explicit-GO-DCB evidence](qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md) records the successful scoped
+`Q13DD` native test: all ten steps RC=0000, three F1024 JFCB
+preflights, independent handles 1–3, INFO/CLOSE and stale-handle
+rejection, and the application PASS marker. The opt-in GO reader DDs
+supplied `DCB=(RECFM=F,LRECL=1024,BLKSIZE=1024)`; the standard
+generator and `bcplqsam.asm` were unchanged. Omitted-DCB geometry
+remains unverified and needs owner policy review. **Q.1 — Linkage
+& OPEN/CLOSE skeleton remains OPEN and NOT ACCEPTED.**
 
 ## Optional numeric and clock milestones
 

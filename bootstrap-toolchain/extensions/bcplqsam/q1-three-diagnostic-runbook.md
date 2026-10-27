@@ -201,6 +201,20 @@ pre-OPEN validation can safely determine its DSCB geometry,
 requires separate owner-reviewed design before changing
 `bcplqsam.asm`. No MVS execution or Q.1 acceptance is implied.
 
+**Observed successor — JOB 6620 (26 October 2026):** The opt-in
+explicit-GO-DCB comparison PASSED within its three-DD scope:
+all ten steps RC=0000, three preflights
+`R3=00000080 R5=00000400 R6=00000400`, OPEN handles 1–3,
+successful INFO/CLOSE and expected stale-handle error, with
+`BCPLQSAM Q1 THREE DD PASS`. See the
+[authoritative JOB 6620 evidence](../../../packaging/qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md)
+and locally preserved `q13dd-go-dcb-6620-{summary,report}.txt`
+in ignored `workarea/bcplqsam-q1/`. The normal JCL generator
+and `bcplqsam.asm` did not change. This does **not** prove support
+for missing GO reader geometry or settle a production policy.
+Owner policy review precedes assembler changes. **Q.1 remains OPEN
+and NOT ACCEPTED.** No replay of JOBs 6617–6619 is requested.
+
 All WSL blocks are bounded, no polling, no fail-fast, no top-level
 shell exit. Execute from the existing checkout on GitHub `main`.
 The temporary dataset writer may run on MVS; no permanent object,
