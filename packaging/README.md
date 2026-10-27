@@ -196,6 +196,11 @@ generator and `bcplqsam.asm` were unchanged. Omitted-DCB geometry
 remains unverified and needs owner policy review. **Q.1 — Linkage
 & OPEN/CLOSE skeleton remains OPEN and NOT ACCEPTED.**
 
+The [owner-approved Q.1 fail-closed hybrid geometry policy](qsam-q1-geometry-policy-and-allocation-identity-review-20261026.md)
+records the safe pre-OPEN validation rule and the required test-only
+allocation-identity feasibility gate before any `OBTAIN` fallback
+or production assembler change. No new JES execution is claimed.
+
 ## Optional numeric and clock milestones
 
 - [Milestone Decimal Arithmetic](milestone-decimal-arithmetic.md): packed-decimal fixed-point arithmetic and business-record interoperability, proposed D.0–D.4.

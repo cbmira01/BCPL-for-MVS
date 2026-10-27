@@ -258,7 +258,11 @@ three successful OPEN/INFO/CLOSE handles (1–3), expected
 `BCPLQSAM Q1 THREE DD PASS`. This **opt-in** comparison supplied
 explicit GO reader DD geometry. It establishes the three-DD
 demonstration only in that configuration; behavior without reader
-`DCB=` is unverified. Production geometry policy needs owner approval
-before modifying `bcplqsam.asm`. The native 16-handle, resource
+`DCB=` is unverified. **Owner approved the fail-closed hybrid production geometry policy**
+on 26 October 2026: see the [geometry-policy and allocation-identity
+review](qsam-q1-geometry-policy-and-allocation-identity-review-20261026.md). The first unfinished gate is determining
+the actual allocation identity/volume before an `OBTAIN`-based
+fallback. This is design approval, **not** permission to modify
+`bcplqsam.asm` or submit JES without a separate reviewed test plan. The native 16-handle, resource
 cleanup, FINISH/STOP(8), and regression acceptance gates remain.
 **Q.1 remains OPEN and NOT ACCEPTED; do not start Q.2.**

@@ -494,3 +494,15 @@ change is justified by this trace.
 Returned-CLOSE fault injection and cleanup-error precedence still
 require a separate owner decision; no higher-region GO or finalizer
 acceptance is implied by any of these jobs.
+
+## 26 October 2026 — geometry-policy decision after JOB 6620
+
+The [JOB 6620 explicit-GO-DCB evidence](../../../packaging/qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md)
+shows the successful three-DD test under explicit reader DCB geometry.
+The owner approved a **fail-closed hybrid**, not a universal
+`DCB=` requirement. See the
+[Q.1 geometry and allocation-identity review](../../../packaging/qsam-q1-geometry-policy-and-allocation-identity-review-20261026.md)
+for the first test-only feasibility gate: inspect RDJFCB name/volume
+identity on omitted-DCB allocations before proposing `OBTAIN`.
+**No production `bcplqsam.asm` change or JES run is approved by
+that design decision. Q.1 remains OPEN and NOT ACCEPTED.**
