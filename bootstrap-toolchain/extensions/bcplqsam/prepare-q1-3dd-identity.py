@@ -3,8 +3,8 @@
 
 Replaces only ASMQ's temporary source in an existing omitted-DCB Q13DD
 JCL deck. On the first OPEN request the diagnostic issues RDJFCB for
-Q00/Q01/Q02, emits raw hex JFCB identity/geometry fields, and returns
-QS_ERR_OPEN=-6 without ever executing QSAM OPEN for these inputs.
+Q00/Q01/Q02, emits bounded raw-hex identity/geometry records through
+BCPLIO IOREPL + IOWRCH, then returns QS_ERR_OPEN=-6 without QSAM OPEN.
 No OBTAIN, no JES submission, no changes to bcplqsam.asm.
 """
 from __future__ import annotations
@@ -49,7 +49,7 @@ PROBE_CSECT = '''***************************************************************
 * VOLS 118. RECORD RAW BYTES; DO NOT INFER ALLOCATION IDENTITY.
 ***********************************************************************
 QIDPROB  CSECT
-         EXTRN IODIAG
+         EXTRN IOREPL,IOWRCH,IOSTAT
          USING QIDPROB,12
 QIDRUN   STM   14,12,12(13)
          LR    12,15
@@ -57,20 +57,27 @@ QIDRUN   STM   14,12,12(13)
          ST    13,4(2)
          ST    2,8(13)
          LR    13,2
+* R5 AT ENTRY IS QSMDISP'S BCPL WORKSPACE; HEX ENCODER CLOBBERS IT.
+         ST    5,QIDWORK
+         XC    QIDERR(4),QIDERR
 * THREE INDEPENDENT QSAM DCBs AND THEIR 176-BYTE JFCB AREAS.
          L     2,=A(QI00)
          L     7,=A(QJ00)
          LA    6,0
          BAL   14,QIDREAD
+         CLC   QIDERR(4),=F'0'
+         BNE   QIDEXIT
          L     2,=A(QI01)
          L     7,=A(QJ01)
          LA    6,1
          BAL   14,QIDREAD
+         CLC   QIDERR(4),=F'0'
+         BNE   QIDEXIT
          L     2,=A(QI02)
          L     7,=A(QJ02)
          LA    6,2
          BAL   14,QIDREAD
-         L     13,4(13)
+QIDEXIT  L     13,4(13)
          LM    14,12,12(13)
          BR    14
 * INPUTS: R2 DCB, R7 JFCB, R6 DD NUMBER 0..2.
@@ -96,6 +103,8 @@ QIDREAD  ST    14,QIDRET
          LA    1,QIDRCB
          LA    2,19
          BAL   14,QIDOUT
+         CLC   QIDERR(4),=F'0'
+         BNE   QIDBACK
          CLC   QIDRC(4),=F'0'
          BNE   QIDBACK
 * NAME=44 BYTES, TWO 22-BYTE HEX RECORDS.
@@ -106,6 +115,8 @@ QIDREAD  ST    14,QIDRET
          LA    1,QIDN0B
          LA    2,56
          BAL   14,QIDOUT
+         CLC   QIDERR(4),=F'0'
+         BNE   QIDBACK
          L     6,QIDPTR
          LA    6,22(6)
          LA    5,QIDN1B+12
@@ -114,6 +125,8 @@ QIDREAD  ST    14,QIDRET
          LA    1,QIDN1B
          LA    2,56
          BAL   14,QIDOUT
+         CLC   QIDERR(4),=F'0'
+         BNE   QIDBACK
 * VOLS=30 BYTES. NVOL+RECFM+BLKSIZE+LRECL=6 BYTES.
          L     6,QIDPTR
          LA    6,118(6)
@@ -123,6 +136,8 @@ QIDREAD  ST    14,QIDRET
          LA    1,QIDVLB
          LA    2,72
          BAL   14,QIDOUT
+         CLC   QIDERR(4),=F'0'
+         BNE   QIDBACK
          L     6,QIDPTR
          MVC   QIDMET(1),117(6)
          MVC   QIDMET+1(1),100(6)
@@ -135,10 +150,12 @@ QIDREAD  ST    14,QIDRET
          LA    1,QIDMTB
          LA    2,24
          BAL   14,QIDOUT
+         CLC   QIDERR(4),=F'0'
+         BNE   QIDBACK
 QIDBACK  L     14,QIDRET
          BR    14
 * INPUTS: R6 SOURCE, R5 DESTINATION, R9 BYTE COUNT.
-* DIGITS ARE EBCDIC (THE SAME ENCODING AS IODIAG TEXT).
+* DIGITS ARE EBCDIC (THE SAME ENCODING AS BCPLIO TEXT).
 QIDHEX   ST    14,QIDHRET
 QIDHXLP  SR    0,0
          IC    0,0(6)
@@ -158,12 +175,31 @@ QIDHXLP  SR    0,0
          BCT   9,QIDHXLP
          L     14,QIDHRET
          BR    14
-* IODIAG USES R1 MESSAGE ADDRESS, R2 EXACT BYTE LENGTH.
-* SAVE ALL WORK REGS AS IN THE ESTABLISHED Q1O DIAGNOSTIC.
+* ONE RECORD PER FIELD; MAX LENGTH 72 < BCPLIO PRIMARY 132.
+* IOREPL REPLACES THE PENDING PRIMARY RECORD (NO APPEND).
+* IOWRCH WITH R7=10 FLUSHES IT; R6 IS ITS RETURN REGISTER.
+* IOSTAT CHECKS ANY PERSISTENT OUTPUT ERROR. FAIL CLOSED.
 QIDOUT   STM   0,15,QIDKEEP
-         L     15,=A(IODIAG)
+         LTR   2,2
+         BM    QIDBAD
+         C     2,=F'72'
+         BH    QIDBAD
+         L     15,=A(IOREPL)
          BALR  14,15
-         LM    0,15,QIDKEEP
+         LTR   15,15
+         BNZ   QIDBAD
+         L     5,QIDWORK
+         LA    7,10
+         L     15,=A(IOWRCH)
+         BALR  6,15
+         L     15,=A(IOSTAT)
+         BALR  14,15
+         LTR   15,15
+         BZ    QIDOK
+QIDBAD   LA    0,1
+         ST    0,QIDERR
+         WTO   'Q1I OUTPUT ERROR'
+QIDOK    LM    0,15,QIDKEEP
          BR    14
          LTORG
 QIDSAVE  DS    18F
@@ -172,6 +208,8 @@ QIDHRET  DC    F'0'
 QIDPTR   DC    F'0'
 QIDIDX   DC    F'0'
 QIDRC    DC    F'0'
+QIDERR   DC    F'0'
+QIDWORK  DC    F'0'
 QIDMET   DC    CL6' '
          DS    0F
 QIDKEEP  DS    16F
@@ -214,6 +252,10 @@ def instrument_asm(source: str) -> str:
         ('QCOPENIN OPEN  ((2),(INPUT))', 1),
         ('         BAL   14,QIDREAD', 3),
         ('         BAL   14,QIDOUT', 5),
+        ('         BALR  6,15', 1),
+        ('         EXTRN IOREPL,IOWRCH,IOSTAT', 1),
+        ("         BNE   QIDBACK", 6),
+        ("         BNE   QIDEXIT", 2),
     ):
         if source.count(token) != count:
             raise ValueError(f'unexpected count for {token!r}')

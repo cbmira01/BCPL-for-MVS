@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 import unittest
 
@@ -79,6 +80,62 @@ class IdentityPreparationTest(unittest.TestCase):
                          'MVC   QIDMET+4(2),104(6)'):
             self.assertIn(fragment, new)
         self.assertEqual(new.count('QIDPROB  CSECT'), 1)
+
+    def test_bounded_separate_records_and_native_output_abi(self):
+        src = ident.PROBE_CSECT
+        self.assertIn('         EXTRN IOREPL,IOWRCH,IOSTAT', src)
+        self.assertIn('ST    5,QIDWORK', src)
+        self.assertIn("QIDWORK  DC    F'0'", src)
+        self.assertNotIn('IODIAG', src)
+        self.assertIn("         C     2,=F'72'\n         BH    QIDBAD", src)
+        # The longest raw-hex record is 12 + 30*2 = 72 bytes;
+        # the accepted primary buffer is 132 bytes.
+        labels = {'RC': 'QIDRCB', 'NM0': 'QIDN0B',
+                  'NM1': 'QIDN1B', 'VOL': 'QIDVLB',
+                  'MET': 'QIDMTB'}
+        sizes = []
+        for kind, label in labels.items():
+            found = re.search(
+                rf"^{label}\s+DC\s+C'([^']*)',(\d+)C'0'$",
+                src, re.MULTILINE)
+            self.assertIsNotNone(found, kind)
+            self.assertEqual(found.group(1), f'Q1I:Q00:{kind}=')
+            byte_count = len(found.group(1)) + int(found.group(2))
+            sizes.append(byte_count)
+            self.assertIn(f'LA    1,{label}\n'
+                          f'         LA    2,{byte_count}\n'
+                          '         BAL   14,QIDOUT', src)
+        self.assertEqual(sizes, [19, 56, 56, 72, 24])
+        self.assertLessEqual(max(sizes), 72)
+        self.assertLess(max(sizes), 132)
+        out = src[src.index('QIDOUT   STM'):src.index('         LTORG')]
+        order = ('L     15,=A(IOREPL)', 'BALR  14,15',
+                 'LTR   15,15', 'BNZ   QIDBAD',
+                 'L     5,QIDWORK', 'LA    7,10', 'L     15,=A(IOWRCH)',
+                 'BALR  6,15', 'L     15,=A(IOSTAT)',
+                 'BALR  14,15', 'LTR   15,15')
+        position = 0
+        for text in order:
+            position = out.index(text, position) + len(text)
+        self.assertIn("WTO   'Q1I OUTPUT ERROR'", out)
+
+    def test_output_failure_aborts_remaining_queries(self):
+        src = ident.PROBE_CSECT
+        self.assertIn('XC    QIDERR(4),QIDERR', src)
+        self.assertIn("ST    0,QIDERR", src)
+        self.assertEqual(src.count("CLC   QIDERR(4),=F'0'"), 7)
+        self.assertEqual(src.count('BNE   QIDBACK'), 6)
+        self.assertEqual(src.count('BNE   QIDEXIT'), 2)
+        self.assertEqual(src.count('BAL   14,QIDOUT'), 5)
+        self.assertEqual(src.count('BAL   14,QIDREAD'), 3)
+        # The first failed output cannot be followed by an NM0 read;
+        # subsequent DD probes are guarded separately.
+        self.assertRegex(src, r'BAL   14,QIDOUT\n'
+                              r"         CLC   QIDERR\(4\),=F'0'\n"
+                              r'         BNE   QIDBACK\n')
+        self.assertEqual(src.count("L     15,=F'-6'"), 0)
+        new = ident.instrument_asm(ASM)
+        self.assertIn("L     15,=F'-6'", new)
 
     def test_jcl_edits_only_temporary_asmq(self):
         old = synthetic_deck()
