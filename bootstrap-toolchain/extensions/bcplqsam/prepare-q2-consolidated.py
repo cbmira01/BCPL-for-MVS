@@ -55,8 +55,8 @@ def link_reader(link: list[str]) -> list[str]:
     replace_one(rd, LINK, "//LKRD     EXEC PGM=IEWL,REGION=256K,")
     replace_one(rd, "//SYSLIN   DD  DSN=&&Q1APOBJ,DISP=(OLD,PASS)",
                 "//SYSLIN   DD  DSN=&&Q2RDOBJ,DISP=(OLD,PASS)")
-    replace_one(rd, " NAME Q1QUERY(R)", " NAME Q2READ(R)")
-    replace_one(rd, "//SYSLMOD  DD  DSN=&&Q1LOAD(Q1QUERY),",
+    replace_one(rd, " NAME Q2WRIT(R)", " NAME Q2READ(R)")
+    replace_one(rd, "//SYSLMOD  DD  DSN=&&Q2WLD(Q2WRIT),",
                 "//SYSLMOD  DD  DSN=&&Q2RLD(Q2READ),")
     return rd
 
@@ -192,6 +192,22 @@ def verify(rows: list[str]) -> str:
         raise ValueError("verifier link output absent")
     if not part(rows, "//LKED     EXEC ") < part(rows, "//LKRD     EXEC "):
         raise ValueError("wrong writer/reader link sequence")
+    # Lock each link to its own application object and load member.
+    # The reader is cloned after the writer link has been renamed.
+    expected_links = (
+        ("LKED", "LKRD", "Q1APOBJ", "Q2WLD(Q2WRIT)", "Q2WRIT"),
+        ("LKRD", "LKVR", "Q2RDOBJ", "Q2RLD(Q2READ)", "Q2READ"),
+    )
+    for link_step, next_step, appobj, loadmod, name in expected_links:
+        begin = part(rows, f"//{link_step:<8} EXEC ")
+        end = part(rows, f"//{next_step:<8} EXEC ")
+        section = rows[begin:end]
+        if (section.count(
+                f"//SYSLIN   DD  DSN=&&{appobj},DISP=(OLD,PASS)") != 1
+            or section.count(
+                f"//SYSLMOD  DD  DSN=&&{loadmod},") != 1
+            or section.count(f" NAME {name}(R)") != 1):
+            raise ValueError(link_step + ": incorrect object/load identity")
     if not part(rows, "//LKVR     EXEC ") < part(rows, "//WGO      EXEC "):
         raise ValueError("verifier link must precede native GO")
     if not (part(rows, "//WGO      EXEC ") <

@@ -65,6 +65,41 @@ class ConsolidatedCampaignTests(unittest.TestCase):
         self.assertNotIn("BOOT_DEVOBJ", self.deck)
         self.assertEqual(rows.count("         BCXREQ BCPLQSAM"), 1)
 
+    def test_reader_link_uses_renamed_writer_template(self):
+        """Catch Q1QUERY-era names after writer link has been renamed."""
+        writer = [
+            GEN.LINK,
+            "//SYSLIN   DD  DSN=&&Q1APOBJ,DISP=(OLD,PASS)",
+            " NAME Q2WRIT(R)",
+            "//SYSLMOD  DD  DSN=&&Q2WLD(Q2WRIT),",
+        ]
+        reader = GEN.link_reader(writer)
+        self.assertIn("//LKRD     EXEC PGM=IEWL,REGION=256K,", reader)
+        self.assertIn("//SYSLIN   DD  DSN=&&Q2RDOBJ,DISP=(OLD,PASS)",
+                      reader)
+        self.assertIn(" NAME Q2READ(R)", reader)
+        self.assertIn("//SYSLMOD  DD  DSN=&&Q2RLD(Q2READ),", reader)
+
+    def test_link_source_and_load_identity(self):
+        rows = self.deck.splitlines()
+        writer_begin = GEN.part(rows, "//LKED     EXEC ")
+        reader_begin = GEN.part(rows, "//LKRD     EXEC ")
+        verifier_begin = GEN.part(rows, "//LKVR     EXEC ")
+        writer = rows[writer_begin:reader_begin]
+        reader = rows[reader_begin:verifier_begin]
+        self.assertIn("//SYSLIN   DD  DSN=&&Q1APOBJ,DISP=(OLD,PASS)",
+                      writer)
+        self.assertIn("//SYSLMOD  DD  DSN=&&Q2WLD(Q2WRIT),", writer)
+        self.assertIn("//SYSLIN   DD  DSN=&&Q2RDOBJ,DISP=(OLD,PASS)",
+                      reader)
+        self.assertIn("//SYSLMOD  DD  DSN=&&Q2RLD(Q2READ),", reader)
+        wrong = list(rows)
+        wrong[wrong.index(
+            "//SYSLIN   DD  DSN=&&Q2RDOBJ,DISP=(OLD,PASS)"
+        )] = "//SYSLIN   DD  DSN=&&Q1APOBJ,DISP=(OLD,PASS)"
+        with self.assertRaisesRegex(ValueError, "LKRD"):
+            GEN.verify(wrong)
+
     def test_rejects_removed_required_phase(self):
         rows = self.deck.splitlines()
         rows.remove("//VGO      EXEC PGM=*.LKVR.SYSLMOD,REGION=256K,")
@@ -73,7 +108,11 @@ class ConsolidatedCampaignTests(unittest.TestCase):
 
     def test_rejects_geometry_and_illegal_output(self):
         rows = self.deck.splitlines()
-        rows[rows.index(GEN.DCB_FB)] = "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=801)"
+        # Target Q.2 data DD, not the earlier assembler object DDs,
+        # which can also have FB80/800 DCB cards.
+        q_b = GEN.dd("QBOUT", "Q2B", "NEW,PASS", "FB", new=True)
+        rows[rows.index(q_b[0]) + 2] = (
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=801)")
         with self.assertRaises(ValueError):
             GEN.verify(rows)
         rows = self.deck.splitlines()
