@@ -62,7 +62,14 @@ class ConsolidatedCampaignTests(unittest.TestCase):
                             and "\t" not in r for r in rows))
         self.assertNotIn("CATLG", self.deck)
         self.assertNotIn("DISP=MOD", self.deck)
-        self.assertNotIn("BOOT_DEVOBJ", self.deck)
+        # A legacy assembler comment may mention BOOT_DEVOBJ; that is
+        # not an active JES statement or a dataset allocation.
+        active_jcl = [r for r in rows
+                      if r.startswith("//") and not r.startswith("//*")]
+        self.assertFalse(any("BOOT_DEVOBJ" in r for r in active_jcl))
+        self.assertIn(
+            "//* Q.2 CONSOLIDATED F/FB: TEMPORARY DDs; NO PDS WRITES",
+            rows)
         self.assertEqual(rows.count("         BCXREQ BCPLQSAM"), 1)
 
     def test_reader_link_uses_renamed_writer_template(self):
@@ -118,6 +125,13 @@ class ConsolidatedCampaignTests(unittest.TestCase):
         rows = self.deck.splitlines()
         rows.insert(-1, "//QFOUT    DD  DSN=HERC02.TEST,DISP=(NEW,CATLG)")
         with self.assertRaises(ValueError):
+            GEN.verify(rows)
+
+    def test_rejects_real_installed_object_reference(self):
+        rows = self.deck.splitlines()
+        rows.insert(-1, "//BADDD    DD  DSN=BOOT_DEVOBJ,DISP=SHR")
+        with self.assertRaisesRegex(ValueError,
+                                    "prohibited permanent MVS dataset"):
             GEN.verify(rows)
 
     def test_rejects_wrong_job_identity(self):

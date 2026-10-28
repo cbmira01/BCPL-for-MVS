@@ -106,6 +106,8 @@ def make_deck(writer: str, reader: str, jobcard: list[str],
         writer, ["//Q1QUERY JOB (BCPL),'Q.2 TEMPLATE',CLASS=A"], obj_dsn)
     rows = base.splitlines()
     rows[:1] = jobcard
+    # This deck executes real QSAM OPEN/CLOSE: replace the Q.1 heading.
+    replace_one(rows, "//* Q.1 QUERY-ONLY: NO QSAM OPEN/CLOSE; NO PDS WRITES", "//* Q.2 CONSOLIDATED F/FB: TEMPORARY DDs; NO PDS WRITES")
     replace_one(rows, " NAME Q1QUERY(R)", " NAME Q2WRIT(R)")
     replace_one(rows, "//SYSLMOD  DD  DSN=&&Q1LOAD(Q1QUERY),",
                 "//SYSLMOD  DD  DSN=&&Q2WLD(Q2WRIT),")
