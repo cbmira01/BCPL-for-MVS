@@ -67,7 +67,7 @@ class Q2SourceRegression(unittest.TestCase):
 
     def test_rejects_lost_eodad_and_synad(self):
         src = ASM.read_text(encoding='ascii')
-        for symptom in ('EODAD=QIOEOD,', ',SYNAD=QS'):
+        for symptom in ('EODAD=E,', ',SYNAD=QS'):
             with self.subTest(symptom=symptom):
                 with self.assertRaises(AssertionError):
                     check_q2(src.replace(symptom, '', 1))
