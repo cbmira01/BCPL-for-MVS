@@ -157,7 +157,9 @@ query into caller-owned BCPL words. The global slots G!200–G!202 are
 allocated; allocation alone does not imply implementation. R.2 verified two independent optional dispatchers under integrated
 BCPLREG selection and tested their QUERY interoperability.
 
-## Proposed optional native I/O milestone
+## Milestone QSAM — native sequential-record I/O
+
+**Current owner status (28 October 2026): Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED; Q.2 — Fixed logical records OPEN / NOT ACCEPTED.** [Q.1 closure/evidence and explicit regression deferrals](qsam-q1-closure-20261028.md) and [Q.2 kickoff](qsam-q2-kickoff-20261028.md) govern the current disposition. The earlier dated Q.0/Q.1 paragraphs remain historical. No installed-object promotion or new JES run accompanies closure.
 
 [Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. The [BCPLQSAM Public Interface Specification](bcplqsam-public-interface.md) records the reviewed Q.0 design baseline, including numeric constants and fixed-size vector contracts; MVS 3.8 and optional-registration verification remain. The [Q.0 ABI evidence](qsam-q0-dispatcher-abi-evidence-20261019.md)
 records observed JOB 2156/2157 **PASS** with permanent test sources.
@@ -185,7 +187,7 @@ storage accounting remains open.
 **Historical 25 October note:** Q.0 was then recorded open; Q.1 code implementation had not yet started. Subsequent Q.1 evidence is linked below.
 The [25 October Q.0 consolidated gate matrix](qsam-q0-consolidated-gate-review.md) and [temporary-only integrated native 16-DCB/FINISH/STOP probe](../bootstrap-toolchain/probes/q0-integrated-16-dcb/README.md) prepare the remaining Q.0 resource/lifecycle evidence for a single MVS batch. They are **not yet MVS-executed or Q.0 acceptance**, and do not change accepted Runtime Extensions or BCPLTIME marches. It is not a dependency of M4. Candidate object builds must remain separate from accepted runtime objects.
 
-### Q.1 native three-DD integration evidence (26 October 2026)
+### Historical Q.1 native three-DD integration evidence (26 October 2026)
 
 [JOB 6620 explicit-GO-DCB evidence](qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md) records the successful scoped
 `Q13DD` native test: all ten steps RC=0000, three F1024 JFCB

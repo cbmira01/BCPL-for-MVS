@@ -1,6 +1,6 @@
 # Milestone QSAM — native BCPL sequential-record I/O
 
-Status (26 October 2026): **Q.1 — Linkage & OPEN/CLOSE skeleton IN PROGRESS; OPEN and NOT ACCEPTED.** JOB 6620 passed the scoped explicit-GO-DCB three-DD integration case; omitted-DCB policy and remaining gates are open. Earlier Q.0 status notes below are historical, not a new Q.0 closure decision. Independent of M4, never a prerequisite for Cambridge self-hosting.
+Status (28 October 2026): **Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED** under the owner-approved narrowed gate; **Q.2 — Fixed logical records OPEN / NOT ACCEPTED.** See the [Q.1 closure](qsam-q1-closure-20261028.md) and [Q.2 kickoff](qsam-q2-kickoff-20261028.md). The dated Q.0/Q.1 notes below are historical and do not supersede this decision. Milestone QSAM remains active and independent of M4.
 
 ## Purpose and historical positioning
 
@@ -45,13 +45,15 @@ DDNAME contract: eight-character uppercased/padded DDNAME, explicit allowable ch
 | March | Objective | Concrete deliverables | Gate to close |
 | --- | --- | --- | --- |
 | **Q.0 — Reconnaissance & contract** | Verify the actual native runtime/linkage and MVS QSAM constraints | API/ABI spec, global-number allocation plan, buffer/string representation, DCB/DDNAME and error semantics, examples, test matrix, MVS 3.8 references | Evidence-backed design approved; no speculative ABI or record-size claims |
-| **Q.1 — Linkage & OPEN/CLOSE skeleton** | Link a separate service into a native BCPL program | Candidate `BCPLQSAM` assembler module, optional BCPL wrappers/declarations, 16-slot handle table, OPEN/CLOSE, JCL and first demo | BCPL calls assembler reliably; 3 DDs independently open/close; clean failures; linked extension auto-closes outstanding handles on FINISH/STOP via approved generic finalization; no regression |
-| **Q.2 — Fixed logical records** | Make deterministic QSAM GET/PUT useful | RECFM F/FB read/write, bounds and padding rules, copy demo, EOF/error tests, round-trip checks | Byte-accurate read/write and observed EOF; overflow/invalid handle tests; all baseline regressions still pass |
+| **Q.1 — Linkage & OPEN/CLOSE skeleton (CLOSED, 28 Oct 2026)** | Link a separate service into a native BCPL program | Candidate `BCPLQSAM` assembler module, optional BCPL wrappers/declarations, 16-slot handle table, OPEN/CLOSE, JCL and first demo | Owner-narrowed gate: native BCPL linkage, three F1024 DDs, 16-handle lifecycle, output OPEN/INFO/CLOSE and normal FINISH 16-CLOSE accounting; ordinary negatives, independent STOP cleanup and full regression explicitly deferred, not marked PASS (see closure record) |
+| **Q.2 — Fixed logical records (OPEN, 28 Oct 2026)** | Make deterministic QSAM GET/PUT useful | RECFM F/FB read/write, bounds and padding rules, copy demo, EOF/error tests, round-trip checks | Byte-accurate read/write and observed EOF; overflow/invalid handle tests; all baseline regressions still pass |
 | **Q.3 — Variable logical records** | Safely handle V/VB | RDW handling contract, logical data-length conversions, zero-length/limit behavior, documentation and tests | Variable lengths preserved; RDW not leaked to BCPL unless explicitly designed; error/status checks pass |
 | **Q.4 — SYSOUT devices** | Prove non-disk record output | `SYSPRINT` FBA carriage-control demo; `SYSPUNCH` 80-column card-image demo; corresponding JES/JCL evidence | Generated printed and punched records verified, including carriage control and padding |
 | **Q.5 — Hardening & release** | Turn experiment into a reproducible optional facility | Regression subset and negative tests, build/clean/rebuild steps, examples, documentation, object promotion decision | Clean-from-Git reconstruction, full native regression, demonstrable optional link-edit; acceptance recorded |
 
 Each march is separately reviewable and committable. Do not start the next until gate evidence is in Git. A genuine blocker can stop the milestone without blocking M4.
+
+**Owner revision, 28 October 2026:** [Q.1 CLOSED](qsam-q1-closure-20261028.md) by an explicit exception to its earlier clean-failure, STOP-accounting and no-regression prerequisites. [Q.2 OPEN](qsam-q2-kickoff-20261028.md). Those unfinished checks remain declared regression/hardening obligations, not passing Q.1 evidence. No new native job, MVS installed-dataset change or Q.2 implementation is implied.
 
 ### Q.0 execution evidence and remaining gate (2026-10-19)
 
@@ -266,3 +268,7 @@ fallback. This is design approval, **not** permission to modify
 `bcplqsam.asm` or submit JES without a separate reviewed test plan. The native 16-handle, resource
 cleanup, FINISH/STOP(8), and regression acceptance gates remain.
 **Q.1 remains OPEN and NOT ACCEPTED; do not start Q.2.**
+
+## Current owner disposition — 28 October 2026
+
+**Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED; Q.2 — Fixed logical records OPEN / NOT ACCEPTED.** This supersedes the 25–26 October historical statements above that Q.1 was open and Q.2 must not begin. The owner accepted the documented narrower Q.1 scope and explicitly deferred incomplete negative, STOP-finalizer and full-panel checks. See the [formal Q.1 closure](qsam-q1-closure-20261028.md) and [Q.2 kickoff](qsam-q2-kickoff-20261028.md).

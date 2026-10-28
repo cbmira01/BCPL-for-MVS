@@ -12,6 +12,8 @@
 
 ---
 
+**Current development status (28 October 2026):** The Q.0 design/evidence status above is historical. [Q.1 is CLOSED](qsam-q1-closure-20261028.md) under a narrowed owner-approved gate, and [Q.2 is OPEN](qsam-q2-kickoff-20261028.md) for fixed-record READ/WRITE. The version-1 opcode/vector and byte-semantics contract below remains the Q.2 design authority; READ/WRITE are not yet claimed implemented by this status note.
+
 ## 1. Purpose
 
 BCPLQSAM provides native BCPL programs with direct access to MVS QSAM sequential logical-record I/O.
