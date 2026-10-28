@@ -2,6 +2,23 @@
 
 **Current status (28 October 2026): Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED** under the owner-approved narrowed gate; **Q.2 — Fixed logical records OPEN / NOT ACCEPTED**. Read the [Q.1 closure](../../../packaging/qsam-q1-closure-20261028.md) and [Q.2 kickoff](../../../packaging/qsam-q2-kickoff-20261028.md). The 25 October assessment below is historical; no MVS object installation was performed by this closure.
 
+## Q.2 consolidated F/FB native campaign candidate
+
+The [Q2FULL campaign runbook](q2-consolidated-runbook.md) describes
+a single temporary-only native MVS job, with IFOX assembly of the
+writer, reader, independent byte verifier and package, IEWL linkage
+of the three test executables, then WGO/RGO/VGO execution. All
+13 steps and the three exact PASS records must succeed.
+
+The generator `prepare-q2-consolidated.py` is source-controlled
+alongside `test-q2-write.bcpl`, `test-q2-read.bcpl`, and
+`q2-verify-copy.asm`. The authenticated JCL is materialized under
+ignored workarea only after both BCPL fixture sources are compiled
+using the existing MVS compiler workflow. Thus **JCL generation is
+not JES submission**. Neither the fixtures nor the QSMIO assembler
+is yet native-tested at this revision. The status remains
+**Q.2 OPEN / NOT ACCEPTED**.
+
 ## Q.2 fixed-record implementation candidate (28 October 2026)
 
 **Source status: OFFLINE-VALIDATED ONLY; native IFOX/IEWL/GET/PUT not

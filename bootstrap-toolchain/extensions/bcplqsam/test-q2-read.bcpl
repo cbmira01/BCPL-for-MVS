@@ -1,0 +1,148 @@
+// Q.2 F80/FB80 native READ, pending retry, EOF and copy.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; GETBYTE:85; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q2 READ FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET VERIFY(B,N) BE
+$(1
+    LET J=0
+    IF GETBYTE(B,0) NE N DO FAIL(101,N)
+    IF GETBYTE(B,1) NE 0 DO FAIL(102,N)
+    IF GETBYTE(B,2) NE 255 DO FAIL(103,N)
+    IF GETBYTE(B,79) NE 64 DO FAIL(104,N)
+    FOR J=3 TO 78 DO
+        IF GETBYTE(B,J) NE J DO FAIL(105,N)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET BF=VEC 19
+    LET BB=VEC 19
+    LET HF=0
+    LET HB=0
+    LET HC=0
+    LET HE=0
+    LET RC=0
+    LET I=0
+    LET J=0
+    Q!0 := "QFOUT"
+    Q!1 := 1
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(1,RC)
+    HF := R!1
+    Q!0 := "QBOUT"
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(2,RC)
+    HB := R!1
+    Q!0 := "QBCOPY"
+    Q!1 := 2
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(3,RC)
+    HC := R!1
+    Q!0 := "QEMPTY"
+    Q!1 := 1
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(4,RC)
+    HE := R!1
+    Q!0 := HE
+    Q!1 := BF
+    Q!2 := 80
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(5,RC)
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(6,RC)
+    Q!0 := HE
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(7,RC)
+    FOR J=0 TO 79 DO
+    $(2
+        PUTBYTE(BF,J,90)
+        PUTBYTE(BB,J,90)
+    $)2
+    Q!0 := HF
+    Q!1 := BF
+    Q!2 := 0
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -1 | R!1 NE 80 DO FAIL(8,RC)
+    Q!0 := HB
+    Q!1 := BB
+    Q!2 := 79
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -1 | R!1 NE 80 DO FAIL(9,RC)
+    Q!0 := HF
+    Q!1 := BF
+    Q!2 := 79
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -1 | R!1 NE 80 DO FAIL(10,RC)
+    FOR J=0 TO 79 DO
+    $(2
+        IF GETBYTE(BF,J) NE 90 DO FAIL(11,J)
+        IF GETBYTE(BB,J) NE 90 DO FAIL(12,J)
+    $)2
+    FOR I=0 TO 22 DO
+    $(2
+        Q!0 := HF
+        Q!1 := BF
+        Q!2 := 80
+        RC := QSAMSVC(2,Q,R)
+        IF RC NE 0 | R!1 NE 80 DO FAIL(13,RC)
+        VERIFY(BF,I)
+        Q!0 := HB
+        Q!1 := BB
+        RC := QSAMSVC(2,Q,R)
+        IF RC NE 0 | R!1 NE 80 DO FAIL(14,RC)
+        VERIFY(BB,I)
+        Q!0 := HC
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 | R!1 NE 80 DO FAIL(15,RC)
+    $)2
+    Q!0 := HF
+    Q!1 := BF
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(16,RC)
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(17,RC)
+    Q!0 := HB
+    Q!1 := BB
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(18,RC)
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(19,RC)
+    IF GETBYTE(BF,0) NE 22 DO FAIL(20,RC)
+    IF GETBYTE(BB,79) NE 64 DO FAIL(21,RC)
+    Q!0 := HF
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -8 DO FAIL(22,RC)
+    Q!0 := HC
+    Q!2 := 79
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -10 DO FAIL(23,RC)
+    Q!0 := HC
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(24,RC)
+    Q!0 := HF
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(25,RC)
+    Q!0 := HB
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(26,RC)
+    Q!0 := HF
+    Q!1 := BF
+    Q!2 := 80
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -7 DO FAIL(27,RC)
+    WRITES("BCPLQSAM Q2 READ COPY EOF RETRY PASS")
+    NEWLINE()
+    FINISH
+$)1
