@@ -2,6 +2,49 @@
 
 **Current status (28 October 2026): Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED** under the owner-approved narrowed gate; **Q.2 — Fixed logical records OPEN / NOT ACCEPTED**. Read the [Q.1 closure](../../../packaging/qsam-q1-closure-20261028.md) and [Q.2 kickoff](../../../packaging/qsam-q2-kickoff-20261028.md). The 25 October assessment below is historical; no MVS object installation was performed by this closure.
 
+## Q.2 fixed-record implementation candidate (28 October 2026)
+
+**Source status: OFFLINE-VALIDATED ONLY; native IFOX/IEWL/GET/PUT not
+yet verified.** The Q.1 normal OPEN/CLOSE and 16-handle results remain
+accepted under the [Q.1 closure](../../../packaging/qsam-q1-closure-20261028.md).
+This Q.2 candidate extends the same relocatable object with the internal
+`QSMIO` CSECT, dispatched by opcodes 2 (READ) and 3 (WRITE).
+
+- Existing 44-byte slots, 16 independently allocated 1024-byte stages,
+  output INFO, generic finalizer, and G!200 registration are retained.
+- The input DCBs use move-mode GET and the common `QIOEOD` and
+  `QIOSYN` exits. Both input and output DCBs use the recognized
+  `QIOSYN` return path. QSAM is not claimed to provide an ordinary
+  GET/PUT R15 status.
+- Two separate 16-element arrays hold input READY/PENDING/EOF states and
+  pending lengths; OPEN initializes them and safe CLOSE clears them.
+  Short READ preserves the entire privately staged record and reports
+  the required LRECL; repeated short retries never perform a second GET.
+  EOF is sticky until CLOSE. Both byte directions use `MVCL` with an
+  exact F/FB LRECL and do not copy padded data or alter record bytes.
+- Record transfer accepts only effective enum F/FB. Wrong direction,
+  unsupported RECFM, invalid arguments, length mismatch, capacity
+  shortage, and recognized SYNAD paths map to existing public codes.
+  Unrecovered MVS abends remain outside the ordinary status contract.
+- The original Q.1 DCB DDNAME= templates are preserved, while
+  short `E` and `QS` symbols alias the shared `QIOEOD` and `QIOSYN`
+  exits, keeping fixed-column cards within 71 columns. The
+  previously tested DDNAME restoration path remains unchanged;
+  IFOX/MVS must verify new exit expansion and relocation.
+- **QUERY deliberately remains mask X'00000019', flags 0**, reflecting
+  the Q.1-verified capability set. Once Q.2 GET/PUT and F/FB native
+  acceptance pass, update the bitmap to X'0000001F' and set the
+  fixed-record capability flag; never advertise unverified support.
+- The historical Q.1 application callers now test the expected Q.2
+  error semantics for missing data pointer (READ -3) and wrong
+  direction (WRITE -8), rather than expecting unsupported opcode -2.
+  `Q1NEG` also resets its reserved word before invalid-handle checks.
+  These revised callers require a fresh native regression.
+
+Offline source checking and regression tests remain distinct from
+actual IFOX assembler validation. No new JES job or installed PDS
+modification is authorized by this source candidate.
+
 **Status (25 October 2026): Q.1 — Linkage & OPEN/CLOSE skeleton,
 UNACCEPTED candidate.** The separately approved Q.0 gate and four Q.1
 implementation decisions permit source work, not MVS deployment or march

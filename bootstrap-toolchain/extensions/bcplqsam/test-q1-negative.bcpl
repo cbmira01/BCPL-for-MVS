@@ -35,6 +35,7 @@ $(1
     IF RC NE -3 DO Q1NEGFAIL(5,RC)
     Q!3 := 0
     Q!0 := 56789
+    Q!1 := 0
     RC := QSAMSVC(4,Q,R)
     IF RC NE -7 DO Q1NEGFAIL(6,RC)
     RC := QSAMSVC(5,Q,R)
