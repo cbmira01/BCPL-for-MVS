@@ -14,6 +14,22 @@ BRANCHES = {'B', 'BE', 'BNE', 'BZ', 'BNZ', 'BM', 'BNM', 'BP', 'BNP',
             'BH', 'BL', 'BNH', 'BNL', 'BAL', 'BCT'}
 
 
+COUNTER_NAMES = ('QSLIVE', 'QSDCBS', 'QSSTAGES', 'QSQUAR', 'QFCOUNT')
+
+
+def check_counter_increments(asm: str) -> None:
+    """Require five correct R0 counter-increment triplets."""
+    lines = [line.strip() for line in asm.splitlines()]
+    for name in COUNTER_NAMES:
+        expected = [f'L     0,{name}', "A     0,=F'1'", f'ST    0,{name}']
+        matches = sum(lines[i:i + 3] == expected
+                      for i in range(len(lines) - 2))
+        assert matches == 1, f'{name}: expected one L/A/ST increment triplet'
+    assert lines.count("A     0,=F'1'") == len(COUNTER_NAMES), (
+        'wrong number of R0 counter increments')
+    assert not any(re.fullmatch(r'LA\s+0,1\(0\)', line) for line in lines), (
+        'LA 0,1(0) cannot increment R0')
+
 def parse() -> tuple[str, dict[str, int], list[tuple[int, str, str]]]:
     lines = (HERE / 'bcplqsam.asm').read_text(encoding='ascii').splitlines()
     symbols: dict[str, int] = {}
@@ -49,6 +65,7 @@ def parse() -> tuple[str, dict[str, int], list[tuple[int, str, str]]]:
 
 def check() -> None:
     asm, labels, branches = parse()
+    check_counter_increments(asm)
     assert len([line for line in asm.splitlines()
                 if re.search(r'\s+CSECT$', line)]) == 7
     for symbol in ('QSMBEG', 'QSMEND', 'QSMDISP', 'QSMCORE',

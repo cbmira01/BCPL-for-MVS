@@ -198,7 +198,7 @@ QCFREE   L     0,0(4)
 QCRESERV LA    0,1
          ST    0,0(4)
          L     0,QSLIVE
-         LA    0,1(0)
+         A     0,=F'1'
          ST    0,QSLIVE
          ST    4,QCCUR
          L     7,QCMOD
@@ -250,7 +250,7 @@ QCOPENCK ST    15,QCOSRC
          LA    0,2
          ST    0,0(4)
          L     0,QSDCBS
-         LA    0,1(0)
+         A     0,=F'1'
          ST    0,QSDCBS
 * CHECK EFFECTIVE DCB FIELDS AGAINST PREFLIGHT AND CEILING.
          SR    3,3
@@ -272,7 +272,7 @@ QCOPENCK ST    15,QCOSRC
          L     4,QCCUR
          ST    1,12(4)
          L     0,QSSTAGES
-         LA    0,1(0)
+         A     0,=F'1'
          ST    0,QSSTAGES
 * PUBLIC HANDLE IS ISSUED ONLY AFTER ALL ACQUISITIONS SUCCEED.
          L     7,QSNEXT
@@ -539,7 +539,7 @@ QSCQUAR  L     4,QSCCUR
          ST    0,0(4)
          XC    4(4,4),4(4)
          L     0,QSQUAR
-         LA    0,1(0)
+         A     0,=F'1'
          ST    0,QSQUAR
 QSCBAD   L     15,=F'-14'
 QSCRET   ST    15,QSCSTAT
@@ -587,7 +587,7 @@ QFNEXT   CLC   0(4,4),=F'2'
          LTR   15,15
          BNZ   QFMARK
          L     0,QFCOUNT
-         LA    0,1(0)
+         A     0,=F'1'
          ST    0,QFCOUNT
          B     QFSTEP
 QFOTHER  L     0,0(4)
