@@ -40,6 +40,22 @@ class ObtainPreparationTest(unittest.TestCase):
                           '         PUT   ','         GET   '):
             self.assertNotIn(forbidden,m.READ_PROBE)
 
+    def test_obtain_subroutine_must_not_fall_through(self):
+        out=m.extension(BASE)
+        rows=out.splitlines()
+        call='         BAL   14,QOBREAD'
+        self.assertEqual(rows.count(call),1)
+        idx=rows.index(call)
+        self.assertEqual(rows[idx+1],'         B     QIDBACK')
+        self.assertIn('QOBREAD  ST    14,QOBRET', rows[idx+2:idx+6])
+        self.assertEqual(rows.count('QIDBACK  L     14,QIDRET'),1)
+        self.assertGreater(rows.index('QIDBACK  L     14,QIDRET'),idx+2)
+        # A deliberately mutated pre-fix sequence fails the assertion.
+        mutant=out.replace(call+'\n         B     QIDBACK\n',call+'\n',1)
+        ix=mutant.splitlines().index(call)
+        self.assertNotEqual(mutant.splitlines()[ix+1],
+                            '         B     QIDBACK')
+
     def test_missing_or_duplicate_anchor_rejected(self):
         for src in ('QIDPROB  CSECT\n',BASE+BASE,
                     BASE.replace("QIDRCB   DC    C'Q1I:Q00:RC='",'X')):

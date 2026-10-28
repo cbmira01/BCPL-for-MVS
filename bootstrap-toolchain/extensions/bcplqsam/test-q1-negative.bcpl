@@ -1,29 +1,44 @@
-// Q.1 argument, DDNAME, and missing-DD checks.
+// Q.1 argument, DDNAME, and missing-DD checks; one diagnostic per failure.
+// Test-only: preserve original call order and expected QSAMSVC statuses.
 GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
-          QSAMSVC:200 $)
+          WRITEF:76; QSAMSVC:200 $)
+LET Q1NEGFAIL(N, RC) BE
+$(1
+    WRITEF("BCPLQSAM Q1 NEGATIVE FAIL %N RC=%N", N, RC)
+    NEWLINE()
+    STOP(8)
+$)1
 LET START() BE
 $(1
     LET Q=VEC 3
     LET R=VEC 7
+    LET RC=0
     Q!0 := "1BAD"
     Q!1 := 1
     Q!2 := 0
     Q!3 := 0
-    IF QSAMSVC(1,Q,R) NE -4 DO STOP(8)
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE -4 DO Q1NEGFAIL(1,RC)
     Q!0 := "QLONGNAME"
-    IF QSAMSVC(1,Q,R) NE -4 DO STOP(8)
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE -4 DO Q1NEGFAIL(2,RC)
     Q!0 := "QMISS"
-    IF QSAMSVC(1,Q,R) NE -5 DO STOP(8)
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE -5 DO Q1NEGFAIL(3,RC)
     Q!0 := "Q00"
     Q!1 := 3
-    IF QSAMSVC(1,Q,R) NE -3 DO STOP(8)
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE -3 DO Q1NEGFAIL(4,RC)
     Q!1 := 1
     Q!3 := 1
-    IF QSAMSVC(1,Q,R) NE -3 DO STOP(8)
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE -3 DO Q1NEGFAIL(5,RC)
     Q!3 := 0
     Q!0 := 56789
-    IF QSAMSVC(4,Q,R) NE -7 DO STOP(8)
-    IF QSAMSVC(5,Q,R) NE -7 DO STOP(8)
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE -7 DO Q1NEGFAIL(6,RC)
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE -7 DO Q1NEGFAIL(7,RC)
     WRITES("BCPLQSAM Q1 NEGATIVE PASS")
     NEWLINE()
     FINISH
