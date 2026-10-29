@@ -773,7 +773,8 @@ QIWVAR   L     5,QIOCNT
          L     4,QIOCUR
          L     6,12(4)
          L     0,QIOCNT
-         LA    0,4(0)
+* R0 IS NOT A VALID LA BASE ON SYSTEM/370: ADD EXPLICITLY.
+         A     0,=F'4'
          STH   0,0(6)
          XC    2(2,6),2(6)
 QIPUT    L     4,QIOCUR
