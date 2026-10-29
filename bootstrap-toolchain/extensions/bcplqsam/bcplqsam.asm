@@ -1,10 +1,10 @@
 ***********************************************************************
-* BCPLQSAM Q.2 CANDIDATE; FIXED GET/PUT, NATIVE UNVERIFIED.
+* BCPLQSAM Q.2 FIXED F/FB NATIVE VERIFIED; QUERY UNDER TEST.
 * ONE RELOCATABLE ASSEMBLY: BCEX + DISPATCHER + FINALIZER + QSAM.
 * OWNER: BCPL FOR MVS 3.8 RECONSTRUCTION; G!200 QSAMSVC.
 * OPERATIONS: QUERY=0 OPEN=1 READ=2 WRITE=3 CLOSE=4 INFO=5.
 * REQUIRES IFOX / SYS1.MACLIB AND R.1 GENERIC BCPLREG.
-* NONREENTRANT, SINGLE-TASK; Q.1 ACCEPTED, Q.2 UNTESTED.
+* NONREENTRANT, SINGLE-TASK; Q.1 CLOSED; Q.2 OPEN.
 ***********************************************************************
 QSMDESC  CSECT
          ENTRY QSMBEG,QSMEND
@@ -51,7 +51,7 @@ QSORD    LTR   8,8
          ST    7,0(9)
          LM    0,1,24(5)
          BCR   15,11
-* SIX-WORD QUERY MASK=19 HEX UNTIL Q.2 NATIVE VALIDATION.
+* QUERY: FIVE SUPPORTED OPERATIONS; FIXED F/FB CAPABILITY.
 QSQUERY  LTR   8,8
          BNZ   QSQPTR
          LTR   9,9
@@ -70,9 +70,9 @@ QSQPTR   LTR   9,9
          ST    14,8(8)
          LA    14,6
          ST    14,12(8)
-         LA    14,25
+         LA    14,31
          ST    14,16(8)
-         SR    14,14
+         LA    14,1
          ST    14,20(8)
          LA    7,6
          B     QSRET

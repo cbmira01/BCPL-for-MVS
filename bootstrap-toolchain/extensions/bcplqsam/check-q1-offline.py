@@ -76,8 +76,11 @@ def check() -> None:
                  "DC    CL8'BCPLQSAM'", "DC    F'200',A(QSMDISP)",
                  "DC    F'1',F'0',F'1',A(QSMFIN),F'0',F'0'"):
         assert card in desc, f'descriptor mismatch: {card}'
-    assert "LA    14,25" in asm, 'QUERY 0x19 bitmap absent'
-    assert "ST    14,20(8)" in asm, 'QUERY flags-word write absent'
+    assert ("LA    14,31\n"
+            "         ST    14,16(8)\n"
+            "         LA    14,1\n"
+            "         ST    14,20(8)") in asm, (
+                'QUERY opcode mask 0x1F / fixed capability 1 missing')
     assert "LA    14,6" in asm, 'QUERY required size absent'
     assert "GETMAIN RC,LV=1024" in asm
     assert "FREEMAIN R,LV=1024,A=(1)" in asm
@@ -114,7 +117,7 @@ def check() -> None:
                     "QSSTAGES DC    F'0'", "QSQUAR   DC    F'0'",
                     'QSCQUAR', 'QFOTHER', 'QCVFORM', 'QCFIND'):
         assert literal in asm
-    # Q.2 static checks; native assembler and execution still unverified.
+    # Q.2 shape checks; native capability advertisement under test.
     # JOB 6639: GET/PUT macro sets R1 from DCB before setting R0.
     # R1 is therefore forbidden as the record-address operand.
     assert asm.count('         GET   (2),(3)') == 1
@@ -167,9 +170,9 @@ def check() -> None:
         assert 'IF QSAMSVC(1,Q,R) NE -11' in s
         assert 'IF QSAMSVC(4,Q,R) NE -7' in s
     print(f'PASS: {len(labels)} labels, {len(branches)} branches, '
-          '16 slots, 32 DCBs, Q.1 invariants and Q.2 candidate shape')
+          '16 slots, 32 DCBs, Q.1 and Q.2 source invariants')
     print('NOT TESTED: IFOX syntax/expansion, IEWL relocation, MVS/JES, '
-          'real QSAM, or REGION=256K runtime consumption')
+          'new QUERY/OUTPUT execution, or REGION=256K runtime consumption')
 
 
 if __name__ == '__main__':
