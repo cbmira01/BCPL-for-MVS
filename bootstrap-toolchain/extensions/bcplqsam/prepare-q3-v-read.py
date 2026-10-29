@@ -314,7 +314,7 @@ def make_limit_deck(generated: str, jobcard: list[str],
         "//* Q.3 1024 V/VB: BCPL AND INDEPENDENT IFOX; TEMP DASD")
     helper = q.time_helper().trailer_helper()
     member = "q3-limit-verify.asm" if writing else "q3-limit-writer.asm"
-    cards = helper.read_cards(helper, HERE / member)
+    cards = q.time_helper().read_cards(helper, HERE / member)
     at = part(rows, "//ASMN     EXEC ")
     rows[at:at] = helper.asm_step("ASML", "Q3LOBJ", cards)
     at = part(rows, "//LKED     EXEC ")
