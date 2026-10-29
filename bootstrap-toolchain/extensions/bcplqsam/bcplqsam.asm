@@ -1,5 +1,5 @@
 ***********************************************************************
-* BCPLQSAM Q.3 V READ CANDIDATE; Q.2 F/FB NATIVE VERIFIED.
+* BCPLQSAM Q.3 V READ VERIFIED; V WRITE NATIVE CANDIDATE.
 * ONE RELOCATABLE ASSEMBLY: BCEX + DISPATCHER + FINALIZER + QSAM.
 * OWNER: BCPL FOR MVS 3.8 RECONSTRUCTION; G!200 QSAMSVC.
 * OPERATIONS: QUERY=0 OPEN=1 READ=2 WRITE=3 CLOSE=4 INFO=5.
@@ -653,10 +653,8 @@ QIFMTCHK L     2,28(4)
          BE    QIPTRCHK
          C     2,=F'2'
          BE    QIPTRCHK
-* V FORMAT ENABLED FOR READ ONLY; VB/VARIABLE WRITE DISABLED.
+* V FORMAT ACCEPTED FOR BOTH READ AND WRITE; VB DEFERRED.
          C     2,=F'3'
-         BNE   QIOFORM
-         C     7,=F'2'
          BNE   QIOFORM
 QIPTRCHK L     8,QIOREQ
          L     7,4(8)
@@ -751,8 +749,10 @@ QIRDBAD  L     6,QISTPTR
          L     6,QIPNPTR
          XC    0(4,6),0(6)
          B     QIOREADR
-* OUTPUT EXACT FIXED LENGTH; NO SILENT PADDING OR TRUNCATION.
-QIWRITE  L     5,32(4)
+* FIXED OUTPUT REQUIRES EXACT LRECL; VARIABLE OUTPUT ALLOWS 0..MAX.
+QIWRITE  CLC   28(4,4),=F'3'
+         BE    QIWVAR
+         L     5,32(4)
          L     3,QIOCNT
          CR    3,5
          BNE   QIOLEN
@@ -760,13 +760,28 @@ QIWRITE  L     5,32(4)
          L     4,12(4)
          LR    7,5
          MVCL  4,6
+         B     QIPUT
+* QSAM V MOVE-MODE STAGE: RDW IN PRIVATE BYTES 0..3, DATA AT +4.
+QIWVAR   L     5,QIOCNT
+         C     5,40(4)
+         BH    QIOLEN
+         L     4,12(4)
+         LA    4,4(4)
+         L     6,QIOBUF
+         LR    7,5
+         MVCL  4,6
          L     4,QIOCUR
+         L     6,12(4)
+         L     0,QIOCNT
+         LA    0,4(0)
+         STH   0,0(6)
+         XC    2(2,6),2(6)
+QIPUT    L     4,QIOCUR
 * PUT ALSO REQUIRES A SEPARATE RECORD-ADDRESS REGISTER.
          L     2,20(4)
          L     3,12(4)
          PUT   (2),(3)
-         L     4,QIOCUR
-         L     0,32(4)
+         L     0,QIOCNT
          L     8,QIORES
          ST    0,4(8)
          SR    15,15

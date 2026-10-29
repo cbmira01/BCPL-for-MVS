@@ -1,0 +1,79 @@
+// Q.3 native BCPL variable-record WRITE, tested by independent IFOX.
+// DATA lengths 1,12,32,96,0,1; RDW stays inside BCPLQSAM.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q3 V WRITE FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 25
+    LET H=0
+    LET RC=0
+    LET I=0
+    LET J=0
+    LET L=0
+    Q!0 := "QVDATA"
+    Q!1 := 2
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(1,RC)
+    H := R!1
+    Q!0 := H
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 DO FAIL(2,RC)
+    IF R!4 NE 3 | R!5 NE 100 DO FAIL(3,RC)
+    IF R!6 NE 104 | R!7 NE 96 DO FAIL(4,RC)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 97
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -10 DO FAIL(5,RC)
+    Q!2 := -1
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -3 DO FAIL(6,RC)
+    Q!2 := 1
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -8 DO FAIL(7,RC)
+    FOR I=0 TO 5 DO
+    $(2
+        L := 0
+        IF I=0 | I=5 DO L := 1
+        IF I=1 DO L := 12
+        IF I=2 DO L := 32
+        IF I=3 DO L := 96
+        FOR J=0 TO 103 DO PUTBYTE(B,J,64)
+        PUTBYTE(B,0,I)
+        PUTBYTE(B,1,0)
+        PUTBYTE(B,2,255)
+        PUTBYTE(B,11,165)
+        PUTBYTE(B,31,126)
+        PUTBYTE(B,95,195)
+        Q!0 := H
+        Q!1 := B
+        Q!2 := L
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 | R!1 NE L DO FAIL(10+I,RC)
+    $)2
+    Q!0 := H
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(20,RC)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 1
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -7 DO FAIL(21,RC)
+    WRITES("BCPLQSAM Q3 V WRITE 6 RECORDS PASS")
+    NEWLINE()
+    FINISH
+$)1

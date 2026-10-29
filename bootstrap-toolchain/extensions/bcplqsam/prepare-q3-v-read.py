@@ -163,10 +163,102 @@ def make_deck(generated: str, jobcard: list[str], obj_dsn: str) -> str:
     return verify(rows)
 
 
+def verifier_link() -> list[str]:
+    return [
+        "//LKVR     EXEC PGM=IEWL,REGION=256K,",
+        "//             PARM='NCAL,LIST,XREF,MAP',",
+        "//             COND=(0,NE)",
+        "//SYSLIN   DD  DSN=&&Q3VOBJ,DISP=(OLD,PASS)",
+        "//         DD  *",
+        " ENTRY Q3VFY",
+        " NAME Q3VFY(R)",
+        "/*",
+        "//SYSLMOD  DD  DSN=&&Q3VLD(Q3VFY),",
+        "//             UNIT=SYSDA,SPACE=(1024,(50,20,1)),",
+        "//             DISP=(NEW,PASS)",
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))",
+        "//SYSPRINT DD  SYSOUT=*",
+    ]
+
+
+def make_write_deck(generated: str, jobcard: list[str],
+                    obj_dsn: str) -> str:
+    if not jobcard or not re.match(r"^//Q3VWRIT\s+JOB\b", jobcard[0]):
+        raise ValueError("Q3VWRIT JOB card required")
+    q = query_helper()
+    rows = q.make_deck(
+        generated, ["//Q1QUERY JOB (BCPL),'Q3 TEMPLATE',CLASS=A"],
+        obj_dsn).splitlines()
+    rows[:1] = jobcard
+    replace_one(
+        rows,
+        "//* Q.1 QUERY-ONLY: NO QSAM OPEN/CLOSE; NO PDS WRITES",
+        "//* Q.3 V WRITE: BCPL PUT; INDEPENDENT IFOX RDW READER")
+    helper = q.time_helper().trailer_helper()
+    verifier = q.time_helper().read_cards(
+        helper, HERE / "q3-v-verify.asm")
+    at = part(rows, "//ASMN     EXEC ")
+    rows[at:at] = helper.asm_step("ASMV", "Q3VOBJ", verifier)
+    at = part(rows, "//LKED     EXEC ")
+    rows[at:at] = verifier_link()
+    replace_one(rows, " NAME Q1QUERY(R)", " NAME Q3VPUT(R)")
+    replace_one(rows, "//SYSLMOD  DD  DSN=&&Q1LOAD(Q1QUERY),",
+                "//SYSLMOD  DD  DSN=&&Q3WLD(Q3VPUT),")
+    replace_one(
+        rows, "//GO       EXEC PGM=*.LKED.SYSLMOD,REGION=256K,",
+        "//WGO      EXEC PGM=*.LKED.SYSLMOD,REGION=256K,")
+    replace_one(rows, "//             TIME=(,2),COND=(0,NE,LKED)",
+                "//             TIME=(,2),COND=(0,NE)")
+    at = part(rows, "//WGO      EXEC ")
+    rows[at+2:at+2] = dataset_dd("NEW,PASS", True)
+    if rows[-1] != "//":
+        raise ValueError("inherited job terminator missing")
+    rows.pop()
+    rows += [
+        "//VGO      EXEC PGM=*.LKVR.SYSLMOD,REGION=256K,",
+        "//             TIME=(,2),COND=(0,NE)",
+        *dataset_dd("OLD,DELETE", False),
+        "//QOUT     DD  SYSOUT=*,",
+        "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
+        "//SYSUDUMP DD  SYSOUT=*",
+        "//",
+    ]
+    for step in ("ASMA", "ASMV", "ASMN", "ASMR", "ASMQ", "ASMG",
+                 "LKVR", "LKED", "WGO", "VGO"):
+        part(rows, f"//{step:<8} EXEC ")
+    if (rows.count("//SYSIN    DD  *") != 6 or
+        rows.count("/*") != 8 or
+        rows.count(" ENTRY R0APP") != 1 or
+        rows.count(" ENTRY Q3VFY") != 1 or
+        rows.count("         BCXREQ BCPLQSAM") != 1):
+        raise ValueError("Q3VWRIT native source/link boundaries invalid")
+    if not (part(rows, "//LKVR     EXEC ") <
+            part(rows, "//LKED     EXEC ") <
+            part(rows, "//WGO      EXEC ") <
+            part(rows, "//VGO      EXEC ")):
+        raise ValueError("Q3VWRIT execution order invalid")
+    for disposition, new in (("NEW,PASS", True),
+                             ("OLD,DELETE", False)):
+        block = dataset_dd(disposition, new)
+        at = part(rows, block[0])
+        if rows[at:at+len(block)] != block:
+            raise ValueError("Q3VWRIT temporary V DD mismatch")
+    if (rows.count("//QOUT     DD  SYSOUT=*,") != 1 or
+        rows.count("//") != 1 or
+        any(len(row) > 71 or not row.isascii() or "\t" in row
+            for row in rows)):
+        raise ValueError("Q3VWRIT invalid IFOX/JCL card or output")
+    if any("CATLG" in row or "DISP=MOD" in row for row in rows):
+        raise ValueError("Q3VWRIT permanent output prohibited")
+    return "\n".join(rows) + "\n"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--check", action="store_true",
                     help="synthetic cards only; no credentials or JES")
+    ap.add_argument("--write", action="store_true",
+                    help="native BCPL V WRITE and independent IFOX reader")
     ap.add_argument("--generated", type=Path,
                     help="actual BCPL compiler CG370 output in workarea")
     args = ap.parse_args()
@@ -175,11 +267,16 @@ def main() -> None:
         if args.generated is not None:
             ap.error("--check and --generated are exclusive")
         source = q.time_helper().trailer_helper().sample_generated()
-        deck = make_deck(
-            source, ["//Q3VREAD JOB (BCPL),'Q3 CHECK',CLASS=A"],
-            "HERC02.BCPL.BOOT.OBJ")
-        print(f"PASS: Q3VREAD synthetic {len(deck.splitlines())} cards, "
-              "10 steps; no compiler/JES/MVS execution")
+        if args.write:
+            deck = make_write_deck(
+                source, ["//Q3VWRIT JOB (BCPL),'Q3 CHECK',CLASS=A"],
+                "HERC02.BCPL.BOOT.OBJ")
+        else:
+            deck = make_deck(
+                source, ["//Q3VREAD JOB (BCPL),'Q3 CHECK',CLASS=A"],
+                "HERC02.BCPL.BOOT.OBJ")
+        print(f"PASS: Q3 {'WRITE' if args.write else 'READ'} synthetic "
+              f"{len(deck.splitlines())} cards, 10 steps; no JES")
         return
     if args.generated is None:
         ap.error("--generated required for actual BCPL test")
@@ -195,11 +292,15 @@ def main() -> None:
         spec.get("recfm") != "FB" or
         int(spec.get("lrecl", 0)) != 80):
         raise ValueError("manifest BOOT_OBJ must be an FB80 object PDS")
+    job = "Q3VWRIT" if args.write else JOB
     jobcard = core.authenticated_job_card(
-        config, JOB, "QSAM Q3 V READ", redact_password=False)
-    deck = make_deck(generated, jobcard, core.full_dsn(config, spec))
+        config, job, "QSAM Q3 V WRITE" if args.write else "QSAM Q3 V READ",
+        redact_password=False)
+    obj = core.full_dsn(config, spec)
+    deck = (make_write_deck(generated, jobcard, obj) if args.write
+            else make_deck(generated, jobcard, obj))
     WORK.mkdir(parents=True, exist_ok=True)
-    dest = WORK / "q3vread.jcl"
+    dest = WORK / ("q3vwrite.jcl" if args.write else "q3vread.jcl")
     fd = os.open(dest, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     with os.fdopen(fd, "w", encoding="ascii", newline="\n") as out:
         out.write(deck)
