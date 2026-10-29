@@ -1,0 +1,64 @@
+// Q.2 native STOP(8) finalizer: write one FB80 record, leave open.
+// Independent assembler must read the flushed record in the next step.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q2 STOP FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(12)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 19
+    LET H=0
+    LET RC=0
+    LET J=0
+    // Exercise actual returned errors before acquiring a handle.
+    Q!0 := "1BAD"
+    Q!1 := 1
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE -4 DO FAIL(1,RC)
+    Q!0 := "QMISS"
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE -5 DO FAIL(2,RC)
+    Q!0 := 123456
+    Q!1 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE -7 DO FAIL(3,RC)
+    // QPOST is temporary FB80/800, allocated by JCL.
+    Q!0 := "QPOST"
+    Q!1 := 2
+    Q!2 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(4,RC)
+    H := R!1
+    IF H < 1 DO FAIL(5,H)
+    Q!0 := H
+    Q!1 := 0
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 DO FAIL(6,RC)
+    IF R!4 NE 2 | R!5 NE 80 | R!6 NE 800 DO FAIL(7,RC)
+    // One binary record: AD 00 FF 03..4E 40; verify every byte.
+    FOR J=0 TO 79 DO PUTBYTE(B,J,J)
+    PUTBYTE(B,0,173)
+    PUTBYTE(B,1,0)
+    PUTBYTE(B,2,255)
+    PUTBYTE(B,79,64)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 79
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -10 DO FAIL(8,RC)
+    Q!2 := 80
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE 0 | R!1 NE 80 DO FAIL(9,RC)
+    WRITES("BCPLQSAM Q2 STOP FB80 WRITTEN PASS")
+    NEWLINE()
+    // Deliberately omit CLOSE. Generic STOP finalizer must flush FB80.
+    STOP(8)
+$)1
