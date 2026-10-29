@@ -689,8 +689,10 @@ QIPTRCHK L     8,QIOREQ
          BE    QICAPCK
          CLI   0(6),X'00'
          BNE   QIOREADR
+* USE SEPARATE DCB/RECORD REGISTERS: GET SETS R1 BEFORE R0.
          L     2,16(4)
-         GET   (2),(1)
+         L     3,12(4)
+         GET   (2),(3)
          L     6,QISTPTR
          MVI   0(6),X'01'
          L     6,QIPNPTR
@@ -732,9 +734,10 @@ QIWRITE  L     5,32(4)
          LR    7,5
          MVCL  4,6
          L     4,QIOCUR
+* PUT ALSO REQUIRES A SEPARATE RECORD-ADDRESS REGISTER.
          L     2,20(4)
-         L     1,12(4)
-         PUT   (2),(1)
+         L     3,12(4)
+         PUT   (2),(3)
          L     4,QIOCUR
          L     0,32(4)
          L     8,QIORES

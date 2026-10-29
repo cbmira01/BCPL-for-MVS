@@ -115,8 +115,18 @@ def check() -> None:
                     'QSCQUAR', 'QFOTHER', 'QCVFORM', 'QCFIND'):
         assert literal in asm
     # Q.2 static checks; native assembler and execution still unverified.
-    assert asm.count('         GET   (2),(1)') == 1
-    assert asm.count('         PUT   (2),(1)') == 1
+    # JOB 6639: GET/PUT macro sets R1 from DCB before setting R0.
+    # R1 is therefore forbidden as the record-address operand.
+    assert asm.count('         GET   (2),(3)') == 1
+    assert asm.count('         PUT   (2),(3)') == 1
+    assert '         GET   (2),(1)' not in asm
+    assert '         PUT   (2),(1)' not in asm
+    assert ('         L     2,16(4)\n'
+            '         L     3,12(4)\n'
+            '         GET   (2),(3)') in asm
+    assert ('         L     2,20(4)\n'
+            '         L     3,12(4)\n'
+            '         PUT   (2),(3)') in asm
     assert asm.count('         MVCL  4,6') == 2
     assert "QISTATES DC    16X'00'" in asm
     assert "QIPENDS  DC    16F'0'" in asm

@@ -12,8 +12,11 @@ ASM = HERE / 'bcplqsam.asm'
 def check_q2(asm: str) -> None:
     """Check structural ordering and invariants before native validation."""
     assert asm.count('QSMIO    CSECT') == 1
-    assert asm.count('         GET   (2),(1)') == 1
-    assert asm.count('         PUT   (2),(1)') == 1
+    # IFOX GET expands LR 1,DCB then LR 0,AREA; AREA must not be R1.
+    assert asm.count('         GET   (2),(3)') == 1
+    assert asm.count('         PUT   (2),(3)') == 1
+    assert '         GET   (2),(1)' not in asm
+    assert '         PUT   (2),(1)' not in asm
     assert asm.count('         MVCL  4,6') == 2
     assert "QISTATES DC    16X'00'" in asm
     assert "QIPENDS  DC    16F'0'" in asm
@@ -38,11 +41,21 @@ def check_q2(asm: str) -> None:
     assert rd.index("CLI   0(6),X'02'") < rd.index('BE    QIOEOF')
     assert rd.index('BE    QIOEOF') < rd.index("CLI   0(6),X'01'")
     assert rd.index("CLI   0(6),X'01'") < rd.index('BE    QICAPCK')
-    assert rd.index('BE    QICAPCK') < rd.index('GET   (2),(1)')
-    assert rd.index('GET   (2),(1)') < rd.index('\nQICAPCK ')
+    assert rd.index('BE    QICAPCK') < rd.index('GET   (2),(3)')
+    assert rd.index('GET   (2),(3)') < rd.index('\nQICAPCK ')
     assert rd.index('CR    3,5') < rd.index('BL    QIOSHORT')
     assert rd.index('BL    QIOSHORT') < rd.index('MVCL  4,6')
     assert rd.index('BNE   QIOLEN') < rd.rindex('MVCL  4,6')
+    assert ('         L     2,16(4)\n'
+            '         L     3,12(4)\n'
+            '         GET   (2),(3)') in rd
+    assert ('         L     2,20(4)\n'
+            '         L     3,12(4)\n'
+            '         PUT   (2),(3)') in rd
+    # Reject any overlapping operand pair in GET/PUT register form.
+    for dcb, rec in re.findall(r'\b(?:GET|PUT)\s+\((\d+)\),\((\d+)\)', rd):
+        assert dcb != rec
+        assert rec != '1'  # macro clobbers R1 before copying area to R0
     assert 'QIOEOD   L     6,QISTPTR' in rd
     assert 'MVI   0(6),X' + "'02'" in rd
     assert "L     15,=F'-1'" in rd
@@ -79,6 +92,29 @@ class Q2SourceRegression(unittest.TestCase):
             with self.subTest(symptom=symptom):
                 with self.assertRaises(AssertionError):
                     check_q2(src.replace(symptom, 'B     QIOEXIT', 1))
+
+    def test_rejects_get_put_register_aliasing(self):
+        src = ASM.read_text(encoding='ascii')
+        for operation in ('GET', 'PUT'):
+            for reg in ('1', '2'):
+                with self.subTest(operation=operation, area_register=reg):
+                    mutated = src.replace(
+                        f'         {operation}   (2),(3)',
+                        f'         {operation}   (2),({reg})', 1)
+                    with self.assertRaises(AssertionError):
+                        check_q2(mutated)
+
+    def test_rejects_missing_private_stage_load(self):
+        src = ASM.read_text(encoding='ascii')
+        for operation, dcb_off in (('GET', 16), ('PUT', 20)):
+            with self.subTest(operation=operation):
+                original = (f'         L     2,{dcb_off}(4)\n'
+                            '         L     3,12(4)\n'
+                            f'         {operation}   (2),(3)')
+                broken = original.replace('L     3,12(4)', 'L     3,20(4)')
+                self.assertIn(original, src)
+                with self.assertRaises(AssertionError):
+                    check_q2(src.replace(original, broken, 1))
 
     def test_rejects_unverified_advertising(self):
         src = ASM.read_text(encoding='ascii')
