@@ -253,12 +253,143 @@ def make_write_deck(generated: str, jobcard: list[str],
     return "\n".join(rows) + "\n"
 
 
+
+def limit_dataset_dd(fmt: str, disposition: str,
+                     create: bool) -> list[str]:
+    if fmt not in ("v", "vb"):
+        raise ValueError("Q.3 limit format must be V or VB")
+    recfm = fmt.upper()
+    blksize = 1028 if fmt == "v" else 2052
+    rows = ["//QVDATA   DD  DSN=&&Q3L,DISP=(" + disposition + "),"]
+    if create:
+        rows.append("//             UNIT=SYSDA,SPACE=(TRK,(4,2)),")
+    rows.append(f"//             DCB=(RECFM={recfm},"
+                f"LRECL=1024,BLKSIZE={blksize})")
+    return rows
+
+
+def limit_job(fmt: str, writing: bool) -> str:
+    if fmt not in ("v", "vb"):
+        raise ValueError("unrecognized limit format")
+    tag = "VL" if fmt == "v" else "VB"
+    return "Q3" + tag + ("WRT" if writing else "RED")
+
+
+def limit_link(writing: bool) -> list[str]:
+    step = "LKVR" if writing else "LKWR"
+    member = "Q3LMV" if writing else "Q3LMW"
+    obj = "Q3LOBJ"
+    load = "Q3LLD"
+    return [
+        f"//{step:<8} EXEC PGM=IEWL,REGION=256K,",
+        "//             PARM='NCAL,LIST,XREF,MAP',",
+        "//             COND=(0,NE)",
+        f"//SYSLIN   DD  DSN=&&{obj},DISP=(OLD,PASS)",
+        "//         DD  *",
+        f" ENTRY {member}",
+        f" NAME {member}(R)",
+        "/*",
+        f"//SYSLMOD  DD  DSN=&&{load}({member}),",
+        "//             UNIT=SYSDA,SPACE=(1024,(50,20,1)),",
+        "//             DISP=(NEW,PASS)",
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))",
+        "//SYSPRINT DD  SYSOUT=*",
+    ]
+
+
+def make_limit_deck(generated: str, jobcard: list[str],
+                    obj_dsn: str, fmt: str, writing: bool) -> str:
+    job = limit_job(fmt, writing)
+    if not jobcard or not re.match(r"^//" + job + r"\s+JOB\b",
+                                   jobcard[0]):
+        raise ValueError("Q.3 limit JOB card name mismatch")
+    q = query_helper()
+    rows = q.make_deck(
+        generated, ["//Q1QUERY JOB (BCPL),'Q3 TEMPLATE',CLASS=A"],
+        obj_dsn).splitlines()
+    rows[:1] = jobcard
+    replace_one(
+        rows,
+        "//* Q.1 QUERY-ONLY: NO QSAM OPEN/CLOSE; NO PDS WRITES",
+        "//* Q.3 1024 V/VB: BCPL AND INDEPENDENT IFOX; TEMP DASD")
+    helper = q.time_helper().trailer_helper()
+    member = "q3-limit-verify.asm" if writing else "q3-limit-writer.asm"
+    cards = helper.read_cards(helper, HERE / member)
+    at = part(rows, "//ASMN     EXEC ")
+    rows[at:at] = helper.asm_step("ASML", "Q3LOBJ", cards)
+    at = part(rows, "//LKED     EXEC ")
+    rows[at:at] = limit_link(writing)
+    appname = "Q3LPUT" if writing else "Q3LRED"
+    load = "Q3LWLD" if writing else "Q3LRLD"
+    replace_one(rows, " NAME Q1QUERY(R)", f" NAME {appname}(R)")
+    replace_one(rows, "//SYSLMOD  DD  DSN=&&Q1LOAD(Q1QUERY),",
+                f"//SYSLMOD  DD  DSN=&&{load}({appname}),")
+    step = "WGO" if writing else "RGO"
+    replace_one(
+        rows, "//GO       EXEC PGM=*.LKED.SYSLMOD,REGION=256K,",
+        f"//{step:<8} EXEC PGM=*.LKED.SYSLMOD,REGION=256K,")
+    replace_one(rows, "//             TIME=(,2),COND=(0,NE,LKED)",
+                "//             TIME=(,2),COND=(0,NE)")
+    at = part(rows, f"//{step:<8} EXEC ")
+    if writing:
+        rows[at+2:at+2] = limit_dataset_dd(fmt, "NEW,PASS", True)
+        if rows[-1] != "//":
+            raise ValueError("inherited job terminator missing")
+        rows.pop()
+        rows += [
+            "//VGO      EXEC PGM=*.LKVR.SYSLMOD,REGION=256K,",
+            "//             TIME=(,2),COND=(0,NE)",
+            *limit_dataset_dd(fmt, "OLD,DELETE", False),
+            "//QOUT     DD  SYSOUT=*,",
+            "//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)",
+            "//SYSUDUMP DD  SYSOUT=*",
+            "//",
+        ]
+    else:
+        rows[at:at] = [
+            "//WGO      EXEC PGM=*.LKWR.SYSLMOD,REGION=256K,",
+            "//             TIME=(,2),COND=(0,NE)",
+            *limit_dataset_dd(fmt, "NEW,PASS", True),
+            "//SYSUDUMP DD  SYSOUT=*",
+        ]
+        at = part(rows, "//RGO      EXEC ")
+        rows[at+2:at+2] = limit_dataset_dd(fmt, "OLD,DELETE", False)
+    asm_steps = ("ASMA", "ASML", "ASMN", "ASMR", "ASMQ", "ASMG")
+    link_steps = ("LKVR", "LKED") if writing else ("LKWR", "LKED")
+    go_steps = ("WGO", "VGO") if writing else ("WGO", "RGO")
+    for step in (*asm_steps, *link_steps, *go_steps):
+        part(rows, f"//{step:<8} EXEC ")
+    if (rows.count("//") != 1 or rows[-1] != "//" or
+        rows.count("//SYSIN    DD  *") != 6 or
+        rows.count("/*") != 8 or
+        rows.count(" ENTRY R0APP") != 1 or
+        rows.count("         BCXREQ BCPLQSAM") != 1 or
+        rows.count(f" NAME {appname}(R)") != 1):
+        raise ValueError("Q.3 limit native deck structure invalid")
+    if any(len(row) > 71 or not row.isascii() or "\t" in row
+           for row in rows):
+        raise ValueError("Q.3 limit JCL/IFOX card width invalid")
+    if any("CATLG" in row or "DISP=MOD" in row or
+           (row.startswith("//") and "BOOT_DEVOBJ" in row)
+           for row in rows):
+        raise ValueError("Q.3 limit permanent MVS modification prohibited")
+    for disposition, create in (("NEW,PASS", True),
+                                ("OLD,DELETE", False)):
+        block = limit_dataset_dd(fmt, disposition, create)
+        at = part(rows, block[0])
+        if rows[at:at+len(block)] != block:
+            raise ValueError("Q.3 limit dataset lifecycle invalid")
+    return "\n".join(rows) + "\n"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--check", action="store_true",
                     help="synthetic cards only; no credentials or JES")
     ap.add_argument("--write", action="store_true",
-                    help="native BCPL V WRITE and independent IFOX reader")
+                    help="native BCPL WRITE and independent IFOX reader")
+    ap.add_argument("--limit", choices=("v", "vb"),
+                    help="1024-byte V/VB ceiling campaign")
     ap.add_argument("--generated", type=Path,
                     help="actual BCPL compiler CG370 output in workarea")
     args = ap.parse_args()
@@ -267,7 +398,12 @@ def main() -> None:
         if args.generated is not None:
             ap.error("--check and --generated are exclusive")
         source = q.time_helper().trailer_helper().sample_generated()
-        if args.write:
+        if args.limit:
+            job = limit_job(args.limit, args.write)
+            deck = make_limit_deck(
+                source, [f"//{job} JOB (BCPL),'Q3 CHECK',CLASS=A"],
+                "HERC02.BCPL.BOOT.OBJ", args.limit, args.write)
+        elif args.write:
             deck = make_write_deck(
                 source, ["//Q3VWRIT JOB (BCPL),'Q3 CHECK',CLASS=A"],
                 "HERC02.BCPL.BOOT.OBJ")
@@ -292,15 +428,22 @@ def main() -> None:
         spec.get("recfm") != "FB" or
         int(spec.get("lrecl", 0)) != 80):
         raise ValueError("manifest BOOT_OBJ must be an FB80 object PDS")
-    job = "Q3VWRIT" if args.write else JOB
+    job = (limit_job(args.limit, args.write) if args.limit
+           else ("Q3VWRIT" if args.write else JOB))
     jobcard = core.authenticated_job_card(
-        config, job, "QSAM Q3 V WRITE" if args.write else "QSAM Q3 V READ",
+        config, job, "QSAM Q3 LIMIT" if args.limit else "QSAM Q3 V",
         redact_password=False)
     obj = core.full_dsn(config, spec)
-    deck = (make_write_deck(generated, jobcard, obj) if args.write
-            else make_deck(generated, jobcard, obj))
+    if args.limit:
+        deck = make_limit_deck(
+            generated, jobcard, obj, args.limit, args.write)
+    else:
+        deck = (make_write_deck(generated, jobcard, obj) if args.write
+                else make_deck(generated, jobcard, obj))
     WORK.mkdir(parents=True, exist_ok=True)
-    dest = WORK / ("q3vwrite.jcl" if args.write else "q3vread.jcl")
+    dest = WORK / (
+        f"{job.lower()}.jcl" if args.limit
+        else ("q3vwrite.jcl" if args.write else "q3vread.jcl"))
     fd = os.open(dest, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     with os.fdopen(fd, "w", encoding="ascii", newline="\n") as out:
         out.write(deck)

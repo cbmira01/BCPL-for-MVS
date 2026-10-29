@@ -1,5 +1,5 @@
 ***********************************************************************
-* BCPLQSAM Q.3 V READ VERIFIED; V WRITE NATIVE CANDIDATE.
+* BCPLQSAM Q.3 V READ/WRITE VERIFIED; VB NATIVE CANDIDATE.
 * ONE RELOCATABLE ASSEMBLY: BCEX + DISPATCHER + FINALIZER + QSAM.
 * OWNER: BCPL FOR MVS 3.8 RECONSTRUCTION; G!200 QSAMSVC.
 * OPERATIONS: QUERY=0 OPEN=1 READ=2 WRITE=3 CLOSE=4 INFO=5.
@@ -622,7 +622,7 @@ QSCSTAT  DC    F'0'
 QSCCUR   DC    F'0'
 QSCDCB   DC    F'0'
 ***********************************************************************
-* Q.3 V READ AND Q.2 F/FB MOVE-MODE RECORD I/O.
+* Q.3 V/VB MOVE-MODE RECORD I/O; Q.2 FIXED PRESERVED.
 * R7 OP, R8 REQUEST, R9 RESULT, R4 LIVE SLOT; RETURN R15.
 * EODAD/SYNAD EXIT THROUGH THIS NONREENTRANT ACTIVE FRAME.
 ***********************************************************************
@@ -653,8 +653,10 @@ QIFMTCHK L     2,28(4)
          BE    QIPTRCHK
          C     2,=F'2'
          BE    QIPTRCHK
-* V FORMAT ACCEPTED FOR BOTH READ AND WRITE; VB DEFERRED.
+* V/VB SHARE RDW-BASED PRIVATE RECORD STAGING.
          C     2,=F'3'
+         BE    QIPTRCHK
+         C     2,=F'4'
          BNE   QIOFORM
 QIPTRCHK L     8,QIOREQ
          L     7,4(8)
@@ -700,8 +702,10 @@ QIPTRCHK L     8,QIOREQ
          L     4,QIOCUR
          L     0,28(4)
          C     0,=F'3'
+         BE    QIRVAR
+         C     0,=F'4'
          BNE   QIRDFIX
-         L     3,12(4)
+QIRVAR   L     3,12(4)
          CLC   2(2,3),=H'0'
          BNE   QIRDBAD
          LH    0,0(3)
@@ -725,8 +729,10 @@ QICAPCK  L     6,QIPNPTR
          L     4,QIOCUR
          L     6,12(4)
          CLC   28(4,4),=F'3'
+         BE    QICOPYV
+         CLC   28(4,4),=F'4'
          BNE   QICOPY
-         LA    6,4(6)
+QICOPYV  LA    6,4(6)
 QICOPY   L     4,QIOBUF
          LR    7,5
          MVCL  4,6
@@ -751,6 +757,8 @@ QIRDBAD  L     6,QISTPTR
          B     QIOREADR
 * FIXED OUTPUT REQUIRES EXACT LRECL; VARIABLE OUTPUT ALLOWS 0..MAX.
 QIWRITE  CLC   28(4,4),=F'3'
+         BE    QIWVAR
+         CLC   28(4,4),=F'4'
          BE    QIWVAR
          L     5,32(4)
          L     3,QIOCNT
