@@ -27,6 +27,8 @@ $(1
     IF RC NE 0 DO FAIL(1,RC)
     H := R!1
     Q!0 := H
+    Q!1 := 0
+    Q!2 := 0
     RC := QSAMSVC(5,Q,R)
     IF RC NE 0 DO FAIL(2,RC)
     IF R!4 NE 3 | R!5 NE 100 DO FAIL(3,RC)
