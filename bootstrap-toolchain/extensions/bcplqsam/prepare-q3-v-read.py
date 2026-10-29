@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""Prepare Q.3 independent IFOX writer + native BCPL V READ job.
+
+The BCPL reader must first be compiled with tools/bootstrap/compile-mvs.
+No compiler/JES submission or permanent MVS dataset write occurs here.
+"""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import os
+from pathlib import Path
+import re
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+WORK = ROOT / "workarea/bcplqsam-q3"
+JOB = "Q3VREAD"
+
+
+def query_helper():
+    path = HERE / "prepare-q1-query.py"
+    spec = importlib.util.spec_from_file_location("q3_query", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("accepted Q.1 integration helper missing")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def part(rows: list[str], prefix: str) -> int:
+    found = [i for i, row in enumerate(rows) if row.startswith(prefix)]
+    if len(found) != 1:
+        raise ValueError("expected one JCL part " + prefix)
+    return found[0]
+
+
+def replace_one(rows: list[str], before: str, after: str) -> None:
+    if rows.count(before) != 1:
+        raise ValueError("expected one JCL card " + before)
+    rows[rows.index(before)] = after
+
+
+def dataset_dd(disposition: str, create: bool) -> list[str]:
+    rows = [
+        "//QVDATA   DD  DSN=&&Q3V,DISP=(" + disposition + "),",
+    ]
+    if create:
+        rows += ["//             UNIT=SYSDA,SPACE=(TRK,(2,1)),"]
+    rows += ["//             DCB=(RECFM=V,LRECL=100,BLKSIZE=104)"]
+    return rows
+
+
+def writer_link() -> list[str]:
+    return [
+        "//LKWR     EXEC PGM=IEWL,REGION=256K,",
+        "//             PARM='NCAL,LIST,XREF,MAP',",
+        "//             COND=(0,NE)",
+        "//SYSLIN   DD  DSN=&&Q3WOBJ,DISP=(OLD,PASS)",
+        "//         DD  *",
+        " ENTRY Q3VWRT",
+        " NAME Q3VWRT(R)",
+        "/*",
+        "//SYSLMOD  DD  DSN=&&Q3WLD(Q3VWRT),",
+        "//             UNIT=SYSDA,SPACE=(1024,(50,20,1)),",
+        "//             DISP=(NEW,PASS)",
+        "//SYSUT1   DD  UNIT=SYSDA,SPACE=(1024,(50,20))",
+        "//SYSPRINT DD  SYSOUT=*",
+    ]
+
+
+def verify(rows: list[str]) -> str:
+    if not rows or not re.match(r"^//Q3VREAD\s+JOB\b", rows[0]):
+        raise ValueError("authenticated Q3VREAD job name missing")
+    if rows.count("//") != 1 or rows[-1] != "//":
+        raise ValueError("JCL termination invalid")
+    if any(len(row) > 71 or not row.isascii() or "\t" in row
+           for row in rows):
+        raise ValueError("JCL/IFOX card outside fixed-column limits")
+    if rows.count("//SYSIN    DD  *") != 6 or rows.count("/*") != 8:
+        raise ValueError("assembler/linker stream boundaries incorrect")
+    steps = ("ASMA", "ASMW", "ASMN", "ASMR", "ASMQ", "ASMG",
+             "LKWR", "LKED", "WGO", "RGO")
+    for step in steps:
+        part(rows, f"//{step:<8} EXEC ")
+    if not (part(rows, "//ASMA     EXEC ") <
+            part(rows, "//ASMW     EXEC ") <
+            part(rows, "//ASMN     EXEC ") <
+            part(rows, "//LKWR     EXEC ") <
+            part(rows, "//LKED     EXEC ") <
+            part(rows, "//WGO      EXEC ") <
+            part(rows, "//RGO      EXEC ")):
+        raise ValueError("execution order incorrect")
+    if (rows.count(" ENTRY Q3VWRT") != 1 or
+        rows.count(" ENTRY R0APP") != 1 or
+        rows.count(" NAME Q3VWRT(R)") != 1 or
+        rows.count(" NAME Q3VRED(R)") != 1 or
+        rows.count("         BCXREQ BCPLQSAM") != 1):
+        raise ValueError("link-edit and registration identities incorrect")
+    if rows.count("//SYSLIN   DD  DSN=&&Q3WOBJ,DISP=(OLD,PASS)") != 1:
+        raise ValueError("independent writer object not linked")
+    if rows.count("//SYSLIN   DD  DSN=&&Q1APOBJ,DISP=(OLD,PASS)") != 1:
+        raise ValueError("compiled BCPL reader object missing")
+    for disposition, create in (("NEW,PASS", True),
+                                ("OLD,DELETE", False)):
+        block = dataset_dd(disposition, create)
+        at = part(rows, block[0])
+        if rows[at:at+len(block)] != block:
+            raise ValueError("temporary V DD geometry/lifecycle changed")
+    if part(rows, "//WGO      EXEC ") >= part(rows, "//RGO      EXEC "):
+        raise ValueError("writer must execute before reader")
+    for step in ("WGO", "RGO"):
+        pos = part(rows, f"//{step:<8} EXEC ")
+        if "REGION=256K" not in rows[pos] or "COND=(0,NE)" not in rows[pos+1]:
+            raise ValueError("missing native GO region/dependency guard")
+    if any("CATLG" in row or "DISP=MOD" in row or
+           (row.startswith("//") and not row.startswith("//*") and
+            "BOOT_DEVOBJ" in row) for row in rows):
+        raise ValueError("prohibited permanent MVS dataset operation")
+    if rows.count(" INCLUDE OBJ(BCPLIO)") != 1:
+        raise ValueError("production BCPLIO reference missing")
+    return "\n".join(rows) + "\n"
+
+
+def make_deck(generated: str, jobcard: list[str], obj_dsn: str) -> str:
+    if not jobcard or not re.match(r"^//Q3VREAD\s+JOB\b", jobcard[0]):
+        raise ValueError("Q3VREAD JOB card required")
+    q = query_helper()
+    sample = q.make_deck(
+        generated,
+        ["//Q1QUERY JOB (BCPL),'Q3 TEMPLATE',CLASS=A"],
+        obj_dsn)
+    rows = sample.splitlines()
+    rows[:1] = jobcard
+    replace_one(
+        rows,
+        "//* Q.1 QUERY-ONLY: NO QSAM OPEN/CLOSE; NO PDS WRITES",
+        "//* Q.3 V READ: INDEPENDENT WRITER; TEMPORARY DASD ONLY")
+    helper = q.time_helper().trailer_helper()
+    writer = q.time_helper().read_cards(helper, HERE / "q3-v-writer.asm")
+    at = part(rows, "//ASMN     EXEC ")
+    rows[at:at] = helper.asm_step("ASMW", "Q3WOBJ", writer)
+    at = part(rows, "//LKED     EXEC ")
+    rows[at:at] = writer_link()
+    replace_one(rows, " NAME Q1QUERY(R)", " NAME Q3VRED(R)")
+    replace_one(rows, "//SYSLMOD  DD  DSN=&&Q1LOAD(Q1QUERY),",
+                "//SYSLMOD  DD  DSN=&&Q3RLD(Q3VRED),")
+    replace_one(
+        rows,
+        "//GO       EXEC PGM=*.LKED.SYSLMOD,REGION=256K,",
+        "//RGO      EXEC PGM=*.LKED.SYSLMOD,REGION=256K,")
+    replace_one(rows, "//             TIME=(,2),COND=(0,NE,LKED)",
+                "//             TIME=(,2),COND=(0,NE)")
+    at = part(rows, "//RGO      EXEC ")
+    rows[at:at] = [
+        "//WGO      EXEC PGM=*.LKWR.SYSLMOD,REGION=256K,",
+        "//             TIME=(,2),COND=(0,NE)",
+        *dataset_dd("NEW,PASS", True),
+        "//SYSUDUMP DD  SYSOUT=*",
+    ]
+    at = part(rows, "//RGO      EXEC ")
+    rows[at+2:at+2] = dataset_dd("OLD,DELETE", False)
+    return verify(rows)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--check", action="store_true",
+                    help="synthetic cards only; no credentials or JES")
+    ap.add_argument("--generated", type=Path,
+                    help="actual BCPL compiler CG370 output in workarea")
+    args = ap.parse_args()
+    q = query_helper()
+    if args.check:
+        if args.generated is not None:
+            ap.error("--check and --generated are exclusive")
+        source = q.time_helper().trailer_helper().sample_generated()
+        deck = make_deck(
+            source, ["//Q3VREAD JOB (BCPL),'Q3 CHECK',CLASS=A"],
+            "HERC02.BCPL.BOOT.OBJ")
+        print(f"PASS: Q3VREAD synthetic {len(deck.splitlines())} cards, "
+              "10 steps; no compiler/JES/MVS execution")
+        return
+    if args.generated is None:
+        ap.error("--generated required for actual BCPL test")
+    source_path = args.generated.resolve()
+    if (ROOT / "workarea").resolve() not in source_path.parents:
+        raise ValueError("CG370 source must be under ignored workarea")
+    generated = source_path.read_bytes().decode("latin-1")
+    core = q.time_helper().trailer_helper().load_core()
+    config = core.load_config()
+    spec = config["datasets"]["BOOT_OBJ"]
+    if (spec.get("content_type") != "object" or
+        spec.get("dsorg") != "PO" or
+        spec.get("recfm") != "FB" or
+        int(spec.get("lrecl", 0)) != 80):
+        raise ValueError("manifest BOOT_OBJ must be an FB80 object PDS")
+    jobcard = core.authenticated_job_card(
+        config, JOB, "QSAM Q3 V READ", redact_password=False)
+    deck = make_deck(generated, jobcard, core.full_dsn(config, spec))
+    WORK.mkdir(parents=True, exist_ok=True)
+    dest = WORK / "q3vread.jcl"
+    fd = os.open(dest, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    with os.fdopen(fd, "w", encoding="ascii", newline="\n") as out:
+        out.write(deck)
+    print(f"PREPARED ONLY: {dest} ({len(deck.splitlines())} cards)")
+    print("No JES submission, object installation, or permanent datasets")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError, UnicodeError) as exc:
+        raise SystemExit("Q.3 V READ preparation FAILED: " + str(exc))

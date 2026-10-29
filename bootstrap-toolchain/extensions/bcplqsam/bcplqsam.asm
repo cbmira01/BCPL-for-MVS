@@ -1,10 +1,10 @@
 ***********************************************************************
-* BCPLQSAM Q.2 FIXED F/FB NATIVE VERIFIED; QUERY UNDER TEST.
+* BCPLQSAM Q.3 V READ CANDIDATE; Q.2 F/FB NATIVE VERIFIED.
 * ONE RELOCATABLE ASSEMBLY: BCEX + DISPATCHER + FINALIZER + QSAM.
 * OWNER: BCPL FOR MVS 3.8 RECONSTRUCTION; G!200 QSAMSVC.
 * OPERATIONS: QUERY=0 OPEN=1 READ=2 WRITE=3 CLOSE=4 INFO=5.
 * REQUIRES IFOX / SYS1.MACLIB AND R.1 GENERIC BCPLREG.
-* NONREENTRANT, SINGLE-TASK; Q.1 CLOSED; Q.2 OPEN.
+* NONREENTRANT, SINGLE-TASK; Q.2 CLOSED; Q.3 IN PROGRESS.
 ***********************************************************************
 QSMDESC  CSECT
          ENTRY QSMBEG,QSMEND
@@ -622,7 +622,7 @@ QSCSTAT  DC    F'0'
 QSCCUR   DC    F'0'
 QSCDCB   DC    F'0'
 ***********************************************************************
-* Q.2 FIXED MOVE-MODE RECORD I/O; SINGLE ACTIVE QSAM MACRO.
+* Q.3 V READ AND Q.2 F/FB MOVE-MODE RECORD I/O.
 * R7 OP, R8 REQUEST, R9 RESULT, R4 LIVE SLOT; RETURN R15.
 * EODAD/SYNAD EXIT THROUGH THIS NONREENTRANT ACTIVE FRAME.
 ***********************************************************************
@@ -652,6 +652,11 @@ QIFMTCHK L     2,28(4)
          C     2,=F'1'
          BE    QIPTRCHK
          C     2,=F'2'
+         BE    QIPTRCHK
+* V FORMAT ENABLED FOR READ ONLY; VB/VARIABLE WRITE DISABLED.
+         C     2,=F'3'
+         BNE   QIOFORM
+         C     7,=F'2'
          BNE   QIOFORM
 QIPTRCHK L     8,QIOREQ
          L     7,4(8)
@@ -693,12 +698,26 @@ QIPTRCHK L     8,QIOREQ
          L     2,16(4)
          L     3,12(4)
          GET   (2),(3)
+* MOVE-MODE V RECORD: PRIVATE STAGE HOLDS RDW + DATA.
+         L     4,QIOCUR
+         L     0,28(4)
+         C     0,=F'3'
+         BNE   QIRDFIX
+         L     3,12(4)
+         CLC   2(2,3),=H'0'
+         BNE   QIRDBAD
+         LH    0,0(3)
+         C     0,=F'4'
+         BL    QIRDBAD
+         C     0,32(4)
+         BH    QIRDBAD
+         S     0,=F'4'
+         B     QIRDSET
+QIRDFIX  L     0,32(4)
+QIRDSET  L     6,QIPNPTR
+         ST    0,0(6)
          L     6,QISTPTR
          MVI   0(6),X'01'
-         L     6,QIPNPTR
-         L     4,QIOCUR
-         L     0,32(4)
-         ST    0,0(6)
 QICAPCK  L     6,QIPNPTR
          L     5,0(6)
          L     3,QIOCNT
@@ -707,15 +726,17 @@ QICAPCK  L     6,QIPNPTR
 * R4/R5 DEST; R6/R7 SOURCE; MVCL COPIES EXACT BYTE LENGTH.
          L     4,QIOCUR
          L     6,12(4)
-         L     4,QIOBUF
+         CLC   28(4,4),=F'3'
+         BNE   QICOPY
+         LA    6,4(6)
+QICOPY   L     4,QIOBUF
          LR    7,5
          MVCL  4,6
          L     6,QISTPTR
          MVI   0(6),X'00'
          L     6,QIPNPTR
+         L     0,0(6)
          XC    0(4,6),0(6)
-         L     4,QIOCUR
-         L     0,32(4)
          L     8,QIORES
          ST    0,4(8)
          SR    15,15
@@ -724,6 +745,12 @@ QIOSHORT L     8,QIORES
          ST    5,4(8)
          L     15,=F'-1'
          B     QIOEXIT
+* MALFORMED RDW: LOCK THIS HANDLE INTO READ ERROR UNTIL CLOSE.
+QIRDBAD  L     6,QISTPTR
+         MVI   0(6),X'03'
+         L     6,QIPNPTR
+         XC    0(4,6),0(6)
+         B     QIOREADR
 * OUTPUT EXACT FIXED LENGTH; NO SILENT PADDING OR TRUNCATION.
 QIWRITE  L     5,32(4)
          L     3,QIOCNT

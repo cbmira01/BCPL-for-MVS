@@ -1,0 +1,99 @@
+// Q.3 BCPLQSAM V READ from independent assembler-written dataset.
+// Expected data lengths: 1,12,32,96,0,1; RDW never visible.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; GETBYTE:85; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q3 V READ FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 25
+    LET H=0
+    LET RC=0
+    LET I=0
+    LET J=0
+    LET L=0
+    LET E=0
+    Q!0 := "QVDATA"
+    Q!1 := 1
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(1,RC)
+    H := R!1
+    Q!0 := H
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 DO FAIL(2,RC)
+    IF R!4 NE 3 | R!5 NE 100 DO FAIL(3,RC)
+    IF R!6 NE 104 | R!7 NE 96 DO FAIL(4,RC)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 1
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -8 DO FAIL(5,RC)
+    FOR I=0 TO 5 DO
+    $(2
+        L := 0
+        IF I=0 | I=5 DO L := 1
+        IF I=1 DO L := 12
+        IF I=2 DO L := 32
+        IF I=3 DO L := 96
+        FOR J=0 TO 103 DO PUTBYTE(B,J,90)
+        Q!0 := H
+        Q!1 := B
+        IF L NE 0 DO
+        $(3
+            Q!2 := L-1
+            RC := QSAMSVC(2,Q,R)
+            IF RC NE -1 | R!1 NE L DO FAIL(10+I,RC)
+            RC := QSAMSVC(2,Q,R)
+            IF RC NE -1 | R!1 NE L DO FAIL(20+I,RC)
+            FOR J=0 TO 103 DO
+                IF GETBYTE(B,J) NE 90 DO FAIL(30+I,J)
+        $)3
+        Q!2 := L
+        RC := QSAMSVC(2,Q,R)
+        IF RC NE 0 | R!1 NE L DO FAIL(40+I,RC)
+        IF L NE 0 DO
+        $(3
+            FOR J=0 TO L-1 DO
+            $(4
+                E := 64
+                IF J=0 DO E := I
+                IF J=1 DO E := 0
+                IF J=2 DO E := 255
+                IF J=11 DO E := 165
+                IF J=31 DO E := 126
+                IF J=95 DO E := 195
+                IF GETBYTE(B,J) NE E DO FAIL(50+I,J)
+            $)4
+        $)3
+        FOR J=L TO 103 DO
+            IF GETBYTE(B,J) NE 90 DO FAIL(60+I,J)
+    $)2
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 100
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(120,RC)
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(121,RC)
+    Q!0 := H
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(122,RC)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 1
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -7 DO FAIL(123,RC)
+    WRITES("BCPLQSAM Q3 V READ 6 RDW RETRY ZERO EOF PASS")
+    NEWLINE()
+    FINISH
+$)1
