@@ -53,12 +53,35 @@ The existing numbered native regression framework is extended with:
 
 The numbered runner uses the **same native Cambridge compiler, IFOX,
 IEWL, JES2 and real QSAM operations**, not host-simulated results.
-It preserves 00–162 unchanged. New numbered cases are **not themselves
-marked native PASS by this closure record**. The first fresh 00–170
-run remains a separately reportable regression follow-up, with the
-expected target 169 PASS, 0 FAIL and 1 expected SKIP 083. This is a
-repeatability exercise following successful standalone acceptance
-evidence; do not cite that target as an observed run.
+The original 00–162 execution path remains unchanged.
+
+**Post-closure native regression verification — 29 October 2026:**
+The operator executed the numbered **163–170** panel on MVS with
+**8 PASS, 0 FAIL, 0 SKIP, runner RC=0**, including BCPLQSAM and
+BCPLDEMO interoperability in case 170.
+
+The operator subsequently executed the entire contiguous
+**00–170 production regression panel**, reporting:
+
+| Panel | PASS | FAIL | SKIP | TOTAL | Runner RC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Q.2 numbered 163–170 | 8 | 0 | 0 | 8 | 0 |
+| Full production 00–170 | **170** | **0** | **1 (083)** | **171** | **0** |
+
+The operator preserved the full-panel log at
+`workarea/bcplqsam-q2/full-00-170/panel.log`, and the
+focused numbered-panel log at
+`workarea/bcplqsam-q2/numbered-163-170/panel.log`.
+These are ignored local evidence artifacts, **not Git-tracked files**.
+The recorded outcome comes from the operator's reported console output
+(eight individual PASS lines and the full-panel totals), not an
+independent per-case JES audit by the documentation author.
+
+The regression integration is committed at
+[`3bd532be3d39`](https://github.com/cbmira01/BCPL-for-MVS/commit/3bd532be3d39489b652b4c8713b4027eb9d7a8c1).
+The expanded panel is no longer pending. Its actual result is
+**170 PASS, 0 FAIL, 1 expected SKIP**, correcting the earlier
+estimate of 169 PASS.
 
 ## Explicitly retained limits and deferrals
 
@@ -82,7 +105,8 @@ On 29 October 2026 the owner explicitly directed:
 > I want regressions tests added to the panel, and Q.2 closed.
 
 Accordingly **Q.2 — Fixed logical records is CLOSED** based on the
-completed native acceptance evidence above. No additional milestone
+completed native acceptance evidence above, with subsequent numbered
+and full-panel MVS verification also PASS. No additional milestone
 or march identifier is introduced. The next march is still
 **Q.3 — Variable logical records**, requiring its own authorization
 before implementation.
