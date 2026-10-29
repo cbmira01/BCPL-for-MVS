@@ -14,22 +14,28 @@ Q3VFY    CSECT
          XC    RECCNT(4),RECCNT
          OPEN  (QDCB,(INPUT))
          OPEN  (ODCB,(OUTPUT))
+         MVI   FAILID,C'F'
          CLI   QDCB+36,X'40'
          BNE   FAILED
+         MVI   FAILID,C'B'
          CLC   QDCB+62(2),=H'104'
          BNE   FAILED
+         MVI   FAILID,C'E'
          CLC   QDCB+82(2),=H'100'
          BNE   FAILED
 RLOOP    GET   QDCB,AREA
+         MVI   FAILID,C'C'
          L     3,RECCNT
          C     3,=F'6'
          BNL   FAILED
          LR    4,3
          SLL   4,1
          LA    5,LENTAB
+         MVI   FAILID,C'L'
          LH    2,AREA
          CH    2,0(4,5)
          BNE   FAILED
+         MVI   FAILID,C'R'
          CLC   AREA+2(2),ZERO2
          BNE   FAILED
          SH    2,=H'4'
@@ -37,7 +43,8 @@ RLOOP    GET   QDCB,AREA
          BZ    RNEXT
          LA    5,AREA+4
          SR    4,4
-RBYTE    LA    6,64
+RBYTE    MVI   FAILID,C'D'
+         LA    6,64
          C     4,=F'0'
          BE    RIDENT
          C     4,=F'1'
@@ -71,7 +78,8 @@ RCOMPARE SR    0,0
 RNEXT    LA    3,1(3)
          ST    3,RECCNT
          B     RLOOP
-ATEND    CLC   RECCNT(4),=F'6'
+ATEND    MVI   FAILID,C'Z'
+         CLC   RECCNT(4),=F'6'
          BNE   FAILED
          PUT   ODCB,PASSREC
          CLOSE (QDCB)
@@ -80,7 +88,11 @@ ATEND    CLC   RECCNT(4),=F'6'
          LM    14,12,12(13)
          SR    15,15
          BR    14
-FAILED   CLOSE (QDCB)
+FAILED   L     3,RECCNT
+         LA    3,240(3)
+         STC   3,FAILNO
+         PUT   ODCB,FAILREC
+         CLOSE (QDCB)
          CLOSE (ODCB)
          L     13,4(13)
          LM    14,12,12(13)
@@ -92,6 +104,11 @@ ZERO2    DC    H'0'
 LENTAB   DC    H'5',H'16',H'36',H'100',H'4',H'5'
 AREA     DS    CL100
 PASSREC  DC    CL80'BCPLQSAM Q3 V WRITE 6 RDW BINARY ZERO PASS'
+FAILREC  DC    CL34'Q3 V WRITE VERIFY FAILURE CHECK'
+FAILID   DC    C'?'
+         DC    CL9' RECORD #'
+FAILNO   DC    C'?'
+         DC    CL35' '
 SAVREG   DS    18F
 QDCB     DCB   DDNAME=QVDATA,DSORG=PS,MACRF=GM,EODAD=ATEND
 ODCB     DCB   DDNAME=QOUT,DSORG=PS,MACRF=PM
