@@ -1,0 +1,93 @@
+// Q.2 fixed F80/FB80 writer, 23 exact binary records each.
+// Temporary QFOUT/QBOUT/QEMPTY only; no permanent allocations.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q2 WRITE FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET FILL(B,N) BE
+$(1
+    LET J=0
+    FOR J=0 TO 79 DO PUTBYTE(B,J,J)
+    PUTBYTE(B,0,N)
+    PUTBYTE(B,1,0)
+    PUTBYTE(B,2,255)
+    PUTBYTE(B,79,64)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 19
+    LET HF=0
+    LET HB=0
+    LET HE=0
+    LET I=0
+    LET RC=0
+    Q!0 := "QFOUT"
+    Q!1 := 2
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(1,RC)
+    HF := R!1
+    Q!0 := "QBOUT"
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(2,RC)
+    HB := R!1
+    Q!0 := "QEMPTY"
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(3,RC)
+    HE := R!1
+    Q!0 := HE
+    Q!1 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(4,RC)
+    Q!0 := HF
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 DO FAIL(5,RC)
+    IF R!4 NE 1 | R!5 NE 80 DO FAIL(6,RC)
+    Q!0 := HB
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 DO FAIL(7,RC)
+    IF R!4 NE 2 | R!5 NE 80 DO FAIL(8,RC)
+    Q!0 := HB
+    Q!1 := B
+    Q!2 := 79
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -10 DO FAIL(9,RC)
+    Q!2 := 81
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -10 DO FAIL(10,RC)
+    Q!2 := 80
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -8 DO FAIL(11,RC)
+    FOR I=0 TO 22 DO
+    $(2
+        FILL(B,I)
+        Q!0 := HF
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 DO FAIL(12,RC)
+        IF R!1 NE 80 DO FAIL(13,RC)
+        Q!0 := HB
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 DO FAIL(14,RC)
+        IF R!1 NE 80 DO FAIL(15,RC)
+    $)2
+    Q!0 := HF
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(16,RC)
+    Q!0 := HB
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(17,RC)
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE -7 DO FAIL(18,RC)
+    WRITES("BCPLQSAM Q2 WRITE 23 F80 FB80 PASS")
+    NEWLINE()
+    FINISH
+$)1

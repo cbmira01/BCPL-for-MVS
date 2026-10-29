@@ -1,0 +1,1 @@
+Q.2 production BOOT_OBJ required; source-mode BCPLQSAM. No permanent MVS writes.

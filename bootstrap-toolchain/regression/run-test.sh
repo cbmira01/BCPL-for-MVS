@@ -100,6 +100,20 @@ else
 fi
 mkdir -p "$work"
 
+# Q.2 System Extension regressions: keep the canonical 00..162 path intact.
+# These cases need multi-step source-mode IFOX/IEWL jobs and JES readback.
+if [[ -f "$case_dir/qsam-native.txt" ]]; then
+    [[ ${BCPL_RUNTIME_PDS:-1} == 1 &&
+       ${BCPL_RUNTIME_LIBRARY:-} == OBJ &&
+       ${BCPL_RUNTIME_CANDIDATE:-0} == 0 &&
+       -z ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} ]] || {
+        echo "run-test: Q.2 cases require production BOOT_OBJ" >&2
+        exit 64
+    }
+    exec python3 "$root/tools/checks/run-q2-qsam-regression.py" \
+        "$test_num" "$case_dir"
+fi
+
 source_copy="$work/$case_name.bcpl"
 cp "$source" "$source_copy"
 

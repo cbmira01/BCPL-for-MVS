@@ -1,6 +1,6 @@
 # Milestone QSAM — native BCPL sequential-record I/O
 
-Status (28 October 2026): **Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED** under the owner-approved narrowed gate; **Q.2 — Fixed logical records OPEN / NOT ACCEPTED.** See the [Q.1 closure](qsam-q1-closure-20261028.md) and [Q.2 kickoff](qsam-q2-kickoff-20261028.md). The dated Q.0/Q.1 notes below are historical and do not supersede this decision. Milestone QSAM remains active and independent of M4.
+**Current status (29 October 2026): Q.2 — Fixed logical records CLOSED.** The owner-directed [Q.2 closure](qsam-q2-closure-20261029.md) records native jobs 6640–6978, the passing 00–162 baseline, and numbered regression cases 163–170. The first expanded 00–170 run is still pending independent native execution; the new cases are not recorded as having passed. Q.3 — Variable logical records has not started. The dated Q.0/Q.1/Q.2 design and kickoff notes below remain historical; Milestone QSAM remains active.
 
 ## Purpose and historical positioning
 

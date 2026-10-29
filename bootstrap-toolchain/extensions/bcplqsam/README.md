@@ -1,6 +1,6 @@
 # BCPLQSAM — source-controlled System Extension candidate
 
-**Current status (28 October 2026): Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED** under the owner-approved narrowed gate; **Q.2 — Fixed logical records OPEN / NOT ACCEPTED**. Read the [Q.1 closure](../../../packaging/qsam-q1-closure-20261028.md) and [Q.2 kickoff](../../../packaging/qsam-q2-kickoff-20261028.md). The 25 October assessment below is historical; no MVS object installation was performed by this closure.
+**Current status (29 October 2026): Q.2 — Fixed logical records CLOSED.** The owner-approved [Q.2 closure](../../../packaging/qsam-q2-closure-20261029.md) records the accepted native F/FB evidence, Q2MIX interoperability and numbered regression cases 163–170. No BCPLQSAM object has been installed, and the newly numbered 00–170 panel is awaiting its first native run. Q.3 has not started. The older candidate-status descriptions below are historical, not current acceptance statements.
 
 ## Q.2 consolidated F/FB native campaign candidate
 

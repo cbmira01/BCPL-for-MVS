@@ -1,0 +1,26 @@
+// Q.1 output OPEN/INFO/CLOSE regression after Q.2 WRITE support.
+// QOUT DD must be preallocated by JCL, RECFM=F,LRECL=1024.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          QSAMSVC:200 $)
+LET START() BE
+$(1
+    LET Q = VEC 3
+    LET R = VEC 7
+    Q!0 := "QOUT"
+    Q!1 := 2
+    Q!2 := 0
+    Q!3 := 0
+    IF QSAMSVC(1,Q,R) NE 0 DO STOP(8)
+    IF R!1 < 1 DO STOP(8)
+    Q!0 := R!1
+    Q!1 := 0
+    IF QSAMSVC(5,Q,R) NE 0 DO STOP(8)
+    IF R!4 NE 1 | R!5 NE 1024 DO STOP(8)
+    IF R!6 NE 1024 | R!7 NE 1024 DO STOP(8)
+    // An absent record buffer must fail before QSAM PUT.
+    IF QSAMSVC(3,Q,R) NE -3 DO STOP(8)
+    IF QSAMSVC(4,Q,R) NE 0 DO STOP(8)
+    WRITES("BCPLQSAM Q1 OUTPUT PASS")
+    NEWLINE()
+    FINISH
+$)1
