@@ -36,7 +36,8 @@ STAGE_NEW = ("         CLC   QCNAME(8),=CL8'Q01'\n"
              "         BALR  14,15\n"
              "         LA    15,4\n"
              "         B     QCSTFAIL\n"
-             "Q5NOGM   GETMAIN RC,LV=1024\n")
+             "Q5NOGM   DS    0H\n"
+             "         GETMAIN RC,LV=1024\n")
 CLEAN = ('         BALR  14,15\n'
          '         L     7,QCERRPRI\n')
 CLEAN_NEW = ("         BALR  14,15\n"
