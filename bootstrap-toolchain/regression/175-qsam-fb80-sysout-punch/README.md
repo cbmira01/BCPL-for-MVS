@@ -20,3 +20,12 @@ physical EBCDIC trailing blanks. Missing/modified capture fails the case.
 
 Run: `tools/bootstrap/run-production-regression 175`. No installed
 MVS object promotion or Hercules configuration changes.
+
+**JES2 PUNCH1 operator prerequisite:** The punch writer may be
+`PAUSED` with `P=Y`. The operator may choose
+`Q4_PUNCH_RESUME=1 tools/bootstrap/run-production-regression 175`
+to authorize one `$S PUN1` console command when the native steps
+have passed and the expected punch capture remains unchanged.
+This single operation may also release other queued class-B output.
+The runner still verifies the actual new device bytes and records the
+console reply under the attempt's `punch-writer-start.log`.

@@ -133,6 +133,18 @@ The opcode bitmap remains 31; VBA is not claimed or tested.
 The runner captures **only device output added after each JES submission**,
 retains local binary capture under `workarea/native-regression/`, and
 requires all expected assembly/link/GO results and PASS markers.
+
+JES2's TK5 `PUNCH1` may be `PAUSED` after processing a punch job
+(`P=Y`); JOB 7755 demonstrated this. For **explicitly authorized**
+writer operation, set `Q4_PUNCH_RESUME=1` when running the panels.
+The native runner sends exactly one `$S PUN1` using Hercules HTTP
+console port 8038 **only after successful MVS step and PASS-marker
+verification in case 175**, and only when no new punch bytes have yet
+arrived. It does not change `P=Y` or otherwise configure JES2.
+The command may also release other queued class-B work. The capture
+still must match the precise 172-byte expectation or case 175 fails.
+Without the opt-in, the runner never sends a console command.
+
 Do not use the historical standalone JOBs 7726/7728 as substitutes
 for newly executed numbered regressions.
 

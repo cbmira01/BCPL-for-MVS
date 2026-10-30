@@ -5,10 +5,12 @@ Each case compiles BCPL with the resident demoted Cambridge compiler,
 builds real source-mode IFOX/IEWL JCL, submits one JES job and checks
 actual steps, records and relevant independent QSAM/IEWL evidence.
 Permanent MVS datasets are read-only; no retry after uncertain submit.
+The optional Q4_PUNCH_RESUME=1 performs one explicit $S PUN1 console action.
 """
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -225,6 +227,32 @@ def evidence(number: int, summary: str, report: str) -> list[str]:
 
 
 
+
+def maybe_resume_punch_writer(offset: int, attempt: Path) -> list[str]:
+    """Explicit opt-in: start PAUSED JES2 PUNCH1 once after native PASS.
+
+    This is a real MVS console action, not an implicit regression side effect.
+    It can release other queued class-B work, so the operator must opt in.
+    """
+    if os.environ.get("Q4_PUNCH_RESUME") != "1":
+        return []
+    path = SYSOUT_PATHS["punch"]
+    if not path.is_file():
+        return ["cannot resume PUNCH1: capture file absent"]
+    if path.stat().st_size != offset:
+        print("Punch capture already changed; no writer command sent")
+        return []
+    rc, response = invoke(
+        ["docker", "exec", "-i", "mvs38j", "curl", "-sS", "-f", "-G",
+         "--data-urlencode", "cmd=/$S PUN1",
+         "http://127.0.0.1:8038/cgi-bin/tasks/cmd"],
+        attempt / "punch-writer-start.log", 30)
+    if rc or "HHC00013I" not in response or "$S PUN1" not in response:
+        return ["explicit JES2 PUNCH1 resume not acknowledged"]
+    print("JES2 PUNCH1 start requested once; device bytes still required")
+    return []
+
+
 def check_sysout_capture(kind: str, offset: int, attempt: Path) -> list[str]:
     """Check newly generated Hercules device output, not prior spool data.
 
@@ -345,6 +373,8 @@ def run(number: int, case: Path) -> int:
     if summary_rc or report_rc:
         return 1
     errors = evidence(number, summary, report)
+    if kind == "punch" and offset is not None and not errors:
+        errors += maybe_resume_punch_writer(offset, attempt)
     if offset is not None:
         errors += check_sysout_capture(kind, offset, attempt)
     if errors:
