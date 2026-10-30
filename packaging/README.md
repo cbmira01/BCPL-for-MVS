@@ -159,7 +159,7 @@ BCPLREG selection and tested their QUERY interoperability.
 
 ## Milestone QSAM — native sequential-record I/O
 
-**Current owner status (28 October 2026): Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED; Q.2 — Fixed logical records OPEN / NOT ACCEPTED.** [Q.1 closure/evidence and explicit regression deferrals](qsam-q1-closure-20261028.md) and [Q.2 kickoff](qsam-q2-kickoff-20261028.md) govern the current disposition. The earlier dated Q.0/Q.1 paragraphs remain historical. No installed-object promotion or new JES run accompanies closure.
+**Current owner status (30 October 2026): Q.4 — SYSOUT devices CLOSED; Q.5 — Hardening & release NOT STARTED.** See the [Q.4 formal closure](qsam-q4-closure-20261030.md) and [native regression evidence](qsam-q4-native-regression-evidence-20261030.md): focused 163–176 **14 PASS, 0 FAIL, 0 SKIP** and full 00–176 **176 PASS, 0 FAIL, 1 expected SKIP 083**, both runner RC=0. Historical dated Q.0–Q.3 notes below retain their original context. No permanent BCPLQSAM object promotion or new JES job accompanied formal Q.4 closure.
 
 [Milestone QSAM](milestone-qsam.md) defines a separately gated Q.0–Q.5 roadmap for a native BCPL QSAM record-I/O extension. The [BCPLQSAM Public Interface Specification](bcplqsam-public-interface.md) records the reviewed Q.0 design baseline, including numeric constants and fixed-size vector contracts; MVS 3.8 and optional-registration verification remain. The [Q.0 ABI evidence](qsam-q0-dispatcher-abi-evidence-20261019.md)
 records observed JOB 2156/2157 **PASS** with permanent test sources.
