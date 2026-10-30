@@ -112,7 +112,7 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
-## Q.4 native SYSOUT regressions (175–176; acceptance pending)
+## Q.4 native SYSOUT regressions (175–176; native acceptance passed 30 October 2026)
 
 Q.4 adds two native `qsam-native.txt` cases to the existing
 source-mode BCPLQSAM runner, using **production BOOT_OBJ read-only**:
@@ -160,7 +160,7 @@ run individually before the focused panel. Execute the full panel
 only if the focused panel returns zero. The expected acceptance totals
 are **14 PASS / 0 FAIL / 0 SKIP** for 163–176, and
 **176 PASS / 0 FAIL / 1 expected SKIP 083** for 00–176.
-These are **targets, not observed MVS results**.
+**Observed owner-run MVS acceptance (30 October 2026, GitHub `main` `51ed022e`):** focused 163–176 **14 PASS, 0 FAIL, 0 SKIP, RC=0**; full production 00–176 **176 PASS, 0 FAIL, 1 expected SKIP 083, RC=0**. See [Q.4 native acceptance evidence](../../packaging/qsam-q4-native-regression-evidence-20261030.md). Formal owner closure remains pending.
 
 ## Q.3 native V/VB regressions (171–174; accepted 30 October 2026)
 
