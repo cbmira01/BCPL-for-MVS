@@ -466,9 +466,9 @@ On success, the result vector provides:
 - Effective block size (BLKSIZE).
 - Maximum supported logical data length.
 
-INFO uses the project-defined numeric enum `QS_FMT_F=1`, `QS_FMT_FB=2`, `QS_FMT_V=3`, `QS_FMT_VB=4`, `QS_FMT_FBA=5`, and `QS_FMT_VBA=6`. These are **not raw DCB RECFM bit encodings**. FBA/VBA may not be reported as supported until Q.4 verifies their treatment.
+INFO uses the project-defined numeric enum `QS_FMT_F=1`, `QS_FMT_FB=2`, `QS_FMT_V=3`, `QS_FMT_VB=4`, `QS_FMT_FBA=5`, and `QS_FMT_VBA=6`. These are **not raw DCB RECFM bit encodings**. FBA is implemented as `QS_FMT_FBA=5` with the full caller-supplied ASA byte retained in the logical record; the Q.4 native JOB 7728 verified FBA133. `QS_FMT_VBA=6` remains unimplemented and unverified.
 
-On success `result!1=0`, `result!2=0`, `result!3=0`, `result!4` is the enum, `result!5` is the effective **DCB LRECL**, `result!6` the effective **DCB BLKSIZE**, and `result!7` the maximum **application data bytes** per logical record allowed by both the dataset and the supported implementation. For F/FB, this data length equals LRECL. For V/VB, DCB LRECL includes the four-byte RDW, so the data maximum is no greater than LRECL minus four. QSAM BDWs are never included in the BCPL record buffer or length. Record-size/device limits must be checked on MVS 3.8.
+On success `result!1=0`, `result!2=0`, `result!3=0`, `result!4` is the enum, `result!5` is the effective **DCB LRECL**, `result!6` the effective **DCB BLKSIZE**, and `result!7` the maximum **application data bytes** per logical record allowed by both the dataset and the supported implementation. For F/FB and FBA, this data length equals LRECL (FBA includes the ASA control byte as byte 0). For V/VB, DCB LRECL includes the four-byte RDW, so the data maximum is no greater than LRECL minus four. QSAM BDWs are never included in the BCPL record buffer or length. Record-size/device limits must be checked on MVS 3.8.
 
 INFO reports attributes established by the actual OPEN processing, not merely values copied from source JCL.
 
@@ -485,6 +485,7 @@ limit or proof that the public dispatcher is implemented.
 | --- | --- | --- |
 | F / FB | 1–1024 bytes | effective LRECL |
 | V / VB | 4–1024 bytes, including four-byte RDW | effective LRECL minus 4 |
+| FBA | 1–1024 bytes, including the ASA byte | effective LRECL |
 
 For V/VB the internal four-byte RDW shares the 1024-byte staging area,
 and a valid RDW-only logical record has **zero application bytes**.
@@ -584,7 +585,7 @@ The initial extension is not required to be reentrant or thread-safe.
 | U | Undefined-length records | Excluded initially |
 | VS/VBS | Spanned variable records | Excluded initially |
 
-For FBA/VBA, the API must explicitly document carriage-control treatment before acceptance. It must not silently remove or synthesize a control character.
+For FBA, the application supplies the complete fixed record, including the ASA control character at byte 0. BCPLQSAM copies exactly LRECL bytes, performs no translation/removal/insertion of carriage control, and reports FBA as enum 5; output printer spacing/page control is performed by MVS/JES2. Supported FBA carriage-control capability is advertised with `QS_CAP_CARRIAGE=4` alongside existing fixed/variable flags after native JOB 7728, subject to numbered regression acceptance. VBA remains unsupported; its carriage-control treatment has not been verified.
 
 Selected PDS members may be used through suitable JCL DD allocations where QSAM permits sequential processing. PDS directory maintenance is outside this interface.
 

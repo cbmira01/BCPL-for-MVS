@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native numbered QSAM regressions 163..174; no simulated target results.
+"""Native numbered QSAM regressions 163..176; no simulated target results.
 
 Each case compiles BCPL with the resident demoted Cambridge compiler,
 builds real source-mode IFOX/IEWL JCL, submits one JES job and checks
@@ -24,8 +24,8 @@ WORK = ROOT / "workarea/native-regression"
 
 # Number: generator kind, canonical source, original native job, GO marker(s).
 CASES = {
-  163: ("query", "test-q3-query.bcpl", "Q2QUERY",
-        ("BCPLQSAM Q3 QUERY VARIABLE PASS",)),
+  163: ("query", "test-q4-query.bcpl", "Q2QUERY",
+        ("BCPLQSAM Q4 QUERY CARRIAGE PASS",)),
   164: ("negative", "test-q1-negative.bcpl", "Q1NEG",
         ("BCPLQSAM Q1 NEGATIVE PASS",)),
   165: ("output", "test-q1-output.bcpl", "Q1OUT",
@@ -41,7 +41,7 @@ CASES = {
   169: ("stopflush", "test-q2-stop-flush.bcpl", "Q2STOP",
         ("BCPLQSAM Q2 STOP FB80 WRITTEN PASS",
          "BCPLQSAM Q2 STOP FLUSH FB80 EXACT PASS")),
-  170: ("mix", "test-q3-mix.bcpl", "Q2MIX",
+  170: ("mix", "test-q4-mix.bcpl", "Q2MIX",
         ("Q2 MIX BCPLQSAM BCPLDEMO WRITTEN PASS",
          "Q2 MIX BCPLQSAM BCPLDEMO FB80 EXACT PASS")),
   171: ("vread", "test-q3-limit-read.bcpl", "Q3VLRED",
@@ -54,6 +54,12 @@ CASES = {
   174: ("vbwrite", "test-q3-limit-write.bcpl", "Q3VBWRT",
         ("BCPLQSAM Q3 1024 V/VB WRITE 7 PASS",
          "BCPLQSAM Q3 1024 V/VB IFOX RDW 7 PASS")),
+  175: ("punch", "test-q4-punch.bcpl", "Q4PUNCH",
+        ("BCPLQSAM Q4 FB80 PUNCH DUAL WRITE PASS",
+         "BCPLQSAM Q4 FB80 TEMP EXACT 3 PASS")),
+  176: ("fba", "test-q4-fba.bcpl", "Q4FBA",
+        ("BCPLQSAM Q4 FBA133 DUAL WRITE PASS",
+         "BCPLQSAM Q4 FBA133 TEMP EXACT 3 PASS")),
 }
 BASIC = ("ASMA", "ASMN", "ASMR", "ASMQ", "ASMG", "LKED", "GO")
 LIFE = ("ASMWR", "LKWR", "ASMA", "ASMN", "ASMR",
@@ -66,6 +72,12 @@ LIMIT_READ = ("ASMA", "ASML", "ASMN", "ASMR", "ASMQ", "ASMG",
               "LKWR", "LKED", "WGO", "RGO")
 LIMIT_WRITE = ("ASMA", "ASML", "ASMN", "ASMR", "ASMQ", "ASMG",
                "LKVR", "LKED", "WGO", "VGO")
+SYSOUT_STEPS = ("ASMA", "ASMV", "ASMN", "ASMR", "ASMQ", "ASMG",
+                "LKVR", "LKED", "WGO", "VGO")
+SYSOUT_PATHS = {
+    "punch": ROOT / "mvs-state/pch/pch00d.txt",
+    "fba": ROOT / "mvs-state/prt/prt00e.txt",
+}
 LIMIT_CASES = ("vread", "vwrite", "vbread", "vbwrite")
 
 
@@ -121,7 +133,8 @@ def prepare(kind: str, generated: str, reader: str | None) -> str:
     obj = object_dsn("BOOT_OBJ")
     ext_obj = object_dsn("EXT_OBJ") if kind == "mix" else None
     original_job = next(job for k, _, job, _ in CASES.values() if k == kind)
-    title = "Q3 NATIVE REG" if kind in LIMIT_CASES else "Q2 NATIVE REG"
+    title = ("Q4 NATIVE REG" if kind in SYSOUT_PATHS else
+             "Q3 NATIVE REG" if kind in LIMIT_CASES else "Q2 NATIVE REG")
     card = core.authenticated_job_card(
         cfg, original_job, title, redact_password=False)
     if kind == "query":
@@ -145,6 +158,10 @@ def prepare(kind: str, generated: str, reader: str | None) -> str:
         writing = kind.endswith("write")
         deck = load("prepare-q3-v-read.py").make_limit_deck(
             generated, card, obj, fmt, writing)
+    elif kind == "punch":
+        deck = load("prepare-q4-punch.py").make_deck(generated, card, obj)
+    elif kind == "fba":
+        deck = load("prepare-q4-fba.py").make_deck(generated, card, obj)
     else:
         raise ValueError("unknown native QSAM campaign " + kind)
     for line in deck.splitlines():
@@ -162,7 +179,8 @@ def evidence(number: int, summary: str, report: str) -> list[str]:
     issues: list[str] = []
     if len(re.findall(rf"^JOB\s+\d+\s+{job}\s*$", summary, re.M)) != 1:
         issues.append("wrong/missing native JES job name")
-    steps = (LIMIT_READ if kind in ("vread", "vbread")
+    steps = (SYSOUT_STEPS if kind in SYSOUT_PATHS
+             else LIMIT_READ if kind in ("vread", "vbread")
              else LIMIT_WRITE if kind in ("vwrite", "vbwrite")
              else FULL if kind == "full"
              else LIFE if kind in ("finish", "stop")
@@ -206,6 +224,54 @@ def evidence(number: int, summary: str, report: str) -> list[str]:
     return issues
 
 
+
+def check_sysout_capture(kind: str, offset: int, attempt: Path) -> list[str]:
+    """Check newly generated Hercules device output, not prior spool data.
+
+    QSAM temporary byte fidelity is checked independently by IFOX VGO.
+    Class-A ASCII printer output proves visible ASA presentation only.
+    """
+    path = SYSOUT_PATHS[kind]
+    issues: list[str] = []
+    fresh = b""
+    for _ in range(12):
+        if not path.is_file() or path.stat().st_size < offset:
+            issues = ["Hercules SYSOUT device capture absent or truncated"]
+            break
+        fresh = path.read_bytes()[offset:]
+        if kind == "punch":
+            expected = (
+                b"Q4CARD01\n"
+                + b"Q4CARD02" + b" " * 71 + b"X\n"
+                + b"Q4CARD03" + b" " * 71 + b"Y\n"
+                + b"\n"
+            )
+            issues = ([] if fresh == expected else
+                      [f"class-B punch mismatch: got {len(fresh)} bytes, "
+                       f"expected {len(expected)}"])
+        else:
+            labels = (b"Q4FBA001", b"Q4FBA002", b"Q4FBA003")
+            issues = []
+            if any(fresh.count(label) != 1 for label in labels):
+                issues.append("class-A printer card labels absent/duplicated")
+            if b"Q4FBA001\n\nQ4FBA002" not in fresh:
+                issues.append("ASA 0 double-space presentation missing")
+            if b"X\x0cQ4FBA003" not in fresh:
+                issues.append("ASA 1 form-feed presentation missing")
+        if not issues:
+            break
+        time.sleep(1)
+    capture = attempt / "sysout-capture.bin"
+    capture.write_bytes(fresh)
+    (attempt / "sysout-inspection.txt").write_text(
+        f"kind={kind} offset={offset} capture={len(fresh)} bytes\n"
+        + ("PASS" if not issues else "\n".join(issues)) + "\n",
+        encoding="ascii")
+    print(f"Hercules {kind} capture: {len(fresh)} new bytes; "
+          + ("PASS" if not issues else "NOT VERIFIED"))
+    return issues
+
+
 def run(number: int, case: Path) -> int:
     if number not in CASES or not case.resolve().is_relative_to(REG.resolve()):
         raise ValueError("invalid QSAM case identity")
@@ -246,6 +312,14 @@ def run(number: int, case: Path) -> int:
         out.write(deck)
     jcl.chmod(0o600)
     print(f"Source-mode MVS deck: {len(deck.splitlines())} cards", flush=True)
+    offset: int | None = None
+    if kind in SYSOUT_PATHS:
+        path = SYSOUT_PATHS[kind]
+        if not path.is_file():
+            raise ValueError("missing Hercules capture before JES: " + str(path))
+        offset = path.stat().st_size
+        (attempt / "sysout-before.bytes").write_text(
+            str(offset) + "\n", encoding="ascii")
     rc, response = invoke(
         [str(TOOLS / "mvs/submit-jcl"), "--timeout", "120", str(jcl)],
         attempt / "submit.log", 180)
@@ -271,6 +345,8 @@ def run(number: int, case: Path) -> int:
     if summary_rc or report_rc:
         return 1
     errors = evidence(number, summary, report)
+    if offset is not None:
+        errors += check_sysout_capture(kind, offset, attempt)
     if errors:
         for error in errors:
             print("QSAM evidence NOT VERIFIED: " + error)

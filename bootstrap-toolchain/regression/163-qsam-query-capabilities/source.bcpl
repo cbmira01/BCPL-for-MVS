@@ -1,4 +1,4 @@
-// Q.3 QUERY: publish OPEN/READ/WRITE/CLOSE/INFO and F/FB/V/VB.
+// Q.4 QUERY: fixed, variable and FBA ASA carriage capability.
 // No record DD required. Test the six-word ABI and sentinel boundaries.
 GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
           WRITEF:76; QSAMSVC:200 $)
@@ -30,7 +30,7 @@ $(1
     RC := QSAMSVC(0,I,6)
     IF RC NE 6 DO FAIL(9,RC)
     IF I!0 NE 1 | I!1 NE 1 | I!2 NE 0 DO FAIL(10,RC)
-    IF I!3 NE 6 | I!4 NE 31 | I!5 NE 3 DO FAIL(11,RC)
+    IF I!3 NE 6 | I!4 NE 31 | I!5 NE 7 DO FAIL(11,RC)
     IF I!6 NE 909 DO FAIL(12,RC)
     RC := QSAMSVC(2,0,0)
     IF RC NE -3 DO FAIL(13,RC)
@@ -40,8 +40,8 @@ $(1
     IF RC NE -2 DO FAIL(15,RC)
     RC := QSAMSVC(0,I,6)
     IF RC NE 6 DO FAIL(16,RC)
-    IF I!4 NE 31 | I!5 NE 3 | I!6 NE 909 DO FAIL(17,RC)
-    WRITES("BCPLQSAM Q3 QUERY VARIABLE PASS")
+    IF I!4 NE 31 | I!5 NE 7 | I!6 NE 909 DO FAIL(17,RC)
+    WRITES("BCPLQSAM Q4 QUERY CARRIAGE PASS")
     NEWLINE()
     FINISH
 $)1

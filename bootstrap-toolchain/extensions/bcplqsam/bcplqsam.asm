@@ -4,7 +4,7 @@
 * OWNER: BCPL FOR MVS 3.8 RECONSTRUCTION; G!200 QSAMSVC.
 * OPERATIONS: QUERY=0 OPEN=1 READ=2 WRITE=3 CLOSE=4 INFO=5.
 * REQUIRES IFOX / SYS1.MACLIB AND R.1 GENERIC BCPLREG.
-* NONREENTRANT, SINGLE-TASK; Q.2 CLOSED; Q.3 IN PROGRESS.
+* NONREENTRANT, SINGLE-TASK; Q.3 CLOSED; Q.4 SYSOUT DEMOS PASS.
 ***********************************************************************
 QSMDESC  CSECT
          ENTRY QSMBEG,QSMEND
@@ -51,7 +51,7 @@ QSORD    LTR   8,8
          ST    7,0(9)
          LM    0,1,24(5)
          BCR   15,11
-* QUERY: FIVE OPERATIONS; F/FB AND V/VB CAPABILITIES.
+* QUERY: FIVE OPERATIONS; FIXED, VARIABLE AND FBA CAPABILITIES.
 QSQUERY  LTR   8,8
          BNZ   QSQPTR
          LTR   9,9
@@ -72,7 +72,7 @@ QSQPTR   LTR   9,9
          ST    14,12(8)
          LA    14,31
          ST    14,16(8)
-         LA    14,3
+         LA    14,7
          ST    14,20(8)
          LA    7,6
          B     QSRET

@@ -1,0 +1,75 @@
+// Q.4 FBA133 ASA printer: duplicate complete records to temporary DASD
+// and JES2 Q4PRINT SYSOUT=A. BCPL owns the carriage-control byte.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q4 FBA FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 33
+    LET HT=0
+    LET HP=0
+    LET I=0
+    LET J=0
+    LET RC=0
+    Q!0 := "Q4TEMP"
+    Q!1 := 2
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(1,RC)
+    HT := R!1
+    Q!0 := "Q4PRINT"
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(2,RC)
+    HP := R!1
+    Q!0 := HT
+    Q!1 := 0
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 | R!4 NE 5 | R!5 NE 133 | R!7 NE 133 DO FAIL(3,RC)
+    Q!0 := HP
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 | R!4 NE 5 | R!5 NE 133 | R!7 NE 133 DO FAIL(4,RC)
+    FOR I=0 TO 2 DO
+    $(2
+        FOR J=0 TO 132 DO PUTBYTE(B,J,64)
+        // First byte is ASA: blank/0/1 = single/double/new page.
+        IF I=1 DO PUTBYTE(B,0,240)
+        IF I=2 DO PUTBYTE(B,0,241)
+        PUTBYTE(B,1,216)  // Q
+        PUTBYTE(B,2,244)  // 4
+        PUTBYTE(B,3,198)  // F
+        PUTBYTE(B,4,194)  // B
+        PUTBYTE(B,5,193)  // A
+        PUTBYTE(B,6,240)  // 0
+        PUTBYTE(B,7,240)  // 0
+        PUTBYTE(B,8,241+I)
+        IF I=1 DO PUTBYTE(B,132,231) // X in final data column
+        IF I=2 DO PUTBYTE(B,132,232) // Y in final data column
+        Q!0 := HT
+        Q!1 := B
+        Q!2 := 133
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 | R!1 NE 133 DO FAIL(10+I,RC)
+        Q!0 := HP
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 | R!1 NE 133 DO FAIL(20+I,RC)
+    $)2
+    Q!0 := HT
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(30,RC)
+    Q!0 := HP
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(31,RC)
+    WRITES("BCPLQSAM Q4 FBA133 DUAL WRITE PASS")
+    NEWLINE()
+    FINISH
+$)1

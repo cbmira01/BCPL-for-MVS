@@ -112,6 +112,44 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
+## Q.4 native SYSOUT regressions (175–176; acceptance pending)
+
+Q.4 adds two native `qsam-native.txt` cases to the existing
+source-mode BCPLQSAM runner, using **production BOOT_OBJ read-only**:
+
+- **175 — qsam-fb80-sysout-punch:** source-identical to
+  `test-q4-punch.bcpl`; three FB80 records, independent IFOX exact
+  byte/EOF verification, class-B ASCII capture of all three card images
+  and the observed blank separator.
+- **176 — qsam-fba133-sysout-printer:** source-identical to
+  `test-q4-fba.bcpl`; three FBA133 records with ASA blank/0/1,
+  independent IFOX exact byte/EOF verification, class-A printer
+  double-spacing and page-eject evidence.
+
+The existing cases 163 and 170 now assert QUERY capabilities
+`QS_CAP_FIXED | QS_CAP_VARIABLE | QS_CAP_CARRIAGE = 7`.
+The opcode bitmap remains 31; VBA is not claimed or tested.
+
+The runner captures **only device output added after each JES submission**,
+retains local binary capture under `workarea/native-regression/`, and
+requires all expected assembly/link/GO results and PASS markers.
+Do not use the historical standalone JOBs 7726/7728 as substitutes
+for newly executed numbered regressions.
+
+Native-first validation and closeout command sequence:
+
+```sh
+tools/bootstrap/run-production-regression 163 176
+tools/bootstrap/run-production-regression 0 176
+```
+
+For first-failure isolation, cases 163, 170, 175 and 176 may be
+run individually before the focused panel. Execute the full panel
+only if the focused panel returns zero. The expected acceptance totals
+are **14 PASS / 0 FAIL / 0 SKIP** for 163–176, and
+**176 PASS / 0 FAIL / 1 expected SKIP 083** for 00–176.
+These are **targets, not observed MVS results**.
+
 ## Q.3 native V/VB regressions (171–174; accepted 30 October 2026)
 
 After the Q.2 tests 163–170, Milestone QSAM adds four cases:

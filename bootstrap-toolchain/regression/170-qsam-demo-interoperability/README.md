@@ -1,23 +1,15 @@
 # Native regression 170 — qsam-demo-interoperability
 
-**Milestone QSAM — Q.2 interoperability, QUERY expectation updated for Q.3.**
+**Milestone QSAM — Q.4 capability acceptance update.**
 
-Combined `QSAMSVC:200` and installed read-only BCPLDEMO
-`DEMOSVC:203`, interleaved calls, temporary FB80 data and
-independent IFOX readback. The current QUERY must report
-`QS_CAP_FIXED | QS_CAP_VARIABLE = 3` (opcode bitmap 31).
-The numbered `source.bcpl` is byte-identical to the Q.3-aware
-`bootstrap-toolchain/extensions/bcplqsam/test-q3-mix.bcpl`.
-The historical `test-q2-mix.bcpl` is unchanged.
+Combined `QSAMSVC:200` and installed read-only `DEMOSVC:203`,
+interleaved calls, temporary FB80 binary output and independent IFOX
+readback. QUERY now requires F/FB, V/VB and verified FBA carriage
+capability bits `7`; the opcode bitmap remains `31`.
 
-Run with `tools/bootstrap/run-production-regression 170`.
-The established native runner verifies the assembler/linker steps,
-BCEX descriptors, 60-byte BCPLREG, independent FB80 readback,
-and exact application output. The original Q2MIX and 163–170
-production panel passed on 29 October 2026 with QUERY capability 1;
-that remains historical evidence, not Q.3 capability-3 validation.
-**Updated Q.3 numbered test: PASS, 30 October 2026.** The
-owner-run focused 163–174 panel passed 12/12 and the complete production
-00–174 panel passed with 174 PASS, 0 FAIL, one expected SKIP 083;
-both runner RC=0. See the [Q.3 closure](../../../packaging/qsam-q3-closure-20261030.md).
-No permanent MVS dataset writes or optional object promotion.
+The numbered `source.bcpl` must be byte-identical to
+`bootstrap-toolchain/extensions/bcplqsam/test-q4-mix.bcpl`.
+Historical Q.3 source remains retained. Test still expects the
+same two native Q2 MIX messages and STOP(8) finalizer behavior.
+
+Run: `tools/bootstrap/run-production-regression 170`.
