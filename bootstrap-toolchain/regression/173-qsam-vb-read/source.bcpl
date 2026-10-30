@@ -1,0 +1,128 @@
+// Q.3 V/VB 1024-byte ceiling BCPL READ from IFOX writer.
+// RDW excluded; full payload 1020, pending retries, zero and EOF.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; GETBYTE:85; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q3 1024 FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET SIZE(I) = VALOF
+$(1
+    IF I=0 | I=5 RESULTIS 0
+    IF I=1 | I=6 RESULTIS 1
+    IF I=2 RESULTIS 12
+    RESULTIS 1020
+$)1
+LET CHECKFMT(R) BE
+$(1
+    IF R!5 NE 1024 | R!7 NE 1020 DO FAIL(2,0)
+    IF R!4=3 DO
+    $(2 IF R!6 NE 1028 DO FAIL(3,R!6) $)2
+    IF R!4=4 DO
+    $(2 IF R!6 NE 2052 DO FAIL(4,R!6) $)2
+    IF R!4 NE 3 & R!4 NE 4 DO FAIL(5,R!4)
+$)1
+LET FILL(B,I) BE
+$(1
+    LET J=0
+    FOR J=0 TO 1019 DO PUTBYTE(B,J,64)
+    PUTBYTE(B,0,I)
+    PUTBYTE(B,1,0)
+    PUTBYTE(B,2,255)
+    PUTBYTE(B,11,165)
+    PUTBYTE(B,31,126)
+    PUTBYTE(B,255,0)
+    PUTBYTE(B,511,255)
+    PUTBYTE(B,767,0)
+    PUTBYTE(B,1019,195)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 259
+    LET H=0
+    LET RC=0
+    LET I=0
+    LET J=0
+    LET L=0
+    LET E=0
+    Q!0 := "QVDATA"
+    Q!1 := 1
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(10,RC)
+    H := R!1
+    Q!0 := H
+    Q!1 := 0
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 DO FAIL(11,RC)
+    CHECKFMT(R)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 1
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE -8 DO FAIL(12,RC)
+    FOR I=0 TO 6 DO
+    $(2
+        L := SIZE(I)
+        FOR J=0 TO 1039 DO PUTBYTE(B,J,90)
+        Q!0 := H
+        Q!1 := B
+        IF L NE 0 DO
+        $(3
+            Q!2 := L-1
+            RC := QSAMSVC(2,Q,R)
+            IF RC NE -1 | R!1 NE L DO FAIL(20+I,RC)
+            RC := QSAMSVC(2,Q,R)
+            IF RC NE -1 | R!1 NE L DO FAIL(30+I,RC)
+            FOR J=0 TO 1039 DO
+                IF GETBYTE(B,J) NE 90 DO FAIL(40+I,J)
+        $)3
+        Q!2 := L
+        RC := QSAMSVC(2,Q,R)
+        IF RC NE 0 | R!1 NE L DO FAIL(50+I,RC)
+        IF L NE 0 DO
+        $(3
+            FOR J=0 TO L-1 DO
+            $(4
+                E := 64
+                IF J=0 DO E := I
+                IF J=1 DO E := 0
+                IF J=2 DO E := 255
+                IF J=11 DO E := 165
+                IF J=31 DO E := 126
+                IF J=255 DO E := 0
+                IF J=511 DO E := 255
+                IF J=767 DO E := 0
+                IF J=1019 DO E := 195
+                IF GETBYTE(B,J) NE E DO FAIL(60+I,J)
+            $)4
+        $)3
+        FOR J=L TO 1039 DO
+            IF GETBYTE(B,J) NE 90 DO FAIL(70+I,J)
+    $)2
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 1020
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(80,RC)
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE 1 | R!1 NE 0 DO FAIL(81,RC)
+    Q!0 := H
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(82,RC)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 1
+    RC := QSAMSVC(2,Q,R)
+    IF RC NE -7 DO FAIL(83,RC)
+    WRITES("BCPLQSAM Q3 1024 V/VB READ 7 PASS")
+    NEWLINE()
+    FINISH
+$)1

@@ -1,0 +1,47 @@
+// Q.3 QUERY: publish OPEN/READ/WRITE/CLOSE/INFO and F/FB/V/VB.
+// No record DD required. Test the six-word ABI and sentinel boundaries.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("BCPLQSAM Q3 QUERY FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET START() BE
+$(1
+    LET I=VEC 6
+    LET RC=0
+    I!0 := 707
+    I!6 := 909
+    RC := QSAMSVC(0,0,0)
+    IF RC NE 6 DO FAIL(1,RC)
+    RC := QSAMSVC(0,I,5)
+    IF RC NE -1 DO FAIL(2,RC)
+    IF I!0 NE 707 | I!6 NE 909 DO FAIL(3,RC)
+    RC := QSAMSVC(0,I,0)
+    IF RC NE -1 DO FAIL(4,RC)
+    IF I!0 NE 707 | I!6 NE 909 DO FAIL(5,RC)
+    RC := QSAMSVC(0,0,6)
+    IF RC NE -3 DO FAIL(6,RC)
+    RC := QSAMSVC(0,I,-1)
+    IF RC NE -3 DO FAIL(7,RC)
+    IF I!0 NE 707 | I!6 NE 909 DO FAIL(8,RC)
+    RC := QSAMSVC(0,I,6)
+    IF RC NE 6 DO FAIL(9,RC)
+    IF I!0 NE 1 | I!1 NE 1 | I!2 NE 0 DO FAIL(10,RC)
+    IF I!3 NE 6 | I!4 NE 31 | I!5 NE 3 DO FAIL(11,RC)
+    IF I!6 NE 909 DO FAIL(12,RC)
+    RC := QSAMSVC(2,0,0)
+    IF RC NE -3 DO FAIL(13,RC)
+    RC := QSAMSVC(3,0,0)
+    IF RC NE -3 DO FAIL(14,RC)
+    RC := QSAMSVC(99,0,0)
+    IF RC NE -2 DO FAIL(15,RC)
+    RC := QSAMSVC(0,I,6)
+    IF RC NE 6 DO FAIL(16,RC)
+    IF I!4 NE 31 | I!5 NE 3 | I!6 NE 909 DO FAIL(17,RC)
+    WRITES("BCPLQSAM Q3 QUERY VARIABLE PASS")
+    NEWLINE()
+    FINISH
+$)1

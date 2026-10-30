@@ -1,4 +1,4 @@
-// Q.2 interoperability: temporary BCPLQSAM plus installed BCPLDEMO.
+// Q.3 capability-aware Q2MIX: BCPLQSAM and installed BCPLDEMO.
 // One FB80 binary record must survive DEMOSVC calls and STOP(8).
 GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
           WRITEF:76; PUTBYTE:86; QSAMSVC:200; DEMOSVC:203 $)
@@ -39,7 +39,7 @@ $(1
     RC := QSAMSVC(0,I,6)
     IF RC NE 6 DO FAIL(3,RC)
     IF I!0 NE 1 | I!1 NE 1 | I!2 NE 0 DO FAIL(4,RC)
-    IF I!3 NE 6 | I!4 NE 31 | I!5 NE 1 DO FAIL(5,RC)
+    IF I!3 NE 6 | I!4 NE 31 | I!5 NE 3 DO FAIL(5,RC)
     IF I!6 NE 707 DO FAIL(6,RC)
     RC := DEMOSVC(0,D,6)
     IF RC NE 6 DO FAIL(7,RC)
@@ -76,7 +76,7 @@ $(1
     DEMOCHECK(V,25)
     RC := QSAMSVC(0,I,6)
     IF RC NE 6 DO FAIL(28,RC)
-    IF I!4 NE 31 | I!5 NE 1 | I!6 NE 707 DO FAIL(29,RC)
+    IF I!4 NE 31 | I!5 NE 3 | I!6 NE 707 DO FAIL(29,RC)
     DEMOCHECK(V,30)
     WRITES("Q2 MIX BCPLQSAM BCPLDEMO WRITTEN PASS")
     NEWLINE()

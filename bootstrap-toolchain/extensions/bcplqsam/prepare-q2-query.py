@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepare Q2QUERY native IFOX/IEWL/GO using established Q.1 BCX linkage.
 
-The test checks QUERY opcode mask 31, QS_CAP_FIXED=1 and ABI edges.
+The numbered test checks QUERY opcode mask 31 and ABI/capability edges.
 Only temporary MVS objects and load modules; never submits a JES job.
 """
 from __future__ import annotations

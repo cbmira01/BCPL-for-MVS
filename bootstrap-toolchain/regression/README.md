@@ -112,6 +112,52 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
+## Q.3 native V/VB regressions (171–174; pending numbered MVS run)
+
+After the Q.2 tests 163–170, Milestone QSAM adds four cases:
+`171-qsam-v-read`, `172-qsam-v-write`,
+`173-qsam-vb-read`, and `174-qsam-vb-write`.
+They preserve the canonical 00–170 runner path, use the already established
+`qsam-native.txt` branch into the native QSAM runner, and construct
+JCL using `prepare-q3-v-read.py`'s 1024-byte ceiling generator.
+The independent IFOX writer/reader and the native BCPL applications
+are compiled, assembled, linked and executed on real MVS; temporary
+dataset disposition is NEW/PASS -> OLD/DELETE. No source-mode
+"simulation" is counted as regression evidence.
+
+The approved private staging ceiling is 1024 bytes, of which
+four bytes are a private RDW for V/VB. Case 171 and 173 verify
+short-buffer retries, a zero-data record, two consecutive 1020-byte
+records, binary contents, sticky EOF and stale handles. Cases 172
+and 174 verify zero/full-length WRITE, error returns and independent
+IFOX comparison of every RDW and binary payload byte.
+
+Cases 163 (QUERY) and 170 (BCPLQSAM+BCPLDEMO) also reassert the new
+QUERY capability bitmap `QS_CAP_FIXED | QS_CAP_VARIABLE = 3`.
+Their original Q.2 test sources and native evidence remain preserved
+under `bootstrap-toolchain/extensions/bcplqsam/test-q2-*.bcpl`
+and the Q.2 closure document.
+
+Offline preparation checks, **without JES submission**, are:
+```sh
+python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q3-v-read.py --limit v --check
+python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q3-v-read.py --limit v --write --check
+python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q3-v-read.py --limit vb --check
+python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q3-v-read.py --limit vb --write --check
+tools/bootstrap/run-regression --check-numbering
+```
+
+The **operator-run** source-mode production panels are:
+```sh
+tools/bootstrap/run-production-regression 163 174
+tools/bootstrap/run-production-regression 0 174
+```
+Run the full panel only after the focused panel has passed. All
+compile/JES outputs remain in `workarea/native-regression/`.
+The four standalone MVS demonstrations (JOBs 7347–7350) have
+passed; they do not substitute for the new numbered runs.
+Q.3 closure requires recorded passing focused and full panels.
+
 ## R.5 optional-extension regressions (146-158)
 
 R.5 adds thirteen individually numbered BCPL tests with

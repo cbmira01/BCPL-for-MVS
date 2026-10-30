@@ -51,7 +51,7 @@ QSORD    LTR   8,8
          ST    7,0(9)
          LM    0,1,24(5)
          BCR   15,11
-* QUERY: FIVE SUPPORTED OPERATIONS; FIXED F/FB CAPABILITY.
+* QUERY: FIVE OPERATIONS; F/FB AND V/VB CAPABILITIES.
 QSQUERY  LTR   8,8
          BNZ   QSQPTR
          LTR   9,9
@@ -72,7 +72,7 @@ QSQPTR   LTR   9,9
          ST    14,12(8)
          LA    14,31
          ST    14,16(8)
-         LA    14,1
+         LA    14,3
          ST    14,20(8)
          LA    7,6
          B     QSRET

@@ -1,6 +1,6 @@
 # Milestone QSAM — native BCPL sequential-record I/O
 
-**Current status (29 October 2026): Q.2 — Fixed logical records CLOSED.** The owner-directed [Q.2 closure](qsam-q2-closure-20261029.md) records native jobs 6640–6978, the passing 00–162 baseline, and numbered regression cases 163–170. The expanded native production 00–170 panel passed with **170 PASS, 0 FAIL, 1 expected SKIP 083 (TOTAL 171), runner RC=0**, as reported by the operator. Q.3 — Variable logical records has not started. The dated Q.0/Q.1/Q.2 design and kickoff notes below remain historical; Milestone QSAM remains active.
+**Current status (30 October 2026): Q.3 — Variable logical records IN PROGRESS, native regression gate pending.** Q.2 — Fixed logical records remains CLOSED, with the prior production 00–170 panel at 170 PASS, 0 FAIL, 1 expected SKIP 083. Q.3 native standalone V/VB READ/WRITE campaigns JOBs 7340, 7344 and 7347–7350 have passed, including 1024-byte logical stages and independent IFOX readback. The owner approved extending the numbered panel to 171–174, updating QUERY cases 163/170, and closing Q.3 subject to actual native focused 163–174 and full 00–174 verification. See [Q.3 acceptance review](qsam-q3-acceptance-review-20261030.md). The dated Q.0/Q.1/Q.2 notes below remain historical; Milestone QSAM remains active.
 
 ## Purpose and historical positioning
 

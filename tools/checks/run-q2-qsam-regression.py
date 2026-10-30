@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native numbered Q.2 regressions 163..170; no simulated target results.
+"""Native numbered QSAM regressions 163..174; no simulated target results.
 
 Each case compiles BCPL with the resident demoted Cambridge compiler,
 builds real source-mode IFOX/IEWL JCL, submits one JES job and checks
@@ -24,8 +24,8 @@ WORK = ROOT / "workarea/native-regression"
 
 # Number: generator kind, canonical source, original native job, GO marker(s).
 CASES = {
-  163: ("query", "test-q2-query.bcpl", "Q2QUERY",
-        ("BCPLQSAM Q2 QUERY FIXED PASS",)),
+  163: ("query", "test-q3-query.bcpl", "Q2QUERY",
+        ("BCPLQSAM Q3 QUERY VARIABLE PASS",)),
   164: ("negative", "test-q1-negative.bcpl", "Q1NEG",
         ("BCPLQSAM Q1 NEGATIVE PASS",)),
   165: ("output", "test-q1-output.bcpl", "Q1OUT",
@@ -41,9 +41,19 @@ CASES = {
   169: ("stopflush", "test-q2-stop-flush.bcpl", "Q2STOP",
         ("BCPLQSAM Q2 STOP FB80 WRITTEN PASS",
          "BCPLQSAM Q2 STOP FLUSH FB80 EXACT PASS")),
-  170: ("mix", "test-q2-mix.bcpl", "Q2MIX",
+  170: ("mix", "test-q3-mix.bcpl", "Q2MIX",
         ("Q2 MIX BCPLQSAM BCPLDEMO WRITTEN PASS",
          "Q2 MIX BCPLQSAM BCPLDEMO FB80 EXACT PASS")),
+  171: ("vread", "test-q3-limit-read.bcpl", "Q3VLRED",
+        ("BCPLQSAM Q3 1024 V/VB READ 7 PASS",)),
+  172: ("vwrite", "test-q3-limit-write.bcpl", "Q3VLWRT",
+        ("BCPLQSAM Q3 1024 V/VB WRITE 7 PASS",
+         "BCPLQSAM Q3 1024 V/VB IFOX RDW 7 PASS")),
+  173: ("vbread", "test-q3-limit-read.bcpl", "Q3VBRED",
+        ("BCPLQSAM Q3 1024 V/VB READ 7 PASS",)),
+  174: ("vbwrite", "test-q3-limit-write.bcpl", "Q3VBWRT",
+        ("BCPLQSAM Q3 1024 V/VB WRITE 7 PASS",
+         "BCPLQSAM Q3 1024 V/VB IFOX RDW 7 PASS")),
 }
 BASIC = ("ASMA", "ASMN", "ASMR", "ASMQ", "ASMG", "LKED", "GO")
 LIFE = ("ASMWR", "LKWR", "ASMA", "ASMN", "ASMR",
@@ -52,6 +62,11 @@ FULL = ("ASMA", "ASMB", "ASMV", "ASMN", "ASMR", "ASMQ", "ASMG",
         "LKED", "LKRD", "LKVR", "WGO", "RGO", "VGO")
 STOP = ("ASMA", "ASMV", "ASMN", "ASMR", "ASMQ", "ASMG",
         "LKED", "LKVR", "BGO", "VGO")
+LIMIT_READ = ("ASMA", "ASML", "ASMN", "ASMR", "ASMQ", "ASMG",
+              "LKWR", "LKED", "WGO", "RGO")
+LIMIT_WRITE = ("ASMA", "ASML", "ASMN", "ASMR", "ASMQ", "ASMG",
+               "LKVR", "LKED", "WGO", "VGO")
+LIMIT_CASES = ("vread", "vwrite", "vbread", "vbwrite")
 
 
 def load(name: str):
@@ -106,8 +121,9 @@ def prepare(kind: str, generated: str, reader: str | None) -> str:
     obj = object_dsn("BOOT_OBJ")
     ext_obj = object_dsn("EXT_OBJ") if kind == "mix" else None
     original_job = next(job for k, _, job, _ in CASES.values() if k == kind)
+    title = "Q3 NATIVE REG" if kind in LIMIT_CASES else "Q2 NATIVE REG"
     card = core.authenticated_job_card(
-        cfg, original_job, "Q2 NATIVE REG", redact_password=False)
+        cfg, original_job, title, redact_password=False)
     if kind == "query":
         deck = load("prepare-q2-query.py").make_deck(generated, card, obj)
     elif kind in ("negative", "output", "finish", "stop"):
@@ -124,8 +140,13 @@ def prepare(kind: str, generated: str, reader: str | None) -> str:
     elif kind == "mix":
         deck = load("prepare-q2-mix.py").make_deck(
             generated, card, obj, ext_obj)
+    elif kind in LIMIT_CASES:
+        fmt = "vb" if kind.startswith("vb") else "v"
+        writing = kind.endswith("write")
+        deck = load("prepare-q3-v-read.py").make_limit_deck(
+            generated, card, obj, fmt, writing)
     else:
-        raise ValueError("unknown native Q.2 campaign " + kind)
+        raise ValueError("unknown native QSAM campaign " + kind)
     for line in deck.splitlines():
         if not line.isascii() or len(line) > 71:
             raise ValueError("JCL card width/encoding invalid")
@@ -141,7 +162,10 @@ def evidence(number: int, summary: str, report: str) -> list[str]:
     issues: list[str] = []
     if len(re.findall(rf"^JOB\s+\d+\s+{job}\s*$", summary, re.M)) != 1:
         issues.append("wrong/missing native JES job name")
-    steps = (FULL if kind == "full" else LIFE if kind in ("finish", "stop")
+    steps = (LIMIT_READ if kind in ("vread", "vbread")
+             else LIMIT_WRITE if kind in ("vwrite", "vbwrite")
+             else FULL if kind == "full"
+             else LIFE if kind in ("finish", "stop")
              else STOP if kind in ("stopflush", "mix") else BASIC)
     found: dict[str, list[int]] = {}
     for line in summary.splitlines():
@@ -184,7 +208,7 @@ def evidence(number: int, summary: str, report: str) -> list[str]:
 
 def run(number: int, case: Path) -> int:
     if number not in CASES or not case.resolve().is_relative_to(REG.resolve()):
-        raise ValueError("invalid Q.2 case identity")
+        raise ValueError("invalid QSAM case identity")
     kind, original, job, markers = CASES[number]
     if not case.name.startswith(f"{number:03d}-"):
         raise ValueError("case number/directory mismatch")
@@ -192,14 +216,14 @@ def run(number: int, case: Path) -> int:
     if (case / "expected.txt").read_text("ascii").splitlines() != list(markers):
         raise ValueError("case expected.txt differs from native evidence contract")
     if (case / "qsam-native.txt").read_text("ascii").strip() != kind:
-        raise ValueError("wrong Q.2 native profile fixture")
+        raise ValueError("wrong QSAM native profile fixture")
     extra = (checked_fixture(case, "reader.bcpl", "test-q2-read.bcpl")
              if kind == "full" else None)
 
     work = WORK / case.name
     work.mkdir(parents=True, exist_ok=True)
     attempt = Path(tempfile.mkdtemp(prefix="native-", dir=work))
-    print(f"Q.2 case {number}, JES job {job}, evidence {attempt}", flush=True)
+    print(f"QSAM case {number}, JES job {job}, evidence {attempt}", flush=True)
 
     generated: list[str] = []
     for index, src in enumerate([source, *([extra] if extra else [])]):
@@ -249,9 +273,9 @@ def run(number: int, case: Path) -> int:
     errors = evidence(number, summary, report)
     if errors:
         for error in errors:
-            print("Q.2 evidence NOT VERIFIED: " + error)
+            print("QSAM evidence NOT VERIFIED: " + error)
         return 1
-    print(f"Q.2 native case {number} PASS; job {job_number}")
+    print(f"QSAM native case {number} PASS; job {job_number}")
     print("=== Regression result ===")
     print(f"TEST: {case.name}")
     print("RESULT: PASS")
@@ -265,7 +289,7 @@ def main() -> int:
     try:
         return run(int(sys.argv[1]), Path(sys.argv[2]))
     except (ValueError, OSError, UnicodeError, KeyError) as exc:
-        print("Q.2 native regression FAILED: " + str(exc), file=sys.stderr)
+        print("QSAM native regression FAILED: " + str(exc), file=sys.stderr)
         return 1
 
 

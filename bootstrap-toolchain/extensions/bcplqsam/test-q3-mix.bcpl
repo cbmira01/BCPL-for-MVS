@@ -1,0 +1,85 @@
+// Q.3 capability-aware Q2MIX: BCPLQSAM and installed BCPLDEMO.
+// One FB80 binary record must survive DEMOSVC calls and STOP(8).
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; PUTBYTE:86; QSAMSVC:200; DEMOSVC:203 $)
+
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q2 MIX FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(12)
+$)1
+
+LET DEMOCHECK(V,N) BE
+$(1
+    LET RC=DEMOSVC(1,V,3)
+    IF RC NE 3 DO FAIL(N,RC)
+    IF V!0 NE 10 | V!1 NE 20 | V!2 NE 30 DO FAIL(N+1,RC)
+    IF V!3 NE 909 DO FAIL(N+2,RC)
+$)1
+
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 19
+    LET I=VEC 6
+    LET D=VEC 6
+    LET V=VEC 3
+    LET H=0
+    LET RC=0
+    LET J=0
+    I!6 := 707
+    D!6 := 808
+    V!3 := 909
+    RC := QSAMSVC(0,0,0)
+    IF RC NE 6 DO FAIL(1,RC)
+    RC := DEMOSVC(0,0,0)
+    IF RC NE 6 DO FAIL(2,RC)
+    RC := QSAMSVC(0,I,6)
+    IF RC NE 6 DO FAIL(3,RC)
+    IF I!0 NE 1 | I!1 NE 1 | I!2 NE 0 DO FAIL(4,RC)
+    IF I!3 NE 6 | I!4 NE 31 | I!5 NE 3 DO FAIL(5,RC)
+    IF I!6 NE 707 DO FAIL(6,RC)
+    RC := DEMOSVC(0,D,6)
+    IF RC NE 6 DO FAIL(7,RC)
+    IF D!0 NE 1 | D!1 NE 1 | D!2 NE 0 DO FAIL(8,RC)
+    IF D!3 NE 6 | D!4 NE 1 | D!5 NE 0 DO FAIL(9,RC)
+    IF D!6 NE 808 DO FAIL(10,RC)
+    DEMOCHECK(V,11)
+    Q!0 := "QPOST"
+    Q!1 := 2
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(14,RC)
+    H := R!1
+    IF H < 1 DO FAIL(15,H)
+    DEMOCHECK(V,16)
+    Q!0 := H
+    Q!1 := 0
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 DO FAIL(19,RC)
+    IF R!4 NE 2 | R!5 NE 80 | R!6 NE 800 DO FAIL(20,RC)
+    DEMOCHECK(V,21)
+    // AD 00 FF 03..4E 40, exactly as independent IFOX expects.
+    FOR J=0 TO 79 DO PUTBYTE(B,J,J)
+    PUTBYTE(B,0,173)
+    PUTBYTE(B,1,0)
+    PUTBYTE(B,2,255)
+    PUTBYTE(B,79,64)
+    Q!0 := H
+    Q!1 := B
+    Q!2 := 80
+    RC := QSAMSVC(3,Q,R)
+    IF RC NE 0 | R!1 NE 80 DO FAIL(24,RC)
+    DEMOCHECK(V,25)
+    RC := QSAMSVC(0,I,6)
+    IF RC NE 6 DO FAIL(28,RC)
+    IF I!4 NE 31 | I!5 NE 3 | I!6 NE 707 DO FAIL(29,RC)
+    DEMOCHECK(V,30)
+    WRITES("Q2 MIX BCPLQSAM BCPLDEMO WRITTEN PASS")
+    NEWLINE()
+    // Finalizer must close the still-open FB80 output handle.
+    STOP(8)
+$)1

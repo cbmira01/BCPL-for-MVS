@@ -1,22 +1,20 @@
 # Native regression 170 — qsam-demo-interoperability
 
-**Milestone QSAM — Q.2 — Fixed logical records.**
+**Milestone QSAM — Q.2 interoperability, QUERY expectation updated for Q.3.**
 
-Combined G!200/G!203 dispatch with installed read-only BCPLDEMO, temporary BCPLQSAM and independent FB80 verification.
-
-The numbered `source.bcpl` is byte-identical to the canonical
-`bootstrap-toolchain/extensions/bcplqsam/test-q2-mix.bcpl`.
-The runner checks that identity before invoking the native compiler.
+Combined `QSAMSVC:200` and installed read-only BCPLDEMO
+`DEMOSVC:203`, interleaved calls, temporary FB80 data and
+independent IFOX readback. The current QUERY must report
+`QS_CAP_FIXED | QS_CAP_VARIABLE = 3` (opcode bitmap 31).
+The numbered `source.bcpl` is byte-identical to the Q.3-aware
+`bootstrap-toolchain/extensions/bcplqsam/test-q3-mix.bcpl`.
+The historical `test-q2-mix.bcpl` is unchanged.
 
 Run with `tools/bootstrap/run-production-regression 170`.
-The established native runner compiles BCPL, assembles/link-edits on
-MVS with IFOX/IEWL, submits JES JCL, verifies native steps and exact
-application output in `expected.txt`, and preserves reports.
-
-Original standalone verification: Q2MIX; see Q.2 closure evidence.
-**Native verification — 29 October 2026: PASS.** Included in the
-focused 163–170 run (8 PASS, 0 FAIL, 0 SKIP) and the complete
-00–170 production panel (170 PASS, 0 FAIL, 1 expected SKIP 083;
-TOTAL 171, runner RC=0). See the Q.2 closure record under
-`packaging/qsam-q2-closure-20261029.md` for evidence and scope.
-No permanent PDS writes or extension promotion.
+The established native runner verifies the assembler/linker steps,
+BCEX descriptors, 60-byte BCPLREG, independent FB80 readback,
+and exact application output. The original Q2MIX and 163–170
+production panel passed on 29 October 2026 with QUERY capability 1;
+that remains historical evidence, not Q.3 capability-3 validation.
+**Updated Q.3 numbered test: PENDING NATIVE EXECUTION.**
+No permanent MVS dataset writes or optional object promotion.
