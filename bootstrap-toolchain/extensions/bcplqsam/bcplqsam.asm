@@ -475,6 +475,8 @@ QCVFORM  LTR   5,5
          BE    QCVFIX
          C     3,=F'144'
          BE    QCVFB
+         C     3,=F'148'
+         BE    QCVFBA
          C     3,=F'64'
          BE    QCVVAR
          C     3,=F'80'
@@ -494,6 +496,17 @@ QCVFB    CR    6,5
          LTR   0,0
          BNZ   QCVSIZE
          LA    0,2
+         LR    1,5
+         B     QCVOK
+* FBA IS FIXED ASA: BCPL OWNS BYTE ZERO, INCLUDED IN LRECL.
+QCVFBA   CR    6,5
+         BL    QCVSIZE
+         SR    0,0
+         LR    1,6
+         DR    0,5
+         LTR   0,0
+         BNZ   QCVSIZE
+         LA    0,5
          LR    1,5
          B     QCVOK
 QCVVAR   LA    0,3
@@ -657,6 +670,9 @@ QIFMTCHK L     2,28(4)
          C     2,=F'3'
          BE    QIPTRCHK
          C     2,=F'4'
+         BE    QIPTRCHK
+* FBA USES EXACT FIXED RECORD BYTES INCLUDING ASA CONTROL BYTE.
+         C     2,=F'5'
          BNE   QIOFORM
 QIPTRCHK L     8,QIOREQ
          L     7,4(8)
