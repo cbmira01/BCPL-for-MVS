@@ -1,6 +1,6 @@
 # BCPLQSAM — source-controlled System Extension candidate
 
-**Current status (30 October 2026): Q.3 — Variable logical records IN PROGRESS, integration gate pending.** Native V/VB 1024-byte READ/WRITE campaigns JOBs 7347–7350 all passed with RC=0000, including independent IFOX readers/writers. Q.2 remains CLOSED with the accepted historical 00–170 results. The Q.3 source changes and numbered regressions 171–174, plus QUERY-capability updates to 163/170, require fresh native focused and full-panel verification before Q.3 is formally CLOSED. No BCPLQSAM object has been installed; see [Q.3 acceptance review](../../../packaging/qsam-q3-acceptance-review-20261030.md). Older candidate-status text below is historical.
+**Current status (30 October 2026): Q.3 — Variable logical records CLOSED.** Native V/VB READ/WRITE standalone campaigns JOBs 7347–7350 passed at the approved 1024-byte private-stage ceiling, including independent IFOX verification. The owner ran the permanent focused 163–174 panel (**12 PASS, 0 FAIL, 0 SKIP, RC=0**) and full 00–174 production panel (**174 PASS, 0 FAIL, 1 expected SKIP 083, RC=0**). The revised QUERY capability cases 163/170 and new V/VB cases 171–174 passed. See [Q.3 closure](../../../packaging/qsam-q3-closure-20261030.md). Q.2 remains CLOSED, Q.4 and Q.5 remain future. **BCPLQSAM is optional and source-controlled; no permanent object installation or release promotion occurred.** Older candidate-status text below is historical.
 
 ## Q.2 consolidated F/FB native campaign candidate
 

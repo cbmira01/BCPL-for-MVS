@@ -16,5 +16,8 @@ BCEX descriptors, 60-byte BCPLREG, independent FB80 readback,
 and exact application output. The original Q2MIX and 163–170
 production panel passed on 29 October 2026 with QUERY capability 1;
 that remains historical evidence, not Q.3 capability-3 validation.
-**Updated Q.3 numbered test: PENDING NATIVE EXECUTION.**
+**Updated Q.3 numbered test: PASS, 30 October 2026.** The
+owner-run focused 163–174 panel passed 12/12 and the complete production
+00–174 panel passed with 174 PASS, 0 FAIL, one expected SKIP 083;
+both runner RC=0. See the [Q.3 closure](../../../packaging/qsam-q3-closure-20261030.md).
 No permanent MVS dataset writes or optional object promotion.

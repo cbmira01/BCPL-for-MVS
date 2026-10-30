@@ -17,5 +17,8 @@ links temporary BCPLQSAM, and verifies real IFOX/IEWL/JES output.
 validated fixed-only capability 1 on the then-current source.
 That historical evidence is retained in the Q.2 closure record and
 `test-q2-query.bcpl`; it does not establish capability 3.
-**Updated Q.3 numbered test: PENDING NATIVE EXECUTION.**
+**Updated Q.3 numbered test: PASS, 30 October 2026.** The
+owner-run focused 163–174 panel passed 12/12 and the complete production
+00–174 panel passed with 174 PASS, 0 FAIL, one expected SKIP 083;
+both runner RC=0. See the [Q.3 closure](../../../packaging/qsam-q3-closure-20261030.md).
 No permanent MVS dataset or object changes.

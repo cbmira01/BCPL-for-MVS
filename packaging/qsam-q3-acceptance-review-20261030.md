@@ -2,7 +2,8 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction
 **March:** **Q.3 — Variable logical records**
-**Disposition:** **IN PROGRESS — numbered and full native regression gate PENDING.**
+**Disposition:** **Historical pre-execution review; subsequent native acceptance PASSED and Q.3 is CLOSED.**
+**Authoritative result:** [Q.3 closure](qsam-q3-closure-20261030.md).
 **Source baseline entering integration:** GitHub `main` at
 `aa53ffb16f16c5c4bb906cb55061f9201fa60be2`, followed by
 the owner-approved Q.3 regression/QUERY integration commit.
@@ -45,7 +46,7 @@ unlimited record-size capability.
   `QS_CAP_FIXED | QS_CAP_VARIABLE`. No carriage-control support is
   claimed during Q.3.
 
-## Permanent native regression integration — awaiting execution
+## Permanent native regression integration — historical pre-execution plan
 
 The owner approved four new regression identities:
 
@@ -68,7 +69,8 @@ Run source-mode native regressions through the existing
    0 SKIP**, runner RC=0.
 2. Full 00–174: 175 total cases; with the historically expected
    SKIP 083, target **174 PASS, 0 FAIL, 1 SKIP**, runner RC=0.
-   Counts are expectations, **not** recorded execution results.
+   These figures were pre-execution targets and have now been met; see
+   the [Q.3 closure record](qsam-q3-closure-20261030.md) for observed totals.
 
 The focused run must pass before the full one. Actual per-case
 compiler/JES IDs, summaries, reports, final counts and any unresolved
@@ -87,5 +89,6 @@ carriage-control work is not implied by successful Q.3 V/VB tests.
 
 **Owner authorization:** The project owner requested permanent Q.3
 native regressions, regression-163 capability correction, and closure
-of Q.3. Closure is contingent on the focused and full native panel
-passing; this document does not claim either panel has run.
+of Q.3. At the time of this review, closure was contingent on both native
+panels passing. They subsequently passed, and the authoritative
+[Q.3 closure](qsam-q3-closure-20261030.md) records their results.

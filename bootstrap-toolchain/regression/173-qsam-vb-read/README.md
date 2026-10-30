@@ -18,8 +18,11 @@ BCPLQSAM, and verifies every IFOX/IEWL/application step and the exact
 
 Standalone acceptance campaign: JOB 7349 Q3VBRED, all ten steps RC=0000,
 native output PASS, as reported by the operator on MVS 3.8J.
-**Numbered regression status: PENDING NEW EXECUTION**. The earlier
-standalone job is not evidence that numbered case 173 has run.
+**Numbered regression status: PASS, 30 October 2026.** The owner
+ran the focused 163–174 and full 00–174 native production panels;
+case 173 passed in both. The earlier standalone JOB above remains
+separate native verification. See the
+[Q.3 closure](../../../packaging/qsam-q3-closure-20261030.md).
 
 Run with `tools/bootstrap/run-production-regression 173`.
 No permanent MVS dataset writes or BCPLQSAM object promotion.

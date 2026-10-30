@@ -112,7 +112,7 @@ Tests should therefore be:
 - ordered so that later tests build on contracts already established by
   earlier tests.
 
-## Q.3 native V/VB regressions (171–174; pending numbered MVS run)
+## Q.3 native V/VB regressions (171–174; accepted 30 October 2026)
 
 After the Q.2 tests 163–170, Milestone QSAM adds four cases:
 `171-qsam-v-read`, `172-qsam-v-write`,
@@ -154,9 +154,12 @@ tools/bootstrap/run-production-regression 0 174
 ```
 Run the full panel only after the focused panel has passed. All
 compile/JES outputs remain in `workarea/native-regression/`.
-The four standalone MVS demonstrations (JOBs 7347–7350) have
-passed; they do not substitute for the new numbered runs.
-Q.3 closure requires recorded passing focused and full panels.
+The standalone MVS demonstrations (JOBs 7347–7350) and the
+numbered native Q.3 regression gates have now PASSED. Owner-run focused
+163–174: **12 PASS, 0 FAIL, 0 SKIP, RC=0**; full production 00–174:
+**174 PASS, 0 FAIL, 1 expected SKIP 083, RC=0**. See
+[Q.3 closure](../../packaging/qsam-q3-closure-20261030.md).
+The commands above remain available for future authorized reruns.
 
 ## R.5 optional-extension regressions (146-158)
 
