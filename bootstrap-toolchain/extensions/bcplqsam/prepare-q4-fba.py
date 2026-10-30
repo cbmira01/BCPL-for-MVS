@@ -148,7 +148,7 @@ def verify(rows: list[str]) -> str:
             raise ValueError("missing GO region/dependency guard")
     if any("CATLG" in row or "DISP=MOD" in row or
            (row.startswith("//") and "BOOT_DEVOBJ" in row) or
-           row.startswith("//SYSPUNCH") or "SYSOUT=B" in row
+           "SYSOUT=B" in row
            for row in rows):
         raise ValueError("permanent allocation or unwanted punch routing")
     return "\n".join(rows) + "\n"

@@ -39,6 +39,9 @@ class TestQ4FBAGenerator(unittest.TestCase):
         self.assertEqual(rows.count(self.m.FBA133), 3)
         self.assertIn(" ENTRY Q4FAV", rows)
         self.assertIn(" NAME Q4FBA(R)", rows)
+        # IFOX requires a temporary SYSPUNCH DD for its object deck.
+        self.assertEqual(
+            rows.count("//SYSPUNCH DD  DSN=&&Q1REGD,UNIT=SYSDA,"), 1)
         self.assertNotIn("//SYSPUNCH DD  SYSOUT=B,", rows)
         self.assertEqual(rows[-1], "//")
 
