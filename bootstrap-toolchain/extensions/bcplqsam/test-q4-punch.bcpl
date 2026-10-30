@@ -1,0 +1,72 @@
+// Q.4 native FB80 punch: duplicate EBCDIC card images to temporary DASD
+// and JES2 SYSOUT=B. Exact validation is performed on temporary DASD.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          WRITEF:76; PUTBYTE:86; QSAMSVC:200 $)
+LET FAIL(N,RC) BE
+$(1
+    WRITEF("Q4 PUNCH FAIL %N RC=%N",N,RC)
+    NEWLINE()
+    STOP(8)
+$)1
+LET START() BE
+$(1
+    LET Q=VEC 3
+    LET R=VEC 7
+    LET B=VEC 19
+    LET HT=0
+    LET HP=0
+    LET I=0
+    LET J=0
+    LET RC=0
+    Q!0 := "Q4TEMP"
+    Q!1 := 2
+    Q!2 := 0
+    Q!3 := 0
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(1,RC)
+    HT := R!1
+    Q!0 := "SYSPUNCH"
+    RC := QSAMSVC(1,Q,R)
+    IF RC NE 0 DO FAIL(2,RC)
+    HP := R!1
+    Q!0 := HT
+    Q!1 := 0
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 | R!4 NE 2 | R!5 NE 80 DO FAIL(3,RC)
+    Q!0 := HP
+    RC := QSAMSVC(5,Q,R)
+    IF RC NE 0 | R!4 NE 2 | R!5 NE 80 DO FAIL(4,RC)
+    FOR I=0 TO 2 DO
+    $(2
+        FOR J=0 TO 79 DO PUTBYTE(B,J,64)
+        PUTBYTE(B,0,216)  // EBCDIC Q
+        PUTBYTE(B,1,244)  // EBCDIC 4
+        PUTBYTE(B,2,195)  // EBCDIC C
+        PUTBYTE(B,3,193)  // EBCDIC A
+        PUTBYTE(B,4,217)  // EBCDIC R
+        PUTBYTE(B,5,196)  // EBCDIC D
+        PUTBYTE(B,6,240)  // EBCDIC 0
+        PUTBYTE(B,7,241+I)
+        IF I=1 DO PUTBYTE(B,79,231)  // EBCDIC X
+        IF I=2 DO PUTBYTE(B,79,232)  // EBCDIC Y
+        Q!0 := HT
+        Q!1 := B
+        Q!2 := 80
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 | R!1 NE 80 DO FAIL(10+I,RC)
+        Q!0 := HP
+        RC := QSAMSVC(3,Q,R)
+        IF RC NE 0 | R!1 NE 80 DO FAIL(20+I,RC)
+    $)2
+    Q!0 := HT
+    Q!1 := 0
+    Q!2 := 0
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(30,RC)
+    Q!0 := HP
+    RC := QSAMSVC(4,Q,R)
+    IF RC NE 0 DO FAIL(31,RC)
+    WRITES("BCPLQSAM Q4 FB80 PUNCH DUAL WRITE PASS")
+    NEWLINE()
+    FINISH
+$)1
