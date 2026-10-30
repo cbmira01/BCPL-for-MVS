@@ -1,7 +1,7 @@
 # Milestone QSAM — Q.4 FBA133 printer evidence (30 October 2026)
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**March:** **Q.4 — SYSOUT devices**  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**March:** **Q.4 — SYSOUT devices**
 **Disposition:** **STANDALONE FBA DEMONSTRATION PASSED; NUMBERED Q.4 REGRESSIONS AND CLOSURE PENDING.**
 
 ## Native execution and authority
