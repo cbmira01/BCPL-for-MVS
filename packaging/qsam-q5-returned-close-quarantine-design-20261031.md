@@ -1,0 +1,45 @@
+# Milestone QSAM — Q.5 returned-CLOSE quarantine experiment
+
+**Project:** BCPL for MVS 3.8 Reconstruction  
+**March:** **Q.5 — Hardening & release** (IN PROGRESS)  
+**Decision:** Owner approved the bounded returned-CLOSE quarantine design and preparation on 31 October 2026. No native MVS compilation or JES execution is authorized by this approval.  
+**Production baseline:** source-controlled `bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm` remains unchanged. No accepted MVS object or permanent dataset is modified.
+
+## Purpose and limits
+
+This experiment validates the **BCPLQSAM response to a returned nonzero CLOSE status**, rather than claiming MVS genuinely returned a CLOSE error. In particular:
+
+1. Native `Q00` QSAM OPEN succeeds and owns a private 1,024-byte stage; native `Q01` OPEN succeeds independently.
+2. `QSMCLS1` issues a **real MVS `CLOSE ((2))` for Q00**. Only if MVS has returned zero, the disposable **ASMQ-only overlay** sets R15 to 4 **once**, gated by published handle ID 1 (`Q00`) and test-only `Q5CONCE=0`. If MVS returns nonzero, its status is not overwritten. A failure or abend in the real CLOSE is neither manufactured away nor classified as a successful injection.
+3. The unmodified production `LTR 15,15` / `BNZ QSCQUAR` handling then retires the public handle and returns `QS_ERR_CLOSE=-14`. It preserves the quarantined slot, DCB and private stage without a second CLOSE or unsafe FREEMAIN. A synthetic error **after actual successful CLOSE** deliberately creates retained diagnostic storage until MVS task termination. This is not proof that a real failed CLOSE leaves the same OS-owned state.
+4. The real BCPL fixture calls repeated `CLOSE` and `INFO` on the invalidated Q00 handle, expecting `QS_ERR_HANDLE=-7`; it then performs real `INFO`, `READ` of one F1024 logical record, and successful `CLOSE` of surviving Q01.
+5. The BCPL application prints `BCPLQSAM Q5 CLOSE QUARANTINE PASS` once and calls explicit `FINISH`. `QSMFIN` encounters quarantined state 4, does **not** retry its CLOSE or release its uncertain ownership, and returns 8. The generic BCEX/BCRG v1 registrar emits `BCPLREG 2001 FINALIZER RETURNED NONZERO`; native GO returns **RC=0008** despite a successful BCPL application marker.
+
+Failures of BCPL assertions call `STOP(12)`. The checker must **not** accept RC=0012 merely because an application marker or some WTOs exist.
+
+## Test-only implementation
+
+- [`test-q5-returned-close.bcpl`](../bootstrap-toolchain/extensions/bcplqsam/test-q5-returned-close.bcpl): real BCPL assertions and normal `FINISH`.
+- [`prepare-q5-returned-close.py`](../bootstrap-toolchain/extensions/bcplqsam/prepare-q5-returned-close.py): fail-closed source and in-stream ASMQ instrumentation, synthetic JCL check, and **one-shot** preparation of `workarea/bcplqsam-q5/q5rcclos.jcl` from independently native-compiled assembler. Uses the established Q16FIN 16 temporary F1024 DD campaign, source-selected BCX/BCRG version-1 registration, read-only `BOOT_OBJ`, and no permanent PDS writes.
+- [`test_prepare_q5_returned_close.py`](../bootstrap-toolchain/extensions/bcplqsam/test_prepare_q5_returned_close.py): offline positive and tampering tests, including one-shot injection and keeping the real CLOSE before the synthetic status override.
+- Existing Q.1 proven `QFPROBE` WTO list/execute code is used **only in the temporary ASMQ**. Its first count reads `QSQUAR` instead of `QFCOUNT` and the messages are relabeled `Q5C:E/L/X`; the separate production finalizer and diagnostics are not edited.
+
+### Expected native trace (subject to MVS verification)
+
+| Phase | Exact payload | Meaning |
+| --- | --- | --- |
+| `Q5C:E` | `00000001:00000002:00000002:00000002` | One-shot injected flag 1; two tracked live DCBs/stages after quarantining Q00 |
+| `Q5C:L` | `00000001:00000001:00000001:00000001:00000000` | One quarantined slot; surviving Q01 successfully CLOSEd; only retained Q00 ownership remains |
+| `Q5C:X` | `00000001:00000001:00000001:00000001:00000008` | Finalizer observed quarantine, returned status 8; did not retry or release uncertain DCB/stage |
+
+Require exactly `E L X` with complete same-JOB `$HASP373` / `$HASP395` boundaries, zero IFOX severity, every IFOX/IEWL/WGO step RC=0000, **GO RC=0008**, the single BCPL PASS record, and the single registrar returned-finalizer diagnostic. The live `Q5C` markers are not a general public API guarantee.
+
+## Gates and evidence
+
+**Implementation/offline gate:** The assistant owns Python syntax checks, unit tests, patch/identity checks and source-controlled JCL preparation. Offline PASS is not proof that IFOX will assemble new macros or that the native MVS path works.
+
+**Separate MVS compiler gate:** Compile this exact BCPL source using the **resident demoted Cambridge compiler** via the established `tools/bootstrap/compile-mvs` workflow with new job name `Q5RCCOMP` and output `workarea/bcplqsam-q5/returned-close-generated.asm`. Preserve full JOB/ICINT19/CODE recovery evidence and matching source/output SHA-256 in the distinct `q5rccomp-attempt` directory. Do not reuse JOB 8144's unrelated assembler.
+
+**Separate native GO gate:** After compiler acceptance and hash/provenance checks, produce `Q5RCCLOS` temporary JCL, verify it never changes production `bcplqsam.asm` or permanent MVS datasets, and obtain **separate explicit JES authorization** for a single submitted attempt. Preserve console, hardcopy, MVS print, IFOX, IEWL, step RC and application evidence, including abnormal outcomes. No automatic retry.
+
+**Scope exclusion:** Actual MVS returned-CLOSE exception behavior, DCB validity after an uncertain CLOSE, resource leaks following a genuine unrecovered abend, and a universal recovery promise remain unverified. Accepted JOB 8145 failed-OPEN rollback evidence is a distinct earlier Q.5 result. Completion of this experiment alone does **not** close March Q.5.
