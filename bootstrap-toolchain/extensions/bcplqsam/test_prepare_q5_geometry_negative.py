@@ -134,7 +134,7 @@ class GeometryOverlayTests(unittest.TestCase):
         self.assertIn('LRECL=1025,BLKSIZE=1025)', self.deck())
 
     def test_18_deck_omits_go_q01_geometry(self):
-        deck=self.deck(); ls=deck.splitlines(); i=ls.index(g.Q01)
+        deck=self.deck(); ls=deck.splitlines(); i=ls.index(g.Q01_NO_DCB)
         self.assertNotEqual(ls[i+1],g.DCB)
         self.assertEqual(deck.count(g.DCB),31)
 
@@ -219,6 +219,22 @@ class GeometryOverlayTests(unittest.TestCase):
                 damaged = template().replace('//Q16FIN JOB ', invalid, 1)
                 with self.assertRaises(ValueError):
                     self.deck(jcl=damaged)
+
+
+    def test_35_q01_is_complete_standalone_dd_card(self):
+        deck = self.deck()
+        rows = deck.splitlines()
+        index = rows.index(g.Q01_NO_DCB)
+        self.assertEqual(rows[index], '//Q01      DD  DSN=&&Q1H01,DISP=(OLD,DELETE)')
+        self.assertFalse(rows[index].endswith(','))
+        self.assertTrue(rows[index + 1].startswith('//Q02      DD '))
+        self.assertNotIn(g.Q01, rows)
+
+    def test_36_rejects_altered_original_q01_continuation(self):
+        bad = template().replace(g.Q01 + '\n' + g.DCB,
+                                 g.Q01_NO_DCB + '\n' + g.DCB, 1)
+        with self.assertRaises(ValueError):
+            self.deck(jcl=bad)
 
 
 if __name__ == '__main__':

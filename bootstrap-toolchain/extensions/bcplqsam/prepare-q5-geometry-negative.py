@@ -53,6 +53,7 @@ EXIT_NEW = (
     '         L     15,QFSTAT\n'
 )
 Q01 = '//Q01      DD  DSN=&&Q1H01,DISP=(OLD,DELETE),'
+Q01_NO_DCB = Q01[:-1]  # Without a DCB continuation, DD must not end in comma.
 Q15 = '//Q15      DD  DSN=&&Q1H15,DISP=(OLD,DELETE),'
 DCB = '//             DCB=(RECFM=F,LRECL=1024,BLKSIZE=1024)'
 EXTRAS = [
@@ -141,6 +142,7 @@ def deck_rows(template: str, baseline: str, campaign, probe: str | None = None) 
     if rows[q01 + 1] != DCB:
         raise ValueError('Q01 lacks controlled original GO DCB')
     del rows[q01 + 1]
+    rows[q01] = Q01_NO_DCB
     q15 = rows.index(Q15)
     if rows[q15 + 1] != DCB:
         raise ValueError('Q15 controlled GO DCB missing')
@@ -159,7 +161,9 @@ def deck_rows(template: str, baseline: str, campaign, probe: str | None = None) 
     if restore[x:x+len(EXTRAS)] != EXTRAS:
         raise ValueError('extra DD block was changed')
     del restore[x:x+len(EXTRAS)]
-    restore.insert(restore.index(Q01) + 1, DCB)
+    q01 = restore.index(Q01_NO_DCB)
+    restore[q01] = Q01
+    restore.insert(q01 + 1, DCB)
     x, y = campaign.source_span(restore, 'ASMQ')
     restore[x:y] = baseline.splitlines()
     restore[0] = original[0]
