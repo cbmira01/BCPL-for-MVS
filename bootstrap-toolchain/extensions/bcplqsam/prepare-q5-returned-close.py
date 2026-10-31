@@ -226,6 +226,21 @@ def check() -> None:
           'cards; 3 negative baseline tests; no JES')
 
 
+def validated_compiler_source(generated: bytes, adapter) -> str:
+    """Check *raw* CG370 through the accepted adapter; do not require R0APP.
+
+    Native Cambridge emits an unnamed CSECT. The application_source()
+    adapter creates R0APP and ENTRY R0APP when assembling into the deck.
+    """
+    if not (100 <= len(generated.splitlines()) <= 500):
+        raise ValueError('unexpected raw CG370 assembler line count')
+    source = generated.decode('latin-1')
+    adapted = adapter(source)
+    if adapted.count('         ENTRY R0APP') != 1:
+        raise ValueError('CG370 adapter did not create one R0APP entry')
+    return source
+
+
 def prepare() -> None:
     """Only after independent resident compiler evidence has been accepted."""
     require_fixture()
@@ -253,10 +268,10 @@ def prepare() -> None:
     output_record = (evidence / 'assembler.sha256').read_text('ascii').split()
     if not output_record or output_record[0] != hashlib.sha256(generated).hexdigest():
         raise ValueError('native compiler assembler digest mismatch')
-    if b' ENTRY R0APP' not in generated or not (100 <= len(generated.splitlines()) <= 500):
-        raise ValueError('unexpected generated CG370 assembler format')
     query = loader('prepare-q1-query.py')
-    core = query.time_helper().trailer_helper().load_core()
+    helper = query.time_helper().trailer_helper()
+    raw_cg370 = validated_compiler_source(generated, helper.application_source)
+    core = helper.load_core()
     config = core.load_config()
     obj = config['datasets']['BOOT_OBJ']
     if obj.get('content_type') != 'object' or obj.get('dsorg') != 'PO' or \
@@ -266,7 +281,7 @@ def prepare() -> None:
         config, 'Q16FIN', 'Q5 CLOSE QUARANTINE', redact_password=False)
     campaign = loader('prepare-q1-campaign.py')
     template = campaign.make_deck(
-        'finish', generated.decode('latin-1'), jobcard,
+        'finish', raw_cg370, jobcard,
         core.full_dsn(config, obj))
     result = instrument_deck(template, BASELINE.read_text('ascii'))
     WORK.mkdir(parents=True, exist_ok=True)
