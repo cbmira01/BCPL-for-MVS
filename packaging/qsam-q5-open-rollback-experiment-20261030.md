@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** **Q.5 — Hardening & release**  
 **Design:** Owner authorized proceeding with the bounded failed-OPEN rollback experiment.  
-**Status:** Native compiler JOB 8141 **PASSED**; native rollback execution JOB 8142 **FAILED (GO ABEND S0C1)**. A separate, test-only six-marker trace refinement is prepared, **not executed**. Q.5 failed-OPEN rollback remains **NOT ACCEPTED**.  
+**Status:** Native compiler JOB 8141 **PASSED**; rollback JOB 8142 and follow-up trace JOB 8143 both **FAILED (GO ABEND S0C1)**. The test-only BCPL source now explicitly calls `FINISH`; the corrected program **has not been compiled or executed on MVS**. Q.5 failed-OPEN rollback remains **NOT ACCEPTED**.  
 **Authority:** GitHub `main`, native MVS 3.8J and actual JES/IFOX/IEWL/GO for target behavior.
 
 ## Design and limits
@@ -75,3 +75,18 @@ Three **register-preserving QFPROBE** calls identify the path *after* the succes
 On complete success, expected ordered phases are **`E L P R T X`**, followed by native GO RC=0000 and one exact `BCPLQSAM Q5 OPEN ROLLBACK PASS` application record. The two initial counters and final counters remain as above. On any abend, [`check-q5-rollback-trace.py`](../bootstrap-toolchain/extensions/bcplqsam/check-q5-rollback-trace.py) reports the last observed checkpoint but must return nonzero, preserving failure evidence. Pure offline negative tests are in [`test_check_q5_rollback_trace.py`](../bootstrap-toolchain/extensions/bcplqsam/test_check_q5_rollback_trace.py).
 
 The new deck's preparation mode is **offline only** and produces `workarea/bcplqsam-q5/q5rbtrc.jcl` once, without modifying `q5rbopen.jcl`, its attempt marker, or any installed dataset. The generator validates source-controlled compilation provenance and the exact SHA-256 of JOB 8141's 308-line recovered assembler. New **Q5RBTRC JES submission requires separate explicit authorization** and a distinct one-attempt marker. Q.5 rollback remains open until MVS target evidence demonstrates successful end-to-end recovery; adding markers is not acceptance.
+
+## JOB 8143 trace outcome and corrected BCPL termination
+
+The owner explicitly authorized one native **Q5RBTRC JOB 8143**, using the 4,151-card preserved deck SHA-256 `ce6036d2ed04cbfec83ef01ba18a1e0e37755b92a002d1b180876818d8b54623` and the original JOB 8141 compiled BCPL. Actual MVS reported:
+
+- ASMWR, LKWR, ASMA, ASMN, ASMR, ASMQ, ASMG, LKED, WGO: **RC=0000**; zero assembler flagged statements and zero highest severity.
+- GO: **ABEND S0C1 U0000**, PSW `078D0000 00000004`, ILC=2, INTC=0001; no application PASS or finalizer `Q5R:X`. **NOT ACCEPTED.**
+- JOB-correlated WTO markers in order: `Q5R:E` (expected counters), `Q5R:L` (expected successful rollback-CLOSE counters), `Q5R:P:POST-CLEAN`, `Q5R:R:ROLL-RETURN`, `Q5R:T:CORE-EPILOGUE`. This places the observed failure **after reaching the core epilogue marker**, but does not prove successful return to the BCPL caller.
+- S0C1 repeated the JOB 8142 low-memory PSW. In the reported JOB 8143 dump, R14=`000A5C5A`, which points into the BCPL application PASS literal in the displayed memory map. The register snapshot cannot alone identify the instruction that spoiled control flow.
+
+Source review revealed the pre-correction [`test-q5-open-rollback.bcpl`](../bootstrap-toolchain/extensions/bcplqsam/test-q5-open-rollback.bcpl) ended `WRITES(...); NEWLINE(); $)1` with **no `FINISH`**, whereas the independently tested Q.1 normal-completion programs explicitly invoked `FINISH`. This is a **plausible root-cause hypothesis, not yet native confirmation**. At owner direction, commit `d0529e16887645ce99d4711a05d33f702633e30f` inserted one `FINISH` statement after `NEWLINE()` without changing the assertion `STOP(12)` branches. A later offline source guard requires that ending and retains failing assertions.
+
+The original JOB 8141 compiler output, JOB 8142 `Q5RBOPEN` deck, JOB 8143 `Q5RBTRC` deck and both one-shot attempt directories are **historical failed/diagnostic evidence**. Do **not** delete, edit, overwrite, or resubmit them.
+
+**Next gates (not yet authorized):** compile the **corrected** BCPL source into a **new filename**, with a new compiler JOB identity (proposed `Q5RFCOMP`); generate a **new** test-only IFOX/IEWL/GO deck and JOB identity (proposed `Q5RBFIN`), reusing the six-marker trace and one-shot stage-refusal logic without reusing the previous assembly image; verify the resulting source/output hashes and native GO/FINISH evidence. Both native jobs require distinct explicit owner authorizations. No production `bcplqsam.asm`, installed object or MVS dataset was changed by the correction.
