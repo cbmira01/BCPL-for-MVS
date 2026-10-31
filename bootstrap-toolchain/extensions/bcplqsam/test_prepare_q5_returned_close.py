@@ -154,6 +154,57 @@ class Q5CloseOverlay(unittest.TestCase):
                         minimal_deck().replace(' NAME Q16FIN(R)',
                                                ' NAME Q16WRONG(R)'), BASE)
 
+    @staticmethod
+    def raw_cg370_sample():
+        helper = q5.loader('prepare-q1-query.py').time_helper().trailer_helper()
+        lines = helper.sample_generated().splitlines()
+        # Test the same line-count range as real compiler JOB 8146.
+        lines[-1:-1] = ['* CG370 RAW SAMPLE'] * max(0, 100 - len(lines))
+        return ('\n'.join(lines) + '\n').encode('ascii'), helper
+
+    def test_native_cg370_raw_unnamed_csect_accepted(self):
+        generated, helper = self.raw_cg370_sample()
+        self.assertNotIn(b'ENTRY R0APP', generated)
+        raw = q5.validated_compiler_source(
+            generated, helper.application_source)
+        adapted = helper.application_source(raw)
+        self.assertEqual(adapted.count('         ENTRY R0APP'), 1)
+        self.assertIn('R0APP    CSECT', adapted)
+
+    def test_native_cg370_missing_csect_rejected(self):
+        generated, helper = self.raw_cg370_sample()
+        broken = generated.replace(b'         CSECT\n',
+                                   b'* NO CSECT\n', 1)
+        with self.assertRaises(ValueError):
+            q5.validated_compiler_source(broken, helper.application_source)
+
+    def test_native_cg370_missing_end_rejected(self):
+        generated, helper = self.raw_cg370_sample()
+        broken = generated.replace(b'         END\n',
+                                   b'* NO END\n', 1)
+        with self.assertRaises(ValueError):
+            q5.validated_compiler_source(broken, helper.application_source)
+
+    def test_native_cg370_duplicated_csect_rejected(self):
+        generated, helper = self.raw_cg370_sample()
+        broken = generated.replace(b'* CG370 RAW SAMPLE',
+                                   b'         CSECT', 1)
+        with self.assertRaises(ValueError):
+            q5.validated_compiler_source(broken, helper.application_source)
+
+    def test_native_cg370_too_short_rejected(self):
+        _, helper = self.raw_cg370_sample()
+        with self.assertRaises(ValueError):
+            q5.validated_compiler_source(
+                helper.sample_generated().encode('ascii'),
+                helper.application_source)
+
+    def test_native_cg370_too_long_rejected(self):
+        generated, helper = self.raw_cg370_sample()
+        broken = generated + (b'* CG370 PADDING\n' * 401)
+        with self.assertRaises(ValueError):
+            q5.validated_compiler_source(broken, helper.application_source)
+
     def test_source_fixture_guard(self):
         with patch.object(q5, 'FIXTURE', Path(__file__).with_name('test-q5-returned-close.bcpl')):
             q5.require_fixture()
