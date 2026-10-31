@@ -58,7 +58,7 @@ QUAR_NEW = (
     "         A     0,=F'1'\n"
     '         ST    0,QSQUAR\n'
     '* E: INJECTION=1, LIVE=2, DCB=2, STAGE=2.\n'
-    '         LA    1,Q5CONCE\n'
+    '         L     1,=A(Q5CONCE)\n'
     '         SR    0,0\n'
     '         L     15,=A(QFPROBE)\n'
     '         BALR  14,15\n'
@@ -75,7 +75,7 @@ SUCCESS_CLOSE_NEW = (
     "         CLC   Q5CONCE(4),=F'1'\n"
     '         BNE   Q5CSKIP\n'
     '         LA    0,1\n'
-    '         LA    1,Q5CONCE\n'
+    '         L     1,=A(Q5CONCE)\n'
     '         L     15,=A(QFPROBE)\n'
     '         BALR  14,15\n'
     'Q5CSKIP  SR    15,15\n'
@@ -85,7 +85,7 @@ FINALIZER = 'QFEXIT   L     15,QFSTAT\n'
 FINALIZER_NEW = (
     '* X: QUAR=1, LIVE=1, DCB=1, STAGE=1, STATUS=8.\n'
     'QFEXIT   LA    0,2\n'
-    '         LA    1,Q5CONCE\n'
+    '         L     1,=A(Q5CONCE)\n'
     '         L     15,=A(QFPROBE)\n'
     '         BALR  14,15\n'
     '         L     15,QFSTAT\n'
