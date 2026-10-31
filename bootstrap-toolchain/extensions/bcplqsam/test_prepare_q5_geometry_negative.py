@@ -237,5 +237,45 @@ class GeometryOverlayTests(unittest.TestCase):
             self.deck(jcl=bad)
 
 
+    def test_37_fixture_clears_open_mode_before_info(self):
+        source = g.FIXTURE.read_text('ascii')
+        self.assertEqual(source.count(
+            '    Q!0 := H0\n    Q!1 := 0\n'
+            '    RC := QSAMSVC(5,Q,R)'), 1)
+
+    def test_38_fixture_preserves_distinct_failure_diagnostics(self):
+        import re
+        source = g.FIXTURE.read_text('ascii')
+        actual = [int(n) for n in re.findall(
+            r'(?m)^\s*IF .* DO FAIL\((\d+),', source)]
+        self.assertEqual(actual, [
+            10,11,20,21,30,31,40,41,50,51,52,60,61,70,71])
+        self.assertIn('WRITEF("Q5G FAIL %N VALUE=%N",N,V)', source)
+        self.assertIn('    STOP(12)', source)
+
+    def test_39_fixture_missing_info_reset_is_rejected(self):
+        source = g.FIXTURE.read_text('ascii')
+        bad = source.replace(
+            '    Q!0 := H0\n    Q!1 := 0\n'
+            '    RC := QSAMSVC(5,Q,R)',
+            '    Q!0 := H0\n    RC := QSAMSVC(5,Q,R)', 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            altered = Path(tmp) / 'bad-info.bcpl'
+            altered.write_text(bad, encoding='ascii')
+            with patch.object(g, 'FIXTURE', altered):
+                with self.assertRaisesRegex(ValueError, 'INFO request'):
+                    g.require_fixture()
+
+    def test_40_fixture_missing_failure_stage_is_rejected(self):
+        source = g.FIXTURE.read_text('ascii')
+        bad = source.replace('FAIL(41,R!0)', 'STOP(12)', 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            altered = Path(tmp) / 'bad-stage.bcpl'
+            altered.write_text(bad, encoding='ascii')
+            with patch.object(g, 'FIXTURE', altered):
+                with self.assertRaisesRegex(ValueError, 'failure diagnostics'):
+                    g.require_fixture()
+
+
 if __name__ == '__main__':
     unittest.main()

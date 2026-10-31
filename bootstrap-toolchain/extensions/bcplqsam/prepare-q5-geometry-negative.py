@@ -187,13 +187,24 @@ def require_fixture() -> None:
     if not source.endswith('    FINISH\n$)1\n'):
         raise ValueError('BCPL fixture must finish normally')
     for clause in ('"QBAD"', '"QBIG"', '"Q01"', '"Q00"',
-                   'QSAMSVC(1,Q,R) NE -6', 'R!0 NE -6 | R!1 NE 0',
-                   'QSAMSVC(2,Q,R) NE 0', 'QSAMSVC(4,Q,R) NE 0',
+                   'LET FAIL(N,V) BE',
+                   'WRITEF("Q5G FAIL %N VALUE=%N",N,V)',
+                   'RC := QSAMSVC(2,Q,R)', 'RC := QSAMSVC(4,Q,R)',
                    'BCPLQSAM Q5 GEOMETRY NEGATIVE PASS', 'STOP(12)'):
         if clause not in source:
             raise ValueError('missing BCPL test requirement: ' + clause)
-    if source.count('QSAMSVC(1,Q,R) NE -6') != 3:
-        raise ValueError('require exactly three OPEN failure assertions')
+    if source.count('RC := QSAMSVC(1,Q,R)') != 4 or \
+       source.count('IF RC NE -6 DO FAIL(') != 3 or \
+       source.count('IF R!0 NE -6 | R!1 NE 0 DO FAIL(') != 3:
+        raise ValueError('require Q00 OPEN and exactly three rejected OPENs')
+    if source.count('    Q!0 := H0\n    Q!1 := 0\n'
+                    '    RC := QSAMSVC(5,Q,R)') != 1:
+        raise ValueError('INFO request must clear OPEN-mode word before call')
+    expected = (10,11,20,21,30,31,40,41,50,51,52,60,61,70,71)
+    observed = tuple(int(n) for n in re.findall(
+        r'(?m)^\s*IF .* DO FAIL\((\d+),', source))
+    if observed != expected:
+        raise ValueError('missing or reordered native failure diagnostics')
 
 
 def validated_compiler_source(raw: bytes, adapter) -> str:
