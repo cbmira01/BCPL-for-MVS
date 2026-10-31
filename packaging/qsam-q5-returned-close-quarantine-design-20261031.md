@@ -2,6 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** **Q.5 — Hardening & release** (IN PROGRESS)  
+**Current result:** **OWNER ACCEPTED Q5RCCLOS JOB 8147 on 31 October 2026** as a bounded native *injected returned-CLOSE status* quarantine test; see [formal acceptance](qsam-q5-returned-close-quarantine-acceptance-20261031.md). Historical design authorization and pre-JES notes below describe earlier gates, not today's outstanding tasks.  
 **Decision:** Owner approved the bounded returned-CLOSE quarantine design and preparation on 31 October 2026. No native MVS compilation or JES execution is authorized by this approval.  
 **Production baseline:** source-controlled `bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm` remains unchanged. No accepted MVS object or permanent dataset is modified.
 
@@ -102,3 +103,27 @@ was unused. A corrected recovery procedure may exercise it once
 after verifying its exact source revision and preserving the
 earlier preparation-failure log; no new compiler submission or
 permanent MVS dataset modification is necessary.
+
+## Native execution result and owner gate — JOB 8147
+
+**Q5RCCLOS JOB 8147 completed once** on 31 October 2026 from the
+corrected 4,121-card one-shot deck SHA-256
+`2ad6eff04abb325cdc71bddff43a1baaf5c615ff19dce7f5aef1bce8c678e1eb`
+(GitHub source `main` `3a0c25b4d31849d27149ca57cd157963c6ca8323`).
+
+JES reported **SUCCESS**, highest **RC=0008**: ASMWR, LKWR,
+ASMA, ASMN, ASMR, ASMQ, ASMG, LKED, WGO all **RC=0000**;
+GO **RC=0008**, intentionally. IFOX statements flagged **0**,
+highest severity **0**. The native application produced
+`BCPLQSAM Q5 CLOSE QUARANTINE PASS` and the registrar logged
+`BCPLREG 2001 FINALIZER RETURNED NONZERO`. Original Hercules
+console and MVS hardcopy match the expected `Q5C:E/L/X` payloads
+**exactly**, with `X` showing one quarantined resource and status 8.
+The operator's evidence-collection command reported overall RC=0.
+
+The owner explicitly directed **"Accept 8147"**, accepting this
+bounded hardening result. See
+[the acceptance record](qsam-q5-returned-close-quarantine-acceptance-20261031.md).
+This result **does not prove a genuine failed MVS CLOSE**, and no
+additional Q5RCCLOS submission is authorized or required.
+Q.5 remains **IN PROGRESS**.
