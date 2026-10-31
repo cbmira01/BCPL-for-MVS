@@ -1,0 +1,46 @@
+// Q.5 test-only: one real Q00 CLOSE, then injected nonzero R15.
+// Tests quarantine logic; MVS did not necessarily report CLOSE failure.
+// The quarantined DCB/stage are deliberately NOT freed or CLOSEd again.
+GLOBAL $( START:1; STOP:30; WRITES:60; NEWLINE:63;
+          QSAMSVC:200 $)
+LET START() BE
+$(1
+    LET Q = VEC 3
+    LET R = VEC 7
+    LET B = VEC 255
+    LET H0 = 0
+    LET H1 = 0
+    Q!1 := 1
+    Q!2 := 0
+    Q!3 := 0
+    Q!0 := "Q00"
+    IF QSAMSVC(1,Q,R) NE 0 DO STOP(12)
+    H0 := R!1
+    IF H0 NE 1 DO STOP(12)
+    Q!0 := "Q01"
+    IF QSAMSVC(1,Q,R) NE 0 DO STOP(12)
+    H1 := R!1
+    IF H1 < 1 | H1 = H0 DO STOP(12)
+    Q!0 := H0
+    Q!1 := 0
+    IF QSAMSVC(4,Q,R) NE -14 DO STOP(12)
+    IF R!0 NE -14 | R!1 NE 0 DO STOP(12)
+    IF QSAMSVC(4,Q,R) NE -7 DO STOP(12)
+    IF QSAMSVC(5,Q,R) NE -7 DO STOP(12)
+    Q!0 := H1
+    IF QSAMSVC(5,Q,R) NE 0 DO STOP(12)
+    IF R!4 NE 1 | R!5 NE 1024 DO STOP(12)
+    IF R!6 NE 1024 | R!7 NE 1024 DO STOP(12)
+    Q!1 := B
+    Q!2 := 1024
+    IF QSAMSVC(2,Q,R) NE 0 DO STOP(12)
+    IF R!1 NE 1024 DO STOP(12)
+    Q!1 := 0
+    Q!2 := 0
+    IF QSAMSVC(4,Q,R) NE 0 DO STOP(12)
+    Q!0 := H0
+    IF QSAMSVC(5,Q,R) NE -7 DO STOP(12)
+    WRITES("BCPLQSAM Q5 CLOSE QUARANTINE PASS")
+    NEWLINE()
+    FINISH
+$)1
