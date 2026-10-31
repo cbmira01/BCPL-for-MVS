@@ -81,11 +81,11 @@ class Q5CloseOverlay(unittest.TestCase):
 
     def test_all_probes_pass_known_reason_address(self):
         src = q5.instrument_asm(BASE, PROBE)
-        self.assertEqual(src.count('LA    1,Q5CONCE'), 3)
+        self.assertEqual(src.count('L     1,=A(Q5CONCE)'), 3)
         self.assertIn('QFEXIT   LA    0,2\n'
-                      '         LA    1,Q5CONCE\n', src)
+                      '         L     1,=A(Q5CONCE)\n', src)
         self.assertIn('         LA    0,1\n'
-                      '         LA    1,Q5CONCE\n'
+                      '         L     1,=A(Q5CONCE)\n'
                       '         L     15,=A(QFPROBE)', src)
 
     def test_reject_repeat(self):
