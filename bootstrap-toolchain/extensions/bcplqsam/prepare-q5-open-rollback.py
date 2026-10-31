@@ -138,8 +138,13 @@ def instrument_deck(deck: str, baseline: str) -> str:
 
 
 def check() -> None:
-    if 'BCPLQSAM Q5 OPEN ROLLBACK PASS' not in FIXTURE.read_text('ascii'):
+    fixture = FIXTURE.read_text('ascii')
+    if 'BCPLQSAM Q5 OPEN ROLLBACK PASS' not in fixture:
         raise ValueError('canonical BCPL test marker missing')
+    if not fixture.endswith('    NEWLINE()\n    FINISH\n$)1\n'):
+        raise ValueError('Q.5 BCPL test must explicitly FINISH normally')
+    if 'STOP(12)' not in fixture:
+        raise ValueError('Q.5 BCPL test must retain failing STOP(12) assertions')
     diag = load('prepare-q1-finalizer-diagnostic.py')
     campaign = diag.load_campaign()
     sample = campaign.module('prepare-q1-query.py').time_helper().trailer_helper().sample_generated()
