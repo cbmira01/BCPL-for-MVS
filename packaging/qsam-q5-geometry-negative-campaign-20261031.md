@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** **Q.5 — Hardening & release** (IN PROGRESS)  
-**Status:** Owner approved commit of six test-only source/documentation files on 31 October 2026. No native compiler or JES execution authorized.**  
+**Status:** Test-only campaign committed on 31 October 2026 by owner approval. Native compiler and JES execution remain separately gated.  
 **Reference baseline:** GitHub `main` `7f3b3ef1c7285761271c76bed770579e1f644dad` and its unchanged `bcplqsam.asm` blob `61daa6da9aa5d95ce7f9e9a0bcce0855806eb535`.
 
 ## Bounded native purpose
