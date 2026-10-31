@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** **Q.5 — Hardening & release**  
 **Design:** Owner authorized proceeding with the bounded failed-OPEN rollback experiment.  
-**Status:** Native compiler JOBs 8141 and 8144 **PASSED**; rollback execution JOBs 8142 and 8143 both **FAILED (GO ABEND S0C1)**. The corrected BCPL test with explicit `FINISH` compiled under resident Cambridge in JOB 8144, but **has not been executed natively**. The new Q5RBFIN preparation tool is committed; no Q5RBFIN JES submission is authorized. Q.5 failed-OPEN rollback remains **NOT ACCEPTED**.  
+**Status:** Corrected native BCPL compiler **JOB 8144 PASSED**; corrected rollback execution **Q5RBFIN JOB 8145 PASSED** with GO RC=0000, exact BCPL PASS and zero finalizer counters. Prior JOBs 8142–8143 remain historical S0C1 failures. JOB 8145's console additionally contains a final test-probe `P` from the **IFOX-confirmed QFPEX → Q5RPST fall-through**, not a second rollback. The original capture script failed its console spacing test; **formal offline checker acceptance and owner gate review remain pending**. March Q.5 remains IN PROGRESS.  
 **Authority:** GitHub `main`, native MVS 3.8J and actual JES/IFOX/IEWL/GO for target behavior.
 
 ## Design and limits
@@ -99,4 +99,64 @@ With the owner's subsequent authorization to implement preparation tooling, [`pr
 
 `--check` generates a synthetic JCL deck, validates E/L/P/R/T/X trace markers and rejects three damaged identity variants, without calling MVS. [`test_prepare_q5_rollback_finish.py`](../bootstrap-toolchain/extensions/bcplqsam/test_prepare_q5_rollback_finish.py) adds isolated negative checks against missing `FINISH`, wrong compiler JOB, stale source digest, corrupted generated assembly, missing output and nonzero compile-step RC. `--prepare` writes `q5rbfin.jcl` **once**, exclusively, after provenance/JCL verification; it does not submit JES, install PDS members or alter the production BCPLQSAM object.
 
-**Outstanding gate:** operator executes the offline Python syntax, synthetic check, provenance unit tests and JCL preparation on a checkout fast-forwarded to the recorded `main` source revision. A new **Q5RBFIN JES submission** would require separate explicit owner authorization and a distinct one-attempt marker. JOBs 8141–8144, their decks and native logs remain preserved. The initial S0C1 root-cause hypothesis is not accepted until a real corrected GO/FINISH result is observed.
+**Gate result:** Owner's WSL checks passed (Python syntax, synthetic deck, seven provenance tests); offline preparation created the 4,154-card `q5rbfin.jcl`. The owner separately approved **one** Q5RBFIN JES submission, yielding JOB 8145. JOBs 8141–8144 and their evidence remain preserved. No further native execution or installed dataset modification has been authorized. The initial missing-`FINISH` diagnosis is supported by JOB 8145's successful corrected native return; it does not retroactively change JOBs 8142–8143.
+
+## Corrected native Q5RBFIN JOB 8145 and test-probe fall-through
+
+The operator used the owner-approved one-shot `Q5RBFIN` deck (4,154 cards; SHA-256
+`e315f22394c9a0fa7118abfaf330c73869936406cebe2e1f8ae4acc7306e4b70`).
+The original full JOB 8145 evidence is preserved under
+`workarea/bcplqsam-q5/q5rbfin-attempt/` and in MVS printer output and Hercules
+logs; GitHub tracks the checker and the acceptance interpretation, **not a
+substitute synthetic JES run**.
+
+- `ASMWR`, `LKWR`, `ASMA`, `ASMN`, `ASMR`, `ASMQ`, `ASMG`, `LKED`,
+  `WGO`, and `GO`: all **RC=0000**. JES reported **JOB RESULT: SUCCESS**,
+  **HIGHEST RC: 0000**; IFOX **zero statements flagged** and
+  **highest severity zero**.
+- The actual native `GO` report contains **exactly one**
+  `BCPLQSAM Q5 OPEN ROLLBACK PASS` output record. The BCPL test's
+  failing `STOP(12)` assertions were not taken.
+- The independent console `mvs-state/log/3033.log` and MVS
+  `mvs-state/log/hardcopy.log` show the same seven WTO observations,
+  all between JOB 8145 `$HASP373` and `$HASP395`:
+  `E L P R T X P`. `E` and `L` carry the agreed rollback counters;
+  `X` records **five zero fullword counters** at finalizer exit.
+- The seventh, extra `P` is **not** evidence of an additional QSAM
+  OPEN/rollback: the actual JOB 8145 IFOX ASMQ listing shows
+  `QFPEX` emitting `Q5R:X` via **`0010CA 0A23` / `SVC 35`**,
+  immediately followed at **`0010CC`** by `Q5RPST LA 1,Q5RPL`
+  and its own WTO call. The test-only probe overlay placed
+  `Q5RPST` directly after `QFPEX` without a branch to `QFPDONE`.
+  This fall-through executes the `P` message a second time **after**
+  finalization; the production `bcplqsam.asm` is unchanged.
+- The initial collection script's `console.rc=1` is independently
+  explained: it searched for literal `Q5RBFIN STARTED` and
+  `Q5RBFIN ENDED`, but actual JES writes **two spaces** between
+  the jobname and STARTED/ENDED. The old script skipped its inline
+  acceptance checker; its `evidence.rc=1` is a **collection/checker
+  failure**, not an MVS GO RC. Both original logs contain complete
+  JOB 8145 boundaries. Neither retained result has been rewritten.
+
+The dedicated, read-only
+[`check-q5-rollback-finish.py`](../bootstrap-toolchain/extensions/bcplqsam/check-q5-rollback-finish.py)
+checks JOB **8145** only. It pins the unique submitted JCL and native
+compiler output digests and the one-shot attempt metadata, all ten
+JES RC=0000 steps and zero IFOX severity, exactly one BCPL PASS,
+both original console and hardcopy complete job intervals with identical
+`E L P R T X P` payloads, **and** the actual IFOX SVC-35/next-instruction
+adjacency proving why the otherwise unexpected seventh marker is safe.
+Seventeen synthetic positive and negative cases are in
+[`test_check_q5_rollback_finish.py`](../bootstrap-toolchain/extensions/bcplqsam/test_check_q5_rollback_finish.py).
+It cannot execute MVS, rewrite evidence or authorize a new job. The
+original strict
+[`check-q5-rollback-trace.py`](../bootstrap-toolchain/extensions/bcplqsam/check-q5-rollback-trace.py)
+remains unchanged for historical JOB 8143 interpretation.
+
+**Remaining gate:** run these new offline tests and checker against the
+preserved JOB 8145 workarea evidence and the **original** Hercules
+console and hardcopy logs; record the outcomes before asking the owner
+to accept the completed failed-OPEN rollback experiment. March
+**Q.5 — Hardening & release** has additional obligations and is
+**not closed** by this individual result.
+
