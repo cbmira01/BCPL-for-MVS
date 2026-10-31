@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** **Q.5 — Hardening & release**  
 **Design:** Owner authorized proceeding with the bounded failed-OPEN rollback experiment.  
-**Status:** Corrected native BCPL compiler **JOB 8144 PASSED**; corrected rollback execution **Q5RBFIN JOB 8145 PASSED** with GO RC=0000, exact BCPL PASS and zero finalizer counters. Prior JOBs 8142–8143 remain historical S0C1 failures. JOB 8145's console additionally contains a final test-probe `P` from the **IFOX-confirmed QFPEX → Q5RPST fall-through**, not a second rollback. The original capture script failed its console spacing test; **formal offline checker acceptance and owner gate review remain pending**. March Q.5 remains IN PROGRESS.  
+**Status:** **Owner ACCEPTED the bounded failed-OPEN rollback experiment on 31 October 2026**, based on corrected compiler JOB 8144 and native Q5RBFIN JOB 8145 (all ten steps RC=0000, exact BCPL PASS, five zero finalizer counters). Prior JOBs 8142–8143 remain historical S0C1 failures. The additional final `P` is explained by the IFOX-proven test-only `QFPEX` → `Q5RPST` fall-through; earlier console harvester spacing failure remains recorded separately. See [formal owner acceptance](qsam-q5-failed-open-rollback-acceptance-20261031.md). March Q.5 remains IN PROGRESS.  
 **Authority:** GitHub `main`, native MVS 3.8J and actual JES/IFOX/IEWL/GO for target behavior.
 
 ## Design and limits
@@ -153,10 +153,5 @@ original strict
 [`check-q5-rollback-trace.py`](../bootstrap-toolchain/extensions/bcplqsam/check-q5-rollback-trace.py)
 remains unchanged for historical JOB 8143 interpretation.
 
-**Remaining gate:** run these new offline tests and checker against the
-preserved JOB 8145 workarea evidence and the **original** Hercules
-console and hardcopy logs; record the outcomes before asking the owner
-to accept the completed failed-OPEN rollback experiment. March
-**Q.5 — Hardening & release** has additional obligations and is
-**not closed** by this individual result.
+**Owner gate:** The owner accepted the bounded failed-OPEN rollback result on 31 October 2026. The offline checker and local workarea provenance status must be recorded independently from this acceptance; no fabricated offline test execution or rewrite of native evidence is implied. Returned-CLOSE quarantine, geometry/resource, packaging, clean-from-Git and full native regression remain separate Q.5 obligations. **Q.5 is not closed.**
 
