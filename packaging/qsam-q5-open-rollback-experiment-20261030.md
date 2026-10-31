@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** **Q.5 — Hardening & release**  
 **Design:** Owner authorized proceeding with the bounded failed-OPEN rollback experiment.  
-**Status:** Native compiler JOB 8141 **PASSED**; rollback JOB 8142 and follow-up trace JOB 8143 both **FAILED (GO ABEND S0C1)**. The test-only BCPL source now explicitly calls `FINISH`; the corrected program **has not been compiled or executed on MVS**. Q.5 failed-OPEN rollback remains **NOT ACCEPTED**.  
+**Status:** Native compiler JOBs 8141 and 8144 **PASSED**; rollback execution JOBs 8142 and 8143 both **FAILED (GO ABEND S0C1)**. The corrected BCPL test with explicit `FINISH` compiled under resident Cambridge in JOB 8144, but **has not been executed natively**. The new Q5RBFIN preparation tool is committed; no Q5RBFIN JES submission is authorized. Q.5 failed-OPEN rollback remains **NOT ACCEPTED**.  
 **Authority:** GitHub `main`, native MVS 3.8J and actual JES/IFOX/IEWL/GO for target behavior.
 
 ## Design and limits
@@ -90,3 +90,13 @@ Source review revealed the pre-correction [`test-q5-open-rollback.bcpl`](../boot
 The original JOB 8141 compiler output, JOB 8142 `Q5RBOPEN` deck, JOB 8143 `Q5RBTRC` deck and both one-shot attempt directories are **historical failed/diagnostic evidence**. Do **not** delete, edit, overwrite, or resubmit them.
 
 **Next gates (not yet authorized):** compile the **corrected** BCPL source into a **new filename**, with a new compiler JOB identity (proposed `Q5RFCOMP`); generate a **new** test-only IFOX/IEWL/GO deck and JOB identity (proposed `Q5RBFIN`), reusing the six-marker trace and one-shot stage-refusal logic without reusing the previous assembly image; verify the resulting source/output hashes and native GO/FINISH evidence. Both native jobs require distinct explicit owner authorizations. No production `bcplqsam.asm`, installed object or MVS dataset was changed by the correction.
+
+## Corrected compilation JOB 8144 and independent Q5RBFIN preparation
+
+The owner separately authorized **Q5RFCOMP JOB 8144**, compiling the corrected test-only source at Git revision `73a077cbcd829f52f8657bc4a5c2d8c708ba6de0`. The resident demoted Cambridge compiler reported COMP/ICINT19 RC=0000, SVCODE/IEBGENER RC=0000, JOB RESULT SUCCESS, execution **CODE=0** after **909851** cycles. The recovered **311-line** native System/370 assembler was saved as `workarea/bcplqsam-q5/rollback-finish-generated.asm`, SHA-256 **`f68e03ea2cdc8bc9a25a8f4df49c8c8cc1fd4b54056eed1a858be952b207d4ed`**.
+
+With the owner's subsequent authorization to implement preparation tooling, [`prepare-q5-rollback-finish.py`](../bootstrap-toolchain/extensions/bcplqsam/prepare-q5-rollback-finish.py) now produces the uniquely named **`Q5RBFIN`** deck at `workarea/bcplqsam-q5/q5rbfin.jcl` using the preserved source-controlled Q16FIN lifecycle campaign, the same six-marker ASMQ diagnostic overlay used by Q5RBTRC, and **only** the verified JOB 8144 assembler. It never reads the obsolete `rollback-generated.asm` as its compiler input or overwrites `q5rbopen.jcl` / `q5rbtrc.jcl`. It requires the matching preserved JOB 8144 compiler attempt metadata (source revision, source SHA, job number, zero step RCs and nonempty assembler with exact SHA/line count).
+
+`--check` generates a synthetic JCL deck, validates E/L/P/R/T/X trace markers and rejects three damaged identity variants, without calling MVS. [`test_prepare_q5_rollback_finish.py`](../bootstrap-toolchain/extensions/bcplqsam/test_prepare_q5_rollback_finish.py) adds isolated negative checks against missing `FINISH`, wrong compiler JOB, stale source digest, corrupted generated assembly, missing output and nonzero compile-step RC. `--prepare` writes `q5rbfin.jcl` **once**, exclusively, after provenance/JCL verification; it does not submit JES, install PDS members or alter the production BCPLQSAM object.
+
+**Outstanding gate:** operator executes the offline Python syntax, synthetic check, provenance unit tests and JCL preparation on a checkout fast-forwarded to the recorded `main` source revision. A new **Q5RBFIN JES submission** would require separate explicit owner authorization and a distinct one-attempt marker. JOBs 8141–8144, their decks and native logs remain preserved. The initial S0C1 root-cause hypothesis is not accepted until a real corrected GO/FINISH result is observed.
