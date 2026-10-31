@@ -129,7 +129,7 @@ def deck_rows(template: str, baseline: str, campaign, probe: str | None = None) 
         raise ValueError('ASMQ differs from controlled production source')
     rows = original.copy()
     rows[start:end] = instrument_asm(baseline, probe).splitlines()
-    if not rows[0].startswith('//Q16FIN JOB '):
+    if not re.match(r'^//Q16FIN +JOB\b', rows[0]):
         raise ValueError('unexpected original JOB card')
     rows[0] = '//Q5GEOM' + rows[0][8:]
     campaign.replace_one(rows, ' NAME Q16FIN(R)', ' NAME Q5GEOM(R)')
@@ -226,11 +226,11 @@ def check() -> None:
     lines[-1:-1] = ['* Q5G SYNTHETIC CG370'] * max(0, 100-len(lines))
     generated = '\n'.join(lines) + '\n'
     template = campaign.make_deck('finish', generated,
-        ["//Q16FIN JOB (BCPL),'Q5 GEOM CHECK',CLASS=A"],
+        ["//Q16FIN   JOB (BCPL),'Q5 GEOM CHECK',CLASS=A"],
         'HERC02.BCPL.BOOT.OBJ')
     source = BASELINE.read_text('ascii')
     out = instrument_deck(template, source, campaign)
-    if not out.startswith('//Q5GEOM JOB ') or 'Q5G:X:' not in out:
+    if not re.match(r'^//Q5GEOM +JOB\b', out) or 'Q5G:X:' not in out:
         raise ValueError('synthetic job identity/probe absent')
     for broken in (source.replace(OPEN, '', 1),
                    source.replace(STATE, '', 1),

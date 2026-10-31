@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -22,7 +23,7 @@ BASE = ('QSMDESC  CSECT\n' + g.OPEN + g.EXIT + g.STATE + 'QSMCTRL  CSECT\n')
 
 class TinyCampaign:
     def verify(self, rows, job, profile):
-        if profile != 'finish' or not rows[0].startswith('//'+job+' JOB '):
+        if profile != 'finish' or not re.match(r'^//' + re.escape(job) + r' +JOB\b', rows[0]):
             raise ValueError('invalid JOB')
         if rows.count(' NAME '+job+'(R)') != 1:
             raise ValueError('wrong link edit')
@@ -203,6 +204,21 @@ class GeometryOverlayTests(unittest.TestCase):
         code=(HERE/'prepare-q5-geometry-negative.py').read_text()
         self.assertNotIn('submit-jcl',code)
         self.assertIn('os.O_EXCL',code)
+
+
+    def test_33_deck_accepts_authenticated_padded_job_card(self):
+        # DSPAL authenticated_job_card right-pads Q16FIN to eight columns.
+        padded = template().replace('//Q16FIN JOB ', '//Q16FIN   JOB ', 1)
+        deck = self.deck(jcl=padded)
+        self.assertTrue(deck.startswith('//Q5GEOM   JOB '))
+        self.assertNotIn('Q16FIN', deck)
+
+    def test_34_deck_rejects_malformed_padded_job_card(self):
+        for invalid in ('//Q16FINX JOB ', '//Q16FIN,JOB ', '//Q16FIN\\tJOB '):
+            with self.subTest(header=invalid):
+                damaged = template().replace('//Q16FIN JOB ', invalid, 1)
+                with self.assertRaises(ValueError):
+                    self.deck(jcl=damaged)
 
 
 if __name__ == '__main__':
