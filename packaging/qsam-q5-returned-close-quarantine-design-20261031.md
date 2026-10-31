@@ -55,3 +55,50 @@ The assistant ran Python 3.13 `py_compile` on the local, byte-identical test-onl
 The owner authorized one `Q5RCCOMP` compilation on 31 October 2026 and returned the native JES evidence. **JOB 8146 / Q5RCCOMP PASSED:** `COMP` ICINT19 RC=0000, `SVCODE` IEBGENER RC=0000, `JOB RESULT: SUCCESS`, `HIGHEST RC: 0000`, `EXECUTION CYCLES = 918876, CODE = 0`, with marked recovered CODE stream. Native output has **309 lines** and SHA-256 `37607f62e4acc6d0ec2a4cf3ca8908e2516695d4622b73e4e5991d5c2755c1ac`; `workarea/bcplqsam-q5/q5rccomp-attempt/` retains the source/assembler hashes, summary and printer report. Compilation does **not** test native OPEN/CLOSE behavior.
 
 The owner has separately approved **one** `Q5RCCLOS` JES submission to test the temporary source-selected quarantine overlay. This approval does not authorize automatic retries, permanent dataset modification, or object promotion.
+
+## First Q5RCCLOS preparation attempt — pre-JES failure
+
+After the owner approved one Q5RCCLOS submission, the operator
+fast-forwarded to GitHub `5330c5325ff99548d41f4a1ce9fe3347706922ce`
+and ran the guarded one-shot shell. `prepare-q5-returned-close.py
+--prepare` rejected the 309-line recovered JOB 8146 compiler output:
+
+```
+Q5RCCLOS preparation FAILED: unexpected generated CG370 assembler format
+Preparation RC=1
+No JES submission. Preserve preparation evidence.
+Overall RC=1
+```
+
+**This is a pre-JES tooling failure, not a native QSAM failure.**
+No `q5rcclos.jcl`, `q5rcclos-attempt/`, or submitted Q5RCCLOS
+job was reported. The successful compiler JOB 8146 and its recovered
+assembler remain unmodified. The original local
+`workarea/bcplqsam-q5/q5rcclos-preparation.log` must not be
+overwritten by a retry.
+
+**Confirmed cause:** the preparation validator incorrectly required
+the text `ENTRY R0APP` in *raw* demoted Cambridge CG370 output.
+The established `application_source()` adapter in
+`bootstrap-toolchain/probes/r0-export-trailer-probe/make-job.py`
+correctly expects exactly one **unnamed CSECT** and adds
+`R0APP CSECT` plus `ENTRY R0APP` only when preparing IFOX cards.
+The recovered assembler's 309-line count is within the existing
+100–500-line limit. That incorrect pre-adapter check was removed.
+
+**Correction:** the source-controlled preparation now validates the
+raw compiler code by invoking that accepted adapter, still requires
+the adapted `ENTRY R0APP` exactly once, and retains the compiler
+summary/input SHA/output SHA, record-count, IFOX/JCL structural
+validation, and non-overwrite safeguards. Six unit cases were added
+for valid unnamed CG370 and malformed variants. The assistant ran
+**9 isolated local tests of the corrected guard/adapter contract:
+PASS**. The complete source-dependent integration test and true
+IFOX/IEWL/GO behavior remain distinct future evidence; do not claim
+them as passing on the strength of isolated tests.
+
+The existing **one** owner authorization for Q5RCCLOS submission
+was unused. A corrected recovery procedure may exercise it once
+after verifying its exact source revision and preserving the
+earlier preparation-failure log; no new compiler submission or
+permanent MVS dataset modification is necessary.
