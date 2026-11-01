@@ -499,245 +499,61 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 `BOOT_DEVOBJ` must remain empty. Do not use it to fill any gap in
 `BOOT_OBJ`.
 
-## Step 9 — Install optional System Extensions and run native production tests
+## Step 9 — Build System Extensions and run native regression
 
-Step 8 must have produced all eight production objects in `BOOT_OBJ`:
-six Core Runtime members, the empty default `BCPLREG`, and `BLIB`.
-The separate installation authorization required in Step 7 still applies;
-this section does not override it.
+### Install System Extensions
 
-### Canonical System Extension build and installation jobs
+1. Inspect the populated sources and object libraries:
 
-| Git-controlled JCL | `BOOT_JCL` member | Installed binary object |
-| --- | --- | --- |
-| `bootstrap-toolchain/jcl/bcpldemo.jcl` | `BCPLDEMO` | `EXT_OBJ(BCPLDEMO)` |
-| `bootstrap-toolchain/jcl/bcpltime.jcl` | `BCPLTIME` | `EXT_OBJ(BCPLTIME)` |
-| `bootstrap-toolchain/jcl/bcplqsam.jcl` | `BCPLQSAM` | `EXT_OBJ(BCPLQSAM)` |
+   ```sh
+   tools/datasets/dspal ls BOOT_OBJ
+   tools/datasets/dspal ls EXT_MAC
+   tools/datasets/dspal ls EXT_ASM
+   tools/datasets/dspal ls EXT_SOURCE
+   tools/datasets/dspal ls EXT_OBJ
+   ```
 
-These are production IFOX assembly, binary installation, readback and
-IEBCOMPR jobs, submitted in the listed order when separately authorized.
-Each job requires successful installation and comparison before the next;
-`dspal populate` alone does not assemble or install `EXT_OBJ`.
+   Require eight production members in `BOOT_OBJ`; `BCXPRE`,
+   `BCXCAT`, `BCXPOST` in `EXT_MAC`; `BCPLDEMO`, `BCPLTIME`,
+   `BCPLQSAM` in `EXT_ASM`; `DEMOHDR`, `TIMEHDR`, `QSAMHDR`
+   in `EXT_SOURCE`. On a fresh rebuild, `EXT_OBJ` is empty.
 
-### Install the optional extension object
+2. With separate authorization for permanent `EXT_OBJ` writes, submit
+   these jobs **one at a time**, in order:
 
-The first `dspal populate all` installed the Git-controlled text members
-in `EXT_MAC`, `EXT_ASM`, and `EXT_SOURCE`. It did **not** populate
-`EXT_OBJ`: binary object records must be assembled on MVS. Check the
-required members before installing:
+   ```sh
+   tools/datasets/dspal submit BOOT_JCL BCPLDEMO
+   tools/datasets/dspal submit BOOT_JCL BCPLTIME
+   tools/datasets/dspal submit BOOT_JCL BCPLQSAM
+   ```
 
-```sh
-tools/datasets/dspal ls EXT_MAC
-tools/datasets/dspal ls EXT_ASM
-tools/datasets/dspal ls EXT_SOURCE
-tools/datasets/dspal ls EXT_OBJ
-```
+   Before running the next job, examine its JES payload report.
+   Require all four steps `RC=0000`, IFOX severity zero, and a
+   successful `IEBCOMPR` read-back comparison:
 
-Require `BCXPRE`, `BCXCAT`, `BCXPOST`, `BCPLDEMO` (assembler source),
-and `DEMOHDR` in their respective text libraries. On a new clean-room
-build, `EXT_OBJ` must still be empty. The approved installation target
-is `HERC02.BCPL.EXT.OBJ(BCPLDEMO)` (FB80 relocatable object records);
-the tracked assembler input is `HERC02.BCPL.EXT.ASM(BCPLDEMO)`. Check
-the effective HLQ before using this site-specific installation deck.
+   | Job | Steps to check |
+   | --- | --- |
+   | `BCPLDEMO` | `ASMDEMO`, `PUTDEMO`, `READBACK`, `VERIFY` |
+   | `BCPLTIME` | `ASMTIME`, `PUTTIME`, `READBACK`, `VERIFY` |
+   | `BCPLQSAM` | `ASMQ`, `PUTQSAM`, `READBACK`, `VERIFY` |
 
-**Permanent PDS write:** Obtain the required owner authorization before
-running the install job. The job's only permanent write is the
-`PUTDEMO` installation of `EXT_OBJ(BCPLDEMO)`. The project treats
-optional package objects as disposable, reproducible build products;
-there is no backup or member-level rollback PDS. Consult
-[the R.5 installation design](runtime-extensions-r5-installation-design.md).
+3. Confirm all three installed objects:
 
-The tracked `bootstrap-toolchain/jcl/bcpldemo.jcl` is populated
-into `BOOT_JCL(BCPLDEMO)` by Step 2C. It contains a JCL job body,
-not a JOB card. `dspal submit` supplies the authenticated card from
-the local configuration, submits through JES INTRDR, and reports both
-the launcher and payload job numbers.
+   ```sh
+   tools/datasets/dspal ls EXT_OBJ
+   ```
 
-Once the permanent installation has been authorized, submit the
-resident job:
+   Require `BCPLDEMO`, `BCPLTIME`, and `BCPLQSAM`.
 
-```sh
-tools/datasets/dspal submit BOOT_JCL BCPLDEMO
-```
-
-The command waits for the payload result. It does not create or
-require a private host-side installation deck. Record the payload
-job number and inspect its detailed report.
-
-Use the reported payload job number with `tools/mvs/job-summary` and
-`tools/mvs/dump-report-for-job`. Verify all four steps in the real
-MVS report:
-
-| Step | Program | Required result |
-| --- | --- | --- |
-| `ASMDEMO` | IFOX00 | RC=0000; no assembler diagnostics |
-| `PUTDEMO` | IEBGENER | RC=0000; binary object member installed |
-| `READBACK` | IEBGENER | RC=0000; installed records copied back |
-| `VERIFY` | IEBCOMPR | RC=0000; all object records match |
-
-Then confirm the installed member:
-
-```sh
-tools/datasets/dspal ls EXT_OBJ
-```
-
-It must contain `BCPLDEMO`. Do not begin installed-mode regression
-if assembly, installation, read-back, comparison, or membership fails.
-Never transfer binary object records using `dspal put` or a text
-encoding conversion.
-
-### Add BCPLTIME in the current T.1 clean-room procedure
-
-The R.5 steps above remain required: `BCPLDEMO` first rebuilds
-`EXT_OBJ(BCPLDEMO)` and verifies its binary records. Under the
-**separately authorized** T.1 installation operation, the populated
-`BOOT_JCL(BCPLTIME)` then builds and installs **only**
-`EXT_OBJ(BCPLTIME)` from `EXT_ASM(BCPLTIME)`:
-
-```sh
-tools/datasets/dspal submit BOOT_JCL BCPLTIME
-```
-
-Review actual JES payload evidence for `ASMTIME`, `PUTTIME`,
-`READBACK` and `VERIFY`, each RC=0000, zero flagged IFOX statements,
-and matching IEBCOMPR records. Confirm both `EXT_OBJ(BCPLDEMO)`
-and `EXT_OBJ(BCPLTIME)` are present. The Git-populated production
-`BCXCAT` recognizes both packages; in a fresh clean-room rebuild,
-the catalog may precede binary installation, so do not run optional
-regressions until **both** installed objects verify.
-
-For an *incremental installation* in an existing accepted MVS
-environment, **do not use `populate EXT_ASM`**: it rewrites BCPLDEMO.
-Follow the [T.1 member-level installation procedure](bcpltime-t1-installation-design.md)
-to stage only the new text members, install/read back the time object,
-and update `BCXCAT` **last**. Neither sequence is authorized solely
-by the existence of this runbook; permanent PDS writes require explicit
-owner approval.
-
-### Add BCPLQSAM in the Q.5 clean-room procedure
-
-The manifest now populates `EXT_ASM(BCPLQSAM)` from the canonical
-Git source and `EXT_SOURCE(QSAMHDR)` from its public BCPL declaration.
-`BOOT_JCL(BCPLQSAM)` is a four-step *native MVS* installation/readback
-job. It is not executed merely by `dspal populate all`.
-
-First confirm all three Git-backed text libraries and the resident
-job bodies were populated from the **same pinned Git revision**.
-Require completed, accepted installations for `BCPLDEMO` and
-`BCPLTIME` before proceeding. Keep `BOOT_OBJ` and those two
-installed extension objects intact.
-
-**Separate MVS authorization is mandatory** before submitting the
-installation job; publishing this JCL is not permission to modify
-`EXT_OBJ(BCPLQSAM)`. After authorization:
-
-```sh
-tools/datasets/dspal submit BOOT_JCL BCPLQSAM
-```
-
-Inspect the payload JES report: `ASMQ`, `PUTQSAM`, `READBACK`,
-`VERIFY` each RC=0000; no IFOX flagged statements; successful
-`IEBCOMPR` equality. Confirm `EXT_OBJ(BCPLQSAM)` exists alongside
-`BCPLDEMO` and `BCPLTIME`. Do not proceed on an incomplete
-or failing install. The installed `BCXCAT` must emit
-`INCLUDE EXTLIB(BCPLQSAM)` only when BCPLQSAM is selected.
-
-For an incremental rebuild, **do not run `populate all`** or
-overwrite `EXT_MAC(BCXCAT)` before reviewing all installed objects.
-Stage only authorized individual members; install and read back
-`BCPLQSAM` first, then update `BCXCAT` last. As with T.1,
-a failed binary installation is recovered from pinned Git sources,
-not an assumed atomic PDS rollback.
-
-Separate installed-mode verification belongs to the
-[Q.5 release acceptance campaign](qsam-q5-installed-reconstruction-20261101.md),
-not the clean-room reconstruction procedure.
-
-### Run the complete production panel
-
-Check the production build and compiler-driver paths:
-
-```sh
-python3 tools/checks/check-native-production-build.py
-```
-
-This is a host-side check; it does not submit MVS jobs. In the
-core-panel cases 00–145, the production linker includes installed
-`BOOT_OBJ(BCPLRGS)` and the default empty `BOOT_OBJ(BCPLREG)`.
-The R.5 extension cases 146–158 instead assemble an application-specific
-registry and temporary registrar. They must not link a second
-`BCPLREG` table.
-
-Run the full production panel using the installed R.5/T.1 profile:
+### Run native regression
 
 ```sh
 tools/bootstrap/run-installed-r5-t1-regression 0 176
 ```
 
-This profile resolves the optional object and macro PDS names from the
-effective `dspal` manifest without persistent shell exports. It does
-**not** automatically resume the JES2 punch writer. That separate,
-explicitly opt-in operation is documented under
-[installed-extension regression](../tools/bootstrap/README.md#installed-r5-and-t1-regression-profile).
-
-The installed-profile wrapper invokes the existing production launcher,
-which selects the accepted `BOOT_OBJ` Core Runtime/Base Library objects (`BCPL_RUNTIME_PDS=1`,
-`BCPL_RUNTIME_LIBRARY=OBJ`, `BCPL_RUNTIME_CANDIDATE=0`).
-It does **not** select the historical `MIXED` or `DEVOBJ`
-profile. The extension settings independently direct cases **146–162**
-to the installed read-only `EXT_OBJ` and resident `EXT_MAC`
-libraries. The QSAM cases **163–176** still use their established
-source-selected candidate. The interpreter-hosted **demoted Cambridge
-compiler** compiles each BCPL client; IFOX, IEWL and GO run on MVS.
-The previously accepted R.5 panel covered 00–158 only; this updated
-T.1 procedure does not retroactively change the R.5 evidence.
-
-**Target result:**
-
-| Result | Count | Meaning |
-| --- | ---: | --- |
-| PASS | **176** | Every executed regression passes |
-| FAIL | **0** | No failed regressions |
-| SKIP | **1** | Case 083 needs source-only instrumentation |
-| TOTAL | **177** | Numbered cases 00 through 176 |
-
-These are the **Q.5 clean-room regression targets**, not results
-from this updated workflow. The previous **T.1** installed-mode
-results on 24 October 2026 were 162 PASS, 0 FAIL, 1 expected SKIP 083.
-That acceptance was an incremental package installation and native full-panel
-run, **not a separate fresh end-to-end clean-room reconstruction**.
-See the [T.1 closure](bcpltime-t1-closure-20261024.md). The historical
-R.5 00–158 result (158 PASS, 0 FAIL, 1 expected SKIP) remains documented
-in the independent R.5 closure.
-
-A few cases are special:
-
-| Case | Expected behavior |
-| --- | --- |
-| `048` | Compile-only test; successful compile counts as PASS |
-| `052` and `093` | In the production D6 profile, GO RC should be 0000 |
-| `124`–`145` | Dynamic-stream and fault/accounting cases use all-OBJ production objects |
-| `139`–`145` | Private test-only accounting does not replace production `BCPLIO` |
-| `146` and `158` | BCPLDEMO excluded from the linked module |
-| `147`–`157` | Installed BCPLDEMO selection, registration, and dispatcher behavior; BCPLTIME excluded |
-| `159` | BCPLTIME selected, BCPLDEMO absent |
-| `160`–`162` | Installed BCPLDEMO+BCPLTIME combined, reversed, and duplicate/upgrade selection |
-
-Each case saves its log in `workarea/native-regression/logs/`.
-Inspect the saved report for any failure, including the actual
-compiler, IFOX, IEWL MAP/XREF, and GO results. Re-run a single case,
-for example `tools/bootstrap/run-production-regression 147 --show-output`.
-Record the full-panel console summary and relevant JES job numbers.
-Do not use `set -e` in the interactive operator shell: a failing
-command should not terminate that shell.
-
-### Verify the full-panel evidence
-
-Keep the complete 00–176 regression summary, individual case logs,
-and relevant JES/IFOX/IEWL MAP/XREF/GO reports, especially for cases
-146–158. The regression harness checks saved job reports; it does not
-independently verify every physical MVS DD record. Do not claim a
-separate report audit was performed unless one was actually run.
+Expected: **176 PASS, 0 FAIL, 1 SKIP (083)**. Save the summary,
+case logs, and JES/IFOX/IEWL/GO evidence. Cases 163–176 still use
+source-selected BCPLQSAM, not the installed `EXT_OBJ(BCPLQSAM)`.
 
 ## Step 10 — Save what you proved
 
