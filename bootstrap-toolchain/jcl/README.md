@@ -20,8 +20,11 @@ job bodies must not contain credentials.
 | `cg370db.jcl` | `CG370DB` | Optional diagnostic compiler image |
 | `bldrgchk.jcl` | `BLDRGCHK` | Non-installing registrar source assembly checks |
 | `r5dinst.jcl` | `R5DINST` | Assemble, install, read back and compare `EXT_OBJ(BCPLDEMO)` |
+| `t1tinst.jcl` | `T1TINST` | Build and verify installed `EXT_OBJ(BCPLTIME)` |
+| `q5qinst.jcl` | `Q5QINST` | Build and verify installed `EXT_OBJ(BCPLQSAM)` |
+| `q5qvfy.jcl` | `Q5QVFY` | Native selected/unselected installed-library IEWL/GO verification |
 
-`tools/datasets/dspal populate BOOT_JCL` installs the twelve
+`tools/datasets/dspal populate BOOT_JCL` installs the fifteen
 tracked FB80 JCL *bodies*; it does not submit any of them.
 `dspal submit BOOT_JCL <MEMBER>` uses the configured MVS batch
 identity and JES internal reader, reports both launcher and payload
@@ -44,12 +47,32 @@ verifies the binary records by read-back and IEBCOMPR. It does
 installation requires the owner's authorization. The operation is
 not atomic; inspect all four payload return codes before acceptance.
 
+`T1TINST` independently installs `EXT_OBJ(BCPLTIME)`; `Q5QINST`
+independently installs `EXT_OBJ(BCPLQSAM)` from the Git-populated
+`EXT_ASM(BCPLQSAM)` source. Each uses IFOX, IEBGENER, an independent
+readback and IEBCOMPR; no Core Runtime member is overwritten.
+`Q5QVFY` is a separate, read-only installed-mode BCPL/IFOX/IEWL/GO
+campaign with one `BCXREQ BCPLQSAM` client and one excluded client.
+It does not install the package or substitute for the full regression.
+Do not submit either Q.5 deck without separate MVS authorization.
+
 After permission and successful PDS population, the documented
 R.5 installation command is:
 
 ```sh
 tools/datasets/dspal submit BOOT_JCL R5DINST
 ```
+
+Q.5 installation and verification jobs, *after separate MVS authorization*, are:
+
+```sh
+tools/datasets/dspal submit BOOT_JCL Q5QINST
+tools/datasets/dspal submit BOOT_JCL Q5QVFY
+```
+
+Run `Q5QVFY` only after `Q5QINST` has produced four RC=0000
+steps and `EXT_OBJ` readback/comparison has been accepted. Inspect
+SLKED/NLKED IEWL MAP/XREF and SGO/NGO output, not just step RCs.
 
 See the [clean-room reconstruction runbook](../../packaging/clean-room-mvs-reconstruction.md)
 and [R.5 installation design](../../packaging/runtime-extensions-r5-installation-design.md)

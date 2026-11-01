@@ -1,0 +1,99 @@
+# Milestone QSAM — Q.5 installed reconstruction and verification
+
+**Status (1 November 2026): Git source/decks prepared, not installed or MVS-tested by this change.**  
+**Authority:** [Milestone QSAM](milestone-qsam.md), [Q.5 release campaign](qsam-q5-release-packaging-campaign-20261031.md), [clean-room runbook](clean-room-mvs-reconstruction.md).  
+**Scope:** optional **BCPLQSAM** System Extension, not a Core Runtime replacement or a compiler change.
+
+## What a clean rebuild reproduces
+
+The `config/dspal.yaml` manifest maps `EXT_ASM(BCPLQSAM)` to
+`bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm`,
+`EXT_SOURCE(QSAMHDR)` to the public `bcplqsam.h`, and
+`BOOT_JCL(Q5QINST)` / `BOOT_JCL(Q5QVFY)` to tracked native JCL.
+`EXT_MAC(BCXCAT)` recognizes `BCPLDEMO`, `BCPLTIME`, and `BCPLQSAM`
+with corresponding member-qualified `EXTLIB` requests. The public
+entry remains `QSAMSVC` at **G!200**; the BCEX v1 descriptor spans
+`QSMBEG`/`QSMEND`. The `EXT_OBJ` binary PDS is deliberately
+`populate: false`: its objects must be assembled on MVS.
+
+The Git-sourced text population must precede the native build. The
+read-only installed-object consumer test must follow successful
+installation and readback. Old accepted `BOOT_OBJ` members and
+`EXT_OBJ(BCPLDEMO)`/`EXT_OBJ(BCPLTIME)` must survive unchanged.
+
+## Native installation job — Q5QINST
+
+`bootstrap-toolchain/jcl/q5qinst.jcl` is a **JOB-body deck** for
+`tools/datasets/dspal submit BOOT_JCL Q5QINST`. dspal supplies the
+site's authenticated JOB card; no credentials belong in Git.
+
+| Step | Program | Acceptance |
+| --- | --- | --- |
+| ASMQ | IFOX00 | Assembles resident `EXT_ASM(BCPLQSAM)` to temporary FB80 object; RC=0000, severity 0 |
+| PUTQSAM | IEBGENER | Only permanent write: `EXT_OBJ(BCPLQSAM)`; RC=0000 |
+| READBACK | IEBGENER | Copies installed binary member into temporary FB80 dataset; RC=0000 |
+| VERIFY | IEBCOMPR | Original vs readback FB80 object records identical; RC=0000 |
+
+This update **does not authorize these permanent MVS writes**. Do
+not submit without separate permission, especially during an
+existing incremental installation. If IFOX or copy/compare fails,
+stop; do not publish an installed-mode acceptance claim. A PDS
+member replacement is not atomic. Recovery is a fresh, authorized
+rebuild from a pinned Git revision; do not overwrite unrelated
+packages while repairing BCPLQSAM.
+
+## Native installed-mode link/absence job — Q5QVFY
+
+`bootstrap-toolchain/jcl/q5qvfy.jcl` is a separate **read-only**
+installed-mode campaign run after the approved installation. It
+runs ten steps: `SCOMP`, `NCOMP`, `SASMA`, `NASMA`, `SASMG`,
+`SLKED`, `SGO`, `NASMG`, `NLKED`, `NGO`.
+
+The resident compiler `CAMBCOMP` (under `ICINT19`) produces native
+assembler for the accepted BCPL 163 QUERY client and the BCPL 146
+unselected client. IFOX assembles those applications and distinct
+BCPLREG tables; the registrar source is read **from installed
+`EXT_MAC(BCXPRE/BCXCAT/BCXPOST)`**. IEWL reads accepted
+`BOOT_OBJ` and, for the selected link only, the **installed read-only
+`EXT_OBJ`**. All new object/load datasets are temporary.
+
+Acceptance requires all ten steps RC=0000 and the following **actual
+MVS output**, not merely the command's return code:
+
+- `SLKED` MAP/XREF: BCPLQSAM via `INCLUDE EXTLIB(BCPLQSAM)`,
+  `QSMDESC`/`QSMDISP`, and `QSMBEG`/`QSMEND`; native
+  `SGO` prints exactly `BCPLQSAM Q4 QUERY CARRIAGE PASS`.
+- `NLKED` MAP/XREF: no BCPLQSAM INCLUDE, QSAM CSECT or G!200
+  registration; native `NGO` prints exactly `R5 EXT 146 PASS`.
+- No unexpected IEWL warning, unresolved external, IFOX error, abend,
+  or permanent PDS write.
+
+Use `tools/mvs/dump-report-for-job <JOBNO>` to examine the real
+JES payload report. Record the source Git revision, job number,
+all step RCs, IFOX severity, IEWL maps and standalone PASS records.
+A successful `Q5QVFY` is **installed-mode** evidence; it does not
+turn the separate earlier `Q5PKG` temporary-PDS proof into an
+installed-object proof.
+
+## Fresh clean-room and regression gate
+
+During a *separately authorized* destructive reconstruction, run
+the established R.5/T.1 object builds, then Q5QINST and Q5QVFY
+before the final production native **00–176** panel. Expected
+full-panel result is **176 PASS / 0 FAIL / 1 documented SKIP 083**.
+
+The current numbered QSAM regression cases 163–176 exercise a
+source-selected temporary BCPLQSAM candidate, even when BCPLDEMO
+and BCPLTIME use installed-mode harness settings. Thus a green
+00–176 panel does **not** by itself establish installed BCPLQSAM
+linkage; the separate `Q5QVFY` MVS job establishes that boundary.
+
+The previously reported `Q5PKG` JOB **8155** completed its 17
+temporary packaging/link/GO steps RC=0000. The owner reported a
+separate full **00–176** panel at 176 PASS/0 FAIL/1 SKIP on the
+prior `main` revision `72a5da31`. These are valid earlier campaign
+evidence, **not** proof of the newly staged installed-mode workflow.
+
+No Q.5 closure or permanent object promotion is inferred from
+the preparation of these decks. Record a deliberate installed-object
+disposition and obtain explicit owner acceptance after MVS evidence.

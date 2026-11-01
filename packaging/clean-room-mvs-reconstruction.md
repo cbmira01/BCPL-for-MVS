@@ -98,7 +98,7 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 6 | Build and test interpreted `CAMBCOMP` | Bootstrap compiler produces System/370 assembler |
 | 7 | Assemble six Core Runtime modules and empty BCPLREG | Seven members in `BOOT_OBJ` |
 | 8 | Compile and assemble `BLIB` | Eight members in `BOOT_OBJ` |
-| 9 | Install `BCPLDEMO`; run native regression 00–158 | 158 PASS, 0 FAIL, 1 expected SKIP |
+| 9 | Install BCPLDEMO, BCPLTIME and BCPLQSAM; verify installed-mode links; run 00–176 | 176 PASS, 0 FAIL, 1 expected SKIP 083 (new gate) |
 | 10 | Save the evidence | Results and limits recorded |
 
 > **Acceptance history:** A previous clean-room rebuild was accepted
@@ -214,13 +214,13 @@ tools/datasets/dspal ls EXT_SOURCE
 tools/datasets/dspal ls EXT_OBJ
 ```
 
-**R.5 and T.1 extension check:** `BOOT_JCL` contains both `R5DINST`
-and `T1TINST`; `EXT_MAC` contains `BCXPRE`, `BCXCAT`, and
-`BCXPOST`; `EXT_ASM` contains `BCPLDEMO` and `BCPLTIME`;
-`EXT_SOURCE` contains `DEMOHDR` and `TIMEHDR`. On a fresh
-clean-room build `EXT_OBJ` must initially be empty: its binary
-`BCPLDEMO` and `BCPLTIME` members are separately assembled and
-installed on MVS, never by text-oriented `dspal populate all`.
+**R.5, T.1 and Q.5 extension check:** `BOOT_JCL` includes `R5DINST`,
+`T1TINST`, `Q5QINST` and `Q5QVFY`; `EXT_MAC` contains `BCXPRE`,
+`BCXCAT`, and `BCXPOST`; `EXT_ASM` contains `BCPLDEMO`,
+`BCPLTIME` and `BCPLQSAM`; `EXT_SOURCE` contains `DEMOHDR`,
+`TIMEHDR` and `QSAMHDR`. On a fresh clean-room build `EXT_OBJ`
+must initially be empty: all three binary objects are separately
+assembled and installed on MVS, never by `dspal populate all`.
 
 **The first population is meant to end with RC=2.** That does **not** mean
 it installed nothing. At this point, the 11 demoted Cambridge sources and
@@ -486,7 +486,7 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 `BOOT_DEVOBJ` must remain empty. Do not use it to fill any gap in
 `BOOT_OBJ`.
 
-## Step 9 — Install BCPLDEMO and run the native production tests
+## Step 9 — Install optional System Extensions and run native production tests
 
 Step 8 must have produced all eight production objects in `BOOT_OBJ`:
 six Core Runtime members, the empty default `BCPLREG`, and `BLIB`.
@@ -588,6 +588,61 @@ and update `BCXCAT` **last**. Neither sequence is authorized solely
 by the existence of this runbook; permanent PDS writes require explicit
 owner approval.
 
+### Add BCPLQSAM in the Q.5 clean-room procedure
+
+The manifest now populates `EXT_ASM(BCPLQSAM)` from the canonical
+Git source and `EXT_SOURCE(QSAMHDR)` from its public BCPL declaration.
+`BOOT_JCL(Q5QINST)` is a four-step *native MVS* installation/readback
+job; `BOOT_JCL(Q5QVFY)` is a ten-step installed-mode selected/
+unselected compiler/IFOX/IEWL/GO verification job. Neither is
+executed merely by `dspal populate all`.
+
+First confirm all three Git-backed text libraries and the resident
+job bodies were populated from the **same pinned Git revision**.
+Require completed, accepted installations for `BCPLDEMO` and
+`BCPLTIME` before proceeding. Keep `BOOT_OBJ` and those two
+installed extension objects intact.
+
+**Separate MVS authorization is mandatory** before submitting the
+installation job; publishing this JCL is not permission to modify
+`EXT_OBJ(BCPLQSAM)`. After authorization:
+
+```sh
+tools/datasets/dspal submit BOOT_JCL Q5QINST
+```
+
+Inspect the payload JES report: `ASMQ`, `PUTQSAM`, `READBACK`,
+`VERIFY` each RC=0000; no IFOX flagged statements; successful
+`IEBCOMPR` equality. Confirm `EXT_OBJ(BCPLQSAM)` exists alongside
+`BCPLDEMO` and `BCPLTIME`. Do not proceed on an incomplete
+or failing install. The installed `BCXCAT` must emit
+`INCLUDE EXTLIB(BCPLQSAM)` only when BCPLQSAM is selected.
+
+After **separate JES submission authorization**, run the native
+installed-mode proof:
+
+```sh
+tools/datasets/dspal submit BOOT_JCL Q5QVFY
+```
+
+`Q5QVFY` does not write permanent PDS members. Require ten
+RC=0000 steps; `SLKED` must include the installed BCPLQSAM
+descriptor/dispatcher with `QSAMSVC` at G!200 and `SGO`
+must print `BCPLQSAM Q4 QUERY CARRIAGE PASS`. `NLKED` must
+**exclude** BCPLQSAM and `NGO` must print `R5 EXT 146 PASS`.
+Check IEWL MAP/XREF and real SYSOUT, not just the job's overall RC.
+
+For an incremental rebuild, **do not run `populate all`** or
+overwrite `EXT_MAC(BCXCAT)` before reviewing all installed objects.
+Stage only authorized individual members; install and read back
+`BCPLQSAM` first, then update `BCXCAT` last. As with T.1,
+a failed binary installation is recovered from pinned Git sources,
+not an assumed atomic PDS rollback.
+
+[Q.5 installed reconstruction and verification design](qsam-q5-installed-reconstruction-20261101.md)
+defines the exact gate and distinguishes temporary-PDS Q5PKG
+evidence from installed-mode MVS proof.
+
 ### Run the complete production panel
 
 Check the production build and compiler-driver paths:
@@ -614,7 +669,7 @@ export BCPL_T1_EXTENSION_MODE=installed
 export BCPL_T1_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ
 export BCPL_T1_MACRO_DSN=HERC02.BCPL.EXT.MAC
 
-tools/bootstrap/run-production-regression 0 162
+Q4_PUNCH_RESUME=1 tools/bootstrap/run-production-regression 0 176
 ```
 
 The production launcher selects the accepted `BOOT_OBJ` Core
@@ -623,7 +678,9 @@ Runtime/Base Library objects (`BCPL_RUNTIME_PDS=1`,
 It does **not** select the historical `MIXED` or `DEVOBJ`
 profile. The extension settings independently direct cases **146–162**
 to the installed read-only `EXT_OBJ` and resident `EXT_MAC`
-libraries. The interpreter-hosted **demoted Cambridge compiler**
+libraries. The QSAM cases **163–176** still use their established
+source-selected candidate; independent installed-object proof is
+provided by `Q5QVFY`. The interpreter-hosted **demoted Cambridge compiler**
 compiles each BCPL client; IFOX, IEWL and GO run on MVS.
 The previously accepted R.5 panel covered 00–158 only; this updated
 T.1 procedure does not retroactively change the R.5 evidence.
@@ -632,13 +689,14 @@ T.1 procedure does not retroactively change the R.5 evidence.
 
 | Result | Count | Meaning |
 | --- | ---: | --- |
-| PASS | **162** | Every executed regression passes |
+| PASS | **176** | Every executed regression passes |
 | FAIL | **0** | No failed regressions |
 | SKIP | **1** | Case 083 needs source-only instrumentation |
-| TOTAL | **163** | Numbered cases 00 through 162 |
+| TOTAL | **177** | Numbered cases 00 through 176 |
 
-These figures are the **T.1 acceptance target and achieved installed-mode
-results** on 24 October 2026: 162 PASS, 0 FAIL, 1 expected SKIP 083.
+These are the **Q.5 clean-room regression targets**, not results
+from this updated workflow. The previous **T.1** installed-mode
+results on 24 October 2026 were 162 PASS, 0 FAIL, 1 expected SKIP 083.
 That acceptance was an incremental package installation and native full-panel
 run, **not a separate fresh end-to-end clean-room reconstruction**.
 See the [T.1 closure](bcpltime-t1-closure-20261024.md). The historical
@@ -668,7 +726,7 @@ command should not terminate that shell.
 
 ### Verify the full-panel evidence
 
-Keep the complete 00–162 regression summary, individual case logs,
+Keep the complete 00–176 regression summary, individual case logs,
 and relevant JES/IFOX/IEWL MAP/XREF/GO reports, especially for cases
 146–158. The regression harness checks saved job reports; it does not
 independently verify every physical MVS DD record. Do not claim a
@@ -690,8 +748,8 @@ PDS members, and jobs were used.
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
-| Optional extension | `BOOT_JCL(R5DINST)` and `BOOT_JCL(T1TINST)`; source/header/catalog inventory; separate `EXT_OBJ(BCPLDEMO)` and `EXT_OBJ(BCPLTIME)` IFOX/install/read-back/comparison receipts; selected/absent IEWL MAP/XREF evidence |
-| Native tests | Full installed-mode 00–162 result (accepted 24 October 2026: 162 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
+| Optional extension | `BOOT_JCL(R5DINST)`, `T1TINST`, `Q5QINST`, `Q5QVFY`; all source/header/catalog members; separate binary install/read-back/compare receipts for `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM`; selected/absent IEWL MAP/XREF evidence |
+| Native tests | Fresh 00–176 result (target 176 PASS, 0 FAIL, expected SKIP 083) plus separate `Q5QVFY` installed-mode native PASS records; case logs and JES job numbers |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;

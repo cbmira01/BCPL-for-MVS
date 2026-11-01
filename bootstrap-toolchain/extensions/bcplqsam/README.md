@@ -1,5 +1,14 @@
 # BCPLQSAM — source-controlled System Extension candidate
 
+**Q.5 update (1 November 2026):** Optional-extension installation and
+read-only installed-link verification JCL are prepared for the
+manifest-managed `EXT_ASM`, `EXT_SOURCE`, `EXT_MAC`, and `EXT_OBJ`
+libraries. The [Q.5 installed reconstruction design](../../../packaging/qsam-q5-installed-reconstruction-20261101.md)
+sets the MVS acceptance gates. `Q5PKG` JOB 8155 and the owner-run
+00–176 panel passed, but this source update has not installed BCPLQSAM
+into `EXT_OBJ` or completed Q.5 closure. The dated Q.4 material below
+is retained as historical evidence.
+
 **Current status (30 October 2026): Q.4 — SYSOUT devices CLOSED; Q.5 — Hardening & release NOT STARTED.** [Q.4 closure](../../../packaging/qsam-q4-closure-20261030.md) accepts the owner's native focused 163–176 (14 PASS / 0 FAIL / 0 SKIP, RC=0) and full production 00–176 (176 PASS / 0 FAIL / 1 expected SKIP 083, RC=0) panels on GitHub `main` `51ed022e`. Numbered FB80 SYSOUT punch (175), FBA133 ASA printer (176) and QUERY/BCPLDEMO capability cases (163/170, `info!5=7`) passed on MVS. The earlier paused-JES2-writer incident is preserved. BCPLQSAM remains an optional **source-mode** System Extension; no permanent MVS object was installed or promoted. The Q.5 hardening/release gate requires separate review. Older Q.1–Q.3 material below remains historical.
 
 ## Q.2 consolidated F/FB native campaign candidate

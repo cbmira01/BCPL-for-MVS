@@ -476,6 +476,8 @@ datasets:
       BLDRGCHK: bootstrap-toolchain/jcl/bldrgchk.jcl
       R5DINST: bootstrap-toolchain/jcl/r5dinst.jcl
       T1TINST: bootstrap-toolchain/jcl/t1tinst.jcl
+      Q5QINST: bootstrap-toolchain/jcl/q5qinst.jcl
+      Q5QVFY: bootstrap-toolchain/jcl/q5qvfy.jcl
 
   BOOT_OBJ:
     dsn: BCPL.BOOT.OBJ
@@ -551,6 +553,7 @@ datasets:
     members:
       BCPLDEMO: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm
       BCPLTIME: bootstrap-toolchain/extensions/bcpltime/bcpltime.asm
+      BCPLQSAM: bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm
 
   EXT_SOURCE:
     dsn: BCPL.EXT.SOURCE
@@ -567,4 +570,5 @@ datasets:
     members:
       DEMOHDR: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.h
       TIMEHDR: bootstrap-toolchain/extensions/bcpltime/bcpltime.h
+      QSAMHDR: bootstrap-toolchain/extensions/bcplqsam/bcplqsam.h
 
