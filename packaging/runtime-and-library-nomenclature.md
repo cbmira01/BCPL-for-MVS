@@ -129,7 +129,7 @@ GLOBAL $( TIMESVC:201 $)          // accepted BCPLTIME public global
 MANIFEST $( T_QUERY=0; T_NOW=1; T_ADD=2 $)
 ```
 
-The [approved shared QUERY v1 contract](runtime-extensions-r0-query-abi-decision-20261021.md) returns a **caller-owned numeric capability descriptor**, not a free-form string or unmanaged function pointer. Its six-word prefix contains format version, package API major/minor, required word count, operation bitmap and package-specific flags. Calls use `PACKAGE_SVC(0, info, capacity_words)` and the size inquiry `PACKAGE_SVC(0,0,0)`; a missing or unregistered extension **cannot** be queried safely. Cross-package MVS evidence is pending.
+The [approved shared QUERY v1 contract](archive/runtime-extensions/runtime-extensions-r0-query-abi-decision-20261021.md) returns a **caller-owned numeric capability descriptor**, not a free-form string or unmanaged function pointer. Its six-word prefix contains format version, package API major/minor, required word count, operation bitmap and package-specific flags. Calls use `PACKAGE_SVC(0, info, capacity_words)` and the size inquiry `PACKAGE_SVC(0,0,0)`; a missing or unregistered extension **cannot** be queried safely. Cross-package MVS evidence is pending.
 
 The **Global Number Registry** reserves the package's dispatcher slot; a **package API registry/header** defines stable opcode numbers. Generated BCPL headers and assembler definitions should derive from the authoritative assignments rather than silently diverging. Private implementations and optional future source-level helper wrappers do not require new global slots. User/Site Libraries use the same arrangement with a documented local-number and collision policy.
 

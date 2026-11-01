@@ -36,7 +36,7 @@ Expected failures are **success conditions only for their named case**.
 They must not skip later MVS steps. Host preflight does not prove MVS
 execution. No PDS installation or R.2 closure is implied by a PASS.
 
-See [consolidated acceptance design](../../../packaging/runtime-extensions-r2-consolidated-acceptance-design-20261022.md).
+See [consolidated acceptance design](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r2-consolidated-acceptance-design-20261022.md).
 
 ## JOB 3086 JCL rejection and correction (22 October 2026)
 

@@ -9,7 +9,7 @@
 
 ## Formal decision
 
-**R.4 is CLOSED.** Its assignment was an investigation and technical recommendation, not a mandate to implement a replacement registrar. A negative conclusion regarding unrestricted IEWL-only discovery is a valid outcome under the original [R.4 investigation gate](runtime-extensions-r4-investigation.md).
+**R.4 is CLOSED.** Its assignment was an investigation and technical recommendation, not a mandate to implement a replacement registrar. A negative conclusion regarding unrestricted IEWL-only discovery is a valid outcome under the original [R.4 investigation gate](archive/runtime-extensions/runtime-extensions-r4-investigation.md).
 
 The owner accepts the following conclusions:
 
@@ -42,9 +42,9 @@ Nonzero GO return codes in these standalone profiles measure a successful BCRG b
 In JOB 3722 the linker MAP/XREF included `BCPLMAIN`, `RGINIT`, `DMODESC`, `DMODISP`, and the 44-byte `BCPLREG` object. IFOX-generated BCRG references to `DMOBEG`/`DMOEND` relocated correctly, and the compiled BCPL application used the registered dispatcher. The zero-entry correction was made in test JCL, without changing the compiler's generated code.
 
 Primary retained evidence:
-- [JOB 3720 macro/PUNCH/IEWL report review](runtime-extensions-r4-job-3720-evidence-20261023.md)
-- [JOB 3721 failure and analysis](runtime-extensions-r4-job-3721-evidence-20261023.md)
-- [JOB 3722 compiled-BCPL integration acceptance](runtime-extensions-r4-job-3722-evidence-20261023.md)
+- [JOB 3720 macro/PUNCH/IEWL report review](archive/runtime-extensions/runtime-extensions-r4-job-3720-evidence-20261023.md)
+- [JOB 3721 failure and analysis](archive/runtime-extensions/runtime-extensions-r4-job-3721-evidence-20261023.md)
+- [JOB 3722 compiled-BCPL integration acceptance](archive/runtime-extensions/runtime-extensions-r4-job-3722-evidence-20261023.md)
 - [MVS-only experimental source and run instructions](../bootstrap-toolchain/probes/r4-bcx-macros/README.md)
 
 ## Technical limits and future ownership

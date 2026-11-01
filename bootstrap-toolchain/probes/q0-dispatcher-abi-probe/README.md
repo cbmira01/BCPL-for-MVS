@@ -88,7 +88,7 @@ assembled dispatcher, executed on MVS 3.8J/TK5, and printed `42`.
 - IEWL MAP resolved `Q0DISP`, application and six accepted BOOT_OBJ objects
 - `42` was printed after the BCPL assertions passed
 
-See [the retained evidence](../../../packaging/qsam-q0-dispatcher-abi-evidence-20261019.md).
+See [the retained evidence](../../../packaging/archive/qsam/qsam-q0-dispatcher-abi-evidence-20261019.md).
 This is **not** proof of real QSAM calls or Runtime Extensions R.0
 registration. The program intentionally uses a test-only generated-trailer
 patch; no production registrar or accepted runtime source was altered.

@@ -52,4 +52,4 @@ All newly assembled objects and linked loads are temporary. `BOOT_OBJ` is read-o
 
 GETMAIN refusal before OPEN takes a checked private-stage rollback path. This does **not** establish generic CLOSE-error recovery: the returned-CLOSE uncertain-ownership policy remains approved and QSAM exceptional outcomes must not be misrepresented as ordinary returns. Public INFO, QUERY, handles, pending READ, and all production lifecycle tests are allocated to existing implementation marches after Q.0 gate acceptance.
 
-See [the consolidated gate matrix](../../../packaging/qsam-q0-consolidated-gate-review.md). A passing probe is **not** approval to close Q.0 or begin Q.1.
+See [the consolidated gate matrix](../../../packaging/archive/qsam/qsam-q0-consolidated-gate-review.md). A passing probe is **not** approval to close Q.0 or begin Q.1.

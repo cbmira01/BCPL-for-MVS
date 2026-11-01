@@ -3,7 +3,7 @@
 **March:** R.0 — Evidence and contract (**open**). Next march R.1 — Generic
 registration foundation (**not started**). **Status: actual MVS JOB 2220 PASS**, including IEWL
 MAP/XREF proof of the temporary BLIB owner. See the
-[accepted JOB 2220 evidence](../../../packaging/runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md). Owner approved this specific isolated fixture on
+[accepted JOB 2220 evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-g76-noexport-job-2220-evidence-20261021.md). Owner approved this specific isolated fixture on
 21 October 2026 after the [effective ownership follow-up]
 (../../../packaging/runtime-extensions-r0-effective-owner-followup-20261021.md).
 

@@ -58,7 +58,7 @@ until the owner supplies the actual JES output.
 
 ## Observed execution
 
-See [MVS JOBs 2178/2179 evidence](../../../packaging/qsam-q0-post-open-info-evidence-20261020.md).
+See [MVS JOBs 2178/2179 evidence](../../../packaging/archive/qsam/qsam-q0-post-open-info-evidence-20261020.md).
 The two QOUT markers appeared; the owner's working tree stayed clean.
 The tests do not implement public QSINFO or approve a record-size
 ceiling. Follow-up test-only jobs are in the

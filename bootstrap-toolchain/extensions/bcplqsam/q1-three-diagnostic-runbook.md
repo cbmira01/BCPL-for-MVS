@@ -207,7 +207,7 @@ all ten steps RC=0000, three preflights
 `R3=00000080 R5=00000400 R6=00000400`, OPEN handles 1–3,
 successful INFO/CLOSE and expected stale-handle error, with
 `BCPLQSAM Q1 THREE DD PASS`. See the
-[authoritative JOB 6620 evidence](../../../packaging/qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md)
+[authoritative JOB 6620 evidence](../../../packaging/archive/qsam/qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md)
 and locally preserved `q13dd-go-dcb-6620-{summary,report}.txt`
 in ignored `workarea/bcplqsam-q1/`. The normal JCL generator
 and `bcplqsam.asm` did not change. This does **not** prove support

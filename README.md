@@ -61,11 +61,11 @@ Read the [formal BCPLIO milestone sign-off]
 (packaging/maintenance/Handoff-repository-cleanup-regression-runner.md).
 
 **Start here:** [Clean-room reconstruction of the entire MVS PDS
-environment](packaging/clean-room-mvs-reconstruction.md). The consolidated
+environment](docs/Rebuild-BCPL-for-MVS-from-source.md). The consolidated
 procedure includes source demotion, managed PDS purge/init/population,
 ICINT19 rebuilding, the MR10 interpreter suites, resident compiler
 reconstruction, runtime objects, and the native regression panel. For
-the previously observed acceptance evidence see [M3 reconstruction acceptance](packaging/m3-native-reconstruction-acceptance-20261015.md).
+the previously observed acceptance evidence see [M3 reconstruction acceptance](packaging/archive/core-runtime/m3-native-reconstruction-acceptance-20261015.md).
 
 ## Repository organization
 

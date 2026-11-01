@@ -4,7 +4,7 @@
 **Milestone disposition:** **Milestone Runtime Extensions CLOSED.**  
 **Date:** 22 October 2026  
 **Acceptance candidate Git revision:** [`a24606328810187c85f9e680eb82d7380b53c55c`](https://github.com/cbmira01/BCPL-for-MVS/commit/a24606328810187c85f9e680eb82d7380b53c55c)  
-**Review/evidence record:** [R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)  
+**Review/evidence record:** [R.3 acceptance and closure review](archive/runtime-extensions/runtime-extensions-r3-acceptance-review-20261022.md)  
 **Disposition:** Accepted for the *source-distributed, temporary-link registration foundation* and its reproducible test procedure; **not** accepted for persistent MVS object installation.
 
 ## Owner approval
@@ -105,9 +105,9 @@ by this closure.
 ## Related source records
 
 - [Official Milestone Runtime Extensions](milestone-runtime-extensions.md)
-- [R.3 acceptance and closure review](runtime-extensions-r3-acceptance-review-20261022.md)
-- [R.3 acceptance operator workflow](runtime-extensions-r3-acceptance-workflow.md)
-- [R.3 linkage and declaration guide](runtime-extensions-r3-linkage-guide.md)
+- [R.3 acceptance and closure review](archive/runtime-extensions/runtime-extensions-r3-acceptance-review-20261022.md)
+- [R.3 acceptance operator workflow](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r3-acceptance-workflow.md)
+- [R.3 linkage and declaration guide](archive/runtime-extensions/runtime-extensions-r3-linkage-guide.md)
 - [R.0 owner-approved ABI decisions](runtime-extensions-r0-owner-abi-decisions.md)
 - [R.1 closure](runtime-extensions-r1-closure-20261022.md)
 - [R.2 closure](runtime-extensions-r2-closure-20261022.md)

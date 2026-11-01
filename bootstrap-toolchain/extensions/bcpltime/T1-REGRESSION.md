@@ -71,5 +71,5 @@ test. Individual payload JOB IDs and every raw per-case report were
 not independently audited in the supplied final-panel transcript.
 
 See the [T.1 owner closure](../../../packaging/bcpltime-t1-closure-20261024.md)
-and [installation/recovery procedure](../../../packaging/bcpltime-t1-installation-design.md).
+and [installation/recovery procedure](../../../packaging/archive/bootstrap/bcpltime-t1-installation-design.md).
 **Milestone BCPLTIME is CLOSED.**

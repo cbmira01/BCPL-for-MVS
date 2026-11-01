@@ -20,7 +20,7 @@ Extensions code was implemented.
 Each job's **ASMWR, ASMRD, LKWR, LKRD, WGO and RGO**
 steps returned **RC=0000**. The optional `sixteen-512` fallback
 was not needed or run. For the evidence scope and limitations see
-[JOBs 2183–2186](../../../packaging/qsam-q0-concurrent-dcb-evidence-20261020.md).
+[JOBs 2183–2186](../../../packaging/archive/qsam/qsam-q0-concurrent-dcb-evidence-20261020.md).
 
 The old planning guidance below is retained as a
 **reproduction procedure**, not an unexecuted work plan.
@@ -99,7 +99,7 @@ memory bound nor a universal MVS 256K requirement. Inspect JES
 step codes, allocation failures and abend diagnostics rather than
 inferring capacity from the standalone 16-stage JOB 2182.
 
-See [Q.0 owner-approved error and R.0 policy](../../../packaging/qsam-q0-error-and-r0-design-decisions-20261020.md).
+See [Q.0 owner-approved error and R.0 policy](../../../packaging/archive/qsam/qsam-q0-error-and-r0-design-decisions-20261020.md).
 **March Q.0 remains open; Q.1 has not started.**
 
 ## Corrected dry-run validation

@@ -1,10 +1,10 @@
 # Milestone QSAM — native BCPL sequential-record I/O
 
-**Current status (1 November 2026): Milestone QSAM CLOSED; Q.0 through Q.5 CLOSED by explicit owner disposition.** The owner directed **"Record these runs, close out Q.5."** The [Q.5 closure](qsam-q5-closure-20261101.md) accepts documented hardening and temporary-object optional link-edit plus [combined native regression coverage](qsam-q5-regression-evidence-20261101.md): the latest full 00–176 panel was **175 PASS / 1 FAIL (175) / 1 expected SKIP (083)**, followed by an independent **case 175 PASS, RC=0**. This is **not** a single uninterrupted green panel. Installed `Q5QVFY` proof and a genuine returned MVS CLOSE exception are **not** accepted as tested. Prior date-stamped in-progress sections remain historical.
+**Current status (1 November 2026): Milestone QSAM CLOSED; Q.0 through Q.5 CLOSED by explicit owner disposition.** The owner directed **"Record these runs, close out Q.5."** The [Q.5 closure](qsam-q5-closure-20261101.md) accepts documented hardening and temporary-object optional link-edit plus [combined native regression coverage](archive/qsam/qsam-q5-regression-evidence-20261101.md): the latest full 00–176 panel was **175 PASS / 1 FAIL (175) / 1 expected SKIP (083)**, followed by an independent **case 175 PASS, RC=0**. This is **not** a single uninterrupted green panel. Installed `Q5QVFY` proof and a genuine returned MVS CLOSE exception are **not** accepted as tested. Prior date-stamped in-progress sections remain historical.
 
-**Historical Q.5 native hardening progress (31 October 2026):** [JOB 8140 STOP(8) finalizer accounting](qsam-q5-stop-finalizer-job-8140-evidence-20261030.md) **PASSED**; the owner formally accepted [JOB 8145 failed-OPEN rollback](qsam-q5-failed-open-rollback-acceptance-20261031.md) with GO RC=0000 and zero final counters, and [JOB 8147 returned-CLOSE quarantine](qsam-q5-returned-close-quarantine-acceptance-20261031.md) with all pre-GO steps RC=0000, expected GO RC=0008 and matching E/L/X diagnostics. **JOB 8147 injected a nonzero status after an actual successful MVS CLOSE**; it proves the native quarantine path, not a genuine MVS CLOSE error. Actual returned CLOSE exceptions, geometry/resource negatives, release packaging, clean-from-Git reconstruction and focused/full native regression remain separate Q.5 obligations. No permanent BCPLQSAM installation or Q.5 closure has been approved.
+**Historical Q.5 native hardening progress (31 October 2026):** [JOB 8140 STOP(8) finalizer accounting](archive/qsam/qsam-q5-stop-finalizer-job-8140-evidence-20261030.md) **PASSED**; the owner formally accepted [JOB 8145 failed-OPEN rollback](archive/qsam/qsam-q5-failed-open-rollback-acceptance-20261031.md) with GO RC=0000 and zero final counters, and [JOB 8147 returned-CLOSE quarantine](archive/qsam/qsam-q5-returned-close-quarantine-acceptance-20261031.md) with all pre-GO steps RC=0000, expected GO RC=0008 and matching E/L/X diagnostics. **JOB 8147 injected a nonzero status after an actual successful MVS CLOSE**; it proves the native quarantine path, not a genuine MVS CLOSE error. Actual returned CLOSE exceptions, geometry/resource negatives, release packaging, clean-from-Git reconstruction and focused/full native regression remain separate Q.5 obligations. No permanent BCPLQSAM installation or Q.5 closure has been approved.
 
-**Historical Q.5 release integration update (earlier 1 November 2026):** Temporary packaging/linkage `Q5PKG` JOB 8155 ran all 17 native steps RC=0000; an owner-run full 00–176 production panel returned 176 PASS / 0 FAIL / 1 expected SKIP 083. The Git-backed [Q.5 installed reconstruction/verification design](qsam-q5-installed-reconstruction-20261101.md) adds `EXT_ASM(BCPLQSAM)`, `EXT_SOURCE(QSAMHDR)`, production `BCXCAT` recognition and separate native `Q5QINST` / `Q5QVFY` jobs. **No installed BCPLQSAM object, clean-room reconstruction, installed-mode native proof, or Q.5 closure is claimed by staging this source.**
+**Historical Q.5 release integration update (earlier 1 November 2026):** Temporary packaging/linkage `Q5PKG` JOB 8155 ran all 17 native steps RC=0000; an owner-run full 00–176 production panel returned 176 PASS / 0 FAIL / 1 expected SKIP 083. The Git-backed [Q.5 installed reconstruction/verification design](archive/qsam/qsam-q5-installed-reconstruction-20261101.md) adds `EXT_ASM(BCPLQSAM)`, `EXT_SOURCE(QSAMHDR)`, production `BCXCAT` recognition and separate native `Q5QINST` / `Q5QVFY` jobs. **No installed BCPLQSAM object, clean-room reconstruction, installed-mode native proof, or Q.5 closure is claimed by staging this source.**
 
 ## Purpose and historical positioning
 
@@ -59,12 +59,12 @@ DDNAME contract: eight-character uppercased/padded DDNAME, explicit allowable ch
 
 Each march is separately reviewable and committable. Do not start the next until gate evidence is in Git. A genuine blocker can stop the milestone without blocking M4.
 
-**Owner revision, 28 October 2026:** [Q.1 CLOSED](qsam-q1-closure-20261028.md) by an explicit exception to its earlier clean-failure, STOP-accounting and no-regression prerequisites. [Q.2 OPEN](qsam-q2-kickoff-20261028.md). Those unfinished checks remain declared regression/hardening obligations, not passing Q.1 evidence. No new native job, MVS installed-dataset change or Q.2 implementation is implied.
+**Owner revision, 28 October 2026:** [Q.1 CLOSED](qsam-q1-closure-20261028.md) by an explicit exception to its earlier clean-failure, STOP-accounting and no-regression prerequisites. [Q.2 OPEN](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q2-kickoff-20261028.md). Those unfinished checks remain declared regression/hardening obligations, not passing Q.1 evidence. No new native job, MVS installed-dataset change or Q.2 implementation is implied.
 
 ### Q.0 execution evidence and remaining gate (2026-10-19)
 
 The [test-only G!200 dispatcher ABI probe](../bootstrap-toolchain/probes/q0-dispatcher-abi-probe/README.md) **passed** with owner-provided JES evidence:
-[Q.0 dispatcher ABI evidence](qsam-q0-dispatcher-abi-evidence-20261019.md).
+[Q.0 dispatcher ABI evidence](archive/qsam/qsam-q0-dispatcher-abi-evidence-20261019.md).
 The demoted Cambridge compiler produced the BCPL caller in **JOB 2156**.
 **JOB 2157** independently assembled the caller and Q0DISP (IFOX RC=0000
 each), link-edited with accepted BOOT_OBJ members (IEWL RC=0000), and
@@ -75,7 +75,7 @@ and correct return to BCPL. The test-only generated-trailer export is
 
 The standalone [FB80 QSAM GET/PUT probe](../bootstrap-toolchain/probes/q0-qsam-fb80-probe/README.md)
 **passed on MVS/TK5 in JOB 2159** (ASM, LKED and GO each RC=0000).
-The [JOB 2159 evidence](qsam-q0-fb80-evidence-20261020.md) records two
+The [JOB 2159 evidence](archive/qsam/qsam-q0-fb80-evidence-20261020.md) records two
 80-byte logical records, preserved blank bytes and trailing markers,
 QSAM OPEN/GET/PUT/CLOSE and EODAD. JOB 2158 was rejected for JCL errors
 before execution. Because JOB 2159 read a JCL DD DATA stream and wrote
@@ -86,30 +86,30 @@ have now **passed** on MVS/TK5: **JOB 2160** (FB80 DASD, 23 records,
 BLKSIZE=800), **JOB 2161** (RECFM=V, 15 variable records), and
 **JOB 2162** (RECFM=VB, 15 variable records). All six steps in
 each job returned RC=0000; the independent readers emitted the
-expected PASS records. See [JOB 2160–2162 execution evidence](qsam-q0-dasd-evidence-20261020.md).
+expected PASS records. See [JOB 2160–2162 execution evidence](archive/qsam/qsam-q0-dasd-evidence-20261020.md).
 These experiments establish supported behavior at the tested record
 sizes, **not** an unrestricted MVS record-size limit.
-The [four fixed-record boundary tests](qsam-q0-fixed-boundary-evidence-20261020.md)
+The [four fixed-record boundary tests](archive/qsam/qsam-q0-fixed-boundary-evidence-20261020.md)
 subsequently passed: JOB 2163 (F80), JOB 2165 (F1024), JOB 2166
 (FB8K) and JOB 2167 (FB16K), all six steps RC=0000. JOB 2164
 failed in IFOX before correction and is recorded separately.
 The [corrected probe source](../bootstrap-toolchain/probes/q0-qsam-boundary-probes/README.md)
 is in Git. Q.0 remains open, and Q.1 has not started.
 
-The [zero-payload V/VB DASD evidence](qsam-q0-zero-record-evidence-20261020.md)
+The [zero-payload V/VB DASD evidence](archive/qsam/qsam-q0-zero-record-evidence-20261020.md)
 records **JOB 2168 (VZERO)** and **JOB 2169 (VBZERO)**, both PASS with
 six RC=0000 steps and independent readback of fifteen logical records.
 Record 15 contained a four-byte RDW and zero data bytes; EODAD occurred
 after that record. This establishes the tested QSAM zero-payload behavior,
 not a completed BCPLQSAM READ implementation.
 
-The [Q.0 non-opening DD inquiry evidence](qsam-q0-dd-inquiry-evidence-20261020.md)
+The [Q.0 non-opening DD inquiry evidence](archive/qsam/qsam-q0-dd-inquiry-evidence-20261020.md)
 records **JOB 2170 / QS0DDCHK**: ASM/LKED/GO all RC=0000;
 RDJFCB R15=0 for allocated QPRES and R15=4 for unallocated QMISS,
-with neither DD opened. The [incompatible-OPEN negative experiment](qsam-q0-open-incompatible-evidence-20261020.md)
+with neither DD opened. The [incompatible-OPEN negative experiment](archive/qsam/qsam-q0-open-incompatible-evidence-20261020.md)
 **JOB 2171** ended with **S013-20** at QSAM OPEN for temporary
 FB80/801 geometry; ASM/LKED both RC=0000. MVS did not return a
-recoverable result to the caller. The [Q.0 JFCB geometry and empty-EOF evidence](qsam-q0-geometry-empty-eof-evidence-20261020.md)
+recoverable result to the caller. The [Q.0 JFCB geometry and empty-EOF evidence](archive/qsam/qsam-q0-geometry-empty-eof-evidence-20261020.md)
 records **JOB 2172 / QS0GEOM** (ASM/LKED/GO all RC=0000) and
 **JOB 2173 / QS0EMPTY** (all six ASM/link/run steps RC=0000).
 JOB 2172 validated non-opening RDJFCB JFCB fields for FB80/800
@@ -120,49 +120,49 @@ standalone probes, **not an implemented BCPLQSAM READ/OPEN**.
 Q.0 remains open.
 
 
-The [period MVS size limits, allocation-failure, and finalization review](qsam-q0-record-limits-failures-finalization-review.md)
+The [period MVS size limits, allocation-failure, and finalization review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q0-record-limits-failures-finalization-review.md)
 documents general Release 3.8 limits and the accepted BCPLIO `GETMAIN RC` precedent.
 It proposes a *generic* optional-module finalizer ordering for owner
 review; the R.0 ABI and exceptional CLOSE semantics remain open.
 The separate **1024-byte total private stage ceiling is now approved
 as an initial implementation policy**, not yet implemented in BCPLQSAM.
 
-The [Q.0 design review](qsam-q0-design-review-20261020.md) separates
+The [Q.0 design review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q0-design-review-20261020.md) separates
 existing public-interface commitments from proposed implementation
-policies. The [approved staging and resource-management decision](qsam-q0-staging-resource-design-decision.md)
+policies. The [approved staging and resource-management decision](archive/qsam/qsam-q0-staging-resource-design-decision.md)
 establishes private per-handle GET/PUT areas, eager checked allocation,
 non-recycled handle identities, pending-record retry invariants, and
 normal termination cleanup via a generic optional-extension finalizer.
-The [Q.0 pending logical-record retry evidence](qsam-q0-pending-retry-evidence-20261020.md)
+The [Q.0 pending logical-record retry evidence](archive/qsam/qsam-q0-pending-retry-evidence-20261020.md)
 records **JOB 2174 / QS0RETRY**: six MVS steps RC=0000, a valid
 private FB80 pending-record retry with unchanged caller buffers on
 capacity error, correct record order, and persistent EOF. This was a
 standalone assembler test with **static** staging, not a completed
 BCPLQSAM READ implementation.
 
-The [Q.0 resource allocation evidence](qsam-q0-resource-evidence-20261020.md)
+The [Q.0 resource allocation evidence](archive/qsam/qsam-q0-resource-evidence-20261020.md)
 records **JOB 2175 / QS0RES**: ASM/LKED/GO all RC=0000 and
 three successful small conditional GETMAIN acquisitions matched by three
 FREEMAIN releases. An injected failure exercised the *explicit*
-rollback sequence. The [JOB 2176 / QS0FAIL evidence](qsam-q0-failure-path-evidence-20261020.md)
+rollback sequence. The [JOB 2176 / QS0FAIL evidence](archive/qsam/qsam-q0-failure-path-evidence-20261020.md)
 records ASM/LKED/GO all RC=0000 and the shared ROLLBACK handler with
 injected nonzero R15: C-before-B release, surviving A, renewed D and
 four acquisitions/four frees. **Neither test caused actual MVS
 storage shortage**, nor implemented the public BCPLQSAM API.
 
-The [real conditional GETMAIN refusal evidence](qsam-q0-real-getmain-refusal-evidence-20261020.md)
+The [real conditional GETMAIN refusal evidence](archive/qsam/qsam-q0-real-getmain-refusal-evidence-20261020.md)
 records **JOB 2177 / QS0NOMEM**: ASM/LKED/GO RC=0000; with
 GO REGION=256K a single 1 MiB conditional GETMAIN returned **R15=4**.
 The program rolled back its unpublished setup, preserved independent
 storage, and resumed small allocations (3 acquired, 3 released, 0 live).
 This closes resource-refusal reconnaissance, **not** the Q.0 gate.
 
-The [post-OPEN INFO execution evidence](qsam-q0-post-open-info-evidence-20261020.md)
+The [post-OPEN INFO execution evidence](archive/qsam/qsam-q0-post-open-info-evidence-20261020.md)
 records **JOBs 2178 / QS0INFV and 2179 / QS0INFVB PASS**: six steps
 RC=0000 for each and effective V/VB DCB fields mapped to enum 3/4 and
 96 payload bytes at LRECL=100. These are standalone, not public QSINFO.
 
-The [1024-byte stage experiments](qsam-q0-1024-byte-stage-evidence-20261020.md)
+The [1024-byte stage experiments](archive/qsam/qsam-q0-1024-byte-stage-evidence-20261020.md)
 **PASSED on MVS/TK5 in JOBs 2180–2182**. The V/VB tests exercised
 RDW-inclusive logical lengths 4/16/1024 and the complete 1020-byte
 full-record payload; the storage test held sixteen separate 1024-byte
@@ -174,8 +174,8 @@ are in the [Q.0 probe README](../bootstrap-toolchain/probes/q0-qsam-ceiling-prob
 
 The 16-stage test did **not** OPEN sixteen QSAM DCBs or establish a
 full-job memory budget. The owner has now separately **approved the
-[Q.0 error/finalization policy and concurrent-DCB experiment](qsam-q0-error-and-r0-design-decisions-20261020.md)**.
-The [test-only 1/3/8/16 DCB experiments](qsam-q0-concurrent-dcb-evidence-20261020.md)
+[Q.0 error/finalization policy and concurrent-DCB experiment](archive/qsam/qsam-q0-error-and-r0-design-decisions-20261020.md)**.
+The [test-only 1/3/8/16 DCB experiments](archive/qsam/qsam-q0-concurrent-dcb-evidence-20261020.md)
 **PASSED on MVS/TK5 in JOBs 2183–2186**: every ASMWR, ASMRD,
 LKWR, LKRD, WGO and RGO returned RC=0000, and each reader emitted
 the corresponding QOUT PASS marker. The 16-DCB `Q0H16` job held
@@ -186,9 +186,9 @@ datasets, interleaved records and performed normal cleanup.
 These are standalone assembler tests, **not** the completed BCPLQSAM
 handle-table or an end-to-end BCPL application memory budget.
 The shared Milestone Runtime Extensions
-[R.0 — Evidence and contract review](runtime-extensions-r0-evidence-and-contract-20261020.md)
+[R.0 — Evidence and contract review](archive/runtime-extensions/runtime-extensions-r0-evidence-and-contract-20261020.md)
 has started as a source/ABI investigation, not as implementation.
-A [candidate exact table/finalizer ABI](runtime-extensions-r0-candidate-binary-abi-20261020.md)
+A [candidate exact table/finalizer ABI](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-candidate-binary-abi-20261020.md)
 has been proposed **for owner review**, not approved or implemented.
 These standalone programs are not production BCPLQSAM acceptance.
 
@@ -243,7 +243,7 @@ optional-package production patterns. BCPLDEMO and BCPLTIME are the accepted
 reference installations. Overall expanded Runtime Extensions milestone owner
 disposition remains separate from closure of its individual marches.
 
-The [Q.0 consolidated gate review](qsam-q0-consolidated-gate-review.md)
+The [Q.0 consolidated gate review](archive/qsam/qsam-q0-consolidated-gate-review.md)
 reconciles the earlier obligations. The [test-only integrated 16-DCB
 native BCPL/FINISH/STOP batch](../bootstrap-toolchain/probes/q0-integrated-16-dcb/README.md)
 is now PREPARED, **not MVS executed**. It uses the accepted BCEX/BCRG
@@ -259,7 +259,7 @@ started.** No Q.1 authorization or Q.0 closure is implied by this update.
 
 ## Q.1 JOB 6620 scoped integration result (26 October 2026)
 
-The [JOB 6620 evidence record](qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md) documents all ten
+The [JOB 6620 evidence record](archive/qsam/qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md) documents all ten
 `Q13DD` steps RC=0000, three valid F1024 non-opening JFCB preflights,
 three successful OPEN/INFO/CLOSE handles (1–3), expected
 `QS_ERR_HANDLE=-7` for repeated CLOSE, and
@@ -268,7 +268,7 @@ explicit GO reader DD geometry. It establishes the three-DD
 demonstration only in that configuration; behavior without reader
 `DCB=` is unverified. **Owner approved the fail-closed hybrid production geometry policy**
 on 26 October 2026: see the [geometry-policy and allocation-identity
-review](qsam-q1-geometry-policy-and-allocation-identity-review-20261026.md). The first unfinished gate is determining
+review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q1-geometry-policy-and-allocation-identity-review-20261026.md). The first unfinished gate is determining
 the actual allocation identity/volume before an `OBTAIN`-based
 fallback. This is design approval, **not** permission to modify
 `bcplqsam.asm` or submit JES without a separate reviewed test plan. The native 16-handle, resource
@@ -277,4 +277,4 @@ cleanup, FINISH/STOP(8), and regression acceptance gates remain.
 
 ## Current owner disposition — 28 October 2026
 
-**Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED; Q.2 — Fixed logical records OPEN / NOT ACCEPTED.** This supersedes the 25–26 October historical statements above that Q.1 was open and Q.2 must not begin. The owner accepted the documented narrower Q.1 scope and explicitly deferred incomplete negative, STOP-finalizer and full-panel checks. See the [formal Q.1 closure](qsam-q1-closure-20261028.md) and [Q.2 kickoff](qsam-q2-kickoff-20261028.md).
+**Q.1 — Linkage & OPEN/CLOSE skeleton CLOSED; Q.2 — Fixed logical records OPEN / NOT ACCEPTED.** This supersedes the 25–26 October historical statements above that Q.1 was open and Q.2 must not begin. The owner accepted the documented narrower Q.1 scope and explicitly deferred incomplete negative, STOP-finalizer and full-panel checks. See the [formal Q.1 closure](qsam-q1-closure-20261028.md) and [Q.2 kickoff](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q2-kickoff-20261028.md).

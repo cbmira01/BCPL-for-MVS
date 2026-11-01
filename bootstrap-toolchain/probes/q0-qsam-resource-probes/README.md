@@ -7,7 +7,7 @@ after an intentionally injected failure. It does **not** implement
 BCPLQSAM or allocate public handles. March Q.0 remains open.
 
 This follows the approved
-[Q.0 staging/resource-management decision](../../../packaging/qsam-q0-staging-resource-design-decision.md)
+[Q.0 staging/resource-management decision](../../../packaging/archive/qsam/qsam-q0-staging-resource-design-decision.md)
 without changing its API or committing to a fixed record-size ceiling.
 
 ## Precisely what it tests
@@ -61,7 +61,7 @@ Q0 GETMAIN RC ROLLBACK 3 ALLOC 3 FREE PASS
 Generation produces a private 0600 JCL file in ignored `workarea/`.
 Do **not** commit generated decks; they may embed local job-card
 credentials. No accepted PDS objects or native runtime components
-were changed by JOB 2175. [Execution evidence](../../../packaging/qsam-q0-resource-evidence-20261020.md) records the precise limits of that PASS.
+were changed by JOB 2175. [Execution evidence](../../../packaging/archive/qsam/qsam-q0-resource-evidence-20261020.md) records the precise limits of that PASS.
 
 ## QS0FAIL — actual rollback-handler path (prepared, not run)
 
@@ -102,7 +102,7 @@ mode 0600 under ignored `workarea/`; it may contain JOB card secrets
 and must never be committed. **JOB 2176 PASSED in MVS, but the
 failure was deliberately injected, not a genuine storage shortage.**
 
-[JOB 2176 evidence](../../../packaging/qsam-q0-failure-path-evidence-20261020.md)
+[JOB 2176 evidence](../../../packaging/archive/qsam/qsam-q0-failure-path-evidence-20261020.md)
 records the tested shared rollback handler, reverse-order C/B release,
 and preservation of independent storage A. The new
 [QS0NOMEM bounded conditional-refusal experiment](README-shortage.md)

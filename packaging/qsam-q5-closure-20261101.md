@@ -6,7 +6,7 @@
 **Owner disposition:** **Q.5 CLOSED — 1 November 2026**, by the owner's explicit direction in the project conversation: **"Record these runs, close out Q.5."**  
 **Milestone disposition:** **Milestone QSAM CLOSED**, with the accepted evidence scope and exclusions below.  
 **Git authority:** `cbmira01/BCPL-for-MVS`, branch `main`. Documentation baseline before this closure: `e5076dd755d632dc03fef9606481ce1791a6e13b`. The exact WSL checkout HEAD used for the latest native panel was **not** included in the posted excerpt; this documentation baseline is **not** asserted to be a cryptographically confirmed execution revision.  
-**Latest native evidence:** [Full-panel failure and focused punch rerun](qsam-q5-regression-evidence-20261101.md).
+**Latest native evidence:** [Full-panel failure and focused punch rerun](archive/qsam/qsam-q5-regression-evidence-20261101.md).
 
 ## Owner acceptance and technical scope
 
@@ -18,19 +18,19 @@ The accepted optional **BCPLQSAM System Extension** is a source-controlled Syste
 
 | Gate evidence | Owner-recorded result | Precise accepted scope |
 | --- | --- | --- |
-| [STOP(8) finalizer accounting](qsam-q5-stop-finalizer-job-8140-evidence-20261030.md), **JOB 8140** | PASS with expected GO RC=8 | Sixteen handles; finalizer counters return to zero on the tested STOP path |
-| [Failed-OPEN rollback](qsam-q5-failed-open-rollback-acceptance-20261031.md), **JOB 8145** | PASS, GO RC=0 | Injected post-OPEN stage refusal and real rollback CLOSE |
-| [Returned-CLOSE quarantine](qsam-q5-returned-close-quarantine-acceptance-20261031.md), **JOB 8147** | PASS with expected GO RC=8 | Quarantine after a **test-injected** nonzero return **following an actual successful CLOSE** |
-| [Geometry negatives](qsam-q5-geometry-negative-acceptance-20261031.md), **JOB 8152** | PASS, GO RC=0 | Incompatible/oversized/incomplete JFCB geometry rejected before inappropriate OPEN |
-| [Real conditional GETMAIN refusal](qsam-q5-real-getmain-acceptance-20261031.md), **JOB 8154** | PASS, GO RC=0 | Returned-control 1024-byte `GETMAIN RC` refusal and rollback with surviving independent handle |
-| [Temporary binary packaging and optional link selection](qsam-q5-release-packaging-campaign-20261031.md), **Q5PKG JOB 8155** | Owner-reported **17 native steps RC=0000** | Temporary-PDS object packaging/readback, selected and unselected native link/GO; **not** installed `EXT_OBJ` proof |
-| [Production 00–176 and rerun 175](qsam-q5-regression-evidence-20261101.md), **JOB 9201** in failing initial 175 | Full **175 PASS / 1 FAIL / 1 SKIP**, then focused **1 PASS / 0 FAIL** (runner RC=0) | **176 unique executable cases passed** across distinct runs, plus one expected SKIP 083 |
+| [STOP(8) finalizer accounting](archive/qsam/qsam-q5-stop-finalizer-job-8140-evidence-20261030.md), **JOB 8140** | PASS with expected GO RC=8 | Sixteen handles; finalizer counters return to zero on the tested STOP path |
+| [Failed-OPEN rollback](archive/qsam/qsam-q5-failed-open-rollback-acceptance-20261031.md), **JOB 8145** | PASS, GO RC=0 | Injected post-OPEN stage refusal and real rollback CLOSE |
+| [Returned-CLOSE quarantine](archive/qsam/qsam-q5-returned-close-quarantine-acceptance-20261031.md), **JOB 8147** | PASS with expected GO RC=8 | Quarantine after a **test-injected** nonzero return **following an actual successful CLOSE** |
+| [Geometry negatives](archive/qsam/qsam-q5-geometry-negative-acceptance-20261031.md), **JOB 8152** | PASS, GO RC=0 | Incompatible/oversized/incomplete JFCB geometry rejected before inappropriate OPEN |
+| [Real conditional GETMAIN refusal](archive/qsam/qsam-q5-real-getmain-acceptance-20261031.md), **JOB 8154** | PASS, GO RC=0 | Returned-control 1024-byte `GETMAIN RC` refusal and rollback with surviving independent handle |
+| [Temporary binary packaging and optional link selection](archive/qsam/qsam-q5-release-packaging-campaign-20261031.md), **Q5PKG JOB 8155** | Owner-reported **17 native steps RC=0000** | Temporary-PDS object packaging/readback, selected and unselected native link/GO; **not** installed `EXT_OBJ` proof |
+| [Production 00–176 and rerun 175](archive/qsam/qsam-q5-regression-evidence-20261101.md), **JOB 9201** in failing initial 175 | Full **175 PASS / 1 FAIL / 1 SKIP**, then focused **1 PASS / 0 FAIL** (runner RC=0) | **176 unique executable cases passed** across distinct runs, plus one expected SKIP 083 |
 
 The native numbered tests 163–176 continue to consume a **source-selected** BCPLQSAM candidate. The accepted Q5PKG campaign demonstrated temporary-PDS optional link selection; neither result proves a separately installed BCPLQSAM object.
 
 ## Git-backed reconstruction and release packaging
 
-The canonical source and manifest are retained in GitHub `main`: `bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm`, its public BCPL header, `config/dspal.yaml`, the production BCX selection macros and the `Q5QINST`/`Q5QVFY` installation/verification JCL. The [clean-room reconstruction runbook](clean-room-mvs-reconstruction.md) specifies regeneration of managed datasets, the MR10 interpreter, demoted Cambridge compiler, Core Runtime/Base Library, optional packages and full production test panel.
+The canonical source and manifest are retained in GitHub `main`: `bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm`, its public BCPL header, `config/dspal.yaml`, the production BCX selection macros and the `Q5QINST`/`Q5QVFY` installation/verification JCL. The [clean-room reconstruction runbook](../docs/Rebuild-BCPL-for-MVS-from-source.md) specifies regeneration of managed datasets, the MR10 interpreter, demoted Cambridge compiler, Core Runtime/Base Library, optional packages and full production test panel.
 
 The owner supplied final regression output in the context of running that reconstruction. The supplied excerpt does **not** include the complete new purge/reallocation/build/install JOB ledger, source hashes or a separately reviewed full-stage acceptance report. The closure accepts the owner's reconstruction status at that reported scope; it **does not claim** independent proof of every new clean-from-Git build step or a verified single-revision end-to-end reconstruction.
 

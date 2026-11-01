@@ -3,7 +3,7 @@
 **March:** **R.0 — Evidence and contract (open)**. **R.1 — Generic registration foundation has not started.**
 **Status:** **MVS calibration JOB 2217 PASS; member comparison JOB 2218 has a date-only END mismatch** (strict binary identity is false; object content equivalence is separately accepted under a narrow END-field exception). The owner approved a narrow, read-only
 `BCPLMEM` rebuild/compare workflow after stage-1 JOBs 2207–2216 passed.
-See [stage-2 design](../../../packaging/runtime-extensions-r0-decision-a-stage2-design-20261021.md).
+See [stage-2 design](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-decision-a-stage2-design-20261021.md).
 
 The probe compares **relocatable FB/80 object records**, not load
 modules. `BOOT_OBJ(BCPLMEM)` is **never written**, installed, rebuilt
@@ -94,7 +94,7 @@ retains the utility report for independent comparison.
 
 ## Date-only END record interpretation (approved)
 
-The [JOBs 2217–2218 evidence record](../../../packaging/runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md)
+The [JOBs 2217–2218 evidence record](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-decision-a-jobs-2217-2218-evidence-20261021.md)
 retains two results separately: **strict FB/80 binary comparison RC=0008
 (unequal)**, and **content equivalence excluding only the assembler's
 Julian run-day field in one OBJ END record** (columns **50–52**, 1-based).

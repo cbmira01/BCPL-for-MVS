@@ -13,7 +13,7 @@ Current contractual statements supersede dated planning notes.
 - [Formal final acceptance and limitations](Milestone-BCPLIO-dynamic-stream-final-acceptance.md)
 - [Concise milestone history and M4/M5 index](Milestone-BCPLIO-dynamic-stream.md)
 - [Immutable evidence metadata archive](../bcplio-dynamic-stream-evidence/)
-- [Complete clean-room reconstruction procedure](../clean-room-mvs-reconstruction.md)
+- [Complete clean-room reconstruction procedure](../../docs/Rebuild-BCPL-for-MVS-from-source.md)
 
 The DEVOBJ BCPLM6+BCPLIO candidate is accepted, **not promoted** to
 production BOOT_OBJ. Independent FB132 QSAM dataset validation is

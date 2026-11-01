@@ -3,7 +3,7 @@
 **Q.5 update (1 November 2026):** Optional-extension installation and
 read-only installed-link verification JCL are prepared for the
 manifest-managed `EXT_ASM`, `EXT_SOURCE`, `EXT_MAC`, and `EXT_OBJ`
-libraries. The [Q.5 installed reconstruction design](../../../packaging/qsam-q5-installed-reconstruction-20261101.md)
+libraries. The [Q.5 installed reconstruction design](../../../packaging/archive/qsam/qsam-q5-installed-reconstruction-20261101.md)
 sets the MVS acceptance gates. `Q5PKG` JOB 8155 and the owner-run
 00–176 panel passed, but this source update has not installed BCPLQSAM
 into `EXT_OBJ` or completed Q.5 closure. The dated Q.4 material below
@@ -568,11 +568,11 @@ acceptance is implied by any of these jobs.
 
 ## 26 October 2026 — geometry-policy decision after JOB 6620
 
-The [JOB 6620 explicit-GO-DCB evidence](../../../packaging/qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md)
+The [JOB 6620 explicit-GO-DCB evidence](../../../packaging/archive/qsam/qsam-q1-job-6620-explicit-go-dcb-evidence-20261026.md)
 shows the successful three-DD test under explicit reader DCB geometry.
 The owner approved a **fail-closed hybrid**, not a universal
 `DCB=` requirement. See the
-[Q.1 geometry and allocation-identity review](../../../packaging/qsam-q1-geometry-policy-and-allocation-identity-review-20261026.md)
+[Q.1 geometry and allocation-identity review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q1-geometry-policy-and-allocation-identity-review-20261026.md)
 for the first test-only feasibility gate: inspect RDJFCB name/volume
 identity on omitted-DCB allocations before proposing `OBTAIN`.
 **No production `bcplqsam.asm` change or JES run is approved by

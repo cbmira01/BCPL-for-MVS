@@ -106,11 +106,11 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 > **Acceptance history:** A previous clean-room rebuild was accepted
 > on **17 October 2026** at source baseline
 > `04c74af8b07b5cdc2aaec44d79f020a848cb7e65`; see the
-> [historical acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md).
+> [historical acceptance record](../packaging/archive/bootstrap/clean-room-mvs-reconstruction-acceptance-2026-10-17.md).
 > On **23 October 2026**, the operator reported a successful fresh
 > end-to-end run of this updated two-pass/R.5 procedure, including
 > **158 PASS, 0 FAIL, 1 expected SKIP** across cases 00–158. See the
-> [R.5 evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+> [R.5 evidence receipt](../packaging/archive/runtime-extensions/runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
 > The latter result is operator-reported; detailed job numbers and
 > independent raw JES/IEWL audit have not yet been supplied.
 
@@ -579,11 +579,11 @@ Keep credentials out of committed files. `workarea/` is ignored by Git;
 its generated logs, images, and manifests will **not** be saved by a
 normal `git commit`.
 
-The [17 October 2026 acceptance record](clean-room-mvs-reconstruction-acceptance-2026-10-17.md)
+The [17 October 2026 acceptance record](../packaging/archive/bootstrap/clean-room-mvs-reconstruction-acceptance-2026-10-17.md)
 proves the **earlier** procedure. The revised two-pass/R.5 procedure
 subsequently passed a new full end-to-end clean-room test on 24 October
 2026, with **158 PASS / 0 FAIL / 1 expected SKIP (083)**. See the
-[24 October owner-approved R.5 closure](runtime-extensions-r5-closure-20261024.md)
+[24 October owner-approved R.5 closure](../packaging/runtime-extensions-r5-closure-20261024.md)
 for MVS payload jobs, installation read-back and the documented 7fff89f
 -> 00379e0 source transition. Keep the earlier record historically intact.
 

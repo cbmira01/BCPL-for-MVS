@@ -2,7 +2,7 @@
 
 **March:** R.0 — Evidence and contract (**open**). **Status:**
 **MVS PASS in JOB 2199**, BLIB-present precedence only. See the
-[actual JOB 2199 evidence](../../../packaging/runtime-extensions-r0-g76-job-2199-evidence-20261021.md).
+[actual JOB 2199 evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-g76-job-2199-evidence-20261021.md).
 The BLIB-absent fallback and installed-object provenance remain open.
 R.1 has not started.
 

@@ -39,7 +39,7 @@ for exact claims and limitations.
   programmer-visible character streams mapped to MVS QSAM.
 - [JCL/QSAM responsibility boundary](BCPLIO-JCL-QSAM-stream-contract.md):
   MVS owns actual dataset validation and errors that do not return control.
-- [Clean-room reconstruction runbook](../clean-room-mvs-reconstruction.md):
+- [Clean-room reconstruction runbook](../../docs/Rebuild-BCPL-for-MVS-from-source.md):
   rebuild MVS resident compiler and runtime from tracked sources.
 
 ## Historical technical records worth retaining

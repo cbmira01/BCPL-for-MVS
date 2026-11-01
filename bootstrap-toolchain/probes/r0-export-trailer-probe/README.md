@@ -2,7 +2,7 @@
 
 **March:** R.0 — Evidence and contract (**open**). **Status:** MVS
 **PASS** in JOB 2197; the compiler ran in JOB 2196. See the
-[recorded evidence and exact 22 exports](../../../packaging/runtime-extensions-r0-trailer-job-2197-evidence-20261021.md).
+[recorded evidence and exact 22 exports](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-trailer-job-2197-evidence-20261021.md).
 The new G!76 conditional-precedence check is separate and not yet
 MVS-verified.
 No R.1 registration, `BCPLMAIN` alteration, package implementation,

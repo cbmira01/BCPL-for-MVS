@@ -33,7 +33,7 @@ pointer-guarded drain; an unexpected outcome returns RC=8. It does
 A candidate 1024-byte *total private stage* permits F/FB 1024-byte
 logical data or V/VB at most 1020 data bytes (four RDW bytes private).
 The owner **approved** that initial stage policy after JOBs 2180–2182;
-see [the MVS execution evidence](../../../packaging/qsam-q0-1024-byte-stage-evidence-20261020.md).
+see [the MVS execution evidence](../../../packaging/archive/qsam/qsam-q0-1024-byte-stage-evidence-20261020.md).
 Neither the public BCPLQSAM implementation nor sixteen complete OPEN
 QSAM handles have been verified.
 

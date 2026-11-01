@@ -2,7 +2,7 @@
 
 **Status: MVS PASS — JOB 2174, 20 October 2026.** This is a standalone System/370 IFOX/QSAM experiment, not an implementation of BCPLQSAM or `QSAMSVC:200`. March Q.0 — Reconnaissance & contract remains open. Q.1 has not started.
 
-The approved [Q.0 staging/resource decision](../../../packaging/qsam-q0-staging-resource-design-decision.md) requires a distinct private stage for each input handle and `READY`/`PENDING`/`EOF` state. This probe exercises the *single-input-handle state machine* without public request/result vectors, storage allocation, or multiple handles. The private stage is a statically allocated 80-byte buffer, not yet the proposed dynamic per-handle allocation.
+The approved [Q.0 staging/resource decision](../../../packaging/archive/qsam/qsam-q0-staging-resource-design-decision.md) requires a distinct private stage for each input handle and `READY`/`PENDING`/`EOF` state. This probe exercises the *single-input-handle state machine* without public request/result vectors, storage allocation, or multiple handles. The private stage is a statically allocated 80-byte buffer, not yet the proposed dynamic per-handle allocation.
 
 ## Exact experiment: `QS0RETRY`
 
@@ -26,7 +26,7 @@ The reader ensures the application's destination remains completely unchanged (8
 Q0 FB80 PENDING RETRIES 2 RECORDS PASS
 ```
 
-[JOB 2174 evidence](../../../packaging/qsam-q0-pending-retry-evidence-20261020.md) records the owner-verified JES results.
+[JOB 2174 evidence](../../../packaging/archive/qsam/qsam-q0-pending-retry-evidence-20261020.md) records the owner-verified JES results.
 
 ## Run from repository root
 

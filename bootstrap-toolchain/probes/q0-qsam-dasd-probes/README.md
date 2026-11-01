@@ -3,7 +3,7 @@
 **Status:** Executed successfully under MVS 3.8J/TK5 on JES job date
 20 October 2026: FB **JOB 2160**, V **JOB 2161**, VB **JOB 2162**.
 Each completed all six assembly/link/execute steps with RC=0000.
-See [Q.0 DASD execution evidence](../../../packaging/qsam-q0-dasd-evidence-20261020.md).
+See [Q.0 DASD execution evidence](../../../packaging/archive/qsam/qsam-q0-dasd-evidence-20261020.md).
 These are Q.0 reconnaissance tests, **not** BCPLQSAM implementation and not
 Q.1 code. They compile and link two native S/370 programs from source with
 IFOX and IEWL, creating only temporary object/load modules and DASD datasets.

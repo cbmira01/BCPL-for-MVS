@@ -47,7 +47,7 @@ The existing `run-production-regression` remains available unchanged
 and still defaults to source-mode optional package tests. Numbered
 BCPLQSAM cases **163–176 remain source-selected** in either profile;
 the separate Q.5 installed-object verification is documented in
-[Q.5 release acceptance](../../packaging/qsam-q5-installed-reconstruction-20261101.md).
+[Q.5 release acceptance](../../packaging/archive/qsam/qsam-q5-installed-reconstruction-20261101.md).
 
 **PUNCH1 safety:** The wrapper discards any inherited
 `Q4_PUNCH_RESUME` setting. The optional
@@ -104,7 +104,7 @@ Regenerate `TRNILRG` using `tools/bootstrap/prepare-bootstrap --with-trnilrg`
 and position it with `dspal put BOOT_INTCODE TRNILRG`.
 
 Stage the generated bootstrap sources using the `dspal populate` procedure in
-[the clean-room runbook](../../packaging/clean-room-mvs-reconstruction.md).
+[the clean-room runbook](../../docs/Rebuild-BCPL-for-MVS-from-source.md).
 The compiler build steps are:
 
 ```sh
@@ -142,4 +142,4 @@ and executed with `dspal submit`. Accepted objects reside in
 The historical job-body steps for assembling, verifying, and installing
 binary FB80 records are preserved. No host build-blib driver exists.
 
-For the full from-scratch M3 reconstruction including MR10 demos and native regression, see [the clean-room PDS runbook](../../packaging/clean-room-mvs-reconstruction.md). The obsolete host source-bootstrap driver and the one-time tools relocation script were retired; their sources remain in Git history.
+For the full from-scratch M3 reconstruction including MR10 demos and native regression, see [the clean-room PDS runbook](../../docs/Rebuild-BCPL-for-MVS-from-source.md). The obsolete host source-bootstrap driver and the one-time tools relocation script were retired; their sources remain in Git history.

@@ -101,8 +101,8 @@ checks on Morkies; **their passing results are not yet confirmed**.
 **After correction, the owner re-ran all four Python tests, six
 dry-run profiles and actual JOBs 2187–2192. All passed with RC=0000
 on each step and actual QOUT markers.** See the
-[recorded MVS evidence](../../../packaging/runtime-extensions-r0-first-probes-evidence-20261020.md).
+[recorded MVS evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-first-probes-evidence-20261020.md).
 Dependency transitivity/ordering,
 complete collision ownership, trusted module extents, finalizer
 invocation, FINISH/STOP integration and R.0 closure remain future gates.
-See the [approved R.0 testing scope](../../../packaging/runtime-extensions-r0-testing-decision-20261020.md).
+See the [approved R.0 testing scope](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-testing-decision-20261020.md).

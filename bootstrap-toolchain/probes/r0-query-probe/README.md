@@ -1,10 +1,10 @@
 # Milestone Runtime Extensions — R.0 shared QUERY probe
 
 **March:** R.0 — Evidence and contract (**open**).
-**Contract:** [Owner-approved shared `QUERY` ABI](../../../packaging/runtime-extensions-r0-query-abi-decision-20261021.md)
+**Contract:** [Owner-approved shared `QUERY` ABI](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-query-abi-decision-20261021.md)
 (21 October 2026). **Status: PASS under actual MVS — JOB 2206**,
 five steps RC=0000, ten host tests PASS and the exact BCPL GO
-marker verified. See [JOB 2206 evidence](../../../packaging/runtime-extensions-r0-query-job-2206-evidence-20261021.md).
+marker verified. See [JOB 2206 evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-query-job-2206-evidence-20261021.md).
 R.1 — Generic registration foundation has not started.
 
 The probe demonstrates the shared version-1 `QUERY` ABI over **two

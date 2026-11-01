@@ -4,7 +4,7 @@
 **R.1 — Generic registration foundation (not started)**.
 **Status:** approved isolated *test-only* implementation; host checks
 pass. **Actual MVS execution and IEWL MAP/XREF review are pending.**
-See [owner-approved design](../../../packaging/runtime-extensions-r0-g150-startup-ownership-review-20261021.md).
+See [owner-approved design](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-g150-startup-ownership-review-20261021.md).
 
 ## Exact question and interpretation
 
@@ -57,7 +57,7 @@ IEWL explicitly includes only installed
 `(BCPLAPT)`, and **`(BLIB)`**, through an input-only `DISP=SHR`
 DD. This is not an optional-package registrar or an accepted-object
 installation. The imported BLIB trailer is checked for any G!150
-export at runtime, and the prior [JOB 2197 ledger](../../../packaging/runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
+export at runtime, and the prior [JOB 2197 ledger](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
 independently documented its 21 exports, none at G!150.
 
 Require actual IEWL `MAP,XREF,LIST` proof that `R0MARK` and

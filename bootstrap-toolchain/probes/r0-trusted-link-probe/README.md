@@ -5,7 +5,7 @@
 owner-approved **Decision A — Trusted extents**.
 **Status:** **actual MVS PASS: JOBs 2207–2216** (ten fixture
 profiles; each six steps RC=0000 and exact QOUT verified). The
-[stage-1 MVS evidence](../../../packaging/runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
+[stage-1 MVS evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-decision-a-jobs-2207-2216-evidence-20261021.md)
 includes the examined JOB 2207 IEWL MAP/XREF; nine other full maps
 and literal SHA-256 manifest values were not supplied.
 **R.1 — Generic registration foundation has not started**. Do not treat the probe as a production registrar.
@@ -126,7 +126,7 @@ CSECT, missing definition or duplicate declaration. **Neither it nor
 IEWL alone proves an arbitrary pointer is safe, validates hostile
 objects, or establishes an installed `BOOT_OBJ` member's build identity.**
 Actual installed-object byte identity is a separate **second stage**.
-The [stage-2 design review](../../../packaging/runtime-extensions-r0-decision-a-stage2-design-20261021.md)
+The [stage-2 design review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-decision-a-stage2-design-20261021.md)
 recommends calibrating IEBCOMPR on temporary FB/80 objects before
 a read-only comparison with a freshly assembled `BCPLMEM`.
 That method is not yet approved or run; this probe does not undertake it.

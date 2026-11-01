@@ -24,7 +24,7 @@ cards entirely within JCL. This is a test authorization only, not an
 accepted registrar or runtime deployment. Use temporary MVS datasets;
 allow a negative technical conclusion.
 
-See the [R.4 investigation](runtime-extensions-r4-investigation.md) and [owner-approved R.4 closure](runtime-extensions-r4-closure-20261024.md). The original experiment scope and restrictions below remain historical evidence; the approved result is the negative IEWL-only discovery finding and the MVS-native known-package BCXSEL/BCXREQ macro/PUNCH method.
+See the [R.4 investigation](archive/runtime-extensions/runtime-extensions-r4-investigation.md) and [owner-approved R.4 closure](runtime-extensions-r4-closure-20261024.md). The original experiment scope and restrictions below remain historical evidence; the approved result is the negative IEWL-only discovery finding and the MVS-native known-package BCXSEL/BCXREQ macro/PUNCH method.
 
 **R.1 owner closure:** The consolidated MVS acceptance campaign passed
 24/24 integrated jobs (2760–2783), all five gates, and the 00..145
@@ -36,7 +36,7 @@ the current gate status. The G!150 FORMTREE/DEBUGINT issue remains
 separate and unresolved. **No BOOT_OBJ or BOOT_DEVOBJ promotion** was
 authorized by R.1 closure.
 
-**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **Extension A passed its first actual MVS demonstration in JOB 3075** (six IFOX assemblies, IEWL, GO all RC=0000; expected BCPL marker and MAP verified). See [JOB 3075 evidence](runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). **Extension B and the 0/A/B/A+B positive matrix PASSED actual MVS JOB 3080 (22 steps RC=0000).** The owner-approved [R.2 consolidated acceptance campaign](runtime-extensions-r2-consolidated-acceptance-design-20261022.md) then reported **JOBs 3091/3092 PASS**. The owner closed R.2 on 22 October 2026; details and limits are recorded in the [closure evidence](runtime-extensions-r2-closure-20261022.md).
+**R.2 owner decision (22 October 2026):** Permanent **G!203 / DEMOSVC** is allocated to **BCPLDEMO**, a maintained teaching/reference optional extension. Its source candidate has QUERY and GETVALUES opcodes, real BCEX/BCPLREG selection and a temporary link-run demonstration. See the [design decision](archive/runtime-extensions/runtime-extensions-r2-bcpldemo-decision-20261022.md) and [example](../bootstrap-toolchain/extensions/bcpldemo/README.md). **Extension A passed its first actual MVS demonstration in JOB 3075** (six IFOX assemblies, IEWL, GO all RC=0000; expected BCPL marker and MAP verified). See [JOB 3075 evidence](archive/runtime-extensions/runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md). **Extension B and the 0/A/B/A+B positive matrix PASSED actual MVS JOB 3080 (22 steps RC=0000).** The owner-approved [R.2 consolidated acceptance campaign](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r2-consolidated-acceptance-design-20261022.md) then reported **JOBs 3091/3092 PASS**. The owner closed R.2 on 22 October 2026; details and limits are recorded in the [closure evidence](runtime-extensions-r2-closure-20261022.md).
 
 ## 1. Purpose
 
@@ -102,7 +102,7 @@ G!201 is allocated to **BCPLTIME** by the [Global Number Registry](global-number
 
 #### Capability query: caller-owned numeric descriptor, not a string
 
-**Owner-approved version-1 signature** (see [shared QUERY contract](runtime-extensions-r0-query-abi-decision-20261021.md); MVS cross-package validation pending):
+**Owner-approved version-1 signature** (see [shared QUERY contract](archive/runtime-extensions/runtime-extensions-r0-query-abi-decision-20261021.md); MVS cross-package validation pending):
 
 ```text
 PACKAGE_SVC(0, info_vector, capacity_words) -> positive_required_words | negative_error
@@ -124,7 +124,7 @@ The vector is writable BCPL word storage, capacity is in **32-bit BCPL words**, 
 
 Approved minimum descriptor size is **6 words**, so `VEC 5` is the BCPL allocation shape for packages whose entire descriptor requires only six words. Extra capability words (additional opcode maps or documented feature fields) may be appended in future versions *without altering this prefix*. Query-format and API-version compatibility rules must be recorded separately. A capability flag or advertised opcode indicates **implemented support**, not necessarily that an environmental resource (such as a particular DDNAME or clock state) will work when invoked. A feature can also be absent from an older compatible implementation.
 
-**Approved common errors:** `-1` insufficient capacity (including a nonnull vector with zero capacity), `-2` unsupported nonzero opcode, and `-3` invalid QUERY argument pairing or negative capacity. No partial writes. Only a null vector with zero capacity is a valid size inquiry. A vector smaller than the *entire* returned descriptor length is rejected. The [shared QUERY contract](runtime-extensions-r0-query-abi-decision-20261021.md) governs first-error precedence, append-only semantics and API version matching; each package documents its other operation-specific statuses.
+**Approved common errors:** `-1` insufficient capacity (including a nonnull vector with zero capacity), `-2` unsupported nonzero opcode, and `-3` invalid QUERY argument pairing or negative capacity. No partial writes. Only a null vector with zero capacity is a valid size inquiry. A vector smaller than the *entire* returned descriptor length is rejected. The [shared QUERY contract](archive/runtime-extensions/runtime-extensions-r0-query-abi-decision-20261021.md) governs first-error precedence, append-only semantics and API version matching; each package documents its other operation-specific statuses.
 
 #### How client BCPL would consume the query
 
@@ -225,14 +225,14 @@ The BCPL application separately imports a library-specific `GLOBAL` declaration/
 4. **Global slots and dispatcher namespaces:** authoritative static Global Number Registry; historical G!0..G!149 and occupied G!150+; one dispatcher slot per optional package by default; package-owned stable opcode allocations; capacity policy and collision checks.
 5. **Conflict handling:** duplicate declarations within a module, between selected modules, against app/BLIB/core; explicit intentional override if ever supported, otherwise fail cleanly before START. No silent last-write-wins.
 6. **Dependencies:** what happens when QSAM depends on a core service or another optional module, and how the link and registration table express it.
-7. **Initialization and finalization:** entries alone versus optional init/finalization hook, sequencing, failure cleanup, and correct MVS save-area/register discipline. Prefer no hooks for stateless facilities. The approved [BCPLQSAM Q.0 staging/resource decision](qsam-q0-staging-resource-design-decision.md) establishes a requirement for **generic normal-termination finalization** of linked stateful extensions on FINISH and STOP(n), before final core storage reclamation. R.0 must specify safe descriptor/hook representation, sequencing, failure reporting and absence of a linked optional module; it does not yet implement this facility.
+7. **Initialization and finalization:** entries alone versus optional init/finalization hook, sequencing, failure cleanup, and correct MVS save-area/register discipline. Prefer no hooks for stateless facilities. The approved [BCPLQSAM Q.0 staging/resource decision](archive/qsam/qsam-q0-staging-resource-design-decision.md) establishes a requirement for **generic normal-termination finalization** of linked stateful extensions on FINISH and STOP(n), before final core storage reclamation. R.0 must specify safe descriptor/hook representation, sequencing, failure reporting and absence of a linked optional module; it does not yet implement this facility.
 8. **Missing optional functions:** a BCPL `GLOBAL` reference is indirect through `G`, so omission can escape the linkage editor; define a preflight declared-requirements check or reliable failure mode. Never claim ordinary link-edit checks all missing globals.
-9. **ABI/versioning and opcode 0:** the [shared QUERY v1 contract](runtime-extensions-r0-query-abi-decision-20261021.md) is **owner-approved**; independent two-dispatcher MVS execution remains pending, as does the later integrated rejection of incompatible extension descriptors.
+9. **ABI/versioning and opcode 0:** the [shared QUERY v1 contract](archive/runtime-extensions/runtime-extensions-r0-query-abi-decision-20261021.md) is **owner-approved**; independent two-dispatcher MVS execution remains pending, as does the later integrated rejection of incompatible extension descriptors.
 10. **Testing:** preserving existing BLIB and native service behavior without modifying current accepted artifacts ahead of gates.
 
 ### Owner-approved R.0 registration/finalization model; A–H accepted
 
-The [Q.0 limits/failure/finalization review](qsam-q0-record-limits-failures-finalization-review.md)
+The [Q.0 limits/failure/finalization review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q0-record-limits-failures-finalization-review.md)
 now records an **owner-approved architectural decision**: a
 versioned, bounded, linker-selected `BCPLREG` table with
 relocated package descriptors, each with an optional finalizer
@@ -246,7 +246,7 @@ ordinary FINISH**; `STOP(n)` retains n. The byte-level descriptors and 8-byte pu
 Decision G's numerical limits and diagnostic values were subsequently
 **approved** and its isolated 14-case MVS count/size test **PASSED**
 (JOB 2203). Remaining contract/evidence tasks are listed in the
-[R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
+[R.0 gate review](archive/runtime-extensions/runtime-extensions-r0-gate-review-20261021.md).
 This paragraph records the former R.0 design stage. R.1 has since verified integrated registration through temporary BCPLMAIN/registrar/link overlays; the accepted `BOOT_OBJ` objects remain unchanged.
 
 ## 7. March roadmap with explicit gates
@@ -289,7 +289,7 @@ operator-supplied campaign at Git `a246063` passed developer-template
 JOBs **3101/3102**, the 0/A/B/A+B matrix JOB **3103**,
 negative/dependency JOB **3104**, and a fresh native 00..145 panel:
 **145 PASS / 0 FAIL / 1 expected SKIP 083**. The
-[R.3 review](runtime-extensions-r3-acceptance-review-20261022.md)
+[R.3 review](archive/runtime-extensions/runtime-extensions-r3-acceptance-review-20261022.md)
 records the gate assessment and operator-local raw-evidence limits.
 The [R.3 owner closure](runtime-extensions-r3-closure-20261022.md)
 accepts the source-distributed temporary-link registration foundation,
@@ -312,7 +312,7 @@ one two-CSECT assembler source/object; define reversible optional PDS
 installation; make BCXSEL/BCXREQ catalog reusable; deliver a programmer
 package; add MVS-compiled/executed regression tests 146–158 integrated
 with the existing numbered runner; verify installed mode; reproduce
-from Git; and record MVS acceptance. See the [R.5 execution plan](runtime-extensions-r5-packaging-and-regression.md).
+from Git; and record MVS acceptance. See the [R.5 execution plan](archive/runtime-extensions/runtime-extensions-r5-packaging-and-regression.md).
 
 **R.5 CLOSED by owner approval, 24 October 2026.** The original installation safety and recovery requirements were reviewed; this closure does not authorize future PDS writes. At the time of R.5 closure, R.4 remained pending; R.4 was subsequently CLOSED by separate owner decision. See the [R.5 closure](runtime-extensions-r5-closure-20261024.md) and [R.4 closure](runtime-extensions-r4-closure-20261024.md).
 
@@ -335,7 +335,7 @@ reconstruction runbook and completing the full native production
 regression 00–158: **158 PASS, 0 FAIL, 1 expected SKIP (083)**.
 The visible terminal excerpt confirms PASS on cases 156, 157 and 158
 and the full-panel summary. See the
-[R.5 clean-room evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+[R.5 clean-room evidence receipt](archive/runtime-extensions/runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
 
 This satisfies the numerical full-panel acceptance target as an
 **operator-reported result**. Executed Git revision, JES payload

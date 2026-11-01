@@ -66,7 +66,7 @@ MVS-resident members with the application's selection cards, rather than
 embed host copies of the macro definitions. The extension object is
 EXT_OBJ(BCPLDEMO) under HERC02.BCPL.EXT.OBJ.
 
-See [the approved installation design](../../../packaging/runtime-extensions-r5-installation-design.md).
+See [the approved installation design](../../../packaging/archive/runtime-extensions/runtime-extensions-r5-installation-design.md).
 Neither permanent dataset creation nor MVS linkage acceptance has been
 authorized or performed by this design work.
 

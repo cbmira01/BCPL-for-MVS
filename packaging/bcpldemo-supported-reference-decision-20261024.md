@@ -16,7 +16,7 @@ it is **not** disposable test scaffolding or an original historical
 Cambridge library service.
 
 This continues and strengthens, rather than replaces, the original
-[22 October R.2 permanent G!203 allocation](runtime-extensions-r2-bcpldemo-decision-20261022.md).
+[22 October R.2 permanent G!203 allocation](archive/runtime-extensions/runtime-extensions-r2-bcpldemo-decision-20261022.md).
 The [R.5 owner closure](runtime-extensions-r5-closure-20261024.md)
 already accepted the installed package and regression tests. Neither
 milestone's closure is reopened by this later support policy.
@@ -83,5 +83,5 @@ remain subject to the project's normal approval and test process.
 - [Global Number Registry](global-number-registry.md)
 - [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md)
 - [Milestone Runtime Extensions](milestone-runtime-extensions.md)
-- [R.2 original allocation](runtime-extensions-r2-bcpldemo-decision-20261022.md)
+- [R.2 original allocation](archive/runtime-extensions/runtime-extensions-r2-bcpldemo-decision-20261022.md)
 - [R.5 installed-package owner closure](runtime-extensions-r5-closure-20261024.md)

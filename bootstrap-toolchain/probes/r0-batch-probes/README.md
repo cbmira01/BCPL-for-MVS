@@ -2,7 +2,7 @@
 
 **March:** R.0 — Evidence and contract (open).
 **MVS-validated test-only batch: JOB 2195, 21 October 2026.**
-See the [verified evidence](../../../packaging/runtime-extensions-r0-batch-job-2195-evidence-20261021.md).
+See the [verified evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-batch-job-2195-evidence-20261021.md).
 No production registrar or finalizer was installed.
 Owner requested batching remaining test-only R.0 probes after JOBs 2187–2192
 passed. This package submits **one JES job**, with six independent IFOX
@@ -107,12 +107,12 @@ subsequently passed on MVS in JOB 2195.**
    R.0 gates. The prior JOBs 2187–2192 cover bounded single-descriptor
    tests; they did not close R.0.
 5. **Actual IFOX/IEWL/GO outcomes are observed and recorded** in
-   [JOB 2195 evidence](../../../packaging/runtime-extensions-r0-batch-job-2195-evidence-20261021.md):
+   [JOB 2195 evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-batch-job-2195-evidence-20261021.md):
    all eight steps RC=0000, zero flagged statements and all 20 exact
    GO/QOUT markers. This is isolated-harness evidence only; no
    application/BLIB ledger, BCPLMAIN startup importer or true
    FINISH/STOP runtime path was exercised.
 
-Sources: [R.0 testing decision](../../../packaging/runtime-extensions-r0-testing-decision-20261020.md),
-[three-question review](../../../packaging/runtime-extensions-r0-three-design-questions-review-20261020.md),
+Sources: [R.0 testing decision](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-testing-decision-20261020.md),
+[three-question review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-three-design-questions-review-20261020.md),
 [prior single-descriptor probes](../r0-registration-probes/README.md).

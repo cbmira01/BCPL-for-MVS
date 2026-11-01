@@ -137,4 +137,4 @@ Implemented portions of LIBHDR numbering, BCPLBYTE byte primitives, BLIB formatt
 
 This versioned specification is the M1.9 audit deliverable. Acceptance means all five modules have a concrete source-grounded interface classification, diagnostic exposure is accurately distinguished from instrumentation, historical claims are limited to actual evidence, and unresolved items have dispositions. Acceptance **does not** certify historical runtime equivalence, trigger an MVS production library promotion, or authorize a new runtime implementation project.
 
-For the full investigation, source citations, historical alternatives and individual gate decisions, see [M1.9 runtime audit](m1-9-runtime-contract-audit.md). For verified resident builds and suite baseline, see [M1.8 build acceptance](m1-8-reproducible-runtime.md).
+For the full investigation, source citations, historical alternatives and individual gate decisions, see [M1.9 runtime audit](archive/core-runtime/m1-9-runtime-contract-audit.md). For verified resident builds and suite baseline, see [M1.8 build acceptance](archive/core-runtime/m1-8-reproducible-runtime.md).

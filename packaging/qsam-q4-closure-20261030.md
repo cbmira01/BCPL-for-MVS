@@ -4,7 +4,7 @@
 **March:** **Q.4 — SYSOUT devices**
 **Disposition:** **CLOSED — 30 October 2026**, by the project owner's explicit instruction: **"Close out Q.4. Give me a handoff prompt for Q.5."**
 **Accepted native source/regression baseline:** GitHub `main` [`51ed022eeea69af2b8453a766b43769abbdbf826`](https://github.com/cbmira01/BCPL-for-MVS/commit/51ed022eeea69af2b8453a766b43769abbdbf826).
-**Technical gate evidence:** [Q.4 native regression acceptance](qsam-q4-native-regression-evidence-20261030.md).
+**Technical gate evidence:** [Q.4 native regression acceptance](archive/qsam/qsam-q4-native-regression-evidence-20261030.md).
 
 ## Accepted native operation
 
@@ -15,7 +15,7 @@ The owner ran the resident **demoted Cambridge compiler**, IFOX, IEWL, native BC
 - **QUERY capability**: `QSAMSVC:200` `info!5=7` represents `QS_CAP_FIXED | QS_CAP_VARIABLE | QS_CAP_CARRIAGE`; the supported-opcode bitmap remains 31. F/FB, V/VB and **FBA** support is verified; **VBA remains unimplemented and unverified**.
 - Existing QSAM lifecycle, negative, F/FB, V/VB and optional BCPLDEMO interoperability tests remained green.
 
-Standalone FB80 [JOBs 7725/7726](qsam-q4-punch-evidence-20261030.md) and FBA133 [JOBs 7727/7728](qsam-q4-fba-evidence-20261030.md) passed, independently of the subsequent numbered regression runs.
+Standalone FB80 [JOBs 7725/7726](archive/qsam/qsam-q4-punch-evidence-20261030.md) and FBA133 [JOBs 7727/7728](archive/qsam/qsam-q4-fba-evidence-20261030.md) passed, independently of the subsequent numbered regression runs.
 
 ## Numbered native regression closure gate
 
@@ -28,7 +28,7 @@ On the accepted source revision `51ed022e`, the owner executed:
 
 Both panel log-capture steps returned RC=0. Cases **175 — qsam-fb80-sysout-punch** and **176 — qsam-fba133-sysout-printer** passed both panels, as did updated QUERY/interop cases 163/170. The final owner-supplied workflow reported `Q.4 FOCUSED AND FULL NATIVE ACCEPTANCE PASSED` and `Q.4 acceptance workflow RC=0`.
 
-The first focused run had reported **13 PASS / 1 FAIL** because `PUNCH1` was paused with `P=Y` after native JOB 7755 completed successfully. The owner verified JES2 device status and used `$S PUN1` to release its queued three-card output, obtaining exactly 172 expected new ASCII capture bytes. That failure and its actual MVS recovery are preserved in the [numbered punch incident](qsam-q4-numbered-punch-incident-20261030.md). The accepted fresh reruns used the explicit `Q4_PUNCH_RESUME=1` opt-in and both panels passed; this closure does **not** relabel the earlier failed run as successful.
+The first focused run had reported **13 PASS / 1 FAIL** because `PUNCH1` was paused with `P=Y` after native JOB 7755 completed successfully. The owner verified JES2 device status and used `$S PUN1` to release its queued three-card output, obtaining exactly 172 expected new ASCII capture bytes. That failure and its actual MVS recovery are preserved in the [numbered punch incident](archive/qsam/qsam-q4-numbered-punch-incident-20261030.md). The accepted fresh reruns used the explicit `Q4_PUNCH_RESUME=1` opt-in and both panels passed; this closure does **not** relabel the earlier failed run as successful.
 
 ## Evidence scope and retained work
 

@@ -2,11 +2,11 @@
 
 ## Recorded DD inquiry: JOB 2170
 
-The already-tracked `dd-inquiry.asm` / `make-jobs.py` experiment **PASSED** on 20 October 2026. `RDJFCB` returned R15=0 for allocated DD `QPRES` and R15=4 for absent `QMISS`, without opening either. The assembler, link-edit and GO steps all returned RC=0000. See [JOB 2170 evidence](../../../packaging/qsam-q0-dd-inquiry-evidence-20261020.md).
+The already-tracked `dd-inquiry.asm` / `make-jobs.py` experiment **PASSED** on 20 October 2026. `RDJFCB` returned R15=0 for allocated DD `QPRES` and R15=4 for absent `QMISS`, without opening either. The assembler, link-edit and GO steps all returned RC=0000. See [JOB 2170 evidence](../../../packaging/archive/qsam/qsam-q0-dd-inquiry-evidence-20261020.md).
 
 ## Executed negative experiment: deliberately incompatible OPEN — JOB 2171
 
-**Status: EXECUTED 2026-10-20 — JOB 2171 GO ABEND S013-20.** ASM/LKED were RC=0000. See [JOB 2171 evidence](../../../packaging/qsam-q0-open-incompatible-evidence-20261020.md).
+**Status: EXECUTED 2026-10-20 — JOB 2171 GO ABEND S013-20.** ASM/LKED were RC=0000. See [JOB 2171 evidence](../../../packaging/archive/qsam/qsam-q0-open-incompatible-evidence-20261020.md).
 
 The isolated disposable job `QS0BADOP` attempted to open a temporary OUTPUT data set using JCL `DCB=(RECFM=FB,LRECL=80,BLKSIZE=801)`. For FB data, 801 is not a multiple of 80, so this deliberately violates the QSAM blocking relationship. **Observed:** the GO step abended S013-20 during OPEN. Other OPEN/DCB cases may behave differently. The job does not write a production PDS and does not read or modify any existing dataset.
 

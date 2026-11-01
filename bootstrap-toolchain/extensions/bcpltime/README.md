@@ -62,7 +62,7 @@ relocatable object to `EXT_OBJ(BCPLTIME)` using
 `BOOT_JCL(T1TINST)`. JOB 5455 read back and compared all 12 object
 records. BCPLDEMO and BOOT_OBJ remain unchanged. For a future
 installation or clean-room rebuild, see the
-[T.1 installation/recovery procedure](../../../packaging/bcpltime-t1-installation-design.md);
+[T.1 installation/recovery procedure](../../../packaging/archive/bootstrap/bcpltime-t1-installation-design.md);
 the earlier owner authorization does not permit new permanent writes.
 
 ## Offline validation
@@ -98,7 +98,7 @@ in each mode**, including when they ran again as part of the full
 00–162 production panel. The resident production BCXCAT and
 `EXT_OBJ(BCPLTIME)` were installed and verified under separately
 approved JOBs. See the [T.1 closure](../../../packaging/bcpltime-t1-closure-20261024.md)
-and [installation procedure](../../../packaging/bcpltime-t1-installation-design.md).
+and [installation procedure](../../../packaging/archive/bootstrap/bcpltime-t1-installation-design.md).
 Individual regression payload JOB IDs were not included in the owner
 console excerpt; the automated IEWL MAP/GO verdicts are retained.
 

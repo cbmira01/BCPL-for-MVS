@@ -58,4 +58,4 @@ Q.2's consolidated panel should include the ordinary Q.1 negative, FINISH/STOP a
 
 The five-increment assembler fix and offline counter guard are already in authoritative GitHub main commit **7f00ff89**. This documentation-only closure does not alter sources, create a JES job, install/promote BOOT_OBJ, BOOT_DEVOBJ or EXT_OBJ, change accepted Core Runtime/Base Library/compiler objects, or accept the entire Milestone QSAM. Original dated Q.1 exploratory reports remain historical evidence.
 
-**Owner disposition: Q.1 CLOSED; Q.2 OPEN / NOT ACCEPTED.** See [Q.2 kickoff](qsam-q2-kickoff-20261028.md).
+**Owner disposition: Q.1 CLOSED; Q.2 OPEN / NOT ACCEPTED.** See [Q.2 kickoff](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/qsam-q2-kickoff-20261028.md).

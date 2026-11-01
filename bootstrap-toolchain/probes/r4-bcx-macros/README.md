@@ -2,7 +2,7 @@
 
 **Status:** JOB 3720 (23 October 2026) **PASSED** all five test-only
 macro/PUNCH/IEWL selections after the JOB 3719 IFOX macro fix. See
-[`JOB 3720 evidence`](../../../packaging/runtime-extensions-r4-job-3720-evidence-20261023.md).
+[`JOB 3720 evidence`](../../../packaging/archive/runtime-extensions/runtime-extensions-r4-job-3720-evidence-20261023.md).
 JOB 3722 (23 October 2026) PASSED integrated BCPL startup and G!203
 BCPLDEMO dispatch; see the linked evidence below. **R.4 CLOSED by
 owner decision, 24 October 2026**; see the
@@ -153,7 +153,7 @@ compiler, IFOX and IEWL all returned RC=0000, but GO **ABEND S0C1**
 because IEWL started BCPLMAIN rather than the compiled client prefix.
 JOB 3722 subsequently passed all eleven EXEC steps at RC=0000,
 including native BCPL GO and the exact marker R4 BCX BCPL START PASS.
-See [JOB 3722 evidence](../../../packaging/runtime-extensions-r4-job-3722-evidence-20261023.md).
+See [JOB 3722 evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r4-job-3722-evidence-20261023.md).
 It assumes the documented resident compiler, ICINT19, headers, and
 accepted BOOT_OBJ Core/Base members already exist in this MVS image.
 

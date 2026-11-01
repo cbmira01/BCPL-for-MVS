@@ -2,7 +2,7 @@
 
 **Status: MVS PASS — JOB 2172 (GEOMETRY) and JOB 2173 (EMPTY), 20 October 2026.** These are isolated assembler reconnaissance jobs, not a BCPLQSAM module. They do not install or modify object-library PDS members. All data sets are temporary; JCL is generated under ignored `workarea/`.
 
-[Execution evidence for both jobs](../../../packaging/qsam-q0-geometry-empty-eof-evidence-20261020.md).
+[Execution evidence for both jobs](../../../packaging/archive/qsam/qsam-q0-geometry-empty-eof-evidence-20261020.md).
 
 ## GEOMETRY: `QS0GEOM`
 

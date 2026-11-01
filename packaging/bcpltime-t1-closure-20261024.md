@@ -135,7 +135,7 @@ all four `dspal populate --dry-run` manifest previews.
 The accepted installation is reconstructible from Git-controlled
 `EXT_ASM(BCPLTIME)`, `EXT_SOURCE(TIMEHDR)`, the production `BCXCAT`,
 `BOOT_JCL(T1TINST)`, and the accepted R.5 BCX macros/registration
-architecture. The [T.1 installation procedure](bcpltime-t1-installation-design.md)
+architecture. The [T.1 installation procedure](archive/bootstrap/bcpltime-t1-installation-design.md)
 documents member-level incremental installation, read-back verification,
 catalog publication after the object, and recovery. A future fresh
 clean-room rebuild must separately reinstall and verify both BCPLDEMO

@@ -95,7 +95,7 @@ Related documents:
 [master milestone](Milestone-BCPLIO-dynamic-stream.md),
 [M5.5 gate history](Milestone-BCPLIO-dynamic-stream-M5.5-plan.md),
 [current runtime contract](BCPLIO-dynamic-runtime-contract.md),
-[canonical clean-room procedure](../clean-room-mvs-reconstruction.md).
+[canonical clean-room procedure](../../docs/Rebuild-BCPL-for-MVS-from-source.md).
 
 ## Administrative closeout and transfer to maintenance
 

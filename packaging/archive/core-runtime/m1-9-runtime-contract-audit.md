@@ -1,0 +1,1124 @@
+# M1.9 — Runtime Contract and Observability Audit
+
+Status: **CLOSED — Gates A–F accepted with documented limitations (13 October 2026).** Opened 13 October 2026 after acceptance and closure of [M1.8](m1-8-reproducible-runtime.md).
+
+## Objective
+
+Produce a source-grounded, versioned **Runtime Contract Specification** for the five-component reconstructed BCPL runtime: BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT and BLIB. Identify existing behavior, interface exposure, historical compatibility and executable evidence. Establish an explicit observability contract for programmers and MVS operators.
+
+**Audit first.** No production OBJ promotion, SOURCE/JCL synchronization, resident build, compiler modification, or runtime semantic change is authorized by opening M1.9. Git remains implementation authority; MVS is the build and execution target. DEVOBJ is the development/candidate object library; OBJ is the stable ordinary-application library, promoted only on separate authorization.
+
+## Gates
+
+| Gate | Scope | Acceptance evidence |
+| --- | --- | --- |
+| **A — Runtime interface inventory** | Five modules; exported entry points, global-vector slots, linkage conventions, dependencies, and registration | Source-anchored interface matrix, unknowns explicitly identified |
+| **B — Storage and stack contracts** | GETVEC/FREEVEC, APTOVEC, stack frames, limits, ownership, cleanup | Implementation and boundary contracts; matching regressions or gaps |
+| **C — I/O and termination contracts** | Stream naming, selected streams, record buffering, FINISH/STOP, completion codes, abnormal exit | Source-anchored I/O and termination map |
+| **D — Observability inventory and exposure** | D1 mechanisms and owning modules; D2 BCPL/operator invocation and output; D3 tests and gaps | Observability contract with interface, trigger, data source, output, failure behavior, evidence |
+| **E — Historical compatibility** | Cambridge BCPLMAIN/BLIB recovered evidence vs implemented semantics | Difference register: matched, intentional MVS adaptation, omission, uncertain, or defect |
+| **F — Verification and acceptance** | Complete contract/evidence traceability, focused tests only where needed, document unresolved gaps | Accepted specification, coverage matrix, disposition register and milestone close |
+
+## Gate A — preliminary source-grounded inventory
+
+Source inspected directly at M1.9 opening: `asm/bcplmain.asm`, `asm/bcplmem.asm`, `asm/bcplbyte.asm`, `asm/bcplapt.asm`, and the M1.8 build/provenance record. **This is a preliminary inventory, not Gate A acceptance**; BLIB exported globals and all register preservation rules remain to be fully enumerated.
+
+| Object/CSECT | Externally visible symbols or interface | Observed source behavior / audit question |
+| --- | --- | --- |
+| BCPLMAIN | CSECT BCPLMAIN; `ENTRY STKOVFL`; `EXTRN BLIB, GETVEC, FREEVEC, MEMDRAIN, MEMBIND` | MVS entry and saved caller context; allocates global/stack region; imports generated application and BLIB global registrations; publishes selected service slots; owns I/O, termination and stack failure path. |
+| BCPLMEM | `ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMSTAT` | Owns vector allocation/deallocation, private teardown, G6!48-list binding and allocator statistics interface. Classify public BCPL services vs private assembler ABI. |
+| BCPLBYTE | `ENTRY GETBYTE,PUTBYTE` | Byte primitives; BCPL argument/return register convention documented in source; G85/G86 slots published by BCPLMAIN. |
+| BCPLAPT | `ENTRY APTOVEC,APLIMIT`, `EXTRN STKOVFL` | G40 temporary-vector call behavior and shared stack-overflow path; establish whether APLIMIT is a public symbol, runtime configuration, or purely internal state. |
+| BLIB | Compiled generated BCPL object, imported via module trailer/global registration rather than assembler `ENTRY` list | Generated from historical `richards-bcpltape/bcplib/bcpl/blib` via `make-demoted.py`. Enumerate actual exported globals from source, not just historical names. |
+
+### Confirmed BCPLMAIN publication paths requiring formal contract
+
+- Main module trailer registration populates the global vector; BCPLMAIN then explicitly imports the separately linked BLIB module's global trailer (source around lines 687–719).
+- G6 publishes a BCPL word pointer to save-area-compatible state, with modeled G6!29 load-list head and G6!48 allocator-list head. The details must be assessed for historical compatibility.
+- G52/G53 main-program bounds and G54/G55 allocated stack extent are published at byte offsets 208/212 and 216/220. The safe frame limit is **not identical** to published G55: safe limit is 16,384 words from the stack base, with reserved clearance.
+- G11, G12, G13, G14, G15, G16, G17, G33, G39, G40, G41, G42, G46, G47, G85, G86, G87, G88 and provisional G150 are among explicit service-publication paths observed around lines 752–810. This list is **not exhaustive** and must be reconciled to LIBHDR.
+- G76 is imported from BLIB when present; BCPLMAIN installs a fallback only while the G76 slot retains the historical unset sentinel.
+
+### Initial observability inventory, not yet a compatibility claim
+
+| Mechanism | Source evidence | Exposure question for Gate D |
+| --- | --- | --- |
+| Stack markers and high-water measurement | BCPLMAIN initializes alternating markers across 16,384 usable stack words and installs guard/marker metadata (around lines 616–657); historical BLIB implements STACKHWM | Verify current BLIB export and whether G56 STACKHWM operates against published G54/G55 and sentinel layout, then classify result semantics. |
+| Stack exhaustion | BCPLMAIN STKIMPL checks frames against STKLIM; STKOVFL writes a diagnostic to the output buffer and enters termination (around lines 1011–1047); BCPLAPT branches to STKOVFL | Establish exact SYSOUT destination, return status, and whether backtrace or map occurs. |
+| Heap accounting | BCPLMEM exports MEMSTAT and controls GETVEC/FREEVEC/MEMDRAIN; BCPLMAIN connects MEMBIND to G6!48 | Determine MEMSTAT contract, whether it is BCPL callable, what values it exposes and which test covers it. |
+| Debug output | BCPLMAIN explicitly publishes DEBUGINT at G150 and includes a decimal output routine | Determine if documented BCPL service or provisional developer hook; output record behavior. |
+| Historical post-mortem | Historical BLIB includes ABORT, BACKTRACE, MAPSTORE, WRITEARG; reconstructed BLIB object may contain these | Verify installed global addresses, actual runtime prerequisites (load list, SAVEAREA fields, program bounds), and executable behavior **before** advertising programmer-visible support. |
+
+## Existing acceptance baseline
+
+M1.8 Gate F: `BCPL_RUNTIME_PDS=1 BCPL_RUNTIME_LIBRARY=DEVOBJ tools/native/run-regression` resulted in **123 PASS, 0 FAIL, 1 expected SKIP (083 source-only instrumentation), TOTAL 124**. This is broad regression baseline evidence, not individual proof of every contract. Keep this baseline stable during audit.
+
+## Immediate Gate A work
+
+1. Enumerate the exact global-vector definitions in the tracked LIBHDR, and compare source-side registration and BLIB exports. Distinguish published and historical-only slots.
+2. Extract actual BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT calling conventions and preserved/clobbered registers; classify assembler-private and BCPL-public entry points.
+3. Map each service to existing regression cases and flag missing direct coverage.
+4. Record unresolved differences, then accept Gate A only after a verified complete matrix. Gate B begins after Gate A closure.
+
+## Non-goals and controls
+
+No broad regression replay, change to resident MVS datasets, production library promotion, historical capability claims based solely on source presence, or speculative implementation while gates A–E are gathering evidence. Gate F may authorize focused new probes only with a clearly identified evidence gap.
+
+## Gate A — source-entry and allocator ABI detail (13 October 2026)
+
+This pass read the entire four canonical assembler modules and historical
+`richards-bcpltape/bcplib/bcpl/blib` directly from Git. Assertions below are
+**source observations**, not claims about the register behavior of every
+linked application. The generated BLIB source's full export trailer and
+resident LIBHDR have not yet been extracted; Gate A remains open.
+
+### Externally linkable assembler symbols and their audiences
+
+| Source | `ENTRY` symbols | Intended audience | Observed contract |
+| --- | --- | --- | --- |
+| `asm/bcplmain.asm` | `STKOVFL` (plus BCPLMAIN CSECT entry) | Native startup, shared abnormal-stack path | Receives generated module base via R15; `STKOVFL` moves message to buffered output and branches to termination. |
+| `asm/bcplmem.asm` | `GETVEC`, `FREEVEC` | BCPL G87/G88 | GETVEC N in R7, returns BCPL word pointer in R7 or 0 on failure. FREEVEC accepts word pointer R7; zero or unknown pointer is no-op. |
+| `asm/bcplmem.asm` | `MEMDRAIN`, `MEMBIND`, `MEMSTAT` | **Private assembler API**, not automatically BCPL callable | MEMDRAIN uses R14 linkage and frees outstanding allocations; MEMBIND accepts R1=address of published G6!48 list-head slot (zero to unbind); MEMSTAT writes four fullwords to R1 target; R10 clobbered. |
+| `asm/bcplbyte.asm` | `GETBYTE`, `PUTBYTE` | BCPL G85/G86 | R7 word pointer, R8 byte offset, R9 byte value for PUTBYTE; GETBYTE returns R7 low-byte value; restores R4 via current frame at R5 and returns through R6. |
+| `asm/bcplapt.asm` | `APTOVEC`, `APLIMIT` | G40 service; APLIMIT native linker symbol | R7 function, R8 vector size; temporary vector is passed to the function. APLIMIT is an exported data symbol used by the bounds check, **not proof of a BCPL function**. Shared failure path via external `STKOVFL`. |
+
+`BCPLMEM` source explicitly labels itself a static singleton allocator
+and non-reentrant. Its GETVEC allocation stores a private 12-byte control
+header (BCPL word pointer, allocated byte length, next record byte
+pointer) and keeps the list head in `VECLIST`, published through
+`MEMBIND` to the G6!48 slot. The requested payload is `N+1`
+words, and the byte allocation additionally includes 12 header bytes.
+`MEMDRAIN` detaches the list head before `FREEMAIN` and decrements
+current allocation counters. Peak counters are not reset on drain.
+
+### Private observability: MEMSTAT is *not* yet a BCPL service
+
+`MEMSTAT` has a concrete native snapshot ABI: on entry **R1** is the
+address of four writable fullwords; on return they contain, in order,
+`MEMCURN` (currently live vector count), `MEMPEAKN` (peak live
+vector count), `MEMCURB` (current allocated bytes, including private
+headers), and `MEMPEAKB` (peak allocated bytes). It preserves the
+R14 return address, overwrites R14 temporarily, and clobbers R10 on
+entry. It is explicitly intended for a quiescent singleton context.
+
+There is **no demonstrated direct global-vector publication of
+MEMSTAT** in `BCPLMAIN`'s explicit installation block (which
+publishes GETVEC and FREEVEC). Do not document it as a callable
+BCPL-language service or an operator command until an exposure
+mechanism is established. This is a concrete Gate D exposure gap,
+not an implementation absence.
+
+### BLIB historical entry names versus actual export registration
+
+The historical BLIB source contains procedure definitions including
+WRITES, UNPACKSTRING, PACKSTRING, WRITEF, ABORT, ERRORMESSAGE,
+PRINTWIDTH, STACKHWM, MAPSTORE, INPROGRAM, VALIDPOINTER, BACKTRACE,
+WRITEARG, WRITED, WRITEN, NEWLINE, NEWPAGE, READN, WRITEOCT,
+WRITEHEX, WRITEO and WRITEX. Those names establish source-level
+definitions but **do not alone establish the current exported
+global slots, executable code paths or compatibility**. The installed
+object is made by compiling the mechanically demoted derivative;
+its actual compiler-generated registration trailer and LIBHDR
+mapping still need to be correlated.
+
+### Audit cautions found in source headers
+
+`asm/bcplbyte.asm` still says it is not used in normal regression
+linkage, and `asm/bcplapt.asm` calls object-library acceptance
+pending. The completed M1.8 DEVOBJ rebuild and regression show
+both components are in the five-member accepted candidate library.
+Treat those historical header comments as **stale wording requiring
+documentation cleanup**, not as stronger evidence than the tested
+linkage. No semantic source edit is justified by this observation.
+
+### Outstanding Gate A evidence
+
+1. **Resolved:** the tracked authoritative input is `richards-bcpltape/sys3/bcpl/libhdr`, mapped to SOURCE(LIBHDR) in `config/dspal.yaml`. Reconcile its full G-number/name table with installed native and BLIB services.
+2. Enumerate actual exported BLIB globals and distinguish imported
+   module trailer records from installed native service entries.
+3. Cross-check assembler calling conventions (including register
+   preservation, error paths and inter-module storage assumptions)
+   with focused regression coverage before closing Gate A.
+4. Identify which of MEMSTAT, STACKHWM, DEBUGINT and post-mortem
+   routines have verified BCPL/operator invocation paths. Full
+   exposure evaluation is Gate D.
+
+## Gate A — authoritative LIBHDR and runtime registration crosswalk (13 October 2026)
+
+The mapping has been resolved in Git without MVS operation:
+`config/dspal.yaml` maps `SOURCE(LIBHDR)` directly to
+`richards-bcpltape/sys3/bcpl/libhdr`. The tracked file contains a
+single GLOBAL declaration for G1–G99 (with gaps) and defines
+`FIRSTFREEGLOBAL=150`. This is the **compiler-visible name/slot
+contract**, not evidence that each named facility has been installed.
+
+### Runtime-owned or runtime-installed slots
+
+The table below is derived by matching LIBHDR name:global declarations
+to the explicit `BCPLMAIN` installation code (source lines 704–810).
+A slot's presence in LIBHDR alone is **not** marked implemented.
+
+| G slot(s) | LIBHDR name | Publication evidence | Status |
+| --- | --- | --- | --- |
+| 1 | START | Generated application trailer is imported; G1 checked for sentinel | Registered by application; not hardwired runtime routine |
+| 6 | SAVEAREA | `ST 1,24(12)` | Published BCPL word pointer to save-area-compatible area |
+| 11,12 | SELECTINPUT, SELECTOUTPUT | BCPLMAIN writes offsets 44,48 | Explicit native service entries |
+| 13–17 | RDCH, WRCH, UNRDCH, INPUT, OUTPUT | Offsets 52,56,60,64,68 | Explicit native service entries |
+| 30 | STOP | Offset 120 | Explicit native service entry |
+| 33 | WRAPOUTPUT | Offset 132 | Explicit native service entry |
+| 39 | FINDPARM | Offset 156 | Explicit native service entry |
+| 40 | APTOVEC | Offset 160 | Explicit native service entry; separately linkable BCPLAPT also exists; distinguish call sites |
+| 41–42 | FINDOUTPUT, FINDINPUT | Offsets 164,168 | Explicit native service entries |
+| 46–47 | ENDREAD, ENDWRITE | Offsets 184,188 | Explicit native service entries |
+| 52–53 | LOADPOINT, ENDPOINT | Offsets 208,212 | Published program extent data, not functions |
+| 54–55 | STACKBASE, STACKEND | Offsets 216,220 | Published stack extent data, not functions |
+| 76 | WRITEF | BLIB trailer import preferred; native fallback at 304 only if unset | Conditional fallback; ownership may be BLIB |
+| 85–86 | GETBYTE, PUTBYTE | Offsets 340,344 | Native assembler symbols from BCPLBYTE |
+| 87–88 | GETVEC, FREEVEC | Offsets 348,352 | Native assembler symbols from BCPLMEM |
+| 150 | Not named in historical LIBHDR; first free global | Offset 600 | Native provisional DEBUGINT, an extension |
+
+BCPLMAIN additionally imports all recognized exported entries from
+the compiled **BLIB registration trailer**, so the table is **not**
+an exhaustive installed-global table. In particular, a historical
+BLIB procedure with a LIBHDR name (e.g. STACKHWM G56) can be present
+through trailer import even without an explicit `ST` in this table.
+The precise compiler-emitted trailer and coverage evidence remain
+necessary for complete Gate A acceptance.
+
+### LIBHDR observability interfaces and classifications to verify
+
+| G slot | Name | Audit classification |
+| --- | --- | --- |
+| 2 | SETPM | Historical interface; check whether available to native applications |
+| 3 | ABORT | Historical BLIB source definition; operational post-mortem unverified |
+| 4 | BACKTRACE | Historical BLIB source definition; native frame-walk compatibility unverified |
+| 5 | ERRORMESSAGE | Historical BLIB source definition; stream fallback compatibility unverified |
+| 31 | LEVEL | Historical service needed by BACKTRACE; verify native provider |
+| 52–55 | LOADPOINT, ENDPOINT, STACKBASE, STACKEND | Explicitly published runtime data |
+| 56 | STACKHWM | Historical BLIB definition; compare to native stack marker layout |
+| 58–59 | INPROGRAM, VALIDPOINTER | Historical BLIB definitions; assess savearea/load-list prerequisites |
+| 69 | WRITEARG | Historical BLIB formatter; pointer / function-tag interpretation unverified |
+| 78 | MAPSTORE | Historical BLIB definition; structural compatibility unverified |
+| 79 | USERPOSTMORTEM | Historical extension hook; verify initialization and invocation |
+| 82–84 | SETBREAK, ISBREAK, ERRORRESET | Historical interface only, until native implementation evidence |
+| 150 | DEBUGINT (extension) | Explicit native installation; BCPL caller usability and output contract unverified |
+| — | MEMSTAT | Assembler-private snapshot ABI, **no LIBHDR slot or explicit native global publication** |
+
+### Historical LIBHDR anomaly — do not silently amend
+
+The checked-in historical LIBHDR assigns both
+`OPENBLOCKFILE:94` and `UPDATEBLOCKFILE:94`. This duplicate is
+present in **the source itself**; audit the historical semantics and
+whether both names intentionally alias the same service before
+changing any compiler-facing header. Other gaps such as G50 and
+G57 are not automatically evidence of implementation defects.
+
+### Gate A verification boundary
+
+We now have the correct tracked LIBHDR mapping and precise **explicit
+native-publication** evidence. This does **not yet establish**:
+all compiler-emitted BLIB trailer registrations, comprehensive
+MVS/BCPL register preservation for each native entry, or executable
+coverage for each LIBHDR slot. Those remain explicit Gate A tasks;
+they are not grounds for broad runtime changes.
+
+## Gate A — BLIB definition-to-global crosswalk and regression trace (13 October 2026)
+
+The tracked historical `richards-bcpltape/bcplib/bcpl/blib` was
+compared to the tracked compiler header
+`richards-bcpltape/sys3/bcpl/libhdr` and the six-stage resident
+`jcl/build-dev-blib.jcl` pipeline. The latter compiles
+`SOURCE(BLIB)` under `SOURCE(LIBHDR)`, repairs the two known
+CG370 cards, assembles its independent CSECT and installs
+`DEVOBJ(BLIB)`. All steps were RC=0000 during M1.8 Gate C.
+**The source-level mapping below is not a decoded object trailer**;
+it enumerates the named top-level definitions and their LIBHDR
+slots, to be checked against generated trailer evidence if needed.
+
+| BLIB top-level definition | LIBHDR slot | Existing executable evidence (scope) |
+| --- | --- | --- |
+| ABORT | G3 | Historical reporting path only; no direct post-mortem execution proof |
+| BACKTRACE | G4 | No native call-chain validation identified |
+| ERRORMESSAGE | G5 | No dedicated fault-stream validation identified |
+| STACKHWM | G56 | 120 tests initialized-stack in-range high-water return |
+| INPROGRAM, VALIDPOINTER | G58, G59 | 121 empty lists; 122 descriptor/list traversal; 123 automatic G6!48 allocator-list publication |
+| WRITES | G60 | 065 historical WRITES; 067/069 separately linked BLIB |
+| WRITEN | G62 | 066 historical WRITEN; 067/069 separately linked BLIB |
+| NEWLINE, NEWPAGE | G63, G64 | BLIB formatting/link paths; dedicated NEWPAGE semantic proof not yet mapped |
+| WRITEO | G65 | 074 independent BLIB object |
+| PACKSTRING, UNPACKSTRING | G66, G67 | 071 in-place pack; 070 unpack |
+| WRITED | G68 | 072 field-width behavior |
+| WRITEARG | G69 | Used by historical reporting; independent format/pointer classification proof not mapped |
+| READN | G70 | No direct focused input parsing evidence identified yet |
+| WRITEX, WRITEHEX | G74, G75 | 073 width path; further coverage mapping needed |
+| WRITEF | G76 | 068 formatted output, 075 mixed arguments, 076 diagnostics, 081 nested argument cursor |
+| WRITEOCT | G77 | 058 and 064 format cases; independent direct-entry coverage to check |
+| MAPSTORE | G78 | No complete native post-mortem map validation identified |
+| PRINTWIDTH | **No LIBHDR global slot** | Top-level helper name does not establish a public BCPL global |
+
+The name `PRINTWIDTH` appears as a top-level BLIB procedure but
+not in the tracked LIBHDR; an actual compiler export cannot be
+inferred from procedure visibility alone. Likewise, the header's
+G79 USERPOSTMORTEM is **not defined by this BLIB source**.
+Its slot must not be equated with an implemented callback.
+
+### Why this is a meaningful exposure distinction
+
+- **Named public slot:** LIBHDR assigns a global number and compiled
+  code may reference it; runtime installation still requires an actual
+  registered module or explicit native publisher.
+- **Defined historical routine:** BLIB source has an implementation,
+  but its successful translation and link do not establish the
+  correctness of all control/data prerequisites.
+- **Proven focused behavior:** individual regressions exercise only
+  the specifically asserted path. For example, test 120 confirms
+  `STACKHWM` returns an in-range word address, *not* precise
+  usage accounting, and test 121 establishes only empty-list
+  behavior for pointer predicates.
+- **Private native entry:** `MEMSTAT` is exported through a native
+  assembler symbol with a defined R1 snapshot ABI but has no
+  LIBHDR assignment or direct published global slot.
+
+### Traceability caveat — historical README status text
+
+Some regression READMEs retain older staging instructions (e.g.
+069 describes an earlier planned failure; 121–123 warn that installed
+PDS mode cannot yet work; 082 says TK5 execution pending).
+These are **historical checkpoint narratives**, not a current status
+override: M1.8's 13 October 2026 full DEVOBJ panel reported
+123 PASS / 0 FAIL / 1 expected SKIP, including cases
+069, 082, 120, 121, 122 and 123. Use dated actual execution
+evidence rather than assuming the first paragraph of an older
+test README represents the current runtime.
+
+### Remaining Gate A verification
+
+The current inventory identifies header slots, historical BLIB
+definitions and most representative tests. To treat the crosswalk
+as a complete *actual exports* ledger, recover the compiler-produced
+global-registration trailer (from retained CG370 assembly, a
+non-mutating linkage report, or a deliberately isolated probe).
+Also reconcile assembler-private register clobbers and callback
+boundaries. No MVS deployment or production OBJ operation is
+authorized by this audit.
+
+## Gate A — linkage reconstruction and remaining evidence boundary (13 October 2026)
+
+Further source inspection confirmed that the canonical BCPLMAIN
+`GIDONE/BLIMP` sequence locates the BLIB module end using the
+halfword offset at BLIB+10, then walks backward through eight-byte
+(global byte offset, relocated entry address) pairs until a zero
+entry address. Each nonzero pair is installed into the global
+vector after validating its offset. The application uses the same
+general trailer-registration mechanism. This proves **how**
+compiled BLIB exports become callable in the current runtime, without
+decoding every individual export pair in the specific assembled deck.
+
+Evidence from regression 069's recorded historical three-CSECT
+linker map and successful `BLIB 42` GO validates the independent
+BLIB registration model. The later authoritative M1.8 DEVOBJ
+full-suite acceptance includes 069, 067–081 and 120–123.
+Older README statuses described intermediate developmental checkpoints
+and must not be mistaken for 13 October 2026 acceptance status.
+
+### Register / linkage boundary matrix (source observed)
+
+| Interface | Linkage / input | Return and controls | Scope |
+| --- | --- | --- | --- |
+| Generated module → BCPLMAIN | R15 contains compiled-module base; entry prefix transfers to BCPLMAIN | BCPLMAIN builds MVS R13 save area, G vector, BCPL stack and system vector; dispatches START | Native startup, not an ordinary BCPL callable function |
+| BCPL call to GETVEC / FREEVEC | R5 current frame, R6 return, R7 first argument; R10 used as BCPLMEM local base | GETVEC returns R7 pointer or 0; FREEVEC returns through R6 and restores R4 from caller frame | G87/G88 |
+| BCPL call to GETBYTE / PUTBYTE | R7 pointer, R8 byte offset, R9 byte argument for PUTBYTE | GETBYTE returns byte in R7; both restore R4 from 0(R5) and branch via R6 | G85/G86 |
+| BCPL call to APTOVEC | R7 target function, R8 number of words; R15 next frame, R5 current frame | Constructs temporary vector and invokes R7 function; uses R6 for nested BCPL return; overflow branches STKOVFL | G40; separate APLIMIT symbol is data |
+| BCPLMAIN → MEMBIND | R1 points at writable G6!48 slot, R14 supplies native return | Registers live-list publication; R1=0 unbinds | Private assembler ABI |
+| BCPLMAIN → MEMDRAIN | R14 native return | Frees outstanding vector records and refreshes published head | Private assembler ABI |
+| Native private → MEMSTAT | R1 points to 16 writable bytes, R14 native return | Four snapshot fullwords written, R10 clobbered; no BCPL global exposure established | Private assembler ABI |
+| BCPL generated code → system vector | R11 supplies SYSV base; branch slots at relative offsets 0,20,40,60,80 | Return, count, finish, checked-entry and checked-count hooks. COUNT and checked-count are labeled stubs in current source | Machine-code system interface, not LIBHDR globals |
+
+**Important limits:** these rows summarize source-visible conventions,
+not a complete exhaustive clobber audit for every BCPLMAIN stream
+service. The byte service's source header saying it is not used in
+normal regression linkage and BCPLAPT's pending-acceptance comment
+are stale relative to M1.8 build/test evidence.
+
+### Gate A decision / evidence not yet possessed
+
+- **Proven:** authoritative LIBHDR location, native entry symbols,
+  native explicit global publishers, BLIB source-defined global names,
+  compiler trailer import mechanism, and focused acceptance of
+  representative actual BLIB object services.
+- **Still not proven by an explicit artifact:** complete set of
+  assembled BLIB trailer entries and their individual addresses,
+  and exhaustive per-entry clobber matrices for all native services.
+  No retained generated BLIB assembler listing was identified in
+  the inspected tracked sources. A new resident compilation solely
+  to extract it is **not** being triggered during this source-only
+  audit.
+
+Keep Gate A **open** until the complete actual BLIB export-trailer
+ledger can be reconciled, or explicitly adopt the narrower
+source/header/registration-and-regression proof as its acceptance
+criterion. Do not silently equate names found in a historical
+source file with directly observed object exports.
+
+## Gate A — complete source-level BLIB export candidate ledger (13 October 2026)
+
+A direct, systematic comparison of the tracked historical
+`richards-bcpltape/bcplib/bcpl/blib` with the actual configured
+`SOURCE(LIBHDR)` input
+(`richards-bcpltape/sys3/bcpl/libhdr`) identified **22 top-level
+BLIB definitions**: **21 named globals** and **one top-level
+unmapped helper, PRINTWIDTH**. Local nested functions such as
+MAPSTORE's MAPOUT are not top-level candidates.
+
+The resulting ordered list is:
+
+| Name | LIBHDR global | Name | LIBHDR global |
+| --- | --- | --- | --- |
+| WRITES | 60 | UNPACKSTRING | 67 |
+| PACKSTRING | 66 | WRITEF | 76 |
+| ABORT | 3 | ERRORMESSAGE | 5 |
+| PRINTWIDTH | *none* | STACKHWM | 56 |
+| MAPSTORE | 78 | INPROGRAM | 58 |
+| VALIDPOINTER | 59 | BACKTRACE | 4 |
+| WRITEARG | 69 | WRITED | 68 |
+| WRITEN | 62 | NEWLINE | 63 |
+| NEWPAGE | 64 | READN | 70 |
+| WRITEOCT | 77 | WRITEHEX | 75 |
+| WRITEO | 65 | WRITEX | 74 |
+
+This reconciles **all 22 source-level definitions** against the
+selected LIBHDR, without silently promoting PRINTWIDTH to a public
+global. No duplicate G number appears among the 21 named BLIB
+definitions. The historical LIBHDR's unrelated G94 duplicate
+remains a distinct header issue.
+
+### Strength and limitation of this ledger
+
+This is the **complete source/header candidate-export ledger**,
+not a byte-for-byte dump of the generated module's relocation or
+global-registration trailer. The M1.8 six-step resident BLIB build
+completed at RC=0000; BCPLMAIN's actual import code scans the BLIB
+trailer; and the M1.8 full DEVOBJ regression passed all executable
+cases, including representative independent BLIB linkage and
+observability services. This is substantial *behavioral corroboration*,
+but neither compiler success nor sampled execution proves that
+**every** one of the 21 candidate trailer pairs exists, carries
+the correct relocated address, and can be called correctly.
+
+**Disposition:** retain that explicit object-trailer verification
+as an open evidence item, without requiring a fresh build or changing
+MVS data during source-only Gate A. A full generated-assembly listing
+or object-level registration dump, obtained read-only from an
+existing artifact or from a deliberately isolated probe, could
+resolve it. Gate A is not yet closed by this source-level enumeration.
+
+## Gate A — acceptance decision (13 October 2026)
+
+**Accepted for runtime interface inventory, with an explicit
+object-evidence limitation.** The ledger accounts for all 22
+top-level BLIB procedures (21 LIBHDR-numbered candidates, one
+unnumbered PRINTWIDTH helper), all explicit assembler ENTRY
+symbols of the four canonical native modules, canonical LIBHDR
+mapping, native global installers, application/BLIB registration
+mechanism, representative calling conventions, and available
+regression evidence. The current M1.8 full DEVOBJ panel supplies
+123 passing executable regressions and an expected source-only
+skip, without claiming each global has its own test.
+
+**Non-closure item / deferred verification:** There is no retained
+complete decoded export trailer for installed DEVOBJ(BLIB) in the
+inspected Git inputs. The exact compiled trailer pair count and
+individual relocations are **not verified**. Do not report them
+as byte-level proven or conflate source-to-LIBHDR mapping with
+an ESD/RLD inspection. If future work needs an exact binary
+inventory, collect a read-only object-deck listing or decode a
+binary-safe copy under a separately controlled evidence task.
+
+`tools/datasets/dspal cat/get` deliberately rejects object libraries for
+text transfer; using it on DEVOBJ(BLIB) would be incorrect. This
+does not prevent Gate A acceptance because the contract inventory
+records uncertainty rather than inventing operational proof.
+
+**Gate A disposition: ACCEPTED, qualified as above.** No resident
+MVS dataset or runtime implementation was changed.
+
+## Gate B — storage and stack audit opened
+
+Examine concrete source/behavior in this order:
+
+1. **Heap ownership:** BCPLMEM's GETMAIN size, the 12-byte record
+   header and linked list, G87/G88 return/error contracts,
+   pointer handling, counters, G6!48 publication and MEMDRAIN.
+2. **Frame layout and checked entry:** generated CG370 call
+   convention; STKIMPL frame-size check, STKLIM safe boundary,
+   STKCIMP call-count stub and return path.
+3. **Stack high-water:** physical GETMAIN bounds versus the
+   published G54/G55 extent, alternating marker initialization,
+   BLIB STACKHWM predicate and what regression 120 proves.
+4. **Temporary vectors:** BCPLAPT's APTOVEC and APLIMIT contract,
+   nested calls and stack-limit failures.
+5. **Exit ownership:** which allocations are drained on
+   FINISH/STOP/abnormal paths, and whether failure paths report
+   appropriate completion codes. Gate C covers full termination
+   semantics; Gate B records storage-specific prerequisites.
+
+Distinguish implemented behavior, separately tested behavior,
+and remaining historical-equivalence gaps. Avoid changing
+runtime source during the audit.
+
+## Gate B — storage ownership and stack implementation audit (13 October 2026)
+
+**Source inspection completed for core allocator, frame limit,
+stack markers and termination reclaim. Gate B remains OPEN** pending
+validation of independent APTOVEC limit initialization and detailed
+semantic/observability checks.
+
+### Main storage allocation
+
+Canonical `asm/bcplmain.asm` defines one static
+`DYNLEN=68592` byte MVS GETMAIN allocation: 700 global-vector
+fullwords (2,800 bytes), 16,384 working-stack fullwords
+(65,536 bytes), and 256 reserved bytes. `DYNWORK` begins at
+the end of the globals; `STKLIM = DYNWORK+65536`; and
+`DYNEND = STKLIM+256`. G54 (STACKBASE) publishes
+`DYNWORK>>2`, while G55 (STACKEND) publishes
+`DYNEND>>2` — **the exposed extent includes clearance beyond the
+operational frame limit**. A check that merely verifies a pointer
+is below G55 is therefore not a proof the pointer is within the
+safe working-stack region.
+
+### GETVEC / FREEVEC and allocator accounting
+
+Canonical `asm/bcplmem.asm` is a static, non-reentrant singleton.
+GETVEC accepts N in R7, rejects negative N and values above
+4,194,299, then asks MVS for **4(N+1)+12 bytes**. On success,
+its 12-byte prefix records the returned BCPL word pointer,
+total byte extent, and the previous allocation-list head.
+The returned word pointer is the base byte address plus 12,
+shifted right two bits. Failure returns R7=0. Linked successful
+allocations increment current/peak live-object count and
+current/peak allocated bytes; the byte statistics include
+the 12-byte header, not just usable vector data.
+
+FREEVEC accepts the BCPL word pointer R7. Zero or a pointer not
+found by **exact head-record pointer comparison** is a no-op.
+A found allocation is unlinked and freed using its stored size
+and byte base. It decrements live-count/byte counters and, when
+the head changes, publishes the new head through MEMBIND.
+
+MEMBIND accepts R1 pointing to writable G6!48, publishing the
+allocator byte-pointer list head (or R1=0 to unbind).
+MEMDRAIN walks live records, unlinks before FREEMAIN, decrements
+current statistics, and refreshes the published head. MEMSTAT
+writes current count, peak count, current allocated bytes and
+peak allocated bytes to four successive fullwords at R1.
+MEMSTAT is assembler-private and not a demonstrated BCPL global.
+
+**Evidence:** GETVEC/FREEVEC regressions 27–32, release/termination
+39 and 82, manually traversed live descriptors in 122, and
+automatic G6!48 publication in 123. Test 82 explicitly does not
+prove exact MVS FREEMAIN quantities; the implementation and
+contract must not claim instrumentation beyond the observed test.
+
+### Stack initialization and high-water calculation
+
+BCPLMAIN writes 8,192 pairs of historical EBCDIC marker fullwords,
+`X'5C40E2E3'` (EVENSTACK) then `X'C3D2405C'` (ODDSTACK),
+over the 16,384-word working area. It writes the EVENSTACK guard
+at `DYNEND-8` (G55-2), and stores at `DYNEND-4` (G55-1)
+the word address `(STKLIM-8)>>2`.
+
+Historical BLIB STACKHWM first checks the guard at
+`STACKEND-2`, checks the saved scan starting word address
+against STACKBASE..STACKEND, and requires EVENSTACK at that
+starting word. It then walks backward in steps of two words
+until a marker mismatch; its outputs are a BCPL word address
+of high-water usage, UNSET=1, or OVERFLOW=0. **A measurement
+is not a byte or word count.** Test 120 validates that the
+installed service returned an address in range, not the precise
+highest used address or full postmortem semantics.
+
+### Checked entries and overflow
+
+The system vector referenced through R11 implements S.STKCK
+at displacement 60; the checked-entry call supplies an inline
+frame-size fullword, and STKIMPL validates the size/alignment,
+calculates `next-frame+size`, and compares against STKLIM,
+which is *stricter than G55*. Its success return skips the
+inline fullword. The malformed-frame path exits with R15=36.
+The overflow route STKOVFL buffers `STACK OVERFLOW`
+and takes the FINIMPL termination path, which currently clears
+the normal completion code to zero. **Flag for Gates C/D:**
+this may produce an abnormal-looking diagnostic with a normal
+completion code; do not advertise reliable nonzero overflow
+status without independent execution evidence.
+
+S.COUNT (displacement 20) and S.STKCKCOUNT (80) are explicit
+return-over-inline-word stubs, not actual call counters.
+
+### APTOVEC discrepancy requiring directed investigation
+
+The canonical BCPLMAIN source still includes a local
+`APTOVEC` implementation checking its own STKLIM, while
+the separately built `asm/bcplapt.asm` exports
+`APTOVEC` and an `APLIMIT` data symbol, initialized to
+zero in that source. BCPLMAIN's explicit G40 installation
+uses local `LA 1,APTOVEC`; no `APLIMIT` reference or
+initialization appears in the inspected canonical BCPLMAIN
+assembler source. This raises a **linkage-selection and
+initialization question**, not a proven runtime defect:
+the native regression/link setup may externalize G40 or
+initialize the independent APLIMIT in a build-specific path.
+Regressions 091–093 passed in the M1.8 DEVOBJ panel, but
+their link/edit inputs must be examined before asserting
+that the independent APTOVEC and its limit are exercised in
+the default runtime. Gate B will trace the actual selection.
+
+### Termination ownership boundary
+
+FINISH clears STOPRC; STOP saves R7 into STOPRC. Both use
+FINEXIT to flush and close buffered streams, then RELMEM
+invokes private MEMDRAIN and MEMBIND(0), and FREEMAIN releases
+the global/stack allocation before returning to MVS. The
+storage cleanup is source-observable on these normal and
+explicit STOP paths. Not every early exit follows FINEXIT:
+for example, the malformed checked-frame path returns 36
+via an independent branch. Gate C must classify all error
+paths individually rather than generalizing cleanup behavior.
+
+**Gate B next:** inspect the actual regression-linker selection
+and APLIMIT setup; map outcomes and refine the storage/stack
+contract with explicit tested versus source-observed evidence.
+
+## Gate B — resolved DEVOBJ APTOVEC linkage ambiguity (13 October 2026)
+
+The actual installed-object regression construction is now traced
+through `tools/native/run-regression` →
+`bootstrap-toolchain/regression/run-test-mvs.sh` →
+`run-test.sh` →
+`tools/checks/prepare-runtime-pds-regression.py`.
+
+For `BCPL_RUNTIME_PDS=1`, the runner **rejects**
+`BCPLAPT_OBJECT`, `BCPLBYTE_OBJECT` and `BCPLMEM_OBJECT` source
+externalization flags, and instead link-edits the assembled application
+with explicit `INCLUDE OBJ(BCPLMAIN)`, `OBJ(BCPLBYTE)`,
+`OBJ(BCPLAPT)`, `OBJ(BCPLMEM)`, `OBJ(BLIB)` cards, using
+`BCPL_RUNTIME_LIBRARY=DEVOBJ` to set the **single object library
+DD**. Therefore regression 091–093 did include independent
+DEVOBJ(BCPLAPT), but **inclusion alone does not establish call-path
+selection**.
+
+The canonical `asm/bcplmain.asm` explicitly publishes
+`LA 1,APTOVEC; ST 1,160(12)` at G40, and defines its *own*
+local APTOVEC label, local `APMAXN` and comparison against STKLIM.
+It does **not** declare `EXTRN APTOVEC,APLIMIT`, nor reference
+or initialize APLIMIT. Conversely, `asm/bcplapt.asm` independently
+exports APTOVEC and APLIMIT and compares a temporary-vector
+upper address to **APLIMIT initially F'0'**.
+On the observed runtime registration path, G40 therefore points
+to **BCPLMAIN's local APTOVEC**, not the standalone BCPLAPT entry,
+even when BCPLAPT is linked into the MVS executable. The independent
+module's execution and limit initialization are **not** established
+by M1.8's installed-runtime regression passes.
+
+The older test-only source externalization utility
+`tools/checks/externalize-bcplapt.py` rewrites the global publisher
+to `L 1,=A(APTOVEC)`, adds `EXTRN APTOVEC,APLIMIT`, and explicitly
+initializes `APLIMIT` from BCPLMAIN's STKLIM. **That adapted source
+is not used in the installed-object PDS path**. It explains why
+earlier standalone BCPLAPT tests may have worked while the
+canonical independently built BCPLAPT object is not wired into
+ordinary G40 calls.
+
+**Gate B finding B-APT-01 (verified source wiring discrepancy):**
+the five-member DEVOBJ packaging includes BCPLAPT, but canonical
+G40 is still supplied by BCPLMAIN's in-module implementation.
+Do not describe DEVOBJ regression 091–093 as proving the standalone
+BCPLAPT ABI. APLIMIT initialized to zero makes direct independent
+APTOVEC calls unsafe before a correct limit setup. This is a
+**contract/integration gap**, not a regression failure and not
+grounds to overwrite production OBJ during this audit.
+
+### Suggested disposition
+
+Record B-APT-01 as a Gate B discrepancy, then either (a) formally
+document in-module APTOVEC as the current selected service and
+separately defer BCPLAPT activation, or (b) authorize a focused,
+testable later integration change that publishes the external entry
+and initializes APLIMIT. Choose deliberately; no silent
+runtime edit is warranted in audit-only Gates A–E.
+
+Evidence anchors: `asm/bcplmain.asm` G40 publisher around
+lines 807–808 and local APTOVEC at 1067–1093;
+`asm/bcplapt.asm` APTOVEC/APLIMIT and its limit test;
+`tools/checks/prepare-runtime-pds-regression.py` lines 119–155;
+`run-test.sh` lines 137–189;
+`tools/checks/externalize-bcplapt.py` function `main`.
+
+## Gate B acceptance and handoff to Gate C (13 October 2026)
+
+**Accepted as an implementation/evidence audit; no source changes.**
+
+The canonical main allocation is 68,592 bytes: 2,800 bytes
+for 700 global words, 65,536 bytes for 16,384 stack words,
+and 256 bytes of clearance. The STKIMPL comment referring to
+16KB is stale; actual safe stack size is 64 KiB. G55 denotes
+the larger physical extent, while STKLIM enforces the smaller
+working-stack bound.
+
+BCPLMEM's GETVEC uses a 12-byte header and N+1 word payload.
+FREEVEC and MEMDRAIN unlink before releasing storage.
+MEMSTAT's live/peak counts and bytes are private native statistics.
+BLIB STACKHWM returns a word address or status, not a byte count.
+Regression 120 verifies an in-range result, not exact usage.
+
+**Disposition register:**
+
+- B-APT-01: canonical G40 selects BCPLMAIN's internal APTOVEC;
+  independent BCPLAPT is linked but not selected, and its
+  APLIMIT data starts at zero. Defer activation/integration;
+  installed regression 091–093 proves the selected G40 path only.
+- B-STK-01: G55 exceeds the safe-frame bound by 256 bytes.
+  Document both bounds, not a single interchangeable limit.
+- B-STK-02: source comment says 16KB despite actual 64 KiB;
+  defer nonsemantic comment correction.
+- B-STK-03: STACKHWM exact high-water precision remains untested;
+  carry to observability Gate D.
+- B-EXIT-01: STKOVFL emits a diagnostic but branches to
+  FINIMPL, which clears the completion code. Carry to Gate C.
+- B-EXIT-02: malformed-frame STKFORM returns R15=36 directly,
+  bypassing ordinary FINEXIT cleanup. Carry to Gate C.
+- B-MEM-01: MEMSTAT has no proven BCPL global publication;
+  carry to Gate D.
+- B-MEM-02: regression 082's successful termination with
+  outstanding vectors is not an independent accounting of
+  FREEMAIN amounts. Preserve as a verification limitation.
+
+Evidence includes canonical BCPLMAIN/BCPLMEM/BCPLAPT,
+historical BLIB, the installed-object linker recipe, and
+regressions 27–32, 39, 48–52, 82, 91–93 and 120–123.
+M1.8's 123-pass full DEVOBJ panel remains the acceptance
+baseline; it does not prove every exceptional branch.
+
+**Gate B: ACCEPTED with documented deviations. Gate C next:
+I/O and termination.** No MVS datasets or object libraries
+were changed.
+
+## Gate C — I/O and termination source audit (13 October 2026)
+
+**Gate C in progress.** This audit reads canonical `asm/bcplmain.asm`,
+including the actual input/output and exit implementations. Do not infer
+the full historical MVS/Cambridge stream system from LIBHDR entries.
+
+### Implemented BCPL-facing stream globals
+
+| G number | LIBHDR name | Implemented source behavior |
+| --- | --- | --- |
+| 11,12 | SELECTINPUT, SELECTOUTPUT | Select recognized static stream handles; an unrecognized handle is not selected |
+| 13,15 | RDCH, UNRDCH | Reads selected stream; independent one-character pushback per input source |
+| 14 | WRCH | Buffers character in selected output record; newline emits one QSAM record |
+| 16,17 | INPUT, OUTPUT | Return current word-address stream handle |
+| 33 | WRAPOUTPUT | On alternate output stream, sends the current 132-byte record and resets buffer |
+| 39 | FINDPARM | Memory stream over MVS EXEC PARM, up to 100 bytes plus newline and EOF |
+| 41,42 | FINDOUTPUT, FINDINPUT | Recognize configured DDNAMEs and return opaque BCPL word handles; otherwise 0 |
+| 46,47 | ENDREAD, ENDWRITE | Release/reset selected named stream; alternate output flushes pending buffer before close |
+
+G11–17 etc. are explicitly installed in BCPLMAIN's global vector;
+historical LIBHDR declares many further I/O globals **not thereby
+implemented**, such as READREC, WRITEREC and library/member operations.
+
+### Input record conversion
+
+`FINDINPUT` recognizes `BCPIN` and `BCPINB`; both are lazily
+OPENed QSAM input DCBs, with separate record positions, EOF flags,
+newline and pushback state. Fixed 80-byte records have **trailing
+EBCDIC blanks trimmed**, retaining interior blanks; RDCH emits
+one logical newline (10) per record, including an entirely blank
+record. After EODAD the selected stream returns -1; UNRDCH can
+repeat the last RDCH result once for its selected source, including
+the EOF result. `FINDPARM` provides a distinct memory stream for
+the parameter bytes and then newline/EOF. The configured EXEC PARM
+length is clamped at 100.
+
+**Contract limitation:** fixed-record trailing blanks are
+indistinguishable from padding under this interface. No claim
+is made of binary-preserving or arbitrary-length input.
+
+### Output record conversion
+
+Default `SYSPRINT` and alternate `BCPALT` each have a
+132-byte output buffer. WRCH appends EBCDIC bytes, and the
+newline character flushes a record. Default SYSPRINT is OPENed
+at BCPLMAIN startup; alternate BCPALT is OPENed lazily by
+FINDOUTPUT. A non-newline character arriving at an already-full
+132-byte buffer triggers STOP(12) rather than continuing or
+silently truncating. ENDWRITE flushes and CLOSEs selected
+BCPALT, restoring selection to SYSPRINT. FINEXIT flushes a
+nonempty final record on each open output and closes those
+DCBs. The source implements static named streams; arbitrary
+DDNAMEs and full historical dynamic stream management are
+not established.
+
+### Termination and completion-path classification
+
+| Path | MVS completion / visible output | Cleanup in source | Audit status |
+| --- | --- | --- | --- |
+| `S.FIN` / FINIMPL | STOPRC is explicitly zeroed | FINEXIT flushes/closes streams, MEMDRAIN, MEMBIND(0), FREEMAIN main block | Implemented normal return |
+| `STOP(N)` / STOPENT | R7 saved as STOPRC, returned in R15 | Same FINEXIT cleanup | Explicit completion-code path |
+| Output capacity overflow | Loads R7=12, branches to STOPENT | Normal FINEXIT cleanup | Explicit STOP(12); actual MVS report must be checked before claiming exact operator presentation |
+| STKOVFL | Buffers `STACK OVERFLOW`, then branches to FINIMPL (R15=0) | FINEXIT cleanup | Controlled diagnostic with success completion code; observability concern |
+| Invalid checked-frame metadata / STKFORM | R15=36 direct return | Bypasses FINEXIT, MEMDRAIN and explicit DCB closure | Exceptional exit path, not normal cleanup |
+| Startup no-storage / GNOCORE | R15=24 direct return | No dynamic allocation yet; no FINEXIT | Independent bootstrap failure |
+| Missing START / NOSTART | R15=20 direct return | Calls RELMEM for storage release, but not FINEXIT stream closure | Partial explicit cleanup |
+| Oversize global export / GTOOBIG | R15=16 direct return | Calls RELMEM, not FINEXIT | Partial explicit cleanup |
+| Unexpected return from START / BADRETN | R15=36 direct return | Calls RELMEM, not FINEXIT | Partial explicit cleanup |
+
+The direct-return branches are intentionally documented
+separately. MVS task termination might reclaim process resources,
+but that is **not equivalent** to demonstrating application-level
+buffer flush or explicit CLOSE/FREEMAIN on every branch.
+
+### Evidence and follow-up
+
+Representative M1.8 DEVOBJ passing regressions:
+084–089 for FINISH/STOP, 094–100 for input/EOF/unread and blank
+records, 101–119 for multiple output/input streams, close/reopen,
+record boundaries, wrapping and termination flush; 052 and 093
+for controlled stack-overflow output. The suite's PASS result
+supports these **specific selected paths**, not every recovery
+condition or unsupported historical LIBHDR interface.
+
+**Gate C remains OPEN** until source-derived paths are cross-referenced
+to exact test assertions and any unimplemented historical I/O entry
+is explicitly marked absent or unresolved. Gate D will address how
+diagnostics and codes are actually exposed to programmers/operators.
+
+## Gate C — evidence reconciliation and acceptance (13 October 2026)
+
+**Gate C accepted as a canonical-source contract audit, not a
+claim of complete historical I/O compatibility.**
+
+### Confirmed source paths
+
+- The installed runtime directly publishes stream-related globals
+  G11–G17, G33, G39, G41–G42 and G46–G47. Source inspection of
+  BCPLMAIN lines 1097–1593 establishes the named QSAM and PARM
+  stream behaviors recorded above.
+- `BCPIN` and `BCPINB` have separate 80-byte fixed-record
+  buffers, per-source EOF/newline/pushback state and lazy OPEN.
+  Trailing blanks are discarded; newline is generated at each
+  logical record boundary. FINEXIT closes opened input DCBs.
+- Output uses 132-byte records for default SYSPRINT and alternate
+  BCPALT; newline issues a PUT, and non-newline output beyond
+  the record limit calls STOP(12). FINEXIT flushes nonempty
+  trailing buffers.
+- `S.FIN` takes FINIMPL, clears STOPRC and calls FINEXIT.
+  `STOP(N)` enters STOPENT, saves R7 and also calls FINEXIT.
+  FINEXIT closes streams and invokes RELMEM before returning.
+- `STKOVFL` emits a diagnostic through FINIMPL and thus returns
+  success code 0. STKFORM (36), GTOOBIG (16), NOSTART (20),
+  GNOCORE (24), and BADRETN (36) follow separate early-exit
+  paths, with cleanup distinctions recorded above.
+
+### Test scope / limitations
+
+The previously accepted M1.8 full DEVOBJ panel
+(123 PASS, 0 FAIL, one source-instrumentation SKIP) includes
+focused normal-I/O and exit scenarios; e.g. regression 093
+specifically describes `STACK OVERFLOW` with GO RC=0000.
+The runner in `bootstrap-toolchain/regression/run-test.sh`
+compares against each case's `expected.txt` (at line 579),
+but the **individual expected fixtures for the ranges
+previously cited have not been exhaustively re-read in this
+Gate C pass**. Consequently, range labels such as 094–119
+are **traceability pointers, not a verified per-case coverage
+matrix**. Do not assert that every individual stream capability
+or exceptional path has a dedicated successful probe without
+reviewing that case's own fixture and output record.
+
+Current exclusions: arbitrary DDNAME dispatch, general dynamic
+stream tables, binary-faithful transport of fixed-record trailing
+spaces, historical READREC/WRITEREC/member I/O, and reliable
+nonzero termination status for stack exhaustion. The source
+contains legacy comments about deferred stream work that predate
+later implementations; executable instructions, not such
+comments, govern this contract.
+
+### Disposition register
+
+| ID | Decision |
+| --- | --- |
+| C-IO-01 | Accepted: implemented named static QSAM and PARM streams, 80-byte read and 132-byte write models; broader historical I/O not claimed |
+| C-IO-02 | Accepted limitation: input trailing blanks are trimmed; not byte-faithful for arbitrary records |
+| C-IO-03 | Accepted limitation: output exceeding 132 bytes without newline returns STOP(12) |
+| C-EXIT-01 | Accepted observed behavior: controlled stack overflow diagnostic with RC=0; issue carried to Gate D |
+| C-EXIT-02 | Accepted observed behavior: early-return error paths do not uniformly perform FINEXIT, flush/close and RELMEM; exact resource implications require dedicated probes |
+| C-TEST-01 | Deferred: comprehensive expected-fixture-to-contract coverage matrix; include under Gate F if needed for overall acceptance |
+
+**Gate C: ACCEPTED with explicitly scoped limitations.**
+Proceed to Gate D: implementation and *exposure* of observability
+mechanisms, output destinations, usable BCPL call paths and
+operator interpretation. No runtime or MVS library mutation
+was needed to establish the current contract.
+
+## Gate D — observability mechanisms and actual exposure (13 October 2026)
+
+**Status: OPEN — D1 mechanism inventory completed; D2 interface
+validation and D3 focused coverage remain.** Distinguish an
+implementation from a callable, supported diagnostic facility.
+
+| Mechanism / owner | Trigger and captured data | Exposure/output | Verification and limits |
+| --- | --- | --- | --- |
+| Stack bounds, BCPLMAIN | Startup creates G54/G55 and 64-KiB marker-painted stack; checked entries compare frame end against STKLIM | BCPL-visible extent globals; STKLIM itself is native-only | Checked-entry regressions 48–52; G55 includes 256-byte clearance and is *not* the safe limit |
+| STACKHWM, historical BLIB | G56 scans EVENSTACK/ODDSTACK sentinels and top metadata | BCPL-callable G56 from linked BLIB; returns **word address**, or 0 OVERFLOW / 1 UNSET | Test 120 accepts in-range result, not precise usage accounting |
+| STACK OVERFLOW, BCPLMAIN | STKOVFL overwrites default output buffer with 14-byte diagnostic | SYSPRINT record via FINIMPL/FINEXIT, current GO RC=0 | Test 093 specifies diagnostic and normal completion; discards previously buffered default output |
+| Heap live/peak counts, BCPLMEM | GETVEC/FREEVEC/MEMDRAIN maintain four fullword counters; MEMSTAT snapshots them | **Assembler-private MEMSTAT**, R1 points to 16-byte result; no LIBHDR global or operator report | Current snapshots cover allocations + 12-byte descriptors, not entire process memory; no direct BCPL call established |
+| Live vector list, BCPLMEM and G6!48 | MEMBIND publishes descriptor byte-address list head into save-area slot | BCPL can inspect memory indirectly via SAVEAREA / historical G59 VALIDPOINTER | Tests 122–123 exercise controlled list predicates, not general heap diagnostics or safe public traversal API |
+| DEBUGINT, BCPLMAIN | G150 accepts signed integer in R7, converts to decimal | BCPL-callable **provisional extension** appending bytes to default SYSPRINT buffer | No historical LIBHDR name; no clearly identified direct focused regression. Appender drops digits once 132-byte buffer is full, with no explicit error |
+| ABORT, historical BLIB | G3 formats user/system/interrupt faults, optionally dispatches BACKTRACE and MAPSTORE | Historical BLIB global, outputs to SYSPRINT when available; otherwise tries FINDLOG/WRITETOLOG; ends with STOP(100) | **Not** automatically wired to MVS program interrupts or the STKOVFL path; historical fallback globals lack verified native providers |
+| BACKTRACE, historical BLIB | G4 uses LEVEL(), inferred frame links and program predicates | Historical BCPL-callable routine, prints through WRITES/WRITEF | Native LEVEL G31 provider and current frame walk are unverified; source presence is not execution proof |
+| MAPSTORE, historical BLIB | G78 reports stack high water, global assignments, program headers, and SAVEAREA!29 load-list descriptors | Historical BCPL-callable procedure using output/formatting globals | No complete current native-map proof; load-list population is provisional and output needs source/runtime prerequisites |
+| USERPOSTMORTEM, historical LIBHDR | G79 is conditionally invoked inside BLIB ABORT when changed from unset sentinel | Potential application callback, **not** a BLIB-defined function or native interrupt hook | No verified operational registration or invocation path |
+| ERRORMESSAGE, historical BLIB | G5 formats selected fault/stream details | Historical callable reporting helper | Fallback I/O behavior and failure recursion not yet exercised |
+
+### Operator/programmer exposure distinction
+
+- **Programmer:** documented global-vector slots are candidate
+  callable services where an actual runtime/BLIB provider is
+  installed. Stack bounds are data; G56 is a function; G150 is an
+  undocumented historical extension that the reconstructed runtime
+  publishes. A native symbol named MEMSTAT does not make it a
+  normal BCPL procedure.
+- **MVS operator:** application-generated diagnostics currently
+  surface through QSAM SYSPRINT and associated JES job output.
+  Exact report retrieval and completion-code interpretation are
+  workflow matters, not independent automatic backtrace or
+  allocation-statistics services.
+- **Automatic failures:** STKOVFL writes a diagnostic and exits
+  through FINISH, but does not call historical ABORT, BACKTRACE,
+  MAPSTORE or USERPOSTMORTEM. The corresponding historical
+  procedures must not be described as installed MVS recovery
+  interceptors.
+
+### Open Gate D findings
+
+**D-OBS-01:** No supported BCPL-facing heap-statistics service yet:
+MEMSTAT is private.
+
+**D-OBS-02:** Controlled overflow has a recognizable message but
+GO RC=0; exit status alone does not signal a stack failure.
+
+**D-OBS-03:** DEBUGINT is published at G150 but has provisional
+semantics and silently stops appending when the output record is full.
+
+**D-OBS-04:** Historical ABORT/BACKTRACE/MAPSTORE and
+USERPOSTMORTEM are *not* established as automatic postmortem
+facilities. In particular BACKTRACE requires LEVEL (G31),
+whose current provider has not been verified.
+
+**D-OBS-05:** STACKHWM return meaning is established, while
+measurement precision and marker corruption cases are not
+independently validated.
+
+### Next Gate D evidence
+
+Verify individual tests/callability for G150 and historical
+diagnostics, including which provider supplies LEVEL and whether
+selected historical I/O fallbacks are usable. Record each
+feature's trigger, destination, result/return code and
+failure behavior before Gate D acceptance. Keep the audit
+read-only and preserve M1.8's accepted object libraries.
+
+## Gate D — provider reconciliation and acceptance (13 October 2026)
+
+**Gate D accepted as a source-grounded observability/exposure audit,
+with unresolved runtime features explicitly excluded from the
+supported interface.** No new MVS execution or semantic changes
+were performed.
+
+### Actual provider and invocation findings
+
+1. **G150 DEBUGINT — actual native publisher exists.** Canonical
+   BCPLMAIN installs `DEBUGINT` into G150 (offset 600).
+   Its implementation accepts an integer in R7, formats a
+   decimal representation through CVD/UNPK, and appends it
+   directly into the default `SYSPRINT` 132-byte buffer.
+   The append helper checks the record capacity but silently
+   ignores bytes beyond it. It restores R4 and returns via R6,
+   satisfying the ordinary native-primitive return pattern.
+   This establishes **call-path wiring**, not dedicated
+   regression coverage or a stable public API. G150 is at
+   `FIRSTFREEGLOBAL=150` in historical LIBHDR and is **not**
+   named DEBUGINT there. Treat it as a provisional extension.
+2. **G31 LEVEL — no canonical native publisher identified.**
+   BLIB `BACKTRACE` calls `LEVEL()` immediately, yet
+   canonical BCPLMAIN's explicit installation block does not
+   assign G31. Every global is initially painted with the
+   historical unset sentinel before generated module and BLIB
+   trailer registration. Neither the 21 BLIB exports nor the
+   explicit native register contains LEVEL; therefore the
+   ordinary five-object runtime has **no evidenced G31
+   implementation**, unless a separately linked application
+   deliberately supplies that global. A direct G4 BACKTRACE
+   call is not a supported diagnostic contract.
+3. **Historical log fallback — no canonical native provider
+   identified.** BLIB ABORT and ERRORMESSAGE reference G36
+   FINDLOG and G37 WRITETOLOG when SYSPRINT is unavailable.
+   These are declared in LIBHDR, but have no observed
+   canonical BCPLMAIN installation and no corresponding BLIB
+   top-level definition. The fallback is **not verified**.
+   Normal availability of G41 FINDOUTPUT("SYSPRINT") does not
+   prove the fallback branch works.
+4. **ABORT is not an automatic exception dispatcher.** BLIB
+   G3 defines the historical formatter and can conditionally
+   request BACKTRACE, USERPOSTMORTEM, and MAPSTORE. The native
+   STKOVFL code instead writes its own 14-byte message and
+   follows FINIMPL. No current evidence establishes automatic
+   invocation of G3 on an MVS program interrupt.
+5. **G79 USERPOSTMORTEM is an optional slot, not a routine
+   provided by BLIB.** BLIB ABORT compares G79 with the
+   historical global sentinel and only calls a replacement
+   value. This path remains dependent on a working ABORT
+   invocation and the application's own callback; it is not
+   a universally installed observability function.
+6. **G56 STACKHWM and G78 MAPSTORE differ sharply.** G56 is
+   source-defined in BLIB and test 120 provides focused
+   operational evidence for an in-range word-address result.
+   G78 is source-defined, but its full output depends on
+   compiled-program recognition, global sentinels,
+   SAVEAREA!29 module-list shape, and formatting facilities.
+   Its comprehensive map is not demonstrated by the general
+   regression baseline.
+
+### Gate D disposition
+
+| Identifier | Exposure classification and disposition |
+| --- | --- |
+| D-OBS-01 | MEMSTAT: implemented assembler-private snapshot; **not** public BCPL or operator statistics; future exposure decision |
+| D-OBS-02 | STKOVFL: implemented operator-visible SYSPRINT diagnostic but RC=0; do not use completion code as sole indicator |
+| D-OBS-03 | G150 DEBUGINT: native BCPL call path wired; provisional/undocumented extension; 132-byte silent truncation risk |
+| D-OBS-04 | G4 BACKTRACE: defined historically but dependent LEVEL G31 provider absent from documented standard runtime; **not advertised operational** |
+| D-OBS-05 | G3 ABORT/G5 ERRORMESSAGE: historical call definitions; automatic recovery and G36/G37 log fallback **not established** |
+| D-OBS-06 | G78 MAPSTORE: present historical BLIB global, full native output and module-list interpretation **unverified** |
+| D-OBS-07 | G79 USERPOSTMORTEM: application callback slot conditional on ABORT invocation, **not automatically dispatched** |
+| D-OBS-08 | G56 STACKHWM: callable BLIB measurement, in-range observed in regression 120; exact high-water precision unverified |
+
+**Acceptance is for the documented present observability
+contract, not acceptance of all historical postmortem APIs.**
+No gate requires inventing a runtime provider for missing
+globals. A future implementation decision may prioritize
+MEMSTAT publication and meaningful nonzero overflow status;
+both require separate authorization and focused tests.
+
+**Gate D: ACCEPTED with deferred implementation/test gaps.**
+Proceed to Gate E, historical compatibility classification.
+
+## Gate E — historical compatibility classification (13 October 2026)
+
+**Audit basis:** surviving `richards-bcpltape/sys3/bcpl/libhdr`,
+`richards-bcpltape/bcplib/bcpl/blib`, canonical four assembler
+sources, the compiler's module trailer convention and the
+M1.8 DEVOBJ accepted regression evidence. This is a comparison
+to **recoverable interfaces**, not proof that all historical
+BCPLMAIN machine code has been recovered.
+
+| ID | Historical evidence / expectation | Current reconstructed behavior | Classification |
+| --- | --- | --- | --- |
+| E-01 | LIBHDR assigns numbered system and BLIB globals | Canonical BCPLMAIN publishes tested subset; compiled BLIB exports source-defined globals by registration trailer | **Partial match**; undeployed historical entries must not be advertised |
+| E-02 | BCPL machine-dependent GETBYTE/PUTBYTE are required by BLIB | Independent BCPLBYTE supplies G85/G86, four bytes per word, BCPL word pointers | **Interface match / MVS implementation** |
+| E-03 | Historical BLIB supplies WRITEF/WRITES and numeric/string formatters | Separately compiled BLIB linked; G76 fallback native only if BLIB export unset; representative regressions pass | **Match on tested subset** |
+| E-04 | BLIB STACKHWM scans alternating marker words and reserved end metadata | BCPLMAIN paints expected markers; publishes extent; regression 120 returns in-range address | **Partial match**, precision and overwrite cases not verified |
+| E-05 | BLIB VALIDPOINTER and INPROGRAM inspect SAVEAREA load/vector lists | G6 modeled; allocator list head published at G6!48; tests 121–123 cover specific empty/nonempty scenarios | **MVS adaptation / partial match**, original allocation/layout fidelity not established |
+| E-06 | Historical APTOVEC expected as global 40 | Current canonical G40 selects in-BCPLMAIN implementation; separate BCPLAPT linked but not activated | **Functional subset / integration omission** (B-APT-01) |
+| E-07 | Rich historical I/O globals include record, block, library and terminal/log facilities | Current named 80-byte QSAM input, 132-byte QSAM output, EXEC PARM stream; unsupported entries remain unset | **Intentional narrow MVS bootstrap subset / omitted features** |
+| E-08 | Historical BLIB ABORT orchestrates fault diagnosis, BACKTRACE, optional USERPOSTMORTEM and MAPSTORE | BLIB routines exist; STKOVFL bypasses ABORT; LEVEL G31 and logging fallbacks not provided in canonical native installer | **Historical recovery/postmortem omitted**, not equivalently operational |
+| E-09 | Historical SAVEAREA, LOADPOINT/ENDPOINT, STACKBASE/END support BLIB introspection | Provisional G6 save area and module/stack bounds published; G55 includes 256-byte clearance beyond safe limit | **MVS adaptation / incomplete equivalence** |
+| E-10 | CG370 system-vector checked entry and call-count conventions | S.STKCK implemented with 64-KiB working stack; S.COUNT and S.STKCKCOUNT are inline-skip stubs | **Partial match with explicit omissions** |
+| E-11 | Historical program and runtime diagnostics distinguish faults and completion | Current overflow prints STACK OVERFLOW but exits RC=0; some error paths bypass FINEXIT | **Known behavioral divergence**; Gates C/D document operator implications |
+| E-12 | Historical global naming/slot allocation includes FIRSTFREEGLOBAL=150 | Reconstructed DEBUGINT installed at G150 without historical LIBHDR declaration | **Project-specific provisional extension**, not historical contract |
+| E-13 | Historical BLIB relies on output/error/log fallback behavior | Normal SYSPRINT formatting works in selected paths; FINDLOG/WRITETOLOG not verified | **Omitted / unsupported fallback** |
+| E-14 | Historical LIBHDR lists OPENBLOCKFILE:94 and UPDATEBLOCKFILE:94 | Same tracked header retains duplicate assignment, neither service is a supported native implementation | **Historical source anomaly**, not a reconstructed runtime defect |
+
+### Interpretation
+
+- **Matched** means a particular interface/property is supported
+  by both historical source and current implementation, with actual
+  tested scope stated.
+- **MVS adaptation** means the recreated program provides an
+  intentional MVS/370-specific implementation, not necessarily
+  identical internal representation or allocation policy.
+- **Omitted** means no current supported provider was established;
+  a historical LIBHDR name alone is not executable functionality.
+- **Uncertain** means historical source describes an interface but
+  actual operational equivalence is not demonstrated by tracked
+  evidence and focused tests.
+- **Known divergence** means source evidence establishes a
+  meaningful behavioral difference worth preserving for future
+  engineering disposition.
+
+The historical material does **not** supply a complete executable
+original BCPLMAIN for direct machine-code differential testing.
+Accordingly, no claim of byte-for-byte reconstruction, exact
+exception semantics, or complete original runtime compatibility
+is made.
+
+### Gate E disposition and carry-forward
+
+Gate E is **ACCEPTED as a bounded historical compatibility
+comparison**. The unresolved matters remain traceable:
+B-APT-01 (standalone BCPLAPT not activated), B-MEM-01 / D-OBS-01
+(private MEMSTAT), C-EXIT-01 / D-OBS-02 (overflow RC=0),
+C-EXIT-02 (uneven abnormal cleanup), D-OBS-04 (LEVEL/BACKTRACE),
+D-OBS-06 (MAPSTORE), and unimplemented historical stream/log
+services.
+
+**Gate F next:** consolidate the versioned Runtime Contract
+Specification, validate document consistency against these
+records, and decide which targeted evidence checks (if any)
+are necessary to accept M1.9. Do not silently enlarge M1.9
+into a runtime implementation milestone or modify production
+OBJ. No MVS workload was submitted for Gate E.
+
+## Gate F — verification and M1.9 acceptance (13 October 2026)
+
+**Deliverable:** [Runtime Contract Specification v1.0](../../runtime-contract-v1.md), tracked independently from this chronological audit.
+
+### Review checklist
+
+| Acceptance item | Result |
+| --- | --- |
+| Five runtime components and entry audiences included | PASS — BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT and BLIB |
+| Historical LIBHDR mapping and native registrations distinguished | PASS — supported subset; compiled BLIB trailer's exact binary inventory remains explicitly unverified |
+| Storage and safe-stack bound specified numerically | PASS — 68,592-byte main allocation and separate 65,536-byte working-stack limit |
+| Allocator accounting and ABI specified without fictional BCPL exposure | PASS — private MEMSTAT four-word snapshot correctly separated |
+| Current G40 implementation and independent BCPLAPT gap recorded | PASS — B-APT-01 remains open engineering disposition |
+| QSAM/EXEC PARM streams and record characteristics identified | PASS — restrictions and EOF/overflow behavior included |
+| FINISH, STOP and abnormal exit codes distinguished | PASS — including stack-overflow RC=0 and bypassed cleanup paths |
+| Observability inventory separates instrumentation and programmer/operator exposure | PASS — G56, G150, MEMSTAT, G3/G4/G78/G79 documented with limitations |
+| Historical compatibility classes explicitly bounded | PASS — matches, adaptations, omissions, uncertainty and known divergence |
+| Existing M1.8 regression evidence preserved without inventing new tests | PASS — 123 PASS / 0 FAIL / 1 expected SKIP; no new MVS job was run |
+| Production library change or promotion | NONE — not authorized, not performed |
+
+### Evidence and acceptance limits
+
+Gate F reviewed canonical tracked sources, historical LIBHDR/BLIB,
+the M1.8 acceptance evidence, native runner wiring and cumulative
+Gate A–E findings. It did not inspect every individual expected.txt
+fixture anew or decode the complete compiled BLIB binary registration
+trailer. Those are **documented verification limitations**, not
+unstated proofs. No new MVS execution is required solely for an
+audit milestone whose known gaps have explicit dispositions.
+
+Outstanding B-/C-/D- issues remain **future engineering decisions**.
+Their existence is not a reason to misrepresent current behavior
+or to prevent delivery of a bounded runtime contract. A future
+change to those contracts must update the versioned specification,
+add focused tests and follow the separate DEVOBJ validation and
+explicit production OBJ promotion discipline.
+
+**Gate F: ACCEPTED. M1.9: CLOSED — Runtime Contract and
+Observability Audit accepted with the documented scope and gaps.**
+
+The milestone made **documentation changes only** in Git.
+No modifications to BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT, BLIB,
+DEVOBJ or OBJ; no resident source/JCL synchronization or MVS jobs.

@@ -1,6 +1,6 @@
 # Milestone QSAM — March Q.0 fixed-record boundary probes
 
-**Status:** All four profiles passed in MVS/TK5 on 20 October 2026. [Execution evidence](../../../packaging/qsam-q0-fixed-boundary-evidence-20261020.md).
+**Status:** All four profiles passed in MVS/TK5 on 20 October 2026. [Execution evidence](../../../packaging/archive/qsam/qsam-q0-fixed-boundary-evidence-20261020.md).
 
 | Profile | JOB | RECFM | LRECL | BLKSIZE | Logical records |
 | --- | --- | --- | ---: | ---: | ---: |

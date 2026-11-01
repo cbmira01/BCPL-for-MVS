@@ -1,6 +1,6 @@
 # Milestone QSAM / March Q.0 — V/VB zero-data-length record probe
 
-**Status: MVS PASS — JOB 2168 (VZERO) and JOB 2169 (VBZERO), 20 October 2026.** This is a standalone assembler test, not an implementation of BCPLQSAM. Original `q0-qsam-dasd-probes` files remain unchanged. See [Q.0 zero-record MVS execution evidence](../../../packaging/qsam-q0-zero-record-evidence-20261020.md).
+**Status: MVS PASS — JOB 2168 (VZERO) and JOB 2169 (VBZERO), 20 October 2026.** This is a standalone assembler test, not an implementation of BCPLQSAM. Original `q0-qsam-dasd-probes` files remain unchanged. See [Q.0 zero-record MVS execution evidence](../../../packaging/archive/qsam/qsam-q0-zero-record-evidence-20261020.md).
 
 The writer emits 15 records using the original V/VB assembler, except that the last record's RDW total length is **4** (`X'00040000'`) and therefore its payload length is **0**. The reader verifies records 1–14 as before; for record 15 it verifies length 4 and both reserved RDW bytes zero, then verifies **EODAD occurs only after record 15**. The marker is checked only after successful completion. This distinguishes a zero-data-length logical record from EOF.
 

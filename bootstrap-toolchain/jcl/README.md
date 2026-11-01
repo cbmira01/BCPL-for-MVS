@@ -60,8 +60,8 @@ tools/datasets/dspal submit BOOT_JCL BCPLQSAM
 Each job must report four successful MVS steps, including readback and
 IEBCOMPR. No installation or JES submission is authorized by this README.
 
-See the [clean-room reconstruction runbook](../../packaging/clean-room-mvs-reconstruction.md)
-and [R.5 installation design](../../packaging/runtime-extensions-r5-installation-design.md)
+See the [clean-room reconstruction runbook](../../docs/Rebuild-BCPL-for-MVS-from-source.md)
+and [R.5 installation design](../../packaging/archive/runtime-extensions/runtime-extensions-r5-installation-design.md)
 for preconditions, recovery and MVS acceptance evidence.
 
 ## Historical builds and diagnostics

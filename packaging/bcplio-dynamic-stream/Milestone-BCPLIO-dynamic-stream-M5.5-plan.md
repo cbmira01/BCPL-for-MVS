@@ -91,7 +91,7 @@ It refuses to overwrite existing M5.5 evidence files.
 **No job is submitted by the preparation tool.**
 
 If DEVOBJ members are missing or stale, follow the
-[M5.4 runbook](../clean-room-mvs-reconstruction.md)
+[M5.4 runbook](../../docs/Rebuild-BCPL-for-MVS-from-source.md)
 for the approved BLDDEVM6 and BLDDEVI rebuilds before
 beginning. Check the build *payload* RCs and the
 installed PDS members. Do not perform an automatic

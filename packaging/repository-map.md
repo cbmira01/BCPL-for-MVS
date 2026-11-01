@@ -3,7 +3,7 @@
 **Scope:** source and documentation navigation, 17 October 2026.
 For project status, see [root README](../README.md); for an ordered
 clean-room rebuild, see
-[reconstruction runbook](clean-room-mvs-reconstruction.md).
+[reconstruction runbook](../docs/Rebuild-BCPL-for-MVS-from-source.md).
 
 | Repository area | Purpose and source authority |
 |---|---|
@@ -19,7 +19,7 @@ clean-room rebuild, see
 | [`tools/checks/`](../tools/checks/) | Static validation, evidence checks and focused research probes |
 | [`docker/`](../docker/) | Hercules/TK5 container setup; MVS remains the target operating system |
 | [`docs/`](../docs/) | Human-readable briefings and programming background only |
-| [`packaging/`](./) | Runtime contracts, engineering decisions, historical acceptance, rebuild procedures, audits |
+| [`packaging/`](/) | Runtime contracts, engineering decisions, historical acceptance, rebuild procedures, audits |
 | `workarea/` | Ignored, disposable *generated host output*; preserve valuable evidence in Git before clearing |
 | `mvs-state/` | Persistent guest DASD, printers and TK5 state; **never** treat as disposable host scratch |
 
@@ -52,7 +52,7 @@ clean-room rebuild, see
   Rebuild binary object decks, INTCODE images and scratch outputs rather
   than copying them from a prior MVS system.
 - For current tool entry points use [root README](../README.md) and
-  [clean-room reconstruction](clean-room-mvs-reconstruction.md),
+  [clean-room reconstruction](../docs/Rebuild-BCPL-for-MVS-from-source.md),
   not pre-M3 root paths such as `asm/`, `intcode/`, `library/`,
   `tests/`, `suite/`, or `jcl/`.
 - Protect `config/dspal.local.yaml` credentials and avoid copying

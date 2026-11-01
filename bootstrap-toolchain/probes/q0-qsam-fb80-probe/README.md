@@ -52,7 +52,7 @@ GO RC=0000; zero assembler errors) emitted the two exact QOUT records.
 The preceding JOB 2158 was rejected by JES (IEF652I and IEF605I),
 before assembly, due to a DD DATA DCB conflict and missing continuation
 comma. The generator in Git now matches the fixed JOB 2159 configuration.
-See the [evidence record](../../../packaging/qsam-q0-fb80-evidence-20261020.md).
+See the [evidence record](../../../packaging/archive/qsam/qsam-q0-fb80-evidence-20261020.md).
 
 The test does **not** independently prove QIN's effective RECFM or
 BLKSIZE, nor does its SYSOUT output demonstrate blocked DASD deblocking.

@@ -91,4 +91,4 @@ object-PDS installation belong to **R.3 — Packaging and acceptance**.
 GitHub `main` remains source/documentation authority; MVS is the
 execution/evidence authority.
 
-See the [R.3 kickoff and design review](runtime-extensions-r3-kickoff-20261022.md).
+See the [R.3 kickoff and design review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r3-kickoff-20261022.md).

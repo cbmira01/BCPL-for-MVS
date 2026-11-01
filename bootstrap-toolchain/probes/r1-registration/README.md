@@ -72,8 +72,8 @@ for the first verified execution). All IFOX/IEWL steps and GO passed at
 RC=0000, with no BCPL application output. The rejection-specific
 R10 save/restore correction is now ready for MVS retesting.
 
-The [2229/2230 failure record](../../../packaging/runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md)
-and [2232 no-output evidence](../../../packaging/runtime-extensions-r1-no-output-job-2232-evidence-20261022.md)
+The [2229/2230 failure record](../../../packaging/archive/runtime-extensions/runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md)
+and [2232 no-output evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r1-no-output-job-2232-evidence-20261022.md)
 explain the isolation and the candidate R10 correction.
 
 **Next MVS test:** recompile nothing; reuse
@@ -132,7 +132,7 @@ remains allocated to BCPLQSAM.
 
 The [15-case integrated negative harness](NEGATIVE-TESTS.md) is now
 available for host validation and subsequent MVS testing. Positive-path
-evidence is recorded in the [JOBs 2226 and 2228 record](../../../packaging/runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
+evidence is recorded in the [JOBs 2226 and 2228 record](../../../packaging/archive/runtime-extensions/runtime-extensions-r1-positive-jobs-2226-2228-evidence-20261022.md).
 
 Remaining R.1 obligations include **executing** the integrated negatives,
 effective-owner ledger, source-trusted callable address checks,

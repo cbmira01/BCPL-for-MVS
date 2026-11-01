@@ -274,4 +274,4 @@ bash bootstrap-toolchain/regression/run-test-mvs.sh 24
 The original `run-test.sh` remains the bootstrap-from-source path and is
 unchanged by default. `mr10-kit-compiler/asm/CURRENT` remains on ICINT V17.
 
-For a complete rebuild starting with an empty `workarea/`, including interpreter, MR10 suites, resident Cambridge image, runtime objects, and all native regressions, use [the single clean-room reconstruction runbook](../packaging/clean-room-mvs-reconstruction.md).
+For a complete rebuild starting with an empty `workarea/`, including interpreter, MR10 suites, resident Cambridge image, runtime objects, and all native regressions, use [the single clean-room reconstruction runbook](../docs/Rebuild-BCPL-for-MVS-from-source.md).

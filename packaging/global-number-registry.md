@@ -35,7 +35,7 @@ and reject new optional overwrites transactionally. See
 
 G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design documents were illustrative and are superseded; the accepted public BCPLTIME dispatcher is **`TIMESVC:201`**, published via `EXT_SOURCE(TIMEHDR)` and linked through the installed BCPLTIME System Extension. BCPLDEC still has no approved public dispatcher spelling. See the [BCPLTIME T.0 closure](bcpltime-t0-closure-20261024.md) and [T.1 acceptance](bcpltime-t1-closure-20261024.md).
 
-**G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the reference demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. See the [initial R.2 allocation](runtime-extensions-r2-bcpldemo-decision-20261022.md), [R.5 installed-mode acceptance](runtime-extensions-r5-closure-20261024.md), and [permanent supported-reference decision](bcpldemo-supported-reference-decision-20261024.md). Other applications and extensions must not reuse G!203. BCPLDEMO remains optional and does not bypass per-executable collision and missing-package validation.
+**G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the reference demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. See the [initial R.2 allocation](archive/runtime-extensions/runtime-extensions-r2-bcpldemo-decision-20261022.md), [R.5 installed-mode acceptance](runtime-extensions-r5-closure-20261024.md), and [permanent supported-reference decision](bcpldemo-supported-reference-decision-20261024.md). Other applications and extensions must not reuse G!203. BCPLDEMO remains optional and does not bypass per-executable collision and missing-package validation.
 
 ## Specific existing positions and conflicts
 
@@ -47,7 +47,7 @@ G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design do
 | 57 | `LIBHDR`: OS/CMS marker comment | Historical data slot; representation unresolved |
 | 73 | `LIBHDR`: explicitly spare | Historical spare, do not silently allocate |
 | 94 | `LIBHDR`: `OPENBLOCKFILE` **and** `UPDATEBLOCKFILE` | **Duplicate historical assignment**; document, do not change evidence |
-| 150 | Bootstrap `BCPLMAIN` startup DEBUGINT conflicts with historical full Cambridge compiler `FORMTREE:150` in `cambridge-compiler/source/bcpl.bcpl` and `synhdr.bcpl` | **Known cross-component conflict; unresolved**; see [G!150 review](runtime-extensions-r0-g150-startup-ownership-review-20261021.md) |
+| 150 | Bootstrap `BCPLMAIN` startup DEBUGINT conflicts with historical full Cambridge compiler `FORMTREE:150` in `cambridge-compiler/source/bcpl.bcpl` and `synhdr.bcpl` | **Known cross-component conflict; unresolved**; see [G!150 review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-g150-startup-ownership-review-20261021.md) |
 | 299 | R.0 and R.2 independent dispatcher probes | **Test-local fixture only; not a permanent public package allocation.** |
 | 699 | `HIGHMARK` in native regression 090 | Test-local assignment; not a permanent public package slot |
 

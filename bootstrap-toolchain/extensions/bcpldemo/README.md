@@ -112,7 +112,7 @@ R2 BCPLDEMO G203 PASS
 This result was **observed exactly once in MVS JOB 3075**. All six IFOX
 steps, IEWL, and GO returned 0000. The real MAP shows `BCPLREG`,
 `DMOBEG`, `DMOEND`, and `DMODISP`, with no application-trailer G!203
-registration. See [the reviewed JOB 3075 evidence](../../../packaging/runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md).
+registration. See [the reviewed JOB 3075 evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r2-bcpldemo-job-3075-evidence-20261022.md).
 Further R.2 acceptance tests remain pending.
 All assembled candidates and the load module use temporary `&&` datasets;
 `BOOT_OBJ` is read-only and `BOOT_DEVOBJ` is not modified. The generator
@@ -144,7 +144,7 @@ DMODISP, assembled from [bcpldemo.asm](bcpldemo.asm). The old two-file
 sources are kept for existing R.2/R.3 regression reproducibility until
 migration. R.5 introduces new native regression cases 146–158 and
 separate source-mode and installed-mode gates. See
-[the R.5 plan](../../../packaging/runtime-extensions-r5-packaging-and-regression.md).
+[the R.5 plan](../../../packaging/archive/runtime-extensions/runtime-extensions-r5-packaging-and-regression.md).
 No MVS object-library installation or R.5 acceptance has occurred.
 
 ## R.5 packaging follow-up (owner decision 23 October 2026)
@@ -162,7 +162,7 @@ The Git-controlled `bootstrap-toolchain/jcl/r5dinst.jcl` body is
 populated as `BOOT_JCL(R5DINST)`. After separate authorization,
 `tools/datasets/dspal submit BOOT_JCL R5DINST` assembles the
 installed object and compares its binary records. See
-[the R.5 installation design](../../../packaging/runtime-extensions-r5-installation-design.md)
+[the R.5 installation design](../../../packaging/archive/runtime-extensions/runtime-extensions-r5-installation-design.md)
 for prerequisites and verification gates; this documentation does not
 claim a new clean-room installation was performed.
 
@@ -172,7 +172,7 @@ After the source-mode and installation-design checkpoints above, the
 operator reported completing the published clean-room procedure and
 native production regressions **00–158: 158 PASS, 0 FAIL, 1 expected
 SKIP 083**. The record is
-[R.5 clean-room acceptance evidence](../../../packaging/runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
+[R.5 clean-room acceptance evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
 Individual `R5DINST` JES/IFOX/IEBCOMPR reports and IEWL MAP/XREF
 receipts still require review. This result does not, by itself,
 close R.5 or formally close R.4.

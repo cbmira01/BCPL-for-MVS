@@ -4,7 +4,7 @@
 in MVS JOBs 2229 and 2230 and correctly issued its WTO, but both jobs
 ended with GO ABEND S322 instead of the required RC=0012. **No
 integrated negative has passed**. This remains a candidate harness.
-It follows the owner-approved [Decision G contract](../../../packaging/runtime-extensions-r0-decision-g-contract-20261021.md).
+It follows the owner-approved [Decision G contract](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-decision-g-contract-20261021.md).
 
 All jobs link the same compiled BCPL caller used by JOB 2228, the
 candidate BCPLMAIN and generic registrar, and a deliberately malformed
@@ -73,7 +73,7 @@ The generated JCL reads `BOOT_OBJ` with `DISP=SHR` and uses temporary
 assembly objects/load modules only. JCL with machine-local credentials
 is generated only under ignored `workarea`, mode 0600; do not commit it.
 
-See the [failure evidence for JOBs 2229 and 2230](../../../packaging/runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md).
+See the [failure evidence for JOBs 2229 and 2230](../../../packaging/archive/runtime-extensions/runtime-extensions-r1-rejection-jobs-2229-2230-evidence-20261022.md).
 **JOB 2232 R1NOOUT passed** with GO RC=0000, proving ordinary
 no-output FINISH does not hang. Review of the R.1 rejection adapter
 found it failed to restore R10 around IOFIN; the ordinary FINISH
@@ -81,4 +81,4 @@ path already restores R10. A temporary candidate now preserves R10
 in both the R1BAD and test-only R1LEAK cleanup paths. This is a
 host-tested correction, **not yet an MVS pass**. Re-run 1001 at the
 original GO CPU limit, verify RC=0012, and only then proceed with
-the other diagnostics. See the [JOB 2232 evidence](../../../packaging/runtime-extensions-r1-no-output-job-2232-evidence-20261022.md).
+the other diagnostics. See the [JOB 2232 evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r1-no-output-job-2232-evidence-20261022.md).

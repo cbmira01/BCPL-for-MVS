@@ -14,7 +14,7 @@ when insufficient storage is available, while an unconditional request
 may terminate the job. A 256K REGION with **one** 1,048,576-byte
 conditional request tests the supported refusal path without repeatedly
 consuming memory. It is an investigation, **not** a claim of an MVS-wide
-storage bound. The actual 3.8J/TK5 result is [documented](../../../packaging/qsam-q0-real-getmain-refusal-evidence-20261020.md).
+storage bound. The actual 3.8J/TK5 result is [documented](../../../packaging/archive/qsam/qsam-q0-real-getmain-refusal-evidence-20261020.md).
 
 Period documentation: IBM, *OS/VS2 System Programming Library:
 Supervisor*, Release 3.7, GC28-0628-2, see the GETMAIN section:

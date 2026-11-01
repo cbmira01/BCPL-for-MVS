@@ -6,14 +6,14 @@
 **Owner approval:** 20 October 2026. **March:** R.0 — Evidence and contract (**open**).
 **Next march:** R.1 — Generic registration foundation (**not started**).
 **Authority:** This record captures the owner's explicit approval of decisions
-A–H in the [exact ABI review](runtime-extensions-r0-abi-decision-review-20261021.md).
+A–H in the [exact ABI review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-abi-decision-review-20261021.md).
 It supersedes incompatible *design proposals*, not observed test evidence.
 The approval does **not** declare R.0 closed, install a registrar, accept
 MVS objects, or authorize production implementation.
-The separate [shared QUERY v1 contract](runtime-extensions-r0-query-abi-decision-20261021.md)
+The separate [shared QUERY v1 contract](archive/runtime-extensions/runtime-extensions-r0-query-abi-decision-20261021.md)
 was approved by the owner on 21 October 2026. Its separate
 two-dispatcher **JOB 2206 MVS test PASSED**; see the
-[evidence record](runtime-extensions-r0-query-job-2206-evidence-20261021.md). It is not part of the earlier
+[evidence record](archive/runtime-extensions/runtime-extensions-r0-query-job-2206-evidence-20261021.md). It is not part of the earlier
 A–H approval, and it does not implement `BCPLREG` or close R.0.
 
 The approved design uses MVS/System/370 **byte addresses** in linked
@@ -33,7 +33,7 @@ registration.
 | **D — Dependencies and lifecycle** | Application and package requirements, transitive dependency checks before `START`, strict dependency-first registration, lazy initialization and no version-1 initializer hook. Finalizers once in reverse order before `BCPLIO.IOFIN` and `BCPLMEM.MEMDRAIN`. Failed validation publishes no optional globals. |
 | **E — Global ownership** | Compose an effective application/BLIB/Core Runtime/optional-package owner ledger, including actual export trailers and the official Global Number Registry; reject unauthorized duplicate or conflicting optional exports before `START`. Preserve only *verified* historical precedence (notably conditional `G!76`); no new optional overwrites. Validate all selections transactionally. |
 | **F — Finalizer ABI** | Conventional MVS linkage: R1 points to the public **8-byte** block (`+0` reason: 0 FINISH / 1 STOP; `+4` STOP code), R13 valid save area, R14 return, R15 entry address and returned status. Callee preserves R2–R12/R13. Nonzero returned status produces diagnostic; ordinary FINISH becomes RC=8, while STOP(n) retains n. Test-only extra trace and injected-error words are **not** public ABI. |
-| **G — Defensive limits** | **Numerical contract approved 21 October 2026**: N/M=0..32, K=1..8, D=0..16, BCRG maximum 540 bytes, BCEX maximum 368 bytes, aggregate 12,316 bytes and G!1..699 subject to ownership. Diagnostic identifiers 1001..1014/2001 and startup rejection RC=12; see the [Decision G contract](runtime-extensions-r0-decision-g-contract-20261021.md). **Isolated count/size verification passed in MVS JOB 2203** (14 cases; 1003/1006 only); other diagnostic categories and integrated startup behavior remain unverified. Three-package fixture counts are not production limits. |
+| **G — Defensive limits** | **Numerical contract approved 21 October 2026**: N/M=0..32, K=1..8, D=0..16, BCRG maximum 540 bytes, BCEX maximum 368 bytes, aggregate 12,316 bytes and G!1..699 subject to ownership. Diagnostic identifiers 1001..1014/2001 and startup rejection RC=12; see the [Decision G contract](archive/runtime-extensions/runtime-extensions-r0-decision-g-contract-20261021.md). **Isolated count/size verification passed in MVS JOB 2203** (14 cases; 1003/1006 only); other diagnostic categories and integrated startup behavior remain unverified. Three-package fixture counts are not production limits. |
 | **H — Core integration boundary** | One generic `BCPLMAIN` adaptation, fully validate before `START`, publish optional entries only after success, finalize before `IOFIN`/`MEMDRAIN`, retain existing BLIB/FINISH/STOP and stream behavior. No accepted runtime-object change in R.0. Actual core integration belongs to R.1, following the R.0 gate. |
 
 ## Fixed binary field positions adopted by B and C
@@ -71,7 +71,7 @@ registration.
 | `48+8*K` | `16*D` | `(CL8 required_ID, F'required_major', F'minimum_minor')` |
 
 The older single-descriptor-pointer / 40-byte package-header
-[proposal](runtime-extensions-r0-candidate-binary-abi-20261020.md)
+[proposal](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-candidate-binary-abi-20261020.md)
 is **superseded**; do not label both layouts version 1.
 
 ## What approval does not establish
@@ -79,15 +79,15 @@ is **superseded**; do not label both layouts version 1.
 - **Actual export ledger:** Decode current native CG370 application and
   installed BLIB object export-pair trailers and test documented legacy
   precedence. Source-declared BLIB names are only candidates, not evidence
-  that those slots were installed. See the [ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md).
+  that those slots were installed. See the [ownership audit](archive/runtime-extensions/runtime-extensions-r0-global-ownership-audit-20261021.md).
 - **G's approved values and observed subset:** Maxima and diagnostic
-  IDs were fixed by the [21 October Decision G contract](runtime-extensions-r0-decision-g-contract-20261021.md).
-  [JOB 2203](runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
+  IDs were fixed by the [21 October Decision G contract](archive/runtime-extensions/runtime-extensions-r0-decision-g-contract-20261021.md).
+  [JOB 2203](archive/runtime-extensions/runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md)
   passed 14 linked MVS count/size cases using 1003 and 1006.
   Other error categories, full trusted descriptor parsing,
   startup RC=12 and invalid finalizer-target checks are not
-  accepted runtime behavior. See the [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md).
-- **Evidence and gate:** Preserve the [26 test-only outcomes](runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
+  accepted runtime behavior. See the [R.0 gate review](archive/runtime-extensions/runtime-extensions-r0-gate-review-20261021.md).
+- **Evidence and gate:** Preserve the [26 test-only outcomes](archive/runtime-extensions/runtime-extensions-r0-batch-job-2195-evidence-20261021.md)
   without claiming they exercised a real `BCPLMAIN` registrar.
   Review bounded/trusted sources, compiler/BLIB overlap and R.0 acceptance
   evidence before closing R.0.
@@ -99,7 +99,7 @@ is **superseded**; do not label both layouts version 1.
 
 **Current disposition:** Decisions **A–H approved**, including the
 **21 October Decision G numeric contract**; its **14-case isolated
-MVS boundary probe passed**. The [R.0 gate review](runtime-extensions-r0-gate-review-20261021.md)
+MVS boundary probe passed**. The [R.0 gate review](archive/runtime-extensions/runtime-extensions-r0-gate-review-20261021.md)
 found additional outstanding contract/evidence items; **R.0 open**;
 **R.1 not started**. No changes to compiler, assembler, runtime, JCL
 or accepted PDS objects were authorized by this decision record.

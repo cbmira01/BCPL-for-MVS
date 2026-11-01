@@ -2,10 +2,10 @@
 
 **March:** R.0 — Evidence and contract (open). **Decision G numeric
 limits and diagnostics: owner approved 21 October 2026.**
-[R.0 Decision G contract](../../../packaging/runtime-extensions-r0-decision-g-contract-20261021.md).
+[R.0 Decision G contract](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-decision-g-contract-20261021.md).
 **Status:** **MVS PASS, JOB 2203**, ASMC/ASMD/LKED/GO RC=0000;
 14 expected GO markers verified; 14 host tests PASS. See the
-[actual MVS evidence](../../../packaging/runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md).
+[actual MVS evidence](../../../packaging/archive/runtime-extensions/runtime-extensions-r0-decision-g-job-2203-evidence-20261021.md).
 **R.1:** Generic registration foundation not started.
 
 Two layers of deliberately isolated evidence:
