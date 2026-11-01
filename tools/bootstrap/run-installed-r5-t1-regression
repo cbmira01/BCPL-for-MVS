@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Run production regression using installed R.5 and T.1 extension objects.
+
+Numbered BCPLQSAM cases 163-176 remain source-selected; this wrapper
+changes only the R.5 and T.1 profile. The JES2 punch resume requires an
+explicit --resume-punch option, not an inherited environment variable.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import os
+from pathlib import Path
+import sys
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[2]
+CORE_PATH = ROOT / "tools/datasets/dspal-core.py"
+RUNNER = ROOT / "tools/bootstrap/run-production-regression"
+
+
+def load_core():
+    spec = importlib.util.spec_from_file_location("dspal_core", CORE_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {CORE_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def installed_environment(
+    core: Any, config: dict[str, Any], original: dict[str, str],
+    *, resume_punch: bool,
+) -> dict[str, str]:
+    datasets = config["datasets"]
+    obj = datasets["EXT_OBJ"]
+    macro = datasets["EXT_MAC"]
+    if obj.get("content_type") != "object":
+        raise ValueError("EXT_OBJ must be the manifest's object library")
+    if str(macro.get("recfm", "")).upper() != "FB":
+        raise ValueError("EXT_MAC must be a fixed-blocked macro library")
+
+    object_dsn = core.full_dsn(config, obj)
+    macro_dsn = core.full_dsn(config, macro)
+    env = dict(original)
+    for prefix in ("BCPL_R5", "BCPL_T1"):
+        env[f"{prefix}_EXTENSION_MODE"] = "installed"
+        env[f"{prefix}_EXTENSION_DSN"] = object_dsn
+        env[f"{prefix}_MACRO_DSN"] = macro_dsn
+
+    # Never inherit punch-writer control implicitly from a prior shell export.
+    env.pop("Q4_PUNCH_RESUME", None)
+    if resume_punch:
+        env["Q4_PUNCH_RESUME"] = "1"
+    return env
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Production OBJ regression with installed R.5/T.1 packages"
+    )
+    parser.add_argument(
+        "--resume-punch", action="store_true",
+        help="explicitly allow the JES2 $S PUN1 action when needed by QSAM tests",
+    )
+    args, forwarded = parser.parse_known_args(argv)
+    try:
+        core = load_core()
+        config = core.load_config()
+        env = installed_environment(
+            core, config, os.environ, resume_punch=args.resume_punch
+        )
+        os.execve(str(RUNNER), [str(RUNNER), *forwarded], env)
+    except (OSError, KeyError, ValueError, RuntimeError) as exc:
+        print(f"installed R.5/T.1 regression: {exc}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

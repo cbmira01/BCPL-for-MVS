@@ -647,22 +647,20 @@ The R.5 extension cases 146–158 instead assemble an application-specific
 registry and temporary registrar. They must not link a second
 `BCPLREG` table.
 
-Set the optional-extension installed-mode inputs and invoke the
-production launcher:
+Run the full production panel using the installed R.5/T.1 profile:
 
 ```sh
-export BCPL_R5_EXTENSION_MODE=installed
-export BCPL_R5_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ
-export BCPL_R5_MACRO_DSN=HERC02.BCPL.EXT.MAC
-export BCPL_T1_EXTENSION_MODE=installed
-export BCPL_T1_EXTENSION_DSN=HERC02.BCPL.EXT.OBJ
-export BCPL_T1_MACRO_DSN=HERC02.BCPL.EXT.MAC
-
-Q4_PUNCH_RESUME=1 tools/bootstrap/run-production-regression 0 176
+tools/bootstrap/run-installed-r5-t1-regression 0 176
 ```
 
-The production launcher selects the accepted `BOOT_OBJ` Core
-Runtime/Base Library objects (`BCPL_RUNTIME_PDS=1`,
+This profile resolves the optional object and macro PDS names from the
+effective `dspal` manifest without persistent shell exports. It does
+**not** automatically resume the JES2 punch writer. That separate,
+explicitly opt-in operation is documented under
+[installed-extension regression](../tools/bootstrap/README.md#installed-r5-and-t1-regression-profile).
+
+The installed-profile wrapper invokes the existing production launcher,
+which selects the accepted `BOOT_OBJ` Core Runtime/Base Library objects (`BCPL_RUNTIME_PDS=1`,
 `BCPL_RUNTIME_LIBRARY=OBJ`, `BCPL_RUNTIME_CANDIDATE=0`).
 It does **not** select the historical `MIXED` or `DEVOBJ`
 profile. The extension settings independently direct cases **146–162**

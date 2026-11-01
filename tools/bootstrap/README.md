@@ -28,6 +28,44 @@ its end-to-end result is pending operator execution.
 See [the current reconstruction runbook]
 (../../packaging/clean-room-mvs-reconstruction.md).
 
+## Installed R.5 and T.1 regression profile
+
+Use `tools/bootstrap/run-installed-r5-t1-regression` for a full or focused
+production native panel that should consume **installed BCPLDEMO and
+BCPLTIME** objects, not temporary source-assembled versions.
+
+```sh
+tools/bootstrap/run-installed-r5-t1-regression 0 176
+```
+
+The wrapper reads the effective `config/dspal.yaml` plus any ignored
+`config/dspal.local.yaml` overrides. It resolves `EXT_OBJ` and
+`EXT_MAC` through the shared `dspal` code, then supplies the
+`BCPL_R5_EXTENSION_*` and `BCPL_T1_EXTENSION_*` settings only to
+its production-regression child process. No shell `export` is needed.
+The existing `run-production-regression` remains available unchanged
+and still defaults to source-mode optional package tests. Numbered
+BCPLQSAM cases **163–176 remain source-selected** in either profile;
+the separate Q.5 installed-object verification is documented in
+[Q.5 release acceptance](../../packaging/qsam-q5-installed-reconstruction-20261101.md).
+
+**PUNCH1 safety:** The wrapper discards any inherited
+`Q4_PUNCH_RESUME` setting. The optional
+`--resume-punch` flag explicitly enables `Q4_PUNCH_RESUME=1`
+*for that run only*. It can issue JES2 `$S PUN1` and release
+other queued class-B punch work. Use it only when that actual console
+operation is intentional:
+
+```sh
+tools/bootstrap/run-installed-r5-t1-regression --resume-punch 0 176
+```
+
+This is a **regression launcher**, not an installation command. It
+submits real MVS/JES test jobs but does not install permanent
+runtime or extension object members. Record real JES/IFOX/IEWL/GO
+evidence separately; a successful process status alone does not
+establish Q.5 closure.
+
 ## Historical M5.4 dynamic runtime DEVOBJ candidate
 
 After an **approved** base M3 compiler/OBJ reconstruction,
