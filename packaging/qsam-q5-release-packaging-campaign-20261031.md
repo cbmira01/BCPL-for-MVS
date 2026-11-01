@@ -83,3 +83,9 @@ Submit the generated deck **once** via tools/mvs/submit-jcl, retaining the print
 - [R.5 installation design](runtime-extensions-r5-installation-design.md)
 - [Git and MVS authority](git-mvs-authority.md)
 - [Q.5 resource-exhaustion acceptance](qsam-q5-real-getmain-acceptance-20261031.md)
+
+## One-shot campaign runner
+
+The tracked tools/mvs/run-q5-release-campaign script implements the operator sequence above. Invoke it using Bash, not by sourcing it into an interactive shell. It reserves workarea/bcplqsam-q5/q5pkg-attempt once, records Git HEAD and source hashes, performs the non-submitting JCL check, invokes two independently named resident compiler jobs, prepares and submits Q5PKG only if both compile successfully, and stores the native job summary, complete printer report and compilation evidence. It never retries an uncertain JES submission or overwrites an earlier attempt. It prints only a preliminary native PASS: IEWL MAP/XREF must still be reviewed before acceptance.
+
+Do not invoke the runner for a second attempt after any failure; first preserve and analyze the complete original evidence. Changes and a new job attempt require a separate uniquely identified continuation.

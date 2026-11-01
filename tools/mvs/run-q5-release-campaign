@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# Q.5 integrated native packaging campaign; 2 compiler jobs + 1 Q5PKG.
+# Temporary objects only; no permanent MVS dataset changes.
+set +e
+set +u
+set +o pipefail
+
+q5_release_once() {
+    local root work attempt sel unsel deck rc job n result
+    root="$(cd -- "$(dirname -- "$0")/../.." && pwd)"
+    if [ -z "$root" ] || ! cd "$root"; then
+        echo 'Cannot enter BCPL repository.'
+        return 1
+    fi
+    if [ "$(git branch --show-current 2>/dev/null)" != main ]; then
+        echo 'Git checkout is not main; no JES submission.'
+        return 1
+    fi
+    work=workarea/bcplqsam-q5
+    attempt="$work/q5pkg-attempt"
+    sel="$work/release-selected.asm"
+    unsel="$work/release-unselected.asm"
+    deck="$work/q5pkg.jcl"
+    mkdir -p "$work" || return 1
+    if [ -e "$sel" ] || [ -L "$sel" ] ||
+       [ -e "$unsel" ] || [ -L "$unsel" ] ||
+       [ -e "$deck" ] || [ -L "$deck" ]; then
+        echo 'Q5PKG compiler/deck output already exists; no overwrite.'
+        return 1
+    fi
+    if ! mkdir "$attempt"; then
+        echo 'Q5PKG attempt already exists; inspect evidence, no retry.'
+        return 1
+    fi
+    git rev-parse HEAD > "$attempt/source-head.txt"
+    git status --short > "$attempt/working-tree-status.txt"
+    date -Is > "$attempt/start-time.txt"
+    sha256sum bootstrap-toolchain/regression/163-qsam-query-capabilities/source.bcpl \
+        bootstrap-toolchain/regression/146-optional-empty/source.bcpl \
+        bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm \
+        > "$attempt/source.sha256"
+
+    python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q5-release-campaign.py --check \
+        > "$attempt/jcl-check.txt" 2>&1
+    rc=$?
+    cat "$attempt/jcl-check.txt"
+    echo "Q5PKG JCL construction check RC=$rc"
+    if [ "$rc" -ne 0 ]; then return 1; fi
+
+    echo 'Compiling selected BCPL case 163 on resident MVS: Q5SCOMP.'
+    python3 tools/bootstrap/compile-mvs \
+        bootstrap-toolchain/regression/163-qsam-query-capabilities/source.bcpl \
+        --job-name Q5SCOMP --output "$sel" \
+        > "$attempt/selected-compile.stdout" 2> "$attempt/selected-compile.stderr"
+    rc=$?
+    printf '%s\n' "$rc" > "$attempt/selected-compile.rc"
+    cat "$attempt/selected-compile.stdout" "$attempt/selected-compile.stderr"
+    echo "Q5SCOMP RC=$rc"
+    if [ "$rc" -ne 0 ] || [ ! -s "$sel" ]; then return 1; fi
+    job="$(sed -nE 's/^JOB ([0-9]+)$/\1/p' "$attempt/selected-compile.stdout")"
+    if ! [[ "$job" =~ ^[0-9]+$ ]]; then
+        echo 'Q5SCOMP job number missing; no further JES.'
+        return 1
+    fi
+    printf '%s\n' "$job" > "$attempt/selected-job-number.txt"
+    python3 tools/mvs/job-summary "$job" --max-rc 0 --verbose > "$attempt/selected-summary.txt" 2>&1
+    rc=$?
+    if [ "$rc" -ne 0 ]; then echo "Q5SCOMP summary RC=$rc"; return 1; fi
+    bash tools/mvs/dump-report-for-job "$job" > "$attempt/selected-report.txt" 2> "$attempt/selected-report.stderr"
+    rc=$?
+    if [ "$rc" -ne 0 ]; then echo "Q5SCOMP report RC=$rc"; return 1; fi
+
+    echo 'Compiling unselected BCPL case 146 on resident MVS: Q5NCOMP.'
+    python3 tools/bootstrap/compile-mvs \
+        bootstrap-toolchain/regression/146-optional-empty/source.bcpl \
+        --job-name Q5NCOMP --output "$unsel" \
+        > "$attempt/unselected-compile.stdout" 2> "$attempt/unselected-compile.stderr"
+    rc=$?
+    printf '%s\n' "$rc" > "$attempt/unselected-compile.rc"
+    cat "$attempt/unselected-compile.stdout" "$attempt/unselected-compile.stderr"
+    echo "Q5NCOMP RC=$rc"
+    if [ "$rc" -ne 0 ] || [ ! -s "$unsel" ]; then return 1; fi
+    job="$(sed -nE 's/^JOB ([0-9]+)$/\1/p' "$attempt/unselected-compile.stdout")"
+    if ! [[ "$job" =~ ^[0-9]+$ ]]; then
+        echo 'Q5NCOMP job number missing; no Q5PKG submission.'
+        return 1
+    fi
+    printf '%s\n' "$job" > "$attempt/unselected-job-number.txt"
+    python3 tools/mvs/job-summary "$job" --max-rc 0 --verbose > "$attempt/unselected-summary.txt" 2>&1
+    rc=$?
+    if [ "$rc" -ne 0 ]; then echo "Q5NCOMP summary RC=$rc"; return 1; fi
+    bash tools/mvs/dump-report-for-job "$job" > "$attempt/unselected-report.txt" 2> "$attempt/unselected-report.stderr"
+    rc=$?
+    if [ "$rc" -ne 0 ]; then echo "Q5NCOMP report RC=$rc"; return 1; fi
+    sha256sum "$sel" "$unsel" > "$attempt/compiled.sha256"
+
+    python3 bootstrap-toolchain/extensions/bcplqsam/prepare-q5-release-campaign.py \
+        --prepare --selected "$sel" --unselected "$unsel" \
+        > "$attempt/prepare.txt" 2>&1
+    rc=$?
+    printf '%s\n' "$rc" > "$attempt/prepare.rc"
+    cat "$attempt/prepare.txt"
+    echo "Q5PKG preparation RC=$rc"
+    if [ "$rc" -ne 0 ] || [ ! -s "$deck" ]; then return 1; fi
+    sha256sum "$deck" > "$attempt/deck.sha256"
+
+    echo 'Submitting Q5PKG to JES once. Do not resubmit on failure.'
+    bash tools/mvs/submit-jcl "$deck" \
+        > "$attempt/submit.stdout" 2> "$attempt/submit.stderr"
+    rc=$?
+    printf '%s\n' "$rc" > "$attempt/submit.rc"
+    cat "$attempt/submit.stdout" "$attempt/submit.stderr"
+    echo "Q5PKG JES submission RC=$rc"
+    if [ "$rc" -ne 0 ]; then return 1; fi
+    job="$(sed -nE 's/^JOB ([0-9]+)$/\1/p' "$attempt/submit.stdout")"
+    if ! [[ "$job" =~ ^[0-9]+$ ]]; then
+        echo 'Job number unknown; do not resubmit.'
+        return 1
+    fi
+    printf '%s\n' "$job" > "$attempt/job-number.txt"
+
+    for ((n=1;n<=90;n++)); do
+        python3 tools/mvs/job-summary "$job" --max-rc 0 --verbose \
+            > "$attempt/summary.txt" 2>&1
+        rc=$?
+        if grep -q '^JOB RESULT: ' "$attempt/summary.txt"; then break; fi
+        sleep 1
+    done
+    printf '%s\n' "$rc" > "$attempt/summary.rc"
+    cat "$attempt/summary.txt"
+    echo "Q5PKG native summary RC=$rc"
+    result=$rc
+
+    bash tools/mvs/dump-report-for-job "$job" \
+        > "$attempt/report.txt" 2> "$attempt/report.stderr"
+    rc=$?
+    printf '%s\n' "$rc" > "$attempt/report.rc"
+    echo "Q5PKG native report RC=$rc"
+    if [ "$rc" -ne 0 ]; then
+        cat "$attempt/report.stderr"
+        result=1
+    else
+        grep -aFx 'BCPLQSAM Q4 QUERY CARRIAGE PASS' "$attempt/report.txt"
+        grep -aFx 'R5 EXT 146 PASS' "$attempt/report.txt"
+    fi
+    if [ "$result" -eq 0 ] &&
+       [ "$(grep -c ' RC=0000$' "$attempt/summary.txt")" -eq 17 ] &&
+       [ "$(grep -aFxc 'BCPLQSAM Q4 QUERY CARRIAGE PASS' "$attempt/report.txt")" -eq 1 ] &&
+       [ "$(grep -aFxc 'R5 EXT 146 PASS' "$attempt/report.txt")" -eq 1 ]; then
+        echo "Q5PKG JOB $job preliminary native result PASS."
+        echo 'Manual IEWL MAP/XREF and installation-boundary review remains.'
+    else
+        echo "Q5PKG JOB $job incomplete/failed acceptance; preserve evidence."
+        result=1
+    fi
+    printf '%s\n' "$result" > "$attempt/preliminary.rc"
+    echo "Evidence: $attempt"
+    return "$result"
+}
+
+q5_release_once
+rc=$?
+echo "Q5 consolidated campaign RC=$rc"
+exit "$rc"
