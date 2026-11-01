@@ -76,9 +76,11 @@ Prior five-module production builds and D6/D7 candidate experiments
 remain historical, not the current eight-member clean-room target.
 Retained `BLDDEV*` jobs are not required for the production rebuild.
 Historical JCL and probes are under [`history/`](history/) and are
-not mapped by the canonical manifest. The `q5pkg-native.jcl` campaign
-fixture remains outside `BOOT_JCL` and is not a production build job. For example,
-`history/build-dev-bcplm6.jcl` may be explicitly staged to
+not mapped by the canonical manifest. The preserved
+[`history/q5pkg-native.jcl`](history/q5pkg-native.jcl) is the direct
+17-step Q.5 packaging acceptance campaign (JOB 8155), not a
+production build job. For example, `history/build-dev-bcplm6.jcl`
+may be explicitly staged to
 reproduce the historical `BOOT_DEVOBJ(BCPLM6)` profile.
 `dspal populate` does not remove previously installed, now-unmapped
 members from an existing MVS PDS.

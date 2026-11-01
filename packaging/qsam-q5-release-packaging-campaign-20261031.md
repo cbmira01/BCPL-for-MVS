@@ -19,6 +19,12 @@
 
 ## The consolidated candidate job: Q5PKG
 
+The preserved direct native JOB deck is
+[`bootstrap-toolchain/jcl/history/q5pkg-native.jcl`](../bootstrap-toolchain/jcl/history/q5pkg-native.jcl).
+It is a historical Q.5 acceptance artifact, not a manifest-managed
+`BOOT_JCL` production installation job. Moving it into `history/`
+does not change the recorded JOB 8155 evidence or authorize a rerun.
+
 One Q5PKG payload executes the following in order, after two resident compiler jobs produce the native application CODE:
 
 | Native step group | Purpose |

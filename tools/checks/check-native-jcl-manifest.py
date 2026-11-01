@@ -45,10 +45,7 @@ def main() -> None:
     ]
     if other_mappings:
         raise ValueError(f"unexpected BOOT_JCL member: {other_mappings}")
-    # The Q.5 campaign fixture is unmanifested, not a production job.
-    unmanifested = {"q5pkg-native.jcl"}
-    actual_files = sorted(p.name for p in DIRECTORY.glob("*.jcl")
-                          if p.name not in unmanifested)
+    actual_files = sorted(p.name for p in DIRECTORY.glob("*.jcl"))
     expected_files = sorted(f"{name.lower()}.jcl" for name in MEMBERS)
     if actual_files != expected_files:
         raise ValueError(f"top-level JCL files are not canonical:"

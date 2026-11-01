@@ -1,6 +1,6 @@
 # Historical native JCL — not in dspal.yaml
 
-These decks document earlier BCPLMAIN and BCPLIO development stages.
+These decks document earlier BCPLMAIN, BCPLIO and BCPLQSAM development stages.
 They are preserved for engineering provenance, **not** populated by
 `dspal populate BOOT_JCL`.
 
@@ -16,6 +16,10 @@ They are preserved for engineering provenance, **not** populated by
   linkage experiments, not maintained builds.
 - `build-gate-f1-bcplmem.jcl` is a historical single-member
   BCPLMEM production installation, not a current build entry point.
+- `q5pkg-native.jcl` preserves the direct, 17-step Q.5 native
+  temporary-PDS packaging and selected/unselected linkage campaign
+  accepted as JOB 8155; it is not a canonical extension installation
+  job or an installed-object verification.
 
 Obsolete D3–D5 candidate, linkage and probe decks, the unneeded
 BLIBLINK consumer and the hazardous SEEDDEV binary-copy job have been
