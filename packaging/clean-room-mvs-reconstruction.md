@@ -100,7 +100,7 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 6 | Build and test interpreted `CAMBCOMP` | Bootstrap compiler produces System/370 assembler |
 | 7 | Assemble six Core Runtime modules and empty BCPLREG | Seven members in `BOOT_OBJ` |
 | 8 | Compile and assemble `BLIB` | Eight members in `BOOT_OBJ` |
-| 9 | Install BCPLDEMO, BCPLTIME and BCPLQSAM; verify installed-mode links; run 00–176 | 176 PASS, 0 FAIL, 1 expected SKIP 083 (new gate) |
+| 9 | Install BCPLDEMO, BCPLTIME and BCPLQSAM; run 00–176 | 176 PASS, 0 FAIL, 1 expected SKIP 083 (new gate) |
 | 10 | Save the evidence | Results and limits recorded |
 
 > **Acceptance history:** A previous clean-room rebuild was accepted
@@ -217,7 +217,7 @@ tools/datasets/dspal ls EXT_OBJ
 ```
 
 **R.5, T.1 and Q.5 extension check:** `BOOT_JCL` includes `R5DINST`,
-`T1TINST`, `Q5QINST` and `Q5QVFY`; `EXT_MAC` contains `BCXPRE`,
+`T1TINST` and `Q5QINST`; `EXT_MAC` contains `BCXPRE`,
 `BCXCAT`, and `BCXPOST`; `EXT_ASM` contains `BCPLDEMO`,
 `BCPLTIME` and `BCPLQSAM`; `EXT_SOURCE` contains `DEMOHDR`,
 `TIMEHDR` and `QSAMHDR`. On a fresh clean-room build `EXT_OBJ`
@@ -598,9 +598,7 @@ owner approval.
 The manifest now populates `EXT_ASM(BCPLQSAM)` from the canonical
 Git source and `EXT_SOURCE(QSAMHDR)` from its public BCPL declaration.
 `BOOT_JCL(Q5QINST)` is a four-step *native MVS* installation/readback
-job; `BOOT_JCL(Q5QVFY)` is a ten-step installed-mode selected/
-unselected compiler/IFOX/IEWL/GO verification job. Neither is
-executed merely by `dspal populate all`.
+job. It is not executed merely by `dspal populate all`.
 
 First confirm all three Git-backed text libraries and the resident
 job bodies were populated from the **same pinned Git revision**.
@@ -623,20 +621,6 @@ Inspect the payload JES report: `ASMQ`, `PUTQSAM`, `READBACK`,
 or failing install. The installed `BCXCAT` must emit
 `INCLUDE EXTLIB(BCPLQSAM)` only when BCPLQSAM is selected.
 
-After **separate JES submission authorization**, run the native
-installed-mode proof:
-
-```sh
-tools/datasets/dspal submit BOOT_JCL Q5QVFY
-```
-
-`Q5QVFY` does not write permanent PDS members. Require ten
-RC=0000 steps; `SLKED` must include the installed BCPLQSAM
-descriptor/dispatcher with `QSAMSVC` at G!200 and `SGO`
-must print `BCPLQSAM Q4 QUERY CARRIAGE PASS`. `NLKED` must
-**exclude** BCPLQSAM and `NGO` must print `R5 EXT 146 PASS`.
-Check IEWL MAP/XREF and real SYSOUT, not just the job's overall RC.
-
 For an incremental rebuild, **do not run `populate all`** or
 overwrite `EXT_MAC(BCXCAT)` before reviewing all installed objects.
 Stage only authorized individual members; install and read back
@@ -644,9 +628,9 @@ Stage only authorized individual members; install and read back
 a failed binary installation is recovered from pinned Git sources,
 not an assumed atomic PDS rollback.
 
-[Q.5 installed reconstruction and verification design](qsam-q5-installed-reconstruction-20261101.md)
-defines the exact gate and distinguishes temporary-PDS Q5PKG
-evidence from installed-mode MVS proof.
+Separate installed-mode verification belongs to the
+[Q.5 release acceptance campaign](qsam-q5-installed-reconstruction-20261101.md),
+not the clean-room reconstruction procedure.
 
 ### Run the complete production panel
 
@@ -684,9 +668,8 @@ It does **not** select the historical `MIXED` or `DEVOBJ`
 profile. The extension settings independently direct cases **146–162**
 to the installed read-only `EXT_OBJ` and resident `EXT_MAC`
 libraries. The QSAM cases **163–176** still use their established
-source-selected candidate; independent installed-object proof is
-provided by `Q5QVFY`. The interpreter-hosted **demoted Cambridge compiler**
-compiles each BCPL client; IFOX, IEWL and GO run on MVS.
+source-selected candidate. The interpreter-hosted **demoted Cambridge
+compiler** compiles each BCPL client; IFOX, IEWL and GO run on MVS.
 The previously accepted R.5 panel covered 00–158 only; this updated
 T.1 procedure does not retroactively change the R.5 evidence.
 
@@ -753,8 +736,8 @@ PDS members, and jobs were used.
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
-| Optional extension | `BOOT_JCL(R5DINST)`, `T1TINST`, `Q5QINST`, `Q5QVFY`; all source/header/catalog members; separate binary install/read-back/compare receipts for `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM`; selected/absent IEWL MAP/XREF evidence |
-| Native tests | Fresh 00–176 result (target 176 PASS, 0 FAIL, expected SKIP 083) plus separate `Q5QVFY` installed-mode native PASS records; case logs and JES job numbers |
+| Optional extension | `BOOT_JCL(R5DINST)`, `T1TINST`, `Q5QINST`; all source/header/catalog members; separate binary install/read-back/compare receipts for `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM` |
+| Native tests | Fresh 00–176 result (target 176 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;
