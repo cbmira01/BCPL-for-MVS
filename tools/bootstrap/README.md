@@ -72,10 +72,12 @@ After an **approved** base M3 compiler/OBJ reconstruction,
 the current M5 native stream candidate consists of
 `BOOT_DEVOBJ(BCPLM6)` and
 `BOOT_DEVOBJ(BCPLIO)`, assembled via
-`BOOT_JCL(BLDDEVM6)` and
-`BOOT_JCL(BLDDEVI)`. BLDDEVM6 must be
-installed explicitly; it is not in the current `BOOT_JCL`
-manifest. The job now reads `BOOT_ASM(BCPLMAIN)`.
+historically staged `BOOT_JCL(BLDDEVM6)` and
+`BOOT_JCL(BLDDEVI)`. Both job sources now reside under
+`bootstrap-toolchain/jcl/history/`; neither is included in the
+current `BOOT_JCL` manifest. Reproducing the DEVOBJ profile requires
+explicit staging and authorization. The BLDDEVM6 job reads
+`BOOT_ASM(BCPLMAIN)`.
 The previous no-promotion policy applied to the accepted DEVOBJ
 milestone. The owner has since explicitly authorized the fresh
 all-OBJ source rebuild; the historical candidate remains independent.

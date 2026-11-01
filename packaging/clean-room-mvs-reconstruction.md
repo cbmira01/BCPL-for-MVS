@@ -216,6 +216,14 @@ tools/datasets/dspal ls EXT_SOURCE
 tools/datasets/dspal ls EXT_OBJ
 ```
 
+**Canonical JCL inventory:** `BOOT_JCL` contains exactly six managed jobs:
+`CAMBBLD`, `BLDBMAIN`, `BLIBBLD`, `BCPLDEMO`, `BCPLTIME`, and
+`BCPLQSAM`. The six former `BLDDEV*` job bodies are archived under
+`bootstrap-toolchain/jcl/history/` and are not populated. On an
+existing MVS PDS, changing `dspal.yaml` does **not** remove previously
+installed `BOOT_JCL(BLDDEV*)` members; any cleanup requires separate
+MVS authorization.
+
 **R.5, T.1 and Q.5 extension check:** `BOOT_JCL` includes `BCPLDEMO`,
 `BCPLTIME` and `BCPLQSAM`; `EXT_MAC` contains `BCXPRE`,
 `BCXCAT`, and `BCXPOST`; `EXT_ASM` contains `BCPLDEMO`,
@@ -816,7 +824,7 @@ that the rebuilt system works. Static checks remain useful when the
 
 | Item | Current status |
 | --- | --- |
-| `BOOT_DEVOBJ` and historical `BCPLM6` candidate | Kept for development/history; **not used** in the production rebuild |
+| `BOOT_DEVOBJ` and historical `BCPLM6` candidate | Kept for development/history; six `BLDDEV*` JCL sources reside in `bootstrap-toolchain/jcl/history/` and are **not** used or populated in the production rebuild |
 | `CAMB_*` PDSes | Managed, but **not used** for the resident bootstrap above |
 | Instrumented `CG370D` compiler | Its generator is retained; the retired diagnostic `CG370DB` job is **not** in the active `BOOT_JCL` manifest |
 | Historical `check-m44-full-panel-logs.py` audit | Restricted to the former 00–145 corpus; fails its corpus check on 00–158 and is **not** the current full-panel acceptance gate |

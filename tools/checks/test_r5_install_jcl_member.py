@@ -24,7 +24,7 @@ class R5InstalledJobMember(unittest.TestCase):
         self.assertTrue(JCL.is_file())
         checker = (ROOT / "tools/checks/check-native-jcl-manifest.py").read_text()
         self.assertIn('"BCPLDEMO",', checker)
-        self.assertIn("PASS: 12 canonical BOOT_JCL members", checker)
+        self.assertIn("PASS: 6 canonical BOOT_JCL members", checker)
 
     def test_job_is_a_clean_fb80_body(self):
         body = JCL.read_text(encoding="ascii")

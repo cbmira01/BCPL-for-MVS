@@ -1,6 +1,7 @@
 # Historical native JCL — not in dspal.yaml
 
-These decks document earlier BCPLMAIN, BCPLIO and BCPLQSAM development stages.
+These decks document earlier BCPLMAIN, BCPLIO and BCPLQSAM development stages,
+including isolated builds of relocatable candidates into `BOOT_DEVOBJ`.
 They are preserved for engineering provenance, **not** populated by
 `dspal populate BOOT_JCL`.
 
@@ -16,6 +17,14 @@ They are preserved for engineering provenance, **not** populated by
   linkage experiments, not maintained builds.
 - `build-gate-f1-bcplmem.jcl` is a historical single-member
   BCPLMEM production installation, not a current build entry point.
+- `blddeva.jcl` builds a development `BCPLAPT` object in `BOOT_DEVOBJ`.
+- `blddevb.jcl` builds a development `BCPLBYTE` object in `BOOT_DEVOBJ`.
+- `blddevi.jcl` builds a development `BCPLIO` object in `BOOT_DEVOBJ`.
+- `blddevl.jcl` builds a development `BLIB` object in `BOOT_DEVOBJ`.
+- `blddevm.jcl` builds a development `BCPLMEM` object in `BOOT_DEVOBJ`.
+- `blddevn.jcl` builds a development `BCPLMAIN` object in `BOOT_DEVOBJ`.
+  These six job bodies formerly lived in the canonical `BOOT_JCL`
+  inventory but are now historical, non-populated development decks.
 - `q5pkg-native.jcl` preserves the direct, 17-step Q.5 native
   temporary-PDS packaging and selected/unselected linkage campaign
   accepted as JOB 8155; it is not a canonical extension installation

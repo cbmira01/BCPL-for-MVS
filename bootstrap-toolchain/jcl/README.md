@@ -10,18 +10,12 @@ job bodies must not contain credentials.
 | --- | --- | --- |
 | `blibbld.jcl` | `BLIBBLD` | Build Base Library `BLIB` into `BOOT_OBJ` |
 | `bldbmain.jcl` | `BLDBMAIN` | Assemble/install six Core Runtime objects and the empty `BCPLREG` table |
-| `blddeva.jcl` | `BLDDEVA` | Development `BCPLAPT` object |
-| `blddevb.jcl` | `BLDDEVB` | Development `BCPLBYTE` object |
-| `blddevi.jcl` | `BLDDEVI` | Development `BCPLIO` object |
-| `blddevm.jcl` | `BLDDEVM` | Development `BCPLMEM` object |
-| `blddevn.jcl` | `BLDDEVN` | Development `BCPLMAIN` object |
-| `blddevl.jcl` | `BLDDEVL` | Development `BLIB` object |
 | `cambbld.jcl` | `CAMBBLD` | Build the demoted Cambridge compiler INTCODE |
 | `bcpldemo.jcl` | `BCPLDEMO` | Assemble, install, read back and compare `EXT_OBJ(BCPLDEMO)` |
 | `bcpltime.jcl` | `BCPLTIME` | Build and verify installed `EXT_OBJ(BCPLTIME)` |
 | `bcplqsam.jcl` | `BCPLQSAM` | Build and verify installed `EXT_OBJ(BCPLQSAM)` |
 
-`tools/datasets/dspal populate BOOT_JCL` installs the twelve
+`tools/datasets/dspal populate BOOT_JCL` installs the six
 tracked FB80 JCL *bodies*; it does not submit any of them.
 `dspal submit BOOT_JCL <MEMBER>` uses the configured MVS batch
 identity and JES internal reader, reports both launcher and payload
@@ -74,9 +68,10 @@ for preconditions, recovery and MVS acceptance evidence.
 
 Prior five-module production builds and D6/D7 candidate experiments
 remain historical, not the current eight-member clean-room target.
-Retained `BLDDEV*` jobs are not required for the production rebuild.
-Historical JCL and probes are under [`history/`](history/) and are
-not mapped by the canonical manifest. The preserved
+The six `BLDDEV*` development jobs are archived under [`history/`](history/),
+not mapped by the canonical manifest or required for production.
+They remain source-controlled for explicitly authorized DEVOBJ work.
+Historical JCL and probes are not populated by `dspal populate BOOT_JCL`. The preserved
 [`history/q5pkg-native.jcl`](history/q5pkg-native.jcl) is the direct
 17-step Q.5 packaging acceptance campaign (JOB 8155), not a
 production build job. For example, `history/build-dev-bcplm6.jcl`

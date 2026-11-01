@@ -465,12 +465,6 @@ datasets:
     members:
       BLIBBLD: bootstrap-toolchain/jcl/blibbld.jcl
       BLDBMAIN: bootstrap-toolchain/jcl/bldbmain.jcl
-      BLDDEVM: bootstrap-toolchain/jcl/blddevm.jcl
-      BLDDEVN: bootstrap-toolchain/jcl/blddevn.jcl
-      BLDDEVB: bootstrap-toolchain/jcl/blddevb.jcl
-      BLDDEVI: bootstrap-toolchain/jcl/blddevi.jcl
-      BLDDEVA: bootstrap-toolchain/jcl/blddeva.jcl
-      BLDDEVL: bootstrap-toolchain/jcl/blddevl.jcl
       CAMBBLD: bootstrap-toolchain/jcl/cambbld.jcl
       BCPLDEMO: bootstrap-toolchain/jcl/bcpldemo.jcl
       BCPLTIME: bootstrap-toolchain/jcl/bcpltime.jcl
