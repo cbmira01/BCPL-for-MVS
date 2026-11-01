@@ -119,7 +119,12 @@ def one(src: str, old: str, new: str) -> str:
 
 def instrument(src: str) -> str:
     src = one(src, STAGE, STAGE_TEST)
-    src = one(src, 'QCSSAVE  DS    18F\n', HELPERS + 'QCSSAVE  DS    18F\n')
+    # Place helper instructions before QSMCORE's final LTORG so new
+    # helper operands receive addressable literals. JOB 8153 IFO209.
+    src = one(src, '         LTORG\n'
+                   '* PRIVATE CORE FIELDS (NO OS-MODULE WRITE OWNERSHIP).\n',
+              HELPERS + '         LTORG\n'
+              '* PRIVATE CORE FIELDS (NO OS-MODULE WRITE OWNERSHIP).\n')
     src = one(src, "QCERRPRI DC   F'0'\n", "QCERRPRI DC   F'0'\n" + DATA)
     for i, row in enumerate(src.splitlines(), 1):
         if not row.isascii() or '\t' in row or len(row) > 71:
