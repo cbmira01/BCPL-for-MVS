@@ -1,10 +1,12 @@
 # Milestone QSAM — Q.5 packaging review and consolidated native campaign
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**March:** **Q.5 — Hardening & release** (IN PROGRESS)  
+**March:** **Q.5 — Hardening & release** (historical campaign; CLOSED by owner 1 November 2026)  
 **Status (31 October design):** Non-destructive campaign prepared, not yet MVS-executed at the time of that design. **Update (1 November):** Direct native `Q5PKG` JOB 8155 completed 17 steps RC=0000; the owner reported the production 00–176 panel at 176 PASS / 0 FAIL / 1 expected SKIP 083 on prior revision `72a5da31`. These results do **not** constitute installed-object proof, clean-room proof, or Q.5 closure. The subsequent [installed reconstruction/verification design](qsam-q5-installed-reconstruction-20261101.md) now stages Git manifest, installation JCL, and read-only installed linkage JCL for a separately authorized future MVS run.  
 **Baseline:** GitHub main through JOB 8154 real GETMAIN acceptance, revision 6e0d38bce06f10848c9bf7e82f23039371532039.  
 **Owner authority:** Commit reviewed project files and request native MVS job runs. No permission to overwrite or purge installed MVS datasets is inferred.
+
+**Later owner disposition (1 November 2026):** Q.5 and Milestone QSAM were [closed with explicit qualifications](qsam-q5-closure-20261101.md) after the [later full-panel failure and focused rerun](qsam-q5-regression-evidence-20261101.md). All statements below that Q.5 remained open or that installation was a future gate describe this **earlier design stage**, not a later successful installed-mode verification. The closure does not certify Q5QVFY or permanent BCPLQSAM promotion.
 
 ## Packaging decisions
 

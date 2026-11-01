@@ -1,6 +1,6 @@
 # Milestone QSAM — Q.5 installed reconstruction and verification
 
-**Status (1 November 2026): Git source/decks prepared, not installed or MVS-tested by this change.**  
+**Status of this 1 November 2026 design:** Git source/decks prepared, not installed or MVS-tested by the design change. **Later owner disposition:** [Q.5 and Milestone QSAM CLOSED with explicit exceptions](qsam-q5-closure-20261101.md). No Q5QINST/Q5QVFY installed-mode native acceptance was supplied for that closure; this document remains the separate future verification procedure.  
 **Authority:** [Milestone QSAM](milestone-qsam.md), [Q.5 release campaign](qsam-q5-release-packaging-campaign-20261031.md), [clean-room runbook](clean-room-mvs-reconstruction.md).  
 **Scope:** optional **BCPLQSAM** System Extension, not a Core Runtime replacement or a compiler change.
 
