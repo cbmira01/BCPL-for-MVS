@@ -7,7 +7,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/dspal.yaml"
-JCL = ROOT / "bootstrap-toolchain/jcl/r5dinst.jcl"
+JCL = ROOT / "bootstrap-toolchain/jcl/bcpldemo.jcl"
 RUNBOOK = ROOT / "packaging/clean-room-mvs-reconstruction.md"
 SUBMIT = ROOT / "tools/datasets/dspal-submit.py"
 
@@ -19,12 +19,12 @@ class R5InstalledJobMember(unittest.TestCase):
             "\n  BOOT_OBJ:\n", 1
         )[0]
         self.assertEqual(
-            section.count("R5DINST: bootstrap-toolchain/jcl/r5dinst.jcl"), 1
+            section.count("BCPLDEMO: bootstrap-toolchain/jcl/bcpldemo.jcl"), 1
         )
         self.assertTrue(JCL.is_file())
         checker = (ROOT / "tools/checks/check-native-jcl-manifest.py").read_text()
-        self.assertIn('"R5DINST",', checker)
-        self.assertIn("PASS: 13 canonical BOOT_JCL members", checker)
+        self.assertIn('"BCPLDEMO",', checker)
+        self.assertIn("PASS: 12 canonical BOOT_JCL members", checker)
 
     def test_job_is_a_clean_fb80_body(self):
         body = JCL.read_text(encoding="ascii")
@@ -73,7 +73,7 @@ class R5InstalledJobMember(unittest.TestCase):
 
     def test_runbook_uses_single_resident_submit_command(self):
         guide = RUNBOOK.read_text(encoding="utf-8")
-        self.assertIn("tools/datasets/dspal submit BOOT_JCL R5DINST", guide)
+        self.assertIn("tools/datasets/dspal submit BOOT_JCL BCPLDEMO", guide)
         self.assertIn("tools/bootstrap/run-production-regression 0 162", guide)
         self.assertIn("| PASS | **162**", guide)
         self.assertIn("| TOTAL | **163**", guide)

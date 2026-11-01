@@ -6,7 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "config/dspal.yaml"
 CATALOG = ROOT / "bootstrap-toolchain/extensions/bcx/BCXCAT.asm"
-INSTALL = ROOT / "bootstrap-toolchain/jcl/t1tinst.jcl"
+INSTALL = ROOT / "bootstrap-toolchain/jcl/bcpltime.jcl"
 
 
 def mapping(text, name):
@@ -34,8 +34,8 @@ class TestT1Packaging(unittest.TestCase):
             "EXT_MAC": ("BCXPRE: bootstrap-toolchain/extensions/bcx/BCXPRE.asm",
                         "BCXCAT: bootstrap-toolchain/extensions/bcx/BCXCAT.asm",
                         "BCXPOST: bootstrap-toolchain/extensions/bcx/BCXPOST.asm"),
-            "BOOT_JCL": ("R5DINST: bootstrap-toolchain/jcl/r5dinst.jcl",
-                         "T1TINST: bootstrap-toolchain/jcl/t1tinst.jcl"),
+            "BOOT_JCL": ("BCPLDEMO: bootstrap-toolchain/jcl/bcpldemo.jcl",
+                         "BCPLTIME: bootstrap-toolchain/jcl/bcpltime.jcl"),
         }
         for section, lines in expected.items():
             body = mapping(self.manifest, section)

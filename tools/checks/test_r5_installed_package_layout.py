@@ -72,7 +72,7 @@ class R5InstalledLayoutTests(unittest.TestCase):
         self.assertNotIn('DSN=HERC02.BCPL.EXT.MAC(', cards)
 
     def test_install_deck_does_not_modify_core_datasets(self):
-        deck = (ROOT / 'bootstrap-toolchain/jcl/r5dinst.jcl').read_text()
+        deck = (ROOT / 'bootstrap-toolchain/jcl/bcpldemo.jcl').read_text()
         self.assertIn('EXEC PGM=IFOX00', deck)
         self.assertIn('EXEC PGM=IEBGENER', deck)
         self.assertIn('EXEC PGM=IEBCOMPR', deck)

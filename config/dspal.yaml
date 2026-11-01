@@ -472,12 +472,9 @@ datasets:
       BLDDEVA: bootstrap-toolchain/jcl/blddeva.jcl
       BLDDEVL: bootstrap-toolchain/jcl/blddevl.jcl
       CAMBBLD: bootstrap-toolchain/jcl/cambbld.jcl
-      CG370DB: bootstrap-toolchain/jcl/cg370db.jcl
-      BLDRGCHK: bootstrap-toolchain/jcl/bldrgchk.jcl
-      R5DINST: bootstrap-toolchain/jcl/r5dinst.jcl
-      T1TINST: bootstrap-toolchain/jcl/t1tinst.jcl
-      Q5QINST: bootstrap-toolchain/jcl/q5qinst.jcl
-      Q5QVFY: bootstrap-toolchain/jcl/q5qvfy.jcl
+      BCPLDEMO: bootstrap-toolchain/jcl/bcpldemo.jcl
+      BCPLTIME: bootstrap-toolchain/jcl/bcpltime.jcl
+      BCPLQSAM: bootstrap-toolchain/jcl/bcplqsam.jcl
 
   BOOT_OBJ:
     dsn: BCPL.BOOT.OBJ

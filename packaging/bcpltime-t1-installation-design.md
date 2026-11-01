@@ -9,6 +9,9 @@ member writes separately authorized and completed 24 October 2026.
 **Acceptance:** [T.1 owner closure](bcpltime-t1-closure-20261024.md)  
 **Official source:** GitHub `main`; resident MVS objects are rebuildable products, not canonical sources.
 
+The current canonical job member is `BOOT_JCL(BCPLTIME)`; historical
+T.1 installation evidence retains the original `T1TINST` job name.
+
 ## Package and exact member mapping
 
 BCPLTIME is a project-created optional System Extension with BCEX/BCRG v1
@@ -21,13 +24,13 @@ area remains **non-reentrant**. It has no dependency on BCPLDEMO.
 | --- | --- | --- |
 | `EXT_ASM` | `BCPLTIME` | `bootstrap-toolchain/extensions/bcpltime/bcpltime.asm` |
 | `EXT_SOURCE` | `TIMEHDR` | `bootstrap-toolchain/extensions/bcpltime/bcpltime.h` |
-| `BOOT_JCL` | `T1TINST` | `bootstrap-toolchain/jcl/t1tinst.jcl` |
+| `BOOT_JCL` | `BCPLTIME` | `bootstrap-toolchain/jcl/bcpltime.jcl` |
 | `EXT_OBJ` | `BCPLTIME` | FB80 binary relocatable object assembled on **MVS** |
 | `EXT_MAC` | existing `BCXCAT` | Production known-package selection catalog |
 
 No new PDS allocation is required. Retain `EXT_ASM(BCPLDEMO)`,
 `EXT_SOURCE(DEMOHDR)`, `EXT_OBJ(BCPLDEMO)`, `BCXPRE`, `BCXPOST`,
-and `BOOT_JCL(R5DINST)`. `EXT_OBJ` remains `populate: false`.
+and `BOOT_JCL(BCPLDEMO)`. `EXT_OBJ` remains `populate: false`.
 Never transfer binary object records with a text-oriented `dspal put`.
 
 Production `BCXCAT` recognizes both `BCPLDEMO` and `BCPLTIME`,
@@ -53,7 +56,7 @@ tools/datasets/dspal populate BOOT_JCL --dry-run
 tools/datasets/dspal info
 ```
 
-The tracked `T1TINST` job body is explicitly configured for the
+The tracked `BCPLTIME` job body is explicitly configured for the
 R.5 site's `HERC02.BCPL.*` datasets. Stop if the effective local
 configuration resolves other names. These checks do not submit any
 installation job. **Incremental installation must not use
@@ -77,14 +80,14 @@ resident `BCXCAT` contents and the source revision for recovery.
      bootstrap-toolchain/extensions/bcpltime/bcpltime.asm
    tools/datasets/dspal put EXT_SOURCE TIMEHDR \
      bootstrap-toolchain/extensions/bcpltime/bcpltime.h
-   tools/datasets/dspal put BOOT_JCL T1TINST \
-     bootstrap-toolchain/jcl/t1tinst.jcl
+   tools/datasets/dspal put BOOT_JCL BCPLTIME \
+     bootstrap-toolchain/jcl/bcpltime.jcl
    ```
 
 2. Verify the resident members, then submit the approved install job:
 
    ```sh
-   tools/datasets/dspal submit BOOT_JCL T1TINST
+   tools/datasets/dspal submit BOOT_JCL BCPLTIME
    ```
 
    `dspal submit` supplies the authenticated JOB card. Retain both
@@ -144,7 +147,7 @@ resident `BCXCAT` contents and the source revision for recovery.
 A fresh clean-room `dspal populate all` installs the Git-controlled
 source, header, job and updated BCXCAT **before** building binary
 members. Do not run the optional-extension panel until **both**
-`R5DINST` and `T1TINST` have completed with verified readbacks.
+`BCPLDEMO` and `BCPLTIME` have completed with verified readbacks.
 The accepted R.5 binary build must not be displaced by T.1.
 
 An object-member update is not atomic. If `ASMTIME`, `PUTTIME`,

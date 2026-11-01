@@ -216,8 +216,8 @@ tools/datasets/dspal ls EXT_SOURCE
 tools/datasets/dspal ls EXT_OBJ
 ```
 
-**R.5, T.1 and Q.5 extension check:** `BOOT_JCL` includes `R5DINST`,
-`T1TINST` and `Q5QINST`; `EXT_MAC` contains `BCXPRE`,
+**R.5, T.1 and Q.5 extension check:** `BOOT_JCL` includes `BCPLDEMO`,
+`BCPLTIME` and `BCPLQSAM`; `EXT_MAC` contains `BCXPRE`,
 `BCXCAT`, and `BCXPOST`; `EXT_ASM` contains `BCPLDEMO`,
 `BCPLTIME` and `BCPLQSAM`; `EXT_SOURCE` contains `DEMOHDR`,
 `TIMEHDR` and `QSAMHDR`. On a fresh clean-room build `EXT_OBJ`
@@ -498,6 +498,19 @@ six Core Runtime members, the empty default `BCPLREG`, and `BLIB`.
 The separate installation authorization required in Step 7 still applies;
 this section does not override it.
 
+### Canonical System Extension build and installation jobs
+
+| Git-controlled JCL | `BOOT_JCL` member | Installed binary object |
+| --- | --- | --- |
+| `bootstrap-toolchain/jcl/bcpldemo.jcl` | `BCPLDEMO` | `EXT_OBJ(BCPLDEMO)` |
+| `bootstrap-toolchain/jcl/bcpltime.jcl` | `BCPLTIME` | `EXT_OBJ(BCPLTIME)` |
+| `bootstrap-toolchain/jcl/bcplqsam.jcl` | `BCPLQSAM` | `EXT_OBJ(BCPLQSAM)` |
+
+These are production IFOX assembly, binary installation, readback and
+IEBCOMPR jobs, submitted in the listed order when separately authorized.
+Each job requires successful installation and comparison before the next;
+`dspal populate` alone does not assemble or install `EXT_OBJ`.
+
 ### Install the optional extension object
 
 The first `dspal populate all` installed the Git-controlled text members
@@ -526,8 +539,8 @@ optional package objects as disposable, reproducible build products;
 there is no backup or member-level rollback PDS. Consult
 [the R.5 installation design](runtime-extensions-r5-installation-design.md).
 
-The tracked `bootstrap-toolchain/jcl/r5dinst.jcl` is populated
-into `BOOT_JCL(R5DINST)` by Step 2C. It contains a JCL job body,
+The tracked `bootstrap-toolchain/jcl/bcpldemo.jcl` is populated
+into `BOOT_JCL(BCPLDEMO)` by Step 2C. It contains a JCL job body,
 not a JOB card. `dspal submit` supplies the authenticated card from
 the local configuration, submits through JES INTRDR, and reports both
 the launcher and payload job numbers.
@@ -536,7 +549,7 @@ Once the permanent installation has been authorized, submit the
 resident job:
 
 ```sh
-tools/datasets/dspal submit BOOT_JCL R5DINST
+tools/datasets/dspal submit BOOT_JCL BCPLDEMO
 ```
 
 The command waits for the payload result. It does not create or
@@ -567,14 +580,14 @@ encoding conversion.
 
 ### Add BCPLTIME in the current T.1 clean-room procedure
 
-The R.5 steps above remain required: `R5DINST` first rebuilds
+The R.5 steps above remain required: `BCPLDEMO` first rebuilds
 `EXT_OBJ(BCPLDEMO)` and verifies its binary records. Under the
 **separately authorized** T.1 installation operation, the populated
-`BOOT_JCL(T1TINST)` then builds and installs **only**
+`BOOT_JCL(BCPLTIME)` then builds and installs **only**
 `EXT_OBJ(BCPLTIME)` from `EXT_ASM(BCPLTIME)`:
 
 ```sh
-tools/datasets/dspal submit BOOT_JCL T1TINST
+tools/datasets/dspal submit BOOT_JCL BCPLTIME
 ```
 
 Review actual JES payload evidence for `ASMTIME`, `PUTTIME`,
@@ -597,7 +610,7 @@ owner approval.
 
 The manifest now populates `EXT_ASM(BCPLQSAM)` from the canonical
 Git source and `EXT_SOURCE(QSAMHDR)` from its public BCPL declaration.
-`BOOT_JCL(Q5QINST)` is a four-step *native MVS* installation/readback
+`BOOT_JCL(BCPLQSAM)` is a four-step *native MVS* installation/readback
 job. It is not executed merely by `dspal populate all`.
 
 First confirm all three Git-backed text libraries and the resident
@@ -611,7 +624,7 @@ installation job; publishing this JCL is not permission to modify
 `EXT_OBJ(BCPLQSAM)`. After authorization:
 
 ```sh
-tools/datasets/dspal submit BOOT_JCL Q5QINST
+tools/datasets/dspal submit BOOT_JCL BCPLQSAM
 ```
 
 Inspect the payload JES report: `ASMQ`, `PUTQSAM`, `READBACK`,
@@ -734,7 +747,7 @@ PDS members, and jobs were used.
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
-| Optional extension | `BOOT_JCL(R5DINST)`, `T1TINST`, `Q5QINST`; all source/header/catalog members; separate binary install/read-back/compare receipts for `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM` |
+| Optional extension | `BOOT_JCL(BCPLDEMO)`, `BCPLTIME`, `BCPLQSAM`; all source/header/catalog members; separate binary install/read-back/compare receipts for `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM` |
 | Native tests | Fresh 00–176 result (target 176 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
 | Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
 
@@ -777,8 +790,8 @@ change the related scripts or JCL, or when you are investigating a problem.
 | `python3 tools/checks/test-dspal-generated-population.py` | Offline tests for first/second population behavior |
 | `python3 tools/checks/check-native-bootstrap-jcl.py` | Expected `CAMBBLD` job structure and PDS names |
 | `python3 tools/checks/check-native-production-build.py` | Canonical native build source and JCL contracts |
-| `python3 -m unittest discover -s tools/checks -p 'test_r5_install_jcl_member.py' -v` | Offline resident R5DINST installation JCL and clean-room documentation checks |
-| `python3 -m unittest discover -s tools/checks -p 'test_t1_install_packaging.py' -v` | T.1 manifest, BCXCAT, T1TINST and binary-install safety checks |
+| `python3 -m unittest discover -s tools/checks -p 'test_r5_install_jcl_member.py' -v` | Offline resident BCPLDEMO installation JCL and clean-room documentation checks |
+| `python3 -m unittest discover -s tools/checks -p 'test_t1_install_packaging.py' -v` | T.1 manifest, BCXCAT, BCPLTIME and binary-install safety checks |
 | `python3 -m unittest discover -s tools/checks -p 'test_r5_time_absence.py' -v` | R.5 BCPLDEMO-only/empty links must not drag in BCPLTIME |
 | `tools/bootstrap/run-production-regression --check-numbering` | Test numbering and expected range |
 | `check-m44-compatibility.py --production` | Harness fixtures, production linkage, and test-only fault settings |
@@ -805,13 +818,14 @@ that the rebuilt system works. Static checks remain useful when the
 | --- | --- |
 | `BOOT_DEVOBJ` and historical `BCPLM6` candidate | Kept for development/history; **not used** in the production rebuild |
 | `CAMB_*` PDSes | Managed, but **not used** for the resident bootstrap above |
-| Instrumented `CG370D` compiler | Its generator and `BOOT_JCL(CG370DB)` build job are still in Git; **not part of the normal build** |
+| Instrumented `CG370D` compiler | Its generator is retained; the retired diagnostic `CG370DB` job is **not** in the active `BOOT_JCL` manifest |
 | Historical `check-m44-full-panel-logs.py` audit | Restricted to the former 00–145 corpus; fails its corpus check on 00–158 and is **not** the current full-panel acceptance gate |
 
 `make-demoted.py` still generates the five instrumented code-generator
 sources in `workarea/bootstrap-cambridge/demoted-diag/`.
-`bootstrap-toolchain/jcl/cg370db.jcl` can build the separate
-`BOOT_INTCODE(CG370D)` image. At present those five diagnostic sources
+The former `bootstrap-toolchain/jcl/cg370db.jcl` deck is available
+only through Git history; it is not a current runnable build job for
+`BOOT_INTCODE(CG370D)`. At present those five diagnostic sources
 (`CGAD`–`CGED`) still need **explicit staging** into `BOOT_SOURCE`:
 they are not in the normal `dspal populate all` mapping.
 Building `CG370D` does **not** replace `CAMBCOMP`.

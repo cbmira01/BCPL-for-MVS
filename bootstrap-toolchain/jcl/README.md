@@ -17,14 +17,11 @@ job bodies must not contain credentials.
 | `blddevn.jcl` | `BLDDEVN` | Development `BCPLMAIN` object |
 | `blddevl.jcl` | `BLDDEVL` | Development `BLIB` object |
 | `cambbld.jcl` | `CAMBBLD` | Build the demoted Cambridge compiler INTCODE |
-| `cg370db.jcl` | `CG370DB` | Optional diagnostic compiler image |
-| `bldrgchk.jcl` | `BLDRGCHK` | Non-installing registrar source assembly checks |
-| `r5dinst.jcl` | `R5DINST` | Assemble, install, read back and compare `EXT_OBJ(BCPLDEMO)` |
-| `t1tinst.jcl` | `T1TINST` | Build and verify installed `EXT_OBJ(BCPLTIME)` |
-| `q5qinst.jcl` | `Q5QINST` | Build and verify installed `EXT_OBJ(BCPLQSAM)` |
-| `q5qvfy.jcl` | `Q5QVFY` | Native selected/unselected installed-library IEWL/GO verification |
+| `bcpldemo.jcl` | `BCPLDEMO` | Assemble, install, read back and compare `EXT_OBJ(BCPLDEMO)` |
+| `bcpltime.jcl` | `BCPLTIME` | Build and verify installed `EXT_OBJ(BCPLTIME)` |
+| `bcplqsam.jcl` | `BCPLQSAM` | Build and verify installed `EXT_OBJ(BCPLQSAM)` |
 
-`tools/datasets/dspal populate BOOT_JCL` installs the fifteen
+`tools/datasets/dspal populate BOOT_JCL` installs the twelve
 tracked FB80 JCL *bodies*; it does not submit any of them.
 `dspal submit BOOT_JCL <MEMBER>` uses the configured MVS batch
 identity and JES internal reader, reports both launcher and payload
@@ -40,39 +37,34 @@ separately. The R.1–R.3 registration acceptance used temporary
 objects. The corrected `BOOT_OBJ` installation remains subject to
 separate owner authorization.
 
-`R5DINST` builds the optional System Extension `BCPLDEMO` from
+`BCPLDEMO` builds the optional System Extension `BCPLDEMO` from
 `EXT_ASM(BCPLDEMO)`, installs only `EXT_OBJ(BCPLDEMO)`, and
 verifies the binary records by read-back and IEBCOMPR. It does
 **not** modify `BOOT_OBJ` or `BOOT_DEVOBJ`. Permanent object
 installation requires the owner's authorization. The operation is
 not atomic; inspect all four payload return codes before acceptance.
 
-`T1TINST` independently installs `EXT_OBJ(BCPLTIME)`; `Q5QINST`
+`BCPLTIME` independently installs `EXT_OBJ(BCPLTIME)`; `BCPLQSAM`
 independently installs `EXT_OBJ(BCPLQSAM)` from the Git-populated
 `EXT_ASM(BCPLQSAM)` source. Each uses IFOX, IEBGENER, an independent
 readback and IEBCOMPR; no Core Runtime member is overwritten.
-`Q5QVFY` is a separate, read-only installed-mode BCPL/IFOX/IEWL/GO
-campaign with one `BCXREQ BCPLQSAM` client and one excluded client.
-It does not install the package or substitute for the full regression.
-Do not submit either Q.5 deck without separate MVS authorization.
+The former `Q5QVFY` installed-mode verification JCL has been removed
+from the active inventory. Its historical verification design remains
+in the Q.5 documentation and Git history; installed-object acceptance
+has **not** been established. All three canonical installation jobs
+require separate MVS authorization before submission.
 
-After permission and successful PDS population, the documented
-R.5 installation command is:
-
-```sh
-tools/datasets/dspal submit BOOT_JCL R5DINST
-```
-
-Q.5 installation and verification jobs, *after separate MVS authorization*, are:
+After separate authorization and confirmed prerequisite installations,
+submit the canonical jobs in this order during a clean-room rebuild:
 
 ```sh
-tools/datasets/dspal submit BOOT_JCL Q5QINST
-tools/datasets/dspal submit BOOT_JCL Q5QVFY
+tools/datasets/dspal submit BOOT_JCL BCPLDEMO
+tools/datasets/dspal submit BOOT_JCL BCPLTIME
+tools/datasets/dspal submit BOOT_JCL BCPLQSAM
 ```
 
-Run `Q5QVFY` only after `Q5QINST` has produced four RC=0000
-steps and `EXT_OBJ` readback/comparison has been accepted. Inspect
-SLKED/NLKED IEWL MAP/XREF and SGO/NGO output, not just step RCs.
+Each job must report four successful MVS steps, including readback and
+IEBCOMPR. No installation or JES submission is authorized by this README.
 
 See the [clean-room reconstruction runbook](../../packaging/clean-room-mvs-reconstruction.md)
 and [R.5 installation design](../../packaging/runtime-extensions-r5-installation-design.md)
@@ -84,7 +76,8 @@ Prior five-module production builds and D6/D7 candidate experiments
 remain historical, not the current eight-member clean-room target.
 Retained `BLDDEV*` jobs are not required for the production rebuild.
 Historical JCL and probes are under [`history/`](history/) and are
-not mapped by the canonical manifest. For example,
+not mapped by the canonical manifest. The `q5pkg-native.jcl` campaign
+fixture remains outside `BOOT_JCL` and is not a production build job. For example,
 `history/build-dev-bcplm6.jcl` may be explicitly staged to
 reproduce the historical `BOOT_DEVOBJ(BCPLM6)` profile.
 `dspal populate` does not remove previously installed, now-unmapped

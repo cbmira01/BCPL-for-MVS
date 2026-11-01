@@ -29,9 +29,9 @@ DMODISP. Its public dispatcher is DEMOSVC at G!203. BCEX/BCRG v1 is unchanged.
 1. Record the Git revision. After explicit authorization create the four
    manifest-managed PDSes and populate their Git-backed text members.
    Verify member names, 80-column cards and EBCDIC conversion.
-2. Verify that `BOOT_JCL(R5DINST)` was populated from
-   `bootstrap-toolchain/jcl/r5dinst.jcl`. After separate installation
-   authorization, run `tools/datasets/dspal submit BOOT_JCL R5DINST`.
+2. Verify that `BOOT_JCL(BCPLDEMO)` was populated from
+   `bootstrap-toolchain/jcl/bcpldemo.jcl`. After separate installation
+   authorization, run `tools/datasets/dspal submit BOOT_JCL BCPLDEMO`.
    `dspal submit` generates the authenticated JOB card from the local
    configuration and submits the resident body through JES INTRDR.
    Never commit authenticated JOB credentials.
@@ -106,11 +106,15 @@ The operator subsequently reported a successful full clean-room
 00–158 panel on 23 October 2026: **158 PASS, 0 FAIL, 1 expected SKIP
 083**. This is documented in the
 [R.5 evidence receipt](runtime-extensions-r5-clean-room-acceptance-evidence-20261023.md).
-Individual `R5DINST` job steps, PDS inventories and actual MAP/XREF/GO
+Individual historical `R5DINST` job steps, PDS inventories and actual MAP/XREF/GO
 reports have not yet been provided for independent review.
 R.4 formal closure is pending; R.5 remains **IN PROGRESS**.
 
 ## Installation and owner acceptance — 24 October 2026
+
+The job name `R5DINST` in the following evidence is the original
+historical name. The present canonical rebuild uses `BOOT_JCL(BCPLDEMO)`.
+
 
 The *design-only/no-installation-authority* status above describes the
 23 October proposal, not the subsequent MVS reconstruction. The

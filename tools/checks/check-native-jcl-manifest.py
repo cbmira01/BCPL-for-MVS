@@ -17,10 +17,9 @@ MEMBERS = (
     "BLDDEVA",
     "BLDDEVL",
     "CAMBBLD",
-    "CG370DB",
-    "BLDRGCHK",
-    "R5DINST",
-    "T1TINST",
+    "BCPLDEMO",
+    "BCPLTIME",
+    "BCPLQSAM",
 )
 
 
@@ -46,7 +45,10 @@ def main() -> None:
     ]
     if other_mappings:
         raise ValueError(f"unexpected BOOT_JCL member: {other_mappings}")
-    actual_files = sorted(p.name for p in DIRECTORY.glob("*.jcl"))
+    # The Q.5 campaign fixture is unmanifested, not a production job.
+    unmanifested = {"q5pkg-native.jcl"}
+    actual_files = sorted(p.name for p in DIRECTORY.glob("*.jcl")
+                          if p.name not in unmanifested)
     expected_files = sorted(f"{name.lower()}.jcl" for name in MEMBERS)
     if actual_files != expected_files:
         raise ValueError(f"top-level JCL files are not canonical:"
@@ -64,7 +66,7 @@ def main() -> None:
         data.decode("ascii")
         if any(len(line) > 80 for line in data.splitlines()):
             raise ValueError(f"JCL record exceeds FB80: {path}")
-    print("PASS: 13 canonical BOOT_JCL members and same-named JCL sources")
+    print("PASS: 12 canonical BOOT_JCL members and same-named JCL sources")
     print("No MVS jobs were submitted; production OBJ remains unchanged.")
 
 
