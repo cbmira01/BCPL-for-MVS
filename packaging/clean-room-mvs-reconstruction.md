@@ -78,9 +78,11 @@ It has two kinds of input:
 | Git-tracked | `mr10-kit-compiler/asm/icintv19.asm` | Right after clone |
 | Generated | `workarea/bootstrap-cambridge/demoted/syn` or `trni-large-names.int` | After we run the bootstrap generator |
 
-We run **`dspal populate all` twice**. On the first pass it installs what
-already exists. On the second pass it adds the files we generated. The same
-manifest controls both passes.
+We run **`dspal populate all`** for Git-tracked sources on the first
+pass, then **`dspal populate all --generated-only`** for the 12 generated
+bootstrap members after preparation. The second pass does **not** rewrite
+previously installed Git-tracked members. The same manifest controls
+both passes.
 
 There is **no `stage-bootstrap` step** and no manual `dspal put` for
 `TRNILRG` or `CAMBBLD` in this rebuild.
@@ -336,18 +338,21 @@ production object build.
 `"trnilrg_rebuilt": true`, and the compiled image exists and is not
 empty. Inspect the interpreted jobs for success and `CODE=0`.
 
-### 5B. Second population: install the generated files
+### 5B. Second population: install only the generated files
 
 ```sh
-tools/datasets/dspal populate all --dry-run
-tools/datasets/dspal populate all
+tools/datasets/dspal populate all --generated-only --dry-run
+tools/datasets/dspal populate all --generated-only
 
 tools/datasets/dspal ls BOOT_SOURCE
 tools/datasets/dspal ls BOOT_INTCODE
 ```
 
-**This pass must return RC=0.** It installs every mapped source file
-again, plus the generated members that were missing the first time.
+**This pass must return RC=0.** It installs only the **12**
+`generated_members` entries, without resubmitting JES jobs for any
+previously populated Git-tracked members. `--generated-only` also works
+with an individual managed source PDS and `--show-jcl`; without the
+flag, existing `populate` behavior is unchanged.
 
 | PDS | What should now be there |
 | --- | --- |

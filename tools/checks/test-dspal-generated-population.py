@@ -133,6 +133,101 @@ class GeneratedPopulationTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertEqual(send.call_count, 2)
 
+    def test_generated_only_first_pass_lists_missing_without_tracked_action(self):
+        _, actions, _, missing = pop.preflight(
+            self.config, "all", generated_only=True
+        )
+        self.assertEqual(actions, [])
+        self.assertEqual(len(missing), 1)
+        self.assertIn("BLIB", missing[0])
+
+    def test_generated_only_selects_only_generated_after_preparation(self):
+        self.make_generated()
+        _, actions, _, missing = pop.preflight(
+            self.config, "all", generated_only=True
+        )
+        self.assertEqual([item["member"] for item in actions], ["BLIB"])
+        self.assertEqual(missing, [])
+
+    def test_generated_only_skips_missing_unrelated_tracked_source(self):
+        (self.root / "tracked.txt").unlink()
+        _, actions, _, missing = pop.preflight(
+            self.config, "all", generated_only=True
+        )
+        self.assertEqual(actions, [])
+        self.assertEqual(len(missing), 1)
+
+    def test_generated_only_still_validates_generation_input_hashes(self):
+        self.make_generated()
+        (self.root / "tracked.txt").write_text("changed since generation\n")
+        with self.assertRaisesRegex(pop.DspalError, "input changed"):
+            pop.preflight(self.config, "all", generated_only=True)
+
+    def test_generated_only_still_rejects_stale_output(self):
+        self.make_generated()
+        self.generated_path.write_text("not the recorded output\n")
+        with self.assertRaisesRegex(pop.DspalError, "stale or not inventoried"):
+            pop.preflight(self.config, "all", generated_only=True)
+
+    def test_generated_only_keeps_cross_group_collision_check(self):
+        self.config["datasets"]["BOOT_SOURCE"]["generated_members"] = {
+            "STATIC": self.generated_rel
+        }
+        with self.assertRaisesRegex(pop.DspalError, "duplicate member"):
+            pop.preflight(self.config, "all", generated_only=True)
+
+    def test_generated_only_real_populate_submits_one_member(self):
+        self.make_generated()
+        with mock.patch.object(pop.core, "require_reader_ready"), \
+             mock.patch.object(pop, "require_target_datasets"), \
+             mock.patch.object(pop.io, "member_put_deck", return_value="//JOB\n") as put, \
+             mock.patch.object(pop.core, "submit_and_wait", return_value=(12, "OK")) as send:
+            rc = pop.cmd_populate(self.config, "all", False, False, generated_only=True)
+            self.assertEqual(rc, 0)
+            self.assertEqual(send.call_count, 1)
+            self.assertEqual(put.call_args.args[2], "BLIB")
+
+    def test_generated_only_static_only_mapping_is_a_noop(self):
+        del self.config["datasets"]["BOOT_SOURCE"]["generated_members"]
+        with mock.patch.object(pop.core, "require_reader_ready") as ready, \
+             mock.patch.object(pop.core, "submit_and_wait") as send:
+            rc = pop.cmd_populate(self.config, "all", False, False, generated_only=True)
+        self.assertEqual(rc, 0)
+        ready.assert_not_called()
+        send.assert_not_called()
+
+    def test_generated_only_dry_run_and_show_jcl_do_not_submit(self):
+        self.make_generated()
+        with mock.patch.object(pop.core, "require_reader_ready") as ready, \
+             mock.patch.object(pop.core, "submit_and_wait") as send, \
+             mock.patch.object(pop.io, "member_put_deck", return_value="//MOCK\n") as put:
+            self.assertEqual(
+                pop.cmd_populate(self.config, "all", True, False, generated_only=True), 0
+            )
+            self.assertEqual(
+                pop.cmd_populate(self.config, "all", False, True, generated_only=True), 0
+            )
+        ready.assert_not_called()
+        send.assert_not_called()
+        put.assert_called_once()
+        self.assertEqual(put.call_args.args[2], "BLIB")
+
+    def test_generated_only_missing_output_does_not_submit(self):
+        with mock.patch.object(pop.core, "require_reader_ready") as ready, \
+             mock.patch.object(pop.core, "submit_and_wait") as send:
+            rc = pop.cmd_populate(self.config, "all", False, False, generated_only=True)
+        self.assertEqual(rc, 2)
+        ready.assert_not_called()
+        send.assert_not_called()
+
+    def test_generated_only_cli_flag_is_compatible_with_dry_run(self):
+        args = pop.make_parser().parse_args(
+            ["all", "--generated-only", "--dry-run"]
+        )
+        self.assertEqual(args.target, "all")
+        self.assertTrue(args.generated_only)
+        self.assertTrue(args.dry_run)
+
 
 if __name__ == "__main__":
     unittest.main()

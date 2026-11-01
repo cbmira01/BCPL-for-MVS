@@ -105,7 +105,7 @@ def validate_generated_sources(paths: list[Path]) -> None:
             )
 
 
-def preflight(config: dict[str, Any], target: str):
+def preflight(config: dict[str, Any], target: str, generated_only: bool = False):
     selected = selected_datasets(config, target)
     actions: list[dict[str, Any]] = []
     problems: list[str] = []
@@ -117,7 +117,8 @@ def preflight(config: dict[str, Any], target: str):
         static = spec.get("members", {})
         generated = spec.get("generated_members", {})
         if "members" not in spec and "generated_members" not in spec:
-            unmapped.append(logical)
+            if not generated_only:
+                unmapped.append(logical)
             continue
 
         if not isinstance(static, dict) or not isinstance(generated, dict):
@@ -140,6 +141,11 @@ def preflight(config: dict[str, Any], target: str):
                     problems.append(f"{logical}: duplicate member mapping for {member}")
                     continue
                 seen.add(member)
+
+                # Filter after name/collision checks, but before any tracked
+                # source I/O. Generated provenance still checks its inputs.
+                if generated_only and group == "tracked":
+                    continue
 
                 try:
                     path = source_path(raw_path)
@@ -190,13 +196,15 @@ def preflight(config: dict[str, Any], target: str):
     return selected, actions, unmapped, missing_generated
 
 
-def report_missing_generated(missing: list[str]) -> bool:
+def report_missing_generated(missing: list[str], generated_only: bool = False) -> bool:
     if not missing:
         return False
+    command = "dspal populate all --generated-only" if generated_only \
+        else "dspal populate all"
     print(
         f"dspal: {len(missing)} generated member(s) unavailable; "
         "run prepare-bootstrap --with-trnilrg "
-        "after installing ICINT19, then repeat 'dspal populate all':",
+        f"after installing ICINT19, then repeat '{command}':",
         file=sys.stderr,
     )
     for item in missing:
@@ -271,23 +279,26 @@ def require_target_datasets(config: dict[str, Any], actions: list[dict[str, Any]
 
 
 def cmd_populate(
-    config: dict[str, Any], target: str, dry_run: bool, show_jcl: bool
+    config: dict[str, Any], target: str, dry_run: bool, show_jcl: bool,
+    generated_only: bool = False,
 ) -> int:
-    _, actions, unmapped, missing_generated = preflight(config, target)
+    _, actions, unmapped, missing_generated = preflight(
+        config, target, generated_only=generated_only
+    )
 
     if dry_run:
         display_plan(actions, unmapped)
         print(f"Dry run: {len(actions)} ready member(s) would be written.")
-        return 2 if report_missing_generated(missing_generated) else 0
+        return 2 if report_missing_generated(missing_generated, generated_only) else 0
 
     if show_jcl:
         sys.stdout.write(combined_jcl(config, actions))
-        return 2 if report_missing_generated(missing_generated) else 0
+        return 2 if report_missing_generated(missing_generated, generated_only) else 0
 
     if not actions:
         display_plan(actions, unmapped)
         print("No mapped members ready; nothing to populate.")
-        return 2 if report_missing_generated(missing_generated) else 0
+        return 2 if report_missing_generated(missing_generated, generated_only) else 0
 
     core.require_reader_ready(config)
     require_target_datasets(config, actions)
@@ -308,7 +319,7 @@ def cmd_populate(
     for logical in unmapped:
         print(f"{logical}: no population mappings defined; skipped")
     print(f"populate completed: {len(completed)} ready member(s) written")
-    return 2 if report_missing_generated(missing_generated) else 0
+    return 2 if report_missing_generated(missing_generated, generated_only) else 0
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -316,6 +327,10 @@ def make_parser() -> argparse.ArgumentParser:
         description="Populate managed BCPL PDS libraries from repository files."
     )
     parser.add_argument("target", help="managed logical dataset name or all")
+    parser.add_argument(
+        "--generated-only", action="store_true",
+        help="populate only generated_members mappings; skip tracked member writes",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--dry-run", action="store_true", help="validate and report actions without submitting jobs"
@@ -330,7 +345,10 @@ def main() -> int:
     try:
         args = make_parser().parse_args()
         config = core.load_config()
-        return cmd_populate(config, args.target, args.dry_run, args.show_jcl)
+        return cmd_populate(
+            config, args.target, args.dry_run, args.show_jcl,
+            generated_only=args.generated_only,
+        )
     except (DspalError, IODspalError, OSError, ValueError, UnicodeError) as exc:
         print(f"dspal: {exc}", file=sys.stderr)
         return 2
