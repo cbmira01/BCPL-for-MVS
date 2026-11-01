@@ -13,8 +13,28 @@ run_q5rgm() {
     attempt="$dir/q5rgm-attempt"
     deck="$dir/q5rgm.jcl"
     marker='+Q5RGM:REAL:GM1024-RC4:ALL-FREED'
+    local failed="$dir/q5rgm-attempt-preflight-job8141-image"
 
     mkdir -p "$dir" || return 1
+    # The previous run stopped before JES, because the preparer wrongly
+    # looked at JOB 8141. Preserve that one historical attempt unchanged.
+    if [ -d "$attempt" ] && [ ! -L "$attempt" ] &&
+       [ ! -e "$deck" ] && [ ! -L "$deck" ] &&
+       [ -f "$attempt/prepare.txt" ] &&
+       grep -Fxq 'Q5RGM preparation failed: JOB 8144 compiled assembler digest mismatch' "$attempt/prepare.txt" &&
+       [ ! -e "$attempt/submit.rc" ] &&
+       [ ! -e "$attempt/submit.stdout" ] &&
+       [ ! -e "$attempt/submit.stderr" ] &&
+       [ ! -e "$attempt/job-number.txt" ]; then
+        if [ -e "$failed" ] || [ -L "$failed" ]; then
+            echo "Failed-preflight archive already exists; no resubmission."
+            return 1
+        fi
+        mv -- "$attempt" "$failed"
+        rc=$?
+        echo "Preserve pre-JES failed attempt RC=$rc"
+        if [ "$rc" -ne 0 ]; then return 1; fi
+    fi
     if ! mkdir "$attempt"; then
         echo "Q5RGM already reserved; inspect $attempt; no resubmission."
         return 1

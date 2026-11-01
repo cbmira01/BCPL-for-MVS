@@ -18,9 +18,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 WORK = ROOT / 'workarea/bcplqsam-q5'
 BASELINE = HERE / 'bcplqsam.asm'
-GENERATED = WORK / 'rollback-generated.asm'
+## The accepted JOB 8144 image is verified by prepare-q5-rollback-finish.
 OUTPUT = WORK / 'q5rgm.jcl'
-EXPECTED_CG = 'f68e03ea2cdc8bc9a25a8f4df49c8c8cc1fd4b54056eed1a858be952b207d4ed'
 JOB = 'Q5RGM'
 
 STAGE = ("         GETMAIN RC,LV=1024\n"
@@ -133,11 +132,11 @@ def instrument(src: str) -> str:
 def prepare() -> None:
     if OUTPUT.exists() or OUTPUT.is_symlink():
         raise ValueError('Q5RGM one-shot deck already exists')
-    if GENERATED.is_symlink() or not GENERATED.is_file():
-        raise ValueError('JOB 8144 compiled BCPL assembler unavailable')
-    raw = GENERATED.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != EXPECTED_CG:
-        raise ValueError('JOB 8144 compiled assembler digest mismatch')
+    # Reuse the accepted JOB 8144 verifier: original compiler JOB,
+    # exact source digest, archived JES success and 311-line CODE image.
+    # rollback-generated.asm belongs to failed JOB 8141 and is NOT input.
+    finish = module('prepare-q5-rollback-finish.py')
+    raw = finish.verified_compiler_code()
     campaign = module('prepare-q1-campaign.py')
     query = module('prepare-q1-query.py')
     core = query.time_helper().trailer_helper().load_core()
