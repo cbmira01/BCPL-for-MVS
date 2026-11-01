@@ -268,7 +268,8 @@ class GeometryOverlayTests(unittest.TestCase):
 
     def test_40_fixture_missing_failure_stage_is_rejected(self):
         source = g.FIXTURE.read_text('ascii')
-        bad = source.replace('FAIL(41,R!0)', 'STOP(12)', 1)
+        # Remove an INFO diagnostic without altering the OPEN count guards.
+        bad = source.replace('FAIL(51,R!4)', 'STOP(12)', 1)
         with tempfile.TemporaryDirectory() as tmp:
             altered = Path(tmp) / 'bad-stage.bcpl'
             altered.write_text(bad, encoding='ascii')
