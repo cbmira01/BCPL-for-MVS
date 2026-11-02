@@ -6,7 +6,7 @@
 **Baseline:** GitHub main through JOB 8154 real GETMAIN acceptance, revision 6e0d38bce06f10848c9bf7e82f23039371532039.  
 **Owner authority:** Commit reviewed project files and request native MVS job runs. No permission to overwrite or purge installed MVS datasets is inferred.
 
-**Later owner disposition (1 November 2026):** Q.5 and Milestone QSAM were [closed with explicit qualifications](../../qsam-q5-closure-20261101.md) after the [later full-panel failure and focused rerun](qsam-q5-regression-evidence-20261101.md). All statements below that Q.5 remained open or that installation was a future gate describe this **earlier design stage**, not a later successful installed-mode verification. The closure does not certify Q5QVFY or permanent BCPLQSAM promotion.
+**Later owner disposition (1 November 2026):** Q.5 and Milestone QSAM were [closed with explicit qualifications](../../milestones/qsam/qsam-q5-closure-20261101.md) after the [later full-panel failure and focused rerun](qsam-q5-regression-evidence-20261101.md). All statements below that Q.5 remained open or that installation was a future gate describe this **earlier design stage**, not a later successful installed-mode verification. The closure does not certify Q5QVFY or permanent BCPLQSAM promotion.
 
 ## Packaging decisions
 
@@ -86,10 +86,10 @@ Submit the generated deck **once** via tools/mvs/submit-jcl, retaining the print
 
 ## Authority references
 
-- [Milestone QSAM](../../milestone-qsam.md)
+- [Milestone QSAM](../../milestones/qsam/milestone-qsam.md)
 - [Runtime Extensions R.5 packaging](../runtime-extensions/runtime-extensions-r5-packaging-and-regression.md)
 - [R.5 installation design](../runtime-extensions/runtime-extensions-r5-installation-design.md)
-- [Git and MVS authority](../../git-mvs-authority.md)
+- [Git and MVS authority](../../operations/git-mvs-authority.md)
 - [Q.5 resource-exhaustion acceptance](qsam-q5-real-getmain-acceptance-20261031.md)
 
 ## One-shot campaign runner

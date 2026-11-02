@@ -83,14 +83,14 @@ milestone. The owner has since explicitly authorized the fresh
 all-OBJ source rebuild; the historical candidate remains independent.
 Run candidate regressions with the four environment
 variables documented in the [complete clean-room
-runbook](../../packaging/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
+runbook](../../packaging/milestones/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
 
 The [current dynamic BCPLIO stream contract]
 (../../packaging/bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md)
 describes the BCPL interface and supported QSAM
 record semantics. The accepted M4.4 result was
 145 PASS/0 FAIL/expected SKIP 083, while the
-fresh M5.5 DEVOBJ panel and strict 145/145 log audit **passed**, and the owner formally **closed** the BCPLIO dynamic-stream milestone on 2026-10-17. Production BOOT_OBJ promotion remains a separate decision; see the [final acceptance](../../packaging/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
+fresh M5.5 DEVOBJ panel and strict 145/145 log audit **passed**, and the owner formally **closed** the BCPLIO dynamic-stream milestone on 2026-10-17. Production BOOT_OBJ promotion remains a separate decision; see the [final acceptance](../../packaging/milestones/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md).
 
 ## M3 clean bootstrap build (not M4)
 

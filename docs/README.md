@@ -34,7 +34,7 @@ milestone trackers.
 For project architecture, build procedures, milestone decisions, audits
 and runtime contracts, use the
 [packaging documentation index](../packaging/README.md) and
-[current repository map](../packaging/repository-map.md).
+[current repository map](../packaging/operations/repository-map.md).
 
 ## Source discipline
 

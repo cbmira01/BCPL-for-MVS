@@ -1081,7 +1081,7 @@ OBJ. No MVS workload was submitted for Gate E.
 
 ## Gate F — verification and M1.9 acceptance (13 October 2026)
 
-**Deliverable:** [Runtime Contract Specification v1.0](../../runtime-contract-v1.md), tracked independently from this chronological audit.
+**Deliverable:** [Runtime Contract Specification v1.0](../../architecture/runtime-contract-v1.md), tracked independently from this chronological audit.
 
 ### Review checklist
 

@@ -1,14 +1,14 @@
 # Milestone Runtime Extensions — R.0 shared QUERY ABI decision
 
-**Current owner disposition (22 October 2026): R.0 CLOSED; R.1 — Generic registration foundation CLOSED.** See [R.1 owner acceptance](../../runtime-extensions-r1-closure-20261022.md). The earlier open-gate and not-started language below records the state when this historical R.0 document was prepared. Uncompleted integrated validation, ownership, finalization and regression evidence are explicit R.1 or later obligations, not completed R.0 tests. No BOOT_OBJ promotion is implied.
+**Current owner disposition (22 October 2026): R.0 CLOSED; R.1 — Generic registration foundation CLOSED.** See [R.1 owner acceptance](../../milestones/runtime-extensions/runtime-extensions-r1-closure-20261022.md). The earlier open-gate and not-started language below records the state when this historical R.0 document was prepared. Uncompleted integrated validation, ownership, finalization and regression evidence are explicit R.1 or later obligations, not completed R.0 tests. No BOOT_OBJ promotion is implied.
 
 
 **Owner approval:** 21 October 2026. **March:** **R.0 — Evidence and contract (open)**.
 **Next march:** **R.1 — Generic registration foundation (not started)**.
-**Authority:** [Milestone Runtime Extensions](../../milestone-runtime-extensions.md),
-[owner ABI decisions A–H](../../runtime-extensions-r0-owner-abi-decisions.md),
-[Global Number Registry](../../global-number-registry.md), and
-[Cambridge runtime/library nomenclature](../../runtime-and-library-nomenclature.md).
+**Authority:** [Milestone Runtime Extensions](../../milestones/runtime-extensions/milestone-runtime-extensions.md),
+[owner ABI decisions A–H](../../milestones/runtime-extensions/runtime-extensions-r0-owner-abi-decisions.md),
+[Global Number Registry](../../architecture/global-number-registry.md), and
+[Cambridge runtime/library nomenclature](../../architecture/runtime-and-library-nomenclature.md).
 
 The owner **approved the six-word shared `QUERY` prefix, three common
 negative results, all-or-nothing writes, version/opcode rules, and
@@ -91,7 +91,7 @@ unchanged. All valid positive-size results are word counts, **not
 success status zero**.
 
 The shared negative meanings match the reviewed
-[BCPLQSAM public specification](../../bcplqsam-public-interface.md), but
+[BCPLQSAM public specification](../../milestones/qsam/bcplqsam-public-interface.md), but
 package-specific non-QUERY opcodes own their own arguments and status
 semantics; this contract does not impose an ordinary-operation result
 vector on every package.

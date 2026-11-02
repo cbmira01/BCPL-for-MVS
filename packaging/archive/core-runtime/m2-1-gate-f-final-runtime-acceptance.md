@@ -11,7 +11,7 @@
 
 ## Gate F deliverables (in repository)
 
-1. [Current runtime contract](m2-1-runtime-contract-v2.md) — supported BCPL global subset, linkage/storage/I/O/termination semantics, deliberate MVS adaptations, and explicit omissions. Supersedes the older M1.9 [v1 specification](../../runtime-contract-v1.md) only for this D7 candidate; historical document is not rewritten.
+1. [Current runtime contract](m2-1-runtime-contract-v2.md) — supported BCPL global subset, linkage/storage/I/O/termination semantics, deliberate MVS adaptations, and explicit omissions. Supersedes the older M1.9 [v1 specification](../../architecture/runtime-contract-v1.md) only for this D7 candidate; historical document is not rewritten.
 2. [Completion-code registry](m2-1-runtime-completion-codes.md) — sources/cleanup and evidence levels for RC 0, application STOP(N), runtime RC12, 16, 20, 24 and 36. Separates GO return code from assembler/link-edit RC and MVS ABEND.
 3. [Regression interface coverage matrix](m2-1-runtime-coverage-matrix.md) — tested native interfaces and limitations, 083 expected SKIP and historical unsupported services.
 4. [Gate E accepted independent application LINK/GO evidence](m2-1-gate-e-application-integration.md) — JOB 3646 and full post-focused regression; final Gate F closure checklist below.

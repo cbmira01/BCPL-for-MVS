@@ -149,5 +149,5 @@ rather than merely by a public BCPL `GLOBAL` declaration.
 - [R.3 kickoff and requirements](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r3-kickoff-20261022.md)
 - [R.3 linkage/declaration guide](runtime-extensions-r3-linkage-guide.md)
 - [Reusable developer template](../../../bootstrap-toolchain/extensions/template/README.md)
-- [R.1 accepted lifecycle evidence](../../runtime-extensions-r1-closure-20261022.md)
-- [R.2 interoperability closure](../../runtime-extensions-r2-closure-20261022.md)
+- [R.1 accepted lifecycle evidence](../../milestones/runtime-extensions/runtime-extensions-r1-closure-20261022.md)
+- [R.2 interoperability closure](../../milestones/runtime-extensions/runtime-extensions-r2-closure-20261022.md)

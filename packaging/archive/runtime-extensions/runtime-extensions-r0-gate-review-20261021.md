@@ -15,10 +15,10 @@ scope**; the remaining provenance, ownership, actual-owner collision
 and negative-validation obligations stay open. No permission to change
 accepted runtime objects follows from this review.
 
-**Authority:** [Milestone Runtime Extensions](../../milestone-runtime-extensions.md),
-[official nomenclature](../../runtime-and-library-nomenclature.md),
-[Global Number Registry](../../global-number-registry.md),
-[owner-approved ABI Decisions A–H](../../runtime-extensions-r0-owner-abi-decisions.md),
+**Authority:** [Milestone Runtime Extensions](../../milestones/runtime-extensions/milestone-runtime-extensions.md),
+[official nomenclature](../../architecture/runtime-and-library-nomenclature.md),
+[Global Number Registry](../../architecture/global-number-registry.md),
+[owner-approved ABI Decisions A–H](../../milestones/runtime-extensions/runtime-extensions-r0-owner-abi-decisions.md),
 [Decision G exact contract](runtime-extensions-r0-decision-g-contract-20261021.md),
 and the [effective ownership audit](runtime-extensions-r0-global-ownership-audit-20261021.md).
 The milestone's R.0 exit gate calls for a verified ABI, slot ownership

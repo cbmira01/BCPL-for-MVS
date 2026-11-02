@@ -1,7 +1,7 @@
 # BCPLDEMO — permanent supported reference System Extension
 
 **Status:** **SUPPORTED, PERMANENT REFERENCE SYSTEM EXTENSION** (owner decision 24 October 2026). The installed-mode R.5 acceptance passed: JOB 5108 installed/read back the object; the native 00–158 regression reported 158 PASS, 0 FAIL, one expected SKIP 083, including BCPLDEMO cases 146–158.
-**Owner-approved:** Permanent `DEMOSVC:203` global; package `BCPLDEMO`. See the [supported-reference owner decision](../../../packaging/bcpldemo-supported-reference-decision-20261024.md).
+**Owner-approved:** Permanent `DEMOSVC:203` global; package `BCPLDEMO`. See the [supported-reference owner decision](../../../packaging/milestones/runtime-extensions/bcpldemo-supported-reference-decision-20261024.md).
 
 BCPLDEMO is a maintained, deliberately simple reference example for people
 building their own System Extension, Standard Library, or User/Site Library.
@@ -31,7 +31,7 @@ The same `BCPLREG` and `BCEX` rules apply to all conforming packages.
 
 These commitments apply prospectively; the earlier R.2/R.5 sections
 below preserve the chronology of candidate and acceptance checkpoints.
-The [owner decision](../../../packaging/bcpldemo-supported-reference-decision-20261024.md)
+The [owner decision](../../../packaging/milestones/runtime-extensions/bcpldemo-supported-reference-decision-20261024.md)
 is the controlling record for this support status.
 
 ## Distinguish the three names
@@ -79,7 +79,7 @@ cannot be made safe through this interface.
 The executable BCPL demonstration currently repeats the header's GLOBAL
 number explicitly because the demoted Cambridge compiler's input header
 handling is not yet part of this example's exercised build procedure.
-The canonical number remains the [Global Number Registry](../../../packaging/global-number-registry.md).
+The canonical number remains the [Global Number Registry](../../../packaging/architecture/global-number-registry.md).
 
 ## Test-only MVS job (R.2 extension A)
 
@@ -189,7 +189,7 @@ checks are a required condition of every numbered R.5 PASS.
 
 The owner approved **CLOSE R.5 — Optional Extension Packaging and
 Regression** with the individual raw MAP/XREF report audit limitation
-documented. See the [formal R.5 closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
+documented. See the [formal R.5 closure](../../../packaging/milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md).
 Earlier "pending" statements are historical checkpoints. R.4 was
 subsequently closed by a separate owner decision on 24 October 2026.
 Future persistent PDS writes still require explicit authorization.

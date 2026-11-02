@@ -8,7 +8,7 @@
 
 ## Purpose and traceability
 
-The [Q.1 owner closure](../../qsam-q1-closure-20261028.md) accepted normal FINISH sixteen-CLOSE accounting in JOB 6636, but explicitly deferred independent STOP(8) finalizer accounting. The Q.2/Q.4 numbered regression 167 subsequently demonstrated the sixteen-handle STOP application and requested GO RC=0008, without independent finalizer counters. Q.5 supplied the missing target-native evidence.
+The [Q.1 owner closure](../../milestones/qsam/qsam-q1-closure-20261028.md) accepted normal FINISH sixteen-CLOSE accounting in JOB 6636, but explicitly deferred independent STOP(8) finalizer accounting. The Q.2/Q.4 numbered regression 167 subsequently demonstrated the sixteen-handle STOP application and requested GO RC=0008, without independent finalizer counters. Q.5 supplied the missing target-native evidence.
 
 The owner approved a test-only three-checkpoint STOP diagnostic and its single JES submission. The source-selected BCPLQSAM System Extension, generic BCEX/BCRG v1 finalizer ABI, accepted production `BOOT_OBJ` objects and private sixteen-handle F1024 DD configuration were preserved. No production source, installed object PDS, installed BCXCAT member or permanent MVS dataset was modified for this test.
 

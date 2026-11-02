@@ -129,6 +129,6 @@ owner's original full clean-room transcript establishes installed
 - The revision transition 7fff89f -> 00379e0 was documented.
 
 R.5 was **CLOSED by explicit owner approval**. See the
-[formal closure record](../../runtime-extensions-r5-closure-20261024.md).
+[formal closure record](../../milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md).
 This does not imply permission for further permanent writes.
 R.4 formal closure remains pending.

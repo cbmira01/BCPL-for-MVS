@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — R.4 — IEWL-Driven Extension Selection
 
-**Status:** **R.4 CLOSED by explicit owner approval, 24 October 2026.** The original investigation was approved 22 October and the MVS-native macro/PUNCH refinement was approved 23 October. See the [formal closure and technical disposition](../../runtime-extensions-r4-closure-20261024.md). No compiler/runtime ABI replacement or permanent PDS write is implied by R.4.
+**Status:** **R.4 CLOSED by explicit owner approval, 24 October 2026.** The original investigation was approved 22 October and the MVS-native macro/PUNCH refinement was approved 23 October. See the [formal closure and technical disposition](../../milestones/runtime-extensions/runtime-extensions-r4-closure-20261024.md). No compiler/runtime ABI replacement or permanent PDS write is implied by R.4.
 
 ## Objective
 
@@ -133,7 +133,7 @@ known-package catalog mechanism. Independent unknown-package
 discovery and transitive dependency selection are not claimed and
 are not outstanding R.4 exit criteria. No new JES job was needed.
 
-See [R.4 owner closure](../../runtime-extensions-r4-closure-20261024.md).
+See [R.4 owner closure](../../milestones/runtime-extensions/runtime-extensions-r4-closure-20261024.md).
 The earlier "R.4 remains OPEN" statement above records the state
 *before* owner disposition; it is superseded by this closure.
-R.5 is also CLOSED under its [separate accepted scope](../../runtime-extensions-r5-closure-20261024.md).
+R.5 is also CLOSED under its [separate accepted scope](../../milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md).

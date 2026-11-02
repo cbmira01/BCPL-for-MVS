@@ -4,7 +4,7 @@
 **Owner decisions, 22 October 2026:** Record the consolidated campaign
 as **successful**; **defer object-PDS installation**; review the R.3
 exit gates; then explicitly **CLOSE R.3** and complete Milestone Runtime
-Extensions. See the [owner closure](../../runtime-extensions-r3-closure-20261022.md).  
+Extensions. See the [owner closure](../../milestones/runtime-extensions/runtime-extensions-r3-closure-20261022.md).  
 **Tested Git revision:** [`a24606328810187c85f9e680eb82d7380b53c55c`](https://github.com/cbmira01/BCPL-for-MVS/commit/a24606328810187c85f9e680eb82d7380b53c55c)  
 **Operator-local campaign:** `20261022T185250588162Z`  
 **Review disposition:** **APPROVED BY OWNER — R.3 CLOSED**, with
@@ -153,16 +153,16 @@ original historical compatibility, or exhaustive negative-case
 provenance assurance. The previously approved object-PDS
 installation **DEFER** decision remains in force.
 
-See the [formal R.3 owner closure](../../runtime-extensions-r3-closure-20261022.md).
+See the [formal R.3 owner closure](../../milestones/runtime-extensions/runtime-extensions-r3-closure-20261022.md).
 No official R.4 march is defined by this decision.
 
 ## Related authoritative records
 
-- [R.3 owner closure](../../runtime-extensions-r3-closure-20261022.md)
-- [Milestone Runtime Extensions](../../milestone-runtime-extensions.md)
+- [R.3 owner closure](../../milestones/runtime-extensions/runtime-extensions-r3-closure-20261022.md)
+- [Milestone Runtime Extensions](../../milestones/runtime-extensions/milestone-runtime-extensions.md)
 - [R.3 kickoff and design review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r3-kickoff-20261022.md)
 - [R.3 reproducible acceptance workflow](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r3-acceptance-workflow.md)
 - [R.3 template JOB 3094/3095 evidence](runtime-extensions-r3-template-jobs-3093-3095-evidence-20261022.md)
 - [R.3 IEWL linkage guide](runtime-extensions-r3-linkage-guide.md)
-- [R.2 closure record](../../runtime-extensions-r2-closure-20261022.md)
-- [R.1 closure record](../../runtime-extensions-r1-closure-20261022.md)
+- [R.2 closure record](../../milestones/runtime-extensions/runtime-extensions-r2-closure-20261022.md)
+- [R.1 closure record](../../milestones/runtime-extensions/runtime-extensions-r1-closure-20261022.md)

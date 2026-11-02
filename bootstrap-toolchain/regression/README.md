@@ -160,7 +160,7 @@ run individually before the focused panel. Execute the full panel
 only if the focused panel returns zero. The expected acceptance totals
 are **14 PASS / 0 FAIL / 0 SKIP** for 163–176, and
 **176 PASS / 0 FAIL / 1 expected SKIP 083** for 00–176.
-**Observed owner-run MVS acceptance (30 October 2026, GitHub `main` `51ed022e`):** focused 163–176 **14 PASS, 0 FAIL, 0 SKIP, RC=0**; full production 00–176 **176 PASS, 0 FAIL, 1 expected SKIP 083, RC=0**. See [Q.4 native acceptance evidence](../../packaging/archive/qsam/qsam-q4-native-regression-evidence-20261030.md). The project owner formally closed Q.4 on 30 October 2026; see the [Q.4 closure](../../packaging/qsam-q4-closure-20261030.md). Q.5 remains NOT STARTED.
+**Observed owner-run MVS acceptance (30 October 2026, GitHub `main` `51ed022e`):** focused 163–176 **14 PASS, 0 FAIL, 0 SKIP, RC=0**; full production 00–176 **176 PASS, 0 FAIL, 1 expected SKIP 083, RC=0**. See [Q.4 native acceptance evidence](../../packaging/archive/qsam/qsam-q4-native-regression-evidence-20261030.md). The project owner formally closed Q.4 on 30 October 2026; see the [Q.4 closure](../../packaging/milestones/qsam/qsam-q4-closure-20261030.md). Q.5 remains NOT STARTED.
 
 ## Q.3 native V/VB regressions (171–174; accepted 30 October 2026)
 
@@ -208,7 +208,7 @@ The standalone MVS demonstrations (JOBs 7347–7350) and the
 numbered native Q.3 regression gates have now PASSED. Owner-run focused
 163–174: **12 PASS, 0 FAIL, 0 SKIP, RC=0**; full production 00–174:
 **174 PASS, 0 FAIL, 1 expected SKIP 083, RC=0**. See
-[Q.3 closure](../../packaging/qsam-q3-closure-20261030.md).
+[Q.3 closure](../../packaging/milestones/qsam/qsam-q3-closure-20261030.md).
 The commands above remain available for future authorized reruns.
 
 ## R.5 optional-extension regressions (146-158)

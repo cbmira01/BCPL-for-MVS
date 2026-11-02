@@ -6,7 +6,7 @@
 **Authority chronology:** Design approved, then five specific permanent
 member writes separately authorized and completed 24 October 2026.
 **No further permanent PDS writes are authorized by this record.**  
-**Acceptance:** [T.1 owner closure](../../bcpltime-t1-closure-20261024.md)  
+**Acceptance:** [T.1 owner closure](../../milestones/bcpltime/bcpltime-t1-closure-20261024.md)  
 **Official source:** GitHub `main`; resident MVS objects are rebuildable products, not canonical sources.
 
 The current canonical job member is `BOOT_JCL(BCPLTIME)`; historical

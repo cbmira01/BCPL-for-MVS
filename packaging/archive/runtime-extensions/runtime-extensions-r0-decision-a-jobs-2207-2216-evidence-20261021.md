@@ -6,7 +6,7 @@
 from GitHub `main` by the operator. No registrar or installed-object
 identity claim follows from these tests.
 
-**Authority:** [Owner-approved Decision A](../../runtime-extensions-r0-owner-abi-decisions.md),
+**Authority:** [Owner-approved Decision A](../../milestones/runtime-extensions/runtime-extensions-r0-owner-abi-decisions.md),
 [Decision G diagnostics](runtime-extensions-r0-decision-g-contract-20261021.md),
 [probe](../../../bootstrap-toolchain/probes/r0-trusted-link-probe/README.md),
 [stage-1 plan](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-decision-a-stage1-20261021.md).

@@ -583,7 +583,7 @@ The [17 October 2026 acceptance record](../packaging/archive/bootstrap/clean-roo
 proves the **earlier** procedure. The revised two-pass/R.5 procedure
 subsequently passed a new full end-to-end clean-room test on 24 October
 2026, with **158 PASS / 0 FAIL / 1 expected SKIP (083)**. See the
-[24 October owner-approved R.5 closure](../packaging/runtime-extensions-r5-closure-20261024.md)
+[24 October owner-approved R.5 closure](../packaging/milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md)
 for MVS payload jobs, installation read-back and the documented 7fff89f
 -> 00379e0 source transition. Keep the earlier record historically intact.
 

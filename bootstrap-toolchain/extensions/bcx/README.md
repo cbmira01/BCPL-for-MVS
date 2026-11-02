@@ -1,6 +1,6 @@
 # R.5 - MVS-native BCX package-selection sources
 
-**Status:** **R.5 optional package-selection sources CLOSED and accepted by owner, 24 October 2026** following resident-MVS installed-mode regression. See the [formal closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
+**Status:** **R.5 optional package-selection sources CLOSED and accepted by owner, 24 October 2026** following resident-MVS installed-mode regression. See the [formal closure](../../../packaging/milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md).
 
 These three IFOX source members provide the native BCXSEL and BCXREQ
 application-selection interface. They run *entirely on MVS*. The
@@ -82,7 +82,7 @@ including optional member inclusion and exclusion.
 
 The owner formally **CLOSED R.5** on this evidence, accepting the
 recorded limitation that per-case raw IEWL reports were not each
-manually audited. See [R.5 owner closure](../../../packaging/runtime-extensions-r5-closure-20261024.md).
+manually audited. See [R.5 owner closure](../../../packaging/milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md).
 The catalog is still intentionally limited to known BCPLDEMO;
 no general package discovery or transitive dependency resolution
 is claimed. R.4 remains pending *formal* closure.

@@ -5,9 +5,9 @@
 **T.1 — Packaging and Acceptance CLOSED** (installed JOB 5455,
 BCXCAT publication JOB 5457, full 00–162 production panel:
 **162 PASS, 0 FAIL, one expected SKIP 083**).
-See the [milestone](../../../packaging/milestone-date-and-time-services.md),
-[T.0 closure](../../../packaging/bcpltime-t0-closure-20261024.md),
-and [T.1 closure](../../../packaging/bcpltime-t1-closure-20261024.md).
+See the [milestone](../../../packaging/milestones/bcpltime/milestone-date-and-time-services.md),
+[T.0 closure](../../../packaging/milestones/bcpltime/bcpltime-t0-closure-20261024.md),
+and [T.1 closure](../../../packaging/milestones/bcpltime/bcpltime-t1-closure-20261024.md).
 
 ## Contents
 
@@ -82,9 +82,9 @@ raw TIME results, and restores R0/R1 before returning. **JOB 5436 PASS**:
 ASMA/ASMN/ASMR/ASMT/ASMG, IEWL and GO all RC=0000; IEWL MAP PASS;
 `BCPLTIME T0 PASS` emitted with STCK CC=0 and two raw TIME words.
 The record checker reported that JES DD attribution was NOT VERIFIED;
-see the [T.0 owner closure](../../../packaging/bcpltime-t0-closure-20261024.md).
+see the [T.0 owner closure](../../../packaging/milestones/bcpltime/bcpltime-t0-closure-20261024.md).
 T.1 subsequently installed and verified the object (JOB 5455);
-see the [T.1 closure](../../../packaging/bcpltime-t1-closure-20261024.md).
+see the [T.1 closure](../../../packaging/milestones/bcpltime/bcpltime-t1-closure-20261024.md).
 
 ## T.1 numbered native interoperability regressions
 
@@ -97,7 +97,7 @@ and read-only installed-mode linkage. **All four cases 159–162 PASS
 in each mode**, including when they ran again as part of the full
 00–162 production panel. The resident production BCXCAT and
 `EXT_OBJ(BCPLTIME)` were installed and verified under separately
-approved JOBs. See the [T.1 closure](../../../packaging/bcpltime-t1-closure-20261024.md)
+approved JOBs. See the [T.1 closure](../../../packaging/milestones/bcpltime/bcpltime-t1-closure-20261024.md)
 and [installation procedure](../../../packaging/archive/bootstrap/bcpltime-t1-installation-design.md).
 Individual regression payload JOB IDs were not included in the owner
 console excerpt; the automated IEWL MAP/GO verdicts are retained.

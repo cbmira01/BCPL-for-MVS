@@ -75,7 +75,7 @@ malformed RDWs, SYNAD, recoverable OPEN failures or retries.
 This follows the earlier [Q.0 dispatcher ABI evidence](qsam-q0-dispatcher-abi-evidence-20261019.md)
 and [FB80 SYSOUT evidence](qsam-q0-fb80-evidence-20261020.md).
 All numeric BCPLQSAM protocol values remain governed by the
-[public interface specification](../../bcplqsam-public-interface.md).
+[public interface specification](../../milestones/qsam/bcplqsam-public-interface.md).
 
 ## Acceptance boundary
 

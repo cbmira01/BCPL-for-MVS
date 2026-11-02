@@ -147,7 +147,7 @@ applies automated IEWL MAP gates for cases 146–158.
 The owner subsequently **approved R.5 closure** accepting the
 explicit limitation that individual raw R.5 IEWL MAP/XREF reports
 were not independently audited. The authoritative final disposition
-is the [24 October R.5 closure](../../runtime-extensions-r5-closure-20261024.md).
+is the [24 October R.5 closure](../../milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md).
 Statements above describing missing evidence and a pending owner
 decision are preserved as an accurate record of the *earlier* review,
 not the current state. R.4 remains pending formal closure.

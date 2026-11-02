@@ -6,9 +6,9 @@
 already named Runtime Extensions milestone, **not a new milestone or
 renumbered march**.
 
-**Authority:** [Milestone Runtime Extensions](../../milestone-runtime-extensions.md),
-[Cambridge runtime and library nomenclature](../../runtime-and-library-nomenclature.md),
-[Global Number Registry](../../global-number-registry.md),
+**Authority:** [Milestone Runtime Extensions](../../milestones/runtime-extensions/milestone-runtime-extensions.md),
+[Cambridge runtime and library nomenclature](../../architecture/runtime-and-library-nomenclature.md),
+[Global Number Registry](../../architecture/global-number-registry.md),
 [BCPLQSAM Q.0 approved error and R.0 policy](../qsam/qsam-q0-error-and-r0-design-decisions-20261020.md),
 and Git-controlled `bootstrap-toolchain/asm/bcplmain.asm`,
 `bootstrap-toolchain/asm/bcplio.asm`.
@@ -131,7 +131,7 @@ single-pointer/40-byte proposal was refined through successful
 bounded test-only MVS evidence; the [21 October ABI review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-abi-decision-review-20261021.md)
 now requests the owner's decision on the revised paired-extent
 48-byte package candidate. **Subsequently, decisions A–H were owner-approved** in the
-[R.0 decision record](../../runtime-extensions-r0-owner-abi-decisions.md);
+[R.0 decision record](../../milestones/runtime-extensions/runtime-extensions-r0-owner-abi-decisions.md);
 G's numeric values and actual application/BLIB trailer evidence remain open.
 The approved higher-level registration/finalization model and
 FINISH RC=8/STOP(n) policy have not changed.

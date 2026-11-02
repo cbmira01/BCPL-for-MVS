@@ -6,7 +6,7 @@ slots from JOB 2197 and installed-runtime G!76 precedence from JOB 2199.
 This is still **not** a complete effective owner ledger, approved
 slot-waiver implementation, or executable package registrar.
 
-Source authority: [Global Number Registry](../../global-number-registry.md),
+Source authority: [Global Number Registry](../../architecture/global-number-registry.md),
 [historical LIBHDR](../../../richards-bcpltape/sys3/bcpl/libhdr),
 [canonical bootstrap BCPLMAIN](../../../bootstrap-toolchain/asm/bcplmain.asm),
 [reconstructed BLIB source](../../../cambridge-compiler/source/blib.bcpl),
@@ -16,7 +16,7 @@ The `cambridge-compiler/asm/bcplmain.asm` file is a **different
 compiler target**, not substituted for the bootstrap runtime audited here.
 
 **Decision E is now owner-approved** under the
-[R.0 owner ABI record](../../runtime-extensions-r0-owner-abi-decisions.md):
+[R.0 owner ABI record](../../milestones/runtime-extensions/runtime-extensions-r0-owner-abi-decisions.md):
 this effective-ledger and transactional-collision policy is required,
 while actual application/BLIB trailer decoding and verified legacy
 exceptions remain incomplete. This approval does not turn a
@@ -121,7 +121,7 @@ G1–G99 reconciliation remains the per-slot historical table.
 
 Historical `FIRSTFREEGLOBAL=150` is **not** a vacancy guarantee.
 Compiler `CGHDR` and MR10-local allocations have additional
-contexts; the [registry](../../global-number-registry.md) must be
+contexts; the [registry](../../architecture/global-number-registry.md) must be
 consulted for every real application or compiler load.
 
 ## Owner-approved pre-START collision policy (not yet implemented)

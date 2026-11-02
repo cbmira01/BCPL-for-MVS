@@ -9,7 +9,7 @@ numeric diagnostic assignments on 21 October 2026**. This freezes
 version-1 design choices for isolated R.0 tests and the later R.1
 implementation; it does **not** claim the registrar exists or that MVS
 has exercised every check. Decisions A–F and H remain in the
-[owner ABI record](../../runtime-extensions-r0-owner-abi-decisions.md).
+[owner ABI record](../../milestones/runtime-extensions/runtime-extensions-r0-owner-abi-decisions.md).
 The older 40-byte descriptor draft is **superseded**.
 
 ## Hard v1 limits
@@ -28,7 +28,7 @@ The older 40-byte descriptor draft is **superseded**.
 `G!0` is reserved global-vector metadata. The current 700-word Core
 Runtime global vector makes 699 the present implementation maximum,
 **not** a guarantee that any slot is vacant or a permanent historical
-limit. Consult [Global Number Registry](../../global-number-registry.md).
+limit. Consult [Global Number Registry](../../architecture/global-number-registry.md).
 A real no-extension registry has **N=M=0 and exactly 28 bytes**.
 A selected package must export at least one entry, but may have no
 dependencies. The default remains **one dispatcher export**; 2–8

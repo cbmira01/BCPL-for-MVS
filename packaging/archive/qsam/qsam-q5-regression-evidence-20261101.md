@@ -4,7 +4,7 @@
 **March:** **Q.5 — Hardening & release**  
 **Source:** Owner-supplied WSL console excerpts in the 1 November 2026 project conversation.  
 **Scope:** Final native production regression and one focused punch-output rerun; **not** a newly observed uninterrupted green full panel or a separate installed-BCPLQSAM test.  
-**Owner disposition:** Recorded with the [Q.5 owner closure](../../qsam-q5-closure-20261101.md).
+**Owner disposition:** Recorded with the [Q.5 owner closure](../../milestones/qsam/qsam-q5-closure-20261101.md).
 
 ## Full numbered production panel: cases 00–176
 

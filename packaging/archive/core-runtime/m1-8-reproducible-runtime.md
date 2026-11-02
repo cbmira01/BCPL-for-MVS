@@ -2,7 +2,7 @@
 
 Status: **CLOSED — Gates A–D and F accepted; optional Gate E deferred, not authorized.**
 
-Governing policy: [Git and MVS authority](../../git-mvs-authority.md).
+Governing policy: [Git and MVS authority](../../operations/git-mvs-authority.md).
 Git defines the implementation; resident MVS provides the target
 build and execution proof. MVS libraries do not become a second
 source-of-truth. This march does not change BCPL runtime semantics.

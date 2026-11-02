@@ -91,4 +91,4 @@ The six candidate assembler object datasets and the `R2DEMO` load module used te
 - [BCPLDEMO example and execution procedure](../../../bootstrap-toolchain/extensions/bcpldemo/README.md)
 - [R.2 interoperability probe](../../../bootstrap-toolchain/probes/r2-interoperability/README.md)
 - [R.2 BCPLDEMO design decision](runtime-extensions-r2-bcpldemo-decision-20261022.md)
-- [Milestone Runtime Extensions](../../milestone-runtime-extensions.md)
+- [Milestone Runtime Extensions](../../milestones/runtime-extensions/milestone-runtime-extensions.md)

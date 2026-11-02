@@ -13,7 +13,7 @@ design/evidence review; R.1 implementation has not started.
 **Prevention rather than speculative recovery.** Validate BCPL-owned
 inputs and verifiable DD attributes before OPEN or other MVS activity;
 recheck effective DCB fields after successful OPEN and before GET/PUT.
-Keep the existing [version-1 numeric errors](../../bcplqsam-public-interface.md),
+Keep the existing [version-1 numeric errors](../../milestones/qsam/bcplqsam-public-interface.md),
 rather than creating new public return codes.
 
 | Condition | Accepted handling |
@@ -52,7 +52,7 @@ entry address** (zero/absent for stateless packages).
 
 - The empty table is valid, with no optional extension installed.
 - Exported globals are checked against the authoritative
-  [Global Number Registry](../../global-number-registry.md). The normal
+  [Global Number Registry](../../architecture/global-number-registry.md). The normal
   policy remains one opcode dispatcher global per package;
   `BCPLQSAM` uses `QSAMSVC:200`.
 - Reject malformed, out-of-range or duplicate global exports, absent

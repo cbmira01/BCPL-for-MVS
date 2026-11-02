@@ -3,7 +3,7 @@
 **Historical runner instructions; owner status:** **R.2 CLOSED 22 October 2026.**
 The executed consolidated campaign on Git revision `7141907` reported
 **JOB 3091 matrix PASS and JOB 3092 negatives PASS**. See the
-[R.2 closure/evidence limits](../../../packaging/runtime-extensions-r2-closure-20261022.md).
+[R.2 closure/evidence limits](../../../packaging/milestones/runtime-extensions/runtime-extensions-r2-closure-20261022.md).
 No accepted object promotion occurred.
 
 From repository root, run the host-only preflight:

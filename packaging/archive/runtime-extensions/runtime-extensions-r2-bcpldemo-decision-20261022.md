@@ -33,7 +33,7 @@ approved. Never reuse G!203 for the second test package.
 
 ## R.2 gate relationship
 
-The approved [R.2 — Selective interoperability](../../milestone-runtime-extensions.md)
+The approved [R.2 — Selective interoperability](../../milestones/runtime-extensions/milestone-runtime-extensions.md)
 requires two independent optional extension probes and the 0/A/B/A+B
 matrix, QUERY/version/capability checks, rejection of collisions and malformed
 or absent dependencies, and real IEWL MAP evidence. The initial
