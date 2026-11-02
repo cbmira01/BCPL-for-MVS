@@ -1,0 +1,330 @@
+#!/usr/bin/env python3
+"""Operator-friendly console client for this project's Hercules/TK5 instance."""
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[2]
+LOG = ROOT / "mvs-state/log/3033.log"
+TAPES = ROOT / "mvs-state/tape"
+CONTAINER = "mvs38j"
+URL = "http://127.0.0.1:8038/cgi-bin/tasks/cmd"
+
+# Exact, version-scoped aliases; raw commands remain available separately.
+CATALOG = {
+    "mvs": {
+        "activity": ("D A,L", "Display active system work"),
+        "dasd": ("D U,DASD", "Display DASD units"),
+        "tapes": ("D U,TAPE", "Display MVS tape units (verify support on local MVS)"),
+    },
+    "jes2": {
+        "printers": ("$D U,PRTS", "Display JES2 printers and queues"),
+        "punches": ("$D U,PUNS", "Display JES2 punches and queues"),
+        "initiators": ("$D I", "Display JES2 initiators (check local command form)"),
+    },
+    "hercules": {
+        "devices": ("devlist", "List emulated devices, including tape drives"),
+        "help": ("help", "Display native Hercules command help"),
+    },
+}
+
+TOPICS = {
+    "jobs": "mvs activity; jes2 initiators; use tools/mvs/job-summary JOB for a completed JES job.",
+    "devices": "mvs dasd; mvs tapes; jes2 printers; jes2 punches; hercules devices.",
+    "tape": "tape list; tape files; tape status ADDRESS; tape mount ADDRESS FILENAME; tape unmount ADDRESS. Mount changes emulator media, not MVS allocation.",
+    "storage": "mvs dasd; mvs tapes; hercules devices. For dataset management use tools/datasets/dspal.",
+    "commands": "commands [mvs|jes2|hercules|tape]; explain DOMAIN NAME; DOMAIN RAW-COMMAND.",
+}
+
+
+def classify(domain: str, command: str, alias: bool = False) -> str:
+    """Conservatively classify only well-known read/display forms as inquiries."""
+    s = command.strip()
+    if alias and domain in CATALOG and any(s == v[0] for v in CATALOG[domain].values()):
+        return "inquiry"
+    if domain == "mvs" and re.fullmatch(r"D(?:ISPLAY)?\s+(?:A,L|U,(?:DASD|TAPE)(?:,ONLINE)?)", s, re.I):
+        return "inquiry"
+    if domain == "jes2" and re.fullmatch(r"\$D\s+(?:U,(?:PRTS|PUNS)|I)", s, re.I):
+        return "inquiry"
+    if domain == "hercules" and re.fullmatch(r"(?:devlist(?:\s+[0-9a-fA-F]{3,4})?|help(?:\s+[a-zA-Z0-9_-]+)?)", s, re.I):
+        return "inquiry"
+    if domain == "hercules" and re.match(r"^(?:quit|exit|ipl|stop|start|detach|attach|devinit|shut|sysreset|store|loadcore)\b", s, re.I):
+        return "disruptive"
+    if domain == "jes2" and re.match(r"^\$(?:P|S|C|Z|H|R|E)\b", s, re.I):
+        return "disruptive"
+    if domain == "mvs" and re.match(r"^(?:C(?:ANCEL)?|P(?:\s|$)|V\s|M\s|S\s|HALT|Z\s|REPLY\s)\b", s, re.I):
+        return "disruptive"
+    return "operational"
+
+
+def normalize(domain: str, command: str) -> str:
+    if not command or any(ord(c) < 32 or ord(c) == 127 for c in command):
+        raise ValueError("command must be a nonempty single line without control characters")
+    command = command.strip()
+    if not command or len(command) > 240:
+        raise ValueError("command must be 1–240 characters")
+    if domain == "hercules":
+        if command.startswith("/"):
+            raise ValueError("Hercules commands must not begin with '/' (reserved for MVS)")
+        return command
+    if domain == "jes2":
+        if command.startswith("/"):
+            command = command[1:]
+        if not command.startswith("$"):
+            raise ValueError("JES2 command must start with '$'; use 'jes2 printers' for an alias")
+    if command.startswith("/"):
+        command = command[1:]
+    return "/" + command
+
+
+def resolved(domain: str, words: list[str]) -> tuple[str, bool]:
+    if not words:
+        raise ValueError(f"missing {domain} command; try 'commands {domain}'")
+    if len(words) == 1 and words[0].lower() in CATALOG.get(domain, {}):
+        return CATALOG[domain][words[0].lower()][0], True
+    return " ".join(words), False
+
+
+def tape_command(args: list[str]) -> tuple[str, str, bool] | None:
+    """Return (domain, command, alias) for tape operations; read-only actions handled by caller."""
+    action = args[0].lower() if args else "help"
+    if action in ("list", "devices"):
+        if len(args) != 1:
+            raise ValueError("usage: tape list")
+        return ("hercules", "devlist", True)
+    if action == "status":
+        if len(args) != 2 or not re.fullmatch(r"[0-9A-Fa-f]{3,4}", args[1]):
+            raise ValueError("usage: tape status ADDRESS (3 or 4 hexadecimal digits)")
+        return ("hercules", f"devlist {args[1].upper()}", True)
+    if action in ("mount", "unmount"):
+        expected = 3 if action == "mount" else 2
+        if len(args) != expected or not re.fullmatch(r"[0-9A-Fa-f]{3,4}", args[1]):
+            raise ValueError(f"usage: tape {action} ADDRESS" + (" FILENAME" if action == "mount" else ""))
+        addr = args[1].upper()
+        if action == "unmount":
+            return ("hercules", f"devinit {addr} *", False)
+        name = args[2]
+        if name != Path(name).name or not re.fullmatch(r"[A-Za-z0-9_.-]+", name) or name in (".", ".."):
+            raise ValueError("mount accepts a single filename from mvs-state/tape (no paths/spaces)")
+        target = TAPES / name
+        if not target.is_file() or target.is_symlink():
+            raise ValueError(f"not an ordinary tape file: {target}")
+        return ("hercules", f"devinit {addr} /tk5/tape/{name}", False)
+    raise ValueError("tape commands: list, files, status ADDRESS, mount ADDRESS FILENAME, unmount ADDRESS")
+
+
+def show_catalog(domain: str | None = None) -> None:
+    domains = (domain,) if domain else tuple(CATALOG)
+    for d in domains:
+        if d == "tape":
+            print("tape list | tape files | tape status ADDRESS | tape mount ADDRESS FILENAME | tape unmount ADDRESS")
+        elif d in CATALOG:
+            print(f"{d}:")
+            for key, (raw, description) in CATALOG[d].items():
+                print(f"  {key:<12} {description}  [{raw}]")
+        else:
+            raise ValueError(f"unknown catalog '{d}'")
+
+
+def show_help(topic: str | None = None) -> None:
+    if not topic:
+        print("mvs-console — one-shot commands or interactive operator console\n")
+        print("  mvs-console [--dry-run] [--yes] mvs|jes2|hercules COMMAND")
+        print("  mvs-console [--dry-run] [--yes] tape ACTION ...")
+        print("  mvs-console                 interactive REPL")
+        print("  mvs-console status          inspect Docker/TK5 without console commands")
+        print("  mvs-console commands [DOMAIN] | help [TOPIC] | explain DOMAIN COMMAND")
+        print("  mvs-console --help          full CLI options\n")
+        print("Help topics: " + ", ".join(TOPICS))
+        print("In the REPL: help, commands, explain, history, quit. Use quotes for commands containing spaces.")
+        print("Operational commands require confirmation; disruptive commands need --allow-disruptive plus confirmation.")
+    elif topic in TOPICS:
+        print(f"{topic}: {TOPICS[topic]}")
+    elif topic in CATALOG or topic == "tape":
+        show_catalog(topic)
+    else:
+        raise ValueError(f"unknown help topic '{topic}'")
+
+
+def docker_running() -> bool:
+    p = subprocess.run(["docker", "inspect", "--format", "{{.State.Running}}", CONTAINER],
+                       capture_output=True, text=True, timeout=10, check=False)
+    if p.returncode:
+        raise RuntimeError("Docker container mvs38j is unavailable: " + p.stderr.strip())
+    return p.stdout.strip() == "true"
+
+
+def log_offset() -> int:
+    if not LOG.is_file():
+        raise RuntimeError(f"missing Hercules log: {LOG}")
+    return LOG.stat().st_size
+
+
+def read_delta(start: int) -> str:
+    with LOG.open("rb") as f:
+        if f.seek(0, os.SEEK_END) < start:
+            raise RuntimeError("Hercules console log rotated/truncated during command")
+        f.seek(start)
+        return f.read().decode("utf-8", "replace")
+
+
+def dispatch(command: str, *, timeout: float = 10.0, settle: float = 0.8) -> int:
+    if not docker_running():
+        raise RuntimeError("Docker container mvs38j is not running")
+    before = log_offset()
+    # No shell: curl encodes command value, including dollar signs, safely.
+    p = subprocess.run(["docker", "exec", "-i", CONTAINER, "curl", "--silent", "--show-error",
+                        "--get", "--connect-timeout", "3", "--max-time", str(max(1, int(timeout))),
+                        "--data-urlencode", "cmd=" + command, "--output", "/dev/null",
+                        "--write-out", "%{http_code}", URL], capture_output=True, text=True,
+                       check=False, timeout=timeout + 5)
+    if settle > 0:
+        time.sleep(settle)
+    delta = read_delta(before)
+    if delta:
+        print(delta, end="" if delta.endswith("\n") else "\n")
+    else:
+        print("No console messages captured in observation window (command may still be processing).")
+    if p.returncode or p.stdout.strip() != "200":
+        print(f"Transport failure: curl RC={p.returncode}, HTTP={p.stdout.strip()}; {p.stderr.strip()}", file=sys.stderr)
+        print("Delivery uncertain: do not blindly retry state-changing commands.", file=sys.stderr)
+        return 1
+    if not delta:
+        print("HTTP accepted the request; this is not proof the guest command completed.")
+    return 0
+
+
+def confirm(risk: str, displayed: str, *, yes: bool, allow_disruptive: bool, dry_run: bool) -> bool:
+    if dry_run or risk == "inquiry":
+        return True
+    if risk == "disruptive" and not allow_disruptive:
+        print("Refused disruptive command. Re-run with --allow-disruptive and confirm interactively.", file=sys.stderr)
+        return False
+    if risk == "operational" and yes:
+        return True
+    if not sys.stdin.isatty():
+        print("Confirmation required from a terminal. --yes permits operational (not disruptive) commands.", file=sys.stderr)
+        return False
+    print(f"{risk.upper()} command: {displayed}")
+    return input("Type YES to send: ").strip() == "YES"
+
+
+def execute(args: list[str], opts: argparse.Namespace) -> int:
+    if not args:
+        show_help()
+        return 0
+    verb, *words = args
+    verb = verb.lower()
+    if verb in ("quit", "exit"):
+        return 99
+    if verb == "help":
+        show_help(words[0].lower() if words else None)
+        return 0
+    if verb == "commands":
+        show_catalog(words[0].lower() if words else None)
+        return 0
+    if verb == "explain":
+        if len(words) < 2:
+            raise ValueError("usage: explain DOMAIN NAME-OR-COMMAND")
+        d = words[0].lower()
+        if d == "tape":
+            show_help("tape")
+        elif d in CATALOG:
+            command, alias = resolved(d, words[1:])
+            info = CATALOG[d].get(words[1].lower()) if len(words) == 2 else None
+            print((info[1] if info else "Raw console command") + f"\nUnderlying: {normalize(d, command)}")
+            print("Classification: " + classify(d, command, alias))
+            print("Commands may change system state; inspect exact syntax before sending.")
+        else:
+            raise ValueError("unknown console domain")
+        return 0
+    if verb == "status":
+        print("Hercules/TK5 Docker container: " + ("running" if docker_running() else "stopped"))
+        print("Console log: " + str(LOG) + (" (present)" if LOG.is_file() else " (missing)"))
+        return 0
+    if verb == "tape" and words and words[0].lower() == "files":
+        if len(words) != 1:
+            raise ValueError("usage: tape files")
+        if not TAPES.is_dir():
+            raise RuntimeError(f"tape directory does not exist: {TAPES}")
+        for p in sorted(TAPES.iterdir()):
+            if p.is_file():
+                print(f"{p.name}\t{p.stat().st_size} bytes")
+        return 0
+    if verb == "tape" and (not words or words[0].lower() == "help"):
+        show_help("tape")
+        return 0
+    if verb == "tape":
+        d, command, alias = tape_command(words)
+        risk = "operational" if words[0].lower() in ("mount", "unmount") else "inquiry"
+    elif verb in CATALOG:
+        d = verb
+        command, alias = resolved(d, words)
+        risk = classify(d, command, alias)
+    else:
+        raise ValueError(f"unknown command '{verb}' (try 'help')")
+    wire = normalize(d, command)
+    print(f"[{d} / {risk}] {wire}")
+    if opts.dry_run:
+        print("DRY RUN: no console command issued")
+        return 0
+    if not confirm(risk, wire, yes=opts.yes, allow_disruptive=opts.allow_disruptive, dry_run=False):
+        return 3
+    return dispatch(wire, timeout=opts.timeout, settle=opts.settle)
+
+
+def repl(opts: argparse.Namespace) -> int:
+    print("TK5 console — 'help' for commands, 'quit' to leave. Commands run against real MVS/Hercules.")
+    history: list[str] = []
+    while True:
+        try:
+            line = input("mvs> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return 0
+        if not line:
+            continue
+        if line == "history":
+            for i, item in enumerate(history, 1):
+                print(f"{i:3} {item}")
+            continue
+        history.append(line)
+        try:
+            rc = execute(shlex.split(line), opts)
+            if rc == 99:
+                return 0
+            if rc:
+                print(f"Command status: {rc}")
+        except (ValueError, RuntimeError, OSError, subprocess.TimeoutExpired) as e:
+            print(f"Error: {e}", file=sys.stderr)
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description=__doc__, add_help=True)
+    p.add_argument("--dry-run", action="store_true", help="show exact command without sending")
+    p.add_argument("--yes", action="store_true", help="allow noninteractive operational commands")
+    p.add_argument("--allow-disruptive", action="store_true", help="allow disruptive commands with typed confirmation")
+    p.add_argument("--timeout", type=float, default=10, help="HTTP transport timeout in seconds (default 10)")
+    p.add_argument("--settle", type=float, default=0.8, help="seconds to observe messages after HTTP (default 0.8)")
+    p.add_argument("args", nargs=argparse.REMAINDER)
+    opts = p.parse_args(argv)
+    if opts.timeout <= 0 or opts.settle < 0:
+        p.error("--timeout must be positive and --settle nonnegative")
+    try:
+        if not opts.args:
+            return repl(opts)
+        return max(0, execute(opts.args, opts))
+    except (ValueError, RuntimeError, OSError, subprocess.TimeoutExpired) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
