@@ -20,7 +20,7 @@ CONTAINER = "mvs38j"
 TAPE_TYPES = frozenset({"3410", "3420", "3422", "3430", "3480", "3490", "3590", "8809", "9347"})
 DEVICE_LINE = re.compile(
     r"\bHHC02279I\s+(?:(?:[0-9A-Fa-f]+):)?(?P<address>[0-9A-Fa-f]{4})\s+"
-    r"(?P<type>[0-9]{4})\s+(?P<detail>.*)$"
+    r"(?P<type>[0-9]{4}(?:-[A-Za-z0-9]+)?)\s+(?P<detail>.*)$"
 )
 
 URL = "http://127.0.0.1:8038/cgi-bin/tasks/cmd"
@@ -98,7 +98,7 @@ def show_devices() -> None:
 
 TOPICS = {
     "jobs": "mvs activity; jes2 initiators; use tools/mvs/job-summary JOB for a completed JES job.",
-    "devices": "devices lists IBM hardware models (offline); hercules devices shows the live inventory; mvs dasd/tapes queries guest units.",
+    "devices": "devices lists IBM hardware models (offline); hercules devices [dasd|tape|printer|card|terminal|communications] filters the live inventory.",
     "tape": "tape list; tape files; tape status ADDRESS; tape mount ADDRESS FILENAME; tape unmount ADDRESS. Mount changes emulator media, not MVS allocation.",
     "storage": "mvs dasd; mvs tapes; hercules devices. For dataset management use tools/datasets/dspal.",
     "commands": "commands [mvs|jes2|hercules|tape]; explain DOMAIN NAME; DOMAIN RAW-COMMAND.",
@@ -206,7 +206,7 @@ def show_help(topic: str | None = None) -> None:
         print("  mvs-console --help          full CLI options\n")
         print("Help topics: " + ", ".join(TOPICS))
         print("In the REPL: help or ?, commands, devices, explain, history, quit.")
-        print("Use DOMAIN ? for local help. Quote commands containing spaces.")
+        print("Use DOMAIN ? or hercules devices ? for local help. Quote commands containing spaces.")
         print("Operational commands require confirmation; disruptive commands need --allow-disruptive plus confirmation.")
     elif topic in TOPICS:
         print(f"{topic}: {TOPICS[topic]}")
@@ -254,15 +254,76 @@ def tape_rows(output: str) -> dict[str, tuple[str, str, str]]:
             if row[0] in TAPE_TYPES}
 
 
-def replay_filter(output: str) -> str:
-    """Collapse only duplicated complete DEVLIST blocks, never arbitrary messages."""
+
+# Local devlist categories: these filter emulator output, never issue a new command.
+DEVICE_GROUPS = {
+    "dasd": {"2305", "2311", "2314", "3330", "3340", "3350", "3375", "3380", "3390", "9345"},
+    "tape": set(TAPE_TYPES),
+    "printer": {"1403", "3211", "3287"},
+    "card": {"1442", "2501", "2540", "3505", "3525"},
+    "terminal": {"1052", "3215", "3270"},
+    "communications": {"2703", "3705"},
+}
+DEVICE_ALIASES = {
+    "disks": "dasd", "disk": "dasd", "tapes": "tape",
+    "printers": "printer", "cards": "card", "terminals": "terminal",
+    "comms": "communications",
+}
+
+
+def device_category(name: str) -> str:
+    category = DEVICE_ALIASES.get(name.lower(), name.lower())
+    if category not in DEVICE_GROUPS:
+        raise ValueError(
+            f"unknown device category '{name}'. Use: dasd, tape, printer, "
+            "card, terminal, communications")
+    return category
+
+
+def show_device_help() -> None:
+    print("hercules devices [dasd|tape|printer|card|terminal|communications]")
+    print("  No category: full Hercules devlist; category: local filtered inquiry.")
+    print("  hercules devices ?   display this help")
+    print("  hercules 'help devlist'   request native Hercules command help")
+    print("  devices             static IBM hardware model directory (offline)")
+
+
+def display_devices(delta: str, category: str) -> int:
+    """Filter a fresh Hercules DEVLIST by model; preserve its original device lines."""
+    if "HHC01603I devlist" not in delta:
+        print("DEVLIST response not captured; device inventory unverified.", file=sys.stderr)
+        return 1
+    models = DEVICE_GROUPS[device_category(category)]
+    rows = [row[2] for row in device_rows(delta).values()
+            if row[0].split("-", 1)[0] in models]
+    if not rows:
+        print(f"No {category} devices found in captured DEVLIST response.")
+    else:
+        print("\n".join(rows))
+    return 0
+
+
+def replay_filter(output: str, command: str | None = None) -> str:
+    """Remove exact consecutive Hercules command-response replays, not guest messages.
+
+    Repeated asynchronous JES/MVS records are never collapsed; only a complete,
+    byte-for-byte identical Hercules panel response with a matching echo is.
+    """
     lines = output.splitlines(keepends=True)
-    anchors = [i for i, line in enumerate(lines) if "HHC01603I devlist" in line]
-    for i in range(len(anchors) - 1, 0, -1):
-        start = anchors[i - 1]
-        mid = anchors[i]
+    anchors = []
+    for index, line in enumerate(lines):
+        echo = re.search(r"\bHHC01603I\s+(.+?)\s*$", line)
+        if echo:
+            anchors.append((index, echo.group(1).strip()))
+    for i in range(len(anchors) - 2, -1, -1):
+        start, first = anchors[i]
+        mid, second = anchors[i + 1]
         width = mid - start
-        if width > 1 and lines[start:mid] == lines[mid:mid + width]:
+        if first != second:
+            continue
+        if command is not None and first.casefold() != command.strip().casefold():
+            continue
+        if width >= 1 and lines[start:mid] == lines[mid:mid + width]:
             del lines[mid:mid + width]
     return "".join(lines)
 
@@ -310,11 +371,19 @@ def display_tapes(delta: str, address: str | None = None) -> int:
 
 
 def dispatch(command: str, *, timeout: float = 10.0, settle: float = 0.8,
-             tape_only: bool = False, tape_address: str | None = None) -> int:
+             tape_only: bool = False, tape_address: str | None = None,
+             device_filter: str | None = None) -> int:
     rc, delta = capture(command, timeout=timeout, settle=settle)
+    if rc:
+        # Preserve visible output and transport warnings even after a failure.
+        if delta:
+            print(delta, end="" if delta.endswith("\n") else "\n")
+        return rc
     if tape_only:
-        return rc or display_tapes(delta, tape_address)
-    delta = replay_filter(delta) if command.strip().lower() == "devlist" else delta
+        return display_tapes(delta, tape_address)
+    if device_filter is not None:
+        return display_devices(delta, device_filter)
+    delta = replay_filter(delta, command) if not command.startswith("/") else delta
     if delta:
         print(delta, end="" if delta.endswith("\n") else "\n")
     else:
@@ -365,9 +434,14 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
     if verb in ("quit", "exit"):
         return 99
     if verb in ("help", "?"):
-        if len(words) > 1:
+        # Accept optional trailing question mark and nested Hercules device help.
+        topics = words[:-1] if words and words[-1] == "?" else words
+        if len(topics) == 2 and [w.lower() for w in topics] == ["hercules", "devices"]:
+            show_device_help()
+            return 0
+        if len(topics) > 1:
             raise ValueError("usage: help [TOPIC]")
-        show_help(None if not words or words[0] == "?" else words[0].lower())
+        show_help(None if not topics else topics[0].lower())
         return 0
     if verb == "devices":
         if not words:
@@ -421,9 +495,19 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
     if verb == "tape" and (not words or words[0].lower() == "help"):
         show_help("tape")
         return 0
+    device_filter = None
     if verb == "tape":
         d, command, alias = tape_command(words)
         risk = "operational" if words[0].lower() in ("mount", "unmount") else "inquiry"
+    elif verb == "hercules" and words and words[0].lower() == "devices":
+        if len(words) == 2 and words[1].lower() in ("?", "help"):
+            show_device_help()
+            return 0
+        if len(words) > 2:
+            raise ValueError("usage: hercules devices [CATEGORY|?|help]")
+        device_filter = device_category(words[1]) if len(words) == 2 else None
+        d, command, alias = "hercules", "devlist", True
+        risk = "inquiry"
     elif verb in CATALOG:
         d = verb
         command, alias = resolved(d, words)
@@ -445,7 +529,8 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
     tape_action = words[0].lower() if verb == "tape" else ""
     return dispatch(wire, timeout=opts.timeout, settle=opts.settle,
                     tape_only=tape_action in ("list", "devices", "status"),
-                    tape_address=words[1] if tape_action == "status" else None)
+                    tape_address=words[1] if tape_action == "status" else None,
+                    device_filter=device_filter)
 
 
 def repl(opts: argparse.Namespace) -> int:

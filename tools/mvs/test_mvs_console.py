@@ -173,5 +173,64 @@ class ConsoleTests(unittest.TestCase):
 
 
 
+    def test_hercules_device_alias_dispatch(self):
+        from argparse import Namespace
+        opts = Namespace(dry_run=False, yes=False, allow_disruptive=False, timeout=5, settle=0)
+        with mock.patch.object(mod, "dispatch", return_value=0) as send, \
+             mock.patch("builtins.input", side_effect=AssertionError("unexpected prompt")):
+            self.assertEqual(mod.execute(["hercules", "devices", "dasd"], opts), 0)
+            send.assert_called_once_with("devlist", timeout=5, settle=0, tape_only=False,
+                                         tape_address=None, device_filter="dasd")
+
+    def test_hercules_device_filters(self):
+        from io import StringIO
+        output = (self.DEVLIST +
+                  "02:27:27 HHC02279I 0:0009 3215-C *syscons cmdpref '/' open\n"
+                  "02:27:27 HHC02279I 0:000E 1403 prt/prt00e.txt open\n")
+        for category, expected, absent in [
+            ("dasd", "0:0390 3390", "0:0480 3420"),
+            ("tapes", "0:0480 3420", "0:0390 3390"),
+            ("printers", "0:000E 1403", "0:0390 3390"),
+            ("terminal", "0:0009 3215-C", "0:0390 3390"),
+        ]:
+            with self.subTest(category=category), \
+                 mock.patch("sys.stdout", new_callable=StringIO) as shown:
+                self.assertEqual(mod.display_devices(output, category), 0)
+                self.assertIn(expected, shown.getvalue())
+                self.assertNotIn(absent, shown.getvalue())
+
+    def test_devices_help_and_invalid_args_stay_local(self):
+        from argparse import Namespace
+        from io import StringIO
+        opts = Namespace(dry_run=False, yes=False, allow_disruptive=False, timeout=5, settle=0)
+        for words in (["hercules", "devices", "help"], ["hercules", "devices", "?"],
+                      ["?", "hercules", "?"], ["?", "hercules", "devices"],
+                      ["?", "hercules", "devices", "?"]):
+            with self.subTest(words=words), \
+                 mock.patch.object(mod, "dispatch") as send, \
+                 mock.patch("sys.stdout", new_callable=StringIO) as output:
+                self.assertEqual(mod.execute(words, opts), 0)
+                self.assertTrue(output.getvalue())
+                send.assert_not_called()
+        for words in (["hercules", "devices", "bogus"],
+                      ["hercules", "devices", "dasd", "help"]):
+            with self.subTest(words=words), \
+                 mock.patch.object(mod, "dispatch") as send:
+                with self.assertRaises(ValueError):
+                    mod.execute(words, opts)
+                send.assert_not_called()
+
+    def test_duplicate_hercules_error_responses_only(self):
+        response = ("15:49:54 HHC01603I devices dasd\n"
+                    "15:49:54 HHC01600E Unknown command devices\n")
+        self.assertEqual(mod.replay_filter(response * 2, "devices dasd"), response)
+        self.assertEqual(mod.replay_filter(response * 2, "other command"), response * 2)
+        msg = "15:49:54 $HASP000 JES event\n"
+        self.assertEqual(mod.replay_filter(msg * 2), msg * 2)
+        changed = response.replace("Unknown command", "Accepted command")
+        self.assertEqual(mod.replay_filter(response + changed, "devices dasd"),
+                         response + changed)
+
+
 if __name__ == '__main__':
     unittest.main()

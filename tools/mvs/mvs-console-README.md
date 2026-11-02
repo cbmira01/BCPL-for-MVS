@@ -15,6 +15,8 @@ tools/mvs/mvs-console help tape
 tools/mvs/mvs-console jes2 printers
 tools/mvs/mvs-console mvs 'D A,L'
 tools/mvs/mvs-console hercules devices
+tools/mvs/mvs-console hercules devices dasd
+tools/mvs/mvs-console 'hercules' 'devices' '?'
 tools/mvs/mvs-console
 ```
 
@@ -33,6 +35,25 @@ tools/mvs/mvs-console hercules 'help devinit'
 A `mvs` command is prefixed with `/` when passed to the Hercules panel; a `jes2` command is passed as `/$...`; a `hercules` command is passed unchanged. The dispatch uses Docker `exec` to reach the running container's HTTP command endpoint, and captures the **new tail** of `mvs-state/log/3033.log`. This log may include asynchronous messages unrelated to the command, or duplicate echoes; a successful HTTP response is **not** evidence of MVS command completion. If the command returns before later messages arrive, re-run a display command or inspect the console log. The tool never automatically retries command transmission.
 
 Use `--dry-run` to see the exact underlying console command without connecting; `--settle SECONDS` controls the post-request observation interval, and `--timeout SECONDS` controls HTTP transport timeout.
+
+## Hercules device inquiries and help
+
+`hercules devices` translates the friendly alias to native Hercules `devlist`.
+Use `hercules devices dasd`, `tape`, `printer`, `card`, `terminal`,
+or `communications` to filter the one `devlist` response **locally** by
+device model. Common plurals are accepted. These are always inquiries: they
+must not prompt for confirmation. `hercules devices help` and
+`hercules devices ?` display usage **without sending any console command**.
+Unknown device categories are rejected locally, rather than sent as invalid
+Hercules commands. `? hercules devices` is another local-help form.
+
+`hercules 'help devlist'` forwards a real Hercules help command. The short
+IBM model directory provided by `devices` is separate from live inventory.
+
+To address observed repeated panel output, the collector suppresses **only
+adjacent, byte-for-byte identical complete Hercules command-response blocks**.
+Different replies and all MVS/JES messages remain intact. A successful HTTP
+request does not prove that a guest command completed.
 
 ## IBM device models
 
