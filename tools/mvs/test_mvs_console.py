@@ -251,7 +251,6 @@ class ConsoleTests(unittest.TestCase):
             (["jes2", "printers", "?"], "Underlying command: /$D U,PRTS"),
             (["hercules", "devices", "?"], "hercules devices"),
             (["hercules", "devices", "help"], "hercules devices"),
-            (["hercules", "devices", "bogus", "?"], "No local help"),
             (["tape", "mount", "?"], "tape list"),
             (["jes2", "unknown", "?"], "No local help"),
         ]
@@ -266,6 +265,17 @@ class ConsoleTests(unittest.TestCase):
                 send.assert_not_called()
                 capture.assert_not_called()
 
+        # Unknown categories are rejected locally, including help requests.
+        for words in (["hercules", "devices", "bogus", "?"],
+                      ["hercules", "devices", "bogus", "help"]):
+            with self.subTest(words=words), \
+                 mock.patch.object(mod, "dispatch") as send, \
+                 mock.patch.object(mod, "capture") as capture, \
+                 mock.patch("builtins.input", side_effect=AssertionError("unexpected prompt")):
+                with self.assertRaisesRegex(ValueError, "unknown device category 'bogus'"):
+                    mod.execute(words, opts)
+                send.assert_not_called()
+                capture.assert_not_called()
 
 
     def test_repl_rejects_misplaced_startup_options(self):
