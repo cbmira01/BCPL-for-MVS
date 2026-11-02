@@ -465,6 +465,10 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
             show_help(verb)
         elif verb == "hercules" and subject == ["devices"]:
             show_device_help()
+        elif verb == "hercules" and len(subject) == 2 and subject[0] == "devices":
+            category = device_category(subject[1])
+            print(f"hercules devices {category}: display {category} devices from Hercules devlist.")
+            print("The devlist inquiry is filtered locally; no command is sent for help.")
         elif verb == "mvs" and subject == ["devices"]:
             print("MVS has no 'devices' alias in this tool. Available MVS unit inquiries:")
             show_catalog("mvs")

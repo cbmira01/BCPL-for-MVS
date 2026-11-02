@@ -212,8 +212,16 @@ class ConsoleTests(unittest.TestCase):
                 self.assertEqual(mod.execute(words, opts), 0)
                 self.assertTrue(output.getvalue())
                 send.assert_not_called()
+        for words in (["hercules", "devices", "dasd", "help"],
+                      ["hercules", "devices", "dasd", "?"]):
+            with self.subTest(words=words), \
+                 mock.patch.object(mod, "dispatch") as send, \
+                 mock.patch("sys.stdout", new_callable=StringIO) as output:
+                self.assertEqual(mod.execute(words, opts), 0)
+                self.assertIn("display dasd devices", output.getvalue())
+                send.assert_not_called()
         for words in (["hercules", "devices", "bogus"],
-                      ["hercules", "devices", "dasd", "help"]):
+                      ["hercules", "devices", "bogus", "help"]):
             with self.subTest(words=words), \
                  mock.patch.object(mod, "dispatch") as send:
                 with self.assertRaises(ValueError):
