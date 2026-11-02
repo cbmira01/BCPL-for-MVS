@@ -73,5 +73,68 @@ class ConsoleTests(unittest.TestCase):
                 self.assertEqual(mod.read_delta(n),'later\n')
 
 
+    DEVLIST = ("02:27:27 HHC01603I devlist\n"
+               "02:27:27 HHC02279I 0:000E 1403 prt/prt00e.txt open\n"
+               "02:27:27 HHC02279I 0:0480 3420 * IO[12] maxsize=0\n"
+               "02:27:27 HHC02279I 0:0390 3390 dasd/tk5res.390 open\n")
+
+    def test_devlist_filters_tapes_and_replays(self):
+        duplicate = self.DEVLIST + self.DEVLIST
+        self.assertEqual(mod.replay_filter(duplicate), self.DEVLIST)
+        self.assertEqual(list(mod.tape_rows(duplicate)), ['0480'])
+        self.assertEqual(mod.device_rows(duplicate)['0390'][0], '3390')
+
+    def test_no_general_message_dedup(self):
+        msg = '12:00 $HASP000 some event\n'
+        self.assertEqual(mod.replay_filter(msg + msg), msg + msg)
+        changed = self.DEVLIST.replace('IO[12]', 'IO[13]')
+        self.assertEqual(mod.replay_filter(self.DEVLIST + changed), self.DEVLIST + changed)
+
+    def test_filtered_display_status_and_missing(self):
+        from io import StringIO
+        with mock.patch('sys.stdout', new_callable=StringIO) as output:
+            self.assertEqual(mod.display_tapes(self.DEVLIST), 0)
+            self.assertIn('0:0480 3420', output.getvalue())
+            self.assertNotIn('3390', output.getvalue())
+        with mock.patch('sys.stdout', new_callable=StringIO) as output:
+            self.assertEqual(mod.display_tapes(self.DEVLIST, '480'), 0)
+            self.assertIn('0:0480 3420', output.getvalue())
+        with mock.patch('sys.stderr', new_callable=StringIO):
+            self.assertEqual(mod.display_tapes(self.DEVLIST, '390'), 1)
+            self.assertEqual(mod.display_tapes('unrelated log', '480'), 1)
+
+    def test_tape_address_preflight_fail_closed(self):
+        with mock.patch.object(mod, 'capture', return_value=(0, self.DEVLIST)):
+            self.assertTrue(mod.verify_tape_address('480', timeout=5, settle=0))
+            self.assertFalse(mod.verify_tape_address('390', timeout=5, settle=0))
+            self.assertFalse(mod.verify_tape_address('999', timeout=5, settle=0))
+        with mock.patch.object(mod, 'capture', return_value=(1, self.DEVLIST)):
+            self.assertFalse(mod.verify_tape_address('480', timeout=5, settle=0))
+        with mock.patch.object(mod, 'capture', return_value=(0, 'other output')):
+            self.assertFalse(mod.verify_tape_address('480', timeout=5, settle=0))
+        busy = self.DEVLIST.replace('IO[12]', 'IO[12] open busy')
+        with mock.patch.object(mod, 'capture', return_value=(0, busy)):
+            self.assertFalse(mod.verify_tape_address('480', timeout=5, settle=0))
+
+    def test_mount_requires_proved_tape_before_send(self):
+        from argparse import Namespace
+        opts = Namespace(dry_run=False, yes=True, allow_disruptive=False, timeout=5, settle=0)
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / 'safe.aws').write_bytes(b'abc')
+            with mock.patch.object(mod, 'TAPES', Path(tmp)), \
+                 mock.patch.object(mod, 'verify_tape_address', return_value=False), \
+                 mock.patch.object(mod, 'dispatch') as send:
+                self.assertEqual(mod.execute(['tape', 'mount', '390', 'safe.aws'], opts), 3)
+                send.assert_not_called()
+            with mock.patch.object(mod, 'TAPES', Path(tmp)), \
+                 mock.patch.object(mod, 'verify_tape_address', return_value=True), \
+                 mock.patch.object(mod, 'dispatch', return_value=0) as send:
+                self.assertEqual(mod.execute(['tape', 'mount', '480', 'safe.aws'], opts), 0)
+                send.assert_called_once()
+
+    def test_status_uses_full_devlist_not_unsupported_argument(self):
+        self.assertEqual(mod.tape_command(['status', '480']), ('hercules', 'devlist', True))
+
+
 if __name__ == '__main__':
     unittest.main()

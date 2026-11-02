@@ -42,7 +42,7 @@ tools/mvs/mvs-console tape mount 580 example.aws
 tools/mvs/mvs-console tape unmount 580
 ```
 
-`tape list` uses Hercules `devlist` (the output includes **all** emulated devices, not just tapes); `tape status ADDRESS` uses `devlist ADDRESS`. Check the output to establish that ADDRESS really is a tape unit before any media operation. `tape files` lists regular files under the host's `mvs-state/tape/` directory. Mount accepts only a single ordinary filename in that directory and maps it to `/tk5/tape/FILENAME` inside the container. It does not create or overwrite an image; for new/blank tape creation use a separate, explicitly reviewed workflow. Unmount maps to `devinit ADDRESS *` (Hercules virtual tape only); it does not run an MVS unload or free an allocation.
+`tape list` queries Hercules `devlist` and displays **only recognized tape drives**, once per device address. `tape status ADDRESS` filters the same full inventory locally rather than relying on an unverified `devlist ADDRESS` form. Supported tape device types are 3410, 3420, 3422, 3430, 3480, 3490, 3590, 8809 and 9347. Before **each mount or unmount**, a fresh `devlist` check must identify a non-busy tape drive; otherwise the operation is refused. This check cannot independently prove that MVS has released the device. `tape files` lists regular files under the host's `mvs-state/tape/` directory. Mount accepts only a single ordinary filename in that directory and maps it to `/tk5/tape/FILENAME` inside the container. It does not create or overwrite an image; for new/blank tape creation use a separate, explicitly reviewed workflow. Unmount maps to `devinit ADDRESS *` (Hercules virtual tape only); it does not run an MVS unload or free an allocation.
 
 **Warning:** `devinit` reinitializes a device and can displace mounted media or disrupt a guest job. Verify the device is idle, the correct tape is selected, and the MVS/JCL allocation is appropriate. MVS tape drive status is separately available via `mvs tapes` (the exact display form should be verified against the running guest). An MVS tape mount request may require intervention on *both* sides: Hercules media association and MVS operator interaction. Never issue an unreviewed tape mount merely because a guest prompts for a volume.
 
@@ -67,5 +67,7 @@ Offline unit tests require no Docker or MVS:
 python3 -m unittest discover -s tools/mvs -p 'test_mvs_console.py' -v
 python3 -m py_compile tools/mvs/mvs-console
 ```
+
+Complete, identical Hercules `devlist` response blocks are collapsed, and tape listings also remove duplicate device addresses. Identical MVS/JES messages are left intact, since they may represent distinct asynchronous events. HTTP 200 establishes transport acceptance, not completion of an MVS operation.
 
 The native Hercules `help` command gives more complete emulator command details. The friendly catalog is deliberately limited to verified/common examples, rather than inventing complete MVS 3.8J/JES2 coverage. References: the project's actual console transcript and `docker/compose.yaml`, plus Hercules command documentation (including `devlist` and `devinit`).

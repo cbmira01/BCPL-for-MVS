@@ -15,6 +15,13 @@ ROOT = Path(__file__).resolve().parents[2]
 LOG = ROOT / "mvs-state/log/3033.log"
 TAPES = ROOT / "mvs-state/tape"
 CONTAINER = "mvs38j"
+# Hercules tape drive types (never infer a device class from its address).
+TAPE_TYPES = frozenset({"3410", "3420", "3422", "3430", "3480", "3490", "3590", "8809", "9347"})
+DEVICE_LINE = re.compile(
+    r"\bHHC02279I\s+(?:(?:[0-9A-Fa-f]+):)?(?P<address>[0-9A-Fa-f]{4})\s+"
+    r"(?P<type>[0-9]{4})\s+(?P<detail>.*)$"
+)
+
 URL = "http://127.0.0.1:8038/cgi-bin/tasks/cmd"
 
 # Exact, version-scoped aliases; raw commands remain available separately.
@@ -102,7 +109,7 @@ def tape_command(args: list[str]) -> tuple[str, str, bool] | None:
     if action == "status":
         if len(args) != 2 or not re.fullmatch(r"[0-9A-Fa-f]{3,4}", args[1]):
             raise ValueError("usage: tape status ADDRESS (3 or 4 hexadecimal digits)")
-        return ("hercules", f"devlist {args[1].upper()}", True)
+        return ("hercules", "devlist", True)  # filter full inventory locally
     if action in ("mount", "unmount"):
         expected = 3 if action == "mount" else 2
         if len(args) != expected or not re.fullmatch(r"[0-9A-Fa-f]{3,4}", args[1]):
@@ -175,11 +182,43 @@ def read_delta(start: int) -> str:
         return f.read().decode("utf-8", "replace")
 
 
-def dispatch(command: str, *, timeout: float = 10.0, settle: float = 0.8) -> int:
+def device_rows(output: str) -> dict[str, tuple[str, str, str]]:
+    """Parse Hercules DEVLIST, retaining just the first report of each device."""
+    rows: dict[str, tuple[str, str, str]] = {}
+    for line in output.splitlines():
+        m = DEVICE_LINE.search(line)
+        if m:
+            addr = m.group("address").upper()
+            rows.setdefault(addr, (m.group("type"), m.group("detail"), line))
+    return rows
+
+
+def tape_rows(output: str) -> dict[str, tuple[str, str, str]]:
+    return {address: row for address, row in device_rows(output).items()
+            if row[0] in TAPE_TYPES}
+
+
+def replay_filter(output: str) -> str:
+    """Collapse only duplicated complete DEVLIST blocks, never arbitrary messages."""
+    lines = output.splitlines(keepends=True)
+    anchors = [i for i, line in enumerate(lines) if "HHC01603I devlist" in line]
+    for i in range(len(anchors) - 1, 0, -1):
+        start = anchors[i - 1]
+        mid = anchors[i]
+        width = mid - start
+        if width > 1 and lines[start:mid] == lines[mid:mid + width]:
+            del lines[mid:mid + width]
+    return "".join(lines)
+
+
+def capture(command: str, *, timeout: float, settle: float) -> tuple[int, str]:
+    """Return transport result and the appended console log.
+
+    An HTTP 200 alone is not proof of guest command completion.
+    """
     if not docker_running():
         raise RuntimeError("Docker container mvs38j is not running")
     before = log_offset()
-    # No shell: curl encodes command value, including dollar signs, safely.
     p = subprocess.run(["docker", "exec", "-i", CONTAINER, "curl", "--silent", "--show-error",
                         "--get", "--connect-timeout", "3", "--max-time", str(max(1, int(timeout))),
                         "--data-urlencode", "cmd=" + command, "--output", "/dev/null",
@@ -188,17 +227,62 @@ def dispatch(command: str, *, timeout: float = 10.0, settle: float = 0.8) -> int
     if settle > 0:
         time.sleep(settle)
     delta = read_delta(before)
+    if p.returncode or p.stdout.strip() != "200":
+        print(f"Transport failure: curl RC={p.returncode}, HTTP={p.stdout.strip()}; {p.stderr.strip()}", file=sys.stderr)
+        print("Delivery uncertain: do not blindly retry state-changing commands.", file=sys.stderr)
+        return 1, delta
+    return 0, delta
+
+
+def display_tapes(delta: str, address: str | None = None) -> int:
+    if "HHC01603I devlist" not in delta:
+        print("No DEVLIST response captured; tape inventory is unverified.", file=sys.stderr)
+        return 1
+    found = tape_rows(delta)
+    if address:
+        address = address.upper().zfill(4)
+        if address not in found:
+            print(f"{address}: not found as a tape drive in the current DEVLIST response.", file=sys.stderr)
+            return 1
+        print(found[address][2])
+    elif not found:
+        print("No tape drives found in DEVLIST response.")
+    else:
+        for row in found.values():
+            print(row[2])
+    return 0
+
+
+def dispatch(command: str, *, timeout: float = 10.0, settle: float = 0.8,
+             tape_only: bool = False, tape_address: str | None = None) -> int:
+    rc, delta = capture(command, timeout=timeout, settle=settle)
+    if tape_only:
+        return rc or display_tapes(delta, tape_address)
+    delta = replay_filter(delta) if command.strip().lower() == "devlist" else delta
     if delta:
         print(delta, end="" if delta.endswith("\n") else "\n")
     else:
         print("No console messages captured in observation window (command may still be processing).")
-    if p.returncode or p.stdout.strip() != "200":
-        print(f"Transport failure: curl RC={p.returncode}, HTTP={p.stdout.strip()}; {p.stderr.strip()}", file=sys.stderr)
-        print("Delivery uncertain: do not blindly retry state-changing commands.", file=sys.stderr)
-        return 1
-    if not delta:
+    if not delta and not rc:
         print("HTTP accepted the request; this is not proof the guest command completed.")
-    return 0
+    return rc
+
+
+def verify_tape_address(address: str, *, timeout: float, settle: float) -> bool:
+    """Fail closed unless a fresh inventory proves this is an idle tape drive."""
+    rc, delta = capture("devlist", timeout=timeout, settle=settle)
+    if rc or "HHC01603I devlist" not in delta:
+        print("Tape safety check failed: no verified DEVLIST response.", file=sys.stderr)
+        return False
+    row = device_rows(delta).get(address.upper().zfill(4))
+    if row is None or row[0] not in TAPE_TYPES:
+        print(f"Tape safety check refused {address}: not a recognized tape drive.", file=sys.stderr)
+        return False
+    if re.search(r"\bbusy\b", row[1], flags=re.I):
+        print(f"Tape safety check refused {address}: device reports busy.", file=sys.stderr)
+        return False
+    print("Verified tape device: " + row[2])
+    return True
 
 
 def confirm(risk: str, displayed: str, *, yes: bool, allow_disruptive: bool, dry_run: bool) -> bool:
@@ -275,9 +359,17 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
     if opts.dry_run:
         print("DRY RUN: no console command issued")
         return 0
+    if verb == "tape" and words[0].lower() in ("mount", "unmount"):
+        # Never change media without a fresh, independently parsed tape inventory.
+        # Dry-runs above deliberately skip all console communication.
+        if not verify_tape_address(words[1], timeout=opts.timeout, settle=opts.settle):
+            return 3
     if not confirm(risk, wire, yes=opts.yes, allow_disruptive=opts.allow_disruptive, dry_run=False):
         return 3
-    return dispatch(wire, timeout=opts.timeout, settle=opts.settle)
+    tape_action = words[0].lower() if verb == "tape" else ""
+    return dispatch(wire, timeout=opts.timeout, settle=opts.settle,
+                    tape_only=tape_action in ("list", "devices", "status"),
+                    tape_address=words[1] if tape_action == "status" else None)
 
 
 def repl(opts: argparse.Namespace) -> int:
