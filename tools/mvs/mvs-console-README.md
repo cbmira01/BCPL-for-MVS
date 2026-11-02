@@ -45,7 +45,9 @@ device model. Common plurals are accepted. These are always inquiries: they
 must not prompt for confirmation. `hercules devices help` and
 `hercules devices ?` display usage **without sending any console command**.
 Unknown device categories are rejected locally, rather than sent as invalid
-Hercules commands. `? hercules devices` is another local-help form.
+Hercules commands. All namespace commands ending in `?` or `help` are
+handled locally; in particular `mvs devices ?` explains available MVS
+unit-display aliases rather than sending an invalid `/devices ?` command. `? hercules devices` is another local-help form.
 
 `hercules 'help devlist'` forwards a real Hercules help command. The short
 IBM model directory provided by `devices` is separate from live inventory.

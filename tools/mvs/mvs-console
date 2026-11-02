@@ -456,6 +456,29 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
             raise ValueError(f"usage: {verb} [help|?]")
         show_help(verb)
         return 0
+    # A trailing ? or 'help' on a console namespace is always local help.
+    # Never forward an unrecognized help request as an MVS/JES2/Hercules
+    # operator command (for example, "mvs devices ?" is not /devices ?).
+    if verb in ("mvs", "jes2", "hercules", "tape") and words and words[-1].lower() in ("?", "help"):
+        subject = [word.lower() for word in words[:-1]]
+        if not subject:
+            show_help(verb)
+        elif verb == "hercules" and subject == ["devices"]:
+            show_device_help()
+        elif verb == "mvs" and subject == ["devices"]:
+            print("MVS has no 'devices' alias in this tool. Available MVS unit inquiries:")
+            show_catalog("mvs")
+            print("Use 'hercules devices' for the live emulator inventory.")
+        elif len(subject) == 1 and subject[0] in CATALOG.get(verb, {}):
+            raw, description = CATALOG[verb][subject[0]]
+            print(f"{verb} {subject[0]}: {description}")
+            print(f"Underlying command: {normalize(verb, raw)}")
+        elif verb == "tape":
+            show_help("tape")
+        else:
+            print(f"No local help entry for {verb} {' '.join(subject)}.")
+            show_help(verb)
+        return 0
     if verb == "commands":
         if len(words) > 1:
             raise ValueError("usage: commands [DOMAIN|?]")

@@ -232,5 +232,33 @@ class ConsoleTests(unittest.TestCase):
                          response + changed)
 
 
+    def test_nested_help_not_sent_to_consoles(self):
+        from argparse import Namespace
+        from io import StringIO
+        opts = Namespace(dry_run=False, yes=False, allow_disruptive=False, timeout=5, settle=0)
+        requests = [
+            (["mvs", "devices", "?"], "no 'devices' alias"),
+            (["mvs", "devices", "help"], "no 'devices' alias"),
+            (["mvs", "dasd", "?"], "Underlying command: /D U,DASD"),
+            (["jes2", "printers", "?"], "Underlying command: /$D U,PRTS"),
+            (["hercules", "devices", "?"], "hercules devices"),
+            (["hercules", "devices", "help"], "hercules devices"),
+            (["hercules", "devices", "bogus", "?"], "No local help"),
+            (["tape", "mount", "?"], "tape list"),
+            (["jes2", "unknown", "?"], "No local help"),
+        ]
+        for words, expected in requests:
+            with self.subTest(words=words), \
+                 mock.patch.object(mod, "dispatch") as send, \
+                 mock.patch.object(mod, "capture") as capture, \
+                 mock.patch("builtins.input", side_effect=AssertionError("unexpected prompt")), \
+                 mock.patch("sys.stdout", new_callable=StringIO) as out:
+                self.assertEqual(mod.execute(words, opts), 0)
+                self.assertIn(expected, out.getvalue())
+                send.assert_not_called()
+                capture.assert_not_called()
+
+
+
 if __name__ == '__main__':
     unittest.main()
