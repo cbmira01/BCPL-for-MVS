@@ -43,9 +43,62 @@ CATALOG = {
     },
 }
 
+# Short static IBM hardware reference, not a live inventory.
+DEVICE_MODELS = {
+    "Consoles and terminals": [
+        ("1052", "Console printer-keyboard (System/360)"),
+        ("3215", "Console printer-keyboard (System/370)"),
+        ("3270", "Display terminal family"),
+        ("3287", "Terminal-attached printer"),
+    ],
+    "Printers and punched cards": [
+        ("1403", "Line printer"),
+        ("3211", "Line printer"),
+        ("3505", "Punched-card reader"),
+        ("3525", "Punched-card punch; optional print/read"),
+    ],
+    "Disk (DASD)": [
+        ("3330", "Removable disk-pack storage"),
+        ("3350", "Fixed disk storage"),
+        ("3375", "Fixed disk storage"),
+        ("3380", "High-capacity disk storage"),
+        ("3390", "Disk storage; common Hercules emulation"),
+    ],
+    "Magnetic tape": [
+        ("3410", "Reel-to-reel tape drive"),
+        ("3420", "Reel-to-reel tape drive"),
+        ("3422", "9-track magnetic tape drive"),
+        ("3430", "9-track magnetic tape drive"),
+        ("3480", "Cartridge magnetic tape drive"),
+        ("3490", "Cartridge magnetic tape drive"),
+        ("3590", "High-capacity cartridge tape drive"),
+        ("8809", "Magnetic tape drive"),
+        ("9347", "Magnetic tape drive"),
+    ],
+    "Communications and control units": [
+        ("2703", "Communications transmission control"),
+        ("3705", "Communications controller"),
+        ("3803", "Magnetic tape control unit"),
+        ("3830", "DASD storage control unit"),
+        ("3880", "DASD storage control unit"),
+        ("3990", "DASD storage control unit"),
+    ],
+}
+
+
+def show_devices() -> None:
+    print("IBM device model directory — static reference, not live inventory")
+    print("Listing does not establish MVS 3.8J compatibility.\n")
+    for category, models in DEVICE_MODELS.items():
+        print(category + ":")
+        for model, description in models:
+            print(f"  {model:<6} {description}")
+        print()
+
+
 TOPICS = {
     "jobs": "mvs activity; jes2 initiators; use tools/mvs/job-summary JOB for a completed JES job.",
-    "devices": "mvs dasd; mvs tapes; jes2 printers; jes2 punches; hercules devices.",
+    "devices": "devices lists IBM hardware models (offline); hercules devices shows the live inventory; mvs dasd/tapes queries guest units.",
     "tape": "tape list; tape files; tape status ADDRESS; tape mount ADDRESS FILENAME; tape unmount ADDRESS. Mount changes emulator media, not MVS allocation.",
     "storage": "mvs dasd; mvs tapes; hercules devices. For dataset management use tools/datasets/dspal.",
     "commands": "commands [mvs|jes2|hercules|tape]; explain DOMAIN NAME; DOMAIN RAW-COMMAND.",
@@ -148,10 +201,12 @@ def show_help(topic: str | None = None) -> None:
         print("  mvs-console [--dry-run] [--yes] tape ACTION ...")
         print("  mvs-console                 interactive REPL")
         print("  mvs-console status          inspect Docker/TK5 without console commands")
+        print("  mvs-console devices         list IBM device models (offline)")
         print("  mvs-console commands [DOMAIN] | help [TOPIC] | explain DOMAIN COMMAND")
         print("  mvs-console --help          full CLI options\n")
         print("Help topics: " + ", ".join(TOPICS))
-        print("In the REPL: help, commands, explain, history, quit. Use quotes for commands containing spaces.")
+        print("In the REPL: help or ?, commands, devices, explain, history, quit.")
+        print("Use DOMAIN ? for local help. Quote commands containing spaces.")
         print("Operational commands require confirmation; disruptive commands need --allow-disruptive plus confirmation.")
     elif topic in TOPICS:
         print(f"{topic}: {TOPICS[topic]}")
@@ -309,11 +364,31 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
     verb = verb.lower()
     if verb in ("quit", "exit"):
         return 99
-    if verb == "help":
-        show_help(words[0].lower() if words else None)
+    if verb in ("help", "?"):
+        if len(words) > 1:
+            raise ValueError("usage: help [TOPIC]")
+        show_help(None if not words or words[0] == "?" else words[0].lower())
+        return 0
+    if verb == "devices":
+        if not words:
+            show_devices()
+        elif len(words) == 1 and words[0].lower() in ("help", "?"):
+            print("devices: static IBM device model directory. Use hercules devices for live inventory.")
+        else:
+            raise ValueError("usage: devices [help|?]")
+        return 0
+    if verb in ("mvs", "jes2", "hercules", "tape") and words and words[0].lower() in ("help", "?"):
+        if len(words) != 1:
+            raise ValueError(f"usage: {verb} [help|?]")
+        show_help(verb)
         return 0
     if verb == "commands":
-        show_catalog(words[0].lower() if words else None)
+        if len(words) > 1:
+            raise ValueError("usage: commands [DOMAIN|?]")
+        show_catalog(None if not words or words[0] == "?" else words[0].lower())
+        return 0
+    if verb == "explain" and (not words or words == ["?"]):
+        print("usage: explain DOMAIN NAME-OR-COMMAND")
         return 0
     if verb == "explain":
         if len(words) < 2:

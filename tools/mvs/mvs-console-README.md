@@ -9,6 +9,8 @@ From the repository root:
 ```sh
 tools/mvs/mvs-console --help
 tools/mvs/mvs-console commands
+tools/mvs/mvs-console devices
+tools/mvs/mvs-console '?'
 tools/mvs/mvs-console help tape
 tools/mvs/mvs-console jes2 printers
 tools/mvs/mvs-console mvs 'D A,L'
@@ -16,7 +18,9 @@ tools/mvs/mvs-console hercules devices
 tools/mvs/mvs-console
 ```
 
-No arguments starts a REPL with `mvs>`. Type `help`, `commands`, `help tape`, `explain jes2 printers`, or `quit`. `history` lists commands typed during the current session (in memory only). Quote commands with spaces if needed.
+No arguments starts a REPL with `mvs>`. `?` works like `help`, including `? tape`, `tape ?`, `mvs ?`, `jes2 ?`, `hercules ?`, and `devices ?`. These commands show help locally without contacting the emulator. `devices` prints an offline, static, grouped IBM device-model directory; use `hercules devices` for the actual configured devices.
+
+ Type `help`, `commands`, `help tape`, `explain jes2 printers`, or `quit`. `history` lists commands typed during the current session (in memory only). Quote commands with spaces if needed.
 
 Native commands are accepted as well as friendly aliases:
 
@@ -29,6 +33,14 @@ tools/mvs/mvs-console hercules 'help devinit'
 A `mvs` command is prefixed with `/` when passed to the Hercules panel; a `jes2` command is passed as `/$...`; a `hercules` command is passed unchanged. The dispatch uses Docker `exec` to reach the running container's HTTP command endpoint, and captures the **new tail** of `mvs-state/log/3033.log`. This log may include asynchronous messages unrelated to the command, or duplicate echoes; a successful HTTP response is **not** evidence of MVS command completion. If the command returns before later messages arrive, re-run a display command or inspect the console log. The tool never automatically retries command transmission.
 
 Use `--dry-run` to see the exact underlying console command without connecting; `--settle SECONDS` controls the post-request observation interval, and `--timeout SECONDS` controls HTTP transport timeout.
+
+## IBM device models
+
+Use `devices` for a short, grouped reference dump of IBM model numbers (terminals, printers, card equipment, DASD, tape, controllers). No search or console traffic is involved. The list includes later IBM devices for context; it is not a statement of support in MVS 3.8J. Model numbers are not channel addresses.
+
+For live hardware attached to Hercules, use `hercules devices`; for tape drives use `tape list`.
+
+References for descriptions: IBM *OS/VS System Generation* (GC28-6554); IBM I/O device/control-unit listings; IBM tape recording format documentation.
 
 ## Tape operations
 

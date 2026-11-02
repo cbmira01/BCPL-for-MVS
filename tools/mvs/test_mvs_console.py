@@ -136,5 +136,42 @@ class ConsoleTests(unittest.TestCase):
         self.assertEqual(mod.tape_command(['status', '480']), ('hercules', 'devlist', True))
 
 
+    def test_devices_is_static_and_offline(self):
+        from argparse import Namespace
+        from io import StringIO
+        opts = Namespace(dry_run=False, yes=False, allow_disruptive=False, timeout=5, settle=0)
+        with mock.patch.object(mod, 'dispatch') as send, \
+             mock.patch('sys.stdout', new_callable=StringIO) as out:
+            self.assertEqual(mod.execute(['devices'], opts), 0)
+            display = out.getvalue()
+            for number in ('3420', '3390', '3505', '3705'):
+                self.assertIn(number, display)
+            self.assertIn('static reference', display)
+            send.assert_not_called()
+
+    def test_question_mark_help_stays_local(self):
+        from argparse import Namespace
+        from io import StringIO
+        opts = Namespace(dry_run=False, yes=False, allow_disruptive=False, timeout=5, settle=0)
+        for args in (['?'], ['?', 'tape'], ['help', '?'], ['tape', '?'],
+                     ['mvs', '?'], ['jes2', '?'], ['hercules', '?'],
+                     ['devices', '?'], ['commands', '?'], ['explain', '?']):
+            with self.subTest(args=args), \
+                 mock.patch.object(mod, 'dispatch') as send, \
+                 mock.patch('sys.stdout', new_callable=StringIO) as out:
+                self.assertEqual(mod.execute(args, opts), 0)
+                self.assertTrue(out.getvalue())
+                send.assert_not_called()
+
+    def test_help_excess_arguments_rejected(self):
+        from argparse import Namespace
+        opts = Namespace(dry_run=False, yes=False, allow_disruptive=False, timeout=5, settle=0)
+        with self.assertRaises(ValueError):
+            mod.execute(['tape', '?', 'mount'], opts)
+        with self.assertRaises(ValueError):
+            mod.execute(['devices', '3420'], opts)
+
+
+
 if __name__ == '__main__':
     unittest.main()
