@@ -575,7 +575,14 @@ def repl(opts: argparse.Namespace) -> int:
         history.append(line)
         readline.add_history(line)
         try:
-            rc = execute(shlex.split(line), opts)
+            args = shlex.split(line)
+            misplaced = [word for word in args if word.startswith("--")]
+            if misplaced:
+                raise ValueError(
+                    "startup option(s) not allowed inside the REPL: "
+                    + ", ".join(misplaced)
+                    + "; start mvs-console with options before entering the REPL")
+            rc = execute(args, opts)
             if rc == 99:
                 return 0
             if rc:

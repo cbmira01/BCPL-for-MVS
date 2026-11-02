@@ -260,5 +260,25 @@ class ConsoleTests(unittest.TestCase):
 
 
 
+    def test_repl_rejects_misplaced_startup_options(self):
+        from argparse import Namespace
+        from io import StringIO
+        opts = Namespace(dry_run=False, yes=False, allow_disruptive=False, timeout=5, settle=0)
+        with mock.patch("builtins.input", side_effect=[
+                     "hercules 'help devlist' --dry-run",
+                     "mvs 'D A,L' --timeout 2",
+                     "quit"
+                 ]), \
+             mock.patch.object(mod, "execute", wraps=mod.execute) as execute, \
+             mock.patch.object(mod, "dispatch") as dispatch, \
+             mock.patch("sys.stderr", new_callable=StringIO) as errors:
+            self.assertEqual(mod.repl(opts), 0)
+            self.assertIn("--dry-run", errors.getvalue())
+            self.assertIn("--timeout", errors.getvalue())
+            dispatch.assert_not_called()
+            execute.assert_called_once_with(["quit"], opts)
+
+
+
 if __name__ == '__main__':
     unittest.main()

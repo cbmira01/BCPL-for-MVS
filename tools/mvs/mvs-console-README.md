@@ -34,7 +34,7 @@ tools/mvs/mvs-console hercules 'help devinit'
 
 A `mvs` command is prefixed with `/` when passed to the Hercules panel; a `jes2` command is passed as `/$...`; a `hercules` command is passed unchanged. The dispatch uses Docker `exec` to reach the running container's HTTP command endpoint, and captures the **new tail** of `mvs-state/log/3033.log`. This log may include asynchronous messages unrelated to the command, or duplicate echoes; a successful HTTP response is **not** evidence of MVS command completion. If the command returns before later messages arrive, re-run a display command or inspect the console log. The tool never automatically retries command transmission.
 
-Use `--dry-run` to see the exact underlying console command without connecting; `--settle SECONDS` controls the post-request observation interval, and `--timeout SECONDS` controls HTTP transport timeout.
+Startup options such as `--dry-run`, `--timeout`, `--settle`, `--yes` and `--allow-disruptive` must appear **before the command** on the initial shell invocation. Options beginning with `--` typed inside the REPL are rejected locally without sending any console command. Exit and restart `mvs-console` to change startup options.\n\nUse `--dry-run` to see the exact underlying console command without connecting; `--settle SECONDS` controls the post-request observation interval, and `--timeout SECONDS` controls HTTP transport timeout.
 
 ## Hercules device inquiries and help
 
