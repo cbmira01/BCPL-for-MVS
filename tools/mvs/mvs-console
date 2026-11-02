@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import readline  # GNU Readline: Up/Down history and Ctrl-A/Ctrl-E editing.
 from pathlib import Path
 import re
 import shlex
@@ -375,6 +376,7 @@ def execute(args: list[str], opts: argparse.Namespace) -> int:
 def repl(opts: argparse.Namespace) -> int:
     print("TK5 console — 'help' for commands, 'quit' to leave. Commands run against real MVS/Hercules.")
     history: list[str] = []
+    readline.clear_history()  # No history file; only the current session.
     while True:
         try:
             line = input("mvs> ").strip()
@@ -388,6 +390,7 @@ def repl(opts: argparse.Namespace) -> int:
                 print(f"{i:3} {item}")
             continue
         history.append(line)
+        readline.add_history(line)
         try:
             rc = execute(shlex.split(line), opts)
             if rc == 99:
