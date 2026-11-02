@@ -7,7 +7,7 @@ set +o pipefail
 
 run_q5rgm() {
     local root dir attempt deck job rc summary_rc report_rc i log out marker
-    root="$(cd -- "$(dirname -- "$0")/../.." && pwd)"
+    root="$(cd -- "$(dirname -- "$0")/../../.." && pwd)"
     cd "$root" || return 1
     dir=workarea/bcplqsam-q5
     attempt="$dir/q5rgm-attempt"

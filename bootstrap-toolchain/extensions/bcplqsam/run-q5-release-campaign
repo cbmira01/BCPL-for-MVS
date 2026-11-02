@@ -7,7 +7,7 @@ set +o pipefail
 
 q5_release_once() {
     local root work attempt sel unsel deck rc job n result
-    root="$(cd -- "$(dirname -- "$0")/../.." && pwd)"
+    root="$(cd -- "$(dirname -- "$0")/../../.." && pwd)"
     if [ -z "$root" ] || ! cd "$root"; then
         echo 'Cannot enter BCPL repository.'
         return 1
