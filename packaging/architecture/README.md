@@ -1,6 +1,8 @@
 # Architecture and contracts
 
 - [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) — compiler, Core Runtime, historical BLIB Base Library, System Extensions, Standard Libraries and User/Site Libraries
+- [BSL scope and module design discussion](bsl-scope-and-module-design-20261103.md) — proposed Standard Library family catalog, modular linking and deferred design decisions
+- [Regression suite separation discussion](regression-suite-separation-20261103.md) — proposed independent bootstrap, extension and future BSL test reporting while preserving acceptance evidence
 - [Global Number Registry](global-number-registry.md) — historical and project global-vector assignments
 - [Runtime contract v1](runtime-contract-v1.md) — native runtime interfaces and invariants
 - [Stack-check contract](stack-check-contract.md) — accepted System/370 stack behavior
