@@ -563,3 +563,24 @@ datasets:
       TIMEHDR: bootstrap-toolchain/extensions/bcpltime/bcpltime.h
       QSAMHDR: bootstrap-toolchain/extensions/bcplqsam/bcplqsam.h
 
+
+  DIST_DOCS:
+    dsn: BCPL.DIST.DOCS
+    description: Distribution-specific documentation for AWS tape releases
+    primary: 5
+    secondary: 2
+    directory: 5
+    type: pds
+    dsorg: PO
+    recfm: FB
+    lrecl: 80
+    blksize: 800
+    populate: true
+    members:
+      README: packaging/distribution/docs/README.txt
+      INSTALL: packaging/distribution/docs/INSTALL.txt
+      DATASETS: packaging/distribution/docs/DATASETS.txt
+      COMPILE: packaging/distribution/docs/COMPILE.txt
+      VERIFY: packaging/distribution/docs/VERIFY.txt
+      RELEASE: packaging/distribution/docs/RELEASE.txt
+      LICENSE: packaging/distribution/docs/LICENSE.txt
