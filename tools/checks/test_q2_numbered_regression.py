@@ -21,8 +21,8 @@ def sample_source():
 
 
 class NumberedQ2Tests(unittest.TestCase):
-    def test_eight_consecutive_cases_and_exact_source_parity(self):
-        self.assertEqual(list(R.CASES), list(range(163, 171)))
+    def test_all_fourteen_cases_and_exact_source_parity(self):
+        self.assertEqual(list(R.CASES), list(range(163, 177)))
         for n, (kind, original, job, markers) in R.CASES.items():
             with self.subTest(n=n):
                 candidates = list(REG.glob(f"{n:03d}-*"))
@@ -58,9 +58,22 @@ class NumberedQ2Tests(unittest.TestCase):
                 elif kind == "stopflush":
                     deck = R.load("prepare-q2-stop-flush.py").make_deck(
                         code, card, boot)
-                else:
+                elif kind == "mix":
                     deck = R.load("prepare-q2-mix.py").make_deck(
                         code, card, boot, ext)
+                elif kind in R.LIMIT_CASES:
+                    deck = R.load("prepare-q3-v-read.py").make_limit_deck(
+                        code, card, boot,
+                        "vb" if kind.startswith("vb") else "v",
+                        kind.endswith("write"))
+                elif kind == "punch":
+                    deck = R.load("prepare-q4-punch.py").make_deck(
+                        code, card, boot)
+                elif kind == "fba":
+                    deck = R.load("prepare-q4-fba.py").make_deck(
+                        code, card, boot)
+                else:
+                    self.fail(f"unrecognized QSAM generator kind {kind}")
                 self.assertTrue(deck.startswith(f"//{job} JOB "))
                 self.assertTrue(all(row.isascii() and len(row) <= 71
                                     for row in deck.splitlines()))

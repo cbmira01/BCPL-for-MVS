@@ -17,14 +17,15 @@ def check_q2(asm: str) -> None:
     assert asm.count('         PUT   (2),(3)') == 1
     assert '         GET   (2),(1)' not in asm
     assert '         PUT   (2),(1)' not in asm
-    assert asm.count('         MVCL  4,6') == 2
+    # Read copy, fixed-record write and V/VB payload write each use MVCL.
+    assert asm.count('         MVCL  4,6') == 3
     assert "QISTATES DC    16X'00'" in asm
     assert "QIPENDS  DC    16F'0'" in asm
     assert asm.count('         D     2,=F' + "'44'") == 3
     assert '         C     7,=F' + "'2'" in asm
     assert '         C     7,=F' + "'3'" in asm
-    # Q.1 capability bits stay unchanged until actual native Q.2 PASS.
-    assert asm.count('         LA    14,25') == 1
+    # Five QSAM operations are now accepted (query capability bitmap 31).
+    assert asm.count('         LA    14,31') == 1
     # Snapshot each full 44-byte slot; Q.2 uses disjoint state arrays.
     assert 'QSSLOTS  DS    0F' in asm
     assert 'QISTATES DC    16X' + "'00'" in asm
@@ -119,7 +120,7 @@ class Q2SourceRegression(unittest.TestCase):
     def test_rejects_unverified_advertising(self):
         src = ASM.read_text(encoding='ascii')
         with self.assertRaises(AssertionError):
-            check_q2(src.replace('LA    14,25', 'LA    14,31'))
+            check_q2(src.replace('LA    14,31', 'LA    14,25'))
 
     def test_rejects_copy_or_stage_regression(self):
         src = ASM.read_text(encoding='ascii')

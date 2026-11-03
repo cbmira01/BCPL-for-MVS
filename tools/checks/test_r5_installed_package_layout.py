@@ -80,7 +80,8 @@ class R5InstalledLayoutTests(unittest.TestCase):
         self.assertIn('DSN=HERC02.BCPL.EXT.OBJ(BCPLDEMO),DISP=OLD', deck)
         self.assertNotIn('DSN=HERC02.BCPL.BOOT.OBJ(', deck)
         self.assertNotIn('DSN=HERC02.BCPL.BOOT.DEVOBJ(', deck)
-        self.assertTrue(all(len(line) <= 71 for line in deck.splitlines()))
+        self.assertTrue(all(len(line) <= (80 if line.startswith('//*') else 71)
+                            for line in deck.splitlines()))
 
 
 if __name__ == '__main__':

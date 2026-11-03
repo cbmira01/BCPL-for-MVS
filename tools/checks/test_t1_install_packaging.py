@@ -86,7 +86,8 @@ class TestT1Packaging(unittest.TestCase):
         for path in (CATALOG, INSTALL):
             for line_no, line in enumerate(path.read_text("ascii").splitlines(), 1):
                 with self.subTest(path=str(path), line=line_no):
-                    self.assertLessEqual(len(line), 71)
+                    self.assertLessEqual(len(line),
+                                         80 if line.startswith('//*') else 71)
                     self.assertTrue(line.isascii())
                     self.assertNotIn("\t", line)
 

@@ -111,7 +111,8 @@ class TemplateTests(unittest.TestCase):
         self.assertNotIn('R2BSVC', src)
 
     def test_linkage_selection_matrix_is_explicit(self):
-        guide = (HERE.parents[1] / 'packaging' /
+        guide = (HERE.parents[1] / 'packaging' / 'archive' /
+                 'runtime-extensions' /
                  'runtime-extensions-r3-linkage-guide.md').read_text()
         for name in ('DMODESC', 'DMODISP', 'R2BDSC', 'R2BDISP',
                      'RGINIT', 'BCPLREG', 'BCPLMAIN', 'BLIB'):

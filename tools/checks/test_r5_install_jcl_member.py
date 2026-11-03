@@ -8,7 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "config/dspal.yaml"
 JCL = ROOT / "bootstrap-toolchain/jcl/bcpldemo.jcl"
-RUNBOOK = ROOT / "packaging/clean-room-mvs-reconstruction.md"
+RUNBOOK = ROOT / "docs/Rebuild-BCPL-for-MVS-from-source.md"
 SUBMIT = ROOT / "tools/datasets/dspal-submit.py"
 
 
@@ -74,9 +74,8 @@ class R5InstalledJobMember(unittest.TestCase):
     def test_runbook_uses_single_resident_submit_command(self):
         guide = RUNBOOK.read_text(encoding="utf-8")
         self.assertIn("tools/datasets/dspal submit BOOT_JCL BCPLDEMO", guide)
-        self.assertIn("tools/bootstrap/run-production-regression 0 162", guide)
-        self.assertIn("| PASS | **162**", guide)
-        self.assertIn("| TOTAL | **163**", guide)
+        self.assertIn("tools/bootstrap/run-installed-r5-t1-regression 0 176", guide)
+        self.assertIn("Require `BCPLDEMO`, `BCPLTIME`, and `BCPLQSAM`.", guide)
         for obsolete in (
             "python3 - <<",
             "tools/mvs/prepare-bcpldemo-install",

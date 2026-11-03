@@ -100,6 +100,15 @@ def pds_steps() -> list[str]:
     ]
 
 
+def reject_permanent_library_operations(cards: list[str]) -> None:
+    """Reject active persistent-output controls, not source comments."""
+    for row in cards:
+        if row.startswith(('//*', '*')):
+            continue
+        if any(token in row for token in ('CATLG', 'DISP=MOD', 'BOOT_DEVOBJ')):
+            raise ValueError('permanent library operation forbidden')
+
+
 def make_deck(selected: str, unselected: str,
               jobcard: list[str], obj_dsn: str) -> str:
     if not jobcard or not re.match(r'^//Q5PKG\s+JOB\b', jobcard[0]):
@@ -152,9 +161,7 @@ def make_deck(selected: str, unselected: str,
         raise ValueError('temporary candidate catalog incorrect')
     if cards.count('//EXTLIB   DD  DSN=&&Q5QOBJ,DISP=(OLD,PASS)') != 1:
         raise ValueError('PDS object link must occur only once')
-    if any('CATLG' in row or 'DISP=MOD' in row or 'BOOT_DEVOBJ' in row
-           for row in cards):
-        raise ValueError('permanent library operation forbidden')
+    reject_permanent_library_operations(cards)
     if cards.count(' COMPARE TYPORG=PS') != 1:
         raise ValueError('binary object readback verification missing')
     if cards.count('//') != 1:
