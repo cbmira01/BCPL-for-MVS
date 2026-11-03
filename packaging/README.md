@@ -4,6 +4,7 @@ This directory is an **index, not a document dump**. GitHub `main` is authoritat
 
 | Directory | Purpose |
 | --- | --- |
+| [Application discussions](applications/README.md) | Research notes on possible native BCPL applications; not project deliverables |
 | [Architecture](architecture/README.md) | Runtime/library terminology, global assignments, ABI and storage contracts |
 | [Milestones](milestones/README.md) | Governing milestone documents, System Extension interfaces, decisions and owner-approved closures, grouped by milestone |
 | [Operations](operations/README.md) | Repository authority, safe WSL procedures, runtime builds, promotion and repository navigation |
