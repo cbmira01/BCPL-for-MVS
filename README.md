@@ -73,6 +73,8 @@ the previously observed acceptance evidence see [M3 reconstruction acceptance](p
 | --- | --- |
 | `mr10-kit-compiler/` | ICINT19 assembler, preserved compiler phases, test panels, interpreted demos, and MVS JCL |
 | `bootstrap-toolchain/` | Demoted Cambridge source machinery, S/370 runtime ASM, authoritative native build JCL, native regressions |
+| `system-extensions/` | Optional System/370 and MVS services and shared extension selection assets; Git-backed source/headers |
+| `standard-library/` | Proposed BCPL Standard Library (BSL); design-only placeholder, no modules implemented |
 | `tools/datasets/` | `dspal` manifest-driven MVS PDS access and lifecycle |
 | `tools/mr10/` | MR10 interpreter, interpreted compiler, demos, and regression runners |
 | `tools/bootstrap/` | Native bootstrap preparation, deployment, compilation, and regression runner |

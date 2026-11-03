@@ -6,6 +6,7 @@
 - [Runtime development workflow](runtime-development-workflow.md)
 - [Runtime object promotion](runtime-object-promotion.md)
 - [Maintenance](maintenance/) — historical repository/regression maintenance notes
+- [Stage 2A precommit source relocation review](maintenance/repository-module-stage2a-precommit-review-20261103.md) — proposed extension-path move, candidate checks, and verification gates
 - [Stage 1 repository/module and regression migration audit](maintenance/repository-module-and-regression-migration-stage1-audit-20261103.md) — current source/test layout, path dependencies, target mapping and gated migration plan
 
 The canonical [clean-room reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains in `docs/`, not here. A Git commit does not authorize JES submissions, dataset writes or production-object promotion.

@@ -75,7 +75,7 @@ def make_deck(n, generated, jobcard, obj, mode="source", extension_dsn=None, mac
              *t.asm_step("ASMR", "R5RGOBJ", rgs)]
     if included and mode == "source":
         pkg = t.checked_asm(
-            (ROOT / "bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm")
+            (ROOT / "system-extensions/bcpldemo/bcpldemo.asm")
             .read_text("ascii"), "combined BCPLDEMO")
         cards += t.asm_step("ASMD", "R5DEOBJ", pkg)
     cards += [

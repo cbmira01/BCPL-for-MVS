@@ -68,7 +68,7 @@ class R5Tests(unittest.TestCase):
                       maclib="BAD..DSN")
 
     def test_combined_descriptor_and_dispatcher(self):
-        path = (ROOT / "bootstrap-toolchain/extensions/bcpldemo/"
+        path = (ROOT / "system-extensions/bcpldemo/"
                 "bcpldemo.asm")
         data = path.read_text("ascii")
         self.assertEqual(data.count("DMODESC  CSECT"), 1)

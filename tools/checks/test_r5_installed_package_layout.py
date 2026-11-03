@@ -27,8 +27,8 @@ class R5InstalledLayoutTests(unittest.TestCase):
         self.assertIn('content_type: object', object_part)
         self.assertIn('populate: false', object_part)
         for member in ('BCXPRE', 'BCXCAT', 'BCXPOST'):
-            self.assertIn(f'{member}: bootstrap-toolchain/extensions/bcx/', data)
-        self.assertIn('DEMOHDR: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.h', data)
+            self.assertIn(f'{member}: system-extensions/bcx/', data)
+        self.assertIn('DEMOHDR: system-extensions/bcpldemo/bcpldemo.h', data)
 
     def test_installed_mode_uses_resident_macros_and_object_member(self):
         g = load_generator()

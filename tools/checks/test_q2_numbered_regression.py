@@ -7,7 +7,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 REG = ROOT / "bootstrap-toolchain/regression"
-EXT = ROOT / "bootstrap-toolchain/extensions/bcplqsam"
+EXT = ROOT / "system-extensions/bcplqsam"
 TARGET = Path(__file__).with_name("run-q2-qsam-regression.py")
 SPEC = importlib.util.spec_from_file_location("q2_numbered", TARGET)
 assert SPEC is not None and SPEC.loader is not None

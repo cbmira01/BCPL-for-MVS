@@ -31,9 +31,9 @@ class TestT1Generator(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         base = Path(self.temp.name)
         reg = base / 'bootstrap-toolchain/regression'
-        bcx = base / 'bootstrap-toolchain/extensions/bcx'
-        time = base / 'bootstrap-toolchain/extensions/bcpltime'
-        demo = base / 'bootstrap-toolchain/extensions/bcpldemo'
+        bcx = base / 'system-extensions/bcx'
+        time = base / 'system-extensions/bcpltime'
+        demo = base / 'system-extensions/bcpldemo'
         asm = base / 'bootstrap-toolchain/asm'
         for path in (reg, bcx, time, demo, asm):
             path.mkdir(parents=True, exist_ok=True)

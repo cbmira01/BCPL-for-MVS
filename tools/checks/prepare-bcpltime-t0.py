@@ -13,8 +13,8 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-EXT = ROOT / "bootstrap-toolchain/extensions/bcpltime"
-BCX = ROOT / "bootstrap-toolchain/extensions/bcx"
+EXT = ROOT / "system-extensions/bcpltime"
+BCX = ROOT / "system-extensions/bcx"
 TRAIL = ROOT / "bootstrap-toolchain/probes/r0-export-trailer-probe/make-job.py"
 
 

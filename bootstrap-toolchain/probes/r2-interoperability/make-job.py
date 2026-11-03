@@ -13,7 +13,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-DEMO = ROOT / 'bootstrap-toolchain/extensions/bcpldemo'
+DEMO = ROOT / 'system-extensions/bcpldemo'
 R1 = HERE.parent / 'r1-registration/make-jobs.py'
 TRAIL = HERE.parent / 'r0-export-trailer-probe/make-job.py'
 PROVENANCE = ROOT / 'tools/checks/r1_provenance.py'

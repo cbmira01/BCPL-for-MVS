@@ -7,7 +7,7 @@ import unittest
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-EXT = ROOT / 'bootstrap-toolchain/extensions/bcpldemo'
+EXT = ROOT / 'system-extensions/bcpldemo'
 REG = ROOT / 'packaging/global-number-registry.md'
 
 

@@ -20,7 +20,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 REG = ROOT / "bootstrap-toolchain/regression"
-EXT = ROOT / "bootstrap-toolchain/extensions/bcplqsam"
+EXT = ROOT / "system-extensions/bcplqsam"
 TOOLS = ROOT / "tools"
 WORK = ROOT / "workarea/native-regression"
 

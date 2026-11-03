@@ -4,7 +4,7 @@
 set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 work="$root/workarea/bcpltime-t0"
-source="$root/bootstrap-toolchain/extensions/bcpltime"
+source="$root/system-extensions/bcpltime"
 prepare="$root/tools/checks/prepare-bcpltime-t0.py"
 
 if [[ $# -eq 1 && $1 == --check ]]; then

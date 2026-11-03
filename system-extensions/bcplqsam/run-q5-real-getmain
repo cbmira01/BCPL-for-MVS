@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# Submit one temporary Q5RGM MVS job and retain its native evidence.
+# This runner never retries a submission or changes installed datasets.
+set +e
+set +u
+set +o pipefail
+
+run_q5rgm() {
+    local root dir attempt deck job rc summary_rc report_rc i log out marker
+    root="$(cd -- "$(dirname -- "$0")/../.." && pwd)"
+    cd "$root" || return 1
+    dir=workarea/bcplqsam-q5
+    attempt="$dir/q5rgm-attempt"
+    deck="$dir/q5rgm.jcl"
+    marker='+Q5RGM:REAL:GM1024-RC4:ALL-FREED'
+    local failed="$dir/q5rgm-attempt-preflight-job8141-image"
+
+    mkdir -p "$dir" || return 1
+    # The previous run stopped before JES, because the preparer wrongly
+    # looked at JOB 8141. Preserve that one historical attempt unchanged.
+    if [ -d "$attempt" ] && [ ! -L "$attempt" ] &&
+       [ ! -e "$deck" ] && [ ! -L "$deck" ] &&
+       [ -f "$attempt/prepare.txt" ] &&
+       grep -Fxq 'Q5RGM preparation failed: JOB 8144 compiled assembler digest mismatch' "$attempt/prepare.txt" &&
+       [ ! -e "$attempt/submit.rc" ] &&
+       [ ! -e "$attempt/submit.stdout" ] &&
+       [ ! -e "$attempt/submit.stderr" ] &&
+       [ ! -e "$attempt/job-number.txt" ]; then
+        if [ -e "$failed" ] || [ -L "$failed" ]; then
+            echo "Failed-preflight archive already exists; no resubmission."
+            return 1
+        fi
+        mv -- "$attempt" "$failed"
+        rc=$?
+        echo "Preserve pre-JES failed attempt RC=$rc"
+        if [ "$rc" -ne 0 ]; then return 1; fi
+    fi
+    if ! mkdir "$attempt"; then
+        echo "Q5RGM already reserved; inspect $attempt; no resubmission."
+        return 1
+    fi
+    git rev-parse HEAD > "$attempt/source-head.txt"
+    date -Is > "$attempt/start-time.txt"
+
+    python3 system-extensions/bcplqsam/prepare-q5-real-getmain.py \
+        > "$attempt/prepare.txt" 2>&1
+    rc=$?
+    cat "$attempt/prepare.txt"
+    echo "Q5RGM preparation RC=$rc"
+    if [ "$rc" -ne 0 ] || [ ! -s "$deck" ]; then
+        echo 'Q5RGM not submitted.'
+        return 1
+    fi
+    sha256sum "$deck" > "$attempt/deck.sha256"
+
+    echo 'Submitting one Q5RGM job to the MVS JES reader.'
+    bash tools/mvs/submit-jcl "$deck" \
+        > "$attempt/submit.stdout" 2> "$attempt/submit.stderr"
+    rc=$?
+    printf '%s\n' "$rc" > "$attempt/submit.rc"
+    cat "$attempt/submit.stdout" "$attempt/submit.stderr"
+    echo "JES submission RC=$rc"
+    if [ "$rc" -ne 0 ]; then
+        echo 'Submission outcome uncertain/failed; do not rerun.'
+        return 1
+    fi
+    job="$(sed -nE 's/^JOB ([0-9]+)$/\1/p' "$attempt/submit.stdout")"
+    if ! [[ "$job" =~ ^[0-9]+$ ]]; then
+        echo 'No unambiguous job number; do not resubmit.'
+        return 1
+    fi
+    printf '%s\n' "$job" > "$attempt/job-number.txt"
+
+    summary_rc=1
+    for ((i=1;i<=90;i++)); do
+        python3 tools/mvs/job-summary "$job" --max-rc 0 --verbose \
+            > "$attempt/summary.txt" 2>&1
+        summary_rc=$?
+        if grep -q '^JOB RESULT: ' "$attempt/summary.txt"; then
+            break
+        fi
+        sleep 1
+    done
+    printf '%s\n' "$summary_rc" > "$attempt/summary.rc"
+    cat "$attempt/summary.txt"
+    echo "Native summary RC=$summary_rc"
+
+    bash tools/mvs/dump-report-for-job "$job" \
+        > "$attempt/report.txt" 2> "$attempt/report.stderr"
+    report_rc=$?
+    printf '%s\n' "$report_rc" > "$attempt/report.rc"
+    echo "Native report RC=$report_rc"
+    if [ "$report_rc" -eq 0 ]; then
+        grep -aFx 'BCPLQSAM Q5 OPEN ROLLBACK PASS' "$attempt/report.txt"
+    else
+        cat "$attempt/report.stderr"
+    fi
+
+    for log in mvs-state/log/3033.log mvs-state/log/hardcopy.log; do
+        if [ "$log" = mvs-state/log/3033.log ]; then
+            out="$attempt/console.job.txt"
+        else
+            out="$attempt/hardcopy.job.txt"
+        fi
+        if [ -r "$log" ]; then
+            grep -aE "JOB[[:space:]]+$job[[:space:]]" "$log" > "$out"
+        else
+            : > "$out"
+        fi
+        grep -aE '\$HASP373|\$HASP395|\+Q5RGM:' "$out" | tail -n 8
+    done
+
+    rc=0
+    if [ "$summary_rc" -ne 0 ] || [ "$report_rc" -ne 0 ] ||
+       [ "$(grep -c ' RC=0000$' "$attempt/summary.txt")" -ne 10 ] ||
+       [ "$(grep -Fxc 'BCPLQSAM Q5 OPEN ROLLBACK PASS' "$attempt/report.txt")" -ne 1 ] ||
+       [ "$(grep -Fc "$marker" "$attempt/console.job.txt")" -ne 1 ] ||
+       [ "$(grep -Fc "$marker" "$attempt/hardcopy.job.txt")" -ne 1 ]; then
+        rc=1
+    fi
+    printf '%s\n' "$rc" > "$attempt/acceptance.rc"
+    echo "Q5RGM JOB $job native acceptance RC=$rc; no automatic retry."
+    return "$rc"
+}
+
+run_q5rgm
+rc=$?
+echo "Overall RC=$rc"
+exit "$rc"

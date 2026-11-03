@@ -525,9 +525,9 @@ datasets:
     blksize: 800
     populate: true
     members:
-      BCXPRE: bootstrap-toolchain/extensions/bcx/BCXPRE.asm
-      BCXCAT: bootstrap-toolchain/extensions/bcx/BCXCAT.asm
-      BCXPOST: bootstrap-toolchain/extensions/bcx/BCXPOST.asm
+      BCXPRE: system-extensions/bcx/BCXPRE.asm
+      BCXCAT: system-extensions/bcx/BCXCAT.asm
+      BCXPOST: system-extensions/bcx/BCXPOST.asm
 
   EXT_ASM:
     dsn: BCPL.EXT.ASM
@@ -542,9 +542,9 @@ datasets:
     blksize: 800
     populate: true
     members:
-      BCPLDEMO: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm
-      BCPLTIME: bootstrap-toolchain/extensions/bcpltime/bcpltime.asm
-      BCPLQSAM: bootstrap-toolchain/extensions/bcplqsam/bcplqsam.asm
+      BCPLDEMO: system-extensions/bcpldemo/bcpldemo.asm
+      BCPLTIME: system-extensions/bcpltime/bcpltime.asm
+      BCPLQSAM: system-extensions/bcplqsam/bcplqsam.asm
 
   EXT_SOURCE:
     dsn: BCPL.EXT.SOURCE
@@ -559,9 +559,9 @@ datasets:
     blksize: 800
     populate: true
     members:
-      DEMOHDR: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.h
-      TIMEHDR: bootstrap-toolchain/extensions/bcpltime/bcpltime.h
-      QSAMHDR: bootstrap-toolchain/extensions/bcplqsam/bcplqsam.h
+      DEMOHDR: system-extensions/bcpldemo/bcpldemo.h
+      TIMEHDR: system-extensions/bcpltime/bcpltime.h
+      QSAMHDR: system-extensions/bcplqsam/bcplqsam.h
 
 
   DIST_DOCS:

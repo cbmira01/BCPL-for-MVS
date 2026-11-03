@@ -25,7 +25,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / 'workarea/runtime-extensions-r3/acceptance'
-TEMPLATE = ROOT / 'bootstrap-toolchain/extensions/template'
+TEMPLATE = ROOT / 'system-extensions/template'
 R2 = ROOT / 'bootstrap-toolchain/probes/r2-interoperability'
 R1 = ROOT / 'bootstrap-toolchain/probes/r1-registration'
 

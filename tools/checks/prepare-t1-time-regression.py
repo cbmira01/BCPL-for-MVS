@@ -10,9 +10,9 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 REG = ROOT / "bootstrap-toolchain/regression"
 R0 = ROOT / "bootstrap-toolchain/probes/r0-export-trailer-probe/make-job.py"
-BCX = ROOT / "bootstrap-toolchain/extensions/bcx"
-TIME = ROOT / "bootstrap-toolchain/extensions/bcpltime"
-DEMO = ROOT / "bootstrap-toolchain/extensions/bcpldemo"
+BCX = ROOT / "system-extensions/bcx"
+TIME = ROOT / "system-extensions/bcpltime"
+DEMO = ROOT / "system-extensions/bcpldemo"
 
 # Case-specific, exact native IFOX selection records. Never synthesize
 # BCPLREG or IEWL INCLUDE controls on the host.

@@ -5,7 +5,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "config/dspal.yaml"
-CATALOG = ROOT / "bootstrap-toolchain/extensions/bcx/BCXCAT.asm"
+CATALOG = ROOT / "system-extensions/bcx/BCXCAT.asm"
 INSTALL = ROOT / "bootstrap-toolchain/jcl/bcpltime.jcl"
 
 
@@ -27,13 +27,13 @@ class TestT1Packaging(unittest.TestCase):
 
     def test_manifest_members_exact_paths(self):
         expected = {
-            "EXT_ASM": ("BCPLDEMO: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.asm",
-                        "BCPLTIME: bootstrap-toolchain/extensions/bcpltime/bcpltime.asm"),
-            "EXT_SOURCE": ("DEMOHDR: bootstrap-toolchain/extensions/bcpldemo/bcpldemo.h",
-                           "TIMEHDR: bootstrap-toolchain/extensions/bcpltime/bcpltime.h"),
-            "EXT_MAC": ("BCXPRE: bootstrap-toolchain/extensions/bcx/BCXPRE.asm",
-                        "BCXCAT: bootstrap-toolchain/extensions/bcx/BCXCAT.asm",
-                        "BCXPOST: bootstrap-toolchain/extensions/bcx/BCXPOST.asm"),
+            "EXT_ASM": ("BCPLDEMO: system-extensions/bcpldemo/bcpldemo.asm",
+                        "BCPLTIME: system-extensions/bcpltime/bcpltime.asm"),
+            "EXT_SOURCE": ("DEMOHDR: system-extensions/bcpldemo/bcpldemo.h",
+                           "TIMEHDR: system-extensions/bcpltime/bcpltime.h"),
+            "EXT_MAC": ("BCXPRE: system-extensions/bcx/BCXPRE.asm",
+                        "BCXCAT: system-extensions/bcx/BCXCAT.asm",
+                        "BCXPOST: system-extensions/bcx/BCXPOST.asm"),
             "BOOT_JCL": ("BCPLDEMO: bootstrap-toolchain/jcl/bcpldemo.jcl",
                          "BCPLTIME: bootstrap-toolchain/jcl/bcpltime.jcl"),
         }
