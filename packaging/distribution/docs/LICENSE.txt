@@ -1,0 +1,22 @@
+LICENSE - COPYRIGHT AND REDISTRIBUTION
+======================================
+
+Original project work:
+  Copyright (c) 2026 Calvin Miracle
+  Licensed under the MIT License unless marked otherwise.
+
+Historical BCPL source, Hercules, TK5, MVS, and other third-party
+materials are NOT covered by the project's MIT License merely
+because they are used or stored with this project.
+
+See these files in the GitHub repository:
+  LICENSE.md
+  THIRD-PARTY-NOTICES.md
+  PUBLIC-RELEASE-AUDIT.md
+
+This short note is not the complete license text.
+Check the terms for each component before redistributing
+a tape containing historical or third-party materials.
+
+A future tape release must include any notices required
+for the components actually distributed on that tape.

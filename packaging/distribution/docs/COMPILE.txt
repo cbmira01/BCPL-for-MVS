@@ -1,0 +1,33 @@
+COMPILE - FROM BCPL SOURCE TO AN MVS PROGRAM
+============================================
+
+Current compiler path:
+
+  BCPL source
+      |
+      v
+  Demoted Cambridge compiler (CAMBCOMP under ICINT19)
+      |
+      v
+  System/370 assembly language
+      |
+      v
+  IFOX assembler -> relocatable object module
+      |
+      v
+  IEWL linkage editor + runtime objects -> executable
+      |
+      v
+  MVS batch job runs the program
+
+The compiler producing assembly is interpreter-hosted.
+The resulting BCPL program runs as native System/370 code.
+
+BCPL programs use the Core Runtime and Base Library (BLIB).
+Optional System Extensions must be selected when linking.
+
+A tested, copy-and-run compile JCL example is not yet
+part of these draft distribution notes.
+
+For current workflows, see the GitHub project tools and
+bootstrap compiler guides.

@@ -1,0 +1,23 @@
+RELEASE - VERSION AND SUPPORT
+=============================
+
+Project: BCPL for MVS 3.8 Reconstruction
+Target:  IBM System/370, MVS 3.8J
+Source:  https://github.com/cbmira01/BCPL-for-MVS
+
+Current project checkpoint:
+  BCPLQSAM optional System Extension: milestone CLOSED,
+  1 November 2026, with documented acceptance limits.
+  Rebuildable bootstrap environment and native runtime tests
+  are recorded in the Git repository.
+
+The native Cambridge compiler remains a separate build goal.
+BCPLQSAM acceptance does not imply that compiler is finished.
+
+THIS FILE IS A DRAFT, NOT A RELEASE IDENTIFIER.
+No AWS distribution tape, volume ID, tape checksum, or
+restoration acceptance is asserted by this text.
+
+A published tape release must identify its exact Git commit,
+release tag, tape volume serial, file inventory, and checksum.
+Consult the matching GitHub Release before installing.

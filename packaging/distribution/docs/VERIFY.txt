@@ -1,0 +1,23 @@
+VERIFY - CHECK YOUR BCPL INSTALLATION
+=====================================
+
+Proposed checks for a restored tape distribution:
+
+  1. Confirm that all expected PDS members are present.
+  2. Run the INTCODE interpreter, ICINT19.
+  3. Compile a small BCPL program to System/370 assembly.
+  4. Assemble, link, and run it under MVS.
+  5. Exercise BCPLQSAM if that extension was installed.
+  6. Check JES results and program output, not only step RCs.
+
+Known source-build acceptance (1 Nov 2026):
+  QSAM milestone is CLOSED with recorded qualifications.
+  Full native panel: 175 PASS, 1 FAIL, 1 expected SKIP.
+  A separate rerun passed the failed case (175).
+  These are separate runs, not one clean uninterrupted panel.
+
+A tape restore has NOT yet been accepted by this project.
+A new tape needs its own restore and execution checks.
+
+Do not treat a successful IEBCOPY job alone as proof
+that the software runs.

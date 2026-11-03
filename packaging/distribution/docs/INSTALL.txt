@@ -1,0 +1,23 @@
+INSTALL - BCPL FOR MVS 3.8J
+============================
+
+You need:
+  - A working MVS 3.8J system (TK5 under Hercules is used here).
+  - IFOX assembler, IEWL linkage editor, and JES batch processing.
+  - Enough DASD space for the BCPL libraries.
+
+Proposed tape installation steps:
+  1. Attach the supplied AWS tape to a Hercules tape drive.
+  2. Review the tape volume ID and library inventory.
+  3. Submit the release's installation JCL.
+  4. Check every job and its return codes.
+  5. Run the tests described in VERIFY.
+
+IMPORTANT: Installation JCL and tape file layout are NOT final.
+Do not guess tape file numbers or submit unverified restore JCL.
+
+To rebuild from Git source instead, see:
+  docs/Rebuild-BCPL-for-MVS-from-source.md
+
+That rebuild procedure can delete existing BCPL data sets.
+Read its warnings before running it.

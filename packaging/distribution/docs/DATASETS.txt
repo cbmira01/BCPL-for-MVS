@@ -1,0 +1,25 @@
+DATASETS - BCPL LIBRARY GUIDE
+=============================
+
+A PDS is an MVS data set containing named members.
+The current Git manifest manages 29 BCPL data sets.
+
+Name pattern               Purpose
+-------------------------  ------------------------------------
+HERC02.BCPL.MR10KIT.*      MR10 kit, ICINT19, examples, tests
+HERC02.BCPL.CAMBRIDG.*     Native Cambridge compiler work area
+HERC02.BCPL.BOOT.*        Bootstrap compiler and Core Runtime
+HERC02.BCPL.EXT.*         Optional System Extensions
+HERC02.BCPL.DIST.DOCS     These distribution notes
+
+Important members and libraries:
+  BOOT.INTCODE(CAMBCOMP)   Interpreter-hosted Cambridge compiler
+  MR10KIT.LOAD(ICINT19)   INTCODE interpreter load module
+  BOOT.OBJ                Accepted Core Runtime and BLIB objects
+  EXT.OBJ                 Installed extension objects, if present
+
+Not every managed PDS contains a finished product.
+Some are reserved or development libraries.
+
+Actual tape file order has not been decided.
+Use the release manifest when a distribution is issued.
