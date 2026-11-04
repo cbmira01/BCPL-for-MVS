@@ -109,3 +109,10 @@ suite runs to isolate evidence. It does not affect legacy invocations.
 The historical QSAM Q.5 full-panel outcome remains 175 PASS / 1 FAIL
 (case 175) / 1 expected SKIP (083), followed by a separate case-175 PASS
 rerun; Stage 2B does not rewrite any accepted historical evidence.
+
+## Project-level coordination — Stage 3
+
+The project-level coordinator is `tools/tests/run-project-regressions`.
+It includes the independent MR10 regression panel alongside the four
+native suites while preserving separate suite identities, profiles,
+outcomes and evidence. See [coordinator usage](../tools/tests/README.md).

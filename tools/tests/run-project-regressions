@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""Coordinate independent MR10 and native BCPL regression suites.
+
+--list and --check are host-only. --run delegates to existing runners and
+can submit JES jobs; no test engines, MVS objects or datasets are installed.
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[2]
+SUITES = ("mr10", "bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
+NATIVE = ROOT / "tools/tests/run-suite"
+MR10 = ROOT / "tools/mr10/run-regression-panel"
+MR10_MANIFEST = ROOT / "mr10-kit-compiler/tests/00-regression-panel/manifest.tsv"
+NATIVE_MANIFESTS = ROOT / "tests/suites"
+RUN_ROOT = ROOT / "workarea/project-regressions"
+TOKEN = re.compile(r"^[a-z][a-z0-9-]*$")
+
+
+class VerificationError(ValueError):
+    pass
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise VerificationError(message)
+
+
+def within_repo(value: str) -> Path:
+    path = Path(value)
+    require(not path.is_absolute() and ".." not in path.parts,
+            f"unsafe manifest path: {value!r}")
+    resolved = (ROOT / path).resolve()
+    require(resolved.is_relative_to(ROOT.resolve()) and resolved.is_file(),
+            f"missing/outside-repository manifest file: {value}")
+    return resolved
+
+
+def mr10_cases() -> list[str]:
+    require(MR10_MANIFEST.is_file(), f"missing MR10 manifest: {MR10_MANIFEST}")
+    cases = []
+    with MR10_MANIFEST.open(encoding="utf-8", newline="") as handle:
+        for lineno, record in enumerate(handle, 1):
+            if not record.strip() or record.startswith("#"):
+                continue
+            row = next(csv.reader([record], delimiter="\t"))
+            require(len(row) == 7, f"MR10 manifest line {lineno}: expected seven fields")
+            name, category, source, extras, compile_args, expected, code = row
+            require(bool(TOKEN.fullmatch(name) and TOKEN.fullmatch(category)),
+                    f"MR10 manifest line {lineno}: invalid test identity")
+            label = f"{category}/{name}"
+            require(label not in cases, f"duplicate MR10 test identity: {label}")
+            within_repo(source)
+            within_repo(expected)
+            try:
+                int(code)
+                extra_args = shlex.split(extras)
+                compile_options = shlex.split(compile_args)
+            except ValueError as exc:
+                raise VerificationError(f"MR10 manifest line {lineno}: {exc}") from exc
+            for argument in extra_args:
+                if argument.startswith("+"):
+                    within_repo(argument[1:])
+            for index, argument in enumerate(compile_options):
+                if argument == "--dd":
+                    require(index + 1 < len(compile_options),
+                            f"MR10 manifest line {lineno}: missing DD value")
+                    binding = compile_options[index + 1]
+                    require("=" in binding, f"invalid MR10 DD binding: {binding}")
+                    within_repo(binding.split("=", 1)[1])
+            cases.append(label)
+    require(bool(cases), "empty MR10 regression panel")
+    return cases
+
+
+def inventory() -> dict[str, list[str]]:
+    require(MR10.is_file(), f"missing MR10 runner: {MR10}")
+    require(NATIVE.is_file(), f"missing native runner: {NATIVE}")
+    require((ROOT / "tools/mr10/compile-and-run").is_file(),
+            "missing MR10 compile-and-run")
+    selected = {"mr10": mr10_cases()}
+    check = subprocess.run([str(NATIVE), "--check"], cwd=ROOT,
+                           text=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, check=False)
+    require(check.returncode == 0, "native manifest check failed: " + check.stdout.strip())
+    for suite in SUITES[1:]:
+        file = NATIVE_MANIFESTS / f"{suite}.tsv"
+        with file.open(encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle, delimiter="\t"))
+        require(bool(rows), f"empty native suite manifest: {suite}")
+        require(all(row.get("case_id") and row.get("directory") for row in rows),
+                f"bad native manifest rows: {suite}")
+        selected[suite] = [row["case_id"] for row in rows]
+    return selected
+
+
+def git_head() -> str:
+    proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                          text=True, capture_output=True, check=False)
+    require(proc.returncode == 0 and bool(proc.stdout.strip()),
+            "cannot determine Git HEAD")
+    return proc.stdout.strip()
+
+
+def parse_mr10(log: str, declared: list[str], rc: int) -> dict:
+    reports = re.findall(
+        r"(?m)^(PASS|FAIL)\s+([a-z][a-z0-9-]*/[a-z][a-z0-9-]*)\s*$", log)
+    labels = [label for _, label in reports]
+    footer = {}
+    for key in ("PASS", "FAIL", "TOTAL"):
+        matches = re.findall(rf"(?m)^{key}\s+(\d+)\s*$", log)
+        require(len(matches) == 1, f"MR10 missing/ambiguous {key} count")
+        footer[key] = int(matches[0])
+    require(len(labels) == len(set(labels)) and set(labels) == set(declared),
+            "MR10 reported cases differ from its manifest")
+    require(footer["TOTAL"] == len(declared) and
+            footer["PASS"] == sum(s == "PASS" for s, _ in reports) and
+            footer["FAIL"] == sum(s == "FAIL" for s, _ in reports),
+            "MR10 case counts disagree with output")
+    require(rc == (1 if footer["FAIL"] else 0),
+            f"MR10 unexpected runner RC={rc}")
+    return {"status": "FAIL" if footer["FAIL"] else "PASS",
+            "counts": {"PASS": footer["PASS"], "FAIL": footer["FAIL"],
+                       "SKIP": None, "BLOCKED": None, "TOTAL": footer["TOTAL"]},
+            "cases": [{"id": label, "status": state} for state, label in reports]}
+
+
+def parse_native(log: str, suite: str, profile: str,
+                 declared: list[str], rc: int) -> dict:
+    matches = re.findall(r"(?m)^Evidence: (.+)\s*$", log)
+    require(bool(matches), f"{suite}: native evidence location not reported")
+    evidence = Path(matches[-1].strip()).resolve()
+    parent = (ROOT / "workarea/test-suites").resolve()
+    require(evidence.parent == parent and evidence.is_dir(),
+            f"{suite}: evidence directory outside native run root")
+    file = evidence / "summary.json"
+    require(file.is_file(), f"{suite}: missing native summary")
+    payload = json.loads(file.read_text(encoding="utf-8"))
+    require(payload.get("suite") == suite and payload.get("profile") == profile,
+            f"{suite}: native evidence identity/profile mismatch")
+    cases = payload.get("cases")
+    require(isinstance(cases, list) and len(cases) == len(declared),
+            f"{suite}: native case count mismatch")
+    ids = [row.get("id") for row in cases]
+    require(len(ids) == len(set(ids)) and set(ids) == set(declared),
+            f"{suite}: native case IDs differ from manifest")
+    counts = {key: sum(row.get("status") == key for row in cases)
+              for key in ("PASS", "FAIL", "SKIP", "BLOCKED")}
+    require(all(row.get("status") in counts for row in cases) and
+            payload.get("counts") == counts,
+            f"{suite}: native outcome counts disagree with summary")
+    expected_rc = 1 if counts["FAIL"] else (2 if counts["BLOCKED"] else 0)
+    require(rc == expected_rc, f"{suite}: native runner RC={rc}, expected {expected_rc}")
+    status = "FAIL" if counts["FAIL"] else (
+        "BLOCKED" if counts["BLOCKED"] else "PASS")
+    return {"status": status, "counts": {**counts, "TOTAL": len(cases)},
+            "native_evidence": str(evidence.relative_to(ROOT)),
+            "cases": [{"id": row["id"], "status": row["status"]} for row in cases]}
+
+
+def save(path: Path, payload: dict) -> None:
+    temp = path.with_suffix(".tmp")
+    temp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    temp.replace(path)
+
+
+def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
+    os.umask(0o077)
+    RUN_ROOT.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(timezone.utc)
+    evidence = Path(tempfile.mkdtemp(
+        prefix=f"{now:%Y%m%dT%H%M%SZ}-{os.getpid()}-", dir=RUN_ROOT))
+    selected = [suite for suite in SUITES if suite in args.suite]
+    summary = {
+        "schema": 1, "git_head": git_head(), "started_utc": now.isoformat(),
+        "selected_suites": selected,
+        "native_profile": args.profile,
+        "suites": [
+            {"name": suite, "status": "NOT_RUN" if suite in selected else "NOT_SELECTED",
+             "test_count": len(cases[suite])}
+            for suite in SUITES
+        ],
+    }
+    filename = evidence / "summary.json"
+    save(filename, summary)
+    print(f"PROJECT REGRESSION EVIDENCE: {evidence}", flush=True)
+    environment = os.environ.copy()
+    for key in ("Q4_PUNCH_RESUME", "R1_ACCEPTANCE", "R1_REGRESSION_LOG_DIR",
+                "R1_ACCEPTANCE_WORKDIR"):
+        environment.pop(key, None)
+
+    for entry in summary["suites"]:
+        suite = entry["name"]
+        if suite not in selected:
+            continue
+        command = ([str(MR10)] if suite == "mr10" else
+                   [str(NATIVE), suite, "--run", "--profile", args.profile])
+        log_path = evidence / f"{suite}.log"
+        print(f"RUN {suite} ({len(cases[suite])} cases)", flush=True)
+        try:
+            with log_path.open("w", encoding="utf-8") as handle:
+                proc = subprocess.run(command, cwd=ROOT, env=environment,
+                                      stdout=handle, stderr=subprocess.STDOUT,
+                                      check=False)
+            log = log_path.read_text(encoding="utf-8", errors="replace")
+            details = (parse_mr10(log, cases[suite], proc.returncode)
+                       if suite == "mr10" else
+                       parse_native(log, suite, args.profile, cases[suite], proc.returncode))
+            entry.update(details)
+            entry["runner_rc"] = proc.returncode
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            entry.update({"status": "FAIL", "error": str(exc)})
+        entry["runner_log"] = str(log_path.relative_to(ROOT))
+        save(filename, summary)
+        print(f"{entry['status']} {suite}: {entry.get('counts', entry.get('error'))}", flush=True)
+        if entry["status"] != "PASS":
+            break  # Never launch further JES work after a failed or blocked suite.
+
+    summary["finished_utc"] = datetime.now(timezone.utc).isoformat()
+    states = {entry["status"] for entry in summary["suites"] if entry["name"] in selected}
+    overall = ("FAIL" if "FAIL" in states else
+               "BLOCKED" if "BLOCKED" in states else
+               "INCOMPLETE" if "NOT_RUN" in states else "PASS")
+    summary["status"] = overall
+    save(filename, summary)
+    print(f"PROJECT REGRESSION RESULT: {overall}")
+    print(f"SUMMARY: {filename}")
+    return 0 if overall == "PASS" else (2 if overall == "BLOCKED" else 1)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    operations = parser.add_mutually_exclusive_group(required=True)
+    operations.add_argument("--list", action="store_true", help="list suites without JES")
+    operations.add_argument("--check", action="store_true", help="validate suite inputs without JES")
+    operations.add_argument("--run", action="store_true", help="execute selected suites; may submit JES")
+    parser.add_argument("--suite", action="append", choices=SUITES,
+                        help="suite to run/list; repeat to combine suites")
+    parser.add_argument("--profile", choices=("production", "installed-r5-t1"),
+                        help="required for native suites when running")
+    args = parser.parse_args(argv)
+    requested = args.suite or []
+    if len(set(requested)) != len(requested):
+        parser.error("duplicate --suite selection")
+    native_requested = any(name != "mr10" for name in requested)
+    if args.run and not requested:
+        parser.error("--run requires one or more explicit --suite options")
+    if args.run and native_requested and not args.profile:
+        parser.error("native --run requires an explicit --profile")
+    if args.profile and (not args.run or not native_requested):
+        parser.error("--profile applies only to native --run")
+    try:
+        cases = inventory()
+        if args.run:
+            return execute(args, cases)
+        selected = [name for name in SUITES if not requested or name in requested]
+        for name in selected:
+            print(f"{name}\t{len(cases[name])}\t" +
+                  ("interpreted MR10" if name == "mr10" else "native System/370"))
+        print("PROJECT SUITE CHECK: PASS" if args.check else
+              "PROJECT SUITE LIST: host-only")
+        return 0
+    except (VerificationError, OSError, csv.Error) as exc:
+        print(f"run-project-regressions: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -15,3 +15,64 @@ tools/tests/run-suite --list
 ```
 
 **`--run` submits JES jobs and requires separate authorization.**
+
+## Stage 3 — independent coordinated regression
+
+`run-project-regressions` coordinates the independent MR10 panel and
+four native regression suites without replacing their existing runners.
+
+Host-only operations, requiring no MVS execution:
+
+```sh
+tools/tests/run-project-regressions --check
+tools/tests/run-project-regressions --list
+tools/tests/run-project-regressions --list --suite bcpltime
+```
+
+The following examples **execute tests** and require separate operator
+authorization. Native execution submits JES jobs; MR10 execution invokes
+the existing interpreter-hosted compile-and-run workflow.
+
+```sh
+tools/tests/run-project-regressions --run --suite mr10
+tools/tests/run-project-regressions --run --suite bootstrap --profile production
+tools/tests/run-project-regressions --run --suite mr10 --suite bcpltime --profile installed-r5-t1
+```
+
+An executing command must explicitly select at least one suite.
+Selected native suites require a common explicit profile:
+`production` or `installed-r5-t1`.
+
+The coordinator uses the existing MR10 manifest and four native suite
+manifests. It does not duplicate, renumber or relocate individual cases.
+
+MR10 tests retain their `category/name` identities. Native cases retain
+their established numeric IDs. Each suite keeps independent outcome
+counts and records, without creating a combined acceptance total.
+
+Execution creates a private directory under
+`workarea/project-regressions/` containing `summary.json` and individual
+suite logs. The native runner additionally retains its original
+per-case JES evidence under `workarea/test-suites/`.
+
+The project summary distinguishes `PASS`, `FAIL`, `BLOCKED`,
+`NOT_RUN` and `NOT_SELECTED`. The MR10 runner reports PASS and FAIL,
+not SKIP/BLOCKED, so its unavailable categories remain `null`.
+
+Execution stops before launching another suite when a selected suite
+fails or is blocked. The coordinator strips inherited JES punch-resume
+settings. It does not implement `--allow-device`; full BCPLQSAM runs
+will therefore report BLOCKED for cases 175 and 176.
+
+The coordinator does not check installed MVS objects or submit jobs
+during `--check` or `--list`. A successful manifest check is not
+evidence of native MVS execution.
+
+The MR10 panel remains in `mr10-kit-compiler/tests/`.
+Its established runner remains `tools/mr10/run-regression-panel`.
+
+Host-only unit tests:
+
+```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_stage3_coordinator.py' -v
+```

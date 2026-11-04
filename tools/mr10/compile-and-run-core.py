@@ -587,16 +587,18 @@ def job_banner(job_number: int) -> str:
 def extract_complete_job(report: str, job_number: int) -> str | None:
     wanted = job_banner(job_number)
     lines = report.splitlines()
+    # JES job numbers are reused. Select the most recent START,
+    # never an older completed occurrence with the same job number.
     start = None
     for index, line in enumerate(lines):
         if "****A  START" in line and wanted in line:
             start = index + 1
-            break
     if start is None:
         return None
     for index in range(start, len(lines)):
         if "****A   END" in lines[index] and wanted in lines[index]:
             return "\n".join(lines[start:index]) + "\n"
+    # The latest occurrence has not completed. Do not return an older job.
     return None
 
 
