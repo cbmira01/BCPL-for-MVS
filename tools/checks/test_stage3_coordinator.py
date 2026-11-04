@@ -70,7 +70,7 @@ class Stage3HostTests(unittest.TestCase):
             "bootstrap": ["00", "01"],
             "runtime-extensions": ["147"],
             "bcpltime": ["159"],
-            "bcplqsam": ["163"],
+            "bcplqsam": ["163", "175", "176"],
         }
         MOD.NATIVE_MANIFESTS.mkdir(parents=True)
         for suite, ids in self.native_ids.items():
@@ -104,24 +104,31 @@ import tempfile
 if sys.argv[1:] == ['--check']:
     print('test native manifests: OK')
     sys.exit(0)
-assert len(sys.argv) == 5 and sys.argv[2:] == ['--run', '--profile', sys.argv[4]]
+assert len(sys.argv) in (5, 6)
+assert sys.argv[2:5] == ['--run', '--profile', sys.argv[4]]
+allow_device = sys.argv[5:] == ['--allow-device']
+assert not sys.argv[5:] or allow_device
+assert not allow_device or sys.argv[1] == 'bcplqsam'
 assert os.environ.get('Q4_PUNCH_RESUME') is None
 suite, profile = sys.argv[1], sys.argv[4]
 with Path('native-invocations').open('a') as handle:
-    handle.write(suite + ':' + profile + '\\n')
+    handle.write(suite + ':' + profile + ('+device' if allow_device else '') + '\\n')
 ids = {'bootstrap': ['00', '01'], 'runtime-extensions': ['147'],
-       'bcpltime': ['159'], 'bcplqsam': ['163']}[suite]
+       'bcpltime': ['159'], 'bcplqsam': ['163', '175', '176']}[suite]
 state = os.environ.get('STAGE3_FAKE_NATIVE', 'PASS')
 if state == 'BAD_ID':
     ids = ['999']
 state = 'PASS' if state == 'BAD_ID' else state
 path = Path(tempfile.mkdtemp(dir=Path('workarea/test-suites').resolve()))
-counts = {x: (len(ids) if x == state else 0) for x in ('PASS', 'FAIL', 'SKIP', 'BLOCKED')}
+states = {ident: ('BLOCKED' if suite == 'bcplqsam' and ident in ('175', '176')
+          and not allow_device and state == 'PASS' else state) for ident in ids}
+counts = {x: sum(value == x for value in states.values())
+          for x in ('PASS', 'FAIL', 'SKIP', 'BLOCKED')}
 (path / 'summary.json').write_text(json.dumps({
     'suite': suite, 'profile': profile, 'counts': counts,
-    'cases': [{'id': x, 'status': state} for x in ids]}) + '\\n')
+    'cases': [{'id': x, 'status': states[x]} for x in ids]}) + '\\n')
 print('Evidence: ' + str(path))
-sys.exit(2 if state == 'BLOCKED' else 1 if state == 'FAIL' else 0)
+sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
 ''')
         (self.root / "workarea/test-suites").mkdir(parents=True)
 
@@ -227,6 +234,47 @@ sys.exit(2 if state == 'BLOCKED' else 1 if state == 'FAIL' else 0)
         self.assertEqual(rc, 1)
         self.assertEqual(self.report()["suites"][3]["status"], "FAIL")
         self.assertIn("case IDs", self.report()["suites"][3]["error"])
+
+    def test_device_cases_remain_blocked_without_opt_in(self):
+        rc, output, errors = self.invoke("--run", "--suite", "bcplqsam",
+                                         "--profile", "installed-r5-t1")
+        self.assertEqual((rc, errors), (2, ""))
+        self.assertIn("PROJECT REGRESSION RESULT: BLOCKED", output)
+        report = self.report()
+        self.assertFalse(report["allow_device"])
+        self.assertEqual(report["suites"][4]["counts"],
+                         {"PASS": 1, "FAIL": 0, "SKIP": 0, "BLOCKED": 2, "TOTAL": 3})
+        self.assertEqual((self.root / "native-invocations").read_text(),
+                         "bcplqsam:installed-r5-t1\n")
+
+    def test_explicit_device_opt_in_only_reaches_bcplqsam(self):
+        rc, output, errors = self.invoke("--run", "--suite", "mr10",
+                                         "--suite", "bootstrap",
+                                         "--suite", "bcplqsam",
+                                         "--profile", "installed-r5-t1",
+                                         "--allow-device")
+        self.assertEqual((rc, errors), (0, ""))
+        self.assertIn("PROJECT REGRESSION RESULT: PASS", output)
+        report = self.report()
+        self.assertTrue(report["allow_device"])
+        self.assertEqual(report["suites"][4]["counts"],
+                         {"PASS": 3, "FAIL": 0, "SKIP": 0, "BLOCKED": 0, "TOTAL": 3})
+        self.assertEqual((self.root / "native-invocations").read_text(),
+                         "bootstrap:installed-r5-t1\nbcplqsam:installed-r5-t1+device\n")
+        self.assertTrue((self.root / "mr10-invoked").is_file())
+
+    def test_device_opt_in_rejects_unrelated_or_host_only_modes(self):
+        for arguments in (
+            ("--check", "--allow-device"),
+            ("--list", "--suite", "bcplqsam", "--allow-device"),
+            ("--run", "--suite", "mr10", "--allow-device"),
+            ("--run", "--suite", "bootstrap", "--profile", "production",
+             "--allow-device"),
+        ):
+            with self.subTest(arguments=arguments):
+                self.assertEqual(self.invoke(*arguments)[0], 2)
+        self.assertFalse(MOD.RUN_ROOT.exists())
+        self.assertFalse((self.root / "native-invocations").exists())
 
     def test_missing_mr10_fixture_fails_offline_check(self):
         (self.root / "fixture/scalar-vector.expected").unlink()
