@@ -37,6 +37,8 @@ the existing interpreter-hosted compile-and-run workflow.
 tools/tests/run-project-regressions --run --suite mr10
 tools/tests/run-project-regressions --run --suite bootstrap --profile production
 tools/tests/run-project-regressions --run --suite mr10 --suite bcpltime --profile installed-r5-t1
+# Explicitly authorized JES printer/punch tests (cases 175–176):
+tools/tests/run-project-regressions --run --suite bcplqsam --profile installed-r5-t1 --allow-device
 ```
 
 An executing command must explicitly select at least one suite.
@@ -61,8 +63,12 @@ not SKIP/BLOCKED, so its unavailable categories remain `null`.
 
 Execution stops before launching another suite when a selected suite
 fails or is blocked. The coordinator strips inherited JES punch-resume
-settings. It does not implement `--allow-device`; full BCPLQSAM runs
-will therefore report BLOCKED for cases 175 and 176.
+settings. By default, BCPLQSAM device cases 175–176 report BLOCKED.
+Only an explicit `--run --suite bcplqsam --allow-device` authorizes
+passing the flag to the native BCPLQSAM runner. The flag is rejected for
+`--list`, `--check`, or runs not selecting BCPLQSAM. The native runner
+never resumes the JES punch writer, and the operator must separately
+authorize JES device testing. The project summary records `allow_device`.
 
 The coordinator does not check installed MVS objects or submit jobs
 during `--check` or `--list`. A successful manifest check is not
