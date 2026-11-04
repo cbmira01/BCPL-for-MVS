@@ -1,0 +1,5 @@
+case_id	directory	profiles	requires	tags	policy
+159	159-bcpltime-alone	production,installed-r5-t1	boot-obj,bcx,bcpltime	time	standard
+160	160-bcpldemo-bcpltime	production,installed-r5-t1	boot-obj,bcx,bcpltime,bcpldemo	time,integration	standard
+161	161-bcpltime-first	production,installed-r5-t1	boot-obj,bcx,bcpltime,bcpldemo	time,integration	standard
+162	162-bcpltime-upgrade	production,installed-r5-t1	boot-obj,bcx,bcpltime,bcpldemo	time,integration	standard

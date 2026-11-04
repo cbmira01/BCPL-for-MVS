@@ -1,0 +1,14 @@
+case_id	directory	profiles	requires	tags	policy
+146	146-optional-empty	production,installed-r5-t1	boot-obj,bcx	selection,no-extension	standard
+147	147-bcpldemo-query-size	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo	standard
+148	148-bcpldemo-query-fields	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo	standard
+149	149-bcpldemo-query-short	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo,negative	standard
+150	150-bcpldemo-query-invalid	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo,negative	standard
+151	151-bcpldemo-getvalues	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo	standard
+152	152-bcpldemo-getvalues-short	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo,negative	standard
+153	153-bcpldemo-getvalues-invalid	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo,negative	standard
+154	154-bcpldemo-unsupported-op	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo,negative	standard
+155	155-bcpldemo-repeat-calls	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection,bcpldemo	standard
+156	156-optional-select-only	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection	standard
+157	157-optional-upgrade-required	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection	standard
+158	158-optional-exclusion	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection	standard

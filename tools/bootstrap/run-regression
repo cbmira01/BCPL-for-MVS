@@ -63,6 +63,11 @@ def parse_args() -> argparse.Namespace:
         help="show each test's BCPL output; on mismatch also show the native job report",
     )
     parser.add_argument(
+        "--log-dir",
+        metavar="ABSOLUTE_PATH",
+        help="write per-case logs here; default preserves historical behavior",
+    )
+    parser.add_argument(
         "--check-numbering",
         action="store_true",
         help="check the legacy/two-digit to three-digit numbering boundary and exit",
@@ -201,7 +206,18 @@ def main() -> int:
             )
         return 65
 
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    if args.log_dir is not None:
+        if os.environ.get("R1_ACCEPTANCE") == "1":
+            print("run-native-regression: --log-dir cannot override the R.1 evidence directory",
+                  file=sys.stderr)
+            return 64
+        log_dir = Path(args.log_dir)
+        if not log_dir.is_absolute():
+            print("run-native-regression: --log-dir must be absolute", file=sys.stderr)
+            return 64
+    else:
+        log_dir = LOG_DIR
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     total = end - start + 1
     passed = 0
@@ -217,7 +233,7 @@ def main() -> int:
     for test_no in range(start, end + 1):
         nn = case_id(test_no)
         case_name = cases[test_no]
-        log = LOG_DIR / f"{case_name}.log"
+        log = log_dir / f"{case_name}.log"
 
         if installed_pds and test_no == 83:
             skipped += 1
@@ -296,7 +312,10 @@ def main() -> int:
             print(f"PASS  {nn}  {case_name}")
         else:
             failed += 1
-            shown_log = log.relative_to(ROOT)
+            try:
+                shown_log = log.relative_to(ROOT)
+            except ValueError:
+                shown_log = log
             print(
                 f"FAIL  {nn}  {case_name} "
                 f"(rc={proc.returncode}; log={shown_log})"

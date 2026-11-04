@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""Select and account for stable-ID native BCPL suites; delegate execution."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[2]
+SUITE_DIR = ROOT / "tests" / "suites"
+CASE_DIR = ROOT / "bootstrap-toolchain" / "regression"
+SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
+COUNTS = (146, 13, 4, 14)
+PROFILES = ("production", "installed-r5-t1")
+HEADERS = ("case_id", "directory", "profiles", "requires", "tags", "policy")
+POLICIES = {"standard", "skip-installed", "device-opt-in"}
+PREREQUISITES = {
+    "boot-obj", "bcx", "bcpldemo", "bcpldemo-installed", "bcpltime",
+    "bcplqsam-source", "jes-punch", "jes-printer", "temporary-datasets",
+}
+IDENTIFIER = re.compile(r"^[a-z][a-z0-9-]*$")
+CASE_NAME = re.compile(r"^(\d{2,3})-[a-z0-9-]+$")
+
+
+class ManifestError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class Case:
+    number: int
+    ident: str
+    directory: str
+    suite: str
+    profiles: tuple[str, ...]
+    requires: tuple[str, ...]
+    tags: tuple[str, ...]
+    policy: str
+
+
+def canonical(number: int) -> str:
+    return f"{number:02d}" if number <= 52 else f"{number:03d}"
+
+
+def terms(value: str) -> tuple[str, ...]:
+    parts = value.split(",") if value else []
+    if any(not IDENTIFIER.fullmatch(x) for x in parts) or len(set(parts)) != len(parts):
+        raise ManifestError(f"invalid or duplicated comma-separated values: {value!r}")
+    return tuple(parts)
+
+
+def parse_suite(root: Path, name: str) -> list[Case]:
+    path = root / "tests" / "suites" / f"{name}.tsv"
+    try:
+        with path.open(encoding="utf-8", newline="") as handle:
+            rows = [r for r in csv.reader(handle, delimiter="\t") if r and not r[0].startswith("#")]
+    except OSError as exc:
+        raise ManifestError(f"{path}: {exc}") from exc
+    if not rows or tuple(rows.pop(0)) != HEADERS:
+        raise ManifestError(f"{path}: expected TSV header {HEADERS}")
+    result = []
+    for lineno, row in enumerate(rows, 2):
+        try:
+            if len(row) != len(HEADERS):
+                raise ManifestError(f"expected {len(HEADERS)} TSV fields, got {len(row)}")
+            ident, directory, profile_text, requires_text, tags_text, policy = row
+            if not ident.isdecimal() or not 0 <= int(ident) <= 999:
+                raise ManifestError("case ID must be decimal between 0 and 999")
+            number = int(ident)
+            if ident != canonical(number):
+                raise ManifestError(f"noncanonical ID: {ident!r} (expected {canonical(number)!r})")
+            match = CASE_NAME.fullmatch(directory)
+            if not match or match.group(1) != ident:
+                raise ManifestError(f"invalid case directory: {directory!r}")
+            profiles, requires, tags = terms(profile_text), terms(requires_text), terms(tags_text)
+            if not profiles or any(x not in PROFILES for x in profiles):
+                raise ManifestError(f"unknown/empty profiles: {profile_text!r}")
+            if "boot-obj" not in requires or any(x not in PREREQUISITES for x in requires):
+                raise ManifestError(f"unknown/missing prerequisites: {requires_text!r}")
+            if policy not in POLICIES:
+                raise ManifestError(f"unknown case policy: {policy!r}")
+            if policy == "skip-installed" and number != 83:
+                raise ManifestError("skip-installed is reserved for historic case 083")
+            if policy == "device-opt-in" and number not in (175, 176):
+                raise ManifestError("device-opt-in is reserved for cases 175–176")
+            if number in (175, 176) and policy != "device-opt-in":
+                raise ManifestError("JES output-device case requires device-opt-in policy")
+            if number == 83 and policy != "skip-installed":
+                raise ManifestError("historic case 083 requires skip-installed policy")
+            if (root / "bootstrap-toolchain" / "regression" / directory).is_dir() is False:
+                raise ManifestError(f"missing case directory: {directory}")
+            result.append(Case(number, ident, directory, name, profiles, requires, tags, policy))
+        except ManifestError as exc:
+            raise ManifestError(f"{path}:{lineno}: {exc}") from exc
+    return result
+
+
+def validate(root: Path) -> dict[str, list[Case]]:
+    suites = {name: parse_suite(root, name) for name in SUITES}
+    found: dict[int, Case] = {}
+    for name, count in zip(SUITES, COUNTS):
+        rows = suites[name]
+        if len(rows) != count:
+            raise ManifestError(f"{name}: expected {count} entries, found {len(rows)}")
+        if [x.number for x in rows] != sorted(x.number for x in rows):
+            raise ManifestError(f"{name}: IDs must be ascending")
+        for row in rows:
+            if row.number in found:
+                raise ManifestError(f"case {row.ident} belongs to both {found[row.number].suite} and {name}")
+            found[row.number] = row
+            p = root / "bootstrap-toolchain" / "regression" / row.directory
+            if row.suite == "bcplqsam" and not (p / "qsam-native.txt").is_file():
+                raise ManifestError(f"case {row.ident}: missing QSAM native fixture marker")
+            if row.suite == "bcpltime" and not (p / "time-selection.asm").is_file():
+                raise ManifestError(f"case {row.ident}: missing BCPLTIME selection marker")
+            if row.suite == "runtime-extensions" and not (p / "extension-selection.asm").is_file():
+                raise ManifestError(f"case {row.ident}: missing R.5 selection marker")
+    if set(found) != set(range(177)):
+        missing = sorted(set(range(177)) - set(found))
+        extra = sorted(set(found) - set(range(177)))
+        raise ManifestError(f"suite IDs must cover 00–176 exactly; missing={missing}; extra={extra}")
+    actual = set()
+    for p in (root / "bootstrap-toolchain" / "regression").iterdir():
+        if p.is_dir() and CASE_NAME.fullmatch(p.name):
+            actual.add(p.name)
+    declared = {case.directory for rows in suites.values() for case in rows}
+    if actual != declared:
+        raise ManifestError(f"physical/manifest case directories differ: missing={sorted(actual-declared)}, stale={sorted(declared-actual)}")
+    return suites
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    ap = argparse.ArgumentParser(description="Stable-ID suite selection and native MVS regression reporting")
+    ap.add_argument("suite", nargs="?", choices=SUITES)
+    operation = ap.add_mutually_exclusive_group(required=True)
+    operation.add_argument("--list", action="store_true", help="show suites or cases; no JES")
+    operation.add_argument("--check", action="store_true", help="validate all four suite manifests; no JES")
+    operation.add_argument("--run", action="store_true", help="execute the selected suite; submits native JES jobs")
+    ap.add_argument("--profile", choices=PROFILES, help="explicit native execution profile (required for --run)")
+    ap.add_argument("--case", action="append", type=int, default=[], metavar="ID", help="restrict to a historical case number; repeatable")
+    ap.add_argument("--tag", action="append", default=[], metavar="TAG", help="select by tag; repeatable")
+    ap.add_argument("--allow-device", action="store_true", help="permit JES printer/punch cases; never resumes the writer")
+    return ap.parse_args(argv)
+
+
+def git_head(root: Path) -> str:
+    p = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True)
+    return p.stdout.strip() if p.returncode == 0 else "unknown"
+
+
+def selected_cases(rows: list[Case], args: argparse.Namespace) -> list[Case]:
+    if args.case and not set(args.case).issubset({r.number for r in rows}):
+        raise ManifestError(f"case selection is not wholly owned by suite {args.suite}")
+    return [r for r in rows if (not args.case or r.number in args.case)
+            and (not args.tag or all(tag in r.tags for tag in args.tag))]
+
+
+def run(root: Path, cases: list[Case], args: argparse.Namespace) -> int:
+    now = datetime.now(timezone.utc)
+    os.umask(0o077)
+    parent = root / "workarea" / "test-suites"
+    parent.mkdir(parents=True, exist_ok=True)
+    evidence = Path(tempfile.mkdtemp(
+        prefix=f"{now:%Y%m%dT%H%M%SZ}-{os.getpid()}-{args.suite}-{args.profile}-",
+        dir=parent,
+    ))
+    summary = {
+        "schema": 1, "suite": args.suite, "profile": args.profile,
+        "git_head": git_head(root), "started_utc": now.isoformat(),
+        "native_qsam": "source-selected (163–176), irrespective of R.5/T.1 profile",
+        "cases": [],
+    }
+    profile_runner = {
+        "production": "tools/bootstrap/run-production-regression",
+        "installed-r5-t1": "tools/bootstrap/run-installed-r5-t1-regression",
+    }[args.profile]
+    tool = root / profile_runner
+    if not tool.is_file():
+        raise ManifestError(f"missing native regression runner: {tool}")
+    env = os.environ.copy()
+    # Never inherit a prior punch resume opt-in from the operator environment.
+    env.pop("Q4_PUNCH_RESUME", None)
+    env.pop("R1_ACCEPTANCE", None)
+    env.pop("R1_REGRESSION_LOG_DIR", None)
+    env.pop("R1_ACCEPTANCE_WORKDIR", None)
+    if args.profile == "production":
+        env["BCPL_R5_EXTENSION_MODE"] = "source"
+        env["BCPL_T1_EXTENSION_MODE"] = "source"
+        for prefix in ("BCPL_R5", "BCPL_T1"):
+            env.pop(f"{prefix}_EXTENSION_DSN", None)
+            env.pop(f"{prefix}_MACRO_DSN", None)
+    results = {"PASS": 0, "FAIL": 0, "SKIP": 0, "BLOCKED": 0}
+    print(f"SUITE {args.suite} PROFILE {args.profile}", flush=True)
+    print(f"Evidence: {evidence}", flush=True)
+    for case in cases:
+        item = {"id": case.ident, "directory": case.directory, "requires": case.requires}
+        if args.profile not in case.profiles:
+            state, reason = "BLOCKED", "profile not supported by manifest"
+        elif case.policy == "skip-installed":
+            state, reason = "SKIP", "historical source-only instrumentation (installed BOOT_OBJ)"
+        elif case.policy == "device-opt-in" and not args.allow_device:
+            state, reason = "BLOCKED", "JES output-device opt-in required (--allow-device)"
+        else:
+            native = evidence / f"case-{case.ident}" / "native-logs"
+            native.mkdir(parents=True)
+            command = [str(tool), str(case.number), "--log-dir", str(native)]
+            output = evidence / f"case-{case.ident}" / "runner.log"
+            with output.open("w", encoding="utf-8") as handle:
+                proc = subprocess.run(command, cwd=root, env=env, stdout=handle,
+                                      stderr=subprocess.STDOUT, check=False)
+            content = output.read_text(encoding="utf-8", errors="replace")
+            passed = bool(re.search(rf"(?m)^PASS\s+{re.escape(case.ident)}\s+", content))
+            counts = all(re.search(rf"(?m)^{label}\s+{count}\s*$", content)
+                         for label, count in (("PASS", 1), ("FAIL", 0), ("SKIP", 0), ("TOTAL", 1)))
+            state = "PASS" if proc.returncode == 0 and passed and counts else "FAIL"
+            reason = f"native runner RC={proc.returncode}; log={output.relative_to(root)}"
+            item.update({"return_code": proc.returncode, "runner_log": str(output.relative_to(root))})
+        item.update({"status": state, "detail": reason})
+        summary["cases"].append(item)
+        results[state] += 1
+        print(f"{state:<7} {case.ident} {case.directory}: {reason}", flush=True)
+        summary["counts"] = results.copy()
+        (evidence / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    print("SUITE COMPLETE")
+    for state in ("PASS", "FAIL", "SKIP", "BLOCKED"):
+        print(f"{state} {results[state]}")
+    print(f"TOTAL {len(cases)}")
+    print(f"Evidence: {evidence}")
+    if results["FAIL"]:
+        return 1
+    return 2 if results["BLOCKED"] else 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    if args.run and (not args.suite or not args.profile):
+        print("run-suite: --run needs SUITE and --profile", file=sys.stderr)
+        return 64
+    if (args.case or args.tag) and not args.suite:
+        print("run-suite: --case and --tag require SUITE", file=sys.stderr)
+        return 64
+    if (args.profile and not args.run) or (args.allow_device and not args.run):
+        print("run-suite: --profile and --allow-device require --run", file=sys.stderr)
+        return 64
+    try:
+        suites = validate(ROOT)
+        if args.check:
+            print("Stage 2B manifests: OK — 177 unique native cases (00–176)")
+            for name in SUITES:
+                print(f"  {name}: {len(suites[name])}")
+            return 0
+        if args.list and not args.suite:
+            for name in SUITES:
+                print(f"{name}\t{len(suites[name])}")
+            print("mr10\tindependent legacy suite: tools/mr10/run-regression-panel")
+            return 0
+        rows = selected_cases(suites[args.suite], args)
+        if not rows:
+            raise ManifestError("no cases match the requested selection")
+        if args.list:
+            for case in rows:
+                print(f"{case.ident}\t{case.directory}\t{','.join(case.tags)}\t{case.policy}")
+            return 0
+        return run(ROOT, rows, args)
+    except (ManifestError, OSError) as exc:
+        print(f"run-suite: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,15 @@
+case_id	directory	profiles	requires	tags	policy
+163	163-qsam-query-capabilities	production,installed-r5-t1	boot-obj,bcplqsam-source	qsam,query	standard
+164	164-qsam-negative-contract	production,installed-r5-t1	boot-obj,bcplqsam-source	qsam,negative	standard
+165	165-qsam-output-lifecycle	production,installed-r5-t1	boot-obj,bcplqsam-source	qsam,lifecycle	standard
+166	166-qsam-sixteen-finish	production,installed-r5-t1	boot-obj,bcplqsam-source	qsam,lifecycle	standard
+167	167-qsam-sixteen-stop	production,installed-r5-t1	boot-obj,bcplqsam-source	qsam,lifecycle	standard
+168	168-qsam-fixed-full	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,lifecycle,fixed-record	standard
+169	169-qsam-stop-flush	production,installed-r5-t1	boot-obj,bcplqsam-source	qsam,lifecycle	standard
+170	170-qsam-demo-interoperability	production,installed-r5-t1	boot-obj,bcplqsam-source,bcpldemo-installed,temporary-datasets	qsam,integration	standard
+171	171-qsam-v-read	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,v-record	standard
+172	172-qsam-v-write	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,v-record	standard
+173	173-qsam-vb-read	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,vb-record	standard
+174	174-qsam-vb-write	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,vb-record	standard
+175	175-qsam-fb80-sysout-punch	production,installed-r5-t1	boot-obj,bcplqsam-source,jes-punch	qsam,device	device-opt-in
+176	176-qsam-fba133-sysout-printer	production,installed-r5-t1	boot-obj,bcplqsam-source,jes-printer	qsam,device	device-opt-in
