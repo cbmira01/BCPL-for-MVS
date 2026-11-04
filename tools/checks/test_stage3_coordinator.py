@@ -302,7 +302,7 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertIn("native internal detail", (run_dir / "bootstrap.log").read_text())
         self.assertIn("native internal detail", (run_dir / "bcplqsam.log").read_text())
         self.assertEqual((self.root / "native-invocations").read_text(),
-                         "bootstrap:installed-r5-t1\\nbcplqsam:installed-r5-t1+device\\n")
+                         "bootstrap:installed-r5-t1\nbcplqsam:installed-r5-t1+device\n")
 
     def test_default_mode_does_not_echo_individual_cases(self):
         rc, output, _ = self.invoke("--run", "--suite", "bootstrap",
