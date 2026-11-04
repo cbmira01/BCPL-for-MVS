@@ -27,13 +27,12 @@ Use `tools/mr10/compile-and-run` for individual BCPL probes and `tools/mr10/run-
 
 Saved OCODE and INTCODE files are evidence, not build litter. Keep them where they explain an observed compiler or runtime behavior.
 
-## Proposed MR10 development-probe suite (manifest only)
+## MR10 development-probe manifest contract
 
 `dev-probes-manifest.tsv` defines **17 proposed checks** across the eleven
-numbered historical development-probe groups. It is **not** an executable
-or accepted suite. All cases are `UNVERIFIED`. The 12-case `00-regression-panel`
+numbered historical development-probe groups. A provisional runner exists, but it is **not** an accepted suite. All cases are `UNVERIFIED`. The 12-case `00-regression-panel`
 and the five-suite project regression coordinator are unchanged;
-`mr10-probes` is not yet a runnable or coordinator-selected suite.
+`mr10-probes` is not yet a coordinator-selected or accepted suite.
 
 The following commands validate the contract **offline**, without submitting
 JES, compiling BCPL, or modifying MVS datasets:
@@ -81,3 +80,50 @@ A green manifest check is not a passing MR10 probe suite.
 
 Only after reviewing execution contracts, expected outcomes, and target-MVS
 evidence should a separate runner or coordinator integration be approved.
+
+## Standalone MR10 development-probe runner (first phase)
+
+The **17** historical development-probe contracts remain `UNVERIFIED`.
+`tools/mr10/run-dev-probes` is a first-phase, **standalone** runner, not
+part of `tools/tests/run-project-regressions` or the existing 12-case
+MR10 Regression Panel. It implements provisional execution of six
+current-ICINT BCPL probes: `04-module-test`, `05-named-dd`,
+`06-dynamic-streams`, `07-many-streams`, `09-multiple-assignment`, and
+`11-getvec-freevec`. Historical interpreter and coroutine/artifact
+checks remain non-executable and must not be treated as passing.
+
+Host-only commands (no JES submissions):
+
+```sh
+tools/mr10/run-dev-probes --check
+tools/mr10/run-dev-probes --list
+tools/mr10/run-dev-probes --list --case 05-named-dd
+python3 -B -m unittest discover -s tools/checks -p 'test_mr10_dev_probes_runner.py' -v
+```
+
+**Operator authorization is required before any `--run`.** Only after
+separate approval for JES execution, use a selected case such as:
+
+```sh
+tools/mr10/run-dev-probes --run --case 05-named-dd
+```
+
+`--run --all-provisional` is an explicit six-case opt-in; there is no
+implicit default run. Unsupported cases or mixed selections containing
+them are rejected **before** JES submission. Each selected case uses
+`tools/mr10/compile-and-run` with its declared input bindings, a unique
+JCL deck and job name, and an isolated evidence directory under
+`workarea/mr10-probes/`. The JSON summary retains Git HEAD, selected
+interpreter, exact command, expected and actual completion, JES job ID,
+runner logs, and provisional output checks. The command stops after the
+first unexpected failure.
+
+**There is no accepted PASS from this runner yet.** Meeting the
+source-derived provisional trace and observing `CODE=0` yields
+`OBSERVED` and overall `UNVERIFIED` (exit code **3**). A failed
+execution or trace yields `FAIL` (exit code **1**); invalid input,
+unsupported cases, or missing prerequisites exit **2** before dispatch.
+Host-only `--check`/`--list` exit **0** when successful. The pending
+output oracles require independently reviewed MVS evidence before
+any acceptance-policy change. Do not interpret exit code 3 or a
+provisional matching trace as suite acceptance.

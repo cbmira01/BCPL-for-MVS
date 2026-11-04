@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""Standalone, provisional MR10 development-probe runner.
+
+--check/--list are host-only. --run delegates to compile-and-run and
+submits JES jobs, but cannot declare an unverified probe PASS. The current
+first phase implements six BCPL probes; all others remain unavailable.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[2]
+VALIDATOR = ROOT / "tools/checks/check-mr10-dev-probes-manifest.py"
+COMPILE = ROOT / "tools/mr10/compile-and-run"
+EVIDENCE_ROOT = ROOT / "workarea/mr10-probes"
+CURRENT = ROOT / "mr10-kit-compiler/asm/CURRENT"
+
+# The initial, source-backed provisional assertions are *not* accepted
+# golden outputs. Keep the remaining 11 contract cases out of --run.
+PROVISIONAL = (
+    "04-module-test",
+    "05-named-dd",
+    "06-dynamic-streams",
+    "07-many-streams",
+    "09-multiple-assignment",
+    "11-getvec-freevec",
+)
+# These expectations are observations to collect/verify on MVS, not a
+# substitute for an independently accepted golden-output baseline.
+FACTORIAL = (1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800)
+TRACE = {
+    "04-module-test": tuple(f"F({i}), = {value}" for i, value in enumerate(FACTORIAL, 1)),
+    "05-named-dd": ("VALUE FROM EXTRA = 12345",),
+    "06-dynamic-streams": ("DEEPEST GET VALUE = 24680",),
+    "07-many-streams": (
+        "OPENED 12 STREAMS",
+        *(f"DD{i} = STREAM {i:02d}" for i in range(1, 13)),
+        "ALL 12 STREAMS READ AND CLOSED",
+    ),
+    "09-multiple-assignment": (
+        "SWAP BEFORE A=1 B=2", "SWAP AFTER  A=2 B=2",
+        "EUCLID BEFORE A=1071 B=462", "EUCLID AFTER  A=462 B=0",
+    ),
+    "11-getvec-freevec": (
+        "ALLOCATED A B C", "A DATA 101 109", "B DATA 201 219",
+        "C DATA 301 329", "REUSED B BLOCK",
+        "COALESCED ALLOC 777 888", "GETVEC FREEVEC OK",
+    ),
+}
+CODE_RE = re.compile(r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)")
+JOB_RE = re.compile(r"(?m)^JOB\s+(\d+)\s*$")
+CURRENT_RE = re.compile(r"icintv[0-9]+\.asm\Z")
+
+
+class ProbeError(ValueError):
+    pass
+
+
+def manifest_cases() -> list[dict[str, str]]:
+    spec = importlib.util.spec_from_file_location("mr10_probe_contract", VALIDATOR)
+    if spec is None or spec.loader is None:
+        raise ProbeError(f"cannot load host-only contract validator: {VALIDATOR}")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+        return module.validate(ROOT)
+    except (OSError, ValueError) as exc:
+        raise ProbeError(f"probe contract validation failed: {exc}") from exc
+
+
+def current_interpreter() -> Path:
+    try:
+        name = CURRENT.read_text(encoding="ascii").strip()
+    except (OSError, UnicodeError) as exc:
+        raise ProbeError(f"cannot read CURRENT interpreter selection: {exc}") from exc
+    if not CURRENT_RE.fullmatch(name):
+        raise ProbeError("CURRENT contains an invalid interpreter name")
+    asm = (CURRENT.parent / name).resolve()
+    if not asm.is_relative_to(ROOT.resolve()) or not asm.is_file():
+        raise ProbeError(f"CURRENT interpreter not found within repository: {name}")
+    return asm
+
+
+def git_head() -> str:
+    proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                          text=True, capture_output=True, check=False)
+    if proc.returncode or not re.fullmatch(r"[a-f0-9]{40}", proc.stdout.strip()):
+        raise ProbeError("cannot record a valid Git HEAD for probe evidence")
+    return proc.stdout.strip()
+
+
+def command_for(row: dict[str, str], icint: Path, jcl: Path, job: str) -> list[str]:
+    ident = row["case_id"]
+    if ident not in PROVISIONAL or row["engine"] != "compile-and-run" or row["interpreter"] != "current":
+        raise ProbeError(f"{ident}: historical or unsupported probe cannot execute")
+    if row["verification"] != "UNVERIFIED" or not row["oracle"].startswith("pending:"):
+        raise ProbeError(f"{ident}: expected pre-acceptance contract")
+    command = [str(COMPILE), "--results", "--jcl", str(jcl), "--job-name", job]
+    for binding in row["dd_bindings"].split(";") if row["dd_bindings"] else []:
+        ddname, rel = binding.split("=", 1)
+        command.extend(("--dd", f"{ddname}={ROOT / rel}"))
+    command.extend((str(icint), str(ROOT / row["source"])))
+    for module in row["modules"].split(";") if row["modules"] else []:
+        command.append("+" + str(ROOT / module))
+    return command
+
+
+def assess_output(ident: str, output: str, returncode: int) -> tuple[str, str]:
+    """Check provisional trace only; success is OBSERVED, never PASS."""
+    if returncode:
+        return "FAIL", f"compile-and-run returned RC={returncode}"
+    jobs = JOB_RE.findall(output)
+    if len(jobs) != 1:
+        return "FAIL", f"expected exactly one JES job ID; found {len(jobs)}"
+    if output.count("INTCODE SYSTEM ENTERED") != 1:
+        return "FAIL", "expected exactly one final ICINT execution banner"
+    codes = CODE_RE.findall(output)
+    if len(codes) != 1:
+        return "FAIL", f"expected one interpreted completion code; found {len(codes)}"
+    if codes[0] != "0":
+        return "FAIL", f"interpreted CODE={codes[0]}; expected 0"
+    lines = [line.strip(" \t\r\f") for line in output.splitlines()]
+    if any(line.startswith(("INTCODE ERROR", "SYNTAX ERROR", "MAPSTORE ERROR")) for line in lines):
+        return "FAIL", "interpreter/compiler error marker in output"
+    # Expect each required line exactly once and in the specified order.
+    # Extra diagnostic lines from ICINT are retained in the raw evidence.
+    positions = []
+    for expected in TRACE[ident]:
+        matches = [i for i, line in enumerate(lines) if line == expected]
+        if len(matches) != 1:
+            return "FAIL", f"expected exactly one occurrence of {expected!r}; got {len(matches)}"
+        positions.append(matches[0])
+    if positions != sorted(positions) or len(positions) != len(set(positions)):
+        return "FAIL", "provisional trace lines are out of order"
+    return "OBSERVED", "provisional source-derived trace matched; oracle remains UNVERIFIED"
+
+
+def save(path: Path, data: dict) -> None:
+    staging = path.with_suffix(".tmp")
+    staging.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    staging.replace(path)
+
+
+def run(rows: list[dict[str, str]], selected: list[str]) -> int:
+    if not COMPILE.is_file():
+        raise ProbeError(f"missing compile-and-run tool: {COMPILE}")
+    icint = current_interpreter()
+    revision = git_head()
+    os.umask(0o077)
+    EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
+    moment = datetime.now(timezone.utc)
+    folder = Path(tempfile.mkdtemp(
+        prefix=f"{moment:%Y%m%dT%H%M%SZ}-{os.getpid()}-", dir=EVIDENCE_ROOT))
+    summary_path = folder / "summary.json"
+    summary = {
+        "schema": 1, "suite": "mr10-probes", "git_head": revision,
+        "started_utc": moment.isoformat(), "interpreter": str(icint.relative_to(ROOT)),
+        "verification": "UNVERIFIED", "status": "IN_PROGRESS",
+        "selected_cases": selected,
+        "cases": [{"id": item, "status": "NOT_RUN"} for item in selected],
+    }
+    save(summary_path, summary)
+    print(f"MR10 PROBE EVIDENCE: {folder}", flush=True)
+    entries = {r["case_id"]: r for r in rows}
+    observed = 0
+    fail = False
+    for index, item in enumerate(summary["cases"], 1):
+        ident = item["id"]
+        slug = ident.replace("/", "--")
+        log_path = folder / f"{slug}.log"
+        jcl_path = folder / f"{slug}.jcl"
+        job_name = f"DP{index:02d}{os.getpid() % 10000:04d}"
+        command = command_for(entries[ident], icint, jcl_path, job_name)
+        item.update({"command": command, "job_name": job_name,
+                     "log": str(log_path.relative_to(ROOT)),
+                     "jcl": str(jcl_path.relative_to(ROOT)),
+                     "expected_code": int(entries[ident]["expected_code"]),
+                     "expected_oracle": entries[ident]["oracle"]})
+        save(summary_path, summary)
+        print(f"RUN      {ident}", flush=True)
+        try:
+            with log_path.open("w", encoding="utf-8") as logfile:
+                proc = subprocess.run(command, cwd=ROOT, stdout=logfile,
+                                      stderr=subprocess.STDOUT, check=False)
+            content = log_path.read_text(encoding="utf-8", errors="replace")
+            state, reason = assess_output(ident, content, proc.returncode)
+            jobs = JOB_RE.findall(content)
+            codes = CODE_RE.findall(content)
+            item.update({"status": state, "reason": reason, "runner_rc": proc.returncode,
+                         "jes_job_id": jobs[0] if len(jobs) == 1 else None,
+                         "interpreted_code": int(codes[0]) if len(codes) == 1 else None})
+        except OSError as exc:
+            item.update({"status": "FAIL", "reason": f"runner I/O failure: {exc}"})
+        save(summary_path, summary)
+        print(f"{item['status']:<8} {ident}: {item['reason']}", flush=True)
+        if item["status"] != "OBSERVED":
+            fail = True
+            break
+        observed += 1
+    summary["finished_utc"] = datetime.now(timezone.utc).isoformat()
+    summary["status"] = "FAIL" if fail else "UNVERIFIED"
+    summary["counts"] = {
+        "OBSERVED": observed, "FAIL": sum(r["status"] == "FAIL" for r in summary["cases"]),
+        "NOT_RUN": sum(r["status"] == "NOT_RUN" for r in summary["cases"]),
+    }
+    save(summary_path, summary)
+    print(f"MR10 PROBE RESULT: {summary['status']} (no PASS accepted)")
+    print(f"SUMMARY: {summary_path}")
+    return 1 if fail else 3  # 3: observed but no accepted oracle
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--check", action="store_true", help="validate manifest; no JES")
+    modes.add_argument("--list", action="store_true", help="list case contracts; no JES")
+    modes.add_argument("--run", action="store_true", help="submit JES for explicitly selected provisional probes")
+    parser.add_argument("--case", action="append", default=[], metavar="CASE_ID",
+                        help="select historical case ID, repeat for multiple cases")
+    parser.add_argument("--all-provisional", action="store_true",
+                        help="select all six first-phase BCPL probes for --run")
+    args = parser.parse_args(argv)
+    try:
+        rows = manifest_cases()
+        entries = {r["case_id"]: r for r in rows}
+        if len(args.case) != len(set(args.case)):
+            raise ProbeError("duplicate --case argument")
+        if args.all_provisional and (args.case or not args.run):
+            raise ProbeError("--all-provisional requires --run without --case")
+        unknown = [ident for ident in args.case if ident not in entries]
+        if unknown:
+            raise ProbeError("unknown probe case: " + ", ".join(unknown))
+        selected = (list(PROVISIONAL) if args.all_provisional else
+                    [r["case_id"] for r in rows if not args.case or r["case_id"] in args.case])
+        if args.check:
+            print(f"MR10 PROBES CHECK: PASS ({len(rows)} UNVERIFIED contracts; "
+                  f"{len(PROVISIONAL)} provisional; host-only)")
+            return 0
+        if args.list:
+            for row in rows:
+                if row["case_id"] in selected:
+                    status = "PROVISIONAL" if row["case_id"] in PROVISIONAL else "NOT_IMPLEMENTED"
+                    print(f"{row['case_id']}\t{status}\t{row['interpreter']}\t{row['oracle']}")
+            return 0
+        if not args.case and not args.all_provisional:
+            raise ProbeError("--run requires --case CASE_ID or --all-provisional")
+        unsupported = [ident for ident in selected if ident not in PROVISIONAL]
+        if unsupported:
+            raise ProbeError("unsupported/UNVERIFIED case(s); no JES submitted: " + ", ".join(unsupported))
+        return run(rows, selected)
+    except (ProbeError, OSError) as exc:
+        print(f"run-dev-probes: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
