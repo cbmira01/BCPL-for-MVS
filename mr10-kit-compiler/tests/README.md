@@ -30,8 +30,8 @@ Saved OCODE and INTCODE files are evidence, not build litter. Keep them where th
 ## MR10 development-probe manifest contract
 
 `dev-probes-manifest.tsv` defines **17 proposed checks** across the eleven
-numbered historical development-probe groups. A standalone runner exists; only `05-named-dd` has an owner-accepted
-golden baseline. The other **16** cases remain `UNVERIFIED`.
+numbered historical development-probe groups. A standalone runner exists; the original six current-ICINT BCPL probes have owner-accepted
+golden baselines. The other **11** historical cases remain `UNVERIFIED`.
 The 12-case `00-regression-panel` and the five-suite project regression
 coordinator are unchanged;
 `mr10-probes` is not yet a coordinator-selected or accepted suite.
@@ -58,7 +58,7 @@ python3 -B -m unittest discover -s tools/checks -p 'test_mr10_dev_probes_manifes
 | `expected_code` | Expected interpreted completion; only MAPSTORE deliberately expects `-1`, the others `0` |
 | `oracle` | `file:path` for an existing candidate golden file or `pending:reason` when output/structural expectations still require verification |
 | `artifacts` | `none` or `ocode,intcode` for proposed compiler-output evidence |
-| `verification` | `ACCEPTED` for owner-approved `05-named-dd`; `UNVERIFIED` for the other 16 cases |
+| `verification` | `ACCEPTED` for six independently reviewed current-ICINT probes; `UNVERIFIED` for the other 11 cases |
 
 The validator checks the fixed historical case identities, interpreters,
 source files, required modules, DD bindings, SYSIN, expected codes, artifacts,
@@ -84,14 +84,14 @@ Further case acceptance or any coordinator integration requires separate owner r
 
 ## Standalone MR10 development-probe runner (first phase)
 
-Of the **17** historical development-probe contracts, **05-named-dd is ACCEPTED**. The other **16 remain UNVERIFIED**.
+Of the **17** historical development-probe contracts, the original **six current-ICINT BCPL probes are ACCEPTED**. The other **11 remain UNVERIFIED**.
 `tools/mr10/run-dev-probes` is a first-phase, **standalone** runner, not
 part of `tools/tests/run-project-regressions` or the existing 12-case
-MR10 Regression Panel. It implements provisional execution of six
-current-ICINT BCPL probes: `04-module-test`, `05-named-dd`,
+MR10 Regression Panel. It implements the original six current-ICINT BCPL probes: `04-module-test`, `05-named-dd`,
 `06-dynamic-streams`, `07-many-streams`, `09-multiple-assignment`, and
 `11-getvec-freevec`. Historical interpreter and coroutine/artifact
-checks remain non-executable and must not be treated as passing.
+checks are now available in an **experimental** execution mode, but
+have not been run or accepted under the expanded runner.
 
 Host-only commands (no JES submissions):
 
@@ -99,6 +99,7 @@ Host-only commands (no JES submissions):
 tools/mr10/run-dev-probes --check
 tools/mr10/run-dev-probes --list
 tools/mr10/run-dev-probes --list --case 05-named-dd
+tools/mr10/run-dev-probes --list
 python3 -B -m unittest discover -s tools/checks -p 'test_mr10_dev_probes_runner.py' -v
 ```
 
@@ -109,8 +110,12 @@ separate approval for JES execution, use a selected case such as:
 tools/mr10/run-dev-probes --run --case 05-named-dd
 ```
 
-`--run --all-provisional` is an explicit six-case opt-in (one accepted, five provisional); there is no
-implicit default run. Unsupported cases or mixed selections containing
+`--run --all-provisional` retains the original six-case selection (now all
+accepted); `--run --all-candidates` explicitly selects **all 17**
+(six accepted, eleven experimental).
+Neither option runs without `--run`; there is no implicit default execution.
+Each new experimental case may also be selected independently with
+`--run --case CASE_ID`, after separate JES authorization. Unsupported cases or mixed selections containing
 them are rejected **before** JES submission. Each selected case uses
 `tools/mr10/compile-and-run` with its declared input bindings, a unique
 JCL deck and job name, and an isolated evidence directory under
@@ -119,24 +124,43 @@ interpreter, exact command, expected and actual completion, JES job ID,
 runner logs, and provisional output checks. The command stops after the
 first unexpected failure.
 
-For `05-named-dd`, a fresh execution now reports **PASS** and exits **0**
-only if the golden program output, all ten expected JES step return codes
-and all three interpreted completion codes are verified. The accepted
-baseline is documented in
-[the 05-named-dd acceptance record](05-named-dd/acceptance-20261104.md).
+For each of the original six BCPL probes, a fresh execution reports
+**PASS** and exits **0** only when its exact golden-output records,
+expected JES step return codes, and interpreted phase codes are verified.
+The two-module cases (`04-module-test`, `11-getvec-freevec`) require 12
+JES steps and five interpreted phases; the four single-module cases require
+10 steps and three interpreted phases.
+The original [05-named-dd acceptance](05-named-dd/acceptance-20261104.md)
+and the five additional acceptance records in the corresponding test
+directories document the evidence.
 
-Other executable probes that match their source-derived traces remain
-**OBSERVED**, with overall **UNVERIFIED** (exit code **3**).
+The eleven experimental historical probes remain **OBSERVED** when their
+source-derived candidate checks succeed, with overall **UNVERIFIED**
+(exit code **3**) unless run alongside failed cases.
 Unexpected execution or comparison failures return **1**. Invalid
 inputs and unsupported selections return **2** before JES submission;
 host-only `--check` and `--list` return **0**.
 A mixed run with accepted PASS and provisional OBSERVED remains
 UNVERIFIED (exit code 3), never an accepted suite-wide PASS.
 
-The `05-named-dd.expected` file contains exactly the semantic program
-output `VALUE FROM EXTRA = 12345`. ICINT memory statistics and cycle
-counts are excluded from the golden comparison, while unexpected
-program-output lines are not. The runner saves the independently
+The `.expected` files for all six accepted cases contain exact semantic
+program-output records. ICINT memory statistics and cycle counts are
+excluded from comparison, while unexpected program-output lines are not. The runner saves the independently
 extracted job summary and full JES report under `workarea/mr10-probes/`.
-No new JES test was submitted to record the initial JOB 9543 acceptance.
-The revised runner still requires its own fresh MVS execution validation.
+Experimental cases have candidate semantic and JES step/phase checks;
+saved OCODE/INTCODE is directed to an isolated per-case artifact folder.
+The historical `v12`, `v13` and `v14` assemblers remain pinned.
+The existing `compile-and-run` defaults are unchanged.
+The six golden baselines are grounded in independently reviewed MVS
+execution: JOB 9543 for 05-named-dd, and JOBs 9545, 9547, 9548, 9549,
+and 9550 for the five newly accepted cases.
+No additional JES job was submitted for this evidence review.
+The revised six-case runner requires its own fresh MVS execution validation.
+
+### Expanded candidate contract (not an acceptance decision)
+
+See [the 4 November candidate contract review](development-probe-expansion-20261104.md)
+for the five newly accepted cases, the eleven still-unverified historical
+experimental cases, and their source-derived output or structural checks.
+No new cases have been promoted to ACCEPTED by this expansion.
+No new JES execution is authorized by checking out or validating this code.

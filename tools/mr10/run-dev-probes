@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Standalone MR10 development-probe runner with one accepted golden case.
 
---check/--list are host-only. --run submits JES jobs through compile-and-run.
-Only 05-named-dd has an owner-accepted golden output and JES step contract;
-other executable probes remain OBSERVED/UNVERIFIED. No installed datasets
-are changed by the runner itself.
+--check/--list are host-only. --run submits JES through compile-and-run
+or run-intcode. Six original BCPL probes have owner-accepted golden baselines;
+the eleven newly executable historical probes remain UNVERIFIED.
+No installed datasets are modified by the runner itself.
 """
 from __future__ import annotations
 
@@ -24,11 +24,26 @@ VALIDATOR = ROOT / "tools/checks/check-mr10-dev-probes-manifest.py"
 COMPILE = ROOT / "tools/mr10/compile-and-run"
 EVIDENCE_ROOT = ROOT / "workarea/mr10-probes"
 CURRENT = ROOT / "mr10-kit-compiler/asm/CURRENT"
+
+# Additional historical probes remain experimental until MVS evidence review.
+EXTRA_PATH = Path(__file__).with_name("dev_probe_extras.py")
+_extra_spec = importlib.util.spec_from_file_location("mr10_dev_probe_extras", EXTRA_PATH)
+if _extra_spec is None or _extra_spec.loader is None:
+    raise RuntimeError(f"cannot load MR10 extra contracts: {EXTRA_PATH}")
+EXTRAS = importlib.util.module_from_spec(_extra_spec)
+_extra_spec.loader.exec_module(EXTRAS)
 JES_SUMMARY = ROOT / "tools/mvs/job-summary"
 JES_DUMP = ROOT / "tools/mvs/dump-report-for-job"
 PRINTER = ROOT / "mvs-state/prt/prt00e.txt"
 ACCEPTED_CASE = "05-named-dd"
 GOLDEN_PATH = "mr10-kit-compiler/tests/05-named-dd/05-named-dd.expected"
+ACCEPTED_CASES = {
+    ident: f"mr10-kit-compiler/tests/{ident}/{ident}.expected"
+    for ident in (
+        "04-module-test", "05-named-dd", "06-dynamic-streams",
+        "07-many-streams", "09-multiple-assignment", "11-getvec-freevec"
+    )
+}
 EXPECTED_STEPS = (
     ("ASM", "IFOX00"), ("LKED", "IEWL"),
     ("STGSYNI", "IEBGENER"), ("STGTRNI", "IEBGENER"),
@@ -120,9 +135,9 @@ def command_for(row: dict[str, str], icint: Path, jcl: Path, job: str) -> list[s
     ident = row["case_id"]
     if ident not in PROVISIONAL or row["engine"] != "compile-and-run" or row["interpreter"] != "current":
         raise ProbeError(f"{ident}: historical or unsupported probe cannot execute")
-    if ident == ACCEPTED_CASE:
+    if ident in ACCEPTED_CASES:
         if (row["verification"] != "ACCEPTED" or
-                row["oracle"] != f"file:{GOLDEN_PATH}"):
+                row["oracle"] != f"file:{ACCEPTED_CASES[ident]}"):
             raise ProbeError(f"{ident}: accepted golden contract is required")
     elif row["verification"] != "UNVERIFIED" or not row["oracle"].startswith("pending:"):
         raise ProbeError(f"{ident}: expected pre-acceptance contract")
@@ -195,12 +210,23 @@ def verify_accepted_output(output: str, golden: Path) -> None:
         raise ProbeError(f"golden output mismatch: expected {expected!r}, got {actual!r}")
 
 
-def verify_jes_steps(job_id: str, expected_name: str, folder: Path) -> dict:
-    """Use the established MVS report tools, enforcing an exact RC=0 panel.
+def expected_jes_steps(ident: str) -> list[tuple[str, str]]:
+    """The original six have either one or two compilation units."""
+    steps = list(EXPECTED_STEPS[:7])
+    count = 2 if ident in ("04-module-test", "11-getvec-freevec") else 1
+    for i in range(1, count + 1):
+        comp = "COMP" if count == 1 else f"COMP{i:02d}"
+        cg = "CG" if count == 1 else f"CG{i:02d}"
+        steps.extend(((comp, "RUNMOD"), (cg, "RUNMOD")))
+    steps.append(("RUN", "RUNMOD"))
+    return steps
 
-    Both report tools are read-only. Persist the extracted JES report and
-    summary, including on validation failure, whenever extraction succeeds.
-    """
+
+def verify_jes_steps(job_id: str, expected_name: str, folder: Path,
+                     ident: str = ACCEPTED_CASE) -> dict:
+    """Require exact job identity, zero RCs and interpreted phase completions."""
+    if ident not in ACCEPTED_CASES:
+        raise ProbeError(f"JES verification is not accepted for {ident}")
     if not PRINTER.is_file() or not JES_SUMMARY.is_file() or not JES_DUMP.is_file():
         raise ProbeError("required existing JES printer output/report tool missing")
     summary_proc = subprocess.run(
@@ -211,8 +237,8 @@ def verify_jes_steps(job_id: str, expected_name: str, folder: Path) -> dict:
         text=True, check=False)
     summary_text = summary_proc.stdout + summary_proc.stderr
     report_text = dump_proc.stdout
-    summary_path = folder / f"{ACCEPTED_CASE}-jes-summary.txt"
-    report_path = folder / f"{ACCEPTED_CASE}-jes-report.txt"
+    summary_path = folder / f"{ident}-jes-summary.txt"
+    report_path = folder / f"{ident}-jes-report.txt"
     summary_path.write_text(summary_text, encoding="utf-8")
     if report_text:
         report_path.write_text(report_text, encoding="utf-8")
@@ -229,19 +255,25 @@ def verify_jes_steps(job_id: str, expected_name: str, folder: Path) -> dict:
         raise ProbeError("JES report does not establish successful RC=0000 completion")
     steps = [match.groups() for line in summary_lines
              if (match := STEP_RE.fullmatch(line.strip()))]
-    required = [(name, pgm, "0000") for name, pgm in EXPECTED_STEPS]
+    required = [(name, pgm, "0000") for name, pgm in expected_jes_steps(ident)]
     if steps != required:
         raise ProbeError(f"JES step list/RC mismatch: expected {required!r}; got {steps!r}")
-    # The report includes COMP, CG, and RUN interpreted completions.
     codes = [int(value) for value in CODE_RE.findall(report_text)]
-    if codes != [0, 0, 0]:
-        raise ProbeError(f"JES compiler, generator and RUN CODEs not [0, 0, 0]: {codes!r}")
-    if not any(line.strip() == "VALUE FROM EXTRA = 12345"
-               for line in report_text.splitlines()):
-        raise ProbeError("accepted output absent from independently extracted JES report")
+    expected_codes = [0] * (2 * (2 if ident in ("04-module-test", "11-getvec-freevec") else 1) + 1)
+    if codes != expected_codes:
+        raise ProbeError(f"JES compiler, generator and RUN CODEs not {expected_codes}: {codes!r}")
+    lines = [line.strip() for line in report_text.splitlines()]
+    positions = []
+    for record in TRACE[ident]:
+        matches = [i for i, line in enumerate(lines) if line == record]
+        if len(matches) != 1:
+            raise ProbeError(f"accepted output {record!r} absent or duplicated in JES report")
+        positions.append(matches[0])
+    if positions != sorted(positions):
+        raise ProbeError("accepted output records out of order in JES report")
     return {
         "jes_step_codes": [{"step": step, "program": pgm, "rc": 0}
-                           for step, pgm in EXPECTED_STEPS],
+                           for step, pgm in expected_jes_steps(ident)],
         "jes_phase_codes": codes,
         "jes_summary": str(summary_path.relative_to(ROOT)),
         "jes_report": str(report_path.relative_to(ROOT)),
@@ -254,6 +286,15 @@ def save(path: Path, data: dict) -> None:
     staging.replace(path)
 
 
+def dispatch_command(row: dict[str, str], icint: Path, jcl: Path,
+                     job: str, artifact_dir: Path) -> list[str]:
+    if row["case_id"] in PROVISIONAL:
+        return command_for(row, icint, jcl, job)
+    if row["case_id"] in EXTRAS.ADDITIONAL:
+        return EXTRAS.command(ROOT, row, icint, jcl, job, artifact_dir)
+    raise ProbeError(f"{row['case_id']}: unsupported case")
+
+
 def run(rows: list[dict[str, str]], selected: list[str]) -> int:
     if not COMPILE.is_file():
         raise ProbeError(f"missing compile-and-run tool: {COMPILE}")
@@ -262,7 +303,9 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
     entries = {r["case_id"]: r for r in rows}
     # Validate every execution contract before creating evidence or submitting JES.
     for ident in selected:
-        command_for(entries[ident], icint, ROOT / "workarea/mr10-probes/preflight.jcl", "DP000000")
+        dispatch_command(entries[ident], icint,
+                         ROOT / "workarea/mr10-probes/preflight.jcl",
+                         "DP000000", ROOT / "workarea/mr10-probes/preflight-artifacts")
     os.umask(0o077)
     EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
     moment = datetime.now(timezone.utc)
@@ -287,7 +330,9 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
         log_path = folder / f"{slug}.log"
         jcl_path = folder / f"{slug}.jcl"
         job_name = f"DP{index:02d}{os.getpid() % 10000:04d}"
-        command = command_for(entries[ident], icint, jcl_path, job_name)
+        artifact_dir = folder / slug / "artifacts"
+        command = dispatch_command(entries[ident], icint, jcl_path,
+                                   job_name, artifact_dir)
         item.update({"command": command, "job_name": job_name,
                      "log": str(log_path.relative_to(ROOT)),
                      "jcl": str(jcl_path.relative_to(ROOT)),
@@ -301,18 +346,38 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
                 proc = subprocess.run(command, cwd=ROOT, stdout=logfile,
                                       stderr=subprocess.STDOUT, check=False)
             content = log_path.read_text(encoding="utf-8", errors="replace")
-            state, reason = assess_output(ident, content, proc.returncode)
+            if ident in EXTRAS.ADDITIONAL:
+                try:
+                    candidate = EXTRAS.assess(ROOT, entries[ident], content,
+                                             proc.returncode, artifact_dir)
+                    state, reason = candidate["status"], candidate["reason"]
+                    item["artifacts"] = candidate["artifacts"]
+                except (EXTRAS.ExtraError, OSError, UnicodeError) as exc:
+                    state, reason = "FAIL", str(exc)
+            else:
+                state, reason = assess_output(ident, content, proc.returncode)
             jobs = JOB_RE.findall(content)
             codes = CODE_RE.findall(content)
             item.update({"status": state, "reason": reason, "runner_rc": proc.returncode,
                          "jes_job_id": jobs[0] if len(jobs) == 1 else None,
                          "interpreted_code": int(codes[0]) if len(codes) == 1 else None})
-            if ident == ACCEPTED_CASE and state == "OBSERVED":
+            if ident in EXTRAS.ADDITIONAL and len(jobs) == 1:
                 try:
-                    verify_accepted_output(content, ROOT / GOLDEN_PATH)
-                    item.update(verify_jes_steps(jobs[0], job_name, folder))
+                    item.update(EXTRAS.capture_jes(
+                        ROOT, entries[ident], jobs[0], job_name, folder, slug))
+                except (EXTRAS.ExtraError, OSError, UnicodeError) as exc:
+                    if item["status"] == "OBSERVED":
+                        item["status"] = "FAIL"
+                        item["reason"] = "JES verification: " + str(exc)
+                    else:
+                        item["jes_review_error"] = str(exc)
+            if ident in ACCEPTED_CASES and state == "OBSERVED":
+                try:
+                    verify_accepted_output(content, ROOT / ACCEPTED_CASES[ident])
+                    item.update(verify_jes_steps(jobs[0], job_name, folder, ident))
                     item["status"] = "PASS"
-                    item["reason"] = "accepted golden output and all ten JES steps verified"
+                    item["reason"] = (f"accepted golden output and all "
+                                      f"{len(expected_jes_steps(ident))} JES steps verified")
                 except ProbeError as exc:
                     item["status"] = "FAIL"
                     item["reason"] = str(exc)
@@ -351,15 +416,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--case", action="append", default=[], metavar="CASE_ID",
                         help="select historical case ID, repeat for multiple cases")
     parser.add_argument("--all-provisional", action="store_true",
-                        help="select all six first-phase BCPL probes for --run")
+                        help="select the original six BCPL probes for --run")
+    parser.add_argument("--all-candidates", action="store_true",
+                        help="run all 17 historical contracts (six ACCEPTED, eleven UNVERIFIED)")
     args = parser.parse_args(argv)
     try:
         rows = manifest_cases()
         entries = {r["case_id"]: r for r in rows}
         if len(args.case) != len(set(args.case)):
             raise ProbeError("duplicate --case argument")
-        if args.all_provisional and (args.case or not args.run):
-            raise ProbeError("--all-provisional requires --run without --case")
+        if args.all_provisional and (args.case or args.all_candidates or not args.run):
+            raise ProbeError("--all-provisional requires --run without --case or --all-candidates")
+        if args.all_candidates and (args.case or not args.run):
+            raise ProbeError("--all-candidates requires --run without --case")
         unknown = [ident for ident in args.case if ident not in entries]
         if unknown:
             raise ProbeError("unknown probe case: " + ", ".join(unknown))
@@ -368,23 +437,26 @@ def main(argv: list[str] | None = None) -> int:
         if args.check:
             count_accepted = sum(r["verification"] == "ACCEPTED" for r in rows)
             print(f"MR10 PROBES CHECK: PASS ({len(rows)} contracts; "
-                  f"{count_accepted} accepted, {len(PROVISIONAL) - count_accepted} provisional; host-only)")
+                  f"{count_accepted} accepted, {len(PROVISIONAL) - count_accepted} provisional, "
+                  f"{len(EXTRAS.ADDITIONAL)} experimental; host-only)")
             return 0
         if args.list:
             for row in rows:
                 if row["case_id"] in selected:
                     status = ("ACCEPTED" if row["verification"] == "ACCEPTED" else
                               "PROVISIONAL" if row["case_id"] in PROVISIONAL else
+                              "EXPERIMENTAL" if row["case_id"] in EXTRAS.ADDITIONAL else
                               "NOT_IMPLEMENTED")
                     print(f"{row['case_id']}\t{status}\t{row['interpreter']}\t{row['oracle']}")
             return 0
-        if not args.case and not args.all_provisional:
-            raise ProbeError("--run requires --case CASE_ID or --all-provisional")
-        unsupported = [ident for ident in selected if ident not in PROVISIONAL]
+        if not args.case and not args.all_provisional and not args.all_candidates:
+            raise ProbeError("--run requires --case CASE_ID, --all-provisional or --all-candidates")
+        supported = set(PROVISIONAL) | set(EXTRAS.ADDITIONAL)
+        unsupported = [ident for ident in selected if ident not in supported]
         if unsupported:
             raise ProbeError("unsupported/UNVERIFIED case(s); no JES submitted: " + ", ".join(unsupported))
         return run(rows, selected)
-    except (ProbeError, OSError) as exc:
+    except (ProbeError, EXTRAS.ExtraError, OSError) as exc:
         print(f"run-dev-probes: {exc}", file=sys.stderr)
         return 2
 

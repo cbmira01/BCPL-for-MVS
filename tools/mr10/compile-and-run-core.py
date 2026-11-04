@@ -776,6 +776,11 @@ def make_parser() -> argparse.ArgumentParser:
         help="save generated INTCODE as workarea/MODULE.intcode for each module",
     )
     parser.add_argument(
+        "--artifact-dir",
+        metavar="PATH",
+        help="directory within workarea/ for saved OCODE and INTCODE (default: workarea/)",
+    )
+    parser.add_argument(
         "--jcl",
         metavar="PATH",
         help="generated JCL deck (default: workarea/compile-and-run-SOURCE.jcl)",
@@ -892,6 +897,14 @@ def main(argv=None) -> int:
             raise ValueError(
                 "saved intermediate files require unique BCPL source stems"
             )
+        artifact_dir = resolve_repo_path(args.artifact_dir) if args.artifact_dir else WORKAREA
+        if args.artifact_dir and not (args.save_ocode or args.save_intcode):
+            raise ValueError("--artifact-dir requires --save-ocode or --save-intcode")
+        if not artifact_dir.is_relative_to(WORKAREA.resolve()):
+            raise ValueError("--artifact-dir must remain under workarea/")
+        if args.save_ocode or args.save_intcode:
+            artifact_dir.mkdir(parents=True, exist_ok=True)
+
         if not 1 <= args.reader_port <= 65535:
             raise ValueError("--reader-port must be between 1 and 65535")
         if args.timeout <= 0:
@@ -926,12 +939,12 @@ def main(argv=None) -> int:
 
         if args.save_ocode:
             for source in sources:
-                output = WORKAREA / f"{source.stem}.ocode"
+                output = artifact_dir / f"{source.stem}.ocode"
                 if output.exists():
                     output.unlink()
         if args.save_intcode:
             for source in sources:
-                output = WORKAREA / f"{source.stem}.intcode"
+                output = artifact_dir / f"{source.stem}.intcode"
                 if output.exists():
                     output.unlink()
 
@@ -955,7 +968,7 @@ def main(argv=None) -> int:
 
         if args.save_ocode:
             for number, source in enumerate(sources, 1):
-                output = WORKAREA / f"{source.stem}.ocode"
+                output = artifact_dir / f"{source.stem}.ocode"
                 output.write_text(
                     extract_saved_stream(report, "ocode", number),
                     encoding="ascii",
@@ -965,7 +978,7 @@ def main(argv=None) -> int:
 
         if args.save_intcode:
             for number, source in enumerate(sources, 1):
-                output = WORKAREA / f"{source.stem}.intcode"
+                output = artifact_dir / f"{source.stem}.intcode"
                 output.write_text(
                     extract_saved_stream(report, "intcode", number),
                     encoding="ascii",

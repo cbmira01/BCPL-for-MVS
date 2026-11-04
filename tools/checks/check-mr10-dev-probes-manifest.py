@@ -2,7 +2,7 @@
 """Host-only contract check for the proposed MR10 development-probe suite.
 
 This script NEVER invokes MR10, JES, or a compiler. The manifest is a
-contract inventory. Only 05-named-dd has an accepted golden baseline.
+contract inventory. Six owner-approved cases have accepted golden baselines.
 """
 from __future__ import annotations
 
@@ -81,6 +81,29 @@ ARTIFACT_CASES = {
     "03-compile-richards-factorial/compile", "08-character-translation",
     "10-coroutines/compiler-probe", "10-coroutines/frame-layout-probe",
 }
+
+ACCEPTED_GOLDENS = {
+    "04-module-test": tuple(
+        f"F({i}), = {n}" for i, n in enumerate(
+            (1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800), 1)),
+    "05-named-dd": ("VALUE FROM EXTRA = 12345",),
+    "06-dynamic-streams": ("DEEPEST GET VALUE = 24680",),
+    "07-many-streams": (
+        "OPENED 12 STREAMS",
+        *(f"DD{i} = STREAM {i:02d}" for i in range(1, 13)),
+        "ALL 12 STREAMS READ AND CLOSED",
+    ),
+    "09-multiple-assignment": (
+        "SWAP BEFORE A=1 B=2", "SWAP AFTER  A=2 B=2",
+        "EUCLID BEFORE A=1071 B=462", "EUCLID AFTER  A=462 B=0",
+    ),
+    "11-getvec-freevec": (
+        "ALLOCATED A B C", "A DATA 101 109", "B DATA 201 219",
+        "C DATA 301 329", "REUSED B BLOCK",
+        "COALESCED ALLOC 777 888", "GETVEC FREEVEC OK",
+    ),
+}
+
 
 DDNAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
 PENDING = re.compile(r"pending:[a-z][a-z0-9-]+\Z")
@@ -189,20 +212,21 @@ def validate(root: Path = ROOT, manifest: Path | None = None) -> list[dict[str, 
         require(row["expected_code"] == str(expected_code),
                 f"{ident}: unexpected interpreted completion code")
         oracle = row["oracle"]
-        if oracle.startswith("file:"):
+        if ident in ACCEPTED_GOLDENS:
+            expected_path = f"mr10-kit-compiler/tests/{ident}/{ident}.expected"
+            require(oracle == f"file:{expected_path}",
+                    f"{ident}: accepted oracle path changed")
+            golden = checked_file(root, expected_path, f"{ident}: accepted golden")
+            expected_text = "\n".join(ACCEPTED_GOLDENS[ident]) + "\n"
+            require(golden.read_text(encoding="utf-8") == expected_text,
+                    f"{ident}: accepted golden output differs from owner-approved baseline")
+        elif oracle.startswith("file:"):
             checked_file(root, oracle[5:], f"{ident}: expected output")
-            require(ident.endswith("/honors-thesis") or ident == "05-named-dd",
+            require(ident.endswith("/honors-thesis"),
                     f"{ident}: new golden output requires separate evidence review")
         else:
             require(bool(PENDING.fullmatch(oracle)),
                     f"{ident}: unrecognized or missing output oracle")
-        if ident == "05-named-dd":
-            require(oracle ==
-                    "file:mr10-kit-compiler/tests/05-named-dd/05-named-dd.expected",
-                    f"{ident}: accepted oracle path changed")
-            golden = checked_file(root, oracle[5:], f"{ident}: accepted golden")
-            require(golden.read_text(encoding="utf-8") == "VALUE FROM EXTRA = 12345\n",
-                    f"{ident}: accepted golden output differs from owner-approved baseline")
         artifacts = row["artifacts"]
         require(artifacts == ("ocode,intcode" if ident in ARTIFACT_CASES else "none"),
                 f"{ident}: artifact requirement changed")
@@ -210,7 +234,7 @@ def validate(root: Path = ROOT, manifest: Path | None = None) -> list[dict[str, 
                 f"{ident}: unknown artifact contract")
         require(engine == "compile-and-run" or artifacts == "none",
                 f"{ident}: run-intcode cannot generate BCPL compiler artifacts")
-        if ident == "05-named-dd":
+        if ident in ACCEPTED_GOLDENS:
             require(row["verification"] == "ACCEPTED",
                     f"{ident}: owner-accepted verification status changed")
         else:

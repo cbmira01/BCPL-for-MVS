@@ -41,7 +41,8 @@ class MR10DevelopmentProbeRunnerTests(unittest.TestCase):
             self.addCleanup(setattr, MOD, key, previous)
         self.make_file("mr10-kit-compiler/asm/CURRENT", "icintv19.asm\n")
         self.make_file("mr10-kit-compiler/asm/icintv19.asm")
-        self.make_file(MOD.GOLDEN_PATH, "VALUE FROM EXTRA = 12345\n")
+        for ident, path in MOD.ACCEPTED_CASES.items():
+            self.make_file(path, "\n".join(MOD.TRACE[ident]) + "\n")
         self.make_file("mvs-state/prt/prt00e.txt")
         self.rows = []
         for case_id in (*MOD.PROVISIONAL, "02-honors-thesis-and-mapstore/honors-thesis"):
@@ -57,9 +58,10 @@ class MR10DevelopmentProbeRunnerTests(unittest.TestCase):
                 dd_bindings=("EXTRA=mr10-kit-compiler/tests/05-named-dd/extra.bcpl"
                              if case_id == "05-named-dd" else ""),
                 sysin="", expected_code="0",
-                oracle=(f"file:{MOD.GOLDEN_PATH}" if case_id == MOD.ACCEPTED_CASE
-                        else "pending:test"), artifacts="none",
-                verification=("ACCEPTED" if case_id == MOD.ACCEPTED_CASE else "UNVERIFIED"),
+                oracle=(f"file:{MOD.ACCEPTED_CASES[case_id]}"
+                        if case_id in MOD.ACCEPTED_CASES else "pending:test"),
+                artifacts="none",
+                verification=("ACCEPTED" if case_id in MOD.ACCEPTED_CASES else "UNVERIFIED"),
             ))
         for row in self.rows:
             self.make_file(row["source"])
@@ -93,6 +95,7 @@ jcl = Path(args[args.index("--jcl")+1])
 case = jcl.stem.replace("--", "/")
 Path(jcl).write_text("//FAKE JOB\\n", encoding="utf-8")
 Path(%r).write_text(args[args.index("--job-name")+1], encoding="utf-8")
+Path(%r).write_text(case, encoding="utf-8")
 if os.environ.get("PROBE_RUNNER_RC"):
     print("FAKE RUNNER ERROR")
     sys.exit(int(os.environ["PROBE_RUNNER_RC"]))
@@ -110,7 +113,8 @@ if os.environ.get("PROBE_EXTRA_LINE"):
     print("UNEXPECTED USER OUTPUT")
 if not os.environ.get("PROBE_NO_CODE"):
     print("EXECUTION CYCLES = 42, CODE = " + os.environ.get("PROBE_BAD_CODE", "0"))
-''' % (str(self.root / 'fake-last-job-name.txt'), MOD.TRACE)
+''' % (str(self.root / 'fake-last-job-name.txt'),
+       str(self.root / 'fake-last-case-id.txt'), MOD.TRACE)
         path = MOD.COMPILE
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(script, encoding="utf-8")
@@ -128,7 +132,13 @@ if os.environ.get('PROBE_JES_SUMMARY_RC'):
     print('report utility failed', file=sys.stderr)
     sys.exit(1)
 print('JOB 8123  ' + ('OTHERJOB' if os.environ.get('PROBE_JES_WRONG_NAME') else job))
-steps = %r
+case = Path(%r).read_text()
+steps = list(%r[:7])
+n = 2 if case in ('04-module-test','11-getvec-freevec') else 1
+for i in range(1,n+1):
+    steps.append((('COMP' if n == 1 else 'COMP%%02d' %% i), 'RUNMOD'))
+    steps.append((('CG' if n == 1 else 'CG%%02d' %% i), 'RUNMOD'))
+steps.append(('RUN','RUNMOD'))
 if os.environ.get('PROBE_JES_MISSING_STEP'):
     steps = steps[:-1]
 print('STEP       PROGRAM      RESULT')
@@ -137,7 +147,8 @@ for i, (step, program) in enumerate(steps):
     print('%%-10s %%-12s RC=%%s' %% (step, program, rc))
 print('JOB RESULT: ' + ('FAILURE' if os.environ.get('PROBE_JES_BAD_RC') else 'SUCCESS'))
 print('HIGHEST RC: ' + ('0008' if os.environ.get('PROBE_JES_BAD_RC') else '0000'))
-''' % (str(self.root / 'fake-last-job-name.txt'), MOD.EXPECTED_STEPS)
+''' % (str(self.root / 'fake-last-job-name.txt'),
+       str(self.root / 'fake-last-case-id.txt'), MOD.EXPECTED_STEPS)
         dump_report = '''#!/usr/bin/env python3
 import os
 from pathlib import Path
@@ -147,14 +158,20 @@ if os.environ.get('PROBE_JES_DUMP_RC'):
     print('report utility failed', file=sys.stderr)
     sys.exit(1)
 print('JOB 8123 ' + job)
-phases = (0, 0) if os.environ.get('PROBE_JES_MISSING_PHASE') else (0, 0, 0)
+case = Path(%r).read_text()
+n = 2 if case in ('04-module-test', '11-getvec-freevec') else 1
+phases = [0]*(2*n+1)
+if os.environ.get('PROBE_JES_MISSING_PHASE'):
+    phases = phases[:-1]
 if os.environ.get('PROBE_JES_BAD_PHASE'):
-    phases = (0, 8, 0)
+    phases[1] = 8
 for i, value in enumerate(phases):
     print(' EXECUTION CYCLES = %%s, CODE = %%d' %% (2000+i, value))
 if not os.environ.get('PROBE_JES_MISSING_VALUE'):
-    print(' VALUE FROM EXTRA = 12345')
-''' % str(self.root / 'fake-last-job-name.txt')
+    for line in %r[case]:
+        print(' ' + line)
+''' % (str(self.root / 'fake-last-job-name.txt'),
+       str(self.root / 'fake-last-case-id.txt'), MOD.TRACE)
         self.make_file('tools/mvs/job-summary', job_summary).chmod(0o755)
         self.make_file('tools/mvs/dump-report-for-job', dump_report).chmod(0o755)
 
@@ -172,15 +189,15 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
     def test_host_check_never_executes_compiler(self):
         rc, out, err = self.cli("--check")
         self.assertEqual((rc, err), (0, ""))
-        self.assertIn("1 accepted, 5 provisional; host-only", out)
+        self.assertIn("6 accepted, 0 provisional, 11 experimental; host-only", out)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_list_shows_full_historical_id_without_execution(self):
         rc, out, err = self.cli("--list")
         self.assertEqual(rc, 0)
-        self.assertIn("04-module-test\tPROVISIONAL", out)
+        self.assertIn("04-module-test\tACCEPTED", out)
         self.assertIn("05-named-dd\tACCEPTED", out)
-        self.assertIn("02-honors-thesis-and-mapstore/honors-thesis\tNOT_IMPLEMENTED", out)
+        self.assertIn("02-honors-thesis-and-mapstore/honors-thesis\tEXPERIMENTAL", out)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_list_subset(self):
@@ -200,15 +217,26 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
         self.assertIn("unknown probe", err)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
-    def test_historical_probe_is_rejected_before_jes(self):
+    def test_historical_probe_requires_engine_before_jes(self):
         rc, _, err = self.cli("--run", "--case", "02-honors-thesis-and-mapstore/honors-thesis")
         self.assertEqual(rc, 2)
-        self.assertIn("no JES submitted", err)
+        self.assertIn("missing MR10 engine", err)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
-    def test_mixed_selection_fails_preflight_without_jes(self):
+    def test_mixed_selection_requires_complete_preflight_without_jes(self):
         rc, _, err = self.cli("--run", "--case", "04-module-test", "--case", "02-honors-thesis-and-mapstore/honors-thesis")
         self.assertEqual(rc, 2)
+        self.assertFalse(MOD.EVIDENCE_ROOT.exists())
+
+    def test_all_candidates_requires_explicit_run(self):
+        rc, _, err = self.cli("--list", "--all-candidates")
+        self.assertEqual(rc, 2)
+        self.assertIn("--all-candidates requires --run", err)
+
+    def test_all_candidates_missing_engine_aborts_before_jes(self):
+        rc, _, err = self.cli("--run", "--all-candidates")
+        self.assertEqual(rc, 2)
+        self.assertIn("missing MR10 engine", err)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_rejects_duplicate_case(self):
@@ -248,22 +276,24 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
 
     def test_multiple_cases_run_in_manifest_order(self):
         rc, _, _ = self.cli("--run", "--case", "11-getvec-freevec", "--case", "04-module-test")
-        self.assertEqual(rc, 3)
+        self.assertEqual(rc, 0)
         s, root = self.evidence()
         self.assertEqual([x["id"] for x in s["cases"]], ["04-module-test", "11-getvec-freevec"])
-        self.assertEqual(s["counts"]["OBSERVED"], 2)
+        self.assertEqual(s["counts"]["PASS"], 2)
+        self.assertEqual([len(x["jes_step_codes"]) for x in s["cases"]], [12, 12])
+        self.assertEqual([len(x["jes_phase_codes"]) for x in s["cases"]], [5, 5])
         self.assertTrue(any("+" in a for a in s["cases"][0]["command"]))
         self.assertTrue(any("+" in a for a in s["cases"][1]["command"]))
         self.assertEqual(len(set(x["job_name"] for x in s["cases"])), 2)
 
     def test_all_six_provisional_cases_with_stubs(self):
         rc, out, err = self.cli("--run", "--all-provisional")
-        self.assertEqual((rc, err), (3, ""))
+        self.assertEqual((rc, err), (0, ""))
         s, root = self.evidence()
         self.assertEqual(len(s["cases"]), 6)
-        self.assertEqual(s["counts"]["PASS"], 1)
-        self.assertEqual(s["counts"]["OBSERVED"], 5)
-        self.assertEqual(sum(line.startswith("PASS ") for line in out.splitlines()), 1)
+        self.assertEqual(s["counts"]["PASS"], 6)
+        self.assertEqual(s["counts"]["OBSERVED"], 0)
+        self.assertEqual(sum(line.startswith("PASS ") for line in out.splitlines()), 6)
 
     def test_runner_nonzero_stops_following_cases(self):
         with patch.dict(os.environ, {"PROBE_RUNNER_RC": "7"}):
@@ -418,16 +448,18 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
             rc, _, _ = self.cli("--run", "--case", "05-named-dd")
         self.assertEqual(rc, 1)
 
-    def test_unverified_04_stays_observed(self):
+    def test_accepted_04_has_twelve_jes_steps(self):
         rc, _, _ = self.cli("--run", "--case", "04-module-test")
-        self.assertEqual(rc, 3)
+        self.assertEqual(rc, 0)
         s, _ = self.evidence()
-        self.assertEqual(s["cases"][0]["status"], "OBSERVED")
-        self.assertEqual(s["cases"][0]["verification"], "UNVERIFIED")
-        self.assertEqual(s["counts"]["PASS"], 0)
+        self.assertEqual(s["cases"][0]["status"], "PASS")
+        self.assertEqual(s["cases"][0]["verification"], "ACCEPTED")
+        self.assertEqual(s["counts"]["PASS"], 1)
+        self.assertEqual(len(s["cases"][0]["jes_step_codes"]), 12)
+        self.assertEqual(s["cases"][0]["jes_phase_codes"], [0]*5)
 
-    def test_unaccepted_manifest_claim_rejected_before_jes(self):
-        self.rows[0]["verification"] = "ACCEPTED"
+    def test_accepted_manifest_demoted_rejected_before_jes(self):
+        self.rows[0]["verification"] = "UNVERIFIED"
         rc, _, err = self.cli("--run", "--case", "04-module-test")
         self.assertEqual(rc, 2)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
