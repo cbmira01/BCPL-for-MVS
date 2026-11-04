@@ -186,6 +186,7 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
         "schema": 1, "git_head": git_head(), "started_utc": now.isoformat(),
         "selected_suites": selected,
         "native_profile": args.profile,
+        "allow_device": args.allow_device,
         "suites": [
             {"name": suite, "status": "NOT_RUN" if suite in selected else "NOT_SELECTED",
              "test_count": len(cases[suite])}
@@ -206,6 +207,8 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
             continue
         command = ([str(MR10)] if suite == "mr10" else
                    [str(NATIVE), suite, "--run", "--profile", args.profile])
+        if suite == "bcplqsam" and args.allow_device:
+            command.append("--allow-device")
         log_path = evidence / f"{suite}.log"
         print(f"RUN {suite} ({len(cases[suite])} cases)", flush=True)
         try:
@@ -247,6 +250,8 @@ def main(argv: list[str] | None = None) -> int:
     operations.add_argument("--run", action="store_true", help="execute selected suites; may submit JES")
     parser.add_argument("--suite", action="append", choices=SUITES,
                         help="suite to run/list; repeat to combine suites")
+    parser.add_argument("--allow-device", action="store_true",
+                        help="authorize BCPLQSAM JES printer/punch cases (requires --run)")
     parser.add_argument("--profile", choices=("production", "installed-r5-t1"),
                         help="required for native suites when running")
     args = parser.parse_args(argv)
@@ -254,6 +259,8 @@ def main(argv: list[str] | None = None) -> int:
     if len(set(requested)) != len(requested):
         parser.error("duplicate --suite selection")
     native_requested = any(name != "mr10" for name in requested)
+    if args.allow_device and (not args.run or "bcplqsam" not in requested):
+        parser.error("--allow-device requires --run and --suite bcplqsam")
     if args.run and not requested:
         parser.error("--run requires one or more explicit --suite options")
     if args.run and native_requested and not args.profile:
