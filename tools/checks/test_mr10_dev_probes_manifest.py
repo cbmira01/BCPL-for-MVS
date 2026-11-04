@@ -37,7 +37,9 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
             if row["sysin"]:
                 self.make_file(row["sysin"])
             if row["oracle"].startswith("file:"):
-                self.make_file(row["oracle"][5:])
+                golden = ("VALUE FROM EXTRA = 12345\n" if row["case_id"] == "05-named-dd"
+                          else "fixture\n")
+                self.make_file(row["oracle"][5:], golden)
 
     def make_file(self, name, content="fixture\n"):
         path = self.root / name
@@ -62,7 +64,8 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
     def test_fixture_contract_is_valid(self):
         self.assertEqual(len(MOD.validate(self.root, self.manifest)), 17)
         self.assertEqual(len(set(row["case_id"].split("/")[0] for row in self.rows)), 11)
-        self.assertEqual({row["verification"] for row in self.rows}, {"UNVERIFIED"})
+        self.assertEqual(sum(row["verification"] == "ACCEPTED" for row in self.rows), 1)
+        self.assertEqual(sum(row["verification"] == "UNVERIFIED" for row in self.rows), 16)
 
     def test_identity_not_renumbered(self):
         self.rows[0]["case_id"] = "01-new-test"
@@ -157,6 +160,29 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
         with self.manifest.open("a", encoding="utf-8") as handle:
             handle.write("extra\t" * 20 + "\n")
         self.check_failure("expected 17 probe contracts")
+
+    def test_05_accepted_and_pinned(self):
+        record = next(row for row in self.rows if row["case_id"] == "05-named-dd")
+        self.assertEqual(record["verification"], "ACCEPTED")
+        self.assertEqual(record["oracle"],
+                         "file:mr10-kit-compiler/tests/05-named-dd/05-named-dd.expected")
+
+    def test_05_golden_mutation_rejected(self):
+        path = self.root / "mr10-kit-compiler/tests/05-named-dd/05-named-dd.expected"
+        path.write_text("VALUE FROM EXTRA = 12346\n", encoding="utf-8")
+        self.check_failure("accepted golden output differs")
+
+    def test_05_cannot_be_demoted_silently(self):
+        row = next(row for row in self.rows if row["case_id"] == "05-named-dd")
+        row["verification"] = "UNVERIFIED"
+        self.save()
+        self.check_failure("owner-accepted verification status changed")
+
+    def test_05_cannot_switch_oracle_path(self):
+        row = next(row for row in self.rows if row["case_id"] == "05-named-dd")
+        row["oracle"] = "pending:extra-value-12345"
+        self.save()
+        self.check_failure("accepted oracle path changed")
 
     def test_current_selector_traversal_fails(self):
         self.make_file("mr10-kit-compiler/asm/CURRENT", "../../icintv19.asm\n")

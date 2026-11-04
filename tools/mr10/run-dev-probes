@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Standalone, provisional MR10 development-probe runner.
+"""Standalone MR10 development-probe runner with one accepted golden case.
 
---check/--list are host-only. --run delegates to compile-and-run and
-submits JES jobs, but cannot declare an unverified probe PASS. The current
-first phase implements six BCPL probes; all others remain unavailable.
+--check/--list are host-only. --run submits JES jobs through compile-and-run.
+Only 05-named-dd has an owner-accepted golden output and JES step contract;
+other executable probes remain OBSERVED/UNVERIFIED. No installed datasets
+are changed by the runner itself.
 """
 from __future__ import annotations
 
@@ -23,6 +24,23 @@ VALIDATOR = ROOT / "tools/checks/check-mr10-dev-probes-manifest.py"
 COMPILE = ROOT / "tools/mr10/compile-and-run"
 EVIDENCE_ROOT = ROOT / "workarea/mr10-probes"
 CURRENT = ROOT / "mr10-kit-compiler/asm/CURRENT"
+JES_SUMMARY = ROOT / "tools/mvs/job-summary"
+JES_DUMP = ROOT / "tools/mvs/dump-report-for-job"
+PRINTER = ROOT / "mvs-state/prt/prt00e.txt"
+ACCEPTED_CASE = "05-named-dd"
+GOLDEN_PATH = "mr10-kit-compiler/tests/05-named-dd/05-named-dd.expected"
+EXPECTED_STEPS = (
+    ("ASM", "IFOX00"), ("LKED", "IEWL"),
+    ("STGSYNI", "IEBGENER"), ("STGTRNI", "IEBGENER"),
+    ("STGCGI", "IEBGENER"), ("STGBLIB", "IEBGENER"),
+    ("STGICLIB", "IEBGENER"), ("COMP", "RUNMOD"),
+    ("CG", "RUNMOD"), ("RUN", "RUNMOD"),
+)
+METADATA_RE = re.compile(
+    r"^(?:PROGRAM SIZE|PROGVEC CAPACITY|FREE STACK/WORK|STACKBASE|"
+    r"STACKEND|GLOBAL CAPACITY|GLOBALS USED|HIGHEST GLOBAL)\s*="
+)
+STEP_RE = re.compile(r"^([A-Z0-9]+)\s+([A-Z0-9]+)\s+RC=(\d{4})$")
 
 # The initial, source-backed provisional assertions are *not* accepted
 # golden outputs. Keep the remaining 11 contract cases out of --run.
@@ -102,7 +120,11 @@ def command_for(row: dict[str, str], icint: Path, jcl: Path, job: str) -> list[s
     ident = row["case_id"]
     if ident not in PROVISIONAL or row["engine"] != "compile-and-run" or row["interpreter"] != "current":
         raise ProbeError(f"{ident}: historical or unsupported probe cannot execute")
-    if row["verification"] != "UNVERIFIED" or not row["oracle"].startswith("pending:"):
+    if ident == ACCEPTED_CASE:
+        if (row["verification"] != "ACCEPTED" or
+                row["oracle"] != f"file:{GOLDEN_PATH}"):
+            raise ProbeError(f"{ident}: accepted golden contract is required")
+    elif row["verification"] != "UNVERIFIED" or not row["oracle"].startswith("pending:"):
         raise ProbeError(f"{ident}: expected pre-acceptance contract")
     command = [str(COMPILE), "--results", "--jcl", str(jcl), "--job-name", job]
     for binding in row["dd_bindings"].split(";") if row["dd_bindings"] else []:
@@ -144,6 +166,88 @@ def assess_output(ident: str, output: str, returncode: int) -> tuple[str, str]:
     return "OBSERVED", "provisional source-derived trace matched; oracle remains UNVERIFIED"
 
 
+def final_program_records(output: str) -> list[str]:
+    """Extract program-visible lines from the final --results ICINT block.
+
+    ICINT's changing counters and memory statistics are metadata, not the
+    user program's golden output. Unknown non-empty lines fail comparison.
+    """
+    lines = [line.strip() for line in output.splitlines()]
+    starts = [i for i, line in enumerate(lines) if line == "INTCODE SYSTEM ENTERED"]
+    if len(starts) != 1:
+        raise ProbeError("expected exactly one final ICINT execution banner")
+    codes = [i for i, line in enumerate(lines) if CODE_RE.fullmatch(line)]
+    if len(codes) != 1 or codes[0] <= starts[0]:
+        raise ProbeError("expected a final interpreted completion record")
+    return [line for line in lines[starts[0] + 1:codes[0]]
+            if line and not METADATA_RE.match(line)]
+
+
+def verify_accepted_output(output: str, golden: Path) -> None:
+    try:
+        expected = [line.rstrip() for line in golden.read_text(encoding="utf-8").splitlines()]
+    except (OSError, UnicodeError) as exc:
+        raise ProbeError(f"missing accepted golden output: {exc}") from exc
+    if not expected or any(not line for line in expected):
+        raise ProbeError("accepted golden output is empty or malformed")
+    actual = final_program_records(output)
+    if actual != expected:
+        raise ProbeError(f"golden output mismatch: expected {expected!r}, got {actual!r}")
+
+
+def verify_jes_steps(job_id: str, expected_name: str, folder: Path) -> dict:
+    """Use the established MVS report tools, enforcing an exact RC=0 panel.
+
+    Both report tools are read-only. Persist the extracted JES report and
+    summary, including on validation failure, whenever extraction succeeds.
+    """
+    if not PRINTER.is_file() or not JES_SUMMARY.is_file() or not JES_DUMP.is_file():
+        raise ProbeError("required existing JES printer output/report tool missing")
+    summary_proc = subprocess.run(
+        [str(JES_SUMMARY), job_id, "--file", str(PRINTER), "--max-rc", "0"],
+        cwd=ROOT, capture_output=True, text=True, check=False)
+    dump_proc = subprocess.run(
+        [str(JES_DUMP), job_id], cwd=ROOT, capture_output=True,
+        text=True, check=False)
+    summary_text = summary_proc.stdout + summary_proc.stderr
+    report_text = dump_proc.stdout
+    summary_path = folder / f"{ACCEPTED_CASE}-jes-summary.txt"
+    report_path = folder / f"{ACCEPTED_CASE}-jes-report.txt"
+    summary_path.write_text(summary_text, encoding="utf-8")
+    if report_text:
+        report_path.write_text(report_text, encoding="utf-8")
+    if summary_proc.returncode != 0 or dump_proc.returncode != 0:
+        raise ProbeError(
+            f"JES report extraction failed (summary RC={summary_proc.returncode}; "
+            f"dump RC={dump_proc.returncode}): "
+            f"{summary_proc.stderr.strip()} {dump_proc.stderr.strip()}")
+    summary_lines = summary_proc.stdout.splitlines()
+    if not summary_lines or summary_lines[0].strip() != f"JOB {job_id}  {expected_name}":
+        raise ProbeError("JES report does not match submitted job ID and name")
+    if ("JOB RESULT: SUCCESS" not in summary_lines or
+            "HIGHEST RC: 0000" not in summary_lines):
+        raise ProbeError("JES report does not establish successful RC=0000 completion")
+    steps = [match.groups() for line in summary_lines
+             if (match := STEP_RE.fullmatch(line.strip()))]
+    required = [(name, pgm, "0000") for name, pgm in EXPECTED_STEPS]
+    if steps != required:
+        raise ProbeError(f"JES step list/RC mismatch: expected {required!r}; got {steps!r}")
+    # The report includes COMP, CG, and RUN interpreted completions.
+    codes = [int(value) for value in CODE_RE.findall(report_text)]
+    if codes != [0, 0, 0]:
+        raise ProbeError(f"JES compiler, generator and RUN CODEs not [0, 0, 0]: {codes!r}")
+    if not any(line.strip() == "VALUE FROM EXTRA = 12345"
+               for line in report_text.splitlines()):
+        raise ProbeError("accepted output absent from independently extracted JES report")
+    return {
+        "jes_step_codes": [{"step": step, "program": pgm, "rc": 0}
+                           for step, pgm in EXPECTED_STEPS],
+        "jes_phase_codes": codes,
+        "jes_summary": str(summary_path.relative_to(ROOT)),
+        "jes_report": str(report_path.relative_to(ROOT)),
+    }
+
+
 def save(path: Path, data: dict) -> None:
     staging = path.with_suffix(".tmp")
     staging.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
@@ -155,6 +259,10 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
         raise ProbeError(f"missing compile-and-run tool: {COMPILE}")
     icint = current_interpreter()
     revision = git_head()
+    entries = {r["case_id"]: r for r in rows}
+    # Validate every execution contract before creating evidence or submitting JES.
+    for ident in selected:
+        command_for(entries[ident], icint, ROOT / "workarea/mr10-probes/preflight.jcl", "DP000000")
     os.umask(0o077)
     EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
     moment = datetime.now(timezone.utc)
@@ -164,14 +272,14 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
     summary = {
         "schema": 1, "suite": "mr10-probes", "git_head": revision,
         "started_utc": moment.isoformat(), "interpreter": str(icint.relative_to(ROOT)),
-        "verification": "UNVERIFIED", "status": "IN_PROGRESS",
+        "verification": "CASE_SPECIFIC", "status": "IN_PROGRESS",
         "selected_cases": selected,
         "cases": [{"id": item, "status": "NOT_RUN"} for item in selected],
     }
     save(summary_path, summary)
     print(f"MR10 PROBE EVIDENCE: {folder}", flush=True)
-    entries = {r["case_id"]: r for r in rows}
     observed = 0
+    accepted = 0
     fail = False
     for index, item in enumerate(summary["cases"], 1):
         ident = item["id"]
@@ -184,7 +292,8 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
                      "log": str(log_path.relative_to(ROOT)),
                      "jcl": str(jcl_path.relative_to(ROOT)),
                      "expected_code": int(entries[ident]["expected_code"]),
-                     "expected_oracle": entries[ident]["oracle"]})
+                     "expected_oracle": entries[ident]["oracle"],
+                     "verification": entries[ident]["verification"]})
         save(summary_path, summary)
         print(f"RUN      {ident}", flush=True)
         try:
@@ -198,24 +307,39 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
             item.update({"status": state, "reason": reason, "runner_rc": proc.returncode,
                          "jes_job_id": jobs[0] if len(jobs) == 1 else None,
                          "interpreted_code": int(codes[0]) if len(codes) == 1 else None})
+            if ident == ACCEPTED_CASE and state == "OBSERVED":
+                try:
+                    verify_accepted_output(content, ROOT / GOLDEN_PATH)
+                    item.update(verify_jes_steps(jobs[0], job_name, folder))
+                    item["status"] = "PASS"
+                    item["reason"] = "accepted golden output and all ten JES steps verified"
+                except ProbeError as exc:
+                    item["status"] = "FAIL"
+                    item["reason"] = str(exc)
         except OSError as exc:
             item.update({"status": "FAIL", "reason": f"runner I/O failure: {exc}"})
         save(summary_path, summary)
         print(f"{item['status']:<8} {ident}: {item['reason']}", flush=True)
-        if item["status"] != "OBSERVED":
+        if item["status"] == "OBSERVED":
+            observed += 1
+        elif item["status"] == "PASS":
+            accepted += 1
+        else:
             fail = True
             break
-        observed += 1
     summary["finished_utc"] = datetime.now(timezone.utc).isoformat()
-    summary["status"] = "FAIL" if fail else "UNVERIFIED"
+    summary["status"] = "FAIL" if fail else "UNVERIFIED" if observed else "PASS"
+    summary["verification"] = "MIXED" if observed and accepted else "UNVERIFIED" if observed else "ACCEPTED"
     summary["counts"] = {
-        "OBSERVED": observed, "FAIL": sum(r["status"] == "FAIL" for r in summary["cases"]),
+        "PASS": accepted, "OBSERVED": observed,
+        "FAIL": sum(r["status"] == "FAIL" for r in summary["cases"]),
         "NOT_RUN": sum(r["status"] == "NOT_RUN" for r in summary["cases"]),
     }
     save(summary_path, summary)
-    print(f"MR10 PROBE RESULT: {summary['status']} (no PASS accepted)")
+    print(f"MR10 PROBE RESULT: {summary['status']} "
+          f"({accepted} accepted PASS; {observed} provisional OBSERVED)")
     print(f"SUMMARY: {summary_path}")
-    return 1 if fail else 3  # 3: observed but no accepted oracle
+    return 1 if fail else 3 if observed else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -242,13 +366,16 @@ def main(argv: list[str] | None = None) -> int:
         selected = (list(PROVISIONAL) if args.all_provisional else
                     [r["case_id"] for r in rows if not args.case or r["case_id"] in args.case])
         if args.check:
-            print(f"MR10 PROBES CHECK: PASS ({len(rows)} UNVERIFIED contracts; "
-                  f"{len(PROVISIONAL)} provisional; host-only)")
+            count_accepted = sum(r["verification"] == "ACCEPTED" for r in rows)
+            print(f"MR10 PROBES CHECK: PASS ({len(rows)} contracts; "
+                  f"{count_accepted} accepted, {len(PROVISIONAL) - count_accepted} provisional; host-only)")
             return 0
         if args.list:
             for row in rows:
                 if row["case_id"] in selected:
-                    status = "PROVISIONAL" if row["case_id"] in PROVISIONAL else "NOT_IMPLEMENTED"
+                    status = ("ACCEPTED" if row["verification"] == "ACCEPTED" else
+                              "PROVISIONAL" if row["case_id"] in PROVISIONAL else
+                              "NOT_IMPLEMENTED")
                     print(f"{row['case_id']}\t{status}\t{row['interpreter']}\t{row['oracle']}")
             return 0
         if not args.case and not args.all_provisional:

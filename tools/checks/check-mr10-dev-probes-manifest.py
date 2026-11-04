@@ -2,7 +2,7 @@
 """Host-only contract check for the proposed MR10 development-probe suite.
 
 This script NEVER invokes MR10, JES, or a compiler. The manifest is a
-pre-acceptance inventory, not an executable suite or a passing test record.
+contract inventory. Only 05-named-dd has an accepted golden baseline.
 """
 from __future__ import annotations
 
@@ -191,11 +191,18 @@ def validate(root: Path = ROOT, manifest: Path | None = None) -> list[dict[str, 
         oracle = row["oracle"]
         if oracle.startswith("file:"):
             checked_file(root, oracle[5:], f"{ident}: expected output")
-            require(ident.endswith("/honors-thesis"),
+            require(ident.endswith("/honors-thesis") or ident == "05-named-dd",
                     f"{ident}: new golden output requires separate evidence review")
         else:
             require(bool(PENDING.fullmatch(oracle)),
                     f"{ident}: unrecognized or missing output oracle")
+        if ident == "05-named-dd":
+            require(oracle ==
+                    "file:mr10-kit-compiler/tests/05-named-dd/05-named-dd.expected",
+                    f"{ident}: accepted oracle path changed")
+            golden = checked_file(root, oracle[5:], f"{ident}: accepted golden")
+            require(golden.read_text(encoding="utf-8") == "VALUE FROM EXTRA = 12345\n",
+                    f"{ident}: accepted golden output differs from owner-approved baseline")
         artifacts = row["artifacts"]
         require(artifacts == ("ocode,intcode" if ident in ARTIFACT_CASES else "none"),
                 f"{ident}: artifact requirement changed")
@@ -203,8 +210,12 @@ def validate(root: Path = ROOT, manifest: Path | None = None) -> list[dict[str, 
                 f"{ident}: unknown artifact contract")
         require(engine == "compile-and-run" or artifacts == "none",
                 f"{ident}: run-intcode cannot generate BCPL compiler artifacts")
-        require(row["verification"] == "UNVERIFIED",
-                f"{ident}: acceptance or blocking requires a separately reviewed evidence record")
+        if ident == "05-named-dd":
+            require(row["verification"] == "ACCEPTED",
+                    f"{ident}: owner-accepted verification status changed")
+        else:
+            require(row["verification"] == "UNVERIFIED",
+                    f"{ident}: acceptance or blocking requires a separately reviewed evidence record")
 
     require(groups == {f"{i:02d}-{name}" for i, name in (
         (1, "echo-test"), (2, "honors-thesis-and-mapstore"),
@@ -222,8 +233,10 @@ def main() -> int:
     except ContractError as exc:
         print(f"MR10 DEVELOPMENT PROBE MANIFEST: FAIL ({exc})", file=sys.stderr)
         return 2
+    accepted = sum(row["verification"] == "ACCEPTED" for row in records)
     print(f"MR10 DEVELOPMENT PROBE MANIFEST: PASS "
-          f"({len(records)} UNVERIFIED entries, 11 historical groups; host-only)")
+          f"({len(records)} entries; {accepted} ACCEPTED, "
+          f"{len(records) - accepted} UNVERIFIED; 11 historical groups; host-only)")
     return 0
 
 

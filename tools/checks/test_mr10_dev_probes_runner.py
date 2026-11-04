@@ -32,12 +32,17 @@ class MR10DevelopmentProbeRunnerTests(unittest.TestCase):
             "COMPILE": self.root / "tools/mr10/compile-and-run",
             "CURRENT": self.root / "mr10-kit-compiler/asm/CURRENT",
             "EVIDENCE_ROOT": self.root / "workarea/mr10-probes",
+            "JES_SUMMARY": self.root / "tools/mvs/job-summary",
+            "JES_DUMP": self.root / "tools/mvs/dump-report-for-job",
+            "PRINTER": self.root / "mvs-state/prt/prt00e.txt",
         }.items():
             previous = getattr(MOD, key)
             setattr(MOD, key, value)
             self.addCleanup(setattr, MOD, key, previous)
         self.make_file("mr10-kit-compiler/asm/CURRENT", "icintv19.asm\n")
         self.make_file("mr10-kit-compiler/asm/icintv19.asm")
+        self.make_file(MOD.GOLDEN_PATH, "VALUE FROM EXTRA = 12345\n")
+        self.make_file("mvs-state/prt/prt00e.txt")
         self.rows = []
         for case_id in (*MOD.PROVISIONAL, "02-honors-thesis-and-mapstore/honors-thesis"):
             self.rows.append(dict(
@@ -51,8 +56,10 @@ class MR10DevelopmentProbeRunnerTests(unittest.TestCase):
                          if case_id == "11-getvec-freevec" else ""),
                 dd_bindings=("EXTRA=mr10-kit-compiler/tests/05-named-dd/extra.bcpl"
                              if case_id == "05-named-dd" else ""),
-                sysin="", expected_code="0", oracle="pending:test", artifacts="none",
-                verification="UNVERIFIED",
+                sysin="", expected_code="0",
+                oracle=(f"file:{MOD.GOLDEN_PATH}" if case_id == MOD.ACCEPTED_CASE
+                        else "pending:test"), artifacts="none",
+                verification=("ACCEPTED" if case_id == MOD.ACCEPTED_CASE else "UNVERIFIED"),
             ))
         for row in self.rows:
             self.make_file(row["source"])
@@ -67,6 +74,7 @@ class MR10DevelopmentProbeRunnerTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         self.make_fake_compiler()
+        self.make_fake_reports()
 
     def make_file(self, relative, content="fixture\n"):
         p = self.root / relative
@@ -84,6 +92,7 @@ args = sys.argv[1:]
 jcl = Path(args[args.index("--jcl")+1])
 case = jcl.stem.replace("--", "/")
 Path(jcl).write_text("//FAKE JOB\\n", encoding="utf-8")
+Path(%r).write_text(args[args.index("--job-name")+1], encoding="utf-8")
 if os.environ.get("PROBE_RUNNER_RC"):
     print("FAKE RUNNER ERROR")
     sys.exit(int(os.environ["PROBE_RUNNER_RC"]))
@@ -97,13 +106,57 @@ if os.environ.get("PROBE_REORDER"):
     lines = list(reversed(lines))
 for line in lines:
     print(line)
+if os.environ.get("PROBE_EXTRA_LINE"):
+    print("UNEXPECTED USER OUTPUT")
 if not os.environ.get("PROBE_NO_CODE"):
     print("EXECUTION CYCLES = 42, CODE = " + os.environ.get("PROBE_BAD_CODE", "0"))
-''' % MOD.TRACE
+''' % (str(self.root / 'fake-last-job-name.txt'), MOD.TRACE)
         path = MOD.COMPILE
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(script, encoding="utf-8")
         path.chmod(0o755)
+
+    def make_fake_reports(self):
+        # These stubs imitate *read-only* job-summary and dump-report-for-job.
+        # No MVS services, reader or printer socket is accessed by tests.
+        job_summary = '''#!/usr/bin/env python3
+import os
+from pathlib import Path
+import sys
+job = Path(%r).read_text()
+if os.environ.get('PROBE_JES_SUMMARY_RC'):
+    print('report utility failed', file=sys.stderr)
+    sys.exit(1)
+print('JOB 8123  ' + ('OTHERJOB' if os.environ.get('PROBE_JES_WRONG_NAME') else job))
+steps = %r
+if os.environ.get('PROBE_JES_MISSING_STEP'):
+    steps = steps[:-1]
+print('STEP       PROGRAM      RESULT')
+for i, (step, program) in enumerate(steps):
+    rc = '0008' if os.environ.get('PROBE_JES_BAD_RC') and i == 1 else '0000'
+    print('%%-10s %%-12s RC=%%s' %% (step, program, rc))
+print('JOB RESULT: ' + ('FAILURE' if os.environ.get('PROBE_JES_BAD_RC') else 'SUCCESS'))
+print('HIGHEST RC: ' + ('0008' if os.environ.get('PROBE_JES_BAD_RC') else '0000'))
+''' % (str(self.root / 'fake-last-job-name.txt'), MOD.EXPECTED_STEPS)
+        dump_report = '''#!/usr/bin/env python3
+import os
+from pathlib import Path
+import sys
+job = Path(%r).read_text()
+if os.environ.get('PROBE_JES_DUMP_RC'):
+    print('report utility failed', file=sys.stderr)
+    sys.exit(1)
+print('JOB 8123 ' + job)
+phases = (0, 0) if os.environ.get('PROBE_JES_MISSING_PHASE') else (0, 0, 0)
+if os.environ.get('PROBE_JES_BAD_PHASE'):
+    phases = (0, 8, 0)
+for i, value in enumerate(phases):
+    print(' EXECUTION CYCLES = %%s, CODE = %%d' %% (2000+i, value))
+if not os.environ.get('PROBE_JES_MISSING_VALUE'):
+    print(' VALUE FROM EXTRA = 12345')
+''' % str(self.root / 'fake-last-job-name.txt')
+        self.make_file('tools/mvs/job-summary', job_summary).chmod(0o755)
+        self.make_file('tools/mvs/dump-report-for-job', dump_report).chmod(0o755)
 
     def cli(self, *args):
         stdout, stderr = io.StringIO(), io.StringIO()
@@ -119,13 +172,14 @@ if not os.environ.get("PROBE_NO_CODE"):
     def test_host_check_never_executes_compiler(self):
         rc, out, err = self.cli("--check")
         self.assertEqual((rc, err), (0, ""))
-        self.assertIn("6 provisional; host-only", out)
+        self.assertIn("1 accepted, 5 provisional; host-only", out)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_list_shows_full_historical_id_without_execution(self):
         rc, out, err = self.cli("--list")
         self.assertEqual(rc, 0)
         self.assertIn("04-module-test\tPROVISIONAL", out)
+        self.assertIn("05-named-dd\tACCEPTED", out)
         self.assertIn("02-honors-thesis-and-mapstore/honors-thesis\tNOT_IMPLEMENTED", out)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
@@ -167,18 +221,22 @@ if not os.environ.get("PROBE_NO_CODE"):
         self.assertEqual(rc, 2)
         self.assertIn("requires --run", err)
 
-    def test_selected_case_evidence_is_unverified(self):
+    def test_accepted_case_passes_with_gold_and_jes(self):
         rc, output, err = self.cli("--run", "--case", "05-named-dd")
-        self.assertEqual((rc, err), (3, ""))
-        self.assertIn("OBSERVED 05-named-dd", output)
-        self.assertNotIn("PASS 05-named-dd", output)
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("PASS     05-named-dd", output)
         summary, root = self.evidence()
-        self.assertEqual(summary["status"], "UNVERIFIED")
-        self.assertEqual(summary["verification"], "UNVERIFIED")
+        self.assertEqual(summary["status"], "PASS")
+        self.assertEqual(summary["verification"], "ACCEPTED")
         self.assertEqual(summary["git_head"], "a" * 40)
-        self.assertEqual(summary["counts"], {"OBSERVED": 1, "FAIL": 0, "NOT_RUN": 0})
+        self.assertEqual(summary["counts"], {"PASS": 1, "OBSERVED": 0, "FAIL": 0, "NOT_RUN": 0})
         item = summary["cases"][0]
-        self.assertEqual(item["status"], "OBSERVED")
+        self.assertEqual(item["status"], "PASS")
+        self.assertEqual(item["verification"], "ACCEPTED")
+        self.assertEqual(len(item["jes_step_codes"]), 10)
+        self.assertEqual(item["jes_phase_codes"], [0, 0, 0])
+        self.assertTrue((self.root / item["jes_summary"]).is_file())
+        self.assertTrue((self.root / item["jes_report"]).is_file())
         self.assertTrue((self.root / item["log"]).is_file())
         self.assertTrue((self.root / item["jcl"]).is_file())
         self.assertIn("EXTRA=", " ".join(item["command"]))
@@ -186,7 +244,7 @@ if not os.environ.get("PROBE_NO_CODE"):
         self.assertEqual(item["jes_job_id"], "8123")
         self.assertEqual(item["expected_code"], 0)
         self.assertEqual(item["interpreted_code"], 0)
-        self.assertTrue(item["expected_oracle"].startswith("pending:"))
+        self.assertEqual(item["expected_oracle"], f"file:{MOD.GOLDEN_PATH}")
 
     def test_multiple_cases_run_in_manifest_order(self):
         rc, _, _ = self.cli("--run", "--case", "11-getvec-freevec", "--case", "04-module-test")
@@ -203,8 +261,9 @@ if not os.environ.get("PROBE_NO_CODE"):
         self.assertEqual((rc, err), (3, ""))
         s, root = self.evidence()
         self.assertEqual(len(s["cases"]), 6)
-        self.assertEqual(s["counts"]["OBSERVED"], 6)
-        self.assertFalse(any(line.startswith("PASS ") for line in out.splitlines()))
+        self.assertEqual(s["counts"]["PASS"], 1)
+        self.assertEqual(s["counts"]["OBSERVED"], 5)
+        self.assertEqual(sum(line.startswith("PASS ") for line in out.splitlines()), 1)
 
     def test_runner_nonzero_stops_following_cases(self):
         with patch.dict(os.environ, {"PROBE_RUNNER_RC": "7"}):
@@ -214,7 +273,7 @@ if not os.environ.get("PROBE_NO_CODE"):
         self.assertEqual(s["status"], "FAIL")
         self.assertEqual(s["cases"][0]["runner_rc"], 7)
         self.assertEqual(s["cases"][1]["status"], "NOT_RUN")
-        self.assertEqual(s["counts"], {"OBSERVED": 0, "FAIL": 1, "NOT_RUN": 5})
+        self.assertEqual(s["counts"], {"PASS": 0, "OBSERVED": 0, "FAIL": 1, "NOT_RUN": 5})
 
     def test_missing_code_is_fail_not_observed(self):
         with patch.dict(os.environ, {"PROBE_NO_CODE": "1"}):
@@ -282,6 +341,96 @@ if not os.environ.get("PROBE_NO_CODE"):
         trace = MOD.TRACE["05-named-dd"]
         body = "\n".join(["JOB 123", "INTCODE SYSTEM ENTERED", *trace, "INTCODE ERROR", "EXECUTION CYCLES = 2, CODE = 0"])
         self.assertEqual(MOD.assess_output("05-named-dd", body, 0)[0], "FAIL")
+
+
+    def test_golden_file_missing_fails(self):
+        (self.root / MOD.GOLDEN_PATH).unlink()
+        rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("missing accepted golden output", s["cases"][0]["reason"])
+
+    def test_golden_file_modified_fails(self):
+        (self.root / MOD.GOLDEN_PATH).write_text("VALUE FROM EXTRA = 99999\n")
+        rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("golden output mismatch", s["cases"][0]["reason"])
+
+    def test_unexpected_output_rejected_by_golden(self):
+        with patch.dict(os.environ, {"PROBE_EXTRA_LINE": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("golden output mismatch", s["cases"][0]["reason"])
+
+    def test_wrong_jes_job_name_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_WRONG_NAME": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("does not match submitted job", s["cases"][0]["reason"])
+
+    def test_missing_jes_step_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_MISSING_STEP": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("JES step list/RC mismatch", s["cases"][0]["reason"])
+
+    def test_nonzero_jes_step_rc_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_BAD_RC": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("JES report does not establish", s["cases"][0]["reason"])
+
+    def test_missing_jes_phase_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_MISSING_PHASE": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("JES compiler, generator and RUN CODEs", s["cases"][0]["reason"])
+
+    def test_nonzero_jes_phase_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_BAD_PHASE": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("JES compiler, generator and RUN CODEs", s["cases"][0]["reason"])
+
+    def test_missing_jes_output_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_MISSING_VALUE": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("absent from independently extracted JES report", s["cases"][0]["reason"])
+
+    def test_job_summary_tool_failure_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_SUMMARY_RC": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+        s, _ = self.evidence()
+        self.assertIn("JES report extraction failed", s["cases"][0]["reason"])
+
+    def test_job_dump_tool_failure_fails(self):
+        with patch.dict(os.environ, {"PROBE_JES_DUMP_RC": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "05-named-dd")
+        self.assertEqual(rc, 1)
+
+    def test_unverified_04_stays_observed(self):
+        rc, _, _ = self.cli("--run", "--case", "04-module-test")
+        self.assertEqual(rc, 3)
+        s, _ = self.evidence()
+        self.assertEqual(s["cases"][0]["status"], "OBSERVED")
+        self.assertEqual(s["cases"][0]["verification"], "UNVERIFIED")
+        self.assertEqual(s["counts"]["PASS"], 0)
+
+    def test_unaccepted_manifest_claim_rejected_before_jes(self):
+        self.rows[0]["verification"] = "ACCEPTED"
+        rc, _, err = self.cli("--run", "--case", "04-module-test")
+        self.assertEqual(rc, 2)
+        self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_trace_assertion_requires_order_and_uniqueness(self):
         trace = MOD.TRACE["09-multiple-assignment"]

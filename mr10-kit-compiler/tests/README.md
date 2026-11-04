@@ -30,8 +30,10 @@ Saved OCODE and INTCODE files are evidence, not build litter. Keep them where th
 ## MR10 development-probe manifest contract
 
 `dev-probes-manifest.tsv` defines **17 proposed checks** across the eleven
-numbered historical development-probe groups. A provisional runner exists, but it is **not** an accepted suite. All cases are `UNVERIFIED`. The 12-case `00-regression-panel`
-and the five-suite project regression coordinator are unchanged;
+numbered historical development-probe groups. A standalone runner exists; only `05-named-dd` has an owner-accepted
+golden baseline. The other **16** cases remain `UNVERIFIED`.
+The 12-case `00-regression-panel` and the five-suite project regression
+coordinator are unchanged;
 `mr10-probes` is not yet a coordinator-selected or accepted suite.
 
 The following commands validate the contract **offline**, without submitting
@@ -56,7 +58,7 @@ python3 -B -m unittest discover -s tools/checks -p 'test_mr10_dev_probes_manifes
 | `expected_code` | Expected interpreted completion; only MAPSTORE deliberately expects `-1`, the others `0` |
 | `oracle` | `file:path` for an existing candidate golden file or `pending:reason` when output/structural expectations still require verification |
 | `artifacts` | `none` or `ocode,intcode` for proposed compiler-output evidence |
-| `verification` | `UNVERIFIED`; any acceptance/blocking claim requires an independently reviewed record and contract update |
+| `verification` | `ACCEPTED` for owner-approved `05-named-dd`; `UNVERIFIED` for the other 16 cases |
 
 The validator checks the fixed historical case identities, interpreters,
 source files, required modules, DD bindings, SYSIN, expected codes, artifacts,
@@ -78,12 +80,11 @@ A green manifest check is not a passing MR10 probe suite.
 - The historical source and intermediate artifacts must remain unmodified.
   Future generated artifacts belong in separate workarea evidence directories.
 
-Only after reviewing execution contracts, expected outcomes, and target-MVS
-evidence should a separate runner or coordinator integration be approved.
+Further case acceptance or any coordinator integration requires separate owner review.
 
 ## Standalone MR10 development-probe runner (first phase)
 
-The **17** historical development-probe contracts remain `UNVERIFIED`.
+Of the **17** historical development-probe contracts, **05-named-dd is ACCEPTED**. The other **16 remain UNVERIFIED**.
 `tools/mr10/run-dev-probes` is a first-phase, **standalone** runner, not
 part of `tools/tests/run-project-regressions` or the existing 12-case
 MR10 Regression Panel. It implements provisional execution of six
@@ -108,7 +109,7 @@ separate approval for JES execution, use a selected case such as:
 tools/mr10/run-dev-probes --run --case 05-named-dd
 ```
 
-`--run --all-provisional` is an explicit six-case opt-in; there is no
+`--run --all-provisional` is an explicit six-case opt-in (one accepted, five provisional); there is no
 implicit default run. Unsupported cases or mixed selections containing
 them are rejected **before** JES submission. Each selected case uses
 `tools/mr10/compile-and-run` with its declared input bindings, a unique
@@ -118,12 +119,24 @@ interpreter, exact command, expected and actual completion, JES job ID,
 runner logs, and provisional output checks. The command stops after the
 first unexpected failure.
 
-**There is no accepted PASS from this runner yet.** Meeting the
-source-derived provisional trace and observing `CODE=0` yields
-`OBSERVED` and overall `UNVERIFIED` (exit code **3**). A failed
-execution or trace yields `FAIL` (exit code **1**); invalid input,
-unsupported cases, or missing prerequisites exit **2** before dispatch.
-Host-only `--check`/`--list` exit **0** when successful. The pending
-output oracles require independently reviewed MVS evidence before
-any acceptance-policy change. Do not interpret exit code 3 or a
-provisional matching trace as suite acceptance.
+For `05-named-dd`, a fresh execution now reports **PASS** and exits **0**
+only if the golden program output, all ten expected JES step return codes
+and all three interpreted completion codes are verified. The accepted
+baseline is documented in
+[the 05-named-dd acceptance record](05-named-dd/acceptance-20261104.md).
+
+Other executable probes that match their source-derived traces remain
+**OBSERVED**, with overall **UNVERIFIED** (exit code **3**).
+Unexpected execution or comparison failures return **1**. Invalid
+inputs and unsupported selections return **2** before JES submission;
+host-only `--check` and `--list` return **0**.
+A mixed run with accepted PASS and provisional OBSERVED remains
+UNVERIFIED (exit code 3), never an accepted suite-wide PASS.
+
+The `05-named-dd.expected` file contains exactly the semantic program
+output `VALUE FROM EXTRA = 12345`. ICINT memory statistics and cycle
+counts are excluded from the golden comparison, while unexpected
+program-output lines are not. The runner saves the independently
+extracted job summary and full JES report under `workarea/mr10-probes/`.
+No new JES test was submitted to record the initial JOB 9543 acceptance.
+The revised runner still requires its own fresh MVS execution validation.
