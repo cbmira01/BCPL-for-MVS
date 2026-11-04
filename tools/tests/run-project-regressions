@@ -19,15 +19,24 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-SUITES = ("mr10", "bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
+NATIVE_SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
+SUITES = ("mr10", "mr10-probes", *NATIVE_SUITES)
 NATIVE = ROOT / "tools/tests/run-suite"
 MR10 = ROOT / "tools/mr10/run-regression-panel"
+MR10_PROBES = ROOT / "tools/mr10/run-dev-probes"
+MR10_PROBES_MANIFEST = ROOT / "mr10-kit-compiler/tests/dev-probes-manifest.tsv"
+ACCEPTED_MR10_PROBES = (
+    "04-module-test", "05-named-dd", "06-dynamic-streams",
+    "07-many-streams", "09-multiple-assignment", "11-getvec-freevec",
+)
 MR10_MANIFEST = ROOT / "mr10-kit-compiler/tests/00-regression-panel/manifest.tsv"
 NATIVE_MANIFESTS = ROOT / "tests/suites"
 RUN_ROOT = ROOT / "workarea/project-regressions"
 TOKEN = re.compile(r"^[a-z][a-z0-9-]*$")
 PROGRESS_MR10 = re.compile(
     r"^(PASS|FAIL)\s+([a-z][a-z0-9-]*/[a-z][a-z0-9-]*)\s*$")
+PROGRESS_PROBES = re.compile(
+    r"^(PASS|FAIL|OBSERVED)\s+([a-z0-9-]+(?:/[a-z0-9-]+)?):")
 PROGRESS_NATIVE = re.compile(
     r"^(PASS|FAIL|SKIP|BLOCKED)\s+(\d{2,3})\s+\2-([a-z0-9-]+):")
 
@@ -93,12 +102,26 @@ def inventory() -> dict[str, list[str]]:
     require(NATIVE.is_file(), f"missing native runner: {NATIVE}")
     require((ROOT / "tools/mr10/compile-and-run").is_file(),
             "missing MR10 compile-and-run")
-    selected = {"mr10": mr10_cases()}
+    require(MR10_PROBES.is_file(), f"missing MR10 probe runner: {MR10_PROBES}")
+    require(MR10_PROBES_MANIFEST.is_file(),
+            f"missing MR10 probe manifest: {MR10_PROBES_MANIFEST}")
+    probe_check = subprocess.run([str(MR10_PROBES), "--check"], cwd=ROOT,
+                                 text=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT, check=False)
+    require(probe_check.returncode == 0,
+            "MR10 probe manifest check failed: " + probe_check.stdout.strip())
+    with MR10_PROBES_MANIFEST.open(encoding="utf-8", newline="") as handle:
+        probe_rows = list(csv.DictReader(handle, delimiter="\t"))
+    accepted = [row["case_id"] for row in probe_rows
+                if row.get("verification") == "ACCEPTED"]
+    require(accepted == list(ACCEPTED_MR10_PROBES),
+            "MR10 accepted probe identities changed; review before updating coordinator")
+    selected = {"mr10": mr10_cases(), "mr10-probes": accepted}
     check = subprocess.run([str(NATIVE), "--check"], cwd=ROOT,
                            text=True, stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, check=False)
     require(check.returncode == 0, "native manifest check failed: " + check.stdout.strip())
-    for suite in SUITES[1:]:
+    for suite in NATIVE_SUITES:
         file = NATIVE_MANIFESTS / f"{suite}.tsv"
         with file.open(encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle, delimiter="\t"))
@@ -138,6 +161,49 @@ def parse_mr10(log: str, declared: list[str], rc: int) -> dict:
             "counts": {"PASS": footer["PASS"], "FAIL": footer["FAIL"],
                        "SKIP": None, "BLOCKED": None, "TOTAL": footer["TOTAL"]},
             "cases": [{"id": label, "status": state} for state, label in reports]}
+
+
+
+def parse_mr10_probes(log: str, declared: list[str], rc: int) -> dict:
+    matches = re.findall(r"(?m)^MR10 PROBE EVIDENCE: (.+)\s*$", log)
+    require(len(matches) == 1, "MR10 probes: expected one evidence directory")
+    evidence = Path(matches[0].strip()).resolve()
+    parent = (ROOT / "workarea/mr10-probes").resolve()
+    require(evidence.parent == parent and evidence.is_dir(),
+            "MR10 probes: evidence directory outside probe run root")
+    file = evidence / "summary.json"
+    require(file.is_file(), "MR10 probes: missing summary")
+    payload = json.loads(file.read_text(encoding="utf-8"))
+    require(payload.get("suite") == "mr10-probes",
+            "MR10 probes: evidence suite mismatch")
+    cases = payload.get("cases")
+    require(isinstance(cases, list) and len(cases) == len(declared),
+            "MR10 probes: case count mismatch")
+    require(payload.get("selected_cases") == declared and
+            [row.get("id") for row in cases] == declared,
+            "MR10 probes: selected IDs differ from the six accepted cases")
+    require(all(row.get("verification") == "ACCEPTED" for row in cases),
+            "MR10 probes: unaccepted case selected")
+    counts = {key: sum(row.get("status") == key for row in cases)
+              for key in ("PASS", "FAIL", "OBSERVED", "NOT_RUN")}
+    require(sum(counts.values()) == len(cases) and
+            payload.get("counts") == counts,
+            "MR10 probes: statuses or counts disagree with summary")
+    expected_rc = 1 if counts["FAIL"] else (3 if counts["OBSERVED"] else 0)
+    expected_status = ("FAIL" if counts["FAIL"] else
+                       "UNVERIFIED" if counts["OBSERVED"] else "PASS")
+    require(rc == expected_rc and payload.get("status") == expected_status,
+            f"MR10 probes: runner RC/status disagree with summary (RC={rc})")
+    require(not counts["NOT_RUN"] or counts["FAIL"],
+            "MR10 probes: unexecuted cases without a reported failure")
+    status = ("FAIL" if counts["FAIL"] else
+              "BLOCKED" if counts["OBSERVED"] else "PASS")
+    return {"status": status,
+            "counts": {"PASS": counts["PASS"], "FAIL": counts["FAIL"],
+                       "SKIP": 0, "BLOCKED": counts["OBSERVED"],
+                       "TOTAL": len(cases)},
+            "probe_evidence": str(evidence.relative_to(ROOT)),
+            "cases": [{"id": row["id"], "status": row["status"]} for row in cases]}
 
 
 def parse_native(log: str, suite: str, profile: str,
@@ -180,13 +246,32 @@ def save(path: Path, payload: dict) -> None:
 
 
 def progress_case(suite: str, line: str) -> str | None:
-    match = (PROGRESS_MR10.fullmatch(line.rstrip("\r\n")) if suite == "mr10"
-             else PROGRESS_NATIVE.match(line))
+    if suite == "mr10":
+        match = PROGRESS_MR10.fullmatch(line.rstrip("\r\n"))
+    elif suite == "mr10-probes":
+        match = PROGRESS_PROBES.match(line)
+    else:
+        match = PROGRESS_NATIVE.match(line)
     if match is None:
         return None
-    if suite != "mr10":
-        return f"{match.group(1):<7} {match.group(2)}  {match.group(3)}"
-    return f"{match.group(1):<7} {match.group(2)}"
+    if suite in ("mr10", "mr10-probes"):
+        return f"{match.group(1):<7} {match.group(2)}"
+    return f"{match.group(1):<7} {match.group(2)}  {match.group(3)}"
+
+
+def suite_command(suite: str, cases: dict[str, list[str]],
+                  profile: str | None, allow_device: bool) -> list[str]:
+    if suite == "mr10":
+        return [str(MR10)]
+    if suite == "mr10-probes":
+        command = [str(MR10_PROBES), "--run"]
+        for ident in cases[suite]:
+            command.extend(("--case", ident))
+        return command
+    command = [str(NATIVE), suite, "--run", "--profile", profile]
+    if suite == "bcplqsam" and allow_device:
+        command.append("--allow-device")
+    return command
 
 
 def run_logged(command: list[str], suite: str, log_path: Path,
@@ -242,10 +327,7 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
         suite = entry["name"]
         if suite not in selected:
             continue
-        command = ([str(MR10)] if suite == "mr10" else
-                   [str(NATIVE), suite, "--run", "--profile", args.profile])
-        if suite == "bcplqsam" and args.allow_device:
-            command.append("--allow-device")
+        command = suite_command(suite, cases, args.profile, args.allow_device)
         log_path = evidence / f"{suite}.log"
         print(f"RUN {suite} ({len(cases[suite])} cases)", flush=True)
         try:
@@ -253,6 +335,8 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
             log = log_path.read_text(encoding="utf-8", errors="replace")
             details = (parse_mr10(log, cases[suite], rc)
                        if suite == "mr10" else
+                       parse_mr10_probes(log, cases[suite], rc)
+                       if suite == "mr10-probes" else
                        parse_native(log, suite, args.profile, cases[suite], rc))
             entry.update(details)
             entry["runner_rc"] = rc
@@ -294,7 +378,7 @@ def main(argv: list[str] | None = None) -> int:
     requested = args.suite or []
     if len(set(requested)) != len(requested):
         parser.error("duplicate --suite selection")
-    native_requested = any(name != "mr10" for name in requested)
+    native_requested = any(name in NATIVE_SUITES for name in requested)
     if args.progress and not args.run:
         parser.error("--progress requires --run")
     if args.allow_device and (not args.run or "bcplqsam" not in requested):
@@ -312,7 +396,9 @@ def main(argv: list[str] | None = None) -> int:
         selected = [name for name in SUITES if not requested or name in requested]
         for name in selected:
             print(f"{name}\t{len(cases[name])}\t" +
-                  ("interpreted MR10" if name == "mr10" else "native System/370"))
+                  ("interpreted MR10" if name == "mr10" else
+                   "interpreted MR10 probes" if name == "mr10-probes" else
+                   "native System/370"))
         print("PROJECT SUITE CHECK: PASS" if args.check else
               "PROJECT SUITE LIST: host-only")
         return 0

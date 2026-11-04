@@ -32,9 +32,9 @@ Saved OCODE and INTCODE files are evidence, not build litter. Keep them where th
 `dev-probes-manifest.tsv` defines **17 proposed checks** across the eleven
 numbered historical development-probe groups. A standalone runner exists; the original six current-ICINT BCPL probes have owner-accepted
 golden baselines. The other **11** historical cases remain `UNVERIFIED`.
-The 12-case `00-regression-panel` and the five-suite project regression
-coordinator are unchanged;
-`mr10-probes` is not yet a coordinator-selected or accepted suite.
+The 12-case `00-regression-panel` remains separate. The project regression
+coordinator includes `mr10-probes` as a sixth suite for the six accepted
+probes. The eleven unverified historical candidates remain excluded.
 
 The following commands validate the contract **offline**, without submitting
 JES, compiling BCPL, or modifying MVS datasets:
@@ -85,13 +85,26 @@ Further case acceptance or any coordinator integration requires separate owner r
 ## Standalone MR10 development-probe runner (first phase)
 
 Of the **17** historical development-probe contracts, the original **six current-ICINT BCPL probes are ACCEPTED**. The other **11 remain UNVERIFIED**.
-`tools/mr10/run-dev-probes` is a first-phase, **standalone** runner, not
-part of `tools/tests/run-project-regressions` or the existing 12-case
-MR10 Regression Panel. It implements the original six current-ICINT BCPL probes: `04-module-test`, `05-named-dd`,
+`tools/mr10/run-dev-probes` remains a standalone runner and is also
+invoked by the project coordinator for exactly the six ACCEPTED cases.
+The 12-case MR10 Regression Panel is independent. It implements the original six current-ICINT BCPL probes: `04-module-test`, `05-named-dd`,
 `06-dynamic-streams`, `07-many-streams`, `09-multiple-assignment`, and
 `11-getvec-freevec`. Historical interpreter and coroutine/artifact
 checks are now available in an **experimental** execution mode, but
 have not been run or accepted under the expanded runner.
+
+Project-wide host-only listing (no JES submissions):
+
+```sh
+tools/tests/run-project-regressions --list
+tools/tests/run-project-regressions --check
+```
+
+The coordinated suite may be selected with `--suite mr10-probes --run --progress`
+and needs no native `--profile` when run by itself. It submits JES jobs and
+is not automatically included unless explicitly selected. The coordinator
+stops after a failed or unverified probe, preserves per-case evidence, and
+does not select the eleven experimental probes.
 
 Host-only commands (no JES submissions):
 
