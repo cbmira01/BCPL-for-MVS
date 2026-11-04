@@ -100,7 +100,7 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 6 | Build and test interpreted `CAMBCOMP` | Bootstrap compiler produces System/370 assembler |
 | 7 | Assemble six Core Runtime modules and empty BCPLREG | Seven members in `BOOT_OBJ` |
 | 8 | Compile and assemble `BLIB` | Eight members in `BOOT_OBJ` |
-| 9 | Install BCPLDEMO, BCPLTIME and BCPLQSAM; run 00–176 | 176 PASS, 0 FAIL, 1 expected SKIP 083 (new gate) |
+| 9 | Install BCPLDEMO, BCPLTIME and BCPLQSAM; run five independent regression suites | MR10 and native suite results separately recorded; SKIP 083 and device opt-in handled explicitly |
 | 10 | Save the evidence | Results and limits recorded |
 
 > **Acceptance history:** A previous clean-room rebuild was accepted
@@ -545,15 +545,98 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 
    Require `BCPLDEMO`, `BCPLTIME`, and `BCPLQSAM`.
 
-### Run native regression
+### Run the independent project regression suites
+
+The preferred post-rebuild regression campaign uses
+`tools/tests/run-project-regressions`. It invokes the existing MR10
+regression panel and four native System/370 suites **sequentially**,
+without renumbering tests or combining their acceptance results:
+
+| Suite | Cases | Expected result on a successful rebuild |
+| --- | ---: | --- |
+| `mr10` | 12 | 12 PASS |
+| `bootstrap` | 146 (00–145) | 145 PASS, 1 expected SKIP (083) |
+| `runtime-extensions` | 13 (146–158) | 13 PASS |
+| `bcpltime` | 4 (159–162) | 4 PASS |
+| `bcplqsam` | 14 (163–176) | 14 PASS when device testing is authorized and prerequisites are met |
+
+The coordinator's MR10 runner compares expected outputs; it provides
+**additional evidence**, not a replacement for Step 4's three resident
+MVS suites. Expected counts are targets, **not results of an uncompleted
+run**.
+
+First validate and list the suite inventory **without JES submissions**:
 
 ```sh
-tools/bootstrap/run-installed-r5-t1-regression 0 176
+set +e
+set +u
+set +o pipefail
+
+tools/tests/run-project-regressions --check
+check_rc=$?
+echo "Project suite check RC=$check_rc"
+
+if [ "$check_rc" -eq 0 ]; then
+    tools/tests/run-project-regressions --list
+    echo "Project suite listing RC=$?"
+else
+    echo "Manifest check failed; listing skipped."
+fi
 ```
 
-Expected: **176 PASS, 0 FAIL, 1 SKIP (083)**. Save the summary,
-case logs, and JES/IFOX/IEWL/GO evidence. Cases 163–176 still use
-source-selected BCPLQSAM, not the installed `EXT_OBJ(BCPLQSAM)`.
+**Separate execution authorization is required.** The following
+command executes MR10 interpreted tests and submits native JES jobs.
+`--allow-device` additionally opts in to cases **175–176** (JES punch
+and printer); include it **only when device testing has been explicitly
+authorized**. The coordinator does not restart the JES punch writer.
+
+```sh
+set +e
+set +u
+set +o pipefail
+
+tools/tests/run-project-regressions \
+    --run \
+    --suite mr10 \
+    --suite bootstrap \
+    --suite runtime-extensions \
+    --suite bcpltime \
+    --suite bcplqsam \
+    --profile installed-r5-t1 \
+    --allow-device \
+    --progress
+
+regression_rc=$?
+echo "Project regression RC=$regression_rc"
+```
+
+`--progress` streams concise per-case `PASS`, `FAIL`, `SKIP`,
+and `BLOCKED` results to WSL, while retaining full logs.
+Without `--progress`, the console shows suite-level results.
+Both `--progress` and `--allow-device` require `--run`; the
+latter also requires selecting `bcplqsam`.
+
+If cases 175–176 have **not** been separately authorized, omit
+`--allow-device`. They will be `BLOCKED`, and the overall campaign
+must not be recorded as PASS. Any FAIL or BLOCKED suite prevents
+subsequent selected suites from running; expected SKIP 083 does not
+prevent a successful suite result.
+
+Preserve the five independent suite results from
+`workarea/project-regressions/<run>/summary.json`, its suite logs,
+and native per-case evidence under `workarea/test-suites/`.
+Review the reported Git HEAD, native profile, `allow_device`,
+individual statuses, and corresponding JES/IFOX/IEWL/GO evidence.
+Even with `installed-r5-t1`, cases 163–176 use **source-selected
+BCPLQSAM**, not installed `EXT_OBJ(BCPLQSAM)`. A suite PASS does
+not establish installed-object QSAM linkage.
+
+The legacy contiguous native panel command
+`tools/bootstrap/run-installed-r5-t1-regression 0 176` remains
+available for historical comparison, but is **not** an additional
+mandatory clean-room gate. Running it would repeat native JES work
+and needs its own authorization. See
+[`tools/tests/README.md`](../tools/tests/README.md).
 
 ## Step 10 — Save what you proved
 
@@ -567,13 +650,13 @@ PDS members, and jobs were used.
 | Erase/recreate | Deleted PDS list; purge and allocation job numbers |
 | First population | Member summary; 12 expected missing generated members; evidence tracked sources were installed |
 | Interpreter | Build payload job, `ASM`/`LKED`/`SAVEOBJ` RCs, smoke-test `CODE=0` |
-| MR10 tests | Payload job numbers, suite pass results, output checked, comparison limits |
+| MR10 tests | Step 4 resident payload jobs and outputs; separate 12-case coordinator MR10 results and expected-output comparisons |
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
 | Optional extension | `BOOT_JCL(BCPLDEMO)`, `BCPLTIME`, `BCPLQSAM`; all source/header/catalog members; separate binary install/read-back/compare receipts for `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM` |
-| Native tests | Fresh 00–176 result (target 176 PASS, 0 FAIL, expected SKIP 083); case logs and JES job numbers |
-| Boundaries | Any checks not run, warnings, and generated evidence that was not saved |
+| Project regressions | Five separate suite statuses/counts (12 MR10 and 177 native cases), Git HEAD, SKIP 083, project summary and suite logs, per-case/JES evidence, and NOT_RUN or BLOCKED reasons |
+| Boundaries | Checks not run, warnings, unsaved evidence, separate device authorization for 175–176, and source-selected rather than installed BCPLQSAM coverage |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;
 its generated logs, images, and manifests will **not** be saved by a
@@ -597,7 +680,7 @@ for MVS payload jobs, installation read-back and the documented 7fff89f
 | Second `populate all` exits nonzero | Generated inventory, missing files, source hashes, or JES installation failures |
 | `CAMBBLD` fails | Interpreter `CODE=0`, `TRNILRG`, source members, and the payload job |
 | Runtime assembly fails | Full IFOX listing and exact step RC; do not install an old object |
-| Native regression fails | That case's saved log and its compiler, assembler, link, and GO jobs |
+| Native regression fails | Project summary and failing suite log, then the case's compiler, assembler, link and GO jobs; a BLOCKED suite prevents later suites |
 | Printer report is missing | Check `mvs-state/prt/prt00e.txt` and the actual payload job number |
 
 Fix failures at the stage where they occur. Do not hide an unexpected
