@@ -1,4 +1,4 @@
-# Stage 2B native suite coordinator
+# Native suite coordinator (Stage 2B/2C)
 
 `run-suite` reads `tests/suites/*.tsv`, validates their static case ownership,
 and invokes existing `tools/bootstrap/run-production-regression` or

@@ -1,10 +1,10 @@
-# Native regression suite ownership — Stage 2B
+# Native regression suites — Stage 2C
 
-Stage 2B assigns the existing **177** native regression cases (00–176) to
-independent, named suites **without moving or renumbering any case directory**.
-The actual BCPL source, fixtures, expected output and execution machinery remain
-under `bootstrap-toolchain/regression/`. `tests/suites/*.tsv` are *routing and
-reporting metadata*, not duplicated test implementations.
+Stage 2B established ownership of all **177** native cases (00–176).
+Stage 2C physically organizes the unchanged case directories by suite.
+Case numbers, source contracts and expected results remain unchanged.
+`tests/suites/*.tsv` retains the authoritative case inventory and reporting
+metadata. Shared execution machinery remains in `bootstrap-toolchain/regression/`.
 
 | Suite | Manifest | Case IDs | Cases |
 | --- | --- | --- | ---: |
@@ -28,7 +28,10 @@ case_id  directory  profiles  requires  tags  policy
 
 (The separators are actual tab characters, not spaces.) Each `case_id` uses
 the historic canonical two-digit (00–52) or three-digit (053–176) form.
-`directory` is the literal child directory of `bootstrap-toolchain/regression/`.
+`directory` is the literal child directory of its owning suite:
+`tests/bootstrap/`, `tests/runtime-extensions/`,
+`tests/system-extensions/bcpltime/`, or
+`tests/system-extensions/bcplqsam/`.
 `profiles`, `requires`, and `tags` are comma-separated identifiers. Case
 identity and ownership are unique; tags may overlap, but must not create
 duplicate acceptance counts. `requires` documents conditions; it is not a
@@ -47,6 +50,18 @@ The fixture files (`expected.txt`, GO RC markers, `.asm` selections, etc.)
 remain the sole expected-output/return-code contract. `policy` is one of:
 `standard`, `skip-installed` (historic source-only instrumentation case 083),
 or `device-opt-in` (175 punch and 176 printer).
+
+## Finding a test
+
+For example, case 170 is under
+`tests/system-extensions/bcplqsam/170-qsam-demo-interoperability/`;
+case 083 is under
+`tests/bootstrap/083-instrumented-storage-reclamation/`.
+
+Use `tools/tests/run-suite --list` to discover suites and case identities.
+The suite manifests map every stable case ID to its directory name.
+There are no duplicate physical test implementations across suites.
+The MR10 regression panel remains independent.
 
 ## Usage
 

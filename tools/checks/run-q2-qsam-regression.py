@@ -19,7 +19,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "bootstrap-toolchain/regression"
+REG = ROOT / "tests/system-extensions/bcplqsam"
 EXT = ROOT / "system-extensions/bcplqsam"
 TOOLS = ROOT / "tools"
 WORK = ROOT / "workarea/native-regression"

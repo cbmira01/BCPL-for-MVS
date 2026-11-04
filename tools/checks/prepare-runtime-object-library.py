@@ -50,7 +50,7 @@ def main() -> None:
         source = dest
     # The installed BCPLMAIN object registers BLIB's globals on startup.
     # Reuse the proven source transformation from regression 069.
-    stage2 = ROOT / "bootstrap-toolchain/regression/069-independent-blib-object/prepare-stage2.py"
+    stage2 = ROOT / "tests/bootstrap/069-independent-blib-object/prepare-stage2.py"
     spec2 = importlib.util.spec_from_file_location("blib_stage2_obj", stage2)
     if spec2 is None or spec2.loader is None:
         raise RuntimeError("unable to load BLIB registration implementation")

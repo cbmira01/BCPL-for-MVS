@@ -6,7 +6,7 @@ from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "bootstrap-toolchain/regression"
+REG = ROOT / "tests/system-extensions/bcplqsam"
 EXT = ROOT / "system-extensions/bcplqsam"
 TARGET = Path(__file__).with_name("run-q2-qsam-regression.py")
 SPEC = importlib.util.spec_from_file_location("q2_numbered", TARGET)
@@ -88,7 +88,7 @@ class NumberedQ2Tests(unittest.TestCase):
             self.assertTrue(R.evidence(n, "", ""))
 
     def test_unmodified_prior_panel_path(self):
-        script = (REG/"run-test.sh").read_text()
+        script = (ROOT/"bootstrap-toolchain/regression/run-test.sh").read_text()
         self.assertIn('if [[ -f "$case_dir/qsam-native.txt" ]]; then',script)
         self.assertIn('exec python3 "$root/tools/checks/run-q2-qsam-regression.py"',
                       script)

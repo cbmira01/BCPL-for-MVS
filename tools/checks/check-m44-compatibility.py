@@ -9,7 +9,7 @@ import runpy
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "bootstrap-toolchain" / "regression"
+REG = ROOT / "tests/bootstrap"
 END = 145
 ACCOUNTING = {
     139: "counters",
@@ -47,8 +47,9 @@ def check(require_candidate: bool, require_production: bool = False) -> None:
     # Consult the real runner's numbering and test discovery rules.
     runner_path = ROOT / "tools/bootstrap/run-regression"
     runner = runpy.run_path(str(runner_path), run_name="m44_preflight")
-    cases, highest = runner["discover"]()
-    require(highest == END, f"regression last test {highest}; expected {END}")
+    discovered, highest = runner["discover"]()
+    cases = {n: name for n, name in discovered.items() if n <= END}
+    require(highest >= END, f"regression last test {highest}; expected at least {END}")
     require(set(cases) == set(range(END + 1)),
             f"missing or extra numbers in 00..{END}")
     for n, case in sorted(cases.items()):
@@ -94,7 +95,7 @@ def check(require_candidate: bool, require_production: bool = False) -> None:
     require('and os.environ.get("BCPL_RUNTIME_LIBRARY") == "OBJ"'
             in runner_source and 'candidate_env or production_env'
             in runner_source, "all-OBJ regression gate missing")
-    harness = read(REG / "run-test.sh")
+    harness = read(ROOT / "bootstrap-toolchain/regression/run-test.sh")
     for anchor in (
         'pds_args+=(--test-io-asm "$account_asm")',
         'account_args+=(--terminal-check)',
@@ -126,7 +127,7 @@ def check(require_candidate: bool, require_production: bool = False) -> None:
         require('INCLUDE OBJ(BCPLBYTE)' in preparer and
                 'INCLUDE OBJ(BCPLAPT)' in preparer,
                 "production modules must link directly through OBJ")
-        harness = read(REG / "run-test.sh")
+        harness = read(ROOT / "bootstrap-toolchain/regression/run-test.sh")
         require('dynamic_profile=0' in harness and
                 'if [[ $dynamic_profile != 1 ]]; then' in harness,
                 "production test-only fault profile not enabled")

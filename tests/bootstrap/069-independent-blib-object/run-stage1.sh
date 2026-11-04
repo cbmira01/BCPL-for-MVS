@@ -3,7 +3,7 @@
 # verify the IEWL map manually. NO GO and NO BLIB recompilation.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../../.." && pwd)"
-case_dir="$root/bootstrap-toolchain/regression/069-independent-blib-object"
+case_dir="$root/tests/bootstrap/069-independent-blib-object"
 work="$root/workarea/native-regression/069-independent-blib-object"
 mkdir -p "$work"
 cp "$case_dir/source.bcpl" "$work/069-independent-blib-object.bcpl"

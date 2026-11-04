@@ -34,7 +34,7 @@ def main():
     for file in (deck, clean, mainasm, memasm):
         file.unlink(missing_ok=True)
     from importlib.util import spec_from_file_location, module_from_spec
-    instrument = root / "bootstrap-toolchain/regression/083-instrumented-storage-reclamation/instrument-reclaim.py"
+    instrument = root / "tests/bootstrap/083-instrumented-storage-reclamation/instrument-reclaim.py"
     spec = spec_from_file_location("instrument_reclaim_083", instrument)
     module = module_from_spec(spec)
     spec.loader.exec_module(module)

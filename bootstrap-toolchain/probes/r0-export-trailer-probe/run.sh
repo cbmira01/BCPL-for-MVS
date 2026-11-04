@@ -13,7 +13,7 @@ python3 -B "$probe/make-job.py" --check
 # Actual resident CAMBCOMP compiles the sample application to CG370 ASM.
 # This step runs ICINT19 in a normal, read-only compiler JOB.
 tools/bootstrap/compile-mvs \
-  bootstrap-toolchain/regression/00-most-degenerate-bcpl-program/source.bcpl \
+  tests/bootstrap/00-most-degenerate-bcpl-program/source.bcpl \
   --job-name R0TRCMP \
   --output "$out/app.s370.asm"
 

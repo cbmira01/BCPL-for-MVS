@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "bootstrap-toolchain/regression"
+REG = ROOT / "tests/system-extensions/bcpltime"
 R0 = ROOT / "bootstrap-toolchain/probes/r0-export-trailer-probe/make-job.py"
 BCX = ROOT / "system-extensions/bcx"
 TIME = ROOT / "system-extensions/bcpltime"

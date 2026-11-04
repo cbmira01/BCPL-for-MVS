@@ -21,7 +21,7 @@ import time
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "bootstrap-toolchain/regression"
+REG = ROOT / "tests/bootstrap"
 WORK = ROOT / "workarea/native-regression"
 LOGS = WORK / "logs"
 BEGIN = WORK / "m55-begin.json"
@@ -54,8 +54,9 @@ def git(*args: str) -> str:
 
 def cases() -> dict[int, str]:
     path = ROOT / "tools/bootstrap/run-regression"
-    found, end = runpy.run_path(str(path), run_name="m55_inspect")["discover"]()
-    require(end == 145 and set(found) == set(range(146)),
+    discovered, end = runpy.run_path(str(path), run_name="m55_inspect")["discover"]()
+    found = {n: name for n, name in discovered.items() if n <= 145}
+    require(end >= 145 and set(found) == set(range(146)),
             "regression case numbering drift (expected 00..145)")
     return found
 

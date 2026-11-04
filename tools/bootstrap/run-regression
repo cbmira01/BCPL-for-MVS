@@ -13,6 +13,21 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 REGRESSION = ROOT / "bootstrap-toolchain" / "regression"
 RUNNER = REGRESSION / "run-test-mvs.sh"
+CASE_ROOTS = (
+    (0, 145, ROOT / "tests/bootstrap"),
+    (146, 158, ROOT / "tests/runtime-extensions"),
+    (159, 162, ROOT / "tests/system-extensions/bcpltime"),
+    (163, 176, ROOT / "tests/system-extensions/bcplqsam"),
+)
+
+
+def case_directory(number: int) -> Path:
+    for first, last, directory in CASE_ROOTS:
+        if first <= number <= last:
+            return directory
+    raise ValueError(f"case {number}: no owning native suite")
+
+
 # Optional R.1 isolated evidence directory; ordinary behavior unchanged.
 if os.environ.get("R1_ACCEPTANCE") == "1":
     location = os.environ.get("R1_REGRESSION_LOG_DIR")
@@ -77,29 +92,34 @@ def parse_args() -> argparse.Namespace:
 
 def discover() -> tuple[dict[int, str], int]:
     cases: dict[int, str] = {}
-    if not REGRESSION.is_dir():
-        raise RuntimeError(f"missing regression directory: {REGRESSION}")
 
-    for path in sorted(REGRESSION.iterdir()):
-        if not path.is_dir():
-            continue
-        match = CASE_RE.match(path.name)
-        if not match:
-            continue
-        raw_id = match.group(1)
-        test_no = int(raw_id, 10)
-        expected_id = case_id(test_no)
-        if raw_id != expected_id:
-            raise RuntimeError(
-                f"noncanonical test directory {path.name!r}: "
-                f"test {test_no} must use prefix {expected_id}-"
-            )
-        if test_no in cases:
-            raise RuntimeError(f"duplicate test number {case_id(test_no)}")
-        cases[test_no] = path.name
+    for first, last, base in CASE_ROOTS:
+        if not base.is_dir():
+            raise RuntimeError(f"missing suite directory: {base}")
+
+        for path in sorted(base.iterdir()):
+            if not path.is_dir():
+                continue
+            match = CASE_RE.match(path.name)
+            if not match:
+                continue
+            raw_id = match.group(1)
+            test_no = int(raw_id, 10)
+            if not first <= test_no <= last:
+                raise RuntimeError(f"case in wrong suite: {path}")
+            if raw_id != case_id(test_no):
+                raise RuntimeError(f"noncanonical case directory: {path}")
+            if test_no in cases:
+                raise RuntimeError(f"duplicate test number: {test_no}")
+            cases[test_no] = path.name
 
     if not cases:
         raise RuntimeError("no numbered native regression tests found")
+
+    if any(p.is_dir() and CASE_RE.match(p.name)
+           for p in REGRESSION.iterdir()):
+        raise RuntimeError("numbered cases remain in legacy harness directory")
+
     return cases, max(cases)
 
 
@@ -239,7 +259,7 @@ def main() -> int:
             skipped += 1
             print(f"SKIP  {nn}  {case_name} (source-only instrumentation)", flush=True)
             continue
-        if (REGRESSION / case_name / "candidate-only.txt").is_file():
+        if (case_directory(test_no) / case_name / "candidate-only.txt").is_file():
             candidate_env = (
                 installed_pds
                 and os.environ.get("BCPL_RUNTIME_LIBRARY") == "DEVOBJ"

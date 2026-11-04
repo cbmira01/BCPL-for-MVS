@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "bootstrap-toolchain/regression"
+REG = ROOT / "tests/runtime-extensions"
 PROBE = ROOT / "bootstrap-toolchain/probes/r4-bcx-macros"
 TRAIL = ROOT / "bootstrap-toolchain/probes/r0-export-trailer-probe/make-job.py"
 

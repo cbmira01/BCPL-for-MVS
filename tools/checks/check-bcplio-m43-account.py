@@ -75,7 +75,7 @@ for site in (
 # JOB 7878 exposed a missing IFOX base register in the test shim.
 # Require a base before the V-type external literal, separately from
 # the canonical BCPLIO instrumentation source audit.
-shim = (ROOT / "bootstrap-toolchain/regression/139-dynamic-dd-resource-accounting/"
+shim = (ROOT / "tests/bootstrap/139-dynamic-dd-resource-accounting/"
         "native.asm").read_text(encoding="ascii")
 assert shim.count("         L     15,=V(IOACCT)") == 1
 assert shim.count("         EXTRN IOACCT") == 1
@@ -119,7 +119,7 @@ cases = (
     "145-dynamic-dd-open-denial-counted",
 )
 for case in cases:
-    path = ROOT / "bootstrap-toolchain/regression" / case / "source.bcpl"
+    path = ROOT / "tests/bootstrap" / case / "source.bcpl"
     bcpl = path.read_text(encoding="ascii")
     for number, record in enumerate(bcpl.splitlines(), 1):
         if len(record) > 80:

@@ -16,7 +16,7 @@ import re
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-CASE = ROOT / 'bootstrap-toolchain/regression/167-qsam-sixteen-stop'
+CASE = ROOT / 'tests/system-extensions/bcplqsam/167-qsam-sixteen-stop'
 NATIVE = ROOT / 'workarea/native-regression/167-qsam-sixteen-stop'
 OUTPUT = ROOT / 'workarea/bcplqsam-q5/q5stdiag.jcl'
 BASELINE = HERE / 'bcplqsam.asm'

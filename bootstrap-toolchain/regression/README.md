@@ -1,7 +1,9 @@
 # Native compiler regression panel
 
-This directory is the durable regression panel for the reconstructed native
-System/370 BCPL compiler/runtime path.
+This directory retains the shared native regression execution harness for
+the reconstructed System/370 BCPL compiler/runtime path.
+Since Stage 2C, numbered case implementations reside in `tests/`, grouped
+by their owning suite; see `tests/README.md` for navigation.
 
 The panel is driven by BCPL behavior.  Tests are deliberately ordered from the
 smallest possible native BCPL program upward through progressively larger parts
@@ -32,13 +34,29 @@ tests.
 Each regression test has its own numbered directory:
 
 ```text
+tests/
+    bootstrap/
+        00-most-degenerate-bcpl-program/
+            source.bcpl
+            README.md
+        01-...
+        145-...
+    runtime-extensions/
+        146-...
+        158-...
+    system-extensions/
+        bcpltime/
+            159-...
+            162-...
+        bcplqsam/
+            163-...
+            176-...
+
 bootstrap-toolchain/regression/
-    README.md
-    00-most-degenerate-bcpl-program/
-        source.bcpl
-        README.md
-    01-...
-    02-...
+    run-test.sh
+    run-test-mvs.sh
+    prepare-native-global.py
+    ...
 ```
 
 The numeric prefix is part of the test identity. It records the intended

@@ -10,7 +10,7 @@ import runpy
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-REG = ROOT / "bootstrap-toolchain/regression"
+REG = ROOT / "tests/bootstrap"
 LOGS = ROOT / "workarea/native-regression/logs"
 MANIFEST = ROOT / "workarea/native-regression/m44-00-145-jobs.tsv"
 SKIP = 83
@@ -34,8 +34,9 @@ def audit() -> int:
     discover = runpy.run_path(
         str(ROOT / "tools/bootstrap/run-regression"), run_name="m44_log_audit"
     )["discover"]
-    cases, highest = discover()
-    if highest != END or set(cases) != set(range(END + 1)):
+    discovered, highest = discover()
+    cases = {n: name for n, name in discovered.items() if n <= END}
+    if highest < END or set(cases) != set(range(END + 1)):
         raise ValueError("corpus drift: expected exactly 00..145")
 
     # Fail closed if either historical stack-overflow profile drifts.

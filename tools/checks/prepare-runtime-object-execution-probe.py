@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "workarea/runtime-object-candidates"
-CASE = ROOT / "bootstrap-toolchain/regression/28-freevec"
+CASE = ROOT / "tests/bootstrap/28-freevec"
 GENERATED = ROOT / "workarea/native-regression/28-freevec/generated.s370.asm"
 
 

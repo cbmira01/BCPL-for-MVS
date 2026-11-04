@@ -17,7 +17,12 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 SUITE_DIR = ROOT / "tests" / "suites"
-CASE_DIR = ROOT / "bootstrap-toolchain" / "regression"
+CASE_ROOTS = {
+    "bootstrap": "tests/bootstrap",
+    "runtime-extensions": "tests/runtime-extensions",
+    "bcpltime": "tests/system-extensions/bcpltime",
+    "bcplqsam": "tests/system-extensions/bcplqsam",
+}
 SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
 COUNTS = (146, 13, 4, 14)
 PROFILES = ("production", "installed-r5-t1")
@@ -96,7 +101,7 @@ def parse_suite(root: Path, name: str) -> list[Case]:
                 raise ManifestError("JES output-device case requires device-opt-in policy")
             if number == 83 and policy != "skip-installed":
                 raise ManifestError("historic case 083 requires skip-installed policy")
-            if (root / "bootstrap-toolchain" / "regression" / directory).is_dir() is False:
+            if (root / CASE_ROOTS[name] / directory).is_dir() is False:
                 raise ManifestError(f"missing case directory: {directory}")
             result.append(Case(number, ident, directory, name, profiles, requires, tags, policy))
         except ManifestError as exc:
@@ -117,7 +122,7 @@ def validate(root: Path) -> dict[str, list[Case]]:
             if row.number in found:
                 raise ManifestError(f"case {row.ident} belongs to both {found[row.number].suite} and {name}")
             found[row.number] = row
-            p = root / "bootstrap-toolchain" / "regression" / row.directory
+            p = root / CASE_ROOTS[row.suite] / row.directory
             if row.suite == "bcplqsam" and not (p / "qsam-native.txt").is_file():
                 raise ManifestError(f"case {row.ident}: missing QSAM native fixture marker")
             if row.suite == "bcpltime" and not (p / "time-selection.asm").is_file():
@@ -129,9 +134,16 @@ def validate(root: Path) -> dict[str, list[Case]]:
         extra = sorted(set(found) - set(range(177)))
         raise ManifestError(f"suite IDs must cover 00–176 exactly; missing={missing}; extra={extra}")
     actual = set()
-    for p in (root / "bootstrap-toolchain" / "regression").iterdir():
-        if p.is_dir() and CASE_NAME.fullmatch(p.name):
-            actual.add(p.name)
+    for suite_name in SUITES:
+        for p in (root / CASE_ROOTS[suite_name]).iterdir():
+            if p.is_dir() and CASE_NAME.fullmatch(p.name):
+                actual.add(p.name)
+    legacy = root / "bootstrap-toolchain" / "regression"
+    if legacy.is_dir() and any(
+        p.is_dir() and CASE_NAME.fullmatch(p.name)
+        for p in legacy.iterdir()
+    ):
+        raise ManifestError("numbered cases remain in legacy harness directory")
     declared = {case.directory for rows in suites.values() for case in rows}
     if actual != declared:
         raise ManifestError(f"physical/manifest case directories differ: missing={sorted(actual-declared)}, stale={sorted(declared-actual)}")

@@ -10,7 +10,7 @@ This project appears to be one of the few modern efforts to reconstruct a histor
 
 | Directory | Compiler execution | Purpose |
 | --- | --- | --- |
-| [`bootstrap-toolchain/`](bootstrap-toolchain/) | Interpreter-hosted under `ICINT19` | Runs the demoted Cambridge compiler and CG370 to produce native System/370 code, and holds the established runtime, build inputs and native regression suite. |
+| [`bootstrap-toolchain/`](bootstrap-toolchain/) | Interpreter-hosted under `ICINT19` | Runs the demoted Cambridge compiler and CG370 to produce native System/370 code, and holds the established runtime, build inputs and shared native regression harness. Numbered test cases now live under [`tests/`](tests/). |
 | [`cambridge-compiler/`](cambridge-compiler/) | Native MVS executable (the new build target) | Owns the work to reconstruct, assemble, link, run and eventually self-compile the native Cambridge compiler on MVS. Historical source authority remains in `richards-bcpltape/`; shared runtime modules remain in `bootstrap-toolchain/`. |
 
 **Important:** The bootstrap toolchain *generates* native code but its

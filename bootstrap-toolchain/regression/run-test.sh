@@ -25,8 +25,21 @@ printf -v entry 'BCRG%04d' "$test_num"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd -- "$script_dir/../.." && pwd)"
 
+if (( test_num <= 145 )); then
+    case_root="$root/tests/bootstrap"
+elif (( test_num <= 158 )); then
+    case_root="$root/tests/runtime-extensions"
+elif (( test_num <= 162 )); then
+    case_root="$root/tests/system-extensions/bcpltime"
+elif (( test_num <= 176 )); then
+    case_root="$root/tests/system-extensions/bcplqsam"
+else
+    echo "run-test: no owning suite for test $test_num" >&2
+    exit 65
+fi
+
 shopt -s nullglob
-matches=("$script_dir/${test_id}-"*)
+matches=("$case_root/${test_id}-"*)
 shopt -u nullglob
 
 if (( ${#matches[@]} != 1 )); then
@@ -408,7 +421,7 @@ if [[ -f "$case_dir/object-blib.txt" ]] || (( test_num == 69 )); then
     echo "=== Build independently linked BLIB object GO job ==="
     jcl="$work/object-go.jcl"
     rm -f "$jcl"
-    python3 "$script_dir/069-independent-blib-object/prepare-stage2.py" \
+    python3 "$root/tests/bootstrap/069-independent-blib-object/prepare-stage2.py" \
         "$generated" "$jcl" --test-number "$test_num" \
         "${object_flags[@]}" || exit $?
     [[ -s "$jcl" ]] || {
@@ -689,9 +702,13 @@ if text.count(plain) + text.count(timed) != 1:
 text = text.replace(plain if plain in text else timed, new, 1)
 # Resolve the actual case directory from the test identity, not JCL path.
 root = path.parents[3]
-cases = sorted((root / "bootstrap-toolchain" / "regression").glob(f"{int(test_no):03d}-*"))
-if not cases and int(test_no) < 53:
-    cases = sorted((root / "bootstrap-toolchain" / "regression").glob(f"{int(test_no):02d}-*"))
+number = int(test_no)
+base = (root / "tests/bootstrap" if number <= 145 else
+        root / "tests/runtime-extensions" if number <= 158 else
+        root / "tests/system-extensions/bcpltime" if number <= 162 else
+        root / "tests/system-extensions/bcplqsam")
+prefix = f"{number:02d}" if number <= 52 else f"{number:03d}"
+cases = sorted(base.glob(f"{prefix}-*"))
 if len(cases) != 1:
     raise SystemExit(f"fixture lookup: expected one test {test_no}")
 exec_parm = cases[0] / "exec-parm.txt"

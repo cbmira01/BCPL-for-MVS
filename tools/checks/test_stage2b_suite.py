@@ -29,16 +29,18 @@ class TestStage2BSuites(unittest.TestCase):
 
     def create_fixture(self):
         suites = self.root / "tests" / "suites"
-        cases = self.root / "bootstrap-toolchain" / "regression"
+        cases = {name: self.root / MOD.CASE_ROOTS[name]
+                 for name in MOD.SUITES}
         suites.mkdir(parents=True)
-        cases.mkdir(parents=True)
+        for location in cases.values():
+            location.mkdir(parents=True)
         lines = {name: ["\t".join(MOD.HEADERS)] for name in MOD.SUITES}
         for i in range(177):
             name = ("bootstrap" if i <= 145 else "runtime-extensions" if i <= 158
                     else "bcpltime" if i <= 162 else "bcplqsam")
             ident = MOD.canonical(i)
             directory = f"{ident}-fake-case"
-            home = cases / directory
+            home = cases[name] / directory
             home.mkdir()
             if name == "bcplqsam":
                 (home / "qsam-native.txt").touch()
@@ -90,7 +92,7 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         with self.assertRaises(MOD.ManifestError):
             MOD.validate(self.root)
         file.write_text(original)
-        (self.root / "bootstrap-toolchain/regression/176-fake-case/qsam-native.txt").unlink()
+        (self.root / MOD.CASE_ROOTS["bcplqsam"] / "176-fake-case/qsam-native.txt").unlink()
         with self.assertRaises(MOD.ManifestError):
             MOD.validate(self.root)
 

@@ -27,7 +27,7 @@ def main():
     if src.count(marker) != 1:
         raise RuntimeError("unexpected global trailer insertion point")
     from importlib.util import spec_from_file_location, module_from_spec
-    injector_path = (ROOT / "bootstrap-toolchain/regression/"
+    injector_path = (ROOT / "tests/bootstrap/"
                      "069-independent-blib-object/prepare-stage2.py")
     spec = spec_from_file_location("blib_stage2", injector_path)
     module = module_from_spec(spec)

@@ -30,7 +30,7 @@ class TestT1Generator(unittest.TestCase):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         base = Path(self.temp.name)
-        reg = base / 'bootstrap-toolchain/regression'
+        reg = base / 'tests/system-extensions/bcpltime'
         bcx = base / 'system-extensions/bcx'
         time = base / 'system-extensions/bcpltime'
         demo = base / 'system-extensions/bcpldemo'
