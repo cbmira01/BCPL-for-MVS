@@ -26,6 +26,10 @@ MR10_MANIFEST = ROOT / "mr10-kit-compiler/tests/00-regression-panel/manifest.tsv
 NATIVE_MANIFESTS = ROOT / "tests/suites"
 RUN_ROOT = ROOT / "workarea/project-regressions"
 TOKEN = re.compile(r"^[a-z][a-z0-9-]*$")
+PROGRESS_MR10 = re.compile(
+    r"^(PASS|FAIL)\s+([a-z][a-z0-9-]*/[a-z][a-z0-9-]*)\s*$")
+PROGRESS_NATIVE = re.compile(
+    r"^(PASS|FAIL|SKIP|BLOCKED)\s+(\d{2,3})\s+\S")
 
 
 class VerificationError(ValueError):
@@ -175,6 +179,36 @@ def save(path: Path, payload: dict) -> None:
     temp.replace(path)
 
 
+def progress_case(suite: str, line: str) -> str | None:
+    match = (PROGRESS_MR10.fullmatch(line.rstrip("\r\n")) if suite == "mr10"
+             else PROGRESS_NATIVE.match(line))
+    if match is None:
+        return None
+    return f"{match.group(1):<7} {match.group(2)}"
+
+
+def run_logged(command: list[str], suite: str, log_path: Path,
+               environment: dict[str, str], progress: bool) -> int:
+    with log_path.open("w", encoding="utf-8") as handle:
+        if not progress:
+            return subprocess.run(command, cwd=ROOT, env=environment,
+                                  stdout=handle, stderr=subprocess.STDOUT,
+                                  check=False).returncode
+        child_env = environment.copy()
+        child_env["PYTHONUNBUFFERED"] = "1"
+        with subprocess.Popen(command, cwd=ROOT, env=child_env,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              text=True, encoding="utf-8", errors="replace",
+                              bufsize=1) as proc:
+            assert proc.stdout is not None
+            for line in proc.stdout:
+                handle.write(line)
+                item = progress_case(suite, line)
+                if item is not None:
+                    print(item, flush=True)
+            return proc.wait()
+
+
 def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
     os.umask(0o077)
     RUN_ROOT.mkdir(parents=True, exist_ok=True)
@@ -187,6 +221,7 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
         "selected_suites": selected,
         "native_profile": args.profile,
         "allow_device": args.allow_device,
+        "progress": args.progress,
         "suites": [
             {"name": suite, "status": "NOT_RUN" if suite in selected else "NOT_SELECTED",
              "test_count": len(cases[suite])}
@@ -212,16 +247,13 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
         log_path = evidence / f"{suite}.log"
         print(f"RUN {suite} ({len(cases[suite])} cases)", flush=True)
         try:
-            with log_path.open("w", encoding="utf-8") as handle:
-                proc = subprocess.run(command, cwd=ROOT, env=environment,
-                                      stdout=handle, stderr=subprocess.STDOUT,
-                                      check=False)
+            rc = run_logged(command, suite, log_path, environment, args.progress)
             log = log_path.read_text(encoding="utf-8", errors="replace")
-            details = (parse_mr10(log, cases[suite], proc.returncode)
+            details = (parse_mr10(log, cases[suite], rc)
                        if suite == "mr10" else
-                       parse_native(log, suite, args.profile, cases[suite], proc.returncode))
+                       parse_native(log, suite, args.profile, cases[suite], rc))
             entry.update(details)
-            entry["runner_rc"] = proc.returncode
+            entry["runner_rc"] = rc
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             entry.update({"status": "FAIL", "error": str(exc)})
         entry["runner_log"] = str(log_path.relative_to(ROOT))
@@ -252,6 +284,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="suite to run/list; repeat to combine suites")
     parser.add_argument("--allow-device", action="store_true",
                         help="authorize BCPLQSAM JES printer/punch cases (requires --run)")
+    parser.add_argument("--progress", action="store_true",
+                        help="stream concise case results to the console (requires --run)")
     parser.add_argument("--profile", choices=("production", "installed-r5-t1"),
                         help="required for native suites when running")
     args = parser.parse_args(argv)
@@ -259,6 +293,8 @@ def main(argv: list[str] | None = None) -> int:
     if len(set(requested)) != len(requested):
         parser.error("duplicate --suite selection")
     native_requested = any(name != "mr10" for name in requested)
+    if args.progress and not args.run:
+        parser.error("--progress requires --run")
     if args.allow_device and (not args.run or "bcplqsam" not in requested):
         parser.error("--allow-device requires --run and --suite bcplqsam")
     if args.run and not requested:
