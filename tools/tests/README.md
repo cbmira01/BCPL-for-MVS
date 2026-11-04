@@ -37,6 +37,8 @@ the existing interpreter-hosted compile-and-run workflow.
 tools/tests/run-project-regressions --run --suite mr10
 tools/tests/run-project-regressions --run --suite bootstrap --profile production
 tools/tests/run-project-regressions --run --suite mr10 --suite bcpltime --profile installed-r5-t1
+# Console progress without showing verbose JES/compiler output:
+tools/tests/run-project-regressions --run --suite mr10 --progress
 # Explicitly authorized JES printer/punch tests (cases 175–176):
 tools/tests/run-project-regressions --run --suite bcplqsam --profile installed-r5-t1 --allow-device
 ```
@@ -56,6 +58,15 @@ Execution creates a private directory under
 `workarea/project-regressions/` containing `summary.json` and individual
 suite logs. The native runner additionally retains its original
 per-case JES evidence under `workarea/test-suites/`.
+
+With `--run --progress`, each reported MR10 or native case result is
+printed to the WSL console as it arrives (`PASS`, `FAIL`, `SKIP`, or
+`BLOCKED`, with its original case ID). Full compiler/JES details still go
+to the suite logs. Python child output is unbuffered in this mode to
+make updates timely. Without `--progress`, only suite-level status is
+shown. The flag is invalid with `--list` or `--check`; it neither
+authorizes JES nor changes device opt-in. The project summary records
+`progress` separately from `allow_device`.
 
 The project summary distinguishes `PASS`, `FAIL`, `BLOCKED`,
 `NOT_RUN` and `NOT_SELECTED`. The MR10 runner reports PASS and FAIL,
