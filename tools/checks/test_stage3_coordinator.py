@@ -86,6 +86,7 @@ import sys
 assert os.environ.get('Q4_PUNCH_RESUME') is None
 Path('mr10-invoked').write_text('yes')
 mode = os.environ.get('STAGE3_FAKE_MR10', 'PASS')
+print('MR10 internal detail')
 print('REGRESSION PANEL')
 for label in ('data-movement/scalar-vector', 'calls/nested-recursion'):
     print(('FAIL' if mode == 'FAIL' and label.startswith('calls/') else 'PASS') + '  ' + label)
@@ -127,6 +128,9 @@ counts = {x: sum(value == x for value in states.values())
 (path / 'summary.json').write_text(json.dumps({
     'suite': suite, 'profile': profile, 'counts': counts,
     'cases': [{'id': x, 'status': states[x]} for x in ids]}) + '\\n')
+print('native internal detail')
+for ident in ids:
+    print(f"{states[ident]:<7} {ident} {ident}-fake-case: result", flush=True)
 print('Evidence: ' + str(path))
 sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
 ''')
@@ -274,6 +278,72 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
             with self.subTest(arguments=arguments):
                 self.assertEqual(self.invoke(*arguments)[0], 2)
         self.assertFalse(MOD.RUN_ROOT.exists())
+        self.assertFalse((self.root / "native-invocations").exists())
+
+    def test_progress_streams_both_runner_formats_and_preserves_logs(self):
+        rc, output, errors = self.invoke("--run", "--suite", "mr10",
+                                         "--suite", "bootstrap",
+                                         "--suite", "bcplqsam",
+                                         "--profile", "installed-r5-t1",
+                                         "--allow-device", "--progress")
+        self.assertEqual((rc, errors), (0, ""))
+        for result in ("PASS    data-movement/scalar-vector",
+                       "PASS    calls/nested-recursion",
+                       "PASS    00", "PASS    01",
+                       "PASS    163", "PASS    175", "PASS    176"):
+            self.assertIn(result, output)
+        self.assertNotIn("MR10 internal detail", output)
+        self.assertNotIn("native internal detail", output)
+        report = self.report()
+        self.assertTrue(report["progress"])
+        self.assertEqual(report["status"], "PASS")
+        run_dir = next(MOD.RUN_ROOT.iterdir())
+        self.assertIn("MR10 internal detail", (run_dir / "mr10.log").read_text())
+        self.assertIn("native internal detail", (run_dir / "bootstrap.log").read_text())
+        self.assertIn("native internal detail", (run_dir / "bcplqsam.log").read_text())
+        self.assertEqual((self.root / "native-invocations").read_text(),
+                         "bootstrap:installed-r5-t1\\nbcplqsam:installed-r5-t1+device\\n")
+
+    def test_default_mode_does_not_echo_individual_cases(self):
+        rc, output, _ = self.invoke("--run", "--suite", "bootstrap",
+                                    "--profile", "production")
+        self.assertEqual(rc, 0)
+        self.assertNotIn("PASS    00", output)
+        self.assertNotIn("native internal detail", output)
+        self.assertFalse(self.report()["progress"])
+        run_dir = next(MOD.RUN_ROOT.iterdir())
+        self.assertIn("PASS    00", (run_dir / "bootstrap.log").read_text())
+
+    def test_progress_rejected_in_host_only_modes(self):
+        for args in (("--list", "--progress"),
+                     ("--check", "--progress"),
+                     ("--list", "--suite", "mr10", "--progress")):
+            with self.subTest(args=args):
+                self.assertEqual(self.invoke(*args)[0], 2)
+        self.assertFalse(MOD.RUN_ROOT.exists())
+
+    def test_progress_reports_blocked_cases_without_device_opt_in(self):
+        rc, output, errors = self.invoke("--run", "--suite", "bcplqsam",
+                                         "--profile", "installed-r5-t1",
+                                         "--progress")
+        self.assertEqual((rc, errors), (2, ""))
+        self.assertIn("PASS    163", output)
+        self.assertIn("BLOCKED 175", output)
+        self.assertIn("BLOCKED 176", output)
+        report = self.report()
+        self.assertEqual(report["status"], "BLOCKED")
+        self.assertEqual(report["suites"][4]["counts"]["BLOCKED"], 2)
+        self.assertFalse(report["allow_device"])
+
+    def test_progress_failure_stops_before_next_suite(self):
+        with patch.dict(os.environ, {"STAGE3_FAKE_MR10": "FAIL"}):
+            rc, output, errors = self.invoke("--run", "--suite", "mr10",
+                                             "--suite", "bootstrap",
+                                             "--profile", "production",
+                                             "--progress")
+        self.assertEqual((rc, errors), (1, ""))
+        self.assertIn("FAIL    calls/nested-recursion", output)
+        self.assertEqual(self.report()["suites"][1]["status"], "NOT_RUN")
         self.assertFalse((self.root / "native-invocations").exists())
 
     def test_missing_mr10_fixture_fails_offline_check(self):
