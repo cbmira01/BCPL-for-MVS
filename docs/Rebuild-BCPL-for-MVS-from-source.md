@@ -100,7 +100,7 @@ There is **no `stage-bootstrap` step** and no manual `dspal put` for
 | 6 | Build and test interpreted `CAMBCOMP` | Bootstrap compiler produces System/370 assembler |
 | 7 | Assemble six Core Runtime modules and empty BCPLREG | Seven members in `BOOT_OBJ` |
 | 8 | Compile and assemble `BLIB` | Eight members in `BOOT_OBJ` |
-| 9 | Install BCPLDEMO, BCPLTIME and BCPLQSAM; run five independent regression suites | MR10 and native suite results separately recorded; SKIP 083 and device opt-in handled explicitly |
+| 9 | Install BCPLDEMO, BCPLTIME and BCPLQSAM; run six independent regression suites | MR10 panel, six accepted MR10 Development Probes, and native suites recorded separately; SKIP 083 and device opt-in handled explicitly |
 | 10 | Save the evidence | Results and limits recorded |
 
 > **Acceptance history:** A previous clean-room rebuild was accepted
@@ -548,22 +548,29 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 ### Run the independent project regression suites
 
 The preferred post-rebuild regression campaign uses
-`tools/tests/run-project-regressions`. It invokes the existing MR10
-regression panel and four native System/370 suites **sequentially**,
-without renumbering tests or combining their acceptance results:
+`tools/tests/run-project-regressions`. It invokes the existing 12-case
+MR10 Regression Panel, the **six accepted MR10 Development Probes**, and
+four native System/370 suites **sequentially**. Each of the six suites
+retains independent status, case counts and evidence, without renumbering
+tests or merging acceptance results.
 
 | Suite | Cases | Expected result on a successful rebuild |
 | --- | ---: | --- |
 | `mr10` | 12 | 12 PASS |
+| `mr10-probes` | 6 accepted probes | 6 PASS |
 | `bootstrap` | 146 (00–145) | 145 PASS, 1 expected SKIP (083) |
 | `runtime-extensions` | 13 (146–158) | 13 PASS |
 | `bcpltime` | 4 (159–162) | 4 PASS |
 | `bcplqsam` | 14 (163–176) | 14 PASS when device testing is authorized and prerequisites are met |
 
-The coordinator's MR10 runner compares expected outputs; it provides
-**additional evidence**, not a replacement for Step 4's three resident
-MVS suites. Expected counts are targets, **not results of an uncompleted
-run**.
+This is **195 case selections** in total: 194 expected PASS and one
+expected SKIP (083) when all prerequisites are met. These counts are
+targets, **not results of an uncompleted run**. The eleven UNVERIFIED
+experimental MR10 probes are **not included** in this acceptance campaign;
+they remain available for separately authorized experimental work through
+`tools/mr10/run-dev-probes`. The coordinator's MR10 tests and probes
+provide **additional evidence**, not a replacement for Step 4's three
+resident MVS suites.
 
 First validate and list the suite inventory **without JES submissions**:
 
@@ -585,10 +592,12 @@ fi
 ```
 
 **Separate execution authorization is required.** The following
-command executes MR10 interpreted tests and submits native JES jobs.
-`--allow-device` additionally opts in to cases **175–176** (JES punch
-and printer); include it **only when device testing has been explicitly
-authorized**. The coordinator does not restart the JES punch writer.
+command runs the MR10 Regression Panel, all six accepted MR10 Development
+Probes, and all four native suites. MR10 probe execution and native tests
+submit JES jobs. `--allow-device` additionally opts in to cases
+**175–176** (JES punch and printer); include it **only when device testing
+has been explicitly authorized**. The coordinator does not restart the JES
+punch writer.
 
 ```sh
 set +e
@@ -598,6 +607,7 @@ set +o pipefail
 tools/tests/run-project-regressions \
     --run \
     --suite mr10 \
+    --suite mr10-probes \
     --suite bootstrap \
     --suite runtime-extensions \
     --suite bcpltime \
@@ -610,8 +620,10 @@ regression_rc=$?
 echo "Project regression RC=$regression_rc"
 ```
 
-`--progress` streams concise per-case `PASS`, `FAIL`, `SKIP`,
-and `BLOCKED` results to WSL, while retaining full logs.
+`--progress` streams per-case results and test names to WSL:
+`PASS`, `FAIL`, `SKIP`, `BLOCKED`, and, if an MR10 probe unexpectedly
+remains provisional, `OBSERVED`. Full logs are retained. An `OBSERVED`
+probe is not an accepted PASS and prevents overall acceptance.
 Without `--progress`, the console shows suite-level results.
 Both `--progress` and `--allow-device` require `--run`; the
 latter also requires selecting `bcplqsam`.
@@ -622,9 +634,11 @@ must not be recorded as PASS. Any FAIL or BLOCKED suite prevents
 subsequent selected suites from running; expected SKIP 083 does not
 prevent a successful suite result.
 
-Preserve the five independent suite results from
-`workarea/project-regressions/<run>/summary.json`, its suite logs,
-and native per-case evidence under `workarea/test-suites/`.
+Preserve all six independent suite results from
+`workarea/project-regressions/<run>/summary.json` and the suite logs.
+Native per-case evidence lives under `workarea/test-suites/`; accepted
+MR10 Development Probe evidence (including JES step verification) lives
+under `workarea/mr10-probes/`.
 Review the reported Git HEAD, native profile, `allow_device`,
 individual statuses, and corresponding JES/IFOX/IEWL/GO evidence.
 Even with `installed-r5-t1`, cases 163–176 use **source-selected
@@ -650,12 +664,12 @@ PDS members, and jobs were used.
 | Erase/recreate | Deleted PDS list; purge and allocation job numbers |
 | First population | Member summary; 12 expected missing generated members; evidence tracked sources were installed |
 | Interpreter | Build payload job, `ASM`/`LKED`/`SAVEOBJ` RCs, smoke-test `CODE=0` |
-| MR10 tests | Step 4 resident payload jobs and outputs; separate 12-case coordinator MR10 results and expected-output comparisons |
+| MR10 tests and probes | Step 4 resident payload jobs and outputs; separate 12-case MR10 Regression Panel results; six accepted MR10 Development Probe results, golden-output checks, JES verification and per-probe evidence |
 | Bootstrap | Source and output hash inventory, `TRNILRG` compile result, second population RC=0 |
 | Demoted Cambridge bootstrap | `CAMBBLD` payload job, all 22 interpreted `CODE=0` results, `CAMBCOMP` smoke test |
 | Runtime | Seven assembly and seven install RCs; eight final `BOOT_OBJ` members including BCPLRGS, BCPLREG, and BLIB |
 | Optional extension | `BOOT_JCL(BCPLDEMO)`, `BCPLTIME`, `BCPLQSAM`; all source/header/catalog members; separate binary install/read-back/compare receipts for `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM` |
-| Project regressions | Five separate suite statuses/counts (12 MR10 and 177 native cases), Git HEAD, SKIP 083, project summary and suite logs, per-case/JES evidence, and NOT_RUN or BLOCKED reasons |
+| Project regressions | Six separate suite statuses/counts (12 MR10, 6 accepted MR10 Development Probes, 177 native cases), Git HEAD, expected SKIP 083, project summary and suite logs, per-case/JES evidence, and NOT_RUN or BLOCKED reasons |
 | Boundaries | Checks not run, warnings, unsaved evidence, separate device authorization for 175–176, and source-selected rather than installed BCPLQSAM coverage |
 
 Keep credentials out of committed files. `workarea/` is ignored by Git;
