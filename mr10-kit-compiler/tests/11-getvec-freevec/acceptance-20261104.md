@@ -1,9 +1,9 @@
 # MR10 development-probe acceptance — 11-getvec-freevec
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**Case:** `11-getvec-freevec`  
-**Date:** 4 November 2026  
-**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**Case:** `11-getvec-freevec`
+**Date:** 4 November 2026
+**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`
 **MVS evidence:** JES JOB 9550, job name `DP068850`
 
 Under the project owner's approval to establish the observed cases' contracts,

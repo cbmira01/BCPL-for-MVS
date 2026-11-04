@@ -1,9 +1,9 @@
 # MR10 development-probe acceptance — 06-dynamic-streams
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**Case:** `06-dynamic-streams`  
-**Date:** 4 November 2026  
-**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**Case:** `06-dynamic-streams`
+**Date:** 4 November 2026
+**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`
 **MVS evidence:** JES JOB 9547, job name `DP038850`
 
 Under the project owner's approval to establish the observed cases' contracts,

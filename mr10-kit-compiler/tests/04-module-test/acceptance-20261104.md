@@ -1,9 +1,9 @@
 # MR10 development-probe acceptance — 04-module-test
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**Case:** `04-module-test`  
-**Date:** 4 November 2026  
-**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**Case:** `04-module-test`
+**Date:** 4 November 2026
+**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`
 **MVS evidence:** JES JOB 9545, job name `DP018850`
 
 Under the project owner's approval to establish the observed cases' contracts,

@@ -117,12 +117,12 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
         self.check_failure("unexpected interpreted completion code")
 
     def test_oracle_cannot_be_empty(self):
-        self.rows[8]["oracle"] = ""
+        next(row for row in self.rows if row["case_id"] == "08-character-translation")["oracle"] = ""
         self.save()
         self.check_failure("output oracle")
 
     def test_unsupported_golden_cannot_be_invented(self):
-        self.rows[8]["oracle"] = "file:mr10-kit-compiler/tests/07-many-streams/dd01.txt"
+        next(row for row in self.rows if row["case_id"] == "08-character-translation")["oracle"] = "file:mr10-kit-compiler/tests/07-many-streams/dd01.txt"
         self.save()
         self.check_failure("new golden output requires separate evidence review")
 

@@ -1,9 +1,9 @@
 # MR10 development-probe acceptance — 07-many-streams
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**Case:** `07-many-streams`  
-**Date:** 4 November 2026  
-**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**Case:** `07-many-streams`
+**Date:** 4 November 2026
+**Source revision:** `6c98bcf16171bc7f4589b7af038408f42c8dc725`
 **MVS evidence:** JES JOB 9548, job name `DP048850`
 
 Under the project owner's approval to establish the observed cases' contracts,
