@@ -29,7 +29,7 @@ TOKEN = re.compile(r"^[a-z][a-z0-9-]*$")
 PROGRESS_MR10 = re.compile(
     r"^(PASS|FAIL)\s+([a-z][a-z0-9-]*/[a-z][a-z0-9-]*)\s*$")
 PROGRESS_NATIVE = re.compile(
-    r"^(PASS|FAIL|SKIP|BLOCKED)\s+(\d{2,3})\s+\S")
+    r"^(PASS|FAIL|SKIP|BLOCKED)\s+(\d{2,3})\s+\2-([a-z0-9-]+):")
 
 
 class VerificationError(ValueError):
@@ -184,6 +184,8 @@ def progress_case(suite: str, line: str) -> str | None:
              else PROGRESS_NATIVE.match(line))
     if match is None:
         return None
+    if suite != "mr10":
+        return f"{match.group(1):<7} {match.group(2)}  {match.group(3)}"
     return f"{match.group(1):<7} {match.group(2)}"
 
 
