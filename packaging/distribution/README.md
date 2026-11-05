@@ -9,9 +9,11 @@ This directory contains the source-controlled materials for a future self-contai
 
 ## Reconstruction automation decision and distribution research
 
-**Owner-approved direction (not yet implemented):**
+**Owner-approved direction and documented implementation status:**
 
 - [Clean-room reconstruction automation decision (4 November 2026)](clean-room-reconstruction-automation-decision-20261104.md) — full purge and restart from zero, one scoped approval, independently runnable tools, optional console progress, and regression tests separate from reconstruction.
+- [Step 3 safety-hardening closure and JOB 357 evidence (5 November 2026)](clean-room-reconstruction-step3-closure-20261105.md) — real-MVS ACTIVE/BLOCKED and CLEAR acceptance; live reconstruction remains disabled.
+- [Next automation phase: guarded live integration (5 November 2026)](clean-room-reconstruction-live-integration-plan-20261105.md) — scoped planning only; no destructive-run authorization.
 
 **Historical research and unimplemented proposals:**
 
