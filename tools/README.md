@@ -13,7 +13,7 @@ The MR10 suite runners now live under `tools/mr10/`. Their former tools-root pat
 - `tools/mr10/` — MR10 INTCODE interpreter, compiler, and short-named suite runners.
 - `tools/bootstrap/` — Cambridge/native compilation, bootstrap source staging, native regressions, and resident-JCL build coordination.
 - `tools/checks/` — reusable static checks, test-only QSAM output probes, job/RC auditing, and final-run freshness evidence.
-- `tools/reconstruction/` — read-only clean-room preflight and dry-run plan (Step 1); no JES or MVS writes.
+- `tools/reconstruction/` — read-only preflight (Step 1), single-run approval (Step 2), and offline-tested reconstruction stage engine (Step 3; live execution disabled).
 
 Only this README and the five subsystem directories remain at the tools root. The M3 manifest now defines 24 managed MR10, reserved CAMB, and NATIVE datasets. See the clean-room runbook for the full reconstruction order.
 
@@ -39,6 +39,7 @@ Only this README and the five subsystem directories remain at the tools root. Th
 | `tools/mr10/run-demo-suite` | Run the 17 general BCPL demonstrations. |
 | `tools/mr10/run-language-demos` | Run the focused BCPL language demonstrations. |
 | `tools/datasets/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
+| `tools/reconstruction/run --list` | Display the offline-tested reconstruction stage sequence; live `--run` remains disabled. |
 
 The old Cambridge-first bootstrap generator is no longer a current tool or workflow.
 

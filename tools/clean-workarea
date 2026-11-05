@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# Clean disposable workarea contents while preserving the Git-tracked placeholder.
-# No noninteractive or force mode: deletions always require typed confirmation.
+# Clean disposable workarea contents while preserving tracked .gitignore.
+# Standalone remains interactive. Reconstruction must supply the exact reviewed
+# entry-list fingerprint; this is not a generic --yes/--force bypass.
 set -euo pipefail
 
-fail() {
-    printf 'ERROR: %s\n' "$*" >&2
-    exit 1
-}
+fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+
+scope=""
+if (( $# )); then
+    [[ $# -eq 2 && "$1" == '--reconstruction-scope' ]] \
+        || fail 'usage: clean-workarea [--reconstruction-scope SHA256]'
+    scope="$2"
+    [[ "$scope" =~ ^[a-f0-9]{64}$ ]] || fail 'Invalid reconstruction scope fingerprint.'
+fi
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd -- "$script_dir/.." && pwd -P)"
@@ -23,20 +29,29 @@ workarea="$repo_root/workarea"
 git -C "$repo_root" ls-files --error-unmatch -- workarea/.gitignore >/dev/null 2>&1 \
     || fail 'workarea/.gitignore is not tracked by Git.'
 
-# Never accidentally remove any other tracked material beneath workarea/.
 while IFS= read -r -d '' tracked; do
     [[ "$tracked" == 'workarea/.gitignore' ]] \
         || fail "Additional tracked file in workarea/: $tracked"
 done < <(git -C "$repo_root" ls-files -z -- workarea/)
 
-# The path identity must not change while the user reviews the delete list.
 workarea_id="$(stat -c '%d:%i' -- "$workarea")"
-
-# find -print0 handles whitespace, newlines, and leading dashes in filenames.
 mapfile -d '' -t entries < <(
     find "$workarea" -mindepth 1 -maxdepth 1 ! -name .gitignore -print0
 )
-if (("${#entries[@]}" == 0)); then
+
+# Allow empty workarea only after verifying a matching empty scope.
+if [[ -n "$scope" ]]; then
+    if ((${#entries[@]})); then
+        actual="$(printf '%s\0' "${entries[@]##*/}" | LC_ALL=C sort -z | sha256sum)"
+    else
+        actual="$(printf '' | sha256sum)"
+    fi
+    actual="${actual%% *}"
+    [[ "$scope" == "$actual" ]] \
+        || fail 'Workarea entries changed from approved reconstruction scope; no files deleted.'
+fi
+
+if ((${#entries[@]} == 0)); then
     printf 'workarea/ is already clean; tracked .gitignore preserved.\n'
     exit 0
 fi
@@ -47,12 +62,17 @@ for entry in "${entries[@]}"; do
     printf '  %q\n' "${entry##*/}"
 done
 printf '\nThe tracked workarea/.gitignore will be preserved.\n'
-[[ -t 0 ]] || fail 'Interactive terminal required; no files deleted.'
-printf 'Type DELETE to confirm, or anything else to cancel: '
-IFS= read -r reply || fail 'No confirmation received; no files deleted.'
-if [[ "$reply" != DELETE ]]; then
-    printf 'Cancelled; no files deleted.\n'
-    exit 0
+
+if [[ -z "$scope" ]]; then
+    [[ -t 0 ]] || fail 'Interactive terminal required; no files deleted.'
+    printf 'Type DELETE to confirm, or anything else to cancel: '
+    IFS= read -r reply || fail 'No confirmation received; no files deleted.'
+    if [[ "$reply" != DELETE ]]; then
+        printf 'Cancelled; no files deleted.\n'
+        exit 0
+    fi
+else
+    printf 'Using the exact workarea scope approved by the reconstruction runner.\n'
 fi
 
 [[ -d "$workarea" && ! -L "$workarea" ]] \
@@ -61,6 +81,18 @@ fi
     || fail 'workarea/ was replaced during confirmation; refusing cleanup.'
 [[ -f "$workarea/.gitignore" && ! -L "$workarea/.gitignore" ]] \
     || fail 'workarea/.gitignore changed during confirmation; refusing cleanup.'
+
+# Recheck scope at the final deletion boundary, not just before printing entries.
+if [[ -n "$scope" ]]; then
+    mapfile -d '' -t current < <(find "$workarea" -mindepth 1 -maxdepth 1 ! -name .gitignore -print0)
+    if ((${#current[@]})); then
+        actual="$(printf '%s\0' "${current[@]##*/}" | LC_ALL=C sort -z | sha256sum)"
+    else
+        actual="$(printf '' | sha256sum)"
+    fi
+    actual="${actual%% *}"
+    [[ "$scope" == "$actual" ]] || fail 'Workarea changed before cleanup; no files deleted.'
+fi
 
 rm -rf -- "${entries[@]}"
 printf 'Cleaned workarea/; preserved workarea/.gitignore.\n'

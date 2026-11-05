@@ -35,4 +35,22 @@ From the repository root:
 python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_*.py' -v
 ```
 
-The tests use an isolated Git fixture or in-memory plan stubs. They do not run JES, change MVS datasets, or create authorization artifacts. The [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains the operating procedure. Steps 3–5 (actual destructive orchestration, progress and report) are **not yet implemented or authorized**.
+The tests use an isolated Git fixture or in-memory plan stubs. They do not run JES, change MVS datasets, or create authorization artifacts. The [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains the operating procedure. Step 3 has an offline-tested stage engine, but **live destructive execution is disabled**. Console streaming, MVS-active-job checks, and complete evidence reporting remain future work.
+
+## Step 3 — reconstruction stage engine (offline implementation)
+
+`tools/reconstruction/run --list` displays the selected reconstruction operations in the established guide order. It does not submit JES jobs or change files.
+
+The stage engine calls the existing `clean-workarea`, `dspal`, `prepare-bootstrap`, `compile-and-run`, and `compile-mvs` tools in order, using the **same-process, one-run** approval gate from Step 2. It checks the Git revision and effective `dspal` configuration throughout, stops on any required nonzero result, recognizes the precise first-population RC=2 exception, and inspects key interpreter, object-library and generated-assembler results. No regression suites, checkpoint/resume state, Git tags or release tasks are included.
+
+`tools/clean-workarea` keeps its standalone interactive `DELETE` confirmation. An internal `--reconstruction-scope SHA256` form checks the exact top-level workarea entry set against a provided fingerprint, rejecting any changed set. **The fingerprint alone is not proof of operator approval.** The orchestration controller must enforce the Step 2 acknowledgment before using this interface. Do not invoke the internal mode manually.
+
+**Live execution remains disabled.** `tools/reconstruction/run --run` currently returns RC=2 without prompting, cleaning or contacting MVS. Before enabling it, implement and verify a read-only MVS/JES active-job guard that fails closed if earlier work may still be writing managed datasets, and complete the payload-specific verification and evidence collection in subsequent steps. This deliberately prevents destructive behavior while the integration with real MVS 3.8J remains unverified.
+
+Offline simulation:
+
+```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_run.py' -v
+```
+
+The tests use temporary Git repositories, fake MVS command results, and source/configuration/approval stubs. They never submit actual MVS jobs. The manual reconstruction guide remains authoritative.
