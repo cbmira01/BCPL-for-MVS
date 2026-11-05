@@ -1,8 +1,10 @@
 # Design discussion — staged automation of clean-room reconstruction
 
 **Date:** 2026-11-03  
-**Status:** Research / architecture proposal only, not an implemented runner or new milestone.  
+**Status:** Historical research proposal, superseded by the [owner-approved 4 November decision](clean-room-reconstruction-automation-decision-20261104.md). Not an implemented runner or new milestone.  
 **Authority:** `docs/Rebuild-BCPL-for-MVS-from-source.md`, `config/dspal.yaml`, applicable packaging policies. The guide governs actual step order and validation until a replacement is accepted.
+
+**Historical note (4 November 2026):** The owner chose a start-from-zero, full-purge/rebuild orchestrator with one explicit scoped approval, individually usable tools, optional WSL-console progress and separate regression testing. The checkpoint/resume approach and multiple approval gates proposed below are **not current requirements**. Retained for provenance.
 
 ## Question and finding
 
