@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 from typing import Callable
+from functools import wraps
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.dont_write_bytecode = True
@@ -23,6 +24,8 @@ from contract import (ScopeError, OPERATIONS, command_manifest, canonical_digest
 from evidence import EvidenceLog
 from verify import (VerificationError, parse_submission, verify_payload,
                     inventory_members, required_inventory, CODE_RECORD)
+sys.path.insert(0, str(ROOT / 'tools/mvs'))
+from jes_submission_gate import controller_window, child_pass_fds
 
 
 class ReconstructionError(RuntimeError):
@@ -296,6 +299,23 @@ class Runner:
             raise
 
 
+def _exclusive_controller(function):
+    @wraps(function)
+    def wrapped(root, *args, **kwargs):
+        with controller_window(root):
+            return function(root, *args, **kwargs)
+    return wrapped
+
+
+def execute_project_command(root: Path, command: list[str]) -> tuple[int, str]:
+    """Pass the controller lease through the first subprocess boundary."""
+    result = subprocess.run(command, cwd=root, text=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            check=False, pass_fds=child_pass_fds(root))
+    return result.returncode, result.stdout
+
+
+@_exclusive_controller
 def authorized_run(root, plan, approval, core, run_command, emit,
                    *, prompt=input, terminal: bool, jes_idle_guard):
     """Offline-testable controller. There is NO public --run route to it."""

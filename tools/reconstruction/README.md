@@ -65,6 +65,12 @@ python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_*.py' -v
 
 The synthetic tests never start JES jobs or change MVS datasets. The [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains authoritative.
 
+## Next automation phase — single-TK5 submission control (candidate)
+
+An offline-tested candidate adds a cooperative kernel `flock` admission gate for `tools/mvs/submit-jcl` (and its `dspal` clients) plus the direct MR10 `compile-and-run` socket transport. The reconstruction controller acquires an exclusive lease before interactive approval and retains it until completion or failure. Only explicitly delegated child processes inherit that lease. Contending project submitters are refused while reconstruction owns the window.
+
+This is **cooperative project-tool exclusivity**, not a hardware or JES system lock. A direct `nc` client, independent console/3270 submission, or other unintegrated connection to Hercules' reader can bypass it. Operator quiescence remains required. The existing single TK5 installation is used; no additional installation is created. See the [design and tests](../../packaging/distribution/clean-room-reconstruction-submission-control-design-20261105.md). This candidate still requires full-project regression and acceptance; `tools/reconstruction/run --run` remains hard-disabled (RC=2).
+
 ## Read-only JES2 activity safeguard (calibration candidate)
 
 The fixed-command diagnostic `tools/reconstruction/jes-idle --live` uses

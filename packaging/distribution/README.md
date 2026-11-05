@@ -13,7 +13,8 @@ This directory contains the source-controlled materials for a future self-contai
 
 - [Clean-room reconstruction automation decision (4 November 2026)](clean-room-reconstruction-automation-decision-20261104.md) — full purge and restart from zero, one scoped approval, independently runnable tools, optional console progress, and regression tests separate from reconstruction.
 - [Step 3 safety-hardening closure and JOB 357 evidence (5 November 2026)](clean-room-reconstruction-step3-closure-20261105.md) — real-MVS ACTIVE/BLOCKED and CLEAR acceptance; live reconstruction remains disabled.
-- [Next automation phase: guarded live integration (5 November 2026)](clean-room-reconstruction-live-integration-plan-20261105.md) — scoped planning only; no destructive-run authorization.
+- [Next automation phase: guarded live integration (5 November 2026)](clean-room-reconstruction-live-integration-plan-20261105.md) — single-TK5 integration planning; no destructive-run authorization.
+- [Single-TK5 JES submission-control candidate (5 November 2026)](clean-room-reconstruction-submission-control-design-20261105.md) — cooperative project submission lock, explicit lease delegation, and offline tests.
 
 **Historical research and unimplemented proposals:**
 

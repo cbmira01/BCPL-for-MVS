@@ -1,40 +1,34 @@
-# Clean-room reconstruction automation — next phase: guarded live integration
+# Clean-room reconstruction automation — guarded live integration
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 5 November 2026  
-**Status:** STARTED — source review and design planning only; live execution **NOT AUTHORISED**  
-**Predecessor:** [Step 3 safety-hardening closure and JOB 357 evidence](clean-room-reconstruction-step3-closure-20261105.md)  
-**Authority:** [4 November automation decision](clean-room-reconstruction-automation-decision-20261104.md); [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md).
+**Status:** IN PROGRESS — single-TK5 submission-control implementation candidate; no live reconstruction authorized  
+**Predecessor:** [Step 3 owner closure and JOB 357 evidence](clean-room-reconstruction-step3-closure-20261105.md)  
+**Authority:** [Owner-approved reconstruction automation decision](clean-room-reconstruction-automation-decision-20261104.md) and [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md).
 
-The owner's request to proceed to **Step 4 of automation development** starts the next planning and integration phase. This is **not** the manual guide's **Step 4 — Test the new interpreter**, which is a separate test workflow deliberately excluded from automated reconstruction. This record does not create a milestone or march number.
+This is the next **automation development phase**, referred to in discussion as Step 4; it does not create a milestone/march, and is **not** the manual guide's Step 4 — Test the new interpreter. The independent MR10 regressions remain outside the reconstruction orchestrator.
 
-## Objective
+## Owner decisions
 
-Wire and accept an operator-invoked, one-shot live reconstruction path **only after** proving that the single interactive approval, fail-closed JES guard, exact target/source/scope checks, existing `dspal` and bootstrap tools, and persistent reports remain correct end to end. Restart from zero after any failed or interrupted attempt; no checkpoints or resume. Independent regression and release workflows remain separate.
+Use the **one existing TK5/MVS installation** only. No cloned system-state or additional TK5 instance is required. All project-managed BCPL datasets are outputs intended to be reconstructed from GitHub source. A real purge nevertheless deletes the current managed objects and must be explicitly authorized. Recreating Docker containers is not the same as restoring the persistent bind-mounted DASD images.
 
-## Initial read-only review completed
+The controller must own an **exclusive job-submission window** during the entire run: review, approval, JES-idle preflight, purge/build operations, verification, reporting and failure/interrupt cleanup. This is separate from the two-point-in-time `$DA` JES-idle safeguard.
 
-The existing `tools/reconstruction/run` already implements `authorized_run(...)`, a controller that requests in-process approval, creates per-attempt evidence outside `workarea/`, verifies two JES CLEAR observations, rechecks the plan, then executes the 25 approved operations. The CLI `main()` deliberately does **not** call that controller: `--run` returns RC=2. The next phase must not remove that hard stop until the live-entry design and target isolation have been reviewed.
+## Current implementation candidate
 
-The `HERC02` namespace and current 29-dataset inventory are not a substitute for a disposable MVS target. Reusing the operator's active development PDSes would still be destructive, even though the DSNs are in scope.
+The proposed cooperative admission mechanism is documented in [single-TK5 submission-control design](clean-room-reconstruction-submission-control-design-20261105.md). It uses a nonblocking Linux kernel `flock`, stored under `mvs-state/locks/`, to exclude other **integrated project submission tools**. The controller holds an exclusive descriptor; delegated project subprocesses receive it through explicit `pass_fds` handoffs. Ordinary submissions acquire shared admission until JES confirms start/rejection. The Python gate validates actual exclusive lock ownership, not just an environment variable or inode equality.
 
-## Proposed implementation and verification order
+This controls `tools/mvs/submit-jcl`, its `dspal` clients (including INTERNAL READER payloads), and the direct MR10 `compile-and-run` socket path. Raw reader-port clients, direct console commands or 3270-based submissions are not blocked by this host advisory lock. **No technical guarantee of system-wide exclusivity is claimed.** Independent direct submitters must be quiescent, and stronger reader-network enforcement may be necessary before activating destructive automation.
 
-1. **Specify isolation.** Choose a disposable TK5/MVS system-state copy with distinct DASD volumes and a verifiable operator-controlled lifecycle. Confirm the reader, console, printer and `dspal` endpoints all target that copy. Verify source Git SHA, tracked files and effective private configuration; prevent accidental contact with the ongoing development installation.
-2. **Design guarded CLI wiring.** Use the existing single-run `authorized_run` and fixed `jes-idle.check_twice` interface, not a second approval mechanism. Keep `--list` and `plan` read-only. Define interruption/timeout, console progress and final RC behavior; no ambient `--yes` bypass.
-3. **Offline integration acceptance.** Revalidate all reconstruction tests and add controller/CLI tests that prove no unapproved entry can call cleanup, purge, population or submission. Cover malformed JES output, active jobs, drift after acknowledgment, an extra managed DSN, and interrupted steps.
-4. **Disposable-system negative verification.** With separately authorized MVS activity, verify that an actual active batch job blocks the **integrated controller** before host cleanup or PDS purge. The existing JOB 357 test verifies the *safeguard*; it does not yet prove the public live controller's destructive boundary.
-5. **Disposable full rebuild.** Only after independent scope and target review and explicit operator approval, run a fresh whole reconstruction on the disposable installation, inspect all payload reports, verify object libraries and outputs, then repeat after a deliberately interrupted attempt from zero. Preserve reports outside `workarea/`.
-6. **Acceptance review.** Confirm reproducibility and failure evidence against the manual guide. Do not automatically run regressions, promote a baseline, tag, package tape, or publish a release.
+## Remaining work before live activation
 
-## Critical design decisions before implementation
+1. Merge and verify the candidate integration on authoritative GitHub `main` only with explicit owner commit approval; run full repository reconstruction regressions. Keep the controller CLI's deliberate `--run` hard stop until separate approval.
+2. Prove in a controller-level offline negative test that a second project submitter fails closed while the controller has the lock, including during approval, JES preflight and error handling; retain ordinary standalone tool usability afterward.
+3. Review the existing single TK5 reader, printer, console, `dspal` configuration, `HERC02` dataset inventory and source revision before destructive operations. No other datasets are in approved scope.
+4. With separately authorized MVS activity, verify a live active job rejects the **integrated controller** before any cleanup or purge. JOB 357 already verified `jes-idle` itself; it did not verify the integrated runner.
+5. Only after a fresh explicit one-run authorization and an accepted submission-control boundary, perform one full rebuild from zero, verify JES payloads and installed members, then test interruption followed by an entirely new rebuild. No checkpoint/resume, regression side effect, object promotion, baseline tag or release.
+6. Record evidence and seek separate owner acceptance. Do not treat successful synthetic tests as acceptance of live reconstruction.
 
-- **Target isolation:** how the disposable MVS state and its device/console/reader endpoints will be made distinguishable from the active development system, so no misdirected purge can be approved.
-- **External JES quiescence:** how an operator will prevent independent submitters from starting after the two read-only `$DA` inquiries; sampling alone cannot lock JES.
-- **Live entry-point exposure:** whether the initial enablement is limited to a disposable-target-only switch, retaining the hard stop for other environments until validated. No general-purpose destructive `--run` exposure is proposed at this stage.
+## Safety boundary
 
-These choices require owner review before code changes to enable live reconstruction. No new commit, even one implementing the entry point, constitutes MVS-operation approval.
-
-## Current boundary
-
-**The public live runner remains disabled:** `tools/reconstruction/run --run` returns RC=2. No JES job, workarea deletion, `dspal purgebcpl`, dataset installation or full reconstruction is authorised by this planning record.
+`tools/reconstruction/run --run` **remains disabled (RC=2)**. The next development phase does not authorize any JES submission, workarea deletion, `dspal purgebcpl`, installed dataset change, tag or release.
