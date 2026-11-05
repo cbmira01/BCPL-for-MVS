@@ -160,7 +160,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--profile", choices=PROFILES, help="explicit native execution profile (required for --run)")
     ap.add_argument("--case", action="append", type=int, default=[], metavar="ID", help="restrict to a historical case number; repeatable")
     ap.add_argument("--tag", action="append", default=[], metavar="TAG", help="select by tag; repeatable")
-    ap.add_argument("--allow-device", action="store_true", help="permit JES printer/punch cases; never resumes the writer")
+    ap.add_argument("--allow-device", action="store_true", help="permit JES device cases; case 175 may start PUN1 after exclusive-queue verification")
     return ap.parse_args(argv)
 
 
@@ -225,9 +225,17 @@ def run(root: Path, cases: list[Case], args: argparse.Namespace) -> int:
             native = evidence / f"case-{case.ident}" / "native-logs"
             native.mkdir(parents=True)
             command = [str(tool), str(case.number), "--log-dir", str(native)]
+            case_env = env.copy()
+            if case.suite == "bcplqsam" and case.number == 175 and args.allow_device:
+                # Device opt-in permits guarded PUN1 recovery only for case 175.
+                # Keep standalone opt-in absent in all other native cases.
+                if args.profile == "installed-r5-t1":
+                    command.insert(1, "--resume-punch")
+                else:
+                    case_env["Q4_PUNCH_RESUME"] = "1"
             output = evidence / f"case-{case.ident}" / "runner.log"
             with output.open("w", encoding="utf-8") as handle:
-                proc = subprocess.run(command, cwd=root, env=env, stdout=handle,
+                proc = subprocess.run(command, cwd=root, env=case_env, stdout=handle,
                                       stderr=subprocess.STDOUT, check=False)
             content = output.read_text(encoding="utf-8", errors="replace")
             passed = bool(re.search(rf"(?m)^PASS\s+{re.escape(case.ident)}\s+", content))

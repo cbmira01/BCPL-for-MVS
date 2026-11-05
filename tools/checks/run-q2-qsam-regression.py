@@ -5,7 +5,7 @@ Each case compiles BCPL with the resident demoted Cambridge compiler,
 builds real source-mode IFOX/IEWL JCL, submits one JES job and checks
 actual steps, records and relevant independent QSAM/IEWL evidence.
 Permanent MVS datasets are read-only; no retry after uncertain submit.
-The optional Q4_PUNCH_RESUME=1 performs one explicit $S PUN1 console action.
+Q4_PUNCH_RESUME=1 permits one guarded $S PUN1 only for isolated case 175.
 """
 from __future__ import annotations
 
@@ -228,11 +228,13 @@ def evidence(number: int, summary: str, report: str) -> list[str]:
 
 
 
-def maybe_resume_punch_writer(offset: int, attempt: Path) -> list[str]:
-    """Explicit opt-in: start PAUSED JES2 PUNCH1 once after native PASS.
+def maybe_resume_punch_writer(offset: int, attempt: Path, job_number: str) -> list[str]:
+    """Release only this run's class-B output after proving an exclusive queue.
 
-    This is a real MVS console action, not an implicit regression side effect.
-    It can release other queued class-B work, so the operator must opt in.
+    The opt-in is selected by run-suite for authorized case 175 (or by the
+    historical standalone Q4_PUNCH_RESUME=1 flag). The separate JES2 display
+    inquiries must prove PUNCH1 paused and exactly this Q4PUNCH job pending.
+    A queue/status mismatch fails closed; no writer command is sent.
     """
     if os.environ.get("Q4_PUNCH_RESUME") != "1":
         return []
@@ -242,14 +244,69 @@ def maybe_resume_punch_writer(offset: int, attempt: Path) -> list[str]:
     if path.stat().st_size != offset:
         print("Punch capture already changed; no writer command sent")
         return []
+
+    console_log = ROOT / "mvs-state/log/3033.log"
+    if not console_log.is_file():
+        return ["cannot verify PUNCH1: Hercules console log missing"]
+
+    rc, status = invoke(
+        [str(TOOLS / "mvs/mvs-console"), "--settle", "2",
+         "jes2", "punches"],
+        attempt / "punch-device-before.log", 30)
+    if rc or not re.search(
+        r"\$HASP000\s+PUNCH1\s+00D\s+PAUSED\b[^\n]*\bP=Y\b[^\n]*\bQ=B\b",
+        status,
+    ):
+        return ["PUNCH1 not verified PAUSED with P=Y and Q=B; writer not started"]
+
+    rc, queue = invoke(
+        [str(TOOLS / "mvs/mvs-console"), "--yes", "--settle", "2",
+         "jes2", "$DN,Q=PPU"],
+        attempt / "punch-queue-before.log", 30)
+    # Reject *all* other queued jobs, including unfamiliar PUN routing.
+    # Unrecognized entries are not silently treated as an empty queue.
+    queued = re.findall(
+        r"\bJOB\s+(\d+)\s+\$HASP000\s+([A-Z0-9]+)\b([^\n]*)",
+        queue,
+    )
+    exclusive = (len(queued) == 1 and
+                 queued[0][:2] == (job_number, "Q4PUNCH") and
+                 re.search(r"\bPUN\s+LOCAL\b", queued[0][2]) is not None)
+    if rc or not exclusive:
+        return [f"PUNCH1 queue not exclusive to Q4PUNCH JOB {job_number}: {queued!r}"]
+
+    if path.stat().st_size != offset:
+        print("Punch capture changed during inquiries; no writer command sent")
+        return []
+    before = console_log.stat().st_size
     rc, response = invoke(
         ["docker", "exec", "-i", "mvs38j", "curl", "-sS", "-f", "-G",
          "--data-urlencode", "cmd=/$S PUN1",
          "http://127.0.0.1:8038/cgi-bin/tasks/cmd"],
         attempt / "punch-writer-start.log", 30)
     if rc or "HHC00013I" not in response or "$S PUN1" not in response:
-        return ["explicit JES2 PUNCH1 resume not acknowledged"]
-    print("JES2 PUNCH1 start requested once; device bytes still required")
+        return ["JES2 PUNCH1 start not acknowledged; do not retry automatically"]
+
+    observed = ""
+    marker = re.compile(
+        rf"\bJOB\s+{re.escape(job_number)}\s+\$HASP150\s+"
+        r"Q4PUNCH\s+ON\s+PUNCH1\s+3 CARDS\b")
+    for _ in range(12):
+        with console_log.open("rb") as handle:
+            handle.seek(0, 2)
+            if handle.tell() < before:
+                return ["Hercules console log rotated during punch verification"]
+            handle.seek(before)
+            observed = handle.read().decode("utf-8", errors="replace")
+        if marker.search(observed):
+            break
+        time.sleep(1)
+    (attempt / "punch-writer-result.log").write_text(
+        observed, encoding="utf-8")
+    if not marker.search(observed):
+        return [f"JES2 did not confirm JOB {job_number} on PUNCH1; "
+                "do not retry automatically"]
+    print(f"JES2 PUNCH1 released JOB {job_number}; exact capture still required")
     return []
 
 
@@ -374,7 +431,7 @@ def run(number: int, case: Path) -> int:
         return 1
     errors = evidence(number, summary, report)
     if kind == "punch" and offset is not None and not errors:
-        errors += maybe_resume_punch_writer(offset, attempt)
+        errors += maybe_resume_punch_writer(offset, attempt, job_number)
     if offset is not None:
         errors += check_sysout_capture(kind, offset, attempt)
     if errors:

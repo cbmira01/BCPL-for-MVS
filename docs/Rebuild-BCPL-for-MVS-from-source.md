@@ -596,8 +596,12 @@ command runs the MR10 Regression Panel, all six accepted MR10 Development
 Probes, and all four native suites. MR10 probe execution and native tests
 submit JES jobs. `--allow-device` additionally opts in to cases
 **175–176** (JES punch and printer); include it **only when device testing
-has been explicitly authorized**. The coordinator does not restart the JES
-punch writer.
+has been explicitly authorized**. For case 175 alone, that opt-in also
+permits **one guarded JES2 `$S PUN1`** if the punch writer is paused and the
+fresh queue inquiry proves that only case 175's own `Q4PUNCH` job is
+waiting. The runner refuses to start the writer when unrelated queued work
+or an uncertain device/queue state is detected; it never clears unrelated
+output. Every punch image must still match the exact 172-byte fixture.
 
 ```sh
 set +e
@@ -630,14 +634,18 @@ latter also requires selecting `bcplqsam`.
 
 If cases 175–176 have **not** been separately authorized, omit
 `--allow-device`. They will be `BLOCKED`, and the overall campaign
-must not be recorded as PASS. Any FAIL or BLOCKED suite prevents
-subsequent selected suites from running; expected SKIP 083 does not
-prevent a successful suite result.
+must not be recorded as PASS. If another class-B output job is queued,
+case 175 fails safely and preserves its JES/punch evidence for operator
+review; **do not automatically retry or clear the queue**. Any FAIL or
+BLOCKED suite prevents subsequent selected suites from running; expected
+SKIP 083 does not prevent a successful suite result.
 
 Preserve all six independent suite results from
 `workarea/project-regressions/<run>/summary.json` and the suite logs.
-Native per-case evidence lives under `workarea/test-suites/`; accepted
-MR10 Development Probe evidence (including JES step verification) lives
+Native per-case evidence lives under `workarea/test-suites/`, with
+case 175's JES2 queue, device-status, and punch-writer receipts in its
+`workarea/native-regression/` attempt directory. Accepted MR10
+Development Probe evidence (including JES step verification) lives
 under `workarea/mr10-probes/`.
 Review the reported Git HEAD, native profile, `allow_device`,
 individual statuses, and corresponding JES/IFOX/IEWL/GO evidence.

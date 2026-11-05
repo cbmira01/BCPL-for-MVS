@@ -10,6 +10,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+import unittest.mock
 
 SOURCE = Path(__file__).resolve().parents[1] / "tests" / "run-suite"
 SPEC = importlib.util.spec_from_loader("stage2b_run_suite", SourceFileLoader("stage2b_run_suite", str(SOURCE)))
@@ -64,10 +65,14 @@ class TestStage2BSuites(unittest.TestCase):
 import os
 from pathlib import Path
 import sys
-n = int(sys.argv[1])
-assert sys.argv[2] == '--log-dir'
-logs = Path(sys.argv[3]); assert logs.is_absolute(); logs.mkdir(parents=True, exist_ok=True)
-assert os.getenv('Q4_PUNCH_RESUME') is None
+installed = Path(sys.argv[0]).name == "run-installed-r5-t1-regression"
+resume_flag = sys.argv[1:2] == ["--resume-punch"]
+args = sys.argv[2:] if resume_flag else sys.argv[1:]
+n = int(args[0])
+assert args[1] == '--log-dir'
+logs = Path(args[2]); assert logs.is_absolute(); logs.mkdir(parents=True, exist_ok=True)
+assert resume_flag == (installed and n == 175)
+assert os.getenv('Q4_PUNCH_RESUME') == ('1' if n == 175 and not installed else None)
 (logs / 'marker').write_text(str(n))
 ident = f'{n:02d}' if n <= 52 else f'{n:03d}'
 print(f'PASS  {ident}  fake-case')
@@ -139,10 +144,23 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         self.assertFalse((blocked / "case-175").exists())
         self.assertEqual(json.loads((blocked / "summary.json").read_text())["counts"]["BLOCKED"], 2)
 
-    def test_explicit_device_opt_in_still_never_resumes_punch(self):
+    def test_case_175_receives_guarded_opt_in_in_both_profiles(self):
         qsam = MOD.validate(self.root)["bcplqsam"]
-        a = SimpleNamespace(suite="bcplqsam", profile="production", allow_device=True)
-        self.assertEqual(MOD.run(self.root, qsam[-2:-1], a), 0)
+        for profile in MOD.PROFILES:
+            with self.subTest(profile=profile):
+                a = SimpleNamespace(suite="bcplqsam", profile=profile,
+                                    allow_device=True)
+                self.assertEqual(MOD.run(self.root, qsam[-2:], a), 0)
+
+    def test_case_175_blocked_does_not_inherit_operator_resume(self):
+        qsam = MOD.validate(self.root)["bcplqsam"]
+        a = SimpleNamespace(suite="bcplqsam", profile="production",
+                            allow_device=False)
+        with unittest.mock.patch.dict("os.environ", {"Q4_PUNCH_RESUME": "1"}):
+            self.assertEqual(MOD.run(self.root, qsam[-2:-1], a), 2)
+        paths = list((self.root / "workarea/test-suites").iterdir())
+        self.assertEqual(len(paths), 1)
+        self.assertFalse((paths[0] / "case-175").exists())
 
 
 if __name__ == "__main__":

@@ -18,8 +18,9 @@ tools/tests/run-suite --list
 
 ## Stage 3 — independent coordinated regression
 
-`run-project-regressions` coordinates the independent MR10 panel and
-four native regression suites without replacing their existing runners.
+`run-project-regressions` coordinates the independent MR10 Regression Panel, six accepted MR10
+Development Probes, and four native regression suites without replacing
+their existing runners.
 
 Host-only operations, requiring no MVS execution:
 
@@ -47,8 +48,9 @@ An executing command must explicitly select at least one suite.
 Selected native suites require a common explicit profile:
 `production` or `installed-r5-t1`.
 
-The coordinator uses the existing MR10 manifest and four native suite
-manifests. It does not duplicate, renumber or relocate individual cases.
+The coordinator uses the existing MR10 panel/probe manifests and four
+native suite manifests. It does not duplicate, renumber or relocate cases.
+The eleven unverified MR10 Development Probes are excluded.
 
 MR10 tests retain their `category/name` identities. Native cases retain
 their established numeric IDs. Each suite keeps independent outcome
@@ -77,9 +79,15 @@ fails or is blocked. The coordinator strips inherited JES punch-resume
 settings. By default, BCPLQSAM device cases 175–176 report BLOCKED.
 Only an explicit `--run --suite bcplqsam --allow-device` authorizes
 passing the flag to the native BCPLQSAM runner. The flag is rejected for
-`--list`, `--check`, or runs not selecting BCPLQSAM. The native runner
-never resumes the JES punch writer, and the operator must separately
-authorize JES device testing. The project summary records `allow_device`.
+`--list`, `--check`, or runs not selecting BCPLQSAM. For case **175
+only**, this opt-in also enables a **guarded single `$S PUN1`** when
+`PUNCH1` is paused (`P=Y, Q=B`) and a fresh JES2 queue display shows
+only the current case's `Q4PUNCH` job. Unrelated queued class-B work,
+an unverified queue/device state, or a missing target job blocks the
+writer start; the runner does not flush the queue or retry a failed
+start. The exact new 172-byte image and target JES job receipt remain
+mandatory. Case **176** never starts the punch writer. The project
+summary records `allow_device`.
 
 The coordinator does not check installed MVS objects or submit jobs
 during `--check` or `--list`. A successful manifest check is not
@@ -92,4 +100,6 @@ Host-only unit tests:
 
 ```sh
 python3 -B -m unittest discover -s tools/checks -p 'test_stage3_coordinator.py' -v
+python3 -B -m unittest discover -s tools/checks -p 'test_stage2b_suite.py' -v
+python3 -B -m unittest discover -s tools/checks -p 'test_qsam_punch_writer_guard.py' -v
 ```
