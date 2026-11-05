@@ -31,6 +31,11 @@ CLEAR = "12:34:00  /$DA\n12:34:01  $HASP612 NO ACTIVE JOBS\n"
 ACTIVE = "12:34:00  /$DA\n12:34:01 JOB00012 $HASP608 IC19BLD EXECUTING A PRIO 9 IBM1\n"
 # Exact fresh console line reported from WSL against TK5/MVS 3.8J, 2026-11-05.
 TK5_CLEAR = "15:20:00 /16.19.59           $HASP000 NO ACTIVE JOBS\n"
+# Real fresh console delta recorded from TK5 by jes-idle --live --diagnose.
+TK5_HHC = '16:36:36 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+TK5_TYPED = '16:36:36 $DA\n'
+TK5_REPLY = '16:36:36 /17.36.35           $HASP000 NO ACTIVE JOBS\n'
+TK5_LIVE_DELTA = 2 * (TK5_HHC + TK5_TYPED) + TK5_REPLY
 
 
 class TestParse(unittest.TestCase):
@@ -75,6 +80,43 @@ class TestParse(unittest.TestCase):
         result = mod.parse_delta("HHC00000I extra line\n" + TK5_CLEAR)
         self.assertEqual('UNKNOWN', result.state)
         self.assertIn('unrecognized console line', result.reason)
+
+    def test_tk5_real_console_double_echo_accepts_one_reply(self):
+        self.assertEqual('CLEAR', mod.parse_delta(TK5_LIVE_DELTA).state)
+
+    def test_tk5_real_console_double_echo_two_samples(self):
+        commands = []
+        def capture(cmd):
+            commands.append(cmd)
+            return (0, TK5_LIVE_DELTA)
+        ok, observations = mod.check_twice(capture)
+        self.assertTrue(ok)
+        self.assertEqual([mod.COMMAND, mod.COMMAND], commands)
+        self.assertEqual(['CLEAR', 'CLEAR'], [o.state for o in observations])
+
+    def test_tk5_one_complete_hercules_echo_pair_is_accepted(self):
+        delta = TK5_HHC + TK5_TYPED + TK5_REPLY
+        self.assertEqual('CLEAR', mod.parse_delta(delta).state)
+
+    def test_tk5_echo_pair_must_be_exact_and_matched(self):
+        bad = [
+            TK5_HHC + TK5_REPLY,  # no matching typed echo
+            TK5_HHC + TK5_TYPED.replace('$DA', '$DQ') + TK5_REPLY,
+            TK5_HHC + TK5_TYPED.replace('16:36:36', '16:36:37') + TK5_REPLY,
+            TK5_HHC.replace('HHC00013I', 'HHC00014I') + TK5_TYPED + TK5_REPLY,
+            TK5_HHC.replace('0:0009', '0:000A') + TK5_TYPED +
+                TK5_HHC + TK5_TYPED + TK5_REPLY,  # two nonidentical pairs
+            3 * (TK5_HHC + TK5_TYPED) + TK5_REPLY,  # replay bounded at two
+            TK5_HHC + TK5_TYPED + 'UNRELATED MESSAGE\n' + TK5_REPLY,
+            TK5_HHC + TK5_TYPED + TK5_REPLY + TK5_TYPED,  # echo after reply
+        ]
+        for delta in bad:
+            with self.subTest(delta=delta):
+                self.assertNotEqual('CLEAR', mod.parse_delta(delta).state)
+
+    def test_tk5_real_delta_with_active_or_incomplete_must_block(self):
+        self.assertEqual('UNKNOWN', mod.parse_delta(TK5_LIVE_DELTA + '$HASP611 LIST INCOMPLETE\n').state)
+        self.assertEqual('UNKNOWN', mod.parse_delta(TK5_LIVE_DELTA + '$HASP373 JOB00001 STARTED\n').state)
 
     def test_tk5_active_or_incomplete_remains_blocked(self):
         self.assertEqual('UNKNOWN', mod.parse_delta(TK5_CLEAR + '$HASP611 LIST INCOMPLETE\n').state)

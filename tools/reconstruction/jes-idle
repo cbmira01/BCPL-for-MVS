@@ -32,6 +32,16 @@ TK5_CLEAR = re.compile(
     r"^\d{2}:\d{2}:\d{2}\s+/\d{1,2}\.\d{2}\.\d{2}\s+"
     r"\$HASP000\s+NO ACTIVE JOBS\s*$", re.I
 )
+# Hercules/TK5 was observed to repeat the identical pair of lines twice:
+#   16:36:36 HHC00013I '/' input entered for console 0:0009: "$DA"
+#   16:36:36 $DA
+# They precede precisely one timestamped $HASP000 idle reply.
+# Recognize only these fixed command echoes; never ignore arbitrary output.
+TK5_TYPED_ECHO = re.compile(r"(?P<time>\d{2}:\d{2}:\d{2})\s+/?\$DA", re.I)
+TK5_HERCULES_ECHO = re.compile(
+    r"(?P<time>\d{2}:\d{2}:\d{2}) HHC00013I '/' input entered for console "
+    r'(?P<console>[0-9A-Fa-f]+:[0-9A-Fa-f]{4}): "\$DA"', re.I
+)
 INCOMPLETE = re.compile(r"\$HASP611\b", re.I)
 ACTIVE = re.compile(r"\$HASP(?:608|890)\b|\bJOB\s*\d{1,5}\b", re.I)
 ACTIVITY = re.compile(r"\$HASP(?:100|373|395)\b", re.I)
@@ -45,6 +55,28 @@ class Observation:
     state: str  # CLEAR, ACTIVE, or UNKNOWN
     reason: str
     evidence: tuple[str, ...]
+
+
+def recognized_tk5_echoes(before: list[str]) -> bool:
+    """Recognize the exact observed console echo envelope (zero, one, or two pairs).
+
+    The double pair must be byte-for-byte identical; unrelated console output
+    and partial/mismatched echoes always block an idle classification.
+    """
+    if not before:
+        return True  # TK5 also produced a single $HASP000 reply without echoes.
+    if len(before) == 1:
+        return TK5_TYPED_ECHO.fullmatch(before[0]) is not None
+    if len(before) not in (2, 4):
+        return False
+    pairs = []
+    for i in range(0, len(before), 2):
+        sent = TK5_HERCULES_ECHO.fullmatch(before[i])
+        echoed = TK5_TYPED_ECHO.fullmatch(before[i + 1])
+        if not sent or not echoed or sent.group("time") != echoed.group("time"):
+            return False
+        pairs.append(before[i:i + 2])
+    return len(pairs) == 1 or pairs[0] == pairs[1]
 
 
 def parse_delta(delta: str, transport_rc: int = 0) -> Observation:
@@ -69,21 +101,17 @@ def parse_delta(delta: str, transport_rc: int = 0) -> Observation:
         return Observation("ACTIVE", "active batch job reported", messages)
     hasp = [line for line in lines if HASP.search(line)]
     clear = [line for line in hasp if CLEAR.search(line)]
-    # The TK5 reply can be accompanied by a separate /$DA command echo in
-    # the same fresh console delta. Accept only that explicitly recognized
-    # extra line; unrelated console output is NOT evidence of an idle system.
+    # The response may be preceded by one typed command echo, or by one
+    # or two identical Hercules/console echo pairs. Anything else blocks.
     tk5 = [(i, line) for i, line in enumerate(lines) if TK5_CLEAR.fullmatch(line)]
     if len(hasp) == 1 and len(tk5) == 1:
         reply_index, _ = tk5[0]
-        extras = [
-            line for i, line in enumerate(lines)
-            if i != reply_index and not (i < reply_index and CMD_ECHO.search(line))
-        ]
-        if not extras:
+        if reply_index == len(lines) - 1 and recognized_tk5_echoes(lines[:reply_index]):
             return Observation("CLEAR", "fresh TK5 $HASP000 NO ACTIVE JOBS response", messages)
         return Observation(
             "UNKNOWN",
-            f"TK5 idle reply accompanied by {len(extras)} unrecognized console line(s)",
+            f"TK5 idle reply accompanied by unrecognized console line(s) "
+            f"({len(lines) - 1} non-reply line(s))",
             messages,
         )
     if len(hasp) != 1 or len(clear) != 1:

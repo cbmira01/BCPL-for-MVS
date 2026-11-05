@@ -141,3 +141,28 @@ and redact before sharing. The diagnostic does not authorize reconstruction.
 Live two-sample verification and a subsequent controlled active-job observation
 remain outstanding. An idle observation is not a lock on other job submitters.
 Live reconstruction remains disabled.
+
+### TK5 Hercules echo-pair calibration (5 November 2026)
+
+The next live diagnostic returned one `$HASP000 NO ACTIVE JOBS` reply preceded
+by **two identical pairs** of Hercules submission messages and `$DA` echoes:
+
+```text
+16:36:36 HHC00013I '/' input entered for console 0:0009: "$DA"
+16:36:36 $DA
+16:36:36 HHC00013I '/' input entered for console 0:0009: "$DA"
+16:36:36 $DA
+16:36:36 /17.36.35           $HASP000 NO ACTIVE JOBS
+```
+
+The prior parser correctly blocked this previously unrecognized console
+envelope (RC=2). The revised recognition accepts a single exact Hercules
+submission/typed-echo pair or **two byte-for-byte identical pairs** before
+one timestamped idle reply. Mismatched timestamps, extra unrelated lines,
+partial pairs, three or more pairs, activity, and incomplete-list indicators
+still block. The later `$HASP612` parsing remains unchanged.
+
+This is a diagnostic calibration, **not** a guarantee that JES is reserved
+or quiescent. We still need a fresh two-sample live result and a separate
+active-job negative verification before considering the safeguard accepted.
+`tools/reconstruction/run --run` remains disabled.
