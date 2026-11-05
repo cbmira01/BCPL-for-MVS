@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Interactive, in-memory reconstruction approval gate; no execution path.
-
-The eventual runner must call request_approval() in its own process and
-verify_approval() before starting approved destructive operations. This
-standalone command only exercises the prompt and discards its result.
-"""
+"""Interactive single-process approval; standalone entry point is exercise only."""
 from __future__ import annotations
 
 import argparse
@@ -17,91 +12,98 @@ import sys
 from typing import Callable, TextIO
 
 ROOT = Path(__file__).resolve().parents[2]
-PLAN_PATH = ROOT / "tools/reconstruction/plan"
-
-
-@dataclass(frozen=True)
-class ApprovedPlan:
-    """Ephemeral grant for one displayed plan within the current process."""
-    digest: str
-    git_sha: str
-    hlq: str
+PLAN_PATH = ROOT / 'tools/reconstruction/plan'
 
 
 class ApprovalError(RuntimeError):
-    """Approval refused. Code 2 means blocked, 3 means declined."""
-    def __init__(self, message: str, code: int = 2):
+    def __init__(self, message, code=2):
         super().__init__(message)
         self.code = code
 
 
+@dataclass(frozen=True)
+class ApprovedPlan:
+    digest: str
+    git_sha: str
+    hlq: str
+    config_digest: str
+    operation_digest: str
+    cleanup_digest: str
+    managed_dsns: tuple[tuple[str, str], ...]
+
+
 def digest_report(report: str) -> str:
-    return hashlib.sha256(report.encode("utf-8")).hexdigest()
+    return hashlib.sha256(report.encode('utf-8')).hexdigest()
 
 
-def identity(report: str) -> tuple[str, str]:
-    if not report.startswith("CLEAN-ROOM RECONSTRUCTION — READ-ONLY PREFLIGHT / DRY-RUN\n"):
-        raise ApprovalError("preview header not recognized")
-    if "\nREADY — read-only preflight passed; no authorization or execution performed.\n" not in report:
-        raise ApprovalError("preview does not contain a successful preflight result")
-    match_git = re.search(r"^Git: ([0-9a-f]{40}) \(branch main\)$", report, re.M)
-    match_target = re.search(r"^Target: HLQ=([A-Z@$#][A-Z0-9@$#]{0,7}) batch-user=", report, re.M)
-    match_config = re.search(r"^Effective non-secret config SHA-256: ([0-9a-f]{64})$", report, re.M)
-    if not match_git or not match_target or not match_config:
-        raise ApprovalError("preview lacks verified Git, target or configuration identity")
-    return match_git.group(1), match_target.group(1)
+def parse_identity(report: str):
+    if not report.startswith('CLEAN-ROOM RECONSTRUCTION — READ-ONLY PREFLIGHT / DRY-RUN\n'):
+        raise ApprovalError('unrecognized reconstruction preview')
+    if not report.endswith('READY — read-only preflight passed; no authorization or execution performed.\n'):
+        raise ApprovalError('preflight is not READY')
+    def one(pattern):
+        found = re.findall(pattern, report, re.M)
+        if len(found) != 1:
+            raise ApprovalError('missing or ambiguous approved-scope identity')
+        return found[0]
+    sha = one(r'^Git: ([0-9a-f]{40}) \(branch main\)$')
+    hlq = one(r'^Target: HLQ=(HERC02) batch-user=HERC02$')
+    cfg = one(r'^Effective non-secret config SHA-256: ([0-9a-f]{64})$')
+    op = one(r'^Exact operation contract SHA-256: ([0-9a-f]{64})$')
+    clean = one(r'^Host cleanup scope SHA-256: ([0-9a-f]{64})$')
+    count = int(one(r'^Approved dataset count: (\d+)$'))
+    dsns = re.findall(r'^  managed: ([A-Z0-9_]+) (HERC02\.BCPL\.[A-Z0-9.$@#]+)$', report, re.M)
+    if count < 1 or count != len(dsns) or len(set(dsns)) != count:
+        raise ApprovalError('approved dataset inventory does not match its declared size')
+    return sha, hlq, cfg, op, clean, tuple(dsns)
 
 
-def verify_approval(approval: ApprovedPlan,
+def verify_approval(approved: ApprovedPlan,
                     planner: Callable[[], tuple[str, list[str]]]) -> None:
-    """Refuse a stale approval. Call immediately before destructive execution."""
     report, errors = planner()
     if errors:
-        raise ApprovalError("preflight changed to BLOCKED after acknowledgment")
-    sha, hlq = identity(report)
-    if (digest_report(report), sha, hlq) != (approval.digest, approval.git_sha, approval.hlq):
-        raise ApprovalError("reconstruction scope changed since acknowledgment; review again")
+        raise ApprovalError('preflight changed to BLOCKED after acknowledgment')
+    fields = parse_identity(report)
+    if (digest_report(report), *fields) != (approved.digest, approved.git_sha, approved.hlq,
+                                            approved.config_digest, approved.operation_digest,
+                                            approved.cleanup_digest, approved.managed_dsns):
+        raise ApprovalError('reconstruction scope changed since acknowledgment')
 
 
 def request_approval(planner: Callable[[], tuple[str, list[str]]],
-                     *, output: TextIO,
-                     read_line: Callable[[str], str],
+                     *, output: TextIO, read_line: Callable[[str], str],
                      interactive: bool) -> ApprovedPlan:
-    """Preview, ask once, recheck scope, and return an in-memory grant only."""
     report, errors = planner()
     output.write(report)
     output.flush()
     if errors:
-        raise ApprovalError("preflight BLOCKED; no acknowledgment requested")
-    sha, hlq = identity(report)
+        raise ApprovalError('preflight BLOCKED; approval not requested')
+    fields = parse_identity(report)
     if not interactive:
-        raise ApprovalError("interactive WSL terminal required; piped approval refused")
-
-    fingerprint = digest_report(report)
-    phrase = f"REBUILD {hlq} {fingerprint[:12]}"
-    output.write("\nONE-RUN SCOPE ACKNOWLEDGMENT\n")
-    output.write("This acknowledgment is specific to the displayed plan, target and Git revision.\n")
-    output.write("It is not saved and cannot be used by a separate process.\n")
-    output.write(f"Type exactly: {phrase}\n")
+        raise ApprovalError('interactive terminal required; piped acknowledgment rejected')
+    digest = digest_report(report)
+    phrase = f'REBUILD {fields[1]} {digest[:12]}'
+    output.write('\nONE-RUN SCOPE ACKNOWLEDGMENT\n')
+    output.write('This authorization is tied to the displayed Git revision, dataset targets, '
+                 'host objects and exact operations. It is never persisted.\n')
+    output.write(f'Type exactly: {phrase}\n')
     output.flush()
     try:
-        response = read_line("Acknowledgment (or Enter to cancel): ")
-    except (EOFError, KeyboardInterrupt):
-        raise ApprovalError("operator acknowledgment cancelled", code=3) from None
-    if response != phrase:
-        raise ApprovalError("operator acknowledgment not exact; cancelled", code=3)
-
-    approval = ApprovedPlan(fingerprint, sha, hlq)
-    verify_approval(approval, planner)
-    return approval
+        answer = read_line('Acknowledgment (or Enter to cancel): ')
+    except (KeyboardInterrupt, EOFError):
+        raise ApprovalError('operator acknowledgment cancelled', code=3) from None
+    if answer != phrase:
+        raise ApprovalError('operator acknowledgment not exact; cancelled', code=3)
+    granted = ApprovedPlan(digest, *fields)
+    verify_approval(granted, planner)
+    return granted
 
 
 def load_plan():
-    """Load the extensionless planner without writing Python bytecode."""
     old = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
     try:
-        loader = importlib.machinery.SourceFileLoader("reconstruction_plan", str(PLAN_PATH))
+        loader = importlib.machinery.SourceFileLoader('reconstruction_plan', str(PLAN_PATH))
         import types
         module = types.ModuleType(loader.name)
         module.__file__ = str(PLAN_PATH)
@@ -111,27 +113,26 @@ def load_plan():
         sys.dont_write_bytecode = old
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--probe", action="store_true", help="read-only Docker/TCP readiness checks")
-    args = parser.parse_args()
-    print("APPROVAL PROMPT EXERCISE ONLY — execution is not implemented.", flush=True)
+def main():
+    args = argparse.ArgumentParser(description=__doc__)
+    args.add_argument('--probe', action='store_true')
+    options = args.parse_args()
+    print('APPROVAL PROMPT EXERCISE ONLY — no reconstruction will start.', flush=True)
     try:
-        plan = load_plan()
-        core = plan.load_dspal_core(ROOT)
-        planner = lambda: plan.prepare(ROOT, core, probe=args.probe)
-        request_approval(planner, output=sys.stdout,
-                         read_line=input, interactive=sys.stdin.isatty())
+        mod = load_plan()
+        core = mod.load_dspal_core(ROOT)
+        planner = lambda: mod.prepare(ROOT, core, probe=options.probe)
+        request_approval(planner, output=sys.stdout, read_line=input,
+                         interactive=sys.stdin.isatty())
     except ApprovalError as exc:
-        print(f"NOT APPROVED: {exc}", file=sys.stderr)
+        print('NOT APPROVED: ' + str(exc), file=sys.stderr)
         return exc.code
     except (OSError, RuntimeError) as exc:
-        print(f"NOT APPROVED: preflight error: {type(exc).__name__}", file=sys.stderr)
+        print('NOT APPROVED: preflight error ' + type(exc).__name__, file=sys.stderr)
         return 2
-    print("ACKNOWLEDGMENT VERIFIED (exercise only).", flush=True)
-    print("No approval persisted; no reconstruction was authorized or executed.", flush=True)
+    print('ACKNOWLEDGMENT VERIFIED — exercise only. No approval persists.', flush=True)
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == '__main__':
+    raise SystemExit(main())

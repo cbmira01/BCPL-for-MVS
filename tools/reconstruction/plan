@@ -1,243 +1,236 @@
 #!/usr/bin/env python3
-"""Read-only preflight and reconstruction dry-run. No JES or dataset writes."""
+"""Read-only clean-room reconstruction preflight and exact operation preview."""
 from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import importlib.util
+import json
 from pathlib import Path
 import re
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-REQUIRED_BUILD_MEMBERS = {
-    "MR10_JCL": ("IC19BLD",),
-    "BOOT_JCL": ("CAMBBLD", "BLDBMAIN", "BLIBBLD", "BCPLDEMO", "BCPLTIME", "BCPLQSAM"),
-}
-REQUIRED_TOOLS = (
-    "tools/clean-workarea", "tools/datasets/dspal",
-    "tools/bootstrap/prepare-bootstrap", "tools/mr10/compile-and-run",
-)
-STAGES = (
-    ("0", "Preflight, plan and single operator approval", "This command previews only; execution is not implemented"),
-    ("1", "Clean generated host workarea", "tools/clean-workarea"),
-    ("2", "Recreate managed BCPL datasets", "dspal purgebcpl; dspal initbcpl; dspal populate all (tracked first pass)"),
-    ("3", "Build and smoke-test installed ICINT19", "dspal submit MR10_JCL IC19BLD; installed interpreter smoke"),
-    ("5", "Generate and populate bootstrap inputs", "prepare-bootstrap --with-trnilrg; dspal populate all --generated-only"),
-    ("6", "Build and smoke-test CAMBCOMP", "dspal submit BOOT_JCL CAMBBLD; assembler-output smoke"),
-    ("7", "Build Core Runtime", "dspal submit BOOT_JCL BLDBMAIN"),
-    ("8", "Build BLIB", "dspal submit BOOT_JCL BLIBBLD"),
-    ("9", "Build optional System Extensions", "dspal submit BOOT_JCL BCPLDEMO, BCPLTIME, BCPLQSAM (separately)"),
-    ("10", "Inspect evidence and report", "Check payload JES RCs, compiler CODE=0, member inventories; save report"),
-)
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import (ScopeError, OPERATIONS, command_manifest, canonical_digest,
+                      dataset_inventory, tracked_logicals, validate_jcl, workarea_scope)
 
+REQUIRED_BUILD_MEMBERS = {
+    'MR10_JCL': ('IC19BLD',),
+    'BOOT_JCL': ('CAMBBLD', 'BLDBMAIN', 'BLIBBLD', 'BCPLDEMO', 'BCPLTIME', 'BCPLQSAM'),
+}
+REQUIRED_TOOLS = ('tools/clean-workarea', 'tools/datasets/dspal',
+                  'tools/bootstrap/prepare-bootstrap', 'tools/mr10/compile-and-run',
+                  'tools/bootstrap/compile-mvs', 'tools/mvs/job-summary',
+                  'tools/mvs/dump-report-for-job')
 
 
 def public_config_digest(config: dict) -> str:
-    """Fingerprint effective mappings/target settings without incorporating credentials."""
     def scrub(value):
         if isinstance(value, dict):
-            return {
-                str(key): "<redacted>" if re.search(
-                    r"password|secret|token|credential", str(key), re.I
-                ) else scrub(item)
-                for key, item in value.items()
-            }
+            return {str(k): '[REDACTED]' if re.search(r'password|secret|token|credential', str(k), re.I)
+                    else scrub(v) for k, v in value.items()}
         if isinstance(value, list):
-            return [scrub(item) for item in value]
+            return [scrub(x) for x in value]
         return value
-
-    data = json.dumps(scrub(config), sort_keys=True, separators=(",", ":"),
-                      default=str).encode("utf-8")
-    return hashlib.sha256(data).hexdigest()
+    return canonical_digest(scrub(config))
 
 
 def run_git(root: Path, *args: str) -> str:
-    p = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
-                       text=True, check=False, timeout=10)
+    p = subprocess.run(['git', '-C', str(root), *args],
+                       capture_output=True, text=True, timeout=10, check=False)
     if p.returncode:
-        raise RuntimeError(f"git {' '.join(args)} failed (RC={p.returncode})")
+        raise RuntimeError(f'git {args[0]} failed (RC={p.returncode})')
     return p.stdout.strip()
 
 
 def load_dspal_core(root: Path):
-    path = root / "tools/datasets/dspal-core.py"
-    if not path.is_file():
-        raise RuntimeError("Missing dspal-core.py")
-    spec = importlib.util.spec_from_file_location("reconstruction_dspal_core", path)
+    path = root / 'tools/datasets/dspal-core.py'
+    spec = importlib.util.spec_from_file_location('reconstruction_dspal_core', path)
     if spec is None or spec.loader is None:
-        raise RuntimeError("Cannot import dspal-core.py")
+        raise RuntimeError('cannot load dspal core')
     module = importlib.util.module_from_spec(spec)
-    old = sys.dont_write_bytecode
-    sys.dont_write_bytecode = True  # This read-only command must not create __pycache__.
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        sys.dont_write_bytecode = old
+    spec.loader.exec_module(module)
     return module
 
 
-def inspect_manifest(root: Path, cfg: dict, core) -> tuple[list, list, list, list]:
-    errors = []
-    datasets = []
-    tracked = []
-    generated = []
-    hlq = str(cfg["mvs"]["hlq"]).upper()
-    if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}", hlq):
-        errors.append("Unsafe or invalid HLQ in effective configuration")
-    seen = set()
-    for logical, spec in cfg["datasets"].items():
-        dsn = core.full_dsn(cfg, spec).upper()
-        if not dsn.startswith(hlq + ".BCPL.") or not re.fullmatch(
-            r"[A-Z@$#][A-Z0-9@$#]{0,7}(\.[A-Z@$#][A-Z0-9@$#]{0,7})+", dsn
-        ):
-            errors.append(f"Dataset outside approved BCPL scope: {logical} {dsn}")
-        if dsn in seen:
-            errors.append(f"Duplicate managed dataset: {dsn}")
-        seen.add(dsn)
-        datasets.append((logical, dsn, spec))
-        for kind, target in (("members", tracked), ("generated_members", generated)):
-            members = spec.get(kind, {})
+def inspect_manifest(root: Path, cfg: dict, core):
+    errors: list[str] = []
+    tracked: list[tuple[str, str, str]] = []
+    generated: list[tuple[str, str, str]] = []
+    try:
+        datasets = dataset_inventory(cfg, core.full_dsn,
+                                     expected_logicals=tracked_logicals(root, core))
+    except (KeyError, TypeError, ScopeError) as exc:
+        return (), (), (), [str(exc)]
+    for logical, spec in cfg['datasets'].items():
+        for key, into in (('members', tracked), ('generated_members', generated)):
+            members = spec.get(key, {})
             if not isinstance(members, dict):
-                errors.append(f"Invalid {kind} mapping in {logical}")
+                errors.append(f'Invalid mapping {logical}.{key}')
                 continue
-            for member, src in members.items():
-                src = str(src)
-                p = Path(src)
-                if p.is_absolute() or ".." in p.parts or not src or p == Path("."):
-                    errors.append(f"Unsafe source path in {logical}({member})")
+            for member, value in members.items():
+                source = str(value)
+                p = Path(source)
+                if (not source or p.is_absolute() or '..' in p.parts or p == Path('.') or
+                    p.parts[0] == '.git'):
+                    errors.append(f'Unsafe source path {logical}({member})')
                     continue
-                if kind == "generated_members" and not src.startswith("workarea/"):
-                    errors.append(f"Generated input outside workarea: {logical}({member})")
-                if kind == "members" and not (root / p).is_file():
-                    errors.append(f"Missing tracked source: {src} ({logical}/{member})")
-                target.append((logical, member, src))
+                if key == 'generated_members' and not source.startswith('workarea/'):
+                    errors.append(f'Generated input escapes workarea: {source}')
+                if key == 'members':
+                    file = root / p
+                    relative = file
+                    contains_link = False
+                    while relative != root and relative != relative.parent:
+                        if relative.is_symlink():
+                            contains_link = True
+                            break
+                        relative = relative.parent
+                    if contains_link or not file.is_file():
+                        errors.append(f'Missing/unsafe tracked source: {source}')
+                into.append((logical, str(member), source))
     for logical, members in REQUIRED_BUILD_MEMBERS.items():
-        found = cfg["datasets"].get(logical, {}).get("members", {})
+        existing = cfg['datasets'][logical].get('members', {})
         for member in members:
-            if member not in found:
-                errors.append(f"Required build JCL absent: {logical}({member})")
+            if member not in existing:
+                errors.append(f'Required build JCL absent: {logical}({member})')
+            else:
+                file = root / existing[member]
+                if file.is_file() and not file.is_symlink():
+                    try:
+                        validate_jcl(file.read_text(encoding='utf-8'), inventory=datasets)
+                    except (UnicodeError, OSError, ScopeError) as exc:
+                        errors.append(f'Unapproved JCL targets {logical}({member}): {exc}')
     return datasets, tracked, generated, errors
 
 
-def inspect_workarea(root: Path) -> tuple[list[str], list[str]]:
-    work = root / "workarea"
-    errors = []
-    entries = []
-    if work.is_symlink() or not work.is_dir():
-        errors.append("workarea/ missing or is a symbolic link")
-        return entries, errors
-    marker = work / ".gitignore"
-    if marker.is_symlink() or not marker.is_file():
-        errors.append("workarea/.gitignore must be a regular tracked file")
+def inspect_workarea(root: Path):
+    errors: list[str] = []
     try:
-        tracked = run_git(root, "ls-files", "--", "workarea/").splitlines()
-        if tracked != ["workarea/.gitignore"]:
-            errors.append("Unexpected tracked workarea files (expected only .gitignore)")
+        scope = workarea_scope(root / 'workarea')
+    except (OSError, ScopeError) as exc:
+        errors.append(str(exc))
+        scope = None
+    try:
+        tracked = run_git(root, 'ls-files', '--', 'workarea/').splitlines()
+        if tracked != ['workarea/.gitignore']:
+            errors.append('Unexpected tracked files in workarea')
     except RuntimeError as exc:
         errors.append(str(exc))
-    entries = sorted(x.name for x in work.iterdir() if x.name != ".gitignore")
-    return entries, errors
+    return scope, errors
 
 
 def prepare(root: Path, core, probe: bool = False) -> tuple[str, list[str]]:
-    errors = []
+    errors: list[str] = []
     try:
-        git_root = run_git(root, "rev-parse", "--show-toplevel")
-        sha = run_git(root, "rev-parse", "HEAD")
-        branch = run_git(root, "symbolic-ref", "--short", "HEAD")
-        dirty = run_git(root, "status", "--porcelain", "--untracked-files=normal")
+        git_root = run_git(root, 'rev-parse', '--show-toplevel')
+        sha = run_git(root, 'rev-parse', 'HEAD')
+        branch = run_git(root, 'symbolic-ref', '--short', 'HEAD')
+        dirty = run_git(root, 'status', '--porcelain', '--untracked-files=normal')
         if Path(git_root).resolve() != root.resolve():
-            errors.append("Project root does not match Git checkout root")
-        if branch != "main":
-            errors.append(f"Expected main branch, found {branch}")
+            errors.append('Project root differs from Git checkout')
+        if branch != 'main':
+            errors.append('Expected branch main')
         if dirty:
-            errors.append("Git checkout has uncommitted or untracked changes")
-    except RuntimeError as exc:
+            errors.append('Git checkout has uncommitted or untracked changes')
+    except (OSError, RuntimeError) as exc:
         errors.append(str(exc))
-        sha, branch = "UNKNOWN", "UNKNOWN"
+        sha, branch = 'UNKNOWN', 'UNKNOWN'
     try:
         cfg = core.load_config()
-        datasets, tracked, generated, manifest_errors = inspect_manifest(root, cfg, core)
+        inventory, tracked, generated, manifest_errors = inspect_manifest(root, cfg, core)
         errors.extend(manifest_errors)
-    except (OSError, ValueError, KeyError, TypeError, core.DspalError) as exc:
-        errors.append(f"Effective dspal configuration unavailable: {type(exc).__name__}")
-        cfg, datasets, tracked, generated = None, [], [], []
-    for tool in REQUIRED_TOOLS:
-        if not (root / tool).is_file():
-            errors.append(f"Missing reconstruction prerequisite: {tool}")
-    entries, work_errors = inspect_workarea(root)
+    except Exception as exc:
+        errors.append('Effective dspal configuration unavailable: ' + type(exc).__name__)
+        cfg, inventory, tracked, generated = None, (), (), (),
+    for path in REQUIRED_TOOLS:
+        if not (root / path).is_file():
+            errors.append(f'Missing reconstruction prerequisite: {path}')
+    scope, work_errors = inspect_workarea(root)
     errors.extend(work_errors)
-    out = ["CLEAN-ROOM RECONSTRUCTION — READ-ONLY PREFLIGHT / DRY-RUN",
-           "No changes will be made; no JES jobs submitted; no approval requested.",
-           f"Git: {sha} (branch {branch})", f"Checkout: {root}"]
-    if cfg:
-        mvs = cfg["mvs"]
-        rt = cfg.get("runtime", {})
-        out += [f"Target: HLQ={str(mvs['hlq']).upper()} batch-user={str(mvs['batch_user']).upper()}",
-                f"Runtime: container={rt.get('docker_container', '?')} "
-                f"reader={rt.get('reader_host', '?')}:{rt.get('reader_port', '?')} "
-                f"hercules={rt.get('hercules_host', '?')}:{rt.get('hercules_port', '?')}",
-                f"Effective non-secret config SHA-256: {public_config_digest(cfg)}",
-                f"Authentication: {'configured' if mvs.get('batch_password') else 'NOT configured'} (value never displayed)",
-                f"MVS write boundary: {mvs.get('write_boundary', '?')}; "
-                f"allocation unit: {mvs.get('default_unit', '?')}; "
-                f"default volume: {mvs.get('default_volume') or '(system selected)'}",
-                f"Managed datasets: {len(datasets)}; tracked members: {len(tracked)}; generated members: {len(generated)}",
-                "", "HOST CLEANUP (preview only):",
-                f"  {root / 'workarea'}: {len(entries)} disposable top-level entries"]
-        out.extend("    " + x for x in entries)
-        out += ["", "MANAGED MVS DATASETS TO DELETE AND RECREATE (preview only):"]
-        allocation = cfg.get("allocation_defaults", {})
-        for logical, dsn, spec in datasets:
-            fmt = (f"  {logical:<14} {dsn} [{spec.get('type', '?')}] "
-                   f"DSORG={spec.get('dsorg', '?')} RECFM={spec.get('recfm', '?')} "
-                   f"LRECL={spec.get('lrecl', '?')} BLKSIZE={spec.get('blksize', '?')}")
-            space = " ".join(f"{key}={spec.get(key, allocation.get(key, '?'))}"
-                             for key in ("primary", "secondary", "directory"))
-            out.append(fmt + " " + space)
-        out += ["", "Git-backed source members: checked for existence.",
-                "Generated members: intentionally absent until bootstrap generation.",
-                "Review redacted JCL independently with:",
-                "  tools/datasets/dspal purgebcpl --show-jcl",
-                "  tools/datasets/dspal initbcpl --show-jcl"]
-        if probe:
-            out.append("\nCONNECTIVITY (read-only Docker inspection / TCP probes):")
-            try:
-                checks = core.cheap_status(cfg)
-                for name, (ok, detail) in checks.items():
-                    out.append(f"  {name}: {'READY' if ok else 'UNAVAILABLE'} ({detail})")
-                    if not ok:
-                        errors.append(f"Connectivity check failed: {name}")
-            except (OSError, ValueError, TypeError) as exc:
-                errors.append("Connectivity probe failed: " + type(exc).__name__)
-    out.append("\nRECONSTRUCTION BUILD PLAN (future execution; not performed):")
-    out.extend(f"  Guide Step {step}: {name}\n    {command}" for step, name, command in STAGES)
-    out.append("\nExcluded: regression suites, native Cambridge compiler, tape/release production, Git tagging.")
+    ops_manifest = command_manifest(inventory)
+    ops_digest = canonical_digest(ops_manifest)
+    config_digest = public_config_digest(cfg) if cfg is not None else 'UNAVAILABLE'
+    lines = [
+        'CLEAN-ROOM RECONSTRUCTION — READ-ONLY PREFLIGHT / DRY-RUN',
+        'No changes will be made; no JES jobs submitted; no approval requested.',
+        f'Git: {sha} (branch {branch})', f'Checkout: {root}',
+    ]
+    if cfg is not None:
+        mvs = cfg['mvs']
+        lines += [
+            f"Target: HLQ={str(mvs.get('hlq', '?')).upper()} batch-user={str(mvs.get('batch_user', '?')).upper()}",
+            f'Effective non-secret config SHA-256: {config_digest}',
+            f"Authentication: {'configured' if mvs.get('batch_password') else 'NOT configured'} (secret redacted)",
+            f'Approved dataset count: {len(inventory)}',
+        ]
+        if not mvs.get('batch_password'):
+            errors.append('MVS authentication unavailable')
+    lines.append('Exact operation contract SHA-256: ' + ops_digest)
+    if scope:
+        lines.extend([
+            f'Host cleanup scope SHA-256: {scope.fingerprint}',
+            f'HOST CLEANUP: {root / "workarea"}; '
+            f'{len([x for x in scope.entries if "/" not in x[0]])} top-level entries',
+        ])
+        for row in scope.entries:
+            lines.append('  disposable: ' + json.dumps(row[0], ensure_ascii=True))
+    lines.append('MANAGED MVS DATASETS TO DELETE AND RECREATE:')
+    for logical, dsn in inventory:
+        lines.append(f'  managed: {logical} {dsn}')
+    lines.append('TRACKED SOURCE-TO-PDS MEMBER WRITES:')
+    for logical, member, source in tracked:
+        lines.append(f'  tracked: {logical}({member}) <- {source}')
+    lines.append('GENERATED SOURCE-TO-PDS MEMBER WRITES (second population):')
+    for logical, member, source in generated:
+        lines.append(f'  generated: {logical}({member}) <- {source}')
+    lines.append('RECONSTRUCTION OPERATIONS — EXACT ORDER / COMMAND / WRITE SCOPE:')
+    for i, op in enumerate(OPERATIONS, 1):
+        lines.append(f'  [{i:02d}] Guide {op.guide}: {op.name}')
+        lines.append('       command: ' + ' '.join(op.command))
+        lines.append('       verify: ' + op.check)
+        for scope_name in op.writes:
+            lines.append('       writes: ' + scope_name)
+    lines += [
+        'Post-submit verification: tools/mvs/job-summary PAYLOAD_JOB',
+        'Post-submit verification: tools/mvs/dump-report-for-job PAYLOAD_JOB',
+        'Persistent evidence writes: mvs-state/reconstruction-evidence/<new-attempt>/ (outside workarea; no secrets).',
+        'Read-only pre-destructive commands: dspal purgebcpl --show-jcl; dspal initbcpl --show-jcl.',
+        'Expected writes: exactly the managed MVS datasets and listed host-generated files.',
+        'Excluded: regression suites, native Cambridge compiler, tape/release, Git tags, resume.',
+    ]
+    if probe and cfg is not None:
+        try:
+            for name, (ok, info) in core.cheap_status(cfg).items():
+                lines.append(f"Connectivity {name}: {'READY' if ok else 'UNAVAILABLE'} ({info})")
+                if not ok:
+                    errors.append(f'Connectivity unavailable: {name}')
+        except (OSError, ValueError, TypeError) as exc:
+            errors.append('Connectivity probe failed: ' + type(exc).__name__)
     if errors:
-        out.append("\nBLOCKED — preflight issues:")
-        out.extend("  - " + e for e in errors)
+        lines.append('BLOCKED — preflight issues:')
+        lines += ['  - ' + item for item in errors]
     else:
-        out.append("\nREADY — read-only preflight passed; no authorization or execution performed.")
-    return "\n".join(out) + "\n", errors
+        lines.append('READY — read-only preflight passed; no authorization or execution performed.')
+    return '\n'.join(lines) + '\n', errors
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true", help="explicit spelling of the default read-only plan")
-    parser.add_argument("--probe", action="store_true", help="also inspect Docker/TCP readiness without starting services")
-    args = parser.parse_args()
-    del args.dry_run
+    parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--probe', action='store_true')
+    opts = parser.parse_args()
     try:
-        report, errors = prepare(ROOT, load_dspal_core(ROOT), args.probe)
+        report, errors = prepare(ROOT, load_dspal_core(ROOT), opts.probe)
+        print(report, end='')
+        return 2 if errors else 0
     except (OSError, RuntimeError) as exc:
-        print("BLOCKED — preflight failed: " + str(exc), file=sys.stderr)
+        print('BLOCKED — preflight failed: ' + str(exc), file=sys.stderr)
         return 2
-    print(report, end="")
-    return 2 if errors else 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == '__main__':
+    raise SystemExit(main())

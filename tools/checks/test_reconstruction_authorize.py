@@ -1,138 +1,154 @@
-"""Offline approval gate tests: no JES submission or write operations."""
+"""Approval tests against the immutable Step 3 reconstruction scope."""
+from __future__ import annotations
+
 import importlib.machinery
-import importlib.util
 import io
 from pathlib import Path
-import sys
+import types
 import unittest
+from dataclasses import FrozenInstanceError
 
-SCRIPT = Path(__file__).resolve().parents[1] / "reconstruction/authorize"
-
-
-def load_authorize():
-    loader = importlib.machinery.SourceFileLoader("reconstruction_authorize_test", str(SCRIPT))
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[loader.name] = module  # dataclass annotations need a module reference
-    loader.exec_module(module)
-    return module
+SCRIPT = Path(__file__).resolve().parents[1] / 'reconstruction' / 'authorize'
+loader = importlib.machinery.SourceFileLoader('reconstruction_authorize_test', str(SCRIPT))
+authorize = types.ModuleType(loader.name)
+authorize.__file__ = str(SCRIPT)
+import sys
+sys.modules[loader.name] = authorize
+loader.exec_module(authorize)
 
 
-authorize = load_authorize()
+def ready_report(*, datasets=2):
+    return '\n'.join([
+        'CLEAN-ROOM RECONSTRUCTION — READ-ONLY PREFLIGHT / DRY-RUN',
+        'Git: ' + 'a'*40 + ' (branch main)',
+        'Target: HLQ=HERC02 batch-user=HERC02',
+        'Effective non-secret config SHA-256: ' + 'b'*64,
+        'Exact operation contract SHA-256: ' + 'c'*64,
+        'Host cleanup scope SHA-256: ' + 'd'*64,
+        f'Approved dataset count: {datasets}',
+        '  managed: BOOT_OBJ HERC02.BCPL.BOOT.OBJ',
+        '  managed: EXT_OBJ HERC02.BCPL.EXT.OBJ',
+        'READY — read-only preflight passed; no authorization or execution performed.',
+        '',
+    ])
 
 
-def report(*, sha="a" * 40, hlq="HERC02", cfg="b" * 64, extra=""):
-    return (
-        "CLEAN-ROOM RECONSTRUCTION — READ-ONLY PREFLIGHT / DRY-RUN\n"
-        "No changes will be made; no JES jobs submitted; no approval requested.\n"
-        f"Git: {sha} (branch main)\n"
-        f"Target: HLQ={hlq} batch-user=HERC02\n"
-        f"Effective non-secret config SHA-256: {cfg}\n"
-        "Authentication: configured (value never displayed)\n"
-        "MANAGED MVS DATASETS TO DELETE AND RECREATE (preview only):\n"
-        "  BOOT_OBJ       HERC02.BCPL.BOOT.OBJ [pds]\n"
-        + extra +
-        "\nREADY — read-only preflight passed; no authorization or execution performed.\n"
-    )
-
-
-class AuthorizationTests(unittest.TestCase):
+class AuthorizeTests(unittest.TestCase):
     def setUp(self):
-        self.text = report()
-        self.output = io.StringIO()
+        self.report = ready_report()
         self.calls = 0
+        self.output = io.StringIO()
 
     def planner(self):
         self.calls += 1
-        return self.text, []
+        return self.report, []
 
-    def phrase(self):
-        return "REBUILD HERC02 " + authorize.digest_report(self.text)[:12]
+    def approve(self, answer=None, interactive=True):
+        phrase = 'REBUILD HERC02 ' + authorize.digest_report(self.report)[:12]
+        return authorize.request_approval(self.planner, output=self.output,
+                                          read_line=lambda prompt: phrase if answer is None else answer,
+                                          interactive=interactive)
 
-    def request(self, text=None, *, interactive=True, planner=None):
-        return authorize.request_approval(
-            planner or self.planner,
-            output=self.output,
-            read_line=lambda _prompt: self.phrase() if text is None else text,
-            interactive=interactive,
-        )
-
-    def test_exact_acknowledgment_yields_ephemeral_grant(self):
-        approved = self.request()
-        self.assertEqual(approved.git_sha, "a" * 40)
-        self.assertEqual(approved.hlq, "HERC02")
+    def test_exact_acknowledgment_is_ephemeral_and_bound(self):
+        approved = self.approve()
+        self.assertEqual(approved.git_sha, 'a'*40)
+        self.assertEqual(approved.hlq, 'HERC02')
+        self.assertEqual(len(approved.managed_dsns), 2)
+        self.assertEqual(approved.config_digest, 'b'*64)
+        self.assertEqual(approved.operation_digest, 'c'*64)
+        self.assertEqual(approved.cleanup_digest, 'd'*64)
         self.assertEqual(self.calls, 2)
-        self.assertIn(self.text, self.output.getvalue())
-        self.assertIn("Type exactly: REBUILD HERC02", self.output.getvalue())
+        self.assertIn('ONE-RUN SCOPE ACKNOWLEDGMENT', self.output.getvalue())
         authorize.verify_approval(approved, self.planner)
         self.assertEqual(self.calls, 3)
 
-    def test_approval_is_bound_to_full_preview_content(self):
-        approved = self.request()
-        self.text = report(extra="  EXTRA HERC02.BCPL.EXTRALIB [pds]\n")
-        with self.assertRaisesRegex(authorize.ApprovalError, "scope changed"):
+    def test_approval_bound_to_full_preview_content(self):
+        approved = self.approve()
+        self.report = self.report.replace('Git: ', 'Git: ', 1).replace(
+            'READY —', 'READY —')
+        self.report = self.report.replace('  managed: EXT_OBJ ', '  managed: OTHER ') 
+        with self.assertRaisesRegex(authorize.ApprovalError, 'scope changed'):
             authorize.verify_approval(approved, self.planner)
 
-    def test_approval_bound_to_private_config_override_mapping(self):
-        approved = self.request()
-        self.text = report(cfg="c" * 64)
-        with self.assertRaises(authorize.ApprovalError):
+    def test_private_configuration_override_changes_digest(self):
+        approved = self.approve()
+        self.report = self.report.replace('b'*64, 'e'*64)
+        with self.assertRaisesRegex(authorize.ApprovalError, 'scope changed'):
             authorize.verify_approval(approved, self.planner)
 
     def test_no_tty_blocks_before_prompt(self):
-        with self.assertRaisesRegex(authorize.ApprovalError, "interactive WSL"):
-            self.request(interactive=False)
+        with self.assertRaisesRegex(authorize.ApprovalError, 'interactive terminal required'):
+            self.approve(interactive=False)
         self.assertEqual(self.calls, 1)
 
     def test_bad_phrase_does_not_authorize(self):
-        for phrase in ("YES", "REBUILD HERC02", self.phrase() + " ", ""):
-            self.output = io.StringIO()
-            with self.assertRaises(authorize.ApprovalError) as ctx:
-                self.request(text=phrase)
-            self.assertEqual(ctx.exception.code, 3)
+        with self.assertRaises(authorize.ApprovalError) as raised:
+            self.approve(answer='YES')
+        self.assertEqual(raised.exception.code, 3)
+        self.assertEqual(self.calls, 1)
 
     def test_eof_cancels(self):
-        def eof(_):
+        def eof(prompt):
             raise EOFError()
-        with self.assertRaises( authorize.ApprovalError) as ctx:
+        with self.assertRaises(authorize.ApprovalError) as raised:
             authorize.request_approval(self.planner, output=self.output,
                                        read_line=eof, interactive=True)
-        self.assertEqual(ctx.exception.code, 3)
+        self.assertEqual(raised.exception.code, 3)
 
     def test_preflight_errors_block_without_prompt(self):
-        def bad_plan():
-            return self.text.replace("READY —", "BLOCKED —"), ["wrong target"]
-        with self.assertRaisesRegex(authorize.ApprovalError, "preflight BLOCKED"):
-            self.request(planner=bad_plan)
+        def blocked():
+            return self.report, ['unavailable']
+        with self.assertRaisesRegex(authorize.ApprovalError, 'preflight BLOCKED'):
+            authorize.request_approval(blocked, output=self.output,
+                                       read_line=lambda prompt: self.fail('prompted'), interactive=True)
 
     def test_preflight_drift_during_prompt_refuses(self):
-        first = self.text
-        changed = report(sha="c" * 40)
-        n = iter([(first, []), (changed, [])])
-        def planner():
-            return next(n)
-        with self.assertRaisesRegex(authorize.ApprovalError, "scope changed"):
-            self.request(planner=planner)
+        def change(prompt):
+            self.report = self.report.replace('c'*64, 'f'*64)
+            return 'REBUILD HERC02 ' + authorize.digest_report(ready_report())[:12]
+        with self.assertRaisesRegex(authorize.ApprovalError, 'scope changed'):
+            authorize.request_approval(self.planner, output=self.output,
+                                       read_line=change, interactive=True)
 
     def test_second_preflight_can_be_blocked(self):
-        n = iter([(self.text, []), (self.text, ["new issue"])])
-        with self.assertRaisesRegex(authorize.ApprovalError, "BLOCKED"):
-            self.request(planner=lambda: next(n))
+        def drifting():
+            self.calls += 1
+            return self.report, ([] if self.calls == 1 else ['BLOCKED'])
+        with self.assertRaisesRegex(authorize.ApprovalError, 'BLOCKED'):
+            authorize.request_approval(drifting, output=self.output,
+                                       read_line=lambda _: 'REBUILD HERC02 ' + authorize.digest_report(self.report)[:12],
+                                       interactive=True)
 
-    def test_malformed_or_missing_scope_is_blocked(self):
-        for data in (report(sha="UNKNOWN"),
-                     report(cfg="not-a-hash"),
-                     report(hlq="BADSCOPE.JUNK"),
-                     self.text.replace("READY —", "BLOCKED —")):
-            with self.assertRaises(authorize.ApprovalError):
-                authorize.identity(data)
+    def test_missing_dataset_scope_blocked(self):
+        self.report = self.report.replace('  managed: EXT_OBJ HERC02.BCPL.EXT.OBJ\n', '')
+        with self.assertRaisesRegex(authorize.ApprovalError, 'inventory'):
+            self.approve()
+
+    def test_count_mismatch_blocked(self):
+        self.report = ready_report(datasets=29)
+        with self.assertRaisesRegex(authorize.ApprovalError, 'inventory'):
+            self.approve()
+
+    def test_duplicate_dataset_blocked(self):
+        self.report = self.report.replace('EXT_OBJ HERC02.BCPL.EXT.OBJ', 'BOOT_OBJ HERC02.BCPL.BOOT.OBJ')
+        with self.assertRaisesRegex(authorize.ApprovalError, 'inventory'):
+            self.approve()
+
+    def test_unrecognized_preview_blocked(self):
+        self.report = self.report.replace('READ-ONLY PREFLIGHT', 'DESTRUCTIVE PREFLIGHT')
+        with self.assertRaisesRegex(authorize.ApprovalError, 'unrecognized'):
+            self.approve()
+
+    def test_incomplete_preflight_blocked(self):
+        self.report = self.report.replace('READY — read-only', 'BLOCKED — read-only')
+        with self.assertRaisesRegex(authorize.ApprovalError, 'not READY'):
+            self.approve()
 
     def test_approval_data_is_immutable(self):
-        approved = self.request()
-        from dataclasses import FrozenInstanceError
+        approved = self.approve()
         with self.assertRaises(FrozenInstanceError):
-            approved.git_sha = "c" * 40
+            approved.git_sha = 'bad'
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-"""One-shot clean-room reconstruction orchestrator; no resume or regression suite.
+"""One-shot reconstruction stage engine; live --run deliberately DISABLED.
 
---run is deliberately blocked until the JES-idle check is independently
-validated on MVS 3.8J. The stage engine and validations are testable offline.
+No resume/checkpoints, no regression/release.  Real MVS mutation requires
+separate operator acceptance and a future change to the hard stop in main().
 """
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import hashlib
-import importlib.machinery
-import importlib.util
-import os
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -19,254 +16,328 @@ import sys
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
-DSPAL = "tools/datasets/dspal"
-BOOTSTRAP = "tools/bootstrap/prepare-bootstrap"
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import (ScopeError, OPERATIONS, command_manifest, canonical_digest,
+                      dataset_inventory, tracked_logicals, validate_jcl, workarea_scope)
+from evidence import EvidenceLog
+from verify import (VerificationError, parse_submission, verify_payload,
+                    inventory_members, required_inventory, CODE_RECORD)
 
 
 class ReconstructionError(RuntimeError):
     pass
 
 
-@dataclass(frozen=True)
-class Step:
-    guide: str
-    name: str
-    command: tuple[str, ...]
-    check: str = "zero"
-
-
-STEPS = (
-    Step("1", "Remove generated host workarea", ("tools/clean-workarea",), "cleanup"),
-    Step("2", "Purge managed BCPL datasets", (DSPAL, "purgebcpl", "--yes")),
-    Step("2", "Recreate managed datasets", (DSPAL, "initbcpl")),
-    Step("2", "Populate Git-backed members", (DSPAL, "populate", "all"), "first-populate"),
-    Step("3", "Build ICINT19", (DSPAL, "submit", "MR10_JCL", "IC19BLD"), "submit"),
-    Step("3", "Check MR10 interpreter load library", (DSPAL, "ls", "MR10_LOAD"), "icint-members"),
-    Step("3", "Check MR10 interpreter object library", (DSPAL, "ls", "MR10_OBJ"), "icint-members"),
-    Step("3", "Smoke-test installed interpreter", (
-        "tools/mr10/compile-and-run", "--installed-icint", "MR10_LOAD", "--results",
-        "mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.bcpl"
-    ), "code-zero"),
-    Step("5", "Generate bootstrap and TRNILRG", (BOOTSTRAP, "--with-trnilrg"), "bootstrap"),
-    Step("5", "Populate generated-only members", (DSPAL, "populate", "all", "--generated-only")),
-    Step("6", "Build CAMBCOMP", (DSPAL, "submit", "BOOT_JCL", "CAMBBLD"), "cambridge"),
-    Step("6", "Smoke-test assembler output", (
-        "tools/bootstrap/compile-mvs",
-        "bootstrap-toolchain/regression/00-most-degenerate-bcpl-program/source.bcpl",
-        "--output", "workarea/m3-clean-smoke.s370.asm"
-    ), "asm-smoke"),
-    Step("7", "Build Core Runtime", (DSPAL, "submit", "BOOT_JCL", "BLDBMAIN"), "submit"),
-    Step("8", "Build BLIB", (DSPAL, "submit", "BOOT_JCL", "BLIBBLD"), "blib"),
-    Step("8", "Verify Core Runtime and BLIB members", (DSPAL, "ls", "BOOT_OBJ"), "runtime-members"),
-    Step("9", "Install BCPLDEMO", (DSPAL, "submit", "BOOT_JCL", "BCPLDEMO"), "submit"),
-    Step("9", "Install BCPLTIME", (DSPAL, "submit", "BOOT_JCL", "BCPLTIME"), "submit"),
-    Step("9", "Install BCPLQSAM", (DSPAL, "submit", "BOOT_JCL", "BCPLQSAM"), "submit"),
-    Step("9", "Verify System Extensions", (DSPAL, "ls", "EXT_OBJ"), "extensions-members"),
-)
-
-RUNTIME_MEMBERS = frozenset((
-    "BCPLMAIN", "BCPLMEM", "BCPLBYTE", "BCPLAPT", "BCPLIO", "BCPLRGS", "BCPLREG", "BLIB"
-))
-EXTENSION_MEMBERS = frozenset(("BCPLDEMO", "BCPLTIME", "BCPLQSAM"))
-
-
-def load_extensionless(path: Path, name: str):
-    old = sys.dont_write_bytecode
-    sys.dont_write_bytecode = True
-    try:
-        loader = importlib.machinery.SourceFileLoader(name, str(path))
-        spec = importlib.util.spec_from_loader(name, loader)
-        if spec is None:
-            raise ReconstructionError(f"cannot load {path}")
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[name] = mod
-        loader.exec_module(mod)
-        return mod
-    finally:
-        sys.dont_write_bytecode = old
-
-
-def scope_snapshot(root: Path) -> str:
-    """Digest exactly the top-level entries in approved workarea cleanup."""
-    work = root / "workarea"
-    if work.is_symlink() or not work.is_dir():
-        raise ReconstructionError("workarea is missing or a symlink")
-    marker = work / ".gitignore"
-    if marker.is_symlink() or not marker.is_file():
-        raise ReconstructionError("workarea/.gitignore is unsafe")
-    names = sorted((os.fsencode(x.name) for x in work.iterdir() if x.name != ".gitignore"))
-    return hashlib.sha256(b"".join(name + b"\0" for name in names)).hexdigest()
-
-
-def assert_source(root: Path, plan, config_hash: str, sha: str, *, first: bool = False) -> None:
-    """Reject changed sources/configuration after approval; ignored output is allowed."""
-    if plan.run_git(root, "rev-parse", "HEAD") != sha:
-        raise ReconstructionError("Git revision changed after approval")
-    if plan.run_git(root, "symbolic-ref", "--short", "HEAD") != "main":
-        raise ReconstructionError("Not on main")
-    if plan.run_git(root, "status", "--porcelain", "--untracked-files=normal"):
-        raise ReconstructionError("Working tree changed after approval")
-    core = plan.load_dspal_core(root)
+def assert_source(root: Path, plan, grant, core, *, first=False):
+    """Validate immutable source/configuration/operations before each operation."""
+    if plan.run_git(root, 'rev-parse', 'HEAD') != grant.git_sha:
+        raise ReconstructionError('Git revision changed after approval')
+    if plan.run_git(root, 'symbolic-ref', '--short', 'HEAD') != 'main':
+        raise ReconstructionError('not on main')
+    if plan.run_git(root, 'status', '--porcelain', '--untracked-files=normal'):
+        raise ReconstructionError('working tree changed after approval')
     cfg = core.load_config()
-    if plan.public_config_digest(cfg) != config_hash:
-        raise ReconstructionError("Effective dspal configuration changed after approval")
-    if first and not cfg["mvs"].get("batch_password"):
-        raise ReconstructionError("MVS batch authentication is not configured")
+    if plan.public_config_digest(cfg) != grant.config_digest:
+        raise ReconstructionError('effective non-secret configuration changed')
+    inv = dataset_inventory(cfg, core.full_dsn,
+                            expected_logicals=tracked_logicals(root, core))
+    if inv != grant.managed_dsns:
+        raise ReconstructionError('managed dataset inventory changed after approval')
+    if canonical_digest(command_manifest(inv)) != grant.operation_digest:
+        raise ReconstructionError('reconstruction operation contract changed after approval')
+    if first and not cfg['mvs'].get('batch_password'):
+        raise ReconstructionError('MVS authentication not configured')
+    return cfg
 
 
-def inventory_members(output: str) -> set[str]:
-    """Parse the strict single-PDS output of dspal ls (not raw JES text)."""
-    lines = output.splitlines()
-    if not lines or not re.fullmatch(r"[A-Z0-9@$#.]+:", lines[0]):
-        raise ReconstructionError("unrecognized dspal ls inventory")
-    found = []
-    for line in lines[1:]:
-        if line.strip() == "(empty)":
-            return set()
-        if not re.fullmatch(r"    [A-Z@$#][A-Z0-9@$#]{0,7}", line):
-            raise ReconstructionError("unrecognized dspal ls member row")
-        found.append(line.strip())
-    return set(found)
+def require_jes_clear(guard) -> None:
+    """Only exact two-observation, verified CLEAR is acceptable.
+
+    bool, integer RC, None and accidental truthy results are never sufficient.
+    The guard must return the existing jes-idle.check_twice() result shape.
+    """
+    try:
+        result = guard()
+    except Exception as exc:
+        raise ReconstructionError('JES idle safeguard failed') from exc
+    if (not isinstance(result, tuple) or len(result) != 2 or
+        result[0] is not True or not isinstance(result[1], list) or
+        len(result[1]) != 2 or
+        any(getattr(obs, 'state', None) != 'CLEAR' for obs in result[1])):
+        raise ReconstructionError('JES idle safeguard did not verify two CLEAR observations')
 
 
-def check_result(step: Step, rc: int, output: str, *, expected_tracked: int = 0,
-                 expected_generated: set[str] | None = None) -> int | None:
-    """Check adapter evidence, not merely process exit codes. Returns payload JOB if present."""
-    if step.check == "first-populate":
-        missing = set(re.findall(r"^\s*MISSING GENERATED:\s*(.+)$", output, re.M))
-        expected = expected_generated or set()
-        if rc != 2 or missing != expected or not re.search(
-            rf"populate completed:\s*{expected_tracked}\s+ready member\(s\) written", output
-        ):
-            raise ReconstructionError("first population did not match its exact expected RC=2/missing-generated contract")
-        return None
-    if rc != 0:
-        raise ReconstructionError(f"{step.name}: subprocess RC={rc}")
-    if step.check == "submit" or step.check in ("cambridge", "blib"):
-        launcher = re.search(r"^Launcher:\s*JOB\s+(\d+)\s*$", output, re.M)
-        payload = re.search(r"^Payload:\s*JOB\s+(\d+)\s*$", output, re.M)
-        if not launcher or not payload or "JOB RESULT: SUCCESS" not in output or "HIGHEST RC: 0000" not in output:
-            raise ReconstructionError(f"{step.name}: launcher/payload or success evidence missing")
-        return int(payload.group(1))
-    if step.check == "icint-members":
-        if "ICINT19" not in inventory_members(output):
-            raise ReconstructionError("ICINT19 missing from installed library")
-    elif step.check == "runtime-members":
-        if inventory_members(output) != RUNTIME_MEMBERS:
-            raise ReconstructionError("BOOT_OBJ must have exactly the eight accepted runtime/BLIB members")
-    elif step.check == "extensions-members":
-        if inventory_members(output) != EXTENSION_MEMBERS:
-            raise ReconstructionError("EXT_OBJ must have exactly the three supported System Extensions")
-    elif step.check == "code-zero":
-        if not re.search(r"\bCODE\s*=\s*0\b", output):
-            raise ReconstructionError("installed interpreter smoke did not establish CODE=0")
-    elif step.check == "bootstrap":
-        if "No MVS datasets changed." in output:
-            # This message only describes the bootstrap generator's own local behavior.
-            pass
-        if "TRNILRG INTCODE not rebuilt" in output:
-            raise ReconstructionError("TRNILRG generation not performed")
-    elif step.check == "asm-smoke":
-        if not re.search(r"\bCODE\s*=\s*0\b", output):
-            raise ReconstructionError("compiler smoke lacks interpreted CODE=0")
-    return None
+def _rc0(rc: int, name: str):
+    if type(rc) is not int or rc != 0:
+        raise ReconstructionError(f'{name}: required subprocess RC=0, got {rc!r}')
+
+
+def _payload_number_from_output(output: str) -> int | None:
+    nums = re.findall(r'^Payload:\s*JOB\s+(\d+)\s*$', output, re.M)
+    return int(nums[0]) if len(nums) == 1 else None
 
 
 class Runner:
     def __init__(self, root: Path, *, run_command: Callable[[list[str]], tuple[int, str]],
-                 emit: Callable[[str], None], plan, approval, planner, config_hash: str):
-        self.root, self.command, self.emit = root, run_command, emit
-        self.plan, self.approval, self.planner, self.config_hash = plan, approval, planner, config_hash
+                 emit: Callable[[str], None], plan, core, approval, grant,
+                 planner: Callable[[], tuple[str, list[str]]], evidence: EvidenceLog):
+        self.root = root
+        self.command = run_command
+        self.emit = emit
+        self.plan = plan
+        self.core = core
+        self.approval = approval
+        self.grant = grant
+        self.planner = planner
+        self.evidence = evidence
 
-    def run(self, config: dict) -> None:
-        """Invoked only by a live controller after approved scope and idle-JES guard."""
-        # Approval replay must be rejected if any host-cleanup entries changed.
-        self.approval.verify_approval(self._approval_grant, self.planner)
-        sha = self._approval_grant.git_sha
-        assert_source(self.root, self.plan, self.config_hash, sha, first=True)
-        expected_generated = {
-            f"{logical}({member}) <- {src}"
-            for logical, spec in config["datasets"].items()
-            for member, src in spec.get("generated_members", {}).items()
-            if spec.get("populate", False)
-        }
-        expected_tracked = sum(
-            len(spec.get("members", {})) for spec in config["datasets"].values()
-            if spec.get("populate", False)
-        )
-        for i, step in enumerate(STEPS, 1):
-            assert_source(self.root, self.plan, self.config_hash, sha)
-            cmd = list(step.command)
-            if step.check == "cleanup":
-                # The existing standalone tool retains its interactive behavior.
-                cmd.extend(("--reconstruction-scope", scope_snapshot(self.root)))
-            self.emit(f"[{i:02d}/{len(STEPS)}] Guide {step.guide}: {step.name}")
-            rc, output = self.command(cmd)
-            self.emit(f"  RC={rc}")
-            payload = check_result(step, rc, output,
-                                   expected_tracked=expected_tracked,
-                                   expected_generated=expected_generated)
-            if payload is not None:
-                self.emit(f"  Payload JOB {payload}")
-            if step.check == "cleanup":
-                if any(x.name != ".gitignore" for x in (self.root / "workarea").iterdir()):
-                    raise ReconstructionError("generated workarea cleanup left prior-run files behind")
-            if step.check == "asm-smoke":
-                asm = self.root / "workarea/m3-clean-smoke.s370.asm"
+    def read_only_preview(self, mode: str) -> str:
+        command = ['tools/datasets/dspal', mode, '--show-jcl']
+        rc, output = self.command(command)
+        self.evidence.detail(0, f'{mode}-preview', output)
+        _rc0(rc, f'{mode} JCL preview')
+        return output
+
+    def verify_destructive_deck(self, mode: str):
+        preview = self.read_only_preview(mode)
+        approved = {dsn for _, dsn in self.grant.managed_dsns}
+        if mode == 'purgebcpl':
+            dsns = re.findall(r"^ DELETE '([A-Z0-9.$@#]+)'$", preview, re.M)
+            if len(dsns) != len(approved) or set(dsns) != approved:
+                raise ReconstructionError('purge JCL does not match the exact approved DSNs')
+        elif mode == 'initbcpl':
+            dsns = re.findall(r'^//D\d{3}\s+DD\s+DSN=([A-Z0-9.$@#]+),\s*$', preview, re.M)
+            if len(dsns) != len(approved) or set(dsns) != approved:
+                raise ReconstructionError('init JCL does not match the exact approved DSNs')
+        else:
+            raise ReconstructionError('unknown destructive deck')
+
+    def verify_bootstrap(self, config: dict):
+        manifest = self.root / 'workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json'
+        if not manifest.is_file():
+            raise ReconstructionError('bootstrap manifest not generated')
+        data = json.loads(manifest.read_text(encoding='utf-8'))
+        if data.get('trnilrg_rebuilt') is not True:
+            raise ReconstructionError('TRNILRG was not rebuilt in this attempt')
+        if not ((self.root / 'workarea/bootstrap-cambridge/trni-large-names.int').is_file() and
+                (self.root / 'workarea/bootstrap-cambridge/trni-large-names.int').stat().st_size > 0):
+            raise ReconstructionError('TRNILRG image is missing')
+        # The exact generated-source map remains in dspal.yaml.  Cross-check
+        # all files and their content against the manifest's SHA-256 inventory.
+        files = data.get('outputs')
+        inputs = data.get('inputs')
+        if not isinstance(files, dict) or not isinstance(inputs, dict) or data.get('format') != 1:
+            raise ReconstructionError('bootstrap SHA-256 input/output inventory is missing')
+        for source, sha in inputs.items():
+            if (not isinstance(source, str) or Path(source).is_absolute() or '..' in Path(source).parts or
+                not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)):
+                raise ReconstructionError('bootstrap input manifest has an unsafe path or hash')
+            path = self.root / source
+            if (not path.is_file() or path.is_symlink() or
+                hashlib.sha256(path.read_bytes()).hexdigest() != sha):
+                raise ReconstructionError(f'bootstrap input hash mismatch: {source}')
+        for rel, sha in files.items():
+            if (not isinstance(rel, str) or not rel.startswith('workarea/bootstrap-cambridge/') or
+                Path(rel).is_absolute() or '..' in Path(rel).parts or
+                not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)):
+                raise ReconstructionError('bootstrap output manifest contains invalid path or digest')
+            path = self.root / rel
+            if (path.is_symlink() or not path.is_file() or not path.stat().st_size or
+                hashlib.sha256(path.read_bytes()).hexdigest() != sha):
+                raise ReconstructionError(f'bootstrap generated output invalid: {rel}')
+        for spec in config['datasets'].values():
+            if not spec.get('populate', False):
+                continue
+            for source in spec.get('generated_members', {}).values():
+                rel = str(source)
+                file = self.root / rel
+                if not file.is_file() or file.is_symlink() or not file.stat().st_size:
+                    raise ReconstructionError(f'generated input absent: {rel}')
+                expected = files.get(rel)
+                if expected != hashlib.sha256(file.read_bytes()).hexdigest():
+                    raise ReconstructionError(f'generated source hash is not verified: {rel}')
+
+    def validate(self, index: int, op, rc: int, output: str,
+                 *, config: dict) -> tuple[int | None, int | None]:
+        if op.check == 'first-populate':
+            generated = {
+                f'{logical}({member}) <- {source}'
+                for logical, spec in config['datasets'].items()
+                if spec.get('populate', False)
+                for member, source in spec.get('generated_members', {}).items()
+            }
+            tracked = sum(len(spec.get('members', {})) for spec in config['datasets'].values()
+                          if spec.get('populate', False))
+            missing = set(re.findall(r'^\s*MISSING GENERATED:\s*(.+)$', output, re.M))
+            if (rc != 2 or missing != generated or not re.search(
+                rf'populate completed:\s*{tracked}\s+ready member\(s\) written', output)):
+                raise ReconstructionError('first population did not match exact generated-missing contract')
+            return None, None
+        _rc0(rc, op.name)
+        if op.check == 'cleanup':
+            if workarea_scope(self.root / 'workarea').entries:
+                raise ReconstructionError('workarea cleanup left generated host files')
+        elif op.check == 'allocated-inventory':
+            found = re.findall(r'^Dataset:\s+([A-Z0-9.$@#]+) \(([A-Z0-9_]+)\)\s*$', output, re.M)
+            if (len(found) != len(self.grant.managed_dsns) or
+                set((logical, dsn) for dsn, logical in found) != set(self.grant.managed_dsns)):
+                raise ReconstructionError('post-init managed inventory is incomplete or ambiguous')
+            for logical, dsn in self.grant.managed_dsns:
+                expected = config['datasets'][logical]
+                block = re.search(r'^Dataset:\s+' + re.escape(dsn) + r' \(' + re.escape(logical) +
+                                  r'\)\s*\n([^\n]+)', output, re.M)
+                if block is None or 'Missing' in block.group(1):
+                    raise ReconstructionError(f'allocated dataset missing: {dsn}')
+                for key in ('dsorg', 'recfm', 'lrecl', 'blksize'):
+                    value = str(expected.get(key, ''))
+                    if not value or re.search(r'\b' + key.upper() + r':' + re.escape(value.upper()) + r'\b', block.group(1)) is None:
+                        raise ReconstructionError(f'allocated dataset attribute mismatch: {dsn} {key}')
+        elif op.check in ('purge', 'init'):
+            # The approved full inventory is validated just before each job.
+            pass
+        elif op.check == 'bootstrap':
+            self.verify_bootstrap(config)
+        elif op.check == 'generated-populate':
+            generated = sum(len(spec.get('generated_members', {})) for spec in config['datasets'].values()
+                            if spec.get('populate', False))
+            if not re.search(rf'populate completed:\s*{generated}\s+ready member\(s\) written', output):
+                raise ReconstructionError('generated-only population count not verified')
+        elif op.check in ('icint-members', 'trni-members', 'cambridge-members',
+                          'runtime-members', 'extensions-members',
+                          'devobj-empty', 'extension-empty'):
+            logical = op.command[-1]
+            dsn = dict(self.grant.managed_dsns)[logical]
+            members = inventory_members(output, dsn)
+            key = {'icint-members': logical,
+                   'trni-members': 'BOOT_INTCODE_TRNI',
+                   'cambridge-members': 'BOOT_INTCODE_COMPLETE',
+                   'runtime-members': 'BOOT_OBJ',
+                   'extensions-members': 'EXT_OBJ',
+                   'devobj-empty': 'BOOT_DEVOBJ',
+                   'extension-empty': 'BOOT_DEVOBJ'}[op.check]
+            if op.check == 'extension-empty':
+                if members:
+                    raise ReconstructionError('EXT_OBJ was not empty after fresh population')
+            else:
+                required_inventory(key, members)
+        elif op.check in ('code-zero', 'asm-smoke'):
+            if len(CODE_RECORD.findall(output)) != 1:
+                raise ReconstructionError('expected exactly one interpreter CODE=0')
+            if op.check == 'asm-smoke':
+                asm = self.root / 'workarea/m3-clean-smoke.s370.asm'
                 if not asm.is_file() or not asm.stat().st_size:
-                    raise ReconstructionError("CAMBCOMP did not create nonempty assembler output")
-                text = asm.read_text(encoding="ascii", errors="replace")
-                for token in ("CSECT", "EXTRN BCPLMAIN", "END"):
-                    if token not in text:
-                        raise ReconstructionError(f"assembler output missing {token}")
-            self.emit("  PASS")
+                    raise ReconstructionError('CAMBCOMP smoke did not generate assembler')
+                source = asm.read_text(encoding='ascii', errors='replace')
+                for token in ('CSECT', 'EXTRN BCPLMAIN', 'END'):
+                    if token not in source:
+                        raise ReconstructionError(f'assembler output lacks {token}')
+        if op.check in ('icint', 'cambridge', 'runtime', 'blib',
+                        'bcpldemo', 'bcpltime', 'bcplqsam'):
+            member = op.command[-1]
+            launcher, payload = parse_submission(output, member=member)
+            s_rc, summary = self.command(['tools/mvs/job-summary', str(payload), '--max-rc', '0'])
+            self.evidence.detail(index, 'payload-summary', summary)
+            _rc0(s_rc, 'payload job-summary')
+            d_rc, detail = self.command(['tools/mvs/dump-report-for-job', str(payload)])
+            self.evidence.detail(index, 'payload-report', detail)
+            _rc0(d_rc, 'payload full report')
+            verify_payload(member, payload, launcher, summary, detail)
+            return launcher, payload
+        return None, None
 
-    def set_approval(self, grant) -> None:
-        self._approval_grant = grant
+    def run(self):
+        """Callable only with an in-process grant and an accepted JES guard."""
+        try:
+            self.approval.verify_approval(self.grant, self.planner)
+            assert_source(self.root, self.plan, self.grant, self.core, first=True)
+            for i, op in enumerate(OPERATIONS, 1):
+                cfg = assert_source(self.root, self.plan, self.grant, self.core)
+                self.emit(f'[{i:02d}/{len(OPERATIONS)}] Guide {op.guide}: {op.name}')
+                output = ''
+                rc = None
+                launcher = payload = None
+                try:
+                    if op.check == 'cleanup':
+                        current = workarea_scope(self.root / 'workarea')
+                        if current.fingerprint != self.grant.cleanup_digest:
+                            raise ReconstructionError('host-cleanup scope changed after acknowledgment')
+                    if op.check == 'purge':
+                        self.verify_destructive_deck('purgebcpl')
+                    if op.check == 'init':
+                        self.verify_destructive_deck('initbcpl')
+                    cmd = list(op.command)
+                    if op.check == 'cleanup':
+                        cmd += ['--reconstruction-scope', self.grant.cleanup_digest]
+                    rc, output = self.command(cmd)
+                    if op.check in ('icint', 'cambridge', 'runtime', 'blib',
+                                    'bcpldemo', 'bcpltime', 'bcplqsam'):
+                        candidates = re.findall(r'^Launcher:\s*JOB\s+(\d+)\s*$', output, re.M)
+                        if len(candidates) == 1:
+                            launcher = int(candidates[0])
+                        payload = _payload_number_from_output(output)
+                    launcher, payload = self.validate(i, op, rc, output, config=cfg)
+                except BaseException as exc:
+                    self.evidence.record(i, op.name, op.command, rc, output,
+                                         launcher=launcher, payload=payload,
+                                         result='FAIL', diagnostic=str(exc))
+                    raise
+                else:
+                    self.evidence.record(i, op.name, op.command, rc, output,
+                                         launcher=launcher, payload=payload, result='PASS')
+                    self.emit(f'  PASS RC={rc}' + (f' PAYLOAD JOB {payload}' if payload is not None else ''))
+            self.evidence.finish('SUCCESS')
+        except (KeyboardInterrupt, SystemExit):
+            self.evidence.finish('INTERRUPTED', 'operator/system interruption')
+            raise
+        except Exception as exc:
+            self.evidence.finish('FAILED' if self.evidence.operations else 'BLOCKED',
+                                 type(exc).__name__ + ': ' + str(exc))
+            raise
 
 
-def authorized_run(root: Path, plan, approval, core, run_command, emit,
-                   *, prompt=input, terminal: bool, jes_idle_guard) -> None:
-    """Integrate the Step 2 gate into one process, then run approved stages.
-
-    A verified JES-idle guard is required; no default / bypass is supplied.
-    This interface is internal until the target-specific guard has been tested.
-    """
+def authorized_run(root, plan, approval, core, run_command, emit,
+                   *, prompt=input, terminal: bool, jes_idle_guard):
+    """Offline-testable controller. There is NO public --run route to it."""
     planner = lambda: plan.prepare(root, core, probe=True)
     grant = approval.request_approval(planner, output=sys.stdout,
                                       read_line=prompt, interactive=terminal)
-    jes_idle_guard()  # Must fail closed if earlier writers may still be active.
     config = core.load_config()
-    engine = Runner(root, run_command=run_command, emit=emit, plan=plan,
-                    approval=approval, planner=planner,
-                    config_hash=plan.public_config_digest(config))
-    engine.set_approval(grant)
-    engine.run(config)
+    evidence = EvidenceLog(root, git_sha=grant.git_sha, plan_sha256=grant.digest,
+                           inventory=grant.managed_dsns,
+                           secrets=(str(config['mvs'].get('batch_password') or ''),))
+    try:
+        require_jes_clear(jes_idle_guard)
+        approval.verify_approval(grant, planner)
+        Runner(root, run_command=run_command, emit=emit, plan=plan, core=core,
+               approval=approval, grant=grant, planner=planner,
+               evidence=evidence).run()
+    except (KeyboardInterrupt, SystemExit):
+        if evidence.state == 'IN_PROGRESS':
+            evidence.finish('INTERRUPTED', 'operator/system interruption')
+        raise
+    except Exception as exc:
+        if evidence.state == 'IN_PROGRESS':
+            evidence.finish('BLOCKED', type(exc).__name__ + ': ' + str(exc))
+        raise
 
 
-def blocked_live() -> int:
-    print("LIVE RECONSTRUCTION DISABLED: no verified read-only JES-idle guard for MVS 3.8J yet.",
-          file=sys.stderr)
-    print("The stage sequence is implemented and testable with simulated commands; real purge/JES will not run.",
-          file=sys.stderr)
-    return 2
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--list", action="store_true", help="list planned commands, perform no work")
-    parser.add_argument("--run", action="store_true", help="reserved until live JES-idle guard is verified")
-    opts = parser.parse_args()
-    if opts.list:
-        for item in STEPS:
-            print(f"Guide {item.guide}: {item.name}: {' '.join(item.command)}")
-        print("Regression tests and release are NOT part of reconstruction.")
+    parser.add_argument('--list', action='store_true', help='show canonical operation sequence, read-only')
+    parser.add_argument('--run', action='store_true', help='reserved: live execution DISABLED')
+    options = parser.parse_args()
+    if options.list:
+        for op in OPERATIONS:
+            print(f'Guide {op.guide}: {op.name}: {" ".join(op.command)}')
+        print('No regressions, native Cambridge compiler, tags, releases, or resume.')
         return 0
-    if opts.run:
-        return blocked_live()
+    if options.run:
+        print('LIVE RECONSTRUCTION DISABLED: safety review, active-job negative test and separate owner authorization required.', file=sys.stderr)
+        return 2
     parser.print_help()
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -35,25 +35,33 @@ From the repository root:
 python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_*.py' -v
 ```
 
-The tests use an isolated Git fixture or in-memory plan stubs. They do not run JES, change MVS datasets, or create authorization artifacts. The [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains the operating procedure. Step 3 has an offline-tested stage engine, but **live destructive execution is disabled**. Console streaming, MVS-active-job checks, and complete evidence reporting remain future work.
+The tests use an isolated Git fixture or in-memory plan stubs. They do not run JES, change MVS datasets, or create authorization artifacts. The [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains the operating procedure. Step 3 now has offline-tested safety hardening and per-attempt evidence reporting. **Live destructive execution is still disabled.** Real-MVS active-job negative testing and separate owner authorization remain required.
 
-## Step 3 — reconstruction stage engine (offline implementation)
+## Step 3 — Safety-hardened reconstruction engine (offline implementation)
 
-`tools/reconstruction/run --list` displays the selected reconstruction operations in the established guide order. It does not submit JES jobs or change files.
+`tools/reconstruction/run --list` displays the **25 canonical operations** shared by the planner and runner, ordered under the manual guide's Steps 1–9. The runner uses the existing independent tools, not replacement implementations. There are no regression suites, checkpoints, resume, baseline tags or release side effects.
 
-The stage engine calls the existing `clean-workarea`, `dspal`, `prepare-bootstrap`, `compile-and-run`, and `compile-mvs` tools in order, using the **same-process, one-run** approval gate from Step 2. It checks the Git revision and effective `dspal` configuration throughout, stops on any required nonzero result, recognizes the precise first-population RC=2 exception, and inspects key interpreter, object-library and generated-assembler results. No regression suites, checkpoint/resume state, Git tags or release tasks are included.
+The read-only planner presents all managed dataset targets, tracked and generated member writes, host cleanup entries, implicit JES build writes, source revision, effective nonsecret configuration digest and operation digest. Approval is interactive, temporary and scoped to the **entire immutable plan**. After the acknowledgment, the runner checks the source, configuration and dataset inventory before operations and refuses drift.
 
-`tools/clean-workarea` keeps its standalone interactive `DELETE` confirmation. An internal `--reconstruction-scope SHA256` form checks the exact top-level workarea entry set against a provided fingerprint, rejecting any changed set. **The fingerprint alone is not proof of operator approval.** The orchestration controller must enforce the Step 2 acknowledgment before using this interface. Do not invoke the internal mode manually.
+The fail-closed JES idle gate requires two independently verified CLEAR observations from the existing `jes-idle` diagnostic. No `False`, missing, ambiguous, incomplete or ACTIVE observation can pass. An idle check is not exclusive control of JES; other submitters must still be quiesced by the operator.
 
-**Live execution remains disabled.** `tools/reconstruction/run --run` currently returns RC=2 without prompting, cleaning or contacting MVS. Before enabling it, implement and verify a read-only MVS/JES active-job guard that fails closed if earlier work may still be writing managed datasets, and complete the payload-specific verification and evidence collection in subsequent steps. This deliberately prevents destructive behavior while the integration with real MVS 3.8J remains unverified.
+`tools/clean-workarea` remains independently executable with its interactive `DELETE` confirmation. In reconstruction mode, it uses the exact reviewed recursive host object inventory and a descriptor-relative deletion procedure. It rejects symlinks, mount points, cross-device entries, replacement and unexpected objects. It preserves `workarea/.gitignore`. **The fingerprint by itself is not an authorization token**; the controller must enforce the single-run gate before using it.
 
-Offline simulation:
+For the approved `HERC02` boundary, the runner compares effective configuration with the tracked managed dataset manifest (currently **29 logical datasets**, including all nine `CAMB_*` datasets and `DIST_DOCS`). Before purge and allocation, it independently compares the generated JCL targets with the full approved DSN inventory. Canonical build JCL undergoes static target preflight.
+
+Each of the seven build payloads is verified by its JES payload number, exact step inventory and zero return codes, independently obtained full job report, required interpreter `CODE=0` records, IFOX assembler severity where applicable, and readback/compare checks for the three installed System Extensions. Compiler, runtime, base-library and extension member inventories are checked as distinct requirements. Bootstrap-generated inputs and outputs are matched to the SHA-256 generation manifest.
+
+Reports, payload summaries, job details and diagnostic results are written outside disposable `workarea/` under `mvs-state/reconstruction-evidence/`; credentials are redacted. Reports are **diagnostic evidence only**, not completion checkpoints, release approval or baseline acceptance.
+
+**Live execution remains disabled:** `tools/reconstruction/run --run` returns RC=2 and cannot reach the engine from its public CLI. The remaining gates are a complete review and the separately authorized live active-job negative test. A successful read-only idle sample does not authorize destructive reconstruction.
+
+Offline verification from the checkout root:
 
 ```sh
-python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_run.py' -v
+python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_*.py' -v
 ```
 
-The tests use temporary Git repositories, fake MVS command results, and source/configuration/approval stubs. They never submit actual MVS jobs. The manual reconstruction guide remains authoritative.
+The synthetic tests never start JES jobs or change MVS datasets. The [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains authoritative.
 
 ## Read-only JES2 activity safeguard (calibration candidate)
 

@@ -1,98 +1,58 @@
-#!/usr/bin/env bash
-# Clean disposable workarea contents while preserving tracked .gitignore.
-# Standalone remains interactive. Reconstruction must supply the exact reviewed
-# entry-list fingerprint; this is not a generic --yes/--force bypass.
-set -euo pipefail
+#!/usr/bin/env python3
+"""Clean disposable host files; preserve the tracked workarea/.gitignore."""
+from __future__ import annotations
 
-fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+import argparse
+from pathlib import Path
+import subprocess
+import sys
 
-scope=""
-if (( $# )); then
-    [[ $# -eq 2 && "$1" == '--reconstruction-scope' ]] \
-        || fail 'usage: clean-workarea [--reconstruction-scope SHA256]'
-    scope="$2"
-    [[ "$scope" =~ ^[a-f0-9]{64}$ ]] || fail 'Invalid reconstruction scope fingerprint.'
-fi
+ROOT = Path(__file__).resolve().parents[1]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(ROOT / 'tools/reconstruction'))
+from contract import ScopeError, remove_workarea_contents, workarea_scope
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-repo_root="$(cd -- "$script_dir/.." && pwd -P)"
-git_root="$(git -C "$repo_root" rev-parse --show-toplevel 2>/dev/null)" \
-    || fail 'Not inside a Git repository.'
-[[ "$git_root" == "$repo_root" ]] \
-    || fail 'Expected this script in the repository tools/ directory.'
 
-workarea="$repo_root/workarea"
-[[ -d "$workarea" && ! -L "$workarea" ]] \
-    || fail 'workarea/ is missing or is a symbolic link; refusing cleanup.'
-[[ -f "$workarea/.gitignore" && ! -L "$workarea/.gitignore" ]] \
-    || fail 'Tracked workarea/.gitignore is missing or unsafe; try: git restore -- workarea/.gitignore'
-git -C "$repo_root" ls-files --error-unmatch -- workarea/.gitignore >/dev/null 2>&1 \
-    || fail 'workarea/.gitignore is not tracked by Git.'
+def main(argv=None, *, read_line=input, interactive=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--reconstruction-scope', metavar='SHA256')
+    args = parser.parse_args(argv)
+    if args.reconstruction_scope and (len(args.reconstruction_scope) != 64 or
+                                      any(c not in '0123456789abcdef' for c in args.reconstruction_scope)):
+        raise ScopeError('invalid reconstruction scope')
+    actual_root = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--show-toplevel'],
+                                 capture_output=True, text=True, check=False)
+    if actual_root.returncode or Path(actual_root.stdout.strip()) != ROOT:
+        raise ScopeError('not in the expected Git repository')
+    tracked = subprocess.run(['git', '-C', str(ROOT), 'ls-files', '-z', '--', 'workarea/'],
+                             capture_output=True, check=False)
+    if tracked.returncode or tracked.stdout.split(b'\0') != [b'workarea/.gitignore', b'']:
+        raise ScopeError('workarea contains unexpected tracked files')
+    work = ROOT / 'workarea'
+    approved = workarea_scope(work)
+    if args.reconstruction_scope and approved.fingerprint != args.reconstruction_scope:
+        raise ScopeError('workarea changed from approved reconstruction scope')
+    top = [row[0] for row in approved.entries if '/' not in row[0]]
+    print(f'About to permanently delete {len(top)} top-level item(s) beneath {work}:')
+    for name in top:
+        print('  ' + repr(name))
+    print('workarea/.gitignore will be preserved.')
+    if not args.reconstruction_scope:
+        if interactive is False or (interactive is None and not sys.stdin.isatty()):
+            raise ScopeError('interactive terminal required')
+        if read_line('Type DELETE to confirm: ') != 'DELETE':
+            print('Cancelled; no files deleted.')
+            return 3
+    else:
+        print('Using the exact previously reviewed reconstruction scope.')
+    remove_workarea_contents(work, approved)
+    print('Cleaned workarea; preserved .gitignore.')
+    return 0
 
-while IFS= read -r -d '' tracked; do
-    [[ "$tracked" == 'workarea/.gitignore' ]] \
-        || fail "Additional tracked file in workarea/: $tracked"
-done < <(git -C "$repo_root" ls-files -z -- workarea/)
 
-workarea_id="$(stat -c '%d:%i' -- "$workarea")"
-mapfile -d '' -t entries < <(
-    find "$workarea" -mindepth 1 -maxdepth 1 ! -name .gitignore -print0
-)
-
-# Allow empty workarea only after verifying a matching empty scope.
-if [[ -n "$scope" ]]; then
-    if ((${#entries[@]})); then
-        actual="$(printf '%s\0' "${entries[@]##*/}" | LC_ALL=C sort -z | sha256sum)"
-    else
-        actual="$(printf '' | sha256sum)"
-    fi
-    actual="${actual%% *}"
-    [[ "$scope" == "$actual" ]] \
-        || fail 'Workarea entries changed from approved reconstruction scope; no files deleted.'
-fi
-
-if ((${#entries[@]} == 0)); then
-    printf 'workarea/ is already clean; tracked .gitignore preserved.\n'
-    exit 0
-fi
-
-printf 'About to PERMANENTLY DELETE %d top-level item(s) beneath:\n  %s\n' \
-    "${#entries[@]}" "$workarea"
-for entry in "${entries[@]}"; do
-    printf '  %q\n' "${entry##*/}"
-done
-printf '\nThe tracked workarea/.gitignore will be preserved.\n'
-
-if [[ -z "$scope" ]]; then
-    [[ -t 0 ]] || fail 'Interactive terminal required; no files deleted.'
-    printf 'Type DELETE to confirm, or anything else to cancel: '
-    IFS= read -r reply || fail 'No confirmation received; no files deleted.'
-    if [[ "$reply" != DELETE ]]; then
-        printf 'Cancelled; no files deleted.\n'
-        exit 0
-    fi
-else
-    printf 'Using the exact workarea scope approved by the reconstruction runner.\n'
-fi
-
-[[ -d "$workarea" && ! -L "$workarea" ]] \
-    || fail 'workarea/ changed during confirmation; refusing cleanup.'
-[[ "$(stat -c '%d:%i' -- "$workarea")" == "$workarea_id" ]] \
-    || fail 'workarea/ was replaced during confirmation; refusing cleanup.'
-[[ -f "$workarea/.gitignore" && ! -L "$workarea/.gitignore" ]] \
-    || fail 'workarea/.gitignore changed during confirmation; refusing cleanup.'
-
-# Recheck scope at the final deletion boundary, not just before printing entries.
-if [[ -n "$scope" ]]; then
-    mapfile -d '' -t current < <(find "$workarea" -mindepth 1 -maxdepth 1 ! -name .gitignore -print0)
-    if ((${#current[@]})); then
-        actual="$(printf '%s\0' "${current[@]##*/}" | LC_ALL=C sort -z | sha256sum)"
-    else
-        actual="$(printf '' | sha256sum)"
-    fi
-    actual="${actual%% *}"
-    [[ "$scope" == "$actual" ]] || fail 'Workarea changed before cleanup; no files deleted.'
-fi
-
-rm -rf -- "${entries[@]}"
-printf 'Cleaned workarea/; preserved workarea/.gitignore.\n'
+if __name__ == '__main__':
+    try:
+        raise SystemExit(main())
+    except (ScopeError, OSError) as exc:
+        print(f'ERROR: {exc}', file=sys.stderr)
+        raise SystemExit(2)
