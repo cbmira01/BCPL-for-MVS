@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import importlib.util
 from pathlib import Path
 import re
@@ -30,6 +32,26 @@ STAGES = (
     ("9", "Build optional System Extensions", "dspal submit BOOT_JCL BCPLDEMO, BCPLTIME, BCPLQSAM (separately)"),
     ("10", "Inspect evidence and report", "Check payload JES RCs, compiler CODE=0, member inventories; save report"),
 )
+
+
+
+def public_config_digest(config: dict) -> str:
+    """Fingerprint effective mappings/target settings without incorporating credentials."""
+    def scrub(value):
+        if isinstance(value, dict):
+            return {
+                str(key): "<redacted>" if re.search(
+                    r"password|secret|token|credential", str(key), re.I
+                ) else scrub(item)
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [scrub(item) for item in value]
+        return value
+
+    data = json.dumps(scrub(config), sort_keys=True, separators=(",", ":"),
+                      default=str).encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
 
 
 def run_git(root: Path, *args: str) -> str:
@@ -75,7 +97,7 @@ def inspect_manifest(root: Path, cfg: dict, core) -> tuple[list, list, list, lis
         if dsn in seen:
             errors.append(f"Duplicate managed dataset: {dsn}")
         seen.add(dsn)
-        datasets.append((logical, dsn, spec.get("type", "?")))
+        datasets.append((logical, dsn, spec))
         for kind, target in (("members", tracked), ("generated_members", generated)):
             members = spec.get(kind, {})
             if not isinstance(members, dict):
@@ -153,14 +175,29 @@ def prepare(root: Path, core, probe: bool = False) -> tuple[str, list[str]]:
            f"Git: {sha} (branch {branch})", f"Checkout: {root}"]
     if cfg:
         mvs = cfg["mvs"]
+        rt = cfg.get("runtime", {})
         out += [f"Target: HLQ={str(mvs['hlq']).upper()} batch-user={str(mvs['batch_user']).upper()}",
+                f"Runtime: container={rt.get('docker_container', '?')} "
+                f"reader={rt.get('reader_host', '?')}:{rt.get('reader_port', '?')} "
+                f"hercules={rt.get('hercules_host', '?')}:{rt.get('hercules_port', '?')}",
+                f"Effective non-secret config SHA-256: {public_config_digest(cfg)}",
                 f"Authentication: {'configured' if mvs.get('batch_password') else 'NOT configured'} (value never displayed)",
+                f"MVS write boundary: {mvs.get('write_boundary', '?')}; "
+                f"allocation unit: {mvs.get('default_unit', '?')}; "
+                f"default volume: {mvs.get('default_volume') or '(system selected)'}",
                 f"Managed datasets: {len(datasets)}; tracked members: {len(tracked)}; generated members: {len(generated)}",
                 "", "HOST CLEANUP (preview only):",
                 f"  {root / 'workarea'}: {len(entries)} disposable top-level entries"]
         out.extend("    " + x for x in entries)
         out += ["", "MANAGED MVS DATASETS TO DELETE AND RECREATE (preview only):"]
-        out.extend(f"  {logical:<14} {dsn} [{kind}]" for logical, dsn, kind in datasets)
+        allocation = cfg.get("allocation_defaults", {})
+        for logical, dsn, spec in datasets:
+            fmt = (f"  {logical:<14} {dsn} [{spec.get('type', '?')}] "
+                   f"DSORG={spec.get('dsorg', '?')} RECFM={spec.get('recfm', '?')} "
+                   f"LRECL={spec.get('lrecl', '?')} BLKSIZE={spec.get('blksize', '?')}")
+            space = " ".join(f"{key}={spec.get(key, allocation.get(key, '?'))}"
+                             for key in ("primary", "secondary", "directory"))
+            out.append(fmt + " " + space)
         out += ["", "Git-backed source members: checked for existence.",
                 "Generated members: intentionally absent until bootstrap generation.",
                 "Review redacted JCL independently with:",

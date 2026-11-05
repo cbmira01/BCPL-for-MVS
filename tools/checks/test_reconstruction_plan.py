@@ -143,6 +143,21 @@ class PlanTests(unittest.TestCase):
         _, errs = self.result()
         self.assertTrue(any('Unexpected tracked workarea' in e for e in errs))
 
+
+    def test_public_configuration_digest_excludes_passwords(self):
+        cfg = self.core.load_config()
+        digest = plan.public_config_digest(cfg)
+        cfg['mvs']['batch_password'] = 'DIFFERENT-CREDENTIAL'
+        self.assertEqual(digest, plan.public_config_digest(cfg))
+        cfg['datasets']['BOOT_SOURCE']['dsn'] = 'BCPL.BOOT.CHANGED'
+        self.assertNotEqual(digest, plan.public_config_digest(cfg))
+
+    def test_preview_contains_public_configuration_identity(self):
+        output, errors = self.result()
+        self.assertFalse(errors)
+        self.assertIn('Effective non-secret config SHA-256:', output)
+        self.assertNotIn('SECRET', output)
+
     def test_probe_failure_is_blocked(self):
         self.core.cheap_status = lambda _cfg: {'reader': (False, 'offline')}
         _, errs = self.result(probe=True)
