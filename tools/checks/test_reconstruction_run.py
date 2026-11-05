@@ -224,6 +224,7 @@ class CleanupTests(unittest.TestCase):
 
     def invoke(self, *args):
         return subprocess.run(['bash', str(self.root / 'tools/clean-workarea'), *args],
+                              stdin=subprocess.DEVNULL,
                               capture_output=True, text=True)
 
     def test_cleanup_scope_exact_and_marker_preserved(self):
@@ -247,6 +248,7 @@ class CleanupTests(unittest.TestCase):
         (self.root / 'workarea/old').write_text('old')
         cp = self.invoke()
         self.assertNotEqual(cp.returncode, 0)
+        self.assertIn('Interactive terminal required', cp.stderr)
         self.assertTrue((self.root / 'workarea/old').exists())
 
 
