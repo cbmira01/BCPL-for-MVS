@@ -13,7 +13,7 @@ The MR10 suite runners now live under `tools/mr10/`. Their former tools-root pat
 - `tools/mr10/` — MR10 INTCODE interpreter, compiler, and short-named suite runners.
 - `tools/bootstrap/` — Cambridge/native compilation, bootstrap source staging, native regressions, and resident-JCL build coordination.
 - `tools/checks/` — reusable static checks, test-only QSAM output probes, job/RC auditing, and final-run freshness evidence.
-- `tools/reconstruction/` — read-only preflight (Step 1), single-run approval (Step 2), and offline-tested reconstruction stage engine (Step 3; live execution disabled).
+- `tools/reconstruction/` — read-only preflight (Step 1), single-run approval (Step 2), offline-tested stage engine (Step 3; live execution disabled), and JES2 `$DA` idle diagnostic (pending MVS verification).
 
 Only this README and the five subsystem directories remain at the tools root. The M3 manifest now defines 24 managed MR10, reserved CAMB, and NATIVE datasets. See the clean-room runbook for the full reconstruction order.
 

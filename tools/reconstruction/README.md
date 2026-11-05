@@ -54,3 +54,44 @@ python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_run.py' 
 ```
 
 The tests use temporary Git repositories, fake MVS command results, and source/configuration/approval stubs. They never submit actual MVS jobs. The manual reconstruction guide remains authoritative.
+
+## Read-only JES2 activity safeguard (calibration candidate)
+
+The fixed-command diagnostic `tools/reconstruction/jes-idle --live` uses
+`tools/mvs/mvs-console`'s transport to issue `/$DA` twice. On OS/VS2 MVS
+JES2 Release 4.1, `$DA` displays active **batch jobs**, including execution
+and unit-record-device processing. `$HASP612 NO ACTIVE JOBS` is its explicit
+empty-list response; `$HASP611 LIST INCOMPLETE` prevents reliable inference.
+
+Each sample reads only console bytes appended after issuing the command. The
+parser requires a correlated command echo and exactly one `$HASP612` response,
+and fails closed on any contradictory job, JES2 activity, incomplete listing,
+transport failure, or unrecognized message. Two independent clear samples are
+required to report a point-in-time idle observation. These rules intentionally
+may reject a harmless but unfamiliar TK5 console format.
+
+The code is still **pending verification with real MVS 3.8J console output**.
+Synthetic offline tests cannot establish the response framing or timing of the
+project's actual Hercules/TK5 configuration. Do not reinterpret a synthetically
+CLEAR result as acceptance evidence.
+
+No active-job inquiry can reserve the system or prevent another submitter from
+starting a job after the query. Before enabling destructive automation, also
+establish operator quiescence of independent job submitters and validate the
+console response handling under actual idle and active conditions.
+
+`tools/reconstruction/run --run` remains disabled. The diagnostic never calls
+`dspal`, cleans the workarea, submits JES jobs, or modifies MVS datasets. It
+returns RC=0 only when it sees two qualifying clear samples; RC=2 otherwise.
+
+Run offline tests from any directory:
+
+```sh
+python3 -B -m unittest discover \
+    -s "$HOME/Source/Repos/BCPL-for-MVS/tools/checks" \
+    -p 'test_reconstruction_jes_idle.py' -v
+```
+
+Historical sources: *Operator's Library: OS/VS2 MVS JES2 Commands*, JES2
+Release 4.1 (GC23-0007-1), Chapter 6; *MVS/370 Message Library*,
+`$HASP611` and `$HASP612`.

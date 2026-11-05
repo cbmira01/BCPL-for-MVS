@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Read-only MVS 3.8J JES2 $DA idle observation; not reconstruction approval.
+
+The live mode sends two fixed inquiry commands via the existing mvs-console
+transport. No JES submission, MVS dataset writes, or runner activation.
+"""
+from __future__ import annotations
+
+import argparse
+from dataclasses import dataclass
+import importlib.machinery
+import importlib.util
+from pathlib import Path
+import re
+import subprocess
+import sys
+from typing import Callable
+
+ROOT = Path(__file__).resolve().parents[2]
+MVS_CONSOLE = ROOT / "tools/mvs/mvs-console"
+COMMAND = "/$DA"
+
+# Historic JES2 Release 4.1: $HASP612 = NO ACTIVE JOBS; $HASP611 = LIST INCOMPLETE.
+# Do not infer inactivity from HTTP 200 or the absence of job-message lines.
+CLEAR = re.compile(r"\$HASP612\s+NO\s+ACTIVE\s+JOBS\s*$", re.I)
+INCOMPLETE = re.compile(r"\$HASP611\b", re.I)
+ACTIVE = re.compile(r"\$HASP(?:608|890)\b|\bJOB\s*\d{1,5}\b", re.I)
+ACTIVITY = re.compile(r"\$HASP(?:100|373|395)\b", re.I)
+HASP = re.compile(r"\$HASP\d{3}\b", re.I)
+CMD_ECHO = re.compile(r"(?<![A-Z0-9])/?\$D\s*A\s*$", re.I)
+ERROR = re.compile(r"(?:COMMAND\s+REJECTED|INVALID\s+COMMAND|UNKNOWN\s+COMMAND|NOT\s+AUTHORIZED|NOT\s+RECOGNIZED)", re.I)
+
+
+@dataclass(frozen=True)
+class Observation:
+    state: str  # CLEAR, ACTIVE, or UNKNOWN
+    reason: str
+    evidence: tuple[str, ...]
+
+
+def parse_delta(delta: str, transport_rc: int = 0) -> Observation:
+    """Classify only a *fresh* delta returned by mvs-console.capture('/$DA').
+
+    This parser intentionally recognizes very little. An unfamiliar console
+    format is a BLOCKED result, not permission to perform destructive work.
+    """
+    if transport_rc != 0:
+        return Observation("UNKNOWN", "console transport failed", ())
+    lines = [line.strip() for line in delta.splitlines() if line.strip()]
+    messages = tuple(line for line in lines if HASP.search(line))
+    if not lines:
+        return Observation("UNKNOWN", "no console messages captured", ())
+    if any(INCOMPLETE.search(line) for line in lines):
+        return Observation("UNKNOWN", "JES2 reported an incomplete active-job list", messages)
+    if any(ERROR.search(line) for line in lines):
+        return Observation("UNKNOWN", "console inquiry was rejected or unrecognized", messages)
+    if any(ACTIVITY.search(line) for line in lines):
+        return Observation("UNKNOWN", "concurrent JES2 job activity observed", messages)
+    if any(ACTIVE.search(line) for line in lines):
+        return Observation("ACTIVE", "active batch job reported", messages)
+    hasp = [line for line in lines if HASP.search(line)]
+    clear = [line for line in hasp if CLEAR.search(line)]
+    if len(hasp) != 1 or len(clear) != 1:
+        return Observation("UNKNOWN", "missing or ambiguous $HASP612 response", messages)
+    # An echo in the same append-only delta helps correlate the reply to the
+    # one fixed inquiry. Do not accept a stale or unrelated $HASP612 alone.
+    first_reply = next(i for i, line in enumerate(lines) if CLEAR.search(line))
+    if not any(CMD_ECHO.search(line) for line in lines[:first_reply]):
+        return Observation("UNKNOWN", "no correlated preceding $DA command echo", messages)
+    return Observation("CLEAR", "fresh $HASP612 NO ACTIVE JOBS response", messages)
+
+
+def load_mvs_console(path: Path = MVS_CONSOLE):
+    """Reuse the existing fixed-command Hercules console transport."""
+    loader = importlib.machinery.SourceFileLoader("reconstruction_jes_console", str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    if spec is None:
+        raise RuntimeError("cannot load mvs-console transport")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[loader.name] = module
+    before = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = before
+    return module
+
+
+def check_twice(capture: Callable[[str], tuple[int, str]]) -> tuple[bool, list[Observation]]:
+    """Point-in-time inquiry only; no lock on incoming JES submissions."""
+    observations = []
+    for _ in range(2):
+        rc, delta = capture(COMMAND)
+        result = parse_delta(delta, rc)
+        observations.append(result)
+        if result.state != "CLEAR":
+            return False, observations
+    return True, observations
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--live", action="store_true", help="send two fixed, read-only $DA console inquiries")
+    mode.add_argument("--parse-file", type=Path, help="inspect a saved fresh console response offline")
+    opts = parser.parse_args(argv)
+    try:
+        if opts.parse_file:
+            obs = parse_delta(opts.parse_file.read_text(encoding="utf-8"))
+            print(f"{obs.state}: {obs.reason}")
+            for evidence in obs.evidence:
+                print("  " + evidence)
+            print("Offline transcript parsing is not a live JES-idle verification.")
+            return 0 if obs.state == "CLEAR" else 2
+        mod = load_mvs_console()
+        ok, observations = check_twice(lambda cmd: mod.capture(cmd, timeout=10.0, settle=2.0))
+        for i, obs in enumerate(observations, 1):
+            print(f"JES2 $DA sample {i}/2: {obs.state} — {obs.reason}")
+            for evidence in obs.evidence:
+                print("  " + evidence)
+        if ok:
+            print("Two fresh idle responses observed; this is not exclusive control of JES submissions.")
+            print("Reconstruction --run remains disabled pending MVS-specific acceptance.")
+            return 0
+        print("BLOCKED: active/unknown JES2 state; no reconstruction actions performed.", file=sys.stderr)
+        return 2
+    except (OSError, RuntimeError, ValueError, UnicodeError, subprocess.TimeoutExpired) as exc:
+        print("BLOCKED: JES2 inquiry failed: " + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
