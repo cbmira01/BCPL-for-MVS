@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""Read-only preflight and reconstruction dry-run. No JES or dataset writes."""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+REQUIRED_BUILD_MEMBERS = {
+    "MR10_JCL": ("IC19BLD",),
+    "BOOT_JCL": ("CAMBBLD", "BLDBMAIN", "BLIBBLD", "BCPLDEMO", "BCPLTIME", "BCPLQSAM"),
+}
+REQUIRED_TOOLS = (
+    "tools/clean-workarea", "tools/datasets/dspal",
+    "tools/bootstrap/prepare-bootstrap", "tools/mr10/compile-and-run",
+)
+STAGES = (
+    ("0", "Preflight, plan and single operator approval", "This command previews only; execution is not implemented"),
+    ("1", "Clean generated host workarea", "tools/clean-workarea"),
+    ("2", "Recreate managed BCPL datasets", "dspal purgebcpl; dspal initbcpl; dspal populate all (tracked first pass)"),
+    ("3", "Build and smoke-test installed ICINT19", "dspal submit MR10_JCL IC19BLD; installed interpreter smoke"),
+    ("5", "Generate and populate bootstrap inputs", "prepare-bootstrap --with-trnilrg; dspal populate all --generated-only"),
+    ("6", "Build and smoke-test CAMBCOMP", "dspal submit BOOT_JCL CAMBBLD; assembler-output smoke"),
+    ("7", "Build Core Runtime", "dspal submit BOOT_JCL BLDBMAIN"),
+    ("8", "Build BLIB", "dspal submit BOOT_JCL BLIBBLD"),
+    ("9", "Build optional System Extensions", "dspal submit BOOT_JCL BCPLDEMO, BCPLTIME, BCPLQSAM (separately)"),
+    ("10", "Inspect evidence and report", "Check payload JES RCs, compiler CODE=0, member inventories; save report"),
+)
+
+
+def run_git(root: Path, *args: str) -> str:
+    p = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
+                       text=True, check=False, timeout=10)
+    if p.returncode:
+        raise RuntimeError(f"git {' '.join(args)} failed (RC={p.returncode})")
+    return p.stdout.strip()
+
+
+def load_dspal_core(root: Path):
+    path = root / "tools/datasets/dspal-core.py"
+    if not path.is_file():
+        raise RuntimeError("Missing dspal-core.py")
+    spec = importlib.util.spec_from_file_location("reconstruction_dspal_core", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Cannot import dspal-core.py")
+    module = importlib.util.module_from_spec(spec)
+    old = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True  # This read-only command must not create __pycache__.
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = old
+    return module
+
+
+def inspect_manifest(root: Path, cfg: dict, core) -> tuple[list, list, list, list]:
+    errors = []
+    datasets = []
+    tracked = []
+    generated = []
+    hlq = str(cfg["mvs"]["hlq"]).upper()
+    if not re.fullmatch(r"[A-Z@$#][A-Z0-9@$#]{0,7}", hlq):
+        errors.append("Unsafe or invalid HLQ in effective configuration")
+    seen = set()
+    for logical, spec in cfg["datasets"].items():
+        dsn = core.full_dsn(cfg, spec).upper()
+        if not dsn.startswith(hlq + ".BCPL.") or not re.fullmatch(
+            r"[A-Z@$#][A-Z0-9@$#]{0,7}(\.[A-Z@$#][A-Z0-9@$#]{0,7})+", dsn
+        ):
+            errors.append(f"Dataset outside approved BCPL scope: {logical} {dsn}")
+        if dsn in seen:
+            errors.append(f"Duplicate managed dataset: {dsn}")
+        seen.add(dsn)
+        datasets.append((logical, dsn, spec.get("type", "?")))
+        for kind, target in (("members", tracked), ("generated_members", generated)):
+            members = spec.get(kind, {})
+            if not isinstance(members, dict):
+                errors.append(f"Invalid {kind} mapping in {logical}")
+                continue
+            for member, src in members.items():
+                src = str(src)
+                p = Path(src)
+                if p.is_absolute() or ".." in p.parts or not src or p == Path("."):
+                    errors.append(f"Unsafe source path in {logical}({member})")
+                    continue
+                if kind == "generated_members" and not src.startswith("workarea/"):
+                    errors.append(f"Generated input outside workarea: {logical}({member})")
+                if kind == "members" and not (root / p).is_file():
+                    errors.append(f"Missing tracked source: {src} ({logical}/{member})")
+                target.append((logical, member, src))
+    for logical, members in REQUIRED_BUILD_MEMBERS.items():
+        found = cfg["datasets"].get(logical, {}).get("members", {})
+        for member in members:
+            if member not in found:
+                errors.append(f"Required build JCL absent: {logical}({member})")
+    return datasets, tracked, generated, errors
+
+
+def inspect_workarea(root: Path) -> tuple[list[str], list[str]]:
+    work = root / "workarea"
+    errors = []
+    entries = []
+    if work.is_symlink() or not work.is_dir():
+        errors.append("workarea/ missing or is a symbolic link")
+        return entries, errors
+    marker = work / ".gitignore"
+    if marker.is_symlink() or not marker.is_file():
+        errors.append("workarea/.gitignore must be a regular tracked file")
+    try:
+        tracked = run_git(root, "ls-files", "--", "workarea/").splitlines()
+        if tracked != ["workarea/.gitignore"]:
+            errors.append("Unexpected tracked workarea files (expected only .gitignore)")
+    except RuntimeError as exc:
+        errors.append(str(exc))
+    entries = sorted(x.name for x in work.iterdir() if x.name != ".gitignore")
+    return entries, errors
+
+
+def prepare(root: Path, core, probe: bool = False) -> tuple[str, list[str]]:
+    errors = []
+    try:
+        git_root = run_git(root, "rev-parse", "--show-toplevel")
+        sha = run_git(root, "rev-parse", "HEAD")
+        branch = run_git(root, "symbolic-ref", "--short", "HEAD")
+        dirty = run_git(root, "status", "--porcelain", "--untracked-files=normal")
+        if Path(git_root).resolve() != root.resolve():
+            errors.append("Project root does not match Git checkout root")
+        if branch != "main":
+            errors.append(f"Expected main branch, found {branch}")
+        if dirty:
+            errors.append("Git checkout has uncommitted or untracked changes")
+    except RuntimeError as exc:
+        errors.append(str(exc))
+        sha, branch = "UNKNOWN", "UNKNOWN"
+    try:
+        cfg = core.load_config()
+        datasets, tracked, generated, manifest_errors = inspect_manifest(root, cfg, core)
+        errors.extend(manifest_errors)
+    except (OSError, ValueError, KeyError, TypeError, core.DspalError) as exc:
+        errors.append(f"Effective dspal configuration unavailable: {type(exc).__name__}")
+        cfg, datasets, tracked, generated = None, [], [], []
+    for tool in REQUIRED_TOOLS:
+        if not (root / tool).is_file():
+            errors.append(f"Missing reconstruction prerequisite: {tool}")
+    entries, work_errors = inspect_workarea(root)
+    errors.extend(work_errors)
+    out = ["CLEAN-ROOM RECONSTRUCTION — READ-ONLY PREFLIGHT / DRY-RUN",
+           "No changes will be made; no JES jobs submitted; no approval requested.",
+           f"Git: {sha} (branch {branch})", f"Checkout: {root}"]
+    if cfg:
+        mvs = cfg["mvs"]
+        out += [f"Target: HLQ={str(mvs['hlq']).upper()} batch-user={str(mvs['batch_user']).upper()}",
+                f"Authentication: {'configured' if mvs.get('batch_password') else 'NOT configured'} (value never displayed)",
+                f"Managed datasets: {len(datasets)}; tracked members: {len(tracked)}; generated members: {len(generated)}",
+                "", "HOST CLEANUP (preview only):",
+                f"  {root / 'workarea'}: {len(entries)} disposable top-level entries"]
+        out.extend("    " + x for x in entries)
+        out += ["", "MANAGED MVS DATASETS TO DELETE AND RECREATE (preview only):"]
+        out.extend(f"  {logical:<14} {dsn} [{kind}]" for logical, dsn, kind in datasets)
+        out += ["", "Git-backed source members: checked for existence.",
+                "Generated members: intentionally absent until bootstrap generation.",
+                "Review redacted JCL independently with:",
+                "  tools/datasets/dspal purgebcpl --show-jcl",
+                "  tools/datasets/dspal initbcpl --show-jcl"]
+        if probe:
+            out.append("\nCONNECTIVITY (read-only Docker inspection / TCP probes):")
+            try:
+                checks = core.cheap_status(cfg)
+                for name, (ok, detail) in checks.items():
+                    out.append(f"  {name}: {'READY' if ok else 'UNAVAILABLE'} ({detail})")
+                    if not ok:
+                        errors.append(f"Connectivity check failed: {name}")
+            except (OSError, ValueError, TypeError) as exc:
+                errors.append("Connectivity probe failed: " + type(exc).__name__)
+    out.append("\nRECONSTRUCTION BUILD PLAN (future execution; not performed):")
+    out.extend(f"  Guide Step {step}: {name}\n    {command}" for step, name, command in STAGES)
+    out.append("\nExcluded: regression suites, native Cambridge compiler, tape/release production, Git tagging.")
+    if errors:
+        out.append("\nBLOCKED — preflight issues:")
+        out.extend("  - " + e for e in errors)
+    else:
+        out.append("\nREADY — read-only preflight passed; no authorization or execution performed.")
+    return "\n".join(out) + "\n", errors
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dry-run", action="store_true", help="explicit spelling of the default read-only plan")
+    parser.add_argument("--probe", action="store_true", help="also inspect Docker/TCP readiness without starting services")
+    args = parser.parse_args()
+    del args.dry_run
+    try:
+        report, errors = prepare(ROOT, load_dspal_core(ROOT), args.probe)
+    except (OSError, RuntimeError) as exc:
+        print("BLOCKED — preflight failed: " + str(exc), file=sys.stderr)
+        return 2
+    print(report, end="")
+    return 2 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
