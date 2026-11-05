@@ -64,10 +64,11 @@ and unit-record-device processing. `$HASP612 NO ACTIVE JOBS` is its explicit
 empty-list response; `$HASP611 LIST INCOMPLETE` prevents reliable inference.
 
 Each sample reads only console bytes appended after issuing the command. The
-parser accepts either a single timestamp-wrapped TK5 `$HASP000 NO ACTIVE JOBS`
-reply or an echoed inquiry followed by exactly one `$HASP612` reply. It fails
-closed on contradictory jobs, JES2 activity, incomplete listings, transport
-failures, or unrecognized messages. Two independent clear samples are
+parser accepts either a timestamp-wrapped TK5 `$HASP000 NO ACTIVE JOBS`
+reply (optionally preceded by an exact `$DA` echo) or an echoed inquiry
+followed by exactly one `$HASP612` reply. Unrecognized additional console
+lines block rather than being silently ignored. Contradictory jobs, JES2
+activity, incomplete listings, and transport failures also block. Two independent clear samples are
 required to report a point-in-time idle observation. These rules intentionally
 may reject a harmless but unfamiliar TK5 console format.
 
@@ -113,7 +114,30 @@ extra console messages, and contradictory active/incomplete replies do not
 qualify. The existing `$HASP612` and command-echo requirements remain.
 
 This calibration is derived from the real console line above, not proof that
-all valid TK5 reply shapes are covered. Live two-sample verification and a
-subsequent controlled active-job observation remain outstanding. An idle
-observation is not a lock on other job submitters. Live reconstruction remains
-disabled.
+all valid TK5 reply shapes are covered. A second live inquiry on 5 November 2026
+also returned:
+
+```text
+15:38:17 /16.38.17           $HASP000 NO ACTIVE JOBS
+```
+
+This line also matches the existing strict timestamp pattern. The original
+one-line-only condition can nevertheless reject an otherwise recognizable
+response when the console delta contains an extra command echo. The revised
+parser permits only a preceding recognized `$DA` echo; other extra lines
+still BLOCK. Because earlier diagnostics printed only `$HASP` messages,
+the contents of any other lines were not visible.
+
+For a **read-only diagnostic** of a blocked result, run:
+
+```sh
+tools/reconstruction/jes-idle --live --diagnose
+```
+
+The opt-in diagnostic prints escaped raw console deltas **only on BLOCKED**.
+They may contain other operator messages, including sensitive data; review
+and redact before sharing. The diagnostic does not authorize reconstruction.
+
+Live two-sample verification and a subsequent controlled active-job observation
+remain outstanding. An idle observation is not a lock on other job submitters.
+Live reconstruction remains disabled.

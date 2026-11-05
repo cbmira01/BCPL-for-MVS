@@ -55,6 +55,27 @@ class TestParse(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual('UNKNOWN', mod.parse_delta(text).state)
 
+    def test_second_observed_tk5_timestamp_is_valid(self):
+        actual = "15:38:17 /16.38.17           $HASP000 NO ACTIVE JOBS\n"
+        self.assertEqual('CLEAR', mod.parse_delta(actual).state)
+
+    def test_tk5_accepts_only_a_preceding_command_echo(self):
+        with_echo = "15:38:16 /$DA\n" + TK5_CLEAR
+        self.assertEqual('CLEAR', mod.parse_delta(with_echo).state)
+        self.assertEqual('UNKNOWN', mod.parse_delta(TK5_CLEAR + "15:38:18 /$DA\n").state)
+
+    def test_tk5_unrecognized_non_hasps_are_not_ignored(self):
+        for extra in ("HERCULES UNKNOWN RESPONSE\n", "IEF403I JOB X STARTED\n",
+                      "$HASP000 MESSAGE\n", "JOB 123 EXECUTING\n"):
+            with self.subTest(extra=extra):
+                observation = mod.parse_delta(TK5_CLEAR + extra)
+                self.assertNotEqual('CLEAR', observation.state)
+
+    def test_tk5_invisible_extra_line_has_diagnostic_reason(self):
+        result = mod.parse_delta("HHC00000I extra line\n" + TK5_CLEAR)
+        self.assertEqual('UNKNOWN', result.state)
+        self.assertIn('unrecognized console line', result.reason)
+
     def test_tk5_active_or_incomplete_remains_blocked(self):
         self.assertEqual('UNKNOWN', mod.parse_delta(TK5_CLEAR + '$HASP611 LIST INCOMPLETE\n').state)
         self.assertEqual('ACTIVE', mod.parse_delta(TK5_CLEAR + ACTIVE).state)
@@ -168,6 +189,17 @@ class TestReadOnlyCheck(unittest.TestCase):
         self.assertEqual(0, rc)
         self.assertEqual(['/$DA', '/$DA'], commands)
         self.assertIn('Reconstruction --run remains disabled', buf.getvalue())
+
+    def test_opt_in_blocked_diagnostic_displays_unfiltered_delta(self):
+        delta = "HHC00000I extra line\n" + TK5_CLEAR
+        fake = types.SimpleNamespace(capture=lambda cmd, timeout, settle: (0, delta))
+        buf = io.StringIO()
+        with patch.object(mod, 'load_mvs_console', return_value=fake), \
+             contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
+            rc = mod.main(['--live', '--diagnose'])
+        self.assertEqual(2, rc)
+        self.assertIn(repr(delta), buf.getvalue())
+        self.assertIn('may contain sensitive data', buf.getvalue())
 
     def test_cli_live_transport_error_is_blocked(self):
         def broken(cmd, *, timeout, settle):

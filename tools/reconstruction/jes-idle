@@ -69,14 +69,30 @@ def parse_delta(delta: str, transport_rc: int = 0) -> Observation:
         return Observation("ACTIVE", "active batch job reported", messages)
     hasp = [line for line in lines if HASP.search(line)]
     clear = [line for line in hasp if CLEAR.search(line)]
-    # TK5's single-message console reply has no distinct command echo.
-    # The transport samples the append-only log before sending each fixed
-    # /$DA command; the strict console envelope plus single-line delta is our
-    # local correlation evidence, not an exclusive JES lock.
-    if len(lines) == 1 and len(hasp) == 1 and TK5_CLEAR.fullmatch(lines[0]):
-        return Observation("CLEAR", "fresh TK5 $HASP000 NO ACTIVE JOBS response", messages)
+    # The TK5 reply can be accompanied by a separate /$DA command echo in
+    # the same fresh console delta. Accept only that explicitly recognized
+    # extra line; unrelated console output is NOT evidence of an idle system.
+    tk5 = [(i, line) for i, line in enumerate(lines) if TK5_CLEAR.fullmatch(line)]
+    if len(hasp) == 1 and len(tk5) == 1:
+        reply_index, _ = tk5[0]
+        extras = [
+            line for i, line in enumerate(lines)
+            if i != reply_index and not (i < reply_index and CMD_ECHO.search(line))
+        ]
+        if not extras:
+            return Observation("CLEAR", "fresh TK5 $HASP000 NO ACTIVE JOBS response", messages)
+        return Observation(
+            "UNKNOWN",
+            f"TK5 idle reply accompanied by {len(extras)} unrecognized console line(s)",
+            messages,
+        )
     if len(hasp) != 1 or len(clear) != 1:
-        return Observation("UNKNOWN", "missing or ambiguous $DA idle response", messages)
+        return Observation(
+            "UNKNOWN",
+            f"missing or ambiguous $DA idle response ({len(lines)} console line(s), "
+            f"{len(hasp)} $HASP message(s))",
+            messages,
+        )
     # For $HASP612 retain the stronger explicit command-echo requirement.
     first_reply = next(i for i, line in enumerate(lines) if CLEAR.search(line))
     if not any(CMD_ECHO.search(line) for line in lines[:first_reply]):
@@ -118,7 +134,13 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--live", action="store_true", help="send two fixed, read-only $DA console inquiries")
     mode.add_argument("--parse-file", type=Path, help="inspect a saved fresh console response offline")
+    parser.add_argument(
+        "--diagnose", action="store_true",
+        help="on a blocked --live check, print escaped raw console deltas; "
+             "may include sensitive console contents, review before sharing",
+    )
     opts = parser.parse_args(argv)
+    raw_deltas: list[str] = []
     try:
         if opts.parse_file:
             obs = parse_delta(opts.parse_file.read_text(encoding="utf-8"))
@@ -128,7 +150,12 @@ def main(argv: list[str] | None = None) -> int:
             print("Offline transcript parsing is not a live JES-idle verification.")
             return 0 if obs.state == "CLEAR" else 2
         mod = load_mvs_console()
-        ok, observations = check_twice(lambda cmd: mod.capture(cmd, timeout=10.0, settle=2.0))
+        def capture_sample(cmd: str) -> tuple[int, str]:
+            rc, delta = mod.capture(cmd, timeout=10.0, settle=2.0)
+            raw_deltas.append(delta)
+            return rc, delta
+
+        ok, observations = check_twice(capture_sample)
         for i, obs in enumerate(observations, 1):
             print(f"JES2 $DA sample {i}/2: {obs.state} — {obs.reason}")
             for evidence in obs.evidence:
@@ -137,6 +164,10 @@ def main(argv: list[str] | None = None) -> int:
             print("Two fresh idle responses observed; this is not exclusive control of JES submissions.")
             print("Reconstruction --run remains disabled pending MVS-specific acceptance.")
             return 0
+        if opts.diagnose:
+            print("DIAGNOSTIC ONLY — raw console content may contain sensitive data.")
+            for i, delta in enumerate(raw_deltas, 1):
+                print(f"Raw JES2 $DA sample {i}: {delta!r}")
         print("BLOCKED: active/unknown JES2 state; no reconstruction actions performed.", file=sys.stderr)
         return 2
     except (OSError, RuntimeError, ValueError, UnicodeError, subprocess.TimeoutExpired) as exc:
