@@ -64,9 +64,10 @@ and unit-record-device processing. `$HASP612 NO ACTIVE JOBS` is its explicit
 empty-list response; `$HASP611 LIST INCOMPLETE` prevents reliable inference.
 
 Each sample reads only console bytes appended after issuing the command. The
-parser requires a correlated command echo and exactly one `$HASP612` response,
-and fails closed on any contradictory job, JES2 activity, incomplete listing,
-transport failure, or unrecognized message. Two independent clear samples are
+parser accepts either a single timestamp-wrapped TK5 `$HASP000 NO ACTIVE JOBS`
+reply or an echoed inquiry followed by exactly one `$HASP612` reply. It fails
+closed on contradictory jobs, JES2 activity, incomplete listings, transport
+failures, or unrecognized messages. Two independent clear samples are
 required to report a point-in-time idle observation. These rules intentionally
 may reject a harmless but unfamiliar TK5 console format.
 
@@ -95,3 +96,24 @@ python3 -B -m unittest discover \
 Historical sources: *Operator's Library: OS/VS2 MVS JES2 Commands*, JES2
 Release 4.1 (GC23-0007-1), Chapter 6; *MVS/370 Message Library*,
 `$HASP611` and `$HASP612`.
+
+### TK5/MVS 3.8J console calibration (5 November 2026)
+
+The first live observation from TK5 produced:
+
+```text
+15:20:00 /16.19.59           $HASP000 NO ACTIVE JOBS
+```
+
+The original synthetic parser expected the later `$HASP612` message and a
+separate `$DA` command echo; TK5's console returned neither. The revised
+parser recognizes **only this timestamp-wrapped `$HASP000 NO ACTIVE JOBS`**
+shape as an additional idle response. `$HASP000 OK`, a bare `$HASP000` line,
+extra console messages, and contradictory active/incomplete replies do not
+qualify. The existing `$HASP612` and command-echo requirements remain.
+
+This calibration is derived from the real console line above, not proof that
+all valid TK5 reply shapes are covered. Live two-sample verification and a
+subsequent controlled active-job observation remain outstanding. An idle
+observation is not a lock on other job submitters. Live reconstruction remains
+disabled.

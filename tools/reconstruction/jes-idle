@@ -20,9 +20,18 @@ ROOT = Path(__file__).resolve().parents[2]
 MVS_CONSOLE = ROOT / "tools/mvs/mvs-console"
 COMMAND = "/$DA"
 
-# Historic JES2 Release 4.1: $HASP612 = NO ACTIVE JOBS; $HASP611 = LIST INCOMPLETE.
-# Do not infer inactivity from HTTP 200 or the absence of job-message lines.
+# The running TK5/MVS 3.8J console on 2026-11-05 emitted the single line
+#   15:20:00 /16.19.59           $HASP000 NO ACTIVE JOBS
+# after /$DA. Its response is not accompanied by a separate command echo.
+# Require precisely this time-stamped Hercules/MVS envelope and message text;
+# generic $HASP000 (which is used for other JES2 command responses) is unsafe.
+# Later JES2 uses $HASP612 with a separate $DA echo; retain that strict form.
+# Do not infer inactivity from HTTP 200 or silence.
 CLEAR = re.compile(r"\$HASP612\s+NO\s+ACTIVE\s+JOBS\s*$", re.I)
+TK5_CLEAR = re.compile(
+    r"^\d{2}:\d{2}:\d{2}\s+/\d{1,2}\.\d{2}\.\d{2}\s+"
+    r"\$HASP000\s+NO ACTIVE JOBS\s*$", re.I
+)
 INCOMPLETE = re.compile(r"\$HASP611\b", re.I)
 ACTIVE = re.compile(r"\$HASP(?:608|890)\b|\bJOB\s*\d{1,5}\b", re.I)
 ACTIVITY = re.compile(r"\$HASP(?:100|373|395)\b", re.I)
@@ -60,10 +69,15 @@ def parse_delta(delta: str, transport_rc: int = 0) -> Observation:
         return Observation("ACTIVE", "active batch job reported", messages)
     hasp = [line for line in lines if HASP.search(line)]
     clear = [line for line in hasp if CLEAR.search(line)]
+    # TK5's single-message console reply has no distinct command echo.
+    # The transport samples the append-only log before sending each fixed
+    # /$DA command; the strict console envelope plus single-line delta is our
+    # local correlation evidence, not an exclusive JES lock.
+    if len(lines) == 1 and len(hasp) == 1 and TK5_CLEAR.fullmatch(lines[0]):
+        return Observation("CLEAR", "fresh TK5 $HASP000 NO ACTIVE JOBS response", messages)
     if len(hasp) != 1 or len(clear) != 1:
-        return Observation("UNKNOWN", "missing or ambiguous $HASP612 response", messages)
-    # An echo in the same append-only delta helps correlate the reply to the
-    # one fixed inquiry. Do not accept a stale or unrelated $HASP612 alone.
+        return Observation("UNKNOWN", "missing or ambiguous $DA idle response", messages)
+    # For $HASP612 retain the stronger explicit command-echo requirement.
     first_reply = next(i for i, line in enumerate(lines) if CLEAR.search(line))
     if not any(CMD_ECHO.search(line) for line in lines[:first_reply]):
         return Observation("UNKNOWN", "no correlated preceding $DA command echo", messages)

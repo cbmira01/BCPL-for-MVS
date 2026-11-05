@@ -29,6 +29,8 @@ def load_script():
 mod = load_script()
 CLEAR = "12:34:00  /$DA\n12:34:01  $HASP612 NO ACTIVE JOBS\n"
 ACTIVE = "12:34:00  /$DA\n12:34:01 JOB00012 $HASP608 IC19BLD EXECUTING A PRIO 9 IBM1\n"
+# Exact fresh console line reported from WSL against TK5/MVS 3.8J, 2026-11-05.
+TK5_CLEAR = "15:20:00 /16.19.59           $HASP000 NO ACTIVE JOBS\n"
 
 
 class TestParse(unittest.TestCase):
@@ -36,6 +38,41 @@ class TestParse(unittest.TestCase):
         r = mod.parse_delta(CLEAR)
         self.assertEqual('CLEAR', r.state)
         self.assertEqual(1, len(r.evidence))
+
+    def test_actual_tk5_transcript_without_separate_echo(self):
+        observation = mod.parse_delta(TK5_CLEAR)
+        self.assertEqual('CLEAR', observation.state)
+        self.assertIn('$HASP000 NO ACTIVE JOBS', observation.evidence[0])
+
+    def test_tk5_clear_is_not_generic_hasp000(self):
+        for text in (
+            '$HASP000 NO ACTIVE JOBS\n',
+            '15:20:00 $HASP000 NO ACTIVE JOBS\n',
+            '15:20:00 /16.19.59 $HASP000 OK\n',
+            '15:20:00 /16.19.59 $HASP000 NO ACTIVE JOBS FROM FILE\n',
+            '15:20:00 /16.19.59 $HASP000 NO ACTIVE JOBS\nOTHER UNKNOWN MESSAGE\n',
+        ):
+            with self.subTest(text=text):
+                self.assertEqual('UNKNOWN', mod.parse_delta(text).state)
+
+    def test_tk5_active_or_incomplete_remains_blocked(self):
+        self.assertEqual('UNKNOWN', mod.parse_delta(TK5_CLEAR + '$HASP611 LIST INCOMPLETE\n').state)
+        self.assertEqual('ACTIVE', mod.parse_delta(TK5_CLEAR + ACTIVE).state)
+
+    def test_tk5_two_fresh_samples_required(self):
+        seen = []
+        def capture(command):
+            seen.append(command)
+            return (0, TK5_CLEAR if len(seen) == 1 else '')
+        passed, observations = mod.check_twice(capture)
+        self.assertFalse(passed)
+        self.assertEqual(2, len(observations))
+        self.assertEqual(['CLEAR', 'UNKNOWN'], [r.state for r in observations])
+
+    def test_tk5_both_fresh_samples_clear(self):
+        passed, observations = mod.check_twice(lambda command: (0, TK5_CLEAR))
+        self.assertTrue(passed)
+        self.assertEqual(['CLEAR', 'CLEAR'], [r.state for r in observations])
 
     def test_empty_and_transport_failure_blocked(self):
         self.assertEqual('UNKNOWN', mod.parse_delta('').state)
