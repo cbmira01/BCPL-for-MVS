@@ -8,7 +8,9 @@ from __future__ import annotations
 import importlib.machinery
 import importlib.util
 from pathlib import Path
+import os
 import sys
+import tempfile
 import types
 from typing import Callable
 
@@ -34,9 +36,28 @@ def observe_jes(root: Path, emit: Callable[[str], None]):
     probe = load_extensionless(root / 'tools/reconstruction/jes-idle',
                                'reconstruction_live_jes_idle')
     console = probe.load_mvs_console(root / 'tools/mvs/mvs-console')
+    diagnose = os.environ.get('BCPL_RECON_JES_DIAGNOSE') == '1'
+    raw_deltas = []
+
     def capture(command):
-        return console.capture(command, timeout=10.0, settle=2.0)
+        rc, delta = console.capture(command, timeout=10.0, settle=2.0)
+        if diagnose:
+            raw_deltas.append(delta)
+        return rc, delta
+
     ok, observations = probe.check_twice(capture)
+
+    if diagnose and not ok:
+        fd, name = tempfile.mkstemp(
+            prefix='bcpl-reconstruction-jes-',
+            suffix='.txt',
+        )
+        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+            for number, delta in enumerate(raw_deltas, 1):
+                stream.write(f'JES2 sample {number}\n')
+                stream.write(repr(delta) + '\n')
+        emit('PRIVATE JES diagnostic file: ' + name)
+        emit('Review for sensitive console content before sharing.')
     for number, obs in enumerate(observations, 1):
         emit(f'JES2 $DA {number}/2: {obs.state} — {obs.reason}')
         for line in obs.evidence:
