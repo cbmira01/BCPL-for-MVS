@@ -37,8 +37,6 @@ MAKE_ASM = ROOT / "tools" / "mvs" / "make-asm-job.py"
 PRINTER = ROOT / "mvs-state" / "prt" / "prt00e.txt"
 WORKAREA = ROOT / "workarea"
 
-sys.path.insert(0, str(ROOT / "tools" / "mvs"))
-from jes_submission_gate import admit
 
 SYNI = ROOT / "mr10-kit-compiler" / "source" / "syni.int"
 TRNI = ROOT / "mr10-kit-compiler" / "source" / "trni.int"
@@ -526,12 +524,11 @@ def submit_job(jcl_path: Path, reader_host: str, reader_port: int) -> int:
     if not deck.endswith(b"\n"):
         deck += b"\n"
     try:
-        with admit(ROOT):
-            before = printer_offset()
-            with socket.create_connection(
-                (reader_host, reader_port), timeout=10.0
-            ) as sock:
-                sock.sendall(deck)
+        before = printer_offset()
+        with socket.create_connection(
+            (reader_host, reader_port), timeout=10.0
+        ) as sock:
+            sock.sendall(deck)
     except OSError as exc:
         raise RuntimeError(
             f"cannot submit JCL to {reader_host}:{reader_port}: {exc}"
@@ -956,15 +953,13 @@ def main(argv=None) -> int:
             f"submitting {jcl_path.relative_to(ROOT)} as {job_name} "
             f"through reader port {args.reader_port}"
         )
-        # Hold admission until JES accepts or rejects the submitted job.
-        with admit(ROOT):
-            start_offset = submit_job(jcl_path, args.reader_host, args.reader_port)
-            job_number = wait_for_new_job(
-                job_name,
-                start_offset,
-                args.timeout,
-                args.poll,
-            )
+        start_offset = submit_job(jcl_path, args.reader_host, args.reader_port)
+        job_number = wait_for_new_job(
+            job_name,
+            start_offset,
+            args.timeout,
+            args.poll,
+        )
         print(f"JOB {job_number}")
 
         report = None

@@ -14,7 +14,6 @@ import re
 import subprocess
 import sys
 from typing import Callable
-from functools import wraps
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.dont_write_bytecode = True
@@ -24,8 +23,6 @@ from contract import (ScopeError, OPERATIONS, command_manifest, canonical_digest
 from evidence import EvidenceLog
 from verify import (VerificationError, parse_submission, verify_payload,
                     inventory_members, required_inventory, CODE_RECORD)
-sys.path.insert(0, str(ROOT / 'tools/mvs'))
-from jes_submission_gate import controller_window, child_pass_fds
 
 
 class ReconstructionError(RuntimeError):
@@ -299,26 +296,17 @@ class Runner:
             raise
 
 
-def _exclusive_controller(function):
-    @wraps(function)
-    def wrapped(root, *args, **kwargs):
-        with controller_window(root):
-            return function(root, *args, **kwargs)
-    return wrapped
-
-
 def execute_project_command(root: Path, command: list[str]) -> tuple[int, str]:
-    """Pass the controller lease through the first subprocess boundary."""
+    """Run the declared project command without host-side submission locking."""
     result = subprocess.run(command, cwd=root, text=True,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            check=False, pass_fds=child_pass_fds(root))
+                            check=False)
     return result.returncode, result.stdout
 
 
-@_exclusive_controller
 def authorized_run(root, plan, approval, core, run_command, emit,
                    *, prompt=input, terminal: bool, jes_idle_guard):
-    """Offline-testable controller. There is NO public --run route to it."""
+    """One-run authorized controller; live use requires terminal approval."""
     planner = lambda: plan.prepare(root, core, probe=True)
     grant = approval.request_approval(planner, output=sys.stdout,
                                       read_line=prompt, interactive=terminal)
@@ -344,7 +332,7 @@ def authorized_run(root, plan, approval, core, run_command, emit,
 
 
 def check_live_guard(root: Path, *, observe=None, emit=None) -> int:
-    """Observe real JES under the project lock, but NEVER enter reconstruction.
+    """Observe real JES without entering reconstruction.
 
     This is an independent diagnostic safety path. It does not request
     reconstruction approval, instantiate Runner, or invoke project commands.
@@ -354,11 +342,10 @@ def check_live_guard(root: Path, *, observe=None, emit=None) -> int:
     observe = observe_jes if observe is None else observe
     emit = (lambda line: print(line, flush=True)) if emit is None else emit
     emit('LIVE GUARD CHECK ONLY: no reconstruction approval or build operations.')
-    emit('This lock controls cooperating project submitters, not external JES clients.')
+    emit('Dedicated TK5: operator must prevent independent job submissions.')
     try:
-        with controller_window(root):
-            result = observe(root, emit)
-            require_jes_clear(lambda: result)
+        result = observe(root, emit)
+        require_jes_clear(lambda: result)
     except (KeyboardInterrupt, EOFError):
         emit('INTERRUPTED: guard check cancelled; no reconstruction attempted.')
         return 130
@@ -377,7 +364,7 @@ def main():
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--list', action='store_true', help='show canonical operation sequence, read-only')
     modes.add_argument('--check-live-guard', action='store_true',
-                       help='read-only JES2 guard observation under exclusive project lock; never reconstructs')
+                       help='read-only JES2 two-sample observation; never reconstructs')
     modes.add_argument('--run', action='store_true', help='request a fresh interactive, scoped reconstruction attempt')
     options = parser.parse_args()
     if options.list:

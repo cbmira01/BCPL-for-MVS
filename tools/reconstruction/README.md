@@ -55,7 +55,7 @@ Each of the seven build payloads is verified by its JES payload number, exact st
 
 Reports, payload summaries, job details and diagnostic results are written outside disposable `workarea/` under `mvs-state/reconstruction-evidence/`; credentials are redacted. Reports are **diagnostic evidence only**, not completion checkpoints, release approval or baseline acceptance.
 
-**Guarded live entry point (pending acceptance):** `tools/reconstruction/run --run` invokes the existing in-process approval and JES safety gates only from an interactive terminal. It refuses noninteractive use (RC=2), acquires the project submission lock, prints the full target/destructive scope, and requires a fresh exact `REBUILD HERC02 <plan-fingerprint>` acknowledgment before any cleanup or MVS write. A successful read-only JES sample alone never grants authorization. No live reconstruction has been performed or accepted.
+**Guarded live entry point (pending acceptance):** `tools/reconstruction/run --run` invokes the existing in-process approval and JES safety gates only from an interactive terminal. It refuses noninteractive use (RC=2), prints the full target/destructive scope, and requires a fresh exact `REBUILD HERC02 <plan-fingerprint>` acknowledgment before any cleanup or MVS write. A successful read-only JES sample alone never grants authorization. No live reconstruction has been performed or accepted.
 
 Offline verification from the checkout root:
 
@@ -65,39 +65,44 @@ python3 -B -m unittest discover -s tools/checks -p 'test_reconstruction_*.py' -v
 
 The synthetic tests never start JES jobs or change MVS datasets. The [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains authoritative.
 
-## Next automation phase — single-TK5 submission control (candidate)
+## Dedicated single-operator TK5 model (owner-approved 6 November 2026)
 
-The committed submission-control implementation adds a cooperative kernel `flock` admission gate for `tools/mvs/submit-jcl` (and its `dspal` clients) plus the direct MR10 `compile-and-run` socket transport. The reconstruction controller acquires an exclusive lease before interactive approval and retains it until completion or failure. Only explicitly delegated child processes inherit that lease. Contending project submitters are refused while reconstruction owns the window.
+The [dedicated TK5 operating decision](../../packaging/distribution/dedicated-tk5-operator-controlled-reconstruction-decision-20261106.md)
+supersedes the earlier cooperative WSL submission-lock design. The controller
+and standalone submit tools no longer acquire or forward a host-side lock;
+no MVS lock dataset is created. The original lock design remains in GitHub as
+a historical record.
 
-This is **cooperative project-tool exclusivity**, not a hardware or JES system lock. A direct `nc` client, independent console/3270 submission, or other unintegrated connection to Hercules' reader can bypass it. Operator quiescence remains required. The existing single TK5 installation is used; no additional installation is created. See the [design and tests](../../packaging/distribution/clean-room-reconstruction-submission-control-design-20261105.md). The next integration includes explicitly delegated Bash/TRNILRG lease forwarding and the guarded terminal-only `--run` entry point. The result still requires full reconstruction regression and MVS acceptance; do not run a destructive reconstruction without a separate owner authorization.
+Before reconstruction, the operator must stop other project submissions
+and ensure earlier JES jobs are finished. Do not run independent JCL submissions,
+MR10 compile-and-run, dataset tools, regressions, reader/console commands, or
+another reconstruction controller during reconstruction. This is an
+operating restriction, **not** a technical exclusion guarantee. The two-sample
+JES2 idle safeguard remains a point-in-time check.
 
-## Guard-only live JES check (read-only integration test)
+## Read-only integrated JES check
 
 ```sh
 tools/reconstruction/run --check-live-guard
 ```
 
-This standalone diagnostic acquires the **same exclusive project-tool submission lock**
-used by the reconstruction controller, invokes the **same two-sample JES2 `/$DA`
-observer and strict `require_jes_clear` check**, then releases the lock.
-It deliberately **never** asks for reconstruction authorization, calls the
-25-operation runner, cleans `workarea/`, submits JCL, or purges/changes MVS datasets.
-A CLEAR result only reports idle observations; it cannot trigger reconstruction.
-Its only expected MVS effect is issuing two read-only `/$DA` console inquiries
-(or fewer when a sample fails).
+The historical CLI name is retained for compatibility. This tool issues the
+same two-sample JES2 `/$DA` inquiry and strict `require_jes_clear` check
+used by the controller, **without a submission lock**. It never requests
+reconstruction authorization, invokes the 25-operation runner, submits JCL,
+cleans `workarea/`, or changes MVS datasets. CLEAR is not authorization.
 
-Results: RC=0 means two CLEAR samples; RC=2 means ACTIVE, UNKNOWN, invalid
-observation or guard failure; RC=130 means interrupted. This verifies the real
-JES-observation path under the project lock, **not** full live reconstruction
-acceptance. Because the lock is cooperative, external console/reader clients
-remain outside its exclusion boundary. To observe the ACTIVE refusal, run this
-diagnostic while an independently authorized long-running JES job is executing.
+Results: RC=0 means two CLEAR samples; RC=2 means ACTIVE, UNKNOWN,
+an invalid response, or a guard failure; RC=130 means interrupted. On
+6 November 2026 the earlier locked version of this guard observed an
+executing JOB 359 JESGTEST and refused with RC=2. That is active-state
+evidence only; the overall test did not verify the matching completed job
+report because JES reused job number 359.
 
-**Never use `tools/reconstruction/run --run` as an active-job negative
-test.** A test job might finish between operator approval and the JES inquiry;
-a subsequently clear response could permit the real destructive rebuild.
-The guarded `--run` path requires separate authorization for an actual
-reconstruction.
+**Never use `--run` as an active-job negative test.** A test job may finish
+before the JES inquiry, allowing a real approved reconstruction to begin.
+The interactive `--run` path requires separate explicit authorization for
+a destructive attempt.
 
 ## Read-only JES2 activity safeguard (calibration candidate)
 
@@ -123,7 +128,7 @@ starting a job after the query. Before enabling destructive automation, also
 establish operator quiescence of independent job submitters and validate the
 console response handling under actual idle and active conditions.
 
-At the time of this diagnostic calibration, `tools/reconstruction/run --run` was disabled. The diagnostic never calls
+At the time of this historical diagnostic calibration, `tools/reconstruction/run --run` was disabled; a guarded interactive entry point was added later and is not accepted as a completed live reconstruction. The diagnostic never calls
 `dspal`, cleans the workarea, submits JES jobs, or modifies MVS datasets. It
 returns RC=0 only when it sees two qualifying clear samples; RC=2 otherwise.
 

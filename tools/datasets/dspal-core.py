@@ -22,8 +22,6 @@ SUBMIT_JCL = ROOT / "tools" / "mvs" / "submit-jcl"
 JOB_SUMMARY = ROOT / "tools" / "mvs" / "job-summary"
 DUMP_REPORT = ROOT / "tools" / "mvs" / "dump-report-for-job"
 
-sys.path.insert(0, str(ROOT / "tools" / "mvs"))
-from jes_submission_gate import child_pass_fds
 
 
 class DspalError(RuntimeError):
@@ -285,7 +283,6 @@ def submit_and_wait(
             text=True,
             capture_output=True,
             check=False,
-            pass_fds=child_pass_fds(ROOT),
         )
         if cp.returncode != 0:
             detail = cp.stderr.strip() or cp.stdout.strip()

@@ -66,8 +66,8 @@ def run_live(root: Path, authorized_run, execute_project_command, *,
                                       'reconstruction_live_authorize')
         core = plan.load_dspal_core(root)
         emit('One-TK5 clean-room reconstruction: review all managed dataset deletions.')
-        emit('Only project-integrated JES submitters are admission-controlled;')
-        emit('direct reader/console submissions must remain quiescent.')
+        emit('Dedicated TK5: do not submit independent jobs during reconstruction.')
+        emit('JES2 idle checks do not reserve or lock the system.')
         authorized_run(root, plan, approval, core,
                        lambda command: execute_project_command(root, command),
                        emit, prompt=prompt, terminal=True,

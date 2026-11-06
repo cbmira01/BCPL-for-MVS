@@ -2,9 +2,11 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 5 November 2026  
-**Status:** Source-controlled cooperative gate (commit `2eb099c`); guarded live-entry integration remains unaccepted  
+**Status:** SUPERSEDED 6 November 2026 by the [dedicated single-operator decision](dedicated-tk5-operator-controlled-reconstruction-decision-20261106.md). Retained as a historical design and test record; not current operating guidance.  
 **Predecessor:** Step 3 safety-hardening closure (JOB 357)  
 **Scope:** Next clean-room automation development phase, not the manual reconstruction guide's Step 4.
+
+**Historical note:** The WSL `flock` and inherited file-descriptor mechanism described below was implemented and tested, then explicitly withdrawn for the dedicated TK5 installation. Do not use this page to plan new host or MVS locks.
 
 ## Owner direction
 
