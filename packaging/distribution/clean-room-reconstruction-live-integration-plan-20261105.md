@@ -35,6 +35,38 @@ replace the remaining fully integrated-controller acceptance requirement.
 Do not run `--run` to test ACTIVE refusal, because the test job might finish
 between approval and the live check.
 
+## First guarded live JES observation — 5 November 2026
+
+The operator updated the existing WSL checkout to GitHub `main` commit
+`b7cd0611d943b533e1fba49b2acf208e40dd4401`. The first
+`tools/reconstruction/run --check-live-guard` run returned **RC=2**
+(UNKNOWN). The read-only diagnostic
+`tools/reconstruction/jes-idle --live --diagnose` likewise returned
+**RC=2**, and exposed this exact five-line console delta:
+
+```text
+02:44:01 HHC00013I '/' input entered for console 0:0009: "$DA"
+02:44:01 $DA
+02:44:01 HHC00013I '/' input entered for console 0:0009: "$DA"
+02:44:01 $DA
+02:44:01 / 3.44.01           $HASP000 NO ACTIVE JOBS
+```
+
+All four echo lines conform to the previously verified identical double-pair
+envelope. The fifth line differs from the previously recognized TK5
+`$HASP000` idle envelope **only** by one ASCII space between the slash and
+the one-digit response time. This is a parser false negative, not
+evidence of an active job, and the safeguards correctly refused to
+continue. The guard-only entry point did not invoke reconstruction.
+
+The correction candidate accepts **zero or one literal ASCII space**
+after the slash, never unrestricted whitespace. The full observed delta
+and rejection of multiple spaces, tabs, newline substitutions,
+additional JES activity and incomplete replies are independently tested.
+**175 offline tests passed** (reconstruction and JES submission control).
+A fresh guard-only live retest is **pending**, and neither this observation
+nor a future CLEAR response authorizes a destructive reconstruction.
+
 ## Remaining work before live activation
 
 1. The submission-control integration is committed on GitHub `main` at `2eb099c`; finish independent regression coverage for the bootstrap Bash/TRNILRG descriptor handoff and guarded public CLI, then seek explicit owner approval before committing further changes. `--run` must require an interactive exact-scope acknowledgment and deny noninteractive execution.

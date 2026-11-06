@@ -23,13 +23,16 @@ COMMAND = "/$DA"
 # The running TK5/MVS 3.8J console on 2026-11-05 emitted the single line
 #   15:20:00 /16.19.59           $HASP000 NO ACTIVE JOBS
 # after /$DA. Its response is not accompanied by a separate command echo.
+# The 2026-11-05 02:44:01 live guard diagnostic also observed " / 3.44.01"
+# (one ASCII space after the slash) with the same exact double echo pair.
+# Accept zero or one ASCII space; never generic whitespace or extra lines.
 # Require precisely this time-stamped Hercules/MVS envelope and message text;
 # generic $HASP000 (which is used for other JES2 command responses) is unsafe.
 # Later JES2 uses $HASP612 with a separate $DA echo; retain that strict form.
 # Do not infer inactivity from HTTP 200 or silence.
 CLEAR = re.compile(r"\$HASP612\s+NO\s+ACTIVE\s+JOBS\s*$", re.I)
 TK5_CLEAR = re.compile(
-    r"^\d{2}:\d{2}:\d{2}\s+/\d{1,2}\.\d{2}\.\d{2}\s+"
+    r"^\d{2}:\d{2}:\d{2}\s+/ ?\d{1,2}\.\d{2}\.\d{2}\s+"
     r"\$HASP000\s+NO ACTIVE JOBS\s*$", re.I
 )
 # Hercules/TK5 was observed to repeat the identical pair of lines twice:

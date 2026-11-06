@@ -94,6 +94,41 @@ class TestParse(unittest.TestCase):
         self.assertEqual([mod.COMMAND, mod.COMMAND], commands)
         self.assertEqual(['CLEAR', 'CLEAR'], [o.state for o in observations])
 
+    def test_real_tk5_november_5_spaced_slash_idle_transcript(self):
+        # Exact real operator-observed delta (02:44:01, 5 November 2026).
+        # All four echo lines are valid and the one reply has "/ 3.44.01".
+        delta = (
+            '02:44:01 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+            '02:44:01 $DA\n'
+            '02:44:01 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+            '02:44:01 $DA\n'
+            '02:44:01 / 3.44.01           $HASP000 NO ACTIVE JOBS\n'
+        )
+        observation = mod.parse_delta(delta)
+        self.assertEqual('CLEAR', observation.state)
+        seen = []
+        def capture(command):
+            seen.append(command)
+            return 0, delta
+        passed, observations = mod.check_twice(capture)
+        self.assertTrue(passed)
+        self.assertEqual(['/$DA', '/$DA'], seen)
+        self.assertEqual(['CLEAR', 'CLEAR'], [obs.state for obs in observations])
+
+    def test_spaced_slash_must_be_exact_and_job_activity_still_blocks(self):
+        reply = '02:44:01 / 3.44.01           $HASP000 NO ACTIVE JOBS\n'
+        for bad_reply in (
+            reply.replace('/ 3.', '/  3.'),  # multiple spaces not observed
+            reply.replace('/ 3.', '/\t3.'),  # tabs not observed
+            reply.replace('/ 3.', '/\n3.'),  # line breaks not observed
+            reply.replace('NO ACTIVE JOBS', 'NO ACTIVE JOBS FROM FILE'),
+        ):
+            with self.subTest(reply=bad_reply):
+                self.assertEqual('UNKNOWN', mod.parse_delta(bad_reply).state)
+        self.assertEqual('UNKNOWN', mod.parse_delta(reply + '$HASP373 JOB00012 STARTED\n').state)
+        self.assertEqual('ACTIVE', mod.parse_delta(reply + ACTIVE).state)
+        self.assertEqual('UNKNOWN', mod.parse_delta(reply + '$HASP611 LIST INCOMPLETE\n').state)
+
     def test_tk5_one_complete_hercules_echo_pair_is_accepted(self):
         delta = TK5_HHC + TK5_TYPED + TK5_REPLY
         self.assertEqual('CLEAR', mod.parse_delta(delta).state)
