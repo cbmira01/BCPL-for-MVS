@@ -78,5 +78,8 @@ def run_live(root: Path, authorized_run, execute_project_command, *,
         emit('INTERRUPTED: reconstruction cancelled or operator input closed.')
         return 130
     except Exception as exc:
-        emit(f'BLOCKED/FAILED: {type(exc).__name__}: {exc}')
+        # Never surface exception text on the operator console: downstream
+        # tools may accidentally include MVS credentials in error messages.
+        # Detailed operation diagnostics belong in the redacted evidence log.
+        emit(f'BLOCKED/FAILED: {type(exc).__name__}; consult preserved evidence if available.')
         return 2

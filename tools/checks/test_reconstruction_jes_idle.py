@@ -230,7 +230,7 @@ class TestReadOnlyCheck(unittest.TestCase):
             rc = mod.main(['--live'])
         self.assertEqual(0, rc)
         self.assertEqual(['/$DA', '/$DA'], commands)
-        self.assertIn('Reconstruction --run remains disabled', buf.getvalue())
+        self.assertIn('does not authorize reconstruction', buf.getvalue())
 
     def test_opt_in_blocked_diagnostic_displays_unfiltered_delta(self):
         delta = "HHC00000I extra line\n" + TK5_CLEAR
@@ -244,12 +244,16 @@ class TestReadOnlyCheck(unittest.TestCase):
         self.assertIn('may contain sensitive data', buf.getvalue())
 
     def test_cli_live_transport_error_is_blocked(self):
+        marker = 'PRIVATE_TEST_PASSWORD_998'
         def broken(cmd, *, timeout, settle):
-            raise RuntimeError('unavailable')
+            raise RuntimeError('unavailable ' + marker)
         fake = types.SimpleNamespace(capture=broken)
-        with patch.object(mod, 'load_mvs_console', return_value=fake), contextlib.redirect_stderr(io.StringIO()):
+        buf = io.StringIO()
+        with patch.object(mod, 'load_mvs_console', return_value=fake), contextlib.redirect_stderr(buf):
             rc = mod.main(['--live'])
         self.assertEqual(2, rc)
+        self.assertIn('RuntimeError', buf.getvalue())
+        self.assertNotIn(marker, buf.getvalue())
 
 
 if __name__ == '__main__':

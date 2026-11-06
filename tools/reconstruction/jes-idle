@@ -190,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
                 print("  " + evidence)
         if ok:
             print("Two fresh idle responses observed; this is not exclusive control of JES submissions.")
-            print("Reconstruction --run remains disabled pending MVS-specific acceptance.")
+            print("This idle result alone does not authorize reconstruction; --run requires a fresh interactive scoped approval.")
             return 0
         if opts.diagnose:
             print("DIAGNOSTIC ONLY — raw console content may contain sensitive data.")
@@ -199,7 +199,8 @@ def main(argv: list[str] | None = None) -> int:
         print("BLOCKED: active/unknown JES2 state; no reconstruction actions performed.", file=sys.stderr)
         return 2
     except (OSError, RuntimeError, ValueError, UnicodeError, subprocess.TimeoutExpired) as exc:
-        print("BLOCKED: JES2 inquiry failed: " + str(exc), file=sys.stderr)
+        # Transport exceptions may include credentials or connection secrets.
+        print("BLOCKED: JES2 inquiry failed: " + type(exc).__name__, file=sys.stderr)
         return 2
 
 

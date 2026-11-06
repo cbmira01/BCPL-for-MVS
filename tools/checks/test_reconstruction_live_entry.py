@@ -48,6 +48,14 @@ class TestLiveEntry(unittest.TestCase):
         self.assertIs(module, sys.modules['test_real_extensionless_tool'])
         sys.modules.pop('test_real_extensionless_tool', None)
 
+    def test_exception_detail_never_leaks_to_console(self):
+        marker = 'PRIVATE_SYNTHETIC_PASSWORD_98765'
+        def failed(*args, **kwargs):
+            raise RuntimeError('secret=' + marker)
+        self.assertEqual(2, self.invoke(fake=failed))
+        self.assertTrue(any('RuntimeError' in line for line in self.messages))
+        self.assertFalse(any(marker in line for line in self.messages))
+
     def test_jes_capture_exception_is_not_accepted_as_idle(self):
         class Probe:
             @staticmethod
@@ -87,7 +95,7 @@ class TestLiveEntry(unittest.TestCase):
         def failure(*args, **kw):
             raise RuntimeError('synthetic guard failure')
         self.assertEqual(2, self.invoke(fake=failure))
-        self.assertTrue(any('synthetic guard failure' in line for line in self.messages))
+        self.assertTrue(any('RuntimeError' in line for line in self.messages))
 
     def test_interrupted_controller_retains_nonzero_rc(self):
         def failure(*args, **kw):
@@ -105,7 +113,7 @@ class TestLiveEntry(unittest.TestCase):
                                 lambda r,c: (0,''), stdin=Terminal(True),
                                 stdout=Terminal(True), emit=self.messages.append)
         self.assertEqual(2, rc)
-        self.assertTrue(any('missing tool' in x for x in self.messages))
+        self.assertTrue(any('FileNotFoundError' in x for x in self.messages))
 
     def test_jes_parser_fails_closed_on_unknown(self):
         class Obs:
