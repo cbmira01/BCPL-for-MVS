@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 5 November 2026  
-**Status:** IN PROGRESS — single-TK5 submission-control implementation candidate; no live reconstruction authorized  
+**Status:** IN PROGRESS — offline-tested guarded live-entry candidate; no live reconstruction authorized  
 **Predecessor:** [Step 3 owner closure and JOB 357 evidence](clean-room-reconstruction-step3-closure-20261105.md)  
 **Authority:** [Owner-approved reconstruction automation decision](clean-room-reconstruction-automation-decision-20261104.md) and [manual reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md).
 
@@ -22,7 +22,7 @@ This controls `tools/mvs/submit-jcl`, its `dspal` clients (including INTERNAL RE
 
 ## Remaining work before live activation
 
-1. Merge and verify the candidate integration on authoritative GitHub `main` only with explicit owner commit approval; run full repository reconstruction regressions. Keep the controller CLI's deliberate `--run` hard stop until separate approval.
+1. The submission-control integration is committed on GitHub `main` at `2eb099c`; finish independent regression coverage for the bootstrap Bash/TRNILRG descriptor handoff and guarded public CLI, then seek explicit owner approval before committing further changes. `--run` must require an interactive exact-scope acknowledgment and deny noninteractive execution.
 2. Prove in a controller-level offline negative test that a second project submitter fails closed while the controller has the lock, including during approval, JES preflight and error handling; retain ordinary standalone tool usability afterward.
 3. Review the existing single TK5 reader, printer, console, `dspal` configuration, `HERC02` dataset inventory and source revision before destructive operations. No other datasets are in approved scope.
 4. With separately authorized MVS activity, verify a live active job rejects the **integrated controller** before any cleanup or purge. JOB 357 already verified `jes-idle` itself; it did not verify the integrated runner.
@@ -31,4 +31,4 @@ This controls `tools/mvs/submit-jcl`, its `dspal` clients (including INTERNAL RE
 
 ## Safety boundary
 
-`tools/reconstruction/run --run` **remains disabled (RC=2)**. The next development phase does not authorize any JES submission, workarea deletion, `dspal purgebcpl`, installed dataset change, tag or release.
+The proposed `tools/reconstruction/run --run` entry point is terminal-only, and **does not authorize a reconstruction by its mere existence**. Every destructive attempt requires a fresh approval of the displayed plan; pending MVS acceptance and separate owner approval, no JES submission, workarea deletion, `dspal purgebcpl`, installed dataset change, tag or release has been requested.

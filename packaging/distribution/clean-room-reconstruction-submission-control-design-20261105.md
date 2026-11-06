@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 5 November 2026  
-**Status:** Implementation candidate, offline tests only; NOT COMMITTED OR ACCEPTED  
+**Status:** Source-controlled cooperative gate (commit `2eb099c`); guarded live-entry integration remains unaccepted  
 **Predecessor:** Step 3 safety-hardening closure (JOB 357)  
 **Scope:** Next clean-room automation development phase, not the manual reconstruction guide's Step 4.
 
@@ -55,7 +55,7 @@ No authorization is implied by possessing a lock or inherited FD. Approval is
 still one-run, scope-bound and interactive. No direct `--yes` bypass, automatic
 release/tagging/regression or checkpoint/resume is added.
 
-**The public `tools/reconstruction/run --run` remains deliberately disabled**
+**The guarded `tools/reconstruction/run --run` integration is pending verification and owner approval**
 through integration and offline tests. Separate permission is still required for
 a destructive reconstruction of the single TK5 installation.
 

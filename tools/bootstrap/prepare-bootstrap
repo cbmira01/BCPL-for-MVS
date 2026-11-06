@@ -15,6 +15,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools/mvs"))
+from jes_submission_gate import child_pass_fds
 BASE = ROOT / "workarea/bootstrap-cambridge"
 DEMOTED = ("blib", "bcpl", "syn", "lex", "trna", "trnb",
            "cga", "cgb", "cgc", "cgd", "cge")
@@ -85,7 +87,10 @@ def main() -> int:
         commands.append([sys.executable, "bootstrap-toolchain/bootstrap-cambridge/make-mr10-trn-large-names.py"])
     for cmd in commands:
         print("+", " ".join(cmd), flush=True)
-        subprocess.run(cmd, cwd=ROOT, check=True)
+        # Only the Bash/TRNILRG path may submit an MVS job. Keep the
+        # exclusive lease out of pure source-generation children.
+        fds = child_pass_fds(ROOT) if args.with_trnilrg and cmd[0] == "bash" else ()
+        subprocess.run(cmd, cwd=ROOT, check=True, pass_fds=fds)
 
     files = outputs(args.with_trnilrg)
     missing = [str(p.relative_to(ROOT)) for p in files if not p.is_file()]

@@ -102,11 +102,11 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn(' --run', cp.stdout)
         self.assertIn('No regressions', cp.stdout)
 
-    def test_live_run_cli_disabled(self):
+    def test_live_run_cli_rejects_noninteractive_without_mutation(self):
         cp = subprocess.run([sys.executable, str(RECON / 'run'), '--run'],
                             capture_output=True, text=True, check=False)
         self.assertEqual(cp.returncode, 2)
-        self.assertIn('DISABLED', cp.stderr)
+        self.assertIn('BLOCKED: reconstruction requires interactive', cp.stdout)
 
     def test_clean_workarea_standalone_requires_terminal(self):
         # No git repository is present at the staging fixture; cleanup must fail,

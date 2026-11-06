@@ -305,11 +305,11 @@ class ReconstructionIntegration(unittest.TestCase):
         self.assertEqual(e.operations[-2]['result'], 'FAIL')
         self.assertFalse(any(c[1:3] == ('populate', 'all') for c in self.command_log))
 
-    def test_cli_stays_disabled(self):
+    def test_cli_rejects_noninteractive_without_reconstruction(self):
         import subprocess
         cp = subprocess.run([sys.executable, str(RECON/'run'), '--run'], text=True, capture_output=True)
         self.assertEqual(cp.returncode, 2)
-        self.assertIn('DISABLED', cp.stderr)
+        self.assertIn('BLOCKED: reconstruction requires interactive', cp.stdout)
 
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""One-shot reconstruction stage engine; live --run deliberately DISABLED.
+"""One-shot, scope-authorized reconstruction stage engine.
 
-No resume/checkpoints, no regression/release.  Real MVS mutation requires
-separate operator acceptance and a future change to the hard stop in main().
+No resume/checkpoints, regression, or release side effects. Live MVS
+mutation requires a fresh interactive review and exact one-run approval.
 """
 from __future__ import annotations
 
@@ -345,7 +345,7 @@ def authorized_run(root, plan, approval, core, run_command, emit,
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--list', action='store_true', help='show canonical operation sequence, read-only')
-    parser.add_argument('--run', action='store_true', help='reserved: live execution DISABLED')
+    parser.add_argument('--run', action='store_true', help='request a fresh interactive, scoped reconstruction attempt')
     options = parser.parse_args()
     if options.list:
         for op in OPERATIONS:
@@ -353,8 +353,8 @@ def main():
         print('No regressions, native Cambridge compiler, tags, releases, or resume.')
         return 0
     if options.run:
-        print('LIVE RECONSTRUCTION DISABLED: safety review, active-job negative test and separate owner authorization required.', file=sys.stderr)
-        return 2
+        from live_entry import run_live
+        return run_live(ROOT, authorized_run, execute_project_command)
     parser.print_help()
     return 0
 
