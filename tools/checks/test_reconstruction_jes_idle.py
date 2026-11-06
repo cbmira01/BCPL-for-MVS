@@ -149,6 +149,59 @@ class TestParse(unittest.TestCase):
             with self.subTest(delta=delta):
                 self.assertNotEqual('CLEAR', mod.parse_delta(delta).state)
 
+    def test_real_tk5_november_6_one_second_typed_echo_rollover(self):
+        # Operator-captured fresh $DA response, 6 November 2026.
+        delta = (
+            '19:39:19 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+            '19:39:19 $DA\n'
+            '19:39:19 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+            '19:39:20 $DA\n'
+            '19:39:20 /20.39.19           $HASP000 NO ACTIVE JOBS\n'
+        )
+        self.assertEqual('CLEAR', mod.parse_delta(delta).state)
+        calls = []
+        def capture(command):
+            calls.append(command)
+            return 0, delta
+        ok, observations = mod.check_twice(capture)
+        self.assertTrue(ok)
+        self.assertEqual(['/$DA', '/$DA'], calls)
+        self.assertEqual(['CLEAR', 'CLEAR'], [o.state for o in observations])
+
+    def test_tk5_one_second_rollover_is_strictly_bounded(self):
+        prefix = (
+            '19:39:19 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+            '19:39:19 $DA\n'
+        )
+        reply = '19:39:20 /20.39.19           $HASP000 NO ACTIVE JOBS\n'
+        good = prefix + prefix.splitlines(keepends=True)[0] + '19:39:20 $DA\n' + reply
+        self.assertEqual('CLEAR', mod.parse_delta(good).state)
+        bad = (
+            good.replace('19:39:20 $DA', '19:39:21 $DA'),
+            good.replace('19:39:20 $DA', '19:39:18 $DA'),
+            good.replace('19:39:20 $DA', '19:39:20 $DQ'),
+            good.replace('19:39:19 $DA\n', '19:39:20 $DA\n', 1),
+            good.replace('0:0009: "$DA"\n19:39:20 $DA',
+                         '0:000A: "$DA"\n19:39:20 $DA'),
+            good.replace('19:39:20 $DA\n', '19:39:20 $DA\nUNRELATED\n'),
+            good.replace('19:39:20 $DA\n', '19:39:20 $DA\n' + prefix),
+            good + '$HASP373 JOB00012 STARTED\n',
+            good + '$HASP611 LIST INCOMPLETE\n',
+        )
+        for delta in bad:
+            with self.subTest(delta=delta):
+                self.assertNotEqual('CLEAR', mod.parse_delta(delta).state)
+
+    def test_tk5_rollover_across_midnight(self):
+        delta = (
+            '23:59:59 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+            '23:59:59 $DA\n'
+            '23:59:59 HHC00013I \'/\' input entered for console 0:0009: "$DA"\n'
+            '00:00:00 $DA\n'
+            '00:00:00 / 1.00.00           $HASP000 NO ACTIVE JOBS\n'
+        )
+        self.assertEqual('CLEAR', mod.parse_delta(delta).state)
+
     def test_tk5_real_delta_with_active_or_incomplete_must_block(self):
         self.assertEqual('UNKNOWN', mod.parse_delta(TK5_LIVE_DELTA + '$HASP611 LIST INCOMPLETE\n').state)
         self.assertEqual('UNKNOWN', mod.parse_delta(TK5_LIVE_DELTA + '$HASP373 JOB00001 STARTED\n').state)
