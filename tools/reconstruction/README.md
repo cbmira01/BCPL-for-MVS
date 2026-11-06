@@ -71,6 +71,34 @@ The committed submission-control implementation adds a cooperative kernel `flock
 
 This is **cooperative project-tool exclusivity**, not a hardware or JES system lock. A direct `nc` client, independent console/3270 submission, or other unintegrated connection to Hercules' reader can bypass it. Operator quiescence remains required. The existing single TK5 installation is used; no additional installation is created. See the [design and tests](../../packaging/distribution/clean-room-reconstruction-submission-control-design-20261105.md). The next integration includes explicitly delegated Bash/TRNILRG lease forwarding and the guarded terminal-only `--run` entry point. The result still requires full reconstruction regression and MVS acceptance; do not run a destructive reconstruction without a separate owner authorization.
 
+## Guard-only live JES check (read-only integration test)
+
+```sh
+tools/reconstruction/run --check-live-guard
+```
+
+This standalone diagnostic acquires the **same exclusive project-tool submission lock**
+used by the reconstruction controller, invokes the **same two-sample JES2 `/$DA`
+observer and strict `require_jes_clear` check**, then releases the lock.
+It deliberately **never** asks for reconstruction authorization, calls the
+25-operation runner, cleans `workarea/`, submits JCL, or purges/changes MVS datasets.
+A CLEAR result only reports idle observations; it cannot trigger reconstruction.
+Its only expected MVS effect is issuing two read-only `/$DA` console inquiries
+(or fewer when a sample fails).
+
+Results: RC=0 means two CLEAR samples; RC=2 means ACTIVE, UNKNOWN, invalid
+observation or guard failure; RC=130 means interrupted. This verifies the real
+JES-observation path under the project lock, **not** full live reconstruction
+acceptance. Because the lock is cooperative, external console/reader clients
+remain outside its exclusion boundary. To observe the ACTIVE refusal, run this
+diagnostic while an independently authorized long-running JES job is executing.
+
+**Never use `tools/reconstruction/run --run` as an active-job negative
+test.** A test job might finish between operator approval and the JES inquiry;
+a subsequently clear response could permit the real destructive rebuild.
+The guarded `--run` path requires separate authorization for an actual
+reconstruction.
+
 ## Read-only JES2 activity safeguard (calibration candidate)
 
 The fixed-command diagnostic `tools/reconstruction/jes-idle --live` uses

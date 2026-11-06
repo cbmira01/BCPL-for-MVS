@@ -20,6 +20,21 @@ The proposed cooperative admission mechanism is documented in [single-TK5 submis
 
 This controls `tools/mvs/submit-jcl`, its `dspal` clients (including INTERNAL READER payloads), and the direct MR10 `compile-and-run` socket path. Raw reader-port clients, direct console commands or 3270-based submissions are not blocked by this host advisory lock. **No technical guarantee of system-wide exclusivity is claimed.** Independent direct submitters must be quiescent, and stronger reader-network enforcement may be necessary before activating destructive automation.
 
+## Read-only integrated live guard diagnostic
+
+The `tools/reconstruction/run --check-live-guard` diagnostic is a separate,
+non-destructive entry point into the same exclusive submission lock,
+`observe_jes` console transport and `require_jes_clear` classifier used
+by the controller. It always exits without invoking reconstruction, including
+when the two samples are CLEAR. It is suitable for controlled real-MVS ACTIVE
+and idle observations without risking a purge if a test job finishes early.
+
+This is a **preliminary integration observation only**: it does not exercise
+the normal `--run` approval or 25-operation path against MVS, and does not
+replace the remaining fully integrated-controller acceptance requirement.
+Do not run `--run` to test ACTIVE refusal, because the test job might finish
+between approval and the live check.
+
 ## Remaining work before live activation
 
 1. The submission-control integration is committed on GitHub `main` at `2eb099c`; finish independent regression coverage for the bootstrap Bash/TRNILRG descriptor handoff and guarded public CLI, then seek explicit owner approval before committing further changes. `--run` must require an interactive exact-scope acknowledgment and deny noninteractive execution.

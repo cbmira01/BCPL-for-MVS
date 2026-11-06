@@ -342,16 +342,51 @@ def authorized_run(root, plan, approval, core, run_command, emit,
         raise
 
 
+
+def check_live_guard(root: Path, *, observe=None, emit=None) -> int:
+    """Observe real JES under the project lock, but NEVER enter reconstruction.
+
+    This is an independent diagnostic safety path. It does not request
+    reconstruction approval, instantiate Runner, or invoke project commands.
+    Even a CLEAR observation exits without any cleanup or dataset mutation.
+    """
+    from live_entry import observe_jes
+    observe = observe_jes if observe is None else observe
+    emit = (lambda line: print(line, flush=True)) if emit is None else emit
+    emit('LIVE GUARD CHECK ONLY: no reconstruction approval or build operations.')
+    emit('This lock controls cooperating project submitters, not external JES clients.')
+    try:
+        with controller_window(root):
+            result = observe(root, emit)
+            require_jes_clear(lambda: result)
+    except (KeyboardInterrupt, EOFError):
+        emit('INTERRUPTED: guard check cancelled; no reconstruction attempted.')
+        return 130
+    except Exception as exc:
+        # Do not expose exception details: they could contain MVS credentials.
+        emit(f'BLOCKED: live guard check failed ({type(exc).__name__}); '
+             'no reconstruction attempted.')
+        return 2
+    emit('CLEAR: two JES-idle observations passed; '
+         'no reconstruction attempted or authorized.')
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--list', action='store_true', help='show canonical operation sequence, read-only')
-    parser.add_argument('--run', action='store_true', help='request a fresh interactive, scoped reconstruction attempt')
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--list', action='store_true', help='show canonical operation sequence, read-only')
+    modes.add_argument('--check-live-guard', action='store_true',
+                       help='read-only JES2 guard observation under exclusive project lock; never reconstructs')
+    modes.add_argument('--run', action='store_true', help='request a fresh interactive, scoped reconstruction attempt')
     options = parser.parse_args()
     if options.list:
         for op in OPERATIONS:
             print(f'Guide {op.guide}: {op.name}: {" ".join(op.command)}')
         print('No regressions, native Cambridge compiler, tags, releases, or resume.')
         return 0
+    if options.check_live_guard:
+        return check_live_guard(ROOT)
     if options.run:
         from live_entry import run_live
         return run_live(ROOT, authorized_run, execute_project_command)
