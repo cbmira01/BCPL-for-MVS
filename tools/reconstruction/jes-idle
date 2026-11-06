@@ -60,26 +60,56 @@ class Observation:
     evidence: tuple[str, ...]
 
 
-def recognized_tk5_echoes(before: list[str]) -> bool:
-    """Recognize the exact observed console echo envelope (zero, one, or two pairs).
+def _one_second_after(before: str, after: str) -> bool:
+    """Accept precisely a one-second echo timestamp shift, including midnight."""
+    def seconds(value: str) -> int | None:
+        try:
+            hour, minute, second = map(int, value.split(':'))
+        except ValueError:
+            return None
+        if not (0 <= hour < 24 and 0 <= minute < 60 and 0 <= second < 60):
+            return None
+        return hour * 3600 + minute * 60 + second
 
-    The double pair must be byte-for-byte identical; unrelated console output
-    and partial/mismatched echoes always block an idle classification.
+    first, second = seconds(before), seconds(after)
+    return first is not None and second is not None and (second - first) % 86400 == 1
+
+
+def recognized_tk5_echoes(before: list[str]) -> bool:
+    """Recognize zero, one or two exact Hercules/console $DA echo pairs.
+
+    A real TK5 capture (2026-11-06) showed two identical HHC00013I
+    envelopes with the second typed $DA echoed one second later.
+    Permit only that bounded rollover; never ignore unrelated lines.
     """
     if not before:
-        return True  # TK5 also produced a single $HASP000 reply without echoes.
+        return True
     if len(before) == 1:
         return TK5_TYPED_ECHO.fullmatch(before[0]) is not None
     if len(before) not in (2, 4):
         return False
+
     pairs = []
     for i in range(0, len(before), 2):
         sent = TK5_HERCULES_ECHO.fullmatch(before[i])
         echoed = TK5_TYPED_ECHO.fullmatch(before[i + 1])
-        if not sent or not echoed or sent.group("time") != echoed.group("time"):
+        if not sent or not echoed:
             return False
-        pairs.append(before[i:i + 2])
-    return len(pairs) == 1 or pairs[0] == pairs[1]
+        pairs.append((sent, echoed))
+
+    first_sent, first_echo = pairs[0]
+    if first_sent.group('time') != first_echo.group('time'):
+        return False
+    if len(pairs) == 1:
+        return True
+
+    second_sent, second_echo = pairs[1]
+    if before[0] != before[2]:  # exact command, console and Hercules timestamp
+        return False
+    first_time = first_echo.group('time')
+    second_time = second_echo.group('time')
+    return (second_time == first_time or
+            _one_second_after(first_time, second_time))
 
 
 def parse_delta(delta: str, transport_rc: int = 0) -> Observation:
