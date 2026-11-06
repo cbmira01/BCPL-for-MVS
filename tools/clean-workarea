@@ -28,6 +28,9 @@ def main(argv=None, *, read_line=input, interactive=None):
                              capture_output=True, check=False)
     if tracked.returncode or tracked.stdout.split(b'\0') != [b'workarea/.gitignore', b'']:
         raise ScopeError('workarea contains unexpected tracked files')
+    if not args.reconstruction_scope:
+        if interactive is False or (interactive is None and not sys.stdin.isatty()):
+            raise ScopeError('interactive terminal required')
     work = ROOT / 'workarea'
     approved = workarea_scope(work)
     if args.reconstruction_scope and approved.fingerprint != args.reconstruction_scope:
