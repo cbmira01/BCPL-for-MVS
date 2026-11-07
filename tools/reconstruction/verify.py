@@ -54,8 +54,9 @@ SEVERITY_ZERO = re.compile(r'^\s*Highest severity:\s*0\s*$', re.M)
 # records count; JCL comments and echoed source cards must not count.
 CODE_RECORD = re.compile(
     r'^\s*(?:(?:(?:INTERPRETER|ICINT19)\s*:?\s*)?CODE\s*=\s*0|'
-    r'EXECUTION CYCLES\s*=\s*\d+\s*,\s*CODE\s*=\s*0)\s*
-
+    r'EXECUTION CYCLES\s*=\s*\d+\s*,\s*CODE\s*=\s*0)\s*(?=\n|\Z)',
+    re.M | re.I,
+)
 
 @dataclass(frozen=True)
 class VerifiedPayload:
