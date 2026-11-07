@@ -37,6 +37,26 @@ class PayloadTests(unittest.TestCase):
                 self.assertEqual(checked.job, name)
                 self.assertEqual(len(checked.step_codes), len(v.EXPECTED_STEPS[name]))
 
+    def test_icint19_cycle_count_completions_are_exact_records(self):
+        actual = ('  EXECUTION CYCLES = 137316, CODE = 0\n'
+                  '  EXECUTION CYCLES = 70818, CODE = 0\n'
+                  '  EXECUTION CYCLES = 3290, CODE = 0\n')
+        self.assertEqual(len(v.CODE_RECORD.findall(actual)), 3)
+        for invalid in ('//* CODE=0', 'SOURCE: CODE=0',
+                        'EXECUTION CYCLES = 3290, CODE = 4',
+                        'EXECUTION CYCLES = 3290, CODE = 0 TRAILING'):
+            with self.subTest(invalid=invalid):
+                self.assertEqual(v.CODE_RECORD.findall(invalid), [])
+
+    def test_cambridge_payload_accepts_cycle_count_code_records(self):
+        summary, _ = fixture('CAMBBLD')
+        report = ('EXECUTION CYCLES = 3290, CODE = 0\n' * 22)
+        result = v.verify_payload('CAMBBLD', 888, 777, summary, report)
+        self.assertEqual(result.interpreter_codes, 22)
+        with self.assertRaisesRegex(v.VerificationError, '22'):
+            v.verify_payload('CAMBBLD', 888, 777, summary, report.replace(
+                'EXECUTION CYCLES = 3290, CODE = 0\n', '', 1))
+
     def test_missing_step_is_rejected_even_with_success_and_highest_zero(self):
         for name in v.EXPECTED_STEPS:
             with self.subTest(job=name):
