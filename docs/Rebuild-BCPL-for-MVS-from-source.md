@@ -443,7 +443,7 @@ for each unit) plus a `PACKCOMP` step. Every interpreted phase must report
 
 ```sh
 tools/bootstrap/compile-mvs \
-  bootstrap-toolchain/regression/00-most-degenerate-bcpl-program/source.bcpl \
+  tests/bootstrap/00-most-degenerate-bcpl-program/source.bcpl \
   --output workarea/m3-clean-smoke.s370.asm
 
 test -s workarea/m3-clean-smoke.s370.asm

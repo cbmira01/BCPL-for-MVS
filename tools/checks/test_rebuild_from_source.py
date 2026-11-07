@@ -134,6 +134,11 @@ exit 0
         self.assertNotIn('submit BOOT_JCL CAMBBLD',
                          self.call_log.read_text(encoding='utf-8'))
 
+    def test_compiler_smoke_source_exists(self):
+        relative = 'tests/bootstrap/00-most-degenerate-bcpl-program/source.bcpl'
+        self.assertIn(relative, SOURCE.read_text(encoding='utf-8'))
+        self.assertTrue((SOURCE.parents[2] / relative).is_file())
+
     def test_no_resume_arguments(self):
         result = subprocess.run(
             ['bash', str(SOURCE), '--resume'],

@@ -115,7 +115,7 @@ step6() {
     run tools/datasets/dspal submit BOOT_JCL CAMBBLD || return $?
     run tools/datasets/dspal ls BOOT_INTCODE || return $?
     run tools/bootstrap/compile-mvs \
-        bootstrap-toolchain/regression/00-most-degenerate-bcpl-program/source.bcpl \
+        tests/bootstrap/00-most-degenerate-bcpl-program/source.bcpl \
         --output workarea/m3-clean-smoke.s370.asm || return $?
     run test -s workarea/m3-clean-smoke.s370.asm || return $?
 }
