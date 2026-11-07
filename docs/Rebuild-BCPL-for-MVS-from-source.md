@@ -27,6 +27,47 @@ compiler being developed in `cambridge-compiler/`.
 MVS**. It is not a guide to installing Linux, Docker, Hercules, or TK5 from
 nothing. Those must already be set up.
 
+## Simple reconstruction driver (recommended)
+
+Run the following **only on the intended dedicated TK5/MVS system**, after
+reviewing the dataset destruction and permanent-object installation scope:
+
+```sh
+bash tools/reconstruction/rebuild-from-source
+```
+
+The driver executes the existing guide commands **from Step 0 every time**,
+in this order: 0, 1, 2, 3, 5, 6, 7, 8, and the **extension installation only**
+portion of 9. There is **no resume, selected restart, saved checkpoint,
+script-wide authorization, or JES2 console-idle probe**. After an unexpected
+stop, fix the problem and invoke the same driver again: it will begin again
+at Step 0, ask for confirmations, and recreate the managed datasets. It does
+not attempt to preserve a partially built MVS state across runs.
+
+The operator confirms **each major guide step** by entering `YES`.
+`tools/clean-workarea` still asks for `DELETE`, and
+`dspal purgebcpl` still asks for its own `YES`. The driver does not
+bypass or automatically answer those prompts. After every extension install,
+the operator must inspect the payload's RCs, IFOX severity and IEBCOMPR
+read-back result before approving the next installation. A nonzero command
+RC stops the driver, except for the **first `populate all` RC=2**, which
+is acceptable *only if* the output proves that tracked sources were written
+and precisely 12 not-yet-generated members are missing. The operator must
+review this evidence before confirming the next major step.
+
+The driver does **not** run the Step 4 resident MR10 suites, any Step 9
+regression campaign, or any other regression suite. **Regressions are a
+separate workflow.** The Step 3 scalar/vector execution and Step 6 assembler
+generation are focused build smoke checks, not regression acceptance.
+Step 10 evidence review and preservation remain operator tasks. The driver's
+completion message means the listed commands returned acceptable RCs,
+**not** that every JES payload or the complete project regression campaign
+has been independently accepted. Review actual payload jobs and reports.
+
+For manual reconstruction, continue using the individual commands below.
+The older `tools/reconstruction/run` controller is not invoked by the
+simple driver; it retains its own separate, more elaborate behavior.
+
 ## Before you begin
 
 ### What the names mean
@@ -57,7 +98,7 @@ This process **deletes data**. Read this table first.
 | --- | --- | --- |
 | `workarea/` on Linux | Its contents are deleted | Save any build logs or evidence you need first. |
 | `workarea/.gitignore` | **Kept** | Git tracks this file so `workarea/` exists after a fresh clone. |
-| 28 BCPL PDSes listed in `config/dspal.yaml` | **Deleted and rebuilt** | Any personal files in these managed PDSes will be lost. |
+| 29 BCPL PDSes listed in `config/dspal.yaml` | **Deleted and rebuilt** | Any personal files in these managed PDSes will be lost. |
 | `BOOT_OBJ` | Recreated empty, then rebuilt | Do not copy old binary objects into it. |
 | `BOOT_DEVOBJ` | Recreated empty | Leave it empty during the production rebuild. |
 | `mvs-state/`, DASD images, TK5 system files | **Kept** | Never erase these as part of this guide. |
@@ -191,7 +232,7 @@ tools/datasets/dspal initbcpl
 tools/datasets/dspal stat
 ```
 
-**Check:** all **28** managed data sets exist with the expected record
+**Check:** all **29** managed data sets exist with the expected record
 formats. The binary libraries start empty. The MVS system data sets and
 the host's DASD images are unchanged.
 
@@ -290,7 +331,7 @@ RC values. In the full report, also look for
 interpreter `CODE=0` messages and the program's actual output. Do not
 assume that the launcher completing means that the real job passed.
 
-## Step 4 — Test the new interpreter
+## Step 4 — Test the new interpreter (separate regression workflow)
 
 The project includes three groups of test and example programs. These
 jobs run inside MVS using the installed interpreter.
@@ -499,7 +540,7 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 `BOOT_DEVOBJ` must remain empty. Do not use it to fill any gap in
 `BOOT_OBJ`.
 
-## Step 9 — Build System Extensions and run native regression
+## Step 9 — Build System Extensions; run regressions separately
 
 ### Install System Extensions
 
@@ -545,7 +586,12 @@ BCPLMAIN  BCPLMEM  BCPLBYTE  BCPLAPT  BCPLIO  BCPLRGS  BCPLREG  BLIB
 
    Require `BCPLDEMO`, `BCPLTIME`, and `BCPLQSAM`.
 
-### Run the independent project regression suites
+### Run the independent project regression suites (separate workflow)
+
+The simple reconstruction driver **stops before this section**. Execute
+regressions independently, only after reviewing and accepting the rebuild
+and providing any required test or device authorization.
+
 
 The preferred post-rebuild regression campaign uses
 `tools/tests/run-project-regressions`. It invokes the existing 12-case
