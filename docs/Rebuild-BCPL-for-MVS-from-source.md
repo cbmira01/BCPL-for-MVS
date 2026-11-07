@@ -758,6 +758,22 @@ for MVS payload jobs, installation read-back and the documented 7fff89f
 Fix failures at the stage where they occur. Do not hide an unexpected
 error code with `|| true` and continue to a later step.
 
+### `DSPALLS` and uncertain JES submission
+
+`dspal submit` no longer performs a separate `DSPALLS` member-listing job
+before submitting a stored JCL member. Its `DSPALSUB` launcher reads the
+member directly. The `APPEND` step runs only after `MKJOB` succeeds, and
+`SUBMIT` runs only after both succeed; a missing or unreadable JCL member
+must not produce a partial payload. `dspal ls` still uses `DSPALLS` to
+inventory a PDS.
+
+`tools/mvs/submit-jcl` recognizes a numbered JES `$HASP373` start record
+or a numbered printer `START JOB` banner emitted after submission. Neither
+the receipt of a deck on the socket reader nor an unnumbered queue message
+is sufficient to claim job execution. If both start records remain absent
+within the configured timeout, the command stops without retrying.
+Inspect `mvs-state/prt/prt00e.txt` and resolve any outstanding JES work
+before resubmission or the next clean-room purge.
 ## Developer checks — not part of a routine rebuild
 
 These checks protect the **build tools and test harness** while someone

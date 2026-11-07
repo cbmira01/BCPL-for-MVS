@@ -120,6 +120,19 @@ fi
 deadline=$((SECONDS + timeout))
 
 while (( SECONDS <= deadline )); do
+    # JES printer START JOB banners carry both the job name and number.
+    # Accept one emitted after this submission, even if $HASP373 is absent.
+    banner=$(
+        tail -n "+$((start_line + 1))" "$printer" 2>/dev/null |
+            grep -m1 -E "\*+A[[:space:]]+START[[:space:]]+JOB[[:space:]]+[0-9]+[[:space:]]+${jobname}([[:space:]]|$)" || true
+    )
+    if [[ -n "$banner" ]]; then
+        job=$(sed -nE 's/^.*\*+A[[:space:]]+START[[:space:]]+JOB[[:space:]]+([0-9]+)[[:space:]]+.*/\1/p' <<<"$banner")
+        if [[ "$job" =~ ^[0-9]+$ ]]; then
+            printf 'JOB %s\n' "$job"
+            exit 0
+        fi
+    fi
     match=$(
         tail -n "+$((start_line + 1))" "$printer" 2>/dev/null |
             grep -m1 -E "\\\$HASP373[[:space:]]+${jobname}([[:space:]]|$)" || true
@@ -133,9 +146,7 @@ while (( SECONDS <= deadline )); do
             exit 0
         fi
 
-        echo >&2 "found JES start line but could not parse job number:"
-        echo >&2 "$match"
-        exit 65
+        # Wait for a numbered START JOB banner; do not invent a job number.
     fi
 
     # JES may reject invalid JCL before emitting $HASP373.
@@ -152,8 +163,8 @@ while (( SECONDS <= deadline )); do
     sleep 0.5
 done
 
-echo >&2 "timed out after ${timeout}s waiting for \$HASP373 ${jobname}"
-echo >&2 "the submitted job may still be running; inspect $printer"
+echo >&2 "timed out after ${timeout}s waiting for job-start evidence for ${jobname}"
+echo >&2 "the submitted job may still be queued or running; inspect $printer"
 exit 75
 
 

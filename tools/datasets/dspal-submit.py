@@ -28,7 +28,6 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = ROOT / "tools" / "datasets" / "dspal-core.py"
-LS_PATH = ROOT / "tools" / "datasets" / "dspal-ls.py"
 
 
 def load_core():
@@ -42,18 +41,6 @@ def load_core():
 
 core = load_core()
 DspalError = core.DspalError
-
-
-def load_ls():
-    spec = importlib.util.spec_from_file_location("dspal_ls", LS_PATH)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot load {LS_PATH}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-lsmod = load_ls()
 
 
 def validate_member(member: str) -> str:
@@ -82,26 +69,6 @@ def resolve_text_pds(
     if int(spec.get("lrecl", 0) or 0) != 80:
         raise DspalError(f"submit requires LRECL=80: {dsn}")
     return dsn, logical, spec
-
-
-def require_member_exists(
-    config: dict[str, Any], dsn: str, member: str
-) -> None:
-    """Fail locally before launching if the requested PDS member is absent."""
-    core.require_reader_ready(config)
-    job, _ = core.submit_and_wait(
-        config,
-        lsmod.list_members_deck(config, [dsn]),
-        max_rc=8,
-    )
-    report = core.job_report(job)
-    block = lsmod.require_members_block(report, dsn, job, [dsn])
-    members = lsmod.parse_members(block)
-    if member not in members:
-        available = ", ".join(members) if members else "(none)"
-        raise DspalError(
-            f"member not found: {dsn}({member}); available members: {available}"
-        )
 
 
 def payload_job_card(
@@ -165,14 +132,14 @@ def launcher_deck(
             "ZZ",
             "//*",
             "//* STEP 2: APPEND THE STORED JOB BODY TO THE SAME CARD DECK.",
-            "//APPEND   EXEC PGM=IEBGENER",
+            "//APPEND   EXEC PGM=IEBGENER,COND=(0,NE,MKJOB)",
             "//SYSPRINT DD  SYSOUT=*",
             "//SYSIN    DD  DUMMY",
             f"//SYSUT1   DD  DSN={dsn}({member}),DISP=SHR",
             "//SYSUT2   DD  DSN=&&PAYLOAD,DISP=(MOD,PASS)",
             "//*",
             "//* STEP 3: FEED THE COMPLETE FB/80 CARD DECK TO JES.",
-            "//SUBMIT   EXEC PGM=IEBGENER",
+            "//SUBMIT   EXEC PGM=IEBGENER,COND=((0,NE,MKJOB),(0,NE,APPEND))",
             "//SYSPRINT DD  SYSOUT=*",
             "//SYSIN    DD  DUMMY",
             "//SYSUT1   DD  DSN=&&PAYLOAD,DISP=(OLD,DELETE)",
@@ -296,7 +263,10 @@ def main() -> int:
             )
             return 0
 
-        require_member_exists(config, dsn, member)
+        # The launcher's APPEND DD proves member accessibility. Avoid an
+        # extra DSPALLS job for a redundant pre-submission member lookup.
+        # Conditional JCL prevents submission of a partial card deck.
+        core.require_reader_ready(config)
         offset = printer_offset(config)
         deck = launcher_deck(config, dsn, member, redact_password=False)
 
