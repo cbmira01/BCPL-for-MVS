@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run the clean-room rebuild guide from the beginning. No resume support.
 # This script does not run regression suites or inspect the JES console.
+# --unattended explicitly authorizes cleanup/purge and skips all checkpoints.
 set +e
 set +u
 set +o pipefail
@@ -10,6 +11,8 @@ if [ -z "$ROOT" ] || ! cd "$ROOT"; then
     printf 'BLOCKED: cannot enter repository root.\n' >&2
     exit 2
 fi
+
+UNATTENDED=0
 
 run() {
     printf '\n> '
@@ -60,6 +63,10 @@ first_population() {
 confirm() {
     local reply
     printf '\n%s\n' "$1"
+    if [ "$UNATTENDED" -eq 1 ]; then
+        printf 'UNATTENDED: checkpoint acknowledged by --unattended.\n'
+        return 0
+    fi
     printf '%s' 'hit ENTER to continue, Ctrl-C to stop: '
     IFS= read -r reply || return 1
     [ -z "$reply" ]
@@ -76,13 +83,21 @@ step0() {
 }
 
 step1() {
-    run tools/clean-workarea || return $?
+    if [ "$UNATTENDED" -eq 1 ]; then
+        run tools/clean-workarea --yes || return $?
+    else
+        run tools/clean-workarea || return $?
+    fi
     run git status --short || return $?
 }
 
 step2() {
     run tools/datasets/dspal purgebcpl --show-jcl || return $?
-    run tools/datasets/dspal purgebcpl || return $?
+    if [ "$UNATTENDED" -eq 1 ]; then
+        run tools/datasets/dspal purgebcpl --yes || return $?
+    else
+        run tools/datasets/dspal purgebcpl || return $?
+    fi
     run tools/datasets/dspal initbcpl --show-jcl || return $?
     run tools/datasets/dspal initbcpl || return $?
     run tools/datasets/dspal stat || return $?
@@ -147,17 +162,25 @@ step9() {
 }
 
 main() {
-    if [ "$#" -ne 0 ]; then
-        printf 'Usage: tools/reconstruction/rebuild-from-source (always starts at Step 0)\n' >&2
+    if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != --unattended ]; }; then
+        printf 'Usage: tools/reconstruction/rebuild-from-source [--unattended] (always starts at Step 0)\n' >&2
         return 2
     fi
-    if [ ! -t 0 ]; then
+    if [ "$#" -eq 1 ]; then
+        UNATTENDED=1
+    fi
+    if [ "$UNATTENDED" -eq 0 ] && [ ! -t 0 ]; then
         printf 'BLOCKED: an interactive terminal is required for operator confirmations.\n' >&2
         return 2
     fi
     printf 'CLEAN-ROOM REBUILD: always starts at Step 0; rerun means another full purge/rebuild.\n'
     printf 'No resume, script-wide approval, JES console probe, or regression suites.\n'
-    printf 'Existing tools will ask for DELETE and YES where appropriate.\n'
+    if [ "$UNATTENDED" -eq 1 ]; then
+        printf 'UNATTENDED: workarea cleanup and managed-dataset deletion are explicitly authorized.\n'
+        printf 'No confirmation prompts; any command failure still stops the rebuild.\n'
+    else
+        printf 'Existing tools will ask for DELETE and YES where appropriate.\n'
+    fi
     local id rc
     for id in 0 1 2 3 5 6 7 8 9; do
         confirm "Guide Step $id — begin?" || {

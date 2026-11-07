@@ -23,11 +23,11 @@ class SimpleReconstructionTests(unittest.TestCase):
         self.call_log = self.root / 'calls.txt'
         stub = """#!/usr/bin/env bash
 printf '%s %s\\n' "${0##*/}" "$*" >> "$MOCK_LOG"
-if [ "${0##*/}" = clean-workarea ]; then
+if [ "${0##*/}" = clean-workarea ] && [ "${1:-}" != --yes ]; then
     read -r answer
     [ "$answer" = DELETE ] || exit 3
 fi
-if [ "$1" = purgebcpl ] && [ "$2" != --show-jcl ]; then
+if [ "$1" = purgebcpl ] && [ "${2:-}" != --show-jcl ] && [ "${2:-}" != --yes ]; then
     read -r answer
     [ "$answer" = YES ] || exit 3
 fi
@@ -90,6 +90,55 @@ exit 0
             capture_output=True, text=True, check=False,
         )
 
+    def invoke_unattended(self, *, fail=None):
+        env = os.environ.copy()
+        env['PATH'] = str(self.root / 'bin') + os.pathsep + env['PATH']
+        env['MOCK_LOG'] = str(self.call_log)
+        if fail:
+            env['MOCK_FAIL'] = fail
+        return subprocess.run(
+            ['bash', 'tools/reconstruction/rebuild-from-source', '--unattended'],
+            cwd=self.root, env=env, stdin=subprocess.DEVNULL,
+            capture_output=True, text=True, check=False,
+        )
+
+    def test_unattended_completes_with_no_tty_and_no_prompts(self):
+        result = self.invoke_unattended()
+        self.assertEqual(result.returncode, 0, result.stdout[-2500:])
+        self.assertIn('REBUILD COMMANDS COMPLETED', result.stdout)
+        self.assertIn('UNATTENDED: workarea cleanup', result.stdout)
+        self.assertNotIn('hit ENTER to continue', result.stdout)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('clean-workarea --yes\n', commands)
+        self.assertIn('dspal purgebcpl --show-jcl\n', commands)
+        self.assertIn('dspal purgebcpl --yes\n', commands)
+        self.assertIn('dspal submit BOOT_JCL BCPLQSAM\n', commands)
+        self.assertEqual(result.stdout.count('Expected first-pass RC=2'), 2)
+
+    def test_unattended_failure_stops_downstream_operations(self):
+        result = self.invoke_unattended(fail='dspal:submit MR10_JCL IC19BLD')
+        self.assertEqual(result.returncode, 7, result.stdout[-1800:])
+        self.assertIn('STOPPED: Guide Step 3', result.stderr)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertNotIn('submit BOOT_JCL CAMBBLD', commands)
+
+    def test_default_mode_requires_terminal(self):
+        result = subprocess.run(
+            ['bash', str(SOURCE)], cwd=self.root,
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('interactive terminal', result.stderr)
+        self.assertFalse(self.call_log.exists())
+
+    def test_unrecognized_option_is_rejected_before_operations(self):
+        result = subprocess.run(
+            ['bash', str(SOURCE), '--resume'], cwd=self.root,
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('[--unattended]', result.stderr)
+        self.assertFalse(self.call_log.exists())
     def test_shell_syntax(self):
         result = subprocess.run(['bash', '-n', str(SOURCE)],
                                 capture_output=True, text=True, check=False)

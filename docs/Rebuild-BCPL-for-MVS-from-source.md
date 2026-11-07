@@ -33,25 +33,38 @@ Run the following **only on the intended dedicated TK5/MVS system**, after
 reviewing the dataset destruction and permanent-object installation scope:
 
 ```sh
-bash tools/reconstruction/rebuild-from-source
+# Interactive mode (unchanged): step checkpoints, DELETE, and YES prompts.
+tools/reconstruction/rebuild-from-source
+
+# Explicitly destructive, completely noninteractive mode:
+tools/reconstruction/rebuild-from-source --unattended
 ```
 
 The driver executes the existing guide commands **from Step 0 every time**,
 in this order: 0, 1, 2, 3, 5, 6, 7, 8, and the **extension installation only**
 portion of 9. There is **no resume, selected restart, saved checkpoint,
-script-wide authorization, or JES2 console-idle probe**. After an unexpected
+implicit script-wide authorization, or JES2 console-idle probe**. After an unexpected
 stop, fix the problem and invoke the same driver again: it will begin again
 at Step 0, ask for confirmations, and recreate the managed datasets. It does
 not attempt to preserve a partially built MVS state across runs.
 
-At each major-step checkpoint and after each extension installation,
+By default, at each major-step checkpoint and after each extension installation,
 the driver prompts `hit ENTER to continue, Ctrl-C to stop: `.
 Press **ENTER** to proceed; Ctrl-C or end-of-input stops the script.
 These checkpoints do not require `YES`. `tools/clean-workarea` still
 requires `DELETE`, and `dspal purgebcpl` still requires its own
 **`YES`**; the driver never bypasses or supplies those acknowledgments.
 After each extension installation, inspect the payload's return codes,
-IFOX severity and IEBCOMPR read-back result before pressing ENTER. A nonzero command RC stops the driver, except that the first-pass
+IFOX severity and IEBCOMPR read-back result before pressing ENTER.
+
+`--unattended` is an explicit, per-invocation authorization to skip *all*
+checkpoint prompts and execute both destructive operations without manual input:
+`tools/clean-workarea --yes` and `dspal purgebcpl --yes`. It works with
+closed/non-terminal stdin and still stops at the first unexpected return code.
+It does not skip the existing workarea scope, Git, dataset manifest, or JES
+checks, does not resume, and does not run regression suites. Use only when the
+entire managed workarea and managed MVS dataset set may be destroyed and
+recreated. Save the full command output for later JES evidence review. A nonzero command RC stops the driver, except that the first-pass
 `dspal populate all --dry-run` and `dspal populate all` may each return
 **RC=2** when their output shows exactly 12 not-yet-generated members
 missing. The dry run must report ready members planned; the actual

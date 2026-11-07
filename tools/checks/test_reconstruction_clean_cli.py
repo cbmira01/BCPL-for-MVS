@@ -49,6 +49,26 @@ class CleanCliTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(file.read_bytes(), b'changed')
 
+    def test_yes_permits_unattended_cleanup(self):
+        file = self.root/'workarea/one'
+        file.write_text('old')
+        result = self.invoke('--yes')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(file.exists())
+        self.assertTrue((self.root/'workarea/.gitignore').is_file())
+
+    def test_yes_preserves_symlink_safety(self):
+        (self.root/'workarea/escape').symlink_to(self.root)
+        result = self.invoke('--yes')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue((self.root/'workarea/escape').is_symlink())
+
+    def test_yes_cannot_combine_with_scope_digest(self):
+        file = self.root/'workarea/one'
+        file.write_text('old')
+        result = self.invoke('--yes', '--reconstruction-scope', 'f'*64)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(file.exists())
     def test_no_tty_no_implicit_approval(self):
         file = self.root/'workarea/one'
         file.write_text('old')
