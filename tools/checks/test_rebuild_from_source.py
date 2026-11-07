@@ -39,11 +39,26 @@ if [ "${0##*/}" = compile-mvs ]; then
     mkdir -p workarea
     echo CSECT > workarea/m3-clean-smoke.s370.asm
 fi
-if [ "${0##*/}" = dspal ] && [ "$*" = 'populate all' ]; then
-    exit 2
-fi
 if [ "${MOCK_FAIL:-}" = "${0##*/}:$*" ]; then
     exit 7
+fi
+if [ "${0##*/}" = dspal ] && [[ "$*" == 'populate all' || "$*" == 'populate all --dry-run' ]]; then
+    if [ "$*" = 'populate all --dry-run' ]; then
+        printf 'Dry run: 162 ready member(s) would be written.\\n'
+        phase=dry-run
+    else
+        printf 'populate completed: 162 ready member(s) written\\n'
+        phase=install
+    fi
+    printf 'dspal: 12 generated member(s) unavailable; prepare-bootstrap required\\n' >&2
+    count=12
+    if [ "${MOCK_BAD_PHASE:-}" = "$phase" ]; then
+        count=11
+    fi
+    for ((n=0; n < count; n++)); do
+        printf '  MISSING GENERATED: BOOT_SOURCE(M%02d) <- generated/file%02d\\n' "$n" "$n" >&2
+    done
+    exit 2
 fi
 exit 0
 """
@@ -58,12 +73,14 @@ exit 0
             path.write_text(stub, encoding='utf-8')
             path.chmod(0o755)
 
-    def invoke(self, *, approve=True, fail=None):
+    def invoke(self, *, approve=True, fail=None, bad_phase=None):
         env = os.environ.copy()
         env['PATH'] = str(self.root / 'bin') + os.pathsep + env['PATH']
         env['MOCK_LOG'] = str(self.call_log)
         if fail:
             env['MOCK_FAIL'] = fail
+        if bad_phase:
+            env['MOCK_BAD_PHASE'] = bad_phase
         # script(1) allocates an interactive PTY for the child command.
         answers = ('YES\nYES\nDELETE\n' + 'YES\n' * 16) if approve else 'NO\n'
         return subprocess.run(
@@ -83,15 +100,32 @@ exit 0
         self.assertEqual(result.returncode, 3, result.stdout[-1000:])
         self.assertFalse(self.call_log.exists())
 
-    def test_full_rebuild_allows_only_expected_first_population_rc2(self):
+    def test_full_rebuild_accepts_verified_rc2_for_dry_run_and_install(self):
         result = self.invoke()
         self.assertEqual(result.returncode, 0, result.stdout[-2000:])
         self.assertIn('REBUILD COMMANDS COMPLETED', result.stdout)
+        self.assertEqual(result.stdout.count('Expected first-pass RC=2'), 2)
         commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal populate all --dry-run\n', commands)
         self.assertIn('dspal populate all\n', commands)
         self.assertIn('dspal submit BOOT_JCL BCPLQSAM\n', commands)
         self.assertNotIn('run-project-regressions', commands)
         self.assertNotIn('jes-idle', commands)
+
+    def test_dry_run_rc2_without_twelve_missing_stops(self):
+        result = self.invoke(bad_phase='dry-run')
+        self.assertEqual(result.returncode, 2, result.stdout[-1000:])
+        self.assertIn('first-pass RC=2 did not match', result.stdout)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal populate all --dry-run\n', commands)
+        self.assertNotIn('dspal populate all\n', commands)
+
+    def test_install_rc2_without_twelve_missing_stops(self):
+        result = self.invoke(bad_phase='install')
+        self.assertEqual(result.returncode, 2, result.stdout[-1000:])
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal populate all\n', commands)
+        self.assertNotIn('submit MR10_JCL IC19BLD', commands)
 
     def test_error_stops_and_never_runs_downstream_build(self):
         result = self.invoke(fail='dspal:submit MR10_JCL IC19BLD')
