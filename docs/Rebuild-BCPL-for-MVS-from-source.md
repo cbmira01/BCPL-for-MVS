@@ -49,11 +49,13 @@ The operator confirms **each major guide step** by entering `YES`.
 `dspal purgebcpl` still asks for its own `YES`. The driver does not
 bypass or automatically answer those prompts. After every extension install,
 the operator must inspect the payload's RCs, IFOX severity and IEBCOMPR
-read-back result before approving the next installation. A nonzero command
-RC stops the driver, except for the **first `populate all` RC=2**, which
-is acceptable *only if* the output proves that tracked sources were written
-and precisely 12 not-yet-generated members are missing. The operator must
-review this evidence before confirming the next major step.
+read-back result before approving the next installation. A nonzero command RC stops the driver, except that the first-pass
+`dspal populate all --dry-run` and `dspal populate all` may each return
+**RC=2** when their output shows exactly 12 not-yet-generated members
+missing. The dry run must report ready members planned; the actual
+population must report ready members written. Other RC=2 outcomes stop
+the driver. The operator must review the output before confirming the
+next major step.
 
 The driver does **not** run the Step 4 resident MR10 suites, any Step 9
 regression campaign, or any other regression suite. **Regressions are a
