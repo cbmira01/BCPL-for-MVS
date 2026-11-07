@@ -82,7 +82,7 @@ exit 0
         if bad_phase:
             env['MOCK_BAD_PHASE'] = bad_phase
         # script(1) allocates an interactive PTY for the child command.
-        answers = ('YES\nYES\nDELETE\n' + 'YES\n' * 16) if approve else 'NO\n'
+        answers = ('\n\nDELETE\n\nYES\n' + '\n' * 16) if approve else 'NO\n'
         return subprocess.run(
             ['script', '-q', '-e', '-c',
              'bash tools/reconstruction/rebuild-from-source', '/dev/null'],
@@ -98,12 +98,14 @@ exit 0
     def test_declined_confirmation_runs_nothing(self):
         result = self.invoke(approve=False)
         self.assertEqual(result.returncode, 3, result.stdout[-1000:])
+        self.assertIn('hit ENTER to continue, Ctrl-C to stop: ', result.stdout)
         self.assertFalse(self.call_log.exists())
 
     def test_full_rebuild_accepts_verified_rc2_for_dry_run_and_install(self):
         result = self.invoke()
         self.assertEqual(result.returncode, 0, result.stdout[-2000:])
         self.assertIn('REBUILD COMMANDS COMPLETED', result.stdout)
+        self.assertIn('hit ENTER to continue, Ctrl-C to stop: ', result.stdout)
         self.assertEqual(result.stdout.count('Expected first-pass RC=2'), 2)
         commands = self.call_log.read_text(encoding='utf-8')
         self.assertIn('dspal populate all --dry-run\n', commands)

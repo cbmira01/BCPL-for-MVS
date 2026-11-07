@@ -60,9 +60,9 @@ first_population() {
 confirm() {
     local reply
     printf '\n%s\n' "$1"
-    printf 'Review preceding command/JES results. Type YES to continue (anything else stops): '
+    printf '%s' 'hit ENTER to continue, Ctrl-C to stop: '
     IFS= read -r reply || return 1
-    [ "$reply" = YES ]
+    [ -z "$reply" ]
 }
 
 step0() {

@@ -44,12 +44,14 @@ stop, fix the problem and invoke the same driver again: it will begin again
 at Step 0, ask for confirmations, and recreate the managed datasets. It does
 not attempt to preserve a partially built MVS state across runs.
 
-The operator confirms **each major guide step** by entering `YES`.
-`tools/clean-workarea` still asks for `DELETE`, and
-`dspal purgebcpl` still asks for its own `YES`. The driver does not
-bypass or automatically answer those prompts. After every extension install,
-the operator must inspect the payload's RCs, IFOX severity and IEBCOMPR
-read-back result before approving the next installation. A nonzero command RC stops the driver, except that the first-pass
+At each major-step checkpoint and after each extension installation,
+the driver prompts `hit ENTER to continue, Ctrl-C to stop: `.
+Press **ENTER** to proceed; Ctrl-C or end-of-input stops the script.
+These checkpoints do not require `YES`. `tools/clean-workarea` still
+requires `DELETE`, and `dspal purgebcpl` still requires its own
+**`YES`**; the driver never bypasses or supplies those acknowledgments.
+After each extension installation, inspect the payload's return codes,
+IFOX severity and IEBCOMPR read-back result before pressing ENTER. A nonzero command RC stops the driver, except that the first-pass
 `dspal populate all --dry-run` and `dspal populate all` may each return
 **RC=2** when their output shows exactly 12 not-yet-generated members
 missing. The dry run must report ready members planned; the actual
