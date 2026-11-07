@@ -78,6 +78,22 @@ class RunnerTests(unittest.TestCase):
         self.assertIsNone(run._payload_number_from_output('Payload: JOB 8\nPayload: JOB 9\n'))
         self.assertEqual(run._payload_number_from_output('Payload: JOB 9\n'), 9)
 
+    def test_icint19_smoke_accepts_observed_run_result(self):
+        result = (' INTCODE SYSTEM ENTERED\n'
+                  ' TEST: Scalar assignments and vector load/store\n'
+                  ' RP: SCALAR 17 42\n'
+                  ' RP: VECTOR 5 10 15 20\n'
+                  ' EXECUTION CYCLES = 3290, CODE = 0\n')
+        runner = object.__new__(run.Runner)
+        op = SimpleNamespace(check='code-zero', name='Smoke-test installed ICINT19')
+        self.assertEqual(runner.validate(11, op, 0, result, config={}), (None, None))
+        for invalid in (result.replace('CODE = 0', 'CODE = 4'),
+                        result.replace('RP: VECTOR 5 10 15 20', 'RP: VECTOR 5 10 15 21'),
+                        result + 'EXECUTION CYCLES = 1, CODE = 0\n'):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(run.ReconstructionError):
+                    runner.validate(11, op, 0, invalid, config={})
+
     def test_exact_payload_step_mapping(self):
         self.assertEqual(verify.EXPECTED_STEPS['IC19BLD'], ('ASM', 'LKED', 'SAVEOBJ'))
         self.assertEqual(len(verify.EXPECTED_STEPS['CAMBBLD']), 23)
