@@ -60,3 +60,18 @@ No tested full-distribution JCL, generated image, or production-ready installer 
 - Hercules operations: https://hercules-390.github.io/html/hercoper.html
 - Hercules mounted-media precautions: https://sdl-hercules-390.github.io/html/hercconf.html
 - IBM modern IEBCOPY overview (corroboration, **not** the MVS 3.8 contract): https://www.ibm.com/docs/en/zos/2.5.0?topic=program-unloading-backing-up-data-sets
+
+## Experiment status update (8 November 2026)
+
+The "first bounded proof" step using a seven-member FB80 scratch PDS
+has been **completed and accepted** on the target MVS system.
+See [scratch PDS round-trip acceptance](create-tape/scratch-pds-roundtrip-acceptance-20261108.md).
+This removes the particular feasibility question for single-file,
+standard-labeled IEBCOPY unload/restore, but does not establish
+automated tape creation or tape-resident installation. The future
+distribution must still independently validate object and load
+libraries, multifile sequencing, the readable first documentation
+dataset, and clean-target installation. The existing Hercules
+`hetmap` utility already provides tape label/file maps;
+[inspection notes](tape-inspection-capabilities-20261108.md) record
+what may require a project-specific read-only tool.

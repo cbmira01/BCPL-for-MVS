@@ -8,9 +8,11 @@ Producer-side source for AWS tape creation and validation.
 
 This side may use the project development environment (WSL, Python, Hercules, `dspal`). Writing tape or executing JES jobs requires explicit separate approval. An initial manual job submission helper is implemented; no end-to-end tape producer exists.
 
-## Manual scratch-PDS tape experiment (unverified on MVS)
+## Manual scratch-PDS tape experiment (accepted on MVS 8 November 2026)
 
-Four independent JCL job bodies are in the jcl directory. They contain
+Four independent JCL job bodies are in the jcl directory. All four
+completed RC=0000 in the recorded experiment (JOBS 2469, 2472, 2474,
+2477); rerunning still requires fresh scratch state and approval. They contain
 no JOB card or credentials. MVS execution, image creation, mounting,
 and dataset changes require separate operational approval.
 
@@ -60,7 +62,7 @@ Offline checks (do not submit JES or mount tapes):
 
     python3 -m unittest discover -s packaging/distribution/create-tape/tests -p 'test_*.py' -v
 
-No successful MVS execution or tape-restoration acceptance is claimed.
+The bounded real-MVS experiment was accepted after IEBCOMPR RC=0000. See [the full receipt](scratch-pds-roundtrip-acceptance-20261108.md). No end-to-end distribution tape or installer is accepted.
 
 ## Operator-controlled manual scratch job submission
 
@@ -103,3 +105,6 @@ Offline checks, with no JES/tape changes:
 
 Keep all AWS images under Git-ignored mvs-state/tape, and any local
 reports under Git-ignored workarea. Never commit tape media.
+
+The existing Hercules `hetmap` tool can inspect tape labels and file
+structure without a JES job. See [tape inspection](../tape-inspection-capabilities-20261108.md).

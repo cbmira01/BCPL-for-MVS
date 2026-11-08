@@ -45,3 +45,20 @@ A preliminary **FB80 text dataset** is easier to audit than a binary object. The
 - Hercules operations: https://hercules-390.github.io/html/hercoper.html (attach/detach versus devinit).
 - Hercules configuration: https://sdl-hercules-390.github.io/html/hercconf.html (`MOUNTED_TAPE_REINIT`, read-only/ring behavior).
 - IBM *OS/VS2 MVS Utilities*, Release 3.8 (GC26-3902-1): https://bitsavers.org/pdf/ibm/370/OS_VS2/Release_3.8_1978/GC26-3902-1_OS_VS2_MVS_Utilities_Rel_3.8_Sep83.pdf (IEBGENER, IEBCOMPR, IEBCOPY).
+
+## Follow-up: verified scratch test (8 November 2026)
+
+The proposed **single scratch FB80 PDS** unload, remount, restore and
+IEBCOMPR round trip was executed on MVS 3.8J and accepted.
+TP01PRE 2469, TP02UNLD 2472, TP03REST 2474 and TP04COMP 2477
+all returned RC=0000. A standard-labeled AWS file with VOLSER BTP001
+and dataset HERC02.BCTP01 was inspected using `hetmap -l`.
+After the unload, the virtual drive appeared unmounted (`*`) and MVS
+reported `O-NRD`. The same tape was remounted without reinitialization
+for restore; seven PDS members and their FB80 attributes were present
+and IEBCOMPR returned zero. See
+[formal bounded acceptance](create-tape/scratch-pds-roundtrip-acceptance-20261108.md).
+
+The other table stages remain separate future exercises. This
+follow-up does not retroactively assert sequential-document, object,
+load-library, multi-file, or clean-install acceptance.
