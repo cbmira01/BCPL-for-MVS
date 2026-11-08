@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Read-only Hercules tape-image map for this project's WSL/TK5 environment."""
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+TAPES = ROOT / "mvs-state" / "tape"
+CONTAINER = "mvs38j"
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Inspect an existing project tape image with Hercules hetmap (read-only).",
+        epilog="IMAGE is one filename under mvs-state/tape; no JES job or mount is used.",
+    )
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--labels", dest="mode", action="store_const", const="-l",
+                       help="IBM VOL/HDR/EOF labels (default)")
+    modes.add_argument("--all", dest="mode", action="store_const", const="-a",
+                       help="all label and tape-file information")
+    modes.add_argument("--files", dest="mode", action="store_const", const="-f",
+                       help="physical tape-file summary")
+    modes.add_argument("--datasets", dest="mode", action="store_const", const="-d",
+                       help="dataset summary")
+    modes.add_argument("--text", dest="mode", action="store_const", const="-t",
+                       help="TAPEMAP-compatible output")
+    parser.set_defaults(mode="-l")
+    parser.add_argument("image", metavar="IMAGE", help="e.g. bcpl-pdstest-20261108-01.aws")
+    args = parser.parse_args(argv)
+
+    name = args.image
+    if (Path(name).name != name or
+            not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name)):
+        print("tape-map: IMAGE must be a filename under mvs-state/tape (no paths)",
+              file=sys.stderr)
+        return 2
+
+    image = TAPES / name
+    if image.is_symlink() or not image.is_file():
+        print(f"tape-map: missing or unsafe tape image: {image}", file=sys.stderr)
+        return 2
+
+    try:
+        result = subprocess.run(
+            ["docker", "exec", CONTAINER, "hetmap", args.mode, f"/tk5/tape/{name}"],
+            check=False,
+        )
+    except OSError as exc:
+        print(f"tape-map: unable to execute Docker: {exc}", file=sys.stderr)
+        return 1
+    if result.returncode:
+        print(f"tape-map: hetmap/docker returned RC={result.returncode}", file=sys.stderr)
+        return 1 if result.returncode < 0 else result.returncode
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

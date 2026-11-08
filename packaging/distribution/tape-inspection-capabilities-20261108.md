@@ -5,6 +5,26 @@
 scratch AWS image. Other documented modes and any new project-native
 tape-map tool remain to be tested/design-reviewed. No new milestone.
 
+## Project wrapper: `tools/mvs/tape-map`
+
+A read-only WSL command now encapsulates the observed `hetmap -l`
+label-dump operation. From the repository root:
+
+```sh
+tools/mvs/tape-map bcpl-pdstest-20261108-01.aws
+tools/mvs/tape-map --labels bcpl-pdstest-20261108-01.aws
+tools/mvs/tape-map --all bcpl-pdstest-20261108-01.aws
+tools/mvs/tape-map --files bcpl-pdstest-20261108-01.aws
+tools/mvs/tape-map --datasets bcpl-pdstest-20261108-01.aws
+tools/mvs/tape-map --text bcpl-pdstest-20261108-01.aws
+```
+
+`--labels` is the default. IMAGE must be a single regular-file name in
+`mvs-state/tape/`; outside paths and symlinks are rejected. The wrapper
+runs `docker exec mvs38j hetmap` and does not alter media, drive or MVS
+state. Offline tests mock Docker; the exact project's live image should
+be checked from WSL before claiming live acceptance of the wrapper.
+
 ## Existing tool: Hercules HETMAP
 
 Our TK5 container includes Hercules `hetmap` version `4.9.1.0-SDL`.
