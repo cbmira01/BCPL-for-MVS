@@ -24,9 +24,10 @@ This directory contains the source-controlled materials for a future self-contai
 
 GitHub `main` remains the source authority. Tape creation, restoration, labeling, bootstrap file ordering, and dataset overwrite policies require design, MVS 3.8J verification, and separate operational authorization.
 
-This layout is still production-distribution scaffolding: no full distribution tape or executable installation package has been accepted. A bounded seven-member FB80 scratch-PDS IEBCOPY tape unload/restore/IEBCOMPR round trip **was verified on MVS** on 8 November 2026; see [acceptance evidence](create-tape/scratch-pds-roundtrip-acceptance-20261108.md).
+This layout is still production-distribution scaffolding: no full distribution tape or executable installation package has been accepted. On 8 November 2026 MVS verified both the [seven-member documentation-PDS round trip](create-tape/scratch-pds-roundtrip-acceptance-20261108.md) and the [eight-member relocatable object-library round trip, including native linkage and execution](create-tape/object-library-tape-roundtrip-acceptance-20261108.md).
 
 ## Tape inspection and verified scratch experiment
 
 - [Scratch tape round-trip acceptance (8 November 2026)](create-tape/scratch-pds-roundtrip-acceptance-20261108.md) — four real JES jobs; IEBCOPY unload and restore; IEBCOMPR RC 0. This is not yet a distribution installation.
+- [Object-library tape round-trip acceptance (8 November 2026)](create-tape/object-library-tape-roundtrip-acceptance-20261108.md) — four real JES jobs, verified BTO001 tape, binary IEBCOMPR RC 0, and native regressions 00/03 PASS using the restored eight-member object PDS.
 - [Tape inspection capability](tape-inspection-capabilities-20261108.md) — Hercules `hetmap` already maps standard labels, physical files and datasets; requirements for a more detailed read-only report remain a future decision.

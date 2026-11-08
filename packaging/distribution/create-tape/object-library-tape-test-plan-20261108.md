@@ -1,8 +1,10 @@
 # Object-library tape round-trip — reviewed design (8 November 2026)
 
-**Status:** Git-reviewed implementation candidate; **not executed on MVS**. No tape
-media, JES job, resident PDS or acceptance milestone is authorized by this document.
-Based on accepted TP01PRE–TP04COMP FB80 documentation round-trip.
+**Status:** Historical reviewed design, subsequently **executed and accepted as a bounded test**
+on 8 November 2026; see [object-library tape round-trip acceptance](object-library-tape-roundtrip-acceptance-20261108.md).
+This plan is not blanket authorization for further JES, tape, or resident dataset
+operations, nor an official milestone closure. Based on accepted TP01PRE–TP04COMP
+FB80 documentation round-trip.
 
 ## Boundaries and identities
 

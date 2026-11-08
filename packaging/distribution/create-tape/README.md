@@ -109,7 +109,7 @@ reports under Git-ignored workarea. Never commit tape media.
 The existing Hercules `hetmap` tool can inspect tape labels and file
 structure without a JES job. See [tape inspection](../tape-inspection-capabilities-20261108.md).
 
-## Object-library tape experiment (design; MVS unverified)
+## Object-library tape experiment (accepted 8 November 2026)
 
 The separate **TO01PRE–TO04COMP** jobs test binary FB80
 `HERC02.BCPL.BOOT.OBJ` -> new scratch PDS -> new BTO001 AWS tape ->
@@ -119,8 +119,9 @@ PDS selection in the existing JCL generator. No approved release is
 inferred from a scratch experiment.
 
 See [object-library tape test plan](object-library-tape-test-plan-20261108.md)
-for identities, prerequisites, operating sequence, separate JES/media
-authorization, and acceptance criteria.
+for the original design and [accepted MVS evidence](object-library-tape-roundtrip-acceptance-20261108.md)
+for JOBS 2483/2486/2488/2491, tape labels and SHA-256, IEBCOMPR,
+and both restored-library native regression results.
 
 Preview all new jobs with `scripts/submit-scratch-job TO01PRE` (similarly
 TO02UNLD, TO03REST, TO04COMP). Submissions, mounts and image creation
