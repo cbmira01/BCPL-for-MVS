@@ -6,7 +6,7 @@ Producer-side source for AWS tape creation and validation.
 - `scripts/`: host-side orchestration and manifest-driven job generation.
 - `tests/`: tape structure and read-back verification.
 
-This side may use the project development environment (WSL, Python, Hercules, `dspal`). Writing tape or executing JES jobs requires explicit separate approval. An initial manual job submission helper is implemented; no end-to-end tape producer exists.
+This side may use the project development environment (WSL, Python, Hercules, `dspal`). Writing tape or executing JES jobs requires explicit separate approval. An initial manual job submission helper is implemented; no end-to-end tape producer exists. The [approved distribution design](../native-cambridge-compiler-distribution-decisions-20261108.md) makes the release manifest authoritative for `BCPL.BTnnnn` logical tape dataset order and producer/consumer JCL generation; the accepted one-dataset scratch tests below predate that naming convention.
 
 ## Manual scratch-PDS tape experiment (accepted on MVS 8 November 2026)
 
