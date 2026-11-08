@@ -6,7 +6,7 @@ Producer-side source for AWS tape creation and validation.
 - `scripts/`: host-side orchestration and manifest-driven job generation.
 - `tests/`: tape structure and read-back verification.
 
-This side may use the project development environment (WSL, Python, Hercules, `dspal`). Writing tape or executing JES jobs requires explicit separate approval. No implementation is present yet.
+This side may use the project development environment (WSL, Python, Hercules, `dspal`). Writing tape or executing JES jobs requires explicit separate approval. An initial manual job submission helper is implemented; no end-to-end tape producer exists.
 
 ## Manual scratch-PDS tape experiment (unverified on MVS)
 
@@ -40,7 +40,7 @@ are Git-ignored: never place tape binaries in source-controlled folders.
 3. Review the full authenticated JES job deck and submit one job at a time.
    The project dspal submit command requires a previously installed managed
    JCL PDS member: it cannot directly submit a host-side JCL file.
-   A secure host-JCL submission method remains to be designed.
+   Use scripts/submit-scratch-job to preview and, after confirmation, submit one host-side JCL body with existing dspal authentication.
 4. Check actual payload JES job IDs, step RCs, IEBCOPY/IEBCOMPR output,
    tape label handling, and MVS device-allocation messages.
 5. Before unmounting, ensure MVS has released the tape. Hercules devinit
@@ -61,3 +61,45 @@ Offline checks (do not submit JES or mount tapes):
     python3 -m unittest discover -s packaging/distribution/create-tape/tests -p 'test_*.py' -v
 
 No successful MVS execution or tape-restoration acceptance is claimed.
+
+## Operator-controlled manual scratch job submission
+
+From the repository root, preview the full deck with its password redacted:
+
+    packaging/distribution/create-tape/scripts/submit-scratch-job TP01PRE
+
+Default mode never contacts JES. Only the four scratch jobs are accepted.
+Since the JCL uses fixed HERC02 dataset names, an alternate effective
+MVS HLQ is rejected.
+
+After reviewing prerequisites and the deck, submit ONE job interactively:
+
+    packaging/distribution/create-tape/scripts/submit-scratch-job TP01PRE --run
+
+A typed SUBMIT TP01PRE confirmation is mandatory. No unattended mode exists.
+The helper uses the existing dspal submit-and-wait mechanism and requires
+JES RC=0. The authenticated deck exists only in a private temporary file
+outside Git, which the existing tool removes afterward. The password is
+read from the ignored config/dspal.local.yaml and is never stored in the
+tracked job bodies. Treat JES printer output as sensitive evidence.
+
+Before TP01PRE: verify the scratch PDS HERC02.BCPL.TPTEST.SRC does not
+exist; inspect the seven members of HERC02.BCPL.DIST.DOCS. The original
+PDS is opened read-only. Before TP02UNLD: verify the new tape image was
+initialized once, its VOLSER is BTP001 and device 0480 is correctly
+mounted and released by MVS. The helper checks that the image file
+exists, but it cannot verify its labels, mount, allocation or position.
+Check the actual installed hetinit -h before creating any new tape.
+
+Before TP03REST: do NOT reinitialize the tape image. Confirm the
+restore PDS is absent and the correct tape is mounted. After every job,
+inspect its JES number, step RC, relevant utility messages, and dataset
+inventory. Only run TP04COMP after verifying the restored PDS.
+
+Offline checks, with no JES/tape changes:
+
+    python3 -B -m unittest discover \
+        -s packaging/distribution/create-tape/tests -p 'test_*.py' -v
+
+Keep all AWS images under Git-ignored mvs-state/tape, and any local
+reports under Git-ignored workarea. Never commit tape media.
