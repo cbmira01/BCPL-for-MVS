@@ -22,6 +22,24 @@ def load(path, name):
     return module
 
 
+
+# Restricted, explicitly opted-in object-tape smoke test source.
+TAPE_OBJECT_PDS = "HERC02.BCPL.TPOBJ.RESTORE"
+
+
+def select_tape_object_pds(environ, number: int, library: str,
+                           candidate: str) -> str | None:
+    """Reject accidental production or candidate PDS substitution."""
+    if "BCPL_TAPE_OBJECT_PDS" not in environ:
+        return None
+    chosen = environ["BCPL_TAPE_OBJECT_PDS"]
+    if chosen != TAPE_OBJECT_PDS:
+        raise ValueError("BCPL_TAPE_OBJECT_PDS must name the approved restored scratch PDS")
+    if (library != "OBJ" or candidate != "0" or number not in (0, 3)
+            or environ.get("R1_ACCEPTANCE") == "1"):
+        raise ValueError("object tape override is restricted to production cases 00 and 03")
+    return chosen
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("generated", type=Path)
@@ -165,7 +183,8 @@ def main():
                 or int(spec.get("lrecl", 0)) != 80 or spec.get("dsorg") != "PO"):
             raise ValueError(f"{logical} must be a binary FB80 object PDS")
         return core.full_dsn(config, spec)
-    main_dsn = object_dsn(chosen)
+    tape_object_pds = select_tape_object_pds(os.environ, n, library, candidate)
+    main_dsn = tape_object_pds or object_dsn(chosen)
     service_dsn = object_dsn("BOOT_DEVOBJ" if candidate == "1"
                              else devchosen)
     core_dsn = object_dsn("BOOT_OBJ")

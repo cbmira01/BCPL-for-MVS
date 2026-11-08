@@ -12,7 +12,9 @@ ROOT = Path(__file__).resolve().parents[4]
 JCL_DIR = ROOT / "packaging" / "distribution" / "create-tape" / "jcl"
 CORE_PATH = ROOT / "tools" / "datasets" / "dspal-core.py"
 TAPE_IMAGE = ROOT / "mvs-state" / "tape" / "bcpl-pdstest-20261108-01.aws"
-JOBS = ("TP01PRE", "TP02UNLD", "TP03REST", "TP04COMP")
+OBJECT_TAPE_IMAGE = ROOT / "mvs-state" / "tape" / "bcpl-objtest-20261108-01.aws"
+JOBS = ("TP01PRE", "TP02UNLD", "TP03REST", "TP04COMP",
+        "TO01PRE", "TO02UNLD", "TO03REST", "TO04COMP")
 
 
 def load_core():
@@ -67,8 +69,10 @@ def main(argv=None) -> int:
         if not args.run:
             sys.stdout.write(make_deck(core, config, args.job, body, redact=True))
             return 0
-        if args.job in ("TP02UNLD", "TP03REST") and not TAPE_IMAGE.is_file():
-            raise ValueError(f"scratch tape image is absent: {TAPE_IMAGE}")
+        if args.job in ("TP02UNLD", "TP03REST", "TO02UNLD", "TO03REST"):
+            image = TAPE_IMAGE if args.job.startswith("TP") else OBJECT_TAPE_IMAGE
+            if image.is_symlink() or not image.is_file():
+                raise ValueError(f"scratch tape image is absent or unsafe: {image}")
         if not sys.stdin.isatty():
             raise ValueError("--run requires an interactive terminal")
         word = f"SUBMIT {args.job}"
