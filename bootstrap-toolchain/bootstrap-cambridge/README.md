@@ -1,320 +1,98 @@
-# Cambridge frontend bootstrap staging
+# Demoted Cambridge compiler — bootstrap inputs and use
 
-This directory contains the durable inputs and generators used to bootstrap the
-surviving Cambridge BCPL frontend through the MR10 kit compiler. Generated
-bootstrap material is deliberately kept out of this source directory and written
-under `workarea/bootstrap-cambridge/`.
+This directory holds the Git-tracked **inputs, generators, bootstrap host
+support and operational documentation** for the interpreter-hosted, demoted
+Cambridge compiler. It is not the independent native-running Cambridge compiler,
+whose work belongs in [`cambridge-compiler/`](../../cambridge-compiler/).
 
-For whole-library regression 067, the same generator also emits the complete
-`workarea/bootstrap-cambridge/demoted/blib`. Its only substantive
-transformations are omission of the `SECTION "BLIB"` wrapper and replacement
-of exactly two `~=` operators with MR10 `NE`. It preserves `GET "LIBHDR"`
-and all BLIB definitions. Generate it alone with:
+The demoted compiler is rebuilt as INTCODE and runs on MVS under
+`MR10_LOAD(ICINT19)`. Its historical CG370 backend produces native
+System/370 assembler code for IFOX/IEWL. GitHub source and build procedures
+remain authoritative; resident MVS datasets are reconstructed products.
 
-```sh
-python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py --blib-only
-```
+## Build and use
 
-The regression runner invokes that command before compiling BLIB.
-
-The historical sources remain untouched under:
-
-- `richards-bcpltape/bcplib/bcpl/syn`
-- `richards-bcpltape/bcplib/bcpl/trn`
-
-## Historical structure discovered
-
-The two tape files are containers for four Cambridge BCPL sections:
-
-```text
-bcplib/bcpl/syn
-    SECTION "SYN"
-    ...
-    .
-    SECTION "LEX"
-    ...
-
-bcplib/bcpl/trn
-    SECTION "TRNA"
-    ...
-    .
-    SECTION "TRNB"
-    ...
-```
-
-The standalone `.` is significant: it terminates one source section before the
-next `SECTION` begins. Therefore simply deleting the first `SECTION` line from
-each historical file would be wrong; an MR10 compilation would stop at the
-first `.` and never see `LEX` or `TRNB`.
-
-## Bootstrap layout
-
-```text
-bootstrap-toolchain/bootstrap-cambridge/
-    README.md
-    make-demoted.py
-    make-icintv18.py
-    options-large-tree.txt
-    source/
-        syn
-        trn
-    demotion.patch
-
-workarea/bootstrap-cambridge/
-    demoted/
-        syn
-        lex
-        trna
-        trnb
-        bcpl
-        cga
-        cgb
-        cgc
-        cgd
-        cge
-    demoted-diag/
-        cga
-        cgb
-        cgc
-        cgd
-        cge
-    mr10-trn-large-names/
-    trni-large-names.int
-```
-
-`source/syn` and `source/trn` are byte-identical working copies of the
-historical Cambridge tape sources at the time this staging area was created.
-
-The bootstrap derivative preserves Cambridge section granularity by splitting
-the historical containers into four MR10 compilation units:
-
-```text
-historical SECTION "SYN"   -> workarea/bootstrap-cambridge/demoted/syn
-historical SECTION "LEX"   -> workarea/bootstrap-cambridge/demoted/lex
-historical SECTION "TRNA"  -> workarea/bootstrap-cambridge/demoted/trna
-historical SECTION "TRNB"  -> workarea/bootstrap-cambridge/demoted/trnb
-```
-
-For each derivative unit the generator:
-
-1. omits the `SECTION "..."` wrapper, which MR10 does not recognize;
-2. omits the inter-section `.` delimiter because the files are now physically
-   separate compilation units;
-3. rewrites the Cambridge not-equal spelling `~=` as the older `NE` spelling;
-4. maps historical member-style header names to MVS DD-friendly names:
-   `HEADERS(SYNHDR)` -> `SYNHDR` and `HEADERS(TRNHDR)` -> `TRNHDR`;
-5. for LEX only, splits the two large packed reserved-word literals into a
-   sequence of shorter `D("...//")` calls so each literal fits MR10's 255-byte
-   source-string limit while preserving reserved-word order and CODEP mapping;
-6. for LEX only, replaces the Cambridge `READFLOAT` implementation with an
-   explicit fatal bootstrap stub because MR10 cannot parse the later `FLOAT`
-   conversion and `#+`, `#*`, `#/` floating operators;
-7. otherwise preserves Cambridge source text and semantics.
-
-The GET-name and packed-string rewrites preserve intended compiler behavior.
-The `READFLOAT` replacement is deliberately narrower: floating literals are
-unsupported by the demoted bootstrap frontend and fail visibly if encountered.
-The historical source remains untouched and is intended to regain its original
-floating-literal implementation once the richer Cambridge frontend can compile
-itself.
-
-## Diagnostic CG370 derivative
-
-`make-demoted.py` also produces a complete diagnostic CG source set under
-`workarea/bootstrap-cambridge/demoted-diag/`.
-
-The diagnostic variant is derived from the same already-demoted logical CG
-source used for the ordinary `cga`..`cge` files. It is not a hand-maintained
-fork. The first instrumentation pass modifies only CGB and CGE; the other
-diagnostic units are deliberately identical in executable source apart from
-their provenance banner.
-
-Every injected assembler record begins:
-
-```text
-* CG370-DIAG:
-```
-
-The commentary exposes:
-
-- historical numeric OCODE value and current SSP;
-- generated procedure-entry label and source-name length;
-- CGSAVE entry state;
-- explicit FNAP/RTAP call kind, K, workspace displacement, and SSP;
-- safe-frame correction state;
-- stack-check inline slot location;
-- final stack-frame size in words and bytes.
-
-A diagnostic-only symbolic OCODE-name helper was tried and rejected after it
-compiled successfully but corrupted the resident INTCODE execution path. The
-numeric opcode remains the stable emitted form; symbolic decoding should be
-performed outside the resident generator if desired. Procedure-name bytes are
-deliberately not reproduced by the diagnostic layer;
-the bootstrap host/target character representation remains a separate concern.
-
-The instrumentation writes listing comments only. It does not update TXTP,
-binary-output state, labels, or generated instructions/data. Each insertion
-point is guarded by an exact source-shape assertion so historical/source drift
-fails loudly.
-
-The required acceptance invariant is stronger than merely compiling: for the
-same BCPL source, stripping only `* CG370-DIAG:` records from diagnostic
-assembler output must reproduce ordinary CG370 output exactly. Check two
-recovered CODE files with:
+Use the [clean-room reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md)
+for the complete ordered, authorized MVS procedure, and the
+[bootstrap tooling guide](../../tools/bootstrap/README.md) for tool entry points.
+These preparation and validation commands do not submit JES jobs:
 
 ```sh
-python3 bootstrap-toolchain/bootstrap-cambridge/check-cg370-diagnostic.py \
-    workarea/cg370-baseline.s370.asm \
-    workarea/cg370-diagnostic.s370.asm
+# Run from the repository root.
+tools/bootstrap/prepare-bootstrap --check-inputs
+tools/bootstrap/prepare-bootstrap
+python3 tools/checks/check-native-bootstrap-jcl.py
+
+# Preview one installed-compiler job without submitting it:
+# tools/bootstrap/compile-mvs PATH/TO/PROGRAM.bcpl --show-jcl
 ```
 
-The MVS resident diagnostic image is kept separate as
-`HERC02.BCPL.INTCODE(CG370D)`; the baseline remains
-`HERC02.BCPL.INTCODE(CAMBCOMP)`.
+`prepare-bootstrap` creates the demoted sources and the MR10 translator
+source derivative under `workarea/bootstrap-cambridge/`. After a fresh
+`MR10_LOAD(ICINT19)` build, **and with separate MVS execution authorization**,
+`tools/bootstrap/prepare-bootstrap --with-trnilrg` also compiles the derived
+MR10 translator into `trni-large-names.int`.
 
-## Deterministic generation
+The authoritative runbook stages those generated members using
+`dspal populate all --generated-only`. The source of
+`BOOT_JCL(CAMBBLD)` is [`jcl/cambbld.jcl`](../jcl/cambbld.jcl);
+it builds `BOOT_INTCODE(CAMBCOMP)` using installed `ICINT19` and
+`BOOT_INTCODE(TRNILRG)`. Use `tools/bootstrap/compile-mvs` to invoke
+the installed compiler against a BCPL source and recover its textual
+System/370 `CODE` output. That operation submits an MVS job.
 
-Run from repository root with:
+## Tracked files and their roles
 
-```sh
-python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py
-```
+| File | Purpose |
+| --- | --- |
+| `source/syn`, `source/trn` | Cambridge source containers used by the generator; historical Richards tape sources remain under `richards-bcpltape/` |
+| `make-demoted.py` | Generates demoted BCPL master, SYN/LEX, TRNA/TRNB, CGA–CGE, BLIB, and CG370 diagnostic sources |
+| `make-mr10-trn-large-names.py` | Derives a larger-name MR10 translator without changing the historical input |
+| `build-mr10-trni-large-names.sh` | Compiles the translator derivative; MVS/JES execution required |
+| `bootstrap-host.bcpl` | Implements required bootstrap host services, including DATE, WRAPOUTPUT and FINDPARM |
+| `options-large-tree.txt` | MR10 compiler tree-capacity option `L12000` |
+| `cambridge-options.txt` | FB80 `CAMBPARM` option record starting with `/N/`, slash-filled |
+| `compiler-options-and-parm.md` | Compiler/CG option phases, historical `EXEC PARM=`, and bootstrap `CAMBPARM` rules |
+| `check-cg370-diagnostic.py` | Compares ordinary and diagnostic CG370 assembler output after removing diagnostic comments; used by `tools/bootstrap/capture-writef-cg370` |
 
-The generator asserts the expected historical section boundaries, `~=` counts,
-header-GET counts, packed-word-table text, and `READFLOAT` body before writing
-anything. Unexpected source drift therefore fails loudly rather than silently
-broadening the bootstrap transformation.
+## Generated artifacts and demotion limits
 
-## SYN compile probes
+`prepare-bootstrap` writes an input/output SHA-256 manifest and regenerated
+files only under `workarea/bootstrap-cambridge/`:
 
-The first experiment is deliberately only `demoted/syn`. The Cambridge
-System/370 `LIBHDR` is exposed as DD `LIBHDR`, and Cambridge `synhdr` is exposed
-as DD `SYNHDR`.
+- `demoted/`: `blib`, `bcpl`, `syn`, `lex`, `trna`, `trnb`, `cga`–`cge`;
+- `demoted-diag/`: instrumented `cga`–`cge` (listing comments only);
+- `mr10-trn-large-names/`: altered MR10 translator sections;
+- `trni-large-names.int`: generated by the `--with-trnilrg` path.
 
-Job 881 reached Cambridge source successfully through both GET files, then the
-MR10 compiler stopped with `PROGRAM TOO LARGE` near line 166. The MR10 master
-driver defaults `TREESIZE` to 5500 and accepts an `OPTIONS` record `L<number>`
-to raise it.
+The separately **tracked** `bootstrap-cambridge/demoted/` files are
+earlier snapshots, not the build inputs of the current clean-room workflow.
+They are retained pending a separate source-snapshot review.
 
-Job 882 used `L12000` with ICINT v17 and abended S0C4. The loaded compiler image
-is 9,972 words, so a 12,000-word APTOVEC request cannot fit in v17's 20,001-word
-PROGVEC once stack overhead is included.
+The generator's source-dialect accommodations are guarded and auditable:
+it splits historical `SECTION` containers, normalizes unsupported operators
+and header GET names, splits oversized LEX literals, and replaces the
+uncompilable floating-literal reader with an explicit fatal bootstrap stub.
+Consult `make-demoted.py` for its *current* exact transformations.
+The old [`demotion.patch`](../../packaging/archive/bootstrap/demotion.patch)
+was an early design note, not an applicable patch.
 
-Job 883 used `L8000`. That fits v17, but Cambridge SYN still exhausted the
-compiler tree near line 447. This is the empirical reason to enlarge PROGVEC
-rather than reduce the tree workspace further.
+The current installed interpreter source lives at
+[`mr10-kit-compiler/asm/icintv19.asm`](../../mr10-kit-compiler/asm/icintv19.asm).
+Historical scripts generating obsolete ICINT V18/V19 candidates are not
+needed to build the accepted interpreter.
 
-`make-icintv18.py` therefore generates a capacity-only candidate from v17 with:
+## Current compiler contract and verification
 
-```text
-PROGCNT 20001 -> 40001
-PROGLEN 80004 -> 160004 bytes
-```
+The demoted frontend intentionally does **not** support floating literals.
+The second-phase `N` in `CAMBPARM` suppresses binary `SYSGO` object-deck
+output; the present compiler driver recovers textual `CODE`.
+`CAMBPARM` is a bootstrap DD input, not the native compiler's historical
+`FINDPARM` interface over `EXEC PARM=`.
 
-Job 884 exposed one additional capacity dependency in v17: the OP1 store guard
-hard-codes a maximum address of `PROGWORD+20000`. With a 40,001-word PROGVEC,
-that guard falsely trapped a legitimate store at D=194995 and returned -2.
-Accordingly the v18 generator expands both the allocation and the matching OP1
-guard:
-
-```text
-PROGCNT                 20001 -> 40001
-OP1 PROGVEC upper bound 20000 -> 40000 words above PROGWORD
-```
-
-Job 885, using corrected v18 and `L12000`, successfully compiled Cambridge SYN
-to nonempty OCODE. CGI converted that OCODE to an INTCODE unit whose loaded
-program size was 4,040 words. The subsequent standalone RUN error is not a
-compiler failure: SYN is a compiler section, not a complete BCPL START program.
-
-This establishes the first successful Cambridge frontend-section bootstrap:
-
-```text
-Cambridge SYN source -> MR10 compiler -> OCODE -> CGI -> INTCODE
-```
-
-## LEX compile probes
-
-Job 886 reached Cambridge LEX with v18 and `L12000` but failed first with:
-
-```text
-SYNTAX ERROR NEAR LINE 286: STRING TOO LONG
-```
-
-The source at that point was the first of two packed slash-delimited
-reserved-word strings consumed by `D(WORDS)`. MR10's lexer limits a source
-string to 255 characters. Splitting each packed string into several shorter
-`D("...//")` calls preserves the static `CODEP` sequence and therefore the
-reserved-word mapping.
-
-Job 887 proved that rewrite worked: compilation advanced beyond the word table
-and then failed in `READFLOAT`, first at the later `FLOAT` conversion and then
-at the Cambridge floating operators `#*`, `#+`, and `#/`. The tree reached
-7,781 words, so this is not a workspace failure. It is a real source-dialect
-boundary.
-
-For bootstrap purposes `READFLOAT` is now replaced by a fatal `CAEREPORT(-33)`
-stub. This is intentionally not a floating-point emulation. If a compiler
-source used during bootstrap contains a floating literal, the demoted frontend
-must fail explicitly rather than silently generate an incorrect constant. If
-TRN/CG do not require floating literals, the bootstrap can proceed; the full
-historical `READFLOAT` implementation remains in the untouched Cambridge source
-for later self-hosting.
-
-Job 888 proved the resulting demoted LEX compiles successfully to nonempty
-OCODE. CGI converted that OCODE to an INTCODE unit with loaded program size
-2,495 words. As with SYN, the subsequent standalone RUN error is expected: LEX
-is a compiler section and has no complete START path by itself.
-
-This establishes both historical Cambridge frontend sections across the MR10
-bootstrap boundary:
-
-```text
-Cambridge SYN source -> MR10 compiler -> OCODE -> CGI -> INTCODE
-Cambridge LEX source -> MR10 compiler -> OCODE -> CGI -> INTCODE
-```
-
-## TRN compile probes
-
-Job 889 proved `demoted/trna` also compiles successfully through the MR10
-bootstrap path. The host wrapper saved nonempty `workarea/trna.ocode`, and CGI
-converted it to an INTCODE unit whose loaded program size was 3,065 words. The
-subsequent standalone RUN error is expected for an isolated compiler section and
-is not a compile failure.
-
-The successful section-bootstrap set is now:
-
-```text
-Cambridge SYN  source -> MR10 compiler -> OCODE -> CGI -> INTCODE
-Cambridge LEX  source -> MR10 compiler -> OCODE -> CGI -> INTCODE
-Cambridge TRNA source -> MR10 compiler -> OCODE -> CGI -> INTCODE
-```
-
-The next controlled probe is `demoted/trnb` with the Cambridge System/370
-`TRNHDR` exposed as DD `TRNHDR`. The objective remains compilation to nonempty
-OCODE; standalone RUN success is not expected for an isolated compiler section.
-
-The MVS step return code for an interpreted compiler failure remains zero; the
-host `compile-and-run` wrapper detects the BCPL execution code afterward. Thus
-CG and RUN may still execute on empty compiler output in a failed interpreted
-probe. A true MVS abend propagates and flushes later steps.
-
-No header-content, `BYTESPERWORD`, `SKIPREC`, driver-initialization, or native
-runtime accommodation has yet been made.
-
-
-## Native code-generation checkpoint
-
-The first successful end-to-end resident Cambridge compile through historical
-CG370 is recorded in [native-codegen-checkpoint.md](native-codegen-checkpoint.md).
-That checkpoint also records the host/target byte-width split, the A/N option
-policy, direct ABI evidence from the generated factorial module, and the
-remaining target-string representation issue.
-
-
-## Compiler options and native MVS parameter transport
-
-The complete surviving compiler/code-generator option grammar, historical
-`EXEC PARM=` transport through `FINDPARM()`, and the present `CAMBPARM`
-bootstrap substitution are documented in
-[compiler-options-and-parm.md](compiler-options-and-parm.md).
+Verify MVS-side `CAMBBLD` and `CAMBCOMP` results through the actual JES
+report, ICINT `CODE` and generated assembler, not JES step RC alone.
+Dated experiments belong in
+[`packaging/archive/bootstrap/`](../../packaging/archive/bootstrap/);
+the first native code-generation/ABI evidence belongs in
+[`packaging/evidence/bootstrap-cambridge/`](../../packaging/evidence/bootstrap-cambridge/).

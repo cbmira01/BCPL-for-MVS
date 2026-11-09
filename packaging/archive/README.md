@@ -3,7 +3,7 @@
 These records are retained for provenance, experiment reproducibility and review. They are **not** new active milestone gates or substitutes for the governing contracts in [`packaging/`](../README.md).
 
 - [Core Runtime](core-runtime/) — M1–M3 runtime contracts, modularity work, object provenance and accepted historical evidence.
-- [Bootstrap](bootstrap/) — early transport, architecture and packaging proposals, and BCPLTIME installation design.
+- [Bootstrap](bootstrap/) — early transport and packaging proposals, Cambridge compiler demotion and resident-image probes, and dated JES checkpoints.
 - [Runtime Extensions](runtime-extensions/) — R.0–R.5 investigations, individual MVS job evidence and intermediate reviews.
 - [QSAM](qsam/) — Q.0–Q.5 probes, detailed demonstrations, JCL/device observations, and hardening evidence.
 

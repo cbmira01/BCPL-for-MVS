@@ -15,6 +15,9 @@ BCPL source -> SYN/TRN -> OCODE
 
 The important change in direction is that a historical **System/370 code generator has been found** in the surviving BCPL material. The project therefore does not need to invent a System/370 backend from scratch. The current task is to make the historical generator runnable in the hosted environment, determine exactly which OCODE and runtime conventions it expects, adapt only what the MVS host requires, and use its output with IFOX and the MVS linkage editor.
 
+For the current demotion inputs, build sequence, compiler options and generated
+artifact policy, see [bootstrap-cambridge/README.md](bootstrap-cambridge/README.md).
+
 ## Architecture notes
 
 - `cg370-architecture-notes.md` records the current understanding of OCODE versus INTCODE, the bootstrap-kit versus native-programming-system distinction, Cambridge `SECTION` handling, CG370's 16-KB section/base-addressing scheme, internal fixups, and object-deck generation.

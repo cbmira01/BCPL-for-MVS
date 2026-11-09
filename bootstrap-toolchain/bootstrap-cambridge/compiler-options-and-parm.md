@@ -327,7 +327,9 @@ PARM pseudo-stream. Its narrow accommodation is:
 LET FINDPARM() = FINDINPUT("CAMBPARM")
 ```
 
-and `tools/native/compile-bootstrap` supplies an FB80 `CAMBPARM` DD.
+and `tools/bootstrap/compile-mvs` obtains its FB80 `CAMBPARM` DD from
+`BOOT_SOURCE(CAMBPARM)`, unless `--cambridge-parm PATH` explicitly supplies
+a different input file.
 
 The current record begins:
 
