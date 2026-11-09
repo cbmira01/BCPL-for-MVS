@@ -86,6 +86,11 @@ until separately authorized. A successful batch requires every expected
 step to appear in `job-summary` as RC=0000; a missing, skipped or failed
 step stops population rather than claiming success.
 
+The guarded [batch acceptance procedure](../packaging/distribution/dspal-batch-acceptance-plan-20261109.md)
+uses a small, manifest-mapped MVS PDS and per-member read-back comparison. It
+requires a separately acknowledged target DSN and does not enable batching in
+reconstruction automatically.
+
 The driver does **not** run the Step 4 resident MR10 suites, any Step 9
 regression campaign, or any other regression suite. **Regressions are a
 separate workflow.** The Step 3 scalar/vector execution and Step 6 assembler

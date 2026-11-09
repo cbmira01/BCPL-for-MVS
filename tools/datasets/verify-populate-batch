@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""Guarded MVS record-readback acceptance for opt-in dspal population batching.
+
+No JES requests with --check. --run writes only the named, manifest-mapped
+PDS, after explicit full-DSN acknowledgment. Never called by reconstruction.
+"""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[2]
+DSPAL = ROOT / "tools/datasets/dspal"
+TARGETS = ("DIST_DOCS", "EXT_SOURCE")
+
+
+def load_population():
+    path = ROOT / "tools/datasets/dspal-populate.py"
+    spec = importlib.util.spec_from_file_location("batch_acceptance_population", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load dspal population preflight")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def canonical_text(records: list[str]) -> str:
+    """The FB/80 text comparison offered by dspal get, not a raw-byte dump.
+
+    FB padding is not distinguishable from meaningful trailing spaces; the
+    existing read path strips right padding and terminal empty records.
+    """
+    if records and (records[0] == "" or records[-1] == ""):
+        raise ValueError("boundary blank records cannot be verified by dspal get")
+    cleaned = [record.rstrip(" ") for record in records]
+    return "\n".join(cleaned) + ("\n" if cleaned else "")
+
+
+def collect_plan(population, target: str):
+    config = population.core.load_config()
+    if target not in config["datasets"]:
+        raise ValueError(f"target {target} not in manifest")
+    _, actions, unmapped, missing = population.preflight(config, target)
+    if missing or unmapped or not actions:
+        raise ValueError(f"target not fully mapped: missing={missing}, unmapped={unmapped}")
+    if any(action["logical"] != target for action in actions):
+        raise ValueError("population preflight escaped selected target")
+    if any(action["member"] in config["datasets"][target].get("generated_members", {})
+           for action in actions):
+        raise ValueError("generated members excluded from this acceptance")
+    # Do not accept a source mapping the reader cannot verify as text.
+    expected = {action["member"]: canonical_text(action["records"]) for action in actions}
+    dsn = population.core.full_dsn(config, config["datasets"][target])
+    if not dsn.startswith(str(config["mvs"]["hlq"]).upper() + "."):
+        raise ValueError("target outside effective MVS HLQ")
+    return dsn, actions, expected
+
+
+def git_revision() -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True,
+        check=False,
+    )
+    if result.returncode or not re.fullmatch(r"[0-9a-f]{40}", result.stdout.strip()):
+        raise RuntimeError("cannot determine Git HEAD")
+    return result.stdout.strip()
+
+
+def check_clean_source() -> None:
+    # Derived output stays in ignored workarea/. This verifies manifest files.
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=ROOT, text=True, capture_output=True, check=False,
+    )
+    if result.returncode or result.stdout.strip():
+        raise RuntimeError("tracked Git working tree is not clean; do not write MVS")
+
+
+def invoke_dspal(*argv: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([str(DSPAL), *argv], cwd=ROOT,
+                          text=True, capture_output=True, check=False)
+
+
+def sha(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def evidence_directory() -> Path:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    path = ROOT / "workarea" / "dspal-batch-acceptance" / f"{stamp}-{os.getpid()}"
+    path.mkdir(parents=True, exist_ok=False)
+    return path
+
+
+def persist(path: Path, result: dict) -> None:
+    (path / "summary.json").write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+def run_acceptance(target: str, dsn: str, expected: dict[str, str], head: str) -> int:
+    path = evidence_directory()
+    result = {
+        "git_head": head, "target": target, "dsn": dsn, "passed": False,
+        "members": [], "batch_rc": None, "elapsed_seconds": None,
+        "evidence": str(path.relative_to(ROOT)),
+        "comparison": "dspal-get canonical FB/80 text (not raw EBCDIC bytes)",
+    }
+    started = time.monotonic()
+    try:
+        print(f"Writing {len(expected)} existing {target} members with --batch")
+        batch = invoke_dspal("populate", target, "--batch")
+        (path / "populate.stdout.txt").write_text(batch.stdout, encoding="utf-8")
+        (path / "populate.stderr.txt").write_text(batch.stderr, encoding="utf-8")
+        result["batch_rc"] = batch.returncode
+        if batch.stdout:
+            print(batch.stdout, end="" if batch.stdout.endswith("\n") else "\n")
+        if batch.stderr:
+            print(batch.stderr, file=sys.stderr, end="" if batch.stderr.endswith("\n") else "\n")
+        if batch.returncode:
+            raise RuntimeError(f"batch population failed RC={batch.returncode}; readback skipped")
+        for member, text in expected.items():
+            readback = invoke_dspal("get", target, member, "-")
+            item = {
+                "member": member, "get_rc": readback.returncode,
+                "expected_sha256": sha(text),
+                "actual_sha256": sha(readback.stdout) if readback.returncode == 0 else None,
+                "matched": readback.returncode == 0 and text == readback.stdout,
+            }
+            result["members"].append(item)
+            if readback.returncode:
+                (path / f"get-{member}.stderr.txt").write_text(
+                    readback.stderr, encoding="utf-8"
+                )
+                raise RuntimeError(f"readback {target}({member}) failed RC={readback.returncode}")
+            if not item["matched"]:
+                (path / f"get-{member}.actual.txt").write_text(
+                    readback.stdout, encoding="utf-8"
+                )
+                raise RuntimeError(f"readback mismatch {target}({member}); see evidence")
+            print(f"PASS {target}({member}) {item['expected_sha256'][:12]}")
+        result["passed"] = True
+        print(f"PASS {target}: {len(expected)} of {len(expected)} members matched")
+        return 0
+    except (OSError, RuntimeError) as exc:
+        result["error"] = str(exc)
+        print(f"FAIL: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        result["elapsed_seconds"] = round(time.monotonic() - started, 2)
+        persist(path, result)
+        print(f"Evidence: {path.relative_to(ROOT)}")
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--check", action="store_true", help="Git/manifest plan only; no JES")
+    mode.add_argument("--run", action="store_true", help="write mapped members and read them back")
+    parser.add_argument("--target", choices=TARGETS, default="DIST_DOCS")
+    parser.add_argument("--approve-dsn", help="required with --run: exact resolved MVS DSN")
+    args = parser.parse_args(argv)
+    if args.run and not args.approve_dsn:
+        parser.error("--run requires --approve-dsn matching the complete MVS dataset name")
+    if args.check and args.approve_dsn:
+        parser.error("--approve-dsn is valid only with --run")
+
+    try:
+        head = git_revision()
+        check_clean_source()
+        population = load_population()
+        dsn, actions, expected = collect_plan(population, args.target)
+        print(f"Git HEAD: {head}")
+        print(f"Population: {args.target} -> {dsn}")
+        for action in actions:
+            print(f"  {action['member']:<8} {action['path'].relative_to(ROOT)} ")
+        if args.check:
+            print(f"CHECK PASS: {len(actions)} members ready; no JES jobs submitted")
+            return 0
+        if args.approve_dsn != dsn:
+            raise ValueError(f"approval does not match resolved dataset {dsn}")
+        return run_acceptance(args.target, dsn, expected, head)
+    except (RuntimeError, ValueError, OSError) as exc:
+        print(f"BLOCKED: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
