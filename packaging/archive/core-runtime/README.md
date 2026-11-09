@@ -13,3 +13,4 @@ before acting on historical paths or acceptance claims.
 - [WRITEF instrumentation investigation](writef-instrumentation-investigation.md)
 - [Regression marches and stream-I/O investigations](regression/README.md)
 - [M4.2 exploratory OPEN notes](probes/README.md)
+- [BCPLMAIN-WIP modularization and runtime investigation records](bcplmain-wip/README.md)

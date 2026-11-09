@@ -16,6 +16,13 @@ Cambridge compiler reconstruction.
 | `bcplrgs.asm` | `RGINIT` / `RGFINI` | Optional package registration and finalization |
 | `bcplreg-empty.asm` | `BCPLREG` | Empty, application-specific registration table |
 
+## Historical BCPLMAIN development material
+
+The former monolithic BCPLMAIN and its exact lexical fragments are retained
+for the legacy source-mode regression path, not for canonical production
+builds. See [fragment staging](bcplmain-wip/README.md) and the
+[archived development checkpoints](../../packaging/archive/core-runtime/bcplmain-wip/README.md).
+
 ## Shared runtime and application-selected table
 
 The five established modules plus `BCPLRGS` form the **Core Runtime**

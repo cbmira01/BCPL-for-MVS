@@ -26,3 +26,5 @@ Additional early bootstrap records:
 - [Interpreter capacity investigation](bootstrap-capacity-notes.md)
 - [Early kit-compiler strategy discussion](kit-compiler-strategy.md)
 - [Former bootstrap overview](bootstrap-toolchain-legacy-readme.md) — preserved before operational overview rewrite
+
+- [Early MVS-resident compiler workflow](mvs-resident-cambridge-early-workflow.md) — superseded pre-reconstruction dataset names and commands; consult the current rebuild runbook instead
