@@ -15,7 +15,7 @@ in [`cambridge-compiler/`](../cambridge-compiler/).
 | [`jcl/`](jcl/README.md) | Canonical MVS build and installation job bodies |
 | [`regression/`](regression/README.md) | Shared native regression runner and its implementation helpers; numbered cases live in `tests/` |
 | [`library/`](library/README.md) | Staged, unpromoted native BCPL utility candidates |
-| `probes/` | Isolated reproducibility fixtures; historical probe evidence is being curated under `packaging/archive/` |
+| [`probes/`](probes/README.md) | Active and dependency-retained test fixtures; completed probe research is archived under `packaging/archive/` |
 
 The authoritative [clean-room rebuild](../docs/Rebuild-BCPL-for-MVS-from-source.md)
 and [repository map](../packaging/operations/repository-map.md) define current

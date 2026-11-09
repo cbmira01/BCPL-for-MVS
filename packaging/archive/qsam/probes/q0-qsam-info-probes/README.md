@@ -1,0 +1,65 @@
+# Milestone QSAM — March Q.0 effective DCB INFO probes
+
+**Status: JOBs 2178 / QS0INFV and 2179 / QS0INFVB PASSED on MVS
+(2026-10-20), six steps RC=0000 each.** Two isolated
+IFOX/QSAM jobs (`QS0INFV` and `QS0INFVB`) extend the accepted V/VB DASD
+reader with post-OPEN checks. They do **not** implement BCPLQSAM, `QSAMSVC:200`,
+public BCPL vectors, or Runtime Extensions registration.
+
+The generator uses the existing V/VB writer and reader as read-only
+source material. It inserts assertions into the reader *after* `OPEN`:
+
+| Job | RECFM from opened DCB | Effective LRECL | BLKSIZE | Project `QS_FMT_*` enum | Payload limit from DCB |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `QS0INFV` | `X'40'` V | 100 | 104 | 3 (`QS_FMT_V`) | 96 bytes |
+| `QS0INFVB` | `X'50'` VB | 100 | 404 | 4 (`QS_FMT_VB`) | 96 bytes |
+
+The reader checks DCB offsets `+36` (RECFM), `+62` (BLKSIZE), and `+82`
+(LRECL), as derived from the project's IFOX DCB expansions and earlier
+Q.0 FB tests. It maps the raw DCB byte to the project's numeric format
+code and computes `LRECL-4` for V/VB data capacity. It then reads and
+validates all 15 logical records and EODAD using the existing reader.
+
+This calculation uses the observed **dataset** limit and does not
+establish the BCPLQSAM implementation ceiling. The accepted INFO contract
+specifies `result!7 = min(dataset data limit, implemented limit)`.
+A separate final BCPLQSAM implementation must validate its own bounds.
+
+## Operation
+
+From repository root, after pulling the accepted GitHub main:
+
+```sh
+PROBE=packaging/archive/qsam/probes/q0-qsam-info-probes
+python3 "$PROBE/make-info-jobs.py" v --check
+python3 "$PROBE/make-info-jobs.py" vb --check
+python3 "$PROBE/make-info-jobs.py" v
+bash tools/mvs/submit-jcl workarea/qsam-q0-info/q0-info-v.jcl
+python3 "$PROBE/make-info-jobs.py" vb
+bash tools/mvs/submit-jcl workarea/qsam-q0-info/q0-info-vb.jcl
+# For each returned job number:
+tools/mvs/dump-report-for-job JOBNUMBER
+```
+
+Each deck contains six steps (`ASMWR`, `ASMRD`, `LKWR`, `LKRD`, `WGO`,
+`RGO`) using an isolated temporary `&&Q0DISK` dataset. Expected all
+RC=0000 and corresponding QOUT marker:
+
+```text
+Q0 INFO V OPEN DCB ENUM3 DATA96 PASS
+Q0 INFO VB OPEN DCB ENUM4 DATA96 PASS
+```
+
+The `--check` mode creates no file, reads no credentials, and submits no
+job. The normal generator writes mode-0600 authenticated decks under
+ignored `workarea/`; never commit them. No BOOT_OBJ, BOOT_DEVOBJ, core
+runtime, or compiler source changes are required. Do not report MVS PASS
+until the owner supplies the actual JES output.
+
+## Observed execution
+
+See [MVS JOBs 2178/2179 evidence](../../qsam-q0-post-open-info-evidence-20261020.md).
+The two QOUT markers appeared; the owner's working tree stayed clean.
+The tests do not implement public QSINFO or approve a record-size
+ceiling. Follow-up test-only jobs are in the
+[candidate 1024-byte stage probes](../q0-qsam-ceiling-probes/README.md).

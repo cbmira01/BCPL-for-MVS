@@ -12,3 +12,4 @@ before acting on historical paths or acceptance claims.
 - [Native compiler runtime dependency audit](runtime-dependency-audit.md)
 - [WRITEF instrumentation investigation](writef-instrumentation-investigation.md)
 - [Regression marches and stream-I/O investigations](regression/README.md)
+- [M4.2 exploratory OPEN notes](probes/README.md)
