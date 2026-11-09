@@ -69,11 +69,11 @@ def cmd_initbcpl(config: dict[str, Any], show_jcl: bool) -> int:
     missing: list[str] = []
     existing: list[str] = []
     incompatible: list[str] = []
-    probes: list[int] = []
+    # One consolidated TSO LISTDS job for the 29 managed datasets.
+    preflight_job, _, inventory = core.managed_inventory(config)
 
     for logical, spec in config["datasets"].items():
-        job, attrs = probe_one(config, logical, spec)
-        probes.append(job)
+        attrs = inventory[logical]
         if attrs is None:
             missing.append(logical)
             continue
@@ -96,8 +96,7 @@ def cmd_initbcpl(config: dict[str, Any], show_jcl: bool) -> int:
 
     if not missing:
         print(
-            "initbcpl preflight completed as JOB "
-            + ",".join(str(job) for job in probes)
+            f"initbcpl preflight completed as JOB {preflight_job}"
         )
         print("All managed datasets already exist with compatible attributes.")
         return 0
@@ -108,8 +107,7 @@ def cmd_initbcpl(config: dict[str, Any], show_jcl: bool) -> int:
         max_rc=0,
     )
     print(
-        "initbcpl preflight completed as JOB "
-        + ",".join(str(number) for number in probes)
+        f"initbcpl preflight completed as JOB {preflight_job}"
     )
     print(f"initbcpl allocation completed as JOB {job}")
     for logical in existing:

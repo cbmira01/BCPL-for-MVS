@@ -72,6 +72,20 @@ population must report ready members written. Other RC=2 outcomes stop
 the driver. The operator must review the output before confirming the
 next major step.
 
+The driver now reports elapsed seconds for every command and major guide step.
+Its PDS inventories are consolidated, and `initbcpl` uses a single bulk
+LISTDS preflight. These changes do not reduce the build's verification gates.
+
+**Opt-in population experiment:** `dspal populate all --batch --show-jcl`
+produces bounded, per-PDS, multi-step IEBGENER jobs (maximum 60 steps and
+approximately 4,000 input cards per job). The unchanged default still submits
+one JES job per member. Batch execution is intentionally **not enabled by
+`rebuild-from-source --unattended`** pending representative MVS read-back
+and record-fidelity verification. `--batch` must not be used for MVS writes
+until separately authorized. A successful batch requires every expected
+step to appear in `job-summary` as RC=0000; a missing, skipped or failed
+step stops population rather than claiming success.
+
 The driver does **not** run the Step 4 resident MR10 suites, any Step 9
 regression campaign, or any other regression suite. **Regressions are a
 separate workflow.** The Step 3 scalar/vector execution and Step 6 assembler

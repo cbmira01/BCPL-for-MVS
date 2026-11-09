@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import time
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -251,36 +252,95 @@ def report_says_missing(report: str, dsn: str) -> bool:
 
 
 def require_target_datasets(config: dict[str, Any], actions: list[dict[str, Any]]) -> None:
+    # The same one-job inventory used by purgebcpl: never one LISTDS job per PDS.
+    _, _, inventory = core.managed_inventory(config)
     seen: set[str] = set()
-    missing: list[str] = []
     for action in actions:
         logical = action["logical"]
         if logical in seen:
             continue
         seen.add(logical)
-        dsn = action["dsn"]
-        job, _ = core.submit_and_wait(config, core.stat_deck(config, [dsn]), max_rc=8)
-        report = core.job_report(job)
-        if report_says_missing(report, dsn):
-            missing.append(f"{logical} ({dsn})")
-            continue
-        block = core.extract_listds_block(report, dsn)
-        attrs = core.parse_listds(block) if block else {}
-        if not attrs:
+        attrs = inventory[logical]
+        if attrs is None:
+            raise DspalError(f"populate target {action['dsn']} is missing")
+        differences = core.mismatches(action["spec"], attrs)
+        if differences:
             raise DspalError(
-                f"JOB {job}: could not verify populate target {dsn}; "
-                f"run dspal stat {logical} --raw"
+                f"populate target {action['dsn']} has incompatible attributes: "
+                + "; ".join(differences)
             )
-    if missing:
+
+
+# Opt-in batching preserves one-PDS-per-job ownership and bounds JCL input.
+BATCH_MAX_STEPS = 60
+BATCH_MAX_CARDS = 4000
+
+
+def population_batches(actions: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    batches: list[list[dict[str, Any]]] = []
+    current: list[dict[str, Any]] = []
+    cards = 0
+    for action in actions:
+        # Six control/comment cards and a data-card delimiter.
+        cost = len(action["records"]) + 7
+        if cost > BATCH_MAX_CARDS:
+            raise DspalError(
+                f"{action['logical']}({action['member']}): {cost} cards exceed "
+                f"batch limit {BATCH_MAX_CARDS}; use member-by-member population"
+            )
+        if current and (action["logical"] != current[0]["logical"]
+                        or len(current) >= BATCH_MAX_STEPS
+                        or cards + cost > BATCH_MAX_CARDS):
+            batches.append(current)
+            current = []
+            cards = 0
+        current.append(action)
+        cards += cost
+    if current:
+        batches.append(current)
+    return batches
+
+
+def batched_put_deck(
+    config: dict[str, Any], batch: list[dict[str, Any]],
+    redact_password: bool = False,
+) -> str:
+    if not batch or len({action["logical"] for action in batch}) != 1:
+        raise DspalError("batched population requires one nonempty PDS group")
+    lines = core.authenticated_job_card(
+        config, "DSPALPOP", "DSPAL BATCH POPULATE",
+        redact_password=redact_password,
+    )
+    for index, action in enumerate(batch, 1):
+        step = f"P{index:04d}"
+        dlm = io.choose_dlm(action["records"])
+        lines.extend([
+            f"//* {step}: {action['logical']}({action['member']})",
+            f"//{step:<8} EXEC PGM=IEBGENER,COND=(0,NE)",
+            "//SYSPRINT DD  SYSOUT=*",
+            "//SYSIN    DD  DUMMY",
+            f"//SYSUT2   DD  DSN={action['dsn']}({action['member']}),DISP=SHR",
+            f"//SYSUT1   DD  DATA,DLM={dlm}",
+        ])
+        lines.extend(action["records"])
+        lines.append(dlm)
+    return "\n".join(lines) + "\n"
+
+
+def verify_batch_summary(summary: str, expected_count: int) -> None:
+    # tools/mvs/job-summary prints one STEP/PROGRAM/RC line per executed step.
+    observed = re.findall(r"(?m)^P(\d{4})\s+\S+\s+RC=0000\s*$", summary)
+    expected = [f"{number:04d}" for number in range(1, expected_count + 1)]
+    if observed != expected or "JOB RESULT: SUCCESS" not in summary:
         raise DspalError(
-            "populate target dataset(s) are missing; run dspal initbcpl first:\n  "
-            + "\n  ".join(missing)
+            f"batch job has {len(observed)} verified steps; expected "
+            f"{expected_count} consecutive RC=0000 steps. Inspect JES output"
         )
 
 
 def cmd_populate(
     config: dict[str, Any], target: str, dry_run: bool, show_jcl: bool,
-    generated_only: bool = False,
+    generated_only: bool = False, batch: bool = False,
 ) -> int:
     _, actions, unmapped, missing_generated = preflight(
         config, target, generated_only=generated_only
@@ -292,7 +352,11 @@ def cmd_populate(
         return 2 if report_missing_generated(missing_generated, generated_only) else 0
 
     if show_jcl:
-        sys.stdout.write(combined_jcl(config, actions))
+        if batch and actions:
+            for group in population_batches(actions):
+                sys.stdout.write(batched_put_deck(config, group, redact_password=True))
+        else:
+            sys.stdout.write(combined_jcl(config, actions))
         return 2 if report_missing_generated(missing_generated, generated_only) else 0
 
     if not actions:
@@ -302,23 +366,38 @@ def cmd_populate(
 
     core.require_reader_ready(config)
     require_target_datasets(config, actions)
-    completed: list[tuple[int, dict[str, Any]]] = []
-    for action in actions:
-        deck = io.member_put_deck(
-            config,
-            action["dsn"],
-            action["member"],
-            action["records"],
-            redact_password=False,
-        )
-        job, _ = core.submit_and_wait(config, deck, max_rc=0)
-        completed.append((job, action))
-        rel = action["path"].relative_to(ROOT)
-        print(f"JOB {job}: {action['logical']}({action['member']}) <- {rel}")
+    completed = 0
+    if batch:
+        groups = population_batches(actions)
+        for number, group in enumerate(groups, 1):
+            start = time.monotonic()
+            deck = batched_put_deck(config, group)
+            job, summary = core.submit_and_wait(config, deck, max_rc=0)
+            verify_batch_summary(summary, len(group))
+            elapsed = time.monotonic() - start
+            print(f"JOB {job}: batch {number}/{len(groups)} "
+                  f"{group[0]['logical']} ({len(group)} members), {elapsed:.1f}s")
+            for index, action in enumerate(group, 1):
+                rel = action["path"].relative_to(ROOT)
+                print(f"  P{index:04d} {action['logical']}({action['member']}) <- {rel}")
+            completed += len(group)
+    else:
+        for action in actions:
+            deck = io.member_put_deck(
+                config,
+                action["dsn"],
+                action["member"],
+                action["records"],
+                redact_password=False,
+            )
+            job, _ = core.submit_and_wait(config, deck, max_rc=0)
+            completed += 1
+            rel = action["path"].relative_to(ROOT)
+            print(f"JOB {job}: {action['logical']}({action['member']}) <- {rel}")
 
     for logical in unmapped:
         print(f"{logical}: no population mappings defined; skipped")
-    print(f"populate completed: {len(completed)} ready member(s) written")
+    print(f"populate completed: {completed} ready member(s) written")
     return 2 if report_missing_generated(missing_generated, generated_only) else 0
 
 
@@ -330,6 +409,10 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--generated-only", action="store_true",
         help="populate only generated_members mappings; skip tracked member writes",
+    )
+    parser.add_argument(
+        "--batch", action="store_true",
+        help="OPT-IN: submit bounded multi-step IEBGENER jobs; requires MVS verification",
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
@@ -347,7 +430,7 @@ def main() -> int:
         config = core.load_config()
         return cmd_populate(
             config, args.target, args.dry_run, args.show_jcl,
-            generated_only=args.generated_only,
+            generated_only=args.generated_only, batch=args.batch,
         )
     except (DspalError, IODspalError, OSError, ValueError, UnicodeError) as exc:
         print(f"dspal: {exc}", file=sys.stderr)

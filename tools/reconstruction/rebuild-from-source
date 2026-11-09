@@ -18,9 +18,10 @@ run() {
     printf '\n> '
     printf '%q ' "$@"
     printf '\n'
+    local start_seconds=$SECONDS
     "$@"
     local rc=$?
-    printf 'Command RC=%s\n' "$rc"
+    printf 'Command RC=%s; elapsed=%ss\n' "$rc" "$((SECONDS - start_seconds))"
     return "$rc"
 }
 
@@ -103,10 +104,8 @@ step2() {
     run tools/datasets/dspal stat || return $?
     first_population dry-run || return $?
     first_population install || return $?
-    local name
-    for name in MR10_SOURCE MR10_JCL MR10_ASM BOOT_SOURCE BOOT_JCL EXT_MAC EXT_ASM EXT_SOURCE EXT_OBJ; do
-        run tools/datasets/dspal ls "$name" || return $?
-    done
+    # One JES inventory replaces nine separate member-listing jobs.
+    run tools/datasets/dspal ls || return $?
 }
 
 step3() {
@@ -151,9 +150,8 @@ step8() {
 
 step9() {
     local name
-    for name in BOOT_OBJ EXT_MAC EXT_ASM EXT_SOURCE EXT_OBJ; do
-        run tools/datasets/dspal ls "$name" || return $?
-    done
+    # Preserve installed-object visibility with one consolidated inventory.
+    run tools/datasets/dspal ls || return $?
     for name in BCPLDEMO BCPLTIME BCPLQSAM; do
         run tools/datasets/dspal submit BOOT_JCL "$name" || return $?
         confirm "Inspect $name payload JES job (RC, IFOX severity, IEBCOMPR) before another installation." || return 3
@@ -181,14 +179,17 @@ main() {
     else
         printf 'Existing tools will ask for DELETE and YES where appropriate.\n'
     fi
-    local id rc
+    local id rc step_start
     for id in 0 1 2 3 5 6 7 8 9; do
         confirm "Guide Step $id — begin?" || {
             printf 'STOPPED before Guide Step %s.\n' "$id"
             return 3
         }
+        step_start=$SECONDS
         "step$id"
         rc=$?
+        printf 'Guide Step %s elapsed=%ss; RC=%s\n' \
+            "$id" "$((SECONDS - step_start))" "$rc"
         if [ "$rc" -ne 0 ]; then
             printf 'STOPPED: Guide Step %s returned RC=%s. Rerun starts at Step 0.\n' "$id" "$rc" >&2
             return "$rc"
