@@ -25,6 +25,7 @@ This directory contains the source-controlled materials for a future self-contai
 - [Tape operations and practice](tape-operations-design-discussion-20261103.md) — attachment versus mounting, MVS read/write exercises, safeguards and proof of tape round trips.
 - [Earlier clean-room automation discussion](clean-room-automation-design-discussion-20261103.md) — historical checkpoint/resume proposal, now superseded.
 - [Distribution tape production automation](tape-production-automation-design-discussion-20261103.md) — manifest-driven JCL, controlled tape writing, independent installation and release gates.
+- [Multi-dataset tape and append experiment (deferred, 8 November 2026)](multi-dataset-tape-and-append-experiment-20261108.md) — observed automatic unmount after one-dataset write; outstanding retention, positioning, standard-label sequence, and safe append/recovery tests.
 
 GitHub `main` remains the source authority. Tape creation, restoration, labeling, bootstrap file ordering, and dataset overwrite policies require design, MVS 3.8J verification, and separate operational authorization.
 

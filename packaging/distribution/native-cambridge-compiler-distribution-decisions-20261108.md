@@ -131,6 +131,8 @@ TSO editing may be supported but cannot be mandatory. Developer-side
 AWS creation may use the project host tools, but the **consumer**
 must not need them.
 
+The [deferred multi-dataset and append experiment](multi-dataset-tape-and-append-experiment-20261108.md)
+will examine tape retention, logical sequencing and safe producer write boundaries.
 The sequential bootstrap, multi-dataset standard-label ordering,
 installer JCL, and a full clean-MVS installation have **not yet**
 been demonstrated; the earlier one-dataset PDS and object-library

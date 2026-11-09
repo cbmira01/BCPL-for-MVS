@@ -36,7 +36,7 @@ Suggested manifest fields (not yet an approved schema): source commit, profile, 
 
 - Separate `plan` / `generate` (no system writes) from `produce` (MVS/tape writes) and `verify` (independent tape readback and/or new-target restore). Exact command names are provisional.
 - Record each stage's identity, timestamps, input hashes, JCL decks, actual JES job IDs/step RCs, dataset inventory, tape mount state and final checksums.
-- Treat incomplete/aborted output media as **invalid**, not resumable by appending without an explicit tape-position and dataset integrity design. Prefer recreate-from-scratch using a new scratch image.
+- Treat incomplete/aborted output media as **invalid**, not resumable by appending without an explicit tape-position and dataset integrity design. Prefer recreate-from-scratch using a new scratch image. The [deferred multi-dataset/append experiment](multi-dataset-tape-and-append-experiment-20261108.md) must establish MVS 3.8J retention, label sequencing, positioning and readback before any producer append/recovery policy is implemented.
 - Ensure an existing output tape is never modified by default. Preflight `MOUNTED_TAPE_REINIT`, image permissions and unique filenames; hardware detach/attach is not the normal mount procedure.
 - Avoid hidden tape handling inside JES launcher code: keep operator-visible volume mount messages and deliberate checkpoint boundaries.
 - Release creation, tag/push, permanent dataset overwrite, JES submission and tape mounting require explicit authorization beyond a repository commit.
