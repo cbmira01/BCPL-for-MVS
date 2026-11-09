@@ -18,3 +18,11 @@ The native CG370 code-generation checkpoint is kept separately in
 [evidence](../../evidence/bootstrap-cambridge/native-codegen-checkpoint.md).
 The current source generator is
 [`make-demoted.py`](../../../bootstrap-toolchain/bootstrap-cambridge/make-demoted.py).
+
+Additional early bootstrap records:
+
+- [Pre-M3 BLIB object-library foundation](object-library/README.md) — Stage A and resident BLIB build evidence (original generators retired)
+- [Historical BLIB integration march](blib-integration-march-checkpoint.md)
+- [Interpreter capacity investigation](bootstrap-capacity-notes.md)
+- [Early kit-compiler strategy discussion](kit-compiler-strategy.md)
+- [Former bootstrap overview](bootstrap-toolchain-legacy-readme.md) — preserved before operational overview rewrite

@@ -6,6 +6,8 @@
 - [Regression suite separation discussion](regression-suite-separation-20261103.md) — proposed independent bootstrap, extension and future BSL test reporting while preserving acceptance evidence
 - [Global Number Registry](global-number-registry.md) — historical and project global-vector assignments
 - [Runtime contract v1](runtime-contract-v1.md) — native runtime interfaces and invariants
+- [CG370 architecture notes](cg370-architecture-notes.md) — historical System/370 generator, code generation and bootstrap distinctions
+- [MR10 and Cambridge runtime interface discussion](runtime-interface-conventions-and-contracts.md) — source-grounded architectural history
 - [Stack-check contract](stack-check-contract.md) — accepted System/370 stack behavior
 
 Milestone-specific contracts, including the [BCPLQSAM public interface](../milestones/qsam/bcplqsam-public-interface.md), live with the corresponding [milestone records](../milestones/README.md). Historical revisions remain accessible through Git history.

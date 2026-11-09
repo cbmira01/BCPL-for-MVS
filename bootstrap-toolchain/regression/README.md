@@ -2,6 +2,8 @@
 
 This directory retains the shared native regression execution harness for
 the reconstructed System/370 BCPL compiler/runtime path.
+Completed historical regression marches and stream-contract investigation notes
+are preserved in [packaging/archive/core-runtime/regression/](../../packaging/archive/core-runtime/regression/README.md).
 Since Stage 2C, numbered case implementations reside in `tests/`, grouped
 by their owning suite; see `tests/README.md` for navigation.
 

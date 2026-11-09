@@ -1,11 +1,16 @@
 # Historical BLIB object-library foundation — Stage A (pre-M3)
 
+**Archived workflow (not executable at its former paths).** The two Python
+probe generators cited below have been retired from the current source tree.
+The dated record is preserved for provenance; use the clean-room runbook and
+current `BOOT_JCL(BLIBBLD)` for any actual reconstruction.
+
 **HISTORICAL NOTE:** This document describes an earlier pre-M3
 `HERC02.BCPL.SOURCE/JCL/OBJ` layout. The recorded evidence remains
 valuable, but its operational commands, filenames and PDS aliases are
 no longer the canonical reconstruction procedure. See
-[the current native JCL index](../jcl/README.md) and
-[the clean-room runbook](../../docs/Rebuild-BCPL-for-MVS-from-source.md)
+[the current native JCL index](../../../../bootstrap-toolchain/jcl/README.md) and
+[the clean-room runbook](../../../../docs/Rebuild-BCPL-for-MVS-from-source.md)
 instead. The old `BLIBLINK` standalone consumer deck was retired.
 
 **Stage A is VERIFIED:** user-run JOB 2396 on 2026-10-08 completed ASMBLIB,
