@@ -7,6 +7,10 @@ This directory contains the source-controlled materials for a future self-contai
 - [create-tape/](create-tape/) — development-host tools and MVS JCL for building and verifying tape media.
 - [install-from-tape/](install-from-tape/) — MVS-resident JCL and installation materials intended to be distributed on tape.
 
+## Release identity and VOLSER tracking
+
+- [Version and VOLSER registry design (8 November 2026)](release-version-and-volser-registry-decisions-20261108.md) — one proposed Git-controlled registry for cross-release version and VOLSER allocation; per-release manifests remain authoritative for tape dataset order. No registry is implemented.
+
 ## Native Cambridge Compiler release and tape naming decisions
 
 - [Owner-approved distribution decisions (8 November 2026)](native-cambridge-compiler-distribution-decisions-20261108.md) — initial native Cambridge Compiler product scope, position-based `BCPL.BTnnnn` dataset aliases, canonical source-to-tape-to-install mapping, self-documenting bootstrap and release lifecycle. This remains a design direction, not a completed installer or release.

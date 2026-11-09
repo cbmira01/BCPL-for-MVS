@@ -155,6 +155,9 @@ round trips do not establish these capabilities.
    it as the tested release.
 
 Release version, source commit, and tape SHA-256 are distinct identities.
+Each release candidate also reserves its own new VOLSER in the proposed
+cross-release [version/VOLSER registry](release-version-and-volser-registry-decisions-20261108.md); no VOLSER allocation
+is implied by this design note.
 The complete release must be reconstructible from authoritative Git
 sources and approved MVS build dependencies, with redistribution rights
 and provenance established for every included component.
