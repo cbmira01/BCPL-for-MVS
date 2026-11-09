@@ -1,6 +1,8 @@
 # MR10 tools
 
 These tools belong to the historical MR10 INTCODE compiler/interpreter workflow.
+For the source-recognized MR10 `OPTIONS` record and `--dd OPTIONS=PATH`
+invocation, see [compiler options](../../mr10-kit-compiler/docs/compiler-options.md).
 
 - `run-demo-suite` — run the 17 MR10 BCPL demonstrations.
 - `run-language-demos` — run the language demonstration suite.
