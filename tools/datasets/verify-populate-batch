@@ -21,7 +21,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 DSPAL = ROOT / "tools/datasets/dspal"
-TARGETS = ("DIST_DOCS", "EXT_SOURCE")
+TARGETS = ("DIST_DOCS", "EXT_SOURCE", "MR10_TESTS")
 
 
 def load_population():
@@ -34,15 +34,31 @@ def load_population():
     return module
 
 
-def canonical_text(records: list[str]) -> str:
-    """The FB/80 text comparison offered by dspal get, not a raw-byte dump.
-
-    FB padding is not distinguishable from meaningful trailing spaces; the
-    existing read path strips right padding and terminal empty records.
-    """
-    if records and (records[0] == "" or records[-1] == ""):
-        raise ValueError("boundary blank records cannot be verified by dspal get")
+def terminal_blank_count(records: list[str]) -> int:
+    """Count FB/80 terminal blank records hidden by dspal get."""
     cleaned = [record.rstrip(" ") for record in records]
+    count = 0
+    for record in reversed(cleaned):
+        if record != "":
+            break
+        count += 1
+    return count
+
+
+def canonical_text(records: list[str], *, allow_terminal_blanks: bool = False) -> str:
+    """Canonical FB/80 text as recovered by dspal get, not raw EBCDIC data.
+
+    The MVS reader strips FB right-padding and terminal blank records.
+    Only MR10_TESTS acceptance allows terminal blanks, and documents the
+    count that cannot be independently verified by this read-back path.
+    """
+    cleaned = [record.rstrip(" ") for record in records]
+    if cleaned and cleaned[0] == "":
+        raise ValueError("leading blank record cannot be verified by dspal get")
+    if terminal_blank_count(records) and not allow_terminal_blanks:
+        raise ValueError("terminal blank records cannot be verified by dspal get")
+    while cleaned and cleaned[-1] == "":
+        cleaned.pop()
     return "\n".join(cleaned) + ("\n" if cleaned else "")
 
 
@@ -59,7 +75,12 @@ def collect_plan(population, target: str):
            for action in actions):
         raise ValueError("generated members excluded from this acceptance")
     # Do not accept a source mapping the reader cannot verify as text.
-    expected = {action["member"]: canonical_text(action["records"]) for action in actions}
+    expected = {
+        action["member"]: canonical_text(
+            action["records"], allow_terminal_blanks=(target == "MR10_TESTS")
+        )
+        for action in actions
+    }
     dsn = population.core.full_dsn(config, config["datasets"][target])
     if not dsn.startswith(str(config["mvs"]["hlq"]).upper() + "."):
         raise ValueError("target outside effective MVS HLQ")
@@ -108,11 +129,43 @@ def persist(path: Path, result: dict) -> None:
     )
 
 
-def run_acceptance(target: str, dsn: str, expected: dict[str, str], head: str) -> int:
+def verify_batch_receipts(stdout: str, target: str, expected_sizes: list[int]):
+    """Require one distinct, ordered JES completion receipt per expected batch."""
+    pattern = re.compile(
+        rf"(?m)^JOB (\d+): batch (\d+)/(\d+) {re.escape(target)} "
+        r"\((\d+) members\), [^\n]+$"
+    )
+    receipts = [
+        {"job": int(job), "batch": int(index), "batch_total": int(total),
+         "members": int(members)}
+        for job, index, total, members in pattern.findall(stdout)
+    ]
+    if (len(receipts) != len(expected_sizes)
+            or len({x["job"] for x in receipts}) != len(receipts)
+            or any((r["batch"], r["batch_total"], r["members"])
+                   != (i, len(expected_sizes), expected_sizes[i - 1])
+                   for i, r in enumerate(receipts, 1))):
+        raise RuntimeError(
+            f"missing or invalid batch JES receipts: expected "
+            f"{expected_sizes} member counts; observed {receipts}"
+        )
+    return receipts
+
+
+def run_acceptance(
+    target: str, dsn: str, expected: dict[str, str], head: str,
+    *, expected_batch_sizes: list[int] | None = None,
+    unverified_terminal_blanks: dict[str, int] | None = None,
+) -> int:
     path = evidence_directory()
+    expected_batch_sizes = expected_batch_sizes or [len(expected)]
+    unverified_terminal_blanks = unverified_terminal_blanks or {}
     result = {
         "git_head": head, "target": target, "dsn": dsn, "passed": False,
-        "members": [], "batch_rc": None, "elapsed_seconds": None,
+        "members": [], "batch_rc": None, "batch_jobs": [],
+        "expected_batch_sizes": expected_batch_sizes, "elapsed_seconds": None,
+        "unverified_terminal_blank_records": unverified_terminal_blanks,
+        "qualified": bool(unverified_terminal_blanks),
         "evidence": str(path.relative_to(ROOT)),
         "comparison": "dspal-get canonical FB/80 text (not raw EBCDIC bytes)",
     }
@@ -129,6 +182,9 @@ def run_acceptance(target: str, dsn: str, expected: dict[str, str], head: str) -
             print(batch.stderr, file=sys.stderr, end="" if batch.stderr.endswith("\n") else "\n")
         if batch.returncode:
             raise RuntimeError(f"batch population failed RC={batch.returncode}; readback skipped")
+        result["batch_jobs"] = verify_batch_receipts(
+            batch.stdout, target, expected_batch_sizes
+        )
         for member, text in expected.items():
             readback = invoke_dspal("get", target, member, "-")
             item = {
@@ -150,7 +206,12 @@ def run_acceptance(target: str, dsn: str, expected: dict[str, str], head: str) -
                 raise RuntimeError(f"readback mismatch {target}({member}); see evidence")
             print(f"PASS {target}({member}) {item['expected_sha256'][:12]}")
         result["passed"] = True
-        print(f"PASS {target}: {len(expected)} of {len(expected)} members matched")
+        print(f"PASS {target}: {len(expected)} of {len(expected)} canonical texts matched")
+        if unverified_terminal_blanks:
+            names = ", ".join(
+                f"{name} ({count})" for name, count in unverified_terminal_blanks.items()
+            )
+            print(f"QUALIFIED: terminal blank record counts not verified: {names}")
         return 0
     except (OSError, RuntimeError) as exc:
         result["error"] = str(exc)
@@ -180,16 +241,33 @@ def main(argv=None) -> int:
         check_clean_source()
         population = load_population()
         dsn, actions, expected = collect_plan(population, args.target)
+        batches = population.population_batches(actions)
+        batch_sizes = [len(batch) for batch in batches]
+        unverified_blanks = {
+            action["member"]: count
+            for action in actions
+            if (count := terminal_blank_count(action["records"]))
+        }
         print(f"Git HEAD: {head}")
         print(f"Population: {args.target} -> {dsn}")
         for action in actions:
             print(f"  {action['member']:<8} {action['path'].relative_to(ROOT)} ")
+        print(f"Planned batch jobs: {len(batches)} "
+              f"({', '.join(str(n) for n in batch_sizes)} members)")
+        if unverified_blanks:
+            print(f"NOTE: {len(unverified_blanks)} members contain terminal blank "
+                  "records that dspal get cannot count; canonical-text "
+                  "comparison only")
         if args.check:
             print(f"CHECK PASS: {len(actions)} members ready; no JES jobs submitted")
             return 0
         if args.approve_dsn != dsn:
             raise ValueError(f"approval does not match resolved dataset {dsn}")
-        return run_acceptance(args.target, dsn, expected, head)
+        return run_acceptance(
+            args.target, dsn, expected, head,
+            expected_batch_sizes=batch_sizes,
+            unverified_terminal_blanks=unverified_blanks,
+        )
     except (RuntimeError, ValueError, OSError) as exc:
         print(f"BLOCKED: {exc}", file=sys.stderr)
         return 2

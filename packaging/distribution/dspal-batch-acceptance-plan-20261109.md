@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 9 November 2026  
-**Status:** Host-only tests passed; live MVS acceptance pending  
+**Status:** `DIST_DOCS` and `EXT_SOURCE` live MVS text acceptance passed; `MR10_TESTS` split-job acceptance pending  
 **Git source authority:** GitHub `main`. **Execution authority:** JES, IEBGENER and actual MVS PDS contents.
 
 ## Scope and constraints
@@ -11,11 +11,10 @@
 jobs, while the original one-job-per-member method remains the default.
 The reconstruction driver **does not** enable batching.
 
-The first live acceptance target is `DIST_DOCS`: seven Git-backed text members
-in the managed `BCPL.DIST.DOCS` PDS (full DSN resolved from the effective HLQ).
-This is an actual PDS write, but it does not replace compiled program objects.
-An optional later target, `EXT_SOURCE`, covers BCPL declaration headers with
-leading `//` lines. It is a separate write and must be separately approved.
+The initial live acceptance targets were `DIST_DOCS` (seven Git-backed
+documentation members) and `EXT_SOURCE` (three BCPL declaration headers,
+including lines beginning with `//`). Both were tested against the existing
+MVS 3.8J installation without rebuilding or deleting object datasets.
 
 The new `tools/datasets/verify-populate-batch` command uses the same
 manifest mappings and input validation as `dspal populate`. It neither
@@ -77,10 +76,70 @@ checks the canonical recovered text, **not byte-for-byte EBCDIC identity**.
 Sources with initial or terminal blank records are refused because this read
 path cannot verify those boundaries.
 
-If the first live run succeeds and the operator approves a second target,
-repeat `--check --target EXT_SOURCE` and then `--run --target EXT_SOURCE`
-with the exact resolved `--approve-dsn`. Do not infer authorization for
-`BOOT_JCL`, native objects, full clean-room reconstruction or regressions.
+## Recorded live MVS results — 9 November 2026
+
+Both tests ran at GitHub HEAD `aa51bad16599ca4c9165775223bc694bd03fdd29`:
+
+| Target | JES job | IEBGENER steps | Member read-back | Batch duration |
+| --- | --- | --- | --- | --- |
+| `DIST_DOCS` | 3136 | 7/7 RC=0000 | 7/7 canonical texts matched | 8.4 s |
+| `EXT_SOURCE` | 3145 | 3/3 RC=0000 | 3/3 canonical texts matched | 8.0 s |
+
+Workstation evidence directories:
+- `workarea/dspal-batch-acceptance/20261109T234013Z-64566`
+- `workarea/dspal-batch-acceptance/20261109T234847Z-64881`
+
+These are operator-reported MVS execution results, not evidence that has
+been independently replayed here. No release or reconstruction acceptance
+is implied.
+
+## Next live gate — split `MR10_TESTS` population
+
+The manifest currently maps **61** Git-tracked members into
+`HERC02.BCPL.MR10KIT.TESTS`. The opt-in batch planner should produce
+**two** JES jobs (60 steps plus 1 step), subject to its additional 4,000-card
+ceiling. The acceptance tool now checks the exact planned job counts,
+ordered/distinct JES batch receipts, and every recoverable member text.
+
+**Qualification:** Four members (`T01ECHO`, `T01TEXT`, `T04MOD1`,
+`T04MOD2`) have terminal empty FB/80 records in their Git sources.
+The current `dspal get` parser discards trailing blank records, so it
+cannot verify those terminal-record counts. For `MR10_TESTS` **only**,
+the acceptance tool compares the canonical recoverable text and reports
+`qualified: true` with the unverifiable member/record counts in
+`summary.json`. It must not be presented as full raw-record fidelity.
+Other acceptance targets continue to reject such source records.
+
+Read-only planning (no JES):
+
+```bash
+set +e
+set +u
+set +o pipefail
+
+tools/datasets/verify-populate-batch --check --target MR10_TESTS
+echo "MR10_TESTS preflight RC=$?"
+```
+
+After separate operator approval of the exact PDS write, keep unrelated
+JES submissions stopped and execute:
+
+```bash
+set +e
+set +u
+set +o pipefail
+
+tools/datasets/verify-populate-batch \
+    --run --target MR10_TESTS \
+    --approve-dsn HERC02.BCPL.MR10KIT.TESTS
+echo "MR10_TESTS split-batch acceptance RC=$?"
+```
+
+This overwrites the 61 mapped PDS members; it does not purge MVS datasets.
+Review both JES jobs, individual step codes, 61 canonical read-back comparisons
+and the explicit qualification before considering the split-batch gate met.
+Do not infer authorization for `BOOT_JCL`, native objects, full
+clean-room reconstruction, or regressions.
 
 ## Acceptance gate
 
