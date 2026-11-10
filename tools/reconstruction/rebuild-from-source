@@ -6,6 +6,16 @@ set +e
 set +u
 set +o pipefail
 
+# Bash SECONDS covers the complete invocation, including early exits.
+REBUILD_STARTED=$SECONDS
+report_rebuild_elapsed() {
+    local rc=$?
+    local elapsed=$((SECONDS - REBUILD_STARTED))
+    printf '\nTOTAL REBUILD EXECUTION TIME: %dm %02ds (RC=%s)\n' \
+        "$((elapsed / 60))" "$((elapsed % 60))" "$rc"
+}
+trap report_rebuild_elapsed EXIT
+
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 if [ -z "$ROOT" ] || ! cd "$ROOT"; then
     printf 'BLOCKED: cannot enter repository root.\n' >&2

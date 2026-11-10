@@ -190,6 +190,18 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
                             for s in report["suites"][1:]))
         self.assertFalse((self.root / "native-invocations").exists())
 
+    def test_elapsed_format_and_run_summary_duration(self):
+        self.assertEqual(MOD.format_elapsed(0), "0m 00s")
+        self.assertEqual(MOD.format_elapsed(557.8), "9m 17s")
+        rc, _, _ = self.invoke(
+            "--run", "--suite", "mr10",
+        )
+        self.assertEqual(rc, 0)
+        report = self.report()
+        self.assertIn("elapsed_seconds", report)
+        self.assertIsInstance(report["elapsed_seconds"], (int, float))
+        self.assertGreaterEqual(report["elapsed_seconds"], 0)
+
     def test_mixed_run_has_independent_results_and_logs(self):
         rc, _, _ = self.invoke("--run", "--suite", "bcpltime",
                                "--suite", "mr10", "--profile", "installed-r5-t1")

@@ -173,6 +173,21 @@ exit 0
         self.assertIn('interactive terminal', result.stderr)
         self.assertFalse(self.call_log.exists())
 
+    def test_total_time_reported_on_success_and_failure(self):
+        success = self.invoke_unattended(batch=True)
+        self.assertEqual(success.returncode, 0, success.stdout[-2200:])
+        self.assertRegex(
+            success.stdout, r"TOTAL REBUILD EXECUTION TIME: \d+m \d{2}s \(RC=0\)")
+        self.assertEqual(success.stdout.count("TOTAL REBUILD EXECUTION TIME:"), 1)
+
+        failure = self.invoke_unattended(
+            fail="dspal:submit MR10_JCL IC19BLD")
+        self.assertEqual(failure.returncode, 7, failure.stdout[-2200:])
+        self.assertRegex(
+            failure.stdout, r"TOTAL REBUILD EXECUTION TIME: \d+m \d{2}s \(RC=7\)")
+        self.assertEqual(failure.stdout.count("TOTAL REBUILD EXECUTION TIME:"), 1)
+        self.assertTrue(failure.stdout.rstrip().endswith("(RC=7)"))
+
     def test_unattended_completes_with_no_tty_and_no_prompts(self):
         result = self.invoke_unattended()
         self.assertEqual(result.returncode, 0, result.stdout[-2500:])

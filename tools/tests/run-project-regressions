@@ -17,6 +17,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 NATIVE_SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
@@ -297,6 +298,7 @@ def run_logged(command: list[str], suite: str, log_path: Path,
 
 
 def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
+    run_started = time.monotonic()
     os.umask(0o077)
     RUN_ROOT.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
@@ -354,6 +356,7 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
                "BLOCKED" if "BLOCKED" in states else
                "INCOMPLETE" if "NOT_RUN" in states else "PASS")
     summary["status"] = overall
+    summary["elapsed_seconds"] = round(time.monotonic() - run_started, 3)
     save(filename, summary)
     print(f"PROJECT REGRESSION RESULT: {overall}")
     print(f"SUMMARY: {filename}")
@@ -407,5 +410,16 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
 
+def format_elapsed(seconds: float) -> str:
+    elapsed = max(0, int(seconds))
+    return f"{elapsed // 60}m {elapsed % 60:02d}s"
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    invocation_started = time.monotonic()
+    try:
+        sys.exit(main())
+    finally:
+        print("TOTAL REGRESSION EXECUTION TIME: "
+              + format_elapsed(time.monotonic() - invocation_started),
+              flush=True)
