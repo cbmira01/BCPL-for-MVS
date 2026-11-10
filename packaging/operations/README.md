@@ -16,6 +16,7 @@
 - [Regression runner performance analysis (9 November 2026)](maintenance/regression-runner-performance-analysis-20261109.md) — 73m57s passing baseline, measured full-printer scan overhead and representative native timings
 - [Guarded JES printer-window trial (10 November 2026)](maintenance/jes-printer-window-opt-in-trial-20261110.md) — opt-in byte-scoped JES reader and activation boundaries
 - [JES printer-window six-suite verification (10 November 2026)](maintenance/jes-printer-window-six-suite-verification-20261110.md) — owner-reported 194 PASS / 1 expected SKIP, 9m17s elapsed, new QSAM reader exercised
+- [Native-regression printer-window default decision (10 November 2026)](maintenance/jes-printer-window-default-decision-20261110.md) — owner-directed default-on for native cases 00–176, explicit legacy override, no change to generic JES tools
 - [QSAM active JCL helper dependency proposal](maintenance/qsam-active-jcl-helper-dependency-proposal-20261109.md) — fixes the 16-DCB probe's archived Q.0 helper path; proposes later extraction of reusable IFOX/IEWL JCL helpers
 
 The canonical [clean-room reconstruction guide](../../docs/Rebuild-BCPL-for-MVS-from-source.md) remains in `docs/`, not here. A Git commit does not authorize JES submissions, dataset writes or production-object promotion.

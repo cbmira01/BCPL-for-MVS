@@ -142,27 +142,34 @@ as `n/a`. The optional benchmark times normal `job-summary` calls
 against the current complete printer file; it does not change that tool.
 This is diagnostic evidence, not regression acceptance.
 
-## Opt-in native regression printer-window trial
+## Native regression printer-window default
 
-The [printer-window trial design](../../packaging/operations/maintenance/jes-printer-window-opt-in-trial-20261110.md)
-documents a safe, pre-submission cursor used to avoid full
-776.7 MiB printer scans during an ordinary native test.
+The [10 November six-suite verification](../../packaging/operations/maintenance/jes-printer-window-six-suite-verification-20261110.md)
+records 194 PASS, zero FAIL, one expected SKIP (083), and 9m17s
+wall time with the offset-based reader explicitly enabled. The
+[owner-directed default decision](../../packaging/operations/maintenance/jes-printer-window-default-decision-20261110.md)
+promotes that already-tested reader to the **default for numbered native
+regressions 00–176**, without changing the generic JES tooling defaults.
 
-This is **not enabled by default**. With a separately authorized
-JES run, a caller may explicitly set
-`BCPL_PRINTER_WINDOW_TRIAL=1` for numbered native cases.
-The flag is passed through the usual native wrappers to the
-Cambridge compilation and native assemble/link/GO report readers.
-BCPLQSAM native cases 163–176 also use a captured pre-submission
-cursor for their native JES summary/report under this opt-in;
-Hercules device capture continues to use independent pre-JES offsets.
-MR10 and its probes retain their independent read paths.
-Offline safety/unit tests:
+- Unset `BCPL_PRINTER_WINDOW_TRIAL` (or set it to `1`): use the
+  pre-submission byte-offset reader for Cambridge compilation and native
+  IFOX/IEWL/GO JES verification.
+- Set `BCPL_PRINTER_WINDOW_TRIAL=0`: explicitly request the legacy
+  full-printer-file reader for a native regression.
+- Both profiles and direct numbered-regression harness calls follow this
+  default; independently invoked `tools/bootstrap/compile-mvs` and generic
+  `tools/mvs` utilities retain their established defaults.
+- BCPLQSAM cases 163–176 use a bounded native-job report cursor; their
+  physical Hercules punch/printer capture checks retain separate offsets.
+  MR10 and MR10 probes retain their independent readers.
+- Invalid/rotated cursors still fail closed, without legacy fallback.
+  The default **does not grant** device authorization; cases 175–176
+  still require `--allow-device` through the suite coordinator.
+
+Host-only checks (no JES submission):
 
 ```sh
 python3 -B -m unittest discover -s tools/checks -p 'test_printer_window*.py' -v
+tools/tests/run-project-regressions --check
 ```
 
-These tests do **not** submit jobs. The opt-in performance path is
-not MVS-accepted and must be compared against the established runner
-before any default behavior changes.

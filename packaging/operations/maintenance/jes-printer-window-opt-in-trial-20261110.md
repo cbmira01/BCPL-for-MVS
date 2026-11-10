@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Date:** 10 November 2026 UTC (9 November US Eastern)
-**Status:** OPT-IN TRIAL — full six-suite verification PASS (10 November 2026); default-on remains a separate decision
+**Status:** HISTORICAL OPT-IN TRIAL — full six-suite verification PASS; subsequent owner-directed default decision documented separately
 **Authority:** [Regressions performance analysis](regression-runner-performance-analysis-20261109.md); GitHub `main` is source authority. Actual JES and program execution remain the acceptance authority.
 
 ## Motivation and measured baseline
@@ -129,8 +129,11 @@ regression at `5cb4d64341f5dd478d87723b941258f177708f07`.
 That verification reported **194 PASS, 0 FAIL, 1 expected SKIP (083),
 0 BLOCKED**, with a corrected measured host elapsed time of **9m17s**.
 See the [dated verification evidence](jes-printer-window-six-suite-verification-20261110.md).
-The optimization remains explicitly opt-in; default-on activation
-requires a separate owner decision.
+At the time of this trial the optimization remained opt-in. The owner later
+directed default-on activation for **native regression harnesses only**; see
+[the separate default decision](jes-printer-window-default-decision-20261110.md).
+The verification record above remains historical evidence of the previously
+explicitly enabled code path.
 
 ## Boundaries
 
@@ -142,6 +145,7 @@ requires a separate owner decision.
   submission must be investigated before any retry.
 - Do not extend the opt-in to parallel JES submissions without
   separate dataset/printer/device isolation analysis.
-- Verify the installed profile, QSAM 163–176 and MR10 paths separately
-  before considering default-on activation. The accepted unoptimized
-  behavior remains available by leaving the environment variable unset.
+- The accepted unoptimized behavior remains available in native regressions
+  through explicit `BCPL_PRINTER_WINDOW_TRIAL=0`. This historical trial
+  required the operator to set `1`; the subsequent default decision
+  reverses only the regression harness default.

@@ -113,7 +113,11 @@ else
 fi
 mkdir -p "$work"
 
-# Optional bounded printer reader trial. No change to default regression path.
+# Default bounded JES printer reads for native regressions. Explicit 0 retains
+# the legacy full-file reader; export the selection to Cambridge/BCPLQSAM jobs.
+if [[ ! ${BCPL_PRINTER_WINDOW_TRIAL+x} ]]; then
+    export BCPL_PRINTER_WINDOW_TRIAL=1
+fi
 printer_args=()
 if [[ ${BCPL_PRINTER_WINDOW_TRIAL:-0} == 1 ]]; then
     printer_args=(--cursor-file "$work/native-printer.cursor")

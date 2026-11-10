@@ -114,7 +114,7 @@ def invoke(args: list[str], out: Path, limit: int) -> tuple[int, str]:
 
 def printer_args_for_attempt(attempt: Path) -> list[str]:
     """Select a safe pre-submission JES printer cursor for this attempt."""
-    trial = os.environ.get("BCPL_PRINTER_WINDOW_TRIAL", "0")
+    trial = os.environ.get("BCPL_PRINTER_WINDOW_TRIAL", "1")
     if trial not in ("0", "1"):
         raise ValueError("BCPL_PRINTER_WINDOW_TRIAL must be 0 or 1")
     return (["--cursor-file", str(attempt / "native-printer.cursor")]
@@ -386,6 +386,9 @@ def run(number: int, case: Path) -> int:
     work = WORK / case.name
     work.mkdir(parents=True, exist_ok=True)
     attempt = Path(tempfile.mkdtemp(prefix="native-", dir=work))
+    # Native regressions default to bounded reads, including direct QSAM runs.
+    # Explicit 0 retains the legacy reader; export so the Cambridge compiler agrees.
+    os.environ.setdefault("BCPL_PRINTER_WINDOW_TRIAL", "1")
     printer_args = printer_args_for_attempt(attempt)
     print(f"QSAM case {number}, JES job {job}, evidence {attempt}", flush=True)
 

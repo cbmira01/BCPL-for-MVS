@@ -19,7 +19,7 @@ SPEC.loader.exec_module(QSAM)
 
 
 class QsamPrinterWindowTests(unittest.TestCase):
-    def exercise_case(self, number: int, trial: str, *, invalid_cursor=False):
+    def exercise_case(self, number: int, trial: str | None, *, invalid_cursor=False):
         kind, _, _, markers = QSAM.CASES[number]
         with tempfile.TemporaryDirectory() as folder:
             base = Path(folder)
@@ -43,6 +43,8 @@ class QsamPrinterWindowTests(unittest.TestCase):
                 if len(args) > 1 and Path(args[1]).name == "compile-mvs":
                     generated = Path(args[args.index("--output") + 1])
                     generated.write_text(" ASSEMBLER SOURCE\n", encoding="ascii")
+                    self.assertEqual(os.environ.get("BCPL_PRINTER_WINDOW_TRIAL"),
+                                     trial if trial is not None else "1")
                     result = (0, "saved Cambridge CODE: synthetic\n")
                 elif name == "submit-jcl":
                     result = (0, "JOB 271\n")
@@ -67,7 +69,10 @@ class QsamPrinterWindowTests(unittest.TestCase):
                 mock.patch.object(QSAM, "evidence", return_value=[]),
                 mock.patch.object(QSAM, "check_sysout_capture", return_value=[]),
                 mock.patch.object(QSAM.time, "sleep", return_value=None),
-                mock.patch.dict(os.environ, {"BCPL_PRINTER_WINDOW_TRIAL": trial}),
+                mock.patch.dict(os.environ,
+                                {"BCPL_PRINTER_WINDOW_TRIAL": trial}
+                                if trial is not None else {},
+                                clear=(trial is None)),
             ]
             if kind == "fba":
                 patches.append(mock.patch.dict(QSAM.SYSOUT_PATHS, {"fba": printer}))
@@ -91,7 +96,7 @@ class QsamPrinterWindowTests(unittest.TestCase):
             self.assertEqual(result, 1 if invalid_cursor else 0)
 
             for args in submit + summary + reports:
-                if trial == "1":
+                if trial != "0":
                     self.assertIn("--cursor-file", args)
                     cursor = Path(args[args.index("--cursor-file") + 1])
                     self.assertEqual(cursor.name, "native-printer.cursor")
@@ -104,7 +109,10 @@ class QsamPrinterWindowTests(unittest.TestCase):
             with self.subTest(number=number):
                 self.exercise_case(number, "1")
 
-    def test_default_preserves_existing_readers(self):
+    def test_default_uses_offset_based_reader(self):
+        self.exercise_case(163, None)
+
+    def test_explicit_zero_preserves_legacy_reader(self):
         self.exercise_case(163, "0")
 
     def test_invalid_cursor_stops_without_report_or_retry(self):

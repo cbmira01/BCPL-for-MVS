@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -103,6 +104,37 @@ class PrinterWindowIntegration(unittest.TestCase):
             printer.write_text(entry(271, "RG000R", "WRONG"), encoding="utf-8")
             invalid = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
             self.assertNotEqual(invalid.returncode, 0)
+
+    def test_native_regression_default_and_explicit_legacy_override(self):
+        # Exercise only the selection stanza: no submission or JES access.
+        script = (ROOT / "bootstrap-toolchain/regression/run-test.sh").read_text(
+            encoding="utf-8")
+        begin = script.index("# Default bounded JES printer reads")
+        end = script.index("# Q.2 System Extension regressions", begin)
+        stanza = script[begin:end]
+        command = (
+            "work=/tmp/printer-window-regression-test\n" + stanza +
+            "\nprintf 'MODE=%s\\nCURSOR=%s\\n' "
+            '"$BCPL_PRINTER_WINDOW_TRIAL" "${printer_args[*]}"\n'
+        )
+        for value, expected, has_cursor in (
+            (None, "1", True), ("1", "1", True), ("0", "0", False),
+        ):
+            with self.subTest(value=value):
+                env = os.environ.copy()
+                env.pop("BCPL_PRINTER_WINDOW_TRIAL", None)
+                if value is not None:
+                    env["BCPL_PRINTER_WINDOW_TRIAL"] = value
+                run = subprocess.run(["bash", "-c", command], cwd=ROOT,
+                                     env=env, capture_output=True, text=True)
+                self.assertEqual(run.returncode, 0, run.stderr)
+                self.assertIn("MODE=" + expected, run.stdout)
+                self.assertEqual("--cursor-file" in run.stdout, has_cursor)
+        env["BCPL_PRINTER_WINDOW_TRIAL"] = "bad"
+        bad = subprocess.run(["bash", "-c", command], cwd=ROOT,
+                             env=env, capture_output=True, text=True)
+        self.assertEqual(bad.returncode, 64)
+        self.assertIn("must be 0 or 1", bad.stderr)
 
     def test_shell_syntax_and_python_imports(self):
         for relative in (
