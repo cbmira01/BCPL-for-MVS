@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Date:** 10 November 2026 UTC (9 November US Eastern)
-**Status:** OPT-IN TRIAL — ordinary native case verification complete; BCPLQSAM native-window extension awaiting live acceptance
+**Status:** OPT-IN TRIAL — full six-suite verification PASS (10 November 2026); default-on remains a separate decision
 **Authority:** [Regressions performance analysis](regression-runner-performance-analysis-20261109.md); GitHub `main` is source authority. Actual JES and program execution remain the acceptance authority.
 
 ## Motivation and measured baseline
@@ -124,8 +124,13 @@ The 10 November full six-suite run at `c0922f3` returned
 still used its prior unbounded native reader in that run. The
 operator's elapsed-time shell arithmetic was invalid, so **no total
 duration is verified** for that run. The BCPLQSAM native-window
-extension in this revision requires new live verification and a
-fresh full six-suite regression before default-on acceptance.
+extension was subsequently tested by a complete passing six-suite
+regression at `5cb4d64341f5dd478d87723b941258f177708f07`.
+That verification reported **194 PASS, 0 FAIL, 1 expected SKIP (083),
+0 BLOCKED**, with a corrected measured host elapsed time of **9m17s**.
+See the [dated verification evidence](jes-printer-window-six-suite-verification-20261110.md).
+The optimization remains explicitly opt-in; default-on activation
+requires a separate owner decision.
 
 ## Boundaries
 
