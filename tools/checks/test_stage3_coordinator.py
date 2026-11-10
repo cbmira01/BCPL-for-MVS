@@ -150,6 +150,12 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertEqual(len(runs), 1)
         return json.loads((runs[0] / "summary.json").read_text())
 
+    def suite(self, report, name):
+        matches = [entry for entry in report["suites"]
+                   if entry["name"] == name]
+        self.assertEqual(len(matches), 1, f"expected one {name} suite")
+        return matches[0]
+
     def test_offline_check_and_list_do_not_execute(self):
         rc, text, _ = self.invoke("--check")
         self.assertEqual(rc, 0)
@@ -180,7 +186,7 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertEqual((rc, errors), (0, ""))
         self.assertIn("PROJECT REGRESSION RESULT: PASS", output)
         report = self.report()
-        mr10 = report["suites"][0]
+        mr10 = self.suite(report, "mr10")
         self.assertEqual(mr10["status"], "PASS")
         self.assertEqual(mr10["counts"]["PASS"], 2)
         self.assertIsNone(mr10["counts"]["BLOCKED"])
@@ -210,9 +216,11 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertEqual(report["selected_suites"], ["mr10", "bcpltime"])
         self.assertEqual(report["native_profile"], "installed-r5-t1")
         self.assertEqual(report["git_head"], "test-git-revision")
-        self.assertEqual([s["status"] for s in report["suites"]],
-            ["PASS", "NOT_SELECTED", "NOT_SELECTED", "PASS", "NOT_SELECTED"])
-        self.assertEqual(report["suites"][3]["cases"],
+        self.assertEqual(
+            {s["name"]: s["status"] for s in report["suites"]},
+            {name: ("PASS" if name in ("mr10", "bcpltime")
+                    else "NOT_SELECTED") for name in MOD.SUITES})
+        self.assertEqual(self.suite(report, "bcpltime")["cases"],
                          [{"id": "159", "status": "PASS"}])
         run_dir = next(MOD.RUN_ROOT.iterdir())
         self.assertTrue((run_dir / "bcpltime.log").is_file())
@@ -226,9 +234,9 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertEqual(rc, 1)
         report = self.report()
         self.assertEqual(report["status"], "FAIL")
-        self.assertEqual(report["suites"][0]["counts"],
+        self.assertEqual(self.suite(report, "mr10")["counts"],
             {"PASS": 1, "FAIL": 1, "SKIP": None, "BLOCKED": None, "TOTAL": 2})
-        self.assertEqual(report["suites"][1]["status"], "NOT_RUN")
+        self.assertEqual(self.suite(report, "bootstrap")["status"], "NOT_RUN")
         self.assertFalse((self.root / "native-invocations").exists())
 
     def test_native_blocked_stops_before_next_suite(self):
@@ -238,8 +246,8 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertEqual(rc, 2)
         report = self.report()
         self.assertEqual(report["status"], "BLOCKED")
-        self.assertEqual(report["suites"][1]["counts"]["BLOCKED"], 2)
-        self.assertEqual(report["suites"][3]["status"], "NOT_RUN")
+        self.assertEqual(self.suite(report, "bootstrap")["counts"]["BLOCKED"], 2)
+        self.assertEqual(self.suite(report, "bcpltime")["status"], "NOT_RUN")
         self.assertEqual((self.root / "native-invocations").read_text(),
                          "bootstrap:production\n")
 
@@ -248,8 +256,8 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
             rc, _, _ = self.invoke("--run", "--suite", "bcpltime",
                                    "--profile", "production")
         self.assertEqual(rc, 1)
-        self.assertEqual(self.report()["suites"][3]["status"], "FAIL")
-        self.assertIn("case IDs", self.report()["suites"][3]["error"])
+        self.assertEqual(self.suite(self.report(), "bcpltime")["status"], "FAIL")
+        self.assertIn("case IDs", self.suite(self.report(), "bcpltime")["error"])
 
     def test_device_cases_remain_blocked_without_opt_in(self):
         rc, output, errors = self.invoke("--run", "--suite", "bcplqsam",
@@ -258,7 +266,7 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertIn("PROJECT REGRESSION RESULT: BLOCKED", output)
         report = self.report()
         self.assertFalse(report["allow_device"])
-        self.assertEqual(report["suites"][4]["counts"],
+        self.assertEqual(self.suite(report, "bcplqsam")["counts"],
                          {"PASS": 1, "FAIL": 0, "SKIP": 0, "BLOCKED": 2, "TOTAL": 3})
         self.assertEqual((self.root / "native-invocations").read_text(),
                          "bcplqsam:installed-r5-t1\n")
@@ -273,7 +281,7 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertIn("PROJECT REGRESSION RESULT: PASS", output)
         report = self.report()
         self.assertTrue(report["allow_device"])
-        self.assertEqual(report["suites"][4]["counts"],
+        self.assertEqual(self.suite(report, "bcplqsam")["counts"],
                          {"PASS": 3, "FAIL": 0, "SKIP": 0, "BLOCKED": 0, "TOTAL": 3})
         self.assertEqual((self.root / "native-invocations").read_text(),
                          "bootstrap:installed-r5-t1\nbcplqsam:installed-r5-t1+device\n")
@@ -344,7 +352,7 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
         self.assertIn("BLOCKED 176", output)
         report = self.report()
         self.assertEqual(report["status"], "BLOCKED")
-        self.assertEqual(report["suites"][4]["counts"]["BLOCKED"], 2)
+        self.assertEqual(self.suite(report, "bcplqsam")["counts"]["BLOCKED"], 2)
         self.assertFalse(report["allow_device"])
 
     def test_progress_failure_stops_before_next_suite(self):
@@ -355,7 +363,7 @@ sys.exit(1 if counts['FAIL'] else 2 if counts['BLOCKED'] else 0)
                                              "--progress")
         self.assertEqual((rc, errors), (1, ""))
         self.assertIn("FAIL    calls/nested-recursion", output)
-        self.assertEqual(self.report()["suites"][1]["status"], "NOT_RUN")
+        self.assertEqual(self.suite(self.report(), "bootstrap")["status"], "NOT_RUN")
         self.assertFalse((self.root / "native-invocations").exists())
 
     def test_missing_mr10_fixture_fails_offline_check(self):
