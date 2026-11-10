@@ -130,7 +130,7 @@ exit 0
         self.assertIn('hit ENTER to continue, Ctrl-C to stop', result.stdout)
         commands = self.call_log.read_text(encoding='utf-8')
         self.assertIn('clean-workarea \n', commands)
-        self.assertIn('dspal purgebcpl \n', commands)
+        self.assertIn('dspal purgebcpl\n', commands)
         self.assertIn('dspal populate all --batch\n', commands)
         self.assertIn('dspal populate all --generated-only --batch\n', commands)
 
