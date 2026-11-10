@@ -153,8 +153,11 @@ JES run, a caller may explicitly set
 `BCPL_PRINTER_WINDOW_TRIAL=1` for numbered native cases.
 The flag is passed through the usual native wrappers to the
 Cambridge compilation and native assemble/link/GO report readers.
-QSAM native cases 163–176 and the MR10 paths retain their
-historical native/report handling. Offline safety/unit tests:
+BCPLQSAM native cases 163–176 also use a captured pre-submission
+cursor for their native JES summary/report under this opt-in;
+Hercules device capture continues to use independent pre-JES offsets.
+MR10 and its probes retain their independent read paths.
+Offline safety/unit tests:
 
 ```sh
 python3 -B -m unittest discover -s tools/checks -p 'test_printer_window*.py' -v

@@ -112,6 +112,15 @@ def invoke(args: list[str], out: Path, limit: int) -> tuple[int, str]:
     return rc, value
 
 
+def printer_args_for_attempt(attempt: Path) -> list[str]:
+    """Select a safe pre-submission JES printer cursor for this attempt."""
+    trial = os.environ.get("BCPL_PRINTER_WINDOW_TRIAL", "0")
+    if trial not in ("0", "1"):
+        raise ValueError("BCPL_PRINTER_WINDOW_TRIAL must be 0 or 1")
+    return (["--cursor-file", str(attempt / "native-printer.cursor")]
+            if trial == "1" else [])
+
+
 def checked_fixture(case: Path, filename: str, original: str) -> Path:
     target = case / filename
     canonical = EXT / original
@@ -323,7 +332,10 @@ def check_sysout_capture(kind: str, offset: int, attempt: Path) -> list[str]:
         if not path.is_file() or path.stat().st_size < offset:
             issues = ["Hercules SYSOUT device capture absent or truncated"]
             break
-        fresh = path.read_bytes()[offset:]
+        # The pre-JES capture offset is enough: avoid a full Hercules file read.
+        with path.open("rb") as stream:
+            stream.seek(offset)
+            fresh = stream.read()
         if kind == "punch":
             expected = (
                 b"Q4CARD01\n"
@@ -374,6 +386,7 @@ def run(number: int, case: Path) -> int:
     work = WORK / case.name
     work.mkdir(parents=True, exist_ok=True)
     attempt = Path(tempfile.mkdtemp(prefix="native-", dir=work))
+    printer_args = printer_args_for_attempt(attempt)
     print(f"QSAM case {number}, JES job {job}, evidence {attempt}", flush=True)
 
     generated: list[str] = []
@@ -406,7 +419,8 @@ def run(number: int, case: Path) -> int:
         (attempt / "sysout-before.bytes").write_text(
             str(offset) + "\n", encoding="ascii")
     rc, response = invoke(
-        [str(TOOLS / "mvs/submit-jcl"), "--timeout", "120", str(jcl)],
+        [str(TOOLS / "mvs/submit-jcl"), "--timeout", "120",
+         *printer_args, str(jcl)],
         attempt / "submit.log", 180)
     jobs = re.findall(r"^JOB ([0-9]+)$", response, re.M)
     if rc or len(jobs) != 1:
@@ -419,12 +433,17 @@ def run(number: int, case: Path) -> int:
     for _ in range(45):
         summary_rc, summary = invoke(
             [str(TOOLS / "mvs/job-summary"), job_number, "--max-rc", "8",
-             "--verbose"], attempt / "summary.txt", 30)
+             "--verbose", *printer_args], attempt / "summary.txt", 30)
+        if printer_args and "printer-window:" in summary:
+            print("QSAM printer cursor invalid; inspect JES before retrying",
+                  file=sys.stderr)
+            return 1
         if summary_rc != 2:
             break
         time.sleep(2)
     report_rc, report = invoke(
-        [str(TOOLS / "mvs/dump-report-for-job"), job_number],
+        [str(TOOLS / "mvs/dump-report-for-job"), job_number,
+         *printer_args],
         attempt / "report.txt", 45)
     print(f"JES job {job_number}: summary RC={summary_rc}, report RC={report_rc}")
     if summary_rc or report_rc:

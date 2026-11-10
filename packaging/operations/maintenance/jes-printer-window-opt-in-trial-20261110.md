@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Date:** 10 November 2026 UTC (9 November US Eastern)
-**Status:** TRIAL CODE — offline helper tests passed; live MVS validation and performance comparison pending
+**Status:** OPT-IN TRIAL — ordinary native case verification complete; BCPLQSAM native-window extension awaiting live acceptance
 **Authority:** [Regressions performance analysis](regression-runner-performance-analysis-20261109.md); GitHub `main` is source authority. Actual JES and program execution remain the acceptance authority.
 
 ## Motivation and measured baseline
@@ -63,20 +63,22 @@ behavior of:
   and output extraction.
 
 The trial is enabled **only** by an explicit
-`BCPL_PRINTER_WINDOW_TRIAL=1` environment variable. It applies
-fully to ordinary native numbered cases **00–162**. BCPLQSAM
-163–176 use `tools/checks/run-q2-qsam-regression.py` for their
-native multi-step job and remain on that reader's established
-report path (their Cambridge compilation may use the cursor).
-The MR10 panel and development probes likewise retain their
-existing independent reader paths.
+`BCPL_PRINTER_WINDOW_TRIAL=1` environment variable. It applies to numbered native cases **00–176**. For BCPLQSAM
+163–176, `tools/checks/run-q2-qsam-regression.py` now supplies the same
+attempt-scoped cursor to native `submit-jcl`, `job-summary`, and
+`dump-report-for-job`. A bad cursor fails closed without a retry or
+historical fallback. The separate class-A and class-B Hercules capture
+checks use their own pre-JES offsets and read only fresh suffix bytes.
+The MR10 panel and development probes retain their existing independent
+reader paths.
 
 A job-number reuse *after the captured cursor* is still handled by
 the existing latest-start/latest-END job summary logic. The cursor
 also excludes historical completed jobs with matching numbers.
 Host-only tests cover rotation, truncation, partial lines, recent
-incomplete jobs, reuse, output parity with the legacy path, and
-nonmutation. Running a JES job is **not** part of those tests.
+incomplete jobs, reuse, output parity with the legacy path, QSAM
+native argument propagation, fail-closed behavior, device capture
+suffixes, and nonmutation. Running a JES job is **not** part of those tests.
 
 ## Required offline validation
 
@@ -113,10 +115,17 @@ generated code and per-case logs. Verify against the previous
 accepted test behavior and explicitly compare elapsed host time.
 A successful process RC without complete JES evidence is insufficient.
 
-If successful, choose a small number of additional representative
-cases, including separate BCPL library compilation. A later
-fully independent six-suite regression remains required before
-making the new reader the default.
+Observed 10 November opt-in trials: cases 00, 25, 147 and 160 PASS
+with host elapsed 2.094s, 2.968s, 2.017s and 1.988s respectively.
+Their independent retained-JES evidence audits also PASS.
+
+The 10 November full six-suite run at `c0922f3` returned
+**194 PASS, 0 FAIL, 1 expected SKIP (083), 0 BLOCKED**, but BCPLQSAM
+still used its prior unbounded native reader in that run. The
+operator's elapsed-time shell arithmetic was invalid, so **no total
+duration is verified** for that run. The BCPLQSAM native-window
+extension in this revision requires new live verification and a
+fresh full six-suite regression before default-on acceptance.
 
 ## Boundaries
 
