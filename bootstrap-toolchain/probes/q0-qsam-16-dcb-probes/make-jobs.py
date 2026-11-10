@@ -8,7 +8,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-BASE = HERE.parent / 'q0-qsam-dasd-probes' / 'make-jobs.py'
+BASE = ROOT / 'packaging/archive/qsam/probes/q0-qsam-dasd-probes/make-jobs.py'
 PROFILES = {'one': (1, 256), 'three': (3, 256),
             'eight': (8, 256), 'sixteen': (16, 256),
             'sixteen-512': (16, 512)}
