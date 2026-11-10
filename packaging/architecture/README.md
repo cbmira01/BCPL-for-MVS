@@ -1,6 +1,7 @@
 # Architecture and contracts
 
 - [Cambridge runtime and library nomenclature](runtime-and-library-nomenclature.md) — compiler, Core Runtime, historical BLIB Base Library, System Extensions, Standard Libraries and User/Site Libraries
+- [Coroutine implementation milestone](../milestones/coroutines/milestone-implement-coroutine-support-for-native-compiler.md) — CO.0–CO.5 and [research gates](../milestones/coroutines/coroutine-research-and-design-gates.md).
 - [Coroutine support design discussion](coroutine-design-discussion-20261103.md) — interpreter-hosted CHANGECO as behavioral reference and proposed native System/370 Core Runtime switching design
 - [BSL scope and module design discussion](bsl-scope-and-module-design-20261103.md) — proposed Standard Library family catalog, modular linking and deferred design decisions
 - [Regression suite separation discussion](regression-suite-separation-20261103.md) — proposed independent bootstrap, extension and future BSL test reporting while preserving acceptance evidence

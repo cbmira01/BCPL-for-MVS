@@ -2,7 +2,9 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Recorded:** 3 November 2026  
-**Status:** Architectural discussion; proposed direction, not an accepted implementation contract or milestone
+**Status at recording (3 November 2026):** Architectural discussion; proposed direction, not an accepted implementation contract or milestone
+
+**10 November 2026 follow-up:** The governing [Milestone: Implement coroutine support for native compiler](../milestones/coroutines/milestone-implement-coroutine-support-for-native-compiler.md) is now established with CO.0–CO.5 NOT STARTED. This historical discussion remains source evidence, not an approved native ABI.
 
 ## 1. Purpose
 
