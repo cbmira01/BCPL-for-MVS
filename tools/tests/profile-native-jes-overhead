@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""Read-only timing trial: compare native-case wall time with MVS job time.
+
+No JES submission, dataset mutation, or production runner modifications.
+Printer matching is diagnostic, not authoritative acceptance evidence.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime
+from pathlib import Path
+import json
+import re
+from statistics import median
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[2]
+START = re.compile(r"\*+A\s+START\s+JOB\s+(\d+)\s+(\S+)")
+END = re.compile(r"\*+A\s+END\s+JOB\s+(\d+)\b")
+IEF_START = re.compile(r"\bIEF403I\s+\S+\s+-\s+STARTED\s+-\s+TIME=(\d{2}\.\d{2}\.\d{2})")
+IEF_END = re.compile(r"\bIEF404I\s+\S+\s+-\s+ENDED\s+-\s+TIME=(\d{2}\.\d{2}\.\d{2})")
+JOB_ID = re.compile(r"(?m)^JOB\s+(\d+)\s*$")
+
+
+def seconds(clock: str) -> int:
+    hours, minutes, sec = (int(part) for part in clock.split("."))
+    if hours > 23 or minutes > 59 or sec > 59:
+        raise ValueError(f"invalid JES clock {clock}")
+    return hours * 3600 + minutes * 60 + sec
+
+
+def job_seconds(start: str | None, end: str | None) -> int | None:
+    if start is None or end is None:
+        return None
+    return (seconds(end) - seconds(start)) % 86400
+
+
+def printer_jobs(path: Path, expected: set[tuple[int, str]]) -> dict[tuple[int, str], int | None]:
+    """Single streaming scan; last complete occurrence per (job number, name)."""
+    found: dict[tuple[int, str], int | None] = {}
+    active: tuple[int, str] | None = None
+    started: str | None = None
+    ended: str | None = None
+    with path.open("r", encoding="utf-8", errors="replace") as stream:
+        for line in stream:
+            match = START.search(line)
+            if match:
+                key = (int(match.group(1)), match.group(2))
+                active = key if key in expected else None
+                if active is not None:
+                    found.pop(key, None)  # An incomplete newer reuse invalidates an old match.
+                started = ended = None
+                continue
+            if active is None:
+                continue
+            match = IEF_START.search(line)
+            if match:
+                started = match.group(1)
+            match = IEF_END.search(line)
+            if match:
+                ended = match.group(1)
+            match = END.search(line)
+            if match and int(match.group(1)) == active[0]:
+                try:
+                    found[active] = job_seconds(started, ended)
+                except ValueError:
+                    found[active] = None
+                active = None
+    return found
+
+
+def case_inventory(evidence: Path, requested: set[int]) -> list[dict]:
+    project = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
+    root = ROOT.resolve()
+    rows: list[dict] = []
+    for suite in project["suites"]:
+        if not suite.get("native_evidence"):
+            continue
+        folder = (ROOT / suite["native_evidence"]).resolve()
+        if not folder.is_relative_to(root):
+            raise ValueError("native evidence must be inside the repository")
+        summary = json.loads((folder / "summary.json").read_text(encoding="utf-8"))
+        previous = datetime.fromisoformat(summary["started_utc"]).timestamp()
+        for case in summary["cases"]:
+            if case["status"] != "PASS":
+                continue
+            ident = int(case["id"])
+            log = folder / f"case-{case['id']}" / "runner.log"
+            finish = log.stat().st_mtime
+            wall = finish - previous
+            previous = finish
+            if ident not in requested:
+                continue
+            if ident >= 163:
+                raise ValueError("QSAM 163-176 uses a distinct job/log path; trial supports 00-162")
+            native_logs = list((folder / f"case-{case['id']}" / "native-logs").glob("*.log"))
+            if len(native_logs) != 1:
+                raise ValueError(f"case {case['id']}: expected one native execution log")
+            ids = [int(x) for x in JOB_ID.findall(native_logs[0].read_text(encoding="utf-8", errors="replace"))]
+            if len(ids) != len(set(ids)):
+                raise ValueError(f"case {case['id']}: duplicated JOB IDs in log")
+            if not ids:
+                raise ValueError(f"case {case['id']}: no JES job numbers in native log")
+            rows.append({"id": case["id"], "number": ident, "wall": wall, "ids": ids})
+    return sorted(rows, key=lambda x: x["number"])
+
+
+def matched_jobs(row: dict, available: dict[tuple[int, str], int | None]) -> list[tuple[str, int, int | None]]:
+    prefix = f"RG{row['number']:03d}"
+    result = []
+    for ident in row["ids"]:
+        matches = [(name, duration) for (number, name), duration in available.items()
+                   if number == ident and name in (prefix + "C", prefix + "L", prefix + "R")]
+        if len(matches) == 1:
+            result.append((matches[0][0], ident, matches[0][1]))
+    return result
+
+
+def benchmark_summary(printer: Path, job: int, repeat: int) -> tuple[float | None, list[int]]:
+    durations = []
+    statuses = []
+    for _ in range(repeat):
+        before = time.perf_counter()
+        proc = subprocess.run([str(ROOT / "tools/mvs/job-summary"), str(job),
+                               "--file", str(printer)], cwd=ROOT,
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                              check=False)
+        durations.append(time.perf_counter() - before)
+        statuses.append(proc.returncode)
+    return (median(durations) if durations else None), statuses
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--evidence", required=True, type=Path,
+                        help="completed project-regressions evidence directory")
+    parser.add_argument("--printer", type=Path, default=ROOT / "mvs-state/prt/prt00e.txt")
+    parser.add_argument("--case", action="append", type=int,
+                        help="native case number 00-162, repeatable; defaults to representative cases")
+    parser.add_argument("--bench", type=int, default=3,
+                        help="read-only job-summary calls to time (0-10, default 3)")
+    args = parser.parse_args()
+    if not 0 <= args.bench <= 10:
+        parser.error("--bench must be between 0 and 10")
+    requested = set(args.case if args.case is not None else [0, 1, 53, 126, 141, 160])
+    if not requested or any(not 0 <= n <= 162 for n in requested):
+        parser.error("choose native cases from 00-162 (QSAM needs separate handling)")
+    try:
+        rows = case_inventory(args.evidence, requested)
+        if not rows:
+            raise ValueError("no requested passing cases found in the evidence")
+        expected = {(job, f"RG{row['number']:03d}{suffix}")
+                    for row in rows for job in row["ids"] for suffix in ("C", "L", "R")}
+        before = time.perf_counter()
+        available = printer_jobs(args.printer, expected)
+        scan = time.perf_counter() - before
+        print(f"Printer: {args.printer} ({args.printer.stat().st_size / 1048576:.1f} MiB)")
+        print(f"One-pass printer search: {scan:.3f}s")
+        print("CASE  HOST(s)  MVS(s)  OTHER(s)  MATCHED JES JOBS")
+        sample_job = None
+        for row in rows:
+            matches = matched_jobs(row, available)
+            total = sum(value for _, _, value in matches if value is not None)
+            complete = len(matches) == len(row["ids"]) and all(value is not None for _, _, value in matches)
+            mvs = f"{total:.1f}" if complete else "n/a"
+            other = f"{row['wall'] - total:.1f}" if complete else "n/a"
+            jobs = ", ".join(f"{name}#{ident}={duration if duration is not None else '?'}s"
+                             for name, ident, duration in matches) or "NONE"
+            print(f"{row['id']:>4}  {row['wall']:>7.1f}  {mvs:>6}  {other:>8}  {jobs}")
+            if complete and sample_job is None:
+                sample_job = matches[0][1]
+        if sample_job is not None and args.bench:
+            result, statuses = benchmark_summary(args.printer, sample_job, args.bench)
+            print(f"job-summary full-file call median ({args.bench} runs): {result:.3f}s; RCs={statuses}")
+        print("OTHER includes JES waits, host tools, reporting and 1-second MVS clock rounding.")
+        print("Diagnostics only: last matching printer occurrence is not tied to the original run timestamp.")
+        return 0
+    except (OSError, KeyError, ValueError, json.JSONDecodeError) as exc:
+        print(f"profile-native-jes-overhead: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

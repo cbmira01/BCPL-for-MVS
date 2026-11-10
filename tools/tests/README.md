@@ -103,3 +103,41 @@ python3 -B -m unittest discover -s tools/checks -p 'test_stage3_coordinator.py' 
 python3 -B -m unittest discover -s tools/checks -p 'test_stage2b_suite.py' -v
 python3 -B -m unittest discover -s tools/checks -p 'test_qsam_punch_writer_guard.py' -v
 ```
+
+## Read-only JES overhead timing trial (10 November 2026)
+
+`tools/tests/profile-native-jes-overhead` analyzes **existing**
+`run-project-regressions` evidence and the Hercules printer file.
+It does **not** submit JES, change installed MVS datasets, change runner
+behavior or rerun tests. Host-only tests:
+
+```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_profile_native_jes_overhead.py' -v
+```
+
+From the repository root, with the previously accepted 10 November
+evidence still available in `workarea/`:
+
+```sh
+tools/tests/profile-native-jes-overhead \
+  --evidence workarea/project-regressions/20261110T020053Z-70445-vk1narmi
+```
+
+The default sample is numbered native cases **00, 01, 053, 126, 141,
+160**. Use repeated `--case N` to select other native cases 00–162,
+or `--bench 0` to omit subprocess benchmarking. The prototype does
+not yet handle BCPLQSAM 163–176, whose compiler and native logs use
+different naming and evidence paths.
+
+For each requested case, the trial correlates `JOB n` entries from
+the retained native execution log with `RGnnnC/L/R` jobs in the printer
+stream, then compares approximate host wall time (case log mtimes)
+against the `IEF403I`/`IEF404I` MVS start/end difference. `OTHER`
+is **not** a pure JES overhead measurement: it includes host preparation,
+polling, report validation and whole-second MVS clock resolution.
+The printer scan selects the **last matching job-number/name occurrence**,
+which can be superseded by later JES activity; compare the job identities
+before interpreting results. Missing or ambiguous durations are reported
+as `n/a`. The optional benchmark times normal `job-summary` calls
+against the current complete printer file; it does not change that tool.
+This is diagnostic evidence, not regression acceptance.

@@ -156,3 +156,68 @@ case.
 phase timing for a handful of representative cases or use retained
 MVS/JES report timestamps first. Both choices deliberately prioritize
 **per-case shared overhead over per-suite measurements**.
+
+## Initial native-case timing observations — operator report (10 November UTC)
+
+After the 73m57s passing campaign, the operator inspected retained native
+case log modification times and reported these approximate statistics
+for **176 passing numbered native cases**:
+
+| Observation | Approximate duration |
+| --- | ---: |
+| Minimum case | 11.9 s |
+| Median case | 23.7 s |
+| 90th percentile | 26.1 s |
+| Maximum case | 40.9 s (case 168) |
+| First 20 cases, median | 23.6 s |
+| Last 20 cases, median | 26.1 s |
+| Compilation phase, median | 11.9 s |
+| Post-compilation phase, median | 11.7 s |
+
+These values came from file modification times, **not** native
+instrumentation. The compilation phase split was available only for
+cases whose generated assembler file met the timestamp checks. The
+first/last comparison also changes workload composition, so it cannot
+prove that printer-log growth is the cause of the difference. The
+near-constant total remains evidence for investigating shared
+per-case costs rather than per-suite totals.
+
+### Approved read-only trial
+
+The owner authorized trial code and commits to study that common cost.
+`tools/tests/profile-native-jes-overhead` is an **offline diagnostic**,
+not a runner change. For ordinary numbered native cases (00–162),
+it correlates retained per-case `JOB n` receipts with the last matching
+`RGnnnC/L/R` printer sections in **one streaming printer pass**,
+calculates their MVS-reported `IEF403I` to `IEF404I` durations, and
+compares those with the case's approximate host wall time. It also
+benchmarks the unchanged `tools/mvs/job-summary` implementation,
+which currently reads and scans the complete printer log **on each poll**.
+
+Run the unit test and inspect the sample:
+
+```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_profile_native_jes_overhead.py' -v
+tools/tests/profile-native-jes-overhead \
+  --evidence workarea/project-regressions/20261110T020053Z-70445-vk1narmi
+```
+
+**Important qualifications:** `OTHER = host elapsed - summed MVS
+job elapsed` is only an initial residual. It includes host work,
+JES queue/submit/completion waits, log retrieval/validation, and MVS
+timestamps rounded to whole seconds; a negative or implausible
+residual signals clock or correlation uncertainty. Older/different
+JES work can reuse the same job number/name, and later reruns can
+replace the last matching printer occurrence. The tool validates the
+retained numeric job identities but cannot prove that the latest
+printer occurrence came from this exact campaign. QSAM 163–176 use
+separate job naming and are deliberately excluded from this initial
+trial. No full-suite rerun or JES submission is necessary.
+
+**Decision remains pending** until the operator provides the diagnostic
+results: if MVS step durations are small and `job-summary` scanning is
+material, first consider a bounded, index-aware or offset-aware
+read-only printer lookup. If the MVS compiler/IFOX stages dominate,
+the design discussion must instead address separate JES job count and
+test isolation. No producer/JCL changes or batch-regression
+architecture have been approved.
