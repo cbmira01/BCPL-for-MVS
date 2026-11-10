@@ -18,7 +18,12 @@ def read_printer_window(printer_file: Path, cursor_file: Path) -> bytes:
         raise RuntimeError('printer-window helper not available')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.read(printer_file, cursor_file)
+    try:
+        return module.read(printer_file, cursor_file)
+    except (module.PrinterWindowError, OSError) as exc:
+        # The callers must distinguish cursor failure from an incomplete
+        # JES report, and must never fall back to a historical job.
+        raise RuntimeError(f'printer-window: {exc}') from exc
 
 
 START_JOB_RE = re.compile(

@@ -14,9 +14,10 @@ MVS = ROOT / "tools/mvs"
 
 
 def entry(number: int, name: str, marker: str, *, complete: bool = True) -> str:
+    # job-summary's START_JOB_RE requires whitespace after the date field.
     body = (
         f"****A  START  JOB {number:4d}  {name} TEST "
-        "ROOM A 10.10.10 AM 10 NOV 26\n"
+        "ROOM A 10.10.10 AM 10 NOV 26 \n"
         f"IEF403I {name} - STARTED - TIME=10.10.10\n"
         f"10.10.10 JOB {number} {name} COMP ICINT19 RC=0000\n"
         f"{marker}\n"
