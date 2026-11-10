@@ -1,8 +1,8 @@
 # Project regression runner performance — initial source analysis and baseline
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**Date:** 9 November 2026 (US Eastern; execution-directory timestamp 10 November UTC)  
-**Status:** ANALYSIS OPEN; no runner/JCL/source changes proposed for implementation without owner review  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**Date:** 9 November 2026 (US Eastern; execution-directory timestamp 10 November UTC)
+**Status:** ANALYSIS OPEN; no runner/JCL/source changes proposed for implementation without owner review
 **Input:** Owner-reported complete passing six-suite execution at GitHub HEAD `268600559e58defb410b7bb7719a66bc8e3c9a85`.
 
 The clean-room batch-population optimization has a separate

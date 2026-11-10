@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 9 November 2026  
-**Status:** Live MVS batch-population tests completed with terminal-blank-record qualifications; subsequent whole-rebuild and independent full-regression acceptance are documented in the [clean-room improvement closure](clean-room-batch-reconstruction-closure-20261109.md)  
+**Status:** Live MVS batch-population tests completed with terminal-blank-record qualifications; subsequent whole-rebuild and independent full-regression acceptance are documented in the [clean-room improvement closure](clean-room-batch-reconstruction-closure-20261109.md)
 **Git source authority:** GitHub `main`. **Execution authority:** JES, IEBGENER and actual MVS PDS contents.
 
 ## Scope and constraints

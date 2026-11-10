@@ -1,8 +1,8 @@
 # Clean-room reconstruction batch-population improvement — acceptance and closure
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**Record date:** 9 November 2026 (US Eastern; evidence directory dates may be 10 November UTC)  
-**Disposition:** **CLOSED — owner-directed completion of the clean-room reconstruction performance-improvement work.**  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**Record date:** 9 November 2026 (US Eastern; evidence directory dates may be 10 November UTC)
+**Disposition:** **CLOSED — owner-directed completion of the clean-room reconstruction performance-improvement work.**
 **Scope:** The simple `tools/reconstruction/rebuild-from-source` driver, its explicit `--batch-populate` mode and corresponding independent regression evidence. This is an engineering-workflow closure, **not** a new milestone/march, a tag, or a release.
 
 ## Source and execution authority
@@ -129,7 +129,7 @@ Project regression RC=0
 Total runtime: 73 minutes 57 seconds
 ```
 
-**Independent regression duration:** 4,437 seconds (73m57s).  
+**Independent regression duration:** 4,437 seconds (73m57s).
 **Evidence:** `workarea/project-regressions/20261110T020053Z-70445-vk1narmi/summary.json` and the accompanying suite logs. These paths are **operator-local, ignored workarea evidence**, not Git-tracked copies. The console summary is owner-reported; no separate raw JES or per-test files were copied into GitHub as part of this record.
 
 **Scope qualifier:** The installed R.5/T.1 profile uses installed
