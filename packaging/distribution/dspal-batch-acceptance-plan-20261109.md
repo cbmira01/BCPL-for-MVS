@@ -2,14 +2,14 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 9 November 2026  
-**Status:** Live MVS batch tests passed for `DIST_DOCS` and `EXT_SOURCE`; `MR10_TESTS` split-job test passed with terminal-blank-record qualification  
+**Status:** Live MVS batch-population tests completed with terminal-blank-record qualifications; subsequent whole-rebuild and independent full-regression acceptance are documented in the [clean-room improvement closure](clean-room-batch-reconstruction-closure-20261109.md)  
 **Git source authority:** GitHub `main`. **Execution authority:** JES, IEBGENER and actual MVS PDS contents.
 
 ## Scope and constraints
 
 `dspal populate --batch` groups IEBGENER member writes into bounded, per-PDS
 jobs, while the original one-job-per-member method remains the default.
-The reconstruction driver **does not** enable batching.
+The reconstruction driver does **not** enable batching by default; `--batch-populate` is an explicit opt-in.
 
 The initial live acceptance targets were `DIST_DOCS` (seven Git-backed
 documentation members) and `EXT_SOURCE` (three BCPL declaration headers,
@@ -161,8 +161,9 @@ clean-room reconstruction, or regressions.
 MVS population acceptance is now established for the tested member classes,
 subject to the four terminal-record qualifications. The reconstruction driver
 offers `--batch-populate` only as an **explicit opt-in** for both population
-passes; its default is unchanged. A **complete clean-room reconstruction** with
-the opt-in mode, preservation of its build and smoke-test evidence, and
-separate regression verification are still required before accepting batching
-as the normal reconstruction behavior. A Git commit alone does not authorize
-destructive MVS operations.
+passes; its default is unchanged. The later [owner-directed scoped closure](clean-room-batch-reconstruction-closure-20261109.md)
+records a successful **12m46s** opt-in reconstruction and separate full
+six-suite regression (**194 PASS, 0 FAIL, one expected SKIP**).
+This closes the batch-population performance improvement with its
+documented JES/evidence qualifications; it does **not** make batching the
+default. A Git commit alone never authorizes destructive MVS operations.

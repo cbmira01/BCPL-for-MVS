@@ -93,13 +93,17 @@ JES summary as RC=0000; missing, bypassed or failed steps stop the driver.
 The first population's narrowly recognized RC=2 (12 missing generated inputs)
 remains required; unrelated RC=2 outcomes still fail closed.
 
-[Controlled MVS acceptance](../packaging/distribution/dspal-batch-acceptance-plan-20261109.md)
-has verified 71 canonical FB/80 texts across `DIST_DOCS`, `EXT_SOURCE`,
+[Controlled MVS batch acceptance](../packaging/distribution/dspal-batch-acceptance-plan-20261109.md)
+verified 71 canonical FB/80 texts across `DIST_DOCS`, `EXT_SOURCE`,
 and split `MR10_TESTS` jobs (60 + 1), with four terminal-blank-record count
-qualifications. This does **not** establish a successful complete clean-room
-rebuild using `--batch-populate`. First obtain separate operator approval
-for the destructive run, then preserve its full build/smoke evidence and
-compare timing against the prior 50-minute baseline.
+qualifications. The owner subsequently completed an explicitly authorized
+`--unattended --batch-populate` clean-room rebuild in **12m46s** (driver RC=0)
+and a separate full six-suite regression at the later regression-harness
+revision (**194 PASS / 0 FAIL / 1 expected SKIP; RC=0**, in **73m57s**).
+See the [scoped acceptance and closure record](../packaging/distribution/clean-room-batch-reconstruction-closure-20261109.md)
+for the distinct source revisions, evidence paths and JES qualifications.
+Batching **remains opt-in**; neither this evidence nor the guide authorizes
+another destructive run or declares a release.
 
 The driver does **not** run the Step 4 resident MR10 suites, any Step 9
 regression campaign, or any other regression suite. **Regressions are a
