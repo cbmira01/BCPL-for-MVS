@@ -113,6 +113,15 @@ else
 fi
 mkdir -p "$work"
 
+# Optional bounded printer reader trial. No change to default regression path.
+printer_args=()
+if [[ ${BCPL_PRINTER_WINDOW_TRIAL:-0} == 1 ]]; then
+    printer_args=(--cursor-file "$work/native-printer.cursor")
+elif [[ ${BCPL_PRINTER_WINDOW_TRIAL:-0} != 0 ]]; then
+    echo "run-test: BCPL_PRINTER_WINDOW_TRIAL must be 0 or 1" >&2
+    exit 64
+fi
+
 # Q.2 System Extension regressions: keep the canonical 00..162 path intact.
 # These cases need multi-step source-mode IFOX/IEWL jobs and JES readback.
 if [[ -f "$case_dir/qsam-native.txt" ]]; then
@@ -771,7 +780,7 @@ fi # end R.5 branch vs unchanged 00..145 path
 echo
 echo "=== Submit native run ==="
 submit=$(
-    bash "$root/tools/mvs/submit-jcl" --timeout 30 "$jcl"
+    bash "$root/tools/mvs/submit-jcl" --timeout 30 "${printer_args[@]}" "$jcl"
 ) || exit $?
 
 echo "$submit"
@@ -801,7 +810,7 @@ expected_output() {
 
 show_bcpl_output() {
     local report
-    report=$(bash "$root/tools/mvs/dump-report-for-job" "$job" 2>/dev/null)
+    report=$(bash "$root/tools/mvs/dump-report-for-job" "$job" "${printer_args[@]}" 2>/dev/null)
     printf '%s\n' "$report" >"$work/job-report.txt"
     python3 "$root/tools/checks/check-combined-jes-records.py" \
         "$expected_file" "$work/job-report.txt" \
@@ -870,7 +879,7 @@ fi
 
 deadline=$((SECONDS + 30))
 while (( SECONDS <= deadline )); do
-    summary=$("$root/tools/mvs/job-summary" "$job" 2>&1)
+    summary=$("$root/tools/mvs/job-summary" "$job" "${printer_args[@]}" 2>&1)
     rc=$?
 
     if (( rc == 0 )); then
@@ -932,13 +941,21 @@ while (( SECONDS <= deadline )); do
         exit 0
     fi
 
+    # Invalid captured cursor must fail closed instead of polling until timeout.
+    if [[ ${BCPL_PRINTER_WINDOW_TRIAL:-0} == 1 &&
+          "$summary" == *"printer-window:"* ]]; then
+        echo "run-test: printer cursor invalid; inspect JES before retrying" >&2
+        echo "$summary" >&2
+        exit 75
+    fi
+
     # job-summary returns 1 for a completed failing job and 2 while the
     # complete report is not yet available.
     if (( rc == 1 )); then
         echo "$summary"
 
         report=$(
-            bash "$root/tools/mvs/dump-report-for-job" "$job" 2>/dev/null
+            bash "$root/tools/mvs/dump-report-for-job" "$job" "${printer_args[@]}" 2>/dev/null
         )
         printf '%s\n' "$report" >"$work/job-report.txt"
 

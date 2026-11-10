@@ -22,3 +22,25 @@ and reports `VOL1`, `HDR1`, `HDR2`, `EOF1`, `EOF2` where present.
 The wrapper refuses missing files, paths outside the tape directory and
 symlinks. It is a read-only host tool; see [tape-inspection notes](../../packaging/distribution/tape-inspection-capabilities-20261108.md).
 Offline tests: `python3 -B -m unittest discover -s tools/mvs -p 'test_tape_map.py' -v`.
+
+## Guarded JES printer window — opt-in trial
+
+`printer-window.py` is an offline-capable byte cursor helper. Capture
+before a job is submitted, then read only newly appended output while
+validating printer identity, size and a short end-of-prefix digest.
+An invalid cursor **fails closed**, never falling back to historical
+jobs with reused JES numbers.
+
+`submit-jcl`, `job-summary` and `dump-report-for-job` accept optional
+`--cursor-file FILE`. Without it, the established full-printer
+behavior is unchanged. The ordinary native regression harness and
+the Cambridge compiler use this path **only** if the operator
+explicitly sets `BCPL_PRINTER_WINDOW_TRIAL=1`; no JES is launched
+by the cursor tool itself. See the
+[trial design and authorization boundaries](../../packaging/operations/maintenance/jes-printer-window-opt-in-trial-20261110.md).
+
+Offline tests:
+
+```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_printer_window*.py' -v
+```

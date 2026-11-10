@@ -221,3 +221,30 @@ read-only printer lookup. If the MVS compiler/IFOX stages dominate,
 the design discussion must instead address separate JES job count and
 test isolation. No producer/JCL changes or batch-regression
 architecture have been approved.
+
+## Printer-window trial — source implementation, live comparison pending
+
+The operator's measured printer log was **776.7 MiB**. A normal
+`job-summary` call took **8.486s median** (three runs), and the
+diagnostic one-pass scan took **7.990s**. Selected ordinary native
+cases 00, 01 and 053 each showed **0s** of reported MVS elapsed time
+at whole-second granularity but approximately **21–23s** of host
+elapsed time. Longer cases did have nonzero MVS durations, so actual
+MVS processing is not assumed free.
+
+With explicit owner approval, an [opt-in guarded printer-window
+trial](jes-printer-window-opt-in-trial-20261110.md) now implements
+capturing the printer byte offset before submission, validating the
+file identity/short prefix digest, and scanning only records that
+arrive afterward. The Cambridge compiler and ordinary native test
+runner use it only when `BCPL_PRINTER_WINDOW_TRIAL=1`; default
+behavior and validation contracts remain unchanged. The standalone
+reader has passed host-only offline safety tests. Integrated JES
+execution remains **unverified** until a separately authorized
+focused test is performed.
+
+The optimization decision is now concrete: determine whether a
+focused case 00 run with the opt-in path retains identical JES/output
+evidence and meaningfully reduces the **host-observed** duration.
+No full regression acceptance or general default-on transition
+is claimed.

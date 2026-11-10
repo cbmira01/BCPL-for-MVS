@@ -2,12 +2,20 @@
 
 set -euo pipefail
 
-if [[ $# -ne 1 || ! $1 =~ ^[0-9]+$ ]]; then
-    echo "Usage: $(basename "$0") JOB_NUMBER" >&2
+if [[ $# -ne 1 && $# -ne 3 ]] || [[ ! $1 =~ ^[0-9]+$ ]]; then
+    echo "Usage: $(basename "$0") JOB_NUMBER [--cursor-file FILE]" >&2
     exit 2
 fi
 
 JOB_NUMBER=$1
+cursor_file=""
+if (( $# == 3 )); then
+    if [[ $2 != --cursor-file || -z $3 ]]; then
+        echo "Usage: $(basename "$0") JOB_NUMBER [--cursor-file FILE]" >&2
+        exit 2
+    fi
+    cursor_file=$3
+fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REPORT="$ROOT/mvs-state/prt/prt00e.txt"
@@ -17,7 +25,9 @@ if [[ ! -f "$REPORT" ]]; then
     exit 1
 fi
 
-LC_ALL=C awk -v job="$JOB_NUMBER" '
+# Preserve the existing full-file path unless the caller explicitly opted in.
+# A bad cursor makes the entire pipeline fail; it cannot fall back to old JES data.
+awk_program='
 BEGIN {
     pattern = sprintf("JOB %4d", job)
     in_job = 0
@@ -53,4 +63,11 @@ END {
     }
     for (i = 1; i <= n; i++) print buffer[i]
 }
-' "$REPORT"
+'
+if [[ -n $cursor_file ]]; then
+    python3 "$ROOT/tools/mvs/printer-window.py" read \
+        --printer "$REPORT" --cursor-file "$cursor_file" |
+        LC_ALL=C awk -v job="$JOB_NUMBER" "$awk_program"
+else
+    LC_ALL=C awk -v job="$JOB_NUMBER" "$awk_program" "$REPORT"
+fi

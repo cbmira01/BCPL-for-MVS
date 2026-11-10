@@ -9,6 +9,17 @@ from pathlib import Path
 import re
 import sys
 
+def read_printer_window(printer_file: Path, cursor_file: Path) -> bytes:
+    # The accepted full-file behavior does not depend on this opt-in helper.
+    import importlib.util
+    helper = Path(__file__).with_name('printer-window.py')
+    spec = importlib.util.spec_from_file_location('printer_window', helper)
+    if spec is None or spec.loader is None:
+        raise RuntimeError('printer-window helper not available')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.read(printer_file, cursor_file)
+
 
 START_JOB_RE = re.compile(
     r"\*+A\s+START\s+JOB\s+(\d+)\s+(\S+)(.*?)"
@@ -123,6 +134,11 @@ def parse_args() -> argparse.Namespace:
             "Printer output file. If omitted, use "
             "mvs-state/prt/prt00e.txt relative to the repository root."
         ),
+    )
+
+    parser.add_argument(
+        '--cursor-file', type=Path,
+        help='opt-in printer cursor captured before this job submission',
     )
 
     parser.add_argument(
@@ -421,10 +437,15 @@ def main() -> int:
                 f"Printer output file does not exist: {printer_file}"
             )
 
-        lines = printer_file.read_text(
-            encoding="utf-8",
-            errors="replace",
-        ).splitlines()
+        if args.cursor_file is None:
+            lines = printer_file.read_text(
+                encoding="utf-8",
+                errors="replace",
+            ).splitlines()
+        else:
+            lines = read_printer_window(printer_file, args.cursor_file).decode(
+                'utf-8', errors='replace'
+            ).splitlines()
 
         job_lines = extract_job(lines, args.job)
         job, diagnostics = parse_job(args.job, job_lines)
@@ -438,7 +459,7 @@ def main() -> int:
 
         return 0 if success else 1
 
-    except (OSError, RuntimeError) as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         print(f"job-summary: {exc}", file=sys.stderr)
         return 2
 

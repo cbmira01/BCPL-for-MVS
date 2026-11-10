@@ -141,3 +141,25 @@ before interpreting results. Missing or ambiguous durations are reported
 as `n/a`. The optional benchmark times normal `job-summary` calls
 against the current complete printer file; it does not change that tool.
 This is diagnostic evidence, not regression acceptance.
+
+## Opt-in native regression printer-window trial
+
+The [printer-window trial design](../../packaging/operations/maintenance/jes-printer-window-opt-in-trial-20261110.md)
+documents a safe, pre-submission cursor used to avoid full
+776.7 MiB printer scans during an ordinary native test.
+
+This is **not enabled by default**. With a separately authorized
+JES run, a caller may explicitly set
+`BCPL_PRINTER_WINDOW_TRIAL=1` for numbered native cases.
+The flag is passed through the usual native wrappers to the
+Cambridge compilation and native assemble/link/GO report readers.
+QSAM native cases 163–176 and the MR10 paths retain their
+historical native/report handling. Offline safety/unit tests:
+
+```sh
+python3 -B -m unittest discover -s tools/checks -p 'test_printer_window*.py' -v
+```
+
+These tests do **not** submit jobs. The opt-in performance path is
+not MVS-accepted and must be compared against the established runner
+before any default behavior changes.

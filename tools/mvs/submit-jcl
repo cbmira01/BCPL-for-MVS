@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'USAGE'
-Usage: tools/mvs/submit-jcl [--timeout SECONDS] JCL
+Usage: tools/mvs/submit-jcl [--timeout SECONDS] [--cursor-file FILE] JCL
 
 Submit a JCL deck to the local TK5 socket reader and print the JES job
 number on stdout. Progress and errors are written to stderr.
@@ -11,17 +11,25 @@ number on stdout. Progress and errors are written to stderr.
 Options:
   --timeout SECONDS    Maximum time to wait for JES to start the job.
                        Default: 120 seconds.
+  --cursor-file FILE   Opt-in: save pre-submission printer identity and byte offset.
+                       Poll only the new printer window; invalid cursor fails.
   -h, --help           Show this help.
 USAGE
 }
 
 timeout=120
+cursor_file=""
 
 while (( $# )); do
     case "$1" in
         --timeout)
             [[ $# -ge 2 ]] || { usage >&2; exit 64; }
             timeout=$2
+            shift 2
+            ;;
+        --cursor-file)
+            [[ $# -ge 2 && -n $2 ]] || { usage >&2; exit 64; }
+            cursor_file=$2
             shift 2
             ;;
         -h|--help)
@@ -97,8 +105,16 @@ jobname=$(
     exit 65
 }
 
-# Only examine printer output produced after this submission.
-start_line=$(wc -l < "$printer")
+# Capture a guarded cursor before writing to the JES reader socket.
+if [[ -n $cursor_file ]]; then
+    if ! python3 "$root/tools/mvs/printer-window.py" capture \
+            --printer "$printer" --cursor-file "$cursor_file"; then
+        echo >&2 "could not capture a safe printer cursor; no JCL was submitted"
+        exit 75
+    fi
+else
+    start_line=$(wc -l < "$printer")
+fi
 
 printf 'submitting %s as %s through reader port %s\n' \
     "$jcl" "$jobname" "$reader_port" >&2
@@ -120,10 +136,19 @@ fi
 deadline=$((SECONDS + timeout))
 
 while (( SECONDS <= deadline )); do
+    if [[ -n $cursor_file ]]; then
+        window=$(python3 "$root/tools/mvs/printer-window.py" read \
+            --printer "$printer" --cursor-file "$cursor_file") || {
+            echo >&2 "printer cursor invalid during JES submission; inspect printer/JES before retry"
+            exit 75
+        }
+    else
+        window=$(tail -n "+$((start_line + 1))" "$printer") || exit 75
+    fi
     # JES printer START JOB banners carry both the job name and number.
     # Accept one emitted after this submission, even if $HASP373 is absent.
     banner=$(
-        tail -n "+$((start_line + 1))" "$printer" 2>/dev/null |
+        printf '%s\n' "$window" |
             grep -m1 -E "\*+A[[:space:]]+START[[:space:]]+JOB[[:space:]]+[0-9]+[[:space:]]+${jobname}([[:space:]]|$)" || true
     )
     if [[ -n "$banner" ]]; then
@@ -134,7 +159,7 @@ while (( SECONDS <= deadline )); do
         fi
     fi
     match=$(
-        tail -n "+$((start_line + 1))" "$printer" 2>/dev/null |
+        printf '%s\n' "$window" |
             grep -m1 -E "\\\$HASP373[[:space:]]+${jobname}([[:space:]]|$)" || true
     )
 
@@ -151,7 +176,7 @@ while (( SECONDS <= deadline )); do
 
     # JES may reject invalid JCL before emitting $HASP373.
     rejected=$(
-        tail -n "+$((start_line + 1))" "$printer" 2>/dev/null |
+        printf '%s\n' "$window" |
             grep -m1 -E "IEF452I[[:space:]]+${jobname}[[:space:]]+JOB NOT RUN" || true
     )
     if [[ -n "$rejected" ]]; then

@@ -258,7 +258,8 @@ def require_reader_ready(config: dict[str, Any]) -> None:
 
 
 def submit_and_wait(
-    config: dict[str, Any], deck: str, max_rc: int = 0
+    config: dict[str, Any], deck: str, max_rc: int = 0,
+    *, cursor_file: Path | None = None,
 ) -> tuple[int, str]:
     rt = config["runtime"]
     printer = ROOT / str(rt["printer"])
@@ -272,13 +273,16 @@ def submit_and_wait(
         tmp = Path(handle.name)
 
     try:
+        submit_command = [
+            str(SUBMIT_JCL),
+            "--timeout",
+            str(rt.get("submit_timeout", 120)),
+        ]
+        if cursor_file is not None:
+            submit_command.extend(("--cursor-file", str(cursor_file)))
+        submit_command.append(str(tmp))
         cp = subprocess.run(
-            [
-                str(SUBMIT_JCL),
-                "--timeout",
-                str(rt.get("submit_timeout", 120)),
-                str(tmp),
-            ],
+            submit_command,
             cwd=ROOT,
             text=True,
             capture_output=True,
@@ -298,14 +302,19 @@ def submit_and_wait(
         deadline = time.monotonic() + int(rt.get("completion_timeout", 120))
         last = ""
         while time.monotonic() <= deadline:
+            summary_command = [str(JOB_SUMMARY), str(job), "--max-rc", str(max_rc)]
+            if cursor_file is not None:
+                summary_command.extend(("--cursor-file", str(cursor_file)))
             summary = subprocess.run(
-                [str(JOB_SUMMARY), str(job), "--max-rc", str(max_rc)],
+                summary_command,
                 cwd=ROOT,
                 text=True,
                 capture_output=True,
                 check=False,
             )
             last = summary.stdout.strip() or summary.stderr.strip()
+            if cursor_file is not None and "printer-window:" in last:
+                raise DspalError(f"JOB {job}: printer cursor invalid: {last}")
             if summary.returncode == 0:
                 return job, summary.stdout
             if "has no END JOB banner" not in last and "was not found" not in last:
@@ -323,9 +332,12 @@ def submit_and_wait(
             pass
 
 
-def job_report(job: int) -> str:
+def job_report(job: int, *, cursor_file: Path | None = None) -> str:
+    command = [str(DUMP_REPORT), str(job)]
+    if cursor_file is not None:
+        command.extend(("--cursor-file", str(cursor_file)))
     cp = subprocess.run(
-        [str(DUMP_REPORT), str(job)],
+        command,
         cwd=ROOT,
         text=True,
         encoding="latin-1",
