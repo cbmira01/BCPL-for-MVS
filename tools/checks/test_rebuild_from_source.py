@@ -42,7 +42,7 @@ fi
 if [ "${MOCK_FAIL:-}" = "${0##*/}:$*" ]; then
     exit 7
 fi
-if [ "${0##*/}" = dspal ] && [[ "$*" == 'populate all' || "$*" == 'populate all --dry-run' ]]; then
+if [ "${0##*/}" = dspal ] && [[ "$*" == 'populate all' || "$*" == 'populate all --dry-run' || "$*" == 'populate all --batch' ]]; then
     if [ "$*" = 'populate all --dry-run' ]; then
         printf 'Dry run: 162 ready member(s) would be written.\\n'
         phase=dry-run
@@ -73,7 +73,7 @@ exit 0
             path.write_text(stub, encoding='utf-8')
             path.chmod(0o755)
 
-    def invoke(self, *, approve=True, fail=None, bad_phase=None):
+    def invoke(self, *, approve=True, fail=None, bad_phase=None, batch=False):
         env = os.environ.copy()
         env['PATH'] = str(self.root / 'bin') + os.pathsep + env['PATH']
         env['MOCK_LOG'] = str(self.call_log)
@@ -83,24 +83,95 @@ exit 0
             env['MOCK_BAD_PHASE'] = bad_phase
         # script(1) allocates an interactive PTY for the child command.
         answers = ('\n\nDELETE\n\nYES\n' + '\n' * 16) if approve else 'NO\n'
+        command = 'bash tools/reconstruction/rebuild-from-source'
+        if batch:
+            command += ' --batch-populate'
         return subprocess.run(
-            ['script', '-q', '-e', '-c',
-             'bash tools/reconstruction/rebuild-from-source', '/dev/null'],
+            ['script', '-q', '-e', '-c', command, '/dev/null'],
             cwd=self.root, env=env, input=answers,
             capture_output=True, text=True, check=False,
         )
 
-    def invoke_unattended(self, *, fail=None):
+    def invoke_unattended(self, *, fail=None, batch=False, options=None):
         env = os.environ.copy()
         env['PATH'] = str(self.root / 'bin') + os.pathsep + env['PATH']
         env['MOCK_LOG'] = str(self.call_log)
         if fail:
             env['MOCK_FAIL'] = fail
+        flags = (['--unattended', '--batch-populate'] if batch
+                 else ['--unattended'])
+        if options is not None:
+            flags = list(options)
         return subprocess.run(
-            ['bash', 'tools/reconstruction/rebuild-from-source', '--unattended'],
+            ['bash', 'tools/reconstruction/rebuild-from-source', *flags],
             cwd=self.root, env=env, stdin=subprocess.DEVNULL,
             capture_output=True, text=True, check=False,
         )
+
+
+    def test_batch_opt_in_unattended_changes_both_writes_only(self):
+        result = self.invoke_unattended(batch=True)
+        self.assertEqual(result.returncode, 0, result.stdout[-2500:])
+        self.assertIn('POPULATION MODE: bounded per-PDS', result.stdout)
+        self.assertEqual(result.stdout.count('Expected first-pass RC=2'), 2)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal populate all --dry-run\n', commands)
+        self.assertIn('dspal populate all --batch\n', commands)
+        self.assertIn('dspal populate all --generated-only --dry-run\n', commands)
+        self.assertIn('dspal populate all --generated-only --batch\n', commands)
+        self.assertNotIn('dspal populate all\n', commands)
+        self.assertNotIn('dspal populate all --generated-only\n', commands)
+        self.assertIn('dspal submit BOOT_JCL BCPLQSAM\n', commands)
+        self.assertNotIn('run-project-regressions', commands)
+
+    def test_batch_opt_in_interactive_keeps_confirmation_gates(self):
+        result = self.invoke(batch=True)
+        self.assertEqual(result.returncode, 0, result.stdout[-2500:])
+        self.assertIn('hit ENTER to continue, Ctrl-C to stop', result.stdout)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('clean-workarea \n', commands)
+        self.assertIn('dspal purgebcpl \n', commands)
+        self.assertIn('dspal populate all --batch\n', commands)
+        self.assertIn('dspal populate all --generated-only --batch\n', commands)
+
+    def test_batch_first_pass_failure_stops_before_interpreter_build(self):
+        result = self.invoke_unattended(batch=True, fail='dspal:populate all --batch')
+        self.assertEqual(result.returncode, 7, result.stdout[-2200:])
+        self.assertIn('STOPPED: Guide Step 2', result.stderr)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal populate all --batch\n', commands)
+        self.assertNotIn('dspal submit MR10_JCL IC19BLD', commands)
+        self.assertNotIn('dspal populate all --generated-only --batch', commands)
+
+    def test_batch_generated_pass_failure_stops_before_compiler_build(self):
+        result = self.invoke_unattended(
+            batch=True, fail='dspal:populate all --generated-only --batch')
+        self.assertEqual(result.returncode, 7, result.stdout[-2200:])
+        self.assertIn('STOPPED: Guide Step 5', result.stderr)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal populate all --batch\n', commands)
+        self.assertIn('dspal populate all --generated-only --batch\n', commands)
+        self.assertNotIn('dspal submit BOOT_JCL CAMBBLD', commands)
+
+    def test_batch_flag_in_either_order_and_duplicate_refusal(self):
+        result = self.invoke_unattended(
+            options=['--batch-populate', '--unattended'])
+        self.assertEqual(result.returncode, 0, result.stdout[-2000:])
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal populate all --batch\n', commands)
+
+        self.call_log.unlink()
+        duplicate = self.invoke_unattended(
+            options=['--unattended', '--batch-populate', '--batch-populate'])
+        self.assertEqual(duplicate.returncode, 2)
+        self.assertIn('duplicate --batch-populate', duplicate.stderr)
+        self.assertFalse(self.call_log.exists())
+
+    def test_batch_option_alone_still_requires_terminal(self):
+        result = self.invoke_unattended(options=['--batch-populate'])
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('interactive terminal', result.stderr)
+        self.assertFalse(self.call_log.exists())
 
     def test_unattended_completes_with_no_tty_and_no_prompts(self):
         result = self.invoke_unattended()

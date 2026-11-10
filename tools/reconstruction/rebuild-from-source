@@ -13,6 +13,7 @@ if [ -z "$ROOT" ] || ! cd "$ROOT"; then
 fi
 
 UNATTENDED=0
+BATCH_POPULATE=0
 
 run() {
     printf '\n> '
@@ -31,11 +32,13 @@ first_population() {
     local mode="$1" log missing rc
     local -a statuses
     log=$(mktemp "${TMPDIR:-/tmp}/bcpl-first-populate.XXXXXXXX") || return 2
+    local -a options=()
     if [ "$mode" = dry-run ]; then
-        run tools/datasets/dspal populate all --dry-run 2>&1 | tee "$log"
-    else
-        run tools/datasets/dspal populate all 2>&1 | tee "$log"
+        options+=(--dry-run)
+    elif [ "$BATCH_POPULATE" -eq 1 ]; then
+        options+=(--batch)
     fi
+    run tools/datasets/dspal populate all "${options[@]}" 2>&1 | tee "$log"
     statuses=("${PIPESTATUS[@]}")
     rc=${statuses[0]}
     if [ "${statuses[1]}" -ne 0 ]; then
@@ -120,7 +123,11 @@ step5() {
     run tools/bootstrap/prepare-bootstrap --with-trnilrg || return $?
     run cat workarea/bootstrap-cambridge/prepare-bootstrap-manifest.json || return $?
     run tools/datasets/dspal populate all --generated-only --dry-run || return $?
-    run tools/datasets/dspal populate all --generated-only || return $?
+    local -a options=(--generated-only)
+    if [ "$BATCH_POPULATE" -eq 1 ]; then
+        options+=(--batch)
+    fi
+    run tools/datasets/dspal populate all "${options[@]}" || return $?
     run tools/datasets/dspal ls BOOT_SOURCE || return $?
     run tools/datasets/dspal ls BOOT_INTCODE || return $?
 }
@@ -160,19 +167,41 @@ step9() {
 }
 
 main() {
-    if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != --unattended ]; }; then
-        printf 'Usage: tools/reconstruction/rebuild-from-source [--unattended] (always starts at Step 0)\n' >&2
-        return 2
-    fi
-    if [ "$#" -eq 1 ]; then
-        UNATTENDED=1
-    fi
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            --unattended)
+                if [ "$UNATTENDED" -eq 1 ]; then
+                    printf 'ERROR: duplicate --unattended option.\n' >&2
+                    return 2
+                fi
+                UNATTENDED=1
+                ;;
+            --batch-populate)
+                if [ "$BATCH_POPULATE" -eq 1 ]; then
+                    printf 'ERROR: duplicate --batch-populate option.\n' >&2
+                    return 2
+                fi
+                BATCH_POPULATE=1
+                ;;
+            *)
+                printf 'Usage: tools/reconstruction/rebuild-from-source [--unattended] [--batch-populate] (always starts at Step 0)\n' >&2
+                return 2
+                ;;
+        esac
+    done
     if [ "$UNATTENDED" -eq 0 ] && [ ! -t 0 ]; then
         printf 'BLOCKED: an interactive terminal is required for operator confirmations.\n' >&2
         return 2
     fi
     printf 'CLEAN-ROOM REBUILD: always starts at Step 0; rerun means another full purge/rebuild.\n'
     printf 'No resume, script-wide approval, JES console probe, or regression suites.\n'
+    if [ "$BATCH_POPULATE" -eq 1 ]; then
+        printf 'POPULATION MODE: bounded per-PDS IEBGENER batching (opt-in).\n'
+        printf 'This option does not authorize a rebuild, certify release, or change regressions.\n'
+    else
+        printf 'POPULATION MODE: one JES job per member (default).\n'
+    fi
     if [ "$UNATTENDED" -eq 1 ]; then
         printf 'UNATTENDED: workarea cleanup and managed-dataset deletion are explicitly authorized.\n'
         printf 'No confirmation prompts; any command failure still stops the rebuild.\n'

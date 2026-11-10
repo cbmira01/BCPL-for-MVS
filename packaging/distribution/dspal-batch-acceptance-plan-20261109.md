@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 9 November 2026  
-**Status:** `DIST_DOCS` and `EXT_SOURCE` live MVS text acceptance passed; `MR10_TESTS` split-job acceptance pending  
+**Status:** Live MVS batch tests passed for `DIST_DOCS` and `EXT_SOURCE`; `MR10_TESTS` split-job test passed with terminal-blank-record qualification  
 **Git source authority:** GitHub `main`. **Execution authority:** JES, IEBGENER and actual MVS PDS contents.
 
 ## Scope and constraints
@@ -93,7 +93,7 @@ These are operator-reported MVS execution results, not evidence that has
 been independently replayed here. No release or reconstruction acceptance
 is implied.
 
-## Next live gate — split `MR10_TESTS` population
+## Split `MR10_TESTS` population — MVS verified with qualification
 
 The manifest currently maps **61** Git-tracked members into
 `HERC02.BCPL.MR10KIT.TESTS`. The opt-in batch planner should produce
@@ -102,13 +102,28 @@ ceiling. The acceptance tool now checks the exact planned job counts,
 ordered/distinct JES batch receipts, and every recoverable member text.
 
 **Qualification:** Four members (`T01ECHO`, `T01TEXT`, `T04MOD1`,
-`T04MOD2`) have terminal empty FB/80 records in their Git sources.
+`T04MOD2`) each have one terminal empty FB/80 record in Git sources.
 The current `dspal get` parser discards trailing blank records, so it
-cannot verify those terminal-record counts. For `MR10_TESTS` **only**,
-the acceptance tool compares the canonical recoverable text and reports
-`qualified: true` with the unverifiable member/record counts in
-`summary.json`. It must not be presented as full raw-record fidelity.
+cannot verify their terminal-record counts. For `MR10_TESTS` **only**,
+the acceptance tool compares canonical recoverable text and records
+`qualified: true` with those four unverifiable records in `summary.json`.
+It must not be presented as full raw-record fidelity.
 Other acceptance targets continue to reject such source records.
+
+The controlled 10 November 2026 UTC live test, using GitHub HEAD
+`b31c9a4305ef6014afcd4bd9d0fe7b00107f56d3`, returned:
+
+| JES job | Steps | Measured batch execution | Result |
+| --- | ---: | ---: | --- |
+| 3150 | 60 | 10.5 s | All 60 IEBGENER steps verified |
+| 3151 | 1 | 8.2 s | One IEBGENER step verified |
+| **Combined** | **61** | **18.7 s** | **61/61 canonical texts matched, qualified** |
+
+The operator's final `MR10_TESTS batch acceptance RC=0` was recorded with
+evidence at `workarea/dspal-batch-acceptance/20261110T000314Z-65156`.
+This verifies real-MVS split behavior, not raw EBCDIC identity or the four
+terminal record counts. Total observed canonical-text verification across
+`DIST_DOCS`, `EXT_SOURCE`, and `MR10_TESTS` is **71/71**.
 
 Read-only planning (no JES):
 
@@ -137,14 +152,17 @@ echo "MR10_TESTS split-batch acceptance RC=$?"
 
 This overwrites the 61 mapped PDS members; it does not purge MVS datasets.
 Review both JES jobs, individual step codes, 61 canonical read-back comparisons
-and the explicit qualification before considering the split-batch gate met.
+and the explicit qualification on any repeat run.
 Do not infer authorization for `BOOT_JCL`, native objects, full
 clean-room reconstruction, or regressions.
 
 ## Acceptance gate
 
-A passing host-only suite or a successful Git commit does **not** prove batch
-operation on MVS. Review the fresh live job IDs, step codes, per-member
-read-back results and the saved receipt. Only then decide whether to make
-batching the default in `rebuild-from-source`, with a separate decision
-and a full clean-room/regression validation.
+MVS population acceptance is now established for the tested member classes,
+subject to the four terminal-record qualifications. The reconstruction driver
+offers `--batch-populate` only as an **explicit opt-in** for both population
+passes; its default is unchanged. A **complete clean-room reconstruction** with
+the opt-in mode, preservation of its build and smoke-test evidence, and
+separate regression verification are still required before accepting batching
+as the normal reconstruction behavior. A Git commit alone does not authorize
+destructive MVS operations.

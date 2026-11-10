@@ -38,6 +38,10 @@ tools/reconstruction/rebuild-from-source
 
 # Explicitly destructive, completely noninteractive mode:
 tools/reconstruction/rebuild-from-source --unattended
+
+# Optional: use MVS-verified per-PDS IEBGENER batching for both population passes.
+# This is also destructive; run only with separate owner approval.
+tools/reconstruction/rebuild-from-source --unattended --batch-populate
 ```
 
 The driver executes the existing guide commands **from Step 0 every time**,
@@ -76,20 +80,26 @@ The driver now reports elapsed seconds for every command and major guide step.
 Its PDS inventories are consolidated, and `initbcpl` uses a single bulk
 LISTDS preflight. These changes do not reduce the build's verification gates.
 
-**Opt-in population experiment:** `dspal populate all --batch --show-jcl`
-produces bounded, per-PDS, multi-step IEBGENER jobs (maximum 60 steps and
-approximately 4,000 input cards per job). The unchanged default still submits
-one JES job per member. Batch execution is intentionally **not enabled by
-`rebuild-from-source --unattended`** pending representative MVS read-back
-and record-fidelity verification. `--batch` must not be used for MVS writes
-until separately authorized. A successful batch requires every expected
-step to appear in `job-summary` as RC=0000; a missing, skipped or failed
-step stops population rather than claiming success.
+**Opt-in batch population:** `--batch-populate` applies `dspal populate --batch`
+to the Step 2 tracked-member write and Step 5 generated-only write.
+Their read-only dry runs are unchanged. By default, reconstruction still
+submits one IEBGENER JES job per member. The flag is accepted with interactive
+checkpoints or alongside `--unattended`; it does not itself bypass
+confirmation, authorize an MVS reconstruction or imply release acceptance.
 
-The guarded [batch acceptance procedure](../packaging/distribution/dspal-batch-acceptance-plan-20261109.md)
-uses a small, manifest-mapped MVS PDS and per-member read-back comparison. It
-requires a separately acknowledged target DSN and does not enable batching in
-reconstruction automatically.
+The batch planner bounds each PDS job to at most 60 steps and approximately
+4,000 input cards. Every expected IEBGENER step must appear in the returned
+JES summary as RC=0000; missing, bypassed or failed steps stop the driver.
+The first population's narrowly recognized RC=2 (12 missing generated inputs)
+remains required; unrelated RC=2 outcomes still fail closed.
+
+[Controlled MVS acceptance](../packaging/distribution/dspal-batch-acceptance-plan-20261109.md)
+has verified 71 canonical FB/80 texts across `DIST_DOCS`, `EXT_SOURCE`,
+and split `MR10_TESTS` jobs (60 + 1), with four terminal-blank-record count
+qualifications. This does **not** establish a successful complete clean-room
+rebuild using `--batch-populate`. First obtain separate operator approval
+for the destructive run, then preserve its full build/smoke evidence and
+compare timing against the prior 50-minute baseline.
 
 The driver does **not** run the Step 4 resident MR10 suites, any Step 9
 regression campaign, or any other regression suite. **Regressions are a
