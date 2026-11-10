@@ -172,4 +172,3 @@ Host-only checks (no JES submission):
 python3 -B -m unittest discover -s tools/checks -p 'test_printer_window*.py' -v
 tools/tests/run-project-regressions --check
 ```
-
