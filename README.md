@@ -105,6 +105,10 @@ tools/mr10/run-language-demos
 tools/bootstrap/run-regression
 ```
 
+For the initial Docker Compose build, TK5 startup/shutdown, logs, image
+updates and persistent-state precautions, see the
+[Hercules/TK5 Docker Compose operations guide](docker/README.md).
+
 These commands assume the environment has already been rebuilt. For a new
 system or after `purgebcpl`, **first follow the clean-room reconstruction
 runbook**, rather than attempting native tests against missing object modules.
