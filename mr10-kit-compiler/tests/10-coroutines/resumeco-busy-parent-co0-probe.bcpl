@@ -56,8 +56,12 @@ $( LET ROOT = VEC 2
 
    B := CREATECO(WORKB, 100)
    A := CREATECO(WORKA, 100)
-   IF A=0 | B=0 DO
-   $( WRITEF("CO0 CREATE FAILED*N")
+   IF A=0 DO
+   $( WRITEF("CO0 CREATE A FAILED*N")
+      FINISH
+   $)
+   IF B=0 DO
+   $( WRITEF("CO0 CREATE B FAILED*N")
       FINISH
    $)
 
