@@ -2,8 +2,8 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Established:** 10 November 2026  
-**Status:** ESTABLISHED; NOT STARTED  
-**Marches:** CO.0–CO.5; all NOT STARTED  
+**Status:** ESTABLISHED; CO.0 IN PROGRESS  
+**Marches:** CO.0 IN PROGRESS; CO.1–CO.5 NOT STARTED  
 **Target:** Native System/370 BCPL applications under MVS 3.8J
 
 ## Purpose and boundaries
@@ -22,6 +22,7 @@ No new BCPL language construct or INTCODE opcode is anticipated. A compiler/code
 - [Global Number Registry](../../architecture/global-number-registry.md)
 - `richards-bcpltape/` (historical evidence); `mr10-kit-compiler/` (kit and interpreter reconstruction)
 - [Research goals and approval gates](coroutine-research-and-design-gates.md)
+- [CO.0 historical source audit, 10 November 2026](co0-historical-source-audit-20261110.md) — source findings, historical KM10 coroutine evidence and open execution questions
 
 ## Architectural direction (pending CO.1 design approval)
 
@@ -46,7 +47,7 @@ These are working boundaries, **not an approved callable interface, descriptor l
 | **CO.4** | **Robustness and Edge-Case Verification** | Verify stack boundaries, recursion, repeated switches, allocation exhaustion, invalid/active/stale descriptors, cleanup and error paths. Do not claim general recovery from arbitrary machine addresses or unrecovered MVS abends. **Gate:** focused positive/negative evidence and no newly broken runtime invariants. |
 | **CO.5** | **Integration, Regression, and Release** | Add named tests to the native Bootstrap suite without renumbering historical cases; run MR10, native and applicable project suites; prove clean-room reconstruction, reproducible linking, documentation and release readiness. **Gate:** separate owner acceptance with source revision, complete per-suite outcomes, IFOX/IEWL/GO/JES evidence and separately authorized installation/promotion. |
 
-**Every march is NOT STARTED.** Each closes only after an explicit evidence-backed owner decision.
+**CO.0 is IN PROGRESS; CO.1–CO.5 are NOT STARTED.** Each closes only after an explicit evidence-backed owner decision.
 
 ## Rules applying to every march
 

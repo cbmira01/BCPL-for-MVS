@@ -2,7 +2,9 @@
 
 **Milestone:** [Implement coroutine support for native compiler](milestone-implement-coroutine-support-for-native-compiler.md)  
 **Recorded:** 10 November 2026  
-**Status:** OPEN; research and approval goals, not implementation evidence
+**Status:** OPEN; CO.0 IN PROGRESS, research and approval goals, not native implementation evidence
+
+**CO.0 discovery (10 November):** The tape's `INDEX` explicitly identifies a **KM10 coroutine library**, including `KM10.COMACRO`, `KM10.COBLIB(CORTN)`, `KM10.COBLIB(STANDARD)`, `KM10.J(COLIB)`, and the **missing** `KM10.COMAIN`. This materially expands the prior historical-source inventory. See the [CO.0 source audit](co0-historical-source-audit-20261110.md). The native switching algorithm and full historical callable API remain unrecovered.
 
 ## Evidence already in Git
 
@@ -12,7 +14,7 @@
 | MR10 switch | `mr10-kit-compiler/source/iclib.int` uses existing INTCODE `X32`; `icintv19.asm` implements `X32` by restoring interpreted P and C. | Trace each scratch global, saved continuation and value-transfer rule in `CHANGECO`; document first activation and resumption. |
 | MR10 descriptor | Existing probe documentation records `C!0` saved P, `C!1` parent, `C!2` list link; `P=C+3`; `P!2` FN, `P!3` SIZE, `P!4` C. | Do **not** assume these interpreted offsets/registers map onto native S/370. |
 | Tests | MR10 12-case regression panel has accepted `basic-coroutine`; `10-coroutines/` has five additional development probes marked UNVERIFIED. | Execute/review those probes and validate golden results without retroactive acceptance claims. |
-| Historical Cambridge | The preserved `sys3/bcpl/libhdr` and `bcplib/bcpl/blib` do not expose these named coroutine routines. | Search the rest of surviving historical materials for interface/ownership evidence; absence in two sources is not evidence of universal historical absence. |
+| Historical Cambridge/KM10 | Ordinary `sys3/bcpl/libhdr` and `bcplib/bcpl/blib` do not expose the MR10-named coroutine API, **but** original `km10/comacro`, `km10/coblib/cortn` and `km10/j/colib` prove a historical native coroutine variant existed. | The tape-listed `km10/comain` is missing. Recover full historical interface, initialization and switching behavior from surviving indirect evidence; do not conflate the variants. |
 | Native ABI | Native contract assigns R5 frame, R6 return, R7–R9 arguments/results, R4 restored from frame, R11 system vector; current BCPLMAIN has a single bounded working stack. | Identify all live registers/condition codes/stack state and restoration requirements using actual CG370 output and MVS probes. |
 | Globals | MR10 numbers 6–8 and 91–95 conflict with the Cambridge `LIBHDR`. | Choose and approve new native slots and exports against Global Number Registry, compiler CGHDR and whole-executable collisions. |
 | Storage | Native `BCPLMEM` supplies `GETVEC`/`FREEVEC`; stack checks use `STKLIM` and runtime diagnostics. | Establish isolated per-coroutine stack layout, guard, high-water, root stack, exhaustion and cleanup. |
@@ -25,7 +27,8 @@ Interpret a claim as **DECLARED**, **SOURCE-OBSERVED**, **INTERPRETED-MVS-TESTED
 - [ ] Compare `compiler-probe.bcpl` and `frame-layout-probe.bcpl` with saved OCODE/INTCODE; prove argument order and actual synthetic frame behavior.
 - [ ] Verify all five existing `10-coroutines/` probes: call layout, frame layout, fixed-stack producer/consumer, RESUMECO parent chain, CREATE/DELETE/reuse. Record exact inputs, phase RCs, output oracle and JES evidence when authorized.
 - [ ] Establish entry argument, yield value, return value, parent relation, natural return/termination, repeated resume, invalid/deleted coroutine and error behavior; classify any inferred behavior.
-- [ ] Search surviving Richards tape sources, headers, runtime text and historical documentation for coroutine ownership; distinguish Cambridge originals from reconstruction-local MR10 routines.
+- [x] Identify the surviving historical KM10 coroutine-library inventory, control-block macro, coroutine-aware BLIB source, and link-edit job; distinguish it from project-created MR10 code (source audit only).
+- [ ] Continue searching period documentation, tape sources and related references for the **missing KM10.COMAIN** implementation and a full historical callable coroutine contract.
 - [ ] Design equivalent interpreted/native BCPL behavior tests, permitting only documented header/global mapping differences.
 
 **CO.0 gate:** reviewed behavior table, provenance, reproducible interpreted test recipe, open unknowns. No new native implementation.
