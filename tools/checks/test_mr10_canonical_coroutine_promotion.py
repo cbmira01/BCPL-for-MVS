@@ -39,9 +39,9 @@ class CanonicalCoroutinePromotionTests(unittest.TestCase):
         )
         self.assertNotIn("//ASM      EXEC", deck)
         self.assertIn("STGICLIB EXEC PGM=IEBGENER", deck)
-        marker = "//SYSUT1   DD  *\\n"
+        marker = "//SYSUT1   DD  *\n"
         stage = deck.split("//STGICLIB", 1)[1]
-        staged_records = stage.split(marker, 1)[1].split("/*\\n", 1)[0]
+        staged_records = stage.split(marker, 1)[1].split("/*\n", 1)[0]
         canonical = (ROOT / "source/iclib.int").read_text(encoding="ascii")
         self.assertEqual(staged_records, canonical)
         self.assertFalse(
