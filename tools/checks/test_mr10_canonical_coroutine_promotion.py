@@ -2,6 +2,7 @@
 """Host-only post-promotion checks for the paired MR10 coroutine repair."""
 
 from pathlib import Path
+import runpy
 import unittest
 
 
@@ -21,6 +22,34 @@ class CanonicalCoroutinePromotionTests(unittest.TestCase):
         self.assertEqual(canonical, stripped)
         self.assertTrue(canonical.rstrip().endswith("\nZ"))
         self.assertTrue(all(len(line) <= 80 for line in canonical.splitlines()))
+
+    def test_canonical_iclib_stages_in_real_jcl_deck(self):
+        core = runpy.run_path(
+            str(ROOT.parent / "tools/mr10/compile-and-run-core.py"),
+            run_name="mr10_canonical_staging_test",
+        )
+        source = ROOT / "tests/00-regression-panel/data-movement/scalar-vector.bcpl"
+        deck = core["build_deck"](
+            interpreter=None,
+            sources=[source],
+            job_name="CO0CHECK",
+            listing="light",
+            named_dds=[],
+            installed_load="HERC02.BCPL.MR10KIT.LOAD",
+        )
+        self.assertNotIn("//ASM      EXEC", deck)
+        self.assertIn("STGICLIB EXEC PGM=IEBGENER", deck)
+        marker = "//SYSUT1   DD  *\\n"
+        stage = deck.split("//STGICLIB", 1)[1]
+        staged_records = stage.split(marker, 1)[1].split("/*\\n", 1)[0]
+        canonical = (ROOT / "source/iclib.int").read_text(encoding="ascii")
+        self.assertEqual(staged_records, canonical)
+        self.assertFalse(
+            any(record.startswith("//") for record in staged_records.splitlines())
+        )
+        self.assertIn("6 LIP2 SG9 LP0 SIG7", staged_records)
+        self.assertNotIn("--iclib", deck)
+        self.assertNotIn("CO.0 EXPERIMENT", deck)
 
     def test_canonical_coroutine_library_matches_candidate(self):
         canonical = (ROOT / "library/coroutines.bcpl").read_text(encoding="ascii")
