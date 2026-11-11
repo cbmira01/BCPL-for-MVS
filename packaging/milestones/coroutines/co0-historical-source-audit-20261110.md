@@ -155,3 +155,111 @@ CO.0 remains **IN PROGRESS** until the evidence and contract pass separate owner
 
 **Status:** CO.0 **IN PROGRESS**; CO.1–CO.5 **NOT STARTED**. No runtime, manifest, historical source, JCL, MVS dataset or test acceptance changed in this documentation update.
 
+## 7. CO.0 reconstructed MR10 CHANGECO trace and candidate behavioral contract — 11 November 2026
+
+**Status:** This section records additional read-only analysis and a **candidate** behavioral contract for owner review. It does not approve a native ABI, close CO.0, or add interpreted/native execution evidence. Classify claims as SOURCE-OBSERVED, INTERPRETED-MVS-TESTED, INFERRED, UNVERIFIED or RECONSTRUCTION PROPOSAL; the classifications are not interchangeable.
+
+### 7.1 Interpreter state and frame conventions
+
+Sources: [reconstructed ICLIB](../../../mr10-kit-compiler/source/iclib.int), [coroutine BCPL](../../../mr10-kit-compiler/library/coroutines.bcpl), [original MR10 ICINT](../../../richards-bcpltape/mr10/bcplkit/icint), [ICINT19 assembler](../../../mr10-kit-compiler/asm/icintv19.asm), [accepted coroutine probes and artifacts](../../../mr10-kit-compiler/tests/10-coroutines/).
+
+**SOURCE-OBSERVED:** The interpreted machine holds A (accumulator), B (previous accumulator), P (current BCPL frame pointer) and C (instruction continuation). These are interpreted registers, **not** native System/370 application-register assignments. INTCODE operation 6 establishes a call frame containing the previous P and C in its words 0 and 1. X4 returns using P!1 for C and P!0 for P. Thus suspended BCPL frames retain their call-return chain.
+
+The reconstructed ICLIB CHANGECO entry treats P!2 as the transferred value and P!3 as the incoming descriptor. G!7 is CURRCO; G!9 and G!10 are transient bridge globals. A reconstructed descriptor has C!0 = saved P, C!1 = parent, C!2 = COLIST link. These are MR10-reconstruction-local conventions, **not** allocated native globals or an approved native descriptor.
+
+### 7.2 Instruction-by-instruction ICLIB path
+
+**SOURCE-OBSERVED:** The complete ICLIB global-6 entry reads:
+
+~~~text
+6   LIP2 SG9 LIP1 SG10 LIP0 SIG7
+    LIP3 SG7 LL498 LIG7 X1 X32
+498 LIG9 JIG10 G6L6
+~~~
+
+| Instructions | Effect on interpreted state |
+| --- | --- |
+| LIP2 SG9 | G!9 := P!2; transfer VALUE saved temporarily. |
+| LIP1 SG10 | G!10 := P!1; outgoing switching-call frame's return continuation saved temporarily. |
+| LIP0 SIG7 | (G!7)!0 := P!0; save outgoing caller-frame pointer in current descriptor. |
+| LIP3 SG7 | G!7 := P!3; make the target descriptor current. |
+| LL498 LIG7 X1 | Put label 498 in B and incoming saved frame (G!7)!0 in A. |
+| X32 | P,C := A,B; install incoming frame, then fetch at trampoline label 498. |
+| 498 LIG9 JIG10 | A := G!9; C := G!10; resume through supplied continuation under incoming P. |
+
+Both original MR10 ICINT (CASE 32) and the ICINT19 assembler (X32) implement P,C := A,B. No new INTCODE opcode was introduced. The reconstructed descriptor records a saved P, not a separate persistent saved C.
+
+**INFERRED MECHANISM:** The trampoline resumes execution using the continuation supplied by the coroutine switching out, but with the *incoming* frame already installed. When that continuation reaches X4, X4 restores the return linkage from the incoming frame's own P!0/P!1. Shared G!9/G!10 therefore do not, by themselves, prove a continuation-corruption defect. This is a source-level control-flow explanation, **not** an independently captured dynamic MVS instruction trace or a proof for arbitrary distinct continuations.
+
+### 7.3 Compiler artifacts and limits of continuation evidence
+
+**SOURCE-OBSERVED:** The preserved compiler-probe.intcode includes these two generated forms:
+
+~~~text
+1 LIP2 SP6 LIP3 SP7 LIG6 K4 X4
+3 LIP2 SP6 LIP3 SP7 LIG6 K4 JL7
+7 X4
+~~~
+
+Both ultimately reach X4, even though the path to it differs. The companion compiler-probe.ocode confirms the two-argument CHANGECO(VALUE,CPTR) call. The saved frame-layout-probe.ocode/intcode support the reconstructed CREATEFRAME(FN,SIZE,C) parameter positions P!2=FN, P!3=SIZE, P!4=C. The two compiler-only START procedures do **not** execute CHANGECO. The four fresh compiler artifacts previously token-matched the archived OCODE/INTCODE, which verifies generated structure, not dynamic switching.
+
+**UNVERIFIED:** We still need an interpreted transition trace that records P, C, outgoing and incoming descriptor, frame P!0/P!1, G!9/G!10, transferred value and resumed instruction across *two distinct* nested suspension sites. Do not generalize from X4-equivalent call continuations to unrestricted instruction-site interchangeability.
+
+### 7.4 First activation, transfer, return and root setup
+
+**SOURCE-OBSERVED:** In reconstructed CREATECO(FN,SIZE), C := GETVEC(SIZE+9), P := C+3, C!0 := P, C!1 := CURRCO, C!2 := COLIST, P!0 := 0, P!1 := 0, P!2 := FN, P!3 := SIZE and P!4 := C. CREATECO links C into COLIST, switches by CHANGECO(0,C), and then enters the repeating expression C := FN(COWAIT(C)) REPEAT.
+
+**INFERRED FROM SOURCE CONTROL FLOW; positive-path outputs INTERPRETED-MVS-TESTED:**
+
+1. The creator's CHANGECO installs the never-run synthetic frame. Execution proceeds after the switching call under that incoming frame, entering COWAIT(C) *before* FN runs.
+2. The first COWAIT clears the new coroutine's parent and yields its descriptor C to the creator, so CREATECO can return the descriptor.
+3. A later first CALLCO(C,A) resumes that suspended COWAIT and passes A as FN's initial argument.
+4. Each subsequent COWAIT(V) yields V and, when resumed, returns the newly transferred value to its own suspended caller.
+5. Natural FN return feeds the next iteration of C := FN(COWAIT(C)) REPEAT. The coroutine is not automatically deleted; it waits again and may re-enter FN on a subsequent activation.
+
+The positive probe fixtures verify selected outputs and interleavings, but **not** every numbered control-flow step by captured instruction trace. In those tests the root descriptor is manually initialized with ROOT!1 := -1; a complete root creation, error and termination contract remains open.
+
+### 7.5 Candidate observable behavioral contract
+
+| Concern | Evidence and disposition |
+| --- | --- |
+| Create a suspended coroutine; deliver first entry argument | SOURCE-OBSERVED; positive INTERPRETED-MVS-TESTED. **Candidate:** preserve initialization and first-call argument delivery. |
+| Yield a value; resume with another value; preserve locals | SOURCE-OBSERVED; positive INTERPRETED-MVS-TESTED. **Candidate:** preserve observable transfer and suspended stack state. |
+| Parent-chain RESUMECO transfer | SOURCE-OBSERVED; positive INTERPRETED-MVS-TESTED. **Candidate:** preserve successful parent handoff. |
+| Occupied CALLCO | SOURCE-OBSERVED returns -999 for C!1 != 0. Error-number policy for native interface remains undecided. |
+| Occupied RESUMECO | SOURCE-OBSERVED clears the current parent's link *before* checking target C!1, then returns -998. **RECONSTRUCTION PROPOSAL, NOT APPROVED:** rejected transfer should preserve caller parent/state; add negative-path probe. |
+| Root sentinel and invalid root transitions | SOURCE-OBSERVED manual -1 sentinel. **UNVERIFIED:** root COWAIT, root resumption, invalid parent and diagnostics. |
+| Natural FN return | SOURCE-OBSERVED repeat/wait model. **Candidate:** preserve unless owner approves a different completion policy; repeated-reentry test absent. |
+| DELETECO membership and storage reuse | SOURCE-OBSERVED; positive INTERPRETED-MVS-TESTED for legitimate members. **Candidate:** permit safe inactive-member deletion/reuse. |
+| Invalid, stale or double-deleted descriptor | SOURCE-OBSERVED DELETECO reads C!1 *before* checking COLIST membership. **RECONSTRUCTION PROPOSAL, NOT APPROVED:** membership-first checks where possible; do not promise recovery from arbitrary unreadable machine pointers. |
+| Independent native stacks and context registers | Historical KM10 COBASE and coroutine-aware BACKTRACE are SOURCE-OBSERVED; no NATIVE-MVS-TESTED implementation. Native frame layout, stack guard, diagnostics, register preservation and global assignment belong to CO.1. |
+
+**Engineering boundary:** Historical fidelity where evidence exists; contemporary engineering judgment where it does not. The candidate contract describes *observable behavior*, not a requirement to duplicate reconstructed MR10 internals or historical KM10 implementation organization. Retain the modular Core Runtime unless evidence requires a justified change.
+
+### 7.6 Proposed interpreted/native BCPL verification matrix
+
+These are planned checks, **not** test IDs, accepted fixtures, authorized JES submissions or native acceptance.
+
+| Check | Interpreted reference | Proposed native oracle |
+| --- | --- | --- |
+| First creation and entry | Existing creation probes and compiler-only call/frame evidence | Same suspended-first-entry order and first argument. |
+| Five producer-consumer exchanges | ACCEPTED fixed-stack-producer-consumer | Exact ten output records; persistent locals. |
+| Parent-chain transfer | ACCEPTED resumeco-chain | Exact seven output records and handoff values. |
+| Create/delete/reuse | ACCEPTED create-delete-static-pool | Equivalent counts, values and valid reuse. |
+| Two distinct nested switching sites | New instrumented interpreted probe needed | Correct continuation and frame-local values for both sites. |
+| Busy CALLCO and RESUMECO | New negative interpreted probes needed | Explicitly approved failure codes and parent-state invariants. |
+| Natural return then reentry | New interpreted probe needed | Approved repeat-entry/completion semantics. |
+| Root and invalid/stale/deleted descriptors | New negative probes needed | Defined rejection behavior without supported-state corruption, where machine safety can be established. |
+| Recursion and per-coroutine stack bounds | No accepted equivalent MR10 case | Native checked-stack/guard/diagnostics separately proven with IFOX/IEWL/GO/JES. |
+
+Accepted interpreted evidence remains JES jobs 5223–5227, 62/62 zero-RC JES steps, 23/23 zero interpreted phase codes, five matching output traces, four matching compiler artifacts. The expanded eleven-case runner has **not** yet been executed on MVS after promotion. No native coroutine implementation or execution is accepted.
+
+### 7.7 Focused CO.0 open-question ledger
+
+1. **High:** Capture interpreted P/C/frame/G!9/G!10 transitions over two distinct, nested suspension sites. Determine exactly which continuation patterns are supported.
+2. **High:** Test occupied-target RESUMECO and decide whether rejected calls must preserve parent relationship; distinguish the reconstructed MR10 behavior from the proposed native improvement.
+3. **High:** Define root and occupied-state legality, including null/nonmember/stale/double-deleted descriptors, valid deletion and storage reuse; do not promise arbitrary-pointer recovery.
+4. **Medium:** Verify natural function return followed by repeat activation, rather than inferring every lifecycle outcome from single calls.
+5. **Medium:** Continue targeted KM10 and period-literature comparison only when it affects native calling, startup, stack/guard, lifecycle or diagnostics. KM10.COMAIN remains missing, and general historical MLIB reconstruction is out of scope.
+
+**Disposition:** CO.0 **IN PROGRESS**; CO.1–CO.5 **NOT STARTED**. This research addendum does not change runtime, ABI, native globals, tests, JCL, MVS datasets, milestone status or existing acceptance records.
