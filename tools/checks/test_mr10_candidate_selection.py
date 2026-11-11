@@ -93,17 +93,17 @@ class CandidateSelectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "candidate.int"
             source.write_text(
-                "// CO.0 experimental notes\\n"
-                "  // indented note\\n"
-                "6 LIP2 SG9 LP0 SIG7\\n"
-                "498 LIG9 JIG10 G6L6\\n"
-                "Z\\n", encoding="ascii"
+                "// CO.0 experimental notes\n"
+                "  // indented note\n"
+                "6 LIP2 SG9 LP0 SIG7\n"
+                "498 LIG9 JIG10 G6L6\n"
+                "Z\n", encoding="ascii"
             )
             self.assertEqual(
                 reader(source, "ICLIB"),
-                "6 LIP2 SG9 LP0 SIG7\\n498 LIG9 JIG10 G6L6\\nZ\\n",
+                "6 LIP2 SG9 LP0 SIG7\n498 LIG9 JIG10 G6L6\nZ\n",
             )
-            source.write_text("// comment only\\n", encoding="ascii")
+            source.write_text("// comment only\n", encoding="ascii")
             with self.assertRaisesRegex(ValueError, "no INTCODE records"):
                 reader(source, "ICLIB")
 
@@ -111,11 +111,11 @@ class CandidateSelectionTests(unittest.TestCase):
         source = ROOT / "mr10-kit-compiler/source/iclib-co0-candidate.int"
         rendered = CORE["read_intcode_records"](source, "ICLIB")
         self.assertIn("6 LIP2 SG9 LP0 SIG7", rendered)
-        self.assertTrue(rendered.endswith("Z\\n"))
+        self.assertTrue(rendered.endswith("Z\n"))
         self.assertFalse(any(line.lstrip().startswith("//")
                              for line in rendered.splitlines()))
         staged = CORE["stage_step"]("STGICLIB", "STAGE ICLIB", "&&ICLIB", rendered)
-        body = staged.split("//SYSUT1   DD  *\\n", 1)[1].split("/*\\n", 1)[0]
+        body = staged.split("//SYSUT1   DD  *\n", 1)[1].split("/*\n", 1)[0]
         self.assertEqual(body, rendered)
         self.assertFalse(any(line.startswith("//") for line in body.splitlines()))
 
