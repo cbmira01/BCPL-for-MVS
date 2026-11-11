@@ -4,6 +4,8 @@
 **Recorded:** 10 November 2026  
 **Status:** OPEN; CO.0 IN PROGRESS, research and approval goals, not native implementation evidence
 
+**Five-probe verification plan:** [CO.0 MR10 coroutine development-probe procedure](co0-mr10-coroutine-probe-verification-plan-20261110.md) records runner selection, candidate oracle and required JES evidence; no new probe execution or acceptance is claimed.
+
 **CO.0 discovery (10 November):** The tape's `INDEX` explicitly identifies a **KM10 coroutine library**, including `KM10.COMACRO`, `KM10.COBLIB(CORTN)`, `KM10.COBLIB(STANDARD)`, `KM10.J(COLIB)`, and the **missing** `KM10.COMAIN`. This materially expands the prior historical-source inventory. See the [CO.0 source audit](co0-historical-source-audit-20261110.md). The native switching algorithm and full historical callable API remain unrecovered.
 
 ## Evidence already in Git

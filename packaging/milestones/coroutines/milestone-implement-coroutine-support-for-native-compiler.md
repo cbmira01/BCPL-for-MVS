@@ -23,6 +23,7 @@ No new BCPL language construct or INTCODE opcode is anticipated. A compiler/code
 - `richards-bcpltape/` (historical evidence); `mr10-kit-compiler/` (kit and interpreter reconstruction)
 - [Research goals and approval gates](coroutine-research-and-design-gates.md)
 - [CO.0 historical source audit, 10 November 2026](co0-historical-source-audit-20261110.md) — source findings, historical KM10 coroutine evidence and open execution questions
+- [CO.0 MR10 coroutine probe verification plan, 10 November 2026](co0-mr10-coroutine-probe-verification-plan-20261110.md) — five-case JES selection, expected outputs and evidence interpretation
 
 ## Architectural direction (pending CO.1 design approval)
 
