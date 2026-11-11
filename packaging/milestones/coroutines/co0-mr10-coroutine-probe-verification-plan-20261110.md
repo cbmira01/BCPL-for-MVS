@@ -3,7 +3,7 @@
 **Milestone:** [Implement coroutine support for native compiler](milestone-implement-coroutine-support-for-native-compiler.md)  
 **March:** CO.0 — Historical Research and Behavioral Contract (**IN PROGRESS**)  
 **Recorded:** 10 November 2026  
-**Evidence status:** SOURCE/TOOL REVIEW ONLY — **JES NOT RUN** and no new acceptance decision
+**Evidence status at creation (10 November):** SOURCE/TOOL REVIEW ONLY; JES not yet run. **11 November follow-up:** all five were executed by the operator. [The JES summary review](co0-mr10-coroutine-jes-summary-review-20261111.md) records five OBSERVED and 62 zero-RC steps; full raw output/artifact inspection remains pending.
 
 ## Purpose and evidence boundaries
 

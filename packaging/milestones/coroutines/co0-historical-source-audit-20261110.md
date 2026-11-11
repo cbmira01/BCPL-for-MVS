@@ -95,6 +95,8 @@ Descriptor below the synthetic frame: `C!0` saved P, `C!1` parent, `C!2` list li
 - `fixed-stack-producer-consumer` is intended to exchange values 1–5; `resumeco-chain` exercises parent-chain transfers; `create-delete-static-pool` exercises allocation/reclamation. These are **test intents**, not accepted run outcomes.
 - **No JES jobs executed in this CO.0 audit.** Do not mark the five probes accepted or claim a native regression PASS.
 
+**11 November 2026 evidence checkpoint:** [JES summary review](co0-mr10-coroutine-jes-summary-review-20261111.md) verifies five distinct successful jobs and 62 zero-RC steps; detailed output/artifact review remains outstanding. This is not an accepted probe promotion or CO.0 closure.
+
 **Execution checkpoint (10 November 2026):** [Five-case MR10 coroutine verification procedure](co0-mr10-coroutine-probe-verification-plan-20261110.md) documents exact candidate oracles, selective runner commands, evidence capture and the expected `OBSERVED`/RC=3 classification. This is a source/tool review, **not a JES run receipt**.
 
 ## 5. Outstanding CO.0 tasks before owner acceptance
