@@ -24,7 +24,7 @@ No new BCPL language construct or INTCODE opcode is anticipated. A compiler/code
 - [Research goals and approval gates](coroutine-research-and-design-gates.md)
 - [CO.0 historical source audit, 10 November 2026](co0-historical-source-audit-20261110.md) — source findings, historical KM10 coroutine evidence and open execution questions
 - [CO.0 MR10 coroutine probe verification plan, 10 November 2026](co0-mr10-coroutine-probe-verification-plan-20261110.md) — five-case JES selection, expected outputs and evidence interpretation
-- [CO.0 MR10 coroutine JES summary review, 11 November 2026](co0-mr10-coroutine-jes-summary-review-20261111.md) — five OBSERVED, 62 zero-RC steps, second-pass extracted output and 4/4 compiler-token comparisons matched; formal golden acceptance pending
+- [CO.0 MR10 coroutine JES summary review, 11 November 2026](co0-mr10-coroutine-jes-summary-review-20261111.md) — five OBSERVED, 62 zero-RC steps, second-pass extracted output and 4/4 compiler-token comparisons matched; owner-accepted golden fixtures; fresh post-promotion runner execution pending
 
 ## Architectural direction (pending CO.1 design approval)
 
@@ -58,7 +58,7 @@ These are working boundaries, **not an approved callable interface, descriptor l
 3. MR10 uses `CHANGECO:6`, `CURRCO:7`, `COLIST:8`, `CREATECO`–`RESUMECO:91..95`, which conflict with historical Cambridge `LIBHDR`. Allocate native slots only through a subsequent Global Number Registry decision, after checking the full compiler/application export set.
 4. A `GLOBAL` declaration is not executable implementation; IEWL linkage is not automatically BCPL global registration. Demonstrate any proposed BCPL library import and Core Runtime export path.
 5. Preserve historical sources and provenance. The project-created MR10 coroutine module is behavioral reference, not proof that these precise entry points lived in historical Cambridge BLIB.
-6. Preserve all existing regression IDs, manifests, known expected SKIPs and accepted qualifications. The accepted MR10 `basic-coroutine` panel case is not the same as the five `10-coroutines/` probes still marked UNVERIFIED in the development manifest.
+6. Preserve all existing regression IDs, manifests, known expected SKIPs and accepted qualifications. The accepted MR10 `basic-coroutine` panel case is not the same as the five `10-coroutines/` probes now independently accepted as interpreted development tests, not native verification.
 7. New code must be easy to modify, rebuild from scratch, test in isolation and distribute; no changes to authoritative historical source and no hidden resident-MVS-only patches.
 
 ## Exclusions and authorization

@@ -28,7 +28,11 @@ MR10_PROBES = ROOT / "tools/mr10/run-dev-probes"
 MR10_PROBES_MANIFEST = ROOT / "mr10-kit-compiler/tests/dev-probes-manifest.tsv"
 ACCEPTED_MR10_PROBES = (
     "04-module-test", "05-named-dd", "06-dynamic-streams",
-    "07-many-streams", "09-multiple-assignment", "11-getvec-freevec",
+    "07-many-streams", "09-multiple-assignment",
+    "10-coroutines/compiler-probe", "10-coroutines/frame-layout-probe",
+    "10-coroutines/fixed-stack-producer-consumer",
+    "10-coroutines/resumeco-chain", "10-coroutines/create-delete-static-pool",
+    "11-getvec-freevec",
 )
 MR10_MANIFEST = ROOT / "mr10-kit-compiler/tests/00-regression-panel/manifest.tsv"
 NATIVE_MANIFESTS = ROOT / "tests/suites"
@@ -182,7 +186,7 @@ def parse_mr10_probes(log: str, declared: list[str], rc: int) -> dict:
             "MR10 probes: case count mismatch")
     require(payload.get("selected_cases") == declared and
             [row.get("id") for row in cases] == declared,
-            "MR10 probes: selected IDs differ from the six accepted cases")
+            "MR10 probes: selected IDs differ from the accepted case inventory")
     require(all(row.get("verification") == "ACCEPTED" for row in cases),
             "MR10 probes: unaccepted case selected")
     counts = {key: sum(row.get("status") == key for row in cases)

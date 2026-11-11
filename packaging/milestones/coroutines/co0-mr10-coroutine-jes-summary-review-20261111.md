@@ -130,3 +130,9 @@ The provided JES summaries independently establish job identities, all named ste
 **11 November second-pass update:** The operator supplied the program-visible final records, interpreted CODE arrays extracted from all five full JES reports, and true/false token comparisons against all four compiler artifacts. All matched; see the second-pass section above. Original complete files remain in the operator's WSL `workarea/`, not this repository. Independent historical-oracle authority, broader negative-path testing and explicit owner approval of any accepted golden fixtures/manifest changes remain open.
 
 **Disposition:** Keep all five `UNVERIFIED` in `mr10-kit-compiler/tests/dev-probes-manifest.tsv`. CO.0 remains **IN PROGRESS**; CO.1–CO.5 remain **NOT STARTED**. No native code, existing test contract, JES job, or MVS dataset was modified in this Git evidence record.
+
+## Owner acceptance decision — 11 November 2026
+
+The owner explicitly approved promotion of the five `10-coroutines/` development probes to `ACCEPTED` with a Git commit. The exact final program-visible outputs from JES jobs **5223–5227** are now frozen into separate `.expected` files, with content and paths pinned by the host-only manifest validator. The revised runner requires exact golden output, exact case-specific JES step/program order and RCs, all-zero interpreted phase codes, plus fresh OCODE/INTCODE token matches for the two compilation probes before claiming a new `PASS`.
+
+See the [formal five-case acceptance record](../../../mr10-kit-compiler/tests/10-coroutines/acceptance-20261111.md). This action **does not** mark CO.0 closed or claim new JES execution of the revised eleven-case runner. The six other historical development probes remain `UNVERIFIED`.

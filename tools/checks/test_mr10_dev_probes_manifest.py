@@ -64,8 +64,8 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
     def test_fixture_contract_is_valid(self):
         self.assertEqual(len(MOD.validate(self.root, self.manifest)), 17)
         self.assertEqual(len(set(row["case_id"].split("/")[0] for row in self.rows)), 11)
-        self.assertEqual(sum(row["verification"] == "ACCEPTED" for row in self.rows), 6)
-        self.assertEqual(sum(row["verification"] == "UNVERIFIED" for row in self.rows), 11)
+        self.assertEqual(sum(row["verification"] == "ACCEPTED" for row in self.rows), 11)
+        self.assertEqual(sum(row["verification"] == "UNVERIFIED" for row in self.rows), 6)
 
     def test_identity_not_renumbered(self):
         self.rows[0]["case_id"] = "01-new-test"
@@ -184,7 +184,7 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
         self.save()
         self.check_failure("accepted oracle path changed")
 
-    def test_all_six_accepted_goldens_are_pinned(self):
+    def test_all_eleven_accepted_goldens_are_pinned(self):
         for row in self.rows:
             if row["case_id"] not in MOD.ACCEPTED_GOLDENS:
                 continue
@@ -192,9 +192,11 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
                 self.assertEqual(row["verification"], "ACCEPTED")
                 self.assertEqual(
                     row["oracle"],
-                    f'file:mr10-kit-compiler/tests/{row["case_id"]}/{row["case_id"]}.expected')
+                    'file:' + (f'mr10-kit-compiler/tests/10-coroutines/{row["case_id"].split("/")[-1]}.expected'
+                               if row["case_id"].startswith("10-coroutines/") else
+                               f'mr10-kit-compiler/tests/{row["case_id"]}/{row["case_id"]}.expected'))
 
-    def test_all_six_reject_golden_mutation(self):
+    def test_all_eleven_reject_golden_mutation(self):
         for row in self.rows:
             if row["case_id"] not in MOD.ACCEPTED_GOLDENS:
                 continue
@@ -204,6 +206,16 @@ class DevelopmentProbeManifestTests(unittest.TestCase):
                 golden.write_text(original + "EXTRA\n", encoding="utf-8")
                 self.check_failure("accepted golden output differs")
                 golden.write_text(original, encoding="utf-8")
+
+    def test_coroutine_demote_or_golden_path_change_refused(self):
+        row = next(r for r in self.rows if r["case_id"] == "10-coroutines/resumeco-chain")
+        row["verification"] = "UNVERIFIED"
+        self.save()
+        self.check_failure("owner-accepted verification status changed")
+        row["verification"] = "ACCEPTED"
+        row["oracle"] = "pending:resume-parent-chain"
+        self.save()
+        self.check_failure("accepted oracle path changed")
 
     def test_current_selector_traversal_fails(self):
         self.make_file("mr10-kit-compiler/asm/CURRENT", "../../icintv19.asm\n")

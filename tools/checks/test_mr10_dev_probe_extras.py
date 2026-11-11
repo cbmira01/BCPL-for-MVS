@@ -93,6 +93,19 @@ class ExtrasTests(unittest.TestCase):
             ex.command(self.root, self.row('05-named-dd'), self.asm,
                        self.artifacts/'t.jcl', 'DP001111', self.artifacts)
 
+    def test_accepted_coroutine_command_requires_exact_golden(self):
+        ident = "10-coroutines/resumeco-chain"
+        row = self.row(ident)
+        row["verification"] = "ACCEPTED"
+        row["oracle"] = "file:mr10-kit-compiler/tests/10-coroutines/resumeco-chain.expected"
+        command = ex.command(self.root, row, self.asm,
+                             self.artifacts/"t.jcl", "DP001111", self.artifacts)
+        self.assertIn(str(self.root / "mr10-kit-compiler/tests/test.bcpl"), command)
+        row["verification"] = "UNVERIFIED"
+        with self.assertRaisesRegex(ex.ExtraError, "accepted coroutine golden"):
+            ex.command(self.root, row, self.asm, self.artifacts/"t.jcl",
+                       "DP001111", self.artifacts)
+
     def test_exact_synthetic_factorials(self):
         row = self.row('03-compile-richards-factorial/v14-intcode', engine='run-intcode', interpreter='v14')
         lines = [f'F({i}), = {value}' for i, value in enumerate(ex.FACTORIAL, 1)]

@@ -42,25 +42,34 @@ class MR10DevelopmentProbeRunnerTests(unittest.TestCase):
         self.make_file("mr10-kit-compiler/asm/CURRENT", "icintv19.asm\n")
         self.make_file("mr10-kit-compiler/asm/icintv19.asm")
         for ident, path in MOD.ACCEPTED_CASES.items():
-            self.make_file(path, "\n".join(MOD.TRACE[ident]) + "\n")
+            self.make_file(path, "\n".join(MOD.TRACE.get(ident, MOD.EXTRAS.TRACE.get(ident, ()))) + "\n")
         self.make_file("mvs-state/prt/prt00e.txt")
         self.rows = []
-        for case_id in (*MOD.PROVISIONAL, "02-honors-thesis-and-mapstore/honors-thesis"):
+        for case_id in (*MOD.PROVISIONAL, *MOD.EXTRAS.ACCEPTED_COROUTINES,
+                        "02-honors-thesis-and-mapstore/honors-thesis"):
             self.rows.append(dict(
                 case_id=case_id,
-                engine="compile-and-run" if case_id in MOD.PROVISIONAL else "run-intcode",
-                interpreter="current" if case_id in MOD.PROVISIONAL else "v12",
-                source=f"mr10-kit-compiler/tests/{case_id.split('/')[0]}/main.bcpl",
+                engine=("compile-and-run" if case_id in MOD.ACCEPTED_CASES
+                        else "run-intcode"),
+                interpreter="current" if case_id in MOD.ACCEPTED_CASES else "v12",
+                source=(f"mr10-kit-compiler/tests/10-coroutines/{case_id.split('/')[-1]}.bcpl"
+                        if case_id in MOD.EXTRAS.ACCEPTED_COROUTINES else
+                        f"mr10-kit-compiler/tests/{case_id.split('/')[0]}/main.bcpl"),
                 modules=("mr10-kit-compiler/tests/04-module-test/module-test-2.bcpl"
                          if case_id == "04-module-test" else
                          "mr10-kit-compiler/library/getvec-freevec.bcpl"
-                         if case_id == "11-getvec-freevec" else ""),
+                         if case_id == "11-getvec-freevec" else
+                         "mr10-kit-compiler/library/getvec-freevec.bcpl;mr10-kit-compiler/library/coroutines.bcpl"
+                         if case_id in ("10-coroutines/resumeco-chain",
+                                        "10-coroutines/create-delete-static-pool") else ""),
                 dd_bindings=("EXTRA=mr10-kit-compiler/tests/05-named-dd/extra.bcpl"
                              if case_id == "05-named-dd" else ""),
                 sysin="", expected_code="0",
                 oracle=(f"file:{MOD.ACCEPTED_CASES[case_id]}"
                         if case_id in MOD.ACCEPTED_CASES else "pending:test"),
-                artifacts="none",
+                artifacts=("ocode,intcode" if case_id in (
+                    "10-coroutines/compiler-probe", "10-coroutines/frame-layout-probe")
+                    else "none"),
                 verification=("ACCEPTED" if case_id in MOD.ACCEPTED_CASES else "UNVERIFIED"),
             ))
         for row in self.rows:
@@ -69,6 +78,10 @@ class MR10DevelopmentProbeRunnerTests(unittest.TestCase):
                 self.make_file(part)
             for binding in row["dd_bindings"].split(";") if row["dd_bindings"] else []:
                 self.make_file(binding.split("=", 1)[1])
+        for name in ("compiler-probe", "frame-layout-probe"):
+            for extension, content in ((".ocode", "STACK 2 GLOBAL 1\n"),
+                                       (".intcode", "G1L1 Z\n")):
+                self.make_file(f"mr10-kit-compiler/tests/10-coroutines/evidence/{name}{extension}", content)
         patcher = patch.object(MOD, "manifest_cases", side_effect=lambda: self.rows)
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -101,6 +114,12 @@ if os.environ.get("PROBE_RUNNER_RC"):
     sys.exit(int(os.environ["PROBE_RUNNER_RC"]))
 print("JOB 8123")
 print("INTCODE SYSTEM ENTERED")
+if "--artifact-dir" in args:
+    folder = Path(args[args.index("--artifact-dir")+1])
+    folder.mkdir(parents=True, exist_ok=True)
+    name = case.split("/")[-1]
+    (folder / (name + ".ocode")).write_text("STACK 2 GLOBAL 1\\n")
+    (folder / (name + ".intcode")).write_text("G1L1 Z\\n")
 expected = %r
 lines = list(expected[case])
 if os.environ.get("PROBE_MISSING_TRACE"):
@@ -114,7 +133,7 @@ if os.environ.get("PROBE_EXTRA_LINE"):
 if not os.environ.get("PROBE_NO_CODE"):
     print("EXECUTION CYCLES = 42, CODE = " + os.environ.get("PROBE_BAD_CODE", "0"))
 ''' % (str(self.root / 'fake-last-job-name.txt'),
-       str(self.root / 'fake-last-case-id.txt'), MOD.TRACE)
+       str(self.root / 'fake-last-case-id.txt'), {**MOD.TRACE, **MOD.EXTRAS.TRACE})
         path = MOD.COMPILE
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(script, encoding="utf-8")
@@ -133,12 +152,7 @@ if os.environ.get('PROBE_JES_SUMMARY_RC'):
     sys.exit(1)
 print('JOB 8123  ' + ('OTHERJOB' if os.environ.get('PROBE_JES_WRONG_NAME') else job))
 case = Path(%r).read_text()
-steps = list(%r[:7])
-n = 2 if case in ('04-module-test','11-getvec-freevec') else 1
-for i in range(1,n+1):
-    steps.append((('COMP' if n == 1 else 'COMP%%02d' %% i), 'RUNMOD'))
-    steps.append((('CG' if n == 1 else 'CG%%02d' %% i), 'RUNMOD'))
-steps.append(('RUN','RUNMOD'))
+steps = list(%r[case])
 if os.environ.get('PROBE_JES_MISSING_STEP'):
     steps = steps[:-1]
 print('STEP       PROGRAM      RESULT')
@@ -148,7 +162,8 @@ for i, (step, program) in enumerate(steps):
 print('JOB RESULT: ' + ('FAILURE' if os.environ.get('PROBE_JES_BAD_RC') else 'SUCCESS'))
 print('HIGHEST RC: ' + ('0008' if os.environ.get('PROBE_JES_BAD_RC') else '0000'))
 ''' % (str(self.root / 'fake-last-job-name.txt'),
-       str(self.root / 'fake-last-case-id.txt'), MOD.EXPECTED_STEPS)
+       str(self.root / 'fake-last-case-id.txt'),
+       {ident: MOD.expected_jes_steps(ident) for ident in MOD.ACCEPTED_CASES})
         dump_report = '''#!/usr/bin/env python3
 import os
 from pathlib import Path
@@ -159,7 +174,7 @@ if os.environ.get('PROBE_JES_DUMP_RC'):
     sys.exit(1)
 print('JOB 8123 ' + job)
 case = Path(%r).read_text()
-n = 2 if case in ('04-module-test', '11-getvec-freevec') else 1
+n = 3 if case in ('10-coroutines/resumeco-chain', '10-coroutines/create-delete-static-pool') else 2 if case in ('04-module-test', '11-getvec-freevec') else 1
 phases = [0]*(2*n+1)
 if os.environ.get('PROBE_JES_MISSING_PHASE'):
     phases = phases[:-1]
@@ -171,7 +186,7 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
     for line in %r[case]:
         print(' ' + line)
 ''' % (str(self.root / 'fake-last-job-name.txt'),
-       str(self.root / 'fake-last-case-id.txt'), MOD.TRACE)
+       str(self.root / 'fake-last-case-id.txt'), {**MOD.TRACE, **MOD.EXTRAS.TRACE})
         self.make_file('tools/mvs/job-summary', job_summary).chmod(0o755)
         self.make_file('tools/mvs/dump-report-for-job', dump_report).chmod(0o755)
 
@@ -189,7 +204,7 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
     def test_host_check_never_executes_compiler(self):
         rc, out, err = self.cli("--check")
         self.assertEqual((rc, err), (0, ""))
-        self.assertIn("6 accepted, 0 provisional, 11 experimental; host-only", out)
+        self.assertIn("11 accepted, 0 provisional, 6 experimental; host-only", out)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_list_shows_full_historical_id_without_execution(self):
@@ -273,6 +288,47 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
         self.assertEqual(item["expected_code"], 0)
         self.assertEqual(item["interpreted_code"], 0)
         self.assertEqual(item["expected_oracle"], f"file:{MOD.GOLDEN_PATH}")
+
+    def test_all_five_coroutine_goldens_pass_under_fake_jes(self):
+        ids = list(MOD.EXTRAS.ACCEPTED_COROUTINES)
+        selection = [x for ident in ids for x in ("--case", ident)]
+        rc, out, err = self.cli("--run", *selection)
+        self.assertEqual((rc, err), (0, ""))
+        summary, _ = self.evidence()
+        self.assertEqual(summary["status"], "PASS")
+        self.assertEqual(summary["counts"]["PASS"], 5)
+        self.assertEqual([r["id"] for r in summary["cases"]], ids)
+        self.assertEqual([len(r["jes_step_codes"]) for r in summary["cases"]],
+                         [12, 12, 10, 14, 14])
+        self.assertTrue(all(r["verification"] == "ACCEPTED" and
+                            r["status"] == "PASS" for r in summary["cases"]))
+
+    def test_coroutine_extra_output_rejected(self):
+        with patch.dict(os.environ, {"PROBE_EXTRA_LINE": "1"}):
+            rc, _, _ = self.cli("--run", "--case",
+                                "10-coroutines/fixed-stack-producer-consumer")
+        self.assertEqual(rc, 1)
+        summary, _ = self.evidence()
+        self.assertIn("semantic output mismatch", summary["cases"][0]["reason"])
+
+    def test_coroutine_golden_mismatch_refused(self):
+        path = self.root / MOD.ACCEPTED_CASES["10-coroutines/resumeco-chain"]
+        path.write_text("UNEXPECTED\n", encoding="ascii")
+        rc, _, _ = self.cli("--run", "--case", "10-coroutines/resumeco-chain")
+        self.assertEqual(rc, 1)
+        summary, _ = self.evidence()
+        self.assertIn("golden output mismatch", summary["cases"][0]["reason"])
+
+    def test_coroutine_missing_jes_phase_refused(self):
+        with patch.dict(os.environ, {"PROBE_JES_MISSING_PHASE": "1"}):
+            rc, _, _ = self.cli("--run", "--case", "10-coroutines/resumeco-chain")
+        self.assertEqual(rc, 1)
+
+    def test_coroutine_artifact_mismatch_refused(self):
+        archive = self.root / "mr10-kit-compiler/tests/10-coroutines/evidence/compiler-probe.ocode"
+        archive.write_text("OTHER OCODE\n", encoding="ascii")
+        rc, _, _ = self.cli("--run", "--case", "10-coroutines/compiler-probe")
+        self.assertEqual(rc, 1)
 
     def test_multiple_cases_run_in_manifest_order(self):
         rc, _, _ = self.cli("--run", "--case", "11-getvec-freevec", "--case", "04-module-test")

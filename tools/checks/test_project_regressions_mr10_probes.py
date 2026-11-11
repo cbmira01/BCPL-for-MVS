@@ -50,14 +50,14 @@ class ProjectMR10ProbesTests(unittest.TestCase):
         rc = 1 if counts["FAIL"] else 3 if counts["OBSERVED"] else 0
         return log, rc
 
-    def test_six_pinned_accepted_cases_match_manifest(self):
+    def test_eleven_pinned_accepted_cases_match_manifest(self):
         with (ROOT / "mr10-kit-compiler/tests/dev-probes-manifest.tsv").open(
                 encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle, delimiter="\t"))
         accepted = [row["case_id"] for row in rows
                     if row["verification"] == "ACCEPTED"]
         self.assertEqual(accepted, self.accepted)
-        self.assertEqual(len(accepted), 6)
+        self.assertEqual(len(accepted), 11)
         self.assertEqual(len(rows), 17)
 
     def test_inventory_keeps_mr10_probes_out_of_native_manifests(self):
@@ -101,7 +101,7 @@ class ProjectMR10ProbesTests(unittest.TestCase):
         command = MOD.suite_command(
             "mr10-probes", {"mr10-probes": self.accepted}, None, False)
         self.assertEqual(command[:2], [str(MOD.MR10_PROBES), "--run"])
-        self.assertEqual(command[2::2], ["--case"] * 6)
+        self.assertEqual(command[2::2], ["--case"] * 11)
         self.assertEqual(command[3::2], self.accepted)
         self.assertNotIn("--all-candidates", command)
         self.assertNotIn("--profile", command)
@@ -133,28 +133,28 @@ class ProjectMR10ProbesTests(unittest.TestCase):
             "PASS    00  most-degenerate-bcpl-program")
 
     def test_accepted_pass(self):
-        log, rc = self.evidence(["PASS"] * 6)
+        log, rc = self.evidence(["PASS"] * 11)
         result = MOD.parse_mr10_probes(log, self.accepted, rc)
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["counts"],
-                         {"PASS": 6, "FAIL": 0, "SKIP": 0, "BLOCKED": 0,
+                         {"PASS": 11, "FAIL": 0, "SKIP": 0, "BLOCKED": 0,
                           "TOTAL": 6})
 
     def test_failure_preserves_not_run_cases(self):
-        log, rc = self.evidence(["PASS", "FAIL"] + ["NOT_RUN"] * 4)
+        log, rc = self.evidence(["PASS", "FAIL"] + ["NOT_RUN"] * 9)
         result = MOD.parse_mr10_probes(log, self.accepted, rc)
         self.assertEqual(result["status"], "FAIL")
         self.assertEqual(result["counts"]["PASS"], 1)
         self.assertEqual(result["cases"][2]["status"], "NOT_RUN")
 
     def test_unverified_observation_cannot_pass(self):
-        log, rc = self.evidence(["OBSERVED"] + ["PASS"] * 5)
+        log, rc = self.evidence(["OBSERVED"] + ["PASS"] * 10)
         result = MOD.parse_mr10_probes(log, self.accepted, rc)
         self.assertEqual(result["status"], "BLOCKED")
         self.assertEqual(result["counts"]["BLOCKED"], 1)
 
     def test_unaccepted_or_reordered_cases_rejected(self):
-        log, rc = self.evidence(["PASS"] * 6)
+        log, rc = self.evidence(["PASS"] * 11)
         file = self.folder / "summary.json"
         payload = json.loads(file.read_text())
         payload["cases"][0]["id"] = "08-character-translation"
@@ -163,7 +163,7 @@ class ProjectMR10ProbesTests(unittest.TestCase):
             MOD.parse_mr10_probes(log, self.accepted, rc)
 
     def test_false_acceptance_rejected(self):
-        log, rc = self.evidence(["PASS"] * 6)
+        log, rc = self.evidence(["PASS"] * 11)
         file = self.folder / "summary.json"
         payload = json.loads(file.read_text())
         payload["cases"][0]["verification"] = "UNVERIFIED"
@@ -172,12 +172,12 @@ class ProjectMR10ProbesTests(unittest.TestCase):
             MOD.parse_mr10_probes(log, self.accepted, rc)
 
     def test_inconsistent_status_and_rc_rejected(self):
-        log, _ = self.evidence(["PASS"] * 6)
+        log, _ = self.evidence(["PASS"] * 11)
         with self.assertRaises(MOD.VerificationError):
             MOD.parse_mr10_probes(log, self.accepted, 1)
 
     def test_unexpected_undelivered_cases_rejected(self):
-        log, _ = self.evidence(["PASS"] * 5 + ["NOT_RUN"])
+        log, _ = self.evidence(["PASS"] * 10 + ["NOT_RUN"])
         with self.assertRaises(MOD.VerificationError):
             MOD.parse_mr10_probes(log, self.accepted, 0)
 

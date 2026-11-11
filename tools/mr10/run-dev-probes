@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Standalone MR10 development-probe runner with one accepted golden case.
+"""Standalone MR10 development-probe runner with eleven accepted golden cases.
 
 --check/--list are host-only. --run submits JES through compile-and-run
-or run-intcode. Six original BCPL probes have owner-accepted golden baselines;
-the eleven newly executable historical probes remain UNVERIFIED.
+or run-intcode. Six original BCPL probes and five reconstructed MR10
+coroutine probes have owner-accepted golden baselines; six historical
+experimental probes remain UNVERIFIED.
 No installed datasets are modified by the runner itself.
 """
 from __future__ import annotations
@@ -44,6 +45,10 @@ ACCEPTED_CASES = {
         "07-many-streams", "09-multiple-assignment", "11-getvec-freevec"
     )
 }
+ACCEPTED_CASES.update({
+    ident: f"mr10-kit-compiler/tests/10-coroutines/{ident.split('/')[-1]}.expected"
+    for ident in EXTRAS.ACCEPTED_COROUTINES
+})
 EXPECTED_STEPS = (
     ("ASM", "IFOX00"), ("LKED", "IEWL"),
     ("STGSYNI", "IEBGENER"), ("STGTRNI", "IEBGENER"),
@@ -57,8 +62,9 @@ METADATA_RE = re.compile(
 )
 STEP_RE = re.compile(r"^([A-Z0-9]+)\s+([A-Z0-9]+)\s+RC=(\d{4})$")
 
-# The initial, source-backed provisional assertions are *not* accepted
-# golden outputs. Keep the remaining 11 contract cases out of --run.
+# Legacy --all-provisional names only the original six accepted cases;
+# the five accepted coroutine probes require explicit --case selection
+# or the coordinated mr10-probes suite.
 PROVISIONAL = (
     "04-module-test",
     "05-named-dd",
@@ -211,16 +217,26 @@ def verify_accepted_output(output: str, golden: Path) -> None:
 
 
 def expected_jes_steps(ident: str) -> list[tuple[str, str]]:
-    """The original six have either one or two compilation units."""
+    """Freeze the exact JES step/program/order contract for accepted cases."""
+    if ident not in ACCEPTED_CASES:
+        raise ProbeError(f"{ident}: no accepted JES step contract")
     steps = list(EXPECTED_STEPS[:7])
-    count = 2 if ident in ("04-module-test", "11-getvec-freevec") else 1
+    count = (3 if ident in ("10-coroutines/resumeco-chain",
+                           "10-coroutines/create-delete-static-pool") else
+             2 if ident in ("04-module-test", "11-getvec-freevec") else 1)
+    save_artifacts = ident in ("10-coroutines/compiler-probe",
+                               "10-coroutines/frame-layout-probe")
     for i in range(1, count + 1):
         comp = "COMP" if count == 1 else f"COMP{i:02d}"
         cg = "CG" if count == 1 else f"CG{i:02d}"
-        steps.extend(((comp, "RUNMOD"), (cg, "RUNMOD")))
+        steps.append((comp, "RUNMOD"))
+        if save_artifacts:
+            steps.append(("SVOC", "IEBGENER"))
+        steps.append((cg, "RUNMOD"))
+        if save_artifacts:
+            steps.append(("SVIN", "IEBGENER"))
     steps.append(("RUN", "RUNMOD"))
     return steps
-
 
 def verify_jes_steps(job_id: str, expected_name: str, folder: Path,
                      ident: str = ACCEPTED_CASE) -> dict:
@@ -259,12 +275,13 @@ def verify_jes_steps(job_id: str, expected_name: str, folder: Path,
     if steps != required:
         raise ProbeError(f"JES step list/RC mismatch: expected {required!r}; got {steps!r}")
     codes = [int(value) for value in CODE_RE.findall(report_text)]
-    expected_codes = [0] * (2 * (2 if ident in ("04-module-test", "11-getvec-freevec") else 1) + 1)
+    expected_codes = [0] * (1 + 2 * sum(name.startswith("COMP") for name, _ in expected_jes_steps(ident)))
     if codes != expected_codes:
         raise ProbeError(f"JES compiler, generator and RUN CODEs not {expected_codes}: {codes!r}")
     lines = [line.strip() for line in report_text.splitlines()]
     positions = []
-    for record in TRACE[ident]:
+    for record in (EXTRAS.TRACE[ident] if ident in EXTRAS.ACCEPTED_COROUTINES
+                   else TRACE[ident]):
         matches = [i for i, line in enumerate(lines) if line == record]
         if len(matches) != 1:
             raise ProbeError(f"accepted output {record!r} absent or duplicated in JES report")
@@ -361,7 +378,7 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
             item.update({"status": state, "reason": reason, "runner_rc": proc.returncode,
                          "jes_job_id": jobs[0] if len(jobs) == 1 else None,
                          "interpreted_code": int(codes[0]) if len(codes) == 1 else None})
-            if ident in EXTRAS.ADDITIONAL and len(jobs) == 1:
+            if ident in EXTRAS.ADDITIONAL and ident not in ACCEPTED_CASES and len(jobs) == 1:
                 try:
                     item.update(EXTRAS.capture_jes(
                         ROOT, entries[ident], jobs[0], job_name, folder, slug))
@@ -371,7 +388,7 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
                         item["reason"] = "JES verification: " + str(exc)
                     else:
                         item["jes_review_error"] = str(exc)
-            if ident in ACCEPTED_CASES and state == "OBSERVED":
+            if ident in ACCEPTED_CASES and item["status"] == "OBSERVED":
                 try:
                     verify_accepted_output(content, ROOT / ACCEPTED_CASES[ident])
                     item.update(verify_jes_steps(jobs[0], job_name, folder, ident))
@@ -418,7 +435,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--all-provisional", action="store_true",
                         help="select the original six BCPL probes for --run")
     parser.add_argument("--all-candidates", action="store_true",
-                        help="run all 17 historical contracts (six ACCEPTED, eleven UNVERIFIED)")
+                        help="run all 17 historical contracts (eleven ACCEPTED, six UNVERIFIED)")
     args = parser.parse_args(argv)
     try:
         rows = manifest_cases()
@@ -436,9 +453,13 @@ def main(argv: list[str] | None = None) -> int:
                     [r["case_id"] for r in rows if not args.case or r["case_id"] in args.case])
         if args.check:
             count_accepted = sum(r["verification"] == "ACCEPTED" for r in rows)
+            count_provisional = sum(r["case_id"] in PROVISIONAL and
+                                    r["verification"] != "ACCEPTED" for r in rows)
+            count_experimental = sum(r["case_id"] in EXTRAS.ADDITIONAL and
+                                     r["verification"] != "ACCEPTED" for r in rows)
             print(f"MR10 PROBES CHECK: PASS ({len(rows)} contracts; "
-                  f"{count_accepted} accepted, {len(PROVISIONAL) - count_accepted} provisional, "
-                  f"{len(EXTRAS.ADDITIONAL)} experimental; host-only)")
+                  f"{count_accepted} accepted, {count_provisional} provisional, "
+                  f"{count_experimental} experimental; host-only)")
             return 0
         if args.list:
             for row in rows:

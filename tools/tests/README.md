@@ -18,7 +18,7 @@ tools/tests/run-suite --list
 
 ## Stage 3 — independent coordinated regression
 
-`run-project-regressions` coordinates the independent MR10 Regression Panel, six accepted MR10
+`run-project-regressions` coordinates the independent MR10 Regression Panel, eleven accepted MR10
 Development Probes, and four native regression suites without replacing
 their existing runners.
 
@@ -50,7 +50,7 @@ Selected native suites require a common explicit profile:
 
 The coordinator uses the existing MR10 panel/probe manifests and four
 native suite manifests. It does not duplicate, renumber or relocate cases.
-The eleven unverified MR10 Development Probes are excluded.
+The six still-unverified MR10 Development Probes are excluded.
 
 MR10 tests retain their `category/name` identities. Native cases retain
 their established numeric IDs. Each suite keeps independent outcome

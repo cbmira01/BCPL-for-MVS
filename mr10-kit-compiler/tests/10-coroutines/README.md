@@ -42,3 +42,9 @@ Use `tools/mr10/compile-and-run --results` with `"$(tools/mr10/current-icint)"` 
 | New coroutine works after older ones are deleted | Freed storage can be reused |
 
 The portable BCPL modules provide the allocator and coroutine calls. The machine-dependent `CHANGECO` for this interpreted bootstrap is in `source/iclib.int`. A native System/370 runtime will need its own switching routine.
+
+## Accepted MR10 development probes — 11 November 2026
+
+All five identities in this directory are **ACCEPTED** as interpreted-MR10 development probes with exact `.expected` files. The [owner-approved acceptance record](acceptance-20261111.md) documents JES jobs 5223–5227, 62 zero-RC JES steps, 23 interpreted CODE=0 phases, exact program traces, and four matching compiler-artifact pairs. These results apply to **ICINT19**, not native System/370 coroutine support or the missing historical `KM10.COMAIN`.
+
+They are included in the coordinator's `mr10-probes` suite alongside the original six accepted development probes. Fresh post-promotion JES execution remains pending separate authorization.

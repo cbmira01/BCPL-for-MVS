@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unaccepted historical MR10 probe contracts and evidence checks.
+"""Additional MR10 development-probe contracts and evidence checks.
 
 This module does not invoke JES. Its caller supplies an explicit execution
 selection, an isolated evidence directory and the completed job output.
@@ -43,6 +43,8 @@ TRACE = {
         "LIST COUNT 2", "DELETED C", "FINAL LIST COUNT 1",
     ),
 }
+ACCEPTED_COROUTINES = tuple(TRACE)
+
 FACTORIAL = (1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800)
 METADATA = re.compile(
     r"^(?:PROGRAM SIZE|PROGVEC CAPACITY|FREE STACK/WORK|STACKBASE|"
@@ -71,8 +73,15 @@ def interpreter(root: Path, current: Path, row: dict[str, str]) -> Path:
 def command(root: Path, row: dict[str, str], current: Path, jcl: Path,
             job: str, artifact_dir: Path) -> list[str]:
     ident = row["case_id"]
-    if ident not in ADDITIONAL or row["verification"] != "UNVERIFIED":
-        raise ExtraError(f"{ident}: historical probe is not an unverified candidate")
+    if ident not in ADDITIONAL:
+        raise ExtraError(f"{ident}: unsupported additional probe")
+    if ident in ACCEPTED_COROUTINES:
+        golden = f"mr10-kit-compiler/tests/10-coroutines/{ident.split('/')[-1]}.expected"
+        if (row["verification"] != "ACCEPTED" or
+                row.get("oracle") != "file:" + golden):
+            raise ExtraError(f"{ident}: accepted coroutine golden contract required")
+    elif row["verification"] != "UNVERIFIED":
+        raise ExtraError(f"{ident}: expected unverified experimental contract")
     engine = row["engine"]
     if engine not in ("compile-and-run", "run-intcode"):
         raise ExtraError(f"unsupported engine for {ident}: {engine}")

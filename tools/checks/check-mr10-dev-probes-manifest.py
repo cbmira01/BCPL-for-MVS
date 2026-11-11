@@ -2,7 +2,7 @@
 """Host-only contract check for the proposed MR10 development-probe suite.
 
 This script NEVER invokes MR10, JES, or a compiler. The manifest is a
-contract inventory. Six owner-approved cases have accepted golden baselines.
+contract inventory. Eleven owner-approved cases have accepted golden baselines.
 """
 from __future__ import annotations
 
@@ -104,6 +104,50 @@ ACCEPTED_GOLDENS = {
     ),
 }
 
+
+ACCEPTED_GOLDENS.update({
+    "10-coroutines/compiler-probe": (
+        "COROUTINE COMPILER PROBE COMPILED",
+    ),
+    "10-coroutines/frame-layout-probe": (
+        "COROUTINE FRAME PROBE COMPILED",
+    ),
+    "10-coroutines/fixed-stack-producer-consumer": (
+        "PRODUCER: 1",
+        "CONSUMER: 1",
+        "PRODUCER: 2",
+        "CONSUMER: 2",
+        "PRODUCER: 3",
+        "CONSUMER: 3",
+        "PRODUCER: 4",
+        "CONSUMER: 4",
+        "PRODUCER: 5",
+        "CONSUMER: 5",
+    ),
+    "10-coroutines/resumeco-chain": (
+        "A START",
+        "B START WITH 111",
+        "ROOT GOT 222",
+        "A RESUMED WITH 333",
+        "ROOT GOT 444",
+        "B RESUMED WITH 555",
+        "ROOT GOT 666",
+    ),
+    "10-coroutines/create-delete-static-pool": (
+        "CREATED 2",
+        "LIST COUNT 3",
+        "A RETURNED 11",
+        "B RETURNED 21",
+        "DELETED A",
+        "LIST COUNT 2",
+        "DELETED B",
+        "LIST COUNT 1",
+        "C RETURNED 31",
+        "LIST COUNT 2",
+        "DELETED C",
+        "FINAL LIST COUNT 1",
+    ),
+})
 
 DDNAME = re.compile(r"[A-Z@#$][A-Z0-9@#$]{0,7}\Z")
 PENDING = re.compile(r"pending:[a-z][a-z0-9-]+\Z")
@@ -213,7 +257,9 @@ def validate(root: Path = ROOT, manifest: Path | None = None) -> list[dict[str, 
                 f"{ident}: unexpected interpreted completion code")
         oracle = row["oracle"]
         if ident in ACCEPTED_GOLDENS:
-            expected_path = f"mr10-kit-compiler/tests/{ident}/{ident}.expected"
+            expected_path = (f"mr10-kit-compiler/tests/10-coroutines/{ident.split('/')[-1]}.expected"
+                             if ident.startswith("10-coroutines/") else
+                             f"mr10-kit-compiler/tests/{ident}/{ident}.expected")
             require(oracle == f"file:{expected_path}",
                     f"{ident}: accepted oracle path changed")
             golden = checked_file(root, expected_path, f"{ident}: accepted golden")

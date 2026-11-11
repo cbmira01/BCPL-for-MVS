@@ -4,7 +4,7 @@
 **Recorded:** 10 November 2026  
 **Status:** OPEN; CO.0 IN PROGRESS, research and approval goals, not native implementation evidence
 
-**Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. Formal independent golden acceptance remains open; these are interpreted, not native, tests.
+**Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. The owner accepted the five golden contracts on 11 November; these are interpreted, not native, tests. The expanded runner has not yet been re-executed on MVS.
 
 **Five-probe verification plan:** [CO.0 MR10 coroutine development-probe procedure](co0-mr10-coroutine-probe-verification-plan-20261110.md) records runner selection, candidate oracle and required JES evidence; no new probe execution or acceptance is claimed.
 
@@ -17,7 +17,7 @@
 | MR10 BCPL routines | `mr10-kit-compiler/library/coroutines.bcpl` implements reconstructed `CREATECO`, `DELETECO`, `CALLCO`, `COWAIT`, `RESUMECO`. | Distinguish designed/tested behavior from historical interfaces and cover error/termination paths. |
 | MR10 switch | `mr10-kit-compiler/source/iclib.int` uses existing INTCODE `X32`; `icintv19.asm` implements `X32` by restoring interpreted P and C. | Trace each scratch global, saved continuation and value-transfer rule in `CHANGECO`; document first activation and resumption. |
 | MR10 descriptor | Existing probe documentation records `C!0` saved P, `C!1` parent, `C!2` list link; `P=C+3`; `P!2` FN, `P!3` SIZE, `P!4` C. | Do **not** assume these interpreted offsets/registers map onto native S/370. |
-| Tests | MR10 12-case regression panel has accepted `basic-coroutine`; `10-coroutines/` has five additional development probes marked UNVERIFIED. | Execute/review those probes and validate golden results without retroactive acceptance claims. |
+| Tests | MR10 12-case regression panel has accepted `basic-coroutine`; `10-coroutines/` has five additional owner-accepted interpreted development probes. | The five candidate outputs and structural artifacts were reviewed and are frozen as goldens; native behavior and negative-path semantics remain unverified. |
 | Historical Cambridge/KM10 | Ordinary `sys3/bcpl/libhdr` and `bcplib/bcpl/blib` do not expose the MR10-named coroutine API, **but** original `km10/comacro`, `km10/coblib/cortn` and `km10/j/colib` prove a historical native coroutine variant existed. | The tape-listed `km10/comain` is missing. Recover full historical interface, initialization and switching behavior from surviving indirect evidence; do not conflate the variants. |
 | Native ABI | Native contract assigns R5 frame, R6 return, R7–R9 arguments/results, R4 restored from frame, R11 system vector; current BCPLMAIN has a single bounded working stack. | Identify all live registers/condition codes/stack state and restoration requirements using actual CG370 output and MVS probes. |
 | Globals | MR10 numbers 6–8 and 91–95 conflict with the Cambridge `LIBHDR`. | Choose and approve new native slots and exports against Global Number Registry, compiler CGHDR and whole-executable collisions. |
@@ -29,7 +29,7 @@ Interpret a claim as **DECLARED**, **SOURCE-OBSERVED**, **INTERPRETED-MVS-TESTED
 
 - [ ] Trace the full `ICLIB` `CHANGECO` instruction path (saved P/C and scratch globals) and inspect original MR10 kit `ICINT` plus the project's `ICINT19`.
 - [ ] Compare `compiler-probe.bcpl` and `frame-layout-probe.bcpl` with saved OCODE/INTCODE; prove argument order and actual synthetic frame behavior.
-- [ ] Verify all five existing `10-coroutines/` probes: call layout, frame layout, fixed-stack producer/consumer, RESUMECO parent chain, CREATE/DELETE/reuse. Record exact inputs, phase RCs, output oracle and JES evidence when authorized.
+- [x] Verify all five existing `10-coroutines/` probes: call layout, frame layout, fixed-stack producer/consumer, RESUMECO parent chain, CREATE/DELETE/reuse. Record exact inputs, phase RCs, output oracle and JES evidence when authorized.
 - [ ] Establish entry argument, yield value, return value, parent relation, natural return/termination, repeated resume, invalid/deleted coroutine and error behavior; classify any inferred behavior.
 - [x] Identify the surviving historical KM10 coroutine-library inventory, control-block macro, coroutine-aware BLIB source, and link-edit job; distinguish it from project-created MR10 code (source audit only).
 - [ ] Continue searching period documentation, tape sources and related references for the **missing KM10.COMAIN** implementation and a full historical callable coroutine contract.
