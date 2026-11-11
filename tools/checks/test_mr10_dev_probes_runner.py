@@ -204,7 +204,7 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
     def test_host_check_never_executes_compiler(self):
         rc, out, err = self.cli("--check")
         self.assertEqual((rc, err), (0, ""))
-        self.assertIn("11 accepted, 0 provisional, 6 experimental; host-only", out)
+        self.assertIn("11 accepted, 0 provisional, 1 experimental; host-only", out)
         self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_list_shows_full_historical_id_without_execution(self):
