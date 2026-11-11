@@ -88,6 +88,37 @@ class CandidateSelectionTests(unittest.TestCase):
             self.assertNotIn("--iclib", command)
             self.assertIn("+library/coroutines.bcpl", command)
 
+    def test_intcode_comments_are_not_staged_as_jcl(self):
+        reader = CORE["read_intcode_records"]
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "candidate.int"
+            source.write_text(
+                "// CO.0 experimental notes\\n"
+                "  // indented note\\n"
+                "6 LIP2 SG9 LP0 SIG7\\n"
+                "498 LIG9 JIG10 G6L6\\n"
+                "Z\\n", encoding="ascii"
+            )
+            self.assertEqual(
+                reader(source, "ICLIB"),
+                "6 LIP2 SG9 LP0 SIG7\\n498 LIG9 JIG10 G6L6\\nZ\\n",
+            )
+            source.write_text("// comment only\\n", encoding="ascii")
+            with self.assertRaisesRegex(ValueError, "no INTCODE records"):
+                reader(source, "ICLIB")
+
+    def test_actual_candidate_has_no_jcl_statements_in_staging(self):
+        source = ROOT / "mr10-kit-compiler/source/iclib-co0-candidate.int"
+        rendered = CORE["read_intcode_records"](source, "ICLIB")
+        self.assertIn("6 LIP2 SG9 LP0 SIG7", rendered)
+        self.assertTrue(rendered.endswith("Z\\n"))
+        self.assertFalse(any(line.lstrip().startswith("//")
+                             for line in rendered.splitlines()))
+        staged = CORE["stage_step"]("STGICLIB", "STAGE ICLIB", "&&ICLIB", rendered)
+        body = staged.split("//SYSUT1   DD  *\\n", 1)[1].split("/*\\n", 1)[0]
+        self.assertEqual(body, rendered)
+        self.assertFalse(any(line.startswith("//") for line in body.splitlines()))
+
     def test_generated_jcl_stages_selected_iclib(self):
         function = CORE["build_deck"]
         original = CORE["ICLIB"]
@@ -96,7 +127,8 @@ class CandidateSelectionTests(unittest.TestCase):
         def records(path, description, width=80):
             return "CANDIDATE\n" if path == candidate else "BASE\n"
 
-        with patch.dict(function.__globals__, {"read_ascii_records": records}):
+        with patch.dict(function.__globals__, {"read_ascii_records": records,
+                                             "read_intcode_records": records}):
             args = dict(
                 interpreter=None, sources=[Path("main.bcpl")],
                 job_name="MR10TEST", listing="light", named_dds=[],
