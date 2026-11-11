@@ -29,6 +29,14 @@ def parse_args() -> argparse.Namespace:
         help="ICINT assembler source; default is the promoted mr10-kit-compiler/asm/CURRENT baseline",
     )
     parser.add_argument(
+        "--iclib", metavar="PATH",
+        help="alternate MR10 ICLIB image for every compilation and RUN step",
+    )
+    parser.add_argument(
+        "--module-override", action="append", default=[], metavar="FROM=TO",
+        help="replace an exact +MODULE manifest path; repeat for other modules",
+    )
+    parser.add_argument(
         "--category",
         action="append",
         default=[],
@@ -126,6 +134,26 @@ def selected(rows: list[dict[str, str]], args: argparse.Namespace) -> list[dict[
     return result
 
 
+def parse_module_overrides(specs: list[str], rows: list[dict[str, str]]) -> dict[str, str]:
+    overrides: dict[str, str] = {}
+    selected_modules = {
+        token[1:] for row in rows for token in shlex.split(row["extras"])
+        if token.startswith("+")
+    }
+    for spec in specs:
+        if spec.count("=") != 1:
+            raise ValueError(f"--module-override requires FROM=TO: {spec}")
+        original, replacement = spec.split("=", 1)
+        if not original or not replacement or original in overrides:
+            raise ValueError(f"invalid or duplicate --module-override: {spec}")
+        if original not in selected_modules:
+            raise ValueError(f"module not present in selected tests: {original}")
+        if not (ROOT / replacement).is_file():
+            raise ValueError(f"replacement module does not exist: {replacement}")
+        overrides[original] = replacement
+    return overrides
+
+
 def rp_records(output: str) -> list[str]:
     records = []
     for line in output.splitlines():
@@ -139,7 +167,9 @@ def expected_records(path: Path) -> list[str]:
     return [line.rstrip() for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def run_case(row: dict[str, str], icint: Path, verbose: bool) -> tuple[bool, str]:
+def run_case(row: dict[str, str], icint: Path, verbose: bool,
+             iclib: Path | None = None,
+             module_overrides: dict[str, str] | None = None) -> tuple[bool, str]:
     source = ROOT / row["source"]
     expected = ROOT / row["expected"]
     if not source.is_file():
@@ -147,11 +177,16 @@ def run_case(row: dict[str, str], icint: Path, verbose: bool) -> tuple[bool, str
     if not expected.is_file():
         return False, f"expected output does not exist: {row['expected']}"
 
-    extras = shlex.split(row["extras"])
+    extras = [
+        "+" + (module_overrides or {}).get(token[1:], token[1:])
+        if token.startswith("+") else token
+        for token in shlex.split(row["extras"])
+    ]
     compile_args = shlex.split(row["compile_args"])
     command = [
         str(COMPILE),
         "--results",
+        *([] if iclib is None else ["--iclib", str(iclib)]),
         *compile_args,
         str(icint),
         str(source),
@@ -205,6 +240,10 @@ def main() -> int:
     try:
         icint = resolve_icint(args.icint)
         rows = selected(load_manifest(), args)
+        module_overrides = parse_module_overrides(args.module_override, rows)
+        iclib = (ROOT / args.iclib).resolve() if args.iclib else None
+        if iclib is not None and not iclib.is_file():
+            raise ValueError(f"ICLIB image does not exist: {iclib}")
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"run-regression-panel: {exc}", file=sys.stderr)
         return 2
@@ -226,12 +265,15 @@ def main() -> int:
     print("REGRESSION PANEL")
     print(f"ICINT: {shown_icint}")
     print(f"Tests: {len(rows)}")
+    print(f"ICLIB: {iclib if iclib is not None else 'canonical'}")
+    for original, replacement in module_overrides.items():
+        print(f"Module override: {original} -> {replacement}")
 
     failures = 0
     for row in rows:
         label = f"{row['category']}/{row['name']}"
         print(f"RUN   {label}")
-        ok, detail = run_case(row, icint, args.verbose)
+        ok, detail = run_case(row, icint, args.verbose, iclib, module_overrides)
         if ok:
             print(f"PASS  {label}")
         else:
