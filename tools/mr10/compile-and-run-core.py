@@ -333,6 +333,7 @@ def build_deck(
     save_ocode: bool = False,
     save_intcode: bool = False,
     installed_load: str | None = None,
+    iclib_path: Path | None = None,
 ) -> str:
     global INSTALLED_LOAD
     INSTALLED_LOAD = installed_load
@@ -357,7 +358,7 @@ def build_deck(
     trni = read_ascii_records(TRNI, "TRNI")
     cgi = read_ascii_records(CGI, "CGI")
     blibi = read_ascii_records(BLIBI, "BLIBI")
-    iclib = read_ascii_records(ICLIB, "ICLIB")
+    iclib = read_ascii_records(iclib_path or ICLIB, "ICLIB")
     asm_options, link_options = PROFILES[listing]
 
     deck = (
@@ -762,6 +763,10 @@ def make_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--iclib", metavar="PATH",
+        help="alternate MR10 ICLIB INTCODE source (default: canonical source/iclib.int)",
+    )
+    parser.add_argument(
         "--results",
         action="store_true",
         help="wait for completion and print only the final BCPL program results",
@@ -868,6 +873,7 @@ def main(argv=None) -> int:
         interpreter = resolve_repo_path(args.interpreter) if args.interpreter else None
         primary = resolve_repo_path(args.source)
         modules = parse_modules(args.modules)
+        iclib_path = resolve_repo_path(args.iclib) if args.iclib else None
         named_dds = parse_named_dds(args.dd)
         sources = [primary, *modules]
 
@@ -887,7 +893,7 @@ def main(argv=None) -> int:
             ("TRNI", TRNI),
             ("CGI", CGI),
             ("BLIBI", BLIBI),
-            ("ICLIB", ICLIB),
+            ("ICLIB", iclib_path or ICLIB),
         ):
             if not path.is_file():
                 raise ValueError(f"{description} does not exist: {path}")
@@ -928,6 +934,7 @@ def main(argv=None) -> int:
             save_ocode=args.save_ocode,
             save_intcode=args.save_intcode,
             installed_load=installed_load,
+            iclib_path=iclib_path,
         )
 
         jcl_path = (
