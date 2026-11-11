@@ -146,6 +146,20 @@ def read_ascii_records(path: Path, description: str, width: int = 80) -> str:
     return "".join(record + "\n" for record in records)
 
 
+def read_intcode_records(path: Path, description: str) -> str:
+    """Prepare INTCODE for JCL DD * staging without source-only // comments.
+
+    JES treats column-one // as a JCL statement, even inside DD * input.
+    Remove only standalone INTCODE comment records, never executable data.
+    This is deliberately distinct from BCPL/SYSIN record handling.
+    """
+    records = read_ascii_records(path, description).splitlines()
+    executable = [record for record in records if not record.lstrip().startswith("//")]
+    if not executable:
+        raise ValueError(f"{description} contains no INTCODE records: {path}")
+    return "".join(record + "\n" for record in executable)
+
+
 def derive_job_name(source: Path) -> str:
     stem = re.sub(r"[^A-Z0-9]", "", source.stem.upper())
     job = "BC" + stem[:6]
@@ -354,11 +368,11 @@ def build_deck(
         (name, path, read_ascii_records(path, f"--dd {name} input"))
         for name, path in named_dds
     ]
-    syni = read_ascii_records(SYNI, "SYNI")
-    trni = read_ascii_records(TRNI, "TRNI")
-    cgi = read_ascii_records(CGI, "CGI")
-    blibi = read_ascii_records(BLIBI, "BLIBI")
-    iclib = read_ascii_records(iclib_path or ICLIB, "ICLIB")
+    syni = read_intcode_records(SYNI, "SYNI")
+    trni = read_intcode_records(TRNI, "TRNI")
+    cgi = read_intcode_records(CGI, "CGI")
+    blibi = read_intcode_records(BLIBI, "BLIBI")
+    iclib = read_intcode_records(iclib_path or ICLIB, "ICLIB")
     asm_options, link_options = PROFILES[listing]
 
     deck = (
