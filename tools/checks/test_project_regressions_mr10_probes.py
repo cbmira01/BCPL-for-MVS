@@ -138,7 +138,7 @@ class ProjectMR10ProbesTests(unittest.TestCase):
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["counts"],
                          {"PASS": 11, "FAIL": 0, "SKIP": 0, "BLOCKED": 0,
-                          "TOTAL": 6})
+                          "TOTAL": 11})
 
     def test_failure_preserves_not_run_cases(self):
         log, rc = self.evidence(["PASS", "FAIL"] + ["NOT_RUN"] * 9)

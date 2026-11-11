@@ -253,8 +253,11 @@ def verify_jes_steps(job_id: str, expected_name: str, folder: Path,
         text=True, check=False)
     summary_text = summary_proc.stdout + summary_proc.stderr
     report_text = dump_proc.stdout
-    summary_path = folder / f"{ident}-jes-summary.txt"
-    report_path = folder / f"{ident}-jes-report.txt"
+    # Accepted case IDs can contain '/', which is not a filename separator here.
+    # Keep both JES reports flat beneath the unique run evidence directory.
+    slug = ident.replace("/", "--")
+    summary_path = folder / f"{slug}-jes-summary.txt"
+    report_path = folder / f"{slug}-jes-report.txt"
     summary_path.write_text(summary_text, encoding="utf-8")
     if report_text:
         report_path.write_text(report_text, encoding="utf-8")

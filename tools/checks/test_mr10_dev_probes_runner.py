@@ -302,6 +302,13 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
                          [12, 12, 10, 14, 14])
         self.assertTrue(all(r["verification"] == "ACCEPTED" and
                             r["status"] == "PASS" for r in summary["cases"]))
+        # Case IDs with '/' must not create nested JES report paths.
+        for item in summary["cases"]:
+            slug = item["id"].replace("/", "--")
+            self.assertTrue(item["jes_summary"].endswith(slug + "-jes-summary.txt"))
+            self.assertTrue(item["jes_report"].endswith(slug + "-jes-report.txt"))
+            self.assertTrue((self.root / item["jes_summary"]).is_file())
+            self.assertTrue((self.root / item["jes_report"]).is_file())
 
     def test_coroutine_extra_output_rejected(self):
         with patch.dict(os.environ, {"PROBE_EXTRA_LINE": "1"}):
