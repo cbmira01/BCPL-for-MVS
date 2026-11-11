@@ -1,0 +1,69 @@
+// CO.0 EXPERIMENT: RESUMECO BUSY-TARGET PARENT INVARIANT
+// This is a bounded interpreted MR10 probe, not an accepted golden.
+// ROOT calls A; A calls B; B tries to RESUMECO the still-active A.
+// B restores its parent only after inspecting the failed RESUMECO.
+// No invalid/freed pointers are used; no permanent datasets change.
+
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+COWAIT:94
+RESUMECO:95
+$)
+
+LET WORKB(A) = VALOF
+$( LET PARENT = CURRCO!1
+   AND RESULT = 0
+
+   WRITEF("CO0 BUSY BEFORE %N*N", PARENT=A)
+   WRITEF("CO0 BUSY TARGET %N*N", A!1\=0)
+
+   RESULT := RESUMECO(A, 123)
+   WRITEF("CO0 BUSY RESULT %N*N", RESULT)
+   WRITEF("CO0 BUSY PARENT KEPT %N*N", CURRCO!1=PARENT)
+   WRITEF("CO0 BUSY PARENT CLEARED %N*N", CURRCO!1=0)
+
+   // Restore for controlled unwinding; this is PROBE repair, not API repair.
+   CURRCO!1 := PARENT
+   RESULTIS COWAIT(777)
+$)
+
+AND WORKA(B) = VALOF
+$( LET VALUE = CALLCO(B, CURRCO)
+   WRITEF("CO0 A GOT %N*N", VALUE)
+   RESULTIS COWAIT(888)
+$)
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
+   AND A = 0
+   AND B = 0
+   AND RESULT = 0
+
+   HEAPINIT(ARENA, 401)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   B := CREATECO(WORKB, 100)
+   A := CREATECO(WORKA, 100)
+   IF A=0 | B=0 DO
+   $( WRITEF("CO0 CREATE FAILED*N")
+      FINISH
+   $)
+
+   RESULT := CALLCO(A, B)
+   WRITEF("CO0 ROOT GOT %N*N", RESULT)
+   WRITEF("CO0 DELETE A %N*N", DELETECO(A))
+   WRITEF("CO0 DELETE B %N*N", DELETECO(B))
+   FINISH
+$)
