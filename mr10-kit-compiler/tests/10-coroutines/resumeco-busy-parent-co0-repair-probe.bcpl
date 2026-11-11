@@ -1,0 +1,71 @@
+// CO.0 CANDIDATE: busy RESUMECO must not destroy B's parent.
+// ROOT calls A; A calls B; B attempts to RESUMECO busy A.
+// Unlike the canonical counterexample, B does NOT restore its parent.
+// Requires isolated coroutines-co0-busy-parent-candidate.bcpl.
+
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+COWAIT:94
+RESUMECO:95
+$)
+
+LET WORKB(A) = VALOF
+$( LET PARENT = CURRCO!1
+   AND RESULT = 0
+
+   WRITEF("CO0 BUSY BEFORE %N*N", PARENT=A)
+   WRITEF("CO0 BUSY TARGET %N*N", A!1\=0)
+
+   RESULT := RESUMECO(A, 123)
+   WRITEF("CO0 BUSY RESULT %N*N", RESULT)
+   WRITEF("CO0 BUSY PARENT KEPT %N*N", CURRCO!1=PARENT)
+   WRITEF("CO0 BUSY PARENT CLEARED %N*N", CURRCO!1=0)
+
+   // No probe-side repair: COWAIT must use the preserved parent.
+   RESULTIS COWAIT(777)
+$)
+
+AND WORKA(B) = VALOF
+$( LET VALUE = CALLCO(B, CURRCO)
+   WRITEF("CO0 A GOT %N*N", VALUE)
+   RESULTIS COWAIT(888)
+$)
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
+   AND A = 0
+   AND B = 0
+   AND RESULT = 0
+
+   HEAPINIT(ARENA, 401)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   B := CREATECO(WORKB, 100)
+   A := CREATECO(WORKA, 100)
+   IF A=0 DO
+   $( WRITEF("CO0 CREATE A FAILED*N")
+      FINISH
+   $)
+   IF B=0 DO
+   $( WRITEF("CO0 CREATE B FAILED*N")
+      FINISH
+   $)
+
+   RESULT := CALLCO(A, B)
+   WRITEF("CO0 ROOT GOT %N*N", RESULT)
+   WRITEF("CO0 DELETE A %N*N", DELETECO(A))
+   WRITEF("CO0 DELETE B %N*N", DELETECO(B))
+   FINISH
+$)
