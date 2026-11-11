@@ -1,9 +1,9 @@
 # CO.0 — JOB 5231 CHANGECO continuation-divergence evidence review
 
-**Milestone:** Implement coroutine support for native compiler  
-**March:** CO.0 — Historical Research and Behavioral Contract (**IN PROGRESS**)  
-**Source revision tested:** 6cfb8f86c2277b3e38c6c784891f2b79c7d9eb22  
-**Date:** 11 November 2026  
+**Milestone:** Implement coroutine support for native compiler
+**March:** CO.0 — Historical Research and Behavioral Contract (**IN PROGRESS**)
+**Source revision tested:** 6cfb8f86c2277b3e38c6c784891f2b79c7d9eb22
+**Date:** 11 November 2026
 **Classification:** Operator-reported INTERPRETED-MVS-TESTED observations; SOURCE-OBSERVED mechanism; INFERRED cause; UNVERIFIED instruction-level diagnosis. This experiment is **not ACCEPTED**.
 
 ## 1. Operator-supplied MVS execution evidence
