@@ -103,6 +103,7 @@ datasets:
       MRBCDEMO: mr10-kit-compiler/jcl/run-bcpl-demos.jcl
       MRLANGDM: mr10-kit-compiler/jcl/run-language-demos.jcl
       MRREGRES: mr10-kit-compiler/jcl/run-regression-tests.jcl
+      CO0TRACE: mr10-kit-compiler/jcl/co0-continuation-divergence.jcl
 
   MR10_LIBRARY:
     dsn: BCPL.MR10KIT.LIBRARY
@@ -260,6 +261,7 @@ datasets:
       T10FIXED: mr10-kit-compiler/tests/10-coroutines/fixed-stack-producer-consumer.bcpl
       T10CHAIN: mr10-kit-compiler/tests/10-coroutines/resumeco-chain.bcpl
       T10CRDEL: mr10-kit-compiler/tests/10-coroutines/create-delete-static-pool.bcpl
+      T10CDIV: mr10-kit-compiler/tests/10-coroutines/continuation-divergence.bcpl
       T11GVFV: mr10-kit-compiler/tests/11-getvec-freevec/getvec-freevec.bcpl
 
   MR10_OBJ:
