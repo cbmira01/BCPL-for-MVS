@@ -1,0 +1,116 @@
+//* CO.0 FIXED-STACK CANDIDATE ONLY -- UNVERIFIED ON MVS.
+//* No JOB card. Requires distinct operator staging/JES authorization.
+//* SOURCE(ICLIBC) with TESTS(T10FIXC); no library modules.
+//* Golden output should match the accepted fixed-stack source.
+//*
+//* Stage SYNI as sequential FB80 for ICINT concatenation.
+//SSYNI    EXEC PGM=IEBGENER,COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//SYSUT1   DD  DSN=HERC02.BCPL.MR10KIT.SOURCE(SYNI),
+//             DISP=SHR
+//SYSUT2   DD  DSN=&&SYNI,UNIT=SYSDA,
+//             SPACE=(80,(1000,500)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),
+//             DISP=(NEW,PASS)
+//*
+//* Stage TRNI as sequential FB80 for ICINT concatenation.
+//STRNI    EXEC PGM=IEBGENER,COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//SYSUT1   DD  DSN=HERC02.BCPL.MR10KIT.SOURCE(TRNI),
+//             DISP=SHR
+//SYSUT2   DD  DSN=&&TRNI,UNIT=SYSDA,
+//             SPACE=(80,(1000,500)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),
+//             DISP=(NEW,PASS)
+//*
+//* Stage CGI as sequential FB80 for ICINT concatenation.
+//SCGI     EXEC PGM=IEBGENER,COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//SYSUT1   DD  DSN=HERC02.BCPL.MR10KIT.SOURCE(CGI),
+//             DISP=SHR
+//SYSUT2   DD  DSN=&&CGI,UNIT=SYSDA,
+//             SPACE=(80,(1000,500)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),
+//             DISP=(NEW,PASS)
+//*
+//* Stage BLIBI as sequential FB80 for ICINT concatenation.
+//SBLIBI   EXEC PGM=IEBGENER,COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//SYSUT1   DD  DSN=HERC02.BCPL.MR10KIT.SOURCE(BLIBI),
+//             DISP=SHR
+//SYSUT2   DD  DSN=&&BLIBI,UNIT=SYSDA,
+//             SPACE=(80,(1000,500)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),
+//             DISP=(NEW,PASS)
+//*
+//* Stage ICLIB as sequential FB80 for ICINT concatenation.
+//SICLIB   EXEC PGM=IEBGENER,COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//SYSUT1   DD  DSN=HERC02.BCPL.MR10KIT.SOURCE(ICLIBC),
+//             DISP=SHR
+//SYSUT2   DD  DSN=&&ICLIBC,UNIT=SYSDA,
+//             SPACE=(80,(1000,500)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),
+//             DISP=(NEW,PASS)
+//*
+//* Compile BCPL source T10FIXC into OCODE.
+//COMPMAIN EXEC PGM=ICINT19,REGION=1024K,COND=(4,LT)
+//STEPLIB  DD  DSN=HERC02.BCPL.MR10KIT.LOAD,DISP=SHR
+//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)
+//INTIN    DD  DSN=&&SYNI,DISP=(OLD,PASS)
+//         DD  DSN=&&TRNI,DISP=(OLD,PASS)
+//         DD  DSN=&&BLIBI,DISP=(OLD,PASS)
+//         DD  DSN=&&ICLIBC,DISP=(OLD,PASS)
+//SYSIN    DD  DSN=HERC02.BCPL.MR10KIT.TESTS(T10FIXC),
+//             DISP=SHR
+//OCODE    DD  DSN=&&OMAIN,UNIT=SYSDA,
+//             SPACE=(80,(1000,500)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),
+//             DISP=(NEW,PASS)
+//SYSUDUMP DD  SYSOUT=*
+//*
+//* Saved main OCODE is printed in this step's SYSOUT for review.
+//SVOCMAIN EXEC PGM=IEBGENER,COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//SYSUT1   DD  DSN=&&OMAIN,DISP=(OLD,PASS)
+//SYSUT2   DD  SYSOUT=*,
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//*
+//* Generate INTCODE for CGMAIN.
+//CGMAIN   EXEC PGM=ICINT19,REGION=1024K,COND=(4,LT)
+//STEPLIB  DD  DSN=HERC02.BCPL.MR10KIT.LOAD,DISP=SHR
+//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)
+//INTIN    DD  DSN=&&CGI,DISP=(OLD,PASS)
+//         DD  DSN=&&BLIBI,DISP=(OLD,PASS)
+//         DD  DSN=&&ICLIBC,DISP=(OLD,PASS)
+//SYSIN    DD  DSN=&&OMAIN,DISP=(OLD,DELETE)
+//INTCODE  DD  DSN=&&IMAIN,UNIT=SYSDA,
+//             SPACE=(80,(1000,500)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80),
+//             DISP=(NEW,PASS)
+//SYSUDUMP DD  SYSOUT=*
+//*
+//* Saved main INTCODE is printed in this step's SYSOUT for review.
+//SVINMAIN EXEC PGM=IEBGENER,COND=(4,LT)
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//SYSUT1   DD  DSN=&&IMAIN,DISP=(OLD,PASS)
+//SYSUT2   DD  SYSOUT=*,
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//*
+//* Run the assembled single-unit interpreted program.
+//RUN      EXEC PGM=ICINT19,REGION=1024K,TIME=(,10),COND=(4,LT)
+//STEPLIB  DD  DSN=HERC02.BCPL.MR10KIT.LOAD,DISP=SHR
+//SYSPRINT DD  SYSOUT=*,DCB=(RECFM=FB,LRECL=132,BLKSIZE=132)
+//INTIN    DD  DSN=&&IMAIN,DISP=(OLD,DELETE)
+//         DD  DSN=&&BLIBI,DISP=(OLD,DELETE)
+//         DD  DSN=&&ICLIBC,DISP=(OLD,DELETE)
+//SYSUDUMP DD  SYSOUT=*
+//*
+//

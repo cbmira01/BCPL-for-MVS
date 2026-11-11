@@ -1,0 +1,76 @@
+// CO.0 experiment: fixed-stack test variant for ICLIBC.
+// The accepted fixed-stack source and golden output remain unchanged.
+// ======================================================================
+// FIXED STACK PRODUCER CONSUMER: BCPL RECONSTRUCTION PROBE
+// ======================================================================
+// FIXED-STACK-PRODUCER-CONSUMER.BCPL
+//
+// First executable coroutine experiment for the MR10 reconstruction.
+// Uses statically reserved coroutine storage so CHANGECO/CALLCO/COWAIT can
+// be proved independently of GETVEC/FREEVEC and full CREATECO support.
+
+// --- Global slots ---
+GLOBAL $(
+START:1
+CHANGECO:6
+CURRCO:7
+WRITEF:76
+$)
+
+LET COBOOT(FN, SIZE, C) = VALOF
+$( C := FN(COWAIT(C)) REPEAT
+$)
+
+AND CALLCO(CPTR, A) = VALOF
+$( CPTR!1 := CURRCO
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND COWAIT(A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   RESULTIS CHANGECO(A, PARENT)
+$)
+
+AND MAKECO(FN, SIZE, C) = VALOF
+$( LET P = C+3
+   C!0 := P
+   C!1 := CURRCO
+   C!2 := 0
+   P!0 := P
+   P!1 := COBOOT
+   P!2 := FN
+   P!3 := SIZE
+   P!4 := C
+   RESULTIS CHANGECO(0, C)
+$)
+
+AND PRODUCER(ARG) = VALOF
+$( FOR N = 1 TO 5 DO
+   $( WRITEF("PRODUCER: %N*N", N)
+      COWAIT(N)
+   $)
+   RESULTIS -1
+$)
+
+// --- Probe entry and output ---
+AND START() BE
+$( LET ROOT = VEC 4
+   AND COSTACK = VEC 110
+   AND CO = 0
+   AND VALUE = 0
+
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+
+   CO := MAKECO(PRODUCER, 100, COSTACK)
+
+   FOR I = 1 TO 5 DO
+   $( VALUE := CALLCO(CO, 0)
+      WRITEF("CONSUMER: %N*N", VALUE)
+   $)
+
+   FINISH
+$)

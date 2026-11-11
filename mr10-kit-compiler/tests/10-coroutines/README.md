@@ -92,3 +92,40 @@ executed while the caller should have been suspended. See the
 [CO.0 evidence review](../../../packaging/milestones/coroutines/co0-changeco-continuation-divergence-jes-5231-review-20261111.md).
 Exact SVINMAIN/SVOCMAIN records remain pending inspection. This
 experimental probe is **not accepted** and is not in any regression manifest.
+
+## CO.0 isolated ICLIB repair candidate — not accepted
+
+The [approved MR10 repair decision](../../../packaging/milestones/coroutines/co0-mr10-iclib-repair-design-decision-20261111.md)
+retains original ICLIB, COROUTIN, all five accepted coroutine tests,
+and the original failed JOB 5231 experiment. The separate candidate
+introduces `SOURCE(ICLIBC)` and `LIBRARY(COCAND)` with a distinct
+initialization trampoline (`COBOOT`). Its descriptor still has three
+words; C!0 now points to the saved CHANGECO call frame rather than
+the caller's P. The synthetic first frame has P!0=P and P!1=COBOOT.
+
+Run offline-only checks with:
+
+```sh
+python3 -B -m unittest discover -s mr10-kit-compiler/tests/10-coroutines \
+    -p 'test_iclib_candidate.py' -v
+```
+
+This tests a **limited instruction-level model**, not the real MR10
+compiler, ICINT19, or MVS. The following distinct stored jobs are
+available for separately authorized operator execution:
+
+- `MR10_JCL(CO0CAND)`: the original unchanged `TESTS(T10CDIV)`
+  continuation probe compiled with `SOURCE(ICLIBC)` and
+  `LIBRARY(COCAND)`, plus unchanged `LIBRARY(GETVEC)`.
+  `SVOCMAIN` and `SVINMAIN` print compiler outputs.
+- `MR10_JCL(CO0FSTK)`: adapted `TESTS(T10FIXC)` fixed-stack
+  producer/consumer source with `SOURCE(ICLIBC)`; the accepted
+  `T10FIXED` source and output remain unchanged.
+
+**Expected, not observed:** `STAGEDWAIT RETURNED 27` should occur
+after `ROOT B1 201`. The fixed-stack probe should match the existing
+ten-line golden output exactly. Check all JES steps, seven interpreted
+codes (CO0CAND), three interpreted codes (CO0FSTK), actual trace order,
+and generated INTCODE before any acceptance. Do not include either
+candidate in regression manifests or switch canonical module mappings
+until separately approved.

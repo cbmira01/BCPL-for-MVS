@@ -54,6 +54,7 @@ datasets:
       BLIBI: mr10-kit-compiler/source/blibi.int
       CGI: mr10-kit-compiler/source/cgi.int
       ICLIB: mr10-kit-compiler/source/iclib.int
+      ICLIBC: mr10-kit-compiler/source/iclib-co0-candidate.int
       SYNI: mr10-kit-compiler/source/syni.int
       TRNI: mr10-kit-compiler/source/trni.int
 
@@ -103,6 +104,8 @@ datasets:
       MRBCDEMO: mr10-kit-compiler/jcl/run-bcpl-demos.jcl
       MRLANGDM: mr10-kit-compiler/jcl/run-language-demos.jcl
       MRREGRES: mr10-kit-compiler/jcl/run-regression-tests.jcl
+      CO0CAND: mr10-kit-compiler/jcl/co0-iclib-repair-candidate.jcl
+      CO0FSTK: mr10-kit-compiler/jcl/co0-fixed-stack-candidate.jcl
       CO0TRACE: mr10-kit-compiler/jcl/co0-continuation-divergence.jcl
 
   MR10_LIBRARY:
@@ -120,6 +123,7 @@ datasets:
     members:
       CHARUTIL: mr10-kit-compiler/library/char-utils.bcpl
       COROUTIN: mr10-kit-compiler/library/coroutines.bcpl
+      COCAND: mr10-kit-compiler/library/coroutines-co0-candidate.bcpl
       GETVEC: mr10-kit-compiler/library/getvec-freevec.bcpl
       INTUTIL: mr10-kit-compiler/library/integer-utils.bcpl
       LINEIO: mr10-kit-compiler/library/line-io.bcpl
@@ -259,6 +263,7 @@ datasets:
       T10CPROB: mr10-kit-compiler/tests/10-coroutines/compiler-probe.bcpl
       T10FRAME: mr10-kit-compiler/tests/10-coroutines/frame-layout-probe.bcpl
       T10FIXED: mr10-kit-compiler/tests/10-coroutines/fixed-stack-producer-consumer.bcpl
+      T10FIXC: mr10-kit-compiler/tests/10-coroutines/fixed-stack-co0-candidate.bcpl
       T10CHAIN: mr10-kit-compiler/tests/10-coroutines/resumeco-chain.bcpl
       T10CRDEL: mr10-kit-compiler/tests/10-coroutines/create-delete-static-pool.bcpl
       T10CDIV: mr10-kit-compiler/tests/10-coroutines/continuation-divergence.bcpl

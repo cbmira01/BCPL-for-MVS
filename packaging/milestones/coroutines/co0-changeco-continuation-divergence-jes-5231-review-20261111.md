@@ -79,3 +79,24 @@ echo "Report inspection RC=$?"
 The window is based on the operator's earlier filtered line numbers; check the actual step boundaries. Next: compare generated STAGEDWAIT, COWAIT and CALLCO post-call instructions; obtain a P/C transition trace if ambiguity remains; decide separately whether the historical MR10 reconstruction should be repaired. No new JES submission is needed just to inspect existing SYSOUT.
 
 **Status:** CO.0 **IN PROGRESS**; CO.1–CO.5 **NOT STARTED**. The probe is experimental, no regression manifest/accepted golden is promoted, and no new MVS execution or dataset modification is recorded by this documentation.
+
+## 6. Subsequent operator-supplied SVINMAIN excerpt
+
+After the initial review, the operator supplied the read-only
+`sed -n '835,892p'` window from JOB 5231 and verified both pipeline
+return codes were zero. The main program's generated `$ 1` function
+(`STAGEDWAIT`) includes:
+
+~~~text
+LIG6 K5 SP4 LL499 SP7 LIP4 SP8 LIG76 K5 ...
+~~~
+
+`LIG6 K5` calls CHANGECO; the immediately following `SP4` and
+`WRITEF` setup are the staged post-call work that printed
+`STAGEDWAIT RETURNED 201` prematurely. This strengthens the
+SOURCE-OBSERVED + INTERPRETED-MVS-TESTED diagnosis in section 3.
+The saved listing was **pasted in the conversation** rather than
+preserved as a byte-exact artifact in Git, and no P/C instruction
+trace was captured. The original reproduction and failing
+observation remain unchanged. The [separate repair decision](co0-mr10-iclib-repair-design-decision-20261111.md)
+now authorizes preparation of an isolated candidate, not acceptance.

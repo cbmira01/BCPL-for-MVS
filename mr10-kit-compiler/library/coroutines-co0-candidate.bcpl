@@ -1,0 +1,130 @@
+// CO.0 EXPERIMENT: paired with SOURCE(ICLIBC), not canonical.
+// C!0 -> suspended CHANGECO call frame; root descriptor stays 3 words.
+// The synthetic startup frame P=C+3 has P!0=P and P!1=COBOOT.
+// No historical or native-ABI compatibility is claimed.
+// ======================================================================
+// COROUTINES: REUSABLE BCPL ROUTINES
+// ======================================================================
+// COROUTINES.BCPL
+//
+// Portable coroutine layer for the reconstructed MR10 runtime.
+//
+// Machine-dependent primitive:
+//     CHANGECO:6
+//
+// Historical runtime state:
+//     CURRCO:7
+//     COLIST:8
+//
+// Reconstructed allocator services:
+//     GETVEC:87
+//     FREEVEC:88
+//
+// Provisional portable coroutine entry points:
+//     CREATECO:91
+//     DELETECO:92
+//     CALLCO:93
+//     COWAIT:94
+//     RESUMECO:95
+//
+// The 91..95 assignments are reconstruction-local until the final runtime
+// header is reconciled.  The calling semantics are already established by
+// the coroutine regression suite.
+//
+// Coroutine descriptor:
+//     C!0 = saved CHANGECO call-frame pointer
+//     C!1 = parent coroutine, or 0 when inactive
+//     C!2 = COLIST link
+//
+// Synthetic startup frame begins at P=C+3; P!0=P, P!1=COBOOT:
+//     P!2 = FN
+//     P!3 = SIZE
+//     P!4 = C
+
+// --- Public global slots ---
+GLOBAL $(
+CHANGECO:6
+CURRCO:7
+COLIST:8
+GETVEC:87
+FREEVEC:88
+CREATECO:91
+DELETECO:92
+CALLCO:93
+COWAIT:94
+RESUMECO:95
+$)
+
+// --- Implementation ---
+// Entered at the explicit first-activation continuation.
+LET COBOOT(FN, SIZE, C) = VALOF
+$( C := FN(COWAIT(C)) REPEAT
+$)
+
+AND CALLCO(CPTR, A) = VALOF
+$( IF CPTR!1 \= 0 RESULTIS -999
+   CPTR!1 := CURRCO
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND COWAIT(A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   RESULTIS CHANGECO(A, PARENT)
+$)
+
+AND RESUMECO(CPTR, A) = VALOF
+$( LET PARENT = CURRCO!1
+   CURRCO!1 := 0
+   IF CPTR!1 \= 0 RESULTIS -998
+   CPTR!1 := PARENT
+   RESULTIS CHANGECO(A, CPTR)
+$)
+
+AND CREATECO(FN, SIZE) = VALOF
+$( LET C = GETVEC(SIZE+9)
+   AND P = 0
+
+   IF C = 0 RESULTIS 0
+
+   P := C+3
+
+   C!0 := P
+   C!1 := CURRCO
+   C!2 := COLIST
+
+   P!0 := P
+   P!1 := COBOOT
+   P!2 := FN
+   P!3 := SIZE
+   P!4 := C
+
+   COLIST := C
+
+   RESULTIS CHANGECO(0, C)
+$)
+
+AND DELETECO(C) = VALOF
+$( LET P = COLIST
+
+   IF C = 0 RESULTIS FALSE
+   IF C = CURRCO RESULTIS FALSE
+   IF C!1 \= 0 RESULTIS FALSE
+
+   IF COLIST = C DO
+   $( COLIST := C!2
+      FREEVEC(C)
+      RESULTIS TRUE
+   $)
+
+   UNTIL P = 0 DO
+   $( IF P!2 = C DO
+      $( P!2 := C!2
+         FREEVEC(C)
+         RESULTIS TRUE
+      $)
+      P := P!2
+   $)
+
+   RESULTIS FALSE
+$)
