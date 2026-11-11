@@ -522,7 +522,7 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
             rc, _, _ = self.cli("--run", "--case", "05-named-dd")
         self.assertEqual(rc, 1)
         s, _ = self.evidence()
-        self.assertIn("absent or duplicated in JES report", s["cases"][0]["reason"])
+        self.assertIn("occurs 0 time(s) in JES report; expected 1", s["cases"][0]["reason"])
 
     def test_job_summary_tool_failure_fails(self):
         with patch.dict(os.environ, {"PROBE_JES_SUMMARY_RC": "1"}):
