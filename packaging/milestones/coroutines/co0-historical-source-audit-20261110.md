@@ -109,3 +109,49 @@ Descriptor below the synthetic frame: `C!0` saved P, `C!1` parent, `C!2` list li
 6. Resolve what CO.0 can normatively require when the reconstructed MR10 implementation exposes the side effects and continuation questions above. Preserve divergences and explicit limitations instead of declaring historical identity.
 
 CO.0 remains **IN PROGRESS** until the evidence and contract pass separate owner review. CO.1–CO.5 remain NOT STARTED. No runtime implementation, global-number allocation, regression manifest edit, new JCL or MVS operation is authorized by this audit.
+
+## 6. Focused historical-architecture comparison and engineering disposition — 11 November 2026
+
+**Authority and scope:** Further read-only source review and owner-approved project direction. This addendum supersedes the *test-status snapshot* in section 4 above: the five `10-coroutines/` development probes were subsequently owner-promoted to `ACCEPTED` with [frozen goldens and historical JES evidence](../../../mr10-kit-compiler/tests/10-coroutines/acceptance-20261111.md). The expanded eleven-case runner has **not** yet been executed on MVS after promotion. Six other MR10 development probes remain `UNVERIFIED`. There is still **no native System/370 coroutine test evidence**.
+
+### 6.1 Historical MLIB versus our Core Runtime
+
+- **SOURCE-OBSERVED:** `richards-bcpltape/bcplib/jcl/makeobj` states that `BCPLIB.OBJ(BCPLMAIN)` contained the entire machine-code library. `richards-bcpltape/bcplib/jcl/makelib` carved load-library members `BCPLMAIN`, `$BLOCK$`, `$LOAD$`, `$TPUT$` out of that assembled object and separately linked BCPL-written `BLIB`, `IOS` and `PM`. A historical linker/module boundary is not necessarily an independent assembler-source boundary.
+- **SOURCE-OBSERVED:** `richards-bcpltape/km10/j/colib` additionally linked coroutine-aware `$CORTN$`, `BLIB(STANDARD)`, machine-library members and `BCPLMAIN`. `richards-bcpltape/km10/comacro` describes `COBASE` with saved stack/parent pointers, word/byte stack bounds, initial wait state and a root-stack error-processing path. `richards-bcpltape/km10/coblib/cortn` traces active/inactive coroutine stacks. The archive's `KM10.COMAIN` is absent.
+- **SOURCE-OBSERVED:** `richards-bcpltape/km10/docmemo` enumerates many machine-code library interfaces: startup/control, allocation, streams, PDS/BDAM I/O, module loading, time/date, byte arithmetic, FORTRAN interoperability and diagnostics. These form a historical service inventory, **not** a statement that every interface is implemented by this project.
+- **RECONSTRUCTION DECISION:** Preserve modular `BCPLMAIN`/`BCPLMEM`/`BCPLBYTE` responsibilities and the established native runtime contract. No general MLIB modernization or reconstruction project follows from the historical inventory. Change boundaries only for proven correctness, historical observable compatibility or substantial maintainability reasons.
+
+### 6.2 Comparative coroutine literature — research leads, not recovered KM10 implementation
+
+- **PERIOD REFERENCE:** Ken Moody and Martin Richards, [*A coroutine mechanism for BCPL*](https://doi.org/10.1002/spe.4380101002), *Software—Practice and Experience* 10 (1980), pp. 765–771, documents a BCPL coroutine mechanism. Its publication and scope are independently identifiable; the full detailed machine interface is **not** established by that bibliographic record.
+- **COMPARATIVE REFERENCE:** Brian James Knight, [*Portable system software for personal computers on a network*](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-26.pdf) (PhD dissertation, April 1982), discusses TRIPOS's machine-code library and coroutine service family (`CREATECO`, `CALLCO`, `COWAIT`, `RESUMECO`, `DELETECO`), as identified in prior research. This is TRIPOS evidence, not direct proof of the particular missing KM10.COMAIN design; its precise interface semantics remain subject to primary-source checking.
+- **COMPARATIVE REFERENCE:** Martin Richards' later BCPL teaching material may clarify conceptual switching, independent stacks and parent/value transfer. It must not be retroactively attributed to the MVS implementation without matching period source evidence.
+- **INFERENCE:** Historical MLIB ownership of high-level coroutine operations need not constrain whether the reconstructed native Core Runtime uses a small IFOX switch and BCPL-language management routines. That partition remains pending CO.1 review.
+
+### 6.3 `ICLIB` switch: narrowly supported control-flow conclusion
+
+**SOURCE-OBSERVED:** `mr10-kit-compiler/source/iclib.int` implements its reconstructed `CHANGECO` by storing the transfer value in scratch `G!9`, storing `P!1` (the switching call's return continuation) in scratch `G!10`, saving outgoing `P!0` through the outgoing `CURRCO` descriptor, installing the incoming descriptor and issuing `X32`. `richards-bcpltape/mr10/bcplkit/icint` and `mr10-kit-compiler/asm/icintv19.asm` both implement `X32` as assigning interpreter `P,C` from `A,B`. The trampoline loads `G!9` and branches by `JIG10`.
+
+**INFERRED, NOT YET PROVEN GENERALLY:** The transient return continuation can execute after the *incoming* frame has been restored; the shared scratch words are not necessarily a defect. To prove arbitrary interleaving, track `P,C`, the descriptor's saved P, `G!9/G!10`, the origin/target and the resumed site across multiple distinct `CHANGECO` call sites. The accepted interpreted prints do not themselves constitute an instruction-level trace.
+
+### 6.4 Behavior and lifecycle boundaries to settle in CO.0
+
+| Concern | Present evidence | What remains to establish |
+| --- | --- | --- |
+| First activation / initial argument | Reconstructed MR10 `CREATECO` builds a synthetic frame and initially switches to `COWAIT`; interpreted golden cases cover successful creation. | Precisely trace the initial `P,C` and entry argument; no native stack/frame layout selected. |
+| Yield / transfer / resumed value | Interpreted `CALLCO`, `COWAIT`, `RESUMECO` and accepted producer/consumer/chain outputs. | Verify arbitrary continuation sites and values, not merely final prints. |
+| Parent chain / occupied target | MR10 `CALLCO` returns `-999` on occupied target; `RESUMECO` returns `-998` but clears caller parent before checking target. | Decide whether error paths must preserve the caller's parent and how to detect invalid/nonmember descriptors. |
+| Natural function return | MR10 library repeats `C := FN(COWAIT(C))`; a function return is **not** automatic coroutine destruction. | Specify an explicit native completion policy; TRIPOS-specific STOP behavior is not assumed for MVS. |
+| Delete / reuse | Interpreted golden tests show successful list deletion and reuse. `DELETECO` dereferences before confirming membership. | Define active, invalid, stale, double-delete and storage reclamation semantics; no implied safety for arbitrary machine addresses. |
+| Stack limits / diagnostics | Historical KM10 `COBASE`, coroutine-aware BACKTRACE and root error stack; current native runtime has a single checked working stack. | Design independent bounds/guard and diagnostic context within the accepted native ABI during CO.1. |
+
+### 6.5 Disposition and next read-only research
+
+1. Trace reconstructed MR10 `CHANGECO` end-to-end, including `X32`, `JIG10`, two distinct caller continuations and the first synthetic activation; classify every statement as source-observed, inferred or interpreted-MVS-tested.
+2. Compare the two accepted compiler/frame-layout probes against stored OCODE/INTCODE and the compiler's actual frame/call sequence, without mistaking token matching for dynamic proof.
+3. Produce a concise normative *observable behavior* table for entry, value passing, yielding, parent handoff, resumption, completion, deletion and errors; explicitly separate our safety decisions from historical assertions.
+4. Use targeted period references and surviving `KM10.COMACRO`, `KM10.COBLIB(CORTN)`, `KM10.J(COLIB)` only to resolve substantive questions. Missing `KM10.COMAIN` stays an open historical limit; do not launch a general historical MLIB reconstruction.
+5. Design a small equivalent interpreted/native BCPL test matrix for later owner authorization. Native ABI/stack design belongs to CO.1; no JES submission or object changes are authorized by this record.
+
+**Status:** CO.0 **IN PROGRESS**; CO.1–CO.5 **NOT STARTED**. No runtime, manifest, historical source, JCL, MVS dataset or test acceptance changed in this documentation update.
+

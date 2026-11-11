@@ -10,6 +10,24 @@
 
 **CO.0 discovery (10 November):** The tape's `INDEX` explicitly identifies a **KM10 coroutine library**, including `KM10.COMACRO`, `KM10.COBLIB(CORTN)`, `KM10.COBLIB(STANDARD)`, `KM10.J(COLIB)`, and the **missing** `KM10.COMAIN`. This materially expands the prior historical-source inventory. See the [CO.0 source audit](co0-historical-source-audit-20261110.md). The native switching algorithm and full historical callable API remain unrecovered.
 
+## Approved engineering direction — 11 November 2026
+
+**Governing principle: Historical fidelity where evidence exists; contemporary engineering judgment where it does not.**
+
+The overarching objective remains a working, capable native System/370 Cambridge compiler and runtime under MVS 3.8J. Historical reconstruction is its foundation, not a requirement to duplicate every undocumented or obsolete implementation detail. Where historical code is missing, make explicit, reviewable contemporary engineering decisions; distinguish historical evidence, inference and deliberate reconstruction choices.
+
+- **Correctness and compatibility:** retain recoverable BCPL semantics, callable interfaces and observable behavior. Treat source observations, interpreted MVS tests and native MVS tests as distinct levels of evidence.
+- **Maintainability and reproducibility:** preserve easy modification, unattended clean-room reconstruction, isolated testing and repeatable release production. The established modular Core Runtime is the baseline, not a disposable approximation.
+- **Targeted research, not wholesale imitation:** investigate historical MLIB and coroutine architecture only where it may affect native ABI/call-return behavior, switching, per-coroutine stack protection, startup, allocation/ownership, global registration, diagnostics or lifecycle. An exhaustive MLIB restoration is out of scope.
+- **Evidence-driven architectural changes:** revise the existing runtime only to correct a demonstrated deficiency, satisfy a substantiated historical compatibility requirement, or secure a meaningful engineering improvement. Historical source packaging does not dictate current module boundaries.
+- **Future research:** a sufficiently capable native Cambridge compiler and runtime can enable deeper historical study later; do not delay the working implementation pending recovery of missing original modules.
+
+The historical `BCPLIB.JCL(MAKEOBJ)` and `BCPLIB.JCL(MAKELIB)` show a monolithic assembler-source `BCPLMAIN` split into several library members, plus separately compiled BCPL `BLIB`, `IOS` and `PM`. This **does not** require collapsing the reconstructed `BCPLMAIN`, `BCPLMEM`, `BCPLBYTE` or other modular components. See the focused comparison appended to the [CO.0 historical source audit](co0-historical-source-audit-20261110.md).
+
+**Pending CO.1 (not an ABI decision):** retain the working direction of an isolated machine-dependent native switch and BCPL-language management routines where feasible; historical accounts of MLIB's ownership of coroutine operations are evidence to consider, not a mandate to rewrite all management routines in assembler. Preserve explicit root context, independent checked stacks, continuation/value transfer and lifecycle/error invariants.
+
+**Status:** This is owner-approved research direction, not acceptance of a native descriptor, global assignment, test oracle or implementation. CO.0 remains **IN PROGRESS**; CO.1–CO.5 remain **NOT STARTED**.
+
 ## Evidence already in Git
 
 | Area | Established source observation | Research still open |
