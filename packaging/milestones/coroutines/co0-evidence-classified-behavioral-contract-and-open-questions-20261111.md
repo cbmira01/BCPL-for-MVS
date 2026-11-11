@@ -1,0 +1,67 @@
+# CO.0 — Evidence-classified coroutine behavior and open-question ledger
+
+**Project:** BCPL for MVS 3.8 Reconstruction  
+**Milestone:** Implement coroutine support for native compiler  
+**March:** CO.0 — Historical Research and Behavioral Contract (**IN PROGRESS**)  
+**Prepared:** 11 November 2026  
+**Source checkpoint:** GitHub `main` at `419aa8a6c28279262e385d88217255a1484b7f04`  
+**Status:** REVIEW DRAFT; reconstructed interpreted behavior only. No native ABI, global-slot, stack layout, or error-recovery policy is approved by this record.
+
+## Scope and evidence vocabulary
+
+**DECLARED** means the project states an intended requirement; **SOURCE-OBSERVED** means directly present in tracked source; **INTERPRETED-MVS-TESTED** means the identified MVS/ICINT19 output or JES result was reported and reviewed; **NATIVE-MVS-TESTED** requires native System/370 execution evidence; **INFERRED** means reasoned from source/test observations but not directly exercised; **UNVERIFIED** means there is no sufficient proof.
+
+The reconstructed **MR10 INTCODE coroutine interface** is distinct from the historical **KM10 native** coroutine mechanism. None of the following assigns the MR10 global numbers to the future native compiler or proves the missing historical `KM10.COMAIN` implementation.
+
+## Current reconstructed MR10 contract
+
+| Behavior | Evidence classification | Observed or source-defined behavior and limits |
+| --- | --- | --- |
+| Call interface | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for selected calls | `CHANGECO(value, target)`, `CALLCO(C,A)`, `COWAIT(A)`, `RESUMECO(C,A)` use BCPL procedure calls. Existing compiler-only probes verify compiled call/frame artifacts but do **not** execute CHANGECO. |
+| Saved execution context | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for continuation-divergence candidate | Promoted `ICLIB` stores the outgoing **CHANGECO call-frame pointer** in current descriptor `C!0`. On incoming transfer it loads the saved frame and continuation from the target frame before the `X32` trampoline. The original global-10 shared-continuation error was observed in JOB 5231; corrected ordering was observed in candidate JOB 5238. |
+| Value transfer | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for tested positive paths | `ICLIB` moves `CHANGECO`'s value argument through scratch `G!9`. The receiving coroutine resumes with the transfer value as the `CHANGECO` result. Exact observed values are fixed by the tests; arbitrary target and argument validity are not established. |
+| First activation | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for basic/compatibility cases | `CREATECO` allocates `GETVEC(SIZE+9)`, sets `P=C+3`, `C!0=P`, `P!0=P`, `P!1=COBOOT`, `P!2=FN`, `P!3=SIZE`, `P!4=C`. `COBOOT` first calls `COWAIT(C)`, then calls the worker with the next delivered argument. This is an MR10-specific synthetic frame, **not** a native stack ABI. |
+| Parent and waiting | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED in selected chains | `CALLCO` rejects a target whose `C!1 != 0` with `-999`; otherwise sets `C!1=CURRCO`. `COWAIT` reads its `CURRCO!1`, clears that parent field, and transfers to the parent. Exact chained outputs are observed in JOB 5244. |
+| RESUMECO transfer | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for positive chain | `RESUMECO` saves the *current* parent's pointer, clears current `CURRCO!1`, tests the target's `C!1`, then installs the saved parent in the target and switches. If the target is occupied, it returns `-998` **after the current parent was already cleared**. The busy-target error/parent mutation is source-observed only and is a potential state-invariant problem. |
+| Worker natural return | SOURCE-OBSERVED; not independently tested as a termination contract | `COBOOT` executes `C := FN(COWAIT(C)) REPEAT`: a worker function's ordinary return is followed by another wait and possible re-entry, **not automatic permanent termination**. The precise next-call behavior and cleanup are not proven under all cases. |
+| Creation failure | SOURCE-OBSERVED; negative path UNVERIFIED | `CREATECO` returns 0 when `GETVEC` returns 0; actual exhaustion thresholds, allocator invariants and malformed `SIZE` inputs are not accepted as coroutine behavior tests. |
+| Deletion | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for selected positive paths | `DELETECO` checks `C=0`, `C=CURRCO` and `C!1 != 0`; it then unlinks a matching descriptor from `COLIST` and calls `FREEVEC(C)`. JOB 5246 observed deletion/list counts and subsequent creation, **not pointer-address reuse**. |
+| Invalid or stale descriptors | UNVERIFIED; source indicates unsafe dereference | `CALLCO`, `RESUMECO` and `DELETECO` dereference nonzero descriptors before proving membership or allocation liveness. No promise of safe handling, rollback, a specific return code or recovery from arbitrary addresses is justified. |
+| Root coroutine | SOURCE-OBSERVED in probes | The MR10 tests create an explicit root descriptor, initialize `CURRCO`, and in library tests set `COLIST`. This is test-level initialization, not an established native root-registration API. |
+| Storage, stack safety and cleanup | SOURCE-OBSERVED for MR10 allocator calls; native UNVERIFIED | MR10 `GETVEC/FREEVEC` and `SIZE+9` are implementation facts. The future native `BCPLMEM` allocator and checked `STKLIM`/stack-high-water contract require a separate CO.1 design. |
+
+## Historical-source boundary
+
+The tape `INDEX` lists `KM10.COMAIN`, `KM10.COMACRO`, `KM10.COBLIB(CORTN)`, `KM10.COBLIB(STANDARD)` and `KM10.J(COLIB)`. `KM10.COMAIN` is **absent** from the preserved archive (UNVERIFIED full implementation). The surviving `km10/comacro` `COBASE` DSECT includes `COFATHER`, `COPSAVE`, `COLBASE`, `COLEND`, `COSTKLIM`, `COENTRY`, `COHOLD` and `COSTART` (SOURCE-OBSERVED). Historical `km10/coblib/cortn` uses stack-related globals `107..109` and private coroutine save-area references; `km10/j/colib` includes that BLIB variant. These findings establish a historical native variant, **not** interchangeability with reconstructed MR10 descriptors or callable names.
+
+The historical MR10 interpreter source `richards-bcpltape/mr10/bcplkit/icint` defines the relevant `X32` P/C-transfer operation; `mr10-kit-compiler/asm/icintv19.asm` is the reconstructed execution substrate. The project repair changes canonical `ICLIB` and `coroutines.bcpl`, **not** the INTCODE instruction set.
+
+## Existing positive oracles and reproducible recipe
+
+**Canonical-default panel:** with Git `main` at `226201834fe205139ef259338bfd8ff508bd8930`, `tools/mr10/run-regression-panel --verbose` (no `--iclib`, no `--module-override`) produced **12/12 PASS, RC=0**, JOBS **5272–5283**, **142/142 JES steps RC=0000**, all 12 final RUN `CODE=0`, and matched unchanged panel goldens. See [canonical panel review](co0-canonical-default-mr10-jes-5272-5283-acceptance-review-20261111.md). Its `coroutines/basic-coroutine` oracle is `RP: COROUTINE 77 1` (JOB 5283).
+
+**Five development probes:** `tools/mr10/run-dev-probes` selects cases from `mr10-kit-compiler/tests/dev-probes-manifest.tsv`. The existing five `10-coroutines/` cases have owner-accepted evidence under JOBS **5223–5227**, including four compiler-artifact token comparisons. Those jobs **preceded the canonical repair**; the original fixed-stack probe uses a different synthetic startup scheme. A repaired **candidate** fixed-stack variant passed JOB **5240**. Do not silently equate the previously accepted unmodified fixed-stack test with the repaired canonical library, or assert that all five have been rerun post-promotion.
+
+**Additional candidate positive paths:** JOB **5238** verified distinct continuation ordering, JOB **5244** the RESUMECO parent chain, JOB **5246** create/delete/recreation; the candidate-aware full panel passed 12/12. Their target was the candidate pair. They support, but do not replace, canonical-default checks.
+
+To reproduce the established canonical panel, use `tools/mr10/run-regression-panel --verbose`, retain a complete report and each `tools/mvs/job-summary JOBID`. For research probes, use the documented `run-dev-probes` commands and preserve distinct source revisions and output oracle identities. No new JES submission is requested by this document.
+
+## Open-question ledger (not concealed assumptions)
+
+| ID | Question / decision needed | Evidence gap and proposed gate |
+| --- | --- | --- |
+| CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | Inspect the exact original MR10 opcode semantics, ICINT19 assembly, and existing compiler-probe/frame-layout saved OCODE/INTCODE; source-derived static trace before accepting exact intermediate state. |
+| CO0-U02 | Compatibility of all five development probes with the **promoted** pair | Existing five-probe acceptance was pre-repair; corrected fixed-stack probe is separate. Plan a post-promotion bounded set and classify any changed or incompatible oracle explicitly. |
+| CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | Source shows the parent cleared before rejection. Write an isolated negative-path BCPL case and decide if a correction is required; test under ICINT19 before any native design. |
+| CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | Negative tests and policy for rejectable valid descriptors versus unrecoverable bad addresses; avoid claiming safe arbitrary-pointer inspection. |
+| CO0-U05 | Natural worker return and repeated activation | Trace `COBOOT` and test repeated return/re-entry and cleanup or exhaustion; do not infer automatic coroutine destruction. |
+| CO0-U06 | Allocation bounds, SIZE validity, stack overruns and cleanup | Define defensible interpreted negative cases first; CO.1 must independently design native stack guards and lifecycle. |
+| CO0-U07 | Recover historical `KM10.COMAIN` and complete original callable interface | Missing archive member; continue targeted source/document search, but owner-approved engineering direction does **not** require exhaustive recovery before implementation. |
+| CO0-U08 | Equivalent **interpreted/native** behavior oracles | Prepare common BCPL tests for yield/resume/value, parent-chain transfer, first activation, nested locals, return/re-entry and deletion, with documented global/header mapping. Native tests and all native outcomes remain UNVERIFIED. |
+| CO0-U09 | Select native ownership, global numbers and descriptor/stack ABI | Reserve for CO.1 owner review against runtime contract, registry, CG370, MVS IFOX/IEWL/GO evidence. Nothing in this document allocates globals or approves the native architecture. |
+
+## Proposed acceptance boundary
+
+This ledger supplies a **reviewable behavior table, source provenance, interpreted reproduction recipe and explicit unknowns**, meeting the *documentation shape* required by the CO.0 gate. It is **not** a declaration that every checkbox in `coroutine-research-and-design-gates.md` has been proved; especially U01/U02/U03/U04/U08 remain open. An owner decision is required for acceptance/closure, and CO.1 remains NOT STARTED.
+
+**No code changes, resident MVS dataset changes, JES submissions, native ABI decisions, canonical golden revisions or march closure are authorized by this review draft.**
