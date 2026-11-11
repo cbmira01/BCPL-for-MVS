@@ -28,11 +28,11 @@
 // the coroutine regression suite.
 //
 // Coroutine descriptor:
-//     C!0 = saved P
+//     C!0 = saved CHANGECO call-frame pointer
 //     C!1 = parent coroutine, or 0 when inactive
 //     C!2 = COLIST link
 //
-// The synthetic MR10 startup frame begins at P=C+3:
+// Synthetic startup frame begins at P=C+3; P!0=P, P!1=COBOOT:
 //     P!2 = FN
 //     P!3 = SIZE
 //     P!4 = C
@@ -52,7 +52,12 @@ RESUMECO:95
 $)
 
 // --- Implementation ---
-LET CALLCO(CPTR, A) = VALOF
+// Entered at the explicit first-activation continuation.
+LET COBOOT(FN, SIZE, C) = VALOF
+$( C := FN(COWAIT(C)) REPEAT
+$)
+
+AND CALLCO(CPTR, A) = VALOF
 $( IF CPTR!1 \= 0 RESULTIS -999
    CPTR!1 := CURRCO
    RESULTIS CHANGECO(A, CPTR)
@@ -84,17 +89,15 @@ $( LET C = GETVEC(SIZE+9)
    C!1 := CURRCO
    C!2 := COLIST
 
-   P!0 := 0
-   P!1 := 0
+   P!0 := P
+   P!1 := COBOOT
    P!2 := FN
    P!3 := SIZE
    P!4 := C
 
    COLIST := C
 
-   CHANGECO(0, C)
-
-   C := FN(COWAIT(C)) REPEAT
+   RESULTIS CHANGECO(0, C)
 $)
 
 AND DELETECO(C) = VALOF
