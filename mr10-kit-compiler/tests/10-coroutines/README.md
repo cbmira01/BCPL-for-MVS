@@ -122,10 +122,20 @@ available for separately authorized operator execution:
   producer/consumer source with `SOURCE(ICLIBC)`; the accepted
   `T10FIXED` source and output remain unchanged.
 
-**Expected, not observed:** `STAGEDWAIT RETURNED 27` should occur
-after `ROOT B1 201`. The fixed-stack probe should match the existing
-ten-line golden output exactly. Check all JES steps, seven interpreted
-codes (CO0CAND), three interpreted codes (CO0FSTK), actual trace order,
-and generated INTCODE before any acceptance. Do not include either
-candidate in regression manifests or switch canonical module mappings
-until separately approved.
+**Observed in JOBS 5238/5240:** `STAGEDWAIT RETURNED 27` occurred
+after `ROOT B1 201`; the fixed-stack test matched the existing
+ten-line golden. All 24 JES steps returned RC=0000 and all ten
+interpreted phases returned CODE=0. See the [CO.0 MVS candidate
+evidence review](../../../packaging/milestones/coroutines/co0-mr10-iclib-repair-candidate-jes-5238-5240-review-20261111.md).
+These are positive, operator-reported candidate observations, not
+canonical acceptance. Generated OCODE/INTCODE are not yet independently
+archived.
+
+The additional separate `MR10_JCL(CO0CHAIN)` and
+`MR10_JCL(CO0REUS)` decks target unchanged `TESTS(T10CHAIN)`
+and `TESTS(T10CRDEL)`, respectively. Each builds with candidate
+`SOURCE(ICLIBC)` and `LIBRARY(COCAND)`, plus original GETVEC.
+Compare complete records to the existing `.expected` files.
+Neither job has been executed; both require separate MVS authorization.
+Do not add candidate tests to accepted manifests or switch canonical
+module mappings until the broader regression and owner gates pass.

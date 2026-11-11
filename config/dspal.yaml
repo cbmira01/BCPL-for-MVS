@@ -105,6 +105,8 @@ datasets:
       MRLANGDM: mr10-kit-compiler/jcl/run-language-demos.jcl
       MRREGRES: mr10-kit-compiler/jcl/run-regression-tests.jcl
       CO0CAND: mr10-kit-compiler/jcl/co0-iclib-repair-candidate.jcl
+      CO0CHAIN: mr10-kit-compiler/jcl/co0-resumeco-chain-candidate.jcl
+      CO0REUS: mr10-kit-compiler/jcl/co0-create-delete-reuse-candidate.jcl
       CO0FSTK: mr10-kit-compiler/jcl/co0-fixed-stack-candidate.jcl
       CO0TRACE: mr10-kit-compiler/jcl/co0-continuation-divergence.jcl
 

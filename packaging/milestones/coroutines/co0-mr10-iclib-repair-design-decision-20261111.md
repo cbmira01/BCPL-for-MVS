@@ -104,3 +104,16 @@ test fixtures before an MVS-verified candidate review.**
 **Disposition:** repair direction approved; candidate not accepted.
 CO.0 IN PROGRESS; CO.1–CO.5 NOT STARTED. No native System/370
 coroutine implementation is approved by this MR10 decision.
+
+## 11 November candidate evidence checkpoint — NOT CANONICAL ACCEPTANCE
+
+The [separate MVS candidate review](co0-mr10-iclib-repair-candidate-jes-5238-5240-review-20261111.md)
+records JOBS 5238 and 5240: 24/24 JES RC=0000 and 10/10
+interpreted CODE=0, with corrected suspension ordering and
+the accepted fixed-stack output reproduced. Both are **positive
+candidate observations**, not approval to replace canonical ICLIB.
+`CO0CHAIN` and `CO0REUS` are newly prepared for unchanged
+parent-chain and create/delete/reuse scenarios; broader MR10
+candidate-mode regression remains outstanding.
+
+**Disposition unchanged:** CO.0 IN PROGRESS; no canonical promotion.
