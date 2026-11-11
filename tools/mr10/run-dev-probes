@@ -238,6 +238,22 @@ def expected_jes_steps(ident: str) -> list[tuple[str, str]]:
     steps.append(("RUN", "RUNMOD"))
     return steps
 
+def verify_jes_output_records(lines: list[str], expected: tuple[str, ...]) -> None:
+    """Check JES output multiplicity and order, including repeated records."""
+    positions = {}
+    for record in dict.fromkeys(expected):
+        matches = [i for i, line in enumerate(lines) if line == record]
+        count = expected.count(record)
+        if len(matches) != count:
+            raise ProbeError(
+                f"accepted output {record!r} occurs {len(matches)} time(s) "
+                f"in JES report; expected {count}")
+        positions[record] = iter(matches)
+    ordered = [next(positions[record]) for record in expected]
+    if ordered != sorted(ordered):
+        raise ProbeError("accepted output records out of order in JES report")
+
+
 def verify_jes_steps(job_id: str, expected_name: str, folder: Path,
                      ident: str = ACCEPTED_CASE) -> dict:
     """Require exact job identity, zero RCs and interpreted phase completions."""
@@ -282,15 +298,9 @@ def verify_jes_steps(job_id: str, expected_name: str, folder: Path,
     if codes != expected_codes:
         raise ProbeError(f"JES compiler, generator and RUN CODEs not {expected_codes}: {codes!r}")
     lines = [line.strip() for line in report_text.splitlines()]
-    positions = []
-    for record in (EXTRAS.TRACE[ident] if ident in EXTRAS.ACCEPTED_COROUTINES
-                   else TRACE[ident]):
-        matches = [i for i, line in enumerate(lines) if line == record]
-        if len(matches) != 1:
-            raise ProbeError(f"accepted output {record!r} absent or duplicated in JES report")
-        positions.append(matches[0])
-    if positions != sorted(positions):
-        raise ProbeError("accepted output records out of order in JES report")
+    expected_records = (EXTRAS.TRACE[ident] if ident in EXTRAS.ACCEPTED_COROUTINES
+                        else TRACE[ident])
+    verify_jes_output_records(lines, expected_records)
     return {
         "jes_step_codes": [{"step": step, "program": pgm, "rc": 0}
                            for step, pgm in expected_jes_steps(ident)],

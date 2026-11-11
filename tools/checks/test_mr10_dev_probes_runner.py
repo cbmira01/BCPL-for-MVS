@@ -310,6 +310,31 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
             self.assertTrue((self.root / item["jes_summary"]).is_file())
             self.assertTrue((self.root / item["jes_report"]).is_file())
 
+    def test_repeated_jes_output_requires_exact_count_and_order(self):
+        expected = MOD.EXTRAS.TRACE["10-coroutines/create-delete-static-pool"]
+        records = list(expected)
+        MOD.verify_jes_output_records(records, expected)
+
+        fewer = records.copy()
+        fewer.remove("LIST COUNT 2")
+        with self.assertRaisesRegex(MOD.ProbeError, "expected 2"):
+            MOD.verify_jes_output_records(fewer, expected)
+
+        extra = records + ["LIST COUNT 2"]
+        with self.assertRaisesRegex(MOD.ProbeError, "expected 2"):
+            MOD.verify_jes_output_records(extra, expected)
+
+        reordered = records.copy()
+        reordered[3], reordered[4] = reordered[4], reordered[3]
+        with self.assertRaisesRegex(MOD.ProbeError, "out of order"):
+            MOD.verify_jes_output_records(reordered, expected)
+
+    def test_unique_jes_output_still_requires_exact_one(self):
+        expected = MOD.EXTRAS.TRACE["10-coroutines/resumeco-chain"]
+        MOD.verify_jes_output_records(list(expected), expected)
+        with self.assertRaisesRegex(MOD.ProbeError, "expected 1"):
+            MOD.verify_jes_output_records(list(expected) + [expected[0]], expected)
+
     def test_coroutine_extra_output_rejected(self):
         with patch.dict(os.environ, {"PROBE_EXTRA_LINE": "1"}):
             rc, _, _ = self.cli("--run", "--case",
