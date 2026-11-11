@@ -263,3 +263,9 @@ Accepted interpreted evidence remains JES jobs 5223–5227, 62/62 zero-RC JES st
 5. **Medium:** Continue targeted KM10 and period-literature comparison only when it affects native calling, startup, stack/guard, lifecycle or diagnostics. KM10.COMAIN remains missing, and general historical MLIB reconstruction is out of scope.
 
 **Disposition:** CO.0 **IN PROGRESS**; CO.1–CO.5 **NOT STARTED**. This research addendum does not change runtime, ABI, native globals, tests, JCL, MVS datasets, milestone status or existing acceptance records.
+
+## 8. CO.0 JOB 5231 continuation-divergence observation
+
+The [CO.0 JOB 5231 evidence review](co0-changeco-continuation-divergence-jes-5231-review-20261111.md) reports 14/14 JES steps RC=0000, seven interpreted phases CODE=0, but an **observable continuation-ordering failure**: STAGEDWAIT RETURNED 201 appears before ROOT B1 201 rather than on resumption with 27. SOURCE-OBSERVED ICLIB restores an incoming P but dispatches through shared G!10 holding the *outgoing* continuation. This is a strongly supported causal INFERENCE, pending inspection of JOB 5231's SVINMAIN/SVOCMAIN records and P/C transitions.
+
+A **candidate**, not approved, corrected behavioral invariant requires restoring each coroutine's own saved frame **and** its own saved continuation. No historical KM10 defect or native ABI choice is implied. The five accepted MR10 positive probes remain valid within their oracles. CO.0 **IN PROGRESS**; CO.1–CO.5 **NOT STARTED**.

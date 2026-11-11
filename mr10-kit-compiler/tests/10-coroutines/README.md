@@ -82,3 +82,13 @@ mr10-kit-compiler/jcl/co0-continuation-divergence.jcl`; then submit with
 **not** a record of executed work. Preserve JES reports and both saved
 compiler artifacts; this probe is excluded from all regression manifests
 until independently verified and owner accepted.
+
+### JOB 5231 observed — continuation ordering not correct
+
+The operator's 11 November 2026 CO0TRACE run returned 14 zero-RC JES
+steps and seven interpreted CODE=0 phases. Nevertheless, it printed
+STAGEDWAIT RETURNED 201 **before** ROOT B1 201: post-CHANGECO code
+executed while the caller should have been suspended. See the
+[CO.0 evidence review](../../../packaging/milestones/coroutines/co0-changeco-continuation-divergence-jes-5231-review-20261111.md).
+Exact SVINMAIN/SVOCMAIN records remain pending inspection. This
+experimental probe is **not accepted** and is not in any regression manifest.

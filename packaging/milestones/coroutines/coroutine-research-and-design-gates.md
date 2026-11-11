@@ -28,6 +28,14 @@ The historical `BCPLIB.JCL(MAKEOBJ)` and `BCPLIB.JCL(MAKELIB)` show a monolithic
 
 **Status:** This is owner-approved research direction, not acceptance of a native descriptor, global assignment, test oracle or implementation. CO.0 remains **IN PROGRESS**; CO.1–CO.5 remain **NOT STARTED**.
 
+**11 November CO.0 observation:** The separate [JOB 5231
+continuation-divergence review](co0-changeco-continuation-divergence-jes-5231-review-20261111.md)
+records a zero-RC / zero-CODE run with an incorrect post-CHANGECO
+execution order. This interpreted counterexample limits the known MR10
+switching contract; the saved INTCODE listing is not yet independently
+reviewed. A correct *candidate* contract saves each coroutine's own
+frame and continuation, subject to later owner design review.
+
 ## Evidence already in Git
 
 | Area | Established source observation | Research still open |
