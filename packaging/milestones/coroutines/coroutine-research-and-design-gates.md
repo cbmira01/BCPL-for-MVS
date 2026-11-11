@@ -4,7 +4,7 @@
 **Recorded:** 10 November 2026  
 **Status:** OPEN; CO.0 IN PROGRESS, research and approval goals, not native implementation evidence
 
-**Five-probe execution checkpoint:** [11 November JES summary review](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC steps, and 23 zero interpreted phase codes reported by the runner; detailed report/artifact audit and formal acceptance are still open.
+**Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. Formal independent golden acceptance remains open; these are interpreted, not native, tests.
 
 **Five-probe verification plan:** [CO.0 MR10 coroutine development-probe procedure](co0-mr10-coroutine-probe-verification-plan-20261110.md) records runner selection, candidate oracle and required JES evidence; no new probe execution or acceptance is claimed.
 

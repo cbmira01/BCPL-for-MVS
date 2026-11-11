@@ -3,7 +3,7 @@
 **Milestone:** [Implement coroutine support for native compiler](milestone-implement-coroutine-support-for-native-compiler.md)  
 **March:** CO.0 — Historical Research and Behavioral Contract  
 **Recorded:** 11 November 2026 (UTC)  
-**Status:** **Five OBSERVED; JES summary review complete; full artifact/output review pending.** Not an accepted test promotion or march closure.
+**Status:** **Five OBSERVED; JES summary and second-pass extracted outputs/artifact comparisons reviewed.** Formal acceptance and raw artifact archival remain pending; not a march closure.
 
 ## Evidence provenance
 
@@ -35,10 +35,98 @@ The supplied `summary.json` was parsed independently and checked against the fiv
 
 The first two `START` programs do not invoke `CHANGECO` at runtime; they test the compiler output structure, not switching. The other three are reconstructed MR10 positive-path exercises and are not the missing historical KM10 native coroutine implementation.
 
+## Second-pass operator extraction: program records and compiler artifacts (11 November)
+
+The operator ran the read-only Python extraction on the original WSL `workarea/` receipts after updating to Git `3001bb6c89ed986d8a1b7d9f6dce72e6c87a0677`; checkout and host-only manifest check both returned RC=0. The extraction program read each local `*-jes-report.txt`, isolated the final INTCODE run, printed non-metadata program records and compared the four newly generated compiler artifacts with the historical files using whitespace-token equality.
+
+**Result:** `Evidence extraction errors: 0`; **extraction RC=0**. The 23 interpreted phase completion codes reported from the detailed JES files were all zero and agreed with `summary.json`. These results are grounded in the operator's printed extraction results, **not** direct byte-level access to files in the operator's WSL environment.
+
+### Exact extracted final program output
+
+**JES 5223 — `compiler-probe`**
+
+```text
+COROUTINE COMPILER PROBE COMPILED
+```
+
+**JES 5224 — `frame-layout-probe`**
+
+```text
+COROUTINE FRAME PROBE COMPILED
+```
+
+**JES 5225 — `fixed-stack-producer-consumer`**
+
+```text
+PRODUCER: 1
+CONSUMER: 1
+PRODUCER: 2
+CONSUMER: 2
+PRODUCER: 3
+CONSUMER: 3
+PRODUCER: 4
+CONSUMER: 4
+PRODUCER: 5
+CONSUMER: 5
+```
+
+**JES 5226 — `resumeco-chain`**
+
+```text
+A START
+B START WITH 111
+ROOT GOT 222
+A RESUMED WITH 333
+ROOT GOT 444
+B RESUMED WITH 555
+ROOT GOT 666
+```
+
+**JES 5227 — `create-delete-static-pool`**
+
+```text
+CREATED 2
+LIST COUNT 3
+A RETURNED 11
+B RETURNED 21
+DELETED A
+LIST COUNT 2
+DELETED B
+LIST COUNT 1
+C RETURNED 31
+LIST COUNT 2
+DELETED C
+FINAL LIST COUNT 1
+```
+
+All five extracted sequences were independently compared against the **source-derived** candidate traces in `tools/mr10/dev_probe_extras.py` and matched exactly. In addition, the operator's local comparison returned `True` for **four of four** pairs:
+
+- `compiler-probe.ocode` versus `tests/10-coroutines/evidence/compiler-probe.ocode`
+- `compiler-probe.intcode` versus `tests/10-coroutines/evidence/compiler-probe.intcode`
+- `frame-layout-probe.ocode` versus `tests/10-coroutines/evidence/frame-layout-probe.ocode`
+- `frame-layout-probe.intcode` versus `tests/10-coroutines/evidence/frame-layout-probe.intcode`
+
+The two compilation-only probe entries were **not executed** as coroutine switches; their reported output and artifact matches verify generation/structure only. The three actual coroutine exercises verify the specific positive-path behaviors above under reconstructed MR10 ICINT19, not the original missing KM10 native runtime.
+
+### Evidence classification and acceptance boundary
+
+| Aspect | Current evidence classification |
+| --- | --- |
+| JES job identities, step/program sequences, RCs | Operator-provided JES summary **independently cross-checked** (62/62 zero) |
+| Interpreted phases | **Interpreted-MVS-tested**: operator extraction of local full JES reports gives 23/23 zero codes; printed results reviewed |
+| Program-visible outputs | **Interpreted-MVS-tested**: five extracted sequences match the source-derived candidate expectations |
+| Compiler artifact structure | **Interpreted-MVS-tested**, operator-comparison attested: 4/4 fresh files token-match checked-in evidence |
+| Formal new golden baselines / manifest status | **UNVERIFIED**; no separate owner acceptance or manifest promotion |
+| Historical KM10 native ABI / full failure-path behavior | **UNVERIFIED**; not covered by these five probes |
+
+This second extraction closes the specific *missing program-output/phase/artifact-comparison transcript* gap from the initial JES-summary-only review. It does **not** mean the original raw reports and artifact bytes have been copied into this Git record, or prove that the source-derived oracles are independently authoritative historical specifications. **Owner review of proposed golden-output acceptance and any manifest promotion is still required.**
+
+No new jobs were submitted for this read-only extraction. No code, manifest, test identities, MVS dataset or historical source was changed as part of the evidence review.
+
 ## Acceptance boundary and next evidence
 
 The provided JES summaries independently establish job identities, all named step/program/RC sequences, and successful overall JES dispositions. The supplied `summary.json` supports the runner's provisional `OBSERVED` results. They **do not independently establish** complete program-visible outputs, detailed interpreter `CODE=` records, unexpected diagnostics, or fresh generated OCODE/INTCODE versus archived evidence.
 
-**Still needed for a full independent review:** all five original `*-jes-report.txt` files (or their program-visible and relevant phase excerpts), and the two compiler probe pairs of fresh OCODE/INTCODE files, alongside checked-in source evidence. Review any failures or differences before proposing new accepted golden fixtures or changing the manifest.
+**11 November second-pass update:** The operator supplied the program-visible final records, interpreted CODE arrays extracted from all five full JES reports, and true/false token comparisons against all four compiler artifacts. All matched; see the second-pass section above. Original complete files remain in the operator's WSL `workarea/`, not this repository. Independent historical-oracle authority, broader negative-path testing and explicit owner approval of any accepted golden fixtures/manifest changes remain open.
 
 **Disposition:** Keep all five `UNVERIFIED` in `mr10-kit-compiler/tests/dev-probes-manifest.tsv`. CO.0 remains **IN PROGRESS**; CO.1–CO.5 remain **NOT STARTED**. No native code, existing test contract, JES job, or MVS dataset was modified in this Git evidence record.
