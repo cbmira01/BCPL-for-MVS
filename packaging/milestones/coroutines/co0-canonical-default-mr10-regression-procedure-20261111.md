@@ -16,9 +16,9 @@ Run from the project repository root after updating GitHub `main` to the exact p
 
 1. `git pull --ff-only origin main` and verify `git rev-parse HEAD` matches the current published commit.
 2. `git diff --check HEAD~5 HEAD`; require RC=0.
-3. `python3 -B -m unittest discover -s tools/checks -p 'test_mr10_canonical_coroutine_promotion.py' -v`; require two passing tests and RC=0.
+3. `python3 -B -m unittest discover -s tools/checks -p 'test_mr10_canonical_coroutine_promotion.py' -v`; require three passing tests (including real canonical ICLIB JCL-deck generation) and RC=0.
 4. `python3 -B -m unittest discover -s tools/checks -p 'test_mr10_candidate_selection.py' -v`; require six passing tests and RC=0.
-5. With separately approved MVS/JES execution, `tools/mr10/run-regression-panel --verbose`; capture all case results, `JOB` IDs, final interpreted `CODE`, runner RC and MVS JES reports.
+5. With separately approved MVS/JES execution, `tools/mr10/run-regression-panel --verbose`; capture the full `--verbose` transcript in a unique `workarea/` log, preserving the pipeline's runner RC with Bash `PIPESTATUS[0]`. Extract each printed `JOB` ID and run `tools/mvs/job-summary` for every reported payload on success or failure; retain the full printer data and avoid inferring missing IDs.
 6. On any failure or BLOCKED outcome, preserve the printer evidence and do not claim acceptance. On 12/12 PASS with runner RC=0, record the output for review. No resident `MR10KIT.SOURCE(ICLIB)` or `MR10KIT.LIBRARY(COROUTIN)` overwrite is authorized by this procedure.
 
 ## Acceptance boundaries
