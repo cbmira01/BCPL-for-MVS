@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** CO.0 — Historical Research and Behavioral Contract (IN PROGRESS)  
 **Checkpoint:** GitHub main at `723c3887b3b732dfa457c169c82e9849b9400b24`  
-**Evidence level:** SOURCE-OBSERVED and partial INTERPRETED-MVS-TESTED; one legacy startup incompatibility unresolved
+**Evidence level:** SOURCE-OBSERVED and INTERPRETED-MVS-TESTED for bounded MR10 behavior; U02 resolved with qualification
 
 ## U01 — What the original interpreter actually does
 
@@ -143,3 +143,97 @@ five passing original cases.
 
 No permanent MVS dataset updates, manifest changes, or native ABI
 decisions are authorized by this plan. CO.0 remains IN PROGRESS.
+
+## 12 November 2026 — U02 disposition after JOB 5321
+
+**Disposition: RESOLVED WITH QUALIFICATION (INTERPRETED-MVS-TESTED).**
+At GitHub `main` HEAD `ee6849ec367574e733a391734aff249060878f21`,
+the existing isolated `fixed-stack-co0-candidate.bcpl` was run
+through the default canonical `iclib.int` and ICINT19 without a
+library override.
+
+- **JOB 5321 (BCFIXEDS)** completed with ten expected alternating
+  producer/consumer records, from `PRODUCER: 1` through
+  `CONSUMER: 5`, in exact accepted-golden order.
+- Final interpreted `EXECUTION CYCLES = 5442, CODE = 0`.
+- `tools/mr10/compile-and-run --results` returned RC=0.
+- Independent operator `tools/mvs/job-summary 5321` returned RC=0,
+  `JOB RESULT: SUCCESS`, highest RC=0000; all **10/10 JES
+  steps** (ASM, LKED, STGSYNI, STGTRNI, STGCGI, STGBLIB,
+  STGICLIB, COMP, CG, RUN) returned RC=0000.
+- Operator evidence:
+  `workarea/co0-fixed-stack-compatibility/20261112T005134Z.log`;
+  JES JOB 5321 summary was supplied separately.
+
+This acceptance does **not** convert the unmodified legacy test
+(JOB 5318, interpreted CODE=-1) into PASS. Four of five original
+accepted cases passed under the promoted implementation. The distinct
+COBOOT-style fixed-stack candidate passed independently and preserved
+the old golden. Original test identities, source, golden and manifest
+are unchanged; the five-case runner still fails if all five originals
+are selected. The compatibility qualification must be carried into
+subsequent suite acceptance and must be explicitly resolved before
+claiming an unqualified full-project regression PASS. No native
+System/370 coroutine execution is implied.
+
+## U01 — explicit bridge token trace and archived compiler call artifacts
+
+**Classification: SOURCE-OBSERVED and host-only symbolic check;
+not a new MVS trace.** Original MR10 `ICINT` defines load (F0)
+as `B:=A; A:=D`, store (F1) as `!D:=A`, add (F2) as
+`A:=A+D`, jump (F3) as `C:=D`, `X1` as
+`A:=!A`, and `X32` as `P,C:=A,B`.
+ICINT19 implements the same relevant `X32` transfer.
+
+Let incoming `CHANGECO(value,target)` enter at interpreter frame
+`P=p` with `p!2=value`, `p!3=target`,
+`G!7=outgoing`, `outgoing!0` writable, and
+`target!0=q` referring to a valid saved frame with
+`q!0=resumeP`, `q!1=resumeC`.
+The canonical bridge at global 6 executes:
+
+| INTCODE token | Relevant effect |
+| --- | --- |
+| `LIP2 SG9` | Save `value` into scratch `G!9`. |
+| `LP0 SIG7` | Save outgoing **CHANGECO call-frame** `p` into `outgoing!0`. |
+| `LIP3 SG7` | Select `target` as new `G!7` (current descriptor). |
+| `LIG7 X1 A1 X1 SG10` | Read `q=target!0`, then `q!1`; save `resumeC` in scratch `G!10`. |
+| `LL498 LIG7 X1 X1 X32` | Load incoming `resumeP=q!0` into interpreter A while B still holds the **common bridge label 498**, then `X32` assigns `P=resumeP`, `C=498`. |
+| `498 LIG9 JIG10` | Reload transfer `value` into A, then branch to saved `resumeC=G!10`. |
+
+**Important ordering distinction:** `X32` does **not** branch
+directly to `resumeC`. It installs the incoming P and branches
+to common label 498. The subsequent `JIG10` jumps to the saved
+per-coroutine continuation. G!10 is scratch for this bounded,
+non-preemptive sequence, not the descriptor's persistent
+continuation slot.
+
+The archived compiler-only `compiler-probe.ocode` has
+`LP 2 LP 3 LG 6 FNAP 4` and its INTCODE has
+`LIP2 SP6 LIP3 SP7 LIG6 K4 X4`, showing two explicit
+arguments supplied in source order, `VALUE` then `CPTR`.
+The second compiler call is also present in its INTCODE.
+The separate archived `frame-layout-probe` contains
+`LG 6 RTAP 5` and `LIG6 K5` for its three-argument
+probe; that frame lays out `FN`, `SIZE`, `C`
+at P!2, P!3 and P!4 of the synthetic first-activation
+frame documented by the probe. The candidate library's
+`COBOOT` is the explicit entry continuation.
+
+**Host-side verification:** A constrained symbolic executor
+checked all 18 bridge tokens against a two-descriptor,
+two-frame example and asserted outgoing saved frame,
+incoming current descriptor, value scratch, continuation
+scratch, label-498 landing, and final resumed continuation
+and value. The model is source-level evidence only;
+it is not an ICINT19/JES execution. The existing MVS
+evidence for distinct continuation and parent/value
+semantics remains JOBS 5238, 5299–5300, 5312 and 5321.
+
+**Remaining U01 gate:** independently inspect full saved
+compiler-generated OCODE/INTCODE with their exact labels,
+and correlate first-activation entry, outgoing return frame
+and per-context nested locals with a bounded MVS execution
+trace before declaring U01 completely resolved. The
+trace above is sufficient to identify the correct
+bridge transfer ordering, not a native coroutine ABI.

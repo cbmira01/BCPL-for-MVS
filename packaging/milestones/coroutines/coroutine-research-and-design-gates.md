@@ -4,7 +4,7 @@
 **Recorded:** 10 November 2026  
 **Status:** OPEN; CO.0 IN PROGRESS, research and approval goals, not native implementation evidence
 
-**Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. The owner accepted the five golden contracts on 11 November; these are interpreted, not native, tests. The expanded runner has not yet been re-executed on MVS.
+**Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. The owner accepted the five golden contracts on 11 November; these are interpreted, not native, tests. The expanded runner has since been re-executed on MVS under the promoted canonical implementation: four original probes pass, the legacy fixed-stack source fails (JOB 5318), and the separately retained corrected-frame source passes (JOB 5321). CO0-U02 is resolved with this explicit compatibility qualification, not with an unqualified five-case PASS.
 
 **Five-probe verification plan:** [CO.0 MR10 coroutine development-probe procedure](co0-mr10-coroutine-probe-verification-plan-20261110.md) records runner selection, candidate oracle and required JES evidence; no new probe execution or acceptance is claimed.
 

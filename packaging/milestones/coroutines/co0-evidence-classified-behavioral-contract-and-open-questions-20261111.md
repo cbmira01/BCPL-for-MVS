@@ -50,8 +50,8 @@ To reproduce the established canonical panel, use `tools/mr10/run-regression-pan
 
 | ID | Question / decision needed | Evidence gap and proposed gate |
 | --- | --- | --- |
-| CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | Inspect the exact original MR10 opcode semantics, ICINT19 assembly, and existing compiler-probe/frame-layout saved OCODE/INTCODE; source-derived static trace before accepting exact intermediate state. |
-| CO0-U02 | Compatibility of five development probes after canonical promotion | **OPEN; qualified 4 PASS / 1 FAIL.** JOBS 5316/5317 and the two separately rerun cases passed their unchanged goldens; JOB 5318 legacy fixed-stack returned interpreted CODE=-1 despite all JES RC=0000. The independent corrected-frame source passed earlier candidate JOB 5240; canonical-ICLIB rerun and separate acceptance pending. |
+| CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | **PARTIALLY RESOLVED (SOURCE-OBSERVED + host-only symbolic check):** 18-token canonical bridge traced; P/C transition goes through common label 498, then G!10 continuation. Archived compiler OCODE/INTCODE show argument ordering and frame-slot layout. MVS correlation of intermediate state and nested contexts remains open; no native ABI claim. |
+| CO0-U02 | Compatibility of five development probes after canonical promotion | **RESOLVED WITH QUALIFICATION (INTERPRETED-MVS-TESTED):** four original cases PASS; original legacy fixed-stack JOB 5318 remains FAIL (CODE=-1); separately identified corrected COBOOT-frame candidate JOB 5321 matches all ten expected records, CODE=0, runner RC=0, 10/10 JES RC=0000. Original golden and manifest unchanged; full original five-case runner still FAILS. |
 | CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | **RESOLVED for valid, live descriptors (INTERPRETED-MVS-TESTED).** Pre-repair counterexample JOB 5284; corrected candidate JOBS 5285–5298; promoted canonical JOBS 5299–5312 (14/14 focused and 142/142 panel JES steps RC=0000, all interpreted CODE=0). Invalid/stale pointers remain CO0-U04. |
 | CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | Negative tests and policy for rejectable valid descriptors versus unrecoverable bad addresses; avoid claiming safe arbitrary-pointer inspection. |
 | CO0-U05 | Natural worker return and repeated activation | Trace `COBOOT` and test repeated return/re-entry and cleanup or exhaustion; do not infer automatic coroutine destruction. |
@@ -118,3 +118,21 @@ source/golden must not be silently replaced. See the updated
 [U01/U02 gate note](co0-u01-static-interpreter-transfer-and-u02-five-probe-gate-20261112.md)
 for the separate existing COBOOT-style candidate and the pending
 canonical-default MVS compatibility gate. No native execution claimed.
+
+## 12 November 2026 — U02 acceptance and U01 bridge refinement
+
+The operator's canonical ICINT19 JOB 5321 independently verified the
+corrected-frame fixed-stack candidate: 10/10 expected producer/consumer
+records, interpreted CODE=0, runner RC=0 and all 10 JES steps RC=0000.
+CO0-U02 is therefore **RESOLVED WITH QUALIFICATION**: four unchanged
+original probes PASS; the original fixed-stack source still FAILS at
+JOB 5318; the separate corrected-frame version PASSes at JOB 5321.
+Do not describe this as five original PASSes or silently amend a golden.
+
+CO0-U01 now has a source-derived 18-token canonical ICLIB transfer
+trace validated by a host-only symbolic exercise and archived compiler
+OCODE/INTCODE call patterns. `X32` installs the incoming frame P and
+branches to common label 498, then `JIG10` enters the incoming
+continuation; transfer value is restored through G!9. Correlation with
+observed intermediate MVS state and nested contexts is still open.
+See the [U01/U02 record](co0-u01-static-interpreter-transfer-and-u02-five-probe-gate-20261112.md).
