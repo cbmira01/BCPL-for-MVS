@@ -38,3 +38,25 @@ codes with semantic correctness.
 
 No installation, accepted golden changes, manifest changes,
 native global allocation, or milestone closure.
+
+## JOB 5323 compiler failure and isolated correction
+
+On 12 November 2026 at baseline
+`9d547b2967a8bcabde42505955425aaabb8977ed`,
+JOB **5323 (BCCO0WOR)** compiled unit 1 with interpreted
+`CODE=8`: `SYNTAX ERROR NEAR LINE 45: ERROR IN COMMAND`
+at the candidate source's standalone `ELSE` after an `IF ... DO`.
+The wrapper returned **RC=2**. All 14 JES steps returned
+RC=0000 and the JES summary reported SUCCESS, but these
+do **not** imply that the BCPL source compiled. The
+subsequent invalid INTCODE execution is downstream of the
+compiler failure; no worker-lifecycle evidence was obtained.
+
+The corrected candidate evaluates `DELETECO(CO)` once,
+stores its result in `R`, then uses two independent
+`IF ... DO` commands (one for nonzero, one for zero).
+This follows syntax exercised by accepted MR10 BCPL tests
+and preserves the original positive and negative diagnostic
+messages. Source-only validation checks structural consistency,
+line widths and supported conditional shape; MVS compilation
+and runtime behavior remain **UNVERIFIED** pending rerun.
