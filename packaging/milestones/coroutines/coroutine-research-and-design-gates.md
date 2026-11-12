@@ -170,3 +170,6 @@ CO.1 design, not speculative interpreted stress testing.
 
 
 **12 November CO0-U08 comparison matrix:** [Interpreted-to-native behavioral oracle matrix](co0-u08-interpreted-to-native-oracle-matrix-20261112.md) reconciles JOBS 5331–5333 as **40 exact expected records** across three independent **INTERPRETED-MVS-TESTED** tests, each with 12/12 successful JES steps. This research mapping makes no native ABI decision and claims no native MVS execution; CO.0 remains IN PROGRESS, CO.1–CO.5 NOT STARTED.
+
+
+**12 November CO0-U04 audit and U08 JES recheck:** [Descriptor validation and source-safety audit](co0-u04-descriptor-validation-and-source-safety-audit-20261112.md) records the canonical MR10 dereference-before-membership limitation and separates supported live-descriptor behavior from unsafe null/stale/nonmember experiments. It also records owner rechecks of JOBS 5331–5333: each summary shell RC=0, each 12/12 JES steps RC=0000 (**36/36** total). This is not a new run or native acceptance. CO.0 IN PROGRESS; CO.1–CO.5 NOT STARTED.
