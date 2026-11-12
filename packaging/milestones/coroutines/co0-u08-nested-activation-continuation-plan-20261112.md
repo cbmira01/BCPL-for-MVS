@@ -4,7 +4,7 @@
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.0 — Historical Research and Behavioral Contract (IN PROGRESS)  
 **Source baseline:** `dad7a3573e5751d6810d3ddca3f720f76e252481`  
-**Status:** SOURCE-OBSERVED, HOST-CHECKED; NOT INTERPRETED-MVS-TESTED
+**Status:** INTERPRETED-MVS-TESTED (bounded), JOB 5332; native UNVERIFIED
 
 ## Investigated distinction
 
@@ -23,7 +23,7 @@ both idle descriptors. No MR10 descriptor internals are used in assertions.
 **Candidate:**
 `mr10-kit-compiler/tests/10-coroutines/co0-nested-activation-continuation-candidate.bcpl`
 
-## Predicted output — not accepted MVS evidence
+## Predicted oracle — verified in JOB 5332
 
     LEAF 1 WAIT 33
     ROOT A1 33
@@ -65,5 +65,16 @@ mapping and an independently tested native implementation. MR10 globals
 native registers, stack boundaries, invalid descriptors, exceptional worker
 termination, recursive transfer, or the historical missing `KM10.COMAIN`.
 
-CO.0 remains IN PROGRESS; CO.1–CO.5 NOT STARTED. No accepted golden or
-regression manifest is changed by this candidate.
+CO.0 remains IN PROGRESS; CO.1–CO.5 NOT STARTED. No regression manifest was changed by this acceptance.
+
+
+## 12 November 2026 — JOB 5332 verification and acceptance
+
+**Source revision:** `cc9e4c36d2593e3d0486e9eced5faa8f59d738cf`.
+**Execution:** JOB 5332 (`BCCO0NES`) via canonical installed ICINT19, canonical ICLIB, and separately compiled GETVEC/FREEVEC and COROUTIN BCPL units.
+
+The owner-reported MVS output matched **all 14 expected records in their exact order**, including A/B nested `LEAF` resume values, `MIDDLE` local-variable results, worker results, root yields and both successful `DELETECO` operations. Final interpreter output: `EXECUTION CYCLES = 9017, CODE = 0`; runner RC=0. Preserved operator-local report: `workarea/co0-u08-nested-activation/20261112T162535Z.log` (not committed).
+
+The independent `tools/mvs/job-summary 5332` display reports JOB RESULT SUCCESS, highest RC=0000 and **12/12 JES steps RC=0000** (STGSYNI, STGTRNI, STGCGI, STGBLIB, STGICLIB, COMP01–03, CG01–03 and RUN). CPU 1.02 sec, SRB 0.12 sec, SYSOUT 806 records. No shell RC for the summary command was separately printed, so none is asserted.
+
+**Classification: INTERPRETED-MVS-TESTED for this bounded two-context nested-activation and continuation scenario.** No native System/370 stack, register restoration, global mapping or descriptor layout is established. CO0-U08 native comparability remains open pending CO.1 design and native MVS testing.
