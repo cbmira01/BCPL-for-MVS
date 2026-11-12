@@ -1,0 +1,85 @@
+// CO.0 U08: alternating nested-frame continuation and value oracle.
+// Interpreted MR10 candidate only; no native ABI/global assignment.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+COWAIT:94
+$)
+
+LET LEAF(TAG, BASE) = VALOF
+$( LET SAVED = BASE+3
+   AND RECEIVED = 0
+   WRITEF("LEAF %N WAIT %N*N", TAG, SAVED)
+   RECEIVED := COWAIT(SAVED)
+   WRITEF("LEAF %N GOT %N*N", TAG, RECEIVED)
+   RESULTIS RECEIVED+SAVED
+$)
+
+AND MIDDLE(TAG, BASE) = VALOF
+$( LET ANCHOR = BASE*2
+   AND VALUE = 0
+   VALUE := LEAF(TAG, BASE)
+   WRITEF("MID %N GOT %N*N", TAG, VALUE+ANCHOR)
+   RESULTIS VALUE+ANCHOR
+$)
+
+AND WORKA(ARG) = VALOF
+$( LET VALUE = MIDDLE(1, ARG*10)
+   WRITEF("A RESULT %N*N", VALUE)
+   COWAIT(VALUE+1)
+   RESULTIS 0
+$)
+
+AND WORKB(ARG) = VALOF
+$( LET VALUE = MIDDLE(2, ARG*10)
+   WRITEF("B RESULT %N*N", VALUE)
+   COWAIT(VALUE+1)
+   RESULTIS 0
+$)
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
+   AND A = 0
+   AND B = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 401)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   A := CREATECO(WORKA, 100)
+   IF A = 0 DO
+   $( WRITEF("CREATE A FAILED*N")
+      FINISH
+   $)
+   B := CREATECO(WORKB, 100)
+   IF B = 0 DO
+   $( WRITEF("CREATE B FAILED*N")
+      FINISH
+   $)
+
+   R := CALLCO(A, 3)
+   WRITEF("ROOT A1 %N*N", R)
+   R := CALLCO(B, 4)
+   WRITEF("ROOT B1 %N*N", R)
+   R := CALLCO(A, 7)
+   WRITEF("ROOT A2 %N*N", R)
+   R := CALLCO(B, 8)
+   WRITEF("ROOT B2 %N*N", R)
+
+   R := DELETECO(A)
+   WRITEF("DELETE A %N*N", R)
+   R := DELETECO(B)
+   WRITEF("DELETE B %N*N", R)
+   FINISH
+$)
