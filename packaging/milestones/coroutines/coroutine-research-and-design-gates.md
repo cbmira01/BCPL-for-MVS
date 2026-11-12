@@ -161,3 +161,6 @@ CO.1 design, not speculative interpreted stress testing.
 
 
 **12 November CO0-U08 independent-local oracle:** JOB **5331** (`BCCO0TWO`) matched eight A/B alternating accumulator and ordinary deletion records, interpreted CODE=0 (5138 cycles), runner RC=0, and independently summarized **12/12 JES steps RC=0000**. This is **INTERPRETED-MVS-TESTED** for the bounded two-coroutine sequence only. [U08 acceptance record](co0-u08-two-coroutine-oracle-plan-20261112.md). Native System/370 correspondence, descriptor ABI and native execution remain unverified. No CO.0 closure or CO.1 decision is implied.
+
+
+**12 November CO0-U08 nested-call acceptance:** JOB **5332** (`BCCO0NES`) precisely matched 14 nested A/B `LEAF`/`MIDDLE`/worker/root and deletion records. Final interpreted CODE=0 (9017 cycles), runner RC=0, independent **12/12 JES steps RC=0000**, JOB RESULT SUCCESS. This is **INTERPRETED-MVS-TESTED**, not native execution. In combination with JOB 5331, two distinct U08 behavioral oracles are accepted for subsequent native comparison. [U08 nested-activation record](co0-u08-nested-activation-continuation-plan-20261112.md). Native stack/register/ABI design and equivalence remain open; CO.0 status unchanged.
