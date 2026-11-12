@@ -1,0 +1,55 @@
+// CO.0 U04: bounded valid-descriptor rejection candidate.
+// No stale, freed or arbitrary descriptor is dereferenced.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+RESUMECO:95
+$)
+
+LET WORKER(ARG) = ARG+1
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
+   AND CO = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 401)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   R := DELETECO(0)
+   WRITEF("DELETE NULL %N*N", R)
+
+   R := DELETECO(ROOT)
+   WRITEF("DELETE CURRENT %N*N", R)
+
+   R := CALLCO(ROOT, 17)
+   WRITEF("CALL BUSY ROOT %N*N", R)
+
+   R := RESUMECO(ROOT, 18)
+   WRITEF("RESUME BUSY ROOT %N*N", R)
+   WRITEF("ROOT PARENT %N*N", ROOT!1)
+
+   CO := CREATECO(WORKER, 100)
+   IF CO = 0 DO
+   $( WRITEF("CREATE FAILED*N")
+      FINISH
+   $)
+
+   R := CALLCO(CO, 10)
+   WRITEF("WORKER RESULT %N*N", R)
+
+   R := DELETECO(CO)
+   WRITEF("DELETE WORKER %N*N", R)
+   FINISH
+$)

@@ -60,3 +60,36 @@ and preserves the original positive and negative diagnostic
 messages. Source-only validation checks structural consistency,
 line widths and supported conditional shape; MVS compilation
 and runtime behavior remain **UNVERIFIED** pending rerun.
+
+## JOB 5324 — accepted bounded normal-return/re-entry evidence
+
+On 12 November 2026 with GitHub source revision
+`b6f88b3cdd3b3e634a941b128694122b818fe49d`,
+the corrected candidate ran under canonical ICINT19/ICLIB and the
+separate GETVEC and COROUTIN BCPL modules.
+
+**JOB 5324 (BCCO0WOR)** produced, in order:
+
+    WORKER ENTER 10
+    ROOT GOT 110
+    WORKER ENTER 20
+    ROOT GOT 120
+    DELETE TRUE
+
+The final interpreted run reported **3237 cycles, CODE=0**;
+`compile-and-run --results` returned RC=0. The separate operator
+`tools/mvs/job-summary 5324` returned RC=0,
+`JOB RESULT: SUCCESS`, highest RC=0000 and all
+**14/14 JES steps RC=0000** (ASM, LKED, STGSYNI, STGTRNI,
+STGCGI, STGBLIB, STGICLIB, COMP01, CG01, COMP02, CG02,
+COMP03, CG03, RUN).
+Local operator log:
+`workarea/co0-u05-worker-return/20261112T014222Z.log`.
+
+**Accepted scope: INTERPRETED-MVS-TESTED for this bounded normal
+worker-return/re-entry and deletion path.** The repaired candidate
+does not become an accepted manifest test. JOB 5323 remains a
+failed-compilation historical observation and is not counted as a
+behavioral pass. No conclusion is drawn about exceptional worker
+termination, out-of-memory handling, stale pointers, stack overflow
+or native System/370 lifecycle behavior.

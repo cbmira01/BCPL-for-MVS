@@ -103,3 +103,11 @@ U01's bounded observed behavior is verified, but the precise
 interpreter-cycle trace and native mechanism remain open.
 A new isolated U05 worker-return/re-entry candidate is untested
 and is not part of the accepted five-probe or regression manifest.
+
+
+**12 November U05/U04 update:** Canonical JOB 5324 established
+bounded normal worker return/re-entry and deletion with five
+correct records, CODE=0, runner RC=0 and 14/14 JES RC=0000.
+A separate unaccepted U04 probe now tests null/current
+deletion and busy valid-root rejection with post-test liveness.
+No stale-pointer safety or native coroutine behavior is claimed.
