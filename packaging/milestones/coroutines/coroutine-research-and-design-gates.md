@@ -176,3 +176,6 @@ CO.1 design, not speculative interpreted stress testing.
 
 
 **12 November CO0-U09 design briefing and JOB 5325 JES recheck:** [Source-backed native ownership/descriptor/stack alternatives](co0-u09-native-coroutine-ownership-and-stack-decision-briefing-20261112.md) compares native runtime constraints without allocating globals or approving a descriptor ABI. Owner-rechecked JOB 5325: JOB SUCCESS, **14/14 JES RC=0000**, summary shell RC=0. This recheck does not upgrade interpreted evidence to native acceptance. CO.0 remains IN PROGRESS; CO.1–CO.5 NOT STARTED.
+
+
+**12 November CO0-U09 owner direction and stack-check source audit:** The owner selected **Approach A (opaque-to-client, valid-live pointer descriptors)** for an initial release, with managed generation-aware handles deferred to future research; recorded in [CO0-U09 owner-decision briefing](co0-u09-native-coroutine-ownership-and-stack-decision-briefing-20261112.md). The [stack-check integration investigation](co0-u09-native-coroutine-stack-check-integration-investigation-20261112.md) verifies the current single active BCPLMAIN `STKLIM` path and compares S1 current-bound switching against S2 per-check lookup **without approving either**. Native register/stack/global design stays pending owner review. CO.0 IN PROGRESS; CO.1–CO.5 NOT STARTED.
