@@ -94,3 +94,12 @@ Use the current `tests/README.md` / `tests/suites/*.tsv` suite system and `mr10-
 - `bootstrap-toolchain/{asm/bcplmain.asm,asm/bcplmem.asm,bootstrap-cambridge}`
 - `tests/README.md`, `docs/Rebuild-BCPL-for-MVS-from-source.md`
 - `packaging/operations/{git-mvs-authority,operator-wsl-command-policy}.md`
+
+
+**12 November U01/U05 update:** Canonical JOB 5322 verified nested
+CHANGECO continuations and value transfer with thirteen matching
+records, final CODE=0, 14/14 JES RC=0000 and runner RC=0.
+U01's bounded observed behavior is verified, but the precise
+interpreter-cycle trace and native mechanism remain open.
+A new isolated U05 worker-return/re-entry candidate is untested
+and is not part of the accepted five-probe or regression manifest.

@@ -50,11 +50,11 @@ To reproduce the established canonical panel, use `tools/mr10/run-regression-pan
 
 | ID | Question / decision needed | Evidence gap and proposed gate |
 | --- | --- | --- |
-| CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | **PARTIALLY RESOLVED (SOURCE-OBSERVED + host-only symbolic check):** 18-token canonical bridge traced; P/C transition goes through common label 498, then G!10 continuation. Archived compiler OCODE/INTCODE show argument ordering and frame-slot layout. MVS correlation of intermediate state and nested contexts remains open; no native ABI claim. |
+| CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | **BEHAVIOR VERIFIED; TRACE DETAIL OPEN:** 18-token bridge and archived compiler calls SOURCE-OBSERVED; canonical JOB 5322 verified bounded nested continuation/value ordering (CODE=0, 14/14 JES RC=0000). Intermediate-cycle state and native ABI unverified. |
 | CO0-U02 | Compatibility of five development probes after canonical promotion | **RESOLVED WITH QUALIFICATION (INTERPRETED-MVS-TESTED):** four original cases PASS; original legacy fixed-stack JOB 5318 remains FAIL (CODE=-1); separately identified corrected COBOOT-frame candidate JOB 5321 matches all ten expected records, CODE=0, runner RC=0, 10/10 JES RC=0000. Original golden and manifest unchanged; full original five-case runner still FAILS. |
 | CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | **RESOLVED for valid, live descriptors (INTERPRETED-MVS-TESTED).** Pre-repair counterexample JOB 5284; corrected candidate JOBS 5285–5298; promoted canonical JOBS 5299–5312 (14/14 focused and 142/142 panel JES steps RC=0000, all interpreted CODE=0). Invalid/stale pointers remain CO0-U04. |
 | CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | Negative tests and policy for rejectable valid descriptors versus unrecoverable bad addresses; avoid claiming safe arbitrary-pointer inspection. |
-| CO0-U05 | Natural worker return and repeated activation | Trace `COBOOT` and test repeated return/re-entry and cleanup or exhaustion; do not infer automatic coroutine destruction. |
+| CO0-U05 | Natural worker return and repeated activation | **SOURCE-OBSERVED; TEST PENDING:** COBOOT loops `C := FN(COWAIT(C)) REPEAT`. A separate unaccepted worker-return/re-entry BCPL probe tests two calls and deletion; no MVS claim or automatic-destruction promise. |
 | CO0-U06 | Allocation bounds, SIZE validity, stack overruns and cleanup | Define defensible interpreted negative cases first; CO.1 must independently design native stack guards and lifecycle. |
 | CO0-U07 | Recover historical `KM10.COMAIN` and complete original callable interface | Missing archive member; continue targeted source/document search, but owner-approved engineering direction does **not** require exhaustive recovery before implementation. |
 | CO0-U08 | Equivalent **interpreted/native** behavior oracles | Prepare common BCPL tests for yield/resume/value, parent-chain transfer, first activation, nested locals, return/re-entry and deletion, with documented global/header mapping. Native tests and all native outcomes remain UNVERIFIED. |
@@ -136,3 +136,17 @@ branches to common label 498, then `JIG10` enters the incoming
 continuation; transfer value is restored through G!9. Correlation with
 observed intermediate MVS state and nested contexts is still open.
 See the [U01/U02 record](co0-u01-static-interpreter-transfer-and-u02-five-probe-gate-20261112.md).
+
+## 12 November 2026 — U01 canonical verification and U05 next gate
+
+JOB **5322**, canonical ICINT19/ICLIB, produced thirteen correct
+continuation/value records, **CODE=0**, runner RC=0, and an
+independent **14/14 JES RC=0000** summary. The staged worker
+resumed after the corresponding root event. Thus U01's tested
+continuation behavior is INTERPRETED-MVS-TESTED; complete
+intermediate-state tracing and native execution remain open.
+
+U05 has a distinct candidate
+`mr10-kit-compiler/tests/10-coroutines/co0-worker-return-reentry-candidate.bcpl`.
+Its predicted two worker returns and subsequent deletion are
+UNVERIFIED pending MVS. Neither manifest nor accepted golden changed.

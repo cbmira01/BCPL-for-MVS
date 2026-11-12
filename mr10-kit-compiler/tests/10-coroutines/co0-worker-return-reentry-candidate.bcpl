@@ -1,0 +1,48 @@
+// CO.0 U05: independent worker return and re-entry candidate.
+// Not an accepted golden or historical/native termination contract.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+$)
+
+LET WORKER(ARG) = VALOF
+$( WRITEF("WORKER ENTER %N*N", ARG)
+   RESULTIS ARG+100
+$)
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
+   AND CO = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 401)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   CO := CREATECO(WORKER, 100)
+   IF CO = 0 DO
+   $( WRITEF("CREATE FAILED*N")
+      FINISH
+   $)
+
+   R := CALLCO(CO, 10)
+   WRITEF("ROOT GOT %N*N", R)
+   R := CALLCO(CO, 20)
+   WRITEF("ROOT GOT %N*N", R)
+
+   IF DELETECO(CO) DO
+      WRITEF("DELETE TRUE*N")
+   ELSE
+      WRITEF("DELETE FALSE*N")
+   FINISH
+$)

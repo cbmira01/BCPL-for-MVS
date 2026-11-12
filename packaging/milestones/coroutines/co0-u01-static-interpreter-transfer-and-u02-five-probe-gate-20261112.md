@@ -237,3 +237,35 @@ and per-context nested locals with a bounded MVS execution
 trace before declaring U01 completely resolved. The
 trace above is sufficient to identify the correct
 bridge transfer ordering, not a native coroutine ABI.
+
+## JOB 5322 — promoted canonical continuation MVS evidence
+
+**12 November 2026, source revision `fd1de0fcf549867631dd98b706499c17108b5125`.**
+The unchanged `continuation-divergence.bcpl` was compiled with
+canonical `ICINT19` and `ICLIB` plus `GETVEC` and `COROUTIN`
+BCPL modules; no candidate override was supplied.
+
+JOB **5322 (BCCONTIN)**: fourteen of fourteen JES steps
+(ASM, LKED, STGSYNI, STGTRNI, STGCGI, STGBLIB, STGICLIB,
+COMP01, CG01, COMP02, CG02, COMP03, CG03, RUN) returned RC=0000.
+The independent `job-summary` returned RC=0, highest RC=0000,
+`JOB RESULT: SUCCESS`. Interpreted RUN used **9841 cycles,
+CODE=0**; runner RC=0.
+
+All thirteen output records matched the earlier candidate JOB 5238
+trace. In particular `ROOT B1 201` preceded
+`STAGEDWAIT RETURNED 27`, then `STAGEDLEAF RESUMED 27`,
+`STAGED CALC 228`, `ROOT B2 203`. The normal path preserved
+`NORMALLEAF RESUMED 17` and `NORMAL CALC 118`.
+Numeric G!9/G!10 trace contents are observed scratch values,
+not portable goldens.
+
+Operator-local evidence:
+`workarea/co0-u01-canonical-trace/20261112T005829Z.log`,
+JOB 5322 independent summary.
+
+**CO0-U01:** Canonical continuation ordering and value transfer are
+INTERPRETED-MVS-TESTED for these bounded nested paths. A full
+cycle-by-cycle intermediate-state trace and native System/370
+coroutine behavior are **not** established. The existing experiment
+source remains outside accepted suite manifests.
