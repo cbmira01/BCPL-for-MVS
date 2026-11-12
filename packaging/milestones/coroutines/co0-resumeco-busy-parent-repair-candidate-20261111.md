@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** CO.0 — Historical Research and Behavioral Contract (IN PROGRESS)  
-**Status:** Isolated busy-target path INTERPRETED-MVS-TESTED (JOB 5285); positive path and full candidate panel pending  
+**Status:** JOBS 5284–5298 reviewed; canonical source promoted; post-promotion MVS run pending  
 **Date:** 11 November 2026
 
 ## Accepted pre-repair counterexample
@@ -31,7 +31,7 @@ The original source and probe remain unchanged as the counterexample.
 
 The isolated library at
 mr10-kit-compiler/library/coroutines-co0-busy-parent-candidate.bcpl
-differs from canonical coroutines.bcpl solely by a two-statement reorder
+differed from pre-promotion canonical coroutines.bcpl solely by a reorder
 in RESUMECO: the target occupancy test occurs before clearing CURRCO!1.
 The successful transfer path preserves the canonical CHANGECO call and
 parent propagation. This change does not validate invalid, null, freed,
@@ -126,3 +126,61 @@ Retain the unchanged manifest and expected output files, capture all
 per-job evidence, and seek a separate owner approval before promotion
 to canonical coroutines.bcpl. CO.0 remains IN PROGRESS; CO.1–CO.5
 remain NOT STARTED.
+
+## Positive path and complete panel — JOBS 5286–5298
+
+All evidence is **INTERPRETED-MVS-TESTED**, not native System/370
+BCPL evidence. The operator verified Git HEAD
+`de794d494e7776ef37941794aa7a688400656616` before execution.
+Local operator evidence:
+
+- `workarea/co0-busy-parent-repair/20261112T000341Z-positive.log`
+- `workarea/co0-busy-parent-repair/20261112T000402Z-regression.log`
+- `workarea/co0-busy-parent-repair/jes-5286-5298.log`
+
+**JOB 5286** executed the unchanged `resumeco-chain.bcpl` using the
+isolated busy-parent candidate and canonical ICLIB. All seven expected
+positive-chain program records matched:
+
+    A START
+    B START WITH 111
+    ROOT GOT 222
+    A RESUMED WITH 333
+    ROOT GOT 444
+    B RESUMED WITH 555
+    ROOT GOT 666
+
+Final interpreted CODE=0, runner RC=0, 14/14 JES steps RC=0000,
+and JOB RESULT: SUCCESS.
+
+**JOBS 5287–5298** ran the complete unchanged 12-case MR10 Regression
+Panel with the isolated library selected through `--module-override`.
+Every existing expected program record matched and all final interpreted
+executions returned CODE=0. The panel recorded **12 PASS / 0 FAIL / 12
+TOTAL, RC=0**. The per-JOB JES summaries establish **142/142** steps
+RC=0000, all JOB RESULT: SUCCESS. JOB 5298 specifically exercised the
+candidate, matching `RP: COROUTINE 77 1`.
+
+Combined, JOBS 5284–5298 have **184/184** zero-RC JES steps:
+14 each for 5284–5286 and 142 across JOBS 5287–5298.
+JOB 5284 is the original *defect counterexample*, not evidence that
+its pre-repair state mutation was acceptable.
+
+## Owner-approved canonical source promotion
+
+The owner explicitly approved promoting the isolated `RESUMECO`
+correction after reviewing the negative, positive, and regression
+evidence. The canonical Git source at
+`mr10-kit-compiler/library/coroutines.bcpl` now checks target
+occupancy before clearing `CURRCO!1`; all other instructions and
+public interfaces are unchanged. The isolated candidate, original
+counterexample, regression manifest, and expected outputs remain
+unchanged for provenance.
+
+**This is a Git-source promotion only.** It does not modify resident
+MVS datasets or certify native System/370 coroutine execution.
+A fresh **canonical-default** MR10 regression without
+`--module-override` is still required to confirm the promoted default
+under MVS before recording post-promotion acceptance.
+
+CO.0 remains IN PROGRESS; CO.1–CO.5 remain NOT STARTED.

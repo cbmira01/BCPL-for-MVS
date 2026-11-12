@@ -22,14 +22,15 @@ INTRO = (
 
 
 class BusyTargetRepairTests(unittest.TestCase):
-    def test_only_change_is_check_before_parent_clear(self):
+    def test_promoted_canonical_matches_preserved_candidate(self):
         canonical = CANONICAL.read_text(encoding="ascii")
         candidate = CANDIDATE.read_text(encoding="ascii")
         self.assertTrue(candidate.startswith(INTRO))
-        self.assertEqual(canonical.count(OLD), 1)
-        self.assertEqual(candidate, INTRO + canonical.replace(OLD, NEW, 1))
+        self.assertEqual(canonical.count(OLD), 0)
+        self.assertEqual(canonical.count(NEW), 1)
+        self.assertEqual(candidate, INTRO + canonical)
         self.assertEqual(candidate.count(NEW), 1)
-        self.assertEqual(candidate.count("RESULTIS CHANGECO(A, CPTR)"), 2)
+        self.assertEqual(canonical.count("RESULTIS CHANGECO(A, CPTR)"), 2)
 
     def test_candidate_probe_does_not_repair_parent_itself(self):
         old = COUNTEREXAMPLE.read_text(encoding="ascii")
@@ -50,28 +51,28 @@ class BusyTargetRepairTests(unittest.TestCase):
                         new.index("RESULTIS COWAIT(777)"))
 
     def test_source_records_are_safe_for_80_column_staging(self):
-        for path in (CANDIDATE, REPAIR_PROBE):
+        for path in (CANONICAL, CANDIDATE, REPAIR_PROBE):
             content = path.read_text(encoding="ascii")
             self.assertTrue(content.strip())
             self.assertTrue(all(len(line) <= 80 for line in content.splitlines()))
             self.assertNotIn("\n/*\n", content)
 
-    def test_generated_jcl_uses_candidate_not_canonical(self):
+    def test_generated_jcl_uses_promoted_canonical(self):
         core = runpy.run_path(
             str(ROOT / "tools/mr10/compile-and-run-core.py"),
             run_name="co0_busy_parent_candidate_host_test",
         )
         deck = core["build_deck"](
             interpreter=None,
-            sources=[REPAIR_PROBE, ALLOCATOR, CANDIDATE],
+            sources=[REPAIR_PROBE, ALLOCATOR, CANONICAL],
             job_name="CO0FIX",
             listing="light",
             named_dds=[],
             installed_load="HERC02.BCPL.MR10KIT.LOAD",
         )
-        for path in (REPAIR_PROBE, ALLOCATOR, CANDIDATE):
+        for path in (REPAIR_PROBE, ALLOCATOR, CANONICAL):
             self.assertIn(path.read_text(encoding="ascii"), deck)
-        self.assertNotIn(CANONICAL.read_text(encoding="ascii"), deck)
+        self.assertNotIn(INTRO, deck)
         self.assertIn(NEW, deck)
         self.assertNotIn(OLD, deck)
         for step in (
