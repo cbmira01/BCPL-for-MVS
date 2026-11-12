@@ -158,3 +158,6 @@ CO.1 design, not speculative interpreted stress testing.
 
 
 **12 November U06 negative-SIZE checkpoint:** JOB **5330** (`BCCO0NEG`) matched four guarded refusal/recovery records, interpreted CODE=0, runner RC=0 and independently **14/14 JES steps RC=0000**. This is **INTERPRETED-MVS-TESTED** only for SIZE=-10 and SIZE=-20 followed by normal coroutine execution/deletion. The nearby SIZE=-9..-1 range, arithmetic overflow, stack overflow and native lifecycle/ownership remain unverified. See [U06 negative-SIZE record](co0-u06-negative-size-guard-plan-20261112.md). CO.0 remains IN PROGRESS; no CO.1 approval or native implementation is implied.
+
+
+**12 November CO0-U08 independent-local oracle:** JOB **5331** (`BCCO0TWO`) matched eight A/B alternating accumulator and ordinary deletion records, interpreted CODE=0 (5138 cycles), runner RC=0, and independently summarized **12/12 JES steps RC=0000**. This is **INTERPRETED-MVS-TESTED** for the bounded two-coroutine sequence only. [U08 acceptance record](co0-u08-two-coroutine-oracle-plan-20261112.md). Native System/370 correspondence, descriptor ABI and native execution remain unverified. No CO.0 closure or CO.1 decision is implied.
