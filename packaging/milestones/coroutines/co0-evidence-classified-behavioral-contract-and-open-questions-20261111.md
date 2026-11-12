@@ -253,3 +253,10 @@ JOB **5330** (`BCCO0NEG`) at `40436cbc3f31c8a39426207754d609384b8d7bee` verified
 ## 12 November 2026 — CO0-U08 alternating independent-local oracle accepted
 
 At source revision `3540202e6da809d2cba55b61ea48f7d3638ef195`, JOB **5331** (`BCCO0TWO`) yielded all **eight exact** expected records: A accumulates 101, 103, 106 while B independently accumulates 1010, 1030, 1060, followed by successful deletion of A and B (-1 each). Canonical installed ICINT19 reported **5138 cycles, CODE=0**; runner RC=0. Owner-supplied independent `tools/mvs/job-summary 5331` showed **12/12 JES steps RC=0000**, job SUCCESS and highest RC=0000. See [CO0-U08 plan and acceptance](co0-u08-two-coroutine-oracle-plan-20261112.md). **INTERPRETED-MVS-TESTED**, bounded. This strengthens CO0-U08's comparable behavioral oracle for alternating contexts, suspended locals, transferred values and deletion. No native counterpart has been executed; the native oracle remains UNVERIFIED. CO.0 stays IN PROGRESS; CO.1 NOT STARTED.
+
+
+## 12 November 2026 — CO0-U08 nested-activation oracle accepted
+
+At Git revision `cc9e4c36d2593e3d0486e9eced5faa8f59d738cf`, owner-executed JOB **5332** (`BCCO0NES`) exactly matched **14/14** predicted `LEAF`/`MIDDLE`/worker/root/deletion records in an alternating two-coroutine nested-call scenario. Installed canonical ICINT19 reported **9017 cycles, CODE=0**, runner RC=0; the independent `tools/mvs/job-summary 5332` display reported **12/12 JES steps RC=0000**, highest RC=0000, JOB RESULT SUCCESS. The operator-local report is `workarea/co0-u08-nested-activation/20261112T162535Z.log`. See [CO0-U08 nested-activation evidence](co0-u08-nested-activation-continuation-plan-20261112.md).
+
+**INTERPRETED-MVS-TESTED (bounded).** Together with JOB 5331, CO0-U08 now has two distinct accepted interpreted oracles: simple alternating persistent locals and alternating *nested* suspended call chains. The equivalent native tests and ABI/header mapping remain UNVERIFIED. CO.0 IN PROGRESS, CO.1–CO.5 NOT STARTED.
