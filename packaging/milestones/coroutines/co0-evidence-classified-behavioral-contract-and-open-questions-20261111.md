@@ -272,3 +272,10 @@ At source revision `c4164f5957d4870e854f28cc9a22c1cb9b49ff37`, JOB **5333** (`BC
 ## 12 November 2026 — CO0-U08 interpreted-to-native oracle consolidation
 
 The [CO0-U08 comparison matrix](co0-u08-interpreted-to-native-oracle-matrix-20261112.md) consolidates the separately accepted JOBS **5331**, **5332** and **5333** (8+14+18 = **40** exact expected program records, and **12/12 JES steps RC=0000** for each). It maps observable value transfer, alternating suspension, persistent locals, nested continuations and ordinary deletion onto proposed **future** native assertions while explicitly leaving ABI, global assignments, stack ownership and native test execution **UNVERIFIED**. This is a source- and acceptance-record audit, **not** an additional MVS run or native design approval. CO.0 remains IN PROGRESS.
+
+
+## 12 November 2026 — CO0-U04 descriptor safety and U08 JES recheck
+
+The [CO0-U04 descriptor source-safety audit](co0-u04-descriptor-validation-and-source-safety-audit-20261112.md) classifies the actual canonical MR10 pre-dereference checks. `DELETECO(0)` and `DELETECO(CURRCO)` return before descriptor reads; `CALLCO`/`RESUMECO` inspect `CPTR!1` immediately, so **null, arbitrary or stale pointer handling is NOT supported by the accepted evidence**. `DELETECO` also reads `C!1` before checking membership. These are SOURCE-OBSERVED boundaries, not proof of native safety or a new native contract. CO0-U04 remains OPEN for invalid/stale input and owner-approved native validation policy.
+
+The operator independently rechecked JOBS **5331, 5332 and 5333** using `tools/mvs/job-summary` after syncing `main` at `63146b91fe3dd903d40e1b3484497fba541a94bb`. Each summary returned shell RC=0, JOB RESULT SUCCESS, highest RC=0000 and 12/12 JES steps RC=0000 (**36/36** total). This confirms the prior U08 interpreted evidence receipts without rerunning the BCPL programs. CO.0 remains IN PROGRESS; CO.1–CO.5 NOT STARTED.
