@@ -43,3 +43,16 @@ negative-N allocator rejection path and normal
 post-rejection liveness. It is not a new accepted
 golden, native API validation rule or general policy
 for invalid `SIZE`.
+
+## 12 November 2026 — JOB 5330 acceptance
+
+**INTERPRETED-MVS-TESTED (bounded):** Owner-executed JOB **5330** (`BCCO0NEG`) at source revision `40436cbc3f31c8a39426207754d609384b8d7bee` matched all four predicted records, in order:
+
+    NEG TEN CREATE 0
+    NEG TWENTY CREATE 0
+    NORMAL RESULT 51
+    NORMAL DELETE -1
+
+Canonical ICINT19 completed with `EXECUTION CYCLES = 3163, CODE = 0`; runner RC=0. Independent `tools/mvs/job-summary 5330` returned RC=0, JOB RESULT SUCCESS, highest RC=0000 and **14/14 JES steps RC=0000**. Operator-local log: `workarea/co0-u06-negative-size/20261112T064450Z.log` (not claimed to be committed).
+
+This accepts only SIZE=-10 and SIZE=-20 through the source-defined negative-N guard, followed by normal execution and cleanup. SIZE=-9..-1, integer overflow, general invalid-SIZE safety, stack overrun and native allocation remain **UNVERIFIED**. No native test or API validation policy is implied.
