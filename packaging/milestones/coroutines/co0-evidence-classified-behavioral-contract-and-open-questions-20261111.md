@@ -260,3 +260,10 @@ At source revision `3540202e6da809d2cba55b61ea48f7d3638ef195`, JOB **5331** (`BC
 At Git revision `cc9e4c36d2593e3d0486e9eced5faa8f59d738cf`, owner-executed JOB **5332** (`BCCO0NES`) exactly matched **14/14** predicted `LEAF`/`MIDDLE`/worker/root/deletion records in an alternating two-coroutine nested-call scenario. Installed canonical ICINT19 reported **9017 cycles, CODE=0**, runner RC=0; the independent `tools/mvs/job-summary 5332` display reported **12/12 JES steps RC=0000**, highest RC=0000, JOB RESULT SUCCESS. The operator-local report is `workarea/co0-u08-nested-activation/20261112T162535Z.log`. See [CO0-U08 nested-activation evidence](co0-u08-nested-activation-continuation-plan-20261112.md).
 
 **INTERPRETED-MVS-TESTED (bounded).** Together with JOB 5331, CO0-U08 now has two distinct accepted interpreted oracles: simple alternating persistent locals and alternating *nested* suspended call chains. The equivalent native tests and ABI/header mapping remain UNVERIFIED. CO.0 IN PROGRESS, CO.1–CO.5 NOT STARTED.
+
+
+## 12 November 2026 — CO0-U08 repeated nested suspension acceptance
+
+At source revision `c4164f5957d4870e854f28cc9a22c1cb9b49ff37`, JOB **5333** (`BCCO0NES`) matched **18/18 exact ordered records** for two coroutines each suspending twice within a nested LEAF activation, preserving SAVED/FIRST locals and returning through MIDDLE/worker to the root. Final canonical ICINT19 **CODE=0**, 11593 cycles, runner **RC=0**. Independent `tools/mvs/job-summary 5333`: **12/12 JES steps RC=0000**, job SUCCESS, highest RC=0000, summary RC=0. Operator-local log: `workarea/co0-u08-nested-double-yield/20261112T165333Z.log`. See [the JOB 5333 acceptance record](co0-u08-nested-double-yield-plan-20261112.md).
+
+**INTERPRETED-MVS-TESTED (bounded).** CO0-U08 has three accepted interpreted oracles: JOB 5331 (interleaved independent locals), JOB 5332 (nested first suspension), and JOB 5333 (two distinct suspension/resumption continuations within each nested frame). All native System/370 counterpart tests, ABI/global mapping and stack design remain UNVERIFIED. CO.0 remains IN PROGRESS; CO.1–CO.5 NOT STARTED.
