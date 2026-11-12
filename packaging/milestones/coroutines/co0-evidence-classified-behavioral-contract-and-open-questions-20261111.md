@@ -245,3 +245,7 @@ values can result in a successful allocation too small
 for the unconditional synthetic-frame writes. The
 negative-SIZE probe is not yet MVS-tested and does not
 prove a comprehensive malformed-SIZE contract.
+
+## 12 November 2026 — U06 guarded negative-SIZE acceptance
+
+JOB **5330** (`BCCO0NEG`) at `40436cbc3f31c8a39426207754d609384b8d7bee` verified four exact records: `NEG TEN CREATE 0`, `NEG TWENTY CREATE 0`, `NORMAL RESULT 51`, `NORMAL DELETE -1`. Canonical ICINT19 completed `CODE=0` (3163 cycles), runner RC=0, and independently checked JES **14/14 steps RC=0000** (`tools/mvs/job-summary 5330`, RC=0). Evidence classification: **INTERPRETED-MVS-TESTED**, only for SIZE=-10/-20 and subsequent ordinary liveness. See [negative-SIZE investigation](co0-u06-negative-size-guard-plan-20261112.md). CO0-U06 remains OPEN for SIZE=-9..-1, arithmetic overflow, stack bounds, exceptional cleanup and native ownership. No general malformed-SIZE guarantee is established. CO.0 remains IN PROGRESS; CO.1 NOT STARTED.
