@@ -1,0 +1,74 @@
+// CO.0 U08: two alternating coroutines with independent suspended locals.
+// Candidate only. MR10 globals are not the proposed native ABI.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+COWAIT:94
+$)
+
+LET WORKA(ARG) = VALOF
+$( LET TOTAL = 100
+   AND NEXT = ARG
+   $( TOTAL := TOTAL + NEXT
+      NEXT := COWAIT(TOTAL)
+   $) REPEAT
+$)
+
+AND WORKB(ARG) = VALOF
+$( LET TOTAL = 1000
+   AND NEXT = ARG
+   $( TOTAL := TOTAL + NEXT
+      NEXT := COWAIT(TOTAL)
+   $) REPEAT
+$)
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
+   AND A = 0
+   AND B = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 401)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   A := CREATECO(WORKA, 100)
+   IF A = 0 DO
+   $( WRITEF("CREATE A FAILED*N")
+      FINISH
+   $)
+   B := CREATECO(WORKB, 100)
+   IF B = 0 DO
+   $( WRITEF("CREATE B FAILED*N")
+      FINISH
+   $)
+
+   R := CALLCO(A, 1)
+   WRITEF("A ONE %N*N", R)
+   R := CALLCO(B, 10)
+   WRITEF("B ONE %N*N", R)
+   R := CALLCO(A, 2)
+   WRITEF("A TWO %N*N", R)
+   R := CALLCO(B, 20)
+   WRITEF("B TWO %N*N", R)
+   R := CALLCO(A, 3)
+   WRITEF("A THREE %N*N", R)
+   R := CALLCO(B, 30)
+   WRITEF("B THREE %N*N", R)
+
+   R := DELETECO(A)
+   WRITEF("DELETE A %N*N", R)
+   R := DELETECO(B)
+   WRITEF("DELETE B %N*N", R)
+   FINISH
+$)
