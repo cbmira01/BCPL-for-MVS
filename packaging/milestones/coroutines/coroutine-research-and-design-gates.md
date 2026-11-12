@@ -155,3 +155,6 @@ partitioned: source-guarded SIZE<=-10 (new candidate) versus
 SIZE=-9..-1 (unsafe undersized synthetic-frame writes).
 General validation and native stack safety require
 CO.1 design, not speculative interpreted stress testing.
+
+
+**12 November U06 negative-SIZE checkpoint:** JOB **5330** (`BCCO0NEG`) matched four guarded refusal/recovery records, interpreted CODE=0, runner RC=0 and independently **14/14 JES steps RC=0000**. This is **INTERPRETED-MVS-TESTED** only for SIZE=-10 and SIZE=-20 followed by normal coroutine execution/deletion. The nearby SIZE=-9..-1 range, arithmetic overflow, stack overflow and native lifecycle/ownership remain unverified. See [U06 negative-SIZE record](co0-u06-negative-size-guard-plan-20261112.md). CO.0 remains IN PROGRESS; no CO.1 approval or native implementation is implied.
