@@ -298,3 +298,8 @@ The [CO0-U09 stack-check source investigation](co0-u09-native-coroutine-stack-ch
 The owner explicitly selected **S1**, switching the active `STKLIM` with the coroutine context, with independent stack storage and restoration of the root limit; the [stack-check source investigation](co0-u09-native-coroutine-stack-check-integration-investigation-20261112.md) now records the direction. Approach A pointer descriptors remain the earlier owner-approved release direction. Exact native stack layout, register saves, global allocation and lifecycle/error contracts remain **CO.1 review tasks**.
 
 The [formal CO.0 acceptance candidate and CO.1 transfer register](co0-acceptance-candidate-and-co1-transfer-20261112.md) consolidates interpreted test provenance, accepted behavior, unresolved exceptions and owner directions. It explicitly preserves the original fixed-stack development-probe **4 PASS / 1 FAIL** post-promotion qualification, records the separate corrected-frame PASS, and does not claim recovery of historical `KM10.COMAIN` or native MVS execution. **CO.0 remains IN PROGRESS pending explicit owner acceptance. CO.1–CO.5 NOT STARTED.**
+
+
+## 12 November 2026 — Owner acceptance and formal CO.0 closure
+
+The owner explicitly approved **CO.0 CLOSED**, with bounded interpreted evidence and open/qualified questions preserved. See [formal CO.0 closure](co0-formal-closure-20261112.md). All earlier IN PROGRESS/acceptance-pending statements are dated historical checkpoints. **CO.1–CO.5 NOT STARTED.**
