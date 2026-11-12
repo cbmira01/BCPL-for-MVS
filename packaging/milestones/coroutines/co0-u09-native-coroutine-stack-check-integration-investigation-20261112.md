@@ -115,3 +115,12 @@ limit for explicit context lookup at every frame check.
 not imply approval of either S1 or S2. CO.0 IN PROGRESS;
 CO.1–CO.5 NOT STARTED. No native ABI, code, globals, datasets,
 regression manifest or JES job were changed.
+
+
+## 12 November 2026 — Owner decision: S1 selected for the initial release
+
+**APPROVED DIRECTION: S1 — switch the active native stack limit with every coroutine context transfer.** Each coroutine will have independently owned stack storage and a separate safe upper limit; every switch must install the incoming context's safe limit for the existing `STKIMPL` checked-entry path, and switching back to the root must restore the root's original limit. This is the owner's explicit selection following the documented S1/S2 comparison.
+
+**Deferred:** S2 (indirect bound lookup at every checked procedure entry) is retained as an alternative for later reconsideration, not required for the first release.
+
+**CO.1 still needs to settle and test:** precise storage allocation and clearance, root/worker context metadata, update ordering and atomicity, preservation of the original full inline callee-size check, `STACKBASE`/`STACKEND`/`STACKHWM` visibility, generated register liveness, overflow response and cleanup. S1 does not authorize a particular descriptor layout, global slot, CSECT or assembler change. CO.0 is still IN PROGRESS pending owner closure; CO.1–CO.5 are NOT STARTED.
