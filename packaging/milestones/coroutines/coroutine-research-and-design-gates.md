@@ -182,3 +182,8 @@ CO.1 design, not speculative interpreted stress testing.
 
 
 **12 November CO.0 gate preparation:** The owner approved **S1 active stack-limit switching** (alongside Approach A pointer descriptors) for the initial release direction; see [U09 stack-check decision](co0-u09-native-coroutine-stack-check-integration-investigation-20261112.md). A [qualified CO.0 acceptance candidate and CO.1 transfer register](co0-acceptance-candidate-and-co1-transfer-20261112.md) consolidates the evidence and clearly retains the original fixed-stack probe FAIL, missing `KM10.COMAIN`, internal tracing limitations and all native ABI/stack/global questions as open or deferred. **READY FOR OWNER REVIEW; CO.0 NOT CLOSED. CO.1–CO.5 NOT STARTED.**
+
+
+## 12 November 2026 — Formal owner closure supersedes earlier CO.0 status notes
+
+The owner explicitly accepted and **CLOSED CO.0 — Historical Research and Behavioral Contract** with documented qualifications. See [formal CO.0 closure](co0-formal-closure-20261112.md). Earlier dated references to CO.0 IN PROGRESS or NOT CLOSED describe historical checkpoints and are superseded. Original post-promotion fixed-stack JOB 5318 remains FAIL; corrected candidate JOB 5321 PASS is separate. Missing KM10.COMAIN, incomplete internal trace and native-unverified status remain limitations. **CO.1–CO.5 NOT STARTED**; no native implementation authorized.
