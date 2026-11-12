@@ -167,3 +167,6 @@ CO.1 design, not speculative interpreted stress testing.
 
 
 **12 November CO0-U08 repeated nested suspension acceptance:** JOB **5333** (`BCCO0NES`) matched 18/18 records for two alternately resumed nested LEAF call frames, each suspending twice and retaining locals. ICINT19 CODE=0 (11593 cycles), runner RC=0, independently **12/12 JES steps RC=0000**, JOB RESULT SUCCESS, `tools/mvs/job-summary 5333` shell RC=0. [JOB 5333 record](co0-u08-nested-double-yield-plan-20261112.md). **INTERPRETED-MVS-TESTED** only. Alongside JOBS 5331–5332, three U08 interpreted oracles are now accepted; native counterparts remain unverified. CO.0 stays IN PROGRESS; no CO.1 approval or implementation is implied.
+
+
+**12 November CO0-U08 comparison matrix:** [Interpreted-to-native behavioral oracle matrix](co0-u08-interpreted-to-native-oracle-matrix-20261112.md) reconciles JOBS 5331–5333 as **40 exact expected records** across three independent **INTERPRETED-MVS-TESTED** tests, each with 12/12 successful JES steps. This research mapping makes no native ABI decision and claims no native MVS execution; CO.0 remains IN PROGRESS, CO.1–CO.5 NOT STARTED.
