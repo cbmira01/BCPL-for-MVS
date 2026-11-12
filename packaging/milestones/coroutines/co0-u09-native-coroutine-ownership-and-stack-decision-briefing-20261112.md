@@ -114,3 +114,43 @@ INTERPRETED-MVS-TESTED classification.
 **Disposition:** CO.0 IN PROGRESS, CO.1–CO.5 NOT STARTED. No
 native global allocation, new descriptor ABI, runtime modification,
 regression enrollment, installed MVS dataset change or march closure.
+
+
+## 12 November 2026 — Owner direction: initial release uses Approach A
+
+**Owner decision recorded:** Use **Approach A — historical-style pointer
+coroutine descriptors** for the first native coroutine release in order
+to minimize complexity and prioritize a working, reproducible release.
+The **managed, runtime-validated handle** approach (Approach B / A2
+in the comparison above) is **deferred research**, not an initial-release
+requirement. Preserve this alternative as a possible future enhancement.
+
+The intended application-level contract is:
+
+- `CREATECO` returns a BCPL word pointer to a runtime/library-owned
+  coroutine descriptor. Callers pass it as an **opaque reference** and
+  do **not** dereference or manipulate descriptor fields.
+- `CALLCO`, `RESUMECO` and `DELETECO` require a valid, live descriptor
+  unless a particular safe rejection is explicitly part of the agreed
+  callable contract. The accepted interpreted `DELETECO(0)` rejection
+  is a **candidate** for that documented case; its exact native status
+  remains to be agreed during CO.1.
+- Passing stale, freed, fabricated or arbitrary machine pointers is
+  outside the supported release contract. No arbitrary-address safety,
+  generation checking or stale-pointer detection is promised.
+- Busy-target rejection, normal worker lifecycle, parent invariants,
+  stack ownership and resource release must still be tested and
+  documented. Approach A is **not** permission to ignore a valid
+  descriptor's lifecycle or the checked-stack protections.
+
+**Deferred Approach B research:** A simple list of descriptor addresses
+can identify current membership but cannot distinguish a stale pointer
+from a newly allocated object at the same address (ABA/reuse). A future
+managed-handle proposal must address generation identity, cost, public
+compatibility, and the validity of the handle value **before** any unsafe
+descriptor dereference. No B implementation is authorized now.
+
+**Decision scope:** The *representation approach* is owner-directed;
+no descriptor word layout, native GLOBAL slot, error code, register-save
+set, stack limit or library entry point has been accepted as a CO.1 ABI.
+CO.0 remains IN PROGRESS; CO.1–CO.5 remain NOT STARTED.
