@@ -52,3 +52,29 @@ all SIZE values, allocator arithmetic overflow, stack
 bounds, worker exceptions, or native BCPLMEM behavior.
 No accepted manifests, original tests or canonical runtime
 are changed.
+
+## JOB 5326 — accepted positive oversize and recovery evidence
+
+On 12 November 2026 at source revision
+`48818dab9483253ae0a2e56b7de8c9f60966b103`,
+the operator ran the existing candidate through canonical
+ICINT19/ICLIB with independent GETVEC and COROUTIN compilation
+units. **JOB 5326 (BCCO0ALL)** produced all five expected
+records, in the order shown above.
+
+Final interpreted `EXECUTION CYCLES = 4085, CODE = 0`;
+`compile-and-run --results` runner RC=0.
+The independent `tools/mvs/job-summary 5326` returned RC=0,
+`JOB RESULT: SUCCESS`, highest RC=0000;
+**14/14 JES steps** (ASM, LKED, STGSYNI, STGTRNI,
+STGCGI, STGBLIB, STGICLIB, COMP01, CG01, COMP02,
+CG02, COMP03, CG03, RUN) each returned RC=0000.
+Operator-local log:
+`workarea/co0-u06-allocation/20261112T050129Z.log`.
+
+**Accepted bounded classification: INTERPRETED-MVS-TESTED**
+for refusal of a positive oversize request, subsequent normal
+worker execution/deletion, and successful reallocation.
+This does not prove exact-fit behavior, a generalized SIZE
+contract, a real stack-guard mechanism, native BCPLMEM,
+exceptional teardown, or address-identity reuse.

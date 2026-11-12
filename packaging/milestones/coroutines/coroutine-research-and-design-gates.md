@@ -119,3 +119,12 @@ runner RC=0 and 14/14 JES RC=0000. Arbitrary/stale descriptor
 safety is still open. A distinct U06 candidate now targets
 positive oversize GETVEC refusal and ordinary allocator reuse,
 not stack overflow or native stack architecture.
+
+
+**12 November CO0-U06 acceptance:** Canonical JOB 5326
+verified positive oversize refusal, normal successful
+execution/deletion and allocator reuse: five output
+records, interpreted CODE=0, runner RC=0, independent
+14/14 JES steps RC=0000. A distinct exact-fit candidate
+is source-checked but remains MVS-unverified. Broader
+SIZE, stack-guard and exceptional cleanup questions remain.
