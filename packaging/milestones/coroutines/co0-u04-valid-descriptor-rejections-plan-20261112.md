@@ -51,3 +51,29 @@ the new candidate has not yet been run under MVS.
 
 No permanent dataset staging, canonical runtime edit, accepted
 manifest change, native-global assignment or CO.1 design decision.
+
+## JOB 5325 — bounded interpreted-MVS acceptance
+
+On 12 November 2026, source revision
+`a3e39083567f3a83b0e0a02e77212faf258e171a`,
+JOB **5325 (BCCO0VAL)** ran with canonical ICINT19/ICLIB and
+separate GETVEC/COROUTIN modules. The exact seven lines
+predicted above were observed in order:
+`DELETE NULL 0`, `DELETE CURRENT 0`,
+`CALL BUSY ROOT -999`, `RESUME BUSY ROOT -998`,
+`ROOT PARENT -1`, `WORKER RESULT 11`,
+`DELETE WORKER -1`.
+
+Final interpreted execution: **5012 cycles, CODE=0**;
+runner RC=0. Independent operator `job-summary 5325`:
+**14/14 JES steps RC=0000**, highest RC=0000,
+`JOB RESULT: SUCCESS`, summary RC=0.
+Evidence:
+`workarea/co0-u04-valid-descriptors/20261112T044016Z.log`.
+
+**Accepted scope: INTERPRETED-MVS-TESTED for these bounded null
+deletion and valid/live descriptor rejection paths only.**
+No stale, freed, arbitrary, unmapped or malformed descriptor
+was exercised. This does not establish a general pointer
+validation or native error-recovery policy. The candidate remains
+separate from accepted test manifests.

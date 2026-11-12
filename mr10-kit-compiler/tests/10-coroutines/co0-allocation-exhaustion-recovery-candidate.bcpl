@@ -1,0 +1,56 @@
+// CO.0 U06: bounded allocation failure, recovery and reuse candidate.
+// No stack overflow, invalid pointer or malformed size is attempted.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+$)
+
+LET WORKER(ARG) = ARG+1
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 160
+   AND CO = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 161)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   CO := CREATECO(WORKER, 200)
+   WRITEF("OVERSIZE CREATE %N*N", CO)
+   IF CO \= 0 DO
+   $( WRITEF("UNEXPECTED OVERSIZE SUCCESS*N")
+      FINISH
+   $)
+
+   CO := CREATECO(WORKER, 100)
+   IF CO = 0 DO
+   $( WRITEF("FIRST CREATE FAILED*N")
+      FINISH
+   $)
+   R := CALLCO(CO, 10)
+   WRITEF("FIRST RESULT %N*N", R)
+   R := DELETECO(CO)
+   WRITEF("FIRST DELETE %N*N", R)
+
+   CO := CREATECO(WORKER, 100)
+   IF CO = 0 DO
+   $( WRITEF("SECOND CREATE FAILED*N")
+      FINISH
+   $)
+   R := CALLCO(CO, 20)
+   WRITEF("SECOND RESULT %N*N", R)
+   R := DELETECO(CO)
+   WRITEF("SECOND DELETE %N*N", R)
+   FINISH
+$)

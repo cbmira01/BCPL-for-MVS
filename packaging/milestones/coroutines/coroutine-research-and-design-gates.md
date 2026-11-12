@@ -111,3 +111,11 @@ correct records, CODE=0, runner RC=0 and 14/14 JES RC=0000.
 A separate unaccepted U04 probe now tests null/current
 deletion and busy valid-root rejection with post-test liveness.
 No stale-pointer safety or native coroutine behavior is claimed.
+
+
+**12 November U04/U06 checkpoint:** Canonical JOB 5325 verified
+seven bounded null/live descriptor rejection records, CODE=0,
+runner RC=0 and 14/14 JES RC=0000. Arbitrary/stale descriptor
+safety is still open. A distinct U06 candidate now targets
+positive oversize GETVEC refusal and ordinary allocator reuse,
+not stack overflow or native stack architecture.

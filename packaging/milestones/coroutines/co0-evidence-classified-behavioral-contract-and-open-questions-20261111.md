@@ -53,9 +53,9 @@ To reproduce the established canonical panel, use `tools/mr10/run-regression-pan
 | CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | **BEHAVIOR VERIFIED; TRACE DETAIL OPEN:** 18-token bridge and archived compiler calls SOURCE-OBSERVED; canonical JOB 5322 verified bounded nested continuation/value ordering (CODE=0, 14/14 JES RC=0000). Intermediate-cycle state and native ABI unverified. |
 | CO0-U02 | Compatibility of five development probes after canonical promotion | **RESOLVED WITH QUALIFICATION (INTERPRETED-MVS-TESTED):** four original cases PASS; original legacy fixed-stack JOB 5318 remains FAIL (CODE=-1); separately identified corrected COBOOT-frame candidate JOB 5321 matches all ten expected records, CODE=0, runner RC=0, 10/10 JES RC=0000. Original golden and manifest unchanged; full original five-case runner still FAILS. |
 | CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | **RESOLVED for valid, live descriptors (INTERPRETED-MVS-TESTED).** Pre-repair counterexample JOB 5284; corrected candidate JOBS 5285–5298; promoted canonical JOBS 5299–5312 (14/14 focused and 142/142 panel JES steps RC=0000, all interpreted CODE=0). Invalid/stale pointers remain CO0-U04. |
-| CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | **OPEN:** new isolated candidate tests DELETECO(0), DELETECO(current live root), CALLCO/RESUMECO busy live root, parent preservation and subsequent normal create/call/delete. Stale, freed and arbitrary addresses deliberately excluded; no safe-recovery contract established. |
+| CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | **BOUNDED VALID-DESCRIPTOR CASES VERIFIED (INTERPRETED-MVS-TESTED); BROADER U04 OPEN:** JOB 5325 observed 7/7 lines, CODE=0, runner RC=0, 14/14 JES RC=0000. Null/current deletion, live busy root rejection and post-rejection worker liveness passed. Stale, freed, malformed, arbitrary pointers unverified. |
 | CO0-U05 | Natural worker return and repeated activation | **RESOLVED for bounded ordinary-return/re-entry (INTERPRETED-MVS-TESTED):** canonical JOB 5324 returned 110 then 120 on distinct worker invocations, accepted deletion, CODE=0, runner RC=0, 14/14 JES steps RC=0000. Exceptional termination and native teardown unverified. |
-| CO0-U06 | Allocation bounds, SIZE validity, stack overruns and cleanup | Define defensible interpreted negative cases first; CO.1 must independently design native stack guards and lifecycle. |
+| CO0-U06 | Allocation bounds, SIZE validity, stack overruns and cleanup | **OPEN:** bounded new source candidate tests deterministic GETVEC refusal on oversized positive SIZE, then normal CREATECO/CALLCO/DELETECO and repeated allocation/reuse within a 161-word fixed arena. No invalid SIZE, stack overflow, native guard or cleanup beyond ordinary deletion is tested. |
 | CO0-U07 | Recover historical `KM10.COMAIN` and complete original callable interface | Missing archive member; continue targeted source/document search, but owner-approved engineering direction does **not** require exhaustive recovery before implementation. |
 | CO0-U08 | Equivalent **interpreted/native** behavior oracles | Prepare common BCPL tests for yield/resume/value, parent-chain transfer, first activation, nested locals, return/re-entry and deletion, with documented global/header mapping. Native tests and all native outcomes remain UNVERIFIED. |
 | CO0-U09 | Select native ownership, global numbers and descriptor/stack ABI | Reserve for CO.1 owner review against runtime contract, registry, CG370, MVS IFOX/IEWL/GO evidence. Nothing in this document allocates globals or approves the native architecture. |
@@ -169,3 +169,20 @@ descriptor whose parent marker is nonzero. It avoids freed and
 arbitrary memory addresses, checks parent preservation and then
 executes a normal create/call/delete as a liveness sanity check.
 Predictions remain UNVERIFIED pending actual ICINT19/JES execution.
+
+## 12 November 2026 — U04 bounded acceptance and U06 new gate
+
+JOB **5325** independently verified the source-predicted
+seven records for null/current deletion and busy valid-root
+CALLCO/RESUMECO rejection, including parent preservation,
+then normal worker creation/deletion. Interpreted CODE=0,
+runner RC=0 and all 14 JES steps RC=0000. This is
+**INTERPRETED-MVS-TESTED only for bounded live/root and null
+operations**; general CO0-U04 remains open for stale/invalid
+addresses. See [U04 details](co0-u04-valid-descriptor-rejections-plan-20261112.md).
+
+A separate U06 candidate now examines deterministic positive
+oversize allocation refusal and ordinary storage recovery in
+the source-defined 161-word fixed arena. The prediction
+is UNVERIFIED pending MVS. It deliberately excludes stack
+overflow, malformed SIZE and native memory reclamation policy.
