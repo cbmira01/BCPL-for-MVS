@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** CO.0 — Historical Research and Behavioral Contract (IN PROGRESS)  
-**Status:** JOBS 5284–5298 reviewed; canonical source promoted; post-promotion MVS run pending  
+**Status:** Canonical RESUMECO accepted as INTERPRETED-MVS-TESTED after JOBS 5299–5312  
 **Date:** 11 November 2026
 
 ## Accepted pre-repair counterexample
@@ -184,3 +184,44 @@ A fresh **canonical-default** MR10 regression without
 under MVS before recording post-promotion acceptance.
 
 CO.0 remains IN PROGRESS; CO.1–CO.5 remain NOT STARTED.
+
+## Post-promotion canonical-default verification — JOBS 5299–5312
+
+**Promoted source:** GitHub `main` at
+`723c3887b3b732dfa457c169c82e9849b9400b24`.
+**Evidence:** INTERPRETED-MVS-TESTED, not native System/370 BCPL.
+
+The operator fast-forwarded to the exact revision and ran the
+canonical library `mr10-kit-compiler/library/coroutines.bcpl`
+(without the isolated candidate override).
+
+- **JOB 5299**, busy-target negative path: all nine expected program
+  records matched, including `RESULT -998`, `PARENT KEPT -1`,
+  `PARENT CLEARED 0`, A=777, ROOT=888 and successful deletion.
+  Final CODE=0; runner RC=0; JES 14/14 steps RC=0000.
+- **JOB 5300**, positive parent chain: all seven accepted program
+  records matched (111, 222, 333, 444, 555, 666 in the established
+  order). Final CODE=0; runner RC=0; JES 14/14 steps RC=0000.
+- **JOBS 5301–5312**, unchanged 12-case MR10 Regression Panel:
+  12 PASS / 0 FAIL / 12 TOTAL, panel RC=0; each final interpreted
+  CODE=0, all 142/142 JES steps RC=0000. JOB 5312 used the
+  canonical `coroutines.bcpl` and matched `RP: COROUTINE 77 1`.
+
+**Total:** 14 successful jobs, 170/170 zero-RC JES steps, all final
+interpreted CODE=0, no mismatched semantic records. The operator
+reviewed all per-job `job-summary` outputs and each reported
+`JOB RESULT: SUCCESS`, highest RC=0000, summary RC=0.
+
+Operator-local evidence:
+- `workarea/co0-canonical-promotion/20261112T001601Z-negative.log`
+- `workarea/co0-canonical-promotion/20261112T001601Z-positive.log`
+- `workarea/co0-canonical-promotion/20261112T001622Z-regression.log`
+- `workarea/co0-canonical-promotion/jes-5299-5312.log`
+
+**CO0-U03 resolution scope:** For valid, live coroutine descriptors,
+a busy `RESUMECO` target returns -998 without clearing the
+current coroutine's parent, and the tested successful parent-chain
+transfer retains its expected values. This is canonical MR10
+interpreted acceptance only. It does not establish safe operations
+on null, stale, freed or arbitrary addresses (CO0-U04), nor prove a
+native S/370 ABI or close CO.0.

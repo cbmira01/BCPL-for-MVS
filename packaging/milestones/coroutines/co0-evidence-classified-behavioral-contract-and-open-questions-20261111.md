@@ -22,7 +22,7 @@ The reconstructed **MR10 INTCODE coroutine interface** is distinct from the hist
 | Value transfer | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for tested positive paths | `ICLIB` moves `CHANGECO`'s value argument through scratch `G!9`. The receiving coroutine resumes with the transfer value as the `CHANGECO` result. Exact observed values are fixed by the tests; arbitrary target and argument validity are not established. |
 | First activation | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for basic/compatibility cases | `CREATECO` allocates `GETVEC(SIZE+9)`, sets `P=C+3`, `C!0=P`, `P!0=P`, `P!1=COBOOT`, `P!2=FN`, `P!3=SIZE`, `P!4=C`. `COBOOT` first calls `COWAIT(C)`, then calls the worker with the next delivered argument. This is an MR10-specific synthetic frame, **not** a native stack ABI. |
 | Parent and waiting | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED in selected chains | `CALLCO` rejects a target whose `C!1 != 0` with `-999`; otherwise sets `C!1=CURRCO`. `COWAIT` reads its `CURRCO!1`, clears that parent field, and transfers to the parent. Exact chained outputs are observed in JOB 5244. |
-| RESUMECO transfer | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for positive chain | `RESUMECO` saves the *current* parent's pointer, clears current `CURRCO!1`, tests the target's `C!1`, then installs the saved parent in the target and switches. If the target is occupied, it returns `-998` **after the current parent was already cleared**. The busy-target error/parent mutation is source-observed only and is a potential state-invariant problem. |
+| RESUMECO transfer | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for busy and positive paths | Canonical `RESUMECO` saves the current parent, **tests `CPTR!1` before clearing `CURRCO!1`**, then installs the saved parent and switches. A valid, busy target returns `-998` and preserves the current parent (JOB 5299). Positive transfer matches all seven chain records (JOB 5300). Invalid/stale pointers remain unverified. |
 | Worker natural return | SOURCE-OBSERVED; not independently tested as a termination contract | `COBOOT` executes `C := FN(COWAIT(C)) REPEAT`: a worker function's ordinary return is followed by another wait and possible re-entry, **not automatic permanent termination**. The precise next-call behavior and cleanup are not proven under all cases. |
 | Creation failure | SOURCE-OBSERVED; negative path UNVERIFIED | `CREATECO` returns 0 when `GETVEC` returns 0; actual exhaustion thresholds, allocator invariants and malformed `SIZE` inputs are not accepted as coroutine behavior tests. |
 | Deletion | SOURCE-OBSERVED; INTERPRETED-MVS-TESTED for selected positive paths | `DELETECO` checks `C=0`, `C=CURRCO` and `C!1 != 0`; it then unlinks a matching descriptor from `COLIST` and calls `FREEVEC(C)`. JOB 5246 observed deletion/list counts and subsequent creation, **not pointer-address reuse**. |
@@ -52,7 +52,7 @@ To reproduce the established canonical panel, use `tools/mr10/run-regression-pan
 | --- | --- | --- |
 | CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | Inspect the exact original MR10 opcode semantics, ICINT19 assembly, and existing compiler-probe/frame-layout saved OCODE/INTCODE; source-derived static trace before accepting exact intermediate state. |
 | CO0-U02 | Compatibility of all five development probes with the **promoted** pair | Existing five-probe acceptance was pre-repair; corrected fixed-stack probe is separate. Plan a post-promotion bounded set and classify any changed or incompatible oracle explicitly. |
-| CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | Source shows the parent cleared before rejection. Write an isolated negative-path BCPL case and decide if a correction is required; test under ICINT19 before any native design. |
+| CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | **RESOLVED for valid, live descriptors (INTERPRETED-MVS-TESTED).** Pre-repair counterexample JOB 5284; corrected candidate JOBS 5285–5298; promoted canonical JOBS 5299–5312 (14/14 focused and 142/142 panel JES steps RC=0000, all interpreted CODE=0). Invalid/stale pointers remain CO0-U04. |
 | CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | Negative tests and policy for rejectable valid descriptors versus unrecoverable bad addresses; avoid claiming safe arbitrary-pointer inspection. |
 | CO0-U05 | Natural worker return and repeated activation | Trace `COBOOT` and test repeated return/re-entry and cleanup or exhaustion; do not infer automatic coroutine destruction. |
 | CO0-U06 | Allocation bounds, SIZE validity, stack overruns and cleanup | Define defensible interpreted negative cases first; CO.1 must independently design native stack guards and lifecycle. |
@@ -65,3 +65,41 @@ To reproduce the established canonical panel, use `tools/mr10/run-regression-pan
 This ledger supplies a **reviewable behavior table, source provenance, interpreted reproduction recipe and explicit unknowns**, meeting the *documentation shape* required by the CO.0 gate. It is **not** a declaration that every checkbox in `coroutine-research-and-design-gates.md` has been proved; especially U01/U02/U03/U04/U08 remain open. An owner decision is required for acceptance/closure, and CO.1 remains NOT STARTED.
 
 **No code changes, resident MVS dataset changes, JES submissions, native ABI decisions, canonical golden revisions or march closure are authorized by this review draft.**
+
+## 12 November 2026 update — resolved U03; bounded U01 and U02 gates
+
+The canonical promotion was approved by the owner and committed at
+`723c3887b3b732dfa457c169c82e9849b9400b24`. See
+[the acceptance evidence](co0-resumeco-busy-parent-repair-candidate-20261111.md)
+for JOBS 5284–5312 and exact local reports. **CO0-U03 is resolved
+for valid, live descriptors only**. No native test is claimed.
+
+**CO0-U01 partial source trace (SOURCE-OBSERVED):** Original historical
+`richards-bcpltape/mr10/bcplkit/icint` has `CASE 32: P, C := A, B`
+and the `mr10-kit-compiler/asm/icintv19.asm` `X32` handler loads
+interpreter A into P and B into C and branches to FETCH. Both implement
+the same atomic interpreter-state transfer. The canonical
+`mr10-kit-compiler/source/iclib.int` CHANGECO path starts at label
+`6` with `LIP2 SG9 LP0 SIG7 LIP3 SG7 LIG7 X1 A1 X1 SG10`;
+its next operations include `LL498 LIG7 X1 X1 X32`, followed at
+label 498 by `LIG9 JIG10`. The source shows that argument, current
+descriptor, saved frame/continuation and return value are handled
+before/after X32. Exact intermediate P/C/scratch-global values still
+require a token-by-token trace together with archived compiler
+OCODE/INTCODE; these are **not** proved by this static observation.
+The source uses interpreter-local globals G!7, G!9 and G!10: no
+assignment of these slots is approved for native S/370 BCPL.
+
+**CO0-U02 pending:** The previously accepted five development-probe
+goldens predate this canonical RESUMECO correction. The 12-case panel
+and isolated positive chain do **not** replace the full five-probe
+rerun. Re-execute the existing five accepted probes through
+`tools/mr10/run-dev-probes --run` with five explicit `--case`
+selectors, preserve compiler OCODE/INTCODE artifacts for
+`compiler-probe` and `frame-layout-probe`, and classify any
+fixed-stack divergence rather than silently changing a golden.
+This work is a distinct interpreted-MVS research gate.
+
+The overall CO.0 status remains IN PROGRESS; CO.1–CO.5 remain
+NOT STARTED. This record does not approve a native interface,
+descriptor layout, global-slot allocation, or a new milestone.
