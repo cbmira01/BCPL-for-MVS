@@ -1,0 +1,54 @@
+// CO.0 U06: bounded negative SIZE refusal and recovery candidate.
+// Only SIZE <= -10 is passed to CREATECO. No undersized allocation.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+$)
+
+LET WORKER(ARG) = ARG+1
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 160
+   AND CO = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 161)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   CO := CREATECO(WORKER, -10)
+   WRITEF("NEG TEN CREATE %N*N", CO)
+   IF CO \= 0 DO
+   $( WRITEF("NEG TEN UNEXPECTED*N")
+      FINISH
+   $)
+
+   CO := CREATECO(WORKER, -20)
+   WRITEF("NEG TWENTY CREATE %N*N", CO)
+   IF CO \= 0 DO
+   $( WRITEF("NEG TWENTY UNEXPECTED*N")
+      FINISH
+   $)
+
+   CO := CREATECO(WORKER, 100)
+   IF CO = 0 DO
+   $( WRITEF("NORMAL CREATE FAILED*N")
+      FINISH
+   $)
+
+   R := CALLCO(CO, 50)
+   WRITEF("NORMAL RESULT %N*N", R)
+   R := DELETECO(CO)
+   WRITEF("NORMAL DELETE %N*N", R)
+   FINISH
+$)

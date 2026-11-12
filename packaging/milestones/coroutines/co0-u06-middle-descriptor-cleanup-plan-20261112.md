@@ -46,3 +46,24 @@ Retain the generated local report and job number.
 
 No accepted manifest, runtime implementation, permanent
 MVS dataset or native ABI is changed.
+
+## JOB 5329 — accepted bounded middle-descriptor cleanup
+
+On 12 November 2026 at GitHub revision
+`03d83683cdca156215b7c7ccab50b71576237116`,
+JOB **5329 (BCCO0MID)** matched all eleven records above
+in order. Final interpreted **EXECUTION CYCLES = 7073,
+CODE = 0**, `compile-and-run --results` runner **RC=0**.
+Independent `tools/mvs/job-summary 5329` returned
+**RC=0**, **JOB RESULT: SUCCESS**, highest RC=0000
+and **14/14 JES steps RC=0000**.
+Operator-local evidence log:
+`workarea/co0-u06-middle-cleanup/20261112T060610Z.log`.
+
+**Accepted INTERPRETED-MVS-TESTED scope:** deleting a
+non-head/middle live-list descriptor, preserving both
+neighboring live descriptors for re-entry, normal reuse
+of recovered capacity and final ordinary cleanup.
+The freed descriptor B was never dereferenced again;
+this proves neither stale-pointer safety nor double-free
+behavior, exceptional cleanup, or native ownership.

@@ -146,3 +146,12 @@ RC=0000. A further bounded live-list middle-unlink
 candidate has been prepared but is not MVS-tested.
 General SIZE validity, exception cleanup, and native
 stack protection remain open.
+
+
+**12 November U06 middle-descriptor acceptance:** JOB 5329
+passed eleven exact records, interpreter CODE=0, runner RC=0,
+14/14 JES RC=0000. The remaining SIZE question is now
+partitioned: source-guarded SIZE<=-10 (new candidate) versus
+SIZE=-9..-1 (unsafe undersized synthetic-frame writes).
+General validation and native stack safety require
+CO.1 design, not speculative interpreted stress testing.
