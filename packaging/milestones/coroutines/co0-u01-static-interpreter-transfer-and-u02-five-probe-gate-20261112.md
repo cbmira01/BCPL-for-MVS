@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** CO.0 — Historical Research and Behavioral Contract (IN PROGRESS)  
 **Checkpoint:** GitHub main at `723c3887b3b732dfa457c169c82e9849b9400b24`  
-**Evidence level:** SOURCE-OBSERVED; MVS probe rerun pending
+**Evidence level:** SOURCE-OBSERVED and partial INTERPRETED-MVS-TESTED; one legacy startup incompatibility unresolved
 
 ## U01 — What the original interpreter actually does
 
@@ -73,3 +73,73 @@ is evidence to analyze, **not** permission to rewrite a golden.
 
 No execution, acceptance, or native System/370 test is claimed by
 this research plan. CO.0 remains IN PROGRESS.
+
+## U02 — post-promotion observations, 12 November 2026
+
+**Source revision:** `2d3183879eebf74b1acde424335a464cd265b639`.
+The operator ran the same five selected cases twice; each
+stopped at the first failing case (fail-fast inside the runner, not
+the operator shell). The second run preserved:
+`workarea/mr10-probes/20261112T004450Z-5973-nxtpfv9g/`.
+
+- JOB 5316, `compiler-probe`: PASS, all 12 JES steps RC=0000,
+  program output and archived OCODE/INTCODE comparisons accepted.
+- JOB 5317, `frame-layout-probe`: PASS, all 12 JES steps RC=0000,
+  program output and archived OCODE/INTCODE comparisons accepted.
+- JOB 5318, `fixed-stack-producer-consumer`: FAIL, final interpreted
+  `CODE=-1`, `INTCODE ERROR AT C = 803`, 101 interpreter cycles,
+  no producer/consumer records. The independent JES summary reports
+  10/10 steps RC=0000 and `JOB RESULT: SUCCESS`. JES RC=0 is not
+  a semantic PASS.
+- The last two cases were run separately in evidence directory
+  `workarea/mr10-probes/20261112T004825Z-6434-cua68fi_/`:
+  `resumeco-chain` PASS (14/14 JES steps, accepted golden) and
+  `create-delete-static-pool` PASS (14/14 JES steps, accepted golden),
+  runner RC=0.
+
+**Overall, four of five original development probes pass under the
+promoted source; the legacy fixed-stack source does not.**
+The original accepted golden and source remain unchanged. This is
+a compatibility qualification, not an unreviewed golden revision.
+
+### Trace-to-source diagnosis
+
+JOB 5318's 64-entry ICINT19 trace shows:
+- cycle 98: `X32` transfers P=175844, C=175789;
+- cycle 99: `LIG9` restores transfer value 0;
+- cycle 100: `JIG10` branches to interpreted C=175839;
+- cycle 101: an invalid word is fetched at C-offset 801, producing
+  `INTCODE ERROR AT C = 803` and final `CODE=-1`.
+
+The legacy `MAKECO` sets `C!0 := C` and uses C's descriptor words
+as the first frame. The promoted bridge expects C!0 to be a saved
+CHANGECO call frame containing a valid P!0 and P!1 continuation.
+The observed control transfer into invalid code and this source
+mismatch together support the startup-frame incompatibility diagnosis.
+No blanket claim is made that every arbitrary frame failure is safe.
+
+### Existing isolated compatibility candidate: next MVS gate
+
+Do not duplicate or overwrite the accepted legacy test:
+`mr10-kit-compiler/tests/10-coroutines/fixed-stack-co0-candidate.bcpl`
+already introduces a separate COBOOT trampoline with `P=C+3`,
+`C!0=P`, `P!0=P`, `P!1=COBOOT`, and P!2..P!4 arguments.
+It preserves the five producer/consumer exchanges and is
+**candidate-only**; its prior JOB 5240 execution used ICLIBC.
+A host-side source comparison establishes that canonical `iclib.int`
+and candidate `iclib-co0-candidate.int` have identical executable
+records (the candidate adds provenance comments only). This is not
+a substitute for the next MVS execution.
+
+Run the existing `tools/mr10/compile-and-run --results` with
+canonical ICINT19/ICLIB and this distinct candidate BCPL source,
+then compare all ten ordered records against the unchanged
+`fixed-stack-producer-consumer.expected`, interpreted CODE=0,
+runner RC=0, and all JES steps RC=0000. Keep its evidence outside
+the five accepted original identities. If it passes, U02 can be
+recorded as four unchanged pass plus one qualified legacy failure
+with separately verified replacement; it must not be recorded as
+five passing original cases.
+
+No permanent MVS dataset updates, manifest changes, or native ABI
+decisions are authorized by this plan. CO.0 remains IN PROGRESS.

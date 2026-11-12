@@ -51,7 +51,7 @@ To reproduce the established canonical panel, use `tools/mr10/run-regression-pan
 | ID | Question / decision needed | Evidence gap and proposed gate |
 | --- | --- | --- |
 | CO0-U01 | Full P/C and argument-order trace, including `X32` and synthetic frame | Inspect the exact original MR10 opcode semantics, ICINT19 assembly, and existing compiler-probe/frame-layout saved OCODE/INTCODE; source-derived static trace before accepting exact intermediate state. |
-| CO0-U02 | Compatibility of all five development probes with the **promoted** pair | Existing five-probe acceptance was pre-repair; corrected fixed-stack probe is separate. Plan a post-promotion bounded set and classify any changed or incompatible oracle explicitly. |
+| CO0-U02 | Compatibility of five development probes after canonical promotion | **OPEN; qualified 4 PASS / 1 FAIL.** JOBS 5316/5317 and the two separately rerun cases passed their unchanged goldens; JOB 5318 legacy fixed-stack returned interpreted CODE=-1 despite all JES RC=0000. The independent corrected-frame source passed earlier candidate JOB 5240; canonical-ICLIB rerun and separate acceptance pending. |
 | CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | **RESOLVED for valid, live descriptors (INTERPRETED-MVS-TESTED).** Pre-repair counterexample JOB 5284; corrected candidate JOBS 5285–5298; promoted canonical JOBS 5299–5312 (14/14 focused and 142/142 panel JES steps RC=0000, all interpreted CODE=0). Invalid/stale pointers remain CO0-U04. |
 | CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | Negative tests and policy for rejectable valid descriptors versus unrecoverable bad addresses; avoid claiming safe arbitrary-pointer inspection. |
 | CO0-U05 | Natural worker return and repeated activation | Trace `COBOOT` and test repeated return/re-entry and cleanup or exhaustion; do not infer automatic coroutine destruction. |
@@ -103,3 +103,18 @@ This work is a distinct interpreted-MVS research gate.
 The overall CO.0 status remains IN PROGRESS; CO.1–CO.5 remain
 NOT STARTED. This record does not approve a native interface,
 descriptor layout, global-slot allocation, or a new milestone.
+
+## 12 November 2026 — U02 compatibility qualification
+
+The first two accepted post-promotion probes (JOBS 5316–5317)
+passed output and saved compiler-artifact checks. JOB 5318
+(`fixed-stack-producer-consumer`) failed with interpreted CODE=-1
+and an ICINT19 invalid-instruction trace at C-offset 803 after
+`JIG10`, despite ten zero-RC JES steps. The final two accepted
+probes were run independently and passed with 28/28 zero-RC JES steps.
+Therefore original probe coverage is **four PASS / one FAIL** at the
+promoted canonical revision, not 5/5. The original fixed-stack
+source/golden must not be silently replaced. See the updated
+[U01/U02 gate note](co0-u01-static-interpreter-transfer-and-u02-five-probe-gate-20261112.md)
+for the separate existing COBOOT-style candidate and the pending
+canonical-default MVS compatibility gate. No native execution claimed.
