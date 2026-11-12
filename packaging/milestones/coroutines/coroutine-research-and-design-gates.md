@@ -137,3 +137,12 @@ CODE=0, runner RC=0 and all 14 JES RC=0000. A bounded
 fragmentation/coalescing source candidate is prepared but
 not executed on MVS. Malformed SIZE and native stack limits
 remain open questions.
+
+
+**12 November U06 coalescing acceptance:** JOB 5328 passed
+the nine-record fragmentation/coalescing oracle, interpreted
+CODE=0, runner RC=0 and independently all 14 JES steps
+RC=0000. A further bounded live-list middle-unlink
+candidate has been prepared but is not MVS-tested.
+General SIZE validity, exception cleanup, and native
+stack protection remain open.

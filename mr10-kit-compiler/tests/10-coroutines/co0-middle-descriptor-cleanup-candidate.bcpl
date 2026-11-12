@@ -1,0 +1,79 @@
+// CO.0 U06: middle descriptor unlink, survivor liveness and reuse.
+// Valid live descriptors only; no double free or stale access.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+$)
+
+LET WORKER(ARG) = ARG+1
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 400
+   AND A = 0
+   AND B = 0
+   AND C = 0
+   AND D = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 401)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   A := CREATECO(WORKER, 100)
+   IF A = 0 DO
+   $( WRITEF("CREATE A FAILED*N")
+      FINISH
+   $)
+   B := CREATECO(WORKER, 100)
+   IF B = 0 DO
+   $( WRITEF("CREATE B FAILED*N")
+      FINISH
+   $)
+   C := CREATECO(WORKER, 100)
+   IF C = 0 DO
+   $( WRITEF("CREATE C FAILED*N")
+      FINISH
+   $)
+
+   R := CALLCO(A, 10)
+   WRITEF("A FIRST %N*N", R)
+   R := CALLCO(B, 20)
+   WRITEF("B FIRST %N*N", R)
+   R := CALLCO(C, 30)
+   WRITEF("C FIRST %N*N", R)
+
+   R := DELETECO(B)
+   WRITEF("DELETE MIDDLE %N*N", R)
+   IF C!2 = A DO WRITEF("LINK OK*N")
+   IF C!2 \= A DO WRITEF("LINK BAD*N")
+
+   R := CALLCO(A, 40)
+   WRITEF("A AGAIN %N*N", R)
+   R := CALLCO(C, 50)
+   WRITEF("C AGAIN %N*N", R)
+
+   D := CREATECO(WORKER, 100)
+   IF D = 0 DO
+   $( WRITEF("REUSE CREATE FAILED*N")
+      FINISH
+   $)
+   R := CALLCO(D, 60)
+   WRITEF("D RESULT %N*N", R)
+   R := DELETECO(D)
+   WRITEF("DELETE D %N*N", R)
+   R := DELETECO(A)
+   WRITEF("DELETE A %N*N", R)
+   R := DELETECO(C)
+   WRITEF("DELETE C %N*N", R)
+   FINISH
+$)

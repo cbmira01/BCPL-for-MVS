@@ -51,3 +51,22 @@ BCPL phase success from zero JES RC alone.
 No canonical runtime, golden fixture, accepted suite manifest,
 MVS permanent dataset or native ABI change accompanies this
 research candidate.
+
+## JOB 5328 — accepted bounded fragmentation/coalescing evidence
+
+At source revision `76e43378cf8b146c57bdc58bf8763903c98fb049`,
+JOB **5328 (BCCO0ALL)** produced all nine exact records
+predicted above, in order. Final interpreted report:
+**EXECUTION CYCLES = 6511, CODE = 0**;
+runner RC=0. Independent `tools/mvs/job-summary 5328`:
+**JOB RESULT: SUCCESS**, highest RC=0000,
+summary RC=0 and **14/14 JES steps RC=0000**.
+Operator-local log:
+`workarea/co0-u06-coalescing/20261112T051949Z.log`.
+
+**Accepted INTERPRETED-MVS-TESTED scope:** the tested
+two-coroutine fragmentation, one-deletion insufficiency,
+full deallocation, adjacent free-block coalescing and
+subsequent large-coroutine execution/deletion. It does
+not validate malformed SIZE, arbitrary pointers, stack
+guards, native BCPLMEM or exceptional cleanup.
