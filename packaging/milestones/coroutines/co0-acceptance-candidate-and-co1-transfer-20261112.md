@@ -123,3 +123,8 @@ execution.
 **IN PROGRESS**; CO.1–CO.5 remain **NOT STARTED**. This record
 is a **formal acceptance candidate**, not an approved closure,
 milestone renumbering, new implementation or release authorization.
+
+
+## 12 November 2026 — Superseding formal owner decision
+
+The owner subsequently explicitly accepted and **CLOSED CO.0**, with all qualifications preserved, in the [formal CO.0 closure](co0-formal-closure-20261112.md). The earlier `READY FOR OWNER REVIEW — NOT CLOSED` and conditional acceptance language are retained as the candidate's historical checkpoint, but superseded. **CO.1–CO.5 remain NOT STARTED.**
