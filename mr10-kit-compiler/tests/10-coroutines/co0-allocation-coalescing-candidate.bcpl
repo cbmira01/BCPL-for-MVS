@@ -1,0 +1,76 @@
+// CO.0 U06: bounded fragmented-arena coalescing candidate.
+// All descriptors live until explicit deletion; no invalid pointers.
+GLOBAL $(
+START:1
+CURRCO:7
+COLIST:8
+WRITEF:76
+HEAPINIT:89
+CREATECO:91
+DELETECO:92
+CALLCO:93
+$)
+
+LET WORKER(ARG) = ARG+1
+
+AND START() BE
+$( LET ROOT = VEC 2
+   AND ARENA = VEC 240
+   AND A = 0
+   AND B = 0
+   AND C = 0
+   AND R = 0
+
+   HEAPINIT(ARENA, 241)
+   CURRCO := ROOT
+   ROOT!0 := 0
+   ROOT!1 := -1
+   ROOT!2 := 0
+   COLIST := ROOT
+
+   A := CREATECO(WORKER, 100)
+   IF A = 0 DO
+   $( WRITEF("FIRST CREATE FAILED*N")
+      FINISH
+   $)
+   R := CALLCO(A, 10)
+   WRITEF("FIRST RESULT %N*N", R)
+
+   B := CREATECO(WORKER, 100)
+   IF B = 0 DO
+   $( WRITEF("SECOND CREATE FAILED*N")
+      FINISH
+   $)
+   R := CALLCO(B, 20)
+   WRITEF("SECOND RESULT %N*N", R)
+
+   C := CREATECO(WORKER, 200)
+   WRITEF("BIG BEFORE %N*N", C)
+   IF C \= 0 DO
+   $( WRITEF("BIG BEFORE UNEXPECTED*N")
+      FINISH
+   $)
+
+   R := DELETECO(A)
+   WRITEF("DELETE FIRST %N*N", R)
+   C := CREATECO(WORKER, 200)
+   WRITEF("BIG PARTIAL %N*N", C)
+   IF C \= 0 DO
+   $( WRITEF("BIG PARTIAL UNEXPECTED*N")
+      FINISH
+   $)
+
+   R := DELETECO(B)
+   WRITEF("DELETE SECOND %N*N", R)
+   C := CREATECO(WORKER, 200)
+   IF C = 0 DO
+   $( WRITEF("BIG AFTER FAILED*N")
+      FINISH
+   $)
+   WRITEF("BIG AFTER OK*N")
+   R := CALLCO(C, 30)
+   WRITEF("BIG RESULT %N*N", R)
+   R := DELETECO(C)
+   WRITEF("BIG DELETE %N*N", R)
+   FINISH
+$)

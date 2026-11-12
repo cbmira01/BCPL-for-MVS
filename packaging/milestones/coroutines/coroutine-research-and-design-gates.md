@@ -128,3 +128,12 @@ records, interpreted CODE=0, runner RC=0, independent
 14/14 JES steps RC=0000. A distinct exact-fit candidate
 is source-checked but remains MVS-unverified. Broader
 SIZE, stack-guard and exceptional cleanup questions remain.
+
+
+**12 November U06 exact-fit checkpoint:** JOB 5327
+independently verified one-word-over refusal, exact-fit
+allocation and reuse with five correct records, interpreted
+CODE=0, runner RC=0 and all 14 JES RC=0000. A bounded
+fragmentation/coalescing source candidate is prepared but
+not executed on MVS. Malformed SIZE and native stack limits
+remain open questions.

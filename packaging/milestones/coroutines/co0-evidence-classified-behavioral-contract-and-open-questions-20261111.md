@@ -55,7 +55,7 @@ To reproduce the established canonical panel, use `tools/mr10/run-regression-pan
 | CO0-U03 | RESUMECO busy-target behavior and parent-chain preservation | **RESOLVED for valid, live descriptors (INTERPRETED-MVS-TESTED).** Pre-repair counterexample JOB 5284; corrected candidate JOBS 5285–5298; promoted canonical JOBS 5299–5312 (14/14 focused and 142/142 panel JES steps RC=0000, all interpreted CODE=0). Invalid/stale pointers remain CO0-U04. |
 | CO0-U04 | Invalid, stale, freed, active and null descriptor semantics | **BOUNDED VALID-DESCRIPTOR CASES VERIFIED (INTERPRETED-MVS-TESTED); BROADER U04 OPEN:** JOB 5325 observed 7/7 lines, CODE=0, runner RC=0, 14/14 JES RC=0000. Null/current deletion, live busy root rejection and post-rejection worker liveness passed. Stale, freed, malformed, arbitrary pointers unverified. |
 | CO0-U05 | Natural worker return and repeated activation | **RESOLVED for bounded ordinary-return/re-entry (INTERPRETED-MVS-TESTED):** canonical JOB 5324 returned 110 then 120 on distinct worker invocations, accepted deletion, CODE=0, runner RC=0, 14/14 JES steps RC=0000. Exceptional termination and native teardown unverified. |
-| CO0-U06 | Allocation bounds, SIZE validity, stack overruns and cleanup | **BOUNDED REFUSAL/RECOVERY VERIFIED (INTERPRETED-MVS-TESTED); BROADER U06 OPEN:** JOB 5326 five expected records, CODE=0, runner RC=0 and 14/14 JES RC=0000. Exact-fit candidate prepared separately; malformed SIZE, stack bounds, exceptional/native cleanup unverified. |
+| CO0-U06 | Allocation bounds, SIZE validity, stack overruns and cleanup | **BOUNDED REFUSAL, EXACT FIT AND REUSE VERIFIED (INTERPRETED-MVS-TESTED); BROADER U06 OPEN:** JOBS 5326 and 5327 matched five records each, CODE=0, runner RC=0, 14/14 JES RC=0000 each. A separate fragmentation/coalescing candidate awaits MVS; malformed SIZE, stack limits and exceptional/native cleanup remain unverified. |
 | CO0-U07 | Recover historical `KM10.COMAIN` and complete original callable interface | Missing archive member; continue targeted source/document search, but owner-approved engineering direction does **not** require exhaustive recovery before implementation. |
 | CO0-U08 | Equivalent **interpreted/native** behavior oracles | Prepare common BCPL tests for yield/resume/value, parent-chain transfer, first activation, nested locals, return/re-entry and deletion, with documented global/header mapping. Native tests and all native outcomes remain UNVERIFIED. |
 | CO0-U09 | Select native ownership, global numbers and descriptor/stack ABI | Reserve for CO.1 owner review against runtime contract, registry, CG370, MVS IFOX/IEWL/GO evidence. Nothing in this document allocates globals or approves the native architecture. |
@@ -200,3 +200,18 @@ deletion and reuse. No new acceptance is claimed for
 that candidate until MVS evidence is collected.
 CO0-U06 remains open for malformed SIZE, stack overrun,
 native cleanup and exceptional termination.
+
+## 12 November 2026 — U06 exact-fit acceptance and coalescing candidate
+
+**JOB 5327** verified the 161-word arena boundary:
+SIZE=150 refused (162 required), SIZE=149 succeeded
+(161 required), and a post-deletion SIZE=149 reallocation
+succeeded. Five expected records, CODE=0, runner RC=0,
+independent 14/14 JES RC=0000. Classified
+**INTERPRETED-MVS-TESTED**, limited to positive SIZE.
+
+A separate candidate now tests two simultaneously live
+coroutines, an oversized third request, partial deletion
+without enough contiguous space, and complete deletion
+followed by adjacent-free-block coalescing. This new
+fragmentation candidate has **no MVS evidence yet**.

@@ -38,3 +38,23 @@ declared acceptable.
 No invalid-pointer use, negative SIZE, arithmetic
 overflow, forced stack overrun, permanent dataset change,
 native ABI decision, or accepted-test manifest edit.
+
+## JOB 5327 — accepted exact-fit boundary evidence
+
+On 12 November 2026 at GitHub revision
+`68de4fcc234c91d67e4f126f7fceeadc49bf7749`,
+JOB **5327 (BCCO0ALL)** produced all five predicted
+output records: `ONE TOO LARGE 0`, `EXACT RESULT 31`,
+`EXACT DELETE -1`, `REUSE RESULT 41`,
+`REUSE DELETE -1`. The interpreter reported
+**3849 cycles, CODE=0** and the runner returned **RC=0**.
+The independently requested `tools/mvs/job-summary 5327`
+returned **RC=0**, **JOB RESULT: SUCCESS**, highest
+RC=0000 and all **14/14 JES steps RC=0000**.
+Operator log: `workarea/co0-u06-exact-fit/20261112T051006Z.log`.
+
+**Accepted INTERPRETED-MVS-TESTED scope:** one-word-over
+refusal, exact-fit allocation, ordinary deletion and subsequent
+exact-fit reuse under canonical ICINT19/ICLIB. General SIZE
+validation, malformed/negative requests, arithmetic overflow,
+stack exhaustion and native BCPLMEM remain unverified.
