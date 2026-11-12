@@ -173,3 +173,6 @@ CO.1 design, not speculative interpreted stress testing.
 
 
 **12 November CO0-U04 audit and U08 JES recheck:** [Descriptor validation and source-safety audit](co0-u04-descriptor-validation-and-source-safety-audit-20261112.md) records the canonical MR10 dereference-before-membership limitation and separates supported live-descriptor behavior from unsafe null/stale/nonmember experiments. It also records owner rechecks of JOBS 5331–5333: each summary shell RC=0, each 12/12 JES steps RC=0000 (**36/36** total). This is not a new run or native acceptance. CO.0 IN PROGRESS; CO.1–CO.5 NOT STARTED.
+
+
+**12 November CO0-U09 design briefing and JOB 5325 JES recheck:** [Source-backed native ownership/descriptor/stack alternatives](co0-u09-native-coroutine-ownership-and-stack-decision-briefing-20261112.md) compares native runtime constraints without allocating globals or approving a descriptor ABI. Owner-rechecked JOB 5325: JOB SUCCESS, **14/14 JES RC=0000**, summary shell RC=0. This recheck does not upgrade interpreted evidence to native acceptance. CO.0 remains IN PROGRESS; CO.1–CO.5 NOT STARTED.
