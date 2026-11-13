@@ -95,6 +95,28 @@ class CandidateTests(unittest.TestCase):
         self.assertNotIn('LA    0,256(0)',code)
         self.assertNotIn('ST    4,-4(',code)
 
+    def test_diagnostic_bcpl_failure_sites(self):
+        source=(FIXTURE/'source.bcpl').read_text('ascii')
+        for record in ('FALLOC','FINIT','FARG','FLOCAL','FVALUE','FSECOND'):
+            self.assertIn('CO1BCPL '+record,source)
+        self.assertNotIn('CO1BCPL FAIL',source)
+        self.assertIn('IF A \\=7 RESULTIS 97',source)
+        self.assertIn('IF LOCAL \\=314 | B \\=10 RESULTIS 98',source)
+
+    def test_diagnostic_go_records_are_rejected_but_extracted(self):
+        for status in ('FALLOC','FINIT','FARG','FLOCAL',
+                       'FVALUE','FSECOND'):
+            output='CO1BCPL '+status+'\n'
+            self.assertEqual(co.observed_records(output),[status])
+            with self.subTest(status=status),self.assertRaisesRegex(
+                    co.CandidateError,'native BCPL records differ'):
+                co.assess(SUMMARY,output,'8301')
+        self.assertEqual(co.observed_records(REPORT),
+                         ['A1','R1','A2','R2','PASS'])
+        self.assertEqual(co.observed_records(
+            "MSG DC CL80'CO1BCPL FARG'\n"+REPORT),
+            ['A1','R1','A2','R2','PASS'])
+
     def test_trailer_exports_two_test_local_globals(self):
         source='\n'.join(co.compiled_application(SAMPLE))
         self.assertIn('EXTRN CO1INIT,CO1SW',source)

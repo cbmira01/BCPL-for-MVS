@@ -31,7 +31,10 @@ REPORT = ROOT / 'tools/mvs/dump-report-for-job'
 CORE = ROOT / 'tools/datasets/dspal-core.py'
 MAIN = ROOT / 'bootstrap-toolchain/asm/bcplmain.asm'
 JOB_RE = re.compile(r'^JOB\s+(\d+)\s*$', re.M)
-OUTPUT_RE = re.compile(r'^CO1BCPL\s+(A1|R1|A2|R2|PASS|FAIL)\s*$')
+OUTPUT_RE = re.compile(
+    r'^CO1BCPL\s+(A1|R1|A2|R2|PASS|FAIL|FALLOC|FINIT|FARG|'
+    r'FLOCAL|FVALUE|FSECOND)\s*$'
+)
 EXPECTED = ('A1', 'R1', 'A2', 'R2', 'PASS')
 STEPS = ('ASMA', 'ASMM', 'ASMS', 'LKED', 'GO')
 
@@ -191,6 +194,12 @@ def build_deck(generated: str, main: str, bridge: str,
     return '\n'.join(cards) + '\n'
 
 
+def observed_records(report: str) -> list[str]:
+    """Parse complete BCPL execution records; ignore IFOX literals."""
+    return [m.group(1) for line in report.replace('\f', '').splitlines()
+            if (m := OUTPUT_RE.fullmatch(line.strip()))]
+
+
 def assess(summary: str, report: str, job: str) -> dict[str, object]:
     if not re.search(rf'^JOB\s+{re.escape(job)}\s+CO1BGO\s*$', summary, re.M):
         raise CandidateError('wrong completed GO job identity')
@@ -205,8 +214,7 @@ def assess(summary: str, report: str, job: str) -> dict[str, object]:
             steps[m.group(1)] = int(m.group(2))
     if set(steps) != set(STEPS) or any(value != 0 for value in steps.values()):
         raise CandidateError(f'missing or nonzero native JES steps: {steps}')
-    actual = [m.group(1) for line in report.replace('\f','').splitlines()
-              if (m:=OUTPUT_RE.fullmatch(line.strip()))]
+    actual = observed_records(report)
     if actual != list(EXPECTED):
         raise CandidateError(f'native BCPL records differ: {actual}')
     return {'steps':steps, 'bcpl_records':actual}
@@ -295,6 +303,7 @@ def execute() -> int:
         result['job_report_rc']=report.returncode
         if report.returncode:
             raise CandidateError('unable to recover native JES report')
+        result['observed_native_records'] = observed_records(report.stdout)
         result.update(assess(summary,report.stdout,job))
         result['status']='PASS'
         result['evidence_class']='OWNER-REPORTED NATIVE-MVS-TESTED'
