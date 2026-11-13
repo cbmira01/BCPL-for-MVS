@@ -50,3 +50,15 @@ The candidate uses test-local G!297, G!298 and G!299; the 24-word descriptor and
 This successful positive case does **not** prove arbitrary-depth recursion, multiple worker contexts, all register/condition-code cases, nested calls close to the stack limit, exhaustion/overflow handling, invalid/stale descriptors, reentrancy, deletion or resource reuse, worker reactivation after termination, or the public `CREATECO`/`CALLCO`/`RESUMECO` lifecycle library.
 
 The immediate next work in **CO.1** is to turn the observed native ABI behavior into an owner-reviewed production design: descriptor and register-save contract, active-stack limit and guard policy, module/global allocation, worker lifetime, error handling and first-entry/exit rules. **Do not mark CO.1 CLOSED or open CO.2 without owner approval.** No new MVS run is required merely to record this PASS.
+
+## Post-PASS safety qualification — 13 November 2026
+
+The console PASS above is valid positive-path evidence at its pinned
+source revision. Subsequent review of the real CG370 listing identified
+an independent frame-bound overrun in `CO1SW`: a 64-byte STM at the
+caller's W while generated `/CN` call frames left only 28 or 32 bytes.
+Therefore **do not promote that binary or infer safe general stack use
+from this PASS**. The proposed private-register-buffer correction is
+recorded in [the subsequent candidate note](co1-switch-workspace-safety-candidate-20261113.md)
+and requires fresh IFOX/IEWL/GO verification. This does not retract the
+observed trace or close CO.1.

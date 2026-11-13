@@ -135,3 +135,22 @@ JOB numbers, exact IFOX/IEWL/GO RCs and native records; a failure must
 be diagnosed from retained real output. No result should be promoted
 to accepted production `CHANGECO` until the complete CO.1 design gate
 and later CO.2–CO.5 acceptance gates have been explicitly satisfied.
+
+## Post-JOB 5357 candidate safety erratum — 13 November 2026
+
+The original source-commit-time statement that the 64-byte register
+snapshot used the caller's BCPL workspace was **not a safe design**.
+The owner's actual Cambridge-generated `/CN` listing established a
+52-byte WORKER frame with `W=P+24` (28 bytes remaining), and a 256-byte
+START frame with `W=P+224` (32 bytes remaining). The original
+`STM 0,15,0(15)` wrote 64 bytes at W, crossing either generated frame
+boundary. Native JOB 5357 passing does **not** prove frame-bound safety.
+
+The corrective candidate uses `CO1SREG DS 16F`, a private 64-byte
+register scratch area within `CO1CHG`, before copying registers to
+the outgoing 24-word descriptor. It retains only the necessary
+three-word RETIMPL frame in W. See
+[CO.1 switch workspace correction](co1-switch-workspace-safety-candidate-20261113.md).
+This is a *new unverified candidate* until a fresh real MVS run. The
+original historical candidate explanation above remains preserved as
+the state at its initial source commit.

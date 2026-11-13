@@ -110,31 +110,35 @@ CO1BAD   B     CO1BAD           TERMINATED WORKER MUST NOT RESUME
          LTORG
          DROP  10
 *
-* Ordinary BCPL call; 64-byte snapshot is candidate-only workspace.
+* Snapshot incoming registers to our private static buffer, NOT the
+* generated caller W frame. /CN supplies only linkage space.
+* Only three return-frame words are written to that workspace.
+* At BCPL call entry R4=CO1SW; base on it before clobbering GPRs.
 * No MVS service or checked BCPL entry occurs during limit updates.
 *
-CO1SW    STM   0,15,0(15)       INCOMING GPRS BEFORE SCRATCH USE
-         LR    5,15             PRIVATE SWITCH FRAME / P
+         USING CO1SW,4
+CO1SW    STM   0,15,CO1SREG     SAVE REGISTERS WITHOUT W OVERFLOW
+         DROP  4
+         LR    5,15             BCPL CALL WORKSPACE W
          BALR  10,0
          USING *,10
          L     2,CURPTR
-         MVC   32(64,2),0(5)    SAVE ALL ORIGINAL R0..R15
-         L     0,60(5)          ORIGINAL R15 = SWITCH FRAME
-         ST    0,52(2)          SAVED R5 (P) ON RESUMPTION
+         MVC   32(64,2),CO1SREG PRESERVE ALL ORIGINAL R0..R15
+         ST    5,52(2)          SAVED R5 (P) ON RESUMPTION
 * Change the first three snapshot words into a real RETIMPL frame:
 * R4 at frame!0, original caller P at frame!1, caller R6 at frame!2.
-         L     0,16(5)
+         L     0,CO1SREG+16     ORIGINAL R4
          ST    0,0(5)
-         L     0,20(5)
+         L     0,CO1SREG+20     ORIGINAL R5
          ST    0,4(5)
-         L     0,24(5)
+         L     0,CO1SREG+24     ORIGINAL R6
          ST    0,8(5)
          L     0,=A(CO1RET)
          ST    0,56(2)          SAVED R6 = RESUME TRAMPOLINE
 * Original R8 is at offset 32; original R7 is at offset 28.
-         L     2,32(5)          TARGET IS ORIGINAL R8 WORD PTR
+         L     2,CO1SREG+32     TARGET IS ORIGINAL R8 WORD PTR
          SLL   2,2              DESCRIPTOR BYTE ADDRESS
-         L     0,28(5)          ORIGINAL R7 VALUE
+         L     0,CO1SREG+28     ORIGINAL R7 VALUE
          ST    0,60(2)          INCOMING SAVED R7
          L     0,20(2)          INCOMING SAFE LIMIT (BYTE)
          L     4,=A(STKLIM)
@@ -156,4 +160,5 @@ CO1RET BCR   15,11           ORDINARY BCPL RETURN TRAMPOLINE
 ROOTPTR  DC    F'0'
 WORKPTR  DC    F'0'
 CURPTR   DC    F'0'
+CO1SREG  DS    16F             PRIVATE R0..R15 ENTRY SCRATCH
          END   CO1CHG

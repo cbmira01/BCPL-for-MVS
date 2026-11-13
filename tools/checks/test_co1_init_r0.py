@@ -45,8 +45,8 @@ class R0Contract(unittest.TestCase):
         self.assertEqual(self.init.count('ST    6,0(4)'),1)
 
     def test_switch_restores_zero_register_image(self):
-        self.assertIn('CO1SW    STM   0,15,0(15)',self.source)
-        self.assertIn('MVC   32(64,2),0(5)',self.source)
+        self.assertIn('CO1SW    STM   0,15,CO1SREG',self.source)
+        self.assertIn('MVC   32(64,2),CO1SREG',self.source)
         self.assertIn('LM    0,15,0(1)',self.source)
 
     def test_saved_r6_original_continuation_retimpl_not_clobbered(self):

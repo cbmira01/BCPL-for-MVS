@@ -75,11 +75,12 @@ class CandidateTests(unittest.TestCase):
 
     def test_switch_preserves_register_image_then_return_frame(self):
         code=(FIXTURE/'co1change.asm').read_text('ascii')
-        for line in ('STM   0,15,0(15)', 'MVC   32(64,2),0(5)',
-                     'ST    0,52(2)', 'ST    0,56(2)',
-                     'L     0,16(5)', 'ST    0,0(5)',
-                     'L     0,20(5)', 'ST    0,4(5)',
-                     'L     0,24(5)', 'ST    0,8(5)',
+        for line in ('CO1SW    STM   0,15,CO1SREG',
+                     'MVC   32(64,2),CO1SREG',
+                     'ST    5,52(2)', 'ST    0,56(2)',
+                     'L     0,CO1SREG+16', 'ST    0,0(5)',
+                     'L     0,CO1SREG+20', 'ST    0,4(5)',
+                     'L     0,CO1SREG+24', 'ST    0,8(5)',
                      'LM    0,15,0(1)', 'CO1RET BCR   15,11'):
             self.assertIn(line,code)
 
