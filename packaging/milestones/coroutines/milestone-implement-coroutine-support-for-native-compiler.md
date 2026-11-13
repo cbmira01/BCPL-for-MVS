@@ -2,8 +2,10 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Established:** 10 November 2026  
-**Status:** ESTABLISHED; CO.0 CLOSED (qualified owner acceptance, 12 November 2026); CO.1 investigation IN PROGRESS  
-**Marches:** CO.0 CLOSED; CO.1 IN PROGRESS (investigation only); CO.2–CO.5 NOT STARTED  
+**Status:** ESTABLISHED; CO.0 CLOSED (qualified owner acceptance, 12 November 2026); CO.1 investigation IN PROGRESS
+
+**Marches:** CO.0 CLOSED; CO.1 IN PROGRESS (investigation only); CO.2–CO.5 NOT STARTED
+
 **Target:** Native System/370 BCPL applications under MVS 3.8J
 
 ## Purpose and boundaries
