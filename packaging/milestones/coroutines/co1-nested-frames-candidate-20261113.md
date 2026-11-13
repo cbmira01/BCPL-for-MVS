@@ -82,3 +82,19 @@ behavior. Only the existing one-worker positive path has passed
 MVS so far; nested-frame verification is pending.
 
 **CO.0 CLOSED (qualified); CO.1 IN PROGRESS; CO.2–CO.5 NOT STARTED.**
+
+## Post-execution note — JOB 5360/5361 PASS
+
+Owner-reported native MVS execution on 13 November 2026 has now
+completed successfully for this exact fixture and runner, using
+GitHub `main` `2742a766891b8ac65a0551f0994f42b76388c452`.
+Resident Cambridge compiler JOB **5360** and native JOB **5361**
+produced the five ordered records `A1 R1 A2 R2 PASS`; the runner
+reported three IFOX, IEWL and GO steps all RC=0000, and runner RC=0.
+The retained evidence directory is
+`workarea/co1-bcpl-nested/20261113T234153Z-sxwgp23i`.
+See [the native JOB 5360/5361 evidence record](co1-nested-frames-jes-5360-5361-pass-20261113.md).
+
+This supersedes this note's earlier pending-execution language for the
+positive nested-frame test, without changing the candidate or approving
+production ABI, general stack safety, error paths, or lifecycle semantics.
