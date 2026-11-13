@@ -12,6 +12,7 @@ CO1CHG   CSECT
          EXTRN STKLIM,APLIMIT
 *
 CO1INIT  STM   4,10,0(15)
+         LR    6,0              SAVE CG370 R0; R6 SAVED IN FRAME
          LR    5,15
          BALR  10,0
          USING *,10
@@ -80,6 +81,7 @@ CO1PAINT ST    0,0(7)
          ST    0,8(9)
          LA    4,32(8)
          STM   0,15,0(4)        COPY ROOT GENERATED CODE CONSTANTS
+         ST    6,0(4)           FIRST WORKER R0 = CALLER R0
          L     0,28(8)
          ST    0,16(4)          RESTORED R4 = WORKER PROCEDURE
          ST    9,20(4)          RESTORED R5 = SYNTHETIC CALLER
@@ -87,6 +89,7 @@ CO1PAINT ST    0,0(7)
          ST    0,24(4)          RESTORED R6 = FIRST ENTRY
          LA    0,64(9)
          ST    0,60(4)          RESTORED R15 = WORKER WORKSPACE
+         LR    0,6              RESTORE CG370 R0 FOR CALLER
          SR    7,7              CO1INIT RESULT = ZERO
          BCR   15,11            RETURN THROUGH BCPL RETIMPL
          LTORG
