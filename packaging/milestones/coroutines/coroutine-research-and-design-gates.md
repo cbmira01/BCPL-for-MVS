@@ -2,7 +2,7 @@
 
 **Milestone:** [Implement coroutine support for native compiler](milestone-implement-coroutine-support-for-native-compiler.md)  
 **Recorded:** 10 November 2026  
-**Status:** OPEN; CO.0 IN PROGRESS, research and approval goals, not native implementation evidence
+**Status:** OPEN; CO.0 CLOSED (qualified acceptance); CO.1 IN PROGRESS (source investigation, not native implementation evidence)
 
 **Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. The owner accepted the five golden contracts on 11 November; these are interpreted, not native, tests. The expanded runner has since been re-executed on MVS under the promoted canonical implementation: four original probes pass, the legacy fixed-stack source fails (JOB 5318), and the separately retained corrected-frame source passes (JOB 5321). CO0-U02 is resolved with this explicit compatibility qualification, not with an unqualified five-case PASS.
 
@@ -187,3 +187,7 @@ CO.1 design, not speculative interpreted stress testing.
 ## 12 November 2026 — Formal owner closure supersedes earlier CO.0 status notes
 
 The owner explicitly accepted and **CLOSED CO.0 — Historical Research and Behavioral Contract** with documented qualifications. See [formal CO.0 closure](co0-formal-closure-20261112.md). Earlier dated references to CO.0 IN PROGRESS or NOT CLOSED describe historical checkpoints and are superseded. Original post-promotion fixed-stack JOB 5318 remains FAIL; corrected candidate JOB 5321 PASS is separate. Missing KM10.COMAIN, incomplete internal trace and native-unverified status remain limitations. **CO.1–CO.5 NOT STARTED**; no native implementation authorized.
+
+## 12 November 2026 — CO.1 source investigation initiated
+
+The owner authorized **CO.1 — Native ABI and Stack Architecture** source investigation and an evidence commit. The [initial CO.1 source investigation](co1-native-abi-and-stack-source-investigation-20261112.md) records CG370 linkage, native checked entry, both `STKLIM` and `APLIMIT` consumers, external G40 source/contract discrepancy, stack paint and STACKHWM, allocator constraints, global collisions and isolated candidate verification gates. No descriptor offsets, register-save set, native globals, code implementation or native MVS test results are accepted by this record. **CO.1 IN PROGRESS; CO.2–CO.5 NOT STARTED.**
