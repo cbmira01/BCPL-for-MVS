@@ -126,7 +126,7 @@ CO1SW    STM   0,15,0(15)       INCOMING GPRS BEFORE SCRATCH USE
          ST    0,4(5)
          L     0,24(5)
          ST    0,8(5)
-         L     0,=A(CO1RETURN)
+         L     0,=A(CO1RET)
          ST    0,56(2)          SAVED R6 = RESUME TRAMPOLINE
 * Original R8 is at offset 32; original R7 is at offset 28.
          L     2,32(5)          TARGET IS ORIGINAL R8 WORD PTR
@@ -146,7 +146,7 @@ CO1SW    STM   0,15,0(15)       INCOMING GPRS BEFORE SCRATCH USE
          LA    1,32(2)
          LM    0,15,0(1)        RESTORE THE INCOMING CONTEXT
          BCR   15,6             ENTER OR RESUME
-CO1RETURN BCR   15,11           ORDINARY BCPL RETURN TRAMPOLINE
+CO1RET BCR   15,11           ORDINARY BCPL RETURN TRAMPOLINE
          LTORG
          DROP  10
          DS    0F

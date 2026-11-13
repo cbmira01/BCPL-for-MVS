@@ -63,6 +63,16 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual((FIXTURE/'cambridge-parm.txt').read_text('ascii').splitlines(),
                          ['/CN'+'/'*77])
 
+    def test_switch_symbol_limit_rejected_before_mvs(self):
+        source=(FIXTURE/'co1change.asm').read_text('ascii')
+        co.checked_cards(source,'CO1CHG')
+        altered=source.replace('CO1RET BCR', 'CO1RETURN BCR')
+        self.assertNotEqual(altered,source)
+        with self.assertRaisesRegex(co.CandidateError,'invalid IFOX label'):
+            co.checked_cards(altered,'CO1CHG')
+        with self.assertRaisesRegex(co.CandidateError,'invalid IFOX label'):
+            co.build_deck(SAMPLE,MAIN,altered,JOB_CARD,OBJ)
+
     def test_switch_preserves_register_image_then_return_frame(self):
         code=(FIXTURE/'co1change.asm').read_text('ascii')
         for line in ('STM   0,15,0(15)', 'MVC   32(64,2),0(5)',
@@ -70,7 +80,7 @@ class CandidateTests(unittest.TestCase):
                      'L     0,16(5)', 'ST    0,0(5)',
                      'L     0,20(5)', 'ST    0,4(5)',
                      'L     0,24(5)', 'ST    0,8(5)',
-                     'LM    0,15,0(1)', 'CO1RETURN BCR   15,11'):
+                     'LM    0,15,0(1)', 'CO1RET BCR   15,11'):
             self.assertIn(line,code)
 
     def test_worker_initialization_and_stack_bounds(self):

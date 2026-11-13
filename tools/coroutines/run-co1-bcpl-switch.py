@@ -49,6 +49,13 @@ def checked_cards(text: str, name: str) -> list[str]:
             raise CandidateError(f'{name}:{i}: invalid IFOX source card')
         if row == '/*' or row.startswith('//'):
             raise CandidateError(f'{name}:{i}: JCL delimiter in source')
+        # IFOX assembler symbols are limited to eight characters.  Check
+        # our separately assembled candidate before any JES submission.
+        if name == 'CO1CHG' and row and row[0] not in (' ', '*'):
+            label = row.split(None, 1)[0]
+            if not re.fullmatch(r'[A-Z@$#][A-Z0-9@$#]{0,7}', label):
+                raise CandidateError(
+                    f'{name}:{i}: invalid IFOX label {label!r}')
     return rows
 
 
