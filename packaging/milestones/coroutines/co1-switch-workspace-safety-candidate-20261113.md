@@ -84,3 +84,24 @@ before further redesign.
 CO.0 remains CLOSED (qualified). CO.1 **IN PROGRESS**; CO.2–CO.5
 **NOT STARTED**. No closure, public API approval, regression-ID
 assignment, clean-room release claim, or installed-object promotion.
+
+## JOB 5358/5359 native verification — 13 November 2026
+
+The owner reran the **exact corrected source** on GitHub `main`
+`70b450b9130dcd378cf1028197494a9d75dcfcb8`. The MVS-facing
+runner reported **PASS**, including three IFOX, IEWL and GO steps,
+all RC=0000, and the exact ordered sequence `A1 R1 A2 R2 PASS`.
+The job numbers were **compiler JOB 5358** and **native GO JOB 5359**.
+The run's WSL evidence directory is
+`workarea/co1-bcpl-switch/20261113T211053Z-49qph4nh`.
+
+This supersedes this document's prior **target MVS result PENDING**
+status for the *private register-buffer correction*, without converting
+the proposal into a production API. See [the actual native result
+record](co1-switch-workspace-jes-5358-5359-pass-20261113.md).
+
+The passing trace demonstrates the single-worker positive path with
+native checks and successful linkage, but not independently exhaustive
+memory integrity, near-limit recursion, concurrent/reentrant entry,
+invalid-descriptor handling, or resource lifecycle. CO.1 remains
+IN PROGRESS; CO.2–CO.5 remain NOT STARTED.
