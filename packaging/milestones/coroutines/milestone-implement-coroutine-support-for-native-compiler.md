@@ -2,9 +2,9 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Established:** 10 November 2026  
-**Status:** ESTABLISHED; CO.0 CLOSED (qualified owner acceptance, 12 November 2026); CO.1 investigation IN PROGRESS
+**Status:** ESTABLISHED; CO.0 CLOSED (qualified owner acceptance, 12 November 2026); CO.1 IN PROGRESS (isolated native BCPL candidate PASS; production design gate OPEN)
 
-**Marches:** CO.0 CLOSED; CO.1 IN PROGRESS (investigation only); CO.2–CO.5 NOT STARTED
+**Marches:** CO.0 CLOSED; CO.1 IN PROGRESS (candidate MVS-tested; owner design acceptance pending); CO.2–CO.5 NOT STARTED
 
 **Target:** Native System/370 BCPL applications under MVS 3.8J
 
@@ -51,7 +51,7 @@ These are working boundaries, **not an approved callable interface, descriptor l
 | **CO.4** | **Robustness and Edge-Case Verification** | Verify stack boundaries, recursion, repeated switches, allocation exhaustion, invalid/active/stale descriptors, cleanup and error paths. Do not claim general recovery from arbitrary machine addresses or unrecovered MVS abends. **Gate:** focused positive/negative evidence and no newly broken runtime invariants. |
 | **CO.5** | **Integration, Regression, and Release** | Add named tests to the native Bootstrap suite without renumbering historical cases; run MR10, native and applicable project suites; prove clean-room reconstruction, reproducible linking, documentation and release readiness. **Gate:** separate owner acceptance with source revision, complete per-suite outcomes, IFOX/IEWL/GO/JES evidence and separately authorized installation/promotion. |
 
-**CO.0 is CLOSED (owner-accepted with qualifications, 12 November 2026); CO.1 is IN PROGRESS (source investigation only; design NOT APPROVED); CO.2–CO.5 are NOT STARTED.** See [formal CO.0 closure](co0-formal-closure-20261112.md) and [CO.1 source investigation](co1-native-abi-and-stack-source-investigation-20261112.md). Subsequent marches close only after separate evidence-backed owner decisions.
+**CO.0 is CLOSED (owner-accepted with qualifications, 12 November 2026); CO.1 is IN PROGRESS (isolated native candidate passed JOBs 5356/5357; production design NOT APPROVED); CO.2–CO.5 are NOT STARTED.** See [formal CO.0 closure](co0-formal-closure-20261112.md) and [CO.1 source investigation](co1-native-abi-and-stack-source-investigation-20261112.md). Subsequent marches close only after separate evidence-backed owner decisions. See the [JOB 5356/5357 native candidate PASS](co1-bcpl-native-candidate-jes-5356-5357-pass-20261113.md) for the first fully successful compiler/IFOX/IEWL/GO BCPL coroutine switch.
 
 ## Rules applying to every march
 

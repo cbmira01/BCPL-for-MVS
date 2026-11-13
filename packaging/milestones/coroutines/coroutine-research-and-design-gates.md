@@ -2,7 +2,7 @@
 
 **Milestone:** [Implement coroutine support for native compiler](milestone-implement-coroutine-support-for-native-compiler.md)  
 **Recorded:** 10 November 2026  
-**Status:** OPEN; CO.0 CLOSED (qualified acceptance); CO.1 IN PROGRESS (source investigation, not native implementation evidence)
+**Status:** OPEN; CO.0 CLOSED (qualified acceptance); CO.1 IN PROGRESS (candidate NATIVE-MVS-TESTED; production design approval pending)
 
 **Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. The owner accepted the five golden contracts on 11 November; these are interpreted, not native, tests. The expanded runner has since been re-executed on MVS under the promoted canonical implementation: four original probes pass, the legacy fixed-stack source fails (JOB 5318), and the separately retained corrected-frame source passes (JOB 5321). CO0-U02 is resolved with this explicit compatibility qualification, not with an unqualified five-case PASS.
 
@@ -64,6 +64,9 @@ Interpret a claim as **DECLARED**, **SOURCE-OBSERVED**, **INTERPRETED-MVS-TESTED
 **CO.0 gate:** reviewed behavior table, provenance, reproducible interpreted test recipe, open unknowns. No new native implementation.
 
 ## CO.1 — Native ABI and Stack Architecture
+
+**13 November native execution checkpoint:** The owner reported PASS for resident compiler JOB 5356 and native job JOB 5357 at GitHub `edb8b765b204903b0cbb9688e066319bbb15bb20`. The candidate runner requires all three IFOX, IEWL and GO steps RC=0000, and it matched the ordered BCPL output `A1 R1 A2 R2 PASS`. See [candidate JES evidence](co1-bcpl-native-candidate-jes-5356-5357-pass-20261113.md). This proves the isolated positive-path candidate, **not** the production descriptor, public ABI, lifecycle, invalid-descriptor behavior, or CO.1 design gate.
+
 
 - [ ] Examine actual CG370-emitted call/return/checked-entry sequences around nested `CHANGECO` calls; document R4/R5/R6/R7–R9/R11/R12/R15, workspace and continuation behavior.
 - [ ] Prove how a never-run coroutine's first frame and continuation are initialized, how context switching returns values, and how the root context is represented.
