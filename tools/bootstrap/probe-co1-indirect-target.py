@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""One fresh MVS compile-only CALLIND target audit with retained receipts.
+"""Audit a fresh or saved MVS compiler-only CALLIND listing.
 
-Runs the existing independently accepted structural compiler probe and
-then checks the R4 target in the named CALLIND procedure. No IFOX/IEWL/GO.
+--reuse-evidence replays retained MVS compiler output without JES submission.
+Never modifies the preexisting target-audit.json from a failed run.
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -19,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / 'workarea/co1-indirect-entry'
 OLD_PROBE = ROOT / 'tools/bootstrap/probe-co1-indirect-entry.py'
 AUDIT = ROOT / 'tools/bootstrap/co1-indirect-target-audit.py'
+SOURCE = ROOT / 'packaging/milestones/coroutines/probes/co1-indirect-entry/source.bcpl'
+PARM = ROOT / 'packaging/milestones/coroutines/probes/co1-indirect-entry/cambridge-parm.txt'
 EVIDENCE = re.compile(r'^CO\.1 INDIRECT evidence: (workarea/co1-indirect-entry/[^\s/]+)\s*$', re.M)
 RESULT = re.compile(r'^CO\.1 INDIRECT PASS: JOB (\d+), checked (\d+), '
                     r'three-formal (\d+), calls (\d+); compile-only\s*$', re.M)
@@ -27,18 +30,30 @@ RESULT = re.compile(r'^CO\.1 INDIRECT PASS: JOB (\d+), checked (\d+), '
 def evidence_path(output: str) -> Path:
     paths = EVIDENCE.findall(output)
     if len(paths) != 1:
-        raise ValueError('expected one fresh CO.1 INDIRECT evidence location')
+        raise ValueError('expected exactly one original MVS evidence location')
     target = (ROOT / paths[0]).resolve()
     if target.parent != BASE.resolve():
-        raise ValueError('evidence path must be an immediate child of workarea/co1-indirect-entry')
+        raise ValueError('evidence path is outside the expected MVS workarea')
     return target
 
 
-def extract_result(stdout: str, summary: dict[str, object]) -> str:
-    found = RESULT.findall(stdout)
-    if len(found) != 1:
-        raise ValueError('no unique structural compiler-only PASS report')
-    job, entries, formals, calls = found[0]
+def select_reuse(value: str) -> Path:
+    path = Path(value)
+    if not path.is_absolute():
+        path = ROOT / path
+    resolved = path.resolve()
+    if resolved.parent != BASE.resolve():
+        raise ValueError('reuse path must be one directory under workarea/co1-indirect-entry')
+    if not resolved.is_dir():
+        raise ValueError('saved MVS evidence directory is absent')
+    return resolved
+
+
+def extract_result(output: str, summary: dict[str, object]) -> str:
+    result = RESULT.findall(output)
+    if len(result) != 1:
+        raise ValueError('saved evidence lacks a unique structural compiler PASS')
+    job, entries, formals, calls = result[0]
     if (summary.get('status') != 'PASS' or summary.get('jes_job_id') != job or
             summary.get('checked_entries') != int(entries) or
             summary.get('three_formal_entries') != int(formals) or
@@ -47,58 +62,73 @@ def extract_result(stdout: str, summary: dict[str, object]) -> str:
             summary.get('assembled') is not False or
             summary.get('linked') is not False or
             summary.get('native_go') is not False):
-        raise ValueError('structural PASS differs from saved compiler summary')
+        raise ValueError('saved structural PASS disagrees with summary.json')
     return job
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--reuse-evidence', metavar='WORKAREA_PATH',
+                        help='audit saved MVS compiler output, without new JES submission')
+    return parser.parse_args()
 
 
 def run() -> int:
     os.umask(0o077)
+    args = parse_args()
     folder: Path | None = None
-    audit_record: dict[str, object] = {
-        'probe': 'CO.1 CALLIND R4 target origin after fresh MVS compile-only',
-        'status': 'FAIL', 'assembled': False, 'linked': False, 'native_go': False,
+    replay = args.reuse_evidence is not None
+    receipt: dict[str, object] = {
+        'probe': 'CO.1 verified CALLIND R4 target origin from MVS compiler text',
+        'audit_version': 2, 'status': 'FAIL', 'reused_existing_mvs_job': replay,
+        'assembled': False, 'linked': False, 'native_go': False,
     }
     try:
-        # The existing probe preserves compiler.log, generated.s370.asm and
-        # summary.json even when the MVS compiler or structural oracle fails.
-        with subprocess.Popen([sys.executable, str(OLD_PROBE)], cwd=ROOT,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              text=True) as child:
-            stdout, stderr = child.communicate()
-            rc = child.returncode
-        folder = evidence_path(stdout)
-        if not folder.is_dir():
-            raise ValueError('fresh evidence directory missing')
-        (folder / 'target-probe.log').write_text(stdout + stderr, encoding='utf-8')
-        if rc:
-            raise ValueError(f'original compile-only structural probe RC={rc}')
+        if replay:
+            folder = select_reuse(args.reuse_evidence)
+            output = (folder / 'target-probe.log').read_text(encoding='utf-8')
+        else:
+            # The original structural probe preserves its full compiler output.
+            process = subprocess.run([sys.executable, '-B', str(OLD_PROBE)], cwd=ROOT,
+                                     text=True, capture_output=True, check=False)
+            output = process.stdout + process.stderr
+            folder = evidence_path(output)
+            if not folder.is_dir():
+                raise ValueError('new compiler evidence directory missing')
+            (folder / 'target-probe.log').write_text(output, encoding='utf-8')
+            if process.returncode:
+                raise ValueError(f'original compiler structural probe RC={process.returncode}')
         summary = json.loads((folder / 'summary.json').read_text(encoding='utf-8'))
-        job = extract_result(stdout, summary)
-        listing = (folder / 'generated.s370.asm').read_text(encoding='latin-1')
-        audit_record['listing_sha256'] = hashlib.sha256(listing.encode('latin-1')).hexdigest()
-        audit_record['structural_compiler_job'] = job
-        audit_record['source_git_head'] = summary.get('git_head')
-        audit_record['compiler_driver_rc'] = summary.get('compiler_driver_rc')
-        # Import a pure parser: no resident MVS operations in this step.
-        spec = importlib.util.spec_from_file_location('co1_indirect_target_audit', AUDIT)
+        if not isinstance(summary, dict):
+            raise ValueError('saved compiler summary is not a JSON object')
+        job = extract_result(output, summary)
+        if summary.get('source_sha256') != hashlib.sha256(SOURCE.read_bytes()).hexdigest():
+            raise ValueError('saved compiler source hash differs from tracked probe fixture')
+        if summary.get('parm_sha256') != hashlib.sha256(PARM.read_bytes()).hexdigest():
+            raise ValueError('saved compiler parameter hash differs from tracked /CN fixture')
+        assembler = (folder / 'generated.s370.asm').read_bytes()
+        receipt['listing_sha256'] = hashlib.sha256(assembler).hexdigest()
+        receipt['source_git_head'] = summary.get('git_head')
+        receipt['compiler_driver_rc'] = summary.get('compiler_driver_rc')
+        receipt['jes_job_id'] = job
+        spec = importlib.util.spec_from_file_location('co1_target_audit', AUDIT)
         if spec is None or spec.loader is None:
-            raise ValueError('cannot load indirect target audit')
+            raise ValueError('could not import target audit')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        audit_record.update(module.audit_indirect_target(listing))
-        audit_record['status'] = 'PASS'
-        print(f"CO.1 TARGET PASS: JOB {job}, {audit_record['entry_label']}, "
-              f"origin {audit_record['target_origin']}; compile-only")
+        receipt.update(module.audit_indirect_target(assembler.decode('latin-1')))
+        receipt['status'] = 'PASS'
+        qualifier = 'saved MVS compiler evidence; no new JES' if replay else 'compile-only'
+        print(f"CO.1 TARGET PASS: JOB {job}, R4 from {receipt['target_origin']}; {qualifier}")
         return 0
-    except (OSError, ValueError, json.JSONDecodeError, UnicodeError) as exc:
-        audit_record['reason'] = str(exc)
+    except (OSError, UnicodeError, ValueError) as exc:
+        receipt['reason'] = str(exc)
         print(f'CO.1 TARGET FAIL: {exc}', file=sys.stderr)
         return 1
     finally:
         if folder is not None and folder.is_dir():
-            (folder / 'target-audit.json').write_text(
-                json.dumps(audit_record, indent=2) + '\n', encoding='utf-8'
-            )
+            name = 'target-audit-v2.json' if replay else 'target-audit.json'
+            (folder / name).write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
             print(f'CO.1 TARGET evidence: {folder.relative_to(ROOT)}')
 
 
