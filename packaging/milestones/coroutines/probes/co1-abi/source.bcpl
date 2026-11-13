@@ -1,0 +1,12 @@
+GLOBAL $( START:1; DEBUGINT:150 $)
+
+LET SUM4(A,B,C,D) = A+B+C+D
+
+LET WRAP(X,Y) = SUM4(X,Y,10,20)
+
+LET START () BE
+$(1
+    LET Z = WRAP(5,7)
+    DEBUGINT(Z)
+    FINISH
+$)1
