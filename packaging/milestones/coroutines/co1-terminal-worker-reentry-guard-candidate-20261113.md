@@ -101,3 +101,35 @@ records. A failure must drive diagnosis of the retained JES report;
 no installed object is to be promoted automatically.
 
 **CO.0 CLOSED (qualified); CO.1 IN PROGRESS; CO.2–CO.5 NOT STARTED.**
+
+## Native execution result — JOB 5366/5367 PASS
+
+The owner ran the exact test-only terminal-guard fixture on MVS 3.8J
+from GitHub `main` revision
+`e48dd4c5573c6094a19db3bf99464ffd29d3862b`. The result:
+
+```text
+Git pull RC=0
+HEAD=e48dd4c5573c6094a19db3bf99464ffd29d3862b
+CO.1 BCPL PASS: compiler JOB 5366, GO JOB 5367; IFOX 3, IEWL 1, GO 1; A1 R1 A2 R2 PASS
+CO.1 BCPL evidence: workarea/co1-bcpl-terminal-guard/20261114T005751Z-0xvovg5a
+CO.1 terminal-guard native runner RC=0
+```
+
+The strict inherited runner required all five native steps (three IFOX,
+IEWL, GO) to return RC=0000 and exactly the five ordered BCPL records.
+The BCPL program reaches `PASS` only after rejecting known-live
+terminated worker A with return `-1`, preserving the root and allowing
+still-suspended worker B to resume and return, and then rejecting B's
+post-termination resume with `-1`. Detailed JES files remain in the
+owner's WSL evidence directory; the assistant has not inspected them
+independently.
+
+This result supersedes the **native MVS result PENDING** statement for
+this specific experiment. The candidate remains separate from the
+previously accepted baseline and installed objects. See [JOB 5366/5367
+native evidence](co1-terminal-worker-reentry-jes-5366-5367-pass-20261113.md).
+
+**CO.1 remains IN PROGRESS.** This bounded success does not prove general
+pointer validation, stale/deleted descriptor recovery, concurrent entry,
+production `CHANGECO` error values, or a complete lifecycle contract.
