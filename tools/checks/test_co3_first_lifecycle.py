@@ -89,6 +89,33 @@ class CO3Checks(unittest.TestCase):
         self.assertIn('L998     EQU *',output)
         self.assertIn('         END   CO3LIB',output)
 
+    def test_actual_cambridge_zero_plus_relocatable_addresses(self):
+        # The first real CO.3 compiler output contained DC A(0+L3).
+        generated = LIB
+        for label in ('L101', 'L102', 'L103', 'L104'):
+            generated = generated.replace(f'DC A({label})',
+                                          f'DC A(0+{label})')
+        output = co3.generated_library(generated)
+        for symbol, label in [('C3INIT','L101'),('C3CREATE','L102'),
+                              ('C3CALL','L103'),('C3WAIT','L104')]:
+            self.assertIn(f'{symbol:<8} EQU   {label}', output)
+            self.assertNotIn(f'{symbol:<8} EQU   0+{label}', output)
+        self.assertIn('         DC A(0+L101)', output)
+        # Exact relocation token observed in the 14 November compiler run.
+        real_shape = LIB.replace('L101', 'L3').replace(
+            'DC A(L3)', 'DC A(0+L3)')
+        real_output = co3.generated_library(real_shape)
+        self.assertIn('C3INIT   EQU   L3', real_output)
+        self.assertIn('         DC A(0+L3)', real_output)
+
+    def test_nonzero_and_unsafe_relocation_expressions_refused(self):
+        for bad in ('4+L101', '-4+L101', 'L101+4', 'L101-L102',
+                    '0+L99999Z', '0+EXTERNAL'):
+            with self.subTest(bad=bad):
+                with self.assertRaises(co3.CandidateError):
+                    co3.generated_library(LIB.replace('DC A(L101)',
+                                                     f'DC A({bad})'))
+
     def test_export_collision_and_shape_fail_closed(self):
         with self.assertRaises(co3.CandidateError):
             co3.generated_library(LIB.replace("DC F'1156'","DC F'1180'"))
@@ -115,6 +142,17 @@ class CO3Checks(unittest.TestCase):
         self.assertEqual(deck.count('\n/*\n'),5)
         self.assertTrue(all(len(x)<=71 and x.isascii() and '\t' not in x
                             for x in deck.splitlines()))
+
+    def test_deck_accepts_real_cg370_export_form(self):
+        lib = LIB.replace('L101', 'L3').replace('DC A(L3)',
+                                               'DC A(0+L3)')
+        app = APP.replace('DC A(L123)', 'DC A(0+L123)')
+        deck = co3.build_deck(app, lib, MAIN, SW,
+                              ["//CO3BGO  JOB (BCPL),'CO3 NATIVE',CLASS=A"],
+                              'HERC02.BCPL.BOOT.OBJ')
+        self.assertIn('C3INIT   EQU   L3', deck)
+        self.assertIn('         DC A(0+L3)', deck)
+        self.assertEqual(deck.count('C3INIT   EQU   L3'), 1)
 
     def test_exact_jes_oracle(self):
         self.assertEqual(co3.assess(SUMMARY,REPORT,'7182')['bcpl_records'],

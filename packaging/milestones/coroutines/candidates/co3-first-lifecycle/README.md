@@ -58,6 +58,31 @@ malformed or misordered BCPL records, retains complete evidence under
 `workarea/co3-first-lifecycle/`, and writes only temporary MVS datasets.
 Successful host-side checks do **not** constitute MVS verification.
 
+## First MVS execution attempt: CG370 export adapter correction
+
+On 14 November 2026 the owner ran the first candidate from GitHub
+`main` at `85d139b55a84791a7f80379e26a683d83ba091bc`.
+The driver recovered generated compiler output and failed during
+host-side export preparation with:
+
+    CO.3 first lifecycle FAIL: nonlocal CG370 procedure label: '0+L3'
+
+The original validation expected `L3`, but the historical Cambridge
+CG370 `GENDCA(L,N)` prints `DC A(N+L<label>)`. In particular,
+`GENDCA(label,0)` emits `DC A(0+L3)`, which is a valid relocatable
+expression. The export adapter now accepts bare `L<label>` or
+`0+L<label>`, verifies the referenced local `EQU` label, and
+emits an external `EQU L<label>` alias. Nonzero/unsupported
+addends remain rejected.
+
+The failure occurred **before** generating/submitting the native GO job.
+No IFOX, IEWL or native GO success is claimed for this attempt.
+Operator-local evidence:
+`workarea/co3-first-lifecycle/20261114T182604Z-87td7zrv`.
+The corrected offline suite contains direct zero-addend cases,
+negative relocation cases and an end-to-end temporary-JCL deck test.
+The next MVS execution must independently establish IFOX, IEWL and GO.
+
 ## Next integration gate
 
 After actual native evidence, add `RESUMECO` and parent-chain verification,

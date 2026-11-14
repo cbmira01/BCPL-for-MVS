@@ -93,14 +93,21 @@ def generated_library(source: str) -> list[str]:
     required = {number*4 for number, _ in EXPORTS}
     if {number for number, _ in pairs} != required:
         raise CandidateError(f'unexpected CO.3 library exports: {pairs}')
-    addresses = dict(pairs)
+    # CG370 GENDCA emits "DC A(0+L<n>)" for exported entry points.
+    # Retain only a zero addend: the IFOX ENTRY alias must designate the
+    # exact relocatable procedure entry, never an offset into its body.
+    addresses: dict[int, str] = {}
     for number, _ in EXPORTS:
-        label = addresses[number*4]
-        if not re.fullmatch(r'L\d{1,5}', label):
-            raise CandidateError(f'nonlocal CG370 procedure label: {label!r}')
+        expression = dict(pairs)[number*4]
+        match = re.fullmatch(r'(?:0\+)?(L\d{1,5})', expression)
+        if match is None:
+            raise CandidateError(
+                f'unsupported CG370 procedure address: {expression!r}')
+        label = match.group(1)
         if sum(bool(re.match(rf'^{re.escape(label)}\s+EQU\s+', row))
                for row in rows[:start]) != 1:
             raise CandidateError(f'CG370 procedure label missing: {label}')
+        addresses[number*4] = label
     csect = unique(rows, r'\s*CSECT\s*', 'CG370 library CSECT')
     unique(rows, r'\s*EXTRN\s+BCPLMAIN\s*', 'CG370 BCPLMAIN external')
     end = unique(rows, r'\s*END(?:\s+.*)?', 'CG370 library END')
