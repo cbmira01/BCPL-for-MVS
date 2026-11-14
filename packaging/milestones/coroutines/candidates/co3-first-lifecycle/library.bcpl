@@ -9,6 +9,7 @@ GLOBAL $(
   CREATECO:290
   CALLCO:292
   COWAIT:293
+  RESUMECO:294
   CO3CURR:295
   CO3ROOT:296
   CO3LIST:297
@@ -99,3 +100,22 @@ $(1
   RESULTIS V
 $)1
 
+// Resume an idle known-live worker with the current parent's chain.
+// Busy refusal MUST NOT clear SELF!25: COWAIT still returns to caller.
+AND RESUMECO(C,A) = VALOF
+$(1
+  LET SELF=CO3CURR
+  AND PARENT=0
+  AND V=0
+  IF SELF=CO3ROOT RESULTIS -3
+  PARENT := SELF!25
+  IF PARENT=0 RESULTIS -3
+  IF C=0 | C=SELF | C=CO3ROOT RESULTIS -998
+  IF C!25 \= 0 RESULTIS -998
+  SELF!25 := 0
+  C!25 := PARENT
+  CO3CURR := C
+  V := CHANGECO(A,C)
+  CO3CURR := SELF
+  RESULTIS V
+$)1

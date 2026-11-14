@@ -101,6 +101,57 @@ missing submit-tool path was used; **no native IFOX, IEWL or GO was
 submitted by this failed attempt**. Owner-local evidence:
 `workarea/co3-first-lifecycle/20261114T183415Z-ksnw0gfk`.
 
+## First native lifecycle PASS: owner-reported JOBS 5384–5386
+
+On 14 November 2026, using GitHub `main` at
+`ef78999dd785585b7e9e18e15f128ab4b34a3531`, the owner reported
+successful independent Cambridge BCPL compilation of application
+JOB **5384** and library JOB **5385**, followed by native JOB **5386**.
+The CO.3 runner reported four RC=0000 IFOX steps, one RC=0000 IEWL,
+one RC=0000 GO, and its exact eight-record `MADE W1 R1 W2 R2 W3 R3
+PASS` application oracle. Runner RC=0.
+
+**Evidence class:** OWNER-REPORTED NATIVE-MVS-TESTED; the assistant has not
+independently inspected the operator-local raw generated assembly or JES.
+Evidence directory:
+`workarea/co3-first-lifecycle/20261114T185702Z-1sa3c7r0`.
+
+This validates the independently compiled and linked first-slice
+`CO3INIT`, `CREATECO`, `CALLCO`, `COWAIT` and `CO3BOOT`
+positive paths; it does not validate `RESUMECO`, deletion, storage
+reuse, installed objects or production ABI status.
+
+## Parent-chain RESUMECO candidate (native MVS evidence pending)
+
+`parent-chain.bcpl` and `library.bcpl` extend the **same candidate**
+with private G!294 `RESUMECO`, compiled and linked independently.
+Two workers exercise nested ROOT→A→B `CALLCO`, an attempted busy
+`RESUMECO` (refused without losing B's parent), A→B
+`RESUMECO` that inherits ROOT as parent, two independent waiting
+continuations, ordinary worker completion and root G54/G55 restoration.
+
+Select `--scenario parent-chain --run` in the same native runner.
+The strict **13-record** target oracle is:
+
+    CO3BCPL MADE
+    CO3BCPL A1
+    CO3BCPL B1
+    CO3BCPL A2
+    CO3BCPL B2
+    CO3BCPL R1
+    CO3BCPL A3
+    CO3BCPL R2
+    CO3BCPL B3
+    CO3BCPL R3
+    CO3BCPL A4
+    CO3BCPL R4
+    CO3BCPL PASS
+
+The original `--scenario first` remains selectable and retains its
+original eight-record oracle. Private G!294 and error `-998` do not
+create public allocations or contracts. This candidate does not free
+registered descriptors or worker stacks, and CO.3 remains IN PROGRESS.
+
 ## Next integration gate
 
 After actual native evidence, add `RESUMECO` and parent-chain verification,

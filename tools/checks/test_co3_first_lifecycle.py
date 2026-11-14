@@ -34,7 +34,8 @@ L101     EQU *
 L102     EQU *
 L103     EQU *
 L104     EQU *
-         DC F'1172'
+L105     EQU *
+         DC F'1176'
          DC F'0'
          DC F'1156'
          DC A(L101)
@@ -44,6 +45,8 @@ L104     EQU *
          DC A(L103)
          DC F'1172'
          DC A(L104)
+         DC F'1176'
+         DC A(L105)
 L998     EQU *
          END
 '''
@@ -91,7 +94,7 @@ class CO3Checks(unittest.TestCase):
                     co3.require_mvs_tools()
 
     def test_bcpl_compiler_records_and_contract(self):
-        for name in ('source.bcpl','library.bcpl'):
+        for name in ('source.bcpl','parent-chain.bcpl','library.bcpl'):
             data=(FIXTURE/name).read_text('ascii')
             self.assertLessEqual(max(map(len,data.splitlines())),80)
             self.assertIn('GLOBAL $(',data)
@@ -100,6 +103,7 @@ class CO3Checks(unittest.TestCase):
         code=(FIXTURE/'library.bcpl').read_text('ascii')
         for token in ('LET CO3BOOT(C)','AND CREATECO(FN,SIZE)',
                       'AND CALLCO(C,A)','AND COWAIT(A)',
+                      'AND RESUMECO(C,A)',
                       'GETVEC(1087)','FREEVEC(C)','CO2INIT('):
             self.assertIn(token,code)
         self.assertIn('A := FN(COWAIT(A)) REPEAT',code)
@@ -109,9 +113,9 @@ class CO3Checks(unittest.TestCase):
     def test_separate_export_aliases(self):
         output=co3.generated_library(LIB)
         self.assertIn('CO3LIB   CSECT',output)
-        self.assertIn('         ENTRY C3INIT,C3CREATE,C3CALL,C3WAIT',output)
+        self.assertIn('         ENTRY C3INIT,C3CREATE,C3CALL,C3WAIT,C3RESUME',output)
         for symbol,label in [('C3INIT','L101'),('C3CREATE','L102'),
-                             ('C3CALL','L103'),('C3WAIT','L104')]:
+                             ('C3CALL','L103'),('C3WAIT','L104'),('C3RESUME','L105')]:
             self.assertIn(f'{symbol:<8} EQU   {label}',output)
         self.assertIn('L998     EQU *',output)
         self.assertIn('         END   CO3LIB',output)
@@ -119,12 +123,12 @@ class CO3Checks(unittest.TestCase):
     def test_actual_cambridge_zero_plus_relocatable_addresses(self):
         # The first real CO.3 compiler output contained DC A(0+L3).
         generated = LIB
-        for label in ('L101', 'L102', 'L103', 'L104'):
+        for label in ('L101', 'L102', 'L103', 'L104', 'L105'):
             generated = generated.replace(f'DC A({label})',
                                           f'DC A(0+{label})')
         output = co3.generated_library(generated)
         for symbol, label in [('C3INIT','L101'),('C3CREATE','L102'),
-                              ('C3CALL','L103'),('C3WAIT','L104')]:
+                              ('C3CALL','L103'),('C3WAIT','L104'),('C3RESUME','L105')]:
             self.assertIn(f'{symbol:<8} EQU   {label}', output)
             self.assertNotIn(f'{symbol:<8} EQU   0+{label}', output)
         self.assertIn('         DC A(0+L101)', output)
@@ -180,6 +184,34 @@ class CO3Checks(unittest.TestCase):
         self.assertIn('C3INIT   EQU   L3', deck)
         self.assertIn('         DC A(0+L3)', deck)
         self.assertEqual(deck.count('C3INIT   EQU   L3'), 1)
+
+    def test_parent_chain_oracle_and_two_worker_sources(self):
+        parent=(FIXTURE/'parent-chain.bcpl').read_text('ascii')
+        self.assertIn('R := CALLCO(CO3LIST,22)', parent)
+        self.assertIn('R := RESUMECO(CO3LIST,44)', parent)
+        self.assertIn('R := RESUMECO(CO3LIST!26,0)', parent)
+        self.assertIn(r'IF R \= -998 RESULTIS -21', parent)
+        self.assertIn(r'KEEP \= 123', parent)
+        self.assertIn(r'KEEP \= 456', parent)
+        self.assertEqual(co3.PARENT_EXPECTED,
+                         ('MADE','A1','B1','A2','B2','R1','A3','R2',
+                          'B3','R3','A4','R4','PASS'))
+        trace=''.join('CO3BCPL '+r+'\n' for r in co3.PARENT_EXPECTED)
+        self.assertEqual(co3.assess(SUMMARY,trace,'7182',co3.PARENT_EXPECTED)
+                         ['bcpl_records'], list(co3.PARENT_EXPECTED))
+        with self.assertRaises(co3.CandidateError):
+            co3.assess(SUMMARY, trace.replace('CO3BCPL B2',
+                                               'CO3BCPL B1'), '7182',
+                       co3.PARENT_EXPECTED)
+
+    def test_resume_refusal_keeps_parent_before_mutation(self):
+        lib=(FIXTURE/'library.bcpl').read_text('ascii')
+        start=lib.index('AND RESUMECO(C,A)')
+        text=lib[start:]
+        self.assertLess(text.index(r'IF C!25 \= 0 RESULTIS -998'),
+                        text.index('SELF!25 := 0'))
+        self.assertLess(text.index('PARENT := SELF!25'),
+                        text.index('C!25 := PARENT'))
 
     def test_exact_jes_oracle(self):
         self.assertEqual(co3.assess(SUMMARY,REPORT,'7182')['bcpl_records'],

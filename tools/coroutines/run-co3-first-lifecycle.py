@@ -31,10 +31,12 @@ BRIDGE = ROOT / 'bootstrap-toolchain/asm/bcplco.asm'
 CO2_RUNNER = ROOT / 'tools/coroutines/run-co2-native-changeco.py'
 JOB_RE = re.compile(r'^JOB\s+(\d+)\s*$', re.M)
 EXPECTED = ('MADE', 'W1', 'R1', 'W2', 'R2', 'W3', 'R3', 'PASS')
+PARENT_EXPECTED = ('MADE', 'A1', 'B1', 'A2', 'B2', 'R1',
+                   'A3', 'R2', 'B3', 'R3', 'A4', 'R4', 'PASS')
 STEPS = ('ASMA', 'ASML', 'ASMM', 'ASMS', 'LKED', 'GO')
 # The entire namespace is private to this candidate application.
 EXPORTS = ((289, 'C3INIT'), (290, 'C3CREATE'),
-           (292, 'C3CALL'), (293, 'C3WAIT'))
+           (292, 'C3CALL'), (293, 'C3WAIT'), (294, 'C3RESUME'))
 
 spec = importlib.util.spec_from_file_location('co3_co2_driver', CO2_RUNNER)
 if spec is None or spec.loader is None:
@@ -112,7 +114,7 @@ def generated_library(source: str) -> list[str]:
     unique(rows, r'\s*EXTRN\s+BCPLMAIN\s*', 'CG370 BCPLMAIN external')
     end = unique(rows, r'\s*END(?:\s+.*)?', 'CG370 library END')
     rows[csect] = 'CO3LIB   CSECT'
-    rows.insert(csect+1, '         ENTRY C3INIT,C3CREATE,C3CALL,C3WAIT')
+    rows.insert(csect+1, '         ENTRY C3INIT,C3CREATE,C3CALL,C3WAIT,C3RESUME')
     end = unique(rows, r'\s*END(?:\s+.*)?', 'CG370 library END')
     aliases = [f'{symbol:<8} EQU   {addresses[slot*4]}'
                for slot, symbol in EXPORTS]
@@ -137,7 +139,7 @@ def generated_application(source: str) -> list[str]:
     rows[csect] = 'CO3APP   CSECT'
     native = unique(rows, r'\s*EXTRN\s+CO2INIT,CHANGECO\s*',
                     'CO.2 machine external')
-    rows.insert(native+1, '         EXTRN C3INIT,C3CREATE,C3CALL,C3WAIT')
+    rows.insert(native+1, '         EXTRN C3INIT,C3CREATE,C3CALL,C3WAIT,C3RESUME')
     end = unique(rows, r'\s*END\s+CO2APP\s*', 'CO2 application END')
     rows[end] = '         END   CO3APP'
     return co2.checked_cards('\n'.join(rows), 'CO3APP')
@@ -211,7 +213,8 @@ def observed_records(report: str) -> list[str]:
     return found
 
 
-def assess(summary: str, report: str, job: str) -> dict[str, object]:
+def assess(summary: str, report: str, job: str,
+           expected: tuple[str, ...] = EXPECTED) -> dict[str, object]:
     if not re.search(rf'^JOB\s+{re.escape(job)}\s+CO3BGO\s*$', summary, re.M):
         raise CandidateError('wrong GO job identity')
     if 'JOB RESULT: SUCCESS' not in summary or 'HIGHEST RC: 0000' not in summary:
@@ -226,7 +229,7 @@ def assess(summary: str, report: str, job: str) -> dict[str, object]:
     if set(steps) != set(STEPS) or any(value != 0 for value in steps.values()):
         raise CandidateError(f'missing/nonzero JES step(s): {steps}')
     records = observed_records(report)
-    if records != list(EXPECTED):
+    if records != list(expected):
         raise CandidateError(f'wrong ordered BCPL records: {records}')
     return {'steps': steps, 'bcpl_records': records}
 
@@ -259,13 +262,16 @@ def require_mvs_tools() -> None:
             raise CandidateError(f'MVS tool missing or not executable: {path}')
 
 
-def execute() -> int:
+def execute(scenario: str = 'first') -> int:
     os.umask(0o077)
     WORK.mkdir(parents=True, exist_ok=True)
     folder = Path(tempfile.mkdtemp(
         prefix=f'{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-', dir=WORK))
+    if scenario not in ('first', 'parent-chain'):
+        raise CandidateError(f'unknown CO.3 scenario: {scenario}')
     result: dict[str, object] = {
-        'status': 'FAIL', 'march': 'CO.3', 'evidence_class': 'MVS-pending',
+        'status': 'FAIL', 'march': 'CO.3', 'scenario': scenario,
+        'evidence_class': 'MVS-pending',
         'installed_mvs_objects_modified': False,
         'public_global_allocation': False,
     }
@@ -274,7 +280,8 @@ def execute() -> int:
         parm = FIXTURE/'cambridge-parm.txt'
         if parm.read_text('ascii').splitlines() != ['/CN'+'/'*77]:
             raise CandidateError('checked Cambridge /CN required')
-        sources = (FIXTURE/'source.bcpl', FIXTURE/'library.bcpl')
+        app = 'parent-chain.bcpl' if scenario == 'parent-chain' else 'source.bcpl'
+        sources = (FIXTURE/app, FIXTURE/'library.bcpl')
         for item in (*sources, parm, BRIDGE, MAIN):
             result[str(item.relative_to(ROOT))+'_sha256'] = hashlib.sha256(
                 item.read_bytes()).hexdigest()
@@ -325,7 +332,8 @@ def execute() -> int:
         (folder/'job-report.log').write_text(report.stdout+report.stderr)
         if report.returncode:
             raise CandidateError('native JES report retrieval failure')
-        result.update(assess(summary, report.stdout, job))
+        expected = PARENT_EXPECTED if scenario == 'parent-chain' else EXPECTED
+        result.update(assess(summary, report.stdout, job, expected))
         result['status'] = 'PASS'
         result['evidence_class'] = 'OWNER-REPORTED NATIVE-MVS-TESTED'
         print(f'CO.3 first lifecycle PASS: compiler JOBS '
@@ -343,12 +351,14 @@ def execute() -> int:
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--scenario', choices=('first', 'parent-chain'),
+                   default='first', help='select a CO.3 native oracle')
     p.add_argument('--run', action='store_true',
                    help='submit two BCPL compiler jobs and one native job')
     args = p.parse_args()
     if not args.run:
         p.error('MVS execution requires explicit --run')
-    return execute()
+    return execute(args.scenario)
 
 
 if __name__ == '__main__':
