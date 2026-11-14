@@ -81,6 +81,23 @@ and rejects the previously faulty fixture. The initial failed native
 result remains FAIL. A corrected IFOX/IEWL/GO run is pending;
 **CO.2 stays IN PROGRESS, CO.3–CO.5 NOT STARTED**.
 
+## 14 November 2026 — CO.2 second native PASS and acceptance review
+
+The [corrected native repeated-continuation JOB 5378/5379 PASS](co2-native-continuations-jes-5378-5379-pass-20261114.md)
+at `5f941bb34cc70649f0325bd73f42eeb67397c5d6` reports three
+zero-RC IFOX steps, one zero-RC IEWL, one zero-RC GO, and the exact
+`X1 Y1 X2 Y2 X3 R1 Y3 R2 PASS` BCPL sequence; runner RC=0.
+The earlier `FVALUE` result remains a separately documented FAIL.
+
+The two positive-path native runs use the same separate candidate
+`BCPLCO` assembler module and support the focused CO.2 implementation
+gate. A [qualified CO.2 acceptance candidate](co2-qualified-acceptance-candidate-20261114.md)
+maps the verified behavior to the march gate and explicitly retains
+production ABI, public globals, lifecycle, robustness and release hold
+points. It is **not** an owner acceptance or closure document.
+**CO.0 and CO.1 remain CLOSED (qualified); CO.2 remains IN PROGRESS;
+CO.3–CO.5 remain NOT STARTED.**
+
 ## Rules applying to every march
 
 1. GitHub `main` remains the source authority. Use real BCPL, IFOX assembler and JCL; MVS/JES, IFOX and IEWL provide target verification. Preserve current installed `BOOT_OBJ` and use isolated candidates.

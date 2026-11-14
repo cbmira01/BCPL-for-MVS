@@ -2,7 +2,7 @@
 
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.2 — Native CHANGECO Implementation (IN PROGRESS)  
-**Status:** First native MVS attempt FAIL (test-oracle defect); corrected candidate pending rerun
+**Status:** Corrected candidate OWNER-REPORTED NATIVE-MVS-TESTED PASS (JOB 5378/5379); CO.2 acceptance pending
 
 This independent native BCPL fixture extends the owner-reported
 JOB 5374/5375 positive-path baseline. It tests the **same separate
@@ -26,8 +26,24 @@ reported `X1 Y1 X2 Y2 X3 FVALUE`, runner RC=1. The source expected
 regression test deriving the expected values from the recursion.
 
 See the [failure and correction record](../../co2-native-continuations-failed-oracle-20261114.md).
-The earlier result remains **FAIL** and a successful rerun is still
-required; no new native IFOX/IEWL/GO acceptance is claimed.
+The earlier result remains **FAIL**. At this documented correction
+checkpoint a successful rerun was still required; the separate PASS
+is recorded below.
+
+## 14 November 2026 — Corrected MVS rerun PASS
+
+The operator's corrected test at revision `5f941bb34cc70649f0325bd73f42eeb67397c5d6`
+passed: compiler JOB 5378, native JOB 5379, three IFOX, one IEWL
+and one GO, with all five native steps accepted as RC=0000 by the
+runner, and the exact nine-record BCPL oracle; runner RC=0.
+Detailed receipts are retained locally at
+`workarea/co2-native-continuations/20261114T161730Z-1a8_w7bf`.
+See [JOB 5378/5379 evidence](../../co2-native-continuations-jes-5378-5379-pass-20261114.md).
+
+The original failed run at revision `ae51ea4bd3c142bc3aa349d74ee850f2a6fdc4f5`
+remains FAIL; its arithmetic error was repaired before the new PASS.
+This does not approve any production library/object installation,
+public global ABI or CO.2 closure.
 
 Expected exact ordered native output:
 
