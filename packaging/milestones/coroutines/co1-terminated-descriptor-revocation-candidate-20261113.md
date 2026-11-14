@@ -112,3 +112,23 @@ safety proof, particularly when addresses can be reused.
 No public ABI or production runtime promotion is authorized by this
 candidate alone. The CO.1 production descriptor and lifecycle contract
 remains subject to owner review.
+
+## Post-execution — JOB 5370/5371 NATIVE-MVS-TESTED PASS
+
+The owner executed this exact isolated candidate against GitHub `main`
+`2d24fcf6d8762e5381a84056ef17a378b3523923`. The reported
+Cambridge compiler JOB **5370**, native JOB **5371**, three IFOX
+steps, one IEWL and one GO step all passed at RC=0000 with the strict
+ordered `A1 R1 A2 R2 PASS` oracle. The runner returned RC=0.
+
+The retained evidence directory is
+`workarea/co1-bcpl-revocation/20261114T022204Z-g7e2s0wi`
+(UTC 14 November; owner's local date 13 November 2026).
+Full JES/compiler reports reside in the owner's WSL workarea and were
+not independently reviewed by the assistant. See the [JOB 5370/5371
+native evidence](co1-terminated-descriptor-revocation-jes-5370-5371-pass-20261113.md).
+
+The original **native MVS result PENDING** status above is superseded
+for this exact positive/negative-path candidate only. This does not
+approve public `CO1DROP`, G!296, the descriptor state numbering, or
+the no-reuse policy. **CO.1 IN PROGRESS**, CO.2–CO.5 NOT STARTED.
