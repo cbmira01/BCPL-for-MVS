@@ -104,3 +104,20 @@ public API. Unexpected compiler/IFOX/IEWL/GO outcomes must be
 investigated from the new retained MVS evidence before changes.
 
 **CO.0 CLOSED (qualified); CO.1 IN PROGRESS; CO.2–CO.5 NOT STARTED.**
+
+## Post-execution — JOB 5362/5363 PASS
+
+The owner ran the isolated two-worker candidate from GitHub `main`
+`0ec7d868a146889309a1ae42f3d2a37a7d3d2ed0` under MVS 3.8J.
+The runner reported resident Cambridge compiler JOB **5362** and native
+JOB **5363**, all three IFOX steps, IEWL and GO at RC=0000, and the
+strictly ordered `A1 R1 A2 R2 PASS` records; runner RC=0. The
+retained evidence directory is
+`workarea/co1-bcpl-two-workers/20261114T002045Z-xpgnb44v`.
+
+This supersedes the *native MVS result PENDING* statement above for
+the tested two-worker positive path. See [the JOB 5362/5363 native
+evidence](co1-two-worker-jes-5362-5363-pass-20261113.md). Production
+descriptor/API approval, lifecycle/error handling, and CO.1 closure
+are still pending. No new native execution is required merely to
+record this result.
