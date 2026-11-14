@@ -120,3 +120,30 @@ Registry, existing regression IDs, or release artifacts. The CO.1
 owner-reviewed descriptor/stack/ABI/lifecycle design gate remains open.
 
 **CO.0 CLOSED (qualified); CO.1 IN PROGRESS; CO.2–CO.5 NOT STARTED.**
+
+## Post-execution — JOB 5372/5373 NATIVE-MVS-TESTED PASS
+
+The owner executed this isolated same-descriptor-address generation
+candidate from GitHub `main` revision
+`4ffd056c95291b61b256ed0edeb6bb973a4d0f7d` under MVS 3.8J.
+The reported Cambridge compiler JOB **5372** and native JOB **5373**
+passed with three IFOX, one IEWL and one GO step, all RC=0000; the
+strict ordered GO output was `A1 R1 A2 R2 PASS` and the runner
+returned RC=0.
+
+The retained evidence directory is
+`workarea/co1-bcpl-generation/20261114T025629Z-l6mr6x21`
+(UTC 14 November; owner's Louisville local date 13 November).
+See the [JOB 5372/5373 native evidence
+record](co1-generation-token-same-address-jes-5372-5373-pass-20261113.md).
+
+This supersedes the preceding native-MVS-PENDING status **for this
+bounded experimental fixture only**. The same descriptor vector is
+intentionally reinitialized without deallocating its descriptor
+storage; the old first-lifetime token 6 must not resolve while token
+10 identifies the new worker. The run does not demonstrate that MVS
+`GETMAIN` reused a freed descriptor address, nor does it enforce
+opaque handle validation inside raw `CHANGECO`, prevent concurrent
+resolve/transfer races, or approve production public globals.
+
+**CO.1 IN PROGRESS; production ABI design gate OPEN; CO.2–CO.5 NOT STARTED.**
