@@ -95,3 +95,24 @@ reentry after termination, invalid pointers, all registers/PSW flags,
 subtask reentrancy, near-limit stack safety or production ABI readiness.
 
 **CO.0 CLOSED (qualified); CO.1 IN PROGRESS; CO.2–CO.5 NOT STARTED.**
+
+## Post-execution — JOB 5364/5365 PASS
+
+The owner executed this isolated candidate on MVS 3.8J from the exact
+source revision `1e7ae65ab97f0272313144946b1eb5714546b1ae`.
+The resident Cambridge compiler was JOB **5364**; native IFOX/IEWL/GO
+execution was JOB **5365**, with three IFOX, IEWL and GO steps reported
+RC=0000. The strict native runner observed `A1 R1 A2 R2 PASS` and
+returned RC=0.
+
+The evidence directory is
+`workarea/co1-bcpl-worker-hop/20261114T003613Z-6asqe2ka`. This
+UTC-stamped directory was produced during the owner's local
+13 November 2026 session. Detailed printer reports are retained in
+the owner's checkout but were not independently furnished for review.
+
+This supersedes the original native-result-PENDING note for the exact
+positive-path probe. See the [JOB 5364/5365 native evidence
+record](co1-worker-to-worker-jes-5364-5365-pass-20261113.md).
+This is **not** approval of dynamic parentage, complete lifecycle
+rules, production descriptor layout, installation, or CO.1 closure.
