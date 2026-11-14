@@ -218,7 +218,7 @@ def assess(summary: str, report: str, job: str,
     if not re.search(rf'^JOB\s+{re.escape(job)}\s+CO3BGO\s*$', summary, re.M):
         raise CandidateError('wrong GO job identity')
     if 'JOB RESULT: SUCCESS' not in summary or 'HIGHEST RC: 0000' not in summary:
-        raise CandidateError('native GO job did not complete RC=0')
+        raise CandidateError('native JES summary unsuccessful or highest RC nonzero')
     steps: dict[str,int] = {}
     for line in summary.splitlines():
         m = re.fullmatch(r'\s*(ASMA|ASML|ASMM|ASMS|LKED|GO)\s+.*?RC=(\d{4})\s*', line)
