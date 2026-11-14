@@ -1,0 +1,101 @@
+// CO.3 PRIVATE CANDIDATE: separate Cambridge BCPL module.
+// Globals 289..299 are test-local, NOT public assignments.
+// Root and two workers maximum until BCPLCO lifecycle expansion.
+// Only root may create; stack size is 1024 working words.
+GLOBAL $(
+  GETVEC:87
+  FREEVEC:88
+  CO3INIT:289
+  CREATECO:290
+  CALLCO:292
+  COWAIT:293
+  CO3CURR:295
+  CO3ROOT:296
+  CO3LIST:297
+  CO2INIT:298
+  CHANGECO:299
+$)
+
+// The initial CHANGECO argument carries the new descriptor.
+// Subsequent ordinary returns wait and permit function re-entry.
+LET CO3BOOT(C) = VALOF
+$(1
+  LET FN=C!24
+  AND A=COWAIT(C)
+  A := FN(A)
+  A := FN(COWAIT(A)) REPEAT
+$)1
+
+AND CO3INIT() = VALOF
+$(1
+  LET ROOT=0
+  IF CO3ROOT \= 0 RESULTIS 0
+  ROOT := GETVEC(23)
+  IF ROOT=0 RESULTIS 0
+  CO3ROOT := ROOT
+  CO3CURR := ROOT
+  CO3LIST := 0
+  RESULTIS ROOT
+$)1
+
+AND CREATECO(FN,SIZE) = VALOF
+$(1
+  LET C=0
+  AND STACK=0
+  AND V=0
+  IF CO3ROOT=0 | CO3CURR \= CO3ROOT RESULTIS 0
+  IF SIZE \= 1024 RESULTIS 0
+  C := GETVEC(27)
+  IF C=0 RESULTIS 0
+  STACK := GETVEC(1087)
+  IF STACK=0 DO
+  $(2 FREEVEC(C)
+      RESULTIS 0
+  $)2
+  C!3 := STACK
+  C!24 := FN
+  C!25 := CO3ROOT
+  C!26 := CO3LIST
+  C!27 := 0
+  IF CO2INIT(CO3ROOT,C,STACK,CO3BOOT) \= 0 DO
+  $(2 FREEVEC(STACK)
+      FREEVEC(C)
+      RESULTIS 0
+  $)2
+  CO3CURR := C
+  V := CHANGECO(C,C)
+  CO3CURR := CO3ROOT
+  // A registered worker is never freed on an abnormal first transfer.
+  IF V \= C RESULTIS 0
+  CO3LIST := C
+  RESULTIS C
+$)1
+
+AND CALLCO(C,A) = VALOF
+$(1
+  LET SELF=CO3CURR
+  AND V=0
+  // Approach A: the caller supplies a known-live descriptor.
+  IF C=SELF | C!25 \= 0 RESULTIS -2
+  C!25 := SELF
+  CO3CURR := C
+  V := CHANGECO(A,C)
+  CO3CURR := SELF
+  RESULTIS V
+$)1
+
+AND COWAIT(A) = VALOF
+$(1
+  LET SELF=CO3CURR
+  AND PARENT=0
+  AND V=0
+  IF SELF=CO3ROOT RESULTIS -3
+  PARENT := SELF!25
+  IF PARENT=0 RESULTIS -3
+  SELF!25 := 0
+  CO3CURR := PARENT
+  V := CHANGECO(A,PARENT)
+  CO3CURR := SELF
+  RESULTIS V
+$)1
+

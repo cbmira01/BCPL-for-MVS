@@ -1,0 +1,66 @@
+# CO.3 — first independently compiled BCPL lifecycle candidate
+
+**Milestone:** Implement coroutine support for native compiler  
+**March:** CO.3 — Coroutine Library and Lifecycle (**IN PROGRESS**)  
+**Status:** OFFLINE-CHECKED candidate; real Cambridge/IFOX/IEWL/GO results pending
+
+This candidate begins CO.3 with actual BCPL source compiled as a **separate
+library translation unit**, rather than copying lifecycle code into the
+application. It uses the qualified CO.2 `BCPLCO` IFOX candidate unchanged
+and links `BCPLMEM` and other installed `BOOT_OBJ` dependencies read-only.
+
+Files: `library.bcpl` (independent library), `source.bcpl` (application
+oracle), `cambridge-parm.txt` (checked native `/CN`), the
+`tools/coroutines/run-co3-first-lifecycle.py` MVS runner, and
+`tools/checks/test_co3_first_lifecycle.py` offline checks.
+
+## Private initial contract
+
+- `CO3INIT()` allocates a root descriptor. The test application initializes
+  private G!295–297 to zero before invoking it.
+- `CREATECO(FN,1024)` creates a new worker using `GETVEC(27)` for the
+  candidate descriptor and `GETVEC(1087)` for the 4096-byte checked stack
+  plus 256-byte clearance. Creation is restricted to root.
+- `CO3BOOT` first yields the descriptor; later `CALLCO(C,A)` delivers A.
+  `COWAIT(V)` suspends to the parent and returns V. Ordinary return from
+  the worker function leads to another wait, allowing function re-entry.
+- G!289–299 (including CO.2's G!298–299) are **test-local**; no public
+  allocation or header is approved. The 24-word machine descriptor prefix,
+  extra private words 24–27, and error returns are **not public ABI**.
+- `CO2INIT` currently supports only two registered workers and has no
+  unregistration. `DELETECO`, `RESUMECO`, worker-side creation, arbitrary
+  stack sizes and address reuse are **not implemented by this first slice**.
+  Never `FREEVEC` a registered worker or a running stack.
+
+## Independent compilation and linker evidence gate
+
+The runner submits **two distinct Cambridge compiler jobs** for the application
+and the BCPL library. It transforms the library's own generated global
+trailer into explicitly exported, linker-visible procedure aliases, and
+adds those aliases to the application registration trailer. It then uses
+**four separate IFOX object steps** (application, library, test-local
+`BCPLMAIN` export copy, and `BCPLCO`), followed by IEWL and native GO.
+No BCPL sources or generated object bodies are concatenated.
+
+The exact output oracle is:
+
+    CO3BCPL MADE
+    CO3BCPL W1
+    CO3BCPL R1
+    CO3BCPL W2
+    CO3BCPL R2
+    CO3BCPL W3
+    CO3BCPL R3
+    CO3BCPL PASS
+
+The runner fails on missing/nonzero JES steps or any missing, extra,
+malformed or misordered BCPL records, retains complete evidence under
+`workarea/co3-first-lifecycle/`, and writes only temporary MVS datasets.
+Successful host-side checks do **not** constitute MVS verification.
+
+## Next integration gate
+
+After actual native evidence, add `RESUMECO` and parent-chain verification,
+then define and test safe IFOX unregister-before-FREEVEC for `DELETECO` and
+a bounded descriptor/stack reuse test. Do not close CO.3 without explicit
+owner acceptance; CO.4–CO.5 remain NOT STARTED.
