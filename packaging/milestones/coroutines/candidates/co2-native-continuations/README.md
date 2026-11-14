@@ -2,7 +2,7 @@
 
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.2 — Native CHANGECO Implementation (IN PROGRESS)  
-**Status:** Offline tests PASS; real MVS evidence PENDING
+**Status:** First native MVS attempt FAIL (test-oracle defect); corrected candidate pending rerun
 
 This independent native BCPL fixture extends the owner-reported
 JOB 5374/5375 positive-path baseline. It tests the **same separate
@@ -16,6 +16,18 @@ The root resumes B with 313; B returns 42 naturally. Both
 nested call chains validate their persistent locals and G54/G55
 stack bounds after every resume, and the root rechecks its bounds
 after both worker returns. Known terminated workers refuse re-entry.
+
+## 14 November 2026 — First MVS attempt and arithmetic correction
+
+The first native attempt at revision `ae51ea4bd3c142bc3aa349d74ee850f2a6fdc4f5`
+reported `X1 Y1 X2 Y2 X3 FVALUE`, runner RC=1. The source expected
+`DEEP1(4)=17` and `DEEP2(5)=22`, but the recursive bodies compute
+23 and 32. These two source assertions are now corrected, with a
+regression test deriving the expected values from the recursion.
+
+See the [failure and correction record](../../co2-native-continuations-failed-oracle-20261114.md).
+The earlier result remains **FAIL** and a successful rerun is still
+required; no new native IFOX/IEWL/GO acceptance is claimed.
 
 Expected exact ordered native output:
 

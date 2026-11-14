@@ -69,6 +69,18 @@ native MVS evidence pending. Source-only offline verification and a
 fail-closed BCPL output marker parser precede its first MVS attempt.
 **CO.2 remains IN PROGRESS; CO.3–CO.5 NOT STARTED.**
 
+## 14 November 2026 — CO.2 repeated-continuation first-run failure
+
+The [first repeated-continuation native MVS attempt](co2-native-continuations-failed-oracle-20261114.md)
+at `ae51ea4bd3c142bc3aa349d74ee850f2a6fdc4f5` reported
+`X1 Y1 X2 Y2 X3 FVALUE`, runner RC=1. The failure is consistent
+with proven BCPL source-oracle errors: `DEEP1(4)` computes 23, not 17,
+and `DEEP2(5)` computes 32, not 22. Only the fixture's two numeric
+assertions were repaired; a new host regression verifies the recurrence
+and rejects the previously faulty fixture. The initial failed native
+result remains FAIL. A corrected IFOX/IEWL/GO run is pending;
+**CO.2 stays IN PROGRESS, CO.3–CO.5 NOT STARTED**.
+
 ## Rules applying to every march
 
 1. GitHub `main` remains the source authority. Use real BCPL, IFOX assembler and JCL; MVS/JES, IFOX and IEWL provide target verification. Preserve current installed `BOOT_OBJ` and use isolated candidates.

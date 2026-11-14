@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import re
 from pathlib import Path
 import sys
 import tempfile
@@ -55,6 +56,24 @@ class CO2ContinuedTests(unittest.TestCase):
         self.assertEqual(self.two.count('CHANGECO('), 2)
         self.assertIn('IF GUARD \\=510+N RESULTIS 98', self.one)
         self.assertIn('IF GUARD \\=710+N RESULTIS 98', self.two)
+
+    def test_nested_return_oracles_match_recursion(self):
+        """Compare WORK1/WORK2 assertions against the BCPL recurrence."""
+        for name, body in (('DEEP1', self.one), ('DEEP2', self.two)):
+            with self.subTest(name=name):
+                self.assertIn(f'R := {name}(N-1)', body)
+                self.assertIn('RESULTIS R+N', body)
+                base = re.search(r'(?m)^    RESULTIS (\d+)$', body)
+                self.assertIsNotNone(base)
+                match = re.search(
+                    rf'IF {name}\((\d+)\) \\=(\d+) RESULTIS 98',
+                    self.source)
+                self.assertIsNotNone(match)
+                depth, expected = map(int, match.groups())
+                actual = int(base.group(1)) + depth*(depth+1)//2
+                self.assertEqual(expected, actual)
+        self.assertIn('IF DEEP1(4) \\=23 RESULTIS 98', self.source)
+        self.assertIn('IF DEEP2(5) \\=32 RESULTIS 98', self.source)
 
     def test_stack_boundaries_checked_after_each_resume(self):
         self.assertEqual(self.one.count('STACKBASE \\= PEER1!4'), 3)
