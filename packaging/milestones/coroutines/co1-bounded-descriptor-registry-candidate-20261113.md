@@ -129,3 +129,25 @@ No new Bootstrap regression ID is assigned, no historical source
 changes, and no installed runtime object is promoted.
 
 **CO.0 CLOSED (qualified); CO.1 IN PROGRESS; CO.2–CO.5 NOT STARTED.**
+
+## Post-execution — JOB 5368/5369 NATIVE-MVS-TESTED PASS
+
+The owner ran the exact candidate from GitHub `main`
+`4aa5b15d768d97654d469aae18f457be5de1c96f` under MVS 3.8J.
+The Cambridge compiler was JOB **5368** and the native job was JOB
+**5369**. The owner-reported runner PASS includes three IFOX, IEWL
+and GO steps at RC=0000; its strict ordered native output oracle
+was `A1 R1 A2 R2 PASS`, with runner RC=0. The preserved local evidence
+is `workarea/co1-bcpl-registry-guard/20261114T014228Z-3sc0ya0d`
+(UTC folder date 14 November; owner's Louisville local date
+13 November 2026).
+
+This supersedes this document's original **native MVS result PENDING**
+for the bounded positive/negative candidate, without changing the source
+or granting public ABI acceptance. See the [JOB 5368/5369 evidence
+record](co1-bounded-descriptor-registry-jes-5368-5369-pass-20261113.md).
+The test confirms registry membership checking and rejection behavior
+only for the fixture's defined inputs. It does not establish memory
+safety for freed/reused registered addresses, arbitrary initializer
+arguments, concurrency or general lifecycle. **CO.1 IN PROGRESS**;
+CO.2–CO.5 NOT STARTED.
