@@ -195,9 +195,23 @@ def build_deck(generated: str, main: str, bridge: str,
 
 
 def observed_records(report: str) -> list[str]:
-    """Parse complete BCPL execution records; ignore IFOX literals."""
-    return [m.group(1) for line in report.replace('\f', '').splitlines()
-            if (m := OUTPUT_RE.fullmatch(line.strip()))]
+    """Accept BCPL markers only if well formed; ignore assembler literals.
+
+    A corrupted or unknown line beginning CO2BCPL is a failure, not
+    background JES text that can be silently discarded.
+    """
+    records: list[str] = []
+    for number, raw in enumerate(report.replace('\f', '').splitlines(), 1):
+        line = raw.strip()
+        if not line.startswith('CO2BCPL'):
+            continue
+        match = OUTPUT_RE.fullmatch(line)
+        if match is None:
+            raise CandidateError(
+                f'malformed native BCPL record at report line {number}: '
+                f'{line[:71]!r}')
+        records.append(match.group(1))
+    return records
 
 
 def assess(summary: str, report: str, job: str) -> dict[str, object]:
@@ -308,7 +322,7 @@ def execute() -> int:
         result['status']='PASS'
         result['evidence_class']='OWNER-REPORTED NATIVE-MVS-TESTED'
         print(f'CO.2 BCPL PASS: compiler JOB {comp_jobs[0]}, GO JOB {job}; '
-              'IFOX 3, IEWL 1, GO 1; A1 B1 A2 R1 B2 R2 PASS')
+              'IFOX 3, IEWL 1, GO 1; ' + ' '.join(EXPECTED))
         return 0
     except (OSError,ValueError,subprocess.TimeoutExpired,UnicodeError) as exc:
         result['reason']=str(exc)

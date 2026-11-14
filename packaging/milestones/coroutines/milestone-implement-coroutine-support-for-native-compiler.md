@@ -53,6 +53,22 @@ These were working boundaries, now accepted **only as the bounded CO.2 implement
 
 **CO.0 is CLOSED (qualified); CO.1 is CLOSED (qualified owner acceptance, 13 November 2026); CO.2 — Native CHANGECO Implementation is IN PROGRESS; CO.3–CO.5 are NOT STARTED.** The bounded CO.2 architecture inherits Approach A (valid/live descriptor preconditions), S1 (independent stacks and coordinated limits), native register/continuation restoration and private candidate-only linkage. The public ABI, permanent global allocations, and complete lifecycle rules are not approved for production promotion. See [formal CO.0 closure](co0-formal-closure-20261112.md) and [CO.1 source investigation](co1-native-abi-and-stack-source-investigation-20261112.md). Subsequent marches close only after separate evidence-backed owner decisions. See the [JOB 5356/5357 native candidate PASS](co1-bcpl-native-candidate-jes-5356-5357-pass-20261113.md) for the first fully successful compiler/IFOX/IEWL/GO BCPL coroutine switch. Subsequent candidate successes establish [nested checked-frame survival under JOB 5360/5361](co1-nested-frames-jes-5360-5361-pass-20261113.md) and [two live worker contexts under JOB 5362/5363](co1-two-worker-jes-5362-5363-pass-20261113.md); neither resolves the production design gate. The [direct worker-to-worker candidate PASS, JOB 5364/5365](co1-worker-to-worker-jes-5364-5365-pass-20261113.md), extends the native context-switch evidence while preserving creation-parent semantics. The [terminated-worker re-entry guard candidate PASS, JOB 5366/5367](co1-terminal-worker-reentry-jes-5366-5367-pass-20261113.md), verifies a bounded negative return from a **known-live** terminated descriptor; this remains an experimental interface, not an approved production lifecycle policy. The [bounded descriptor registry PASS, JOB 5368/5369](co1-bounded-descriptor-registry-jes-5368-5369-pass-20261113.md), adds MVS evidence for rejecting unregistered, null, active and terminated targets before an invalid target dereference; it does not establish safe deletion/reuse or a final registry design. The [revocation-before-FREEVEC candidate PASS, JOB 5370/5371](co1-terminated-descriptor-revocation-jes-5370-5371-pass-20261113.md), verifies revoking a terminated descriptor before freeing its storage and rejecting the former address without re-registration. It does **not** establish safe storage-address reuse. The [generation-token same-descriptor-address PASS, JOB 5372/5373](co1-generation-token-same-address-jes-5372-5373-pass-20261113.md), demonstrates a revoked old token remaining invalid after the same still-allocated descriptor is reused for a second worker lifetime, using a test-only BCPL resolution wrapper. It is not proof of actual MVS allocation-address reuse or a production-enforced opaque handle ABI.
 
+## 14 November 2026 — CO.2 native positive-path checkpoint
+
+The [owner-reported CO.2 JOB 5374/5375 PASS](co2-native-changeco-jes-5374-5375-pass-20261114.md)
+establishes one completed Cambridge compilation, three RC=0000 IFOX
+steps, one RC=0000 IEWL, one RC=0000 GO and a seven-record ordered BCPL
+oracle, with native runner RC=0. This is qualified
+**OWNER-REPORTED NATIVE-MVS-TESTED** evidence, not independent inspection
+of the owner's raw JES receipts. It is promoted as the **CO.2 source
+verification baseline**, not as a public API or installed runtime object.
+
+The separate [repeated-continuation CO.2 candidate](candidates/co2-native-continuations/README.md)
+extends the check to two suspensions per nested worker, with independent
+native MVS evidence pending. Source-only offline verification and a
+fail-closed BCPL output marker parser precede its first MVS attempt.
+**CO.2 remains IN PROGRESS; CO.3–CO.5 NOT STARTED.**
+
 ## Rules applying to every march
 
 1. GitHub `main` remains the source authority. Use real BCPL, IFOX assembler and JCL; MVS/JES, IFOX and IEWL provide target verification. Preserve current installed `BOOT_OBJ` and use isolated candidates.

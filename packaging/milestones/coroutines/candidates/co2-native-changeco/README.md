@@ -4,7 +4,7 @@
 **March:** CO.2 — Native CHANGECO Implementation (IN PROGRESS)  
 **Source:** `bootstrap-toolchain/asm/bcplco.asm`  
 **Compiler options:** `/CN` (native checked System/370 entry)  
-**Status:** candidate-only; real MVS IFOX/IEWL/GO evidence PENDING
+**Status:** candidate-only; OWNER-REPORTED NATIVE-MVS-TESTED JOB 5374/5375 PASS
 
 This is the first separate **Core Runtime** implementation candidate after
 qualified CO.1 acceptance. It extracts CO.1's tested machine-context
@@ -79,3 +79,17 @@ or claim broader CO.3/CO.4/CO.5 acceptance without a separate owner
 decision. `/CPN` combined counting/check behavior, PSW/condition-code
 preservation, unsafe pointers, deletion and concurrent execution
 remain outside this acceptance candidate.
+
+## 14 November 2026 — Positive-path MVS checkpoint
+
+At source commit 3ba79577b171216ed809bfb37d21b0d27270d88d,
+the operator-reported Cambridge JOB 5374 and native JOB 5375 passed
+the three IFOX steps, IEWL, GO and the exact seven-record oracle,
+with runner RC=0. This confirms the bounded CO.2 positive path.
+Evidence: [JOB 5374/5375 record](../../co2-native-changeco-jes-5374-5375-pass-20261114.md).
+
+The subsequent independent repeated-suspension candidate is in
+[candidates/co2-native-continuations](../co2-native-continuations/README.md).
+Its native MVS execution remains pending. The tracked Core Runtime
+source is still a candidate, not a production-installed object or
+approved permanent global interface.
