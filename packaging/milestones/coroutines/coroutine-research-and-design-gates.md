@@ -2,7 +2,7 @@
 
 **Milestone:** [Implement coroutine support for native compiler](milestone-implement-coroutine-support-for-native-compiler.md)  
 **Recorded:** 10 November 2026  
-**Status:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified owner acceptance, 13 November 2026); CO.2 IN PROGRESS (bounded native candidate implementation); CO.3–CO.5 NOT STARTED. Production public ABI and permanent globals remain gated.
+**Status (14 November 2026):** CO.0–CO.2 CLOSED (qualified, separately owner accepted); CO.3 IN PROGRESS; CO.4–CO.5 NOT STARTED. Production public ABI and permanent globals remain gated.
 
 **Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. The owner accepted the five golden contracts on 11 November; these are interpreted, not native, tests. The expanded runner has since been re-executed on MVS under the promoted canonical implementation: four original probes pass, the legacy fixed-stack source fails (JOB 5318), and the separately retained corrected-frame source passes (JOB 5321). CO0-U02 is resolved with this explicit compatibility qualification, not with an unqualified five-case PASS.
 
@@ -270,3 +270,7 @@ The [CO.1 four-argument/nested-call checked ABI preparation](co1-native-four-arg
 ## 13 November 2026 — CO.1 accepted (qualified); CO.2 started
 
 The owner explicitly directed immediate CO.1 acceptance and CO.2 initiation. The [qualified CO.1 acceptance record](co1-formal-acceptance-and-co2-transition-20261113.md) defines the bounded approved implementation direction, distinguishes native JOB 5372/5373 evidence from public ABI approval, and lists production promotion hold points. The [CO.2 kickoff](co2-native-changeco-implementation-kickoff-20261113.md) opens **CO.2 — Native CHANGECO Implementation** for isolated Core Runtime IFOX, BCPL, JCL and real MVS verification. **CO.1 CLOSED (qualified); CO.2 IN PROGRESS; CO.3–CO.5 NOT STARTED.**
+
+## 14 November 2026 — CO.2 closure and CO.3 opening
+
+The owner formally [accepted and closed CO.2 (qualified)](co2-formal-acceptance-and-co3-transition-20261114.md) on 14 November following native JOBS 5374/5375 and 5378/5379. This acceptance covers candidate-only IFOX context switching, checked nested BCPL frames and repeated continuation; the test-local public ABI, descriptor layout, lifetime/reuse policy, stack-limit instrumentation, and exceptional machine context remain unapproved. The [CO.3 kickoff](co3-coroutine-library-and-lifecycle-kickoff-20261114.md) begins a separately compiled and linked BCPL management library, with parent-chain and lifecycle verification. The earlier CO.1 and CO.2 historical interim statuses on this page are not reclassified. **Current status: CO.3 IN PROGRESS; CO.4–CO.5 NOT STARTED.**

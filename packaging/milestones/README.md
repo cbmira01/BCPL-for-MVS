@@ -2,7 +2,7 @@
 
 Each directory contains the authoritative milestone document and its directly relevant contracts, decisions and owner-approved closure records. **Existing milestone titles and march identifiers remain unchanged.**
 
-- [Implement coroutine support for native compiler](coroutines/milestone-implement-coroutine-support-for-native-compiler.md) — CO.0 and CO.1 CLOSED (qualified); CO.2 IN PROGRESS with [two native PASS records and a qualified acceptance candidate](coroutines/co2-qualified-acceptance-candidate-20261114.md); CO.3–CO.5 NOT STARTED.
+- [Implement coroutine support for native compiler](coroutines/milestone-implement-coroutine-support-for-native-compiler.md) — CO.0–CO.2 CLOSED (qualified); [CO.2 formal closure](coroutines/co2-formal-acceptance-and-co3-transition-20261114.md) accepted 14 November 2026, [CO.3 — Coroutine Library and Lifecycle](coroutines/co3-coroutine-library-and-lifecycle-kickoff-20261114.md) IN PROGRESS; CO.4–CO.5 NOT STARTED.
 - [Runtime Extensions](runtime-extensions/) — R.0–R.5 governing document, BCEX/BCRG v1 decisions, BCPLDEMO reference decision and R.1–R.5 closure records. R.0–R.5 are individually closed; formal expanded-milestone closure remains a separate owner decision.
 - [QSAM — native BCPL sequential-record I/O](qsam/) — Q.0–Q.5 governing milestone, BCPLQSAM public API and Q.1–Q.5 closure records. Milestone QSAM is owner-closed with documented Q.5 qualifications.
 - [BCPLTIME — Date and Time Services](bcpltime/) — governing milestone and T.0/T.1 closures.
