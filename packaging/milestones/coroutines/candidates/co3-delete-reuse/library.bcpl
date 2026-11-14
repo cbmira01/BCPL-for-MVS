@@ -1,0 +1,148 @@
+// CO.3 candidate: independently compiled BCPL lifecycle management.
+// Private G289-300 only; not a public ABI. Root + two live workers.
+GLOBAL $(
+  GETVEC:87
+  FREEVEC:88
+  CO3INIT:289
+  CREATECO:290
+  DELETECO:291
+  CALLCO:292
+  COWAIT:293
+  RESUMECO:294
+  CO3CURR:295
+  CO3ROOT:296
+  CO3LIST:297
+  CO2INIT:298
+  CHANGECO:299
+  CO3DROP:300
+$)
+
+LET CO3BOOT(C) = VALOF
+$(1
+  LET FN=C!24
+  AND A=COWAIT(C)
+  A := FN(A)
+  A := FN(COWAIT(A)) REPEAT
+$)1
+
+AND CO3INIT() = VALOF
+$(1
+  LET ROOT=0
+  IF CO3ROOT \= 0 RESULTIS 0
+  ROOT := GETVEC(23)
+  IF ROOT=0 RESULTIS 0
+  CO3ROOT := ROOT
+  CO3CURR := ROOT
+  CO3LIST := 0
+  RESULTIS ROOT
+$)1
+
+AND CREATECO(FN,SIZE) = VALOF
+$(1
+  LET C=0
+  AND STACK=0
+  AND V=0
+  IF CO3ROOT=0 | CO3CURR \= CO3ROOT RESULTIS 0
+  IF SIZE \= 1024 RESULTIS 0
+  C := GETVEC(27)
+  IF C=0 RESULTIS 0
+  STACK := GETVEC(1087)
+  IF STACK=0 DO
+  $(2 FREEVEC(C)
+      RESULTIS 0
+  $)2
+  C!3 := STACK
+  C!24 := FN
+  C!25 := CO3ROOT
+  C!26 := CO3LIST
+  C!27 := 0
+  IF CO2INIT(CO3ROOT,C,STACK,CO3BOOT) \= 0 DO
+  $(2 FREEVEC(STACK)
+      FREEVEC(C)
+      RESULTIS 0
+  $)2
+  CO3CURR := C
+  V := CHANGECO(C,C)
+  CO3CURR := CO3ROOT
+  IF V \= C RESULTIS 0
+  CO3LIST := C
+  RESULTIS C
+$)1
+
+AND CALLCO(C,A) = VALOF
+$(1
+  LET SELF=CO3CURR
+  AND V=0
+  IF C=SELF | C!25 \= 0 RESULTIS -2
+  C!25 := SELF
+  CO3CURR := C
+  V := CHANGECO(A,C)
+  CO3CURR := SELF
+  RESULTIS V
+$)1
+
+AND COWAIT(A) = VALOF
+$(1
+  LET SELF=CO3CURR
+  AND PARENT=0
+  AND V=0
+  IF SELF=CO3ROOT RESULTIS -3
+  PARENT := SELF!25
+  IF PARENT=0 RESULTIS -3
+  SELF!25 := 0
+  CO3CURR := PARENT
+  V := CHANGECO(A,PARENT)
+  CO3CURR := SELF
+  RESULTIS V
+$)1
+
+AND RESUMECO(C,A) = VALOF
+$(1
+  LET SELF=CO3CURR
+  AND PARENT=0
+  AND V=0
+  IF SELF=CO3ROOT RESULTIS -3
+  PARENT := SELF!25
+  IF PARENT=0 RESULTIS -3
+  IF C=0 | C=SELF | C=CO3ROOT RESULTIS -998
+  IF C!25 \= 0 RESULTIS -998
+  SELF!25 := 0
+  C!25 := PARENT
+  CO3CURR := C
+  V := CHANGECO(A,C)
+  CO3CURR := SELF
+  RESULTIS V
+$)1
+
+// The owner of a known-live, inactive worker may delete it from ROOT.
+// Verify list membership before descriptor dereference. CO3DROP atomically
+// revokes registry membership before either FREEVEC: no suspended stack is
+// reclaimed while its continuation is active or parent-reachable.
+AND DELETECO(C) = VALOF
+$(1
+  LET P=CO3LIST
+  AND PREV=0
+  AND NEXT=0
+  AND STACK=0
+  IF C=0 | CO3CURR \= CO3ROOT | C=CO3ROOT RESULTIS FALSE
+  WHILE P \= 0 DO
+  $(2 IF P=C BREAK
+      PREV:=P
+      P:=P!26
+  $)2
+  IF P=0 RESULTIS FALSE
+  IF C!25 \= 0 RESULTIS FALSE
+  P:=CO3LIST
+  WHILE P \= 0 DO
+  $(2 IF P \= C & P!25=C RESULTIS FALSE
+      P:=P!26
+  $)2
+  IF CO3DROP(C) \= 0 RESULTIS FALSE
+  NEXT:=C!26
+  STACK:=C!3
+  TEST PREV=0 THEN CO3LIST:=NEXT
+              OR PREV!26:=NEXT
+  FREEVEC(STACK)
+  FREEVEC(C)
+  RESULTIS TRUE
+$)1
