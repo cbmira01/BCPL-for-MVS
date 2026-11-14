@@ -2,7 +2,7 @@
 
 **Milestone:** [Implement coroutine support for native compiler](milestone-implement-coroutine-support-for-native-compiler.md)  
 **Recorded:** 10 November 2026  
-**Status:** OPEN; CO.0 CLOSED (qualified acceptance); CO.1 IN PROGRESS (candidate NATIVE-MVS-TESTED; production design approval pending)
+**Status:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified owner acceptance, 13 November 2026); CO.2 IN PROGRESS (bounded native candidate implementation); CO.3–CO.5 NOT STARTED. Production public ABI and permanent globals remain gated.
 
 **Five-probe execution checkpoint:** [11 November JES review and second-pass extraction](co0-mr10-coroutine-jes-summary-review-20261111.md) documents five OBSERVED cases, 62 zero-RC JES steps, 23 zero interpreted phase codes extracted from local reports, five matched program-output sequences, and four matched compiler-artifact pairs. The owner accepted the five golden contracts on 11 November; these are interpreted, not native, tests. The expanded runner has since been re-executed on MVS under the promoted canonical implementation: four original probes pass, the legacy fixed-stack source fails (JOB 5318), and the separately retained corrected-frame source passes (JOB 5321). CO0-U02 is resolved with this explicit compatibility qualification, not with an unqualified five-case PASS.
 
@@ -75,7 +75,7 @@ Interpret a claim as **DECLARED**, **SOURCE-OBSERVED**, **INTERPRETED-MVS-TESTED
 - [ ] Resolve native global numbers and historical BLIB versus separate BCPL library ownership. Establish actual BCPL object trailer/global import and assembler Core Runtime integration; do not assume System Extension BCEX/BCRG provides library linking.
 - [ ] Provide a bounded native IFOX/IEWL/GO probe matrix and a non-production object/JCL workflow before submitting JES.
 
-**CO.1 gate:** explicit owner approval of descriptor, stack bounds, register/continuation restoration, public BCPL API/global allocations, library location and lifecycle contract before CO.2.
+**CO.1 gate disposition, 13 November 2026:** Owner-directed **qualified CO.1 closure** accepts Approach A, S1, separate IFOX Core Runtime switching and separate future BCPL coroutine library for **isolated CO.2 candidate work**. Not all original full-production gate items have been approved: final descriptor ABI, public global allocations, complete lifecycle and error policy and broader machine-state guarantees remain hold points **before production promotion**, not silent checkmarks. See [formal closure](co1-formal-acceptance-and-co2-transition-20261113.md) and [CO.2 kickoff](co2-native-changeco-implementation-kickoff-20261113.md).
 
 ## CO.2–CO.5 — Required independent verification
 
@@ -266,3 +266,7 @@ The [CO.1 four-argument/nested-call checked ABI preparation](co1-native-four-arg
 ## 13 November 2026 — CO.1 native IFOX/IEWL/GO JOB 5349 PASS
 
 [JOB 5349 isolated native context-transfer result](co1-native-switch-jes-5349-ifox-iewl-go-result-20261113.md) records the owner's guarded `cd5b4d1e9e9162e83c5be594b783e76ac2ad217c` MVS execution: **PASS, JOB 5349; ASMSW IFOX00 RC=0000, ASMTST IFOX00 RC=0000, LKED IEWL RC=0000, GO RC=0000; ordered output `A1 B1 A2 B2 PASS`; runner RC=0**. Versioned runner enforces the four zero-RC steps and exact five GO records; original saved log/summary files were not independently re-read in this checkpoint. Owner-host evidence retained in `workarea/co1-native-switch/20261113T150704Z-57vfyna4`. This upgrades the previous candidate plan from **MVS PENDING** to **OWNER-REPORTED NATIVE-MVS-TESTED proof of isolated register-context transfer**, not a public `CHANGECO` ABI or generated BCPL coroutine. No new JES job, installed object or MVS dataset modification for this record. Move to an owner-reviewed minimal BCPL-callable/synthetic-frame/S1 design and actual native integration rather than more compile-only microprobes. **CO.1 IN PROGRESS; owner design gate OPEN; CO.2–CO.5 NOT STARTED.**
+
+## 13 November 2026 — CO.1 accepted (qualified); CO.2 started
+
+The owner explicitly directed immediate CO.1 acceptance and CO.2 initiation. The [qualified CO.1 acceptance record](co1-formal-acceptance-and-co2-transition-20261113.md) defines the bounded approved implementation direction, distinguishes native JOB 5372/5373 evidence from public ABI approval, and lists production promotion hold points. The [CO.2 kickoff](co2-native-changeco-implementation-kickoff-20261113.md) opens **CO.2 — Native CHANGECO Implementation** for isolated Core Runtime IFOX, BCPL, JCL and real MVS verification. **CO.1 CLOSED (qualified); CO.2 IN PROGRESS; CO.3–CO.5 NOT STARTED.**
