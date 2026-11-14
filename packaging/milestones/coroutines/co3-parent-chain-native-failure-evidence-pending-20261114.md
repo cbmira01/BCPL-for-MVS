@@ -36,4 +36,11 @@ separate owner-reported PASS; this failed parent-chain attempt does not
 alter those receipts. Do not modify RESUMECO or accepted runtime objects
 until the actual failing step has been established.
 
+**Follow-up (14 November 2026):** The owner supplied a read-only
+saved-receipt inspection identifying native JOB 5389: four IFOX and
+IEWL RC=0000, GO RC=0012, markers ending `... A4 R`. The
+[classified failure and next targeted fix](co3-parent-chain-jes-5389-output-capacity-failure-20261114.md)
+supersede the earlier unknown-step classification without changing
+the original FAIL evidence.
+
 **Disposition:** CO.3 IN PROGRESS; CO.4 and CO.5 NOT STARTED.

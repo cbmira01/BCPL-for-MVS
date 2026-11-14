@@ -152,6 +152,22 @@ original eight-record oracle. Private G!294 and error `-998` do not
 create public allocations or contracts. This candidate does not free
 registered descriptors or worker stacks, and CO.3 remains IN PROGRESS.
 
+## JOB 5389 parent-chain failure: output-buffer capacity
+
+On 14 November 2026, native JOB **5389** completed all four IFOX
+steps and IEWL at RC=0000, but GO returned **RC=0012**. The observed
+markers ended in `... A4 R`, with no `PASS`. The 132-byte
+`BCPLIO` record boundary is reached exactly after `MADE` through
+`A4` and nine characters of `R4` (counting newline characters).
+This is a real failed native test, separately documented in
+[JOB 5389 output-capacity evidence](../../co3-parent-chain-jes-5389-output-capacity-failure-20261114.md).
+
+The corrected **parent-chain fixture only** now explicitly calls
+`WRCH(10)` instead of `NEWLINE()` to request native `IOWRCH`
+record flushing. The library, the IFOX switch and the 13-marker
+behavioral assertions are unchanged. Native re-verification pending;
+the original JOB 5389 remains FAIL.
+
 ## Next integration gate
 
 After actual native evidence, add `RESUMECO` and parent-chain verification,

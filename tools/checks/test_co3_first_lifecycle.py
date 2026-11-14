@@ -204,6 +204,21 @@ class CO3Checks(unittest.TestCase):
                                                'CO3BCPL B1'), '7182',
                        co3.PARENT_EXPECTED)
 
+    def test_parent_chain_explicit_native_newline_flush(self):
+        # 14 Nov JOB 5389 GO RC=12, a 132-byte primary-output overrun.
+        parent=(FIXTURE/'parent-chain.bcpl').read_text('ascii')
+        self.assertIn('  WRCH:14', parent)
+        self.assertNotIn('NEWLINE()', parent)
+        self.assertEqual(parent.count('WRCH(10)'), 19)
+        # The observed failed trace ends at 132 bytes after "CO3BCPL R".
+        records=co3.PARENT_EXPECTED
+        prefix=''.join('CO3BCPL '+m+'\n' for m in records[:11])
+        self.assertEqual(len(prefix),123)
+        self.assertEqual(len(prefix+'CO3BCPL R'),132)
+        self.assertEqual(len(''.join('CO3BCPL '+m+'\n' for m in records)),147)
+        # WRCH(10) invokes BCPLIO's documented FB132 QSAM PUT control.
+        self.assertLess(max(len('CO3BCPL '+m) for m in records),132)
+
     def test_resume_refusal_keeps_parent_before_mutation(self):
         lib=(FIXTURE/'library.bcpl').read_text('ascii')
         start=lib.index('AND RESUMECO(C,A)')
