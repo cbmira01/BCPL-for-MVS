@@ -57,7 +57,7 @@ Each token above must appear as a complete, separately flushed
 The fixture verifies a refused third registration at capacity, an active
 worker's refusal to self-delete, two suspended-worker removals, continued
 operation of the other live worker, normal return followed by deletion,
-list head/middle/tail unlinking, and repeated registry slot reuse. The
+list head/tail unlinking, and repeated registry slot reuse. The
 successful case requires exact output, six zero-RC native JES steps and
 runner RC=0. Full reports stay under `workarea/co3-delete-reuse/`.
 
