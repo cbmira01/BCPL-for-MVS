@@ -2,9 +2,12 @@
 """Offline only: CO.3 independent object linkage and exact JES oracle."""
 from __future__ import annotations
 import importlib.util
+import os
 from pathlib import Path
 import re
+import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT/'tools/coroutines/run-co3-first-lifecycle.py'
@@ -63,6 +66,30 @@ HIGHEST RC: 0000
 REPORT = ''.join('CO3BCPL '+record+'\n' for record in co3.EXPECTED)
 
 class CO3Checks(unittest.TestCase):
+    def test_mvs_submission_path_and_fail_closed_preflight(self):
+        # CO.2 already uses the canonical script without a .sh suffix.
+        self.assertEqual(co3.SUBMIT, co3.co2.SUBMIT)
+        self.assertEqual(co3.SUBMIT.name, 'submit-jcl')
+        with tempfile.TemporaryDirectory() as directory:
+            paths = [Path(directory)/n for n in
+                     ('submit-jcl', 'job-summary', 'dump-report-for-job')]
+            for item in paths:
+                item.write_text('#!/bin/sh\nexit 0\n', encoding='ascii')
+                item.chmod(0o700)
+            with (patch.object(co3, 'SUBMIT', paths[0]),
+                  patch.object(co3.co2, 'SUBMIT', paths[0]),
+                  patch.object(co3, 'SUMMARY', paths[1]),
+                  patch.object(co3, 'REPORT', paths[2])):
+                co3.require_mvs_tools()
+                paths[0].chmod(0o600)
+                with self.assertRaisesRegex(co3.CandidateError,
+                                            'not executable'):
+                    co3.require_mvs_tools()
+                paths[0].chmod(0o700)
+                paths[1].unlink()
+                with self.assertRaisesRegex(co3.CandidateError, 'missing'):
+                    co3.require_mvs_tools()
+
     def test_bcpl_compiler_records_and_contract(self):
         for name in ('source.bcpl','library.bcpl'):
             data=(FIXTURE/name).read_text('ascii')

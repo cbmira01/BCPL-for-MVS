@@ -23,7 +23,7 @@ FIXTURE = (ROOT / 'packaging/milestones/coroutines/candidates'
            / 'co3-first-lifecycle')
 WORK = ROOT / 'workarea/co3-first-lifecycle'
 COMPILER = ROOT / 'tools/bootstrap/compile-mvs'
-SUBMIT = ROOT / 'tools/mvs/submit-jcl.sh'
+SUBMIT = ROOT / 'tools/mvs/submit-jcl'
 SUMMARY = ROOT / 'tools/mvs/job-summary'
 REPORT = ROOT / 'tools/mvs/dump-report-for-job'
 MAIN = ROOT / 'bootstrap-toolchain/asm/bcplmain.asm'
@@ -250,6 +250,15 @@ def config_and_object() -> tuple[list[str], str]:
             core.full_dsn(cfg, obj))
 
 
+def require_mvs_tools() -> None:
+    """Reject missing launch/evidence tools before submitting compiler jobs."""
+    if SUBMIT != co2.SUBMIT:
+        raise CandidateError('CO.3 submit tool differs from CO.2 baseline')
+    for path in (SUBMIT, SUMMARY, REPORT):
+        if not path.is_file() or not os.access(path, os.X_OK):
+            raise CandidateError(f'MVS tool missing or not executable: {path}')
+
+
 def execute() -> int:
     os.umask(0o077)
     WORK.mkdir(parents=True, exist_ok=True)
@@ -261,6 +270,7 @@ def execute() -> int:
         'public_global_allocation': False,
     }
     try:
+        require_mvs_tools()
         parm = FIXTURE/'cambridge-parm.txt'
         if parm.read_text('ascii').splitlines() != ['/CN'+'/'*77]:
             raise CandidateError('checked Cambridge /CN required')

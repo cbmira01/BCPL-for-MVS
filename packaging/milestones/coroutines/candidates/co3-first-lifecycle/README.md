@@ -83,6 +83,24 @@ The corrected offline suite contains direct zero-addend cases,
 negative relocation cases and an end-to-end temporary-JCL deck test.
 The next MVS execution must independently establish IFOX, IEWL and GO.
 
+## Second MVS execution attempt: submit-tool preflight correction
+
+The next owner-run attempt reached the native submission step but failed
+before submitting the generated native job:
+
+    [Errno 2] No such file or directory: tools/mvs/submit-jcl.sh
+
+The actual repository tool is the executable `tools/mvs/submit-jcl`
+(no .sh suffix), also used by the accepted CO.2 candidate runner. The
+CO.3 runner now uses this canonical path and verifies that the submit,
+summary, and report tools exist and are executable **before starting**
+compiler jobs. It also detects divergence from CO.2's submit path.
+
+The first two Cambridge compilation steps reached completion before the
+missing submit-tool path was used; **no native IFOX, IEWL or GO was
+submitted by this failed attempt**. Owner-local evidence:
+`workarea/co3-first-lifecycle/20261114T183415Z-ksnw0gfk`.
+
 ## Next integration gate
 
 After actual native evidence, add `RESUMECO` and parent-chain verification,
