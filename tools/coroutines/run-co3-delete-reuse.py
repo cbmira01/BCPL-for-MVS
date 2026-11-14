@@ -66,14 +66,38 @@ def bind_application_export(rows: list[str], driver) -> list[str]:
     start, last, maximum, pairs = driver.trailer(rows)
     if 1200 in {number for number, _ in pairs}:
         raise CandidateError('generated app already exports G!300')
-    alias = '         EXTRN C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME'
-    if rows.count(alias) != 1:
+    # The qualified CO.3 runner generates the five-function EXTRN card
+    # literally even when its EXPORTS tuple includes DELETECO.
+    baseline = '         EXTRN C3INIT,C3CREATE,C3CALL,C3WAIT,C3RESUME'
+    expanded = '         EXTRN C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME'
+    if rows.count(baseline) != 1 or expanded in rows:
         raise CandidateError('BCPL library imports changed')
-    rows.insert(rows.index(alias)+1, '         EXTRN CO3DROP')
+    at = rows.index(baseline)
+    rows[at] = expanded
+    rows.insert(at+1, '         EXTRN CO3DROP')
     start, last, maximum, pairs = driver.trailer(rows)
     rows[start] = f"         DC F'{max(maximum, 1200)}'"
     rows[last:last] = ["         DC F'1200'", '         DC A(CO3DROP)']
     return driver.co2.checked_cards('\n'.join(rows), 'CO3APP')
+
+
+def bind_library_export(rows: list[str], driver) -> list[str]:
+    """Publish the added independent BCPL DELETECO procedure to IEWL.
+
+    The qualified CO.3 runner also hard-codes the older five-entry IFOX
+    ENTRY card, independent of its dynamic EXPORTS procedure trailer.
+    """
+    rows = list(rows)
+    baseline = '         ENTRY C3INIT,C3CREATE,C3CALL,C3WAIT,C3RESUME'
+    expanded = '         ENTRY C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME'
+    if rows.count(baseline) != 1 or expanded in rows:
+        raise CandidateError('BCPL library ENTRY contract changed')
+    import re
+    if sum(bool(re.fullmatch(r'C3DELETE\s+EQU\s+L\d{1,5}', row))
+           for row in rows) != 1:
+        raise CandidateError('DELETECO label alias missing or ambiguous')
+    rows[rows.index(baseline)] = expanded
+    return driver.co2.checked_cards('\n'.join(rows), 'CO3LIB')
 
 
 def configure(driver) -> None:
@@ -82,6 +106,7 @@ def configure(driver) -> None:
                                 (294, 'C3RESUME')):
         raise CandidateError('qualified CO.3 library export baseline changed')
     old_application = driver.generated_application
+    old_library = driver.generated_library
     old_deck = driver.build_deck
     extension = EXTENSION.read_text('ascii')
 
@@ -93,12 +118,16 @@ def configure(driver) -> None:
     def application(source: str) -> list[str]:
         return bind_application_export(old_application(source), driver)
 
+    def library(source: str) -> list[str]:
+        return bind_library_export(old_library(source), driver)
+
     def deck(app: str, library: str, main: str, bridge: str,
              jobcard: list[str], obj_dsn: str) -> str:
         return old_deck(app, library, main,
                         merge_bridge(bridge, extension), jobcard, obj_dsn)
 
     driver.generated_application = application
+    driver.generated_library = library
     driver.build_deck = deck
 
 

@@ -61,6 +61,26 @@ list head/tail unlinking, and repeated registry slot reuse. The
 successful case requires exact output, six zero-RC native JES steps and
 runner RC=0. Full reports stay under `workarea/co3-delete-reuse/`.
 
+## First owner attempt: hard-coded import/export adapter mismatch
+
+On 14 November 2026, the initial native deletion/reuse attempt from
+GitHub `main` at `4565e9f6aca065fc3193ec7e044dc06055531a08`
+reported `CO.3 first lifecycle FAIL: BCPL library imports changed`
+at `workarea/co3-delete-reuse/20261114T235000Z-zvui6mmb`.
+The independent Cambridge compiler jobs had produced their listings,
+but the adapter rejected the generated application before native
+JCL submission; no IFOX, IEWL or native GO result was produced.
+
+Root cause: the qualified CO.3 runner expands global trailer exports
+using its dynamic `EXPORTS` tuple, but its application `EXTRN` and
+library `ENTRY` cards retain a literal five-function symbol list.
+The deletion adapter expected six imports and therefore refused
+the otherwise valid output. The candidate adapter now requires
+the exact baseline five-function cards, expands both to include
+`C3DELETE`, and checks its compiler-generated `EQU` alias before
+submitting the native deck. No change to the qualified base runner,
+accepted BCPLCO, installed objects or public globals is made.
+
 ## Explicit remaining gates
 
 - MVS Cambridge/IFOX/IEWL/GO evidence for this candidate is **pending**.

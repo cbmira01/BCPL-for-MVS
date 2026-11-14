@@ -17,13 +17,23 @@ BASE=ROOT/'packaging/milestones/coroutines/candidates/co3-delete-reuse'
 
 # Intentionally minimal but preserves real CG370 global trailer structure.
 APP='''CO3APP   CSECT
-         EXTRN C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME
+         EXTRN C3INIT,C3CREATE,C3CALL,C3WAIT,C3RESUME
          DC F'1196'
          DC F'0'
          DC F'4'
          DC A(L123)
 L998     EQU *
          END   CO3APP
+'''
+LIB='''CO3LIB   CSECT
+         ENTRY C3INIT,C3CREATE,C3CALL,C3WAIT,C3RESUME
+C3INIT   EQU   L1
+C3CREATE EQU   L2
+C3DELETE EQU   L3
+C3CALL   EQU   L4
+C3WAIT   EQU   L5
+C3RESUME EQU   L6
+         END   CO3LIB
 '''
 BASE_BRIDGE='''BCPLCO   CSECT
          ENTRY CO2INIT,CHANGECO
@@ -69,6 +79,9 @@ class FakeDriver:
     def generated_application(self, source):
         # The real base runner refers to mutable EXPORTS to synthesize aliases.
         return APP.splitlines()
+    @staticmethod
+    def generated_library(source):
+        return LIB.splitlines()
     @staticmethod
     def build_deck(app,library,main,bridge,jobcard,obj):
         return bridge
@@ -138,10 +151,90 @@ class CO3DeleteReuseChecks(unittest.TestCase):
                 with self.assertRaises(co3.CandidateError):
                     co3.merge_bridge(altered,extension)
 
+    def test_library_entry_required_for_iewl(self):
+        f=FakeDriver()
+        rows=co3.bind_library_export(LIB.splitlines(),f)
+        expanded='         ENTRY C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME'
+        self.assertEqual(rows.count(expanded),1)
+        self.assertIn('C3DELETE EQU   L3',rows)
+        self.assertLessEqual(max(map(len,rows)),71)
+        for bad in (LIB.replace('ENTRY C3INIT','ENTRY C3X'),
+                    LIB.replace('C3DELETE EQU   L3',''),
+                    LIB.replace('C3DELETE EQU   L3',
+                                'C3DELETE EQU   L3\nC3DELETE EQU   L4')):
+            with self.subTest(bad=bad):
+                with self.assertRaises(co3.CandidateError):
+                    co3.bind_library_export(bad.splitlines(),f)
+
+    def test_real_co3_driver_generated_exports_and_imports(self):
+        # Unlike FakeDriver, this uses the true CO.3 builder that hard-codes
+        # the original five-function ENTRY and EXTRN assembler cards.
+        spec=importlib.util.spec_from_file_location('co3_real',co3.BASE_RUNNER)
+        real=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(real)
+        co3.configure(real)
+        app='''         CSECT
+         EXTRN BCPLMAIN
+L999     EQU *
+L123     EQU *
+         DC F'4'
+         DC F'0'
+         DC F'4'
+         DC A(L123)
+L998     EQU *
+         END
+'''
+        lib='''         CSECT
+         EXTRN BCPLMAIN
+L999     EQU *
+L101     EQU *
+L102     EQU *
+L103     EQU *
+L104     EQU *
+L105     EQU *
+L106     EQU *
+         DC F'1176'
+         DC F'0'
+         DC F'1156'
+         DC A(0+L101)
+         DC F'1160'
+         DC A(0+L102)
+         DC F'1164'
+         DC A(0+L103)
+         DC F'1168'
+         DC A(0+L104)
+         DC F'1172'
+         DC A(0+L105)
+         DC F'1176'
+         DC A(0+L106)
+L998     EQU *
+         END
+'''
+        app_rows=real.generated_application(app)
+        lib_rows=real.generated_library(lib)
+        self.assertEqual(app_rows.count(
+            '         EXTRN C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME'),
+            1)
+        self.assertEqual(lib_rows.count(
+            '         ENTRY C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME'),
+            1)
+        self.assertEqual(len([x for x in lib_rows
+                              if x.startswith('C3DELETE EQU')]),1)
+        self.assertIn("         DC F'1164'",app_rows)
+        self.assertIn('         DC A(C3DELETE)',app_rows)
+        self.assertIn("         DC F'1200'",app_rows)
+        self.assertIn('         DC A(CO3DROP)',app_rows)
+        self.assertLessEqual(max(map(len,app_rows)),71)
+        self.assertLessEqual(max(map(len,lib_rows)),71)
+
     def test_export_and_application_trailer_bindings(self):
         f=FakeDriver()
         rows=co3.bind_application_export(APP.splitlines(),f)
         self.assertIn('         EXTRN CO3DROP',rows)
+        self.assertIn(
+            '         EXTRN C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME',
+            rows)
+        self.assertLessEqual(max(map(len,rows)),71)
         self.assertIn("         DC F'1200'",rows)
         self.assertIn('         DC A(CO3DROP)',rows)
         self.assertEqual(rows.count("         DC F'1200'"),2)
@@ -162,6 +255,10 @@ class CO3DeleteReuseChecks(unittest.TestCase):
         self.assertEqual(fake.WORK,co3.EVIDENCE)
         output=fake.generated_application('sample')
         self.assertIn('         EXTRN CO3DROP',output)
+        library=fake.generated_library('sample')
+        self.assertIn(
+            '         ENTRY C3INIT,C3CREATE,C3DELETE,C3CALL,C3WAIT,C3RESUME',
+            library)
         deck=fake.build_deck('app','lib','main',BASE_BRIDGE,['//CO3BGO JOB'],
                              'HERC02.BCPL.BOOT.OBJ')
         self.assertIn('CO3DROP  STM',deck)
