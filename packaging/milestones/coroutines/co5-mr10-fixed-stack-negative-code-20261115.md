@@ -83,3 +83,21 @@ the known-incompatible accepted legacy test. A future explicit
 release/suite contract decision must govern how the known qualified
 incompatibility is represented in a unified regression acceptance gate.
 CO.5 remains **IN PROGRESS**.
+
+## 15 November 2026 — remaining probe cases verified separately
+
+Following the documented JES 5499 fail-stop, the owner ran exactly
+the three previously NOT_RUN accepted Development Probe identities
+at revision `6f039e7bd1e3cd8e57ef8b4fede986920b1172e7`:
+
+- `10-coroutines/resumeco-chain` — PASS, all 14 JES steps verified
+- `10-coroutines/create-delete-static-pool` — PASS, all 14 JES steps verified
+- `11-getvec-freevec` — PASS, all 12 JES steps verified
+
+The runner returned **RC=0**, evidence
+`workarea/mr10-probes/20261115T214035Z-27407-fl8okmho/summary.json`.
+This closes execution coverage for those three IDs; together with
+the earlier seven PASS, it does **not** erase the one legacy FAIL or
+establish an eleven-case all-PASS. Other native regression outcomes
+are recorded separately in
+[the CO.5 cross-suite checkpoint](co5-cross-suite-regression-checkpoint-20261115.md).

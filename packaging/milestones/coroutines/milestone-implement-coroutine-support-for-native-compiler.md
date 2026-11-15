@@ -199,3 +199,24 @@ and other suites as separately reported runs. Do not claim an
 unqualified full-project PASS without a distinct owner-approved
 resolution of the known incompatible accepted fixture.
 **CO.5 stays IN PROGRESS.**
+
+## 15 November 2026 — CO.5 cross-suite regression checkpoint
+
+At GitHub `main` revision `6f039e7bd1e3cd8e57ef8b4fede986920b1172e7`, the owner reported a
+**PASS/RC=0** five-suite coordinated campaign (MR10 12/12; Bootstrap
+145 PASS + expected SKIP 083; Runtime Extensions 13/13; BCPLTIME
+4/4; Coroutines native 177–189 13/13), a separate 12/12 PASS for
+BCPLQSAM non-device cases 163–174, and a 3/3 PASS for the remaining
+MR10 Development Probes with 40 JES step contracts verified by the
+runner. These supplement the preceding seven Development Probe PASS
+results and their **one preserved legacy fixed-stack FAIL**. Across
+unique current suite identities, **209 PASS, 1 legacy FAIL, 1 expected
+SKIP and 2 device cases not run**. There is no claim of a single
+unqualified all-suites PASS.
+
+See [CO.5 cross-suite regression checkpoint](co5-cross-suite-regression-checkpoint-20261115.md)
+for the exact evidence paths, status distinctions and release gates.
+The known legacy failure remains under CO.0's qualified compatibility
+disposition. Unapproved device operation, clean-room reconstruction,
+installed-object promotion, public ABI publication and separate owner
+CO.5 acceptance remain outstanding. **CO.5 IN PROGRESS.**
