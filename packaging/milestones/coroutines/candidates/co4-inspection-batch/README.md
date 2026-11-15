@@ -144,3 +144,15 @@ command. A failing run must be retained, not overwritten.
 **Status:** CO.4 remains IN PROGRESS, CO.5 NOT STARTED. No runtime
 installation, release, public ABI promotion or qualified closure is
 claimed by preparing this batch.
+
+## First operator attempt and report-decoding correction
+
+The first three-case attempt at `bdd1c4716cc0012d0ae314576d35bd489f4765bb`
+reported a host UTF-8 decoding failure while processing a printer stream.
+It did **not** satisfy the LIMITS native oracle, and ACCOUNT and DENY were
+not attempted. That attempt remains a distinct FAIL, with owner-local
+receipts preserved. The follow-up correction applies Latin-1 decoding
+*only* to the raw `dump-report-for-job` subprocess in this test runner,
+matching the project's established DSPAL report handling; accepted
+CO.2/CO.3 runners and all native candidate objects remain unchanged.
+See [first-run evidence and host verification](../../co4-inspection-batch-printer-decode-failure-20261114.md).

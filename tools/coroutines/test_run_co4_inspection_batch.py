@@ -8,6 +8,7 @@ import io
 import json
 from pathlib import Path
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -183,6 +184,60 @@ class NativeBindingTests(unittest.TestCase):
             result=co4.validate_inputs()
             self.assertEqual(len(result['cases']),3)
             self.assertEqual(len(result['accepted_co3']['co4_source_sha256']),64)
+
+
+class RawPrinterDecoderTests(unittest.TestCase):
+    def test_non_utf8_printer_bytes_preserve_report_text(self):
+        # This is synthetic local process output, not MVS or JES evidence.
+        class Driver:
+            REPORT=Path(sys.executable)
+            ROOT=Path(__file__).resolve().parents[2]
+            class co2:
+                @staticmethod
+                def shell(cmd, *, timeout=240):
+                    raise AssertionError('raw report must bypass UTF-8 shell')
+        driver=Driver()
+        co4.configure_report_decoder(driver)
+        code = ("import os; os.write(1, "
+                "b'CO4LIM PASS\\n\\xd7\\n')")
+        result=driver.co2.shell([sys.executable, '-c', code],timeout=15)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, 'CO4LIM PASS\n\u00d7\n')
+        self.assertEqual(co4.parse_records(result.stdout, 'CO4LIM'), ['PASS'])
+
+    def test_other_commands_delegate_to_accepted_shell(self):
+        calls=[]
+        class Driver:
+            REPORT=Path('/fake/raw-printer-report')
+            ROOT=Path('/fake/root')
+            class co2:
+                @staticmethod
+                def shell(cmd, *, timeout=240):
+                    calls.append((cmd,timeout))
+                    return 'delegate-result'
+        driver=Driver()
+        co4.configure_report_decoder(driver)
+        self.assertEqual(driver.co2.shell(['git','rev-parse','HEAD'],timeout=15),
+                         'delegate-result')
+        self.assertEqual(calls,[(['git','rev-parse','HEAD'],15)])
+
+    def test_only_raw_printer_subprocess_has_latin1(self):
+        class Driver:
+            REPORT=Path('/fake/dump-report-for-job')
+            ROOT=Path('/fake/root')
+            class co2:
+                @staticmethod
+                def shell(cmd, *, timeout=240):
+                    raise AssertionError('generic shell path forbidden')
+        driver=Driver()
+        co4.configure_report_decoder(driver)
+        with mock.patch.object(co4.subprocess,'run',return_value='receipt') as run:
+            self.assertEqual(driver.co2.shell([str(driver.REPORT),'42'],timeout=9),
+                             'receipt')
+        run.assert_called_once_with([str(driver.REPORT),'42'],
+                                    cwd=driver.ROOT,text=True,
+                                    encoding='latin-1',capture_output=True,
+                                    check=False,timeout=9)
 
 
 class BatchReceiptTests(unittest.TestCase):

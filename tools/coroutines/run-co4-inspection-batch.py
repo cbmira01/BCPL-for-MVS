@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -187,6 +188,29 @@ def configure(driver, adapter, extension: str) -> None:
     driver.build_deck = deck
 
 
+def configure_report_decoder(driver) -> None:
+    """Decode only raw JES printer output using the project's byte policy.
+
+    dump-report-for-job streams unconverted printer bytes. The inherited
+    generic subprocess wrapper uses UTF-8 under a UTF-8 host locale; a
+    high-bit printer byte can abort report capture. The
+    accepted dspal job_report already decodes this boundary as latin-1.
+    Leave git, Cambridge compiler, submit and job-summary commands on
+    their existing decoding path. Do not modify any accepted runner.
+    """
+    report_program = str(driver.REPORT)
+    inherited_shell = driver.co2.shell
+
+    def shell(cmd: list[str], *, timeout: int = 240):
+        if cmd and cmd[0] == report_program:
+            return subprocess.run(cmd, cwd=driver.ROOT, text=True,
+                                  encoding='latin-1', capture_output=True,
+                                  check=False, timeout=timeout)
+        return inherited_shell(cmd, timeout=timeout)
+
+    driver.co2.shell = shell
+
+
 def compiler_diagnostic(evidence: Path) -> str | None:
     for job in ('CO3ACMP', 'CO3LCMP'):
         path = evidence/(job+'.log')
@@ -213,6 +237,7 @@ def run_one(key: str, session: Path, previous, hashes: dict) -> dict:
         adapter = previous.load_module('co4ins_adapter_'+key,
                                        previous.CO3_ADAPTER)
         configure(driver, adapter, EXTENSION.read_text('ascii'))
+        configure_report_decoder(driver)
         driver.FIXTURE = stage
         driver.WORK = case_dir
         driver.EXPECTED = expected
