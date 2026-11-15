@@ -347,7 +347,11 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
         "started_utc": moment.isoformat(), "interpreter": str(icint.relative_to(ROOT)),
         "verification": "CASE_SPECIFIC", "status": "IN_PROGRESS",
         "selected_cases": selected,
-        "cases": [{"id": item, "status": "NOT_RUN"} for item in selected],
+        # Materialize accepted status before execution, so fail-stop receipts
+        # retain contract identity even when later cases remain NOT_RUN.
+        "cases": [{"id": item, "status": "NOT_RUN",
+                   "verification": entries[item]["verification"]}
+                  for item in selected],
     }
     save(summary_path, summary)
     print(f"MR10 PROBE EVIDENCE: {folder}", flush=True)

@@ -187,7 +187,12 @@ def parse_mr10_probes(log: str, declared: list[str], rc: int) -> dict:
     require(payload.get("selected_cases") == declared and
             [row.get("id") for row in cases] == declared,
             "MR10 probes: selected IDs differ from the accepted case inventory")
-    require(all(row.get("verification") == "ACCEPTED" for row in cases),
+    # The preflight inventory already guarantees the eleven accepted IDs.
+    # Earlier fail-stopped runner receipts omitted verification on NOT_RUN
+    # cases; do not let them conceal a real preceding probe failure.
+    require(all(row.get("verification") == "ACCEPTED" or
+                (row.get("status") == "NOT_RUN" and
+                 row.get("verification") is None) for row in cases),
             "MR10 probes: unaccepted case selected")
     counts = {key: sum(row.get("status") == key for row in cases)
               for key in ("PASS", "FAIL", "OBSERVED", "NOT_RUN")}
@@ -208,7 +213,10 @@ def parse_mr10_probes(log: str, declared: list[str], rc: int) -> dict:
                        "SKIP": 0, "BLOCKED": counts["OBSERVED"],
                        "TOTAL": len(cases)},
             "probe_evidence": str(evidence.relative_to(ROOT)),
-            "cases": [{"id": row["id"], "status": row["status"]} for row in cases]}
+            "cases": [{"id": row["id"], "status": row["status"],
+                       **({"reason": row["reason"]} if
+                          row["status"] == "FAIL" and row.get("reason") else {})}
+                      for row in cases]}
 
 
 def parse_native(log: str, suite: str, profile: str,
@@ -351,6 +359,12 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
         entry["runner_log"] = str(log_path.relative_to(ROOT))
         save(filename, summary)
         print(f"{entry['status']} {suite}: {entry.get('counts', entry.get('error'))}", flush=True)
+        if suite == "mr10-probes" and entry["status"] == "FAIL":
+            failed = next((case for case in entry.get("cases", [])
+                           if case["status"] == "FAIL"), None)
+            if failed:
+                reason = " ".join(str(failed.get("reason", "see runner log")).split())
+                print(f"MR10 PROBE FAILURE: {failed['id']}: {reason[:180]}", flush=True)
         if entry["status"] != "PASS":
             break  # Never launch further JES work after a failed or blocked suite.
 
