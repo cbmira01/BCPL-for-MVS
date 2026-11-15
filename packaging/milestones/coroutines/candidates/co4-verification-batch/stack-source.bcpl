@@ -1,0 +1,96 @@
+// CO.4 S1 static stack-extent and guard sentinel, /CN checked frames.
+// Private descriptor layout, known-live worker only. No overflow test.
+GLOBAL $(
+  START:1
+  WRCH:14
+  STACKBASE:54
+  STACKEND:55
+  WRITES:60
+  CO3INIT:289
+  CREATECO:290
+  DELETECO:291
+  CALLCO:292
+  COWAIT:293
+  CO3CURR:295
+  CO3ROOT:296
+  CO3LIST:297
+$)
+LET MARK(S) BE
+$(1 WRITES("CO4STK ")
+    WRITES(S)
+    WRCH(10)
+$)1
+AND FAIL() BE
+$(1 MARK("FAIL")
+    FINISH
+$)1
+// Stack extent includes 64 clearance words above safe stack.
+// Guard at END-2 is painted like an untouched even safe word.
+// END-1 records address of final even marker in safe stack.
+AND CHECK(WORDS) = VALOF
+$(1 LET BASE=STACKBASE
+    AND END=STACKEND
+    IF END-BASE \= WORDS RESULTIS FALSE
+    LET GUARD=END-2
+    AND SAFE=BASE+WORDS-72
+    AND META=END-1
+    IF GUARD!0 \= SAFE!0 RESULTIS FALSE
+    IF META!0 \= END-66 RESULTIS FALSE
+    RESULTIS TRUE
+$)1
+AND DEEP(N,X) = VALOF
+$(1 LET TOKEN=N*1000+X
+    AND SELF=CO3CURR
+    AND R=0
+    IF CHECK(1088)=FALSE RESULTIS -91
+    IF STACKBASE \= SELF!4 RESULTIS -92
+    IF STACKEND \= SELF!6 RESULTIS -93
+    IF SELF!5 \= (STACKBASE+1024)*4 RESULTIS -94
+    IF N=0 DO
+    $(2 IF X \= 11 RESULTIS -95
+        R:=COWAIT(111)
+        IF R \= 12 RESULTIS -96
+        IF CHECK(1088)=FALSE RESULTIS -97
+        IF SELF!5 \= (STACKBASE+1024)*4 RESULTIS -98
+        RESULTIS 112
+    $)2
+    R:=DEEP(N-1,X)
+    IF TOKEN \= N*1000+X RESULTIS -99
+    IF CO3CURR \= SELF RESULTIS -100
+    IF CHECK(1088)=FALSE RESULTIS -101
+    RESULTIS R
+$)1
+AND WORK(X)=DEEP(5,X)
+LET START() BE
+$(1 LET ROOT=0
+    AND A=0
+    AND R=0
+    AND BASE=STACKBASE
+    AND END=STACKEND
+    CO3ROOT:=0
+    CO3CURR:=0
+    CO3LIST:=0
+    ROOT:=CO3INIT()
+    IF ROOT=0 | CHECK(16448)=FALSE DO FAIL()
+    MARK("ROOT")
+    A:=CREATECO(WORK,1024)
+    IF A=0 | CO3LIST \= A DO FAIL()
+    IF A!4 \= A!3 | A!6-A!4 \= 1088 DO FAIL()
+    IF A!5 \= (A!4+1024)*4 DO FAIL()
+    IF CHECK(16448)=FALSE DO FAIL()
+    MARK("MADE")
+    R:=CALLCO(A,11)
+    IF R \= 111 | CO3CURR \= ROOT | A!25 \= 0 DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= END DO FAIL()
+    IF CHECK(16448)=FALSE DO FAIL()
+    MARK("YIELD")
+    R:=CALLCO(A,12)
+    IF R \= 112 | CO3CURR \= ROOT | A!25 \= 0 DO FAIL()
+    IF CHECK(16448)=FALSE DO FAIL()
+    MARK("RETURN")
+    IF DELETECO(A) \= TRUE | CO3LIST \= 0 DO FAIL()
+    IF CHECK(16448)=FALSE DO FAIL()
+    MARK("CLEAN")
+    MARK("PASS")
+    FINISH
+$)1
