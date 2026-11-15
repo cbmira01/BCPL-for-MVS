@@ -2,9 +2,9 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Established:** 10 November 2026  
-**Status:** ESTABLISHED; CO.0–CO.3 CLOSED (qualified); CO.4 IN PROGRESS; CO.5 NOT STARTED
+**Status:** ESTABLISHED; CO.0–CO.4 CLOSED (qualified); CO.5 IN PROGRESS
 
-**Marches:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified); CO.2 CLOSED (qualified); CO.3 CLOSED (qualified); CO.4 IN PROGRESS; CO.5 NOT STARTED
+**Marches:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified); CO.2 CLOSED (qualified); CO.3 CLOSED (qualified); CO.4 CLOSED (qualified); CO.5 IN PROGRESS
 
 **Target:** Native System/370 BCPL applications under MVS 3.8J
 
@@ -161,5 +161,14 @@ opens [CO.4 — Robustness and Edge-Case Verification](co4-robustness-and-edge-c
 global assignments, production object installation, stale-pointer
 recovery, full robustness and release acceptance remain unapproved.
 
-**Current status: CO.0–CO.3 CLOSED (qualified); CO.4 IN PROGRESS;
-CO.5 NOT STARTED.**
+**Historical status before owner decision on 15 November 2026:** CO.0–CO.3 CLOSED (qualified); CO.4 IN PROGRESS; CO.5 NOT STARTED.
+
+## 15 November 2026 — CO.4 qualified closure; CO.5 opened
+
+The owner explicitly directed **“Close CO.4, and proceed to CO.5 without delay. Give me a handoff prompt for a new conversation.”** The direction accepts the bounded qualifying disposition in the [CO.4 acceptance review candidate](co4-qualified-acceptance-review-candidate-20261115.md), following the separate owner-reported native PASS results for LIMITS, DENY and ACCOUNT and prior CO.4 bounded stress, safe-negative and STACK/CHURN/BUSY cases.
+
+[Formal CO.4 qualified closure and transition](co4-formal-acceptance-and-co5-transition-20261115.md) documents the source revisions, exact evidence qualifications and untested failure surfaces. **CO.4 — Robustness and Edge-Case Verification: CLOSED (qualified).** This does not establish real MVS GETMAIN exhaustion, deliberate stack-overflow behavior, arbitrary stale-address or ABA-safe pointer recovery, reentrancy or exceptional MVS abend recovery.
+
+[CO.5 — Integration, Regression, and Release kickoff](co5-integration-regression-and-release-kickoff-20261115.md) begins immediately **IN PROGRESS**. Its separate gate requires named native Bootstrap test integration without renumbering existing cases, MR10/native/applicable project suites, clean-room reconstruction, reproducible linking, release documentation, and owner-reviewed per-suite/JES evidence. A CO.5 start does **not** authorize destructive rebuilds, installed-object changes, permanent globals, public ABI freeze, release publication or CO.5 closure.
+
+**Current status as of 15 November 2026: CO.0–CO.4 CLOSED (qualified); CO.5 IN PROGRESS.**
