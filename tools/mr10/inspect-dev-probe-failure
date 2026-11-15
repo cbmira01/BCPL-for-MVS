@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Read-only MVS/ICINT diagnostic from a failed MR10 Development Probe receipt."""
+from __future__ import annotations
+import argparse
+import json
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+CASE = '10-coroutines/fixed-stack-producer-consumer'
+BANNER = 'INTCODE SYSTEM ENTERED'
+CODE = re.compile(r'EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)')
+ERROR = re.compile(r'INTCODE ERROR AT C\s*=|BAD (?:CODE|CH) AT P\s*=|SYNTAX ERROR')
+MARKER = re.compile(r'(?m)^MR10 PROBE EVIDENCE: (.+?)\s*$')
+
+
+def inspect(project_run: Path) -> str:
+    root = ROOT.resolve()
+    project = (root / 'workarea/project-regressions' / project_run).resolve()
+    if project.parent != root / 'workarea/project-regressions' or not project.is_dir():
+        raise ValueError('unsafe/missing project regression evidence directory')
+    summary = json.loads((project / 'summary.json').read_text())
+    if 'mr10-probes' not in summary.get('selected_suites', []):
+        raise ValueError('MR10 Development Probes not selected')
+    log = (project / 'mr10-probes.log').read_text(errors='replace')
+    matches = MARKER.findall(log)
+    if len(matches) != 1:
+        raise ValueError('MR10 probe receipt path missing/ambiguous')
+    receipt = Path(matches[0].strip()).resolve()
+    if receipt.parent != root / 'workarea/mr10-probes' or not receipt.is_dir():
+        raise ValueError('MR10 probe receipt outside workarea')
+    data = json.loads((receipt / 'summary.json').read_text())
+    if data.get('suite') != 'mr10-probes':
+        raise ValueError('unexpected probe receipt suite')
+    cases = [x for x in data['cases'] if x.get('id') == CASE]
+    if len(cases) != 1 or cases[0].get('status') != 'FAIL':
+        raise ValueError('fixed-stack case not uniquely recorded as FAIL')
+    case = cases[0]
+    raw = (receipt / '10-coroutines--fixed-stack-producer-consumer.log').read_text(errors='replace')
+    lines = [s.replace('\f', '').strip() for s in raw.splitlines()]
+    starts = [i for i, s in enumerate(lines) if s.startswith(BANNER)]
+    final = lines[starts[-1]:] if starts else lines
+    codes = [int(m.group(1)) for line in lines if (m := CODE.search(line))]
+    errors = [s for s in final if ERROR.search(s)]
+    stop = next((i for i, s in enumerate(final) if ERROR.search(s)), len(final))
+    programs = [s for s in final[:stop] if s.startswith(('PRODUCER:', 'CONSUMER:'))]
+    trace = []
+    if '*** ICINT RECENT INSTRUCTION TRACE ***' in final:
+        i = final.index('*** ICINT RECENT INSTRUCTION TRACE ***')
+        j = next((k for k in range(i+1, len(final)) if final[k] == '*** END ICINT TRACE ***'),
+                 min(len(final)-1, i+150))
+        trace = final[i:j+1]
+    return '\n'.join([
+        'MR10 FIXED-STACK PROBE — ORIGINAL STATUS: FAIL (read-only)',
+        f'PROJECT HEAD: {summary.get("git_head", "unknown")}',
+        f'PROBE HEAD: {data.get("git_head", "unknown")}',
+        f'JES JOB: {case.get("jes_job_id", "unknown")}; RUNNER RC: {case.get("runner_rc")}',
+        f'INTERPRETED PHASE CODES: {codes}',
+        f'RECORDED REASON: {case.get("reason", "unknown")}',
+        'FINAL PRODUCER/CONSUMER RECORDS:', *(programs[-10:] or ['(none)']),
+        'INTERPRETER ERRORS:', *(errors[:3] or ['(none)']),
+        'ICINT TRACE TAIL (up to 21 lines):', *(trace[-21:] or ['(none)']),
+        f'RAW LOG: {(receipt / "10-coroutines--fixed-stack-producer-consumer.log").relative_to(root)}',
+    ])
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--project-evidence', required=True,
+                   help='name of the existing project regression evidence directory')
+    args = p.parse_args(argv)
+    try:
+        print(inspect(Path(args.project_evidence)))
+        return 0  # extraction succeeded; the original MVS test remains FAIL
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f'inspect-dev-probe-failure: {exc}', file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())
