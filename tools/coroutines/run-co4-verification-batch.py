@@ -36,7 +36,8 @@ CASES = {
 
 REQUIRED = {
     'stack': ('CHECK(16448)', 'CHECK(1088)', 'SELF!5', 'GUARD!0',
-              'META!0', 'DEEP(5,X)', 'DELETECO(A)'),
+              'META!0', 'AND GUARD=STACKEND-2', 'AND META=STACKEND-1',
+              'DEEP(5,X)', 'DELETECO(A)'),
     'churn': ('FOR I=1 TO 16 DO', 'CREATECO(WORKA,1024)',
               'CREATECO(WORKB,1024)', 'CREATECO(WORKA,1024)',
               'CALLCO(A,I*10+1)', 'CALLCO(B,I*20+1)',
@@ -85,6 +86,13 @@ def validate_case(key: str, fixture: Path = FIXTURE) -> dict[str, str]:
     for number, line in enumerate(code.splitlines(), 1):
         if len(line) > 80 or '\t' in line:
             raise CandidateError(f'{source}: non-FB80 card {number}')
+    if key == 'stack':
+        # Cambridge BCPL declaration groups must precede commands.
+        # The first attempt contained a LET after an IF inside CHECK.
+        check_body = code.split('AND CHECK(WORDS) = VALOF', 1)[1].split(
+            'AND DEEP(N,X) = VALOF', 1)[0]
+        if 'IF ' not in check_body or 'LET ' in check_body.split('IF ', 1)[1]:
+            raise CandidateError(f'{source}: late declaration in CHECK')
     for token in REQUIRED[key]:
         if token not in code:
             raise CandidateError(f'{source}: source contract absent: {token}')
@@ -106,6 +114,19 @@ def validate_inputs() -> dict[str, object]:
     prior = previous.validate_inputs()
     return {'accepted_co3': prior,
             'cases': {case: validate_case(case) for case in CASES}}
+
+
+def compiler_failure_detail(evidence: Path) -> str | None:
+    """Return at most one bounded compiler diagnostic; never dump JES text."""
+    for name in ('CO3ACMP', 'CO3LCMP'):
+        log = evidence / f'{name}.log'
+        if not log.is_file():
+            continue
+        for line in reversed(log.read_text(errors='replace').splitlines()):
+            text = line.strip()
+            if text.startswith('cambridge-compile-mvs:'):
+                return f'{name}: {text[:200]}'
+    return None
 
 
 def run_one(key: str, session: Path, previous, hashes: dict) -> dict:
@@ -140,8 +161,11 @@ def run_one(key: str, session: Path, previous, hashes: dict) -> dict:
             evidence_name = str(evidence.relative_to(ROOT))
         except ValueError:
             evidence_name = str(evidence)
+        detail = compiler_failure_detail(evidence) if rc != 0 else None
         outcome = {
             'case': key, 'status': raw['status'], 'rc': rc,
+            'reason': raw.get('reason') if rc != 0 else None,
+            'compiler_diagnostic': detail,
             'evidence_dir': evidence_name,
             'native_job': raw.get('native_job'),
             'compiler_jobs': {k: raw.get(k) for k in
@@ -156,6 +180,8 @@ def run_one(key: str, session: Path, previous, hashes: dict) -> dict:
         (evidence / 'co4-case-result.json').write_text(
             json.dumps(outcome, indent=2) + '\n')
         print(f'CO.4 {key.upper()} ' + ('PASS' if rc == 0 else 'FAIL'))
+        if detail:
+            print(f'CO.4 {key.upper()} diagnostic: {detail}')
         return outcome
 
 
@@ -173,7 +199,7 @@ def run_batch() -> int:
             item = run_one(key, session, previous, hashes)
             result['cases'].append(item)
             if item['status'] != 'PASS':
-                result['reason'] = f'{key}: native result FAIL'
+                result['reason'] = f"{key}: {item.get('reason') or 'native result FAIL'}"
                 return 1
         result['status'] = 'PASS'
         return 0

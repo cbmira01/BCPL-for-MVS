@@ -1,8 +1,8 @@
 # CO.4 — Consolidated safe native verification batch
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**March:** CO.4 — Robustness and Edge-Case Verification (**IN PROGRESS**)  
-**Source authority:** GitHub `main`; accepted CO.3 candidate and runtime  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**March:** CO.4 — Robustness and Edge-Case Verification (**IN PROGRESS**)
+**Source authority:** GitHub `main`; accepted CO.3 candidate and runtime
 **Evidence classification:** HOST-CHECKED / NATIVE MVS PENDING
 
 ## Three independent native cases, one operator invocation
@@ -73,3 +73,26 @@ inherited independently compiled Cambridge, IFOX, IEWL, GO and JES
 receipts. A failing early case blocks later cases without rewriting
 prior evidence. Failed attempts remain failures even if later reruns
 succeed. These cases **do not by themselves close CO.4**.
+
+## 14 November 2026 — First native attempt and source correction
+
+The first operator execution at GitHub revision
+`6d6ee095b68253ecd175055fdaa2218a6eba0298` stopped before native
+IFOX/IEWL/GO: STACK Cambridge application compilation JOB **5404**
+returned host compiler RC=2. The batch reported **FAIL (0/3)**; CHURN
+and BUSY were not run. This failed attempt is preserved separately in
+`co4-verification-batch-job-5404-source-repair-20261114.md`.
+
+Source review found a second `LET` declaration appearing after an `IF`
+command in STACK's `CHECK` block. The correction groups every local
+`CHECK` declaration at block entry, uses `TOP` instead of the untested
+identifier `END` in all three candidate fixtures, and adds a host
+regression rejecting late `LET` declarations. These changes are a
+**source-grounded hypothesis**, not a diagnosis from the unexamined
+JOB 5404 compiler listing; the actual MVS cause remains unverified.
+
+On failure the coordinator now preserves the inherited `result.json`
+reason and prints at most one `cambridge-compile-mvs:` diagnostic from
+the relevant compiler log, without dumping printer listings. A rerun
+will attempt all three cases sequentially if STACK compilation succeeds.
+All original unsuccessful receipts remain unmodified.

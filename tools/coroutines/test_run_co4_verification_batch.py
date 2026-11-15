@@ -79,6 +79,38 @@ class OracleAndSourceTests(unittest.TestCase):
             self.assertNotIn('CALLCO(1,', joined)
             self.assertNotIn('RESUMECO(1,', joined)
 
+    def test_stack_declarations_before_executable_code(self):
+        src = (co4.FIXTURE/'stack-source.bcpl').read_text()
+        check = src.split('AND CHECK(WORDS) = VALOF', 1)[1].split(
+            'AND DEEP(N,X) = VALOF', 1)[0]
+        self.assertIn('AND GUARD=STACKEND-2', check)
+        self.assertNotIn('LET ', check.split('IF ', 1)[1])
+
+    def test_old_late_declaration_fails_validation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = Path(temp)
+            src = (co4.FIXTURE/'stack-source.bcpl').read_text()
+            broken = src.replace('    AND GUARD=STACKEND-2\n', '')
+            broken = broken.replace('    IF TOP-BASE \\= WORDS RESULTIS FALSE\n',
+                                    '    IF TOP-BASE \\= WORDS RESULTIS FALSE\n'
+                                    '    LET GUARD=STACKEND-2\n')
+            (fixture/'stack-source.bcpl').write_text(broken)
+            with self.assertRaisesRegex(co4.CandidateError,
+                                        'late declaration'):
+                co4.validate_case('stack', fixture)
+
+    def test_compiler_diagnostic_is_single_bounded_line(self):
+        with tempfile.TemporaryDirectory() as temp:
+            case = Path(temp)
+            (case/'CO3ACMP.log').write_text(
+                'JOB 5404\ncambridge-compile-mvs: compiler returned code 1\n'
+                'A long unrelated printer listing\n')
+            self.assertEqual(co4.compiler_failure_detail(case),
+                             'CO3ACMP: cambridge-compile-mvs: '
+                             'compiler returned code 1')
+            (case/'CO3ACMP.log').unlink()
+            self.assertIsNone(co4.compiler_failure_detail(case))
+
     def test_source_case_distinction(self):
         self.assertIn('META!0', (co4.FIXTURE/'stack-source.bcpl').read_text())
         self.assertIn('FOR I=1 TO 16 DO',

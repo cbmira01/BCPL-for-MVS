@@ -48,7 +48,7 @@ $(1 LET ROOT=0
     AND B=0
     AND R=0
     AND BASE=STACKBASE
-    AND END=STACKEND
+    AND TOP=STACKEND
     CO3ROOT:=0
     CO3CURR:=0
     CO3LIST:=0
@@ -74,7 +74,7 @@ $(1 LET ROOT=0
         R:=CALLCO(B,I*20+1)
         IF R \= I*20+4000 | CO3CURR \= ROOT | B!25 \= 0
            DO FAIL()
-        IF STACKBASE \= BASE | STACKEND \= END DO FAIL()
+        IF STACKBASE \= BASE | STACKEND \= TOP DO FAIL()
         IF DELETECO(A) \= TRUE | CO3LIST \= B | B!26 \= 0
            DO FAIL()
         IF DELETECO(B) \= TRUE | CO3LIST \= 0 DO FAIL()
