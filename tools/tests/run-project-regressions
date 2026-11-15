@@ -20,7 +20,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-NATIVE_SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
+NATIVE_SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam", "coroutines")
 SUITES = ("mr10", "mr10-probes", *NATIVE_SUITES)
 NATIVE = ROOT / "tools/tests/run-suite"
 MR10 = ROOT / "tools/mr10/run-regression-panel"

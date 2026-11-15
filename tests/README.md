@@ -1,6 +1,8 @@
 # Native regression suites — Stage 2C
 
-Stage 2B established ownership of all **177** native cases (00–176).
+Stage 2B established ownership of the original **177** native cases (00–176).
+CO.5 adds thirteen independently named source-selected coroutine cases
+177–189 without changing the earlier identities or their acceptance contracts.
 Stage 2C physically organizes the unchanged case directories by suite.
 Case numbers, source contracts and expected results remain unchanged.
 `tests/suites/*.tsv` retains the authoritative case inventory and reporting
@@ -12,6 +14,7 @@ metadata. Shared execution machinery remains in `bootstrap-toolchain/regression/
 | Runtime Extensions | `suites/runtime-extensions.tsv` | 146–158 | 13 |
 | BCPLTIME | `suites/bcpltime.tsv` | 159–162 | 4 |
 | BCPLQSAM | `suites/bcplqsam.tsv` | 163–176 | 14 |
+| Coroutines | `suites/coroutines.tsv` | 177–189 | 13 |
 
 The independent MR10 regression panel remains at
 `mr10-kit-compiler/tests/00-regression-panel/manifest.tsv` and runs via
@@ -27,7 +30,7 @@ case_id  directory  profiles  requires  tags  policy
 ```
 
 (The separators are actual tab characters, not spaces.) Each `case_id` uses
-the historic canonical two-digit (00–52) or three-digit (053–176) form.
+the historic canonical two-digit (00–52) or three-digit (053–189) form.
 `directory` is the literal child directory of its owning suite:
 `tests/bootstrap/`, `tests/runtime-extensions/`,
 `tests/system-extensions/bcpltime/`, or
@@ -78,7 +81,7 @@ tools/tests/run-suite bcplqsam --list --tag integration
 tools/tests/run-suite bcplqsam --run --profile production --case 163
 ```
 
-`--check` validates **all four** manifests against all 177 physical cases,
+`--check` validates **all five** manifests against all 190 physical cases,
 including marker files, canonical IDs, complete coverage, ownership and
 case-directory identity; it is entirely offline. `--list` is also offline.
 `--case ID` can be repeated; `--tag TAG` can be repeated as an AND filter.
@@ -116,3 +119,18 @@ The project-level coordinator is `tools/tests/run-project-regressions`.
 It includes the independent MR10 regression panel alongside the four
 native suites while preserving separate suite identities, profiles,
 outcomes and evidence. See [coordinator usage](../tools/tests/README.md).
+
+## CO.5 coroutine suite (177–189)
+
+These thirteen native candidate-source tests use the accepted CO.2/CO.3/CO.4
+Cambridge compiler, four-IFOX (three for CO.2), IEWL and GO/JES runners.
+Their numbered fixture directories reference canonical accepted candidate
+BCPL sources; `expected.txt` holds exact ordered logical record oracles.
+The independent CO.3 library and BCPLCO/BCPLMAIN assemblies remain test-local;
+BOOT_OBJ is read-only, and G!289–305 are not public globals.
+
+Host-only selection: `tools/tests/run-suite coroutines --list`.
+Native execution, following explicit operator approval:
+`tools/tests/run-project-regressions --run --suite coroutines --profile production --progress`.
+CO.5 remains IN PROGRESS until real MVS evidence, clean-room reconstruction,
+release documentation and owner acceptance gates are satisfied.

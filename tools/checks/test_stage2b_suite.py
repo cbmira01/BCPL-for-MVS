@@ -36,9 +36,10 @@ class TestStage2BSuites(unittest.TestCase):
         for location in cases.values():
             location.mkdir(parents=True)
         lines = {name: ["\t".join(MOD.HEADERS)] for name in MOD.SUITES}
-        for i in range(177):
+        for i in range(190):
             name = ("bootstrap" if i <= 145 else "runtime-extensions" if i <= 158
-                    else "bcpltime" if i <= 162 else "bcplqsam")
+                    else "bcpltime" if i <= 162 else "bcplqsam" if i <= 176
+                    else "coroutines")
             ident = MOD.canonical(i)
             directory = f"{ident}-fake-case"
             home = cases[name] / directory
@@ -49,6 +50,11 @@ class TestStage2BSuites(unittest.TestCase):
                 (home / "time-selection.asm").touch()
             if name == "runtime-extensions":
                 (home / "extension-selection.asm").touch()
+            if name == "coroutines":
+                (home / "coroutine-native.txt").touch()
+                (home / "source-reference.txt").write_text("fixture/source.bcpl\n")
+                (home / "expected.txt").write_text("CO3BCPL PASS\n")
+                (home / "README.md").write_text("fixture\n")
             policy = "skip-installed" if i == 83 else "device-opt-in" if i in (175, 176) else "standard"
             prereqs = ["boot-obj"]
             if i == 175:
@@ -89,6 +95,8 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         self.assertEqual({s: len(c) for s, c in suites.items()}, dict(zip(MOD.SUITES, MOD.COUNTS)))
         self.assertEqual([x.ident for x in suites["bootstrap"][:2]], ["00", "01"])
         self.assertEqual(suites["bcplqsam"][-1].ident, "176")
+        self.assertEqual(suites["coroutines"][0].ident, "177")
+        self.assertEqual(suites["coroutines"][-1].ident, "189")
 
     def test_duplicate_and_missing_case_rejected(self):
         file = self.root / "tests" / "suites" / "bcplqsam.tsv"

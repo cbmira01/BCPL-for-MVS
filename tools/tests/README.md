@@ -19,7 +19,7 @@ tools/tests/run-suite --list
 ## Stage 3 — independent coordinated regression
 
 `run-project-regressions` coordinates the independent MR10 Regression Panel, eleven accepted MR10
-Development Probes, and four native regression suites without replacing
+Development Probes, and five native regression suites without replacing
 their existing runners.
 
 Host-only operations, requiring no MVS execution:
@@ -172,3 +172,12 @@ Host-only checks (no JES submission):
 python3 -B -m unittest discover -s tools/checks -p 'test_printer_window*.py' -v
 tools/tests/run-project-regressions --check
 ```
+
+## CO.5 — native coroutine suite
+
+`coroutines` owns test IDs 177–189 with private source-selected CO.2–CO.4
+candidate assemblies and BCPL library. Exact oracles and each individual
+Cambridge/IFOX/IEWL/GO/JES receipt are checked by the native coordinator.
+The `--suite coroutines` project selection runs 13 independent cases without
+assigning public globals, modifying installed BOOT_OBJ or changing existing
+suite identities. An actual JES run and acceptance remain separate evidence.

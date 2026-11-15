@@ -22,15 +22,17 @@ CASE_ROOTS = {
     "runtime-extensions": "tests/runtime-extensions",
     "bcpltime": "tests/system-extensions/bcpltime",
     "bcplqsam": "tests/system-extensions/bcplqsam",
+    "coroutines": "tests/coroutines",
 }
-SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam")
-COUNTS = (146, 13, 4, 14)
+SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam", "coroutines")
+COUNTS = (146, 13, 4, 14, 13)
 PROFILES = ("production", "installed-r5-t1")
 HEADERS = ("case_id", "directory", "profiles", "requires", "tags", "policy")
 POLICIES = {"standard", "skip-installed", "device-opt-in"}
 PREREQUISITES = {
     "boot-obj", "bcx", "bcpldemo", "bcpldemo-installed", "bcpltime",
     "bcplqsam-source", "jes-punch", "jes-printer", "temporary-datasets",
+    "coroutine-source",
 }
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9-]*$")
 CASE_NAME = re.compile(r"^(\d{2,3})-[a-z0-9-]+$")
@@ -129,10 +131,16 @@ def validate(root: Path) -> dict[str, list[Case]]:
                 raise ManifestError(f"case {row.ident}: missing BCPLTIME selection marker")
             if row.suite == "runtime-extensions" and not (p / "extension-selection.asm").is_file():
                 raise ManifestError(f"case {row.ident}: missing R.5 selection marker")
-    if set(found) != set(range(177)):
-        missing = sorted(set(range(177)) - set(found))
-        extra = sorted(set(found) - set(range(177)))
-        raise ManifestError(f"suite IDs must cover 00–176 exactly; missing={missing}; extra={extra}")
+            if row.suite == "coroutines":
+                if not (p / "coroutine-native.txt").is_file():
+                    raise ManifestError(f"case {row.ident}: missing coroutine source marker")
+                if not all((p / name).is_file() for name in
+                           ("source-reference.txt", "expected.txt", "README.md")):
+                    raise ManifestError(f"case {row.ident}: incomplete coroutine fixture")
+    if set(found) != set(range(190)):
+        missing = sorted(set(range(190)) - set(found))
+        extra = sorted(set(found) - set(range(190)))
+        raise ManifestError(f"suite IDs must cover 00–189 exactly; missing={missing}; extra={extra}")
     actual = set()
     for suite_name in SUITES:
         for p in (root / CASE_ROOTS[suite_name]).iterdir():
@@ -155,7 +163,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("suite", nargs="?", choices=SUITES)
     operation = ap.add_mutually_exclusive_group(required=True)
     operation.add_argument("--list", action="store_true", help="show suites or cases; no JES")
-    operation.add_argument("--check", action="store_true", help="validate all four suite manifests; no JES")
+    operation.add_argument("--check", action="store_true", help="validate all five suite manifests; no JES")
     operation.add_argument("--run", action="store_true", help="execute the selected suite; submits native JES jobs")
     ap.add_argument("--profile", choices=PROFILES, help="explicit native execution profile (required for --run)")
     ap.add_argument("--case", action="append", type=int, default=[], metavar="ID", help="restrict to a historical case number; repeatable")
@@ -189,6 +197,7 @@ def run(root: Path, cases: list[Case], args: argparse.Namespace) -> int:
         "schema": 1, "suite": args.suite, "profile": args.profile,
         "git_head": git_head(root), "started_utc": now.isoformat(),
         "native_qsam": "source-selected (163–176), irrespective of R.5/T.1 profile",
+        "native_coroutines": "source-selected candidate (177–189), read-only BOOT_OBJ",
         "cases": [],
     }
     profile_runner = {
@@ -274,7 +283,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         suites = validate(ROOT)
         if args.check:
-            print("Stage 2B manifests: OK — 177 unique native cases (00–176)")
+            print("Stage 2B manifests: OK — 190 unique native cases (00–189)")
             for name in SUITES:
                 print(f"  {name}: {len(suites[name])}")
             return 0

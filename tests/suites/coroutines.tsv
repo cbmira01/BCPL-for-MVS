@@ -1,0 +1,14 @@
+case_id	directory	profiles	requires	tags	policy
+177	177-co2-native-changeco	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co2,integration	standard
+178	178-co2-repeated-continuations	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co2,integration	standard
+179	179-co3-first-lifecycle	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co3,integration	standard
+180	180-co3-parent-chain	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co3,integration	standard
+181	181-co3-delete-reuse	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co3,integration	standard
+182	182-co4-bounded-stress	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard
+183	183-co4-safe-negative	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard
+184	184-co4-stack	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard
+185	185-co4-churn	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard
+186	186-co4-busy	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard
+187	187-co4-limits	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard
+188	188-co4-deny	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard
+189	189-co4-account	production,installed-r5-t1	boot-obj,coroutine-source,temporary-datasets	coroutine,co4,integration	standard

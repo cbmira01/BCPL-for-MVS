@@ -33,6 +33,8 @@ elif (( test_num <= 162 )); then
     case_root="$root/tests/system-extensions/bcpltime"
 elif (( test_num <= 176 )); then
     case_root="$root/tests/system-extensions/bcplqsam"
+elif (( test_num <= 189 )); then
+    case_root="$root/tests/coroutines"
 else
     echo "run-test: no owning suite for test $test_num" >&2
     exit 65
@@ -49,6 +51,20 @@ fi
 
 case_dir=${matches[0]}
 case_name=$(basename "$case_dir")
+# CO.5 numbered coroutine cases use accepted source-selected candidate linkage.
+# BOOT_OBJ remains read-only; these tests do not install runtime objects.
+if [[ -f "$case_dir/coroutine-native.txt" ]]; then
+    [[ $test_num -ge 177 && $test_num -le 189 &&
+       ${BCPL_RUNTIME_PDS:-1} == 1 &&
+       ${BCPL_RUNTIME_LIBRARY:-} == OBJ &&
+       ${BCPL_RUNTIME_CANDIDATE:-0} == 0 &&
+       -z ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} ]] || {
+        echo "run-test: coroutine cases require production BOOT_OBJ as read-only input" >&2
+        exit 64
+    }
+    exec python3 -B "$root/tools/checks/run-coroutine-regression.py" \
+        "$test_num" "$case_dir" --run
+fi
 # Dynamic-stream cases accept either the historical D6 DEVOBJ profile
 # or an explicitly selected full production OBJ profile.
 dynamic_profile=0

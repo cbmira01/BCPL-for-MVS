@@ -18,6 +18,7 @@ CASE_ROOTS = (
     (146, 158, ROOT / "tests/runtime-extensions"),
     (159, 162, ROOT / "tests/system-extensions/bcpltime"),
     (163, 176, ROOT / "tests/system-extensions/bcplqsam"),
+    (177, 189, ROOT / "tests/coroutines"),
 )
 
 

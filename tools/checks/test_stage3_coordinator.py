@@ -71,6 +71,7 @@ class Stage3HostTests(unittest.TestCase):
             "runtime-extensions": ["147"],
             "bcpltime": ["159"],
             "bcplqsam": ["163", "175", "176"],
+            "coroutines": ["177", "189"],
         }
         MOD.NATIVE_MANIFESTS.mkdir(parents=True)
         for suite, ids in self.native_ids.items():
@@ -115,7 +116,8 @@ suite, profile = sys.argv[1], sys.argv[4]
 with Path('native-invocations').open('a') as handle:
     handle.write(suite + ':' + profile + ('+device' if allow_device else '') + '\\n')
 ids = {'bootstrap': ['00', '01'], 'runtime-extensions': ['147'],
-       'bcpltime': ['159'], 'bcplqsam': ['163', '175', '176']}[suite]
+       'bcpltime': ['159'], 'bcplqsam': ['163', '175', '176'],
+       'coroutines': ['177', '189']}[suite]
 state = os.environ.get('STAGE3_FAKE_NATIVE', 'PASS')
 if state == 'BAD_ID':
     ids = ['999']
