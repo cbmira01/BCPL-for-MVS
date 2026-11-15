@@ -77,3 +77,17 @@ Entry native regression baseline: **90/90 PASS** (000–089).
 The three staged extension modules are not yet native-regression
 validated. Their promotion to resident object members is contingent
 on focused TK5 tests and a full native regression sweep.
+
+## CO.5 production coroutine library
+
+The independently compiled production `coroutines.bcpl` and matching
+`coroutines.h` are derived from the accepted CO.3 source, with
+permanent G!289–300 assignments. The older deferred-port note above
+describes the historic staging baseline; this CO.5 entry supersedes
+that note for coroutine support only. `coroutines.bcpl` is **not**
+folded into historic `BLIB`. The production object is
+`BOOT_OBJ(COROUTIN)`, separate from IFOX `BOOT_OBJ(BCPLCO)`.
+The accepted 24-word descriptor remains private and only the bounded
+root/two-worker contract is supported.
+
+See [production promotion runbook](../../packaging/milestones/coroutines/co5-production-promotion-20261115.md).

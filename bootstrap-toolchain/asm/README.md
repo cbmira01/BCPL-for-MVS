@@ -75,3 +75,18 @@ Consult `packaging/milestone-runtime-extensions.md`,
 `packaging/runtime-extensions-r3-closure-20261022.md`, and
 `packaging/runtime-and-library-nomenclature.md` for the accepted
 architecture and nomenclature.
+
+## CO.5 production coroutine IFOX bridge
+
+`bcplco.asm` remains the accepted CO.2 **candidate** source used by
+the native regression runners. The distinct
+`bcplco-production.asm` merges that unchanged source with the
+accepted CO.3 `CO3DROP` revocation bridge. Production
+`BOOT_OBJ(BCPLCO)` exports `CO2INIT`, `CHANGECO`, and
+`CO3DROP`; canonical `BCPLMAIN` now exports `STKLIM` to
+satisfy the coroutine object's external reference. No private
+descriptor layout has become a stable public ABI.
+
+The owner authorized promotion while deferring the `dspal`
+manifest update. Manual MVS staging and installed-link tests are
+specified in [the CO.5 production record](../../packaging/milestones/coroutines/co5-production-promotion-20261115.md).

@@ -234,3 +234,18 @@ module was **not** installed in production `BOOT_OBJ`.
 See [CO.5 clean-room reconstruction MVS evidence](co5-clean-room-reconstruction-mvs-pass-20261115.md).
 This baseline rebuild **does not establish post-rebuild regression
 acceptance**. **CO.5 IN PROGRESS.**
+
+## 15 November 2026 — owner-approved coroutine production allocation
+
+The owner authorized permanent native coroutine **G!289–300**
+assignments and production promotion, explicitly deferring the
+`config/dspal.yaml` update. The new Git production sources retain
+the accepted CO.2/CO.3 implementations and test oracles, export
+`STKLIM` from canonical `BCPLMAIN`, and provide two separately
+rebuildable production relocatable objects: `BCPLCO` and
+`COROUTIN`. See
+[CO.5 production promotion and operator verification](co5-production-promotion-20261115.md).
+Until the manifest is updated, staging is manual and the accepted
+clean-room procedure cannot reproduce these two new members by
+itself. Installed MVS object and IEWL/GO verification remain
+pending. All CO.4 bounds remain binding. **CO.5 IN PROGRESS.**

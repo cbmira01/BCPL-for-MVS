@@ -117,12 +117,15 @@ def compiled_application(source: str) -> list[str]:
 def candidate_main(source: str) -> list[str]:
     """Export private stack-limit symbol in *this job*, not BOOT_OBJ."""
     anchor = '         ENTRY STKOVFL\n'
-    if source.count(anchor) != 1:
-        raise CandidateError('BCPLMAIN STKOVFL entry shape changed')
+    exported = '         ENTRY STKOVFL,STKLIM\n'
     if 'STKLIM   DC    F\'0\'' not in source:
         raise CandidateError('BCPLMAIN STKLIM layout changed')
-    return checked_cards(source.replace(anchor,
-                         '         ENTRY STKOVFL,STKLIM\n', 1), 'CO1MAIN')
+    if source.count(exported) == 1 and source.count(anchor) == 0:
+        # Production BCPLMAIN already exports STKLIM.
+        return checked_cards(source, 'CO1MAIN')
+    if source.count(anchor) != 1 or source.count(exported):
+        raise CandidateError('BCPLMAIN STKOVFL entry shape changed')
+    return checked_cards(source.replace(anchor, exported, 1), 'CO1MAIN')
 
 
 def asm_step(name: str, member: str, rows: list[str]) -> list[str]:

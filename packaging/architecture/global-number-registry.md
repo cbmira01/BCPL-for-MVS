@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Effective date:** 2026-10-22
 **Authority:** Official repository record of BCPL GLOBAL-number ownership.
-**Status:** Historical and existing project slots inventoried; G!200–G!202 are assigned to System Extensions, and **G!203 / DEMOSVC belongs permanently to BCPLDEMO**, an **owner-confirmed supported reference System Extension** (initial allocation 22 October; continued-support decision 24 October 2026). G!203's installed package passed R.5 acceptance; allocation by itself does not imply deployment for other packages.
+**Status:** CO.5 owner-approved native coroutine G!289–300; historical and existing project slots inventoried; G!200–G!202 are assigned to System Extensions, and **G!203 / DEMOSVC belongs permanently to BCPLDEMO**, an **owner-confirmed supported reference System Extension** (initial allocation 22 October; continued-support decision 24 October 2026). G!203's installed package passed R.5 acceptance; allocation by itself does not imply deployment for other packages.
 
 ## Rules and interpretation
 
@@ -37,6 +37,55 @@ G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design do
 
 **G!203 / `DEMOSVC` belongs exclusively to BCPLDEMO.** Its fixed slot is deliberately permanent so the reference demonstrates real compile-time `GLOBAL` declarations, IEWL relocation of a `BCEX` dispatcher entry, and subsequent `BCPLREG` startup installation. See the [initial R.2 allocation](../archive/runtime-extensions/runtime-extensions-r2-bcpldemo-decision-20261022.md), [R.5 installed-mode acceptance](../milestones/runtime-extensions/runtime-extensions-r5-closure-20261024.md), and [permanent supported-reference decision](../milestones/runtime-extensions/bcpldemo-supported-reference-decision-20261024.md). Other applications and extensions must not reuse G!203. BCPLDEMO remains optional and does not bypass per-executable collision and missing-package validation.
 
+## Native coroutine Core Runtime allocations — CO.5 owner approval
+
+**Owner decision, 15 November 2026:** Native coroutine support owns
+**G!289–G!300 permanently** in the Cambridge System/370 global
+namespace. These are Core Runtime/Base Library positions, **not**
+optional System Extension dispatcher numbers. They do not alter G!200–203.
+
+| Global | Name | Owner / purpose |
+| ---: | --- | --- |
+| 289 | `CO3INIT` | BCPL initialization function |
+| 290 | `CREATECO` | BCPL coroutine creation |
+| 291 | `DELETECO` | BCPL coroutine deletion |
+| 292 | `CALLCO` | BCPL parent-chain transfer |
+| 293 | `COWAIT` | BCPL yield to parent |
+| 294 | `RESUMECO` | BCPL coroutine resume |
+| 295 | `CO3CURR` | BCPL current-coroutine state |
+| 296 | `CO3ROOT` | BCPL root-coroutine state |
+| 297 | `CO3LIST` | BCPL registered-worker list state |
+| 298 | `CO2INIT` | IFOX initial worker context |
+| 299 | `CHANGECO` | IFOX context transfer |
+| 300 | `CO3DROP` | IFOX registry revocation before FREEVEC |
+
+G!289–294 name exported BCPL procedures in the independently compiled
+`BOOT_OBJ(COROUTIN)` object; G!295–297 are global-vector data/state words.
+G!298–300 name IFOX entries from `BOOT_OBJ(BCPLCO)`. Compilation,
+IEWL selection and per-application global registration remain separate
+and all must agree; allocation itself does not establish installation.
+
+**Qualified production scope:** one root and at most two known-live
+registered worker descriptors; CREATECO(FN,1024), checked independent
+S1 stacks, root-controlled inactive deletion, registry removal before
+FREEVEC. The private 24-word descriptor is not a public layout contract.
+Arbitrary freed/stale pointers, ABA-safe identity, real GETMAIN
+exhaustion, exceptional cancellation, more workers, subtasks and
+reentrancy are not approved.
+
+G!299 had previously also been used in isolated R.0/R.2 dispatcher
+test fixtures. Their original observations remain valid, but those
+fixtures cannot be linked into an executable that also uses the
+permanent native CHANGECO G!299 allocation. Preserve collision checks.
+
+Authoritative BCPL declaration source:
+`bootstrap-toolchain/library/coroutines.h`. Production bridge source:
+`bootstrap-toolchain/asm/bcplco-production.asm`; the original
+`bootstrap-toolchain/asm/bcplco.asm` remains the CO.2 test baseline.
+See [CO.5 production promotion](../milestones/coroutines/co5-production-promotion-20261115.md).
+The owner deferred updating `config/dspal.yaml`: manual staging
+and fresh MVS installed-link verification are required in the interim.
+
 ## Specific existing positions and conflicts
 
 | Global | Evidence | Disposition |
@@ -48,7 +97,7 @@ G!200 belongs exclusively to BCPLQSAM. Prior `TIMESVC:200` examples in design do
 | 73 | `LIBHDR`: explicitly spare | Historical spare, do not silently allocate |
 | 94 | `LIBHDR`: `OPENBLOCKFILE` **and** `UPDATEBLOCKFILE` | **Duplicate historical assignment**; document, do not change evidence |
 | 150 | Bootstrap `BCPLMAIN` startup DEBUGINT conflicts with historical full Cambridge compiler `FORMTREE:150` in `cambridge-compiler/source/bcpl.bcpl` and `synhdr.bcpl` | **Known cross-component conflict; unresolved**; see [G!150 review](https://github.com/cbmira01/BCPL-for-MVS/blob/62df114afe16115b1216367b2d827aba790bc9d6/packaging/runtime-extensions-r0-g150-startup-ownership-review-20261021.md) |
-| 299 | R.0 and R.2 independent dispatcher probes | **Test-local fixture only; not a permanent public package allocation.** |
+| 299 | R.0 and R.2 independent dispatcher probes | Historical fixture-only use; **G!299 is now permanently assigned to native coroutine CHANGECO**. Do not co-link conflicting fixtures. |
 | 699 | `HIGHMARK` in native regression 090 | Test-local assignment; not a permanent public package slot |
 
 Historical `LIBHDR` also declares `FIRSTFREEGLOBAL=150`. That is **not** a current vacancy guarantee. The Cambridge compiler's `CGHDR` uses compiler globals in the 100s and above; the reconstructed runtime has an existing G!150 diagnostic collision.

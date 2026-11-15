@@ -89,3 +89,20 @@ tools/datasets/dspal populate BOOT_JCL --dry-run
 
 These checks validate the Git-to-PDS source inventory and planned
 population, not runtime execution or installation success.
+
+## CO.5 production coroutine installs — manifest update deferred
+
+`bldcorco.jcl` stages as `BOOT_JCL(BLDCORCO)` and assembles
+`BOOT_ASM(BCPLCO)` to `BOOT_OBJ(BCPLCO)`.
+`bldcorlb.jcl` stages as `BOOT_JCL(BLDCORLB)` and assembles
+the independently compiled, verified IFOX `BOOT_ASM(COROUTIN)`
+to `BOOT_OBJ(COROUTIN)`. Both jobs require exactly four
+successful steps: IFOX, IEBGENER install, independent readback,
+and IEBCOMPR binary comparison. Neither is in the current
+`config/dspal.yaml` manifest by owner direction; use explicit
+`dspal put` staging, not `dspal populate`.
+
+The unchanged `BLDBMAIN` rebuilds installed `BCPLMAIN`
+with its newly exported `STKLIM` after staging the Git source.
+Keep distinct MVS object write authorization and verify installed
+linkage via `tools/coroutines/verify-installed-production.py --run`.

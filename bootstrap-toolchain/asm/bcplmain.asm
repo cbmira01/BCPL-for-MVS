@@ -22,7 +22,7 @@
 ***********************************************************************
 
 BCPLMAIN CSECT
-         ENTRY STKOVFL
+         ENTRY STKOVFL,STKLIM
          EXTRN BLIB
          EXTRN RGINIT,RGFINI
          EXTRN GETVEC,FREEVEC,MEMDRAIN,MEMBIND
