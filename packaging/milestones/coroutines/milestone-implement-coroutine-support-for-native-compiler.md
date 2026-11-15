@@ -182,3 +182,20 @@ At tested GitHub `main` revision `53a4e4feebfec3f41223288416d2f0a3011bb77a`, the
 Raw JES reports were retained in the operator workarea, but not separately
 audited in this conversation. Other project suites and clean-room/release
 gates remain open. **CO.5 stays IN PROGRESS.**
+
+## 15 November 2026 — CO.5 MR10 interpreted legacy compatibility qualification
+
+The coordinated MR10 Development Probe campaign at
+`803c5ba0c712a36c043f20da7cbc4987c17feb1d`
+recorded **7 PASS, 1 FAIL, 3 NOT_RUN**. JES 5499's interpreted
+`CODE=-1`, `INTCODE ERROR AT C = 803`, 101-cycle signature matches
+CO.0 JOB 5318's documented legacy fixed-stack incompatibility; it is
+not a new native System/370 coroutine regression.
+[CO.5 recurrence evidence](co5-mr10-fixed-stack-negative-code-20261115.md)
+and [the accepted CO.0 qualified disposition](co0-u01-static-interpreter-transfer-and-u02-five-probe-gate-20261112.md)
+require preserving that original FAIL; the compatible separate
+`COBOOT`-style source passed JOB 5321. Continue unexecuted MR10 probes
+and other suites as separately reported runs. Do not claim an
+unqualified full-project PASS without a distinct owner-approved
+resolution of the known incompatible accepted fixture.
+**CO.5 stays IN PROGRESS.**

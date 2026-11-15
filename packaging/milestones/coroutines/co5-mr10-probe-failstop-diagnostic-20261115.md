@@ -62,3 +62,16 @@ The earlier MR10 12-case PASS is unchanged. Other native/project
 suite results remain pending for this campaign.
 
 **CO.5 — Integration, Regression, and Release remains IN PROGRESS.**
+
+## 15 November 2026 — earlier masked failure resolved by JES 5499
+
+The repaired coordinator at revision
+`803c5ba0c712a36c043f20da7cbc4987c17feb1d`
+exposed the first real failure: the accepted legacy MR10 fixed-stack
+probe returned `CODE=-1` after seven successful probes.
+Read-only inspection of JES 5499 reproduced the exact historical
+`INTCODE ERROR AT C = 803` signature from JOB 5318.
+The accepted CO.0 disposition calls this a **known, qualified
+incompatibility** with the promoted `COBOOT` startup layout, not a
+new defect in the coroutine implementation. The original FAIL must be
+retained. See [trace and explicit qualification](co5-mr10-fixed-stack-negative-code-20261115.md).
