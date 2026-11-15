@@ -220,3 +220,17 @@ The known legacy failure remains under CO.0's qualified compatibility
 disposition. Unapproved device operation, clean-room reconstruction,
 installed-object promotion, public ABI publication and separate owner
 CO.5 acceptance remain outstanding. **CO.5 IN PROGRESS.**
+
+## 15 November 2026 — clean-room reconstruction verification
+
+At GitHub revision `2d0cfb90a1cda0cfeb73c45cb00a8fe1f90b3c18`, the operator completed
+`tools/reconstruction/rebuild-from-source --unattended --batch-populate`,
+all nine driver guide steps **RC=0**, total **2m 11s, RC=0**. The
+29 managed MVS datasets were deleted/recreated; **171** tracked and
+**12** generated members populated; ICINT19, CAMBBLD, seven native IFOX
+Core Runtime members, BLIB and the three optional System Extensions
+rebuilt/installed with zero-RC MVS job receipts. The candidate coroutine
+module was **not** installed in production `BOOT_OBJ`.
+See [CO.5 clean-room reconstruction MVS evidence](co5-clean-room-reconstruction-mvs-pass-20261115.md).
+This baseline rebuild **does not establish post-rebuild regression
+acceptance**. **CO.5 IN PROGRESS.**
