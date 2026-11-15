@@ -37,6 +37,34 @@ $(1 LET SELF=CO3CURR
     IF CO3CURR \= SELF RESULTIS -2
     RESULTIS X+200
 $)1
+// CO3INIT publishes the root BCPL global before CO2INIT has ever run.
+// The private machine CURPTR is still zero until first CREATECO.
+// Observe allocator/root invariants without expecting early registration.
+AND BOOTSNAP(N,B) = VALOF
+$(1 LET P=PROBEPTR
+    IF CO4PROB(P) \= 0 DO
+    $(2 MARK("FBPROBE")
+        RESULTIS FALSE
+    $)2
+    IF P!4 \= 0 | CO3CURR \= CO3ROOT | CO3ROOT=0 |
+       CO3LIST \= 0 DO
+    $(2 MARK("FBOOT")
+        RESULTIS FALSE
+    $)2
+    IF P!5 \= N DO
+    $(2 MARK("FBCOUNT")
+        RESULTIS FALSE
+    $)2
+    IF P!7 \= B DO
+    $(2 MARK("FBBYTES")
+        RESULTIS FALSE
+    $)2
+    IF P!6 < P!5 | P!8 < P!7 DO
+    $(2 MARK("FBPEAK")
+        RESULTIS FALSE
+    $)2
+    RESULTIS TRUE
+$)1
 AND SNAP(N,B) = VALOF
 $(1 LET P=PROBEPTR
     IF CO4PROB(P) \= 0 DO
@@ -93,11 +121,11 @@ $(1 LET ROOT=0
     $(2 MARK("FINIT0")
         FAIL()
     $)2
-    IF SNAP(N+1,BYTES+108)=FALSE DO FAIL()
+    IF BOOTSNAP(N+1,BYTES+108)=FALSE DO FAIL()
     MARK("INIT")
     IF GETVEC(-1) \= 0 DO FAIL()
     IF GETVEC(4194300) \= 0 DO FAIL()
-    IF SNAP(N+1,BYTES+108)=FALSE DO FAIL()
+    IF BOOTSNAP(N+1,BYTES+108)=FALSE DO FAIL()
     MARK("INVALID")
     FOR I=1 TO 12 DO
     $(2 A:=CREATECO(WORK,1024)

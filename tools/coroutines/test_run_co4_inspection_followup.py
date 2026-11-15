@@ -33,7 +33,8 @@ class FollowupTests(unittest.TestCase):
             self.assertEqual(code.count('PROBEPTR:305'),1)
             self.assertEqual(code.count('AND SNAP(N,B) = VALOF'),1)
             self.assertEqual(code.count('PROBEPTR:=P'),1)
-            self.assertEqual(code.count('LET P=PROBEPTR'),1)
+            self.assertEqual(code.count('LET P=PROBEPTR'),
+                             2 if key=='account' else 1)
             self.assertNotIn('SNAP(P,',code)
             self.assertEqual(code.count('MARK("PASS")'),1)
             self.assertEqual(code.count('MARK("FAIL")'),1)
@@ -59,6 +60,58 @@ class FollowupTests(unittest.TestCase):
     def test_cases_are_only_account_and_deny(self):
         self.assertEqual(followup.CASES, ('account', 'deny'))
 
+    def test_bootstrap_machine_cursor_differs_until_first_worker(self):
+        code=(ROOT/'packaging/milestones/coroutines/candidates/'
+              'co4-inspection-batch/account-source.bcpl').read_text('ascii')
+        self.assertEqual(code.count('AND BOOTSNAP(N,B) = VALOF'),1)
+        self.assertEqual(code.count('IF BOOTSNAP(N+1,BYTES+108)=FALSE'),2)
+        self.assertEqual(code.count('IF SNAP(N+1,BYTES+108)=FALSE'),1)
+        before_first_worker = code.split('A:=CREATECO(WORK,1024)',1)[0]
+        self.assertEqual(before_first_worker.count('IF BOOTSNAP('),2)
+        self.assertEqual(before_first_worker.count('IF SNAP('),0)
+        self.assertIn('P!4 \\= 0 | CO3CURR \\= CO3ROOT',code)
+        # Strict post-CO2INIT CURPTR == CO3CURR condition is retained.
+        self.assertIn('IF P!4 \\= CO3CURR DO',code)
+
+    def test_early_machine_pointer_assumption_is_rejected(self):
+        source=(ROOT/'packaging/milestones/coroutines/candidates/'
+                'co4-inspection-batch')
+        class Sources:
+            FIXTURE=source
+            CASES={'account':('account-source.bcpl','CO4MEM',()),
+                   'deny':('deny-source.bcpl','CO4DENY',())}
+        with tempfile.TemporaryDirectory() as temp:
+            stage=Path(temp)
+            for key in followup.CASES:
+                name=key+'-source.bcpl'
+                data=(source/name).read_text('ascii')
+                if key=='account':
+                    data=data.replace('IF BOOTSNAP(N+1,BYTES+108)=FALSE',
+                                      'IF SNAP(N+1,BYTES+108)=FALSE',1)
+                (stage/name).write_text(data,encoding='ascii')
+            Sources.FIXTURE=stage
+            with self.assertRaisesRegex(followup.FollowupError,'bootstrap CURPTR'):
+                followup.source_diagnostics(Sources())
+
+    def test_missing_bootstrap_cursor_diagnostic_rejected(self):
+        source=(ROOT/'packaging/milestones/coroutines/candidates/'
+                'co4-inspection-batch')
+        class Sources:
+            FIXTURE=source
+            CASES={'account':('account-source.bcpl','CO4MEM',()),
+                   'deny':('deny-source.bcpl','CO4DENY',())}
+        with tempfile.TemporaryDirectory() as temp:
+            stage=Path(temp)
+            for key in followup.CASES:
+                name=key+'-source.bcpl'
+                data=(source/name).read_text('ascii')
+                if key=='account':
+                    data=data.replace('MARK("FBOOT")','MARK("FOTHER")',1)
+                (stage/name).write_text(data,encoding='ascii')
+            Sources.FIXTURE=stage
+            with self.assertRaisesRegex(followup.FollowupError,'diagnostic marker'):
+                followup.source_diagnostics(Sources())
+
     def test_oracle_only_requires_known_native_job(self):
         case={'status':'FAIL','rc':1,'native_job':'5430',
               'reason':"wrong ordered BCPL records: ['FAIL']"}
@@ -80,12 +133,12 @@ class FollowupTests(unittest.TestCase):
                 return outcomes[key]
         return FakePrior()
 
-    def run_synthetic(self, outcomes):
+    def run_synthetic(self, outcomes, *, cases=followup.CASES):
         with tempfile.TemporaryDirectory() as t:
             prior=self.fake_prior(outcomes)
             with mock.patch.object(followup,'validate_inputs',return_value={'cases':{}}):
                 with redirect_stdout(io.StringIO()):
-                    rc=followup.run_followup(prior,work=Path(t))
+                    rc=followup.run_followup(prior,work=Path(t),cases=cases)
             receipt=json.loads(next(Path(t).glob('*/batch-result.json')).read_text())
             return rc, receipt
 
@@ -107,6 +160,22 @@ class FollowupTests(unittest.TestCase):
         self.assertEqual([x['case'] for x in rec['cases']],['account','deny'])
         self.assertEqual(rec['status'],'FAIL')
 
+    def test_account_only_does_not_rerun_accepted_deny(self):
+        rc,rec=self.run_synthetic({
+            'account':{'case':'account','status':'PASS','rc':0}},
+            cases=('account',))
+        self.assertEqual(rc,0)
+        self.assertEqual(rec['status'],'PASS')
+        self.assertEqual(rec['selected_cases'],['account'])
+        self.assertEqual([x['case'] for x in rec['cases']],['account'])
+
+    def test_bad_selected_cases_rejected(self):
+        prior=self.fake_prior({})
+        for selection in ((),('account','account'),('unsupported',)):
+            with self.subTest(selection=selection):
+                with self.assertRaisesRegex(followup.FollowupError,'invalid'):
+                    followup.run_followup(prior, cases=selection)
+
     def test_stops_on_go_abend(self):
         rc,rec=self.run_synthetic({
             'account':{'case':'account','status':'FAIL','rc':1,
@@ -124,6 +193,21 @@ class FollowupTests(unittest.TestCase):
             'deny':{'case':'deny','status':'PASS','rc':0}})
         self.assertEqual(rc,1)
         self.assertEqual(len(rec['cases']),1)
+
+    def test_cli_account_selection_does_not_submit_deny(self):
+        with (mock.patch('sys.argv',[
+                'run-co4-inspection-followup.py','--run','--case','account']),
+              mock.patch.object(followup,'load_prior',return_value='PRIOR'),
+              mock.patch.object(followup,'run_followup',return_value=0) as run):
+            self.assertEqual(followup.main(),0)
+        run.assert_called_once_with('PRIOR',cases=('account',))
+
+    def test_cli_check_cannot_select_one_case(self):
+        with mock.patch('sys.argv',[
+                'run-co4-inspection-followup.py','--check','--case','account']):
+            with self.assertRaises(SystemExit) as err:
+                followup.main()
+            self.assertEqual(err.exception.code,2)
 
     def test_cli_requires_explicit_action(self):
         with mock.patch('sys.argv',['run-co4-inspection-followup.py']):

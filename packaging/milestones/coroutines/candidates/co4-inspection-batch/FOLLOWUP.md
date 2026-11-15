@@ -30,3 +30,44 @@ Host checks are performed by the assistant. `--check` is offline and
 never submits MVS jobs; `--run` requires explicit operator invocation.
 No new regression numbers, ABI assignments, installed MVS objects or
 production artifacts are introduced. CO.4 remains IN PROGRESS.
+
+## Second owner run — DENY native PASS; ACCOUNT bootstrap mismatch
+
+At GitHub `main` `491f4acaa44a37eb4e63ff7e3bc75693c96211c7`,
+independent MVS execution yielded `CO4MEM FCURR`, `CO4MEM FAIL` for ACCOUNT
+and an exact `CO4DENY` native PASS for DENY. The combined result was
+`FAIL (1/2 PASS)` with distinct receipts at
+`workarea/co4-inspection-followup/20261115T140823Z-zg8lgr_p/`.
+This is **not** a successful ACCOUNT run; do not merge the separate outcomes.
+
+The `FCURR` record occurs before `CO4MEM INIT`: `CO3INIT()` has
+published the BCPL root globals, but `BCPLCO.CURPTR` is initialized to
+zero and is populated by `CO2INIT()` only when the **first worker** is
+created. The original `SNAP` routine incorrectly demanded equality of
+`CURPTR` and `CO3CURR` during this pre-registration interval. That
+expectation was a test-fixture defect, not a demonstrated runtime or
+compiler failure.
+
+The corrected ACCOUNT fixture uses `BOOTSNAP` exclusively for the two
+pre-worker snapshots (root descriptor allocation, then invalid-GETVEC
+refusal). This checks zero machine `CURPTR`, initialized BCPL root
+state, the empty worker list, exact allocation counts/bytes, and
+allocation peak invariants. **The existing `SNAP` remains unchanged**
+for all checks after the first `CREATECO`, including a strict test of
+machine `CURPTR == CO3CURR`. New `FBPROBE`, `FBOOT`, `FBCOUNT`,
+`FBBYTES`, and `FBPEAK` markers diagnose any bootstrap mismatch and
+remain failure-only records. The eight-record successful ACCOUNT oracle
+is unchanged.
+
+The follow-up runner now accepts an optional `--case account` on
+`--run`, still using the same independently compiled Cambridge, IFOX,
+IEWL, GO and JES test pipeline. Unqualified `--run` continues to
+execute ACCOUNT then DENY. `--check` always verifies both sources;
+`--case` with `--check` is rejected. Evidence remains segregated by
+UTC run and case; no prior receipts are overwritten. Because DENY has
+already passed, the next operator command runs only ACCOUNT. Neither
+LIMITS nor DENY is resubmitted.
+
+No accepted CO.2/CO.3 runtime, IFOX bridge, installed MVS object, or
+public global assignment changes. This correction is **HOST-CHECKED,
+MVS-PENDING**; CO.4 remains IN PROGRESS and CO.5 NOT STARTED.

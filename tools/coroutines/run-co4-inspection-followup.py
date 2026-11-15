@@ -38,7 +38,8 @@ def source_diagnostics(prior) -> None:
     """Diagnostic markers appear only on a failed path, never on PASS."""
     signatures = {
         'account': ('FALLOC', 'FPROB0', 'FINIT0', 'FPROBE',
-                    'FLIMIT', 'FCURR', 'FCOUNT', 'FBYTES', 'FPEAK'),
+                    'FLIMIT', 'FCURR', 'FCOUNT', 'FBYTES', 'FPEAK',
+                    'FBPROBE', 'FBOOT', 'FBCOUNT', 'FBBYTES', 'FBPEAK'),
         'deny': ('FALLOC', 'FPROB0', 'FINIT0', 'FMAKE',
                  'FPROBE', 'FCOUNT', 'FBYTES', 'FPEAK'),
     }
@@ -54,6 +55,16 @@ def source_diagnostics(prior) -> None:
             raise FollowupError(f'{key}: SNAP contract changed')
         if content.count('PROBEPTR:=P') != 1:
             raise FollowupError(f'{key}: probe pointer publication drift')
+        if key == 'account':
+            # Only the two snapshots before first CREATECO may observe
+            # unregistered private CURPTR=0. After that, SNAP remains strict.
+            if (content.count('AND BOOTSNAP(N,B) = VALOF') != 1 or
+                    content.count('IF BOOTSNAP(N+1,BYTES+108)=FALSE') != 2 or
+                    'P!4 \\= 0 | CO3CURR \\= CO3ROOT' not in content or
+                    content.count('IF SNAP(N+1,BYTES+108)=FALSE') != 1 or
+                    content.index('IF BOOTSNAP(') > content.index(
+                        'FOR I=1 TO 12 DO')):
+                raise FollowupError('account: bootstrap CURPTR contract drift')
 
 
 def validate_inputs(prior) -> dict:
@@ -72,7 +83,11 @@ def oracle_only_failure(item: dict) -> bool:
                 'wrong ordered BCPL records:'))
 
 
-def run_followup(prior, *, work: Path = WORK) -> int:
+def run_followup(prior, *, work: Path = WORK,
+                 cases: tuple[str, ...] = CASES) -> int:
+    if (not cases or len(set(cases)) != len(cases) or
+            any(case not in CASES for case in cases)):
+        raise FollowupError('invalid selected CO.4 cases')
     pins = validate_inputs(prior)
     os.umask(0o077)
     work.mkdir(parents=True, exist_ok=True)
@@ -80,7 +95,8 @@ def run_followup(prior, *, work: Path = WORK) -> int:
         prefix=f'{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-', dir=work))
     receipt = {
         'march': 'CO.4', 'candidate': 'inspection-followup',
-        'status': 'FAIL', 'cases': [], 'source_verification': pins,
+        'status': 'FAIL', 'cases': [], 'selected_cases': list(cases),
+        'source_verification': pins,
         'previous_limits_pass_git_head':
             'b0ce46fd965d1ca7720594fc5516ad7dd12f3993',
         'installed_mvs_objects_modified': False,
@@ -88,7 +104,7 @@ def run_followup(prior, *, work: Path = WORK) -> int:
     }
     try:
         previous = prior.load_module('co4_followup_prior_base', prior.BASE)
-        for key in CASES:
+        for key in cases:
             item = prior.run_one(key, session, previous, pins)
             receipt['cases'].append(item)
             if item.get('status') != 'PASS' and not oracle_only_failure(item):
@@ -112,7 +128,7 @@ def run_followup(prior, *, work: Path = WORK) -> int:
             json.dumps(receipt, indent=2)+'\n')
         passed = sum(x.get('status') == 'PASS' for x in receipt['cases'])
         print(f'CO.4 followup {receipt["status"]} '
-              f'({passed}/{len(CASES)} PASS)')
+              f'({passed}/{len(cases)} PASS)')
         print(f'CO.4 followup evidence: {session}')
 
 
@@ -123,14 +139,19 @@ def main() -> int:
                          help='offline source/contract validation; no MVS')
     actions.add_argument('--run', action='store_true',
                          help='explicitly submit ACCOUNT then DENY')
+    parser.add_argument('--case', choices=CASES,
+                        help='run one pending case; default runs both')
     args = parser.parse_args()
+    if args.check and args.case:
+        parser.error('--case requires --run (offline check validates both)')
     try:
         prior = load_prior()
         if args.check:
             validate_inputs(prior)
             print('CO.4 inspection followup OFFLINE CHECK PASS')
             return 0
-        return run_followup(prior)
+        selected = (args.case,) if args.case else CASES
+        return run_followup(prior, cases=selected)
     except (OSError, ValueError, UnicodeError) as exc:
         parser.exit(1, f'CO.4 followup FAIL: {exc}\n')
 

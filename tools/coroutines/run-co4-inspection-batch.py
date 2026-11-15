@@ -100,10 +100,17 @@ def validate_case(case: str, root: Path = ROOT) -> dict[str, object]:
     if source.count('CO4PROB:301') != 1:
         raise CandidateError(f'{name}: private G301 probe declaration missing')
     if case in ('account', 'deny'):
+        expected_helpers = 2 if case == 'account' else 1
         if (source.count('AND SNAP(N,B) = VALOF') != 1 or
-                source.count('LET P=PROBEPTR') != 1 or
+                source.count('LET P=PROBEPTR') != expected_helpers or
                 source.count('PROBEPTR:=P') != 1 or 'SNAP(P,' in source):
             raise CandidateError(f'{name}: snapshot pointer contract changed')
+        if case == 'account':
+            if (source.count('AND BOOTSNAP(N,B) = VALOF') != 1 or
+                    source.count('IF BOOTSNAP(N+1,BYTES+108)=FALSE') != 2 or
+                    source.count('IF SNAP(N+1,BYTES+108)=FALSE') != 1 or
+                    'P!4 \\= 0 | CO3CURR \\= CO3ROOT' not in source):
+                raise CandidateError('ACCOUNT pre-registration state changed')
     if 'CO3ROOT:=0' not in source or 'CO3LIST:=0' not in source:
         raise CandidateError(f'{name}: root initialization missing')
     if 'MARK("FAIL")' not in source or source.count('MARK("FAIL")') != 1:
