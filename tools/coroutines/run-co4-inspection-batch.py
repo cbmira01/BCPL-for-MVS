@@ -131,6 +131,13 @@ def validate_extension(root: Path = ROOT) -> dict[str, str]:
                 'LR    14,8', 'L     10,24(5)', 'BCR   15,11')
     if any(source.count(x) != 1 for x in required):
         raise CandidateError('unexpected test-only IFOX ABI/source contract')
+    restore = ('LR    4,10', 'L     15,=A(MEMSTAT)',
+               'BALR  14,15', 'LR    10,4', 'LR    14,8',
+               'SR    7,7', 'B     C4PRET')
+    locations = [source.find(s) for s in restore]
+    if (any(source.count(s) != 1 for s in restore) or
+            locations != sorted(locations) or any(x < 0 for x in locations)):
+        raise CandidateError('CO4PROB must restore R10 base after MEMSTAT')
     if 'GETMAIN' in source or 'FREEMAIN' in source:
         raise CandidateError('observer must not allocate')
     return {'file': 'co4probe.inc', 'sha256': hashlib.sha256(raw).hexdigest()}
@@ -223,6 +230,32 @@ def compiler_diagnostic(evidence: Path) -> str | None:
     return None
 
 
+def native_failure_detail(evidence: Path) -> str | None:
+    """One short existing JES failure diagnostic, no fresh MVS operation."""
+    summary = evidence/'job-summary.log'
+    report = evidence/'job-report.log'
+    if not summary.is_file():
+        return None
+    lines = summary.read_text(encoding='latin-1').splitlines()
+    parts: list[str] = []
+    for line in lines:
+        line = line.strip()
+        match = re.fullmatch(
+            r'(ASMA|ASML|ASMM|ASMS|LKED|GO)\s+\S+\s+RC=(\d{4})', line)
+        if match and match.group(2) != '0000':
+            parts.append(match.group(1)+' RC='+match.group(2))
+    if any('ABEND:' in line and 'detected' in line.lower() for line in lines):
+        parts.append('JES ABEND')
+    if report.is_file():
+        for line in report.read_text(encoding='latin-1').splitlines():
+            if ('IEF450I' in line and 'ABEND' in line) or (
+                    'PSW AT ENTRY TO ABEND' in line):
+                parts.append(line.strip())
+                if len(parts) >= 4:
+                    break
+    return '; '.join(parts)[:280] if parts else None
+
+
 def run_one(key: str, session: Path, previous, hashes: dict) -> dict:
     name, prefix, expected = CASES[key]
     case_dir = session/key
@@ -255,10 +288,12 @@ def run_one(key: str, session: Path, previous, hashes: dict) -> dict:
         if (rc == 0) != (base.get('status') == 'PASS'):
             raise CandidateError(f'{key}: executor/receipt mismatch')
         diagnostic = compiler_diagnostic(evidence) if rc else None
+        native_diagnostic = native_failure_detail(evidence) if rc else None
         outcome = {
             'case': key, 'status': base['status'], 'rc': rc,
             'reason': base.get('reason') if rc else None,
             'diagnostic': diagnostic,
+            'native_diagnostic': native_diagnostic,
             'native_job': base.get('native_job'),
             'compiler_jobs': {n: base.get(n) for n in
                               ('CO3ACMP_job', 'CO3LCMP_job')},
@@ -274,6 +309,8 @@ def run_one(key: str, session: Path, previous, hashes: dict) -> dict:
         print('CO.4 '+key.upper()+' '+('PASS' if rc == 0 else 'FAIL'))
         if diagnostic:
             print('CO.4 '+key.upper()+' compiler: '+diagnostic)
+        if native_diagnostic:
+            print('CO.4 '+key.upper()+' native: '+native_diagnostic)
         return outcome
 
 

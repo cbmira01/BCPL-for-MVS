@@ -5,6 +5,7 @@
 * Call only in quiescent, known-live coroutine/allocator context.
 * Save original R1 in R9 and original R0 in R6; RETIMPL frame
 * at R15 saves R4..R10. MEMSTAT uses R14 linkage and clobbers R10.
+* Keep the probe address base (R10) in R4 across that call.
          USING CO4PROB,4
 CO4PROB  STM   4,10,0(15)
          DROP  4
@@ -32,8 +33,10 @@ CO4PROB  STM   4,10,0(15)
          ST    0,16(8)
          LA    1,20(8)
          LR    8,14          SAVE CALLER R14 ACROSS MEMSTAT
+         LR    4,10          MEMSTAT CLOBBERS THE IFOX R10 BASE
          L     15,=A(MEMSTAT)
          BALR  14,15
+         LR    10,4          RESTORE BASE BEFORE BRANCH/LITERALS
          LR    14,8          RESTORE CALLER R14
          SR    7,7
          B     C4PRET

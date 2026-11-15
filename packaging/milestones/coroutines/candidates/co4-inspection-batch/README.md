@@ -156,3 +156,28 @@ receipts preserved. The follow-up correction applies Latin-1 decoding
 matching the project's established DSPAL report handling; accepted
 CO.2/CO.3 runners and all native candidate objects remain unchanged.
 See [first-run evidence and host verification](../../co4-inspection-batch-printer-decode-failure-20261114.md).
+
+## JOB 5419 S0C1 and test-only IFOX base-register repair
+
+The owner-reported second run at `d1726d3cc3a829af679df671912677a9f3dc244b`
+compiled successfully (compiler JOBs 5417/5418), assembled all four
+IFOX steps at RC=0000, and link-edited at RC=0000. Native JOB 5419
+terminated with GO ABEND S0C1 (PSW `000A9828`) before the LIMITS
+oracle completed. ACCOUNT and DENY were not attempted. The initial
+UTF-8 failure and this independent S0C1 result both remain FAIL.
+
+Source review revealed a definite test-only linkage defect:
+`CO4PROB` used `USING *,10` and branched to `C4PRET` after calling
+`MEMSTAT`, whose `BALR 10,0` replaces R10 with its own base.
+The repair retains the observer's base in R4 before `BALR 14,15`
+and restores `LR 10,4` immediately afterward, before branching.
+`MEMSTAT` does not modify R4, and the accepted BCPL frame restores
+the original R4 on return. All source inputs, machine oracles and
+accepted runtime objects remain unchanged.
+
+The host validator now rejects a missing or late R10 restoration.
+The runner also extracts one bounded, existing-JES failure diagnostic
+without printing full job reports or making another MVS submission.
+This is **source-grounded diagnosis and HOST-CHECKED repair**,
+not a retroactive native PASS: a new MVS run remains necessary.
+See [JOB 5419 repair evidence](../../co4-inspection-batch-jes-5419-s0c1-r10-repair-20261115.md).

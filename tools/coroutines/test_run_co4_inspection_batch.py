@@ -100,6 +100,34 @@ class OfflineSourceTests(unittest.TestCase):
                 co4.validate_extension(root)
 
 
+    def test_original_probe_missing_r10_restore_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root/co4.EXTENSION.relative_to(co4.ROOT)
+            path.parent.mkdir(parents=True)
+            data = co4.EXTENSION.read_text('ascii')
+            restore = '         LR    10,4          RESTORE BASE BEFORE BRANCH/LITERALS\n'
+            self.assertIn(restore, data)
+            path.write_text(data.replace(restore, ''), encoding='ascii')
+            with self.assertRaisesRegex(co4.CandidateError, 'restore R10 base'):
+                co4.validate_extension(root)
+
+    def test_memstat_restore_after_branch_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root/co4.EXTENSION.relative_to(co4.ROOT)
+            path.parent.mkdir(parents=True)
+            data = co4.EXTENSION.read_text('ascii')
+            restore = '         LR    10,4          RESTORE BASE BEFORE BRANCH/LITERALS\n'
+            self.assertIn(restore, data)
+            data = data.replace(restore, '').replace(
+                '         B     C4PRET\n',
+                '         B     C4PRET\n'+restore)
+            path.write_text(data, encoding='ascii')
+            with self.assertRaisesRegex(co4.CandidateError, 'restore R10 base'):
+                co4.validate_extension(root)
+
+
 class NativeBindingTests(unittest.TestCase):
     # Synthetic CG370 trailer and BCPLCO anchor based on the accepted
     # interface; this is structural host validation, not native IFOX.
@@ -238,6 +266,38 @@ class RawPrinterDecoderTests(unittest.TestCase):
                                     cwd=driver.ROOT,text=True,
                                     encoding='latin-1',capture_output=True,
                                     check=False,timeout=9)
+
+
+class NativeReportDiagnosticTests(unittest.TestCase):
+    def test_abend_s0c1_report_is_bounded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            (p/'job-summary.log').write_text(
+                'JOB 5419  CO3BGO\nASMA IFOX00 RC=0000\n'
+                'LKED IEWL RC=0000\nJOB RESULT: FAILURE\n'
+                'HIGHEST RC: 0000\nABEND: detected\n')
+            (p/'job-report.log').write_text(
+                '4.13.31 JOB 5419 IEF450I CO3BGO GO - ABEND S0C1 U0000\n'
+                'PSW AT ENTRY TO ABEND 078D0000 000A9828\n')
+            result = co4.native_failure_detail(p)
+            self.assertIn('JES ABEND', result)
+            self.assertIn('S0C1', result)
+            self.assertIn('000A9828', result)
+            self.assertLessEqual(len(result), 280)
+
+    def test_nonzero_ifox_step_is_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            (p/'job-summary.log').write_text(
+                'ASMS IFOX00 RC=0012\nJOB RESULT: FAILURE\n')
+            self.assertIn('ASMS RC=0012', co4.native_failure_detail(p))
+
+    def test_success_summary_has_no_failure_diagnostic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            (p/'job-summary.log').write_text(
+                'ASMS IFOX00 RC=0000\nJOB RESULT: SUCCESS\n')
+            self.assertIsNone(co4.native_failure_detail(p))
 
 
 class BatchReceiptTests(unittest.TestCase):
