@@ -132,3 +132,20 @@ No preemptive scheduling, MVS subtasks, timer-driven yields, general thread safe
 **CO.1 → CO.2 transition, 13 November 2026:** The owner explicitly authorized immediate qualified CO.1 acceptance and the start of CO.2. See the [formal acceptance record](co1-formal-acceptance-and-co2-transition-20261113.md) and [CO.2 kickoff](co2-native-changeco-implementation-kickoff-20261113.md). The original authorization boundary below describes milestone creation, not this subsequent approval. Production object installation, permanent global-number assignment and release publication remain separately gated. CO.2's owner-accepted closure on 14 November 2026 is separately recorded above.
 
 Creation of this milestone authorizes only this documentation and planning. It does **not** authorize implementation, JES submissions, new MVS datasets, promotion/overwrite of accepted objects, release publication, or any march closure. The major ABI, stack and library decisions must be discussed and approved before CO.2.
+
+## 14 November 2026 — CO.3 independently compiled lifecycle PASS evidence
+
+Owner-reported native **JOBS 5384–5386** (first lifecycle),
+**5390–5392** (nested `RESUMECO` parent-chain) and
+**5395–5397** (private `DELETECO` revoke-before-`FREEVEC`
+and registry-slot reuse) satisfy the corresponding strict
+Cambridge compiler / four-IFOX / IEWL / native GO candidate
+oracles. See [parent-chain PASS](co3-parent-chain-jes-5390-5392-pass-20261114.md)
+and [delete/reuse PASS](co3-delete-reuse-jes-5395-5397-pass-20261114.md).
+Failures in earlier adapter and output-buffer candidates are
+preserved separately. This is **bounded candidate evidence**:
+no public ABI/global allocation, stale-pointer guarantee,
+production object installation or release acceptance is implied.
+
+**CO.3 remains IN PROGRESS**, awaiting owner acceptance review;
+CO.4–CO.5 remain NOT STARTED.

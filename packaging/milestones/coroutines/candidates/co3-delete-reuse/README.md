@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.3 — Coroutine Library and Lifecycle (**IN PROGRESS**)  
-**Status:** Offline-tested source candidate; new native MVS evidence pending.
+**Status:** OWNER-REPORTED NATIVE-MVS-TESTED; JOBS 5395–5397 PASS; qualified acceptance pending.
 
 ## Scope and provenance
 
@@ -81,9 +81,33 @@ the exact baseline five-function cards, expands both to include
 submitting the native deck. No change to the qualified base runner,
 accepted BCPLCO, installed objects or public globals is made.
 
+## Native MVS PASS: JOBS 5395–5397
+
+On 14 November 2026 local time (15 November UTC), the owner ran
+`tools/coroutines/run-co3-delete-reuse.py --run` from `main` at
+`1875b26110dae6b19be05cf77a150cb54a1bb392` and reported:
+
+    CO.3 first lifecycle PASS: compiler JOBS 5395/5396,
+      native JOB 5397; IFOX 4, IEWL 1, GO 1
+    CO.3 deletion/reuse verification RC=0
+
+Operator-local receipt:
+`workarea/co3-delete-reuse/20261115T000019Z-nc9zruc0`.
+The strict runner requires all six IFOX/IEWL/GO steps RC=0000,
+JES job SUCCESS, and the exact 21 ordered `CO3BCPL` records
+listed above. This pass supersedes the pending-native status of this
+candidate, **not** the separately recorded failed adapter attempt.
+
+The MVS pass is evidence for unregister-before-release, list
+maintenance, surviving-worker continuity, capacity refusal and
+registry-slot reuse. The first and parent-chain fixtures retain
+their independent earlier PASS records.
+
 ## Explicit remaining gates
 
-- MVS Cambridge/IFOX/IEWL/GO evidence for this candidate is **pending**.
+- The owner-reported Cambridge/IFOX/IEWL/GO candidate PASS is recorded in the
+  [JOBS 5395–5397 evidence record](../../co3-delete-reuse-jes-5395-5397-pass-20261114.md).
+  The complete JES reports remain operator-local.
 - No real same-address `GETMAIN` reuse, stale-pointer safety or production
   generation-token ABI is claimed. The separate CO.1 token experiment
   remains the evidence for bounded same-address identity separation.
