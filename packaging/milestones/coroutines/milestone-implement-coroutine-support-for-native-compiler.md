@@ -249,3 +249,24 @@ Until the manifest is updated, staging is manual and the accepted
 clean-room procedure cannot reproduce these two new members by
 itself. Installed MVS object and IEWL/GO verification remain
 pending. All CO.4 bounds remain binding. **CO.5 IN PROGRESS.**
+
+## 15 November 2026 — production installation and installed-link PASS
+
+At tested GitHub revision `4bdf3509d99a82ee9784f5978bef0c6f2802829a`, the owner confirmed five host
+unit PASS results, Cambridge library compilation JOB **5972** and
+manual MVS source/JCL staging JOBS **5973–5979**. Production
+`BLDBMAIN` JOB **5981** built and installed seven Core Runtime
+modules, all RC=0000. `BLDCORCO` JOB **5983** installed and
+IEBCOMPR-verified `BOOT_OBJ(BCPLCO)`, and `BLDCORLB` JOB
+**5985** did the same for `BOOT_OBJ(COROUTIN)`. Both reported
+IFOX severity 0 and every stage RC=0000. The installed object
+library now contains **10 members**.
+
+The installed-only verifier compiled the accepted BCPL application
+as JOB **5987** and ran IFOX/IEWL/GO JOB **5988** against the
+installed production objects, all RC=0000 with the accepted
+21-record `CO3BCPL` oracle. See
+[CO.5 installed production verification](co5-installed-production-pass-20261115.md).
+Post-promotion full regressions and the owner-deferred
+`config/dspal.yaml` clean-room integration remain open.
+**CO.5 IN PROGRESS.**
