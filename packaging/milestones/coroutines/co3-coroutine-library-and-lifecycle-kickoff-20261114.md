@@ -3,7 +3,8 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.3 — Coroutine Library and Lifecycle  
-**Status:** **IN PROGRESS**  
+**Status at kickoff:** **IN PROGRESS**  
+**Current status:** **CLOSED (qualified)** — see [formal owner-directed closure](co3-formal-acceptance-and-co4-transition-20261114.md)  
 **Opened:** 14 November 2026 (Louisville local time)  
 **Authority:** [CO.2 qualified owner closure](co2-formal-acceptance-and-co3-transition-20261114.md)  
 **Source authority:** GitHub `main` — verify its current HEAD before changes

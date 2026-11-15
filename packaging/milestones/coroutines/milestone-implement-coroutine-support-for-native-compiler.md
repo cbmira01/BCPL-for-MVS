@@ -2,9 +2,9 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Established:** 10 November 2026  
-**Status:** ESTABLISHED; CO.0 CLOSED (qualified); CO.1 CLOSED (qualified); CO.2 CLOSED (qualified owner acceptance, 14 November 2026); CO.3 IN PROGRESS; CO.4–CO.5 NOT STARTED
+**Status:** ESTABLISHED; CO.0–CO.3 CLOSED (qualified); CO.4 IN PROGRESS; CO.5 NOT STARTED
 
-**Marches:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified); CO.2 CLOSED (qualified); CO.3 IN PROGRESS; CO.4–CO.5 NOT STARTED
+**Marches:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified); CO.2 CLOSED (qualified); CO.3 CLOSED (qualified); CO.4 IN PROGRESS; CO.5 NOT STARTED
 
 **Target:** Native System/370 BCPL applications under MVS 3.8J
 
@@ -51,7 +51,7 @@ These were working boundaries, now accepted **only as the bounded CO.2 implement
 | **CO.4** | **Robustness and Edge-Case Verification** | Verify stack boundaries, recursion, repeated switches, allocation exhaustion, invalid/active/stale descriptors, cleanup and error paths. Do not claim general recovery from arbitrary machine addresses or unrecovered MVS abends. **Gate:** focused positive/negative evidence and no newly broken runtime invariants. |
 | **CO.5** | **Integration, Regression, and Release** | Add named tests to the native Bootstrap suite without renumbering historical cases; run MR10, native and applicable project suites; prove clean-room reconstruction, reproducible linking, documentation and release readiness. **Gate:** separate owner acceptance with source revision, complete per-suite outcomes, IFOX/IEWL/GO/JES evidence and separately authorized installation/promotion. |
 
-**Current disposition (14 November 2026): CO.0 and CO.1 CLOSED (qualified); CO.2 — Native CHANGECO Implementation CLOSED (qualified owner acceptance); CO.3 — Coroutine Library and Lifecycle IN PROGRESS; CO.4–CO.5 NOT STARTED.** The bounded CO.2 architecture inherits Approach A (valid/live descriptor preconditions), S1 (independent stacks and coordinated limits), native register/continuation restoration and private candidate-only linkage. The public ABI, permanent global allocations, and complete lifecycle rules are not approved for production promotion. See [formal CO.0 closure](co0-formal-closure-20261112.md) and [CO.1 source investigation](co1-native-abi-and-stack-source-investigation-20261112.md). Subsequent marches close only after separate evidence-backed owner decisions. See the [JOB 5356/5357 native candidate PASS](co1-bcpl-native-candidate-jes-5356-5357-pass-20261113.md) for the first fully successful compiler/IFOX/IEWL/GO BCPL coroutine switch. Subsequent candidate successes establish [nested checked-frame survival under JOB 5360/5361](co1-nested-frames-jes-5360-5361-pass-20261113.md) and [two live worker contexts under JOB 5362/5363](co1-two-worker-jes-5362-5363-pass-20261113.md); neither resolves the production design gate. The [direct worker-to-worker candidate PASS, JOB 5364/5365](co1-worker-to-worker-jes-5364-5365-pass-20261113.md), extends the native context-switch evidence while preserving creation-parent semantics. The [terminated-worker re-entry guard candidate PASS, JOB 5366/5367](co1-terminal-worker-reentry-jes-5366-5367-pass-20261113.md), verifies a bounded negative return from a **known-live** terminated descriptor; this remains an experimental interface, not an approved production lifecycle policy. The [bounded descriptor registry PASS, JOB 5368/5369](co1-bounded-descriptor-registry-jes-5368-5369-pass-20261113.md), adds MVS evidence for rejecting unregistered, null, active and terminated targets before an invalid target dereference; it does not establish safe deletion/reuse or a final registry design. The [revocation-before-FREEVEC candidate PASS, JOB 5370/5371](co1-terminated-descriptor-revocation-jes-5370-5371-pass-20261113.md), verifies revoking a terminated descriptor before freeing its storage and rejecting the former address without re-registration. It does **not** establish safe storage-address reuse. The [generation-token same-descriptor-address PASS, JOB 5372/5373](co1-generation-token-same-address-jes-5372-5373-pass-20261113.md), demonstrates a revoked old token remaining invalid after the same still-allocated descriptor is reused for a second worker lifetime, using a test-only BCPL resolution wrapper. It is not proof of actual MVS allocation-address reuse or a production-enforced opaque handle ABI.
+**Historical 14 November CO.2 checkpoint: CO.0 and CO.1 CLOSED (qualified); CO.2 — Native CHANGECO Implementation CLOSED (qualified owner acceptance); CO.3 — Coroutine Library and Lifecycle IN PROGRESS; CO.4–CO.5 NOT STARTED.** The bounded CO.2 architecture inherits Approach A (valid/live descriptor preconditions), S1 (independent stacks and coordinated limits), native register/continuation restoration and private candidate-only linkage. The public ABI, permanent global allocations, and complete lifecycle rules are not approved for production promotion. See [formal CO.0 closure](co0-formal-closure-20261112.md) and [CO.1 source investigation](co1-native-abi-and-stack-source-investigation-20261112.md). Subsequent marches close only after separate evidence-backed owner decisions. See the [JOB 5356/5357 native candidate PASS](co1-bcpl-native-candidate-jes-5356-5357-pass-20261113.md) for the first fully successful compiler/IFOX/IEWL/GO BCPL coroutine switch. Subsequent candidate successes establish [nested checked-frame survival under JOB 5360/5361](co1-nested-frames-jes-5360-5361-pass-20261113.md) and [two live worker contexts under JOB 5362/5363](co1-two-worker-jes-5362-5363-pass-20261113.md); neither resolves the production design gate. The [direct worker-to-worker candidate PASS, JOB 5364/5365](co1-worker-to-worker-jes-5364-5365-pass-20261113.md), extends the native context-switch evidence while preserving creation-parent semantics. The [terminated-worker re-entry guard candidate PASS, JOB 5366/5367](co1-terminal-worker-reentry-jes-5366-5367-pass-20261113.md), verifies a bounded negative return from a **known-live** terminated descriptor; this remains an experimental interface, not an approved production lifecycle policy. The [bounded descriptor registry PASS, JOB 5368/5369](co1-bounded-descriptor-registry-jes-5368-5369-pass-20261113.md), adds MVS evidence for rejecting unregistered, null, active and terminated targets before an invalid target dereference; it does not establish safe deletion/reuse or a final registry design. The [revocation-before-FREEVEC candidate PASS, JOB 5370/5371](co1-terminated-descriptor-revocation-jes-5370-5371-pass-20261113.md), verifies revoking a terminated descriptor before freeing its storage and rejecting the former address without re-registration. It does **not** establish safe storage-address reuse. The [generation-token same-descriptor-address PASS, JOB 5372/5373](co1-generation-token-same-address-jes-5372-5373-pass-20261113.md), demonstrates a revoked old token remaining invalid after the same still-allocated descriptor is reused for a second worker lifetime, using a test-only BCPL resolution wrapper. It is not proof of actual MVS allocation-address reuse or a production-enforced opaque handle ABI.
 
 ## 14 November 2026 — CO.2 native positive-path checkpoint
 
@@ -147,5 +147,19 @@ preserved separately. This is **bounded candidate evidence**:
 no public ABI/global allocation, stale-pointer guarantee,
 production object installation or release acceptance is implied.
 
-**CO.3 remains IN PROGRESS**, awaiting owner acceptance review;
-CO.4–CO.5 remain NOT STARTED.
+**Historical checkpoint:** At the time of the three native PASS records,
+CO.3 awaited owner acceptance. The subsequent formal closure and CO.4
+transition are linked below.
+
+## 14 November 2026 — CO.3 qualified closure and CO.4 opening
+
+Following explicit owner direction, [CO.3 — Coroutine Library and Lifecycle](co3-formal-acceptance-and-co4-transition-20261114.md)
+was formally **CLOSED (qualified)** against its independent BCPL module
+linkage and deterministic native lifecycle gate. The same decision
+opens [CO.4 — Robustness and Edge-Case Verification](co4-robustness-and-edge-case-verification-kickoff-20261114.md)
+**IN PROGRESS**, with CO.5 **NOT STARTED**. Public ABI, permanent
+global assignments, production object installation, stale-pointer
+recovery, full robustness and release acceptance remain unapproved.
+
+**Current status: CO.0–CO.3 CLOSED (qualified); CO.4 IN PROGRESS;
+CO.5 NOT STARTED.**
