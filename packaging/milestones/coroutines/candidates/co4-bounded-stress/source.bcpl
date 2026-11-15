@@ -1,0 +1,122 @@
+// CO.4 bounded native stress/refusal candidate. /CN checked frames.
+// Root plus two 1024-word workers. No stale or arbitrary pointers.
+GLOBAL $(
+  START:1
+  WRCH:14
+  STACKBASE:54
+  STACKEND:55
+  WRITES:60
+  CO3INIT:289
+  CREATECO:290
+  DELETECO:291
+  CALLCO:292
+  COWAIT:293
+  RESUMECO:294
+  CO3CURR:295
+  CO3ROOT:296
+  CO3LIST:297
+  CHANGECO:299
+$)
+
+LET MARK(S) BE
+$(1 WRITES("CO4BCPL ")
+    WRITES(S)
+    WRCH(10)
+$)1
+
+AND FAIL() BE
+$(1 MARK("FAIL")
+    FINISH
+$)1
+
+// Four nested recursive invocations retain their private TOKEN words.
+// Fifteen COWAITs occur at depth zero; call sixteen returns naturally
+// through all four waiting frames, then CO3BOOT yields to the root.
+AND DEEP(N,WHO,INPUT) = VALOF
+$(1 LET TOKEN=WHO*10000+N*100+INPUT
+    AND R=0
+    IF N=0 DO
+    $(2 LET X=INPUT
+        AND LOCAL=WHO*1000+INPUT
+        AND SELF=CO3CURR
+        AND PARENT=CO3CURR!25
+        IF CALLCO(SELF,0) \= -2 RESULTIS -701
+        IF RESUMECO(0,0) \= -998 RESULTIS -702
+        IF CO3CURR \= SELF | SELF!25 \= PARENT
+           RESULTIS -703
+        FOR I=1 TO 15 DO
+        $(3 IF X \= WHO*100+I RESULTIS -704
+            X:=COWAIT(WHO*1000+I)
+            IF LOCAL \= WHO*1000+INPUT RESULTIS -705
+            IF CO3CURR \= SELF | SELF!25 \= PARENT
+               RESULTIS -706
+        $)3
+        IF X \= WHO*100+16 RESULTIS -707
+        RESULTIS WHO*1000+16
+    $)2
+    R:=DEEP(N-1,WHO,INPUT)
+    IF TOKEN \= WHO*10000+N*100+INPUT RESULTIS -708
+    RESULTIS R
+$)1
+
+AND AWORK(A) = DEEP(4,1,A)
+AND BWORK(A) = DEEP(4,2,A)
+
+LET START() BE
+$(1 LET ROOT=0
+    AND A=0
+    AND B=0
+    AND R=0
+    AND BASE=STACKBASE
+    AND LIMIT=STACKEND
+    CO3ROOT:=0
+    CO3CURR:=0
+    CO3LIST:=0
+    ROOT:=CO3INIT()
+    IF ROOT=0 DO FAIL()
+    A:=CREATECO(AWORK,1024)
+    B:=CREATECO(BWORK,1024)
+    IF A=0 | B=0 | A=B | CO3LIST \= B | B!26 \= A
+       DO FAIL()
+    MARK("MADE")
+
+    // Only raw CHANGECO is used for invalid target values.  Its
+    // registry check precedes target dereference; no freed pointer.
+    R:=CHANGECO(123,0)
+    IF R \= -1 DO FAIL()
+    R:=CHANGECO(123,1)
+    IF R \= -1 DO FAIL()
+    IF CO3CURR \= ROOT | CO3LIST \= B | B!26 \= A
+       DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("REFUSED")
+
+    // Sixteen alternating calls per worker, with result and state
+    // checks after every suspension and the final recursive unwind.
+    FOR I=1 TO 16 DO
+    $(2 R:=CALLCO(A,100+I)
+        IF R \= 1000+I | CO3CURR \= ROOT | A!25 \= 0
+           DO FAIL()
+        IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+        R:=CALLCO(B,200+I)
+        IF R \= 2000+I | CO3CURR \= ROOT | B!25 \= 0
+           DO FAIL()
+        IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+        IF CO3LIST \= B | B!26 \= A | A!26 \= 0
+           DO FAIL()
+        IF I=4 DO MARK("R04")
+        IF I=8 DO MARK("R08")
+        IF I=12 DO MARK("R12")
+        IF I=16 DO MARK("R16")
+    $)2
+    IF DELETECO(A) \= TRUE | CO3LIST \= B | B!26 \= 0
+       DO FAIL()
+    MARK("DELA")
+    IF DELETECO(B) \= TRUE | CO3LIST \= 0
+       DO FAIL()
+    IF CO3CURR \= ROOT DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("DELB")
+    MARK("PASS")
+    FINISH
+$)1
