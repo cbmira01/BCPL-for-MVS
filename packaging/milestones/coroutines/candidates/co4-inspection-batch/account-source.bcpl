@@ -1,4 +1,5 @@
 // CO.4 allocation-byte/count accounting across repeated worker churn.
+// On failure emit a unique diagnostic before FAIL, preserving the oracle.
 GLOBAL $(
   START:1
   WRCH:14
@@ -16,6 +17,7 @@ GLOBAL $(
   CO3ROOT:296
   CO3LIST:297
   CO4PROB:301
+  PROBEPTR:305
 $)
 LET MARK(S) BE
 $(1 WRITES("CO4MEM ")
@@ -35,11 +37,32 @@ $(1 LET SELF=CO3CURR
     IF CO3CURR \= SELF RESULTIS -2
     RESULTIS X+200
 $)1
-AND SNAP(P,N,B) = VALOF
-$(1 IF CO4PROB(P) \= 0 RESULTIS FALSE
-    IF P!0 \= P!1 | P!4 \= CO3CURR RESULTIS FALSE
-    IF P!5 \= N | P!7 \= B RESULTIS FALSE
-    IF P!6 < P!5 | P!8 < P!7 RESULTIS FALSE
+AND SNAP(N,B) = VALOF
+$(1 LET P=PROBEPTR
+    IF CO4PROB(P) \= 0 DO
+    $(2 MARK("FPROBE")
+        RESULTIS FALSE
+    $)2
+    IF P!0 \= P!1 DO
+    $(2 MARK("FLIMIT")
+        RESULTIS FALSE
+    $)2
+    IF P!4 \= CO3CURR DO
+    $(2 MARK("FCURR")
+        RESULTIS FALSE
+    $)2
+    IF P!5 \= N DO
+    $(2 MARK("FCOUNT")
+        RESULTIS FALSE
+    $)2
+    IF P!7 \= B DO
+    $(2 MARK("FBYTES")
+        RESULTIS FALSE
+    $)2
+    IF P!6 < P!5 | P!8 < P!7 DO
+    $(2 MARK("FPEAK")
+        RESULTIS FALSE
+    $)2
     RESULTIS TRUE
 $)1
 LET START() BE
@@ -51,28 +74,38 @@ $(1 LET ROOT=0
     AND N=0
     AND BYTES=0
     P:=GETVEC(8)
-    IF P=0 DO FAIL()
-    IF CO4PROB(P) \= 0 DO FAIL()
+    IF P=0 DO
+    $(2 MARK("FALLOC")
+        FAIL()
+    $)2
+    PROBEPTR:=P
+    IF CO4PROB(P) \= 0 DO
+    $(2 MARK("FPROB0")
+        FAIL()
+    $)2
     N:=P!5
     BYTES:=P!7
     CO3ROOT:=0
     CO3CURR:=0
     CO3LIST:=0
     ROOT:=CO3INIT()
-    IF ROOT=0 DO FAIL()
-    IF SNAP(P,N+1,BYTES+108)=FALSE DO FAIL()
+    IF ROOT=0 DO
+    $(2 MARK("FINIT0")
+        FAIL()
+    $)2
+    IF SNAP(N+1,BYTES+108)=FALSE DO FAIL()
     MARK("INIT")
     IF GETVEC(-1) \= 0 DO FAIL()
     IF GETVEC(4194300) \= 0 DO FAIL()
-    IF SNAP(P,N+1,BYTES+108)=FALSE DO FAIL()
+    IF SNAP(N+1,BYTES+108)=FALSE DO FAIL()
     MARK("INVALID")
     FOR I=1 TO 12 DO
     $(2 A:=CREATECO(WORK,1024)
         B:=CREATECO(WORK,1024)
         IF A=0 | B=0 | A=B DO FAIL()
-        IF SNAP(P,N+5,BYTES+9084)=FALSE DO FAIL()
+        IF SNAP(N+5,BYTES+9084)=FALSE DO FAIL()
         IF CREATECO(WORK,1024) \= 0 DO FAIL()
-        IF SNAP(P,N+5,BYTES+9084)=FALSE DO FAIL()
+        IF SNAP(N+5,BYTES+9084)=FALSE DO FAIL()
         R:=CALLCO(A,I*10)
         IF R \= I*10+100 DO FAIL()
         R:=CALLCO(B,I*20)
@@ -81,11 +114,11 @@ $(1 LET ROOT=0
         IF R \= I*10+200 DO FAIL()
         R:=CALLCO(B,I*20+1)
         IF R \= I*20+200 DO FAIL()
-        IF SNAP(P,N+5,BYTES+9084)=FALSE DO FAIL()
+        IF SNAP(N+5,BYTES+9084)=FALSE DO FAIL()
         IF DELETECO(A) \= TRUE | DELETECO(B) \= TRUE
            DO FAIL()
         IF CO3LIST \= 0 | CO3CURR \= ROOT DO FAIL()
-        IF SNAP(P,N+1,BYTES+108)=FALSE DO FAIL()
+        IF SNAP(N+1,BYTES+108)=FALSE DO FAIL()
         IF I=3 DO MARK("C03")
         IF I=6 DO MARK("C06")
         IF I=9 DO MARK("C09")

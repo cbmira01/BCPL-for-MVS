@@ -44,11 +44,13 @@ REQUIRED = {
                'BASEBYTES+9084', 'BASEBYTES+108', 'DELETECO(A)'),
     'account': ('GETVEC(-1)', 'GETVEC(4194300)',
                 'FOR I=1 TO 12 DO', 'CREATECO(WORK,1024)',
-                'SNAP(P,N+5,BYTES+9084)', 'DELETECO(B)'),
+                'SNAP(N+5,BYTES+9084)', 'PROBEPTR:305',
+                'DELETECO(B)'),
     'deny': ('GETVEC:=DENY', 'GETVEC:=SAVEDGET',
              'FAILAT:=1', 'FAILAT:=2', 'REQUESTS:=0',
              'R:=CREATECO(WORK,1024)', 'SAVEDGET(N)',
-             'SNAP(P,N+3,BYTES+4596)', 'CALLCO(A,13)',
+             'SNAP(N+3,BYTES+4596)', 'PROBEPTR:305',
+             'CALLCO(A,13)',
              'DELETECO(B)'),
 }
 
@@ -97,6 +99,11 @@ def validate_case(case: str, root: Path = ROOT) -> dict[str, object]:
             raise CandidateError(f'{name}: missing contract {token}')
     if source.count('CO4PROB:301') != 1:
         raise CandidateError(f'{name}: private G301 probe declaration missing')
+    if case in ('account', 'deny'):
+        if (source.count('AND SNAP(N,B) = VALOF') != 1 or
+                source.count('LET P=PROBEPTR') != 1 or
+                source.count('PROBEPTR:=P') != 1 or 'SNAP(P,' in source):
+            raise CandidateError(f'{name}: snapshot pointer contract changed')
     if 'CO3ROOT:=0' not in source or 'CO3LIST:=0' not in source:
         raise CandidateError(f'{name}: root initialization missing')
     if 'MARK("FAIL")' not in source or source.count('MARK("FAIL")') != 1:
