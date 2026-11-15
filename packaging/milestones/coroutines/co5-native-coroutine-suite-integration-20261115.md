@@ -48,3 +48,11 @@ After operator updates to the new main revision and grants JES execution:
 Run with retained per-case evidence, then investigate only actual BCPL,
 IFOX, IEWL and GO/JES failures. Do not promote BOOT_OBJ or use destructive
 clean-room rebuild under this integration action.
+
+## Native MVS result — 15 November 2026
+
+The operator ran all 13 numbered coroutine cases on GitHub `main` at
+`53a4e4feebfec3f41223288416d2f0a3011bb77a` and reported **13/13 PASS** with coordinator RC=0.
+This supersedes only the earlier statement that native-suite execution
+was pending. See [CO.5 integrated native PASS](co5-integrated-coroutine-native-pass-20261115.md).
+Remaining full-project, clean-room and release gates are not accepted.

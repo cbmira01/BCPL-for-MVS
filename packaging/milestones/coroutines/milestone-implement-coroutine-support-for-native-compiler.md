@@ -172,3 +172,13 @@ The owner explicitly directed **“Close CO.4, and proceed to CO.5 without delay
 [CO.5 — Integration, Regression, and Release kickoff](co5-integration-regression-and-release-kickoff-20261115.md) begins immediately **IN PROGRESS**. Its separate gate requires named native Bootstrap test integration without renumbering existing cases, MR10/native/applicable project suites, clean-room reconstruction, reproducible linking, release documentation, and owner-reviewed per-suite/JES evidence. A CO.5 start does **not** authorize destructive rebuilds, installed-object changes, permanent globals, public ABI freeze, release publication or CO.5 closure.
 
 **Current status as of 15 November 2026: CO.0–CO.4 CLOSED (qualified); CO.5 IN PROGRESS.**
+
+## 15 November 2026 — CO.5 integrated native coroutine suite PASS
+
+At tested GitHub `main` revision `53a4e4feebfec3f41223288416d2f0a3011bb77a`, the owner-reported
+`production` run passed all thirteen native coroutine cases 177–189:
+**13 PASS, 0 FAIL, 0 SKIP, 0 BLOCKED; RC=0; 0m52s**.
+[Execution evidence, exact case matrix and qualifications](co5-integrated-coroutine-native-pass-20261115.md).
+Raw JES reports were retained in the operator workarea, but not separately
+audited in this conversation. Other project suites and clean-room/release
+gates remain open. **CO.5 stays IN PROGRESS.**
