@@ -1,0 +1,133 @@
+// CO.4 recoverable negative paths: known-live, two-worker candidate.
+// Preserve accepted CO.3 lifecycle/stack ABI, /CN checked frames.
+GLOBAL $(
+  START:1
+  WRCH:14
+  STACKBASE:54
+  STACKEND:55
+  WRITES:60
+  CO3INIT:289
+  CREATECO:290
+  DELETECO:291
+  CALLCO:292
+  COWAIT:293
+  RESUMECO:294
+  CO3CURR:295
+  CO3ROOT:296
+  CO3LIST:297
+$)
+
+LET MARK(S) BE
+$(1 WRITES("CO4SAFE ")
+    WRITES(S)
+    WRCH(10)
+$)1
+
+AND FAIL() BE
+$(1 MARK("FAIL")
+    FINISH
+$)1
+
+AND AWORK(X) = VALOF
+$(1 LET SELF=CO3CURR
+    AND PARENT=SELF!25
+    AND TOKEN=50111
+    IF X \= 11 RESULTIS -11
+    IF DELETECO(SELF) RESULTIS -12
+    IF CO3CURR \= SELF | SELF!25 \= PARENT RESULTIS -13
+    MARK("A1")
+    X:=COWAIT(101)
+    IF X \= 12 | TOKEN \= 50111 RESULTIS -14
+    IF CO3CURR \= SELF | SELF!25 \= PARENT RESULTIS -15
+    MARK("A2")
+    RESULTIS 102
+$)1
+
+AND BWORK(X) = VALOF
+$(1 LET SELF=CO3CURR
+    AND PARENT=SELF!25
+    AND TOKEN=60221
+    IF X \= 21 RESULTIS -21
+    IF DELETECO(SELF) RESULTIS -22
+    IF CO3CURR \= SELF | SELF!25 \= PARENT RESULTIS -23
+    MARK("B1")
+    X:=COWAIT(201)
+    IF X \= 22 | TOKEN \= 60221 RESULTIS -24
+    IF CO3CURR \= SELF | SELF!25 \= PARENT RESULTIS -25
+    MARK("B2")
+    RESULTIS 202
+$)1
+
+LET START() BE
+$(1 LET ROOT=0
+    AND A=0
+    AND B=0
+    AND R=0
+    AND BASE=STACKBASE
+    AND LIMIT=STACKEND
+    CO3ROOT:=0
+    CO3CURR:=0
+    CO3LIST:=0
+    ROOT:=CO3INIT()
+    IF ROOT=0 DO FAIL()
+    MARK("INIT")
+
+    // No allocation: SIZE != 1024 is rejected before GETVEC.
+    IF CREATECO(AWORK,1023) \= 0 DO FAIL()
+    IF CREATECO(AWORK,1025) \= 0 DO FAIL()
+    IF CREATECO(AWORK,-1) \= 0 DO FAIL()
+    IF CO3LIST \= 0 | CO3CURR \= ROOT DO FAIL()
+    MARK("SIZE")
+
+    IF COWAIT(9) \= -3 DO FAIL()
+    IF RESUMECO(0,9) \= -3 DO FAIL()
+    IF CO3CURR \= ROOT | CO3LIST \= 0 DO FAIL()
+    MARK("ROOT")
+
+    A:=CREATECO(AWORK,1024)
+    B:=CREATECO(BWORK,1024)
+    IF A=0 | B=0 | A=B | CO3LIST \= B | B!26 \= A
+       DO FAIL()
+    MARK("MADE")
+
+    // Third registration must roll back its newly allocated vectors.
+    IF CREATECO(AWORK,1024) \= 0 DO FAIL()
+    IF CO3CURR \= ROOT | CO3LIST \= B | B!26 \= A
+       DO FAIL()
+    MARK("FULL")
+
+    // These values are never passed to raw CALLCO or RESUMECO.
+    // DELETECO compares known list pointers before target deref.
+    IF DELETECO(0) DO FAIL()
+    IF DELETECO(ROOT) DO FAIL()
+    IF DELETECO(1) DO FAIL()
+    IF CO3LIST \= B | B!26 \= A | A!26 \= 0 DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("BADDEL")
+
+    R:=CALLCO(A,11)
+    IF R \= 101 | CO3CURR \= ROOT | A!25 \= 0 DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("RA1")
+    R:=CALLCO(B,21)
+    IF R \= 201 | CO3CURR \= ROOT | B!25 \= 0 DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("RB1")
+    R:=CALLCO(A,12)
+    IF R \= 102 | CO3CURR \= ROOT | A!25 \= 0 DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("RA2")
+    R:=CALLCO(B,22)
+    IF R \= 202 | CO3CURR \= ROOT | B!25 \= 0 DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("RB2")
+
+    IF DELETECO(A) \= TRUE | CO3LIST \= B | B!26 \= 0
+       DO FAIL()
+    IF DELETECO(B) \= TRUE | CO3LIST \= 0 DO FAIL()
+    IF CO3CURR \= ROOT DO FAIL()
+    IF STACKBASE \= BASE | STACKEND \= LIMIT DO FAIL()
+    MARK("CLEAN")
+    MARK("PASS")
+    FINISH
+$)1
