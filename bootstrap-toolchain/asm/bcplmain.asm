@@ -15,12 +15,15 @@
 * and the generic registrar BCPLRGS (RGINIT/RGFINI).
 * Preserves the accepted native System/370 BCPL register ABI.
 *
-* STATUS:
-* Accepted R.1-R.3 behavior was tested with temporary MVS
-* objects; no BOOT_OBJ or BOOT_DEVOBJ installation is implied.
-* A reconstruction, not authenticated historical machine code.
+* PRODUCTION: Git is source authority for installed BOOT_OBJ.
+* This is reconstructed code, not an original historical binary.
+* Runtime globals and optional packages bind before START.
 ***********************************************************************
 
+* ENTRY: native MVS/CG370 application startup.
+* This module owns global and system vectors, the root stack,
+* and orderly startup/shutdown. It does not allocate the
+* individual worker stacks used by native coroutines.
 BCPLMAIN CSECT
          ENTRY STKOVFL,STKLIM
          EXTRN BLIB
@@ -67,6 +70,8 @@ BCPLMAIN CSECT
 * through R15.  Store base and length for subsequent FREEMAIN R.
 *
          L     9,DYNLEN
+* Acquire root global vector and checked stack in one owned
+* MVS block. RELMEM eventually releases the whole allocation.
          GETMAIN EC,LV=(9),A=DYNBASE,SP=0
          LTR   15,15
          BNZ   GNOCORE
@@ -139,6 +144,9 @@ GSCAN    AH    8,=H'-8'
 * Re-scan from the module end and install each exported global.
 *
          L     8,MODEND
+* Application trailer supplies exported global (offset,address)
+* pairs. Record each owner so the optional registrar cannot
+* silently overwrite app, BLIB or Core Runtime entries.
 GINST    AH    8,=H'-8'
          L     9,4(8)
          LTR   9,9
@@ -179,6 +187,8 @@ BLIMP    AH    8,=H'-8'
          AR    2,4
          OI    0(2),X'02'
          B     BLIMP
+* BLIB is a separate compiled module whose exports must
+* also be imported. Header declarations alone install no code.
 BLIDONE  L     4,4(12)
          C     4,=X'C7D3F004'
          BC    8,NOSTART
@@ -317,6 +327,8 @@ WFHAS76  EQU   *
 * Install independent BCPLAPT G40 entry and its safe stack limit.
          L     1,=A(APLIMIT)
          L     2,STKLIM
+* APTOVEC shares the root checked-entry limit with STKLIM.
+* CHANGECO replaces both when a worker stack becomes active.
          ST    2,0(1)
          L     1,=A(APTOVEC)
          ST    1,160(12)
@@ -345,6 +357,9 @@ WFHAS76  EQU   *
 * generated USING 4096,1,2,3 code.
 *
 * REGISTER OPTIONALS AFTER CORE AND BLIB IMPORTS.
+* Registrar receives current global vector and owner ledger.
+* Validate all optional selections before publishing exports;
+* START must never see a partially installed package.
          ST    12,R1GVEC
          LA    1,R1GVEC
          L     15,=A(RGINIT)
@@ -377,6 +392,8 @@ WFHAS76  EQU   *
 *
 * REGISTRATION REJECTION BEFORE APPLICATION START.
 * IOFIN USES R10 AS A PRIVATE BASE. PRESERVE OUR BASE IN R9.
+* Rejecting registration must prevent START and release all
+* owned runtime resources before returning to MVS.
 R1BAD    LR    9,10
          L     15,=A(IOFIN)
          BALR  14,15
@@ -498,6 +515,9 @@ STOPENT  ST    7,STOPRC
          ST    7,R1CODE
          LA    1,1
          ST    1,R1REAS
+* Finalize in dependency-safe order: optional packages while
+* streams and allocations live, then IOFIN, MEMDRAIN and
+* the root's combined global/stack GETMAIN allocation.
 FINEXIT  LR    9,10
 * FINALIZERS RUN BEFORE IOFIN AND MEMDRAIN.
          LA    1,R1REAS
@@ -561,6 +581,9 @@ RELDONE  L     14,RELRET
 * The missing machine-code STKCK body leaves exact clearance semantics
 * unrecovered. The provisional boundary remains 16KB from stack base.
 ***********************************************************************
+* Checked /CN entry reads an inline frame-size fullword.
+* Verify structure and STKLIM bound; success skips the word
+* before resuming compiler-generated procedure code.
 STKIMPL  LR    5,15
          L     4,0(14)
          LTR   4,4
@@ -976,6 +999,8 @@ WFDECZN  DS    CL15
 * BCPLMEM external allocator routines.
 *
 ***********************************************************************
+* DEBUGINT at G!150 formats a diagnostic signed integer.
+* It is not a recovered general-purpose historical BLIB API.
 DEBUGINT XC    DBGPOS(4),DBGPOS
          LTR   7,7
          BNM   DBGCVT
@@ -1027,6 +1052,9 @@ DBGARET  BR    14
 * WIP DATA
 ***********************************************************************
          DS    0F
+* Module-owned MVS save area and lifecycle bookkeeping.
+* Worker descriptors and their stacks are owned by the
+* separate coroutine library, not this root startup CSECT.
 MSVSAVE  DS    18F
 * Historical USERSAVE-compatible G6 list-head positions.
 * The leading 18 words remain the ordinary MVS save area (R13).

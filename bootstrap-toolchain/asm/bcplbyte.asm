@@ -10,13 +10,16 @@
 * R5 is the BCPL frame, R6 return linkage.
 ***********************************************************************
 
-* G85/G86 link to this independent CSECT (M2.0 Gate C accepted).
+* BCPLMAIN installs these byte primitives at G!85 and G!86.
 ***********************************************************************
 BCPLBYTE CSECT
          ENTRY GETBYTE,PUTBYTE
 *
 * GETBYTE(S,I) -> R7
 * S is a BCPL word pointer; I is an unrestricted byte offset.
+* GETBYTE(S,I) returns byte 0..255 through R7. S is a
+* BCPL word pointer; I counts bytes from that address.
+* The caller must provide a valid readable address and offset.
 GETBYTE  LR    14,7
          SLL   14,2
          AR    14,8
@@ -26,6 +29,9 @@ GETBYTE  LR    14,7
          BCR   15,6
 *
 * PUTBYTE(S,I,BYTE): stores low eight bits of R9.
+* PUTBYTE(S,I,B) writes the low eight bits of R9 only.
+* Storage bounds and writability belong to the caller.
+* Neither primitive translates the contents as characters.
 PUTBYTE  LR    14,7
          SLL   14,2
          AR    14,8

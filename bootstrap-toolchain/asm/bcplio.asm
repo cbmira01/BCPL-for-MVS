@@ -29,8 +29,8 @@
 * Not reentrant: QSAM and saved registers use static module state.
 * Historical-facing behavior is a tested MVS reconstruction,
 * not a claim of recovered original Cambridge machine code.
-* Accepted independently in DEVOBJ, including D6 regression 00-123:
-* 123 PASS, 0 FAIL, 1 expected source-only SKIP (083).
+* Maintained production code for native BCPL character streams.
+* Logical-record I/O is the separate BCPLQSAM System Extension.
 ***********************************************************************
 BCPLIO   CSECT
          ENTRY IOINIT,IOFIN,IOWRCH,IOSTAT,IOSEL
@@ -39,6 +39,9 @@ BCPLIO   CSECT
          ENTRY IOSELIN,IOINP,IOPARMST,IORDCH,IOUNRD,IOFINDIN
          ENTRY IOENDRD,IONORM
 *
+* IOINIT: private R14-linked call, R1 points to EXEC PARM list.
+* Initialize primary SYSPRINT output and stream selection state.
+* If already active, a second call leaves the stream in place.
 IOINIT   BALR  10,0
          USING *,10
          STM   0,9,IOISAVE
@@ -68,6 +71,9 @@ IOIDONE  LM    0,9,IOISAVE
          DROP  11
          DROP  10
 *
+* IOFIN: called at shutdown before BCPLMEM cleanup.
+* Flush buffered output, close active QSAM datasets, and
+* drain descriptors that own dynamic stream storage.
 IOFIN    BALR  10,0
          USING *,10
          STM   0,9,IOFSAVE
@@ -119,6 +125,9 @@ IFDPARM  LR    9,10
 *
 * BCPL-facing candidate: R7 holds a character code.
 * Save caller registers before all output paths, including PUT.
+* WRCH uses R7 as the character to output. A newline writes
+* the current fixed QSAM record; other bytes fill the buffer.
+* On overflow use the configured nonreturning STOP callback.
 IOWRCH   LR    4,10
          BALR  10,0
          USING *,10
@@ -183,6 +192,9 @@ IOW2PUT  PUT   IO2DCB,IO2BUF
          B     IOWRET
 * Dynamic stream buffer occupies descriptor-owned region +0..131;
 * current fill count at region +236. Handle never dereferenced.
+* Dynamic handles are identities, never raw DCB addresses.
+* Resolve the current handle before writing to its independently
+* owned 132-byte buffer and QSAM control block.
 IOWDYN   LR    9,10
          L     1,IOCURH
          L     15,=A(HLOOK)
@@ -297,6 +309,9 @@ IOSERET  LM    0,9,IOESAVE
 * MVS DD first character is alphabetic/@/#/$; remaining
 * characters may also be decimal digits. Empty or >8 fails.
 *
+* Normalize a counted BCPL DD-name into eight EBCDIC bytes.
+* R1 names the counted string, R2 the caller buffer; R15=0/8.
+* This does not dynamically allocate the JCL DD.
 IONORM   BALR  10,0
          USING *,10
          STM   0,9,IONMSAV
@@ -380,6 +395,9 @@ IONMSAV  DS    16F
 * argument/result, restore R4 from 0(R5), clobber R10.
 * Handles are the word addresses of private IOCTL1/IOCTL2.
 *
+* FINDOUTPUT takes a counted name in R7, returns a stable
+* word-addressed output handle or zero on failure. Resolve the
+* built-in streams before trying a dynamic handle.
 IOFOUT   LR    4,10
          BALR  10,0
          USING *,10
@@ -435,6 +453,8 @@ IOOUT    LR    4,10
          BCR   15,6
          DROP  10
 *
+* SELECTOUTPUT may select only a recognized live handle.
+* Private descriptor memory never escapes through that handle.
 IOSOUT   LR    4,10
          BALR  10,0
          USING *,10
@@ -499,6 +519,9 @@ IOWRRET  LM    0,9,IOOSAVE
          DROP  10
 *
 * ENDWRITE: only alternate; flush/close and revert selection.
+* ENDWRITE flushes and closes a selected nonprimary stream.
+* Dynamic handles are invalidated before descriptor storage
+* is released; primary SYSPRINT remains owned by IOFIN.
 IOENDW   LR    4,10
          BALR  10,0
          USING *,10
@@ -566,6 +589,9 @@ IOEWRET  LM    0,9,IOOSAVE
 * Install a caller-owned NONRETURNING overflow exit. R1=entry or 0
 * (disable). This is a native R14-linked private setup API.
 * Caller must route to STOP(12) and cleanup without returning.
+* IOBIND supplies BCPLMAIN's private overflow exit in R1,
+* or zero to disable. The callback must not return to a
+* full buffer. This is not a BCPL global-vector entry.
 IOBIND   BALR  10,0
          USING *,10
          ST    1,IOOVHAND
@@ -668,6 +694,8 @@ IOPMGET  BALR  10,0
 * Each external BCPL entry saves caller R10 before selecting the
 * independent BCPLIO base. R3 is local scratch on input paths.
 * This static implementation is nonreentrant, consistent with BCPLIO.
+* FINDINPUT takes a counted BCPL DD-name and returns a
+* stable word-addressed stream handle, not a DCB pointer.
 IOFINDIN  LR    4,10
          BALR  10,0
          USING *,10
@@ -771,6 +799,8 @@ IOINP      LR    4,10
          L     4,0(5)
          BCR   15,6
 *
+* SELECTINPUT only accepts a known live input handle.
+* Invalid/closed handles do not change the current stream.
 IOSELIN    LR    4,10
          BALR  10,0
          USING *,10
@@ -811,6 +841,9 @@ SELIRET  LM    0,15,IINSAVE
          L     4,0(5)
          BCR   15,6
 *
+* RDCH converts QSAM logical records into BCPL characters.
+* EOF, newline synthesis, and one-byte pushback belong to
+* each selected input stream's private state.
 IORDCH    LR    4,10
          BALR  10,0
          USING *,10
@@ -1043,6 +1076,8 @@ INDYEOD  L     2,INDESC
          B     RDYEOF
 *
 * UNRDCH repeats the last RDCH result once for this selected stream.
+* UNRDCH schedules one repeat of the last byte for this
+* particular input stream, not for all streams collectively.
 IOUNRD   LR    4,10
          BALR  10,0
          USING *,10
@@ -1092,6 +1127,8 @@ UNRDRET  LM    0,15,IINSAVE
          BCR   15,6
 *
 * ENDREAD closes the selected BCPIN input stream and clears state.
+* ENDREAD closes the selected input as appropriate and
+* clears its state; dynamic handles are revoked before release.
 IOENDRD  LR    4,10
          BALR  10,0
          USING *,10
@@ -1289,6 +1326,8 @@ IO2PTR   BALR  10,0
 * OPEN/PUT/CLOSE are separate private DQ* calls (output only).
 *
          ENTRY DALLOC,DREL
+* DALLOC owns a private descriptor, QSAM DCB and buffer.
+* Its result must never be used as a public stream handle.
 DALLOC   BALR  10,0
          USING *,10
          STM   0,9,DSAVE
@@ -1596,6 +1635,9 @@ HRETURN  LM    0,9,HSAVE
          BR    14
          DROP  10
 *
+* HLOOK maps an application handle to live descriptor storage.
+* Retired handle identities remain tombstones, so memory
+* address reuse cannot by itself make an old handle valid.
 HLOOK    BALR  10,0
          USING *,10
          STM   0,9,HSAVE

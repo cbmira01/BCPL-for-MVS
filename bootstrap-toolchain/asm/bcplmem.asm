@@ -19,6 +19,9 @@ BCPLMEM  CSECT
          ENTRY GETVEC,FREEVEC,MEMDRAIN,MEMBIND,MEMSTAT
 *
 * GETVEC(N): R7=N. R10 is our private addressing base.
+* GETVEC(N): R7 specifies last vector index, not byte length.
+* Allocate N+1 BCPL words and a private 12-byte list header.
+* Return word pointer in R7, or zero if allocation fails.
 GETVEC   BALR  10,0
          USING *,10
          LTR   7,7
@@ -34,6 +37,8 @@ GETVEC   BALR  10,0
          SLL   8,2
          LA    8,12(8)
          ST    8,GVRLEN
+* Only a successful GETMAIN becomes a live list member.
+* Failed allocation must not change the list or its counts.
          GETMAIN EC,LV=(8),A=GVRADDR,SP=0
          LTR   15,15
          BNZ   GVFAIL
@@ -79,6 +84,9 @@ GVFAIL0  SR    7,7
          DROP  10
 *
 * FREEVEC(V): R7=BCPL word pointer, unknown pointer is no-op.
+* FREEVEC: R7 is a BCPL vector word pointer. Search the
+* live list before examining header bytes. Unknown pointers
+* are ignored; this does not make arbitrary addresses safe.
 FREEVEC  BALR  10,0
          USING *,10
          LTR   7,7
@@ -97,6 +105,8 @@ FVSCAN   LTR   14,14
          LR    8,14
          L     14,8(14)
          B     FVSCAN
+* Unlink before FREEMAIN and use the header's saved exact
+* byte length, including the private bookkeeping header.
 FVFOUND  L     4,8(14)
          LTR   8,8
          BZ    FVHEAD
@@ -131,6 +141,9 @@ FVNFOUND L     15,FVWSAVE
 *
 * MEMDRAIN: private BCPLMAIN exit call, R14 linkage.
 * Preserve R0-R3, R15 and all BCPL fixed base registers.
+* Release all remaining allocations at shutdown. Selected
+* package finalizers run first and can free their own vectors.
+* Detach each record before returning memory to MVS.
 MEMDRAIN BALR  10,0
          USING *,10
          ST    14,MEMRET
@@ -162,6 +175,8 @@ MEMDONE  LM    0,3,MEMSAV
 *
 * MEMBIND: R1=address of writable G6!48 slot, or zero to unbind.
 * R14 linkage. Preserve R0-R3, R4-R12, R15 and R1 itself.
+* MEMBIND: R1 is a writable runtime-owned list-head slot
+* (G!6 bookkeeping), or zero to stop publishing the head.
 MEMBIND  BALR  10,0
          USING *,10
          ST    1,VECPUB
@@ -177,6 +192,9 @@ MBNRET   BR    14
 * Private snapshot: R1 addresses four fullwords (16 bytes).
 * Return R14 intact. R10 is clobbered, as in MEMBIND.
 * Call only in quiescent singleton allocator context.
+* MEMSTAT writes four fullwords at R1: current/peak block
+* counts and current/peak allocated byte totals. This is
+* a private native diagnostic, not a BCPL global service.
 MEMSTAT  BALR  10,0
          USING *,10
          ST    14,MSRET

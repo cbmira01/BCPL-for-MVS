@@ -4,15 +4,28 @@
 * Valid/live word-pointer descriptors; test-local G!298/299 only.
 * The 24-word descriptor is PRIVATE, not a frozen public interface.
 * One root and two workers maximum; no deletion/reuse in CO.2.
-* Each worker stack is GETVEC(1087): 4096 safe + 256 clearance.
+* Caller owns GETVEC(1087): 4096 safe bytes + 256 clearance.
 * Restore 16 GPRs, STKLIM/APLIMIT, G54/G55, and checked /CN frames.
 * First entry and natural return use normal generated BCPL linkage.
 * No system calls during context transfer. Not reentrant.
 ***********************************************************************
+* BCPL call interface (arguments supplied in R7-R10):
+* CO2INIT: R7=root, R8=worker, R9=stack, R10=procedure.
+*           All pointers use BCPL word addresses; returns 0/-2.
+* CHANGECO: R7=transferred value, R8=known-live target.
+*           Returns transferred value or -1 for invalid target.
+* This isolated candidate does not support deletion or reuse.
+* Only root plus two registered workers are supported.
+* Descriptor layout is PRIVATE; no stale-pointer safety promise.
+* Singleton static storage means this code is not reentrant.
 BCPLCO   CSECT
          ENTRY CO2INIT,CHANGECO
          EXTRN STKLIM,APLIMIT
 *
+* Initialize caller-allocated worker and first saved context.
+* The BCPL library allocates and later releases both the stack
+* and descriptor. This routine does not call GETVEC or FREEVEC.
+* Capture root stack bounds for later context restoration.
 CO2INIT  STM   4,10,0(15)
          LR    6,0              SAVE CG370 R0; R6 SAVED IN FRAME
          LR    5,15
@@ -44,6 +57,9 @@ CO2FIRST C     8,ROOTPTR
 CO2REG1 ST    8,REGW1
          B     CO2REGOK
 CO2REG2 ST    8,REGW2
+* Root and live worker addresses occupy a bounded registry.
+* SWITCH validates this registry before target dereference.
+* The root's saved bounds use its currently active stack.
 CO2REGOK ST    7,ROOTPTR
          ST    7,CURPTR
          ST    0,12(8)
@@ -80,6 +96,9 @@ CO2REGOK ST    7,ROOTPTR
          L     0,=X'5C40E2E3'
          L     14,=X'C3D2405C'
          L     4,=F'512'
+* Paint safe worker stack with alternating BLIB STACKHWM
+* markers. The 256-byte clearance stores the guard and
+* high-water metadata outside the 1024-word checked region.
 CO2PAINT ST    0,0(7)
          ST    14,4(7)
          LA    7,8(7)
@@ -98,6 +117,10 @@ CO2PAINT ST    0,0(7)
 * Synthetic caller base. Normal generated WORKER entry stores its own
 * caller P and BALR return at R15; RETIMPL returns to CO2WDONE.
 *
+* Construct a synthetic caller frame and saved GPR image.
+* First activation must enter as normal compiler-generated
+* BCPL linkage: valid P, W, R6 and R15 on the new worker.
+* A direct branch would not set up the matching RETIMPL path.
          L     0,=A(CO2WDONE)
          ST    0,0(9)
          ST    9,4(9)
@@ -125,7 +148,12 @@ CO2INBAD LR    0,6
 * This first-entry trampoline enters a real compiler-generated worker
 * procedure; return follows the ordinary frame-based return path.
 *
+* The first-entry trampoline calls the actual BCPL worker.
+* Normal generated frame linkage must handle its return.
 CO2WBOOT BALR  6,4
+* A naturally returned worker becomes TERMINATED before
+* transferring its final result back to the root. Do not
+* resume a terminal continuation.
 CO2WDONE BALR  10,0
          USING *,10
          L     4,CURPTR
@@ -147,6 +175,10 @@ CO2BAD   B     CO2BAD           TERMINATED WORKER MUST NOT RESUME
 * No MVS service or checked BCPL entry occurs during limit updates.
 *
          USING CHANGECO,4
+* CHANGECO cooperatively suspends the current coroutine.
+* Snapshot all sixteen GPRs in private scratch before altering
+* registers: /CN generated workspace holds only return linkage,
+* not enough space for a complete saved machine context.
 CHANGECO    STM   0,15,CO2SREG     SAVE REGISTERS WITHOUT W OVERFLOW
          DROP  4
          LR    5,15             BCPL CALL WORKSPACE W
@@ -163,12 +195,18 @@ CHANGECO    STM   0,15,CO2SREG     SAVE REGISTERS WITHOUT W OVERFLOW
          BC    8,CO2VALID
          C     2,REGW2
          BC    7,CO2TERM
+* Known-live registry admission happens before dereference.
+* Reject self-switch and terminated state. A registry check
+* does NOT validate arbitrary machine addresses or stale uses.
 CO2VALID C     2,CURPTR
          BC    8,CO2TERM
          L     0,0(2)
          C     0,=F'3'
          BC    8,CO2TERM
          L     2,CURPTR
+* Save the outgoing context into its own descriptor and
+* make a three-word RETIMPL-compatible caller frame. On later
+* resumption CO2RET returns to the suspended BCPL call.
          MVC   32(64,2),CO2SREG PRESERVE ALL ORIGINAL R0..R15
          ST    5,52(2)          SAVED R5 (P) ON RESUMPTION
 * Change the first three snapshot words into a real RETIMPL frame:
@@ -186,6 +224,10 @@ CO2VALID C     2,CURPTR
          SLL   2,2              DESCRIPTOR BYTE ADDRESS
          L     0,CO2SREG+28     ORIGINAL R7 VALUE
          ST    0,60(2)          INCOMING SAVED R7
+* Switch the active stack's checked-entry limits and bounds.
+* STKLIM/APLIMIT use byte addresses; G!54/G!55 use BCPL words.
+* Restore all of them before resuming the incoming registers,
+* without MVS service calls in between.
          L     0,20(2)          INCOMING SAFE LIMIT (BYTE)
          L     4,=A(STKLIM)
          ST    0,0(4)
@@ -199,6 +241,8 @@ CO2VALID C     2,CURPTR
          LA    1,32(2)
          LM    0,15,0(1)        RESTORE THE INCOMING CONTEXT
          BCR   15,6             ENTER OR RESUME
+* A refused target must leave current context and stack limits
+* unchanged. Restore normal return linkage and report R7=-1.
 CO2TERM L     0,CO2SREG+16
          ST    0,0(5)
          L     0,CO2SREG+20
@@ -213,6 +257,9 @@ CO2TERM L     0,CO2SREG+16
 CO2RET   BCR   15,11           ORDINARY BCPL RETURN TRAMPOLINE
          LTORG
          DROP  10
+* Private singleton registry and temporary GPR snapshot.
+* Shared scratch is why overlapping transfers are unsupported.
+* Keep DS and ROOTPTR together for the candidate merge check.
          DS    0F
 ROOTPTR  DC    F'0'
 REGW1    DC    F'0'

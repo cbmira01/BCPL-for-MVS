@@ -14,9 +14,13 @@
 * LIMITATIONS:
 * Selected package linker addresses require source review;
 * the registrar does not protect against malicious pointers.
-* Accepted MVS evidence used temporary objects.
+* Each application selects its own link-time BCRG table.
 ***********************************************************************
 
+* RGINIT: R14-linked call before START, R1 points to two
+* fullwords: global-vector base and per-global owner ledger.
+* R15=0 success, otherwise WTO diagnostic 1001..1014.
+* No package global is installed on validation failure.
 RGINIT   CSECT
          ENTRY RGINIT,REGCOUNT,REGFINTB
          EXTRN BCRGBEG,BCRGEND
@@ -37,6 +41,8 @@ RGINIT   CSECT
          ST    10,RGGBASE
          L     2,4(1)
          ST    2,RGOWNER
+* Link-provided BCRGBEG/BCRGEND delimit the registry table.
+* Check alignment and bounded size BEFORE reading its header.
          L     9,=A(BCRGBEG)
          L     4,=A(BCRGEND)
 * BOUNDS FIRST; NEVER READ AN INVALID FIXED HEADER.
@@ -93,6 +99,9 @@ RGINIT   CSECT
          AR    1,8
          ST    1,RGREQP
          XC    RGIDX(4),RGIDX
+* Read selected BCEX package descriptors in BCRG order.
+* Verify bounded extents, header version and unique IDs
+* before trusting export and dependency data.
 PKNEXT   L     6,RGIDX
          C     6,RGCNT
          BNL   REQLIST
@@ -171,6 +180,9 @@ IDPRIOR  L     4,RGSCAN
          LA    4,1(4)
          ST    4,RGSCAN
          B     IDPRIOR
+* Exports must have valid G-slot numbers and linker addresses.
+* Reject collision with existing app, BLIB, core, or another
+* optional package rather than replacing a live global.
 EXBEGIN  XC    RGEXI(4),RGEXI
 EXNEXT   L     6,RGEXI
          C     6,RGK
@@ -252,6 +264,8 @@ EXDONE   L     6,RGEXI
          ST    6,RGEXI
          B     EXNEXT
 * DEPENDENCIES MUST ALREADY HAVE BEEN SELECTED (AND VALIDATED).
+* Dependencies must name earlier selected packages with
+* compatible API versions; this fixes their startup order.
 DEBEGIN  XC    RGDEPI(4),RGDEPI
 DENEXT   L     6,RGDEPI
          C     6,RGD
@@ -330,6 +344,8 @@ FINSTORE L     8,=A(REGFINTB)
          ST    6,RGIDX
          B     PKNEXT
 * APPLICATION REQUIRED IDS MAY NOT REFER TO AN UNSELECTED PACKAGE.
+* Application requirements are checked separately: each
+* package ID must be unique and selected by this BCRG table.
 REQLIST  XC    RGREQI(4),RGREQI
 REQNEXT  L     6,RGREQI
          C     6,RGREQN
@@ -371,6 +387,9 @@ REQFOUND L     6,RGREQI
          ST    6,RGREQI
          B     REQNEXT
 * ONLY NOW CAN OPTIONAL GLOBALS BECOME VISIBLE TO START.
+* Two-phase registration: only AFTER every selected package,
+* dependency and global owner check passes may the runtime
+* write exported addresses into the application's G vector.
 PUBLISH  XC    RGIDX(4),RGIDX
 PUBPKG   L     6,RGIDX
          C     6,RGCNT
@@ -437,6 +456,8 @@ ERR1013  WTO   'BCPLREG 1013 INVALID FINALIZER ADDRESS'
          B     REGFAIL
 ERR1014  WTO   'BCPLREG 1014 INVALID DEPENDENCY RECORD'
          LA    15,1014
+* Return the recorded failure and reset accepted package
+* count. BCPLMAIN must refuse to call START on nonzero R15.
 REGFAIL  ST    15,RGERR
          XC    REGCOUNT(4),REGCOUNT
 REGRET   L     15,RGERR
@@ -444,6 +465,8 @@ REGRET   L     15,RGERR
          LM    14,14,12(13)
          LM    0,12,20(13)
          BR    14
+* Static save area, validation scratch and finalizer registry.
+* This code is not reentrant; REGFINTB holds 32 entries.
          DS    0F
 RSAVE    DS    18F
 RGGBASE  DC    F'0'
@@ -472,6 +495,9 @@ REGFINTB DS    32F
 * R1 -> TWO FULLWORDS REASON (0 FINISH,1 STOP), REQUESTED STOP CODE.
 * STATUS 8 MEANS AT LEAST ONE FINALIZER RETURNED NONZERO.
 ***********************************************************************
+* RGFINI: R14-linked shutdown hook called before IOFIN.
+* R1 points to reason (0 FINISH, 1 STOP) and requested code.
+* R15=0 if finalizers succeed, or 8 if any returns nonzero.
 RGFINI   CSECT
          ENTRY RGFINI
          STM   14,12,12(13)
@@ -489,6 +515,8 @@ RGFINI   CSECT
          LTR   6,6
          BZ    FRETURN
          L     4,=A(REGFINTB)
+* Visit saved finalizer entries in reverse selection order.
+* Skip zero entries; continue after error but retain status 8.
 FINLOOP  LR    3,6
          BCTR  3,0
          SLL   3,2

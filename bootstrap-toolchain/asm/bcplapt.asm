@@ -12,6 +12,10 @@
 BCPLAPT  CSECT
          ENTRY APTOVEC,APLIMIT
          EXTRN STKOVFL
+* APTOVEC: R7=procedure entry, R8=argument count.
+* Build a word-addressed argument vector above the caller frame.
+* Invoke the procedure through normal BCPL linkage; the caller
+* must have enough checked workspace for its argument words.
 APTOVEC  STM   4,6,0(15)
          ST    10,12(15)
          LR    5,15
@@ -28,6 +32,9 @@ APTOVEC  STM   4,6,0(15)
          AR    4,14
          LR    14,4
          LA    14,16(14)
+* Include arguments and call clearance in the safe-limit check.
+* APLIMIT is a byte address. The active coroutine determines
+* which stack limit belongs here.
          C     14,APLIMIT
          BH    APERROR
          LR    14,7
@@ -41,6 +48,8 @@ APTOVEC  STM   4,6,0(15)
          L     5,4(5)
          L     4,0(5)
          BCR   15,6
+* Invalid counts and exhausted workspace take the same
+* nonreturning overflow path as a checked BCPL procedure entry.
 APERROR  L     4,=A(STKOVFL)
          BR    4
          LTORG
