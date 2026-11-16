@@ -173,3 +173,7 @@ separate diagnostic, not part of the all-PASS eligible suite set.
 **Verification state:** source/runner host checks PASS; the new
 coordinated supported selection is **MVS UNVERIFIED** until the
 operator completes the consolidated acceptance batch.
+
+## 16 November 2026 — supported suite MVS verification
+
+At GitHub `main` `216b6707c404a91c796ed8f1419a99ef172b184a`, the operator reported the coordinated `mr10-coroutines-supported` **5 PASS, 0 FAIL, 0 SKIP/BLOCKED, RC=0**. The separate original five-probe `mr10-coroutines` diagnostic yielded **4 PASS, 1 genuine original fixed-stack FAIL, RC=1**. See [CO.6 qualified acceptance candidate](../../../packaging/milestones/coroutines/co6-qualified-acceptance-review-candidate-20261116.md). The original BCPL source/golden and development-probe manifest remain unchanged. Owner qualified closure is pending.

@@ -3,97 +3,146 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification  
-**Status:** AMENDED — SUPPORTED-SUITE MVS VERIFICATION PENDING; **NOT CLOSED**  
-**Prepared:** 16 November 2026  
-**Tested GitHub `main`:** `7e41425cc272c68edea792b1d16b1b2c783eb556`  
-**Evidence classification:** OWNER-REPORTED MVS/JES suite receipts; complete individual raw JES reports were not independently inspected in this conversation.
+**Status:** READY FOR OWNER REVIEW — **NOT CLOSED**  
+**Prepared and updated:** 16 November 2026  
+**MVS-tested source:** GitHub `main` `216b6707c404a91c796ed8f1419a99ef172b184a`  
+**Evidence classification:** OWNER-REPORTED MVS/JES project-coordinator results. Source-controlled runners validate their own job and oracle receipts. The full individual raw JES reports and JSON receipts are preserved in the operator workarea and were not independently opened in this conversation.
 
-## Consolidated MVS acceptance campaign
+## Final supported campaign — MVS PASS
 
-The operator executed the planned campaign using two separate coordinator invocations. The seven PASS-eligible suites ran together (with production native profile and explicit BCPLQSAM device authorization), followed by the independent five-case historical MR10 coroutine diagnostic selection. Two separate coordinator invocations are intentional: the coordinator stops after a failed suite, and the original MR10 static-frame case must remain a genuine FAIL.
+The owner performed one combined, fail-stop, **eight-suite supported regression campaign** on MVS 3.8J with the `production` profile and explicit BCPLQSAM printer/punch authorization. Project coordinator returned **RC=0, PASS**.
 
-| Selection | PASS | FAIL | SKIP | BLOCKED | Coordinator result |
+| Suite selection | PASS | FAIL | SKIP | BLOCKED | Outcome |
 | --- | ---: | ---: | ---: | ---: | --- |
 | `mr10` | 12 | 0 | 0 | 0 | PASS |
+| `mr10-coroutines-supported` | 5 | 0 | 0 | 0 | PASS |
 | `bootstrap` | 145 | 0 | 1 (083) | 0 | PASS |
 | `runtime-extensions` | 13 | 0 | 0 | 0 | PASS |
 | `bcpltime` | 4 | 0 | 0 | 0 | PASS |
-| `bcplqsam` | 14 | 0 | 0 | 0 | PASS, including authorized device cases |
-| `coroutines` | 13 | 0 | 0 | 0 | PASS; existing native cases 177–189 |
-| `coroutine-contract` | 2 | 0 | 0 | 0 | PASS; both MR10/native paired cases |
-| **Seven PASS-eligible suites** | **203** | **0** | **1** | **0** | **PASS / RC=0** |
-| `mr10-coroutines` | 4 | 1 | 0 | 0 | **FAIL / RC=1**, genuine historical exception |
-| **All eight selections** | **207** | **1** | **1** | **0** | **Qualified result; not an all-PASS run** |
+| `bcplqsam` | 14 | 0 | 0 | 0 | PASS, including device cases 175–176 |
+| `coroutines` | 13 | 0 | 0 | 0 | PASS, native cases 177–189 |
+| `coroutine-contract` | 2 | 0 | 0 | 0 | PASS, both paired MR10/native cases |
+| **Supported total** | **208** | **0** | **1** | **0** | **PASS / RC=0** |
 
-The source-controlled `coroutine-contract` suite checked `co6-pair` (11 exact ordered records) and `co6-nested` (18 exact ordered records). Each source pair separately executes interpreted MR10/ICINT19 and Cambridge-generated native System/370, and validates the relevant compiler phases, MR10 completion codes, IFOX/IEWL/GO job steps, retained JES records and exact output oracle. Both individual cases returned PASS in the new regular coordinator.
+The five-case `mr10-coroutines-supported` selection comprises
+`compiler-probe`, `frame-layout-probe`, `resumeco-chain`,
+`create-delete-static-pool` and the distinct
+`fixed-stack-co0-candidate`. This is the **first fully coordinated
+MVS PASS for the new supported selection**. The versioned runner
+checks the accepted four original cases using their existing
+golden/JES verifier and the corrected-frame candidate using an
+independent exact ten-record producer/consumer oracle,
+**ten zero-RC JES steps** and **three zero-valued interpreted
+completion phases**. The corrected source retains the valid
+`P=C+3` / `COBOOT` initial frame.
 
-The `mr10-coroutines` selection checked all five accepted identities:
-compiler-probe, frame-layout-probe, resumeco-chain and
-create-delete-static-pool **PASS**;
-`10-coroutines/fixed-stack-producer-consumer` **FAIL** with
+The paired `coroutine-contract` selection also passed both
+`co6-pair` (eleven ordered records) and `co6-nested`
+(eighteen ordered records), with independent MR10/ICINT19 and
+Cambridge-generated native System/370 compilation/execution receipts.
+These demonstrate the agreed *observable* cooperative coroutine
+behavior within the explicitly bounded contract, not ABI/frame
+identity across compilers.
+
+### Supported execution evidence
+
+- Coordinator JSON: `workarea/project-regressions/20261116T151624Z-56400-i4ueoalx/summary.json`
+- Retained console/job summary log: `mvs-state/reconstruction-evidence/co6-supported-final-20261116T151623Z.log`
+- Verified Git code revision: `216b6707c404a91c796ed8f1419a99ef172b184a`
+- Owner-reported terminal line: `PROJECT REGRESSION RESULT: PASS`; coordinator **RC=0**
+
+## Separate original historical diagnostic — genuine FAIL retained
+
+The owner ran the **unchanged** five-case `mr10-coroutines`
+historical diagnostic in a **separate** coordinator invocation.
+It returned **4 PASS, 1 genuine FAIL, 0 SKIP, 0 BLOCKED; RC=1**.
+The failure remains precisely
+`10-coroutines/fixed-stack-producer-consumer` with
 `interpreted CODE expected 0, got ['-1']`.
-The narrow diagnostic continuation allowed the last two probes to finish without reclassifying the original failure. **No accepted source, golden oracle, expected CODE or test status was overwritten to make this run appear green.**
 
-### Operator-local evidence
+The original manually constructed first-activation frame
+(`C!0 := C`) does not meet canonical ICINT19/ICLIB
+`CHANGECO` continuation requirements. The original source,
+original exact golden, accepted expected CODE=0 and frozen
+17-entry historical development-probe manifest are **untouched**.
+The corrected, separately named `fixed-stack-co0-candidate`
+PASS **does not convert that original FAIL** into PASS, SKIP,
+XFAIL, OBSERVED or a successful negative test.
 
-- PASS-eligible coordinator summary:
-  `workarea/project-regressions/20261116T130728Z-35427-w963446s/summary.json`;
-  operator log:
-  `mvs-state/reconstruction-evidence/co6-final-regressions-20261116T130728Z.log`.
-- Historical coroutine diagnostic coordinator summary:
-  `workarea/project-regressions/20261116T131744Z-56157-nsm6p61_/summary.json`;
-  operator log:
-  `mvs-state/reconstruction-evidence/co6-final-probes-20261116T130728Z.log`.
-- The separately executed first paired candidate previously passed at
-  `workarea/co6-pair/20261116T123048Z-sfas9clu`;
-  the second passed at
-  `workarea/co6-nested/20261116T124503Z-mczybqy0`.
-  The new coordinated 2/2 PASS supersedes the need for another independent pair rerun.
+The four historical PASS identities overlap the supported
+selection; therefore **do not add historical diagnostic results
+to the 208 distinct supported-case total** and describe the
+combined execution as an all-PASS run.
 
-## CO.6 acceptance-gate assessment
+- Diagnostic JSON: `workarea/project-regressions/20261116T152532Z-76357-_s4f83jy/summary.json`
+- Diagnostic operator log: `mvs-state/reconstruction-evidence/co6-historical-final-20261116T151623Z.log`
+- Owner-reported terminal line: `PROJECT REGRESSION RESULT: FAIL`; coordinator **RC=1**, consistent with the preserved exception.
 
-| Governing gate | Observed evidence | Recommendation |
+## CO.6 governing acceptance gates
+
+| Requirement | Observed evidence | Assessment |
 | --- | --- | --- |
-| Source-controlled MR10 diagnostic with faithful classification | All five exercised: four PASS, one original CODE=-1 FAIL; no XFAIL/SKIP or patched fixture | **MET with explicit qualification** |
-| Common valid first activation and argument/result transfer | `co6-pair` and `co6-nested` both interpreted and native PASS with exact record oracles | **MET** |
-| Suspended locals/nested continuations, RESUMECO parent handoff and busy refusal | Two-worker `co6-nested` PASS under both paths; 18 strict records | **MET within tested bounded domain** |
-| Ordinary worker return/re-entry | One-worker `co6-pair` PASS under both paths; 11 strict records | **MET within tested bounded domain** |
-| Delete/reuse known-live inactive workers | `co6-nested` PASS under both paths and native `coroutines` 13/13 PASS | **MET within tested bounded domain** |
-| Fresh coordinated production regressions | Six established suites 201 PASS, zero FAIL/BLOCKED and one expected SKIP 083; `coroutine-contract` additional 2/2 PASS | **MET** |
-| Owner approval for the CO.6 historical first-activation exception and formal closure | Previous CO.0 qualified disposition exists, but this CO.6 decision is not yet given | **PENDING OWNER DECISION** |
+| Historical MR10 originals remain honestly classified | Five original probes run: four PASS and original fixed-stack CODE=-1 genuine FAIL | **MET, qualified** |
+| Valid-frame supported interpreted coroutine regression | All five `mr10-coroutines-supported` cases PASS, including corrected-frame fixed-stack program | **MET** |
+| Independently compiled interpreted/native behavioral parity | `co6-pair` and `co6-nested` PASS, complete exact-output and JES contracts enforced by their runners | **MET in tested common domain** |
+| First activation, value transfers, nested continuations, preserved locals | Both shared oracles and 13 native coroutine cases PASS | **MET in bounded domain** |
+| RESUMECO parent chain, busy refusal, natural return/re-entry, deletion/reuse | Both shared oracles PASS | **MET in bounded domain** |
+| Regular full production regressions | Six original suites: 201 PASS, zero FAIL/BLOCKED, expected SKIP 083 | **MET** |
+| Separate owner approval for CO.6 qualified closure | Not yet provided | **PENDING** |
 
-## Conditions and limits of proposed qualified acceptance
+## Qualifications preserved from prior marches
 
-The original fixed-stack producer/consumer uses an incompatible manually assembled initial MR10 frame. Its `CODE=-1` outcome remains an actual negative result. The separately named corrected-frame candidate passed the canonical interpreter in CO.0 JOB 5321; this establishes a supported *valid-frame* path, **not** retroactive PASS for the original fixture. A distinct later corrected-frame JOB 7693 returned driver RC=0, but the user's compact excerpt did not independently establish its entire record oracle.
+The accepted native **Approach A/S1** scope remains a root coroutine
+with at most **two live registered worker coroutines**, separately
+checked **1024-word** worker stacks and approved coroutine
+**G!289–300** global assignments. The ABI, descriptor layout and
+compiler execution modes are not shared between MR10 and native
+System/370. The Cambridge compiler currently executes as INTCODE
+under ICINT19 while generating native System/370 application code;
+no native-running Cambridge compiler is claimed.
 
-CO.6 verifies *program-visible application behavior*, not identical interpreter/native coroutine descriptors, stack frames, global-number layouts or machine code, and not a natively executing Cambridge compiler. The accepted native **Approach A/S1** constraints remain a root and at most two live workers, checked **1024-word** stacks, known-live handles, and permanent coroutine globals **G!289–300**. Neither arbitrary dangling-pointer safety, unlimited stack sizes/workers, preemption, abnormal cancellation, system exhaustion recovery nor complete historical source/binary compatibility was verified.
+Not verified: general stale/freed-pointer or ABA-proof recovery,
+unbounded workers/stacks, actual GETMAIN exhaustion, exceptional
+cancellation/abend recovery, preemption/reentrancy, complete
+historical frame compatibility, or full historical source/binary
+compatibility.
 
-Retain CO.5's original Bootstrap case 117 IEWL **SB2D** incident in JOB 6745 as a failed attempt even though the case and subsequent full campaigns passed; its underlying cause remains unproven. The CO.5 Git-backed ten-object clean-room rebuild and installed-only verification remain accepted previously recorded evidence, **not a fresh rebuild performed by this CO.6 campaign**.
+The original Bootstrap case 117 IEWL **SB2D** abend in JOB 6745
+remains a recorded failure despite subsequent isolated and full-suite
+PASS. Its cause has not been independently resolved. The accepted CO.5
+Git-source **ten-object** clean-room reconstruction, production
+`BOOT_OBJ(BCPLCO)` and `BOOT_OBJ(COROUTIN)` installation and
+installed-only verification remain the existing evidence, **not a
+fresh clean-room rebuild performed as part of CO.6**.
 
-No production BCPL/IFOX/IEWL object, public API/global allocation, distribution tape or published release is modified or authorized by this proposed qualified closure. Only the owner can authorize formal CO.6 closure.
+This review does not authorize production object changes,
+unverified historical-image rollback, distribution tape publication,
+or a new official march.
+
+## Earlier CO.6 checkpoint preserved
+
+The preceding checkpoint at
+`7e41425cc272c68edea792b1d16b1b2c783eb556`
+contained **203 PASS, one expected SKIP** across seven supported
+suites, plus the separate four-PASS/one-FAIL historical diagnostic.
+That prior result remains valid for its tested revision.
+At the new tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`, the five-case
+supported MR10 suite was added and passed: **208 PASS,
+one expected SKIP**, with the separate historical FAIL unchanged.
 
 ## Proposed owner decision — NOT YET APPROVED
 
-> Close **CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification (qualified)**, accepting both independently MVS-verified paired BCPL behaviors and the fresh seven-suite 203-PASS / one expected SKIP production campaign. Retain the separately executed historical `mr10-coroutines` diagnostic as **four PASS, one genuine FAIL**, explicitly accepting its incompatible manually constructed first-activation frame as a bounded historical exception rather than silently changing its source, golden output or status. Preserve existing CO.5 Bootstrap 117 SB2D, Approach A/S1 resource limits, and release restrictions. Authorize no new official march, production runtime changes or distribution publication through this decision.
+> Approve and close **CO.6 — Common Coroutine Behavioral Contract
+> and Cross-Compiler Verification (qualified)**. Accept the MVS-tested
+> eight-suite **208 PASS, zero FAIL/BLOCKED, one expected SKIP 083**
+> supported campaign; the independent shared MR10/native coroutine
+> oracles; the separate **five-PASS** supported MR10 coroutine suite,
+> including the corrected-frame `fixed-stack-co0-candidate`; and
+> the distinct original historical diagnostic as **four PASS,
+> one genuine CODE=-1 FAIL**. Preserve the original fixture,
+> original golden, original expected CODE, Bootstrap 117 SB2D
+> history and Approach A/S1 architectural limits. Authorize no
+> runtime object changes, public release or new official march
+> through this acceptance alone.
 
-**Owner approval: PENDING. CO.6 remains IN PROGRESS.**
-
-## 16 November 2026 — amendment: supported-fixture acceptance pending
-
-After this review candidate was drafted, the owner explicitly chose
-to resolve the suite organization rather than accept a standalone
-failing coroutine *regression* as the final result. The original
-historical FAIL remains an actual negative result, but the accepted
-valid-frame candidate is being promoted under its **own supported
-test identity**. The five-case `mr10-coroutines-supported` suite
-must complete one fresh integrated ICINT19/JES run, distinct from the
-five-case historical `mr10-coroutines` diagnostic.
-
-**This previous acceptance proposal is NOT READY for owner approval
-until the new supported suite is MVS-verified.** The earlier
-203-PASS regular result and the 4-PASS/1-FAIL historical result
-remain valid, dated evidence for the previous Git revision; they
-must not be overwritten or retrospectively reclassified. After the
-new campaign, update this recommendation with the actual counts
-and a newly tested revision. CO.6 is still IN PROGRESS; no closure,
-production object change or distribution release is authorized.
+**Owner approval: PENDING. CO.6 remains IN PROGRESS, NOT CLOSED.**

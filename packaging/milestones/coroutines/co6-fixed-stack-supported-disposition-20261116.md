@@ -80,3 +80,36 @@ tests PASS; Python syntax passes. This is not MVS verification.
 No installed coroutine runtime, IFOX, IEWL, historical source, JCL,
 original accepted output, or MVS dataset is changed by the
 documentation-only acceptance proposal and new host runner.
+
+## 16 November 2026 — final supported/historical MVS campaign completed
+
+At **tested** GitHub `main` `216b6707c404a91c796ed8f1419a99ef172b184a`, the owner executed the
+single eight-suite supported campaign with `--profile production`,
+`--allow-device`, and `--progress`: **RC=0,
+PROJECT REGRESSION RESULT: PASS; 208 PASS, zero FAIL/BLOCKED,
+one expected Bootstrap SKIP 083**. These are six established
+suites (201 PASS, one SKIP) plus the verified
+`mr10-coroutines-supported` selection (5 PASS) and the
+`coroutine-contract` paired selection (2 PASS).
+The supported suite's **five real interpreted MVS tests** passed;
+this supersedes only the earlier MVS-UNVERIFIED status of the
+supported runner, not historical evidence.
+
+A separate original historical `mr10-coroutines` diagnostic
+returned **RC=1/FAIL** with **4 PASS, one genuine original
+`fixed-stack-producer-consumer` interpreted CODE=-1 FAIL**.
+No original fixture, golden, accepted code or manifest was changed.
+The four overlapping historical passing identities are not new
+unique supported test cases.
+
+Evidence: `workarea/project-regressions/20261116T151624Z-56400-i4ueoalx/summary.json`,
+`workarea/project-regressions/20261116T152532Z-76357-_s4f83jy/summary.json`;
+operator logs `mvs-state/reconstruction-evidence/co6-supported-final-20261116T151623Z.log`
+and `mvs-state/reconstruction-evidence/co6-historical-final-20261116T151623Z.log`.
+The submitted terminal excerpts show status/counts, not the
+raw JES reports or the whole receipts independently.
+
+The [revised CO.6 formal qualified acceptance review candidate](co6-qualified-acceptance-review-candidate-20261116.md)
+documents met gates and retained limits. **CO.6 remains IN PROGRESS
+until explicit owner qualified-closure approval.**
+No MVS reruns, source/runtime changes or new march are requested.
