@@ -181,3 +181,11 @@ Cambridge/IFOX/IEWL/GO/JES receipt are checked by the native coordinator.
 The `--suite coroutines` project selection runs 13 independent cases without
 assigning public globals, modifying installed BOOT_OBJ or changing existing
 suite identities. An actual JES run and acceptance remain separate evidence.
+
+## CO.6 — Interpreted/native coroutine comparison
+
+The additional project suite selector `mr10-coroutines` runs the five original owner-accepted `10-coroutines/` MR10 Development Probes via the existing interpreted runner with their unchanged goldens and JES checks. It does **not** duplicate or renumber the 11-case `mr10-probes` selection, the ordinary 12-case `mr10` panel, or the 13-case native `coroutines` suite (177–189).
+
+The original `10-coroutines/fixed-stack-producer-consumer` is a genuine, known interpreted `CODE=-1` FAIL under canonical COBOOT first-activation semantics. It remains FAIL, not an expected PASS, SKIP or XFAIL, so `mr10-coroutines` currently cannot truthfully report all-PASS. The project coordinator stops at that failure; execute the native `coroutines` selection separately to collect its independent MVS receipts. Cross-compiler equivalence is not proved by running the two suites without matched source/oracles. See [CO.6 common contract](../../packaging/milestones/coroutines/co6-common-coroutine-contract-20261116.md).
+
+Host-only contracts: `tools/tests/run-project-regressions --check` and `python3 -B -m unittest discover -s tools/checks -p 'test_co6_coroutine_suite.py' -v`. MVS runs require `--run`, and native `coroutines` additionally requires `--profile production` or `--profile installed-r5-t1`.

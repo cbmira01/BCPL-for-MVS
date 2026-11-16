@@ -21,7 +21,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 NATIVE_SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam", "coroutines")
-SUITES = ("mr10", "mr10-probes", *NATIVE_SUITES)
+SUITES = ("mr10", "mr10-coroutines", "mr10-probes", *NATIVE_SUITES)
 NATIVE = ROOT / "tools/tests/run-suite"
 MR10 = ROOT / "tools/mr10/run-regression-panel"
 MR10_PROBES = ROOT / "tools/mr10/run-dev-probes"
@@ -33,6 +33,15 @@ ACCEPTED_MR10_PROBES = (
     "10-coroutines/fixed-stack-producer-consumer",
     "10-coroutines/resumeco-chain", "10-coroutines/create-delete-static-pool",
     "11-getvec-freevec",
+)
+# CO.6: independent MR10 coroutine subset. The original fixed-stack case
+# remains an ordinary, fail-closed accepted probe (never XFAIL/SKIP).
+MR10_COROUTINE_PROBES = (
+    "10-coroutines/compiler-probe",
+    "10-coroutines/frame-layout-probe",
+    "10-coroutines/fixed-stack-producer-consumer",
+    "10-coroutines/resumeco-chain",
+    "10-coroutines/create-delete-static-pool",
 )
 MR10_MANIFEST = ROOT / "mr10-kit-compiler/tests/00-regression-panel/manifest.tsv"
 NATIVE_MANIFESTS = ROOT / "tests/suites"
@@ -121,7 +130,11 @@ def inventory() -> dict[str, list[str]]:
                 if row.get("verification") == "ACCEPTED"]
     require(accepted == list(ACCEPTED_MR10_PROBES),
             "MR10 accepted probe identities changed; review before updating coordinator")
-    selected = {"mr10": mr10_cases(), "mr10-probes": accepted}
+    require(all(item in accepted for item in MR10_COROUTINE_PROBES),
+            "MR10 coroutine suite contains unaccepted probe identities")
+    selected = {"mr10": mr10_cases(),
+                "mr10-coroutines": list(MR10_COROUTINE_PROBES),
+                "mr10-probes": accepted}
     check = subprocess.run([str(NATIVE), "--check"], cwd=ROOT,
                            text=True, stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, check=False)
@@ -187,7 +200,7 @@ def parse_mr10_probes(log: str, declared: list[str], rc: int) -> dict:
     require(payload.get("selected_cases") == declared and
             [row.get("id") for row in cases] == declared,
             "MR10 probes: selected IDs differ from the accepted case inventory")
-    # The preflight inventory already guarantees the eleven accepted IDs.
+    # The preflight inventory guarantees the selected accepted IDs (five or eleven).
     # Earlier fail-stopped runner receipts omitted verification on NOT_RUN
     # cases; do not let them conceal a real preceding probe failure.
     require(all(row.get("verification") == "ACCEPTED" or
@@ -261,13 +274,13 @@ def save(path: Path, payload: dict) -> None:
 def progress_case(suite: str, line: str) -> str | None:
     if suite == "mr10":
         match = PROGRESS_MR10.fullmatch(line.rstrip("\r\n"))
-    elif suite == "mr10-probes":
+    elif suite in ("mr10-probes", "mr10-coroutines"):
         match = PROGRESS_PROBES.match(line)
     else:
         match = PROGRESS_NATIVE.match(line)
     if match is None:
         return None
-    if suite in ("mr10", "mr10-probes"):
+    if suite in ("mr10", "mr10-probes", "mr10-coroutines"):
         return f"{match.group(1):<7} {match.group(2)}"
     return f"{match.group(1):<7} {match.group(2)}  {match.group(3)}"
 
@@ -276,7 +289,7 @@ def suite_command(suite: str, cases: dict[str, list[str]],
                   profile: str | None, allow_device: bool) -> list[str]:
     if suite == "mr10":
         return [str(MR10)]
-    if suite == "mr10-probes":
+    if suite in ("mr10-probes", "mr10-coroutines"):
         command = [str(MR10_PROBES), "--run"]
         for ident in cases[suite]:
             command.extend(("--case", ident))
@@ -350,7 +363,7 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
             details = (parse_mr10(log, cases[suite], rc)
                        if suite == "mr10" else
                        parse_mr10_probes(log, cases[suite], rc)
-                       if suite == "mr10-probes" else
+                       if suite in ("mr10-probes", "mr10-coroutines") else
                        parse_native(log, suite, args.profile, cases[suite], rc))
             entry.update(details)
             entry["runner_rc"] = rc
@@ -359,7 +372,7 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
         entry["runner_log"] = str(log_path.relative_to(ROOT))
         save(filename, summary)
         print(f"{entry['status']} {suite}: {entry.get('counts', entry.get('error'))}", flush=True)
-        if suite == "mr10-probes" and entry["status"] == "FAIL":
+        if suite in ("mr10-probes", "mr10-coroutines") and entry["status"] == "FAIL":
             failed = next((case for case in entry.get("cases", [])
                            if case["status"] == "FAIL"), None)
             if failed:
@@ -418,6 +431,7 @@ def main(argv: list[str] | None = None) -> int:
         for name in selected:
             print(f"{name}\t{len(cases[name])}\t" +
                   ("interpreted MR10" if name == "mr10" else
+                   "interpreted MR10 coroutine probes" if name == "mr10-coroutines" else
                    "interpreted MR10 probes" if name == "mr10-probes" else
                    "native System/370"))
         print("PROJECT SUITE CHECK: PASS" if args.check else
