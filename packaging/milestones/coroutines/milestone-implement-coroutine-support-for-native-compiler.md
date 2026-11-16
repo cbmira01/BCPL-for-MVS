@@ -2,9 +2,9 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Established:** 10 November 2026  
-**Status:** ESTABLISHED; CO.0–CO.4 CLOSED (qualified); CO.5 IN PROGRESS
+**Status:** CLOSED (qualified); CO.0–CO.5 CLOSED (qualified); owner accepted 16 November 2026
 
-**Marches:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified); CO.2 CLOSED (qualified); CO.3 CLOSED (qualified); CO.4 CLOSED (qualified); CO.5 IN PROGRESS
+**Marches:** CO.0 CLOSED (qualified); CO.1 CLOSED (qualified); CO.2 CLOSED (qualified); CO.3 CLOSED (qualified); CO.4 CLOSED (qualified); CO.5 CLOSED (qualified)
 
 **Target:** Native System/370 BCPL applications under MVS 3.8J
 
@@ -368,3 +368,32 @@ or golden changes are justified by the clean-room results.
 A [CO.5 formal qualified acceptance review candidate](co5-qualified-acceptance-review-candidate-20261116.md)
 is ready. **CO.5 remains IN PROGRESS until explicit owner approval.
 No distribution release is authorized.**
+
+## 16 November 2026 — CO.5 formal owner-accepted qualified closure
+
+The owner explicitly approved **CO.5 — Integration, Regression, and
+Release (qualified)** closure on 16 November 2026 and requested
+a handoff to proposed CO.6. The governing [CO.5 acceptance candidate](co5-qualified-acceptance-review-candidate-20261116.md)
+is accepted **with its qualifications and exclusions**. The
+[formal closure record](co5-formal-acceptance-and-closure-20261116.md)
+is now the authoritative disposition.
+
+The accepted evidence includes Git-source ten-object clean-room
+reconstruction (RC=0, 2m47s, compiler JOB 6489, native JOB 6490,
+installed-only IFOX/IEWL/GO all RC0000) and the subsequent
+production six-suite campaign at
+`9a621d5aac0d5c6068e10c6425b861f7480cf30a`
+(RC=0, **201 regular PASS, 0 FAIL, 1 expected SKIP 083,
+0 BLOCKED**).
+
+The separately executed original MR10 fixed-stack Development
+Probe remains an actual qualified FAIL (not PASS/SKIP); the
+first Bootstrap 117 `LKED` IEWL SB2D failed attempt remains
+historically recorded, although later isolated and complete
+runs passed. Current qualified Approach A/S1 limits remain.
+No distribution release or unverified historical-image
+rollback is authorized by closure.
+
+**CO.0–CO.5 are CLOSED (qualified).** CO.6 — Common Coroutine
+Behavioral Contract and Cross-Compiler Verification — remains
+a **proposed** next march, *not yet formally established*.
