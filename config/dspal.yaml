@@ -409,6 +409,8 @@ datasets:
       BOOTHOST: bootstrap-toolchain/bootstrap-cambridge/bootstrap-host.bcpl
       OPTIONS: bootstrap-toolchain/bootstrap-cambridge/options-large-tree.txt
       CAMBPARM: bootstrap-toolchain/bootstrap-cambridge/cambridge-options.txt
+      COROUTIN: bootstrap-toolchain/library/coroutines.bcpl
+      COHDR: bootstrap-toolchain/library/coroutines.h
     generated_members:
       BLIB: workarea/bootstrap-cambridge/demoted/blib
       BCPL: workarea/bootstrap-cambridge/demoted/bcpl
@@ -458,6 +460,10 @@ datasets:
       BCPLAPT: bootstrap-toolchain/asm/bcplapt.asm
       BCPLRGS: bootstrap-toolchain/asm/bcplrgs.asm
       BCPLREG: bootstrap-toolchain/asm/bcplreg-empty.asm
+      BCPLCO: bootstrap-toolchain/asm/bcplco-production.asm
+      # COROUTIN is generated only AFTER resident CAMBCOMP is rebuilt.
+      # The reconstruction entry points compile, prepare and stage it;
+      # it is intentionally not part of first-pass manifest population.
 
   BOOT_JCL:
     dsn: BCPL.BOOT.JCL
@@ -478,6 +484,8 @@ datasets:
       BCPLDEMO: bootstrap-toolchain/jcl/bcpldemo.jcl
       BCPLTIME: bootstrap-toolchain/jcl/bcpltime.jcl
       BCPLQSAM: bootstrap-toolchain/jcl/bcplqsam.jcl
+      BLDCORCO: bootstrap-toolchain/jcl/bldcorco.jcl
+      BLDCORLB: bootstrap-toolchain/jcl/bldcorlb.jcl
 
   BOOT_OBJ:
     dsn: BCPL.BOOT.OBJ

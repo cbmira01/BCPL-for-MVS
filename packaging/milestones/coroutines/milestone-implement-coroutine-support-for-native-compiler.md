@@ -270,3 +270,23 @@ installed production objects, all RC=0000 with the accepted
 Post-promotion full regressions and the owner-deferred
 `config/dspal.yaml` clean-room integration remain open.
 **CO.5 IN PROGRESS.**
+
+## 15 November 2026 — CO.5 production installation and regression checkpoint
+
+The owner reported installed `BOOT_OBJ(BCPLCO/COROUTIN)` binary
+readback and native IFOX/IEWL/GO **PASS** (JOBS 5981/5983/5985,
+5987/5988). Post-installation tests at Git
+`b2ff3bc8d4d8e1373aa1a58e8b08bcf1ab51be30` yielded **201
+regular-suite PASS, zero FAIL, one expected SKIP (083)**, including
+coroutines 177–189 and device-authorized BCPLQSAM 175/176.
+The separate 11 accepted MR10 Development Probes produced 10 PASS
+and one already-qualified but actual FAIL in the original fixed-stack
+probe. See [post-install regression checkpoint](co5-post-installation-regressions-20261115.md).
+
+The owner subsequently authorized the deferred `config/dspal.yaml`
+and both clean-room entry-point changes. Git integration now stages the
+tracked coroutine source/JCL, compiles COROUTIN after rebuilding
+CAMBCOMP, installs and binary-verifies both objects, requires the
+ten-object inventory, and executes the installed-only oracle.
+**Fresh operator MVS clean-room evidence and separate owner acceptance
+are still required. CO.5 remains IN PROGRESS.**

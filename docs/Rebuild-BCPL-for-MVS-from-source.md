@@ -1,5 +1,17 @@
 # Rebuild BCPL for MVS from source
 
+> **CO.5 production coroutine update (15 November 2026):**
+> The established clean-room build now also reconstructs `BCPLCO`
+> and `COROUTIN`, resulting in **10** production `BOOT_OBJ` members.
+> The automated entry points generate `COROUTIN` assembler only after
+> rebuilding resident CAMBCOMP, install both coroutine objects in Guide
+> Step 8, verify binary readback and execute the installed-object oracle.
+> Older eight-member descriptions retained below document the earlier
+> M3 baseline. See
+> [CO.5 reconstruction integration](../packaging/milestones/coroutines/co5-reconstruction-integration-20261115.md)
+> before executing the older manual command sequence.
+
+
 > **Core Runtime installation hold (R.5):** The revised seven-assembler-
 > object `BLDBMAIN` and the production linker recipe implement the
 > approved registration-enabled eight-member `BOOT_OBJ` design.

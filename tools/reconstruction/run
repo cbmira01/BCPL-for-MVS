@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import (ScopeError, OPERATIONS, command_manifest, canonical_digest,
                       dataset_inventory, tracked_logicals, validate_jcl, workarea_scope)
 from evidence import EvidenceLog
+from coroutine_gate import verify_reconstruction_coroutine
 from verify import (VerificationError, parse_submission, verify_payload,
                     inventory_members, required_inventory, CODE_RECORD)
 
@@ -175,6 +176,14 @@ class Runner:
                 raise ReconstructionError('first population did not match exact generated-missing contract')
             return None, None
         _rc0(rc, op.name)
+        if op.check in ('coroutine-compile', 'coroutine-prepare',
+                        'coroutine-stage', 'coroutine-oracle'):
+            receipt = verify_reconstruction_coroutine(
+                op.check, root=self.root, output=output,
+                git_sha=self.grant.git_sha,
+                inventory=dict(self.grant.managed_dsns))
+            if receipt is not None:
+                self.evidence.detail(index, 'coroutine-installed-oracle', receipt)
         if op.check == 'cleanup':
             if workarea_scope(self.root / 'workarea').entries:
                 raise ReconstructionError('workarea cleanup left generated host files')
@@ -240,7 +249,7 @@ class Runner:
                 for token in ('CSECT', 'EXTRN BCPLMAIN', 'END'):
                     if token not in source:
                         raise ReconstructionError(f'assembler output lacks {token}')
-        if op.check in ('icint', 'cambridge', 'runtime', 'blib',
+        if op.check in ('icint', 'cambridge', 'runtime', 'blib', 'coroutine-core', 'coroutine-library',
                         'bcpldemo', 'bcpltime', 'bcplqsam'):
             member = op.command[-1]
             launcher, payload = parse_submission(output, member=member)
@@ -278,7 +287,7 @@ class Runner:
                     if op.check == 'cleanup':
                         cmd += ['--reconstruction-scope', self.grant.cleanup_digest]
                     rc, output = self.command(cmd)
-                    if op.check in ('icint', 'cambridge', 'runtime', 'blib',
+                    if op.check in ('icint', 'cambridge', 'runtime', 'blib', 'coroutine-core', 'coroutine-library',
                                     'bcpldemo', 'bcpltime', 'bcplqsam'):
                         candidates = re.findall(r'^Launcher:\s*JOB\s+(\d+)\s*$', output, re.M)
                         if len(candidates) == 1:

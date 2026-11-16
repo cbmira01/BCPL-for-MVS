@@ -26,6 +26,8 @@ EXPECTED_STEPS: dict[str, tuple[str, ...]] = {
     'BCPLDEMO': ('ASMDEMO', 'PUTDEMO', 'READBACK', 'VERIFY'),
     'BCPLTIME': ('ASMTIME', 'PUTTIME', 'READBACK', 'VERIFY'),
     'BCPLQSAM': ('ASMQ', 'PUTQSAM', 'READBACK', 'VERIFY'),
+    'BLDCORCO': ('ASMCOR', 'PUTCOR', 'RDCOR', 'VFCOR'),
+    'BLDCORLB': ('ASMCOLIB', 'PUTCOLIB', 'RDCOLIB', 'VFCOLIB'),
 }
 EXPECTED_PROGRAMS = {
     'IC19BLD': {'ASM': 'IFOX00', 'LKED': 'IEWL', 'SAVEOBJ': 'IEBGENER'},
@@ -39,9 +41,14 @@ EXPECTED_PROGRAMS = {
                  'READBACK': 'IEBGENER', 'VERIFY': 'IEBCOMPR'},
     'BCPLQSAM': {'ASMQ': 'IFOX00', 'PUTQSAM': 'IEBGENER',
                  'READBACK': 'IEBGENER', 'VERIFY': 'IEBCOMPR'},
+    'BLDCORCO': {'ASMCOR': 'IFOX00', 'PUTCOR': 'IEBGENER',
+                  'RDCOR': 'IEBGENER', 'VFCOR': 'IEBCOMPR'},
+    'BLDCORLB': {'ASMCOLIB': 'IFOX00', 'PUTCOLIB': 'IEBGENER',
+                  'RDCOLIB': 'IEBGENER', 'VFCOLIB': 'IEBCOMPR'},
 }
 ASSEMBLER_COUNTS = {'IC19BLD': 1, 'BLDBMAIN': 7, 'BLIBBLD': 2,
-                    'BCPLDEMO': 1, 'BCPLTIME': 1, 'BCPLQSAM': 1}
+                    'BCPLDEMO': 1, 'BCPLTIME': 1, 'BCPLQSAM': 1,
+                    'BLDCORCO': 1, 'BLDCORLB': 1}
 ASSEMBLER_JOBS = frozenset(ASSEMBLER_COUNTS)
 CODE_COUNTS = {'CAMBBLD': 22, 'BLIBBLD': 1}
 JOB_HEADER = re.compile(r'^JOB\s+(\d+)\s+([A-Z0-9@$#]{1,8})\s*$', re.M)
@@ -113,7 +120,7 @@ def verify_payload(member: str, payload_number: int, launcher_number: int,
         # Some non-interpreter jobs may invoke unrelated programs, but that
         # requires an explicit update to this checked, accepted contract.
         raise VerificationError(f'{member}: unexpected interpreted CODE=0 records ({count})')
-    if member in ('BCPLDEMO', 'BCPLTIME', 'BCPLQSAM'):
+    if member in ('BCPLDEMO', 'BCPLTIME', 'BCPLQSAM', 'BLDCORCO', 'BLDCORLB'):
         if ('COMPARE FAILED' in full_report.upper() or
             'DATA SETS ARE NOT EQUAL' in full_report.upper()):
             raise VerificationError(f'{member}: IEBCOMPR reported mismatch')
@@ -139,7 +146,8 @@ def inventory_members(text: str, dsn: str) -> frozenset[str]:
 
 
 RUNTIME_MEMBERS = frozenset(('BCPLMAIN', 'BCPLMEM', 'BCPLBYTE', 'BCPLAPT',
-                             'BCPLIO', 'BCPLRGS', 'BCPLREG', 'BLIB'))
+                             'BCPLIO', 'BCPLRGS', 'BCPLREG', 'BLIB',
+                             'BCPLCO', 'COROUTIN'))
 EXTENSION_MEMBERS = frozenset(('BCPLDEMO', 'BCPLTIME', 'BCPLQSAM'))
 CAMB_UNITS = frozenset(('BCPL', 'SYN', 'LEX', 'TRNA', 'TRNB', 'CGA', 'CGB',
                         'CGC', 'CGD', 'CGE', 'BOOTHOST'))
@@ -150,7 +158,7 @@ def required_inventory(logical: str, members: frozenset[str]) -> None:
         'MR10_OBJ': frozenset(('ICINT19',)),
         'BOOT_INTCODE_TRNI': frozenset(('TRNILRG',)),
         'BOOT_INTCODE_COMPLETE': frozenset((*CAMB_UNITS, 'TRNILRG', 'CAMBCOMP')),
-        'BOOT_OBJ_CORE': RUNTIME_MEMBERS - {'BLIB'},
+        'BOOT_OBJ_CORE': RUNTIME_MEMBERS - {'BLIB', 'BCPLCO', 'COROUTIN'},
         'BOOT_OBJ': RUNTIME_MEMBERS,
         'BOOT_DEVOBJ': frozenset(),
         'EXT_OBJ': EXTENSION_MEMBERS,

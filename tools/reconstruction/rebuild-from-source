@@ -149,6 +149,18 @@ step6() {
         tests/bootstrap/00-most-degenerate-bcpl-program/source.bcpl \
         --output workarea/m3-clean-smoke.s370.asm || return $?
     run test -s workarea/m3-clean-smoke.s370.asm || return $?
+    run tools/bootstrap/compile-mvs \
+        bootstrap-toolchain/library/coroutines.bcpl \
+        --job-name COPRLCMP \
+        --cambridge-parm \
+          packaging/milestones/coroutines/candidates/co3-delete-reuse/cambridge-parm.txt \
+        --output workarea/co5-production/coroutines-generated.asm || return $?
+    run python3 -B tools/coroutines/prepare-production-library.py \
+        --compiled workarea/co5-production/coroutines-generated.asm \
+        --output workarea/co5-production/coroutin-prepared.asm || return $?
+    run test -s workarea/co5-production/coroutin-prepared.asm || return $?
+    run tools/datasets/dspal put BOOT_ASM COROUTIN \
+        workarea/co5-production/coroutin-prepared.asm || return $?
 }
 
 step7() {
@@ -161,7 +173,10 @@ step7() {
 
 step8() {
     run tools/datasets/dspal submit BOOT_JCL BLIBBLD || return $?
+    run tools/datasets/dspal submit BOOT_JCL BLDCORCO || return $?
+    run tools/datasets/dspal submit BOOT_JCL BLDCORLB || return $?
     run tools/datasets/dspal ls BOOT_OBJ || return $?
+    run python3 -B tools/coroutines/verify-installed-production.py --run || return $?
     run tools/datasets/dspal ls BOOT_DEVOBJ || return $?
 }
 

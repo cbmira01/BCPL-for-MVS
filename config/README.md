@@ -32,7 +32,7 @@ config/dspal.local.yaml, when present
 
 The local file is deep-merged over the checked-in manifest. It is the place for installation-specific changes such as another userid/HLQ, a pinned DASD volume, different reader or Hercules ports, another container name, and MVS batch credentials.
 
-The checked-in defaults use `HERC02`, leave physical volume selection to normal MVS allocation, use `SYSDA` as the default allocation unit, use the local TK5 reader on port 3505, and define the 24 managed MR10, CAMB-reserved, and NATIVE datasets used by `dspal initbcpl`.
+The checked-in defaults use `HERC02`, leave physical volume selection to normal MVS allocation, use `SYSDA` as the default allocation unit, use the local TK5 reader on port 3505, and define the 29 managed MR10, CAMB-reserved, NATIVE, extension and distribution datasets used by `dspal initbcpl`.
 
 ## Batch credentials
 
@@ -59,3 +59,15 @@ For a stock TK5 installation, use the current password for the configured `batch
 `dspal initbcpl --show-jcl` shows the authenticated JOB-card form but replaces the password with `REDACTED`. Actual mutating submissions require `mvs.batch_password` to be present in `config/dspal.local.yaml`; otherwise `dspal` fails locally before submitting a job.
 
 Keep shared reproducible policy in `dspal.yaml`; keep host/user-specific policy and credentials in `dspal.local.yaml`.
+
+## Coroutine production mappings (CO.5)
+
+The tracked manifest publishes `BOOT_SOURCE(COROUTIN)`,
+`BOOT_SOURCE(COHDR)`, `BOOT_ASM(BCPLCO)`, and installer jobs
+`BOOT_JCL(BLDCORCO)` and `BOOT_JCL(BLDCORLB)`.
+`BOOT_ASM(COROUTIN)` cannot be populated at initial setup because it
+must be compiled by the **freshly rebuilt resident Cambridge compiler**.
+Both reconstruction entry points generate the assembler during Guide
+Step 6 and stage it through `dspal put` before the Guide Step 8 object
+builds. Do not introduce a second Git-managed generated assembler
+source or include the member in first-pass `generated_members`.

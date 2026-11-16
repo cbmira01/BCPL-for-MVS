@@ -41,6 +41,9 @@ class FakeCore:
         for member in plan.REQUIRED_BUILD_MEMBERS['BOOT_JCL']:
             self.config['datasets']['BOOT_JCL']['members'][member] = 'src/' + member
         self.config['datasets']['BOOT_SOURCE']['members']['LIBHDR'] = 'src/libhdr'
+        for logical, members in plan.REQUIRED_SOURCE_MEMBERS.items():
+            for member in members:
+                self.config['datasets'][logical]['members'][member] = 'src/' + member
         self.config['datasets']['BOOT_SOURCE']['generated_members']['TRNA'] = 'workarea/bootstrap/trna'
 
     def load_config(self):
@@ -123,6 +126,12 @@ class PlanTests(unittest.TestCase):
         self.core.config['datasets']['BOOT_SOURCE']['dsn'] = 'BCPL.BOOT.JCL'
         _, errors = self.result()
         self.assertTrue(any('duplicate managed dataset' in e for e in errors))
+
+    def test_missing_coroutine_mapping_blocked(self):
+        del self.core.config['datasets']['BOOT_SOURCE']['members']['COROUTIN']
+        _, errors = self.result()
+        self.assertTrue(any('Required production source absent' in e
+                            for e in errors))
 
     def test_generated_outside_workarea_blocked(self):
         self.core.config['datasets']['BOOT_SOURCE']['generated_members']['TRNA'] = 'src/trna'

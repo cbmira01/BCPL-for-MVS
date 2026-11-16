@@ -51,7 +51,7 @@ The fail-closed JES idle gate requires two independently verified CLEAR observat
 
 For the approved `HERC02` boundary, the runner compares effective configuration with the tracked managed dataset manifest (currently **29 logical datasets**, including all nine `CAMB_*` datasets and `DIST_DOCS`). Before purge and allocation, it independently compares the generated JCL targets with the full approved DSN inventory. Canonical build JCL undergoes static target preflight.
 
-Each of the seven build payloads is verified by its JES payload number, exact step inventory and zero return codes, independently obtained full job report, required interpreter `CODE=0` records, IFOX assembler severity where applicable, and readback/compare checks for the three installed System Extensions. Compiler, runtime, base-library and extension member inventories are checked as distinct requirements. Bootstrap-generated inputs and outputs are matched to the SHA-256 generation manifest.
+Each of the nine build payloads is verified by its JES payload number, exact step inventory and zero return codes, independently obtained full job report, required interpreter `CODE=0` records, IFOX assembler severity where applicable, and readback/compare checks for the three installed System Extensions. Compiler, runtime, base-library and extension member inventories are checked as distinct requirements. Bootstrap-generated inputs and outputs are matched to the SHA-256 generation manifest.
 
 Reports, payload summaries, job details and diagnostic results are written outside disposable `workarea/` under `mvs-state/reconstruction-evidence/`; credentials are redacted. Reports are **diagnostic evidence only**, not completion checkpoints, release approval or baseline acceptance.
 
@@ -208,3 +208,26 @@ still block. The later `$HASP612` parsing remains unchanged.
 
 This is a diagnostic calibration, **not** a guarantee that JES is reserved
 or quiescent. The subsequent fresh two-sample live result and separate active-job negative verification passed with JOB 357. This does not authorize reconstruction. The separate guarded live-entry implementation requires fresh approval and has not yet been exercised against MVS.
+
+## CO.5 production coroutine reconstruction
+
+The two Core Runtime/Base Library coroutine object members are now
+reconstructed from Git and the freshly rebuilt resident Cambridge compiler.
+`BOOT_SOURCE(COROUTIN/COHDR)`, `BOOT_ASM(BCPLCO)` and
+`BOOT_JCL(BLDCORCO/BLDCORLB)` are manifest-populated tracked inputs.
+The separately compiled `BOOT_ASM(COROUTIN)` is deliberately generated
+**after** CAMBCOMP is rebuilt, prepared through
+`tools/coroutines/prepare-production-library.py`, then staged with
+`dspal put`; it is never treated as a first-pass generated member.
+
+Both reconstruction entry points run the compiled library generation,
+install the two production objects with IFOX/IEBGENER/IEBCOMPR receipts,
+require exactly ten `BOOT_OBJ` members and then run the independent
+installed-object IFOX/IEWL/GO oracle. The guarded controller additionally
+checks source/provenance and strict evidence identities. Neither entry
+point runs the complete regression suite or publishes a release.
+
+The simple unattended driver is **destructive**: it purges and rebuilds
+the entire managed BCPL environment. Operator permission and quiescent
+JES are required; successful host tests do not establish MVS acceptance.
+See [CO.5 clean-room integration](../../packaging/milestones/coroutines/co5-reconstruction-integration-20261115.md).

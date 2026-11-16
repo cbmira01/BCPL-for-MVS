@@ -71,6 +71,9 @@ class ReconstructionIntegration(unittest.TestCase):
             cfg['datasets']['BOOT_JCL']['members'][member] = 'jcl/'+member
         cfg['datasets']['BOOT_SOURCE']['populate'] = True
         cfg['datasets']['BOOT_SOURCE']['members']['HEADER'] = 'src/header'
+        for logical, members in plan.REQUIRED_SOURCE_MEMBERS.items():
+            for member in members:
+                cfg['datasets'][logical]['members'][member] = 'src/' + member
         cfg['datasets']['BOOT_SOURCE']['generated_members'] = {'TRNA': 'workarea/bootstrap-cambridge/demoted/trna'}
         self.cfg = cfg
         self.core = FakeCore(cfg)
@@ -120,7 +123,9 @@ class ReconstructionIntegration(unittest.TestCase):
             contract.remove_workarea_contents(self.root/'workarea', contract.workarea_scope(self.root/'workarea'))
             return 0, 'cleaned\n'
         if cmd[1:3] == ['populate', 'all'] and '--generated-only' not in cmd:
-            return 2, ('populate completed: 1 ready member(s) written\n'
+            tracked = sum(len(spec.get('members', {})) for spec in self.cfg['datasets'].values()
+                          if spec.get('populate', False))
+            return 2, (f'populate completed: {tracked} ready member(s) written\n'
                        ' MISSING GENERATED: BOOT_SOURCE(TRNA) <- workarea/bootstrap-cambridge/demoted/trna\n')
         if cmd[1:3] == ['populate', 'all'] and '--generated-only' in cmd:
             return 0, 'populate completed: 1 ready member(s) written\n'
@@ -136,8 +141,46 @@ class ReconstructionIntegration(unittest.TestCase):
                'format':1, 'trnilrg_rebuilt': True, 'inputs': {}, 'outputs': outputs}))
             return 0, 'READY\n'
         if cmd[0] == 'tools/bootstrap/compile-mvs':
+            if '--job-name' in cmd:
+                rel = Path('workarea/co5-production/coroutines-generated.asm')
+                path = self.root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('         CSECT\n         END\n')
+                return 0, 'JOB 5991\nsaved Cambridge CODE: ' + str(rel) + '\n'
             (self.root/'workarea/m3-clean-smoke.s370.asm').write_text('CSECT\nEXTRN BCPLMAIN\nEND\n')
             return 0, 'INTERPRETER CODE=0\n'
+        if cmd[0] == 'python3':
+            if any(str(x).endswith('/prepare-production-library.py') for x in cmd):
+                rel = Path('workarea/co5-production/coroutin-prepared.asm')
+                path = self.root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                rows = (['CO3LIB   CSECT',
+                         '         ENTRY C3INIT,C3CREATE,C3DELETE'] +
+                        ['         DS    0F'] * 100 +
+                        ['         END   CO3LIB'])
+                path.write_text('\n'.join(rows) + '\n')
+                return 0, f'Prepared IFOX COROUTIN: {rel} ({len(rows)} cards)\n'
+            if any(str(x).endswith('/verify-installed-production.py') for x in cmd):
+                rel = Path('workarea/co5-installed-coroutines/20261115T235200Z-fixture')
+                path = self.root / rel / 'result.json'
+                path.parent.mkdir(parents=True, exist_ok=True)
+                result = {
+                    'status': 'PASS', 'git_head': 'a' * 40,
+                    'compiler_job': '5991', 'native_job': '5992',
+                    'installed_objects_modified': False,
+                    'linkage': 'installed BOOT_OBJ(BCPLMAIN/BCPLCO/COROUTIN)',
+                    'steps': {'ASMA': 0, 'LKED': 0, 'GO': 0},
+                    'bcpl_records': ['CO3BCPL MADE'] +
+                                    ['CO3BCPL TEST'] * 19 +
+                                    ['CO3BCPL PASS'],
+                }
+                path.write_text(json.dumps(result) + '\n')
+                return 0, ('INSTALLED COROUTINES PASS: compiler JOB 5991, '
+                           'native JOB 5992; IFOX/IEWL/GO all RC=0000\n'
+                           f'Installed coroutine evidence: {rel}\n')
+        if cmd[1:4] == ['put', 'BOOT_ASM', 'COROUTIN']:
+            return 0, (f'put completed as JOB 5990: {cmd[-1]} -> '
+                       f'{inv["BOOT_ASM"]}(COROUTIN)\n')
         if cmd[0] == 'tools/mr10/compile-and-run':
             return 0, 'INTERPRETER CODE=0\n'
         if cmd[1] == 'submit':
@@ -149,7 +192,9 @@ class ReconstructionIntegration(unittest.TestCase):
         if cmd[0] in ('tools/mvs/job-summary', 'tools/mvs/dump-report-for-job'):
             member = next(c[-1] for c in reversed(self.command_log)
                           if len(c) == 4 and c[1] == 'submit')
-            summary, detail = fixture(member, omit=self.summary_broken if member == 'BLDBMAIN' else None)
+            summary, detail = fixture(member, omit=self.summary_broken
+                                      if member in ('BLDBMAIN', 'BLDCORCO',
+                                                    'BLDCORLB') else None)
             return 0, summary if cmd[0].endswith('job-summary') else detail
         if cmd[1] == 'ls':
             logical = cmd[2]
@@ -196,6 +241,12 @@ class ReconstructionIntegration(unittest.TestCase):
         engine.run()
         self.assertEqual(e.state, 'SUCCESS')
         self.assertEqual(len(e.operations), len(contract.OPERATIONS))
+        self.assertTrue(any(any(str(x).endswith('/verify-installed-production.py') for x in c)
+                            for c in self.command_log))
+        self.assertEqual(sum('BLDCORCO' == c[-1] for c in self.command_log
+                             if len(c) == 4 and c[1] == 'submit'), 1)
+        self.assertEqual(sum('BLDCORLB' == c[-1] for c in self.command_log
+                             if len(c) == 4 and c[1] == 'submit'), 1)
         self.assertFalse(any('run-regression' in op[0] for op in self.command_log))
         self.assertTrue((self.root/'workarea/.gitignore').exists())
         self.assertFalse((self.root/'workarea/old').exists())
@@ -209,6 +260,61 @@ class ReconstructionIntegration(unittest.TestCase):
             engine.run()
         self.assertEqual(e.state, 'FAILED')
         self.assertFalse(any(c[-1]=='BLIBBLD' for c in self.command_log if len(c)==4 and c[1]=='submit'))
+
+    def test_missing_coroutine_asm_staging_fails_before_runtime_build(self):
+        grant = self.grant()
+        engine, evidence = self.run_engine(grant)
+        original = self.execute
+        def bad_stage(cmd):
+            if cmd[1:4] == ['put', 'BOOT_ASM', 'COROUTIN']:
+                self.command_log.append(tuple(cmd))
+                return 0, 'unexpected stage receipt\n'
+            return original(cmd)
+        engine.command = bad_stage
+        with self.assertRaisesRegex(ValueError, 'stage receipt'):
+            engine.run()
+        self.assertEqual(evidence.state, 'FAILED')
+        self.assertFalse(any(c[-1] == 'BLDBMAIN'
+                             for c in self.command_log
+                             if len(c) == 4 and c[1] == 'submit'))
+
+    def test_failed_coroutine_binary_readback_blocks_oracle(self):
+        grant = self.grant()
+        engine, evidence = self.run_engine(grant)
+        self.summary_broken = 'VFCOR'
+        with self.assertRaises(verify.VerificationError):
+            engine.run()
+        self.assertEqual(evidence.state, 'FAILED')
+        self.assertFalse(any(any(str(x).endswith('/verify-installed-production.py') for x in c)
+                             for c in self.command_log))
+
+    def test_coroutine_go_failure_blocks_extensions(self):
+        grant = self.grant()
+        engine, evidence = self.run_engine(grant)
+        original = self.execute
+        def bad_go(cmd):
+            if any(str(x).endswith('/verify-installed-production.py') for x in cmd):
+                self.command_log.append(tuple(cmd))
+                return 0, 'INSTALLED COROUTINES FAIL\n'
+            return original(cmd)
+        engine.command = bad_go
+        with self.assertRaisesRegex(ValueError, 'PASS receipt'):
+            engine.run()
+        self.assertEqual(evidence.state, 'FAILED')
+        self.assertFalse(any(c[-1] == 'BCPLDEMO'
+                             for c in self.command_log
+                             if len(c) == 4 and c[1] == 'submit'))
+
+    def test_missing_coroutine_source_mapping_blocks_preflight(self):
+        del self.cfg['datasets']['BOOT_ASM']['members']['BCPLCO']
+        _, errors = self.planner()
+        self.assertTrue(any('Required production source absent' in e for e in errors))
+
+    def test_generated_source_as_initial_population_is_rejected(self):
+        self.cfg['datasets']['BOOT_ASM']['generated_members'] = {
+            'COROUTIN': 'workarea/co5-production/coroutin-prepared.asm'}
+        _, errors = self.planner()
+        self.assertTrue(any('after CAMBCOMP' in e for e in errors))
 
     def test_host_cleanup_changed_during_prompt_refuses_without_operations(self):
         with self.assertRaises(auth.ApprovalError):

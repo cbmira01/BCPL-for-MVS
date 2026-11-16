@@ -19,12 +19,22 @@ from contract import (ScopeError, OPERATIONS, command_manifest, canonical_digest
 
 REQUIRED_BUILD_MEMBERS = {
     'MR10_JCL': ('IC19BLD',),
-    'BOOT_JCL': ('CAMBBLD', 'BLDBMAIN', 'BLIBBLD', 'BCPLDEMO', 'BCPLTIME', 'BCPLQSAM'),
+    'BOOT_JCL': ('CAMBBLD', 'BLDBMAIN', 'BLIBBLD', 'BCPLDEMO', 'BCPLTIME', 'BCPLQSAM', 'BLDCORCO', 'BLDCORLB'),
+}
+REQUIRED_SOURCE_MEMBERS = {
+    'BOOT_ASM': ('BCPLCO',),
+    'BOOT_SOURCE': ('COROUTIN', 'COHDR'),
 }
 REQUIRED_TOOLS = ('tools/clean-workarea', 'tools/datasets/dspal',
                   'tools/bootstrap/prepare-bootstrap', 'tools/mr10/compile-and-run',
                   'tools/bootstrap/compile-mvs', 'tools/mvs/job-summary',
-                  'tools/mvs/dump-report-for-job')
+                  'tools/mvs/dump-report-for-job',
+                  'tools/coroutines/prepare-production-library.py',
+                  'tools/coroutines/verify-installed-production.py',
+                  'tools/coroutines/run-co3-first-lifecycle.py',
+                  'tools/coroutines/run-co3-delete-reuse.py',
+                  'packaging/milestones/coroutines/candidates/co3-delete-reuse/cambridge-parm.txt',
+                  'tools/reconstruction/coroutine_gate.py')
 
 
 def public_config_digest(config: dict) -> str:
@@ -92,6 +102,15 @@ def inspect_manifest(root: Path, cfg: dict, core):
                     if contains_link or not file.is_file():
                         errors.append(f'Missing/unsafe tracked source: {source}')
                 into.append((logical, str(member), source))
+    for logical, members in REQUIRED_SOURCE_MEMBERS.items():
+        existing = cfg['datasets'][logical].get('members', {})
+        for member in members:
+            if member not in existing:
+                errors.append(f'Required production source absent: {logical}({member})')
+    asm = cfg['datasets']['BOOT_ASM']
+    if ('COROUTIN' in asm.get('members', {}) or
+            'COROUTIN' in asm.get('generated_members', {})):
+        errors.append('BOOT_ASM(COROUTIN) must be generated after CAMBCOMP, not populated in Step 2/5')
     for logical, members in REQUIRED_BUILD_MEMBERS.items():
         existing = cfg['datasets'][logical].get('members', {})
         for member in members:

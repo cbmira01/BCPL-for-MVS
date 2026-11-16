@@ -100,6 +100,22 @@ class PayloadTests(unittest.TestCase):
         with self.assertRaisesRegex(v.VerificationError, 'IEBCOMPR'):
             v.verify_payload('BCPLTIME', 888, 777, summary, report + 'DATA SETS ARE NOT EQUAL\n')
 
+    def test_coroutine_installers_require_binary_readback(self):
+        for name in ('BLDCORCO', 'BLDCORLB'):
+            with self.subTest(name=name):
+                summary, report = fixture(name)
+                verified = v.verify_payload(name, 888, 777, summary, report)
+                self.assertEqual(len(verified.step_codes), 4)
+                bad_summary = summary.replace('IEBCOMPR', 'BADPROG')
+                with self.assertRaisesRegex(v.VerificationError, 'IEBCOMPR'):
+                    v.verify_payload(name, 888, 777, bad_summary, report)
+                with self.assertRaisesRegex(v.VerificationError, 'IEBCOMPR'):
+                    v.verify_payload(name, 888, 777, summary,
+                                     report + 'DATA SETS ARE NOT EQUAL\n')
+                with self.assertRaisesRegex(v.VerificationError, 'severity'):
+                    v.verify_payload(name, 888, 777, summary,
+                                     report.replace('HIGHEST SEVERITY WAS 0', ''))
+
     def test_parse_submission_exact_identity(self):
         text = 'Submitted HERC02.BCPL.BOOT.JCL(BLIBBLD)\nLauncher: JOB 777\nPayload:  JOB 888\n'
         self.assertEqual(v.parse_submission(text, member='BLIBBLD'), (777, 888))

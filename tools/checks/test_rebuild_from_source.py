@@ -38,6 +38,14 @@ fi
 if [ "${0##*/}" = compile-mvs ]; then
     mkdir -p workarea
     echo CSECT > workarea/m3-clean-smoke.s370.asm
+    if [[ "$*" == *'coroutines.bcpl'* ]]; then
+        mkdir -p workarea/co5-production
+        echo CSECT > workarea/co5-production/coroutines-generated.asm
+    fi
+fi
+if [ "${0##*/}" = python3 ] && [[ "$*" == *'prepare-production-library.py'* ]]; then
+    mkdir -p workarea/co5-production
+    echo 'CO3LIB   CSECT' > workarea/co5-production/coroutin-prepared.asm
 fi
 if [ "${MOCK_FAIL:-}" = "${0##*/}:$*" ]; then
     exit 7
@@ -66,7 +74,7 @@ exit 0
             'tools/mvs/start-tk5', 'tools/datasets/dspal',
             'tools/bootstrap/prepare-bootstrap', 'tools/clean-workarea',
             'tools/mr10/compile-and-run', 'tools/bootstrap/compile-mvs',
-            'bin/git',
+            'bin/git', 'bin/python3',
         ):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,6 +130,9 @@ exit 0
         self.assertNotIn('dspal populate all\n', commands)
         self.assertNotIn('dspal populate all --generated-only\n', commands)
         self.assertIn('dspal submit BOOT_JCL BCPLQSAM\n', commands)
+        self.assertIn('dspal submit BOOT_JCL BLDCORCO\n', commands)
+        self.assertIn('dspal submit BOOT_JCL BLDCORLB\n', commands)
+        self.assertIn('python3 -B tools/coroutines/verify-installed-production.py --run\n', commands)
         self.assertNotIn('run-project-regressions', commands)
 
     def test_batch_opt_in_interactive_keeps_confirmation_gates(self):
@@ -152,6 +163,25 @@ exit 0
         self.assertIn('dspal populate all --batch\n', commands)
         self.assertIn('dspal populate all --generated-only --batch\n', commands)
         self.assertNotIn('dspal submit BOOT_JCL CAMBBLD', commands)
+
+    def test_coroutine_staging_failure_blocks_runtime_build(self):
+        command = ('dspal:put BOOT_ASM COROUTIN '
+                   'workarea/co5-production/coroutin-prepared.asm')
+        result = self.invoke_unattended(fail=command)
+        self.assertEqual(result.returncode, 7, result.stdout[-2200:])
+        self.assertIn('STOPPED: Guide Step 6', result.stderr)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('dspal put BOOT_ASM COROUTIN ', commands)
+        self.assertNotIn('dspal submit BOOT_JCL BLDBMAIN', commands)
+
+    def test_coroutine_assembly_failure_blocks_oracle(self):
+        result = self.invoke_unattended(
+            fail='dspal:submit BOOT_JCL BLDCORCO')
+        self.assertEqual(result.returncode, 7, result.stdout[-2200:])
+        self.assertIn('STOPPED: Guide Step 8', result.stderr)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertNotIn('dspal submit BOOT_JCL BLDCORLB', commands)
+        self.assertNotIn('verify-installed-production.py --run', commands)
 
     def test_batch_flag_in_either_order_and_duplicate_refusal(self):
         result = self.invoke_unattended(
