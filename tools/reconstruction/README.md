@@ -222,7 +222,7 @@ The separately compiled `BOOT_ASM(COROUTIN)` is deliberately generated
 
 Both reconstruction entry points run the compiled library generation,
 install the two production objects with IFOX/IEBGENER/IEBCOMPR receipts,
-require exactly ten `BOOT_OBJ` members and then run the independent
+require exactly ten `BOOT_OBJ` members (including an enforced check in the simple driver) and then run the independent
 installed-object IFOX/IEWL/GO oracle. The guarded controller additionally
 checks source/provenance and strict evidence identities. Neither entry
 point runs the complete regression suite or publishes a release.

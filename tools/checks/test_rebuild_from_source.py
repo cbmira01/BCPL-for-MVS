@@ -132,6 +132,7 @@ exit 0
         self.assertIn('dspal submit BOOT_JCL BCPLQSAM\n', commands)
         self.assertIn('dspal submit BOOT_JCL BLDCORCO\n', commands)
         self.assertIn('dspal submit BOOT_JCL BLDCORLB\n', commands)
+        self.assertIn('python3 -B tools/reconstruction/verify-boot-obj.py\n', commands)
         self.assertIn('python3 -B tools/coroutines/verify-installed-production.py --run\n', commands)
         self.assertNotIn('run-project-regressions', commands)
 
@@ -181,6 +182,15 @@ exit 0
         self.assertIn('STOPPED: Guide Step 8', result.stderr)
         commands = self.call_log.read_text(encoding='utf-8')
         self.assertNotIn('dspal submit BOOT_JCL BLDCORLB', commands)
+        self.assertNotIn('verify-installed-production.py --run', commands)
+
+    def test_missing_coroutine_inventory_blocks_installed_oracle(self):
+        result = self.invoke_unattended(
+            fail='python3:-B tools/reconstruction/verify-boot-obj.py')
+        self.assertEqual(result.returncode, 7, result.stdout[-2200:])
+        self.assertIn('STOPPED: Guide Step 8', result.stderr)
+        commands = self.call_log.read_text(encoding='utf-8')
+        self.assertIn('python3 -B tools/reconstruction/verify-boot-obj.py', commands)
         self.assertNotIn('verify-installed-production.py --run', commands)
 
     def test_batch_flag_in_either_order_and_duplicate_refusal(self):
