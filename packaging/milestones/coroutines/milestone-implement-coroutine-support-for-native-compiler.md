@@ -311,3 +311,14 @@ fail-stop. The case ID and raw diagnostic are pending review. See
 [post-clean-room failure checkpoint](co5-post-cleanroom-regression-fail-20261116.md).
 Preserve the installed-object and clean-room PASS records separately.
 **CO.5 IN PROGRESS; no acceptance or release.**
+
+## 16 November 2026 — Bootstrap 117 post-rebuild failure isolation
+
+The owner supplied the failed case log. `117-independent-input-eof`
+compiled in JOB **6744**. Native JOB **6745** (`RG117R`) completed
+`ASMAP IFOX00 RC=0000` with severity zero but reported an ABEND and
+bypassed downstream steps. `LKED` and `GO` did not complete; no BCPL
+EOF comparison took place. The MVS completion code is not yet known.
+See [case 117 failure investigation](co5-bootstrap-117-post-cleanroom-abend-20261116.md).
+**Do not change BCPL, JCL or regression expectations without the actual
+MVS error message. CO.5 IN PROGRESS.**
