@@ -62,3 +62,31 @@ The new interpreted suite and existing native suite are initially **independent*
 - [Runtime nomenclature](../../architecture/runtime-and-library-nomenclature.md)
 - [Global Number Registry](../../architecture/global-number-registry.md)
 - [Git/MVS authority](../../operations/git-mvs-authority.md)
+
+## 16 November 2026 — first CO.6 MVS results and diagnostic continuation
+
+**Tested GitHub `main`:** `b4efa179a3d98b83b310fd9986d2e5fcf02881c2`.
+**Evidence class:** OWNER-REPORTED MVS runner excerpts; original summary
+JSON and full JES reports were not directly inspected by the assistant.
+
+- `mr10-coroutines` returned coordinator **RC=1 / FAIL**: compiler-probe
+  PASS, frame-layout-probe PASS, fixed-stack-producer-consumer genuine FAIL
+  (interpreted CODE expected 0, received -1); two subsequent cases NOT_RUN
+  under the runner's fail-stop policy. **2 PASS, 1 FAIL, 2 NOT_RUN.**
+  Evidence `workarea/project-regressions/20261116T061411Z-32072-jzwqxcat/summary.json`;
+  console log `mvs-state/reconstruction-evidence/co6-mr10-20261116T061411Z.log`.
+- `coroutines` native production profile returned coordinator **RC=0 /
+  PASS**, all existing native cases **177–189 PASS** (13 PASS, zero FAIL,
+  SKIP or BLOCKED). Evidence
+  `workarea/project-regressions/20261116T061422Z-32091-j8q5ib8j/summary.json`;
+  console log `mvs-state/reconstruction-evidence/co6-native-20261116T061411Z.log`.
+
+These separate campaigns do not establish equivalent paired source
+oracles or remove the existing original fixed-stack FAIL.
+
+**CO.6 tooling change:** Enable `--continue-known-fixed-stack-failure` exclusively for
+the `mr10-coroutines` selection. It continues collecting accepted
+later-case evidence **only** after the exact known fixed-stack
+diagnostic (compiler/runner RC0, interpreted CODE=-1, unique JES ID).
+Any unrelated failure stops immediately. The aggregate still returns
+FAIL / nonzero RC, and no historical source or golden changes.

@@ -131,7 +131,10 @@ for line in lines:
 if os.environ.get("PROBE_EXTRA_LINE"):
     print("UNEXPECTED USER OUTPUT")
 if not os.environ.get("PROBE_NO_CODE"):
-    print("EXECUTION CYCLES = 42, CODE = " + os.environ.get("PROBE_BAD_CODE", "0"))
+    bad_code = os.environ.get("PROBE_BAD_CODE", "0")
+    if os.environ.get("PROBE_BAD_CODE_FOR") == case:
+        bad_code = "-1"
+    print("EXECUTION CYCLES = 42, CODE = " + bad_code)
 ''' % (str(self.root / 'fake-last-job-name.txt'),
        str(self.root / 'fake-last-case-id.txt'), {**MOD.TRACE, **MOD.EXTRAS.TRACE})
         path = MOD.COMPILE
@@ -309,6 +312,52 @@ if not os.environ.get('PROBE_JES_MISSING_VALUE'):
             self.assertTrue(item["jes_report"].endswith(slug + "-jes-report.txt"))
             self.assertTrue((self.root / item["jes_summary"]).is_file())
             self.assertTrue((self.root / item["jes_report"]).is_file())
+
+    def test_known_fixed_stack_failure_continues_to_later_cases(self):
+        ids = list(MOD.EXTRAS.ACCEPTED_COROUTINES)
+        selection = [arg for ident in ids for arg in ("--case", ident)]
+        with patch.dict(os.environ, {
+            "PROBE_BAD_CODE_FOR": "10-coroutines/fixed-stack-producer-consumer"
+        }):
+            rc, output, error = self.cli(
+                "--run", *selection, "--continue-known-fixed-stack-failure")
+        self.assertEqual((rc, error), (1, ""))
+        summary, _ = self.evidence()
+        self.assertEqual(summary["status"], "FAIL")
+        self.assertTrue(summary["continue_known_fixed_stack_failure"])
+        self.assertEqual(summary["counts"],
+                         {"PASS": 4, "OBSERVED": 0, "FAIL": 1, "NOT_RUN": 0})
+        self.assertEqual([item["status"] for item in summary["cases"]],
+                         ["PASS", "PASS", "FAIL", "PASS", "PASS"])
+        self.assertEqual(summary["cases"][2]["interpreted_code"], -1)
+        self.assertIn("interpreted CODE expected 0", summary["cases"][2]["reason"])
+        self.assertIn("PASS     10-coroutines/create-delete-static-pool", output)
+
+    def test_known_failure_flag_does_not_continue_after_runner_rc(self):
+        ids = list(MOD.EXTRAS.ACCEPTED_COROUTINES)
+        selection = [arg for ident in ids for arg in ("--case", ident)]
+        with patch.dict(os.environ, {"PROBE_RUNNER_RC": "7"}):
+            rc, _, _ = self.cli("--run", *selection, "--continue-known-fixed-stack-failure")
+        self.assertEqual(rc, 1)
+        summary, _ = self.evidence()
+        self.assertEqual(summary["counts"]["NOT_RUN"], 4)
+        self.assertEqual(summary["cases"][0]["runner_rc"], 7)
+
+    def test_known_failure_flag_needs_accepted_explicit_cases(self):
+        for argv in (
+            ("--check", "--continue-known-fixed-stack-failure"),
+            ("--run", "--all-provisional", "--continue-known-fixed-stack-failure"),
+            ("--run", "--case", "04-module-test", "--continue-known-fixed-stack-failure"),
+            ("--run", "--case",
+             "10-coroutines/fixed-stack-producer-consumer",
+             "--case", "02-honors-thesis-and-mapstore/honors-thesis",
+             "--continue-known-fixed-stack-failure"),
+        ):
+            with self.subTest(argv=argv):
+                rc, _, error = self.cli(*argv)
+                self.assertEqual(rc, 2)
+                self.assertIn("--continue-known-fixed-stack-failure", error)
+                self.assertFalse(MOD.EVIDENCE_ROOT.exists())
 
     def test_repeated_jes_output_requires_exact_count_and_order(self):
         expected = MOD.EXTRAS.TRACE["10-coroutines/create-delete-static-pool"]

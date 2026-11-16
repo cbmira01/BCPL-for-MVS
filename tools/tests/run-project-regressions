@@ -293,6 +293,8 @@ def suite_command(suite: str, cases: dict[str, list[str]],
         command = [str(MR10_PROBES), "--run"]
         for ident in cases[suite]:
             command.extend(("--case", ident))
+        if suite == "mr10-coroutines":
+            command.append("--continue-known-fixed-stack-failure")
         return command
     command = [str(NATIVE), suite, "--run", "--profile", profile]
     if suite == "bcplqsam" and allow_device:

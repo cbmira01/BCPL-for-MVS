@@ -189,3 +189,15 @@ The additional project suite selector `mr10-coroutines` runs the five original o
 The original `10-coroutines/fixed-stack-producer-consumer` is a genuine, known interpreted `CODE=-1` FAIL under canonical COBOOT first-activation semantics. It remains FAIL, not an expected PASS, SKIP or XFAIL, so `mr10-coroutines` currently cannot truthfully report all-PASS. The project coordinator stops at that failure; execute the native `coroutines` selection separately to collect its independent MVS receipts. Cross-compiler equivalence is not proved by running the two suites without matched source/oracles. See [CO.6 common contract](../../packaging/milestones/coroutines/co6-common-coroutine-contract-20261116.md).
 
 Host-only contracts: `tools/tests/run-project-regressions --check` and `python3 -B -m unittest discover -s tools/checks -p 'test_co6_coroutine_suite.py' -v`. MVS runs require `--run`, and native `coroutines` additionally requires `--profile production` or `--profile installed-r5-t1`.
+
+### CO.6 known first-activation failure evidence collection
+
+Only the `mr10-coroutines` coordinator selection opts in to
+`--continue-known-fixed-stack-failure`. The MR10 runner may continue to later
+cases only if the original fixed-stack case has the exact known
+interpreted `CODE=-1` diagnostic, compiler/runner RC=0 and a unique
+JES job ID. The fixed-stack case and **entire suite remain FAIL**.
+All other failures are fail-stop, and the eleven-case
+`mr10-probes` selection retains its existing default. This makes
+`resumeco-chain` and `create-delete-static-pool` observable in the
+same new-suite campaign without hiding the original exception.

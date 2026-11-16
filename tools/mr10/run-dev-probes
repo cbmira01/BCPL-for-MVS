@@ -325,7 +325,20 @@ def dispatch_command(row: dict[str, str], icint: Path, jcl: Path,
     raise ProbeError(f"{row['case_id']}: unsupported case")
 
 
-def run(rows: list[dict[str, str]], selected: list[str]) -> int:
+def known_fixed_stack_failure(ident: str, item: dict) -> bool:
+    """Recognize only the original MR10 fixed-stack first-activation fault."""
+    return (
+        ident == "10-coroutines/fixed-stack-producer-consumer"
+        and item.get("status") == "FAIL"
+        and item.get("runner_rc") == 0
+        and item.get("interpreted_code") == -1
+        and bool(item.get("jes_job_id"))
+        and "interpreted CODE expected 0, got ['-1']" in item.get("reason", "")
+    )
+
+
+def run(rows: list[dict[str, str]], selected: list[str],
+        continue_known_fixed_stack_failure: bool = False) -> int:
     if not COMPILE.is_file():
         raise ProbeError(f"missing compile-and-run tool: {COMPILE}")
     icint = current_interpreter()
@@ -346,6 +359,7 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
         "schema": 1, "suite": "mr10-probes", "git_head": revision,
         "started_utc": moment.isoformat(), "interpreter": str(icint.relative_to(ROOT)),
         "verification": "CASE_SPECIFIC", "status": "IN_PROGRESS",
+        "continue_known_fixed_stack_failure": continue_known_fixed_stack_failure,
         "selected_cases": selected,
         # Materialize accepted status before execution, so fail-stop receipts
         # retain contract identity even when later cases remain NOT_RUN.
@@ -425,7 +439,9 @@ def run(rows: list[dict[str, str]], selected: list[str]) -> int:
             accepted += 1
         else:
             fail = True
-            break
+            if not (continue_known_fixed_stack_failure and
+                    known_fixed_stack_failure(ident, item)):
+                break
     summary["finished_utc"] = datetime.now(timezone.utc).isoformat()
     summary["status"] = "FAIL" if fail else "UNVERIFIED" if observed else "PASS"
     summary["verification"] = "MIXED" if observed and accepted else "UNVERIFIED" if observed else "ACCEPTED"
@@ -451,6 +467,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="select historical case ID, repeat for multiple cases")
     parser.add_argument("--all-provisional", action="store_true",
                         help="select the original six BCPL probes for --run")
+    parser.add_argument("--continue-known-fixed-stack-failure", action="store_true",
+                        help="continue only after the known fixed-stack CODE=-1 failure")
     parser.add_argument("--all-candidates", action="store_true",
                         help="run all 17 historical contracts (eleven ACCEPTED, six UNVERIFIED)")
     args = parser.parse_args(argv)
@@ -463,6 +481,12 @@ def main(argv: list[str] | None = None) -> int:
             raise ProbeError("--all-provisional requires --run without --case or --all-candidates")
         if args.all_candidates and (args.case or not args.run):
             raise ProbeError("--all-candidates requires --run without --case")
+        if args.continue_known_fixed_stack_failure and (
+                not args.run or not args.case or
+                "10-coroutines/fixed-stack-producer-consumer" not in args.case):
+            raise ProbeError(
+                "--continue-known-fixed-stack-failure requires --run and an explicit "
+                "--case 10-coroutines/fixed-stack-producer-consumer selection")
         unknown = [ident for ident in args.case if ident not in entries]
         if unknown:
             raise ProbeError("unknown probe case: " + ", ".join(unknown))
@@ -489,11 +513,14 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if not args.case and not args.all_provisional and not args.all_candidates:
             raise ProbeError("--run requires --case CASE_ID, --all-provisional or --all-candidates")
+        if args.continue_known_fixed_stack_failure and any(
+                entries[ident]["verification"] != "ACCEPTED" for ident in selected):
+            raise ProbeError("--continue-known-fixed-stack-failure requires only accepted cases")
         supported = set(PROVISIONAL) | set(EXTRAS.ADDITIONAL)
         unsupported = [ident for ident in selected if ident not in supported]
         if unsupported:
             raise ProbeError("unsupported/UNVERIFIED case(s); no JES submitted: " + ", ".join(unsupported))
-        return run(rows, selected)
+        return run(rows, selected, args.continue_known_fixed_stack_failure)
     except (ProbeError, EXTRAS.ExtraError, OSError) as exc:
         print(f"run-dev-probes: {exc}", file=sys.stderr)
         return 2

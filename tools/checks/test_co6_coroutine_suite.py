@@ -66,8 +66,9 @@ class CO6CoroutineSuiteTests(unittest.TestCase):
     def test_suite_uses_existing_real_mr10_runner(self):
         command = MOD.suite_command('mr10-coroutines', {'mr10-coroutines': self.cases}, None, False)
         self.assertEqual(command[:2], [str(MOD.MR10_PROBES), '--run'])
-        self.assertEqual(command[2::2], ['--case'] * 5)
-        self.assertEqual(command[3::2], self.cases)
+        self.assertEqual(command[-1], '--continue-known-fixed-stack-failure')
+        self.assertEqual(command[2:-1:2], ['--case'] * 5)
+        self.assertEqual(command[3:-1:2], self.cases)
 
     def test_original_legacy_failure_is_retained(self):
         result = self.receipt(['PASS', 'PASS', 'FAIL', 'NOT_RUN', 'NOT_RUN'])
@@ -78,6 +79,13 @@ class CO6CoroutineSuiteTests(unittest.TestCase):
         self.assertEqual(result['cases'][2]['status'], 'FAIL')
         self.assertEqual(result['cases'][2]['reason'], 'interpreted CODE=-1')
         self.assertEqual(result['cases'][3]['status'], 'NOT_RUN')
+
+    def test_known_failure_continuation_cannot_report_pass(self):
+        result = self.receipt(['PASS', 'PASS', 'FAIL', 'PASS', 'PASS'])
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['counts'],
+                         {'PASS': 4, 'FAIL': 1, 'SKIP': 0,
+                          'BLOCKED': 0, 'TOTAL': 5})
 
     def test_five_pass_requires_real_five_pass_receipt(self):
         result = self.receipt(['PASS'] * 5)
