@@ -290,3 +290,14 @@ CAMBCOMP, installs and binary-verifies both objects, requires the
 ten-object inventory, and executes the installed-only oracle.
 **Fresh operator MVS clean-room evidence and separate owner acceptance
 are still required. CO.5 remains IN PROGRESS.**
+
+## 16 November 2026 — reconstructed production coroutine clean-room PASS
+
+Owner-reported clean-room driver RC=0 at revision `788616e6d34325cbe6a9473edcc6be340da3e577`:
+`BOOT_OBJ` verified **10 exact production members**, and the installed
+coroutine oracle reported **PASS** (compiler JOB 6489, native JOB 6490;
+IFOX/IEWL/GO all RC=0000). Rebuild elapsed **2m 47s**. The retained
+operator log is `mvs-state/reconstruction-evidence/co5-rebuild-20261116T005114Z.log`.
+See [CO.5 Git-driven production clean-room evidence](co5-production-clean-room-pass-20261116.md).
+Fresh post-rebuild project regressions and separate owner closure are
+still required. **CO.5 IN PROGRESS.**

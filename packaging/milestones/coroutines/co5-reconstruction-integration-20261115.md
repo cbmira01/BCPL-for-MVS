@@ -56,3 +56,15 @@ If the production rebuild succeeds, rerun the applicable full suites
 and request separate owner acceptance of CO.5 before declaring it
 closed. The qualified CO.4 limits and known MR10 fixed-stack FAIL
 remain unchanged.
+
+## 16 November 2026 — completed clean-room reconstruction
+
+The owner ran the new Git-integrated simple rebuild with bounded
+batch population and reported **RC=0**, strict **10-member BOOT_OBJ
+PASS**, installed coroutine **PASS**, compiler JOB **6489**, native
+JOB **6490**, IFOX/IEWL/GO RC=0000 and 2m47s elapsed. The original
+"not yet executed" status above describes this document at creation;
+the current clean-room gate is now satisfied as recorded in
+[CO.5 production clean-room PASS](co5-production-clean-room-pass-20261116.md).
+Post-reconstruction full regression and formal CO.5 owner closure
+remain outstanding.
