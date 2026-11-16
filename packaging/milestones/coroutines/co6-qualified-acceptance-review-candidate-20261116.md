@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification  
-**Status:** READY FOR OWNER REVIEW — **NOT CLOSED**  
+**Status:** AMENDED — SUPPORTED-SUITE MVS VERIFICATION PENDING; **NOT CLOSED**  
 **Prepared:** 16 November 2026  
 **Tested GitHub `main`:** `7e41425cc272c68edea792b1d16b1b2c783eb556`  
 **Evidence classification:** OWNER-REPORTED MVS/JES suite receipts; complete individual raw JES reports were not independently inspected in this conversation.
@@ -77,3 +77,23 @@ No production BCPL/IFOX/IEWL object, public API/global allocation, distribution 
 > Close **CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification (qualified)**, accepting both independently MVS-verified paired BCPL behaviors and the fresh seven-suite 203-PASS / one expected SKIP production campaign. Retain the separately executed historical `mr10-coroutines` diagnostic as **four PASS, one genuine FAIL**, explicitly accepting its incompatible manually constructed first-activation frame as a bounded historical exception rather than silently changing its source, golden output or status. Preserve existing CO.5 Bootstrap 117 SB2D, Approach A/S1 resource limits, and release restrictions. Authorize no new official march, production runtime changes or distribution publication through this decision.
 
 **Owner approval: PENDING. CO.6 remains IN PROGRESS.**
+
+## 16 November 2026 — amendment: supported-fixture acceptance pending
+
+After this review candidate was drafted, the owner explicitly chose
+to resolve the suite organization rather than accept a standalone
+failing coroutine *regression* as the final result. The original
+historical FAIL remains an actual negative result, but the accepted
+valid-frame candidate is being promoted under its **own supported
+test identity**. The five-case `mr10-coroutines-supported` suite
+must complete one fresh integrated ICINT19/JES run, distinct from the
+five-case historical `mr10-coroutines` diagnostic.
+
+**This previous acceptance proposal is NOT READY for owner approval
+until the new supported suite is MVS-verified.** The earlier
+203-PASS regular result and the 4-PASS/1-FAIL historical result
+remain valid, dated evidence for the previous Git revision; they
+must not be overwritten or retrospectively reclassified. After the
+new campaign, update this recommendation with the actual counts
+and a newly tested revision. CO.6 is still IN PROGRESS; no closure,
+production object change or distribution release is authorized.

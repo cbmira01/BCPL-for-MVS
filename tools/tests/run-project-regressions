@@ -21,10 +21,12 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 NATIVE_SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam", "coroutines")
-SUITES = ("mr10", "mr10-coroutines", "mr10-probes", *NATIVE_SUITES, "coroutine-contract")
+SUITES = ("mr10", "mr10-coroutines-supported", "mr10-coroutines", "mr10-probes", *NATIVE_SUITES, "coroutine-contract")
 NATIVE = ROOT / "tools/tests/run-suite"
 MR10 = ROOT / "tools/mr10/run-regression-panel"
 MR10_PROBES = ROOT / "tools/mr10/run-dev-probes"
+MR10_SUPPORTED = ROOT / "tools/mr10/run-supported-coroutines.py"
+MR10_SUPPORTED_MANIFEST = ROOT / "mr10-kit-compiler/tests/10-coroutines/supported-manifest.tsv"
 COROUTINE_CONTRACT = ROOT / "tools/coroutines/run-co6-contract-regressions.py"
 COROUTINE_CONTRACT_MANIFEST = ROOT / "tests/suites/coroutine-contract.tsv"
 CO6_ACCEPTED_PAIRS = ("co6-pair", "co6-nested")
@@ -39,6 +41,13 @@ ACCEPTED_MR10_PROBES = (
 )
 # CO.6: independent MR10 coroutine subset. The original fixed-stack case
 # remains an ordinary, fail-closed accepted probe (never XFAIL/SKIP).
+MR10_SUPPORTED_PROBES = (
+    "10-coroutines/compiler-probe",
+    "10-coroutines/frame-layout-probe",
+    "10-coroutines/resumeco-chain",
+    "10-coroutines/create-delete-static-pool",
+    "10-coroutines/fixed-stack-co0-candidate",
+)
 MR10_COROUTINE_PROBES = (
     "10-coroutines/compiler-probe",
     "10-coroutines/frame-layout-probe",
@@ -115,6 +124,23 @@ def mr10_cases() -> list[str]:
     return cases
 
 
+def supported_coroutine_cases() -> list[str]:
+    """Supported valid-frame MR10 suite; original historical fixture untouched."""
+    require(MR10_SUPPORTED.is_file(), "missing supported MR10 coroutine runner")
+    require(MR10_SUPPORTED_MANIFEST.is_file(), "missing supported MR10 manifest")
+    result = subprocess.run(
+        [sys.executable, "-B", str(MR10_SUPPORTED), "--check"],
+        cwd=ROOT, text=True, capture_output=True, check=False)
+    require(result.returncode == 0,
+            "supported MR10 contract preflight failed: " +
+            ((result.stdout or "") + getattr(result, "stderr", "")).strip())
+    with MR10_SUPPORTED_MANIFEST.open(encoding="ascii", newline="") as stream:
+        rows = list(csv.DictReader(stream, delimiter="\t"))
+    require([row.get("case_id") for row in rows] == list(MR10_SUPPORTED_PROBES),
+            "supported MR10 selected case identities changed")
+    return list(MR10_SUPPORTED_PROBES)
+
+
 def coroutine_contract_cases() -> list[str]:
     """Host-only verification of the two accepted CO.6 paired case identities."""
     require(COROUTINE_CONTRACT.is_file(), "missing CO.6 regression runner")
@@ -155,6 +181,7 @@ def inventory() -> dict[str, list[str]]:
     require(all(item in accepted for item in MR10_COROUTINE_PROBES),
             "MR10 coroutine suite contains unaccepted probe identities")
     selected = {"mr10": mr10_cases(),
+                "mr10-coroutines-supported": supported_coroutine_cases(),
                 "mr10-coroutines": list(MR10_COROUTINE_PROBES),
                 "mr10-probes": accepted,
                 "coroutine-contract": coroutine_contract_cases()}
@@ -253,6 +280,21 @@ def parse_mr10_probes(log: str, declared: list[str], rc: int) -> dict:
                        **({"reason": row["reason"]} if
                           row["status"] == "FAIL" and row.get("reason") else {})}
                       for row in cases]}
+
+
+def parse_mr10_supported(log: str, declared: list[str], rc: int) -> dict:
+    """Reuse the supported-suite strict independent JES/ICINT receipt auditor."""
+    import importlib.util
+    from importlib.machinery import SourceFileLoader
+    loader = SourceFileLoader("mr10_supported_evidence_reader", str(MR10_SUPPORTED))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    require(spec is not None and spec.loader is not None,
+            "supported MR10 evidence module unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    require(list(module.CASES) == declared,
+            "supported MR10 coordinator identity mismatch")
+    return module.verify_coordinator_result(log, rc)
 
 
 def parse_coroutine_contract(log: str, declared: list[str], rc: int) -> dict:
@@ -362,7 +404,7 @@ def save(path: Path, payload: dict) -> None:
 def progress_case(suite: str, line: str) -> str | None:
     if suite == "mr10":
         match = PROGRESS_MR10.fullmatch(line.rstrip("\r\n"))
-    elif suite in ("mr10-probes", "mr10-coroutines"):
+    elif suite in ("mr10-probes", "mr10-coroutines", "mr10-coroutines-supported"):
         match = PROGRESS_PROBES.match(line)
     elif suite == "coroutine-contract":
         match = PROGRESS_CO6.match(line)
@@ -370,7 +412,7 @@ def progress_case(suite: str, line: str) -> str | None:
         match = PROGRESS_NATIVE.match(line)
     if match is None:
         return None
-    if suite in ("mr10", "mr10-probes", "mr10-coroutines", "coroutine-contract"):
+    if suite in ("mr10", "mr10-probes", "mr10-coroutines", "mr10-coroutines-supported", "coroutine-contract"):
         return f"{match.group(1):<7} {match.group(2)}"
     return f"{match.group(1):<7} {match.group(2)}  {match.group(3)}"
 
@@ -386,6 +428,8 @@ def suite_command(suite: str, cases: dict[str, list[str]],
         if suite == "mr10-coroutines":
             command.append("--continue-known-fixed-stack-failure")
         return command
+    if suite == "mr10-coroutines-supported":
+        return [sys.executable, "-B", str(MR10_SUPPORTED), "--run"]
     if suite == "coroutine-contract":
         return [sys.executable, "-B", str(COROUTINE_CONTRACT), "--run"]
     command = [str(NATIVE), suite, "--run", "--profile", profile]
@@ -458,6 +502,8 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
                        if suite == "mr10" else
                        parse_mr10_probes(log, cases[suite], rc)
                        if suite in ("mr10-probes", "mr10-coroutines") else
+                       parse_mr10_supported(log, cases[suite], rc)
+                       if suite == "mr10-coroutines-supported" else
                        parse_coroutine_contract(log, cases[suite], rc)
                        if suite == "coroutine-contract" else
                        parse_native(log, suite, args.profile, cases[suite], rc))
@@ -528,6 +574,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{name}\t{len(cases[name])}\t" +
                   ("interpreted MR10" if name == "mr10" else
                    "interpreted MR10 coroutine probes" if name == "mr10-coroutines" else
+                   "supported MR10 coroutine regression" if name == "mr10-coroutines-supported" else
                    "interpreted MR10 probes" if name == "mr10-probes" else
                    "paired MR10/native System/370" if name == "coroutine-contract" else
                    "native System/370"))

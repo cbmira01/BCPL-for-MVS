@@ -443,3 +443,28 @@ records the evidence, applicable Approach A/S1 and historical qualifications,
 and the proposed owner decision. **CO.6 remains IN PROGRESS and is NOT
 CLOSED until explicitly approved by the owner.** No new official march,
 MVS object modification, or public release is authorized.
+
+## 16 November 2026 — owner-directed CO.6 historical/support split
+
+The owner approved retaining the genuine
+`10-coroutines/fixed-stack-producer-consumer` CODE=-1 FAIL as a
+historical compatibility diagnostic, while promoting the already
+tested valid-frame `fixed-stack-co0-candidate.bcpl` into a
+separate PASS-eligible five-case interpreted regression selection
+`mr10-coroutines-supported`. The original 17 historical probe
+manifest, five original coroutine identities, original BCPL source
+and golden remain unchanged.
+
+The new suite uses the original MR10 accepted runner for four cases
+and exact candidate program/ICINT19/JES verification for the fifth.
+Eighteen focused host-only tests PASS. **Fresh MVS verification of
+the newly registered supported suite is still pending**, so the
+[CO.6 qualified acceptance review candidate]
+(co6-qualified-acceptance-review-candidate-20261116.md) is on hold.
+Previously reported full regular-suite MVS successes remain valid
+for their recorded source revisions.
+
+[Disposition and acceptance gate]
+(co6-fixed-stack-supported-disposition-20261116.md).
+**CO.6 remains IN PROGRESS pending the consolidated MVS run and
+separate owner acceptance.** No new march or production release.

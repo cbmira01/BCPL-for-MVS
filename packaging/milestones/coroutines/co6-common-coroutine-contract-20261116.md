@@ -209,3 +209,42 @@ This is distinct from the original **`mr10-coroutines`** five-probe diagnostic s
 At GitHub `main` `7e41425cc272c68edea792b1d16b1b2c783eb556`, the owner reported an uninterrupted **PASS / RC=0** for the seven selected regular and paired suites (`mr10`, `bootstrap`, `runtime-extensions`, `bcpltime`, `bcplqsam`, `coroutines`, `coroutine-contract`): **203 PASS, zero FAIL/BLOCKED, one expected SKIP 083**, including both new paired BCPL cases. The original five-case `mr10-coroutines` diagnostic was separately run, returning **4 PASS, one genuine historical FAIL, RC=1**. Combined outcomes are **207 PASS, one SKIP, one real FAIL** across eight suite selections, **not** an unqualified all-suite PASS.
 
 Sources and evidence paths are in the [CO.6 formal qualified acceptance review candidate](co6-qualified-acceptance-review-candidate-20261116.md). Full JES reports remain operator-local and were not independently inspected here. No additional MVS test is required for the qualified acceptance decision; CO.6 **remains IN PROGRESS pending explicit owner approval**.
+
+## 16 November 2026 — approved supported MR10 fixed-stack disposition
+
+After the 203-PASS plus one expected SKIP coordinated campaign
+and the genuine original MR10 fixed-stack failure (four PASS, one FAIL),
+the owner approved **promoting the distinct valid-frame candidate**
+and separating supported regressions from historical compatibility
+diagnostics, before accepting CO.6 closure.
+
+The immutable 17-entry historical development-probe manifest,
+`fixed-stack-producer-consumer.bcpl`, its original golden, and its
+CODE=-1 evidence remain unchanged. A separate five-case
+`mr10-coroutines-supported` source manifest selects four accepted
+passing probes and the existing `fixed-stack-co0-candidate.bcpl`.
+The candidate now has its own exact golden file, identical in records
+to the preserved original golden but separate in identity.
+
+The source-controlled runner
+`tools/mr10/run-supported-coroutines.py` delegates the four prior
+accepted tests to `run-dev-probes`, then verifies the corrected
+candidate under ICINT19 using the original accepted *structural*
+ten-step/three-phase JES contract. This reuse of structural checks
+does **not** change or mark the historical fixture as PASS.
+The project coordinator now exposes `mr10-coroutines-supported`
+alongside the unchanged `mr10-coroutines` diagnostic.
+
+**Host verification:** eighteen isolated synthetic host unit tests
+PASS, including exact original/corrected Git source blobs, manifest
+and golden tampering refusals, ICINT19 preflight, semantic record
+order, JES/phase mismatch, original accepted receipt rejection,
+fail-stop and aggregate RC classification. Python syntax checks PASS.
+These are **not** new MVS execution results. A single consolidated
+MVS campaign is the remaining gate before updating the formal
+qualified acceptance review and requesting explicit owner closure.
+No ICLIB, BCPLCO, COROUTIN, historical fixture or production object
+was changed.
+
+See the [CO.6 supported/historical resolution record]
+(co6-fixed-stack-supported-disposition-20261116.md).

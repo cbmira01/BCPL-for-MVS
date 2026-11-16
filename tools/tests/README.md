@@ -233,3 +233,27 @@ verified; **actual MVS execution remains outstanding**.
 The newly registered `coroutine-contract` project suite contains exactly two source-pinned paired cases: **`co6-pair`** (11 output records, single-worker re-entry) and **`co6-nested`** (18 output records, two-worker parent-chain, nested continuations and delete/reuse). It dispatches the accepted `tools/coroutines/run-co6-pair.py` and `run-co6-nested.py` unchanged through `tools/coroutines/run-co6-contract-regressions.py`.
 
 The manifest `tests/suites/coroutine-contract.tsv` pins both case identities, source runners and oracles. `tools/tests/run-project-regressions --check` validates the paired sources without JES work. `--run --suite coroutine-contract` submits MVS work (MR10 plus Cambridge/IFOX/IEWL/GO per case), validates complete separate receipts, and provides case names with `--progress`. This suite **does not need** the native-only `--profile` option, because each paired candidate already owns its proven native compilation/linkage profile. Failure stops later cases and returns nonzero. The original `mr10-coroutines` suite continues to report the qualified manual-frame FAIL and cannot be hidden by the new green-contract suite. The first integrated MVS coordinator run is still pending.
+
+## CO.6 supported versus historical MR10 coroutine selections
+
+`mr10-coroutines-supported` selects five **valid-domain** interpreted
+MR10 cases. The first four use the existing accepted
+`run-dev-probes` strict golden/JES verifier; the fifth compiles
+`fixed-stack-co0-candidate.bcpl` under canonical ICINT19 and verifies
+its independent exact ten-record oracle, ten zero-RC JES steps and
+three zero-valued compiler/generator/RUN completion codes. The supported
+manifest is kept separately at
+`mr10-kit-compiler/tests/10-coroutines/supported-manifest.tsv`.
+The suite retains evidence in `workarea/mr10-supported-coroutines/`
+and its accepted subreceipt in `workarea/mr10-probes/`.
+Use `--suite mr10-coroutines-supported` to select it in
+`tools/tests/run-project-regressions`. Its integrated MVS PASS remains
+pending on this newly committed version.
+
+`mr10-coroutines` still selects the **five original historical**
+coroutine probes and retains the original fixed-stack failure as
+**one genuine FAIL**; no source/golden or status was changed.
+The six regular project suites and `coroutine-contract` also remain
+unchanged. Never combine historical diagnostic FAIL outcomes into the
+regular PASS total without explicitly distinguishing the separate
+execution groups.

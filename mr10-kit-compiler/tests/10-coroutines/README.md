@@ -139,3 +139,37 @@ Compare complete records to the existing `.expected` files.
 Neither job has been executed; both require separate MVS authorization.
 Do not add candidate tests to accepted manifests or switch canonical
 module mappings until the broader regression and owner gates pass.
+
+## CO.6 supported regression versus historical diagnostic — 16 November 2026
+
+The original `fixed-stack-producer-consumer.bcpl` retains its accepted
+historical source, ten-record golden, and genuine **CODE=-1 FAIL** under
+canonical ICINT19. That result is not a successful or expected-failure
+regression. Its hand-built `C!0 := C` initial frame does not satisfy the
+reconstructed interpreter continuation requirements. Preserve the earlier
+historical acceptance record; that record does not supersede the later
+actual failure.
+
+The separately named existing `fixed-stack-co0-candidate.bcpl` uses a
+valid `P=C+3`, `P!0 := P`, `P!1 := COBOOT` first-activation frame.
+Its standalone candidate JOB 5321 previously completed with the ten
+producer/consumer oracle records. The same ten records are now in an
+independent, source-controlled `fixed-stack-co0-candidate.expected`;
+the original historical golden is unchanged.
+
+The new `supported-manifest.tsv` owns five supported interpreted cases:
+compiler-probe, frame-layout-probe, resumeco-chain,
+create-delete-static-pool, and fixed-stack-co0-candidate. The new
+`mr10-coroutines-supported` coordinator suite uses these five IDs,
+runs the first four through the existing accepted development-probe
+JES verifier, and checks the corrected candidate with exact program
+records, ten zero-RC JES steps and three interpreted CODE=0 phases.
+It does not modify the historical 17-entry development-probe manifest.
+
+The existing `mr10-coroutines` selection continues to run all five
+*original* identities, reporting the real fixed-stack FAIL. It is a
+separate diagnostic, not part of the all-PASS eligible suite set.
+
+**Verification state:** source/runner host checks PASS; the new
+coordinated supported selection is **MVS UNVERIFIED** until the
+operator completes the consolidated acceptance batch.

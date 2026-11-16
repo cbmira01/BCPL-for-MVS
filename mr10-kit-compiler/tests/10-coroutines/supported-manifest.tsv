@@ -1,0 +1,6 @@
+case_id	source	oracle
+10-coroutines/compiler-probe	mr10-kit-compiler/tests/10-coroutines/compiler-probe.bcpl	mr10-kit-compiler/tests/10-coroutines/compiler-probe.expected
+10-coroutines/frame-layout-probe	mr10-kit-compiler/tests/10-coroutines/frame-layout-probe.bcpl	mr10-kit-compiler/tests/10-coroutines/frame-layout-probe.expected
+10-coroutines/resumeco-chain	mr10-kit-compiler/tests/10-coroutines/resumeco-chain.bcpl	mr10-kit-compiler/tests/10-coroutines/resumeco-chain.expected
+10-coroutines/create-delete-static-pool	mr10-kit-compiler/tests/10-coroutines/create-delete-static-pool.bcpl	mr10-kit-compiler/tests/10-coroutines/create-delete-static-pool.expected
+10-coroutines/fixed-stack-co0-candidate	mr10-kit-compiler/tests/10-coroutines/fixed-stack-co0-candidate.bcpl	mr10-kit-compiler/tests/10-coroutines/fixed-stack-co0-candidate.expected

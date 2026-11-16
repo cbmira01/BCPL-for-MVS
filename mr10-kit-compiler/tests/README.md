@@ -179,3 +179,17 @@ No new JES execution is authorized by checking out or validating this code.
 ### Five accepted coroutine probes (11 November 2026)
 
 The [five-case acceptance record](10-coroutines/acceptance-20261111.md) pins the exact `.expected` outputs from MR10 JES jobs 5223–5227. The 11 accepted probes, including these five, are now selected by the `mr10-probes` suite. The runner verifies exact output, JES step/program order/RCs, interpreted phase CODEs, and (for the two compilation probes) fresh OCODE/INTCODE token correspondence. The earlier five-job run used the **experimental pre-promotion runner**; an eleven-case acceptance run remains pending separate JES authorization.
+
+## Supported MR10 coroutine regressions — CO.6
+
+The new `10-coroutines/supported-manifest.tsv` names the four original
+passing coroutine cases plus the separately named valid-frame
+`fixed-stack-co0-candidate`. It does **not** add an eighteenth
+historical development probe or change the eleven accepted original
+probe identities. `mr10-coroutines-supported` is the PASS-eligible
+five-case regression selection; `mr10-coroutines` retains all five
+original probes, including the actual fixed-stack CODE=-1 failure.
+The corrected case has a separate `.expected` file with the same
+ten producer/consumer records; neither original fixture is edited.
+Details and evidence disposition are in
+[10-coroutines/README.md](10-coroutines/README.md).
