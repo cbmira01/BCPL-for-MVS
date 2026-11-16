@@ -405,3 +405,20 @@ a **proposed** next march, *not yet formally established*.
 The owner approved proceeding with **CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification**, adopting a shared observable contract and a separate interpreted MR10 coroutine regression selection. The approved direction requires preserving the original fixed-stack source and genuine FAIL, investigating a valid common first-activation contract, and verifying real interpreted and native MVS results before behavioral equivalence is claimed. See [CO.6 common contract and acceptance gate](co6-common-coroutine-contract-20261116.md).
 
 **CO.6 IN PROGRESS; CO.0–CO.5 remain CLOSED (qualified).** This documentation and host-side regression-selector integration do not claim new MVS execution, a repaired historical fixture, production runtime modification, or CO.6 closure.
+
+## 16 November 2026 — first CO.6 paired MVS PASS and second paired candidate
+
+At tested GitHub revision `6cf1bf7444bc3dc8a694a638fbfbb2c051bd8e01`,
+the owner reported **RC=0** for both MR10 interpreted and native
+System/370 paths in the first `CO6PAIR` application. The paired
+runner verified one shared eleven-record oracle plus separately
+checked compiler, ICINT, IFOX, IEWL, GO and JES outcomes.
+Evidence: `workarea/co6-pair/20261116T123048Z-sfas9clu`.
+Raw job reports remain owner-local and were not separately inspected.
+See [CO.6 cross-compiler contract](co6-common-coroutine-contract-20261116.md).
+
+A **second CO.6 paired candidate** now covers two workers, nested
+resumptions, parent-chain RESUMECO and deletion/reuse. Its source and
+driver are host-tested but not yet MVS-executed. The original MR10
+fixed-stack case remains an actual, qualified FAIL under the canonical
+continuation contract. **CO.6 IN PROGRESS; CO.0–CO.5 CLOSED (qualified).**

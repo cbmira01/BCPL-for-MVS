@@ -1,0 +1,122 @@
+// CO.6 nested parent-chain / two-worker/reuse contract: MR10 INTCODE.
+// Reconstructed MR10 coroutine descriptors and heap are not native ABI.
+GLOBAL $(
+  START:1
+  CURRCO:7
+  COLIST:8
+  WRITEF:76
+  HEAPINIT:89
+  CREATECO:91
+  DELETECO:92
+  CALLCO:93
+  COWAIT:94
+  RESUMECO:95
+$)
+
+LET MARK(S) BE WRITEF("CO6NEST %S*N", S)
+
+AND FAIL() BE
+$( MARK("FAIL")
+   FINISH
+$)
+
+AND NESTA(N) = VALOF
+$( LET KEEP=123+N
+   AND R=0
+   IF N=0 DO
+   $( MARK("A1")
+      R:=CALLCO(COLIST,22)
+      IF R \=33 RESULTIS -11
+      MARK("A2")
+      R:=RESUMECO(COLIST,44)
+      IF R \=55 RESULTIS -12
+      MARK("A3")
+      R:=COWAIT(66)
+      IF R \=77 | KEEP \=123 RESULTIS -13
+      MARK("A4")
+      RESULTIS 88
+   $)
+   R:=NESTA(N-1)
+   IF KEEP \=123+N RESULTIS -14
+   RESULTIS R
+$)
+
+AND NESTB(N) = VALOF
+$( LET KEEP=456+N
+   AND R=0
+   IF N=0 DO
+   $( MARK("B1")
+      R:=RESUMECO(COLIST!2,0)
+      IF R \=-998 RESULTIS -21
+      R:=COWAIT(33)
+      IF R \=44 RESULTIS -22
+      MARK("B2")
+      R:=COWAIT(99)
+      IF R \=110 | KEEP \=456 RESULTIS -23
+      MARK("B3")
+      RESULTIS 120
+   $)
+   R:=NESTB(N-1)
+   IF KEEP \=456+N RESULTIS -24
+   RESULTIS R
+$)
+
+AND AWORK(ARG) = VALOF
+$( IF ARG \=11 RESULTIS -10
+   RESULTIS NESTA(2)
+$)
+
+AND BWORK(ARG) = VALOF
+$( IF ARG \=22 RESULTIS -20
+   RESULTIS NESTB(2)
+$)
+
+AND CWORK(ARG) = VALOF
+$( IF ARG \=5 RESULTIS -30
+   MARK("C1")
+   RESULTIS 6
+$)
+
+AND START() BE
+$( LET ROOT=VEC 2
+   AND ARENA=VEC 500
+   AND A=0
+   AND B=0
+   AND C=0
+   AND R=0
+   HEAPINIT(ARENA,501)
+   CURRCO:=ROOT
+   ROOT!0:=0
+   ROOT!1:=-1
+   ROOT!2:=0
+   COLIST:=ROOT
+   A:=CREATECO(AWORK,100)
+   B:=CREATECO(BWORK,100)
+   IF A=0 | B=0 | A=B DO FAIL()
+   MARK("MADE")
+   R:=CALLCO(A,11)
+   IF R \=99 DO FAIL()
+   MARK("R1")
+   R:=CALLCO(A,55)
+   IF R \=66 DO FAIL()
+   MARK("R2")
+   R:=CALLCO(B,110)
+   IF R \=120 DO FAIL()
+   MARK("R3")
+   R:=CALLCO(A,77)
+   IF R \=88 DO FAIL()
+   MARK("R4")
+   IF DELETECO(A) \= TRUE DO FAIL()
+   MARK("DELA")
+   IF DELETECO(B) \= TRUE DO FAIL()
+   MARK("DELB")
+   C:=CREATECO(CWORK,100)
+   IF C=0 DO FAIL()
+   R:=CALLCO(C,5)
+   IF R \=6 DO FAIL()
+   MARK("RC")
+   IF DELETECO(C) \=TRUE DO FAIL()
+   MARK("DELC")
+   MARK("PASS")
+   FINISH
+$)

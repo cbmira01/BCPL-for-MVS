@@ -215,3 +215,16 @@ is limited to per-engine status and evidence location. Both engines must
 PASS for an overall PASS; an MR10 failure never suppresses the native
 submission. The pair is **experimental and not yet a regular regression
 suite member** pending independent MVS verification and owner acceptance.
+
+## CO.6 — second paired nested coroutine MVS candidate
+
+`tools/coroutines/run-co6-nested.py --check` validates source/oracle
+contracts without contacting MVS. `--run` executes both interpreted
+MR10 and native System/370 independently, retaining exact records,
+zero-return-code job steps and source evidence in
+`workarea/co6-nested/`. The separate paired contract uses 18 ordered
+`CO6NEST` records and exercises two-worker nested suspension,
+busy-target refusal, RESUMECO parent transfer, deletion and reuse.
+The tool reuses the verified first-pair driver without editing it or
+writing installed MVS objects. Source inputs and host tests are
+verified; **actual MVS execution remains outstanding**.

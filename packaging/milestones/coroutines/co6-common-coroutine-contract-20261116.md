@@ -143,3 +143,49 @@ ASCII, 80-column BCPL card limits and expected markers. This is **not**
 a BCPL syntax/compiler or IFOX/IEWL/MVS execution PASS. The paired
 application remains **UNVERIFIED on MVS** until the owner supplies
 separate actual execution receipts. CO.6 remains IN PROGRESS.
+
+## 16 November 2026 — first paired contract PASS (owner-reported)
+
+**Tested source:** `6cf1bf7444bc3dc8a694a638fbfbb2c051bd8e01`.
+The owner executed `tools/coroutines/run-co6-pair.py --run` on MVS,
+reporting **RC=0**, `CO.6 MR10 PASS`, `CO.6 NATIVE PASS`, and
+`CO.6 PAIRED RESULT: PASS`. The retained evidence directory is
+`workarea/co6-pair/20261116T123048Z-sfas9clu`, with operator log
+`mvs-state/reconstruction-evidence/co6-paired-20261116T123048Z.log`.
+
+This **OWNER-REPORTED PAIRED-MVS-TESTED** result is stronger than
+host-only checks: the versioned runner requires the same **eleven ordered
+CO6PAIR records** from both paths, seven zero MR10 ICINT completion
+codes, fourteen MR10 zero-RC JES steps, two Cambridge compiler jobs,
+and native four IFOX, IEWL and GO zero-RC steps. Its structured receipts
+and full JES reports remain in the operator workarea and were **not
+independently opened** here. Do not claim those raw reports have been
+separately audited or that the original MR10 fixed-stack test has passed.
+
+**Accepted contract coverage for this individual execution:** valid
+first activation, repeated CALLCO/COWAIT value transfer, preserved
+locals, ordinary worker return/re-entry, and known-live deletion for
+one worker. This is not evidence of two-worker parent transfer or reuse
+on a paired basis.
+
+## 16 November 2026 — second paired nested/parent-chain candidate
+
+Added [`co6-nested`](candidates/co6-nested/README.md), a distinct
+**18-record** paired BCPL scenario for two live workers, recursive
+suspended frames, busy RESUMECO refusal, valid parent-chain transfer,
+root return, inactive deletion and subsequent reuse. Both executors
+reuse the accepted first-pair MVS pipeline and keep separate BCPL
+globals, descriptor layouts and sizes; the original first-pair fixture
+and original historical fixed-stack negative fixture are unmodified.
+
+The isolated wrapper `tools/coroutines/run-co6-nested.py` delegates
+to the already tested driver after revalidating its original fixture
+and pinned CO.3 dependencies. Nine focused real host-workspace tests
+passed, including golden tampering, malformed records, stack-size and
+MR10 descriptor-link rejection, preflight preservation and failure
+propagation. No MVS jobs were executed for this new scenario yet.
+
+**CO.6 remains IN PROGRESS.** The next gate is independent interpreted
+and native MVS execution of this second source pair, with structured
+JES and exact-oracle receipts before any regression-panel promotion
+or closure. The original fixed-stack case stays an actual FAIL.

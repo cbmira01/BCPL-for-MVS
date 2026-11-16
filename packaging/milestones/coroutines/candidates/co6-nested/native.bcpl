@@ -1,0 +1,131 @@
+// CO.6 nested parent-chain / two-worker/reuse contract: native S/370.
+// Link accepted isolated CO.3 lifecycle and BCPLCO adapter (read-only).
+GLOBAL $(
+  START:1
+  WRCH:14
+  STACKBASE:54
+  STACKEND:55
+  WRITES:60
+  CO3INIT:289
+  CREATECO:290
+  DELETECO:291
+  CALLCO:292
+  COWAIT:293
+  RESUMECO:294
+  CO3CURR:295
+  CO3ROOT:296
+  CO3LIST:297
+$)
+
+LET MARK(S) BE
+$(1 WRITES("CO6NEST ")
+    WRITES(S)
+    WRCH(10)
+$)1
+
+AND FAIL() BE
+$(1 MARK("FAIL")
+    FINISH
+$)1
+
+AND NESTA(N) = VALOF
+$(1 LET KEEP=123+N
+    AND R=0
+    IF N=0 DO
+    $(2 MARK("A1")
+        R:=CALLCO(CO3LIST,22)
+        IF R \=33 RESULTIS -11
+        MARK("A2")
+        R:=RESUMECO(CO3LIST,44)
+        IF R \=55 RESULTIS -12
+        MARK("A3")
+        R:=COWAIT(66)
+        IF R \=77 | KEEP \=123 RESULTIS -13
+        MARK("A4")
+        RESULTIS 88
+    $)2
+    R:=NESTA(N-1)
+    IF KEEP \=123+N RESULTIS -14
+    RESULTIS R
+$)1
+
+AND NESTB(N) = VALOF
+$(1 LET KEEP=456+N
+    AND R=0
+    IF N=0 DO
+    $(2 MARK("B1")
+        R:=RESUMECO(CO3LIST!26,0)
+        IF R \=-998 RESULTIS -21
+        R:=COWAIT(33)
+        IF R \=44 RESULTIS -22
+        MARK("B2")
+        R:=COWAIT(99)
+        IF R \=110 | KEEP \=456 RESULTIS -23
+        MARK("B3")
+        RESULTIS 120
+    $)2
+    R:=NESTB(N-1)
+    IF KEEP \=456+N RESULTIS -24
+    RESULTIS R
+$)1
+
+AND AWORK(ARG) = VALOF
+$(1 IF ARG \=11 RESULTIS -10
+    RESULTIS NESTA(2)
+$)1
+
+AND BWORK(ARG) = VALOF
+$(1 IF ARG \=22 RESULTIS -20
+    RESULTIS NESTB(2)
+$)1
+
+AND CWORK(ARG) = VALOF
+$(1 IF ARG \=5 RESULTIS -30
+    MARK("C1")
+    RESULTIS 6
+$)1
+
+LET START() BE
+$(1 LET ROOT=0
+    AND A=0
+    AND B=0
+    AND C=0
+    AND R=0
+    AND BASE=STACKBASE
+    AND LIMIT=STACKEND
+    CO3ROOT:=0
+    CO3CURR:=0
+    CO3LIST:=0
+    ROOT:=CO3INIT()
+    IF ROOT=0 DO FAIL()
+    A:=CREATECO(AWORK,1024)
+    B:=CREATECO(BWORK,1024)
+    IF A=0 | B=0 | A=B | CO3CURR \= ROOT DO FAIL()
+    MARK("MADE")
+    R:=CALLCO(A,11)
+    IF R \=99 | CO3CURR \=ROOT DO FAIL()
+    MARK("R1")
+    R:=CALLCO(A,55)
+    IF R \=66 | CO3CURR \=ROOT DO FAIL()
+    MARK("R2")
+    R:=CALLCO(B,110)
+    IF R \=120 | CO3CURR \=ROOT DO FAIL()
+    MARK("R3")
+    R:=CALLCO(A,77)
+    IF R \=88 | CO3CURR \=ROOT DO FAIL()
+    MARK("R4")
+    IF DELETECO(A) \=TRUE DO FAIL()
+    MARK("DELA")
+    IF DELETECO(B) \=TRUE DO FAIL()
+    MARK("DELB")
+    C:=CREATECO(CWORK,1024)
+    IF C=0 DO FAIL()
+    R:=CALLCO(C,5)
+    IF R \=6 | CO3CURR \=ROOT DO FAIL()
+    MARK("RC")
+    IF DELETECO(C) \=TRUE DO FAIL()
+    MARK("DELC")
+    IF STACKBASE \=BASE | STACKEND \=LIMIT DO FAIL()
+    MARK("PASS")
+    FINISH
+$)1
