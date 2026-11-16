@@ -4,7 +4,7 @@
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification  
 **Decision:** Owner-directed supported/diagnostic separation, 16 November 2026  
-**Status:** IMPLEMENTED IN GIT; NEW MVS ACCEPTANCE RUN PENDING
+**Status:** IMPLEMENTED AND VERIFIED ON MVS; CO.6 owner acceptance pending
 
 ## Problem and disposition
 
