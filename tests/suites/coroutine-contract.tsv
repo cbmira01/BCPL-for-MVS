@@ -1,0 +1,3 @@
+case_id	runner	oracle
+co6-pair	tools/coroutines/run-co6-pair.py	packaging/milestones/coroutines/candidates/co6-pair/expected.txt
+co6-nested	tools/coroutines/run-co6-nested.py	packaging/milestones/coroutines/candidates/co6-nested/expected.txt

@@ -422,3 +422,9 @@ resumptions, parent-chain RESUMECO and deletion/reuse. Its source and
 driver are host-tested but not yet MVS-executed. The original MR10
 fixed-stack case remains an actual, qualified FAIL under the canonical
 continuation contract. **CO.6 IN PROGRESS; CO.0–CO.5 CLOSED (qualified).**
+
+## 16 November 2026 — CO.6 nested pair PASS, regular-suite integration candidate
+
+The owner-reported **second paired CO.6 run** at revision `c71dcc77ee2b8eabdf7f141a2497c3e811f7a7b2` completed with **MR10 PASS, native PASS, overall RC=0** for the `CO6NEST` eighteen-record two-worker oracle. Evidence: `workarea/co6-nested/20261116T124503Z-mczybqy0`. The first eleven-record `CO6PAIR` remains separately PASS. Both are independently MVS-tested (owner-reported). See [CO.6 contract and evidence](co6-common-coroutine-contract-20261116.md).
+
+Promote these two verified pair identities into the new selectable project regression suite **`coroutine-contract`**, distinct from the genuinely failing historical `mr10-coroutines` diagnostic selection and from existing native cases 177–189. Host-side tests of the added runner/coordinator pass, but **the newly integrated coordinator suite has not yet been exercised against MVS**. CO.6 remains **IN PROGRESS** pending a fresh integrated test and owner acceptance decision. No production object changes or distribution release.

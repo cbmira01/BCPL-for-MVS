@@ -189,3 +189,17 @@ propagation. No MVS jobs were executed for this new scenario yet.
 and native MVS execution of this second source pair, with structured
 JES and exact-oracle receipts before any regression-panel promotion
 or closure. The original fixed-stack case stays an actual FAIL.
+
+## 16 November 2026 — nested cross-compiler MVS PASS
+
+**Tested source:** GitHub `main` `c71dcc77ee2b8eabdf7f141a2497c3e811f7a7b2`. The owner ran `tools/coroutines/run-co6-nested.py --run`, reporting **RC=0**, `CO.6 MR10 PASS`, `CO.6 NATIVE PASS` and `CO.6 PAIRED RESULT: PASS`. Evidence directory `workarea/co6-nested/20261116T124503Z-mczybqy0`; operator log `mvs-state/reconstruction-evidence/co6-nested-20261116T124503Z.log`.
+
+**Evidence class:** OWNER-REPORTED PAIRED-MVS-TESTED. The source-controlled nested wrapper reuses the first paired interpreter/compiler and native IFOX/IEWL/GO/JES validators, replacing only the two BCPL programs, the exact **18-record CO6NEST** oracle and its isolated workarea. The owner-provided excerpt establishes the overall PASS and the two independent engine statuses. The assistant has **not separately inspected** the raw JES reports, individual job IDs or inner structured receipts.
+
+This complements the previous **11-record** one-worker pairing with two-worker nested continuations, busy RESUMECO refusal, parent-chain handoff, deletion and reuse. Both pairs pass independently on MVS. The original manual-frame MR10 fixed-stack source remains **one genuine interpreted FAIL**, unchanged and not disguised as PASS or SKIP.
+
+## CO.6 — promote paired candidates into regular regression coordination
+
+Two already MVS-tested source pairs are promoted to an independently selectable, source-controlled regular project suite named **`coroutine-contract`** with exact case identities `co6-pair` and `co6-nested`. The suite executes the existing paired engines unchanged, verifies each retained MR10 CODE=0/JES and Cambridge/IFOX/IEWL/GO receipt, requires both individual exact BCPL output oracles and fails closed on any incomplete or mismatched record. The suite manifest is `tests/suites/coroutine-contract.tsv` and the MVS-facing driver is `tools/coroutines/run-co6-contract-regressions.py`.
+
+This is distinct from the original **`mr10-coroutines`** five-probe diagnostic selection (four PASS / one original FAIL) and from the native `coroutines` cases 177–189 (13 PASS in their last verified run). The new paired suite needs its **own fresh MVS run through the project coordinator** before the integrated regression claim is accepted; separate prior pairs do not constitute that run. Owner approval remains required for any qualified CO.6 closure or release decision.

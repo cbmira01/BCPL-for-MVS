@@ -21,10 +21,13 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 NATIVE_SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam", "coroutines")
-SUITES = ("mr10", "mr10-coroutines", "mr10-probes", *NATIVE_SUITES)
+SUITES = ("mr10", "mr10-coroutines", "mr10-probes", *NATIVE_SUITES, "coroutine-contract")
 NATIVE = ROOT / "tools/tests/run-suite"
 MR10 = ROOT / "tools/mr10/run-regression-panel"
 MR10_PROBES = ROOT / "tools/mr10/run-dev-probes"
+COROUTINE_CONTRACT = ROOT / "tools/coroutines/run-co6-contract-regressions.py"
+COROUTINE_CONTRACT_MANIFEST = ROOT / "tests/suites/coroutine-contract.tsv"
+CO6_ACCEPTED_PAIRS = ("co6-pair", "co6-nested")
 MR10_PROBES_MANIFEST = ROOT / "mr10-kit-compiler/tests/dev-probes-manifest.tsv"
 ACCEPTED_MR10_PROBES = (
     "04-module-test", "05-named-dd", "06-dynamic-streams",
@@ -53,6 +56,7 @@ PROGRESS_PROBES = re.compile(
     r"^(PASS|FAIL|OBSERVED)\s+([a-z0-9-]+(?:/[a-z0-9-]+)?):")
 PROGRESS_NATIVE = re.compile(
     r"^(PASS|FAIL|SKIP|BLOCKED)\s+(\d{2,3})\s+\2-([a-z0-9-]+):")
+PROGRESS_CO6 = re.compile(r"^(PASS|FAIL)\s+(co6-(?:pair|nested)):")
 
 
 class VerificationError(ValueError):
@@ -111,6 +115,24 @@ def mr10_cases() -> list[str]:
     return cases
 
 
+def coroutine_contract_cases() -> list[str]:
+    """Host-only verification of the two accepted CO.6 paired case identities."""
+    require(COROUTINE_CONTRACT.is_file(), "missing CO.6 regression runner")
+    require(COROUTINE_CONTRACT_MANIFEST.is_file(), "missing CO.6 regression manifest")
+    check = subprocess.run([sys.executable, "-B", str(COROUTINE_CONTRACT),
+                            "--check"], cwd=ROOT, capture_output=True,
+                           text=True, check=False)
+    require(check.returncode == 0,
+            "CO.6 paired host preflight failed: " +
+            ((check.stdout or "") + getattr(check, "stderr", "")).strip())
+    with COROUTINE_CONTRACT_MANIFEST.open(encoding="ascii", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    ids = [row.get("case_id") for row in rows]
+    require(ids == list(CO6_ACCEPTED_PAIRS),
+            "CO.6 paired regression identities changed")
+    return ids
+
+
 def inventory() -> dict[str, list[str]]:
     require(MR10.is_file(), f"missing MR10 runner: {MR10}")
     require(NATIVE.is_file(), f"missing native runner: {NATIVE}")
@@ -134,7 +156,8 @@ def inventory() -> dict[str, list[str]]:
             "MR10 coroutine suite contains unaccepted probe identities")
     selected = {"mr10": mr10_cases(),
                 "mr10-coroutines": list(MR10_COROUTINE_PROBES),
-                "mr10-probes": accepted}
+                "mr10-probes": accepted,
+                "coroutine-contract": coroutine_contract_cases()}
     check = subprocess.run([str(NATIVE), "--check"], cwd=ROOT,
                            text=True, stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, check=False)
@@ -232,6 +255,71 @@ def parse_mr10_probes(log: str, declared: list[str], rc: int) -> dict:
                       for row in cases]}
 
 
+def parse_coroutine_contract(log: str, declared: list[str], rc: int) -> dict:
+    """Fail-closed aggregation of both independently verified paired MVS runs."""
+    markers = re.findall(r"(?m)^CO6 REGRESSION EVIDENCE: (.+)\s*$", log)
+    require(len(markers) == 1, "CO.6: expected one paired suite evidence directory")
+    evidence = Path(markers[0].strip()).resolve()
+    parent = (ROOT / "workarea/co6-contract-regressions").resolve()
+    require(evidence.parent == parent and evidence.is_dir(),
+            "CO.6 paired evidence outside suite run root")
+    file = evidence / "summary.json"
+    require(file.is_file(), "CO.6 paired regression summary missing")
+    payload = json.loads(file.read_text(encoding="utf-8"))
+    require(payload.get("schema") == 1 and payload.get("suite") == "coroutine-contract",
+            "CO.6 paired evidence schema or identity mismatch")
+    cases = payload.get("cases")
+    require(isinstance(cases, list) and len(cases) == len(declared) and
+            payload.get("selected_cases") == declared and
+            [x.get("id") for x in cases] == declared,
+            "CO.6 paired evidence case identities or order mismatch")
+    statuses = [row.get("status") for row in cases]
+    require(all(value in ("PASS", "FAIL", "NOT_RUN") for value in statuses),
+            "CO.6 invalid case result state")
+    counts = {key: statuses.count(key) for key in ("PASS", "FAIL", "NOT_RUN")}
+    require(payload.get("counts") == counts,
+            "CO.6 paired evidence counts disagree")
+    if "FAIL" in statuses:
+        first_fail = statuses.index("FAIL")
+        require(statuses[:first_fail] == ["PASS"] * first_fail and
+                statuses[first_fail+1:] == ["NOT_RUN"] * (len(statuses)-first_fail-1),
+                "CO.6 paired failure does not honor fail-stop")
+    else:
+        require(statuses == ["PASS"] * len(declared),
+                "CO.6 incomplete paired results without a failed case")
+    expected_status = "FAIL" if counts["FAIL"] else "PASS"
+    require(payload.get("status") == expected_status and
+            rc == (1 if counts["FAIL"] else 0),
+            f"CO.6 paired result/runner RC mismatch ({rc})")
+    for row in cases:
+        if row["status"] != "PASS":
+            continue
+        receipt = row.get("paired_evidence")
+        require(isinstance(receipt, str) and receipt and
+                not Path(receipt).is_absolute() and ".." not in Path(receipt).parts,
+                "CO.6 passing case lacks safe paired evidence reference")
+        path = (ROOT / receipt).resolve()
+        expected_parent = (ROOT / "workarea" / row["id"]).resolve()
+        require(path.parent == expected_parent and (path / "result.json").is_file(),
+                f"CO.6 {row['id']}: source paired MVS receipt missing")
+        summary = json.loads((path / "result.json").read_text(encoding="utf-8"))
+        require(summary.get("status") == "PASS" and
+                summary.get("selected") == ["mr10", "native"] and
+                isinstance(summary.get("paths"), dict) and
+                {name: item.get("status") for name, item in summary["paths"].items()}
+                == {"mr10": "PASS", "native": "PASS"},
+                f"CO.6 {row['id']}: source pair not independently PASS")
+    return {"status": expected_status,
+            "counts": {"PASS": counts["PASS"], "FAIL": counts["FAIL"],
+                       "SKIP": 0, "BLOCKED": 0, "TOTAL": len(declared)},
+            "paired_regression_evidence": str(evidence.relative_to(ROOT)),
+            "cases": [{"id": row["id"], "status": row["status"],
+                       **({"reason": row["reason"]} if row["status"] == "FAIL"
+                          and row.get("reason") else {}),
+                       **({"paired_evidence": row["paired_evidence"]} if
+                          row["status"] == "PASS" else {})} for row in cases]}
+
+
 def parse_native(log: str, suite: str, profile: str,
                  declared: list[str], rc: int) -> dict:
     matches = re.findall(r"(?m)^Evidence: (.+)\s*$", log)
@@ -276,11 +364,13 @@ def progress_case(suite: str, line: str) -> str | None:
         match = PROGRESS_MR10.fullmatch(line.rstrip("\r\n"))
     elif suite in ("mr10-probes", "mr10-coroutines"):
         match = PROGRESS_PROBES.match(line)
+    elif suite == "coroutine-contract":
+        match = PROGRESS_CO6.match(line)
     else:
         match = PROGRESS_NATIVE.match(line)
     if match is None:
         return None
-    if suite in ("mr10", "mr10-probes", "mr10-coroutines"):
+    if suite in ("mr10", "mr10-probes", "mr10-coroutines", "coroutine-contract"):
         return f"{match.group(1):<7} {match.group(2)}"
     return f"{match.group(1):<7} {match.group(2)}  {match.group(3)}"
 
@@ -296,6 +386,8 @@ def suite_command(suite: str, cases: dict[str, list[str]],
         if suite == "mr10-coroutines":
             command.append("--continue-known-fixed-stack-failure")
         return command
+    if suite == "coroutine-contract":
+        return [sys.executable, "-B", str(COROUTINE_CONTRACT), "--run"]
     command = [str(NATIVE), suite, "--run", "--profile", profile]
     if suite == "bcplqsam" and allow_device:
         command.append("--allow-device")
@@ -366,6 +458,8 @@ def execute(args: argparse.Namespace, cases: dict[str, list[str]]) -> int:
                        if suite == "mr10" else
                        parse_mr10_probes(log, cases[suite], rc)
                        if suite in ("mr10-probes", "mr10-coroutines") else
+                       parse_coroutine_contract(log, cases[suite], rc)
+                       if suite == "coroutine-contract" else
                        parse_native(log, suite, args.profile, cases[suite], rc))
             entry.update(details)
             entry["runner_rc"] = rc
@@ -435,6 +529,7 @@ def main(argv: list[str] | None = None) -> int:
                   ("interpreted MR10" if name == "mr10" else
                    "interpreted MR10 coroutine probes" if name == "mr10-coroutines" else
                    "interpreted MR10 probes" if name == "mr10-probes" else
+                   "paired MR10/native System/370" if name == "coroutine-contract" else
                    "native System/370"))
         print("PROJECT SUITE CHECK: PASS" if args.check else
               "PROJECT SUITE LIST: host-only")

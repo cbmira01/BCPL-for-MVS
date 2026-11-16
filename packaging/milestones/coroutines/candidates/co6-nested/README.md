@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **March:** CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification  
-**Evidence status:** OFFLINE-TESTED; MVS UNVERIFIED
+**Evidence status:** OWNER-REPORTED PAIRED-MVS-TESTED (16 November 2026; raw JES reports not independently inspected)
 
 This is the second independent paired BCPL behavioral oracle. It must not
 replace the first, already MVS-tested `co6-pair` fixture or the historical
@@ -58,6 +58,8 @@ output prefix distinguish this second test.
 Use `--check` for host-only source/oracle validation; `--run` for both
 independent MVS paths; `--run-mr10` and `--run-native` for isolated diagnosis.
 The full outputs and result JSON are retained under `workarea/co6-nested/`.
-No persistent MVS installation or source mutation is authorized. A complete
-MVS PASS has not yet been reported. The runner must return nonzero if either
-execution path fails.
+No persistent MVS installation or source mutation is authorized. A complete MVS PASS has now been owner-reported for this source revision. The runner must return nonzero if either execution path fails. See the evidence note below.
+
+## 16 November 2026 — paired execution PASS
+
+At tested GitHub `main` `c71dcc77ee2b8eabdf7f141a2497c3e811f7a7b2`, the owner reported `CO.6 nested paired MVS RC=0`, interpreted MR10 PASS, native System/370 PASS and the overall paired result PASS. The retained evidence directory is `workarea/co6-nested/20261116T124503Z-mczybqy0`, with `mvs-state/reconstruction-evidence/co6-nested-20261116T124503Z.log` as the operator log. The versioned driver checks all 18 ordered records and individual MVS phase/step outcomes; the original raw receipts were not separately inspected in this conversation. This does not modify the historical manual-frame failure or establish full historical BCPL compatibility.

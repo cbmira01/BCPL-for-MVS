@@ -213,8 +213,7 @@ inputs and does not install or overwrite BOOT_OBJ. Full logs and
 structured results go under `workarea/co6-pair/`; normal console output
 is limited to per-engine status and evidence location. Both engines must
 PASS for an overall PASS; an MR10 failure never suppresses the native
-submission. The pair is **experimental and not yet a regular regression
-suite member** pending independent MVS verification and owner acceptance.
+submission. The `co6-pair` and `co6-nested` fixtures each have an owner-reported independent MVS PASS. They are now promoted into the `coroutine-contract` regular project suite, whose own new coordinator run remains pending MVS verification.
 
 ## CO.6 — second paired nested coroutine MVS candidate
 
@@ -228,3 +227,9 @@ busy-target refusal, RESUMECO parent transfer, deletion and reuse.
 The tool reuses the verified first-pair driver without editing it or
 writing installed MVS objects. Source inputs and host tests are
 verified; **actual MVS execution remains outstanding**.
+
+## CO.6 regular cross-compiler regression suite
+
+The newly registered `coroutine-contract` project suite contains exactly two source-pinned paired cases: **`co6-pair`** (11 output records, single-worker re-entry) and **`co6-nested`** (18 output records, two-worker parent-chain, nested continuations and delete/reuse). It dispatches the accepted `tools/coroutines/run-co6-pair.py` and `run-co6-nested.py` unchanged through `tools/coroutines/run-co6-contract-regressions.py`.
+
+The manifest `tests/suites/coroutine-contract.tsv` pins both case identities, source runners and oracles. `tools/tests/run-project-regressions --check` validates the paired sources without JES work. `--run --suite coroutine-contract` submits MVS work (MR10 plus Cambridge/IFOX/IEWL/GO per case), validates complete separate receipts, and provides case names with `--progress`. This suite **does not need** the native-only `--profile` option, because each paired candidate already owns its proven native compilation/linkage profile. Failure stops later cases and returns nonzero. The original `mr10-coroutines` suite continues to report the qualified manual-frame FAIL and cannot be hidden by the new green-contract suite. The first integrated MVS coordinator run is still pending.
