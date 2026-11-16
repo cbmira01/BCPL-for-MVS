@@ -428,3 +428,18 @@ continuation contract. **CO.6 IN PROGRESS; CO.0–CO.5 CLOSED (qualified).**
 The owner-reported **second paired CO.6 run** at revision `c71dcc77ee2b8eabdf7f141a2497c3e811f7a7b2` completed with **MR10 PASS, native PASS, overall RC=0** for the `CO6NEST` eighteen-record two-worker oracle. Evidence: `workarea/co6-nested/20261116T124503Z-mczybqy0`. The first eleven-record `CO6PAIR` remains separately PASS. Both are independently MVS-tested (owner-reported). See [CO.6 contract and evidence](co6-common-coroutine-contract-20261116.md).
 
 Promote these two verified pair identities into the new selectable project regression suite **`coroutine-contract`**, distinct from the genuinely failing historical `mr10-coroutines` diagnostic selection and from existing native cases 177–189. Host-side tests of the added runner/coordinator pass, but **the newly integrated coordinator suite has not yet been exercised against MVS**. CO.6 remains **IN PROGRESS** pending a fresh integrated test and owner acceptance decision. No production object changes or distribution release.
+
+## 16 November 2026 — consolidated CO.6 campaign and acceptance candidate
+
+At tested GitHub `main` `7e41425cc272c68edea792b1d16b1b2c783eb556`, the owner reported a seven-suite
+coordinated PASS / RC0: **203 PASS, zero FAIL/BLOCKED, expected SKIP 083**.
+This includes all six established production suites (201 PASS, one SKIP)
+and both new `coroutine-contract` paired BCPL cases (2 PASS). The five
+original `mr10-coroutines` probes were run separately and returned
+**4 PASS, 1 genuine original fixed-stack FAIL / RC1**.
+
+The [CO.6 formal qualified acceptance review candidate](co6-qualified-acceptance-review-candidate-20261116.md)
+records the evidence, applicable Approach A/S1 and historical qualifications,
+and the proposed owner decision. **CO.6 remains IN PROGRESS and is NOT
+CLOSED until explicitly approved by the owner.** No new official march,
+MVS object modification, or public release is authorized.
