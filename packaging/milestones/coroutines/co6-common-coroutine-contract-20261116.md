@@ -4,7 +4,7 @@
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification  
 **Established:** 16 November 2026 (owner approval in project conversation)  
-**Status:** IN PROGRESS; MVS verification gates satisfied, owner acceptance pending  
+**Status:** CLOSED (qualified) — owner accepted 16 November 2026  
 **Baseline:** GitHub main `60750004f5826bac1355c9c2d32b35ba141628c3` before CO.6 edits
 
 ## Scope and comparison boundary
@@ -281,3 +281,7 @@ The [revised CO.6 formal qualified acceptance review candidate](co6-qualified-ac
 documents met gates and retained limits. **CO.6 remains IN PROGRESS
 until explicit owner qualified-closure approval.**
 No MVS reruns, source/runtime changes or new march are requested.
+
+## 16 November 2026 — formal owner decision
+
+The owner expressly accepted [CO.6 qualified closure](co6-formal-acceptance-and-closure-20261116.md) following the final MVS-supported campaign. This records **CO.6 CLOSED (qualified)**. All agreed supported verification gates are met within the documented common-domain boundary. The original manually framed MR10 probe still genuinely fails, separately classified, and the previously accepted Approach A/S1 and historical limitations remain. No new official march, production runtime change, or distribution publication follows automatically from closure.

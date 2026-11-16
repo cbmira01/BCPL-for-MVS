@@ -2,9 +2,9 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Established:** 10 November 2026  
-**Status:** IN PROGRESS (CO.6); CO.0–CO.5 CLOSED (qualified), owner accepted 16 November 2026
+**Status:** CLOSED (qualified); CO.0–CO.6 owner-accepted, 16 November 2026
 
-**Marches:** CO.0–CO.5 CLOSED (qualified); CO.6 IN PROGRESS
+**Marches:** CO.0–CO.6 CLOSED (qualified)
 
 **Target:** Native System/370 BCPL applications under MVS 3.8J
 
@@ -501,3 +501,11 @@ The [revised CO.6 formal qualified acceptance review candidate](co6-qualified-ac
 documents met gates and retained limits. **CO.6 remains IN PROGRESS
 until explicit owner qualified-closure approval.**
 No MVS reruns, source/runtime changes or new march are requested.
+
+## 16 November 2026 — CO.6 formally CLOSED (qualified) by owner approval
+
+The owner expressly approved closing **CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification** on 16 November 2026, after reviewing the [final formal qualified acceptance candidate](co6-qualified-acceptance-review-candidate-20261116.md). The approved [CO.6 formal acceptance and closure record](co6-formal-acceptance-and-closure-20261116.md) is authoritative for the closing disposition; prior interim "IN PROGRESS" and "MVS pending" passages remain as historical dated checkpoints, not current status.
+
+The final integrated, source-controlled **eight-suite supported MVS campaign** tested GitHub `main` `216b6707c404a91c796ed8f1419a99ef172b184a` with **208 PASS, zero FAIL/BLOCKED, one expected Bootstrap SKIP 083, coordinator RC=0**. The separate historical `mr10-coroutines` diagnostic remained **4 PASS, one genuine fixed-stack CODE=-1 FAIL, RC=1**. Both paired MR10/native BCPL contract cases passed. Original historical source, golden oracles and negative records are preserved without reclassification.
+
+**CO.0–CO.6 are now CLOSED (qualified); the milestone "Implement coroutine support for native compiler" is CLOSED (qualified).** Accepted Approach A/S1 limits, CO.5 Bootstrap 117 SB2D evidence, native compiler execution boundary, and distribution/rollback exclusions remain. No new march, production object promotion or public release is authorized by this documentation-only closure. Post-milestone discussion is a separate owner-directed activity, not an already approved implementation milestone. See the [post-milestone discussion handoff](co6-post-milestone-discussion-handoff-20261116.md).

@@ -4,7 +4,7 @@
 **Milestone:** Implement coroutine support for native compiler  
 **March:** CO.6 — Common Coroutine Behavioral Contract and Cross-Compiler Verification  
 **Decision:** Owner-directed supported/diagnostic separation, 16 November 2026  
-**Status:** IMPLEMENTED AND VERIFIED ON MVS; CO.6 owner acceptance pending
+**Status:** IMPLEMENTED, MVS VERIFIED, AND ACCEPTED IN CO.6 QUALIFIED CLOSURE
 
 ## Problem and disposition
 
@@ -113,3 +113,7 @@ The [revised CO.6 formal qualified acceptance review candidate](co6-qualified-ac
 documents met gates and retained limits. **CO.6 remains IN PROGRESS
 until explicit owner qualified-closure approval.**
 No MVS reruns, source/runtime changes or new march are requested.
+
+## 16 November 2026 — owner acceptance and closure
+
+The owner accepted [CO.6 CLOSED (qualified)](co6-formal-acceptance-and-closure-20261116.md). The independently named supported fixed-stack frame test remains a PASS from the completed **five-PASS** supported MR10 MVS suite, while the original historical fixed-stack probe remains an actual **CODE=-1 FAIL** from the four-PASS/one-FAIL diagnostic. Neither original source, golden, expected code nor historical evidence was changed to accomplish acceptance.
