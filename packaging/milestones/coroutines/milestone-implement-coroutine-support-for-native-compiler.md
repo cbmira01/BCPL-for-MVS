@@ -301,3 +301,13 @@ operator log is `mvs-state/reconstruction-evidence/co5-rebuild-20261116T005114Z.
 See [CO.5 Git-driven production clean-room evidence](co5-production-clean-room-pass-20261116.md).
 Fresh post-rebuild project regressions and separate owner closure are
 still required. **CO.5 IN PROGRESS.**
+
+## 16 November 2026 — post-reconstruction regular regression FAIL
+
+At revision `172d5c1486a69ae427e167df22f075590d7d1654`, the first regular post-reconstruction
+coordinator returned RC=1: MR10 12 PASS, Bootstrap 144 PASS / one
+actual FAIL / expected SKIP 083; later selected suites NOT RUN under
+fail-stop. The case ID and raw diagnostic are pending review. See
+[post-clean-room failure checkpoint](co5-post-cleanroom-regression-fail-20261116.md).
+Preserve the installed-object and clean-room PASS records separately.
+**CO.5 IN PROGRESS; no acceptance or release.**
