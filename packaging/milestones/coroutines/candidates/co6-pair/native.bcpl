@@ -1,0 +1,76 @@
+// CO.6 paired observable coroutine contract: native System/370 version.
+// Link to isolated accepted CO.3 independent library and BCPLCO candidate.
+GLOBAL $(
+  START:1
+  WRCH:14
+  WRITES:60
+  CO3INIT:289
+  CREATECO:290
+  DELETECO:291
+  CALLCO:292
+  COWAIT:293
+  CO3CURR:295
+  CO3ROOT:296
+  CO3LIST:297
+$)
+
+LET MARK(S) BE
+$(1 WRITES("CO6PAIR ")
+    WRITES(S)
+    WRCH(10)
+$)1
+
+AND FAIL() BE
+$(1 MARK("FAIL")
+    FINISH
+$)1
+
+AND WORK(A) = VALOF
+$(1 LET KEEP=717
+    AND R=0
+    IF A=11 DO
+    $(2 MARK("W1")
+        R:=COWAIT(21)
+        IF R \=31 | KEEP \=717 RESULTIS -1
+        MARK("W2")
+        R:=COWAIT(41)
+        IF R \=51 | KEEP \=717 RESULTIS -2
+        MARK("W3")
+        RESULTIS 61
+    $)2
+    IF A=71 DO
+    $(2 MARK("W4")
+        RESULTIS 81
+    $)2
+    RESULTIS -3
+$)1
+
+LET START() BE
+$(1 LET ROOT=0
+    AND CO=0
+    AND R=0
+    CO3ROOT:=0
+    CO3CURR:=0
+    CO3LIST:=0
+    ROOT:=CO3INIT()
+    IF ROOT=0 DO FAIL()
+    CO:=CREATECO(WORK,1024)
+    IF CO=0 | CO3CURR \= ROOT DO FAIL()
+    MARK("MADE")
+    R:=CALLCO(CO,11)
+    IF R \=21 | CO3CURR \= ROOT DO FAIL()
+    MARK("R1")
+    R:=CALLCO(CO,31)
+    IF R \=41 | CO3CURR \= ROOT DO FAIL()
+    MARK("R2")
+    R:=CALLCO(CO,51)
+    IF R \=61 | CO3CURR \= ROOT DO FAIL()
+    MARK("R3")
+    R:=CALLCO(CO,71)
+    IF R \=81 | CO3CURR \= ROOT DO FAIL()
+    MARK("R4")
+    IF DELETECO(CO) \= TRUE DO FAIL()
+    MARK("DEL")
+    MARK("PASS")
+    FINISH
+$)1

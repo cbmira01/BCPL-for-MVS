@@ -22,7 +22,7 @@ The common domain is cooperative, valid/live coroutines with one root and no mor
 | RESUMECO/parent chain | Valid inactive targets resume with correct parent ownership; busy-target rejection preserves the caller's parent |
 | Suspension and continuation | Local and nested-call state survive multiple yields at distinct continuation sites |
 | Deletion and reuse | Inactive registered descriptors can be deleted and bounded storage reused without corrupting surviving workers |
-| Natural worker return | **Known divergence:** MR10 COBOOT can invoke FN again after a natural return; accepted native support terminates the worker. Do not call these equivalent before an explicit common-contract decision and tests |
+| Natural worker return | **SOURCE-OBSERVED shared behavior:** canonical MR10 `COBOOT` and production native `CO3BOOT` can both invoke `FN` again on a later call after ordinary return. Paired interpreted/native execution must still verify the common observable oracle. |
 
 No comparison depends on matching internal descriptor offsets, interpreter P/C, native register values, compiler-generated decks or MR10-local G!6–10/91–95. No arbitrary stale/freed-pointer recovery, unlimited coroutine count or stack size, preemption, abend recovery or untested native compiler execution is implied.
 
@@ -49,7 +49,7 @@ The new interpreted suite and existing native suite are initially **independent*
 
 - MR10's five original coroutine probes are independently selectable and honestly classified. The original fixed-stack FAIL remains visible until genuinely resolved or separately dispositioned by owner approval.
 - Paired, source-controlled, valid-domain BCPL cases satisfy the agreed observable contract under **both** interpreted MR10 and native System/370 execution with retained MVS/JES evidence. Do not infer parity from shared test names alone.
-- Resolve or obtain explicit owner-approved *narrow exceptions* for first-activation and natural-return differences; never silently weaken either contract.
+- Explicitly disposition the historical invalid first-activation frame and verify the source-shared ordinary-return/re-entry contract in paired interpreted/native MVS runs; document any genuine differences without weakening accepted oracles.
 - The prior six regular project suites remain verified against the installed production objects, retaining expected Bootstrap SKIP 083 and the original case 117 IEWL SB2D failure record. Separate new-suite failure is not folded into the 201-PASS CO.5 count.
 - Separate owner review and acceptance precede any CO.6 qualified closure, production object promotion or next march. No public release is authorized.
 
@@ -90,3 +90,56 @@ later-case evidence **only** after the exact known fixed-stack
 diagnostic (compiler/runner RC0, interpreted CODE=-1, unique JES ID).
 Any unrelated failure stops immediately. The aggregate still returns
 FAIL / nonzero RC, and no historical source or golden changes.
+
+## 16 November 2026 — second interpreted campaign and corrected-frame JOB 7693
+
+**Tested GitHub `main`:** `d0cd9543e3a0f947d61fee497fe1b2d606bb0fa4`.
+**Evidence:** OWNER-REPORTED MVS runner excerpt; raw JES reports and complete candidate output not independently inspected.
+
+- `mr10-coroutines` **RC=1 / FAIL**, **4 PASS, 1 genuine FAIL,
+  zero SKIP/BLOCKED**. Compiler-probe, frame-layout-probe,
+  resumeco-chain and create-delete-static-pool all PASS. The original
+  fixed-stack-producer-consumer still fails the exact interpreted
+  CODE=0 requirement with observed CODE=-1. The narrow continuation
+  policy permitted both later tests to run; it did not hide the failure.
+- Coordinator receipt:
+  `workarea/project-regressions/20261116T064034Z-34134-dbofgojz/summary.json`;
+  operator console log:
+  `mvs-state/reconstruction-evidence/co6-mr10-full-20261116T064033Z.log`.
+- The separately run corrected-frame
+  `fixed-stack-co0-candidate.bcpl` returned compiler driver **RC=0**,
+  **JOB 7693**. The supplied grep excerpt showed the job ID but not the
+  ten intended producer/consumer records or final interpreted CODE.
+  Therefore this attempt is **RUNNER-RC0, ORACLE NOT INDEPENDENTLY VERIFIED**
+  on supplied evidence. Earlier JOB 5321 is the existing
+  exact-oracle/code-zero/ten-step verified candidate evidence.
+  Operator log:
+  `mvs-state/reconstruction-evidence/co6-fixed-frame-20261116T064033Z.log`.
+
+## CO.6 paired BCPL application candidate — verification pending
+
+The [CO.6 paired application fixture](candidates/co6-pair/README.md)
+introduces separate real BCPL entry programs for MR10 INTCODE and native
+System/370, with one shared **eleven-record** output oracle. Both use
+valid library-mediated creation rather than hand-constructed interpreter
+frames; the observed contract is first activation, 11/31/51/71 argument
+delivery, 21/41/61/81 yields, preservation of local 717 across two
+suspensions, ordinary worker return and later re-entry, root-controlled
+inactive deletion, and ordered completion.
+
+The [new isolated driver](../../../tools/coroutines/run-co6-pair.py)
+submits a distinct interpreted MR10 compiler/ICINT job and two
+Cambridge compilation jobs plus one four-IFOX/IEWL/native GO job;
+it checks complete independent output/JES/phase evidence and retains
+both receipts. It reuses the accepted CO.3 isolated linkage adapter
+with pinned source hashes, temporary candidate datasets and
+read-only BOOT_OBJ. The historical negative fixture, existing
+production objects, native numbered regression suite, and
+other test oracles are unchanged.
+
+**Independent host verification:** Eight focused Python unit tests PASS
+in assistant workspace; Python syntax checked; source files checked for
+ASCII, 80-column BCPL card limits and expected markers. This is **not**
+a BCPL syntax/compiler or IFOX/IEWL/MVS execution PASS. The paired
+application remains **UNVERIFIED on MVS** until the owner supplies
+separate actual execution receipts. CO.6 remains IN PROGRESS.

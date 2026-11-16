@@ -1,0 +1,72 @@
+// CO.6 paired observable coroutine contract: interpreted MR10 version.
+// One root, one valid worker; no descriptor-layout parity with native.
+GLOBAL $(
+  START:1
+  CURRCO:7
+  COLIST:8
+  WRITEF:76
+  HEAPINIT:89
+  CREATECO:91
+  DELETECO:92
+  CALLCO:93
+  COWAIT:94
+$)
+
+LET MARK(S) BE WRITEF("CO6PAIR %S*N", S)
+
+AND FAIL() BE
+$( MARK("FAIL")
+   FINISH
+$)
+
+AND WORK(A) = VALOF
+$( LET KEEP=717
+   AND R=0
+   IF A=11 DO
+   $( MARK("W1")
+      R:=COWAIT(21)
+      IF R \=31 | KEEP \=717 RESULTIS -1
+      MARK("W2")
+      R:=COWAIT(41)
+      IF R \=51 | KEEP \=717 RESULTIS -2
+      MARK("W3")
+      RESULTIS 61
+   $)
+   IF A=71 DO
+   $( MARK("W4")
+      RESULTIS 81
+   $)
+   RESULTIS -3
+$)
+
+AND START() BE
+$( LET ROOT=VEC 2
+   AND ARENA=VEC 400
+   AND CO=0
+   AND R=0
+   HEAPINIT(ARENA,401)
+   CURRCO:=ROOT
+   ROOT!0:=0
+   ROOT!1:=-1
+   ROOT!2:=0
+   COLIST:=ROOT
+   CO:=CREATECO(WORK,100)
+   IF CO=0 DO FAIL()
+   MARK("MADE")
+   R:=CALLCO(CO,11)
+   IF R \=21 DO FAIL()
+   MARK("R1")
+   R:=CALLCO(CO,31)
+   IF R \=41 DO FAIL()
+   MARK("R2")
+   R:=CALLCO(CO,51)
+   IF R \=61 DO FAIL()
+   MARK("R3")
+   R:=CALLCO(CO,71)
+   IF R \=81 DO FAIL()
+   MARK("R4")
+   IF DELETECO(CO) \= TRUE DO FAIL()
+   MARK("DEL")
+   MARK("PASS")
+   FINISH
+$)

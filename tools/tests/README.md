@@ -201,3 +201,17 @@ All other failures are fail-stop, and the eleven-case
 `mr10-probes` selection retains its existing default. This makes
 `resumeco-chain` and `create-delete-static-pool` observable in the
 same new-suite campaign without hiding the original exception.
+
+## CO.6 paired interpreted/native application candidate
+
+`tools/coroutines/run-co6-pair.py --run` submits independent interpreted
+MR10 and native Cambridge/IFOX/IEWL/GO paths, using
+`packaging/milestones/coroutines/candidates/co6-pair/` and one exact
+11-record oracle. Its `--check` mode is host-only. The native
+linker path reuses the accepted CO.3 deletion adapter with pinned source
+inputs and does not install or overwrite BOOT_OBJ. Full logs and
+structured results go under `workarea/co6-pair/`; normal console output
+is limited to per-engine status and evidence location. Both engines must
+PASS for an overall PASS; an MR10 failure never suppresses the native
+submission. The pair is **experimental and not yet a regular regression
+suite member** pending independent MVS verification and owner acceptance.
