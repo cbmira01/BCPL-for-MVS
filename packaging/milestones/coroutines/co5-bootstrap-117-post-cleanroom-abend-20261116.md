@@ -30,6 +30,43 @@ observed running**: the required link-edit completion boundary and
 `GO` were absent. No actual input/EOF output comparison is established
 by this run. Do not recategorize the case as PASS or SKIP.
 
+## MVS JES completion-code follow-up: SB2D
+
+The owner obtained a focused extract from existing JOB 6745 JES SYSOUT,
+confirming the failing step and completion code:
+
+```text
+RG117R ASMAP IFOX00 RC= 0000
+IEC999I IFG0TC0A,IFG0TC0B,RG117R,LKED,DEB ADDR=99B494
+IEC999I IFG0TC0A,IFG0TC0B,RG117R,LKED,DEB ADDR=99B030
+IEC999I IFG0TC0A,IFG0TC0B,RG117R,LKED,DEB ADDR=99B50C
+IEC999I IFG0TC0A,IFG0TC0B,RG117R,LKED,DEB ADDR=99B2D0
+IEF450I RG117R LKED - ABEND SB2D U0000
+RG117R LKED IEWL AB SB2D
+RG117R GO PGM=*.DD *FLUSH*
+IEF472I RG117R LKED - COMPLETION CODE - SYSTEM=B2D USER=0000
+IEF272I RG117R GO - STEP WAS NOT EXECUTED.
+```
+
+IBM's *OS/VS Message Library: VS2 System Codes*, GC38-1008-9
+(December 1984), defines **B2D** as a program check during FETCH
+ESTAE processing when loading a segment of an overlay program.
+Reference: https://manualzz.com/doc/22379714/ibm-vs2-system-codes-os-vs-message-library-manual
+The `IEC999I IFG0TC0A/IFG0TC0B` messages correspond to OPEN/CLOSE/EOV
+or task-close processing (see IBM's `IEC999I` reference:
+https://www.ibm.com/docs/en/zos/2.5.0?topic=messages-iec999i).
+The messages alone do not establish whether the initial cause was
+a damaged overlay, an intermittent MVS FETCH issue, or another
+system condition.
+
+**Disposition:** The test's BCPL EOF logic was never executed;
+the system abend occurred in IEWL before GO. This is a real FAIL
+of the complete regression attempt, but not a demonstrated BCPL
+behavioral defect. A **single focused MVS rerun of case 117**
+is justified as the next discriminating test. If SB2D repeats,
+investigate the IEWL overlay load and environment using the
+new job report; do not alter BCPL code or expected output.
+
 ## Technical interpretation and next gate
 
 The summary is consistent with an operational JES failure after the
@@ -38,12 +75,12 @@ MVS completion code or underlying cause**. It does not, by itself,
 prove a BCPL source/compiler/runtime defect or a transient resource
 failure.
 
-Next, inspect the *existing* JES printer report for JOB 6745,
-particularly `IEF450I`, `IEF472I`, `IEA995I`, the program/step name
-and any accompanying `IEC`, `IKJ` or allocation diagnostics.
-Preserve the full evidence in the operator's MVS log. Do not rerun
-the 146-case Bootstrap suite or modify accepted tests before the
-failure class is understood.
+The original failed JES report has now been examined far enough to
+identify the B2D overlay FETCH abend at `LKED`. Obtain a focused
+case-117 repeat using `tools/tests/run-suite bootstrap --run --profile
+production --case 117`. Preserve any new JES report and distinguish
+PASS after retry from the original irreversible FAIL. Do not rerun
+all 146 Bootstrap cases or modify expected outputs on speculation.
 
 CO.5 clean-room reconstruction and installed coroutine GO remain PASS.
 The current post-rebuild regression gate remains FAIL, and later

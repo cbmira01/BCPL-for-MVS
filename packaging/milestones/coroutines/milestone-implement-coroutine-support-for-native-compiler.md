@@ -322,3 +322,15 @@ EOF comparison took place. The MVS completion code is not yet known.
 See [case 117 failure investigation](co5-bootstrap-117-post-cleanroom-abend-20261116.md).
 **Do not change BCPL, JCL or regression expectations without the actual
 MVS error message. CO.5 IN PROGRESS.**
+
+## 16 November 2026 — Bootstrap 117 SB2D identified
+
+Owner-provided JES for `RG117R` JOB **6745** isolates the fault to
+`LKED` (IEWL), ABEND **SB2D U0000**, after `ASMAP RC=0000`.
+The GO step was flushed. IBM's OS/VS2 completion-code manual
+identifies B2D with overlay-program FETCH processing. The
+`IEC999I IFG0TC0A/IFG0TC0B` DEB messages occurred in task-close
+processing. A focused one-case rerun is the next gate; do not claim
+that the application observed an EOF mismatch. See
+[case 117 SB2D evidence](co5-bootstrap-117-post-cleanroom-abend-20261116.md).
+**CO.5 IN PROGRESS.**
