@@ -348,3 +348,23 @@ attempt; its cause is not resolved. See
 [case 117 two-attempt record](co5-bootstrap-117-post-cleanroom-abend-20261116.md).
 A complete, successful six-suite post-reconstruction campaign and
 separate owner acceptance remain outstanding. **CO.5 IN PROGRESS.**
+
+## 16 November 2026 — full six-suite post-clean-room PASS
+
+At revision `9a621d5aac0d5c6068e10c6425b861f7480cf30a`, the owner reported RC=0 and
+`PROJECT REGRESSION RESULT: PASS` for all six regular project
+suites under the production profile with BCPLQSAM device permission.
+The source-controlled fail-stop coordinator and case manifests
+establish **201 PASS, zero FAIL, one expected SKIP 083 and zero
+BLOCKED**. All 13 native coroutine cases passed. See
+[CO.5 six-suite post-reconstruction evidence](co5-post-reconstruction-full-regression-pass-20261116.md).
+
+The original Bootstrap 117 IEWL `SB2D` failed attempt is retained
+despite subsequent case and whole-suite PASS. The interpreted
+MR10 legacy fixed-stack probe remains one genuine qualified FAIL
+in the separately executed Development Probes. No BCPL/IFOX/JCL
+or golden changes are justified by the clean-room results.
+
+A [CO.5 formal qualified acceptance review candidate](co5-qualified-acceptance-review-candidate-20261116.md)
+is ready. **CO.5 remains IN PROGRESS until explicit owner approval.
+No distribution release is authorized.**
