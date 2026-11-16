@@ -334,3 +334,17 @@ processing. A focused one-case rerun is the next gate; do not claim
 that the application observed an EOF mismatch. See
 [case 117 SB2D evidence](co5-bootstrap-117-post-cleanroom-abend-20261116.md).
 **CO.5 IN PROGRESS.**
+
+## 16 November 2026 — case 117 isolated PASS after SB2D
+
+The owner repeated only Bootstrap case **117-independent-input-eof**
+under production profile. The runner returned **RC=0**, one PASS,
+zero FAIL, zero SKIP and zero BLOCKED; evidence:
+`workarea/test-suites/20261116T013444Z-89084-bootstrap-production-2nkpzua4`
+and persistent operator log
+`mvs-state/reconstruction-evidence/co5-case117-20261116T013444Z.log`.
+The original JOB 6745 IEWL SB2D remains recorded as a real failed
+attempt; its cause is not resolved. See
+[case 117 two-attempt record](co5-bootstrap-117-post-cleanroom-abend-20261116.md).
+A complete, successful six-suite post-reconstruction campaign and
+separate owner acceptance remain outstanding. **CO.5 IN PROGRESS.**

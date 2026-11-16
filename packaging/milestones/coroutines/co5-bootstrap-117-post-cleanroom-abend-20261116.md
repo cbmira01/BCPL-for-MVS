@@ -86,3 +86,43 @@ CO.5 clean-room reconstruction and installed coroutine GO remain PASS.
 The current post-rebuild regression gate remains FAIL, and later
 selected suites are NOT RUN under coordinator fail-stop. **CO.5
 remains IN PROGRESS.**
+
+## 16 November 2026 — isolated case 117 rerun PASS
+
+Following the first-run IEWL SB2D in JOB 6745, the owner ran a **single**
+production-profile MVS regression for Bootstrap case
+`117-independent-input-eof` at revision
+`3da7bca64b47ea387b4d89d4d1e7bc95d7011c7c` (revision-guarded operator command).
+The reported output is:
+
+```text
+Case 117 RC=0
+Evidence: mvs-state/reconstruction-evidence/co5-case117-20261116T013444Z.log
+Evidence: /home/calvin/Source/Repos/BCPL-for-MVS/workarea/test-suites/20261116T013444Z-89084-bootstrap-production-2nkpzua4
+PASS    117 117-independent-input-eof: native runner RC=0; log=workarea/test-suites/20261116T013444Z-89084-bootstrap-production-2nkpzua4/case-117/runner.log
+SUITE COMPLETE
+PASS 1
+FAIL 0
+SKIP 0
+BLOCKED 0
+TOTAL 1
+```
+
+This is a **new PASS attempt** on the same accepted source and
+expected-output fixture. It supports that case 117 is executable on
+the reconstructed production runtime; it **does not erase** the original
+full-suite FAIL, establish the cause of the SB2D, or demonstrate that
+an environmental or IEWL problem has been permanently corrected.
+
+The native runner's detailed JES job identifiers and output records
+for this new attempt were not included in the supplied excerpt.
+Retain the operator-local evidence listed above. No application,
+runtime, JCL, expected-output or regression-harness code was changed.
+
+**Next CO.5 gate:** rerun all six regular selected suites on the
+unchanged reconstructed MVS environment (MR10, Bootstrap, Runtime
+Extensions, BCPLTIME, Coroutines and device-authorized BCPLQSAM).
+The previously accepted original fixed-stack MR10 development-probe
+FAIL remains separate. Only a new, complete per-suite outcome can
+satisfy the post-reconstruction regression gate.
+**CO.5 IN PROGRESS.**
