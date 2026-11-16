@@ -44,6 +44,33 @@ Owns the executable's mandatory ABI and environment: MVS entry and exit, save-ar
 
 `LIBHDR` is the **historical base declaration header**, not an executable library. It publishes `GLOBAL` names/numbers and `MANIFEST` constants. It does not itself link any code or populate slots. The source under `richards-bcpltape/sys3/bcpl/libhdr` is the evidence authority for the historical names present there; its complete implementation remains subject to reconstruction.
 
+### Coroutine Support Library
+
+**Owner decision (16 November 2026):** The maintained
+`bootstrap-toolchain/library/coroutines.bcpl` is the separate
+**Coroutine Support Library**, not an addition to the historical
+**Base Library** (`BLIB`). It provides the BCPL lifecycle routines
+`CREATECO`, `DELETECO`, `CALLCO`, `COWAIT`, and `RESUMECO`;
+its native object is `BOOT_OBJ(COROUTIN)`.
+
+The associated Core Runtime assembler bridge is
+`bootstrap-toolchain/asm/bcplco-production.asm`, installed as
+`BOOT_OBJ(BCPLCO)`. It provides native context switching and
+descriptor revocation. Together the separate modules support the
+accepted bounded coroutine contract. This is a fundamental runtime
+facility, not an optional MVS System Extension or a general-purpose
+Standard Library.
+
+The two coroutine objects and historical `BLIB` may share the
+`BOOT_OBJ` object-library PDS without becoming the same logical
+library. Preserve historical `BLIB` unchanged unless independent
+evidence and a separate owner-approved decision justify changes.
+This classification does not modify the accepted coroutine contract,
+internal ABIs, global numbers, linkage, or build procedures.
+
+See the [coroutine milestone](../milestones/coroutines/milestone-implement-coroutine-support-for-native-compiler.md)
+and [CO.6 qualified closure](../milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md).
+
 ### System Extensions
 
 A System Extension is an optional package primarily intended to expose platform facilities. `BCPLQSAM` (MVS record I/O), `BCPLTIME` (MVS clock bridge) and `BCPLDEC` (initial System/370 packed-decimal implementation) are examples under their respective milestones. **BCPLDEMO** is the deliberately simple, project-created **permanent supported reference System Extension**. It is retained to teach and regression-test BCEX/BCRG v1, BCX/IEWL selection, and interoperability; its demonstration service does not claim to be a historical Cambridge platform API. See its [formal owner support decision](../milestones/runtime-extensions/bcpldemo-supported-reference-decision-20261024.md). All System Extensions, including BCPLDEMO, remain optional: none is built into BCPLMAIN or required for M4.

@@ -84,9 +84,14 @@ The independently compiled production `coroutines.bcpl` and matching
 `coroutines.h` are derived from the accepted CO.3 source, with
 permanent G!289–300 assignments. The older deferred-port note above
 describes the historic staging baseline; this CO.5 entry supersedes
-that note for coroutine support only. `coroutines.bcpl` is **not**
-folded into historic `BLIB`. The production object is
-`BOOT_OBJ(COROUTIN)`, separate from IFOX `BOOT_OBJ(BCPLCO)`.
+that note for coroutine support only. By the owner-approved
+[nomenclature decision](../../packaging/architecture/runtime-and-library-nomenclature.md#coroutine-support-library),
+it is the separate **Coroutine Support Library**, not part of the
+historical **Base Library** (`BLIB`) or a System Extension. The
+production object `BOOT_OBJ(COROUTIN)` provides BCPL coroutine
+lifecycle operations alongside the Core Runtime assembler bridge
+`BOOT_OBJ(BCPLCO)`. Sharing `BOOT_OBJ` does not merge these
+logical libraries.
 The accepted 24-word descriptor remains private and only the bounded
 root/two-worker contract is supported.
 
