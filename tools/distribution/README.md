@@ -56,3 +56,21 @@ The first two commands audit the fifteen selected object/load members against th
 To additionally check the exact **member names** in *saved read-only MVS listing outputs*, supply `--inventory-dir <directory>`; that directory must contain `MR10_OBJ.txt`, `MR10_LOAD.txt`, `BOOT_OBJ.txt`, `EXT_OBJ.txt` as unmodified output from `dspal ls <key>` on the intended MVS system. This tool does not contact MVS, collect those outputs, or equate a matching directory with binary-byte acceptance.
 
 The [TA.0 binary provenance review](../../packaging/distribution/manifest/ta0-provenance-and-dependency-audit.md) documents the limitations. The offline TA.0 suite contains **55 synthetic-fixture cases**. There is no license/rights sign-off, no tape producer or installation approval, and no TA.0 formal closure.
+
+## Saved MVS evidence inspection (read-only TA.0)
+
+```sh
+python3 -B tools/distribution/audit-mvs-build-evidence.py \
+    --index /path/to/saved-evidence/index.json \
+    --source-sha FULL_40_CHARACTER_SOURCE_GIT_SHA \
+    --json
+```
+
+All **20** saved UTF-8 attachments must have SHA-256 digests in the
+operator-supplied index: 8 job summaries, 8 full dump reports, and
+4 exact binary PDS member inventories. See the
+[full evidence contract](../../packaging/distribution/manifest/ta0-mvs-build-evidence-intake.md).
+
+The source SHA check compares two operator claims, not Git bytes to MVS;
+the result is not binary record readback, rights approval, or a tape acceptance.
+

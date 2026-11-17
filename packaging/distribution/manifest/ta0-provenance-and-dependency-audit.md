@@ -130,3 +130,19 @@ python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'tes
 The optional `--inventory-dir <directory>` reads four saved, standard `dspal ls` outputs (`MR10_OBJ.txt`, `MR10_LOAD.txt`, `BOOT_OBJ.txt`, `EXT_OBJ.txt`) and checks exact member equality and the development HLQ heading. It does **not** connect to MVS or produce those reports. Comparing directory member names is only one of many required checks: full member record bytes, DCB, job identity/RC/severity, restoration and executable linkage/GO remain necessary.
 
 **Independent GitHub cross-check at `bb4a88d76dfbda91eacc7dda6cb196a3747534b2`:** all eight relevant IFOX/IEWL/IEBGENER build JCL step sequences matched `verify.py` expectations, including the unshipped `BLIBBLD` development job. The fifteen offline test cases added in this checkpoint are synthetic; with existing 40 TA.0 cases, **55 offline tests passed**. This is build-contract consistency evidence, **not** a resident MVS readback, legal redistribution determination, or TA.0 closure. No MVS or tape writes occurred.
+
+## 7. Read-only retained MVS evidence preflight — 17 November 2026
+
+The [operator-supplied evidence index contract](ta0-mvs-build-evidence-intake.md)
+specifies eight JES job summary/full-report pairs and four saved object/load
+directory listings with SHA-256 attachment integrity. The
+[read-only inspector](../../../tools/distribution/audit-mvs-build-evidence.py)
+uses existing reconstruction verification rules and rejects inconsistent
+source claims, malformed job IDs, missing/duplicated members, unsafe paths,
+symlinks, changed attachments, job failures, nonzero RCs, and absent CODE=0.
+
+18 new synthetic tests pass, bringing the TA.0 offline suite to **73/73**.
+No real JES output, MVS binary record readback, actual DCB proof or historical
+redistribution acceptance is present in this checkpoint. Existing CO.5
+qualification remains unchanged; no new tape-candidate evidence is claimed.
+

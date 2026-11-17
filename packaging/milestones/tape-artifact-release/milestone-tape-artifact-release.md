@@ -70,6 +70,8 @@ The first TA.1 diagnostic experiment should use a **fresh, uniquely named scratc
 
 **Further TA.0 binary provenance checkpoint, 17 November 2026:** the [read-only 15-member build-chain audit](../../distribution/manifest/ta0-provenance-and-dependency-audit.md#6-binary-source-to-build-chain-and-saved-inventory-checks--17-november-2026) reconciles source/build JCL and `tools/reconstruction/verify.py` step contracts. Historical CO.5 acceptance is acknowledged but not reclassified as a verified new candidate image. `BLIBBLD` remains unshipped and source rebuild of historical `BLIB` or Coroutine Support from BCPL requires compiler functionality not supplied by the scoped release. No new resident binary or redistribution evidence was produced; **TA.0 remains IN PROGRESS**.
 
+**Further TA.0 retained-evidence preflight, 17 November 2026:** the [read-only evidence intake contract](../../distribution/manifest/ta0-mvs-build-evidence-intake.md) defines SHA-256-pinned operator-supplied JES reports and exact member listings. The offline suite passes 73/73 synthetic tests; no actual MVS evidence, binary record bytes, DCB correspondence, or redistribution approval was supplied. **TA.0 remains IN PROGRESS.**
+
 The approved single-manifest/bootstrap/naming rules, independent environments, and manual MR10 verification decision are binding. Other architecture details in this section remain **proposals**, not presumed owner approvals.
 
 ## 7. Safety, verification and authority

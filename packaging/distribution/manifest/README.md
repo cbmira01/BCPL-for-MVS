@@ -62,3 +62,15 @@ python3 -B tools/distribution/audit-binary-build-chain.py --strict
 ```
 
 `--strict` **must fail** on the design-only inventory and empty evidence slots. `BOOT_OBJ(BLIB)` depends on non-distributed development `BLIBBLD`; `BOOT_OBJ(COROUTIN)` depends on pre-generated assembler. Historical qualified reconstruction receipts do not automatically establish the binary contents or redistribution rights of a new tape candidate. See the [source-to-build mapping and evidence limitations](ta0-provenance-and-dependency-audit.md#6-binary-source-to-build-chain-and-saved-inventory-checks--17-november-2026).
+
+## TA.0 retained MVS build evidence preflight
+
+The [read-only retained-evidence contract](ta0-mvs-build-evidence-intake.md)
+and [inspector](../../../tools/distribution/audit-mvs-build-evidence.py)
+check operator-supplied SHA-256-pinned JES summary/report pairs and exact
+binary PDS member listings using the existing reconstruction verifier.
+
+The inspector does not execute MVS jobs, compare object/load records, prove
+source Git-to-MVS equivalence, decide rights, or authorize a release.
+See [18 synthetic evidence tests](tests/test_mvs_build_evidence.py).
+
