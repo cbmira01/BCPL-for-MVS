@@ -1,6 +1,17 @@
 # Native Cambridge Compiler distribution and tape naming decisions — 8 November 2026
 
 **Status: Owner-approved distribution design direction; not implemented or MVS release-accepted.**
+
+**Scope update (16 November 2026):** The owner later approved a broader
+[release payload scope](release-payload-scope-decision-20261116.md): native
+Coroutine Support, `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM`, plus an
+independently usable MR10 Kit Compiler with its 11 language demos,
+17 BCPL demos and standard 12-case regression panel. The panel must
+be runnable **and verifiable** entirely on MVS before release acceptance.
+The 8 November exclusions of the kit compiler and optional extensions
+are superseded for the specified components; the original tape layout,
+manifest, installation and release identity rules remain in force.
+
 These are product/package decisions, **not** a new project milestone or march.
 Do not infer operational approval to submit JES, change resident datasets,
 initialize tape, or publish a release.

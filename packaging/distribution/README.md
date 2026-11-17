@@ -11,6 +11,10 @@ This directory contains the source-controlled materials for a future self-contai
 
 - [Version and VOLSER registry design (8 November 2026)](release-version-and-volser-registry-decisions-20261108.md) — one proposed Git-controlled registry for cross-release version and VOLSER allocation; per-release manifests remain authoritative for tape dataset order. No registry is implemented.
 
+## Expanded release payload decisions (16 November 2026)
+
+- [Approved release scope expansion](release-payload-scope-decision-20261116.md) - include native Coroutine Support, `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM`, and the independently usable MR10 Kit Compiler with all 11 language demos, 17 BCPL demos, and its 12-case panel. MVS-only golden-result verification of the panel is an **unmet release gate**, not a completed feature. No tape release has been accepted.
+
 ## Native Cambridge Compiler release and tape naming decisions
 
 - [Owner-approved distribution decisions (8 November 2026)](native-cambridge-compiler-distribution-decisions-20261108.md) — initial native Cambridge Compiler product scope, position-based `BCPL.BTnnnn` dataset aliases, canonical source-to-tape-to-install mapping, self-documenting bootstrap and release lifecycle. This remains a design direction, not a completed installer or release.

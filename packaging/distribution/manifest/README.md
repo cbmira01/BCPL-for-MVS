@@ -7,3 +7,6 @@ Reserved for the **authoritative source-controlled release inventory**: selectio
 See [native compiler distribution and tape naming decisions](../native-cambridge-compiler-distribution-decisions-20261108.md) and [cross-release version/VOLSER registry decisions](../release-version-and-volser-registry-decisions-20261108.md). The registry tracks identities across releases; this directory holds each release's actual ordered tape inventory.
 
 The manifest format and authoritative inputs (including `config/dspal.yaml`) are to be specified before producing media. Do not treat this directory as a complete distribution manifest.
+
+The [16 November approved payload scope](../release-payload-scope-decision-20261116.md) requires entries for both independently installable compiler environments, the Coroutine Support Library, the three accepted System Extensions, the MR10 11 + 17 demos and 12-case MVS-verifiable regression panel. These are **logical release selection requirements**, not assigned `BCPL.BTnnnn` slots, physical DASD datasets or finished member inventories. Preserve the single source-of-truth manifest and the reserved `BT0001`/`BT0002` roles.
+
