@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""TA.1 Track A offline-only review: no image creation, JES or device calls.
+
+This is deliberately not a tape launcher.  Its 'PASS' is only a static
+contract validation and an image path collision check.  Live MVS catalog,
+Hercules allocation, VOLSER uniqueness and media positioning remain manual
+operator/owner authorization gates. Never retry a partially written image.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+JCL = ROOT / 'packaging/distribution/create-tape/jcl'
+TAPES = ROOT / 'mvs-state/tape'
+IMAGE = 'bcpl-ta1-a-20261117-01.aws'
+VOLSER = 'BTA101'  # Proposed scratch only, NOT reserved or verified unique.
+FILES = ('TA1AWRIT', 'TA1AR001', 'TA1AR002', 'TA1ACOMP')
+EXPECTED_STEPS = {
+    'TA1AWRIT': [('BOOTSTRP', 'IEBGENER'), ('UNLOAD', 'IEBCOPY')],
+    'TA1AR001': [('RESTORE', 'IEBGENER')],
+    'TA1AR002': [('RESTORE', 'IEBCOPY')],
+    'TA1ACOMP': [('CMPFB', 'IEBCOMPR'), ('CMPPDS', 'IEBCOMPR')],
+}
+EXPECTED_DSNS = {
+    'TA1AWRIT': ('HERC02.BCPL.DIST.DOCS(README)',
+                   'BCPL.BT0001', 'HERC02.BCPL.DIST.DOCS', 'BCPL.BT0002'),
+    'TA1AR001': ('BCPL.BT0001', 'HERC02.BCPL.TA1A.FBREST'),
+    'TA1AR002': ('BCPL.BT0002', 'HERC02.BCPL.TA1A.PDSREST'),
+    'TA1ACOMP': ('HERC02.BCPL.DIST.DOCS(README)',
+                  'HERC02.BCPL.TA1A.FBREST',
+                  'HERC02.BCPL.DIST.DOCS',
+                  'HERC02.BCPL.TA1A.PDSREST'),
+}
+
+class Refusal(ValueError):
+    pass
+
+
+def require(value: bool, message: str) -> None:
+    if not value:
+        raise Refusal(message)
+
+
+def validate_card_file(job: str, root: Path = ROOT) -> str:
+    path = root / 'packaging/distribution/create-tape/jcl' / (job + '.jcl')
+    require(path.is_file() and not path.is_symlink(), job + ': JCL missing or symlink')
+    try:
+        source = path.read_text(encoding='ascii')
+    except UnicodeError as exc:
+        raise Refusal(job + ': non-ASCII JCL') from exc
+    cards = source.splitlines()
+    require(source.endswith('//\n'), job + ': final end-of-job // missing')
+    require('NO MVS EXECUTION WITHOUT OWNER APPROVAL' in source,
+            job + ': approval warning missing')
+    require(all(len(card) <= 80 and '\t' not in card for card in cards),
+            job + ': invalid JCL card width')
+    require(not re.search(r'(?m)^//[^\s*/]+\s+JOB\b', source),
+            job + ': unexpected JOB card')
+    require(not re.search(r'(?m)^//[^\s*/]+\s+(?:PROC|JCLLIB|INCLUDE)\b', source),
+            job + ': external JCL expansion')
+    steps = re.findall(r'^//([A-Z0-9]+)\s+EXEC PGM=([A-Z0-9]+)', source, re.M)
+    require(steps == EXPECTED_STEPS[job], job + ': unexpected step/program contract')
+    # Enumerate exact datasets, not merely the presence of safe examples.
+    dsns = re.findall(r'\bDSN=([A-Z0-9.]+(?:\([A-Z0-9]+\))?)', source)
+    require(tuple(dsns) == EXPECTED_DSNS[job], job + ': dataset identity mismatch')
+    require('DISP=MOD' not in source and 'DISP=(MOD' not in source,
+            job + ': append/update forbidden')
+    return source
+
+
+def validate_contract(root: Path = ROOT) -> None:
+    decks = {job: validate_card_file(job, root) for job in FILES}
+    write = decks['TA1AWRIT']
+    require(write.count('DSN=BCPL.BT0001') == 1 and
+            write.count('DSN=BCPL.BT0002') == 1,
+            'missing or duplicate logical tape dataset')
+    require('VOL=(PRIVATE,RETAIN,SER=' + VOLSER + ')' in write and
+            'VOL=(PRIVATE,SER=' + VOLSER + ')' in write,
+            'wrong VOLSER/retention strategy')
+    require('LABEL=(1,SL)' in write and 'LABEL=(2,SL)' in write,
+            'missing ordered standard labels')
+    require('COND=(0,NE,BOOTSTRP)' in write,
+            'second write must be gated on successful first step')
+    require(write.count('DISP=(NEW,KEEP,KEEP)') == 2,
+            'new-only tape writes and failure preservation required')
+    require(write.count('DISP=SHR') == 2,
+            'both write-stage source datasets must be read-only')
+    require('DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=800' in write,
+            'FB80 logical tape source missing')
+    require('DSORG=PO,RECFM=FB' not in write,
+            'PDS source DCB must not be imposed on IEBCOPY unload')
+    require(write.count('UNIT=480') == 2, 'wrong tape units in write steps')
+    require('COPY OUTDD=OUTTAPE,INDD=INPDS' in write,
+            'IEBCOPY unload control missing')
+    for name, dsnum, target in (
+        ('TA1AR001', 1, 'HERC02.BCPL.TA1A.FBREST'),
+        ('TA1AR002', 2, 'HERC02.BCPL.TA1A.PDSREST'),
+    ):
+        body = decks[name]
+        require('VOL=SER=' + VOLSER in body and
+                f'LABEL=({dsnum},SL)' in body and 'DISP=OLD' in body,
+                name + ': unexpected restore tape selection')
+        require('DSN=' + target in body and
+                'DISP=(NEW,CATLG,DELETE)' in body,
+                name + ': target must be new scratch DASD')
+        require('NO AUTO REMOUNT' in body,
+                name + ': operator gate missing')
+        require(body.count('UNIT=480') == 1, name + ': wrong tape unit')
+        expected_dcb = ('DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=800'
+                        if dsnum == 1 else
+                        'DSORG=PO,RECFM=FB,LRECL=80,BLKSIZE=800')
+        require(body.count(expected_dcb) == 1,
+                name + ': restored DCB differs from approved fixture')
+    compare = decks['TA1ACOMP']
+    require(compare.count('DISP=SHR') == 4 and
+            'COMPARE TYPORG=PS' in compare and
+            'COMPARE TYPORG=PO' in compare and
+            'COND=(0,NE,CMPFB)' in compare,
+            'independent FB and PDS comparison contract missing')
+    require('VOL=SER=' + VOLSER not in compare,
+            'comparison must read DASD only, never tape')
+    require(compare.count('DSN=BCPL.BT') == 0 and
+            'UNIT=480' not in compare and 'DISP=OLD' not in compare,
+            'comparison must be read-only DASD-only')
+
+
+def validate_image_absent(root: Path = ROOT) -> None:
+    state = root / 'mvs-state'
+    tapes = state / 'tape'
+    require(state.is_dir() and not state.is_symlink(),
+            'unsafe or missing mvs-state/ directory')
+    require(tapes.is_dir() and not tapes.is_symlink(),
+            'unsafe or missing mvs-state/tape directory')
+    candidate = tapes / IMAGE
+    # lexists-like semantics: even a dangling symlink is an existing path.
+    require(not candidate.is_symlink() and not candidate.exists(),
+            'candidate path already exists; NEVER overwrite or retry')
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--json', action='store_true')
+    args = parser.parse_args(argv)
+    try:
+        validate_contract()
+        validate_image_absent()
+    except (Refusal, OSError, UnicodeError) as exc:
+        print('TA.1 STATIC PREFLIGHT REFUSED: ' + str(exc), file=sys.stderr)
+        print('No media/JES operations were attempted.', file=sys.stderr)
+        return 2
+    result = {
+        'result': 'STATIC_ONLY_PASS',
+        'proposed_image': 'mvs-state/tape/' + IMAGE,
+        'proposed_volser': VOLSER,
+        'image_path': 'ABSENT_AT_TIME_OF_CHECK',
+        'volser_uniqueness': 'NOT_VERIFIED',
+        'device_state': 'NOT_VERIFIED',
+        'source_and_target_MVS_DCB_catalog': 'NOT_VERIFIED',
+        'tape_position': 'NOT_VERIFIED',
+        'owner_stateful_authorization': 'REQUIRED',
+    }
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print('TA.1 STATIC ONLY: PASS; image absent at check time.')
+        print('VOLSER, MVS catalog, device, positioning and owner approval PENDING.')
+        print('No writes, mounts, JES calls, retries or automatic recovery.')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
