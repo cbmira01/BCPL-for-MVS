@@ -95,3 +95,38 @@ python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'tes
 The design-source `--strict` check is **expected to fail** because jobs still require `JOB` cards and `HERC02` substitution. For separately staged adapted JCL, the audit supports `--hlq SITEABC --strict` with an explicit `--dspal` mapping pointing to those staged Git-derived job files; the scanner performs **no adaptation**, writes no jobs and never submits them. Offline tests exercise synthetic fixtures (40 total manifest + JCL tests passed); a parallel read-only GitHub analysis independently checked the ten actual source JCL bodies. A static reference match is **not** MVS compilation, target installation or acceptance of job semantics.
 
 **Still open:** define deterministic generated recipient JCL, site JOB/HLQ/UNIT/SPACE and no-overwrite policy, prove IFOX/IEWL/JES execution, establish exact MVS object/load inventory with source-to-binary receipts, generated `COROUTIN` provenance, historical redistribution permissions, and TA.1 tape mechanics. No VOLSER or release identity is reserved and no TA.0 march closure is claimed.
+
+## 6. Binary source-to-build chain and saved-inventory checks — 17 November 2026
+
+The read-only [binary build-chain auditor](../../../tools/distribution/audit-binary-build-chain.py) derives its fifteen selected MVS binary members from the *same* `ta0-inventory.yaml`. It statically parses `tools/reconstruction/verify.py` (without importing or executing it), checks accepted `RUNTIME_MEMBERS` and `EXTENSION_MEMBERS`, and verifies the selected Git-backed build JCL `EXEC` step sequence against the reconstruction `EXPECTED_STEPS` contract.
+
+**Source and build map (Git source, not target binary proof):**
+
+| Binary member(s) selected | Selected source member(s) | Reconstruction build job | Count |
+| --- | --- | --- | ---: |
+| `MR10_OBJ(ICINT19)`, `MR10_LOAD(ICINT19)` | `MR10_ASM(ICINT19)` | `MR10_JCL(IC19BLD)` — IFOX, IEWL and object save | 2 |
+| `BOOT_OBJ(BCPLMAIN/BCPLMEM/BCPLBYTE/BCPLAPT/BCPLIO/BCPLRGS/BCPLREG)` | Corresponding `BOOT_ASM` members | `BOOT_JCL(BLDBMAIN)` — seven independent assemblies and seven installation steps | 7 |
+| `BOOT_OBJ(BLIB)` | Generated `BOOT_SOURCE(BLIB)` | `BOOT_JCL(BLIBBLD)` — **development-only, not selected on tape**; uses the interpreter-hosted compiler | 1 |
+| `BOOT_OBJ(BCPLCO)` | `BOOT_ASM(BCPLCO)` | `BOOT_JCL(BLDCORCO)` | 1 |
+| `BOOT_OBJ(COROUTIN)` | Maintained `BOOT_SOURCE(COROUTIN)` and **generated** `BOOT_ASM(COROUTIN)` | `BOOT_JCL(BLDCORLB)` — assembler build requires the generated member already staged | 1 |
+| `EXT_OBJ(BCPLDEMO/BCPLTIME/BCPLQSAM)` | Corresponding `EXT_ASM` members | Three separate `BOOT_JCL(BCPLDEMO/BCPLTIME/BCPLQSAM)` jobs | 3 |
+| **Total** | | | **15** |
+
+**Evidence qualification:** The established reconstruction/CO.5 records document accepted BOOT_OBJ inventories and production coroutine results (see [CO.5 qualified closure](../../milestones/coroutines/co5-formal-acceptance-and-closure-20261116.md)), but the original `mvs-state/reconstruction-evidence/` receipts and current MVS dataset bytes are **not in GitHub**. This audit therefore does not assign **any** of the fifteen members a candidate-specific MVS receipt, source revision binding, binary readback comparison or redistribution approval. It does not downgrade the historical qualified acceptance; it refuses to reuse it as unexamined **new tape candidate** evidence.
+
+In particular, **both `BLIB` and `COROUTIN` are BCPL-derived**. Their installed object decks may be usable as accepted components without shipping the native-running Cambridge Compiler, but distributing `BOOT_SOURCE(BLIB)` or `BOOT_SOURCE(COROUTIN)` does not make a recipient BCPL-source rebuild possible. `BLIBBLD` is deliberately absent from the curated release JCL inventory because its `CAMBCOMP` dependency is not supplied. `BLDCORLB` is only independently usable after its generated IFOX assembler input is supplied.
+
+**Local read-only commands on a real checkout (PyYAML on development host):**
+
+```sh
+python3 -B tools/distribution/audit-binary-build-chain.py
+python3 -B tools/distribution/audit-binary-build-chain.py --json
+python3 -B tools/distribution/audit-binary-build-chain.py --strict
+python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'test_*.py' -v
+```
+
+`--json` produces fifteen explicit *requirements* with MVS receipt fields `null` and rights `false`; it does not confer evidence or issue acceptance. The `--strict` exit is **expected nonzero**, even after a mere inventory match, until an independently designed candidate-specific evidence/rights acceptance mechanism exists.
+
+The optional `--inventory-dir <directory>` reads four saved, standard `dspal ls` outputs (`MR10_OBJ.txt`, `MR10_LOAD.txt`, `BOOT_OBJ.txt`, `EXT_OBJ.txt`) and checks exact member equality and the development HLQ heading. It does **not** connect to MVS or produce those reports. Comparing directory member names is only one of many required checks: full member record bytes, DCB, job identity/RC/severity, restoration and executable linkage/GO remain necessary.
+
+**Independent GitHub cross-check at `bb4a88d76dfbda91eacc7dda6cb196a3747534b2`:** all eight relevant IFOX/IEWL/IEBGENER build JCL step sequences matched `verify.py` expectations, including the unshipped `BLIBBLD` development job. The fourteen source/test cases added in this checkpoint are synthetic; with existing 40 TA.0 cases, **55 offline tests passed**. This is build-contract consistency evidence, **not** a resident MVS readback, legal redistribution determination, or TA.0 closure. No MVS or tape writes occurred.

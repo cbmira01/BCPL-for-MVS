@@ -13,7 +13,7 @@ This directory contains the source-controlled materials for a future self-contai
 - [TA.0 release architecture and inventory](manifest/ta0-release-architecture-and-inventory.md) — curated member selections, mappings, dependencies and incomplete compiler artifacts.
 - [Manifest schema v1 design](manifest/schema-v1-design.md) — canonical inventory, validation and consistency requirements.
 - [Design-stage selected-member YAML inventory](manifest/ta0-inventory.yaml) and [read-only validator](../../tools/distribution/validate-manifest.py) — 20 proposed logical datasets, 127 members; not a release candidate.
-- [TA.0 provenance and recipient-JCL dependency audit](manifest/ta0-provenance-and-dependency-audit.md) — 110 Git-backed selections, 2 generated, 15 MVS binaries, ten JCL adaptation blockers; none release-accepted.
+- [TA.0 provenance, JCL and binary build-chain audit](manifest/ta0-provenance-and-dependency-audit.md) — 110 Git-backed selections, 2 generated, 15 MVS binary build chains, ten JCL adaptation blockers; none accepted as a new release candidate.
 
 **TA.0 is in progress; no march is closed.** The [read-only JCL dependency audit](../../tools/distribution/audit-jcl-dependencies.py) checks ten selected source jobs and flags all ten as requiring site adaptation. No tape or publication is authorized.
 

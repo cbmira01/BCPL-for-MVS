@@ -51,3 +51,14 @@ python3 -B tools/distribution/audit-jcl-dependencies.py --json
 ```
 
 The stricter `--strict` run is expected to **fail** on existing development JCL. See the [17 November JCL findings](ta0-provenance-and-dependency-audit.md#5-nativemr10-release-jcl-dependency-closure--17-november-2026-checkpoint) and [offline tests](tests/test_jcl_dependency_audit.py). This does not transform JCL, provide the absent native-running compiler or replace recipient MVS execution evidence.
+
+## TA.0 selected MVS binary build-chain audit
+
+The read-only [binary build-chain auditor](../../../tools/distribution/audit-binary-build-chain.py) and [offline tests](tests/test_binary_build_chain.py) map all **15** selected binary object/load members to their selected source members, reconstructed build JCL and expected IFOX/IEWL steps without executing them. It detects drift from `tools/reconstruction/verify.py`, and can inspect *saved* exact-member `dspal ls` listings supplied later by an operator.
+
+```sh
+python3 -B tools/distribution/audit-binary-build-chain.py --json
+python3 -B tools/distribution/audit-binary-build-chain.py --strict
+```
+
+`--strict` **must fail** on the design-only inventory and empty evidence slots. `BOOT_OBJ(BLIB)` depends on non-distributed development `BLIBBLD`; `BOOT_OBJ(COROUTIN)` depends on pre-generated assembler. Historical qualified reconstruction receipts do not automatically establish the binary contents or redistribution rights of a new tape candidate. See the [source-to-build mapping and evidence limitations](ta0-provenance-and-dependency-audit.md#6-binary-source-to-build-chain-and-saved-inventory-checks--17-november-2026).
