@@ -2,7 +2,7 @@
 
 **Milestone:** Tape artifact release  
 **March:** TA.0 — Release Architecture, Inventory, and Manifest  
-**Status:** Implemented and mock-tested host-side generator/runner; actual multi-member MVS output pending.
+**Status:** Read-only multi-member MVS utility JOB 9045 returned RC=0000 (owner observed, 17 November 2026); original multi-member listing not yet decoded/inspected in the assistant workspace. Host-side decoder implemented and synthetic-tested; exact byte content remains pending.
 
 ## Justification and MVS authority
 
@@ -78,3 +78,21 @@ These are **not** simulated MVS execution results and do not close TA.0.
 No TA.1 tape operations, VOLSER reservation, candidate promotion or publication
 are permitted by this pilot. Only `BCPL.BT0001` and `BCPL.BT0002` have frozen
 roles; later proposed positions remain unfrozen.
+
+## Observed two-member execution and next evidence gate (17 November 2026)
+
+After updating from GitHub `main`, the owner executed the controlled two-member
+`EXT_OBJ(BCPLTIME,BCPLQSAM)` pilot. The runner reported **JOB 9045, TA0MULT,
+IEBPTPCH RC=0000** and retained the five SHA-256-pinned evidence attachments
+and receipt outside the checkout in a private directory. The failed first
+attempt (missing local runner file before Git pull) did not submit a JES job.
+The assistant has not inspected the original printed data or byte contents;
+RC=0000 is successful MVS **utility execution**, not member byte acceptance.
+
+The new read-only decoder and 36 offline-only tests are documented in
+[JOB 9045 evidence and next-stage decoder](ta0-iebptpch-job9045-evidence-20261117.md).
+The focused IEBPTPCH suites now total **100/100 PASS** in the isolated assistant
+workspace. On receipt of a successful live 9045 decode, the next MVS-facing
+work can cover the selected ten `BOOT_OBJ` FB80 objects and one `MR10_OBJ`
+object using the existing no-overwrite, read-only runner. PO/U `MR10_LOAD`
+remains outside that algorithm and continues to require a separate procedure.
