@@ -18,3 +18,24 @@ The [16 November approved payload scope](../release-payload-scope-decision-20261
 - [Release without the unfinished native compiler](../release-without-native-compiler-decision-20261116.md)
 
 The per-candidate manifest must explicitly declare `native_compiler: absent` or `included`. A scoped release without the compiler remains valid after full MR10 and selected native-component verification, clean-target installation, provenance audit and separate publication approval. The TA.6 self-compilation gate applies only to candidates including the compiler. **Only BT0001 and BT0002 roles are reserved; later logical positions are proposals.** No candidate identity, VOLSER or AWS image has been created.
+
+## TA.0 implemented design-stage inventory and static preflight
+
+See [ta0-inventory.yaml](ta0-inventory.yaml) for the **design-only** approved
+selection (20 logical tape datasets, 127 PDS members including 79 MR10).
+Sequence positions after BT0002 are proposed, not frozen for any candidate.
+
+See the read-only [manifest validator](../../../tools/distribution/validate-manifest.py)
+and its [offline tests](tests/test_validate_manifest.py). It requires PyYAML
+on the **development host**, not on recipient MVS.
+
+```sh
+python3 -B tools/distribution/validate-manifest.py
+python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'test_*.py' -v
+```
+
+The optional `--release` preflight must **FAIL** on the design-only inventory.
+It does not create media or reserve any version/VOLSER. No completed per-release
+manifest, rights audit, MVS readback evidence, consumer JCL or tape exists.
+Retire the TA.0 proposed selection into one reviewed per-candidate manifest
+at release preparation; do not maintain two competing authoritative inventories.

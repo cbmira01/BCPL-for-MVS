@@ -12,6 +12,7 @@ This directory contains the source-controlled materials for a future self-contai
 - [Release without the native compiler](release-without-native-compiler-decision-20261116.md) — owner decision and conditional TA.6 gate.
 - [TA.0 release architecture and inventory](manifest/ta0-release-architecture-and-inventory.md) — curated member selections, mappings, dependencies and incomplete compiler artifacts.
 - [Manifest schema v1 design](manifest/schema-v1-design.md) — canonical inventory, validation and consistency requirements.
+- [Design-stage selected-member YAML inventory](manifest/ta0-inventory.yaml) and [read-only validator](../../tools/distribution/validate-manifest.py) — 20 proposed logical datasets, 127 members; not a release candidate.
 
 **TA.0 is in progress; no march is closed.** No tape or publication is authorized.
 

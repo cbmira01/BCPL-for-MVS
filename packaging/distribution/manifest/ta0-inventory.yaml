@@ -1,0 +1,200 @@
+# TA.0 DESIGN-ONLY proposed exact selection; NOT a release candidate or write plan.
+schema_version: 1
+phase: design
+release:
+  product: Cambridge BCPL Programming System for MVS 3.8J
+  version: null
+  candidate_id: null
+  source_commit: null
+  native_compiler: absent
+volume:
+  format: aws
+  labeling: SL
+  volser: null
+  volume_ordinal: 1
+profiles:
+  mr10-only: [common, mr10]
+  native-only: [common, native]
+  combined: [common, mr10, native]
+datasets:
+  - sequence: 1
+    group: common
+    owner: distribution
+    kind: sequential_text
+    generator: bootstrap_fb80
+    transfer: sequential_standard_label
+    target_dcb: {dsorg: PS, recfm: FB, lrecl: 80, blksize: 800}
+  - sequence: 2
+    group: common
+    owner: distribution
+    kind: pds_unload
+    generator: installer_pds
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+  - sequence: 3
+    group: common
+    owner: distribution
+    kind: pds_unload
+    dspal_key: DIST_DOCS
+    target_dsn_template: "{HLQ}.BCPL.DIST.DOCS"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [README, INSTALL, DATASETS, COMPILE, VERIFY, RELEASE, LICENSE]
+  - sequence: 4
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_SOURCE
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.SOURCE"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [SYNI, TRNI, CGI, BLIBI, ICLIB]
+  - sequence: 5
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_ASM
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.ASM"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [ICINT19]
+  - sequence: 6
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_JCL
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.JCL"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [IC19BLD, MRLANGDM, MRBCDEMO, MRREGRES]
+  - sequence: 7
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_LIBRARY
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.LIBRARY"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [CHARUTIL, COROUTIN, GETVEC, INTUTIL, LINEIO, MEMUTIL, NUMCONV, RANDOM, STRUTIL]
+  - sequence: 8
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_LANGDEMO
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.LANGDEMO"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [BOOLOPS, DECLS, FUNCVAL, MANIGLOB, PTRIDIOM, REPEAT, STRBYTES, SWITCHON, TABVECT, TESTTHEN, VALOFRES]
+  - sequence: 9
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_BCPLDEMO
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.BCPLDEMO"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [RFACT, QUEENS, KNIGHT, HANOI, SIEVE, GCD, QUICKSRT, BSEARCH, LINKLIST, BINTREE, HASHTABL, WORDCNT, RPNCALC, EXPRPARS, MAZE, STRMFANO, COROUTIN, WORDIN, FANAIN, FANBIN, FANCIN]
+  - sequence: 10
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_TESTS
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.TESTS"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [SCALVEC, BYTES, INTARITH, BRANCHES, NESTREC, MODMAIN, BASLIB, RANDCHAR, STRMEM, LINEIO, GETVEC, BASICCO, MODHELP, SCAVEXP, BYTESEXP, INTAREXP, BRANEXP, NESTREXP, MODEXP, BASLEXP, RANDEXP, STRMEXP, LINEEXP, GETVEXP, BASCOEXP, LINEIN]
+  - sequence: 11
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_OBJ
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.OBJ"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [ICINT19]
+  - sequence: 12
+    group: mr10
+    owner: mr10
+    kind: pds_unload
+    dspal_key: MR10_LOAD
+    target_dsn_template: "{HLQ}.BCPL.MR10KIT.LOAD"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: U, lrecl: 0, blksize: 6144}
+    members: [ICINT19]
+  - sequence: 13
+    group: native
+    owner: core-runtime
+    kind: pds_unload
+    dspal_key: BOOT_OBJ
+    target_dsn_template: "{HLQ}.BCPL.BOOT.OBJ"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [BCPLMAIN, BCPLMEM, BCPLBYTE, BCPLAPT, BCPLIO, BCPLRGS, BCPLREG, BLIB, BCPLCO, COROUTIN]
+    member_owners: {BLIB: historical-blib, BCPLCO: coroutine-support, COROUTIN: coroutine-support}
+  - sequence: 14
+    group: native
+    owner: core-runtime
+    kind: pds_unload
+    dspal_key: BOOT_ASM
+    target_dsn_template: "{HLQ}.BCPL.BOOT.ASM"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [BCPLMAIN, BCPLIO, BCPLMEM, BCPLBYTE, BCPLAPT, BCPLRGS, BCPLREG, BCPLCO, COROUTIN]
+    generated_members: {COROUTIN: "Generated on MVS from BOOT_SOURCE(COROUTIN) via accepted compiler; build receipt pending"}
+    member_owners: {BCPLCO: coroutine-support, COROUTIN: coroutine-support}
+  - sequence: 15
+    group: native
+    owner: historical-blib
+    kind: pds_unload
+    dspal_key: BOOT_SOURCE
+    target_dsn_template: "{HLQ}.BCPL.BOOT.SOURCE"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [LIBHDR, BLIB, COROUTIN, COHDR]
+    member_owners: {COROUTIN: coroutine-support, COHDR: coroutine-support}
+  - sequence: 16
+    group: native
+    owner: core-runtime
+    kind: pds_unload
+    dspal_key: BOOT_JCL
+    target_dsn_template: "{HLQ}.BCPL.BOOT.JCL"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [BLDBMAIN, BLDCORCO, BLDCORLB, BCPLDEMO, BCPLTIME, BCPLQSAM]
+    member_owners: {BLDCORCO: coroutine-support, BLDCORLB: coroutine-support, BCPLDEMO: system-extensions, BCPLTIME: system-extensions, BCPLQSAM: system-extensions}
+  - sequence: 17
+    group: native
+    owner: system-extensions
+    kind: pds_unload
+    dspal_key: EXT_OBJ
+    target_dsn_template: "{HLQ}.BCPL.EXT.OBJ"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [BCPLDEMO, BCPLTIME, BCPLQSAM]
+  - sequence: 18
+    group: native
+    owner: system-extensions
+    kind: pds_unload
+    dspal_key: EXT_ASM
+    target_dsn_template: "{HLQ}.BCPL.EXT.ASM"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [BCPLDEMO, BCPLTIME, BCPLQSAM]
+  - sequence: 19
+    group: native
+    owner: system-extensions
+    kind: pds_unload
+    dspal_key: EXT_SOURCE
+    target_dsn_template: "{HLQ}.BCPL.EXT.SOURCE"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [DEMOHDR, TIMEHDR, QSAMHDR]
+  - sequence: 20
+    group: native
+    owner: system-extensions
+    kind: pds_unload
+    dspal_key: EXT_MAC
+    target_dsn_template: "{HLQ}.BCPL.EXT.MAC"
+    transfer: iebcopy_unload
+    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
+    members: [BCXPRE, BCXCAT, BCXPOST]

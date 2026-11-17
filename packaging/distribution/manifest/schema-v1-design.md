@@ -68,3 +68,17 @@ datasets:
 8. After closure, record complete-image AWS SHA-256, byte count, provenance and acceptance in an **external immutable receipt**, not as a self-referential image checksum. Publish **exact tested bytes** after separate owner approval; an altered image needs new identity/VOLSER and full acceptance.
 
 All selected source, relocatable object, executable, documentation and fixtures must be assigned correct historical/project provenance and redistribution status. Version and VOLSER registry implementation, manifest parser, generated installer, candidate reservation, TA.1 tests and TA.4 source modifications remain outstanding. This design authorizes no MVS/tape writes or release publication.
+
+## TA.0 design-stage implementation checkpoint
+
+`ta0-inventory.yaml` implements `phase: design` with a curated
+no-native-compiler selection and null release identities. Exact member names
+and source `dspal_key` mappings are checked statically. `member_owners`
+distinguishes the historical Base Library and Coroutine Support even when
+sharing a physical PDS. Generated assembler, object/load modules, release JCL
+and rights decisions remain incomplete, not assumed.
+
+`tools/distribution/validate-manifest.py` is a **read-only prototype**.
+`--release` is a strict preflight for candidates and rejects the design file;
+the future producer/installer and independent MVS/TA.1/TA.7 checks remain
+separate acceptance obligations. PyYAML is required only on the development host.
