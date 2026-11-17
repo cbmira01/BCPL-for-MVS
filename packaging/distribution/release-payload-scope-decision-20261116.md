@@ -4,6 +4,12 @@
 **Status:** Owner-approved release payload scope and acceptance requirements; **not implemented or release-accepted**  
 **Authority:** GitHub `main`; supersedes the narrower product-inventory exclusions of [8 November 2026](native-cambridge-compiler-distribution-decisions-20261108.md), while retaining its tape naming, release identity, single-manifest, installation safety and acceptance rules.
 
+## Subsequent owner clarification — 16 November 2026
+
+The owner subsequently approved the [`EXP:` expected-output and manual MVS-verification decision](mr10-regression-exp-manual-verification-decision-20261116.md) for the standard **12-case `MRREGRES` panel**. Every BCPL regression will print fixed literal `EXP:` records alongside unchanged actual `RP:` results, and a person will inspect all 12 cases plus interpreted `CODE=`, recording explicit per-case PASS/FAIL and overall sign-off. The existing WSL `RP:`/`CODE=` automated runner remains. This later decision **supersedes the automatic MVS-resident PASS/FAIL comparison and automatic semantic-mismatch non-success requirement** described below. Those requirements remain preserved below as the earlier decision record, not as live acceptance gates. MVS-only verified execution and human sign-off **remain unimplemented**.
+
+The nine-march [Tape artifact release milestone](../milestones/tape-artifact-release/milestone-tape-artifact-release.md), TA.0–TA.8, was also owner-approved on 16 November 2026. Neither decision authorizes media creation, MVS changes or publication.
+
 ## Owner decisions
 
 In discussion on 16 November 2026, the owner expanded the proposed Cambridge BCPL Programming System distribution to include the **Coroutine Support Library**, **all three currently implemented and accepted System Extensions**, and the **MR10 Kit Compiler** as a fully usable, independent interpreted programming environment with its demonstrations. The owner additionally directed inclusion of the **12-case MR10 Kit Compiler regression panel**, conditional on recipients being able to compile, run and verify that panel **entirely under MVS 3.8J**. No distribution media, installer or publication was authorized.

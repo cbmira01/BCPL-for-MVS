@@ -11,9 +11,14 @@ This directory contains the source-controlled materials for a future self-contai
 
 - [Version and VOLSER registry design (8 November 2026)](release-version-and-volser-registry-decisions-20261108.md) — one proposed Git-controlled registry for cross-release version and VOLSER allocation; per-release manifests remain authoritative for tape dataset order. No registry is implemented.
 
+## Governing Tape artifact release milestone
+
+- [Tape artifact release](../milestones/tape-artifact-release/milestone-tape-artifact-release.md) — nine owner-approved marches **TA.0–TA.8**; **TA.0 ready for kickoff**, no completed release or tape authorization.
+- [Owner-approved MR10 regression reporting and human MVS verification](mr10-regression-exp-manual-verification-decision-20261116.md) — the 12 standard cases print literal `EXP:` next to actual `RP:`; MVS recipient verification is documented human review, **not** an automatic MVS semantic comparator. WSL automated `RP:`/`CODE=` checks remain.
+
 ## Expanded release payload decisions (16 November 2026)
 
-- [Approved release scope expansion](release-payload-scope-decision-20261116.md) - include native Coroutine Support, `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM`, and the independently usable MR10 Kit Compiler with all 11 language demos, 17 BCPL demos, and its 12-case panel. MVS-only golden-result verification of the panel is an **unmet release gate**, not a completed feature. No tape release has been accepted.
+- [Approved release scope expansion](release-payload-scope-decision-20261116.md) - include native Coroutine Support, `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM`, and the independently usable MR10 Kit Compiler with all 11 language demos, 17 BCPL demos, and its 12-case panel. MVS-only **human-reviewed** golden-result verification of the panel is an **unmet release gate**, not a completed feature (subsequent owner decision above). No tape release has been accepted.
 
 ## Native Cambridge Compiler release and tape naming decisions
 
