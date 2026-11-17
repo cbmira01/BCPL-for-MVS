@@ -128,3 +128,12 @@ TO02UNLD, TO03REST, TO04COMP). Submissions, mounts and image creation
 remain separately authorized operator actions.
 
 Offline checks: `python3 -B -m unittest discover -s packaging/distribution/create-tape/tests -p 'test_*.py' -v`.
+
+## TA.1 Track A (design approved; live media not authorized)
+
+See [TA.1 Track A preflight](ta1-track-a-preflight-20261117.md).
+The four TA1A JCL bodies are staged with a read-only ta1-preflight checker,
+14 offline JCL/negative tests, and a separately tested one-shot authenticated
+submit-ta1-job helper (7 offline tests). Its default mode makes no JES calls;
+its --run mode is subject to independent, explicit stateful owner approval.
+No image, mount, restore or MVS-write acceptance follows from this design.

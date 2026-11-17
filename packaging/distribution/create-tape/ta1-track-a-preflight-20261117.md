@@ -52,3 +52,22 @@ In the assistant's isolated workspace on 17 November 2026, 14/14 offline structu
 Track A PASS requires actual live MVS/Hercules two-dataset tape structure and restored compare evidence. Track B independently requires PO/U/0/6144 MR10_LOAD(ICINT19) unload/restore, directory/content checks and successful execution with STEPLIB selecting RESTORED ICINT19. Development JOB 9061 is only a baseline.
 
 TA.0 remains CLOSED (qualified). TA.1 remains in preflight, NOT accepted. Publication and candidate manifest identity belong to later gates.
+
+## One-shot authenticated Track A submission helper
+
+The Git-controlled scripts/submit-ta1-job entry point reuses the existing
+submit-scratch-job authenticated JOB-card construction and dspal-core submission.
+Default execution only validates and previews. --show-deck prints a redacted
+review copy. --run requires a real initialized image, an interactive exact
+SUBMIT <job> BTA101 confirmation, and independent prior operator approval.
+The helper writes a unique durable per-job attempt marker under
+workarea/ta1-operations/ *before* transmitting JES and refuses any repeat of
+that stage even following failure or ambiguous completion. It isolates the
+printer window with a cursor, redirects temporary authenticated decks into
+workarea/ (not /tmp), and caps user-facing summary output. These protections
+do not verify tape position, volume identity, catalog collision, MVS allocation,
+or mount/demount status and are NOT substitutes for the live preflight.
+
+Do not invoke --run solely because the design is approved. Obtain explicit
+permission for the exact media initialization, mount, one write job, later
+restore jobs and any remount/unmount; preserve all results without retry.
