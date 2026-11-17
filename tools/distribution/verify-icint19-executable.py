@@ -173,8 +173,8 @@ def save_window(core, config: dict, cursor: Path, output: Path) -> None:
     require(proc.returncode == 0, 'printer-window read failed; do not retry')
 
 
-def run(core, config: dict, *, evidence: Path, review_dir: Path, output: Path) -> dict:
-    external(output, new=True)
+def validated_inputs(core, config: dict, *, evidence: Path, review_dir: Path):
+    """Shared read-only preflight for execution and post-failure inspection."""
     original, reviewed = validate_directory(evidence, review_dir)
     spec = config.get('datasets', {}).get('MR10_LOAD')
     require(type(spec) is dict and core.full_dsn(config, spec) == original['dsn']
@@ -185,6 +185,13 @@ def run(core, config: dict, *, evidence: Path, review_dir: Path, output: Path) -
     body, origin_blob = canonical_steps(source, hlq=config['mvs']['hlq'], load_dsn=original['dsn'])
     gold = tuple(read_plain(GOLD, 1024).decode('ascii').splitlines())
     require(gold == GOLDEN, 'scalar-vector golden output changed')
+    return original, reviewed, source, body, origin_blob
+
+
+def run(core, config: dict, *, evidence: Path, review_dir: Path, output: Path) -> dict:
+    external(output, new=True)
+    original, reviewed, source, body, origin_blob = validated_inputs(
+        core, config, evidence=evidence, review_dir=review_dir)
     deck = '\n'.join(core.authenticated_job_card(config, NAME,
                              'TA0 ICINT19 EXEC', False)) + '\n' + body
     os.mkdir(output, 0o700)

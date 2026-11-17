@@ -176,7 +176,7 @@ class ExecutePilot(unittest.TestCase):
 
     def test_existing_output_fails(self):
         self.out.mkdir()
-        with self.assertRaisesRegex(mod.ExecEvidenceError,'new directory'):self.run_it()
+        with self.assertRaisesRegex(mod.ExecEvidenceError,'new output must not already exist'):self.run_it()
         self.assertEqual(self.core.calls,0)
 
     def test_negative_code_rejected_and_preserved(self):
