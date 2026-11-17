@@ -7,6 +7,18 @@ This directory contains the source-controlled materials for a future self-contai
 - [create-tape/](create-tape/) — development-host tools and MVS JCL for building and verifying tape media.
 - [install-from-tape/](install-from-tape/) — MVS-resident JCL and installation materials intended to be distributed on tape.
 
+## Private TA.0 evidence location
+
+Private JES reports, printer windows, decoded members, receipts and test output
+belong only under the ignored repository `workarea/`, not directly under
+`$HOME` and not in tracked `packaging/` or runtime `mvs-state/`.
+The historical home TA.0 collection is moved, without reprinting or
+overwriting files, by
+[`relocate-ta0-evidence.py`](../../tools/distribution/relocate-ta0-evidence.py).
+[Storage policy and migration evidence](manifest/ta0-evidence-placement-and-migration-20261117.md)
+describes the path guards, one-time atomic move and limits. All current TA.0
+collection/readback tools enforce the project-local workarea policy.
+
 ## TA.0 architecture and approved scoped releases
 
 - [Release without the native compiler](release-without-native-compiler-decision-20261116.md) — owner decision and conditional TA.6 gate.

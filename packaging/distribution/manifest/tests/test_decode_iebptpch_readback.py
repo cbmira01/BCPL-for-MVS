@@ -105,7 +105,7 @@ class DecodeReadback(unittest.TestCase):
             self.check(self.text.replace('TOTCONV=XE', 'TOTCONV=PZ'))
 
     def test_output_is_private_and_never_overwritten(self):
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea') as folder:
             root = Path(folder)
             inp = root / 'report.txt'
             dest = root / 'obj.bin'
@@ -124,7 +124,7 @@ class DecodeReadback(unittest.TestCase):
             self.assertIn('unused absolute file', run2.stderr)
 
     def test_fail_no_output_on_wrong_job(self):
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea') as folder:
             root = Path(folder)
             inp = root / 'report.txt'; dest = root / 'obj.bin'
             inp.write_text(self.text, encoding='utf-8')

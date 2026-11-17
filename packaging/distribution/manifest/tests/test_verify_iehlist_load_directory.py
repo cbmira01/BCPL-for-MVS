@@ -188,10 +188,10 @@ class PinnedEvidence(unittest.TestCase):
         self.output.mkdir()
         with self.assertRaisesRegex(mod.EvidenceError,'BAD_OUTPUT_LOCATION'):
             self.run_validation()
-    def test_outside_repo_enforced(self):
-        with tempfile.TemporaryDirectory(dir=mod.ROOT) as d:
-            with self.assertRaisesRegex(mod.EvidenceError,'BAD_OUTPUT_LOCATION'):
-                mod.check_paths(self.evidence,Path(d)/'output')
+    def test_outside_workarea_enforced(self):
+        # No untracked test directory needs creating in the checkout root.
+        with self.assertRaisesRegex(mod.EvidenceError,'BAD_OUTPUT_LOCATION'):
+            mod.check_paths(self.evidence,mod.ROOT/'unauthorized-ta0-output')
     def test_private_no_console_full_report(self):
         from contextlib import redirect_stdout,redirect_stderr
         from io import StringIO

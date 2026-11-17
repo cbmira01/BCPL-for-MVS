@@ -74,7 +74,7 @@ class FakeDecoder:
 
 class RecoveryTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name) / 'ext-panel'
         self.root.mkdir(mode=0o700)
@@ -203,7 +203,7 @@ class RecoveryTests(unittest.TestCase):
 
     def test_no_evidence_in_checkout(self):
         # Explicit rejection, without creating directories in any checkout.
-        with self.assertRaisesRegex(mod.RecoverError, 'outside checkout'):
+        with self.assertRaisesRegex(mod.RecoverError, 'private workarea/'):
             mod.recover(self.panel, self.decoder, directory=ROOT,
                         key=KEY, members=MEMBERS, source_dataset=DSN)
 

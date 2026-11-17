@@ -106,7 +106,7 @@ class FakeDecoder:
 
 class PanelTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea')
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
         self.out = self.base / 'panel'

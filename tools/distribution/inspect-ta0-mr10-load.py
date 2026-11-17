@@ -20,6 +20,10 @@ import sys
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+# Centralized, symlink-safe ignored-workarea evidence policy.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 CORE = ROOT / 'tools/datasets/dspal-core.py'
 INVENTORY = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
 DSPAL = ROOT / 'config/dspal.yaml'
@@ -52,17 +56,17 @@ def load_core():
 
 
 def external_existing(path: Path) -> None:
-    need(path.is_absolute() and path.is_dir() and not path.is_symlink() and
-         not path.resolve().is_relative_to(ROOT.resolve()),
-         'evidence must be existing directory outside repository')
+    try:
+        guard_evidence_path(path, new=False, root=ROOT)
+    except ValueError as exc:
+        raise LoadError('evidence must be an existing private workarea/ directory') from exc
 
 
 def external_new(path: Path) -> None:
-    need(path.is_absolute() and not path.exists() and not path.is_symlink() and
-         path.parent.is_dir() and not path.parent.is_symlink() and
-         not path.resolve().is_relative_to(ROOT.resolve()),
-         'output must be new absolute directory outside repository')
-
+    try:
+        guard_evidence_path(path, new=True, root=ROOT)
+    except ValueError as exc:
+        raise LoadError('output must be a new private directory under workarea/') from exc
 
 def read_file(parent: Path, name: str, max_bytes: int = 1024 * 1024) -> bytes:
     p = parent / name

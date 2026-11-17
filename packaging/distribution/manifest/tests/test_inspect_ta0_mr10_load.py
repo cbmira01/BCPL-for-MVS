@@ -59,7 +59,7 @@ class Core:
 
 class LoadInspectionTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.evidence = self.root / 'captured'
@@ -181,14 +181,14 @@ class LoadInspectionTests(unittest.TestCase):
 
     def test_existing_output_fails(self):
         self.output.mkdir()
-        with self.assertRaisesRegex(mod.LoadError,'new absolute'):
+        with self.assertRaisesRegex(mod.LoadError,'new private directory'):
             self.call()
         self.assertEqual(self.core.submissions,0)
 
     def test_external_symlink_fails(self):
         link=self.root/'link'
         link.symlink_to(self.evidence,target_is_directory=True)
-        with self.assertRaisesRegex(mod.LoadError,'outside repository'):
+        with self.assertRaisesRegex(mod.LoadError,'private workarea/'):
             mod.run(self.core,self.config,evidence=link,output=self.output)
         self.assertEqual(self.core.submissions,0)
 

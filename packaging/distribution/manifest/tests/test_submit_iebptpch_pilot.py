@@ -53,7 +53,7 @@ class FakeCore:
 
 class PilotTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea')
         self.addCleanup(self.temp.cleanup)
         self.tmpdir = Path(self.temp.name)
         self.output = self.tmpdir / 'pilot'
@@ -104,12 +104,12 @@ class PilotTests(unittest.TestCase):
 
     def test_preexisting_output_fails_before_mvs(self):
         self.output.mkdir()
-        with self.assertRaisesRegex(pilot.PilotError, 'new absolute'):
+        with self.assertRaisesRegex(pilot.PilotError, 'new private directory'):
             self.run_one()
         self.assertEqual(self.core.submissions, 0)
 
     def test_relative_path_fails_before_mvs(self):
-        with self.assertRaisesRegex(pilot.PilotError, 'new absolute'):
+        with self.assertRaisesRegex(pilot.PilotError, 'new private directory'):
             pilot.run_one(self.core, prep, key='EXT_OBJ',
                           members=['BCPLTIME'], output=Path('relative/pilot'))
         self.assertEqual(self.core.submissions, 0)
@@ -147,7 +147,7 @@ class PilotTests(unittest.TestCase):
         self.assertFalse((self.output / 'receipt.json').exists())
 
     def test_inside_checkout_rejected_before_mvs(self):
-        with self.assertRaisesRegex(pilot.PilotError, 'outside'):
+        with self.assertRaisesRegex(pilot.PilotError, 'under repository workarea/'):
             pilot.run_one(self.core, prep, key='EXT_OBJ', members=['BCPLTIME'],
                           output=ROOT / 'untracked-evidence')
         self.assertEqual(self.core.submissions, 0)

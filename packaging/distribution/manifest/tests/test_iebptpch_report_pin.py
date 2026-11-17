@@ -23,7 +23,7 @@ ACTUAL_REPORTED_SHA = 'a9207bbac0624a34f945630c354b4883f6f6ed526350a0e395e5aa5d9
 
 class ReportPinTests(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.TemporaryDirectory()
+        self.dir = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea')
         self.addCleanup(self.dir.cleanup)
         self.root = Path(self.dir.name)
         self.report = self.root / 'report.txt'

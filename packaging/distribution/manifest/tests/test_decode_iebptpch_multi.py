@@ -304,15 +304,13 @@ class DecodeMulti(unittest.TestCase):
         self.assertEqual(list(self.output.iterdir()), [])
 
     def test_refuse_inside_checkout(self):
-        with tempfile.TemporaryDirectory(dir=ROOT) as folder:
-            # this test creates a short-lived temp directory in isolated
-            # harness checkout, never user working tree.
-            run = subprocess.run([sys.executable, '-B', str(SRC),
-                                  '--evidence-dir', str(self.evidence),
-                                  '--output-dir', str(Path(folder) / 'result')],
-                                 capture_output=True, text=True)
-            self.assertEqual(run.returncode, 1)
-            self.assertIn('outside Git checkout', run.stderr)
+        # Path is disallowed; do not create any untracked directory in repo root.
+        run = subprocess.run([sys.executable, '-B', str(SRC),
+                              '--evidence-dir', str(self.evidence),
+                              '--output-dir', str(ROOT / 'unauthorized-ta0-output')],
+                             capture_output=True, text=True)
+        self.assertEqual(run.returncode, 1)
+        self.assertIn('under repository workarea/', run.stderr)
 
     def test_nonexistent_report_fails_without_output(self):
         (self.evidence / 'job-report.txt').unlink()

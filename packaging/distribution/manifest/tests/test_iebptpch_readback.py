@@ -138,7 +138,7 @@ class PrepareReadback(unittest.TestCase):
             self.render()
 
     def test_cli_success_and_fail_closed(self):
-        with tempfile.TemporaryDirectory() as temp:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea') as temp:
             manifest_path, dspal_path = Path(temp) / "manifest.yaml", Path(temp) / "dspal.yaml"
             manifest_path.write_text(yaml.safe_dump(self.manifest), encoding="utf-8")
             dspal_path.write_text(yaml.safe_dump(self.dspal), encoding="utf-8")

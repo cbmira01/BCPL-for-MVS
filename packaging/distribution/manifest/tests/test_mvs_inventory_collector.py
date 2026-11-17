@@ -13,12 +13,13 @@ SHA = 'ab' * 20
 
 class CollectorTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.repo = self.root / 'repo'
         self.repo.mkdir()
         (self.repo / '.git').mkdir()
+        (self.repo / 'workarea').mkdir()
         (self.repo / 'tools/datasets').mkdir(parents=True)
         dspal = self.repo / 'tools/datasets/dspal'
         dspal.write_text('''#!/usr/bin/env bash
@@ -47,10 +48,10 @@ fi
         result = self.run_collector('--dry-run')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.count('MVS LISTDS'), 4)
-        self.assertFalse((self.repo / 'workarea').exists())
+        self.assertTrue((self.repo / 'workarea').exists())
 
     def test_capture_and_checksum(self):
-        out = self.root / 'evidence'
+        out = self.repo / 'workarea' / 'evidence'
         result = self.run_collector('--run', '--output', out)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(list(out.iterdir())), 10)
@@ -64,11 +65,16 @@ fi
             self.assertEqual(hashlib.sha256((out / name).read_bytes()).hexdigest(), digest)
 
     def test_rejects_existing_destination(self):
-        out = self.root / 'evidence'
+        out = self.repo / 'workarea' / 'evidence'
         out.mkdir()
         result = self.run_collector('--run', '--output', out)
         self.assertEqual(result.returncode, 2)
         self.assertEqual(list(out.iterdir()), [])
+
+    def test_rejects_output_outside_repository(self):
+        result = self.run_collector('--run', '--output', self.root / 'evidence')
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse((self.root / 'evidence').exists())
 
     def test_rejects_output_inside_checkout(self):
         result = self.run_collector('--run', '--output', self.repo / 'new-evidence')

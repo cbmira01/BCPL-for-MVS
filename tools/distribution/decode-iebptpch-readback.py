@@ -8,10 +8,16 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import json
 from pathlib import Path
 import re
 import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 
 MEMBER = re.compile(r"[A-Z@$#][A-Z0-9@$#]{0,7}\Z")
 HEX8 = r"[0-9A-F]{8}"
@@ -118,9 +124,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-sha256",
                         help="optional independent expected digest of decoded bytes; mismatch fails closed")
     parser.add_argument("--output", required=True, type=Path,
-                        help="new binary output path outside repository checkout")
+                        help="new binary output path under ignored repository workarea/")
     args = parser.parse_args(argv)
     try:
+        try:
+            guard_evidence_path(args.report.parent, new=False, root=ROOT)
+        except ValueError as exc:
+            raise ReadbackError("report must be under repository workarea/") from exc
         require(args.report.is_file() and not args.report.is_symlink(),
                 "report must be an existing plain file")
         require(args.report.stat().st_size <= MAX_REPORT, "report exceeds size limit")
@@ -138,18 +148,15 @@ def main(argv: list[str] | None = None) -> int:
             receipt['independent_expected_sha256_matched'] = True
         destination = args.output
         require(destination.is_absolute() and not destination.exists() and
-                not destination.is_symlink(), "output must be an unused absolute file")
-        require(destination.parent.is_dir() and not destination.parent.is_symlink(),
-                "output parent must be a plain existing directory")
-        root = Path(__file__).resolve().parents[2]
-        require(not destination.resolve().is_relative_to(root),
-                "refusing to write a binary artifact inside the Git checkout")
+                not destination.is_symlink() and '..' not in destination.parts,
+                "output must be an unused absolute file under workarea/")
+        try:
+            guard_evidence_path(destination.parent, new=False, root=ROOT)
+        except ValueError as exc:
+            raise ReadbackError("output parent must be inside repository workarea/") from exc
         receipt_path = destination.with_suffix(destination.suffix + ".json")
         require(not receipt_path.exists() and not receipt_path.is_symlink(),
                 "receipt exists; cannot overwrite")
-        require(not receipt_path.resolve().is_relative_to(root),
-                "refusing to write a receipt inside the Git checkout")
-        import os
         fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "wb") as file:
             file.write(raw)

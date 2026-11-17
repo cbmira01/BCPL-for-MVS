@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """TA.0: one authorized read-only IEBPTPCH job and private JES evidence intake.
 
-No tape operations, no binary acceptance, no output files inside the Git checkout.
+No tape operations, no binary acceptance; private files stay in ignored workarea/.
 Runs only when explicitly invoked; default job is the two-member EXT_OBJ pilot.
 """
 from __future__ import annotations
@@ -17,6 +17,10 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+# Centralized, symlink-safe ignored-workarea evidence policy.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 PREP = Path(__file__).with_name('prepare-iebptpch-readback.py')
 CORE = ROOT / 'tools/datasets/dspal-core.py'
 JOBNAME = re.compile(r'[A-Z@$#][A-Z0-9@$#]{0,7}\Z')
@@ -36,11 +40,10 @@ def load_python(path: Path, name: str):
 
 
 def validate_output_dir(path: Path) -> None:
-    if (not path.is_absolute() or path.exists() or path.is_symlink() or
-            not path.parent.is_dir() or path.parent.is_symlink() or
-            path.resolve().is_relative_to(ROOT.resolve())):
-        raise PilotError('output must be a new absolute private directory outside the Git checkout')
-
+    try:
+        guard_evidence_path(path, new=True, root=ROOT)
+    except ValueError as exc:
+        raise PilotError('output must be a new private directory under repository workarea/') from exc
 
 def digest(path: Path) -> str:
     hasher = hashlib.sha256()
@@ -71,7 +74,7 @@ def capture_window(core, config: dict, cursor: Path, output: Path) -> None:
 
 def run_one(core, prep, *, key: str, members: list[str], output: Path,
             jobname: str = 'TA0MULT') -> dict:
-    """One read-only JES job; output exists only outside repository and cannot overwrite."""
+    """One read-only JES job; output stays in ignored workarea/ and cannot overwrite."""
     if not JOBNAME.fullmatch(jobname):
         raise PilotError('invalid MVS jobname')
     validate_output_dir(output)

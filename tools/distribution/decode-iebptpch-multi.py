@@ -17,6 +17,10 @@ import sys
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+# Centralized, symlink-safe ignored-workarea evidence policy.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 SOURCE = Path(__file__).with_name('decode-iebptpch-readback.py')
 MAX_REPORT = 32 * 1024 * 1024
 MAX_RAW = 64 * 1024 * 1024
@@ -59,8 +63,10 @@ def safe_file(directory: Path, name: str, *, limit: int) -> bytes:
 
 def load_evidence(directory: Path) -> tuple[dict[str, Any], str, dict[str, str]]:
     """Verify all five original evidence file pins BEFORE trusting any report."""
-    need(directory.is_absolute() and directory.is_dir() and not directory.is_symlink(),
-         'evidence directory must be an existing absolute, real directory')
+    try:
+        guard_evidence_path(directory, new=False, root=ROOT)
+    except ValueError as exc:
+        raise MultiError('evidence directory must be under repository workarea/') from exc
     original = safe_file(directory, 'receipt.json', limit=1024 * 1024)
     try:
         receipt = json.loads(original)
@@ -252,10 +258,10 @@ def private_write(path: Path, contents: bytes) -> None:
 
 
 def process(evidence: Path, output: Path, *, expected_counts: list[str]) -> dict:
-    need(output.is_absolute() and not output.exists() and not output.is_symlink() and
-         output.parent.is_dir() and not output.parent.is_symlink() and
-         not output.resolve().is_relative_to(ROOT.resolve()),
-         'output must be new absolute directory outside Git checkout')
+    try:
+        guard_evidence_path(output, new=True, root=ROOT)
+    except ValueError as exc:
+        raise MultiError('output must be a new directory under repository workarea/') from exc
     receipt, report, pins = load_evidence(evidence)
     members = receipt['requested_members']
     expected = parse_expected(expected_counts, members)
@@ -291,7 +297,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--evidence-dir', required=True, type=Path,
                         help='existing private directory written by submit-iebptpch-pilot.py')
     parser.add_argument('--output-dir', required=True, type=Path,
-                        help='new private directory outside Git checkout')
+                        help='new private directory under repository workarea/')
     parser.add_argument('--expected-records', action='append', default=[],
                         help='optional independent MEMBER:COUNT; specify once for each member')
     args = parser.parse_args(argv)

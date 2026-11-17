@@ -34,9 +34,11 @@ if [[ ! -d $parent || -L $parent ]]; then
     exit 2
 fi
 repo=$(pwd -P)
+workarea="$repo/workarea"
 resolved=$(realpath -m -- "$out")
-if [[ $resolved == "$repo" || $resolved == "$repo/"* ]]; then
-    echo 'Refusing to create evidence inside the Git checkout.' >&2
+if [[ ! -d $workarea || -L $workarea || $out != "$workarea/"* ||
+      $resolved != "$workarea/"* ]]; then
+    echo 'Evidence must be inside the repository ignored workarea/ directory.' >&2
     exit 2
 fi
 

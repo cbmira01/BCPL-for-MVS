@@ -17,6 +17,10 @@ import sys
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+# Centralized, symlink-safe ignored-workarea evidence policy.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 DIR = Path(__file__).resolve().parent
 
 
@@ -58,9 +62,10 @@ def sha(data: bytes) -> str:
 
 def recover(panel, decoder, *, directory: Path, key: str, members: list[str],
             source_dataset: str) -> dict[str, Any]:
-    need(directory.is_absolute() and directory.is_dir() and not directory.is_symlink()
-         and not directory.resolve().is_relative_to(ROOT.resolve()),
-         'existing panel must be a private directory outside checkout')
+    try:
+        guard_evidence_path(directory, new=False, root=ROOT)
+    except ValueError as exc:
+        raise RecoverError('existing panel must be a real private workarea/ directory') from exc
     need(type(members) is list and len(members) >= 1 and len(members) <= 20 and
          len(set(members)) == len(members), 'invalid selected members')
     need(key in panel.ALLOWED, 'unknown object-library selection')

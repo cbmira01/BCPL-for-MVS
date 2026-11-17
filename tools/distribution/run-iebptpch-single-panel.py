@@ -18,6 +18,10 @@ import sys
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+# Centralized, symlink-safe ignored-workarea evidence policy.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 TOOLS = ROOT / 'tools/distribution'
 CORE = ROOT / 'tools/datasets/dspal-core.py'
 PREP = TOOLS / 'prepare-iebptpch-readback.py'
@@ -71,11 +75,10 @@ def preflight(prep, core, *, key: str, members: list[str],
     require(all(type(m) is str and MEMBER.fullmatch(m) is not None for m in members),
             'all members must be legal uppercase MVS names')
     require(len(members) == len(set(members)), 'duplicate selected member')
-    require(output.is_absolute() and not output.exists() and
-            not output.is_symlink() and output.parent.is_dir() and
-            not output.parent.is_symlink() and
-            not output.resolve().is_relative_to(ROOT.resolve()),
-            'output must be a NEW private directory outside the Git checkout')
+    try:
+        guard_evidence_path(output, new=True, root=ROOT)
+    except ValueError as exc:
+        raise PanelError('output must be a NEW private directory under workarea/') from exc
     manifest = prep.load_yaml(prep.MANIFEST)
     dspal = prep.load_yaml(prep.DSPAL)
     config = core.load_config()
@@ -189,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     selector.add_argument('--all-selected', action='store_true',
                           help='all canonically selected members of this object PDS')
     parser.add_argument('--output-dir', required=True, type=Path,
-                        help='new private directory, outside checkout')
+                        help='new private directory inside ignored workarea/')
     args = parser.parse_args(argv)
     try:
         os.umask(0o077)

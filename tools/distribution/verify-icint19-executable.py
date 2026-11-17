@@ -18,6 +18,10 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+# Centralized, symlink-safe ignored-workarea evidence policy.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 JCL = ROOT / 'mr10-kit-compiler/jcl/run-regression-tests.jcl'
 GOLD = ROOT / 'mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.expected'
 CORE = ROOT / 'tools/datasets/dspal-core.py'
@@ -71,15 +75,12 @@ def private(path: Path, data: bytes) -> None:
 
 
 def external(path: Path, *, new: bool) -> None:
-    require(path.is_absolute() and not path.is_symlink() and
-            not path.resolve().is_relative_to(ROOT.resolve()),
-            'private evidence path must be absolute and outside Git checkout')
-    if new:
-        require(not path.exists() and path.parent.is_dir() and not path.parent.is_symlink(),
-                'output must be a new directory with existing plain parent')
-    else:
-        require(path.is_dir(), 'source evidence directory does not exist')
-
+    try:
+        guard_evidence_path(path, new=new, root=ROOT)
+    except ValueError as exc:
+        raise ExecEvidenceError(
+            'TA.0 private evidence must be a real workarea/ directory; '
+            'new output must not already exist') from exc
 
 def validate_directory(evidence: Path, review_dir: Path):
     """Re-derive the reviewed IEHLIST identity and reject stale/transformed receipts."""

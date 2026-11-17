@@ -98,7 +98,7 @@ class FakeCore:
 
 class ExecutePilot(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory()
+        self.tmp=tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4] / 'workarea')
         self.addCleanup(self.tmp.cleanup)
         self.base=Path(self.tmp.name)
         self.jcl=self.base/'canonical.jcl'; self.jcl.write_bytes(fixture())

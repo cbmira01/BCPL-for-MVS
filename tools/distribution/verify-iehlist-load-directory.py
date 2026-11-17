@@ -16,6 +16,10 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+# Centralized, symlink-safe ignored-workarea evidence policy.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ta0_evidence_paths import guard as guard_evidence_path
 EXPECTED_PHASE = 'TA.0 LOAD DIRECTORY PILOT — NOT LOAD BYTE OR RELEASE ACCEPTANCE'
 FILES = frozenset(('cursor.json', 'job-body.jcl', 'job-summary.txt',
                    'job-report.txt', 'printer-window.raw'))
@@ -53,13 +57,14 @@ def file_bytes(folder: Path, name: str, limit: int = MAX_BYTES) -> bytes:
 
 
 def check_paths(evidence: Path, output: Path) -> None:
-    root = ROOT.resolve()
-    need(evidence.is_absolute() and evidence.is_dir() and not evidence.is_symlink()
-         and not evidence.resolve().is_relative_to(root), 'BAD_EVIDENCE_LOCATION')
-    need(output.is_absolute() and not output.exists() and not output.is_symlink()
-         and output.parent.is_dir() and not output.parent.is_symlink()
-         and not output.resolve().is_relative_to(root), 'BAD_OUTPUT_LOCATION')
-
+    try:
+        guard_evidence_path(evidence, new=False, root=ROOT)
+    except ValueError as exc:
+        raise EvidenceError('BAD_EVIDENCE_LOCATION') from exc
+    try:
+        guard_evidence_path(output, new=True, root=ROOT)
+    except ValueError as exc:
+        raise EvidenceError('BAD_OUTPUT_LOCATION') from exc
 
 def pinned_files(folder: Path) -> tuple[dict, dict[str, bytes]]:
     try:
