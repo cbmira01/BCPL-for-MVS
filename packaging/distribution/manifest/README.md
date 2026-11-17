@@ -8,7 +8,7 @@ See [native compiler distribution and tape naming decisions](../native-cambridge
 
 The manifest format and authoritative inputs (including `config/dspal.yaml`) are to be specified before producing media. Do not treat this directory as a complete distribution manifest.
 
-The [16 November approved payload scope](../release-payload-scope-decision-20261116.md) requires entries for both independently installable compiler environments, the Coroutine Support Library, the three accepted System Extensions, the MR10 11 + 17 demos and 12-case MVS-verifiable regression panel. These are **logical release selection requirements**, not assigned `BCPL.BTnnnn` slots, physical DASD datasets or finished member inventories. Preserve the single source-of-truth manifest and the reserved `BT0001`/`BT0002` roles.
+The [16 November approved payload scope](../release-payload-scope-decision-20261116.md), as revised by the [subsequent scoped-release decision](../release-without-native-compiler-decision-20261116.md), requires the full independent MR10 compiler/demos/12-case panel and accepted native Core Runtime, historical `BLIB`, Coroutine Support Library and three System Extensions. The native-running Cambridge Compiler is required **only** when `native_compiler: included`. These are release-selection requirements, not assigned tape slots beyond `BT0001`/`BT0002`, recipient datasets or completed acceptance. One manifest remains authoritative.
 
 
 ## TA.0 owner-approved design, 16 November 2026
@@ -41,3 +41,13 @@ It does not create media or reserve any version/VOLSER. No completed per-release
 manifest, rights audit, MVS readback evidence, consumer JCL or tape exists.
 Retire the TA.0 proposed selection into one reviewed per-candidate manifest
 at release preparation; do not maintain two competing authoritative inventories.
+
+## TA.0 selected-JCL source dependency preflight
+
+The [read-only JCL dependency auditor](../../../tools/distribution/audit-jcl-dependencies.py) checks the ten selected MR10/native build/demo/regression jobs against the **same** design inventory, reports used programs and selected dataset/member references, and flags missing site JOB cards and `HERC02` development HLQ. For a source-level dependency worksheet:
+
+```sh
+python3 -B tools/distribution/audit-jcl-dependencies.py --json
+```
+
+The stricter `--strict` run is expected to **fail** on existing development JCL. See the [17 November JCL findings](ta0-provenance-and-dependency-audit.md#5-nativemr10-release-jcl-dependency-closure--17-november-2026-checkpoint) and [offline tests](tests/test_jcl_dependency_audit.py). This does not transform JCL, provide the absent native-running compiler or replace recipient MVS execution evidence.

@@ -65,3 +65,33 @@ python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'tes
 The JSON contains an ordered entry for each selected PDS member, its logical owner, source class/reference, and **unreviewed** rights/MVS evidence slots. It is derived output, **not** a second release manifest. The existing design file must fail `--release` preflight. Offline tests use synthetic MVS mapping fixtures; they **do not** constitute live-MVS inventory proof.
 
 Remaining TA.0 review includes the exact native source/JCL dependency closure, per-member attribution/rights methodology, DCB/transfer requirements and owner acceptance of the proposed order after `BT0002`. TA.1 must separately prove multi-dataset tape sequencing and `RECFM=U` executable load-library restore; TA.3 must prove the recipient installer; TA.4/TA.5 and TA.7–TA.8 own their respective MVS acceptance/publication evidence. **No tape operation, production release identity, VOLSER reservation, MVS dataset modification or march closure is authorized by this audit.**
+
+## 5. Native/MR10 release JCL dependency closure — 17 November 2026 checkpoint
+
+A separate [read-only dependency scanner](../../../tools/distribution/audit-jcl-dependencies.py) now inspects the ten **selected Git JCL source members** using the one TA.0 design inventory and `config/dspal.yaml`. The scan classifies active `//` JCL `DSN=/DSNAME=` references (not comments or in-stream input), verifies that referenced PDS members are selected, identifies `EXEC PGM=` dependencies, rejects undeclared permanent datasets/programs and rejects MR10/native cross-profile dependencies. It **does not** parse all possible JCL constructs or prove that JES will accept generated recipient jobs.
+
+**Independent read-only GitHub source review at `012fc467f274c682c8380b8992ee66fc157bed21`:**
+
+| Finding | Count / result |
+| --- | --- |
+| Selected source JCL | 10 total: 4 `MR10_JCL`, 6 `BOOT_JCL` |
+| Active selected permanent-dataset DSN references | 260 occurrences (111 with an explicit member qualifier); **zero** unselected dataset/member or MR10/native cross-profile references |
+| Source jobs requiring recipient adaptation | **10/10** use literal `HERC02` and lack a standalone `JOB` card |
+| Jobs requiring `SYS1.MACLIB` | **7/10** (IFOX assembler); a target MVS-system prerequisite, **not** tape content |
+| Native JCL `CAMBCOMP` execution references | **0** among the six selected native JCL jobs |
+| Active source JCL records longer than 80 columns | **0** in the ten inspected Git sources |
+
+**Dependency interpretation:** `MR10_JCL(IC19BLD)` uses IFOX/IEWL/IEBGENER to build `ICINT19`, and the other three MR10 jobs run `ICINT19` with selected MR10 source/load/demo/test members. The six selected native jobs use IFOX/IEBGENER/IEBCOMPR with selected `BOOT_ASM`/`BOOT_OBJ` or `EXT_ASM`/`EXT_OBJ`. There is no direct `CAMBCOMP` program dependency in those six JCL bodies. However, `BOOT_JCL(BLDCORLB)` **assumes the generated assembler member** `BOOT_ASM(COROUTIN)` already exists, and no independently operable BCPL-source rebuild of historical `BLIB` is demonstrated without a native-running compiler. A no-native-compiler release may truthfully provide accepted objects and qualified assembler-source rebuilds, **not** native BCPL source compilation.
+
+**Repeatability on an actual checkout (development host, PyYAML):**
+
+```sh
+python3 -B tools/distribution/audit-jcl-dependencies.py
+python3 -B tools/distribution/audit-jcl-dependencies.py --json
+python3 -B tools/distribution/audit-jcl-dependencies.py --strict
+python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'test_*.py' -v
+```
+
+The design-source `--strict` check is **expected to fail** because jobs still require `JOB` cards and `HERC02` substitution. For separately staged adapted JCL, the audit supports `--hlq SITEABC --strict` with an explicit `--dspal` mapping pointing to those staged Git-derived job files; the scanner performs **no adaptation**, writes no jobs and never submits them. Offline tests exercise synthetic fixtures (40 total manifest + JCL tests passed); a parallel read-only GitHub analysis independently checked the ten actual source JCL bodies. A static reference match is **not** MVS compilation, target installation or acceptance of job semantics.
+
+**Still open:** define deterministic generated recipient JCL, site JOB/HLQ/UNIT/SPACE and no-overwrite policy, prove IFOX/IEWL/JES execution, establish exact MVS object/load inventory with source-to-binary receipts, generated `COROUTIN` provenance, historical redistribution permissions, and TA.1 tape mechanics. No VOLSER or release identity is reserved and no TA.0 march closure is claimed.

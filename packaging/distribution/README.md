@@ -15,7 +15,7 @@ This directory contains the source-controlled materials for a future self-contai
 - [Design-stage selected-member YAML inventory](manifest/ta0-inventory.yaml) and [read-only validator](../../tools/distribution/validate-manifest.py) — 20 proposed logical datasets, 127 members; not a release candidate.
 - [TA.0 provenance and recipient-JCL dependency audit](manifest/ta0-provenance-and-dependency-audit.md) — 110 Git-backed selections, 2 generated, 15 MVS binaries, ten JCL adaptation blockers; none release-accepted.
 
-**TA.0 is in progress; no march is closed.** No tape or publication is authorized.
+**TA.0 is in progress; no march is closed.** The [read-only JCL dependency audit](../../tools/distribution/audit-jcl-dependencies.py) checks ten selected source jobs and flags all ten as requiring site adaptation. No tape or publication is authorized.
 
 ## Release identity and VOLSER tracking
 
@@ -23,7 +23,7 @@ This directory contains the source-controlled materials for a future self-contai
 
 ## Governing Tape artifact release milestone
 
-- [Tape artifact release](../milestones/tape-artifact-release/milestone-tape-artifact-release.md) — nine owner-approved marches **TA.0–TA.8**; **TA.0 ready for kickoff**, no completed release or tape authorization.
+- [Tape artifact release](../milestones/tape-artifact-release/milestone-tape-artifact-release.md) — nine owner-approved marches **TA.0–TA.8**; **TA.0 IN PROGRESS**, no completed release or tape authorization.
 - [Owner-approved MR10 regression reporting and human MVS verification](mr10-regression-exp-manual-verification-decision-20261116.md) — the 12 standard cases print literal `EXP:` next to actual `RP:`; MVS recipient verification is documented human review, **not** an automatic MVS semantic comparator. WSL automated `RP:`/`CODE=` checks remain.
 
 ## Expanded release payload decisions (16 November 2026)

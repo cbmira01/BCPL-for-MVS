@@ -28,3 +28,17 @@ or redistribution approvals. The validator cannot itself demonstrate TA.1–TA.8
 acceptance, producer/installer correctness or legal redistribution.
 
 TA.0 is in progress; TA.1 is separately gated.
+
+## Selected release JCL dependency audit (TA.0)
+
+```sh
+python3 -B tools/distribution/audit-jcl-dependencies.py
+python3 -B tools/distribution/audit-jcl-dependencies.py --json
+python3 -B tools/distribution/audit-jcl-dependencies.py --strict
+```
+
+The default read-only scan checks the **ten selected Git JCL source members** against the proposed TA.0 inventory and `dspal` Git paths. It rejects undeclared datasets, members, program dependencies and MR10/native cross-profile references. Original jobs have no standalone `JOB` cards and hard-code development `HERC02`; consequently the `--strict` command **must fail** until release JCL is separately adapted.
+
+For an inspection of site-adapted *files*, use `--hlq SITEABC --strict --dspal <stage-map.yaml> --root <stage-root>`; the specified development-host map must identify the corresponding staged JCL paths and other selected source inputs. The scanner does **not** create, adapt, submit or validate execution of an MVS job. Program availability, full JCL semantics, site allocation/no-overwrite safety and target MVS verification remain acceptance gates.
+
+The 17 November GitHub review found 260 selected permanent-dataset references, zero unselected or cross-profile references, and seven `SYS1.MACLIB` dependencies. The two offline TA.0 test modules contain **40 passing synthetic-fixture cases**; see [audit details](../../packaging/distribution/manifest/ta0-provenance-and-dependency-audit.md).
