@@ -43,3 +43,36 @@ The expected record count is an operator input. Passing it does not independentl
 5. Preserve the separate `BLIB` compiler-hosted build lineage, generated `COROUTIN` assembly lineage, candidate source commit and redistribution rights reviews.
 
 **TA.0 remains IN PROGRESS.** TA.1 writes and release publication remain independently gated. All `BCPL.BT0003` and later positions remain proposed, not frozen.
+
+## Follow-up: retained JOB 9044 report decoded independently — 17 November 2026
+
+After updating to GitHub `main`, the owner ran the committed report extractor
+with the submission-time cursor and the committed strict decoder. The decoder
+reported **JOB 9044, BCPLDEMO, 10 FB80 records, 800 bytes, SHA-256
+`a9207bbac0624a34f945630c354b4883f6f6ed526350a0e395e5aa5d99fc49f0`**.
+It printed its normal qualification that printer-output decode does **not**
+independently establish the current DASD bytes or source lineage.
+
+**IMPORTANT HASH DISCREPANCY — NOT RESOLVED.** The earlier fixture
+`tests/fixtures/ta0-job9044-bcpldemo-transcribed.txt` decodes to
+`b74b12ac496437725910ce0a1edfbbd5e55cb33e5905e405b8a6820257f30ee6`.
+The owner-reported decoder result from the saved cursor-scoped report differs.
+The exact original report and binary receipt remain outside the assistant's
+workspace; therefore the differing hexadecimal records cannot currently be
+localized or assigned a cause. Neither digest is a verified independent DASD
+fingerprint. Do not update the historical fixture to force agreement or declare
+member byte acceptance.
+
+The decoder now records the SHA-256 of the **saved input report** as well as its
+decoded byte SHA-256. Optional `--expected-sha256` requires an independently
+supplied 64-digit lowercase digest and fails before creating output if the
+bytes do not match. The 9044 fixture's digest is a transcription reference only;
+do **not** use it as an independent release acceptance oracle.
+
+The approved next read-only experiment prints the two remaining selected
+`EXT_OBJ` members, `BCPLTIME` and `BCPLQSAM`, in **one** `IEBPTPCH` step using
+`PRINT TYPORG=PO,TOTCONV=XE,MAXNAME=2` and two `MEMBER` controls. A private
+printer-window capture will determine whether the multiple-member report
+format can be safely generalized. No automatic multi-member decoding is
+claimed before this live experiment. See
+[TA.0 multiple-member pilot](ta0-iebptpch-multi-member-pilot-20261117.md).

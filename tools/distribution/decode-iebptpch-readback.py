@@ -115,6 +115,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--member", required=True)
     parser.add_argument("--job", required=True, type=int)
     parser.add_argument("--expected-records", required=True, type=int)
+    parser.add_argument("--expected-sha256",
+                        help="optional independent expected digest of decoded bytes; mismatch fails closed")
     parser.add_argument("--output", required=True, type=Path,
                         help="new binary output path outside repository checkout")
     args = parser.parse_args(argv)
@@ -127,6 +129,13 @@ def main(argv: list[str] | None = None) -> int:
         text = data.decode("utf-8")
         raw, receipt = decode(text, member=args.member, job=args.job,
                               expected_records=args.expected_records)
+        receipt['sha256_of_saved_report'] = hashlib.sha256(data).hexdigest()
+        if args.expected_sha256 is not None:
+            require(re.fullmatch(r'[0-9a-f]{64}', args.expected_sha256) is not None,
+                    "expected SHA-256 must be 64 lowercase hex digits")
+            require(receipt['sha256_of_decoded_print'] == args.expected_sha256,
+                    "decoded bytes do not match the independently expected SHA-256")
+            receipt['independent_expected_sha256_matched'] = True
         destination = args.output
         require(destination.is_absolute() and not destination.exists() and
                 not destination.is_symlink(), "output must be an unused absolute file")
