@@ -1,6 +1,6 @@
 # Milestone Runtime Extensions — Optional Modules and Global Registration
 
-**Status (owner decisions through 24 October 2026): R.0 — Evidence and contract CLOSED; R.1 — Generic registration foundation CLOSED; R.2 — Selective interoperability CLOSED; R.3 — Packaging and acceptance CLOSED; R.4 — IEWL-Driven Extension Selection CLOSED; R.5 — Optional Extension Packaging and Regression CLOSED.** See the [R.4 owner closure](runtime-extensions-r4-closure-20261024.md) and [R.5 owner closure](runtime-extensions-r5-closure-20261024.md). The historical R.0–R.3 closure remains intact. All approved Runtime Extensions marches are individually closed; **formal owner disposition of the expanded milestone as a whole has not yet been recorded**. The accepted BCEX/BCRG v1 ABI, object library safety boundaries and separate authorization for future MVS writes remain binding.
+**Status: CLOSED (qualified) - 16 November 2026, owner-approved expanded-milestone closure.** All approved marches **R.0 - Evidence and contract**, **R.1 - Generic registration foundation**, **R.2 - Selective interoperability**, **R.3 - Packaging and acceptance**, **R.4 - IEWL-Driven Extension Selection**, and **R.5 - Optional Extension Packaging and Regression** were previously individually CLOSED. The owner has now formally closed the expanded **Milestone Runtime Extensions - Optional Modules and Global Registration** without reopening any march. Read the [formal milestone-level closure and retained findings](runtime-extensions-milestone-formal-closure-20261116.md) for evidence boundaries, accepted limitations and independent future work. The BCEX/BCRG v1 contract, Git/MVS authority rules and requirement for separate authorization of MVS writes remain unchanged.
 
 ## R.4 — IEWL-Driven Extension Selection (CLOSED 24 October 2026)
 
@@ -387,3 +387,7 @@ Earlier "R.4 pending" statements above refer to their historical
 record dates, not this final status. **All approved R.0–R.5 marches
 are now CLOSED; separate expanded-milestone closure awaits an explicit
 owner disposition.** No R.6 has been defined or authorized.
+
+## Expanded milestone formal owner closure - 16 November 2026
+
+The owner directed **close out Runtime Extensions and record the decision and remaining findings**. The expanded milestone is therefore **CLOSED (qualified)** at the scope of [the formal milestone closure](runtime-extensions-milestone-formal-closure-20261116.md). This supersedes earlier dated statements in this historical plan that R.4, R.5 or expanded-milestone closure was still pending; those historical checkpoints remain intact. All R.0-R.5 marches were already individually CLOSED. No R.6 is created and no new IFOX, IEWL, JES, regression or MVS installation was performed solely for this administrative closure.

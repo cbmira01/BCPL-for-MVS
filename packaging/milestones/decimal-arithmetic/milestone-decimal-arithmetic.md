@@ -1,6 +1,6 @@
 # Milestone Decimal Arithmetic
 
-**Status:** Proposed, not started (2026-10-15). Optional native BCPL runtime extension; independent of M4 and Milestone QSAM.
+**Status:** Proposed, not started (2026-10-15); **indefinitely deferred to deep background by owner decision (16 November 2026)**. No D.0-D.4 work is authorized or active. Optional native BCPL System Extension, independent of M4 and Milestone QSAM. The existing provisional G!202 assignment is not released by deferral.
 
 ## Objective and scope
 
