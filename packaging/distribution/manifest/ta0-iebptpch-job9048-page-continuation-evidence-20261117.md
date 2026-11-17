@@ -30,6 +30,22 @@ This directly fixes the JOB 9048 behavior without changing the canonical release
 
 **Offline proof:** 14 new standalone page-framing tests and 11 further local checks (including parsing the supplied JOB 9048 report and adversarial mutations) passed in the assistant workspace. The full previously established TA.0 regression suite is not claimed rerun against this workspace. The actual *saved private* JOB 9048/9045 printer reports have not been re-decoded here; those require access to their bytes on Morkies.
 
+## Recovery without a duplicate MVS job
+
+`tools/distribution/recover-iebptpch-single-panel.py` is a deliberately
+non-submitting recovery path for the stopped `EXT_OBJ` panel. It requires the
+existing `failure.json` to identify the **decode** stage and the same
+selected member/ordinal/job found in the saved, SHA-256-pinned pilot receipt.
+It independently re-decodes every preserved pilot report, byte-compares both
+previously decoded members and validates their original report/receipt hashes,
+then creates only the missing decoded artifact for `BCPLQSAM` and an overall
+panel receipt. It preserves `failure.json` as historical diagnostic evidence.
+There are no JES calls, no silent retries and no replacement of prior bytes.
+If any original pilot, previous decoded file, member identity, receipt or
+expected job is inconsistent, it refuses recovery before producing the missing
+artifact. Thirteen isolated mock-based recovery tests passed in the assistant
+workspace. Real MVS/private-file recovery is not claimed executed here.
+
 ## Follow-up evidence gate
 
 1. Re-decode the already-retained private single-member JOB 9048 pilot without resubmitting it; compare the resulting record count and checksum with the **pasted-output** values above. Preserve any disagreement rather than silently reconciling it.
