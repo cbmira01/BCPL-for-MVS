@@ -74,3 +74,19 @@ The inspector does not execute MVS jobs, compare object/load records, prove
 source Git-to-MVS equivalence, decide rights, or authorize a release.
 See [18 synthetic evidence tests](tests/test_mvs_build_evidence.py).
 
+
+
+## TA.0 development binary evidence reconciliation — 17 November 2026
+
+The [JOB 9061 ICINT19 executable-use and fourteen-object reconciliation record](ta0-binary-evidence-reconciliation-20261117.md)
+documents the owner-reported **SAVED_EXECUTION_VERIFIED** result (twice
+revalidated, no new JES job). The read-only
+[TA.0 binary reconciler](../../../tools/distribution/reconcile-ta0-binary-evidence.py)
+rechecks the three retained FB80 object panels and the pinned JOB 9060/9061
+directory/executable receipt together using the *one* existing TA.0 design
+selection and the historical printed hash ledger. It writes its derived
+private index only under ignored repository workarea/.
+
+This is development MVS printer and executable-use evidence. It is not raw
+source-to-DASD byte provenance, a RECFM=U restore, a production manifest, tape
+proof, rights clearance or release acceptance. TA.0 remains IN PROGRESS.

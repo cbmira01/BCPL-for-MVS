@@ -91,3 +91,26 @@ IEBCOPY unload/restore, or recipient tape acceptance. No TA.0 march closure.
 The improved path was verified with offline, adversarial fixtures in the
 assistant's isolated workarea, not the owner's private SYSOUT. Actual MVS
 result classification is the next live gate.
+
+
+## Live verification: JOB 9061, 17 November 2026
+
+The owner executed the corrected read-only receipt review **twice** against
+the same saved workarea evidence. Each review returned:
+
+    TA.0 ICINT19 GATE: SAVED_EXECUTION_VERIFIED JOB=9061
+      PREFLIGHT=OK_NOW REPORT=PINNED_JES_AND_BCPL_RESULT_VERIFIED
+      SUBMITTED_IN_THIS_INVOCATION=NO
+
+This supersedes the earlier **unknown** execution-result status in this
+document. The eight-step development MR10 ICINT19 executable-use gate is
+**PASS (qualified)**. The saved receipt verifier confirms the original
+JES/IEF142I RC=0000, interpreted CODE=0 and scalar/vector RP results;
+neither subsequent check submitted a new MVS job. The user's private
+underlying report remains under ignored workarea/, not in Git or directly
+available in the assistant workspace. See the
+[TA.0 binary evidence reconciliation record](ta0-binary-evidence-reconciliation-20261117.md).
+
+No RECFM=U byte identity, original-source-to-DASD binding, restored
+load-library execution, recipient/tape verification, TA.0 closure or rights
+clearance follows from this narrow pass.

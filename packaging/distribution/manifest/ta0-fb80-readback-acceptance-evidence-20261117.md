@@ -45,3 +45,16 @@ Period reference: IBM *OS/VS2 MVS Utilities*, Release 3.8, GC26-3902-1, IEHLIST 
 ## Outstanding gates
 
 Separate `RECFM=U` member bytes/directory/IEBCOPY round-trip/executable use; eight build-job receipts; native Core Runtime/BLIB/COROUTIN source-to-MVS revision lineage; full rights/redistribution review; candidate source freeze; release version/VOLSER registry; independent installation and tests; any TA.1 scratch tape operations (owner approval required). **TA.0 remains IN PROGRESS.**
+
+
+## Subsequent MR10 load executable-use result — 17 November 2026
+
+The owner later confirmed JOB **9060** as a valid edited IEHLIST directory
+observation of MR10_LOAD(ICINT19), entry 000000, attributes 02E2, and
+twice revalidated the saved JOB **9061** eight-step ICINT19 executable
+pilot as SAVED_EXECUTION_VERIFIED. All 14 FB80 objects therefore have
+qualified printer-output readbacks, while the 15th selected binary member
+has **directory-plus-development-executable-use evidence** (not an
+independent byte readback). These results do **not** complete RECFM=U
+unload/restore or release acceptance. See the
+[consolidated reconciliation design and JOB 9061 record](ta0-binary-evidence-reconciliation-20261117.md).
