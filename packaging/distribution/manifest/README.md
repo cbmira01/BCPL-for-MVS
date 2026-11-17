@@ -90,3 +90,17 @@ private index only under ignored repository workarea/.
 This is development MVS printer and executable-use evidence. It is not raw
 source-to-DASD byte provenance, a RECFM=U restore, a production manifest, tape
 proof, rights clearance or release acceptance. TA.0 remains IN PROGRESS.
+
+
+## TA.0 successful retained-binary reconciliation
+
+The [17 November binary reconciliation evidence](ta0-binary-evidence-reconciliation-20261117.md)
+now records a **live PASS (qualified)**: 14/14 selected FB80 object members,
+902 records / 72,160 decoded printer bytes, exactly two historical
+pre-pagination receipts, JOB 9060 load directory, and JOB 9061
+development `ICINT19` executable-use verification. The original JES reports
+and derived `reconciliation.json` remain private under ignored
+`workarea/`. This is *not* an independent DASD byte comparison, build
+provenance clearance, `RECFM=U` tape restoration, or candidate/release
+acceptance. Continue with the existing eight-build-job provenance intake
+contract without rerunning accepted printer pilots.

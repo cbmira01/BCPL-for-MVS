@@ -60,3 +60,19 @@ Do not use this compatibility rule as original source-to-DASD binary proof or
 as independent RECFM=U load-module byte comparison. No scratch tape write,
 release candidate freeze, VOLSER allocation, TA.0 closure, TA.1 authorization,
 rights decision or publication follows from this correction.
+
+
+## Live compatibility verification — PASS (qualified), 17 November 2026
+
+The owner ran the corrected reconciler and observed complete reconciliation
+of **14/14 FB80 objects, 902 FB80 records / 72,160 bytes** with **exactly
+two** historical pre-pagination receipts. Both old receipts were accepted
+only where the present decoder observed zero repeated page headings; the
+original receipts were unchanged. The retained MR10 load-directory JOB 9060
+and interpreter executable-use JOB 9061 passed the consolidated gate.
+
+This supersedes the prior "live re-reconciliation pending" status in the
+heading; no independent raw DASD or tape-byte identity is inferred.
+The successful tool created its private derived reconciliation index in the
+ignored workarea. No original evidence files were rewritten or JES jobs
+submitted. Full release acceptance remains open.

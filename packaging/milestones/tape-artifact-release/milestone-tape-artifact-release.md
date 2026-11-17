@@ -74,6 +74,20 @@ The first TA.1 diagnostic experiment should use a **fresh, uniquely named scratc
 
 The approved single-manifest/bootstrap/naming rules, independent environments, and manual MR10 verification decision are binding. Other architecture details in this section remain **proposals**, not presumed owner approvals.
 
+**TA.0 qualified binary evidence checkpoint, 17 November 2026:** The
+[consolidated development-evidence reconciler](../../distribution/manifest/ta0-binary-evidence-reconciliation-20261117.md)
+now passes against the saved MVS evidence: **14/14** selected FB80 objects,
+**902** FB80 records / **72,160** decoded printer bytes; two original
+pre-pagination receipt schemas were accepted without rewriting the private
+files. JOB **9060** confirms `MR10_LOAD(ICINT19)` formatted directory metadata,
+and JOB **9061** confirms development interpreter executable use on the
+bounded eight-step scalar/vector case. **This is qualified development
+evidence, not TA.0 closure or binary-source/tape acceptance.** Eight historical
+build-job source/provenance receipts, generated `BLIB`/`COROUTIN` lineage,
+recipient JCL transformation/target DCB, rights clearance, and owner review of
+the proposed post-`BT0002` dataset order remain open. No tape write, new
+VOLSER or publication is authorized by this checkpoint.
+
 ## 7. Safety, verification and authority
 
 - GitHub `main` owns all source/JCL/specification/decision files; MVS 3.8J, IFOX, IEWL, JES and actual program execution own target-system evidence.

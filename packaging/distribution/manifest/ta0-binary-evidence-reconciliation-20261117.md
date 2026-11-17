@@ -65,3 +65,37 @@ record-count, binary and panel-receipt checks. It records each schema
 variant and the legacy receipt count in the derived output. Original
 evidence files are not rewritten. Live MVS reconciliation remains pending
 until the owner runs the revised tool against the preserved evidence.
+
+
+## Live consolidated reconciliation — PASS (qualified), 17 November 2026
+
+The owner reran the corrected, read-only reconciler at GitHub
+`262f2f637ae9025f30139abb78b6098ecd83634f` against the **unchanged**
+private collection in `workarea/ta0-mvs-evidence-20261117/`. The MVS-facing
+evidence command returned:
+
+    TA.0 BINARY EVIDENCE RECONCILED: 14/14 FB80 objects, 902 records, 72160 bytes
+    Historical pre-pagination receipts: 2 (only zero repeated headings; original files unchanged)
+    MR10_LOAD(ICINT19): JOB 9060 directory; JOB 9061 saved execution verified
+    Read-only MVS evidence; no DASD byte identity, tape restore or release acceptance.
+
+**Disposition: PASS (qualified)** for the defined **development binary evidence
+reconciliation**. The 3 EXT_OBJ, 1 MR10_OBJ, and 10 BOOT_OBJ members reconcile
+with their pinned IEBPTPCH print, decoded member bytes, historical hashes and
+panel receipts. Exactly two pre-pagination metadata receipts were accepted
+under the narrowly validated zero-page-repeat compatibility rule.
+The ICINT19 directory/GO evidence remains JOBs 9060/9061. No JES work or tape
+I/O was submitted by this reconciliation and the original files were not
+rewritten. The new private derived `ta0-binary-evidence-reconciled/reconciliation.json`
+was written by the successful tool, but its full contents and SHA-256 were not
+provided to this Git-tracked record.
+
+This **supersedes** the earlier pending live-reconciliation language above.
+It does **not** prove the original DASD bytes, Git source ancestry, the eight
+historical build receipts, RECFM=U load-library unload/restore, recipient
+installation, licensing, TA.0 closure, or authority to write tape. The next
+TA.0 provenance task is to validate actual IFOX/IEWL/build-job receipts
+against the canonical 15-member build chain and independently establish
+their association with the resident development sources/binaries; the existing
+[build evidence intake](ta0-mvs-build-evidence-intake.md) provides the
+fail-closed contract and leaves missing evidence unresolved.
