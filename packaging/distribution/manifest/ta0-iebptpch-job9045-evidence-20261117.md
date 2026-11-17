@@ -101,3 +101,36 @@ sensitive JES details; do not publish them.
 **TA.0 remains IN PROGRESS; TA.1 and release publication remain separately
 gated.** No new VOLSER is reserved, no tape is written, and all release
 positions after `BCPL.BT0002` remain proposed.
+
+
+## Actual decoder failure — 17 November 2026
+
+The owner subsequently invoked the consolidated read/decode stanza. Its first
+operation against saved JOB 9045 evidence returned:
+
+    TA.0 MULTI READBACK FAIL: printed member headers missing, duplicated or reordered
+
+Bash set -e stopped the stanza at this first failed step. **No new MR10_OBJ
+or BOOT_OBJ JES job was submitted by that stanza.** The previously successful
+JOB 9045 is retained as an IEBPTPCH RC=0000 execution observation, **not**
+as accepted two-member decoded bytes. The failure does not establish
+which printed-heading assumption was violated. In particular, it is not evidence
+that the members were physically absent, or that their order differs. Do not
+change the decoder to reorder or invent headers based solely on this message.
+
+The owner-private job-report.txt and printer-window.raw have not been
+transferred to the assistant's workspace; the following diagnostic therefore
+runs against the already-pinned local MVS evidence, not a fabricated JOB 9045
+transcript. tools/distribution/diagnose-iebptpch-headings.py invokes the
+existing load_evidence receipt verifier (all five SHA-256 attachment pins)
+and prints only requested member names, exact and whitespace-tolerant
+heading matches, potential alternate-format heading names, control-statement
+names, hex-line counts and missing/duplicate/order flags. It does **not** print
+the actual report, source binary, password-bearing JOB card or JES listing,
+write any files, submit JCL or permit malformed output to be accepted.
+
+Nine synthetic, isolated tests cover normal, missing, reverse-order, duplicate,
+alternate spacing/carriage-control, formfeed, member controls, hex-line counts,
+redaction and line-count bounds: **9/9 PASS**. These tests do not establish the
+actual JOB 9045 printed format. The original decoder remains deliberately
+unchanged until live diagnostic data establishes the structural issue.
