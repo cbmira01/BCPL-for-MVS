@@ -1,13 +1,13 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **Milestone structure owner-approved, 16 November 2026; TA.0 ready for kickoff, not yet executed**  
+**Status:** **TA.0 IN PROGRESS — release architecture and scoped-release decision owner-approved 16 November 2026; no march closed**  
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
 ## 1. Objective and product boundary
 
-Deliver a complete, reproducible, independently installable release containing two usable, independent programming environments:
+Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
 
 1. **Native Cambridge Compiler:** A ready-to-run, native System/370 compiler with its own source, supporting assembly, MVS build/link JCL, examples, verification procedures and the required Core Runtime and historical Base Library (`BLIB`).
 2. **MR10 Kit Compiler:** A ready-to-run `ICINT19` with assembler source/build JCL; `SYNI`, `TRNI`, `CGI`, `BLIBI`, `ICLIB` INTCODE decks; supporting sources/libraries/JCL; 11 language demonstrations (`MRLANGDM`); 17 BCPL demonstrations (`MRBCDEMO`); and the standard 12-case regression panel (`MRREGRES`), including input data and expected results.
@@ -18,11 +18,11 @@ The two environments must be independently selectable, installable and usable; t
 
 **Excluded/deferred:** `BCPLDEC` (indefinitely deferred); the unimplemented BCPL Standard Library; the interpreter-hosted/demoted Cambridge compiler `CAMBCOMP` unless separately approved; full development/reconstruction history and host-side Python, WSL, `dspal`, or Hercules tooling as *recipient* requirements.
 
-The complete native-running Cambridge Compiler remains **unfinished**. A compiler that runs as INTCODE under `ICINT19` and merely generates native assembler is *not* a substitute for the release's native compiler/self-compilation gate.
+The complete native-running Cambridge Compiler remains **unfinished**. A **release without the native compiler** is also owner-approved: it provides the complete independent MR10 compiler environment and accepted native Runtime/BLIB/Coroutine Support/System Extensions but must not claim a native compiler or its self-compilation. `CAMBCOMP` is not a native compiler substitute. The [subsequent owner decision](../../distribution/release-without-native-compiler-decision-20261116.md) supersedes the unconditional native-compiler publication gate.
 
 ## 2. Approved tape and source-of-truth architecture
 
-- Preserve a single authoritative, Git-controlled, **per-release manifest** for selected inputs and member ownership, dataset attributes, source-to-tape-to-recipient mapping, validation, dependencies, and ordered 1-based *logical MVS tape dataset* sequence. `config/dspal.yaml` describes development datasets; it is **not** the release-selection authority.
+- Preserve a single authoritative, Git-controlled, **per-release manifest** for selected inputs and member ownership, dataset attributes, source-to-tape-to-recipient mapping, validation, dependencies, declared `native_compiler: absent | included` capability, and ordered 1-based *logical MVS tape dataset* sequence. `config/dspal.yaml` describes development datasets; it is **not** the release-selection authority.
 - All standard-label tape DSNs follow `BCPL.BTnnnn`, continuously numbered by logical tape dataset sequence. `BCPL.BT0001` is human-readable EBCDIC FB80 installation/bootstrap text; `BCPL.BT0002` is the installation JCL/procedure PDS unload; `BCPL.BT0003` onward is selected by the manifest. The `BT` number is **not** a Hercules physical file number.
 - Producer and consumer installation materials must come from the same manifest. A recipient provides an authorized site-specific HLQ and receives MVS-native bootstrap, allocation, restoration, instructions and verification without Git, TSO, Python, WSL or `dspal`. Initial bootstrap is read-only.
 - Initial design is a single standard-labeled AWS tape volume. A candidate receives a frozen Git SHA, reviewed release/version identity, newly reserved unique six-character VOLSER, ordered inventory, and SHA-256 checksum; use one cross-release version/VOLSER registry. Publish **only the exact image bytes that passed acceptance**, with separate owner approval.
@@ -38,9 +38,9 @@ The complete native-running Cambridge Compiler remains **unfinished**. A compile
 | **TA.3** | **MVS Bootstrap and Installation** | `BT0001` can be read on a recipient without BCPL; `BT0002` yields operable MVS-only installation jobs; site HLQ/allocation and overwrite policy validated; independently selectable MR10-only, native-only or combined install paths, all without developer tools. |
 | **TA.4** | **MR10 Kit Compiler Distribution and Verification** | Installed `ICINT19` and its rebuild source/JCL operate independently; all 11 + 17 demos and the complete 12-case `MRREGRES` panel compile/run on MVS. Every case emits fixed `EXP:` expected records and distinct `RP:` actual records; a human reviews expected versus actual and `CODE=` for *all 12*, recording per-case PASS/FAIL and explicit sign-off. Preserve unchanged WSL automated `RP:`/`CODE=` checking, proven by its regression run. |
 | **TA.5** | **Native Runtime, Libraries, and Extensions Distribution** | Restore/link/execute the Core Runtime, `BLIB`, `BCPLCO`/`COROUTIN` Coroutine Support and `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM` from the distribution; prove correct object/source provenance, BCEX/BCRG selection, optional-link behavior, build procedures and relevant native tests. |
-| **TA.6** | **Native Cambridge Compiler Distribution and Self-Compilation** | Deliver and run the separate **native-running** compiler on recipient MVS; use that supplied native executable to compile its distributed source, assemble/link via IFOX/IEWL, then execute and verify the rebuilt native compiler. No `CAMBCOMP` or MR10 substitution. |
-| **TA.7** | **Clean-Target Integration and Release Acceptance** | From an isolated clean target, install both environments independently, verify the full 12-case MR10 panel with documented human per-case review, run applicable native regressions/extension and coroutine checks, and pass native compiler self-compilation; retain actual JES/IFOX/IEWL/GO and tape/installation evidence. |
-| **TA.8** | **Release Audit and Controlled Publication** | Complete provenance/redistribution review, version/VOLSER registry, documentation, checksum, manifest and test/evidence audit; obtain separate publication approval; tag and publish precisely the accepted bytes. |
+| **TA.6** | **Native Cambridge Compiler Distribution and Self-Compilation** | Mandatory for a candidate declaring `native_compiler: included`: the genuine native executable compiles its distributed source, assembles/links through IFOX/IEWL and runs the rebuilt compiler. No `CAMBCOMP` or MR10 substitution. If absent, mark this **candidate gate N/A**, not PASS or formal TA.6 closure. |
+| **TA.7** | **Clean-Target Integration and Release Acceptance** | On an isolated clean target, verify MR10-only, native-only and combined installed profiles; human-review all 12 MR10 cases and test 11+17 demos plus native runtime/BLIB/coroutine/extension linkage/execution. Require native compiler self-compilation **only if included**. Retain JES/IFOX/IEWL/GO and tape/installation evidence. |
+| **TA.8** | **Release Audit and Controlled Publication** | Audit provenance/redistribution, scope disclosure, version/VOLSER registry, documentation, checksum, manifest and evidence. With separate publication approval, publish exactly tested bytes. A verified release without the native compiler is eligible. |
 
 **Milestone structure and march identifiers TA.0–TA.8 were owner-approved on 16 November 2026.** This approval establishes the work plan, not an accepted implementation, an MVS/tape write permit, or public-release authorization. No march is yet formally closed.
 
@@ -58,13 +58,13 @@ The earlier historical MR10 diagnostic/probe suites are not automatically part o
 
 The tape/installer path is **TA.0 → TA.1 → TA.2 → TA.3 → TA.7 → TA.8**. MR10 TA.4 and native library TA.5 can advance after inventory architecture review, in parallel with tape mechanics and producer work; their *installed-recipient* acceptance requires TA.3.
 
-TA.6 depends on completion of the separate unfinished native-running Cambridge Compiler, outside this distribution milestone's early tape-mechanics work. **TA.6 is an unconditional TA.7/TA.8 gate**. Do not freeze the complete product candidate as accepted without that compiler.
+TA.6 depends on completion of the unfinished native-running Cambridge Compiler. **It is an unconditional TA.7/TA.8 gate only for a candidate with `native_compiler: included`.** Candidates declaring `absent` may proceed to clean-target acceptance and controlled publication after all included MR10/native-component/redistribution requirements and separate approval; they must not claim two compilers. The native compiler remains mandatory for any **complete** release.
 
 The first TA.1 diagnostic experiment should use a **fresh, uniquely named scratch image**, two distinct fixtures approximating `BT0001` FB80 and `BT0002` IEBCOPY-PDS, explicit `LABEL=(1,SL)` and `LABEL=(2,SL)`, followed by label inspection and independent restore/comparison. Investigate `VOLUME=RETAIN`, `DISP=PASS`, MVS allocation/demount, step boundaries and positioning before execution; do not assume an append/resume protocol. Test load-library `RECFM=U` transport separately.
 
 ## 6. TA.0 open design decisions
 
-Require owner review of: exact manifest schema and release inventories; installation profile/selection and destination-HLQ parameterization; PDS/load-library transport and DCB normalization; MVS tape step/job sequencing and error policy; expected-output presentation and manual sign-off format; version/candidate-to-final identity rules, VOLSER registry schema, and immutable artifact retention; component redistribution audit and recipient prerequisites.
+**Owner-approved design direction:** curated exact-member inventories, one canonical per-candidate manifest, MR10-only/native-only/combined installation profiles, site-HLQ parameterization, non-reusable VOLSERs and immutable artifacts, and a releasable no-native-compiler configuration. See [TA.0 inventory/architecture](../../distribution/manifest/ta0-release-architecture-and-inventory.md) and [manifest schema](../../distribution/manifest/schema-v1-design.md). **Still open:** final candidate identity, native source/JCL provenance, executable site-specific HLQ JCL, transport/DCB evidence, multi-dataset retention/positioning, MR10 `EXP:` implementation/human review, redistribution audit. TA.1 is separately gated.
 
 The approved single-manifest/bootstrap/naming rules, independent environments, and manual MR10 verification decision are binding. Other architecture details in this section remain **proposals**, not presumed owner approvals.
 

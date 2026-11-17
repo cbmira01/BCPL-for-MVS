@@ -7,6 +7,14 @@ This directory contains the source-controlled materials for a future self-contai
 - [create-tape/](create-tape/) — development-host tools and MVS JCL for building and verifying tape media.
 - [install-from-tape/](install-from-tape/) — MVS-resident JCL and installation materials intended to be distributed on tape.
 
+## TA.0 architecture and approved scoped releases
+
+- [Release without the native compiler](release-without-native-compiler-decision-20261116.md) — owner decision and conditional TA.6 gate.
+- [TA.0 release architecture and inventory](manifest/ta0-release-architecture-and-inventory.md) — curated member selections, mappings, dependencies and incomplete compiler artifacts.
+- [Manifest schema v1 design](manifest/schema-v1-design.md) — canonical inventory, validation and consistency requirements.
+
+**TA.0 is in progress; no march is closed.** No tape or publication is authorized.
+
 ## Release identity and VOLSER tracking
 
 - [Version and VOLSER registry design (8 November 2026)](release-version-and-volser-registry-decisions-20261108.md) — one proposed Git-controlled registry for cross-release version and VOLSER allocation; per-release manifests remain authoritative for tape dataset order. No registry is implemented.

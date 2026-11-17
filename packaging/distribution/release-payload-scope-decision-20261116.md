@@ -4,6 +4,8 @@
 **Status:** Owner-approved release payload scope and acceptance requirements; **not implemented or release-accepted**  
 **Authority:** GitHub `main`; supersedes the narrower product-inventory exclusions of [8 November 2026](native-cambridge-compiler-distribution-decisions-20261108.md), while retaining its tape naming, release identity, single-manifest, installation safety and acceptance rules.
 
+**Subsequent 16 November owner decision:** [A release without the native-running Cambridge Compiler is permitted](release-without-native-compiler-decision-20261116.md), subject to scoped acceptance and explicit disclosure. This supersedes earlier unconditional TA.6 publication prerequisites in the historical text below.
+
 ## Subsequent owner clarification — 16 November 2026
 
 The owner subsequently approved the [`EXP:` expected-output and manual MVS-verification decision](mr10-regression-exp-manual-verification-decision-20261116.md) for the standard **12-case `MRREGRES` panel**. Every BCPL regression will print fixed literal `EXP:` records alongside unchanged actual `RP:` results, and a person will inspect all 12 cases plus interpreted `CODE=`, recording explicit per-case PASS/FAIL and overall sign-off. The existing WSL `RP:`/`CODE=` automated runner remains. This later decision **supersedes the automatic MVS-resident PASS/FAIL comparison and automatic semantic-mismatch non-success requirement** described below. Those requirements remain preserved below as the earlier decision record, not as live acceptance gates. MVS-only verified execution and human sign-off **remain unimplemented**.

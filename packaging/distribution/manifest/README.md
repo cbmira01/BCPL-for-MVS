@@ -10,3 +10,11 @@ The manifest format and authoritative inputs (including `config/dspal.yaml`) are
 
 The [16 November approved payload scope](../release-payload-scope-decision-20261116.md) requires entries for both independently installable compiler environments, the Coroutine Support Library, the three accepted System Extensions, the MR10 11 + 17 demos and 12-case MVS-verifiable regression panel. These are **logical release selection requirements**, not assigned `BCPL.BTnnnn` slots, physical DASD datasets or finished member inventories. Preserve the single source-of-truth manifest and the reserved `BT0001`/`BT0002` roles.
 
+
+## TA.0 owner-approved design, 16 November 2026
+
+- [TA.0 architecture / inventory](ta0-release-architecture-and-inventory.md)
+- [Manifest schema v1 design](schema-v1-design.md)
+- [Release without the unfinished native compiler](../release-without-native-compiler-decision-20261116.md)
+
+The per-candidate manifest must explicitly declare `native_compiler: absent` or `included`. A scoped release without the compiler remains valid after full MR10 and selected native-component verification, clean-target installation, provenance audit and separate publication approval. The TA.6 self-compilation gate applies only to candidates including the compiler. **Only BT0001 and BT0002 roles are reserved; later logical positions are proposals.** No candidate identity, VOLSER or AWS image has been created.

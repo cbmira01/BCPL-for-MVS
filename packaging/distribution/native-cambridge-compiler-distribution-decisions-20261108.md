@@ -2,6 +2,8 @@
 
 **Status: Owner-approved distribution design direction; not implemented or MVS release-accepted.**
 
+**Later 16 November owner decision:** [A scoped release without the unfinished native-running compiler is permitted](release-without-native-compiler-decision-20261116.md). The historical native-focused product description below no longer imposes an unconditional TA.6 publication gate; tape naming, single-manifest, version/VOLSER and safety rules remain authoritative.
+
 **Scope update (16 November 2026):** The owner later approved a broader
 [release payload scope](release-payload-scope-decision-20261116.md): native
 Coroutine Support, `BCPLDEMO`, `BCPLTIME`, `BCPLQSAM`, plus an
