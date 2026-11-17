@@ -76,3 +76,15 @@ trusted report* means a JES submission cannot be safely ruled out; a *saved
 report* permits report-level failure analysis. The resulting live state,
 not synthetic guesses, determines whether the next change concerns preflight,
 MVS JCL, interpreted execution or strict report framing.
+
+## Subsequent owner-reported gate result
+
+On 17 November 2026, the owner reran the once-only gate against the moved
+repository-local evidence, obtaining `RECEIPT_ALREADY_PRESENT JOB=unknown`,
+`PREFLIGHT=OK_NOW`, and `SUBMITTED_IN_THIS_INVOCATION=NO`. This proves only
+that a saved receipt file exists and the current source preflight succeeds.
+The original inspector did not read or verify the receipt when present.
+The follow-up validation correction and its limits are in
+[TA.0 executable-use gate](ta0-icint19-once-execution-gate-20261117.md).
+Do not infer a new JES submission, a successful prior job, or source provenance
+until the existing receipt and its pinned report are verified.

@@ -158,5 +158,34 @@ class GateTests(unittest.TestCase):
         self.assertEqual(rc,0)
         self.assertIn('NEW_EXECUTION_VALIDATED',out.getvalue())
 
+    def test_saved_validated_receipt_is_success_without_job(self):
+        self.output.mkdir()
+        with patch.object(pilot,'run',side_effect=AssertionError('repeated JES')) as submit:
+            with patch.object(triage,'diagnose',return_value={
+                 'state':'SAVED_EXECUTION_VERIFIED','job':'9061',
+                 'preflight':'OK_NOW','reason':'PINNED_JES_AND_BCPL_RESULT_VERIFIED'}):
+                result=self.call()
+        submit.assert_not_called()
+        self.assertEqual(result['state'],'SAVED_EXECUTION_VERIFIED')
+        self.assertEqual(result['job'],'9061')
+        self.assertEqual(result['submitted_now'],'NO')
+
+    def test_saved_validated_receipt_cli_success(self):
+        args=['--iehlist-evidence',str(self.iehlist),
+              '--review-dir',str(self.review),'--output-dir',str(self.output)]
+        out=io.StringIO()
+        with patch.object(mod,'load',side_effect=[pilot,triage]), \
+             patch.object(pilot,'import_file',return_value=SimpleNamespace(
+                 load_config=lambda: {})), \
+             patch.object(mod,'decision',return_value={
+                 'state':'SAVED_EXECUTION_VERIFIED', 'job':'9061',
+                 'preflight':'OK_NOW', 'reason':'PINNED_JES_AND_BCPL_RESULT_VERIFIED',
+                 'submitted_now':'NO'}), \
+             contextlib.redirect_stdout(out):
+            rc=mod.main(args)
+        self.assertEqual(rc,0)
+        self.assertIn('SAVED_EXECUTION_VERIFIED',out.getvalue())
+        self.assertIn('SUBMITTED_IN_THIS_INVOCATION=NO',out.getvalue())
+
 
 if __name__=='__main__': unittest.main()

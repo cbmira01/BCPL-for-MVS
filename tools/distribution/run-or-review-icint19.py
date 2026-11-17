@@ -89,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     print('  PREFLIGHT=' + detail['preflight'] + ' REPORT=' + detail['reason'])
     print('  SUBMITTED_IN_THIS_INVOCATION=' + detail['submitted_now'])
     print('Private evidence remains in workarea/; no automatic JES retry.')
-    return 0 if detail['state'] == 'NEW_EXECUTION_VALIDATED' else 1
+    return 0 if detail['state'] in ('NEW_EXECUTION_VALIDATED', 'SAVED_EXECUTION_VERIFIED') else 1
 
 
 if __name__ == '__main__':
