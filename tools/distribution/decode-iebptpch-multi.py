@@ -193,10 +193,18 @@ def decode_multi(report: str, *, job: int, jobname: str,
     single = module()
     verify_job(report, job=job, jobname=jobname, members=members)
     lines = report.replace('\r', '').replace('\f', '\n').splitlines()
-    headers = [(i, m.group(1)) for i, line in enumerate(lines)
-               if (m := single.HEADER.fullmatch(line))]
-    need([name for _, name in headers] == members,
-         'printed member headers missing, duplicated or reordered')
+    # IEBPTPCH repeats a member heading at every printed PAGE (JOB 9048).
+    # Fold only sequential same-member page continuations, never logical
+    # member transitions or malformed/missing records.
+    page_source = Path(__file__).with_name('iebptpch-page-framing.py')
+    page_spec = importlib.util.spec_from_file_location('ta0_iebptpch_page_framing', page_source)
+    need(page_spec is not None and page_spec.loader is not None,
+         'IEBPTPCH page-continuation validator is unavailable')
+    pages = importlib.util.module_from_spec(page_spec)
+    page_spec.loader.exec_module(pages)
+    lines, headers, page_repeats = pages.coalesce_page_headings(
+        lines, members=members, header=single.HEADER,
+        first=single.FIRST, second=single.SECOND, require=need)
     need(expected is None or set(expected) == set(members),
          'expected record counts must cover all selected members')
     result = {}
@@ -217,6 +225,7 @@ def decode_multi(report: str, *, job: int, jobname: str,
             'block_end_records': blocks,
             'sha256_of_decoded_print': hashlib.sha256(raw).hexdigest(),
             'expected_records_supplied': expected is not None,
+            'repeated_page_headings': page_repeats[name],
             'qualification': 'PRINT-ONLY; NO INDEPENDENT DASD BYTE OR SOURCE PROVENANCE',
         })
     return result
