@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 IN PROGRESS — release architecture and scoped-release decision owner-approved 16 November 2026; no march closed**
+**Status:** **TA.0 CLOSED (qualified), owner-directed 17 November 2026; TA.1 READY FOR DESIGN/PREFLIGHT (no tape-write authorization); milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -87,6 +87,27 @@ build-job source/provenance receipts, generated `BLIB`/`COROUTIN` lineage,
 recipient JCL transformation/target DCB, rights clearance, and owner review of
 the proposed post-`BT0002` dataset order remain open. No tape write, new
 VOLSER or publication is authorized by this checkpoint.
+
+## TA.0 formal closure and TA.1 transition — 17 November 2026
+
+Owner direction authorizes formal **TA.0 CLOSED (qualified)** at the
+[17 November 2026 acceptance/transition record](ta0-formal-acceptance-and-ta1-transition-20261117.md).
+The architecture and inventory design baseline and the owner-reported live
+14-member FB80 reconciliation plus JOB 9060/9061 evidence are accepted
+**only in their specified development scope**. Binary/source provenance,
+rights clearance, transport verification, recipient JCL, final artifact
+identity and release acceptance remain explicitly unproven and are assigned
+to their existing later marches. The TA.0 design record is not a frozen
+candidate manifest. TA.0 is not a retroactive claim of test/tape production.
+
+**TA.1 — Multi-Dataset Tape Mechanics is READY FOR DESIGN/PREFLIGHT.**
+Its [kickoff and acceptance tracks](ta1-kickoff-20261117.md) require both a
+two-logical-dataset standard-label scratch tape roundtrip and a separate
+`RECFM=U` load-library unload/restore/executable-use experiment.
+**No scratch AWS media initialization, JCL submission that changes MVS state,
+tape mount/write, dataset overwrite, VOLSER reservation or publication is
+authorized by this closure.** Obtain separate explicit approval for the
+specific safe scratch operation.
 
 ## 7. Safety, verification and authority
 

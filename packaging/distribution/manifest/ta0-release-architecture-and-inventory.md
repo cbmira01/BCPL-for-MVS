@@ -1,7 +1,7 @@
 # TA.0 — Release architecture, inventory and manifest mapping
 
 **March:** TA.0 — Release Architecture, Inventory, and Manifest
-**Status:** Owner-approved design direction, TA.0 in progress (not closed)
+**Status:** TA.0 CLOSED (qualified) by owner direction 17 November 2026; this remains a design inventory, not a frozen release candidate
 **Source inspected:** GitHub `main` at `624f70d331b1e7c0bc9a26a946b8b07d23799875`
 **Controlling:** [Milestone](../../milestones/tape-artifact-release/milestone-tape-artifact-release.md), [scoped release](../release-without-native-compiler-decision-20261116.md), [nomenclature](../../architecture/runtime-and-library-nomenclature.md), [manifest schema](schema-v1-design.md).
 
@@ -96,3 +96,16 @@ Each member's source-to-MVS record must identify project-original, preserved his
 ## Subsequent TA.0 static audit
 
 The [derived member provenance and recipient-JCL dependency audit](ta0-provenance-and-dependency-audit.md) checks this one design selection against Git and `dspal` mappings: 110 Git-backed paths, two generated members, fifteen MVS object/load members, and ten JCL site-adaptation blockers. It is **not** a second release manifest, a rights approval, MVS acceptance or a permit to write tape.
+
+## Qualified TA.0 closure — 17 November 2026
+
+The owner formally directed TA.0 closure. The
+[formal acceptance and TA.1 transition](../../milestones/tape-artifact-release/ta0-formal-acceptance-and-ta1-transition-20261117.md)
+accepts this design baseline with explicit qualifications: the development
+14-object printer readback (902 FB80 records / 72,160 bytes), JOB 9060
+`ICINT19` directory and JOB 9061 development execution are verified in
+the stated scope; exact resident source lineage, complete build receipts,
+`RECFM=U` tape restoration, manifest freeze, rights and recipient
+installation are not. These remaining obligations are preserved in the
+governing milestone's existing later marches. No tape write or release
+publication is authorized by closure.
