@@ -55,3 +55,14 @@ The offline build-chain map identifies 15 objects/load members but not their cur
 The proposed renderer and its 20 synthetic unit tests were executed in the assistant's isolated workspace on 17 November 2026: **20/20 PASS**. Python syntax check also passed. These are not actual MVS evidence; the wider 73-case TA.0 suite has not been rerun in this isolated workspace. GitHub main remains source authority. MVS/JES/IFOX/IEWL remain execution authority.
 
 **TA.0 remains IN PROGRESS.** No TA.1 tape write, recipient installation, new VOLSER, release candidate or publication is authorized by this note. Only BT0001 and BT0002 tape roles are fixed; later positions remain proposals.
+
+
+## Companion MVS LISTDS collection helper — 17 November 2026
+
+The read-only tools/distribution/collect-mvs-inventories.sh prepares a separate, private evidence directory outside the repository (no checkout-local untracked files). The --run --output absolute-new-directory mode runs exactly eight existing MVS-facing dspal operations: one LISTDS MEMBERS and one LISTDS LABEL for each of MR10_OBJ, MR10_LOAD, BOOT_OBJ and EXT_OBJ. It stores the four exact member listings in the preexisting evidence inspector's expected naming convention, the four raw LISTDS/JES DCB reports, a context-only Git HEAD and SHA-256 checksums for all nine attachments. A new output directory is mandatory; overwrite and checkout-local destinations are refused. JES jobs are read-only but do create spool output.
+
+The helper **does not** execute IEBPTPCH, collect the eight historical build-job summary/report pairs, create the index.json receipt, recover binary records, or prove Git ancestry. Original printer spool, build histories and the separate load-library record path are outstanding.
+
+Seven additional mock-only negative/positive checks were executed in an isolated workspace with a stubbed dspal and git: **7/7 PASS**. The existing 20 IEBPTPCH generator checks were re-run at the same checkpoint: **20/20 PASS**; Bash syntax was verified. The complete established 73-test TA.0 suite was not rerun. No live MVS JOB is claimed.
+
+**Safety:** All collected reports may contain credential-bearing or private JES material. Keep directory permissions private and do not commit reports, checksums or candidate identity based on these reports alone.
