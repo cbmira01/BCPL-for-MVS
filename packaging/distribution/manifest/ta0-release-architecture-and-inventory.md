@@ -1,8 +1,8 @@
 # TA.0 — Release architecture, inventory and manifest mapping
 
-**March:** TA.0 — Release Architecture, Inventory, and Manifest  
-**Status:** Owner-approved design direction, TA.0 in progress (not closed)  
-**Source inspected:** GitHub `main` at `624f70d331b1e7c0bc9a26a946b8b07d23799875`  
+**March:** TA.0 — Release Architecture, Inventory, and Manifest
+**Status:** Owner-approved design direction, TA.0 in progress (not closed)
+**Source inspected:** GitHub `main` at `624f70d331b1e7c0bc9a26a946b8b07d23799875`
 **Controlling:** [Milestone](../../milestones/tape-artifact-release/milestone-tape-artifact-release.md), [scoped release](../release-without-native-compiler-decision-20261116.md), [nomenclature](../../architecture/runtime-and-library-nomenclature.md), [manifest schema](schema-v1-design.md).
 
 `config/dspal.yaml` currently defines **29 managed development datasets**, not 29 automatically selected release datasets. The canonical per-release manifest explicitly selects members; each physical dataset has one group/target, each member one logical owner, one source lineage and one redistribution disposition. Unselected development candidates must never leak into the release.

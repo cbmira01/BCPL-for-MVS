@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 IN PROGRESS — release architecture and scoped-release decision owner-approved 16 November 2026; no march closed**  
+**Status:** **TA.0 IN PROGRESS — release architecture and scoped-release decision owner-approved 16 November 2026; no march closed**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 

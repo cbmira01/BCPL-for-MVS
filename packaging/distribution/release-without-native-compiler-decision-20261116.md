@@ -1,8 +1,8 @@
 # Owner decision — Release without the native-running Cambridge Compiler
 
-**Project:** BCPL for MVS 3.8 Reconstruction  
-**Milestone:** Tape artifact release, TA.0–TA.8 unchanged  
-**Decision:** Owner-approved 16 November 2026, following TA.0 briefing  
+**Project:** BCPL for MVS 3.8 Reconstruction
+**Milestone:** Tape artifact release, TA.0–TA.8 unchanged
+**Decision:** Owner-approved 16 November 2026, following TA.0 briefing
 **State:** Design approval; no release candidate, Git tag, tape operation, MVS installation, march closure or publication authorized.
 
 The owner approved the curated-member inventory, single canonical manifest, MR10-only/native-only/combined installation choices, conservative transport and immutable release identity **with one proviso: a tape release must be possible without the unfinished native-running Cambridge Compiler**. This revises the earlier unconditional native-compiler gate in the [milestone](../milestones/tape-artifact-release/milestone-tape-artifact-release.md). The complete two-compiler product remains a separate release configuration.
