@@ -1,7 +1,7 @@
 # TA.0 — Member provenance and recipient-JCL dependency audit
 
-**Milestone:** Tape artifact release; **march:** TA.0 — Release Architecture, Inventory, and Manifest  
-**Status:** Read-only design audit, **TA.0 IN PROGRESS**; no release acceptance, candidate or publication  
+**Milestone:** Tape artifact release; **march:** TA.0 — Release Architecture, Inventory, and Manifest
+**Status:** Read-only design audit, **TA.0 IN PROGRESS**; no release acceptance, candidate or publication
 **Evidence basis:** GitHub `main` at `c65cae8f34a404d8913f9b4fe84bc1a10142ade1`, the 29-dataset `config/dspal.yaml` development map, the selected design inventory and Git object tree
 
 This document reviews **the one design inventory**, [`ta0-inventory.yaml`](ta0-inventory.yaml); it does not create another member selection or second manifest. The read-only [`validate-manifest.py`](../../../tools/distribution/validate-manifest.py) `--audit-json` mode derives the current per-member worksheet from that inventory and `config/dspal.yaml`. Its source hints are **not** proven binary ancestry or redistribution permissions.
