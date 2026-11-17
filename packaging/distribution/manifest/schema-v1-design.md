@@ -82,3 +82,7 @@ and rights decisions remain incomplete, not assumed.
 `--release` is a strict preflight for candidates and rejects the design file;
 the future producer/installer and independent MVS/TA.1/TA.7 checks remain
 separate acceptance obligations. PyYAML is required only on the development host.
+
+## Member provenance worksheet (derived, not authoritative selection)
+
+`python3 -B tools/distribution/validate-manifest.py --audit-json` creates an on-demand 127-member JSON worksheet from the canonical TA.0 design inventory and `dspal` mappings. It marks **all redistribution reviews `UNREVIEWED`** and build receipts absent, preserving candidate source hints as investigation leads rather than proof. See the [TA.0 provenance and JCL dependency audit](ta0-provenance-and-dependency-audit.md). The read-only validator additionally rejects unsafe Git paths, unselected generated members and a claim that the native Cambridge Compiler is included without all nine reserved compiler datasets. Its 24 offline tests use synthetic mappings, not resident MVS inventories.

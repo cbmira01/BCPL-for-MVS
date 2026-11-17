@@ -26,11 +26,13 @@ selection (20 logical tape datasets, 127 PDS members including 79 MR10).
 Sequence positions after BT0002 are proposed, not frozen for any candidate.
 
 See the read-only [manifest validator](../../../tools/distribution/validate-manifest.py)
-and its [offline tests](tests/test_validate_manifest.py). It requires PyYAML
+and its [offline tests](tests/test_validate_manifest.py).
+See the [TA.0 member provenance and recipient-JCL dependency audit](ta0-provenance-and-dependency-audit.md), which derives from the inventory rather than selecting release content. It requires PyYAML
 on the **development host**, not on recipient MVS.
 
 ```sh
 python3 -B tools/distribution/validate-manifest.py
+python3 -B tools/distribution/validate-manifest.py --audit-json
 python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'test_*.py' -v
 ```
 

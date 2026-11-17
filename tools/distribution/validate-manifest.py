@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 from pathlib import Path
 import re
 import sys
@@ -28,6 +29,10 @@ PROFILES = {
     "combined": {"common", "mr10", "native"},
 }
 FORBIDDEN = {"BOOT_DEVOBJ", "BOOT_INTCODE"}
+CAMBRIDGE_KEYS = {"CAMB_SOURCE", "CAMB_ASM", "CAMB_JCL", "CAMB_LIBRARY",
+                  "CAMB_BCPLDEMO", "CAMB_LANGDEMO", "CAMB_TESTS",
+                  "CAMB_OBJ", "CAMB_LOAD"}
+BINARY_KEYS = {"BOOT_OBJ", "EXT_OBJ", "MR10_OBJ", "MR10_LOAD"}
 REQUIRED_COUNTS = {
     "DIST_DOCS": 7,
     "MR10_SOURCE": 5, "MR10_ASM": 1, "MR10_JCL": 4,
@@ -79,6 +84,16 @@ def unique_strings(items: Any, where: str) -> list[str]:
     require(len(set(items)) == len(items), f"{where}: duplicate member")
     require(all(MEMBER.fullmatch(i) for i in items), f"{where}: invalid MVS member")
     return items
+
+
+def safe_git_source(root: Path, path: Any) -> bool:
+    """Reject absolute, parent-traversing and symlink-escaping source paths."""
+    if not isinstance(path, str) or not path or Path(path).is_absolute():
+        return False
+    if any(part in {"..", ""} for part in Path(path).parts):
+        return False
+    source = root / path
+    return source.resolve().is_relative_to(root.resolve()) and source.is_file()
 
 
 def valid_dsn(s: str) -> bool:
@@ -173,7 +188,9 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
                     f"{where}: target HLQ template mismatch")
             require(target not in seen_dsn, f"{where}: duplicate recipient dataset")
             seen_dsn.add(target)
-            group = "mr10" if key.startswith("MR10_") else "native" if key.startswith(("BOOT_", "EXT_")) else "common"
+            group = ("mr10" if key.startswith("MR10_") else
+                     "native" if key.startswith(("BOOT_", "EXT_")) else
+                     "cambridge" if key.startswith("CAMB_") else "common")
             require(row["group"] == group, f"{where}: wrong group for {key}")
             d = row.get("target_dcb")
             check_dcb(d, kind, where)
@@ -193,14 +210,15 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
             present = managed[key].get("members", {}) or {}
             generated = managed[key].get("generated_members", {}) or {}
             extra_generated = row.get("generated_members", {}) or {}
-            require(isinstance(extra_generated, dict), f"{where}: generated_members must be mapping")
+            require(isinstance(extra_generated, dict) and set(extra_generated) <= set(members),
+                    f"{where}: generated_members must only name selected members")
             for member in members:
                 if member in present:
-                    path = root / present[member]
-                    require(path.is_file(), f"{where}: missing Git-backed source {present[member]}")
+                    require(safe_git_source(root, present[member]),
+                            f"{where}: missing or unsafe Git-backed source {present[member]}")
                 else:
                     require(member in generated or member in extra_generated or
-                            (key in {"BOOT_OBJ", "EXT_OBJ", "MR10_OBJ", "MR10_LOAD"} and
+                            (key in BINARY_KEYS and
                              managed[key].get("populate") is False),
                             f"{where}: unmapped member {member}")
                 if member in extra_generated:
@@ -236,7 +254,8 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
     require(len([x for x in entries if x.get("group") == "mr10"]) == 9, "all nine MR10 PDSes required")
     require(len([x for x in entries if x.get("group") == "native"]) == 8, "all eight native component PDSes required")
     if native == "included":
-        require(any(x["group"] == "cambridge" for x in entries), "native compiler included but no compiler payload")
+        require(CAMBRIDGE_KEYS <= seen_key,
+                "native compiler included but nine compiler datasets are not selected")
     else:
         require(not any(x["group"] == "cambridge" for x in entries), "no-native compiler must have no compiler payload")
     require(sum(len(x.get("members", [])) for x in entries if x["group"] == "mr10") == 79,
@@ -248,18 +267,72 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
             "owners": owner_count, "last_tape_alias": f"BCPL.BT{len(entries):04d}"}
 
 
+
+def provenance_report(manifest: dict[str, Any], dspal: dict[str, Any]) -> dict[str, Any]:
+    """Derived TA.0 audit worksheet. Never certifies any right or MVS build."""
+    sources: list[dict[str, Any]] = []
+    counts = {"git_source": 0, "generated": 0, "resident_binary": 0}
+    for row in manifest["datasets"][2:]:
+        key = row["dspal_key"]
+        mapping = dspal["datasets"][key]
+        tracked = mapping.get("members", {}) or {}
+        generated = mapping.get("generated_members", {}) or {}
+        special = row.get("generated_members", {}) or {}
+        owners = row.get("member_owners", {}) or {}
+        for member in row["members"]:
+            if member in tracked:
+                kind, ref = "git_source", tracked[member]
+                hint = None
+            elif member in generated:
+                kind, ref = "generated", generated[member]
+                hint = None
+            elif member in special:
+                kind, ref = "generated", special[member]
+                hint = None
+            else:
+                kind, ref = "resident_binary", None
+                if key in {"MR10_OBJ", "MR10_LOAD"}:
+                    hint = f"MR10_ASM({member})"
+                elif key == "EXT_OBJ":
+                    hint = f"EXT_ASM({member})"
+                elif key == "BOOT_OBJ":
+                    hint = (f"BOOT_SOURCE({member})" if member == "BLIB" else
+                            f"BOOT_ASM({member})")
+                else:
+                    hint = None
+            counts[kind] += 1
+            sources.append({"tape_sequence": row["sequence"],
+                            "dataset_key": key, "member": member,
+                            "logical_owner": owners.get(member, row["owner"]),
+                            "source_class": kind, "source_reference": ref,
+                            "source_hint_not_evidence": hint,
+                            "mvs_build_receipt": None,
+                            "redistribution_review": "UNREVIEWED"})
+    return {"status": "TA.0 DESIGN ONLY; NOT RIGHTS OR MVS ACCEPTANCE",
+            "summary": {"members": len(sources), **counts,
+                        "rights_unreviewed": len(sources),
+                        "mvs_receipts_recorded": 0},
+            "members": sources}
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--manifest", type=Path, default=DRAFT)
     p.add_argument("--dspal", type=Path, default=DSPAL)
     p.add_argument("--root", type=Path, default=ROOT)
     p.add_argument("--release", action="store_true", help="fail closed unless candidate fully validated")
+    p.add_argument("--audit-json", action="store_true",
+                   help="print derived member provenance gaps; never rights approval")
     args = p.parse_args(argv)
     try:
-        info = check(load(args.manifest), load(args.dspal), args.root, release=args.release)
+        manifest, dspal = load(args.manifest), load(args.dspal)
+        info = check(manifest, dspal, args.root, release=args.release)
     except ManifestError as exc:
         print(f"TA.0 MANIFEST FAIL: {exc}", file=sys.stderr)
         return 1
+    if args.audit_json:
+        print(json.dumps(provenance_report(manifest, dspal), indent=2, sort_keys=True))
+        return 0
     print(f"TA.0 MANIFEST PASS ({info['phase']} only): {info['logical_datasets']} logical datasets, "
           f"{info['selected_members']} selected PDS members, {info['mr10_members']} MR10; "
           f"last proposed alias {info['last_tape_alias']}; native compiler {info['native_compiler']}")

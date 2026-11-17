@@ -92,3 +92,7 @@ Static: exact member lists, one primary logical owner per member, source path/ge
 Each member's source-to-MVS record must identify project-original, preserved historical, derived or MVS-generated status, Git input, source rights and required attribution, transformation/encoding, IFOX/IEWL/JES build receipts and redistribution disposition. Public historical source is not automatically licensed by the project's MIT license. Uncertain rights or provenance are a release gate.
 
 **Remaining:** exact final native source/JCL dependencies, source-vs-object provenance, safe recipient installer, manifest parser, immutable version/VOLSER registry, TA.1 multi-dataset and `RECFM=U` experiments, MR10 `EXP:` modification and clean-target tests. TA.0 remains open and TA.1 writing separately gated.
+
+## Subsequent TA.0 static audit
+
+The [derived member provenance and recipient-JCL dependency audit](ta0-provenance-and-dependency-audit.md) checks this one design selection against Git and `dspal` mappings: 110 Git-backed paths, two generated members, fifteen MVS object/load members, and ten JCL site-adaptation blockers. It is **not** a second release manifest, a rights approval, MVS acceptance or a permit to write tape.
