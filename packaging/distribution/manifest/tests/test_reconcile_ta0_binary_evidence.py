@@ -213,6 +213,110 @@ class EvidenceFixture(unittest.TestCase):
             mod.reconcile(self.root,load_module=self.decoder,exec_module=self.pilot,
                           triage_module=self.triage)
 
+    def legacy_receipt(self, index):
+        # Preserve the actual old schema from before the pagination fix:
+        # all metadata keys except repeated_page_headings.
+        key, member, job, count, h, pilot_dir, decoded_dir = self.sources[index]
+        path = decoded_dir/'decode-receipt.json'
+        saved = mod.js(path)
+        self.assertEqual(saved['members'][0]['repeated_page_headings'], 0)
+        del saved['members'][0]['repeated_page_headings']
+        dump(path, saved)
+        panel_path = decoded_dir.parent/'panel-receipt.json'
+        panel = mod.js(panel_path)
+        for item in panel['members']:
+            if item['member'] == member:
+                item['decode_receipt_sha256'] = sha(path.read_bytes())
+                break
+        else:
+            self.fail('no selected panel member')
+        dump(panel_path, panel)
+        return path, decoded_dir, saved
+
+    def test_historical_pre_pagination_receipts_accepted_without_rewriting(self):
+        self.legacy_receipt(0)   # BCPLDEMO, JOB 9046
+        self.legacy_receipt(1)   # BCPLTIME, JOB 9047
+        before = {p.relative_to(self.base).as_posix(): p.read_bytes()
+                  for p in self.base.rglob('*') if p.is_file()}
+        result = self.check()
+        self.assertEqual(result['historical_pre_page_receipts'], 2)
+        self.assertEqual(result['members'][0]['decode_receipt_schema'], 'PRE_PAGE_V1')
+        self.assertEqual(result['members'][1]['decode_receipt_schema'], 'PRE_PAGE_V1')
+        self.assertEqual(result['members'][2]['decode_receipt_schema'], 'PAGE_AWARE_V2')
+        self.assertEqual(result['fb80_bytes'], 72160)
+        self.assertEqual({p.relative_to(self.base).as_posix(): p.read_bytes()
+                          for p in self.base.rglob('*') if p.is_file()}, before)
+
+    def test_recovered_ext_panel_and_legacy_receipts(self):
+        self.legacy_receipt(0)
+        self.legacy_receipt(1)
+        f = self.base/mod.DIRS['EXT_OBJ']/'panel-receipt.json'
+        obj=mod.js(f)
+        obj['phase']='TA.0 SINGLE-MEMBER FB80 PANEL — RECOVERED PRINTER-DECODE EVIDENCE ONLY'
+        (f.parent/'failure.json').write_bytes(b'RECOVERY LOG PRESERVED')
+        obj['original_failure_sha256']=sha((f.parent/'failure.json').read_bytes())
+        obj['recovery']='Re-decoded existing verified JES reports; ZERO new MVS jobs.'
+        dump(f, obj)
+        self.assertEqual(self.check()['historical_pre_page_receipts'], 2)
+
+    def test_historical_receipt_cannot_hide_real_page_continuation(self):
+        self.legacy_receipt(0)
+        key, member, job, count, h, pilot_dir, decoded_dir = self.sources[0]
+        binary, new_meta = self.decoder.data[(member, job)]
+        new_meta['repeated_page_headings'] = 2
+        with self.assertRaisesRegex(mod.ReconcileError,
+                                    'DECODE_RECEIPT_METADATA_MISMATCH_EXT_OBJ_BCPLDEMO'):
+            self.check()
+
+    def test_historical_receipt_changed_record_count_rejected_after_repin(self):
+        path, decoded_dir, saved = self.legacy_receipt(0)
+        saved['members'][0]['record_count'] = 11
+        dump(path, saved)
+        panel_path = decoded_dir.parent/'panel-receipt.json'
+        panel = mod.js(panel_path)
+        panel['members'][0]['decode_receipt_sha256'] = sha(path.read_bytes())
+        dump(panel_path, panel)
+        with self.assertRaisesRegex(mod.ReconcileError,
+                                    'DECODE_RECEIPT_METADATA_MISMATCH_EXT_OBJ_BCPLDEMO'):
+            self.check()
+
+    def test_historical_receipt_missing_other_metadata_field_rejected(self):
+        path, decoded_dir, saved = self.legacy_receipt(0)
+        del saved['members'][0]['job']
+        dump(path, saved)
+        panel_path = decoded_dir.parent/'panel-receipt.json'
+        panel = mod.js(panel_path)
+        panel['members'][0]['decode_receipt_sha256'] = sha(path.read_bytes())
+        dump(panel_path, panel)
+        with self.assertRaisesRegex(mod.ReconcileError,
+                                    'DECODE_RECEIPT_METADATA_MISMATCH_EXT_OBJ_BCPLDEMO'):
+            self.check()
+
+    def test_new_receipt_page_count_tampering_rejected_after_repin(self):
+        path = self.sources[0][6]/'decode-receipt.json'
+        saved = mod.js(path)
+        saved['members'][0]['repeated_page_headings'] = 7
+        dump(path, saved)
+        panel_path = path.parent.parent/'panel-receipt.json'
+        panel=mod.js(panel_path)
+        panel['members'][0]['decode_receipt_sha256']=sha(path.read_bytes())
+        dump(panel_path, panel)
+        with self.assertRaisesRegex(mod.ReconcileError,
+                                    'DECODE_RECEIPT_METADATA_MISMATCH_EXT_OBJ_BCPLDEMO'):
+            self.check()
+
+    def test_legacy_source_report_pin_tampering_rejected(self):
+        path, decoded_dir, saved = self.legacy_receipt(0)
+        saved['source_report_sha256'] = '0'*64
+        dump(path, saved)
+        panel_path = decoded_dir.parent/'panel-receipt.json'
+        panel = mod.js(panel_path)
+        panel['members'][0]['decode_receipt_sha256'] = sha(path.read_bytes())
+        dump(panel_path, panel)
+        with self.assertRaisesRegex(mod.ReconcileError,
+                                    'DECODE_RECEIPT_SOURCE_MISMATCH_EXT_OBJ_BCPLDEMO'):
+            self.check()
+
     def test_no_side_effects(self):
         before={p.relative_to(self.base).as_posix():p.read_bytes()
                 for p in self.base.rglob('*') if p.is_file()}

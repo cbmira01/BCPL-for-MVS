@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ta0_evidence_paths import guard
+from ta0_receipt_compat import metadata_schema
 
 MANIFEST = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
 LEDGER = ROOT / 'packaging/distribution/manifest/ta0-fb80-readback-acceptance-evidence-20261117.md'
@@ -160,14 +161,21 @@ def one_panel(decoder, base: Path, key: str, members: list[str], ledger: dict) -
              stored.get('source_receipt_sha256') == digest(read(pilot_dir / 'receipt.json')) and
              stored.get('source_report_sha256') == pins['job-report.txt'] and
              stored.get('source_printer_window_sha256') == pins['printer-window.raw'] and
-             type(stored.get('members')) is list and len(stored['members']) == 1 and
-             stored['members'][0] == metadata,
-             'DECODE_RECEIPT_MISMATCH')
+             type(stored.get('members')) is list and len(stored['members']) == 1,
+             'DECODE_RECEIPT_SOURCE_MISMATCH_' + key + '_' + member)
+        # Early printer receipts predate the page-framing fix. Their metadata
+        # differs ONLY by the absent repeated_page_headings field, and is
+        # accepted only when current strict decoding observes zero repetitions.
+        # All saved receipt/source/file pins are still verified byte-for-byte.
+        schema = metadata_schema(stored['members'][0], metadata)
+        need(schema is not None,
+             'DECODE_RECEIPT_METADATA_MISMATCH_' + key + '_' + member)
         need(read(decoded_dir / f'{member}.fb80', MAXOBJ) == binary,
              'DECODED_BINARY_MISMATCH')
         checked.append({'dataset_key': key, 'member': member, 'job': receipt['job'],
                         'records': metadata['record_count'], 'bytes': len(binary),
-                        'printer_sha256': digest(binary)})
+                        'printer_sha256': digest(binary),
+                        'decode_receipt_schema': schema})
     return checked
 
 
@@ -204,6 +212,8 @@ def reconcile(base: Path, *, load_module=None, exec_module=None,
          status.get('job') == '9061', 'ICINT19_EXECUTABLE_EVIDENCE_NOT_VERIFIED')
     return {'phase': 'TA.0 RECONCILED DEVELOPMENT MVS EVIDENCE; NOT RELEASE ACCEPTANCE',
             'fb80_objects': len(verified), 'fb80_records': 902, 'fb80_bytes': 72160,
+            'historical_pre_page_receipts': sum(
+                item['decode_receipt_schema'] == 'PRE_PAGE_V1' for item in verified),
             'load_member': 'MR10_LOAD(ICINT19)', 'load_directory_job': 9060,
             'load_execution_job': 9061, 'load_execution_status': status['state'],
             'members': verified,
@@ -237,6 +247,8 @@ def main(argv=None):
               file=sys.stderr)
         return 1
     print('TA.0 BINARY EVIDENCE RECONCILED: 14/14 FB80 objects, 902 records, 72160 bytes')
+    print(f"Historical pre-pagination receipts: {result['historical_pre_page_receipts']} "
+          "(only zero repeated headings; original files unchanged)")
     print('MR10_LOAD(ICINT19): JOB 9060 directory; JOB 9061 saved execution verified')
     print('Read-only MVS evidence; no DASD byte identity, tape restore or release acceptance.')
     return 0

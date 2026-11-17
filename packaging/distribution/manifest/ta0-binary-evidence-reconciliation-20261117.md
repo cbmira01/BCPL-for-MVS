@@ -39,3 +39,29 @@ The standalone reconciler has **14** locally passing synthetic tests, covering c
 ## Still open
 
 TA.0 requires actual source-to-resident binary lineage/producer receipt binding, historical and project redistribution review, generated `BLIB`/`COROUTIN` provenance, exact MVS DCB/source/unload/target mapping, recipient JCL independence, and owner review of proposed post-`BT0002` positions. **TA.1** separately requires owner-authorized fresh scratch tape testing and `RECFM=U` IEBCOPY unload/restore followed by GO. No candidate, unique VOLSER, tape write, TA.0 march closure, or publication is authorized by this evidence.
+
+
+## Live reconciliation refusal and narrow schema correction — 17 November 2026
+
+The first live invocation of the consolidated reconciler returned
+`DECODE_RECEIPT_MISMATCH`. No new JES jobs were submitted; because the
+reconciler verifies before creating its destination, no reconciliation
+receipt was produced. The error is **not evidence of changed MVS object
+bytes** or invalid JOB 9061 execution.
+
+Investigation identified an exact version difference in the checked-in
+decoder implementations: the decoder used before the JOB 9048 pagination
+fix omitted the `repeated_page_headings` metadata field. The later decoder
+adds it to *every* member, including members with no pagination. The
+reconciler had compared old saved metadata against new metadata with a
+strict full-object equality check. This is the leading cause; the user's
+private receipt bytes were not independently examined in the assistant
+workspace. See [the compatibility investigation and constraints](ta0-reconciliation-schema-compatibility-20261117.md).
+
+The revised reconciler accepts the old schema **only** when newly decoded
+printer evidence confirms integer zero repeated headings, with exact
+equality of all other metadata and all existing SHA-256, JES, member,
+record-count, binary and panel-receipt checks. It records each schema
+variant and the legacy receipt count in the derived output. Original
+evidence files are not rewritten. Live MVS reconciliation remains pending
+until the owner runs the revised tool against the preserved evidence.
