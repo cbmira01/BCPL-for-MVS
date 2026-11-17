@@ -32,3 +32,25 @@ Twenty-four isolated synthetic tests pass (including positive published-format s
 - The eight source/build receipts, historical BLIB/COROUTIN lineage, redistribution rights and candidate identification/registry remain open.
 
 **No TA.0 closure, VOLSER reservation, TA.1 tape-write authorization or publication is implied.**
+
+
+## Live formatted-directory result — 17 November 2026
+
+The owner subsequently ran the pinned report inspector and reported:
+
+    TA.0 LOAD DIRECTORY JOB 9060: ICINT19 observed, entry=000000 attr=02E2
+    Directory evidence only; no load bytes or executable-use verified.
+
+This **supersedes only the earlier pending directory-interpretation gate** above.
+The formatted, non-alias ICINT19 entry is now observed in the retained JOB 9060
+IEHLIST report and written to the owner's private directory-review.json.
+The original report bytes and the review receipt remain outside Git and were
+not independently available in the assistant's workspace. It is still not a
+RECFM=U byte comparison, source ancestry proof, program GO or tape result.
+
+The bounded next executable-use pilot is recorded in
+[TA.0 MR10_LOAD executable-use pilot](ta0-icint19-executable-use-pilot-20261117.md).
+It uses eight exact steps from the existing standard MRREGRES JCL, executes
+the installed development ICINT19, and verifies interpreted CODE=
+and scalar/vector RP: output. A successful future MVS run is necessary
+before making any executable-use acceptance claim.
