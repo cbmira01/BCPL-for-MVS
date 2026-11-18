@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B design proposed but unapproved; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B design approved and static implementation ready, live execution pending; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -16,8 +16,9 @@ The [Track A round-trip record](../../distribution/create-tape/ta1-track-a-round
 now records Track A PASS (qualified): read-only review of the actual
 saved tape-map reports found seven physical tape files containing
 3, 3, 2, 2, 25, 2 and 0 blocks, with both datasets and original image
-SHA-256 preserved. Track B remains pending, and its design is still
-subject to explicit owner approval. No further stateful operation
+SHA-256 preserved. Track B remains pending. Owner approved its design on 18 November 2026;
+source-controlled JCL and read-only preflight are implemented but no Track B
+stateful operation has been authorized. No further stateful operation
 is authorized here.
 
 **TA.1 saved physical-file review checkpoint (18 November 2026):**
@@ -30,6 +31,16 @@ both expected standard-label dataset sequences, the restored seven-member
 PDS and unchanged SHA-256. This is an actual owner-reported MVS/Hercules
 evidence review, not an offline simulation. Track A is PASS (qualified);
 **TA.1 remains open for Track B**. No new MVS operation is authorized.
+
+**TA.1 Track B implementation checkpoint (18 November 2026):**
+The owner approved the [separate RECFM=U selected ICINT19 load-library tape design](../../distribution/create-tape/ta1-track-b-design-proposal-20261117.md).
+Tracked `TA1BWRIT.jcl` and `TA1BREST.jcl`, pinned canonical MRREGRES/IEHLIST
+job generation and strictly read-only MVS/Hercules preflight are staged.
+The [implementation record](../../distribution/create-tape/ta1b-implementation-20261118.md)
+reports 44/44 synthetic/negative offline tests passing. No BTA102 image,
+MVS tape job, remount, new load PDS or restored ICINT19 GO was executed.
+Track B remains IN PROGRESS, and separate explicit authorization is required
+for all stateful media and MVS operations.
 
 ## 1. Objective and product boundary
 

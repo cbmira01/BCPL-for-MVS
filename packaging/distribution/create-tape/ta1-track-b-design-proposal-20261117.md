@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Milestone:** Tape artifact release
 **March:** TA.1 — Multi-Dataset Tape Mechanics
-**Status:** PROPOSED; major design choices and any stateful operation require owner approval.
+**Status:** DESIGN APPROVED BY OWNER 18 NOVEMBER 2026; JCL, generated-job contract and read-only MVS preflight implemented and offline-tested. **NO STATEFUL TAPE/MVS OPERATION AUTHORIZED.**
 
 ## Objective
 
@@ -73,9 +73,10 @@ attributes instead. Track A's FB80 IEBCOMPR does not prove this path.
 
 ## Approval gates and references
 
-First obtain approval for the exact scratch identity, selection,
-restored-dataset and verification approach; source-controlled JCL and
-safety tests may then be implemented. Distinct authorization is required
+The owner approved the exact Track B scratch identity, selection,
+restored-dataset and verification design on 18 November 2026. Source-controlled
+JCL, generator, static and MVS read-only preflight, and offline safety tests
+have now been implemented. Distinct authorization is still required
 before any tape initialization/mount/write, MVS scratch allocation,
 conditional remount, or executable smoke job. No producer/installer
 release acceptance is implied.
@@ -87,3 +88,7 @@ experiments. MVS 3.8j IEBCOPY load-library examples:
 https://www.jaymoseley.com/hercules/backup_restore/index.htm
 IBM IEBCOMPR load-module caution:
 https://www.ibm.com/docs/en/zos/2.5.0?topic=utilities-iebcompr-compare-data-sets-program
+
+## Implementation checkpoint — 18 November 2026
+
+See [Track B implementation and offline verification](ta1b-implementation-20261118.md). The two proposed JCL decks are `TA1BWRIT` and `TA1BREST`; `scripts/ta1b-contract` checks their safety contracts and derives source-pinned scalar/vector `TA1BGO` and IEHLIST FORMAT job bodies. `scripts/ta1b-preflight --live` gathers **read-only** live MVS catalog/DCB/member, Hercules tape image/VOLSER and unit evidence under `workarea/ta1b-operations/`. No execution of a Track B tape job, tape initialization or new DASD library has occurred, and no stateful operation is authorized by the design approval.

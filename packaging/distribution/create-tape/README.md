@@ -201,3 +201,9 @@ for physical file roles and evidence qualifications.
 **Track A PASS (qualified); TA.1 IN PROGRESS** pending the separately
 designed `RECFM=U` Track B test. No new tape job, MVS state change,
 or tape catalog operation is authorized by this record.
+
+## TA.1 Track B: approved design and static implementation (18 November 2026)
+
+The owner approved the [Track B RECFM=U design](ta1-track-b-design-proposal-20261117.md). Tracked fixed JCL `jcl/TA1BWRIT.jcl` and `jcl/TA1BREST.jcl` operate on a **proposed new** standard-label BTA102 AWS scratch tape and source-read-only `HERC02.BCPL.MR10KIT.LOAD(ICINT19)`; only the separate new DASD target `HERC02.BCPL.TA1B.LOAD` may eventually be cataloged. `scripts/ta1b-contract` validates fixed card/dataset/label/disposition contracts, generates a read-only IEHLIST FORMAT body and extracts eight pinned MRREGRES steps with exactly three restored-STEPLIB substitutions.
+
+`scripts/ta1b-preflight --live` is a compact **read-only MVS-facing** source, catalog, VOLSER, tape-inventory and device check, using existing MVS LISTDS inquiries and Hercules inspection. It saves private evidence under ignored `workarea/ta1b-operations/` and does not initialize, mount, unload, restore or execute programs. The [implementation checkpoint](ta1b-implementation-20261118.md) records 44/44 dedicated offline tests passing. **Separate owner authorization for BTA102 initialization, MVS unload, restore, remount and GO is still required.**
