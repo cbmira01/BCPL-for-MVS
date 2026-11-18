@@ -101,9 +101,16 @@ def unit_ready(preflight, evidence: Path, *, mounted: bool) -> None:
              'Hercules unit holds media; cannot displace it')
     guest = preflight.checked(['tools/mvs/mvs-console', 'mvs', 'D U,TAPE'],
                               'mvs-mounted' if mounted else 'mvs-empty', evidence)
-    matches = [x for x in guest.splitlines() if re.search(r'\b480\s+3400\s+', x)]
-    need(len(matches) == 1 and re.search(r'\b480\s+3400\s+O(?:\s|$)', matches[0]) is not None,
-         'MVS tape unit 480 is not unambiguously online/ready')
+    matches = [x for x in guest.splitlines() if re.match(r'^\s*480\s+3400\s+', x)]
+    need(len(matches) == 1, 'MVS tape unit 480 status row missing/ambiguous')
+    state = re.match(r'^\s*480\s+3400\s+(O(?:-NRD)?)(?=\s|$)', matches[0])
+    need(state is not None, 'MVS unit 480 status unrecognized: ' + matches[0].strip())
+    if mounted:
+        need(state.group(1) == 'O',
+             'MVS tape unit 480 is not ready after BTA102 mount: ' + state.group(1))
+    else:
+        need(state.group(1) in ('O', 'O-NRD'),
+             'MVS tape unit 480 not online before mount')
     need(not re.search(r'\b(?:ALLOC|BUSY)\b', matches[0], re.I), 'MVS tape unit allocated/busy')
 
 

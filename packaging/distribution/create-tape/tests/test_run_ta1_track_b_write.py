@@ -156,11 +156,49 @@ class TestWrite(unittest.TestCase):
         with self.assertRaisesRegex(script.Halt, 'expected BTA102'):
             script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=True)
 
-    def test_mvs_not_ready_refused(self):
+    def test_unmounted_online_not_ready_accepted(self):
+        # MVS O-NRD is valid for an empty, online 3420 with no medium.
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[6] maxsize=0\n'
+                    if argv[1:3] == ['tape','status']
+                    else 'UNIT TYPE STATUS VOLSER VOLSTATE\n480 3400 O-NRD /REMOV\n')
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_mounted_online_not_ready_refused(self):
+        # After devinit, MVS must see a ready tape (O, not O-NRD).
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 /tk5/tape/bcpl-ta1-b-20261117-01.aws IO[0]\n'
+                    if argv[1:3] == ['tape','status']
+                    else '480 3400 O-NRD /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'not ready after BTA102 mount'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=True)
+
+    def test_unmounted_offline_not_ready_refused(self):
         def checked(argv, name, folder):
             return ('HHC02279I 0:0480 3420 * IO[6]\n' if argv[1:3] == ['tape','status']
-                    else '480 3400 O-NRD /REMOV')
-        with self.assertRaisesRegex(script.Halt, 'online/ready'):
+                    else '480 3400 F-NRD /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'status unrecognized'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_unmounted_allocated_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[6]\n' if argv[1:3] == ['tape','status']
+                    else '480 3400 A /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'status unrecognized'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_mvs_duplicate_unit_rows_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[6]\n' if argv[1:3] == ['tape','status']
+                    else '480 3400 O /REMOV\n480 3400 O /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'row missing/ambiguous'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_mvs_unrecognized_state_reports_observed_row(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[6]\n' if argv[1:3] == ['tape','status']
+                    else '480 3400 O-XYZ /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, '480 3400 O-XYZ'):
             script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
 
     def test_docker_identity_mismatch(self):

@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B read-only live preflight PASS; one-shot write runner offline-tested, awaiting separate media-write authorization; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; corrected safety guard awaiting live verification; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -57,6 +57,25 @@ checkpoint, **not** proof that BTA102 was initialized or written.
 See [TA.1B live-preflight and write gate](../../distribution/create-tape/ta1b-readonly-preflight-and-write-gate-20261118.md).
 **No Track B stateful initialization, mount, write, restore or GO is authorized
 by this design/preflight result.** TA.1 remains IN PROGRESS.
+
+**TA.1 Track B stateful-experiment gate correction (18 November 2026):**
+The owner approved ONE new `BTA102` initialization/mount and ONE
+`TA1BWRIT` unload, but the first invocation at GitHub
+`51c56b326fc48a1f47d9e4b19101f0694f333387`
+stopped at the FIRST read-only `unit_ready()` inquiry with:
+`MVS tape unit 480 is not unambiguously online/ready`.
+The failure occurred before any operator confirmation, no-retry marker,
+tape image creation, mount, or production job submission. No
+MVS `D U,TAPE` raw status row was supplied; `O-NRD` is a grounded
+hypothesis from the preflight/writer disagreement, not a measured claim.
+The guard has been corrected to accept `O-NRD` for an **empty,
+unallocated, online Hercules 0480** ONLY, while retaining strict
+`O` status after BTA102 mount. Negative tests exercise offline,
+busy, ambiguous and foreign-media refusal. See
+[TA.1B first gated run and correction](../../distribution/create-tape/ta1b-first-write-gate-correction-20261118.md).
+The approved scope is unchanged: the corrected live runner still
+refuses any preexisting attempt receipt or AWS image. **No Track B
+write, restoration or GO has been observed.** TA.1 remains IN PROGRESS.
 
 ## 1. Objective and product boundary
 

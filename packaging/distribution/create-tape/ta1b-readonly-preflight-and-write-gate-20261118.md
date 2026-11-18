@@ -34,3 +34,23 @@ Safety contract:
 5. On any uncertain stage, stop permanently for owner review. **No automatic retry, remount, overwrite, restore, or GO.** The original source load PDS is read-only. The eventual cataloged target is a separate, later-approved DASD restore PDS.
 
 **Local offline validation:** 27/27 synthetic/negative tests PASS for the new one-shot runner. This is **not** actual MVS unload verification. Track A remains qualified PASS. Track B and TA.1 remain IN PROGRESS. Release publication and recipient installation remain outside this experiment.
+
+## Subsequent approved write attempt — read-only guard halt
+
+The owner approved fresh BTA102 initialization, mount and one TA1BWRIT
+on 18 November 2026. Initial execution at
+`51c56b326fc48a1f47d9e4b19101f0694f333387` reported:
+`TA.1B WRITE HALTED: MVS tape unit 480 is not unambiguously online/ready`,
+with private evidence
+`workarea/ta1b-operations/BTA102-track-b-write-20261118T205215Z-8283/`.
+
+The runner stopped in the first read-only `unit_ready()` call,
+**before** `take_attempt()`, `reserve_image()`, hetinit, mount or
+TA1BWRIT submission. No successful stateful Track B operation is claimed.
+The original preflight had allowed `O-NRD` on an empty drive whereas
+the writer erroneously required `O` before mounting. This is a
+supported code-path diagnosis; the raw guest status row was not shared
+and cannot be asserted as observed. A corrected check permits
+`O-NRD` *only when Hercules reports an empty drive*; after mount
+`O` remains mandatory and unrelated MVS statuses are refused.
+See [the correction and acceptance boundary](ta1b-first-write-gate-correction-20261118.md).

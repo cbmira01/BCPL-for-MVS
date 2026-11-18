@@ -224,3 +224,17 @@ and filemarks, and record SHA-256. No automatic retry, remount,
 restoration, restored ICINT19 execution, or tape cataloging.
 Its **27/27** isolated negative/synthetic tests PASS; no BTA102 image
 has been initialized or written by this checkpoint.
+
+## TA.1B first approved invocation — preflight-only halt
+
+The owner authorized the first BTA102 scratch write but the invocation
+on GitHub `51c56b326fc48a1f47d9e4b19101f0694f333387` stopped
+during the first guest unit-status check, before any media creation,
+attempt marker, mount or production JES submission.
+A narrowly corrected `scripts/run-ta1-track-b-write` now accepts
+MVS `O-NRD` **only for a verified EMPTY Hercules 0480**, while
+requiring MVS `O` after mount. Ambiguous, foreign-media,
+offline or allocated conditions remain blocked. See
+[TA.1B unit gate correction](ta1b-first-write-gate-correction-20261118.md).
+The original media-write authorization scope is unchanged and the
+one-shot runner refuses a previous stateful attempt if one exists.
