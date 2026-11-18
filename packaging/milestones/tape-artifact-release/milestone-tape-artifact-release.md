@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B design approved and static implementation ready, live execution pending; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B read-only live preflight PASS; one-shot write runner offline-tested, awaiting separate media-write authorization; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -41,6 +41,22 @@ reports 44/44 synthetic/negative offline tests passing. No BTA102 image,
 MVS tape job, remount, new load PDS or restored ICINT19 GO was executed.
 Track B remains IN PROGRESS, and separate explicit authorization is required
 for all stateful media and MVS operations.
+
+**TA.1 Track B read-only MVS/Hercules evidence checkpoint (18 November 2026):**
+The owner executed `ta1b-preflight --live` on GitHub main
+`eb0a26e489255e43a1bdc5089589dc53fa8347a0`, reporting PASS.
+`MR10_LOAD(ICINT19)` is PO/U/0/6144 on TSO003; BTA102 was absent among
+four inspected existing images and the new filename was absent; Hercules
+0480 was empty, MVS unit 480 reported, and the uncataloged tape DSN and
+new target DASD load library were absent in the MVS catalog.
+A new fail-closed one-shot `run-ta1-track-b-write` runner was isolated
+and synthetic-tested 27/27 PASS, retaining the required fresh checks,
+exclusive media creation, no-retry receipts, live JES/hetmap evidence
+and protection of the existing BTA101 image. This is a new implementation
+checkpoint, **not** proof that BTA102 was initialized or written.
+See [TA.1B live-preflight and write gate](../../distribution/create-tape/ta1b-readonly-preflight-and-write-gate-20261118.md).
+**No Track B stateful initialization, mount, write, restore or GO is authorized
+by this design/preflight result.** TA.1 remains IN PROGRESS.
 
 ## 1. Objective and product boundary
 

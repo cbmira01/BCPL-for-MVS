@@ -207,3 +207,20 @@ or tape catalog operation is authorized by this record.
 The owner approved the [Track B RECFM=U design](ta1-track-b-design-proposal-20261117.md). Tracked fixed JCL `jcl/TA1BWRIT.jcl` and `jcl/TA1BREST.jcl` operate on a **proposed new** standard-label BTA102 AWS scratch tape and source-read-only `HERC02.BCPL.MR10KIT.LOAD(ICINT19)`; only the separate new DASD target `HERC02.BCPL.TA1B.LOAD` may eventually be cataloged. `scripts/ta1b-contract` validates fixed card/dataset/label/disposition contracts, generates a read-only IEHLIST FORMAT body and extracts eight pinned MRREGRES steps with exactly three restored-STEPLIB substitutions.
 
 `scripts/ta1b-preflight --live` is a compact **read-only MVS-facing** source, catalog, VOLSER, tape-inventory and device check, using existing MVS LISTDS inquiries and Hercules inspection. It saves private evidence under ignored `workarea/ta1b-operations/` and does not initialize, mount, unload, restore or execute programs. The [implementation checkpoint](ta1b-implementation-20261118.md) records 44/44 dedicated offline tests passing. **Separate owner authorization for BTA102 initialization, MVS unload, restore, remount and GO is still required.**
+
+## Track B live read-only preflight PASS; one-shot write runner awaiting approval
+
+The owner reported `ta1b-preflight --live` PASS (18 November 2026):
+source `MR10_LOAD(ICINT19)` PO/U/0/6144 on `TSO003`, BTA102 absent
+among four inspected AWS images, new filename absent, Hercules 0480
+empty, and scratch tape DSN/restore target uncataloged/absent.
+See [the source-constrained evidence and write gate](ta1b-readonly-preflight-and-write-gate-20261118.md).
+
+`scripts/run-ta1-track-b-write` is inert by default. Its `--run`
+mode will demand **separate explicit media-write authorization**,
+repeat the actual MVS/Hercules/VOLSER/source checks, exclusively create
+the new AWS file, submit `TA1BWRIT` once, capture JES/hetmap labels
+and filemarks, and record SHA-256. No automatic retry, remount,
+restoration, restored ICINT19 execution, or tape cataloging.
+Its **27/27** isolated negative/synthetic tests PASS; no BTA102 image
+has been initialized or written by this checkpoint.

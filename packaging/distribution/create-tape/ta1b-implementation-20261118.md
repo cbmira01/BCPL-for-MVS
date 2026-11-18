@@ -29,3 +29,26 @@ Tracked, JOB-card-free JCL: `jcl/TA1BWRIT.jcl` uses IEBCOPY `COPY` plus `SELECT 
 ## Offline implementation tests
 
 In the assistant's isolated project workspace, **44/44** dedicated synthetic and negative tests passed. Tests exercise wrong VOLSER/label/DSN/DCB/SELECT, tape-catalog attempts, GO-job STEPLIB pinning, foreign IEHLIST targets, malformed input, symlinks, existing-image collisions, catalog ambiguity, unit status, and non-shell read-only subprocess capture. The actual GitHub `MRREGRES` blob and its eight selected steps/three STEPLIB replacements were also independently inspected; all derived cards remain within 80 columns. **No MVS, Hercules mount, tape initialization, ICINT19 execution, or real IEBCOPY was performed by the assistant.**
+
+## Subsequent live read-only preflight and producer checkpoint (18 November 2026)
+
+The owner separately ran the committed live read-only preflight on
+`eb0a26e489255e43a1bdc5089589dc53fa8347a0` and reported PASS.
+Source `MR10_LOAD(ICINT19)` is PO/U/0/6144 on `TSO003`; BTA102
+was absent from all four inspected existing images and proposed filename,
+Hercules 0480 was empty, and the tape DSN/new DASD target were absent
+in the catalog. The full private evidence remains in
+`workarea/ta1b-operations/BTA102-readonly-20261118T185240Z-7885/`
+on the owner's checkout, not the assistant workspace.
+
+A new guarded `scripts/run-ta1-track-b-write` is prepared for a
+**separately authorized** one-shot `hetinit -d -i`, mount at 0480,
+and exactly one `TA1BWRIT` IEBCOPY job. It performs fresh live checks
+twice, refuses an occupied/nonready unit, requires source VOLSER TSO003,
+uses exclusive-create no-overwrite/no-retry markers, and saves JES and
+Hercules label/filemark evidence plus image SHA-256. It never restores,
+runs the ICINT19 GO, or catalogs the tape dataset. **27/27** additional
+offline synthetic tests PASS; no live write has been executed.
+See [the bounded live preflight and write-stage gate](ta1b-readonly-preflight-and-write-gate-20261118.md)
+for exact scope. Prior statements describing preflight as pending are
+historical; Track B remains NOT YET ACCEPTED.
