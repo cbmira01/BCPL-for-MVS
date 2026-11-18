@@ -1,0 +1,260 @@
+#!/usr/bin/env python3
+"""TA.1 Track A: gated one-shot BTA101 restore and independent IEBCOMPR.
+
+Preflight is read-only. --run changes ONLY fresh DASD restore datasets and
+may remount the EXISTING BTA101 virtual tape if the drive is empty. It never
+initializes, repositions, overwrites, retries or modifies the AWS image.
+Requires separate owner authorization of both restore jobs and comparison.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import argparse
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPT = ROOT / 'packaging/distribution/create-tape/scripts'
+OPS = ROOT / 'workarea/ta1-operations'
+WRITE_EVIDENCE = OPS / 'BTA101-track-a-execution-20261118T010626Z-5215'
+EXPECTED_SHA = 'd5900cbccaaa2f7eb1bcc59ae30847540e6911c577dafa5e131c0b3a9c8e3fe2'
+TAPE = ROOT / 'mvs-state/tape/bcpl-ta1-a-20261117-01.aws'
+ATTEMPT = OPS / 'BTA101-track-a-readback.json'
+RUN_LOG = OPS / ('BTA101-track-a-readback-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+STAGES = (('TA1AR001', 'RESTORE', 'HERC02.BCPL.TA1A.FBREST', 'PS'),
+          ('TA1AR002', 'RESTORE', 'HERC02.BCPL.TA1A.PDSREST', 'PO'),
+          ('TA1ACOMP', 'CMPFB,CMPPDS', None, None))
+
+
+class Halt(RuntimeError):
+    pass
+
+
+def require(test: bool, reason: str) -> None:
+    if not test:
+        raise Halt(reason)
+
+
+def import_tool(filename: str, name: str):
+    loader = importlib.machinery.SourceFileLoader(name, str(SCRIPT / filename))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    require(spec is not None and spec.loader is not None, 'missing repository helper')
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def sha256() -> str:
+    require(TAPE.is_file() and not TAPE.is_symlink(), 'BTA101 image missing/unsafe')
+    with TAPE.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def check_sha() -> None:
+    require(sha256() == EXPECTED_SHA,
+            'tape checksum differs from successful JOB 9076 write; DO NOT MOUNT/READ')
+
+
+def verify_labels(label_text: str) -> None:
+    require("Label               : 'VOL1'" in label_text and
+            "Volume Serial       : 'BTA101'" in label_text,
+            'standard tape VOL1 or VOLSER missing')
+    for i, dsn in enumerate(('BCPL.BT0001', 'BCPL.BT0002'), 1):
+        require(label_text.count("Dataset ID          : '" + dsn) == 2,
+                f'missing HDR1/EOF1 for {dsn}')
+        require(label_text.count("Dataset Sequence    : '" + f'{i:04d}' + "'") == 2,
+                f'wrong label sequence for {dsn}')
+    require(label_text.count("Label               : 'HDR1'") == 2 and
+            label_text.count("Label               : 'EOF1'") == 2 and
+            label_text.count("Label               : 'HDR2'") == 2 and
+            label_text.count("Label               : 'EOF2'") == 2,
+            'two complete standard-label groups not found')
+
+
+def verify_write_receipt() -> None:
+    require(WRITE_EVIDENCE.is_dir() and not WRITE_EVIDENCE.is_symlink(),
+            'approved write receipt directory absent/unsafe')
+    for name in ('summary.txt', 'sha256.txt', 'labels-final.txt', 'submit.txt'):
+        path = WRITE_EVIDENCE / name
+        require(path.is_file() and not path.is_symlink(), f'write evidence {name} missing')
+    sha_receipt = (WRITE_EVIDENCE / 'sha256.txt').read_text()
+    require(sha_receipt.strip() == EXPECTED_SHA + '  mvs-state/tape/' + TAPE.name,
+            'written SHA-256 receipt does not match owner-supplied value')
+    result = (WRITE_EVIDENCE / 'summary.txt').read_text()
+    require('JOB 9076  TA1AWRIT' in result and 'JOB RESULT: SUCCESS' in result and
+            re.search(r'(?m)^BOOTSTRP\s+\S+\s+RC=0000\s*$', result) is not None and
+            re.search(r'(?m)^UNLOAD\s+\S+\s+RC=0000\s*$', result) is not None,
+            'JOB 9076 two-step RC=0 receipt incomplete')
+    require('TA1AWRIT: JES JOB 9076 returned accepted RC=0' in
+            (WRITE_EVIDENCE / 'submit.txt').read_text(),
+            'original JES 9076 receipt not found')
+    verify_labels((WRITE_EVIDENCE / 'labels-final.txt').read_text())
+    check_sha()
+
+
+def run(write, key: str, argv: list[str], evidence: Path = RUN_LOG) -> str:
+    _, stdout = write.must_run(key, argv, log=evidence)
+    return stdout
+
+
+def check_live(write, log: Path) -> None:
+    write.load_guard().validate_contract()
+    write.check_identity(log)
+    changes = ['packaging/distribution/create-tape/scripts/run-ta1-track-a-readback',
+               'packaging/distribution/create-tape/jcl/TA1AR001.jcl',
+               'packaging/distribution/create-tape/jcl/TA1AR002.jcl',
+               'packaging/distribution/create-tape/jcl/TA1ACOMP.jcl']
+    rc, state = write.capture('git-readback-guard',
+                              ['git', 'status', '--porcelain', '--untracked-files=no', '--', *changes], log=log)
+    require(rc == 0 and not state.strip(), 'git readback guard failed or tracked files modified')
+    write.check_docker(log)
+    write.check_guest(log)
+    for job, *_ in STAGES:
+        require(not (OPS / ('BTA101-' + job + '.json')).exists(),
+                f'{job} prior attempt exists; do not repeat')
+    check_sha()
+    verify_labels(run(write, 'fresh-hetmap',
+                      ['docker', 'exec', 'mvs38j', 'hetmap', '-l', '/tk5/tape/' + TAPE.name], log))
+
+
+def tape_state(write, log: Path, suffix: str) -> str:
+    status = run(write, 'tape-status-' + suffix,
+                 ['tools/mvs/mvs-console', 'tape', 'status', '0480'], log)
+    lines = [x for x in status.splitlines() if re.search(r'\b0:0480\s+3420\s+', x)]
+    require(len(lines) == 1, 'one Hercules 3420 at 0480 not confirmed')
+    line = lines[0]
+    require(not re.search(r'\bbusy\b', line, re.I), '0480 is busy')
+    empty = bool(re.search(r'\b3420\s+\*\s', line))
+    correct = TAPE.name in line
+    require(empty or correct, '0480 holds a DIFFERENT image; refuse displacement')
+    mvs = run(write, 'mvs-status-' + suffix,
+              ['tools/mvs/mvs-console', 'mvs', 'D U,TAPE'], log)
+    matches = [x for x in mvs.splitlines() if re.search(r'\b480\s+3400\s+', x)]
+    require(matches and any(re.search(r'\b480\s+3400\s+O(?:-NRD)?\b', x) for x in matches),
+            'MVS tape unit is offline/ambiguous')
+    require(not any(re.search(r'\b480\s+3400\s+(?:ALLOC|BUSY)', x, re.I)
+                    for x in matches), 'MVS tape unit allocated/busy')
+    if correct:
+        require(any(re.search(r'\b480\s+3400\s+O(?:\s|$)', x) for x in matches),
+                'BTA101 image mounted but MVS unit is not ready')
+    return 'empty' if empty else 'mounted'
+
+
+def ensure_mounted(write, log: Path, suffix: str) -> None:
+    check_sha()
+    state = tape_state(write, log, suffix + '-before')
+    if state == 'empty':
+        run(write, 'mount-' + suffix,
+            ['tools/mvs/mvs-console', '--yes', 'tape', 'mount', '0480', TAPE.name], log)
+    require(tape_state(write, log, suffix + '-after') == 'mounted',
+            'BTA101 not confirmed mounted; DO NOT submit JES')
+    check_sha()
+
+
+def submit(write, log: Path, job: str, expected: str) -> int:
+    output = run(write, 'submit-' + job,
+                 [str(SCRIPT / 'submit-ta1-job'), job, '--run'], log)
+    found = re.search(rf'{job}: JES JOB (\d+) returned accepted RC=0', output)
+    require(found is not None, f'{job} JES result ambiguous; preserve image and stop')
+    number = int(found.group(1))
+    cursor = OPS / ('BTA101-' + job + '.cursor.json')
+    summary = run(write, 'summary-' + job,
+                  ['tools/mvs/job-summary', str(number), '--max-rc', '0',
+                   '--cursor-file', str(cursor)], log)
+    require('JOB RESULT: SUCCESS' in summary, f'{job} failed JES summary')
+    for name in expected.split(','):
+        require(re.search(rf'(?m)^{re.escape(name)}\s+\S+\s+RC=0000\s*$', summary)
+                is not None, f'{job}: {name} expected RC=0000 missing')
+    run(write, 'jes-' + job,
+        ['tools/mvs/dump-report-for-job', str(number), '--cursor-file', str(cursor)], log)
+    print(f'{job}: JES JOB {number}, required steps RC=0000')
+    return number
+
+
+def check_restored(write, log: Path, dsn: str, organization: str) -> None:
+    stat = run(write, 'stat-' + organization, ['tools/datasets/dspal', 'stat', dsn], log)
+    normalized = ' '.join(stat.upper().split())
+    require(dsn in normalized and 'DSORG:' + organization in normalized and
+            'RECFM:FB' in normalized and 'LRECL:80' in normalized and
+            'BLKSIZE:800' in normalized,
+            f'{dsn} restored DCB differs from PO/PS FB/80/800')
+    if organization == 'PO':
+        listing = run(write, 'members-restored', ['tools/datasets/dspal', 'ls', dsn], log)
+        names = set(re.findall(r'(?m)^\s{4}([A-Z0-9@$#]{1,8})\s*$', listing))
+        require(names == write.EXPECTED_MEMBERS,
+                'restored PDS seven-member inventory mismatch')
+
+
+def begin_once() -> None:
+    require(not OPS.is_symlink(), 'unsafe attempt directory')
+    require(not ATTEMPT.is_symlink(), 'unsafe attempt marker')
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
+    try:
+        fd = os.open(ATTEMPT, flags, 0o600)
+    except FileExistsError as exc:
+        raise Halt('readback already attempted; NEVER rerun') from exc
+    with os.fdopen(fd, 'w') as file:
+        json.dump({'image': TAPE.name, 'volser': 'BTA101', 'source_job': 9076,
+                   'state': 'READBACK_ATTEMPTED', 'retry': 'forbidden'}, file)
+        file.write('\n')
+        file.flush()
+        os.fsync(file.fileno())
+
+
+def operation(*, authorized: bool) -> int:
+    require(OPS.is_dir() and not OPS.is_symlink(), 'original workarea missing/unsafe')
+    require(not RUN_LOG.is_symlink(), 'unsafe evidence folder')
+    require(not ATTEMPT.exists() and not ATTEMPT.is_symlink(), 'prior readback attempt exists')
+    RUN_LOG.mkdir(mode=0o700, exist_ok=False)
+    verify_write_receipt()
+    write = import_tool('run-ta1-track-a', 'ta1_existing_writer_tools')
+    print('BTA101 JOB 9076 write receipt and SHA-256 verified.')
+    check_live(write, RUN_LOG)
+    print('Read-only restore preflight PASS (no DASD targets created).')
+    if not authorized:
+        return 0
+    require(sys.stdin.isatty(), 'interactive confirmation required')
+    phrase = 'RESTORE COMPARE BTA101'
+    require(input(f'Type {phrase} to authorize two new DASD datasets: ').strip() == phrase,
+            'no stateful authorization entered')
+    # Stop after any ambiguous state, retaining original image and receipts.
+    verify_write_receipt()
+    begin_once()
+    for job, steps, target, org in STAGES:
+        if job != 'TA1ACOMP':
+            ensure_mounted(write, RUN_LOG, job)
+        print(f'One-shot {job}; at its prompt, type SUBMIT {job} BTA101')
+        submit(write, RUN_LOG, job, steps)
+        if target is not None:
+            check_restored(write, RUN_LOG, target, org)
+        check_sha()
+    print('Track A: two independent MVS restores and IEBCOMPR steps RC=0000.')
+    print('Image unchanged SHA-256: ' + EXPECTED_SHA)
+    print('Evidence: ' + str(RUN_LOG.relative_to(ROOT)))
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run', action='store_true',
+                        help='REQUIRES separate owner approval of readback/remount/new DASD targets')
+    args = parser.parse_args(argv)
+    try:
+        return operation(authorized=args.run)
+    except (Halt, RuntimeError, OSError, ValueError) as error:
+        print(f'TA.1 readback HALTED: {error}', file=sys.stderr)
+        print('Preserve BTA101 and all DASD/evidence; no retry, seek or reinitialization.',
+              file=sys.stderr)
+        print('Evidence: ' + str(RUN_LOG.relative_to(ROOT)), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -1,9 +1,17 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified), owner-directed 17 November 2026; TA.1 READY FOR DESIGN/PREFLIGHT (no tape-write authorization); milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A two-dataset write observed (JOB 9076), readback and Track B pending; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
+
+**TA.1 operator-reported write checkpoint (17 November 2026):**
+The new uncataloged BTA101 scratch image was initialized and written by
+TA1AWRIT JOB 9076; the guarded runner reported both logical standard-label
+datasets and SHA-256 d5900cbccaaa2f7eb1bcc59ae30847540e6911c577dafa5e131c0b3a9c8e3fe2.
+See [Track A write evidence](../../distribution/create-tape/ta1-track-a-write-evidence-20261117.md).
+Readback, independent IEBCOMPR and Track B are not yet executed or accepted.
+No additional tape operation is authorized by this record.
 
 ## 1. Objective and product boundary
 

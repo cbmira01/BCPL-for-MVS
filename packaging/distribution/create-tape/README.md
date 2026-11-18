@@ -148,3 +148,20 @@ It requires a terminal and typed confirmations; it never retries and never
 restores or catalogs tape datasets. On any failure, preserve media and
 `workarea/ta1-operations/` evidence and report the result. See the
 TA.1 Track A preflight document for the exact approval boundary.
+
+## TA.1 Track A operator write completed; readback not yet authorized
+
+The owner-provided 17 November 2026 transcript shows TA1AWRIT JOB 9076
+ran on newly initialized, standard-labeled scratch BTA101 image, with
+two ordered BCPL.BT0001 / BCPL.BT0002 label sequences and SHA-256
+d5900cbccaaa2f7eb1bcc59ae30847540e6911c577dafa5e131c0b3a9c8e3fe2.
+See [the write-stage evidence](ta1-track-a-write-evidence-20261117.md).
+
+A separate `scripts/run-ta1-track-a-readback` entry point has been
+prepared and offline-tested for one-shot IEBGENER/IEBCOPY restore and
+independent IEBCOMPR TYPORG=PS/PO. Its default mode is READ-ONLY;
+its `--run` mode (including selective remount and new DASD allocation)
+requires separate owner approval. The program requires the original
+JOB 9076 receipt, matching original image SHA-256 and clean scratch
+target catalog; any ambiguous result halts without retry. Tape datasets
+remain uncataloged throughout.

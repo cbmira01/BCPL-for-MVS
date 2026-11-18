@@ -5,7 +5,7 @@
 **March:** TA.1 — Multi-Dataset Tape Mechanics
 **Design decision:** Track A design approved by the owner, 17 November 2026
 **Authority:** GitHub main, following TA.0 CLOSED (qualified)
-**Execution status:** PREFLIGHT ONLY — NO TAPE INITIALIZATION, MOUNT, WRITE, RESTORE OR MVS DATASET CHANGE AUTHORIZED
+**Execution status:** TWO-DATASET WRITE COMPLETED (owner-reported JOB 9076); RESTORATION / REMOUNT / COMPARISON NOT YET AUTHORIZED
 
 ## Track A identity and fixture
 
@@ -140,3 +140,22 @@ MVS disposition policy remains unchanged: tape datasets are uncataloged;
 only independent fresh DASD restore targets may be cataloged in a later
 separately authorized step. TA.1 is NOT accepted until live write and
 independent restored-dataset evidence have been reviewed.
+
+## Track A write result and pending independent readback (17 November 2026)
+
+The owner ran the authorized new BTA101 write as MVS JOB 9076;
+the one-shot tool verified its two-step JES summary and reported both
+BCPL.BT0001 and BCPL.BT0002 labels and image SHA-256
+d5900cbccaaa2f7eb1bcc59ae30847540e6911c577dafa5e131c0b3a9c8e3fe2.
+See [the bounded write receipt](ta1-track-a-write-evidence-20261117.md).
+The actual full SYSOUT and filemark map remain in ignored workarea.
+
+The new `scripts/run-ta1-track-a-readback` integrates the existing,
+already reviewed TA1AR001, TA1AR002 and TA1ACOMP jobs.
+Default mode performs only fresh read-only preflight; --run, which MAY
+remount the same AWS image and WILL create the two new DASD targets,
+requires separate explicit owner authorization and interactive prompts.
+It verifies the exact write evidence, SHA-256 before/after each read,
+MVS/Hercules state, restored DCB/member inventory, the three new JES
+jobs and both IEBCOMPR step RCs. No image initialization, tape catalog,
+automatic retry, or unrelated dataset writes are permitted.
