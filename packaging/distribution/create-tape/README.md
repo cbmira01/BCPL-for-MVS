@@ -185,3 +185,19 @@ come from owner-local HETMAP output before final filemark acceptance.
 
 [Track B RECFM=U load library design](ta1-track-b-design-proposal-20261117.md)
 is proposed for owner review. No Track B stateful operation is authorized.
+
+## Track A final saved-evidence review — 18 November 2026
+
+The owner ran the non-submitting `scripts/review-ta1-track-a`; result
+`TA.1 TRACK A: saved MVS evidence PASS (qualified)`. The physical
+standard-labeled AWS layout has seven file segments containing
+`3, 3, 2, 2, 25, 2, 0` blocks. Source/restored MVS checks show
+JOBS 9076, 9084, 9086 and 9089 at required RC=0000; restored PS/PO
+attributes, seven PDS members and unchanged BTA101 SHA-256
+`d5900cbccaaa2f7eb1bcc59ae30847540e6911c577dafa5e131c0b3a9c8e3fe2`.
+See [Track A acceptance evidence](ta1-track-a-roundtrip-review-20261117.md)
+for physical file roles and evidence qualifications.
+
+**Track A PASS (qualified); TA.1 IN PROGRESS** pending the separately
+designed `RECFM=U` Track B test. No new tape job, MVS state change,
+or tape catalog operation is authorized by this record.

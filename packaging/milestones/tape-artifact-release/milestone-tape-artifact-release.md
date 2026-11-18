@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A two-dataset write/restore/compare PASS (qualified, operator-reported), physical-filemark review pending; Track B design proposed; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B design proposed but unapproved; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -13,8 +13,23 @@ See [Track A write evidence](../../distribution/create-tape/ta1-track-a-write-ev
 Readback and both independent IEBCOMPR steps subsequently completed with
 MVS JOBS 9084, 9086 and 9089, all RC=0000, and the AWS SHA unchanged.
 The [Track A round-trip record](../../distribution/create-tape/ta1-track-a-roundtrip-review-20261117.md)
-contains the bounded acceptance candidate; physical filemark review and
-Track B remain pending. No further stateful operation is authorized here.
+now records Track A PASS (qualified): read-only review of the actual
+saved tape-map reports found seven physical tape files containing
+3, 3, 2, 2, 25, 2 and 0 blocks, with both datasets and original image
+SHA-256 preserved. Track B remains pending, and its design is still
+subject to explicit owner approval. No further stateful operation
+is authorized here.
+
+**TA.1 saved physical-file review checkpoint (18 November 2026):**
+The owner executed the Git-controlled read-only reviewer at
+`4845be9db79ecaa6b8dd4e777ba32bbcf4983886`; it reported
+`TA.1 TRACK A: saved MVS evidence PASS (qualified)`, confirmed all
+four actual MVS JES jobs 9076/9084/9086/9089 at required RC=0000,
+seven physical tape file block counts `3,3,2,2,25,2,0`,
+both expected standard-label dataset sequences, the restored seven-member
+PDS and unchanged SHA-256. This is an actual owner-reported MVS/Hercules
+evidence review, not an offline simulation. Track A is PASS (qualified);
+**TA.1 remains open for Track B**. No new MVS operation is authorized.
 
 ## 1. Objective and product boundary
 
