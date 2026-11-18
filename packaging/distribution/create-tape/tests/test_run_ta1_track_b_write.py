@@ -262,11 +262,77 @@ class TestWrite(unittest.TestCase):
         with self.assertRaisesRegex(script.Halt, 'status unrecognized'):
             script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
 
-    def test_mvs_duplicate_unit_rows_refused(self):
+    def test_mvs_identical_unit_rows_echo_accepted(self):
         def checked(argv, name, folder):
             return ('HHC02279I 0:0480 3420 * IO[6]\n' if argv[1:3] == ['tape','status']
                     else '480 3400 O /REMOV\n480 3400 O /REMOV\n')
-        with self.assertRaisesRegex(script.Halt, 'row missing/ambiguous'):
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_actual_owner_status_echo_accepted_without_mount(self):
+        # Exact owner-provided unit 480 status, repeated by MVS console transport.
+        status = ('23:36:00 / 480  3400 O-NRD              /REMOV 481  3400 OFFLINE')
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else status + '\n' + status + '\n')
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_actual_owner_status_echo_refused_after_mount(self):
+        status = '23:36:00 / 480  3400 O-NRD              /REMOV 481  3400 OFFLINE'
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 /tk5/tape/bcpl-ta1-b-20261117-01.aws IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else status + '\n' + status + '\n')
+        with self.assertRaisesRegex(script.Halt, 'not ready after BTA102 mount'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=True)
+
+    def test_same_device_conflicting_status_refused(self):
+        status = '23:36:00 / 480  3400 O-NRD              /REMOV 481  3400 OFFLINE'
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else status + '\n' + status.replace('O-NRD', 'A') + '\n')
+        with self.assertRaisesRegex(script.Halt, 'distinct=2'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_same_status_distinct_timestamp_refused(self):
+        status = '23:36:00 / 480  3400 O-NRD              /REMOV 481  3400 OFFLINE'
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else status + '\n' + status.replace('23:36:00', '23:36:01') + '\n')
+        with self.assertRaisesRegex(script.Halt, 'distinct=2'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_two_unit_480_entries_same_console_line_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else '23:36:00 / 480 3400 O /REMOV 480 3400 A /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'distinct=2'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_unit_481_allocated_does_not_change_unit_480(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else '23:36:00 / 480 3400 O-NRD /REMOV 481 3400 ALLOC\n')
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_unit_480_allocated_on_shared_line_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else '23:36:00 / 480 3400 O-NRD ALLOC /REMOV 481 3400 OFFLINE\n')
+        with self.assertRaisesRegex(script.Halt, 'allocated/busy'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_duplicate_mounted_ready_status_accepted(self):
+        status = '23:36:00 / 480 3400 O /REMOV 481 3400 OFFLINE'
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 /tk5/tape/bcpl-ta1-b-20261117-01.aws IO[0]\n'
+                    if argv[1:3] == ['tape', 'status'] else status + '\n' + status + '\n')
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=True)
+
+    def test_nonidentical_echo_prefix_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 480 3400 O-NRD /REMOV\nIEE458I 480 3400 O-NRD /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'distinct=2'):
             script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
 
     def test_mvs_unrecognized_state_reports_observed_row(self):

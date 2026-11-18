@@ -252,3 +252,15 @@ bounded status-line excerpt rather than another opaque failure.
 See [second write-gate correction](ta1b-second-write-gate-correction-20261118.md).
 No fresh media initialization, remount, JES unload, DASD restoration,
 or GO execution is claimed.
+
+## Track B: exact duplicate MVS unit line (third gate correction)
+
+The owner reported two identical status records,
+`23:36:00 / 480  3400 O-NRD /REMOV 481  3400 OFFLINE`,
+during the first read-only `run-ta1-track-b-write` guard.
+This was before any attempt marker, image, tape mount or production JES job.
+The writer now deduplicates **only byte-identical** unit 480 records,
+rejects conflicting observations and requires MVS `O` after mounting.
+The change is limited to console parsing and diagnostics; the
+original authorization and no-retry media safeguards remain intact.
+See [third gate evidence](ta1b-third-write-gate-correction-20261118.md).

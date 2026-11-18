@@ -101,22 +101,30 @@ def unit_ready(preflight, evidence: Path, *, mounted: bool) -> None:
              'Hercules unit holds media; cannot displace it')
     guest = preflight.checked(['tools/mvs/mvs-console', 'mvs', 'D U,TAPE'],
                               'mvs-mounted' if mounted else 'mvs-empty', evidence)
-    # MVS-console replies may prefix a line with a message identifier/timestamp.
-    # The successful read-only preflight used an in-line status search.
-    # Count *all* matching rows; never accept an ambiguous or duplicate device.
-    matches = [m for line in guest.splitlines()
-               if (m := re.search(r'\b480[ \t]+3400[ \t]+(\S+)', line))]
-    if len(matches) != 1:
+    # Console transport sometimes repeats the *identical* status line.
+    # Count distinct raw records (including within-line offsets), not transport echoes.
+    # Do not merge conflicting states, different timestamps, or multiple device entries.
+    matches = [(line, m.start(), m.group(1))
+               for line in guest.splitlines()
+               for m in re.finditer(r'\b480[ \t]+3400[ \t]+(\S+)', line)]
+    distinct = set(matches)
+    if len(distinct) != 1:
         nearby = [line.strip()[:160] for line in guest.splitlines()
                   if re.search(r'\b480\b', line)]
         context = ' | '.join(nearby[:2]) or '(no 480 line)'
         raise Halt(f'MVS tape unit 480 status row missing/ambiguous '
-                   f'(matches={len(matches)}; observed={context})')
-    state = matches[0].group(1)
+                   f'(matches={len(matches)}; distinct={len(distinct)}; observed={context})')
+    line, start, state = next(iter(distinct))
     need(state in (('O',) if mounted else ('O', 'O-NRD')),
-         f'MVS unit 480 not {"ready after BTA102 mount" if mounted else "online before mount"}: {state}')
-    # Allocation and busy flags may occur later in a prefixed console reply.
-    need(not re.search(r'\b(?:ALLOC|BUSY)\b', matches[0].string, re.I),
+         f'MVS unit 480 not {"ready after BTA102 mount" if mounted else "online before mount"}: {state}; '
+         f'observed={line.strip()[:160]}')
+    # Bound allocation/busy qualifiers to unit 480 when the MVS formatter
+    # places several device rows on the same line (e.g. 481 3400 OFFLINE).
+    suffix = line[start:]
+    following = re.search(r'\b[0-9A-F]{3}[ \t]+[0-9A-F]{4}[ \t]+', suffix[3:])
+    if following:
+        suffix = suffix[:3 + following.start()]
+    need(not re.search(r'\b(?:ALLOC|BUSY)\b', suffix, re.I),
          'MVS tape unit allocated/busy')
 
 

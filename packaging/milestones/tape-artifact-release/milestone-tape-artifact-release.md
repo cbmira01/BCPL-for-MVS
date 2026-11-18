@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; second read-only status-format halt; prefix-tolerant fail-closed guard committed, live BTA102 still pending; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; third read-only halt: identical echoed MVS 480 status; guarded duplicate fix committed, BTA102 write pending; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -98,6 +98,27 @@ mismatch. Source and safety tests committed; no BTA102 tape
 initialization, mount, write, restore or executable GO observed.
 See [second guard correction](../../distribution/create-tape/ta1b-second-write-gate-correction-20261118.md).
 TA.1 is still IN PROGRESS.
+
+**TA.1 Track B third guarded read-only halt (18 November 2026):**
+With GitHub `main` at `5bae753128c3f79f7e7cace74190c554a167a9a9`,
+the owner ran `run-ta1-track-b-write --run`; the first
+`unit_ready(mounted=False)` check stopped with `matches=2`.
+The exact diagnostic contained *two byte-identical* console lines:
+`23:36:00 / 480  3400 O-NRD              /REMOV 481  3400 OFFLINE`.
+Thus 480 is `O-NRD` and separate unit 481 is `OFFLINE`; the duplication,
+not a contradictory state, caused the halt. Owner-local private evidence:
+`workarea/ta1b-operations/BTA102-track-b-write-20261118T233538Z-9227/`.
+No operator confirmation, attempt marker, image, mount or production
+JES submission was reached. The corrected guard requires one **distinct**
+unit-480 record, collapsing only byte-identical echoed lines and
+rejecting conflicting states, timestamps, different prefixes and
+two instances on the same line. It isolates unit-480 allocation flags
+from adjacent 481 output and retains the empty-Hercules and
+post-mount MVS-`O` safety conditions. **24/24 focused offline tests
+PASS**, with the tracked unit-test module expanded to 50 test methods;
+the full suite was not separately asserted as executed.
+See [third gate evidence](../../distribution/create-tape/ta1b-third-write-gate-correction-20261118.md).
+TA.1 IN PROGRESS; no BTA102 write/restore/GO has been verified.
 
 ## 1. Objective and product boundary
 
