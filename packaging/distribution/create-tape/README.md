@@ -238,3 +238,17 @@ offline or allocated conditions remain blocked. See
 [TA.1B unit gate correction](ta1b-first-write-gate-correction-20261118.md).
 The original media-write authorization scope is unchanged and the
 one-shot runner refuses a previous stateful attempt if one exists.
+
+## TA.1B second first-guard halt — prefix-aware MVS status check
+
+A further invocation at `efab256a987512b9e524557293faff99f206fac2`
+failed during the FIRST read-only writer readiness check (before media
+creation or an attempt receipt), because the writer insisted that the
+MVS unit status row begin at column 1. The original read-only preflight
+passed using an in-line lookup. The updated writer now searches within
+each console line while strictly requiring one unit row and checking
+`O` / `O-NRD` by mount phase. On a future mismatch it supplies a
+bounded status-line excerpt rather than another opaque failure.
+See [second write-gate correction](ta1b-second-write-gate-correction-20261118.md).
+No fresh media initialization, remount, JES unload, DASD restoration,
+or GO execution is claimed.

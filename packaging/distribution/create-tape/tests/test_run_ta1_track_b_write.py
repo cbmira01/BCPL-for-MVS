@@ -147,6 +147,81 @@ class TestWrite(unittest.TestCase):
             return '480 3400 O /REMOV\n'
         script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
 
+    def test_prefixed_mvs_online_empty_accepted(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0] maxsize=0\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 18.22.11 480 3400 O /REMOV\n')
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_prefixed_mvs_online_not_ready_empty_accepted(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I UNIT STATUS\nIEE457I 18.22.11 480 3400 O-NRD /REMOV\n')
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_prefixed_mvs_mounted_ready_accepted(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 /tk5/tape/bcpl-ta1-b-20261117-01.aws IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 480 3400 O /REMOV\n')
+        script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=True)
+
+    def test_prefixed_mvs_mounted_not_ready_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 /tk5/tape/bcpl-ta1-b-20261117-01.aws IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 480 3400 O-NRD /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'not ready after BTA102 mount: O-NRD'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=True)
+
+    def test_prefixed_mvs_duplicate_unit_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 480 3400 O /REMOV\nIEE457I 480 3400 O-NRD /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'matches=2'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_prefixed_mvs_offline_and_allocated_refused(self):
+        def checked_factory(status):
+            def checked(argv, name, folder):
+                return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                        if argv[1:3] == ['tape', 'status']
+                        else f'IEE457I 480 3400 {status} /REMOV\n')
+            return types.SimpleNamespace(checked=checked)
+        for status in ('F-NRD', 'A'):
+            with self.subTest(status=status), self.assertRaisesRegex(script.Halt, status):
+                script.unit_ready(checked_factory(status), self.root, mounted=False)
+
+    def test_prefixed_mvs_busy_flag_refused(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 480 3400 O-NRD ALLOC\n')
+        with self.assertRaisesRegex(script.Halt, 'allocated/busy'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
+    def test_missing_row_diagnostic_is_bounded(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 480 DEVICE UNRECOGNIZED ' + 'X' * 800 + '\n')
+        with self.assertRaises(script.Halt) as caught:
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+        self.assertIn('matches=0', str(caught.exception))
+        self.assertIn('observed=', str(caught.exception))
+        self.assertLess(len(str(caught.exception)), 275)
+
+    def test_prefix_not_an_other_device(self):
+        def checked(argv, name, folder):
+            return ('HHC02279I 0:0480 3420 * IO[0]\n'
+                    if argv[1:3] == ['tape', 'status']
+                    else 'IEE457I 1480 3400 O-NRD /REMOV\n')
+        with self.assertRaisesRegex(script.Halt, 'matches=0'):
+            script.unit_ready(types.SimpleNamespace(checked=checked), self.root, mounted=False)
+
     def test_readiness_foreign_volume_refused(self):
         def checked(argv, name, folder):
             return ('HHC02279I 0:0480 3420 /tk5/tape/bcpl01.aws IO[0]\n'

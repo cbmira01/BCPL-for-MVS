@@ -74,3 +74,16 @@ The next permitted live stage is STILL ONLY virgin BTA102 creation,
 mount on 0480 and one TA1BWRIT, followed by read-only JES/hetmap
 inspection. No `TA1BREST`, `TA1BGO`, load-library catalog, remount
 or release acceptance is authorized by this correction.
+
+## Second invocation and superseding parser correction (18 November 2026)
+
+The owner retried the corrected **read-only preflight path** at GitHub
+`efab256a987512b9e524557293faff99f206fac2`. It stopped again
+at the first `unit_ready(mounted=False)` check with
+`MVS tape unit 480 status row missing/ambiguous`. The new matching
+logic had erroneously anchored the unit row at the start of the console
+line; the previously successful `ta1b-preflight` had used `re.search`
+and recognized the unit status anywhere within its line. No typed
+confirmation, no attempt receipt, image initialization, mount, or
+TA1BWRIT occurred. Full case:
+[second-readiness correction](ta1b-second-write-gate-correction-20261118.md).

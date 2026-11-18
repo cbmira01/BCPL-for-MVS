@@ -101,17 +101,23 @@ def unit_ready(preflight, evidence: Path, *, mounted: bool) -> None:
              'Hercules unit holds media; cannot displace it')
     guest = preflight.checked(['tools/mvs/mvs-console', 'mvs', 'D U,TAPE'],
                               'mvs-mounted' if mounted else 'mvs-empty', evidence)
-    matches = [x for x in guest.splitlines() if re.match(r'^\s*480\s+3400\s+', x)]
-    need(len(matches) == 1, 'MVS tape unit 480 status row missing/ambiguous')
-    state = re.match(r'^\s*480\s+3400\s+(O(?:-NRD)?)(?=\s|$)', matches[0])
-    need(state is not None, 'MVS unit 480 status unrecognized: ' + matches[0].strip())
-    if mounted:
-        need(state.group(1) == 'O',
-             'MVS tape unit 480 is not ready after BTA102 mount: ' + state.group(1))
-    else:
-        need(state.group(1) in ('O', 'O-NRD'),
-             'MVS tape unit 480 not online before mount')
-    need(not re.search(r'\b(?:ALLOC|BUSY)\b', matches[0], re.I), 'MVS tape unit allocated/busy')
+    # MVS-console replies may prefix a line with a message identifier/timestamp.
+    # The successful read-only preflight used an in-line status search.
+    # Count *all* matching rows; never accept an ambiguous or duplicate device.
+    matches = [m for line in guest.splitlines()
+               if (m := re.search(r'\b480[ \t]+3400[ \t]+(\S+)', line))]
+    if len(matches) != 1:
+        nearby = [line.strip()[:160] for line in guest.splitlines()
+                  if re.search(r'\b480\b', line)]
+        context = ' | '.join(nearby[:2]) or '(no 480 line)'
+        raise Halt(f'MVS tape unit 480 status row missing/ambiguous '
+                   f'(matches={len(matches)}; observed={context})')
+    state = matches[0].group(1)
+    need(state in (('O',) if mounted else ('O', 'O-NRD')),
+         f'MVS unit 480 not {"ready after BTA102 mount" if mounted else "online before mount"}: {state}')
+    # Allocation and busy flags may occur later in a prefixed console reply.
+    need(not re.search(r'\b(?:ALLOC|BUSY)\b', matches[0].string, re.I),
+         'MVS tape unit allocated/busy')
 
 
 def docker_identity(preflight, evidence: Path) -> None:

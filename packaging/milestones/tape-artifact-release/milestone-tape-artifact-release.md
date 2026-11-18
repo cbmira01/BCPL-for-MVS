@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; corrected safety guard awaiting live verification; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; second read-only status-format halt; prefix-tolerant fail-closed guard committed, live BTA102 still pending; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -76,6 +76,28 @@ busy, ambiguous and foreign-media refusal. See
 The approved scope is unchanged: the corrected live runner still
 refuses any preexisting attempt receipt or AWS image. **No Track B
 write, restoration or GO has been observed.** TA.1 remains IN PROGRESS.
+
+**TA.1 Track B second read-only guard halt (18 November 2026):**
+The owner invoked the corrected `run-ta1-track-b-write --run` from GitHub
+main `efab256a987512b9e524557293faff99f206fac2`. It reported
+`TA.1B WRITE HALTED: MVS tape unit 480 status row missing/ambiguous`;
+private evidence was written to
+`workarea/ta1b-operations/BTA102-track-b-write-20261118T232154Z-8887/`.
+This was the FIRST `unit_ready(mounted=False)` inquiry, before the
+operator confirmation, no-retry receipt, AWS file creation, mounting,
+or JES submission. The previous read-only preflight searched for
+`480 3400` anywhere within an output line and passed, whereas this
+writer revision anchored it to the beginning of a line. A console
+message prefix is a source-supported explanation, **not** an
+assertion that a particular raw MVS status row was observed.
+The revised writer counts in-line unit matches, still rejects
+duplicates and unexpected statuses, accepts `O-NRD` only on
+verified empty Hercules 0480, and requires `O` after mount.
+It now includes a bounded observed-line diagnostic on a future
+mismatch. Source and safety tests committed; no BTA102 tape
+initialization, mount, write, restore or executable GO observed.
+See [second guard correction](../../distribution/create-tape/ta1b-second-write-gate-correction-20261118.md).
+TA.1 is still IN PROGRESS.
 
 ## 1. Objective and product boundary
 
