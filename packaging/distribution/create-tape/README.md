@@ -137,3 +137,14 @@ The four TA1A JCL bodies are staged with a read-only ta1-preflight checker,
 submit-ta1-job helper (7 offline tests). Its default mode makes no JES calls;
 its --run mode is subject to independent, explicit stateful owner approval.
 No image, mount, restore or MVS-write acceptance follows from this design.
+
+### Owner-authorized TA.1 Track A single-run entry point
+
+Use `scripts/run-ta1-track-a --run` from the repository root after GitHub
+main is updated. This single command combines fresh read-only catalog,
+device and media collision checks, exclusive AWS initialization, mount,
+once-only authenticated TA1AWRIT submission, then saved JES/hetmap evidence.
+It requires a terminal and typed confirmations; it never retries and never
+restores or catalogs tape datasets. On any failure, preserve media and
+`workarea/ta1-operations/` evidence and report the result. See the
+TA.1 Track A preflight document for the exact approval boundary.

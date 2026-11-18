@@ -109,3 +109,34 @@ distinct and acceptable. No installation design may rely on a tape catalog.
 **Status:** TRACK A LIVE READ-ONLY PREFLIGHT EVIDENCE RECORDED;
 MEDIA INITIALIZATION / MOUNT / WRITING STILL REQUIRE DISTINCT EXPLICIT
 OWNER AUTHORIZATION. TA.1 acceptance is not implied.
+
+## Owner-authorized stateful TA.1 Track A execution
+
+**Authorization received 17 November 2026:** initialize exactly one NEW
+`mvs-state/tape/bcpl-ta1-a-20261117-01.aws` as uncompressed SL AWS tape,
+VOLSER `BTA101`; mount it at Hercules device `0480`; submit the single
+two-step `TA1AWRIT` job once; inspect MVS/JES and final AWS labels/filemarks.
+This authorizes NO restoration, remount after failure, retry, modification
+of any existing image, catalog of tape datasets, or release publication.
+
+Use `scripts/run-ta1-track-a --run` from repository root after pulling the
+commit containing this section. It performs fresh live MVS source/collision,
+Hercules device, Docker bind/user and all existing AWS VOLSER checks before
+a typed confirmation. It uses exclusive-create records under
+`workarea/ta1-operations/` and exclusive creation of the new tape image;
+once an attempt begins, it cannot be repeated. The image initialization
+is `hetinit -d -i`, followed by VOL1 verification, mount/ready verification,
+the separately confirmed authenticated `submit-ta1-job TA1AWRIT --run`,
+then job summary, JES report, final `hetmap` -l/-f/-a and SHA-256 evidence.
+Full host output is saved privately in unique ignored `workarea/` evidence,
+not dumped into WSL. A failure never triggers automatic recovery.
+
+**Validation:** 27/27 isolated offline tests passed for the new runner and
+existing static JCL gate; no live MVS initialization or job execution is
+claimed by these tests. The owner-provided old VOLSER reports remain
+read-only preflight evidence; a new current VOLSER scan is required.
+
+MVS disposition policy remains unchanged: tape datasets are uncataloged;
+only independent fresh DASD restore targets may be cataloged in a later
+separately authorized step. TA.1 is NOT accepted until live write and
+independent restored-dataset evidence have been reviewed.
