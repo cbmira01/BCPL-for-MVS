@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A two-dataset write observed (JOB 9076), readback and Track B pending; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A two-dataset write/restore/compare PASS (qualified, operator-reported), physical-filemark review pending; Track B design proposed; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -10,8 +10,11 @@ The new uncataloged BTA101 scratch image was initialized and written by
 TA1AWRIT JOB 9076; the guarded runner reported both logical standard-label
 datasets and SHA-256 d5900cbccaaa2f7eb1bcc59ae30847540e6911c577dafa5e131c0b3a9c8e3fe2.
 See [Track A write evidence](../../distribution/create-tape/ta1-track-a-write-evidence-20261117.md).
-Readback, independent IEBCOMPR and Track B are not yet executed or accepted.
-No additional tape operation is authorized by this record.
+Readback and both independent IEBCOMPR steps subsequently completed with
+MVS JOBS 9084, 9086 and 9089, all RC=0000, and the AWS SHA unchanged.
+The [Track A round-trip record](../../distribution/create-tape/ta1-track-a-roundtrip-review-20261117.md)
+contains the bounded acceptance candidate; physical filemark review and
+Track B remain pending. No further stateful operation is authorized here.
 
 ## 1. Objective and product boundary
 

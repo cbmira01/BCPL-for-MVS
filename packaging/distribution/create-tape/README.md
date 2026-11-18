@@ -165,3 +165,23 @@ requires separate owner approval. The program requires the original
 JOB 9076 receipt, matching original image SHA-256 and clean scratch
 target catalog; any ambiguous result halts without retry. Tape datasets
 remain uncataloged throughout.
+
+
+## Track A complete two-dataset round-trip: qualified owner-reported PASS
+
+The separate readback restored both datasets on MVS and ran both
+IEBCOMPR comparison steps RC=0000: JOB 9084 (PS restore), JOB 9086
+(PDS restore), JOB 9089 (two comparisons). The original JOB 9076
+image SHA-256 remained unchanged. See
+[the bounded Track A round-trip record](ta1-track-a-roundtrip-review-20261117.md).
+
+A strictly **read-only** saved-evidence/filemark checker is
+scripts/review-ta1-track-a. It checks the original private JES summaries,
+Hercules physical-file output, both standard-label datasets, restored
+DCBs and PDS members, and the immutable original AWS SHA. It creates
+no files, submits no JES, and changes no mounted tape or MVS dataset.
+13/13 synthetic/negative tests PASS; actual physical-file counts must
+come from owner-local HETMAP output before final filemark acceptance.
+
+[Track B RECFM=U load library design](ta1-track-b-design-proposal-20261117.md)
+is proposed for owner review. No Track B stateful operation is authorized.

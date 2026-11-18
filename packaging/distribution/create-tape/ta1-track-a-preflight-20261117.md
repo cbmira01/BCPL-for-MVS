@@ -159,3 +159,15 @@ It verifies the exact write evidence, SHA-256 before/after each read,
 MVS/Hercules state, restored DCB/member inventory, the three new JES
 jobs and both IEBCOMPR step RCs. No image initialization, tape catalog,
 automatic retry, or unrelated dataset writes are permitted.
+
+
+## Owner-reported TA.1 Track A restoration result (17 November 2026)
+
+Following the new separately approved readback, the owner reported
+TA1AR001 JOB 9084, TA1AR002 JOB 9086 and TA1ACOMP JOB 9089,
+all required steps RC=0000; restored PS/PO DCB and PDS directory
+verified. The image SHA-256 remained
+d5900cbccaaa2f7eb1bcc59ae30847540e6911c577dafa5e131c0b3a9c8e3fe2.
+This supersedes earlier readback-PENDING status statements in this
+historical preflight record. See
+[the qualified Track A round-trip review](ta1-track-a-roundtrip-review-20261117.md).

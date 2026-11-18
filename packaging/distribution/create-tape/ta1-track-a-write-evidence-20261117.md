@@ -58,3 +58,13 @@ temporary new DASD restore targets may be cataloged.
 
 **Unresolved TA.1:** independent restored content evidence and the Track B
 PO/U/0/6144 `MR10_LOAD(ICINT19)` executable round trip.
+
+
+## Subsequent restoration checkpoint (17 November 2026)
+
+The owner subsequently completed the separately authorized readback:
+TA1AR001 JOB 9084 RC=0000; TA1AR002 JOB 9086 RC=0000;
+TA1ACOMP JOB 9089 with both independent IEBCOMPR steps RC=0000.
+The original BTA101 image SHA-256 was unchanged.
+See [the Track A round-trip record](ta1-track-a-roundtrip-review-20261117.md).
+Earlier write-stage PENDING statements are historical and superseded.
