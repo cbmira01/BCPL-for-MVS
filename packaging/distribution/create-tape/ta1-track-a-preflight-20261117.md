@@ -71,3 +71,41 @@ or mount/demount status and are NOT substitutes for the live preflight.
 Do not invoke --run solely because the design is approved. Obtain explicit
 permission for the exact media initialization, mount, one write job, later
 restore jobs and any remount/unmount; preserve all results without retry.
+
+## Owner-supplied live preflight observations (17 November 2026)
+
+This record reflects console and utility output provided by the owner, NOT
+execution by this change. No image creation, device mount, JES write job,
+restore, or comparison was reported. Evidence here establishes only the
+inquiries actually shown.
+
+- GitHub main was fast-forwarded to 671242045694faab2d169986fd218ab50664650a.
+- Hercules devlist reported 0:0480 as an unmounted 3420 (shown as '*').
+  MVS D U,TAPE listed 480 online ('O') with /REMOV and no active VOLSER.
+- dspal stat DIST_DOCS returned JOB 9062 and confirmed
+  HERC02.BCPL.DIST.DOCS on TSO002, PO/FB/80/800, with COMPILE, DATASETS,
+  INSTALL, LICENSE, README, RELEASE and VERIFY.
+- Four independent dspal stat catalog inquiries reported 'data set not
+  found': HERC02.BCPL.TA1A.FBREST, HERC02.BCPL.TA1A.PDSREST,
+  BCPL.BT0001 and BCPL.BT0002.
+- The observed tape directory contained only .gitkeep, bcpl01.aws,
+  bcpl-pdstest-20261108-01.aws and bcpl-objtest-20261108-01.aws; proposed
+  bcpl-ta1-a-20261117-01.aws was absent in that listing.
+- Owner-supplied hetmap --labels inspection identified existing volume
+  serials BCPL01, BTP001 and BTO001 respectively. Neither reported BTA101.
+  The old bcpl01.aws contains an anomalous placeholder HDR1; it must not
+  be treated as a scratch candidate.
+- This proves no BTA101 collision within the three inspected images;
+  it does NOT verify every external image, operator reservation or future
+  filesystem state. Revalidate absence and idle state immediately before
+  separately authorized initialization.
+
+**Owner direction: never catalog the distribution tape datasets on MVS.**
+The approved tape writer uses DISP=(NEW,KEEP,KEEP), not CATLG, and tape
+readers explicitly specify UNIT=480, VOL=SER=BTA101 and LABEL=(n,SL).
+Cataloging the newly allocated, disposable DASD restoration targets is
+distinct and acceptable. No installation design may rely on a tape catalog.
+
+**Status:** TRACK A LIVE READ-ONLY PREFLIGHT EVIDENCE RECORDED;
+MEDIA INITIALIZATION / MOUNT / WRITING STILL REQUIRE DISTINCT EXPLICIT
+OWNER AUTHORIZATION. TA.1 acceptance is not implied.
