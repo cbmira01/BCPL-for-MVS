@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""TA.2 read-only IEHLIST space observation for 18 curated source PDSes.
+
+The observed allocation/high-water figures are planning inputs, not an
+exact estimate of compacted curated staging size. No DASD/tape mutation.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+DESIGN = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+OUT = ROOT / 'workarea/ta2-capacity-preflight'
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, reason: str) -> None:
+    if not ok:
+        raise Refusal(reason)
+
+
+def import_script(name: str, path: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'TA.2 dependency unavailable')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def extract_blocks(report: str) -> dict[str, tuple[str, str]]:
+    """Locate exact managed dspal Dataset headings, not arbitrary JES tokens."""
+    heading = re.compile(r'(?im)^Dataset:[ \t]+([A-Z0-9@$#.-]+)[ \t]+\(([A-Z0-9_]+)\)[ \t]*$')
+    matches = list(heading.finditer(report))
+    need(matches, 'dspal stat-all output has no managed dataset headings')
+    blocks = {}
+    for i, m in enumerate(matches):
+        key = m.group(2).upper()
+        need(key not in blocks, 'duplicate managed dataset heading: ' + key)
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(report)
+        blocks[key] = (m.group(1).upper(), report[m.start():end])
+    return blocks
+
+
+def inspect_space(block: str, key: str) -> dict:
+    """Conservatively interpret the exact published dspal/IEHLIST rendering."""
+    tracks = re.findall(
+        r'(?m)^\s*Tracks:\s+allocated\s+(\d+),\s+through HWM\s+(\d+),'
+        r'\s+tail free\s+(\d+),\s+utilization\s+[\d.]+%,\s+extents\s+(\d+)\s*$',
+        block)
+    dirs = re.findall(
+        r'(?m)^\s*Directory blocks:\s+allocated\s+(\d+),'
+        r'\s+used\s+(\d+),\s+unused\s+(\d+)\s*$', block)
+    need(len(tracks) == 1 and len(dirs) == 1,
+         key + ': no unambiguous IEHLIST tracks/directory observation')
+    allocated, hwm, tail, extents = map(int, tracks[0])
+    da, du, df = map(int, dirs[0])
+    need(allocated > 0 and extents > 0 and hwm >= 0 and tail >= 0 and
+         allocated == hwm + tail, key + ': inconsistent DASD extent/high-water metadata')
+    need(da > 0 and 0 <= du <= da and da == du + df,
+         key + ': inconsistent source PDS directory metadata')
+    return {'tracks_allocated': allocated, 'tracks_through_hwm': hwm,
+            'tracks_free_tail': tail, 'extents': extents,
+            'directory_allocated': da, 'directory_used': du,
+            'directory_free': df}
+
+
+def reconcile(report: str, items: list[dict], source, receipt: dict) -> dict:
+    need(receipt.get('checked_libraries') == 18 and
+         receipt.get('curated_members') == 127 and
+         receipt.get('status') == 'PASS (saved MVS source metadata only)',
+         'saved source-inventory review has not passed')
+    blocks = extract_blocks(report)
+    need(len(items) == 18 and len({i['key'] for i in items}) == 18,
+         'expected 18 distinct curated source libraries')
+    results = []
+    for item in items:
+        key = item['key']
+        need(key in blocks, key + ': missing from current MVS full inventory')
+        dsn, text = blocks[key]
+        need(dsn == item['dsn'], key + ': full-inventory DSN differs from manifest')
+        try:
+            volume = source.inspect_stat(text, dsn, key, item['dcb'])
+        except source.Refusal as exc:
+            raise Refusal(f'{key}: {exc}') from exc
+        usage = inspect_space(text, key)
+        results.append({'key': key, 'dsn': dsn, 'sequence': item['sequence'],
+                        'source_volume': volume, 'selected_members': len(item['selected']),
+                        **usage})
+    return {'status': 'PASS (read-only source capacity observation)',
+            'libraries': len(results), 'selected_members': sum(x['selected_members'] for x in results),
+            'excluded_development_members': receipt['excluded_development_members'],
+            'results': results,
+            'qualification': 'IEHLIST tracks through HWM are not exact curated member footprint; staging allocation unapproved'}
+
+
+def new_evidence() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()), 'unsafe workarea root')
+    need(not OUT.is_symlink(), 'linked capacity evidence root refused')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    path = OUT / (stamp + '-' + str(os.getpid()))
+    path.mkdir(mode=0o700, exist_ok=False)
+    return path
+
+
+def put(path: Path, content: bytes) -> None:
+    need(not path.exists() and not path.is_symlink(), 'evidence cannot be overwritten')
+    with path.open('xb') as stream:
+        stream.write(content)
+    path.chmod(0o600)
+
+
+def capture(folder: Path) -> str:
+    p = subprocess.run(['tools/datasets/dspal', 'stat'], cwd=ROOT,
+                       capture_output=True, text=True, timeout=420, check=False,
+                       env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+    put(folder / 'dspal-stat-all.txt',
+        (f'RC={p.returncode}\n' + p.stdout + p.stderr).encode('utf-8'))
+    need(p.returncode == 0, 'dspal stat-all MVS/IEHLIST inquiry failed')
+    return p.stdout
+
+
+def persist(folder: Path, review: dict, report: dict) -> None:
+    report['source_evidence_directory'] = review['evidence_directory']
+    report['source_review_summary_sha256'] = review['summary_sha256']
+    report['source_review_sha256sums_sha256'] = review['sha256sums_sha256']
+    put(folder / 'summary.json', (json.dumps(report, indent=2) + '\n').encode('utf-8'))
+    files = sorted(p for p in folder.iterdir() if p.is_file())
+    puts = '\n'.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name for p in files)
+    put(folder / 'SHA256SUMS', (puts + '\n').encode('ascii'))
+
+
+def record_failure(folder: Path, reason: str) -> None:
+    """Never discard a partial MVS observation; mark it non-accepted."""
+    put(folder / 'failure.json',
+        (json.dumps({'status': 'REFUSED', 'reason': reason}, indent=2) + '\n').encode('utf-8'))
+    files = sorted(p for p in folder.iterdir() if p.is_file())
+    sums = '\n'.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name
+                     for p in files)
+    put(folder / 'SHA256SUMS', (sums + '\n').encode('ascii'))
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--live', action='store_true', help='run one read-only full dspal/IEHLIST inventory')
+    ap.add_argument('--source-evidence', type=Path, help='saved approved source-preflight run')
+    args = ap.parse_args(argv)
+    folder = None
+    try:
+        source = import_script('ta2_capacity_source', SCRIPTS / 'ta2-source-preflight')
+        reviewer = import_script('ta2_capacity_review', SCRIPTS / 'ta2-source-review')
+        core = source.core()
+        manifest, dspal = core.load(DESIGN), core.load(DSPAL)
+        info = core.check(manifest, dspal, ROOT, release=False)
+        need(manifest['phase'] == 'design' and info['logical_datasets'] == 20,
+             'TA.0 design inventory mismatch')
+        items = source.expected_sources(manifest, dspal)
+        need(len(items) == 18, 'expected 18 source PDSes')
+        if not args.live:
+            need(args.source_evidence is None, '--source-evidence needs --live')
+            print('TA.2 CAPACITY PREFLIGHT PLAN: source-review + one read-only full MVS stat/IEHLIST query; no DASD writes')
+            return 0
+        need(args.source_evidence is not None, '--live requires --source-evidence')
+        reviewed = reviewer.inspect(args.source_evidence, items, source)
+        folder = new_evidence()
+        report = capture(folder)
+        output = reconcile(report, items, source, reviewed)
+        persist(folder, reviewed, output)
+        print(f'TA.2 CAPACITY PREFLIGHT: {output["libraries"]}/18 source PDSes; '
+              f'{output["selected_members"]} selected; '
+              f'{output["excluded_development_members"]} excluded; 0 blockers')
+        print('Private saved MVS evidence: ' + str(folder.relative_to(ROOT)))
+        print('Source high-water and directory observations only; no staging/tape changes.')
+        return 0
+    except (Refusal, OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
+        if folder is not None:
+            try:
+                record_failure(folder, str(exc))
+            except (OSError, Refusal):
+                pass  # Preserve whatever original files exist; never overwrite them.
+            print('Private MVS evidence retained at: ' + str(folder.relative_to(ROOT)))
+        print('TA.2 CAPACITY PREFLIGHT REFUSED: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

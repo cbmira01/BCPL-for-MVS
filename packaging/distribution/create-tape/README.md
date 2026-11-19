@@ -462,3 +462,16 @@ source-inventory checkpoint is recorded in the
 [TA.2 implementation record](ta2-offline-producer-implementation-20261119.md).
 It does not substitute for the future isolated staging inventory or source
 byte/provenance verification.
+
+### TA.2 read-only source-capacity inquiry (MVS IEHLIST)
+
+`scripts/ta2-capacity-preflight --live --source-evidence <saved-run>`
+first independently audits the saved 18-source DCB/member inventory and then
+uses the existing **read-only** `tools/datasets/dspal stat` all-datasets
+LISTDS/IEHLIST query to record source track allocation, high-water and
+directory-block capacity. It rejects missing/ambiguous metadata, preserves
+private SHA-256-pinned evidence under `workarea/ta2-capacity-preflight/`,
+and does **not** allocate or copy MVS datasets, mount tapes, or reserve
+candidate identities. Source PDS high-water figures are only conservative
+staging-planning evidence, not exact curated payload sizing.
+See [the capacity-preflight design and evidence contract](ta2-capacity-preflight-20261119.md).

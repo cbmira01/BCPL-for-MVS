@@ -405,6 +405,19 @@ environment. No source bytes, legal provenance, isolated staging, tape
 production or candidate identity is accepted by this checkpoint.
 See the [TA.2 implementation record](../../distribution/create-tape/ta2-offline-producer-implementation-20261119.md).
 
+
+**TA.2 staging capacity inspection prepared (19 November 2026):**
+The new [read-only source-capacity preflight](../../distribution/create-tape/ta2-capacity-preflight-20261119.md)
+chains the saved-source reviewer to a fresh `dspal stat` MVS
+LISTDS/IEHLIST all-managed-dataset inventory. It refuses missing source
+DCB/volume/track/high-water/directory observations and preserves private
+SHA-256-pinned evidence. **94/94 synthetic TA.2 tests PASS** in the
+assistant workspace; no actual new source-capacity inquiry or MVS staging
+has occurred. Source VTOC high-water and directory allocations are planning
+observations only, not exact curated-library footprint measurements.
+No candidate identity or stateful production is authorized here.
+
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
