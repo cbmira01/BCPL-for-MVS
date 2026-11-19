@@ -120,7 +120,7 @@ the full suite was not separately asserted as executed.
 See [third gate evidence](../../distribution/create-tape/ta1b-third-write-gate-correction-20261118.md).
 TA.1 IN PROGRESS; no BTA102 write/restore/GO has been verified.
 
-**TA.1 Track B BTA102 write checkpoint (18 November 2026 local / 19 November UTC):**
+**TA.1 Track B BTA102 write checkpoint (18 November 2026, 23:52 UTC / 18:52 EST):**
 The owner invoked the authorized, guarded one-shot writer at GitHub
 `702617a30c765df06815bcf9c028930dfa3d91c8`. After fresh
 read-only preflight and explicit initialization/JES confirmations,

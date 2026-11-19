@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction
 **Milestone / march:** Tape artifact release / TA.1 — Multi-Dataset Tape Mechanics
-**Date:** 18 November 2026 local (19 November UTC evidence)
+**Date:** 18 November 2026 (23:52 UTC / 18:52 EST)
 **Status:** Selected-member BTA102 tape WRITE **PASS (qualified)**. Independent restore and GO **NOT EXECUTED**.
 
 ## Owner-reported real MVS/Hercules execution
