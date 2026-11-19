@@ -426,3 +426,14 @@ absence remains explicitly disclosed in any scoped release.
 No new AWS volume, VOLSER, source freeze, installation or
 publication is authorized by this transition. See
 [TA.2 kickoff](../../milestones/tape-artifact-release/ta2-kickoff-20261119.md).
+
+## TA.2 — Initial offline manifest producer and validation
+
+The reviewed first TA.2 implementation is `scripts/ta2-offline` with tests
+`tests/test_ta2_offline.py` and details in
+[TA.2 offline implementation](ta2-offline-producer-implementation-20261119.md).
+The default mode accepts only the design stage as a concise, read-only
+inventory review. `--candidate` is a strict, separately authorized frozen
+manifest/registry/evidence gate. `--emit-jcl` only renders a validated JOB-less
+JCL body; it never submits it. There is no candidate manifest, registry
+reservation, tape write, full producer, or TA.2 acceptance yet.

@@ -1,0 +1,345 @@
+#!/usr/bin/env python3
+"""TA.2 offline manifest/registry gate and deterministic MVS write-deck renderer.
+
+Never contacts Hercules/MVS, allocates a dataset, creates a tape, or reserves a
+VOLSER. Candidate use is fail-closed until externally approved frozen inputs
+and independently retained MVS evidence have been supplied.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+VALIDATOR = ROOT / 'tools/distribution/validate-manifest.py'
+DRAFT = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+REGISTRY = ROOT / 'packaging/distribution/registry/releases.yaml'
+MEMBER = re.compile(r'[A-Z@$#][A-Z0-9@$#]{0,7}\Z')
+VOLSER = re.compile(r'[A-Z0-9@$#]{6}\Z')
+SHA256 = re.compile(r'[0-9a-f]{64}\Z')
+SCRATCH_VOLSERS = frozenset({'BTA101', 'BTA102', 'BTO001', 'BTP001'})
+CANDIDATE_ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,47}\Z')
+STATES = frozenset({'prepared', 'reserved', 'built', 'verified', 'rejected', 'failed', 'published'})
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(condition: bool, description: str) -> None:
+    if not condition:
+        raise Refusal(description)
+
+
+def load_core():
+    need(VALIDATOR.is_file(), 'TA.0 canonical validator unavailable')
+    spec = importlib.util.spec_from_file_location('ta2_canonical_validator', VALIDATOR)
+    need(spec is not None and spec.loader is not None, 'cannot import TA.0 validator')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def safe_mvs_dsn(dsn: object) -> bool:
+    return isinstance(dsn, str) and len(dsn) <= 44 and len(dsn) >= 3 and all(
+        MEMBER.fullmatch(s) for s in dsn.split('.'))
+
+
+def digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def pinned_attachment(root: Path, receipt: object) -> str:
+    """Inspect saved workarea evidence only; never create or modify it."""
+    need(isinstance(receipt, dict) and set(receipt) == {'path', 'sha256'},
+         'MVS receipt must have only path and sha256')
+    rel = receipt['path']
+    sha = receipt['sha256']
+    need(isinstance(rel, str) and rel.startswith('workarea/') and
+         '..' not in Path(rel).parts and not Path(rel).is_absolute(),
+         'MVS evidence must be a safe repository workarea path')
+    need(isinstance(sha, str) and SHA256.fullmatch(sha) is not None,
+         'MVS evidence digest missing/invalid')
+    workarea = root / 'workarea'
+    need(workarea.is_dir() and not workarea.is_symlink() and
+         workarea.resolve().is_relative_to(root.resolve()),
+         'workarea is absent, linked or outside repository')
+    p = root / rel
+    need(p.is_file() and not p.is_symlink() and
+         p.resolve().is_relative_to((root / 'workarea').resolve()),
+         'MVS evidence missing, linked or outside workarea')
+    need(p.stat().st_size <= 16 * 1024 * 1024, 'MVS evidence exceeds review limit')
+    data = p.read_bytes()
+    need(digest(data) == sha, 'MVS evidence SHA-256 mismatch')
+    try:
+        return data.decode('utf-8')
+    except UnicodeDecodeError as exc:
+        raise Refusal('MVS evidence must be saved UTF-8 output') from exc
+
+
+def check_registry(registry: dict, manifest: dict, manifest_sha: str) -> dict:
+    """Cross-release identity check; no mutation or reservation side effect."""
+    need(registry.get('schema_version') == 1 and isinstance(registry.get('candidates'), list),
+         'registry schema must be 1 with candidates list')
+    ids, vols = set(), set()
+    selected = None
+    for entry in registry['candidates']:
+        need(isinstance(entry, dict), 'registry candidate is not a mapping')
+        cid, vol = entry.get('candidate_id'), entry.get('volser')
+        need(isinstance(cid, str) and bool(cid) and cid not in ids,
+             'registry candidate ID missing or reused')
+        ids.add(cid)
+        need(entry.get('state') in STATES, 'unknown registry lifecycle state')
+        if vol is not None:
+            need(isinstance(vol, str) and VOLSER.fullmatch(vol) is not None and
+                 vol not in SCRATCH_VOLSERS and vol not in vols,
+                 'registry VOLSER invalid, duplicate, or reserved scratch identity')
+            vols.add(vol)
+        else:
+            need(entry['state'] == 'prepared', 'only prepared registry entries may lack VOLSER')
+        if cid == manifest['release']['candidate_id']:
+            selected = entry
+    need(selected is not None, 'candidate not registered')
+    need(CANDIDATE_ID.fullmatch(manifest['release']['candidate_id']) is not None,
+         'unsafe candidate identity')
+    need(manifest['volume'].get('registry_reservation') == selected['candidate_id'],
+         'manifest registry reservation must identify the same candidate')
+    need(selected['state'] == 'reserved',
+         'producer gate requires a reserved, unbuilt candidate (never resume)')
+    for k, expected in (('version', manifest['release']['version']),
+                        ('source_commit', manifest['release']['source_commit']),
+                        ('volser', manifest['volume']['volser']),
+                        ('manifest_sha256', manifest_sha)):
+        need(selected.get(k) == expected, f'registry {k} differs from frozen manifest')
+    need(selected['volser'] not in SCRATCH_VOLSERS, 'accepted TA.1 tape identity is immutable')
+    return selected
+
+
+def frozen_git(root: Path, sha: str, paths: list[str]) -> None:
+    """Pin build inputs to a reachable source commit, not a self-referential HEAD.
+
+    The separately committed candidate manifest and registry need not exist
+    in the earlier frozen source revision; every selected source blob must.
+    """
+    def git(*args: str) -> str:
+        p = subprocess.run(['git', '-C', str(root), *args], capture_output=True,
+                           text=True, check=False, timeout=20)
+        need(p.returncode == 0, 'frozen Git revision/path unavailable')
+        return p.stdout.strip()
+    need(git('cat-file', '-t', sha) == 'commit', 'source SHA is not a Git commit')
+    git('merge-base', '--is-ancestor', sha, 'HEAD')
+    need(not git('status', '--porcelain', '--untracked-files=no'),
+         'tracked checkout changes would invalidate the source freeze')
+    for path in sorted(set(paths)):
+        need(re.fullmatch(r'[A-Za-z0-9_./-]+', path) is not None and
+             not path.startswith('/') and '..' not in Path(path).parts,
+             'unsafe Git source path')
+        need(git('rev-parse', f'{sha}:{path}') == git('rev-parse', f'HEAD:{path}'),
+             f'source content drift after frozen Git commit: {path}')
+    for path in ('packaging/distribution/registry/releases.yaml',):
+        git('cat-file', '-e', 'HEAD:' + path)
+
+
+def verify_dcbs(row: dict) -> None:
+    n = row['sequence']
+    for key in ('source_dcb', 'target_dcb'):
+        d = row.get(key)
+        need(isinstance(d, dict) and all(k in d for k in ('dsorg', 'recfm', 'lrecl', 'blksize')),
+             f'BT{n:04d} missing {key}')
+    need(row['source_dcb'] == row['target_dcb'],
+         f'BT{n:04d} source/restored DCB differs; requires separate approval')
+    if n > 1:
+        d = row.get('unload_dcb')
+        need(isinstance(d, dict) and d.get('dsorg') == 'PS' and
+             isinstance(d.get('recfm'), str) and
+             type(d.get('lrecl')) is int and type(d.get('blksize')) is int and
+             d['blksize'] > 0 and d['lrecl'] >= 0,
+             f'BT{n:04d} unverified sequential IEBCOPY unload DCB')
+    else:
+        need(row['source_dcb'] == {'dsorg': 'PS', 'recfm': 'FB', 'lrecl': 80, 'blksize': 800},
+             'bootstrap must be FB80/800')
+
+
+def verify_saved_mvs(root: Path, row: dict) -> None:
+    """Require SHA-pinned read-only MVS stat/ls results for exact staging DSN.
+
+    This is a saved observation, not a live query or member byte comparison.
+    """
+    seq = row['sequence']
+    receipt = row.get('mvs_inventory_receipt')
+    expected_fields = {'stat'} if seq == 1 else {'stat', 'ls'}
+    need(isinstance(receipt, dict) and set(receipt) == expected_fields,
+         f'BT{seq:04d} requires pinned saved stat/ls evidence')
+    stat = pinned_attachment(root, receipt['stat']).upper()
+    dsn = row['producer_source_dsn']
+    need(re.search(r'(?m)^DATASET:\s+' + re.escape(dsn) + r'\s*$', stat) is not None,
+         f'BT{seq:04d} source stat names wrong dataset')
+    for name, value in row['source_dcb'].items():
+        need(re.search(r'\b' + re.escape(name.upper()) + r'\s*:\s*' +
+                       re.escape(str(value).upper()) + r'\b', stat) is not None,
+             f'BT{seq:04d} saved stat {name} disagrees with source DCB')
+    m = re.search(r'\bVOLUME\s*:\s*([A-Z0-9]{1,6})\b', stat)
+    need(m is not None and m.group(1) == row.get('producer_source_volume'),
+         f'BT{seq:04d} source DASD volume unverified/mismatched')
+    if seq > 1:
+        listing = pinned_attachment(root, receipt['ls']).upper()
+        need(re.search(r'(?m)^' + re.escape(dsn) + r':\s*$', listing) is not None,
+             f'BT{seq:04d} saved directory names wrong PDS')
+        found = re.findall(r'(?m)^    ([A-Z0-9@$#]{1,8})\s*$', listing)
+        need(len(found) == len(set(found)) and set(found) == set(row['members']),
+             f'BT{seq:04d} staged member list differs from selected manifest')
+
+
+def check_candidate(manifest: dict, dspal: dict, registry: dict, root: Path,
+                    manifest_bytes: bytes, core, *, check_git: bool = True) -> dict:
+    """Strict gate supplementing (never replacing) canonical --release check."""
+    info = core.check(manifest, dspal, root, release=True)
+    check_registry(registry, manifest, digest(manifest_bytes))
+    generation = manifest.get('generation')
+    need(isinstance(generation, dict) and
+         generation.get('producer_sha256') == digest(Path(__file__).read_bytes()) and
+         generation.get('canonical_validator_sha256') == digest(VALIDATOR.read_bytes()),
+         'generator or canonical validator bytes not pinned in manifest')
+    sources = []
+    for row in manifest['datasets']:
+        n = row['sequence']
+        source = row.get('producer_source_dsn')
+        need(safe_mvs_dsn(source), f'BT{n:04d} lacks approved MVS staging source DSN')
+        verify_dcbs(row)
+        verify_saved_mvs(root, row)
+        if n > 2:
+            mapping = dspal['datasets'][row['dspal_key']].get('members', {}) or {}
+            for member in row['members']:
+                path = mapping.get(member)
+                if path is not None:
+                    sources.append(path)
+            for member in row['members']:
+                prov = row['member_provenance'][member]
+                need(isinstance(prov, dict) and isinstance(prov.get('rights_ref'), str)
+                     and bool(prov.get('rights_ref')) and
+                     isinstance(prov.get('source_ref'), str) and bool(prov.get('source_ref')),
+                     f'BT{n:04d}({member}): rights/lineage missing')
+    need(len({r['producer_source_dsn'] for r in manifest['datasets']}) ==
+         len(manifest['datasets']), 'producer source/staging DSNs must be distinct')
+    if check_git:
+        frozen_git(root, manifest['release']['source_commit'], sources)
+    return info
+
+
+def checked_lines(lines: list[str]) -> str:
+    need(all(line.isascii() and len(line) <= 80 and '\t' not in line and
+             '\r' not in line for line in lines), 'generated JCL is not ASCII FB80-safe')
+    need(all(len(line) <= 71 for line in lines if line.startswith('//') and
+             not line.startswith('//*')), 'JCL operation extends beyond column 71')
+    return '\n'.join(lines) + '\n'
+
+
+def render_write_jcl(manifest: dict) -> str:
+    """Return deterministic JOB-less MVS 3.8J JCL body; never submit it.
+
+    Each SELECT has one member: no long IEBCOPY SYSIN continuation cards.
+    Existing TA.1 two-dataset RETAIN sequencing is extended as a proposal,
+    not yet an accepted 20-dataset MVS execution result.
+    """
+    entries = manifest['datasets']
+    vol = manifest['volume']['volser']
+    need(isinstance(vol, str) and VOLSER.fullmatch(vol) is not None and
+         vol not in SCRATCH_VOLSERS, 'invalid production VOLSER')
+    need(entries and all(row.get('sequence') == i for i, row in enumerate(entries, 1)),
+         'noncontiguous logical tape sequence')
+    lines = [f'//* TA.2 FROZEN CANDIDATE {manifest["release"]["candidate_id"]}',
+             '//* GENERATOR OUTPUT ONLY; NO JOB CARD; MVS VERIFICATION REQUIRED.',
+             '//* NO CATALOGED TAPE DSNS. STOP ON ANY AMBIGUOUS FAILURE.']
+    for i, row in enumerate(entries, 1):
+        kind = row['kind']
+        step = f'T{i:04d}'
+        last = i == len(entries)
+        retain = '' if last else 'RETAIN,'
+        label = f'BCPL.BT{i:04d}'
+        cond = '' if i == 1 else ',COND=(0,NE)'
+        pgm = 'IEBGENER' if i == 1 else 'IEBCOPY'
+        lines.extend([f'//{step} EXEC PGM={pgm},REGION=512K{cond}',
+                      '//SYSPRINT DD SYSOUT=*'])
+        if i == 1:
+            need(kind == 'sequential_text', 'first tape dataset is not bootstrap')
+            lines.extend(['//SYSIN DD DUMMY',
+                          f'//SYSUT1 DD DSN={row["producer_source_dsn"]},',
+                          '//            DISP=SHR'])
+        else:
+            need(kind == 'pds_unload', 'non-bootstrap tape dataset is not IEBCOPY')
+            lines.extend([f'//INPDS DD DSN={row["producer_source_dsn"]},',
+                          '//            DISP=SHR'])
+        outdd = 'SYSUT2' if i == 1 else 'OUTTAPE'
+        lines.extend([f'//{outdd} DD DSN={label},UNIT=480,',
+                      f'//            VOL=(PRIVATE,{retain}SER={vol}),',
+                      f'//            LABEL=({i},SL),DISP=(NEW,KEEP,KEEP)' + (',' if i == 1 else '')])
+        if i == 1:
+            lines.append('//            DCB=(DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=800)')
+        else:
+            lines.extend(['//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                          '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                          '//SYSIN DD *',
+                          ' COPY OUTDD=OUTTAPE,INDD=INPDS'])
+            for member in row['members']:
+                need(MEMBER.fullmatch(member) is not None, 'invalid SELECT member')
+                lines.append(f' SELECT MEMBER=({member})')
+            lines.append('/*')
+    lines.append('//')
+    return checked_lines(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--manifest', type=Path, default=DRAFT)
+    ap.add_argument('--dspal', type=Path, default=DSPAL)
+    ap.add_argument('--registry', type=Path, default=REGISTRY)
+    ap.add_argument('--candidate', action='store_true', help='strict frozen-candidate preflight')
+    ap.add_argument('--emit-jcl', action='store_true', help='print validated JOB-less write deck')
+    args = ap.parse_args(argv)
+    try:
+        need(not args.emit_jcl or args.candidate, '--emit-jcl needs candidate preflight')
+        core = load_core()
+        manifest_bytes = args.manifest.read_bytes()
+        manifest = core.load(args.manifest)
+        dspal = core.load(args.dspal)
+        if args.candidate:
+            need(args.registry.is_file(), 'no release registry; no candidate reservation approved')
+            releases = ROOT / 'packaging/distribution/manifest/releases'
+            need(not args.manifest.is_symlink() and args.manifest.resolve().parent == releases.resolve(),
+                 'candidate must be a canonical manifest/releases/<candidate-id>.yaml file')
+            need(not args.registry.is_symlink() and args.registry.resolve() == REGISTRY.resolve(),
+                 'candidate must use the sole canonical registry/releases.yaml')
+            need(args.manifest.name == manifest['release']['candidate_id'] + '.yaml',
+                 'candidate manifest filename/identity mismatch')
+            p = subprocess.run(['git', '-C', str(ROOT), 'cat-file', '-e',
+                                'HEAD:packaging/distribution/manifest/releases/' + args.manifest.name],
+                               capture_output=True, timeout=20)
+            need(p.returncode == 0, 'candidate manifest is not committed at HEAD')
+            registry = core.load(args.registry)
+            info = check_candidate(manifest, dspal, registry, ROOT, manifest_bytes, core)
+            deck = render_write_jcl(manifest)
+            if args.emit_jcl:
+                sys.stdout.write(deck)
+            else:
+                print(f'TA.2 FROZEN PLAN PASS: {info["logical_datasets"]} logical datasets; '
+                      'JCL generated offline, NOT submitted')
+        else:
+            info = core.check(manifest, dspal, ROOT, release=False)
+            need(manifest['phase'] == 'design', 'candidate requires explicit --candidate')
+            print(f'TA.2 READ-ONLY DESIGN PASS: {info["logical_datasets"]} proposed logical datasets; '
+                  f'{info["selected_members"]} selected members; no version/VOLSER reserved')
+        return 0
+    except (Refusal, OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
+        print(f'TA.2 OFFLINE REFUSED: {exc}', file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
