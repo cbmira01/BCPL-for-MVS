@@ -496,6 +496,24 @@ See the [TA.2 parser correction record](../../distribution/create-tape/ta2-targe
 No staging SPACE, DASD allocation, candidate VOLSER or tape operation
 is authorized. TA.2 remains IN PROGRESS.
 
+**TA.2 verified TSO002 VTOC checkpoint and draft SPACE sizing (19 November 2026):**
+The owner reported a successful corrected `ta2-target-review --live`:
+**18/18 catalog-absence checks, 30 formatted VTOC dataset rows**, fresh
+MVS match and **16,045 IEHLIST-reported free tracks** on *proposed*
+`TSO002`. Private receipt:
+`workarea/ta2-target-review/20261119T181059Z-17632`. The assistant
+did not inspect the private underlying reports. The new
+[source-bounded offline/read-only staging SPACE planner](../../distribution/create-tape/ta2-source-bounded-staging-space-20261119.md)
+replays the entire original evidence chain, proposes 18 explicit
+primary/secondary/directory allocations against source PDS capacity,
+requires combined primary+secondary to fit within half of the
+MVS-reported free tracks, repeats source and target MVS inquiries, and
+writes only ignored private draft allocations/JCL and checksums.
+**40/40 new focused synthetic tests PASS.** Contiguous free extent
+suitability, target-volume selection, SPACE approval, JES staging,
+record fidelity and release-media acceptance remain open. No staging
+PDS, candidate identity or VOLSER was allocated. TA.2 IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:

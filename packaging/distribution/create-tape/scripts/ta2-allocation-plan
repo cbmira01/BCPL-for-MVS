@@ -1,0 +1,362 @@
+#!/usr/bin/env python3
+"""TA.2 proposed source-bounded staging allocations; read-only MVS recheck.
+
+Never allocates DASD, submits IEBCOPY, reserves a VOLSER, or writes tape.
+The candidate's proposed SPACE numbers are planning values, not approval.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+OUT = ROOT / 'workarea/ta2-allocation-plan'
+REVIEW_BASE = ROOT / 'workarea/ta2-target-review'
+RUN = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
+CHECKSUM = re.compile(r'([a-f0-9]{64})  ([a-z0-9.-]+)\Z')
+MAX_FILE = 16 * 1024 * 1024
+STAGING = 'HERC02.BCPL.TA2STG'
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, reason: str) -> None:
+    if not ok:
+        raise Refusal(reason)
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def load(name: str, file: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(file))
+    spec = importlib.util.spec_from_loader(name, loader)
+    need(spec is not None and spec.loader is not None, 'required TA.2 implementation absent')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def checked_file(p: Path) -> bytes:
+    need(p.is_file() and not p.is_symlink() and p.stat().st_size <= MAX_FILE,
+         'missing/linked/oversized saved evidence: ' + p.name)
+    return p.read_bytes()
+
+
+def read_review(folder: Path, volume: str) -> tuple[dict, dict[str, bytes], str]:
+    """Check exact saved private report set and names; no symlink traversal."""
+    need(isinstance(volume, str) and re.fullmatch(r'[A-Z0-9]{1,6}', volume),
+         'invalid proposed DASD volume')
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and
+         REVIEW_BASE.is_dir() and not REVIEW_BASE.is_symlink() and
+         REVIEW_BASE.resolve().parent == work.resolve() and
+         RUN.fullmatch(folder.name) is not None and
+         folder.is_dir() and not folder.is_symlink() and
+         folder.resolve().parent == REVIEW_BASE.resolve(),
+         'unsafe or missing TA.2 target-review evidence')
+    expected = {'review.json', 'catalog-report.txt', 'vtoc-report.txt'}
+    need({p.name for p in folder.iterdir()} == expected | {'SHA256SUMS'},
+         'saved review has missing or extra files')
+    pins = {}
+    try:
+        lines = checked_file(folder / 'SHA256SUMS').decode('ascii').splitlines()
+    except UnicodeDecodeError as exc:
+        raise Refusal('non-ASCII saved review checksums') from exc
+    for line in lines:
+        m = CHECKSUM.fullmatch(line)
+        need(m is not None and m.group(2) in expected and m.group(2) not in pins,
+             'malformed/duplicate saved review SHA256SUMS')
+        pins[m.group(2)] = m.group(1)
+    need(set(pins) == expected, 'incomplete saved review SHA256SUMS')
+    data = {name: checked_file(folder / name) for name in expected}
+    for name, blob in data.items():
+        need(sha(blob) == pins[name], 'saved review checksum mismatch: ' + name)
+    try:
+        review = json.loads(data['review.json'])
+    except (UnicodeError, ValueError) as exc:
+        raise Refusal('invalid saved review JSON') from exc
+    need(type(review) is dict and review.get('status') ==
+         'PASS (catalog and formatted VTOC identity only)' and
+         review.get('live_recheck') is True and review.get('volume') == volume and
+         review.get('source_target_count') == 18 and
+         review.get('staging_names_in_formatted_vtoc') == 0 and
+         review.get('source_capacity_is_destination_free_space') is False and
+         type(review.get('iehlist_reported_free_total_tracks')) is int and
+         review['iehlist_reported_free_total_tracks'] > 0 and
+         review.get('fresh_vtoc_format1_datasets_seen') ==
+         review.get('format1_datasets_seen'),
+         'saved target-review verdict incomplete or unsuitable for SPACE planning')
+    return review, data, sha(data['review.json'])
+
+
+def derive_targets(rows: list[dict], sources: list[dict], worksheet_sha: str,
+                   review: dict, volume: str, *, fraction: int = 2) -> tuple[dict, dict]:
+    """Planning *proposal*: source capacity + 10% plus secondary reserve.
+
+    No compacted curated footprint is known. The existing source's complete
+    allocation is a conservative reference; proposed primary has 10% + 4
+    extra tracks. Proposed secondary is 10% + 2 tracks. Stage requests
+    consume no more than half of MVS-reported total empty tracks including
+    possible secondary extensions; this is a planning limit, not a VTOC
+    allocation/contiguity acceptance or proof of enough real free extents.
+    """
+    need(fraction == 2, 'unsupported allocation headroom policy')
+    need(len(rows) == len(sources) == 18 and
+         [x['sequence'] for x in rows] == list(range(3, 21)) and
+         [x['tape_sequence'] for x in sources] == list(range(3, 21)),
+         'noncanonical 18-PDS source inventory')
+    free = review['iehlist_reported_free_total_tracks']
+    need(type(free) is int and free > 0 and review['volume'] == volume and
+         type(review.get('format1_datasets_seen')) is int and
+         review['format1_datasets_seen'] > 0,
+         'volume free-space observation unavailable')
+    targets, proposed = [], []
+    for row, src in zip(rows, sources):
+        n = row['sequence']
+        need(src['tape_sequence'] == n and row['source_dsn'] == src['source_dsn'] and
+             row['dcb'] == src['source_dcb'] and
+             len(row['members']) == src['selected_count'] and
+             row['members'] == src['selected_members'],
+             f'BT{n:04d} source/selection mismatch')
+        for k in ('source_tracks_allocated', 'source_tracks_through_hwm',
+                  'source_directory_allocated', 'source_directory_used'):
+            need(type(src.get(k)) is int and src[k] >= 0,
+                 f'BT{n:04d} unsupported source capacity')
+        total = src['source_tracks_allocated']
+        hwm = src['source_tracks_through_hwm']
+        alloc_dir = src['source_directory_allocated']
+        dir_used = src['source_directory_used']
+        need(total > 0 and 0 < hwm <= total and 0 < alloc_dir and
+             0 <= dir_used <= alloc_dir,
+             f'BT{n:04d} invalid source allocation/HWM/directory')
+        primary = total + max(4, (total + 9) // 10)
+        secondary = max(2, (total + 9) // 10)
+        directory = max(alloc_dir + max(2, (alloc_dir + 3)//4),
+                        (src['selected_count'] + 2)//3 + 2)
+        need(max(primary, secondary, directory) <= 65535 and
+             primary > 0 and secondary > 0 and directory > 0,
+             f'BT{n:04d} proposed MVS SPACE exceeds limits')
+        dest = f'{STAGING}.BT{n:04d}'
+        space = {'primary_tracks': primary, 'secondary_tracks': secondary,
+                 'directory_blocks': directory}
+        targets.append({'sequence': n, 'dsn': dest, 'volume': volume, 'space': space})
+        proposed.append({'sequence': n, 'source_dsn': row['source_dsn'],
+                         'source_tracks_allocated': total,
+                         'source_tracks_through_hwm': hwm,
+                         'source_directory_allocated': alloc_dir,
+                         'selected_members': src['selected_count'],
+                         'staging_dsn': dest, **space})
+    requested_primary = sum(x['space']['primary_tracks'] for x in targets)
+    requested_secondary = sum(x['space']['secondary_tracks'] for x in targets)
+    budget = requested_primary + requested_secondary
+    need(budget * fraction <= free,
+         f'proposed primary+secondary {budget} tracks exceeds 50% of '
+         f'MVS-reported {free} free tracks; do not allocate')
+    allocation = {'schema_version': 1, 'stage_worksheet_sha256': worksheet_sha,
+                  'staging_namespace': STAGING, 'targets': targets}
+    sizing = {'status': 'PROPOSED ONLY; NOT ALLOCATION AUTHORIZATION',
+              'volume': volume, 'reported_free_tracks': free,
+              'reserve_policy': 'at most 50% of reported empty tracks, including secondary',
+              'primary_tracks_total': requested_primary,
+              'secondary_tracks_total': requested_secondary,
+              'total_primary_secondary_budget': budget,
+              'unused_reported_tracks_after_budget': free - budget,
+              'directory_blocks_total': sum(x['directory_blocks'] for x in proposed),
+              'sources': proposed,
+              'qualification': ('IEHLIST reported total is not proof of usable contiguous extents; '
+                                'source allocation is NOT exact compacted curated footprint; '
+                                'all destination SPACE and volume placement unapproved')}
+    return allocation, sizing
+
+
+def create_run() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and not OUT.is_symlink(),
+         'unsafe staging proposal output root')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    folder = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    return folder
+
+
+def save_new(path: Path, b: bytes) -> None:
+    need(not path.is_symlink() and not path.exists(), 'refuse evidence overwrite')
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, 'wb') as f:
+        f.write(b)
+
+
+def seal(folder: Path) -> None:
+    files = sorted(p for p in folder.iterdir() if p.is_file())
+    save_new(folder / 'SHA256SUMS', ''.join(
+        sha(p.read_bytes()) + '  ' + p.name + '\n' for p in files).encode('ascii'))
+
+
+def audit_saved(review: dict, review_data: dict[str, bytes], stage, target,
+                reviewer, core, manifest: dict, dspal: dict, stage_rows: list[dict],
+                volume: str) -> dict:
+    """Recompute the reviewed MVS record chain, not the review PASS string."""
+    origin = review.get('original_target_evidence')
+    need(isinstance(origin, str) and origin.startswith('workarea/ta2-target-preflight/')
+         and not Path(origin).is_absolute() and '..' not in Path(origin).parts,
+         'unsafe original target evidence identity')
+    original_path = ROOT / review['original_target_evidence']
+    original = reviewer.read_original(original_path)
+    source_stage = json.loads(original['summary.json'])['stage_evidence']
+    need(isinstance(source_stage, str) and
+         source_stage.startswith('workarea/ta2-stage-plan/') and
+         not Path(source_stage).is_absolute() and '..' not in Path(source_stage).parts,
+         'unsafe original stage evidence identity')
+    plan, wsha, stat = stage.read_stage_run(ROOT, ROOT / source_stage)
+    need(review.get('stage_worksheet_sha256') == wsha, 'review worksheet SHA mismatch')
+    stage.verify_history(plan, stat, manifest, dspal)
+    names = target.targets(stage_rows, dspal)
+    verified = reviewer.inspect_saved(original, wsha, names, source_stage, target, core)
+    need(verified['format1_names_sha256'] == review['format1_names_sha256'] and
+         verified['iehlist_reported_free_total_tracks'] == review['iehlist_reported_free_total_tracks'] and
+         verified['format1_datasets_seen'] == review['format1_datasets_seen'] and
+         review['original_target_summary_sha256'] == sha(original['summary.json']),
+         'original MVS VTOC differs from review receipt')
+    fresh = reviewer.inspect_vtoc(review_data['vtoc-report.txt'].decode('utf-8'),
+                                  volume, names)
+    target.catalog_absence(core, review_data['catalog-report.txt'].decode('utf-8'), names)
+    need(fresh['format1_names_sha256'] == verified['format1_names_sha256'] and
+         fresh['format1_datasets_seen'] == verified['format1_datasets_seen'] and
+         fresh['iehlist_reported_free_total_tracks'] == review['iehlist_reported_free_total_tracks'],
+         'fresh MVS VTOC inventory/capacity differs from saved original')
+    for k in ('source_allocated_tracks_total', 'source_tracks_through_hwm_total',
+              'source_directory_allocated_total'):
+        field = ('source_directory_allocated' if k == 'source_directory_allocated_total'
+                 else 'source_tracks_through_hwm' if k == 'source_tracks_through_hwm_total'
+                 else 'source_tracks_allocated')
+        need(sum(x[field] for x in plan['sources']) == review[k],
+             'source totals differ from independently verified capacity receipt: ' + k)
+    return {'plan': plan, 'worksheet_sha': wsha, 'names': names, 'original': original}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--target-review', type=Path, required=True)
+    parser.add_argument('--volume', required=True, help='proposed DASD VOLSER, not approved for allocation')
+    parser.add_argument('--live', action='store_true', help='read-only MVS source/catalog/VTOC recheck')
+    args = parser.parse_args(argv)
+    folder = None
+    try:
+        source = load('ta2_alloc_source', SCRIPTS / 'ta2-source-preflight')
+        stage = load('ta2_alloc_stage', SCRIPTS / 'ta2-stage-jcl')
+        capacity = load('ta2_alloc_capacity', SCRIPTS / 'ta2-capacity-preflight')
+        src_review = load('ta2_alloc_src_review', SCRIPTS / 'ta2-source-review')
+        source_stat = load('ta2_alloc_source_stat', SCRIPTS / 'ta2-stage-plan')
+        target = load('ta2_alloc_target', SCRIPTS / 'ta2-target-preflight')
+        reviewer = load('ta2_alloc_review', SCRIPTS / 'ta2-target-review')
+        core = load('ta2_alloc_core', ROOT / 'tools/datasets/dspal-core.py')
+        canonical = source.core()
+        manifest = canonical.load(ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml')
+        dspal = canonical.load(ROOT / 'config/dspal.yaml')
+        canonical.check(manifest, dspal, ROOT, release=False)
+        review, data, review_sha = read_review(args.target_review, args.volume)
+        rel = review['original_target_evidence']
+        original = reviewer.read_original(ROOT / rel)
+        original_summary = json.loads(original['summary.json'])
+        need(isinstance(original_summary, dict) and
+             isinstance(original_summary.get('stage_evidence'), str) and
+             original_summary['stage_evidence'].startswith('workarea/ta2-stage-plan/') and
+             '..' not in Path(original_summary['stage_evidence']).parts,
+             'unsafe source stage path in original target receipt')
+        plan, worksheet_sha, stat_saved = stage.read_stage_run(
+            ROOT, ROOT / original_summary['stage_evidence'])
+        rows = stage.validate_worksheet(plan, manifest, dspal)
+        checked = audit_saved(review, data, stage, target, reviewer, core, manifest, dspal, rows,
+                              args.volume)
+        allocation, sizing = derive_targets(rows, checked['plan']['sources'], worksheet_sha, review,
+                                            args.volume)
+        checked_allocations = stage.validate_allocations(allocation, worksheet_sha, rows, dspal)
+        draft = stage.render_jcl(checked_allocations)
+        need(draft.count(' EXEC PGM=IEBCOPY') == 18 and draft.count(' SELECT MEMBER=') == 127,
+             'offline staging JCL deck does not cover exact curated library selection')
+        if not args.live:
+            print('TA.2 ALLOCATION DRAFT: source/target saved evidence accepted; fresh MVS recheck required')
+            print(f'{sizing["primary_tracks_total"]} primary + {sizing["secondary_tracks_total"]} secondary '
+                  f'tracks proposed on {args.volume}; saved free-track evidence remains nonbinding')
+            print('No allocation/JES staging/tape; use --live to save a reviewed proposal.')
+            return 0
+        folder = create_run()
+        source_receipt = src_review.inspect(ROOT / checked['plan']['source_evidence_directory'],
+                                             source.expected_sources(manifest, dspal), source)
+        saved_raw = source_stat.read_capacity(ROOT, ROOT / checked['plan']['capacity_evidence_directory'])
+        saved_capacity = source_stat.replay_capacity(saved_raw, source_receipt,
+                                  source.expected_sources(manifest, dspal), capacity, source)
+        p = subprocess.run(['tools/datasets/dspal', 'stat'], cwd=ROOT, text=True,
+                           capture_output=True, timeout=420, check=False,
+                           env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1',
+                                'TMPDIR': str(folder.resolve())})
+        save_new(folder / 'source-stat.txt',
+                 (f'RC={p.returncode}\n' + p.stdout + p.stderr).encode('utf-8'))
+        need(p.returncode == 0, 'fresh MVS source stat failed')
+        source_stat.compare_current(p.stdout, saved_capacity,
+                                    source.expected_sources(manifest, dspal),
+                                    capacity, source, source_receipt)
+        config = core.load_config()
+        need(config['mvs']['hlq'] == 'HERC02', 'MVS HLQ changed')
+        core.require_reader_ready(config)
+        jobs = target.inquire(core, config, folder, checked['names'], args.volume)
+        fresh_vtoc = reviewer.inspect_vtoc((folder / 'vtoc-report.txt').read_text(),
+                                           args.volume, checked['names'])
+        target.catalog_absence(core, (folder / 'catalog-report.txt').read_text(),
+                               checked['names'])
+        need(fresh_vtoc['format1_names_sha256'] == review['format1_names_sha256'] and
+             fresh_vtoc['iehlist_reported_free_total_tracks'] == sizing['reported_free_tracks'],
+             'fresh MVS target volume inventory/free capacity drift')
+        sizing.update({'status': 'READ-ONLY MVS PLANNING PASS; ALLOCATIONS UNAPPROVED',
+                       'source_worksheet_sha256': worksheet_sha,
+                       'target_review_sha256': review_sha,
+                       'target_review_directory': args.target_review.as_posix(),
+                       'fresh_mvs_jobs': jobs,
+                       'source_stat_sha256': sha(checked_file(folder / 'source-stat.txt'))})
+        save_new(folder / 'stage-allocations-proposed.json',
+                 (json.dumps(allocation, indent=2) + '\n').encode('utf-8'))
+        save_new(folder / 'stage-iebcopy-draft.jcl', draft.encode('ascii'))
+        save_new(folder / 'planning-review.json',
+                 (json.dumps(sizing, indent=2) + '\n').encode('utf-8'))
+        seal(folder)
+        print(f'TA.2 STAGING SPACE PROPOSAL: {len(rows)}/18 libraries; 127 selected; '
+              f'{args.volume} MVS free {sizing["reported_free_tracks"]} tracks')
+        print(f'  primary {sizing["primary_tracks_total"]}, secondary reserve '
+              f'{sizing["secondary_tracks_total"]}, proposed total '
+              f'{sizing["total_primary_secondary_budget"]} (max 50% free)')
+        print('Private proposed allocations/JCL and MVS evidence: '
+              + str(folder.relative_to(ROOT)))
+        print('Draft only: no PDS allocated, no IEBCOPY stage submitted, no VOLSER/tape change.')
+        return 0
+    except (Refusal, OSError, ValueError, TypeError, KeyError,
+            UnicodeError, subprocess.TimeoutExpired) as exc:
+        if folder is not None:
+            try:
+                save_new(folder / 'failure.json',
+                         (json.dumps({'status':'REFUSED','reason':str(exc)})+'\n').encode('utf-8'))
+                seal(folder)
+                print('Private MVS evidence retained: ' + str(folder.relative_to(ROOT)))
+            except (OSError, Refusal):
+                pass
+        print('TA.2 ALLOCATION PLAN REFUSED: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

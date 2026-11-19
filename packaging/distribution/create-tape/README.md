@@ -534,3 +534,17 @@ fixture omitted the DSCB type `1` field. The reviewer now recognizes the
 MVS FORMAT-1 layout used by `dspal-space.py`; the original target
 evidence remains unchanged. See the
 [correction and validation record](ta2-target-format1-parser-correction-20261119.md).
+
+### TA.2 read-only staging SPACE proposal (source-bounded)
+
+`scripts/ta2-allocation-plan --target-review <run> --volume TSO002 --live`
+independently replays the owner-reported MVS target review, checks all
+original source/stage evidence, then performs fresh read-only source
+LISTDS/IEHLIST and target catalog/VTOC inquiries. It generates 18
+explicit source-bounded `SPACE` proposals and one JOB-less selective
+IEBCOPY draft, both **unapproved** and retained privately under
+`workarea/ta2-allocation-plan/`. The proposed primary+secondary sum
+must remain under half the reported volume free tracks, with no
+claim of contiguous extents. No allocation, stage copy, release
+identity or tape write occurs. See the
+[TA.2 allocation design and verification record](ta2-source-bounded-staging-space-20261119.md).
