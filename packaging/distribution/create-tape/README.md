@@ -327,3 +327,17 @@ PASS** across the extended standalone checks and the tracked contract
 module. Source/target IEHLIST and actual restored-STEPLIB GO remain
 unexecuted and separately authorized. See
 [the restore and directory-stage record](ta1b-restore-evidence-and-directory-gate-20261118.md).
+
+## TA.1B source/restored directory read-only preflight PASS
+
+The owner executed `scripts/run-ta1-track-b-directory` without
+`--run` on GitHub `main` `58f98db10dd5b790ea52c488070c6de2a98b98d5`.
+The MVS-facing preflight returned PASS: source MR10_LOAD TSO003
+and restored HERC02.BCPL.TA1B.LOAD TSO002 both PO/U/0/6144,
+with BTA102 SHA-256 and JOB 9136 receipt validated. Evidence:
+`workarea/ta1b-operations/BTA102-track-b-directory-20261119T023717Z-11735/`.
+No IEHLIST JES jobs or executable GO occurred. The separately
+authorized next stage, **not approved by this PASS**, is the guarded
+one-shot submission of `TA1BSRC` and `TA1BDST` for source/restored
+ICINT19 directory attributes. See
+[the live read-only preflight](ta1b-directory-readonly-preflight-20261118.md).

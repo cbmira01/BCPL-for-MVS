@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write JOB 9120 and restore JOB 9136 PASS (qualified); source/restored directory comparison and executable GO pending separate authorization**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write JOB 9120 and restore JOB 9136 PASS (qualified); source/restored directory live read-only preflight PASS, two IEHLIST jobs and restored GO pending separate authorization**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -194,6 +194,30 @@ and 8 tracked contract checks). Neither directory jobs nor the
 restored eight-step MRREGRES scalar/vector GO have been submitted.
 See [restore acceptance and IEHLIST preparation](../../distribution/create-tape/ta1b-restore-evidence-and-directory-gate-20261118.md).
 TA.1 remains IN PROGRESS.
+
+**TA.1 Track B source-versus-restored directory live read-only preflight PASS (18 November 2026 EST / 19 November UTC):**
+The owner executed the committed
+`packaging/distribution/create-tape/scripts/run-ta1-track-b-directory`
+**without `--run`** from GitHub `main`
+`58f98db10dd5b790ea52c488070c6de2a98b98d5`.
+The MVS-facing runner reported:
+`TA.1B IEHLIST preflight PASS: MR10_LOAD TSO003; restored LOAD TSO002; both PO/U/0/6144`;
+`BTA102 SHA-256 and JOB 9136 receipt PASS; no tape media operation`.
+It explicitly confirmed **NO IEHLIST JES submission or ICINT19 GO**.
+Private evidence:
+`workarea/ta1b-operations/BTA102-track-b-directory-20261119T023717Z-11735/`.
+This is a live read-only source/restored dataset and original
+tape/restore receipt check, **not** a comparison of IEHLIST
+directory entry `000000` and attribute `02E2` yet.
+The existing source-controlled guarded `--run` workflow, requiring
+a **separate explicit owner authorization and interactive confirmation**,
+will submit exactly two read-only `IEHLIST LISTPDS FORMAT` JES jobs:
+`TA1BSRC` against source `HERC02.BCPL.MR10KIT.LOAD` on TSO003,
+and `TA1BDST` against restored `HERC02.BCPL.TA1B.LOAD` on TSO002.
+It preserves all existing BCPL data, requires independent
+MVS success/IEF142I, and performs no tape, restoration or GO operation.
+TA.1 remains IN PROGRESS.
+See [live directory preflight record](../../distribution/create-tape/ta1b-directory-readonly-preflight-20261118.md).
 
 ## 1. Objective and product boundary
 

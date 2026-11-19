@@ -74,3 +74,15 @@ The final Track B evidence still requires actual execution of the
 canonical eight-step MR10 scalar/vector case from the restored
 `HERC02.BCPL.TA1B.LOAD` `STEPLIB`, under its own explicit
 authorization. TA.1 stays **IN PROGRESS**.
+
+## Subsequent actual MVS read-only directory preflight (18 November 2026 EST)
+
+The owner invoked `run-ta1-track-b-directory` without `--run`
+from GitHub `main` `58f98db10dd5b790ea52c488070c6de2a98b98d5`.
+The tool reported PASS for source TSO003 and restored TSO002,
+both PO/U/0/6144, with unchanged BTA102 hash and JOB 9136
+receipt. Private evidence:
+`workarea/ta1b-operations/BTA102-track-b-directory-20261119T023717Z-11735/`.
+The live check did **not** submit either IEHLIST job or execute
+`ICINT19` and therefore does not establish directory metadata
+identity. See [the independent preflight record](ta1b-directory-readonly-preflight-20261118.md).
