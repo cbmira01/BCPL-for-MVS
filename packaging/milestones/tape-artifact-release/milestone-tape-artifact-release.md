@@ -573,6 +573,18 @@ The guarded staging runner enforces this distinction with
 **42/42 focused local tests PASS**, including seven new approval
 refusals. **No MVS staging writes were performed.** TA.2 IN PROGRESS.
 
+**TA.2 owner-reported repeat staging write-gate PASS (19 November 2026):**
+With **TSO002 volume-only approval** recorded on GitHub `main`,
+the owner reran the guarded `ta2-stage-once --live` workflow and
+reported **18/18 source and destination checks, 127 curated members,
+fresh MVS PASS**, with private original evidence
+`workarea/ta2-stage-operations/20261119T234948Z-18994`.
+The run performed **read-only** source/catalog/VTOC inquiries;
+it **did not** allocate a stage PDS, submit IEBCOPY, reserve a
+production tape identity or modify media. All 18 proposed `SPACE`
+triples and the state-changing one-shot submission **remain separately
+unapproved**. TA.2 IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:

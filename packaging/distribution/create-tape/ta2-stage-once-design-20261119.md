@@ -111,3 +111,34 @@ new approval distinction (seven new refusal/identity tests).
 No MVS operation was performed by the assistant; neither PDS
 allocation nor IEBCOPY/tape write is claimed.
 
+## Latest owner-operated MVS read-only stage gate
+
+**Owner report, 19 November 2026:** After the Git-controlled volume-only
+approval was committed, the owner ran the updated
+`ta2-stage-once --readiness-evidence ... --live` on the current MVS
+system. The concise console receipt was:
+
+```text
+TA.2 STAGING WRITE GATE: 18/18 source/targets, 127 selected, fresh MVS PASS; TSO002.
+Read-only; TSO002 approved, 18 SPACE triples and IEBCOPY unapproved; no submission.
+Private MVS evidence: workarea/ta2-stage-operations/20261119T234948Z-18994
+```
+
+This confirms the volume-only approval contract did not block
+legitimate read-only MVS verification. The assistant has not directly
+inspected the private MVS JES reports. It does **not** accept any of
+the 18 proposed `SPACE` triples or authorize `--run`.
+`ta2-stage-write-approval.json` remains intentionally absent.
+Do not submit the 18-step IEBCOPY deck or infer tape/installer
+acceptance from this read-only PASS.
+
+### Separate local repository observation
+
+The owner also showed an empty root-level `FETCH_HEAD` last modified
+11 November 2026. The actual Git metadata path is
+`.git/FETCH_HEAD`; root `FETCH_HEAD` is absent from the GitHub
+`main` tree and is not matched by the tracked `.gitignore`.
+No current tracked-code reference was found in the GitHub code search.
+Its creator is not established by this evidence. This unrelated
+local file should not be ignored merely to disguise it, and no
+automatic deletion was added to the staging tooling.
