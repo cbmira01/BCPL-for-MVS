@@ -264,3 +264,28 @@ rejects conflicting observations and requires MVS `O` after mounting.
 The change is limited to console parsing and diagnostics; the
 original authorization and no-retry media safeguards remain intact.
 See [third gate evidence](ta1b-third-write-gate-correction-20261118.md).
+
+## Track B successful BTA102 unload and guarded restore preflight (18 November 2026)
+
+The owner reported MVS `TA1BWRIT` JOB **9120**, IEBCOPY UNLOAD
+RC=0000, with a complete standard-label single-dataset AWS tape
+(layout `3,8,2,0`) and immutable BTA102 SHA-256
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+Original evidence is retained in ignored
+`workarea/ta1b-operations/BTA102-track-b-write-20261118T235204Z-9548/`.
+
+The new `scripts/run-ta1-track-b-restore` defaults to read-only live
+MVS/Hercules preflight, including strict source, target-absence,
+original JES, label/filemark, full inventory, checksum and tape unit
+checks. Under **separate owner authorization only**, `--run` can
+conditionally mount the *same* BTA102 AWS image and submit one
+`TA1BREST` job to new DASD `HERC02.BCPL.TA1B.LOAD`.
+It does not create/reinitialize/overwrite the AWS tape, catalog
+a tape dataset, or run the MR10 `ICINT19` GO. The script retains
+private receipts and enforces a durable no-retry marker before any
+stateful action. Its **26 isolated synthetic tests PASS**.
+See [Track B write evidence and readback gate](ta1b-write-evidence-and-readback-preparation-20261118.md).
+
+**Status:** TA.1 Track B WRITE PASS (qualified); independent restoration,
+IEHLIST directory comparison and executable GO still pending separate
+approval and actual MVS verification.

@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; third read-only halt: identical echoed MVS 480 status; guarded duplicate fix committed, BTA102 write pending; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; Track B BTA102 unload PASS (qualified), JOB 9120 IEBCOPY RC=0000; separate load-library restore/GO pending; milestone IN PROGRESS**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -119,6 +119,31 @@ PASS**, with the tracked unit-test module expanded to 50 test methods;
 the full suite was not separately asserted as executed.
 See [third gate evidence](../../distribution/create-tape/ta1b-third-write-gate-correction-20261118.md).
 TA.1 IN PROGRESS; no BTA102 write/restore/GO has been verified.
+
+**TA.1 Track B BTA102 write checkpoint (18 November 2026 local / 19 November UTC):**
+The owner invoked the authorized, guarded one-shot writer at GitHub
+`702617a30c765df06815bcf9c028930dfa3d91c8`. After fresh
+read-only preflight and explicit initialization/JES confirmations,
+BTA102 was initialized and mounted at Hercules 0480.
+`TA1BWRIT` JOB **9120** completed `UNLOAD IEBCOPY RC=0000`;
+the runner verified one complete standard-labeled `BCPL.BT0001`
+data set, four Hercules physical-file segments with block counts
+**3, 8, 2, 0**, and AWS SHA-256
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+Source `MR10_LOAD(ICINT19)` remained read only and the tape DSN was
+not cataloged. Original private evidence:
+`workarea/ta1b-operations/BTA102-track-b-write-20261118T235204Z-9548/`.
+This owner-reported success is the **Track B unload/write PASS
+(qualified)**, not a restored executable proof.
+A separately authorized restore to
+`HERC02.BCPL.TA1B.LOAD` (PO/U/0/6144), followed by IEHLIST
+directory comparison and actual restored-STEPLIB ICINT19 execution,
+is still required. The new `run-ta1-track-b-restore` script defaults
+to **read-only live preflight** and forbids a stateful restore
+without its own explicit owner authorization and typed confirmations.
+Its 26 synthetic/negative offline tests PASS. See
+[Track B write receipt and restore staging](../../distribution/create-tape/ta1b-write-evidence-and-readback-preparation-20261118.md).
+TA.1 remains IN PROGRESS; no restore/GO acceptance is claimed.
 
 ## 1. Objective and product boundary
 

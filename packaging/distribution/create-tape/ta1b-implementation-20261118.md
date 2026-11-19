@@ -52,3 +52,19 @@ offline synthetic tests PASS; no live write has been executed.
 See [the bounded live preflight and write-stage gate](ta1b-readonly-preflight-and-write-gate-20261118.md)
 for exact scope. Prior statements describing preflight as pending are
 historical; Track B remains NOT YET ACCEPTED.
+
+## Actual one-shot unload and guarded restore preparation (18 November 2026)
+
+Owner-reported live MVS/Hercules result on
+`702617a30c765df06815bcf9c028930dfa3d91c8`:
+`TA1BWRIT` JOB 9120, `UNLOAD IEBCOPY RC=0000`, physical
+AWS block counts `3,8,2,0`, preserved image SHA-256
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+The subsequent `scripts/run-ta1-track-b-restore` is **not a second
+writer**: default operation performs read-only MVS preflight and
+saved receipt/SHA validation; separately authorized `--run` may
+conditionally mount the exact existing BTA102 and submit only the
+fixed `TA1BREST.jcl` into a new `HERC02.BCPL.TA1B.LOAD`.
+It never initializes, overwrites, seeks, catalogs tape or executes GO.
+26 synthetic/negative tests PASS. See
+[write evidence and readback design](ta1b-write-evidence-and-readback-preparation-20261118.md).

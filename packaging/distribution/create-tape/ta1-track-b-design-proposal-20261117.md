@@ -92,3 +92,17 @@ https://www.ibm.com/docs/en/zos/2.5.0?topic=utilities-iebcompr-compare-data-sets
 ## Implementation checkpoint — 18 November 2026
 
 See [Track B implementation and offline verification](ta1b-implementation-20261118.md). The two proposed JCL decks are `TA1BWRIT` and `TA1BREST`; `scripts/ta1b-contract` checks their safety contracts and derives source-pinned scalar/vector `TA1BGO` and IEHLIST FORMAT job bodies. `scripts/ta1b-preflight --live` gathers **read-only** live MVS catalog/DCB/member, Hercules tape image/VOLSER and unit evidence under `workarea/ta1b-operations/`. No execution of a Track B tape job, tape initialization or new DASD library has occurred, and no stateful operation is authorized by the design approval.
+
+## Subsequent actual BTA102 write and separate readback gate (18 November 2026)
+
+The owner subsequently approved and completed the one-shot scratch write.
+`TA1BWRIT` JOB 9120 returned `IEBCOPY UNLOAD RC=0000`, and the
+standard-labeled BTA102 AWS image was confirmed with four physical-file
+block counts `3,8,2,0` and SHA-256
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+The original no-stateful-operation description above documents the earlier
+design-approval checkpoint and is superseded **only for the write stage**.
+Restoration, any conditional remount, IEHLIST directory comparison and
+restored executable GO remain separately gated; the owner has not approved
+them by reporting the completed write. See
+[the owner-reported write result](ta1b-write-evidence-and-readback-preparation-20261118.md).
