@@ -1,0 +1,286 @@
+#!/usr/bin/env python3
+"""TA.2 independently audit target-preflight evidence; optional live MVS recheck.
+
+Saved reports are validated without MVS. --live runs only fresh LISTDS/IEHLIST
+inquiries and retains raw reports. Nothing allocates DASD or tape volumes.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+EVIDENCE_BASE = ROOT / 'workarea/ta2-target-preflight'
+OUT = ROOT / 'workarea/ta2-target-review'
+RUN = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
+SUM = re.compile(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)\Z')
+HEAD = re.compile(r'CONTENTS\s+OF\s+VTOC\s+ON\s+VOL\s+([A-Z0-9]{1,6})\b', re.I)
+# Classic MVS IEHLIST FORMAT-1 rows: dataset name, SER NO, SEQNO, DATE.CRE.
+# This identifies listed names, NOT the volume's free extents or free tracks.
+ENTRY = re.compile(r'(?m)^[ \t]*([A-Z@$#][A-Z0-9@$#-]{0,7}(?:\.[A-Z@$#][A-Z0-9@$#-]{0,7})+)[ \t]+'
+                   r'([A-Z0-9]{1,6})[ \t]+([0-9]{1,5})[ \t]+')
+MAX = 16 * 1024 * 1024
+TRACKS_PER_CYL = 15  # TK5 target DASD: reconcile with project dspal-space.py
+FREE = re.compile(r'THERE\s+ARE\s+(\d+)\s+EMPTY\s+CYLINDERS\s+PLUS\s+(\d+)\s+'
+                  r'EMPTY\s+TRACKS\s+ON\s+THIS\s+VOLUME\b', re.I)
+EXPECTED = {'summary.json', 'catalog-report.txt', 'vtoc-report.txt'}
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, detail: str) -> None:
+    if not ok:
+        raise Refusal(detail)
+
+
+def load_module(name: str, path: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'TA.2 audit dependency absent')
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def file_bytes(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX,
+         'missing, linked or oversized evidence: ' + path.name)
+    return path.read_bytes()
+
+
+def sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def safe_evidence(folder: Path, base: Path | None = None) -> Path:
+    if base is None:
+        base = EVIDENCE_BASE
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and
+         base.is_dir() and not base.is_symlink() and
+         base.resolve().parent == work.resolve(), 'unsafe/missing evidence base')
+    need(RUN.fullmatch(folder.name) is not None and folder.is_dir() and
+         not folder.is_symlink() and folder.resolve().parent == base.resolve(),
+         'unsafe/missing target evidence run')
+    return folder.resolve()
+
+
+def read_original(folder: Path) -> dict[str, bytes]:
+    folder = safe_evidence(folder)
+    need({p.name for p in folder.iterdir()} == EXPECTED | {'SHA256SUMS'},
+         'missing or extra target evidence')
+    try:
+        lines = file_bytes(folder / 'SHA256SUMS').decode('ascii').splitlines()
+    except UnicodeDecodeError as e:
+        raise Refusal('non-ASCII SHA256SUMS') from e
+    expected = {}
+    for line in lines:
+        m = SUM.fullmatch(line)
+        need(m is not None and m.group(2) in EXPECTED and m.group(2) not in expected,
+             'malformed, duplicated or foreign SHA256SUMS record')
+        expected[m.group(2)] = m.group(1)
+    need(set(expected) == EXPECTED, 'incomplete evidence SHA256SUMS')
+    data = {name: file_bytes(folder / name) for name in EXPECTED}
+    for name, blob in data.items():
+        need(sha(blob) == expected[name], 'target evidence SHA-256 mismatch: ' + name)
+    return data
+
+
+def inspect_vtoc(report: str, volume: str, names: list[str]) -> dict:
+    """Read-format inventory only; cannot equate source HWM with free space."""
+    upper = report.upper()
+    volumes = HEAD.findall(upper)
+    need(volumes and set(volumes) == {volume},
+         'VTOC has no unambiguous CONTENTS OF VTOC ON VOL heading')
+    need('DATA SET NAME' in upper and 'SER NO' in upper,
+         'VTOC FORMAT data-set header is missing')
+    need(not re.search(r'\bIEH\d{3}E\b|\bABEND\b', upper),
+         'VTOC reports error/abend')
+    for name in names:
+        need(re.search(r'(?<![A-Z0-9@$#.-])' + re.escape(name) +
+                       r'(?![A-Z0-9@$#.-])', upper) is None,
+             name + ': possible uncataloged VTOC presence')
+    entries = [(m.group(1), m.group(2)) for m in ENTRY.finditer(upper)]
+    need(entries, 'VTOC has no recognizable FORMAT-1 dataset rows; raw review needed')
+    need(all(v == volume for _, v in entries),
+         'VTOC dataset row has unexpected VOLSER')
+    dsns = [name for name, _ in entries]
+    need(len(dsns) == len(set(dsns)),
+         'duplicate FORMAT-1 dataset names; cannot establish a complete listing')
+    frees = FREE.findall(upper)
+    need(len(frees) <= 1, 'ambiguous IEHLIST volume free-space totals')
+    cylinders = tracks = reported_free = None
+    if frees:
+        cylinders, tracks = map(int, frees[0])
+        need(tracks < TRACKS_PER_CYL,
+             'IEHLIST volume free-space remainder outside target geometry')
+        reported_free = cylinders * TRACKS_PER_CYL + tracks
+    return {'volume': volume, 'format1_datasets_seen': len(dsns),
+            'format1_names_sha256': sha(('\n'.join(sorted(dsns))+'\n').encode('ascii')),
+            'staging_names_in_formatted_vtoc': 0,
+            'volume_free_tracks': None,
+            'volume_free_tracks_verified': False,
+            'iehlist_reported_free_cylinders': cylinders,
+            'iehlist_reported_free_extra_tracks': tracks,
+            'iehlist_reported_free_total_tracks': reported_free,
+            'format4_heading_seen': 'FORMAT 4 DSCB' in upper,
+            'format5_heading_seen': 'FORMAT 5 DSCB' in upper,
+            'qualification': ('Complete free space and extent distribution are NOT derived from '
+                              'IEHLIST dataset HWM or this listing; no staging SPACE approved')}
+
+
+def inspect_saved(data: dict[str, bytes], stage_worksheet_sha: str, names: list[str],
+                  expected_stage: str, target, core) -> dict:
+    try:
+        summary = json.loads(data['summary.json'].decode('utf-8'))
+        cat = data['catalog-report.txt'].decode('utf-8')
+        vtoc = data['vtoc-report.txt'].decode('utf-8')
+    except (ValueError, UnicodeDecodeError) as e:
+        raise Refusal('target MVS report or summary invalid UTF-8/JSON') from e
+    need(isinstance(summary, dict) and set(summary) == {
+        'status', 'staging_namespace', 'proposed_dasd_volume', 'target_dsns',
+        'stage_evidence', 'stage_worksheet_sha256', 'mvs_jobs', 'qualification'},
+        'saved target preflight receipt schema mismatch')
+    need(summary['status'] == 'CATALOG ABSENCE CHECKED; VTOC SPACE REVIEW PENDING' and
+         summary['staging_namespace'] == target.NAMESPACE and
+         summary['target_dsns'] == names and
+         summary['stage_evidence'] == expected_stage and
+         summary['stage_worksheet_sha256'] == stage_worksheet_sha,
+         'target receipt disagrees with approved staging plan or selection')
+    volume = summary['proposed_dasd_volume']
+    need(isinstance(volume, str) and target.VOLUME.fullmatch(volume) is not None,
+         'unsupported saved destination volume')
+    jobs = summary['mvs_jobs']
+    need(isinstance(jobs, dict) and set(jobs) == {'catalog_job', 'vtoc_job'} and
+         all(type(jobs[k]) is int and jobs[k] > 0 for k in jobs) and
+         jobs['catalog_job'] != jobs['vtoc_job'], 'invalid MVS JES job receipts')
+    target.catalog_absence(core, cat, names)
+    target.vtoc_observation(vtoc, volume, names)
+    review = inspect_vtoc(vtoc, volume, names)
+    review.update({'status': 'PASS (catalog and formatted VTOC identity only)',
+                   'stage_evidence': expected_stage,
+                   'stage_worksheet_sha256': stage_worksheet_sha,
+                   'source_target_count': len(names),
+                   'saved_mvs_jobs': jobs})
+    return review
+
+
+def new_evidence() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and
+         not OUT.is_symlink(), 'unsafe target review workarea')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    name = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid())
+    p = OUT / name
+    p.mkdir(mode=0o700, exist_ok=False)
+    return p
+
+
+def save(p: Path, data: bytes) -> None:
+    need(not p.exists() and not p.is_symlink(), 'evidence cannot be overwritten')
+    fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, 'wb') as f:
+        f.write(data)
+
+
+def write_sums(folder: Path) -> None:
+    files = sorted(p for p in folder.iterdir() if p.is_file())
+    save(folder / 'SHA256SUMS', ''.join(sha(p.read_bytes()) + '  ' + p.name + '\n'
+                                      for p in files).encode('ascii'))
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--target-evidence', type=Path, required=True)
+    ap.add_argument('--live', action='store_true',
+                    help='repeat two read-only LISTDS and IEHLIST MVS inquiries')
+    args = ap.parse_args(argv)
+    folder = None
+    try:
+        target = load_module('ta2_review_target', SCRIPTS / 'ta2-target-preflight')
+        stage = load_module('ta2_review_stage', SCRIPTS / 'ta2-stage-jcl')
+        source = load_module('ta2_review_source', SCRIPTS / 'ta2-source-preflight')
+        canonical = source.core()
+        manifest, dspal = canonical.load(ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'), \
+                          canonical.load(ROOT / 'config/dspal.yaml')
+        canonical.check(manifest, dspal, ROOT, release=False)
+        original = read_original(args.target_evidence)
+        summary = json.loads(original['summary.json'].decode('utf-8'))
+        rel = summary.get('stage_evidence')
+        need(isinstance(rel, str) and rel.startswith('workarea/ta2-stage-plan/') and
+             '..' not in Path(rel).parts and not Path(rel).is_absolute(),
+             'saved stage evidence pointer outside repository workarea')
+        stage_plan, stage_sha, saved_stat = stage.read_stage_run(ROOT, ROOT / rel)
+        rows = stage.validate_worksheet(stage_plan, manifest, dspal)
+        stage.verify_history(stage_plan, saved_stat, manifest, dspal)
+        names = target.targets(rows, dspal)
+        # Observed source allocations only: not a candidate staging SPACE map.
+        sources = stage_plan['sources']
+        need(len(sources) == 18 and all(
+            type(x.get(k)) is int and x[k] >= 0 for x in sources for k in
+            ('source_tracks_allocated', 'source_tracks_through_hwm',
+             'source_directory_allocated', 'source_directory_used')),
+             'missing/invalid source capacity observations')
+        core = load_module('ta2_review_core', ROOT / 'tools/datasets/dspal-core.py')
+        reviewed = inspect_saved(original, stage_sha, names, rel, target, core)
+        reviewed['source_allocated_tracks_total'] = sum(x['source_tracks_allocated'] for x in sources)
+        reviewed['source_tracks_through_hwm_total'] = sum(x['source_tracks_through_hwm'] for x in sources)
+        reviewed['source_directory_allocated_total'] = sum(x['source_directory_allocated'] for x in sources)
+        reviewed['source_capacity_is_destination_free_space'] = False
+        folder = new_evidence()
+        reviewed['original_target_evidence'] = args.target_evidence.as_posix()
+        reviewed['original_target_summary_sha256'] = sha(original['summary.json'])
+        if args.live:
+            config = core.load_config()
+            need(config['mvs']['hlq'] == 'HERC02', 'MVS HLQ drift')
+            core.require_reader_ready(config)
+            jobs = target.inquire(core, config, folder, names, reviewed['volume'])
+            fresh = inspect_vtoc((folder / 'vtoc-report.txt').read_text(),
+                                 reviewed['volume'], names)
+            target.catalog_absence(core, (folder / 'catalog-report.txt').read_text(), names)
+            need(fresh['format1_names_sha256'] == reviewed['format1_names_sha256'],
+                 'fresh VTOC dataset inventory differs from saved report')
+            reviewed['fresh_mvs_jobs'] = jobs
+            reviewed['fresh_vtoc_format1_datasets_seen'] = fresh['format1_datasets_seen']
+        reviewed['live_recheck'] = bool(args.live)
+        save(folder / 'review.json', (json.dumps(reviewed, indent=2) + '\n').encode('utf-8'))
+        write_sums(folder)
+        print(f'TA.2 TARGET REVIEW: 18/18 saved catalog checks; '
+              f'{reviewed["format1_datasets_seen"]} VTOC dataset rows; '
+              f'{"fresh MVS check PASS" if args.live else "offline replay PASS"}')
+        print('Private review evidence: ' + str(folder.relative_to(ROOT)))
+        free = reviewed['iehlist_reported_free_total_tracks']
+        if free is None:
+            print('IEHLIST did not supply a recognized volume free-space total; staging SPACE unapproved.')
+        else:
+            print(f'IEHLIST reported {free} free tracks on {reviewed["volume"]} '
+                  '(unverified contiguity; staging SPACE unapproved).')
+        print('No staging allocation, candidate or tape changes.')
+        return 0
+    except (Refusal, OSError, KeyError, TypeError, ValueError, UnicodeDecodeError) as e:
+        if folder is not None:
+            try:
+                save(folder / 'failure.json', (json.dumps({'status':'REFUSED','reason':str(e)}) + '\n').encode())
+                write_sums(folder)
+                print('Private evidence retained: ' + str(folder.relative_to(ROOT)))
+            except (Refusal, OSError):
+                pass
+        print('TA.2 TARGET REVIEW REFUSED: ' + str(e), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -515,3 +515,15 @@ under `workarea/ta2-target-preflight/`. Raw VTOC free-space and
 uncataloged-collision interpretation still require follow-up review;
 `TSO002` is only a proposed volume for the read-only inquiry. See
 [the target safety contract](ta2-namespace-volser-and-target-preflight-20261119.md).
+
+### TA.2 saved target/VTOC evidence review (read-only)
+
+`scripts/ta2-target-review --target-evidence <saved-target-run> --live`
+checks the complete saved TSO LISTDS/IEHLIST evidence and chained
+source/capacity/staging receipts, and **then** performs a new read-only
+MVS catalog and VTOC recheck, retaining full JES records under
+`workarea/ta2-target-review/`. It records the source allocated-space
+totals and, *only if MVS provides an unambiguous volume summary*, the
+volume-reported empty tracks. It never computes an approved per-PDS
+staging `SPACE` or submits state-changing JCL. See the
+[TA.2 saved-VTOC evidence contract](ta2-target-saved-vtoc-review-20261119.md).

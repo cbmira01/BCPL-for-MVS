@@ -465,6 +465,21 @@ offline-producer regression suite has not been rerun in that workspace.
 No MVS stage data set, tape image, candidate reservation or allocated
 DASD volume is accepted by these checks. TA.2 remains IN PROGRESS.
 
+**TA.2 MVS catalog-absence checkpoint and VTOC evidence review (19 November 2026):**
+The owner reported the real `ta2-target-preflight` result of
+**18/18 absent staging DSNs** and one saved raw **TSO002 IEHLIST VTOC**
+in `workarea/ta2-target-preflight/20261119T170234Z-17334`.
+These are private read-only JES results, not assistant-reviewed raw
+bytes. The new [independent saved-VTOC reviewer](../../distribution/create-tape/ta2-target-saved-vtoc-review-20261119.md)
+validates original SHA-256 evidence and source/capacity/stage ancestry,
+reconstructs formatted VTOC dataset-name inventory, optionally rechecks
+two MVS read-only jobs and retains new private evidence. The assistant
+tested **103/103 focused synthetic cases**; no live reviewer run or
+free-DASD-space/fragmentation acceptance has yet occurred.
+`TSO002` remains proposed only; no staging `SPACE` is authorized.
+No DASD stage allocation, candidate identity/VOLSER reservation or
+tape operation occurred. TA.2 stays IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
