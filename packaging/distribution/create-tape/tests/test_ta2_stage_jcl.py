@@ -10,6 +10,7 @@ import types
 import unittest
 from unittest.mock import patch
 
+ROOT = Path(__file__).resolve().parents[4]
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts/ta2-stage-jcl'
 loader = importlib.machinery.SourceFileLoader('ta2_stage_jcl_tests', str(SCRIPT))
 spec = importlib.util.spec_from_loader(loader.name, loader)
@@ -19,7 +20,7 @@ loader.exec_module(mod)
 
 class StageJCLTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(dir=ROOT / 'workarea')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.directory = self.root / 'workarea/ta2-stage-plan/20261119T155947Z-17087'
