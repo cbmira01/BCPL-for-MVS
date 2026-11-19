@@ -486,3 +486,14 @@ source-capacity match produces a private checksum-pinned worksheet under
 `workarea/ta2-stage-plan/`; destination DSNs and `SPACE` values remain
 **unset**. No stage allocation/IEBCOPY/tape or candidate identity is performed.
 See [the staging-plan evidence contract](ta2-stage-plan-20261119.md).
+
+### TA.2 selective IEBCOPY staging-deck proposal (offline only)
+
+`scripts/ta2-stage-jcl` independently replays the saved stage-plan,
+capacity and 127-member source evidence, and derives **18 selective
+IEBCOPY stages** from the one TA.0 manifest. Without an explicit separate
+staging namespace/volume/SPACE allocation proposal it is a non-mutating
+source-selection check. With such a proposal it emits **only a new private
+JOB-less draft** under `workarea/`, never submits MVS, touches DASD, or
+assigns release media. No staging parameters or authorization exist yet.
+See the [design and exact remaining gates](ta2-selective-staging-deck-20261119.md).

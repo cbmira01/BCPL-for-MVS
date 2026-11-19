@@ -1,0 +1,313 @@
+#!/usr/bin/env python3
+"""TA.2 offline selective IEBCOPY staging-deck generator (no submission).
+
+Only a checksum-pinned source worksheet and explicitly supplied staging
+allocation proposal may produce a JOB-less draft. This program never uses
+Hercules, MVS, JES or media. No staging operation is authorized by the draft.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+RUN_ID = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
+HASH = re.compile(r'[a-f0-9]{64}\Z')
+QUAL = re.compile(r'[A-Z@$#][A-Z0-9@$#]{0,7}\Z')
+MAX_SIZE = 16 * 1024 * 1024
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(test: bool, reason: str) -> None:
+    if not test:
+        raise Refusal(reason)
+
+
+def import_script(name: str, path: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None, 'unavailable TA.2 audit dependency')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def valid_dsn(value) -> bool:
+    return isinstance(value, str) and 3 <= len(value) <= 44 and all(
+        QUAL.fullmatch(part) for part in value.split('.'))
+
+
+def read_file(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX_SIZE,
+         'missing, linked or oversized evidence file: ' + path.name)
+    return path.read_bytes()
+
+
+def read_stage_run(root: Path, path: Path) -> tuple[dict, str]:
+    """Never accept unpinned/partial source planning evidence."""
+    base = root / 'workarea/ta2-stage-plan'
+    need((root / 'workarea').is_dir() and not (root / 'workarea').is_symlink() and
+         (root / 'workarea').resolve().is_relative_to(root.resolve()) and
+         base.is_dir() and not base.is_symlink() and
+         RUN_ID.fullmatch(path.name) is not None and path.is_dir() and
+         not path.is_symlink() and path.resolve().parent == base.resolve(),
+         'unsafe or missing TA.2 stage-plan evidence directory')
+    expected = {'stage-worksheet.json', 'dspal-stat-all.txt'}
+    need({x.name for x in path.iterdir()} == expected | {'SHA256SUMS'},
+         'stage plan receipt has incomplete/extra files')
+    sums = read_file(path / 'SHA256SUMS').decode('ascii').splitlines()
+    pins = {}
+    for line in sums:
+        m = re.fullmatch(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)', line)
+        need(m is not None, 'malformed stage plan SHA256SUMS')
+        value, filename = m.groups()
+        need(filename in expected and filename not in pins,
+             'stage plan SHA256SUMS duplicate/foreign file')
+        pins[filename] = value
+    need(set(pins) == expected, 'stage plan checksums incomplete')
+    blobs = {filename: read_file(path / filename) for filename in expected}
+    for name, data in blobs.items():
+        need(sha(data) == pins[name], 'stage plan checksum mismatch: ' + name)
+    need(blobs['dspal-stat-all.txt'].startswith(b'RC=0\n') and
+         b'\nRC=' not in blobs['dspal-stat-all.txt'],
+         'saved stage plan MVS inquiry was not successful')
+    try:
+        plan = json.loads(blobs['stage-worksheet.json'].decode('utf-8'))
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise Refusal('invalid stage worksheet') from exc
+    need(isinstance(plan, dict) and plan.get('status') ==
+         'READ-ONLY PLAN; STAGING NOT AUTHORIZED', 'stage worksheet is not read-only PASS')
+    return plan, sha(blobs['stage-worksheet.json']), blobs['dspal-stat-all.txt']
+
+
+
+def verify_history(plan: dict, stat_saved: bytes, manifest: dict, dspal: dict) -> None:
+    """Recompute provenance linkage from saved source+capacity MVS inquiries.
+
+    A newly self-checksummed worksheet is not independent evidence.
+    Every original MVS report and the final saved source snapshot must agree.
+    """
+    source = import_script('ta2_jcl_hist_source', SCRIPTS / 'ta2-source-preflight')
+    reviewer = import_script('ta2_jcl_hist_reviewer', SCRIPTS / 'ta2-source-review')
+    capacity = import_script('ta2_jcl_hist_capacity', SCRIPTS / 'ta2-capacity-preflight')
+    stage = import_script('ta2_jcl_hist_stage', SCRIPTS / 'ta2-stage-plan')
+    def safe_receipt_path(key: str, parent: str) -> Path:
+        value = plan.get(key)
+        need(isinstance(value, str) and
+             value.startswith('workarea/' + parent + '/') and
+             '..' not in Path(value).parts and not Path(value).is_absolute(),
+             'unsafe or missing saved MVS evidence path: ' + key)
+        return ROOT / value
+    items = source.expected_sources(manifest, dspal)
+    receipt = reviewer.inspect(safe_receipt_path('source_evidence_directory',
+                                                 'ta2-source-preflight'), items, source)
+    saved_raw = stage.read_capacity(ROOT, safe_receipt_path('capacity_evidence_directory',
+                                                          'ta2-capacity-preflight'))
+    saved = stage.replay_capacity(saved_raw, receipt, items, capacity, source)
+    need(stat_saved.startswith(b'RC=0\n'), 'stage report inquiry RC mismatch')
+    stage.compare_current(stat_saved.decode('utf-8').split('\n', 1)[1],
+                          saved, items, capacity, source, receipt)
+    expected = stage.make_worksheet(saved, items)
+    expected.update({
+        'source_evidence_directory': receipt['evidence_directory'],
+        'source_review_summary_sha256': receipt['summary_sha256'],
+        'source_review_sha256sums_sha256': receipt['sha256sums_sha256'],
+        'capacity_evidence_directory': plan['capacity_evidence_directory'],
+        'capacity_summary_sha256': sha(saved_raw['summary.json']),
+        'capacity_sha256sums_sha256': sha(stage.checked_file(
+            safe_receipt_path('capacity_evidence_directory',
+                              'ta2-capacity-preflight') / 'SHA256SUMS'))})
+    need(plan == expected, 'stage worksheet differs from independently replayed MVS evidence')
+
+
+def validate_worksheet(plan: dict, manifest: dict, dspal: dict) -> list[dict]:
+    """Canonical release selections, never a new manually curated map."""
+    sources = plan.get('sources')
+    need(isinstance(sources, list) and len(sources) == 18 and
+         plan.get('source_pds') == 18 and plan.get('selected_members') == 127 and
+         type(plan.get('excluded_development_members')) is int and
+         plan['excluded_development_members'] >= 0,
+         'stage worksheet inventory totals or exclusions changed')
+    need(len(manifest['datasets']) == 20 and manifest['phase'] == 'design',
+         'canonical TA.0 design inventory not recognized')
+    hlq = dspal['mvs']['hlq']
+    result = []
+    for n, (row, src) in enumerate(zip(manifest['datasets'][2:], sources), start=3):
+        key = row['dspal_key']
+        dsn = hlq + '.' + dspal['datasets'][key]['dsn']
+        expected = row['target_dcb']
+        need(row['sequence'] == src.get('tape_sequence') == n and
+             src.get('source_key') == key and src.get('source_dsn') == dsn and
+             src.get('source_dcb') == expected and
+             src.get('selected_members') == row['members'] and
+             src.get('selected_count') == len(row['members']) and
+             src.get('staging_dsn') is None and src.get('stage_space') is None and
+             src.get('allocation_approved') is False,
+             f'BT{n:04d} worksheet differs from canonical manifest')
+        need(valid_dsn(dsn), 'invalid source DSN')
+        need(isinstance(src.get('source_volume'), str) and
+             re.fullmatch(r'[A-Z0-9]{1,6}', src['source_volume']) is not None and
+             all(type(src.get(x)) is int and src[x] >= 0 for x in
+                 ('source_tracks_allocated', 'source_tracks_through_hwm',
+                  'source_directory_allocated', 'source_directory_used')),
+             f'BT{n:04d} source volume/capacity unsupported')
+        result.append({'sequence': n, 'key': key, 'source_dsn': dsn,
+                       'dcb': expected, 'members': row['members']})
+    need(sum(len(r['members']) for r in result) == 127,
+         'selected member total not canonical')
+    return result
+
+
+def validate_allocations(allocation: dict, worksheet_sha: str, rows: list[dict],
+                         dspal: dict) -> list[dict]:
+    """Explicit operational allocation choices; never a second member manifest."""
+    need(isinstance(allocation, dict) and set(allocation) ==
+         {'schema_version', 'stage_worksheet_sha256', 'staging_namespace', 'targets'} and
+         allocation['schema_version'] == 1 and
+         allocation['stage_worksheet_sha256'] == worksheet_sha,
+         'staging allocation proposal not bound to exact source worksheet')
+    prefix = allocation['staging_namespace']
+    need(valid_dsn(prefix) and len(prefix) <= 37 and
+         prefix.startswith(dspal['mvs']['hlq'] + '.BCPL.'),
+         'unsafe or unrelated staging namespace')
+    targets = allocation['targets']
+    need(isinstance(targets, list) and len(targets) == 18,
+         'exactly 18 explicit allocation records required')
+    hlq = dspal['mvs']['hlq']
+    all_dev = {hlq + '.' + v['dsn'] for v in dspal['datasets'].values()}
+    need(all(not ds.startswith(prefix + '.') and ds != prefix for ds in all_dev),
+         'staging namespace overlaps a managed development dataset')
+    seen = set()
+    out = []
+    for row, target in zip(rows, targets):
+        n = row['sequence']
+        need(isinstance(target, dict) and set(target) ==
+             {'sequence', 'dsn', 'volume', 'space'},
+             f'BT{n:04d} allocation fields are ambiguous')
+        dsn = target['dsn']
+        need(target['sequence'] == n and dsn == f'{prefix}.BT{n:04d}' and
+             valid_dsn(dsn) and dsn not in seen and dsn not in all_dev,
+             f'BT{n:04d} unsafe, duplicate or non-isolated staging DSN')
+        seen.add(dsn)
+        volume = target['volume']
+        need(isinstance(volume, str) and re.fullmatch(r'[A-Z0-9]{1,6}', volume)
+             is not None, f'BT{n:04d} invalid DASD volume')
+        space = target['space']
+        need(isinstance(space, dict) and set(space) ==
+             {'primary_tracks', 'secondary_tracks', 'directory_blocks'} and
+             all(type(space[k]) is int and 1 <= space[k] <= 65535
+                 for k in space), f'BT{n:04d} invalid explicit staging SPACE')
+        out.append({**row, 'staging_dsn': dsn, 'volume': volume, 'space': space})
+    return out
+
+
+def render_jcl(rows: list[dict]) -> str:
+    """Draft JOB-less deck, never submitted by this tool."""
+    need(len(rows) == 18 and [r['sequence'] for r in rows] ==
+         list(range(3, 21)), 'noncontiguous staging sequence')
+    cards = ['//* TA.2 DRAFT: NOT APPROVED FOR MVS SUBMISSION.',
+             '//* EACH STEP CREATES ONE NEW ISOLATED PDS. NEVER RETRY.',
+             '//* ONLY EXPLICIT MANIFEST MEMBERS SELECTED; NO TAPE OPERATIONS.']
+    for r in rows:
+        n = r['sequence']
+        dcb = r['dcb']
+        need(dcb['dsorg'] == 'PO' and
+             (dcb == {'dsorg':'PO', 'recfm':'FB', 'lrecl':80, 'blksize':800} or
+              dcb == {'dsorg':'PO', 'recfm':'U', 'lrecl':0, 'blksize':6144}),
+             f'BT{n:04d} unsupported staging PDS DCB')
+        need(isinstance(r['members'], list) and
+             len(set(r['members'])) == len(r['members']) and
+             all(isinstance(m, str) and QUAL.fullmatch(m) for m in r['members']),
+             f'BT{n:04d} invalid or duplicate selected member')
+        space = r['space']
+        cond = '' if n == 3 else ',COND=(0,NE)'
+        cards += [f'//S{n:04d} EXEC PGM=IEBCOPY,REGION=512K{cond}',
+                  '//SYSPRINT DD SYSOUT=*',
+                  f'//INPDS DD DSN={r["source_dsn"]},DISP=SHR',
+                  f'//OUTPDS DD DSN={r["staging_dsn"]},',
+                  '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,',
+                  f'//            VOL=SER={r["volume"]},',
+                  f'//            SPACE=(TRK,({space["primary_tracks"]},'
+                  f'{space["secondary_tracks"]},{space["directory_blocks"]})),',
+                  ('//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,'
+                   'BLKSIZE=800)' if dcb['recfm'] == 'FB' else
+                   '//            DCB=(DSORG=PO,RECFM=U,BLKSIZE=6144)'),
+                  '//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                  '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                  '//SYSIN DD *',
+                  ' COPY OUTDD=OUTPDS,INDD=INPDS']
+        cards += [f' SELECT MEMBER=({m})' for m in r['members']]
+        cards += ['/*']
+    cards += ['//']
+    need(all(len(x) <= 80 and x.isascii() and '\t' not in x for x in cards),
+         'staging JCL card exceeds FB80 or has unsafe characters')
+    need(all(len(x) <= 71 for x in cards if x.startswith('//') and
+             not x.startswith('//*')), 'JCL operand extends beyond column 71')
+    need(sum(x.startswith(' SELECT MEMBER=') for x in cards) == 127 and
+         sum(' EXEC PGM=IEBCOPY' in x for x in cards) == 18,
+         'curated selection or stage count changed')
+    return '\n'.join(cards) + '\n'
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--stage-evidence', type=Path, required=True)
+    parser.add_argument('--allocations', type=Path)
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args(argv)
+    try:
+        need((args.allocations is None) == (args.output is None),
+             'both --allocations and --output are required to draft JCL')
+        source = import_script('ta2_jcl_source', SCRIPTS / 'ta2-source-preflight')
+        canonical = source.core()
+        manifest, dspal = canonical.load(
+            ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'), canonical.load(
+            ROOT / 'config/dspal.yaml')
+        canonical.check(manifest, dspal, ROOT, release=False)
+        plan, digest, saved_stat = read_stage_run(ROOT, args.stage_evidence)
+        rows = validate_worksheet(plan, manifest, dspal)
+        verify_history(plan, saved_stat, manifest, dspal)
+        if args.allocations is None:
+            print('TA.2 STAGING DESIGN CHECK: 18/18 source PDSes, '
+                  '127 curated members; destination allocation NOT approved')
+            return 0
+        # Draft map is an operational allocation proposal, never member selection.
+        data = read_file(args.allocations)
+        proposal = json.loads(data.decode('utf-8'))
+        approved = validate_allocations(proposal, digest, rows, dspal)
+        deck = render_jcl(approved).encode('ascii')
+        out = args.output
+        work = ROOT / 'workarea'
+        need(work.is_dir() and not work.is_symlink() and
+             out.resolve().is_relative_to(work.resolve()) and
+             not out.exists() and not out.is_symlink(),
+             'draft output must be a new path under private workarea')
+        fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'wb') as f:
+            f.write(deck)
+        print('TA.2 STAGING DRAFT ONLY: 18 IEBCOPY steps, 127 SELECTs, '
+              'no MVS submission or approval')
+        return 0
+    except (Refusal, OSError, KeyError, TypeError, ValueError,
+            UnicodeDecodeError) as exc:
+        print('TA.2 STAGING DECK REFUSED: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

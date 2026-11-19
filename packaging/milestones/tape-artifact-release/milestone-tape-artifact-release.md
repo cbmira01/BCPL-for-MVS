@@ -433,6 +433,20 @@ been run on the owner's MVS. No staging DSN or `SPACE` size is approved;
 no DASD/tape modification, release identity or VOLSER reservation is
 authorized. TA.2 remains IN PROGRESS.
 
+**TA.2 staging preflight PASS and selective-copy draft (19 November 2026):**
+The owner reported `18/18 source PDSes; 127 selected; 76 excluded; 0
+blockers` from a fresh read-only MVS stage-plan inquiry, with private
+evidence at `workarea/ta2-stage-plan/20261119T155947Z-17087`.
+The stage capacity allocations and underlying bytes were not inspected
+by the assistant; the result does not authorize DASD writes. The
+[TA.2 draft-only staging-deck implementation](../../distribution/create-tape/ta2-selective-staging-deck-20261119.md)
+replays all original MVS receipts against the one canonical manifest,
+then requires an independently approved isolated namespace and exact
+target volumes/SPACE allocations before it can emit a JOB-less
+18-IEBCOPY-step/127-SELECT draft. Its 42/42 new synthetic tests passed.
+There is **no staging allocation map, JES execution, VOLSER reservation
+or candidate tape**. TA.2 remains IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
