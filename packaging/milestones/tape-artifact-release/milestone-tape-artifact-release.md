@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 ACCEPTANCE CANDIDATE — Track A and Track B PASS (qualified), including restored ICINT19 GO JOB 9165; formal owner approval of TA.1 closure pending**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer READY FOR DESIGN AND READ-ONLY PREFLIGHT ONLY — no candidate production authorized**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -358,6 +358,39 @@ review-ready candidate, not a declaration of TA.1 CLOSED.
 Release producer, recipient installer, complete distribution
 acceptance, permissions and publication remain later marches.
 See [TA.1 qualified acceptance candidate](ta1-qualified-acceptance-candidate-20261119.md).
+
+**TA.1 — Multi-Dataset Tape Mechanics FORMALLY CLOSED (qualified), owner decision 19 November 2026:**
+The owner directed **“Move to TA.1 closure without delay. Give me a handoff prompt for TA.2.”**
+This expressly accepts the bounded **Track A PASS (qualified)** on BTA101:
+two ordered standard-label logical datasets, independent MVS restore
+and two IEBCOMPR RC=0000 verifications, file/label map
+`3,3,2,2,25,2,0`, and unchanged BTA101 image SHA-256.
+It also accepts the bounded **Track B PASS (qualified)** on BTA102:
+IEBCOPY unload **JOB 9120**, restore **JOB 9136**,
+source/restored IEHLIST matching **JOBS 9151/9152** with `ICINT19`
+entry `000000` and attributes `02E2`, and restored
+`HERC02.BCPL.TA1B.LOAD` scalar/vector execution
+**TA1BGO JOB 9165**, 8 steps RC=0000, 3 restored
+`ICINT19` calls and golden `RP:` records.
+The tested AWS images retain their checksums and are **scratch
+evidence, not releasable candidate media**. The assistant's
+review rests on actual owner-reported MVS/Hercules runner results
+and verified committed source, not a direct independent reading
+of private JES/SYSPRINT/HETMAP files. Exact RECFM=U load-module
+byte identity is unproven; TA.2–TA.8 obligations remain open.
+**TA.1 is not to be reopened without demonstrated regression/defect.**
+See [formal TA.1 closure](ta1-formal-qualified-closure-and-ta2-transition-20261119.md)
+and [TA.2 kickoff](ta2-kickoff-20261119.md).
+
+**TA.2 — Manifest-Driven Tape Producer, READY FOR DESIGN AND READ-ONLY PREFLIGHT (19 November 2026):**
+Begin with the one TA.0 approved schema/inventory and producer/recipient
+architecture, independently analyze actual MVS source DCB,
+member selection/provenance and the TA.1 label/IEBCOPY evidence.
+Agree on major producer, freeze/registry and validation choices
+before implementing. No frozen candidate manifest or identity,
+new VOLSER allocation, AWS image production, MVS tape operation,
+installation or publication is authorized by this transition.
+See [TA.2 kickoff](ta2-kickoff-20261119.md).
 
 ## 1. Objective and product boundary
 

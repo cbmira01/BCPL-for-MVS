@@ -4,8 +4,8 @@
 **Milestone:** Tape artifact release  
 **March:** TA.1 — Multi-Dataset Tape Mechanics  
 **Date:** 19 November 2026  
-**Proposed disposition:** **ACCEPT and CLOSE TA.1 (qualified)** — **pending explicit owner decision**.  
-**Next march, if approved:** **TA.2 — Manifest-Driven Tape Producer** (design/preflight only; no tape creation permission implied).
+**Owner disposition:** **ACCEPTED AND CLOSED (qualified), 19 November 2026**. See [formal closure](ta1-formal-qualified-closure-and-ta2-transition-20261119.md).  
+**Next march:** **TA.2 — Manifest-Driven Tape Producer** (ready for design and read-only preflight; no tape creation permission implied).
 
 ## Acceptance against the authoritative two-track contract
 
@@ -66,3 +66,12 @@ formal TA.1 decision.
 - [Track A independent round-trip](../../distribution/create-tape/ta1-track-a-roundtrip-review-20261117.md)
 - [Track B restored GO actual result](../../distribution/create-tape/ta1b-restored-go-evidence-20261119.md)
 - [Governing tape milestone](milestone-tape-artifact-release.md)
+
+## Owner decision subsequently recorded — 19 November 2026
+
+The owner expressly directed **“Move to TA.1 closure without delay.
+Give me a handoff prompt for TA.2.”** This resolves the previously
+proposed decision in favor of **TA.1 CLOSED (qualified)**.
+The acceptance matrix and limitations in this candidate remain
+binding. See [the formal qualified closure](ta1-formal-qualified-closure-and-ta2-transition-20261119.md)
+and [the TA.2 kickoff](ta2-kickoff-20261119.md).

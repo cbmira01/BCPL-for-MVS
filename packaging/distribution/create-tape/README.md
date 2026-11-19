@@ -407,3 +407,22 @@ without approval. No byte-identical load module or public release
 acceptance is claimed. The next march, **TA.2 — Manifest-Driven Tape
 Producer**, remains separately scoped and unauthorized for stateful
 production. See [GO evidence](ta1b-restored-go-evidence-20261119.md).
+
+## TA.1 formally closed (qualified) and TA.2 transition — 19 November 2026
+
+The owner accepted **TA.1 — Multi-Dataset Tape Mechanics CLOSED
+(qualified)** after Track A's BTA101 two-logical-dataset
+standard-label round trip and Track B's BTA102 IEBCOPY
+load-module unload/restore, source/restored IEHLIST comparison
+and **TA1BGO JOB 9165** restored-`ICINT19` execution.
+The original experimental tapes must not be overwritten or
+repurposed as a release candidate. See
+[formal TA.1 closure](../../milestones/tape-artifact-release/ta1-formal-qualified-closure-and-ta2-transition-20261119.md).
+
+**TA.2 — Manifest-Driven Tape Producer** is ready for **design and
+read-only preflight only**. The proposed 20-position TA.0 design
+inventory is not a frozen candidate, and the native compiler's
+absence remains explicitly disclosed in any scoped release.
+No new AWS volume, VOLSER, source freeze, installation or
+publication is authorized by this transition. See
+[TA.2 kickoff](../../milestones/tape-artifact-release/ta2-kickoff-20261119.md).
