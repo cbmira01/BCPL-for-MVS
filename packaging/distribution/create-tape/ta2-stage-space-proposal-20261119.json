@@ -1,5 +1,5 @@
 {
-  "status": "PROPOSED_ONLY_NOT_APPROVED",
+  "status": "VOLUME_APPROVED_SPACE_AND_WRITE_UNAPPROVED",
   "readiness_evidence": "workarea/ta2-stage-readiness/20261119T210718Z-18180",
   "allocation_evidence": "workarea/ta2-allocation-plan/20261119T204153Z-17905",
   "volume": "TSO002",

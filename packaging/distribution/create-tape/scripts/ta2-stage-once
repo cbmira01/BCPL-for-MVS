@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[4]
 SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
 PACKAGING = ROOT / 'packaging/distribution/create-tape'
 PROPOSAL = PACKAGING / 'ta2-stage-space-proposal-20261119.json'
+VOLUME_APPROVAL = PACKAGING / 'ta2-stage-volume-approval-20261119.json'
 APPROVAL = PACKAGING / 'ta2-stage-write-approval.json'  # NOT PRESENT without owner approval
 BASE = ROOT / 'workarea/ta2-stage-readiness'
 OPERATIONS = ROOT / 'workarea/ta2-stage-operations'
@@ -94,7 +95,7 @@ def read_proposal() -> tuple[dict, str]:
     need(isinstance(p, dict) and set(p) ==
          {'status', 'readiness_evidence', 'allocation_evidence', 'volume', 'targets',
           'primary_total', 'secondary_total', 'total_budget', 'selected_members'} and
-         p['status'] == 'PROPOSED_ONLY_NOT_APPROVED' and p['volume'] == 'TSO002' and
+         p['status'] == 'VOLUME_APPROVED_SPACE_AND_WRITE_UNAPPROVED' and p['volume'] == 'TSO002' and
          p['selected_members'] == 127 and
          (p['primary_total'], p['secondary_total'], p['total_budget']) == (645, 65, 710),
          'unapproved/malformed fixed TA.2 proposal')
@@ -108,6 +109,28 @@ def read_proposal() -> tuple[dict, str]:
          sum(v['secondary_tracks'] for v in values) == 65,
          '18 exact staging allocation triples invalid')
     return p, digest(data)
+
+def read_volume_approval(proposal: dict) -> dict:
+    """Recognize the owner-approved DASD volume; never grant SPACE/write rights."""
+    doc = json.loads(checked_file(VOLUME_APPROVAL).decode('utf-8'))
+    need(type(doc) is dict and set(doc) == {
+         'schema_version', 'status', 'volume', 'staging_namespace',
+         'readiness_evidence', 'allocation_evidence',
+         'space_allocation_authorized', 'iebcopy_submission_authorized',
+         'production_tape_authorized', 'qualification'} and
+         doc['schema_version'] == 1 and
+         doc['status'] == 'OWNER_APPROVED_STAGING_VOLUME_ONLY' and
+         doc['volume'] == proposal['volume'] == 'TSO002' and
+         doc['staging_namespace'] == 'HERC02.BCPL.TA2STG' and
+         doc['readiness_evidence'] == proposal['readiness_evidence'] and
+         doc['allocation_evidence'] == proposal['allocation_evidence'] and
+         doc['space_allocation_authorized'] is False and
+         doc['iebcopy_submission_authorized'] is False and
+         doc['production_tape_authorized'] is False and
+         type(doc['qualification']) is str and bool(doc['qualification']),
+         'TSO002 volume-only owner approval absent or widened')
+    return doc
+
 
 def read_readiness(path: Path, proposal: dict) -> tuple[dict, dict[str, bytes], str]:
     safe_run(path, BASE)
@@ -305,6 +328,7 @@ def operation(args) -> int:
     global ACTIVE_FOLDER
     ACTIVE_FOLDER = None
     proposal, proposal_sha = read_proposal()
+    read_volume_approval(proposal)
     path = ROOT / proposal['readiness_evidence']
     need(args.readiness_evidence.resolve() == path.resolve(), 'explicit readiness path differs from pinned proposal')
     receipt, raw, receipt_sha = read_readiness(path, proposal)
@@ -313,6 +337,7 @@ def operation(args) -> int:
     approved = None
     if args.run:
         approved = read_approval(proposal_sha,receipt_sha)
+        git_original(VOLUME_APPROVAL)  # Both owner decisions must be committed on main.
         need(sys.stdin.isatty(), 'state-changing IEBCOPY requires an operator TTY')
     if not args.live and not args.run:
         print('TA.2 STAGE ONCE: saved readiness/18-PDS selection accepted; MVS recheck still required')
@@ -326,7 +351,7 @@ def operation(args) -> int:
     print('TA.2 STAGING WRITE GATE: 18/18 source/targets, 127 selected, fresh MVS PASS; TSO002.')
     if not args.run:
         seal(folder)
-        print('Read-only; staging volumes/SPACE still unapproved; no IEBCOPY submitted.')
+        print('Read-only; TSO002 approved, 18 SPACE triples and IEBCOPY unapproved; no submission.')
         print('Private MVS evidence: '+relative(folder))
         return 0
     token = 'AUTHORIZE TA2STAGE TSO002 18 PDS'

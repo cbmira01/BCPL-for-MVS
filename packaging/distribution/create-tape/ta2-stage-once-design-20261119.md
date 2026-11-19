@@ -4,7 +4,7 @@
 **Milestone:** Tape artifact release  
 **March:** TA.2 — Manifest-Driven Tape Producer  
 **Date:** 19 November 2026  
-**Status:** Guarded runner implemented; write approval and MVS staging still pending.
+**Status:** TSO002 staging volume approved by owner; 18 SPACE triples and write approval still pending.
 
 ## Owner-reported MVS readiness
 
@@ -25,8 +25,9 @@ saved MVS readiness and allocation evidence. The proposal is not a
 release dataset/member manifest. The TA.0 inventory remains authoritative
 for all 127 selected members.
 
-**TSO002 has not been approved as a staging destination, and the per-PDS
-allocation triples have not been approved for writes.** The MVS free-track
+**TSO002 is now approved as the staging DASD destination (owner decision,
+19 November 2026); the 18 per-PDS SPACE allocation triples and the
+state-changing IEBCOPY staging operation remain unapproved.** The MVS free-track
 total alone does not establish free-extent contiguity or guaranteed 18
 successful allocations.
 
@@ -79,6 +80,34 @@ checks also pass. The actual private MVS evidence has not been imported
 into the assistant workspace and the live one-shot runner has **not** been
 executed on MVS; no acceptance of staging execution is claimed.
 
-**Next owner gate:** explicitly approve or revise TSO002 and all 18
-`SPACE` triples. A separate owner authorization is required before any
-state-changing IEBCOPY job. TA.2 remains IN PROGRESS.
+**Next owner gate:** explicitly approve or revise **all 18** `SPACE`
+triples on the now-approved TSO002 volume. A separate owner authorization
+is required before any state-changing IEBCOPY job. TA.2 remains IN PROGRESS.
+
+## Subsequent explicit owner decision: TSO002 volume only
+
+After the successful read-only `ta2-stage-once --live` gate, the owner
+explicitly stated **“TSO002 approved.”** The preserved private
+read-only MVS evidence is
+`workarea/ta2-stage-operations/20261119T234105Z-18708`:
+18/18 source/target checks, 127 selected members, fresh MVS PASS.
+The canonical volume-only decision is recorded in
+[`ta2-stage-volume-approval-20261119.json`](ta2-stage-volume-approval-20261119.json).
+The unchanged 18 proposed allocation amounts are retained in
+[`ta2-stage-space-proposal-20261119.json`](ta2-stage-space-proposal-20261119.json),
+whose status is now `VOLUME_APPROVED_SPACE_AND_WRITE_UNAPPROVED`.
+
+This **does not** approve the 18 `SPACE` triples or the non-retryable
+IEBCOPY stage. The missing `ta2-stage-write-approval.json` remains
+a mandatory fail-closed gate for `--run`; a committed volume approval
+cannot satisfy it. The runner now validates the exact source-controlled
+volume-only decision and refuses an altered decision that purports to
+authorize SPACE, JES write or production tape operations. In a
+hypothetical future authorized write, it also verifies both authorization
+records are committed unchanged on GitHub `main`.
+
+**42/42 focused offline staging-runner tests passed** following the
+new approval distinction (seven new refusal/identity tests).
+No MVS operation was performed by the assistant; neither PDS
+allocation nor IEBCOPY/tape write is claimed.
+

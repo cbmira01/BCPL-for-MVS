@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "OWNER_APPROVED_STAGING_VOLUME_ONLY",
+  "volume": "TSO002",
+  "staging_namespace": "HERC02.BCPL.TA2STG",
+  "readiness_evidence": "workarea/ta2-stage-readiness/20261119T210718Z-18180",
+  "allocation_evidence": "workarea/ta2-allocation-plan/20261119T204153Z-17905",
+  "space_allocation_authorized": false,
+  "iebcopy_submission_authorized": false,
+  "production_tape_authorized": false,
+  "qualification": "Approves TSO002 as the staging DASD volume only; 18 per-PDS SPACE triples and one-shot IEBCOPY require separate explicit owner approval."
+}

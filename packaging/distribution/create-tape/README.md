@@ -582,3 +582,21 @@ before one possible 18-step IEBCOPY JES submission. No staging data sets
 have been created; records/DCB/source-to-staged identity must still be
 checked independently after any approved write. See the
 [TA.2 one-shot staging safety contract](ta2-stage-once-design-20261119.md).
+
+### TA.2 owner-approved TSO002 staging DASD volume (SPACE/write still pending)
+
+After the owner's fresh read-only `ta2-stage-once --live` success
+(18/18 libraries, 127 selected, private evidence
+`workarea/ta2-stage-operations/20261119T234105Z-18708`),
+the owner **approved TSO002 only**. The
+[tracked volume-only approval](ta2-stage-volume-approval-20261119.json)
+and [18-PDS allocation proposal](ta2-stage-space-proposal-20261119.json)
+explicitly preserve that distinction: the 645 primary and 65
+secondary tracks remain **proposed**, as do all 18 per-PDS directory
+sizes. The one-shot submission approval file remains **absent**,
+so `ta2-stage-once --run` remains blocked. The updated runner
+independently validates the approved volume record and rejects
+any purported widening to SPACE or tape/JES authorization.
+**42/42 focused offline tests PASS.** No additional MVS stage,
+candidate identity or tape operation was performed. See
+[the one-shot design record](ta2-stage-once-design-20261119.md).

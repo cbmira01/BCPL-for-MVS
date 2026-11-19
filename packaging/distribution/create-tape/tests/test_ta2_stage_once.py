@@ -26,6 +26,7 @@ class StagingTests(unittest.TestCase):
         self.pack=self.root/'packaging/distribution/create-tape'
         self.pack.mkdir(parents=True)
         self.proposal=json.loads((ROOT/'packaging/distribution/create-tape/ta2-stage-space-proposal-20261119.json').read_text())
+        self.volume_approval=json.loads((ROOT/'packaging/distribution/create-tape/ta2-stage-volume-approval-20261119.json').read_text())
         self.rdir=self.root/'workarea/ta2-stage-readiness/20261119T210718Z-18180'
         self.rdir.mkdir(parents=True)
         self.ops=self.root/'workarea/ta2-stage-operations'
@@ -44,7 +45,8 @@ class StagingTests(unittest.TestCase):
         self.data['readiness.json']=(json.dumps(self.receipt)+'\n').encode()
         self.save_data()
         (self.pack/'ta2-stage-space-proposal-20261119.json').write_text(json.dumps(self.proposal)+'\n')
-        ps=[patch.object(mod,'ROOT',self.root),patch.object(mod,'PROPOSAL',self.pack/'ta2-stage-space-proposal-20261119.json'),patch.object(mod,'APPROVAL',self.pack/'ta2-stage-write-approval.json'),patch.object(mod,'BASE',self.root/'workarea/ta2-stage-readiness'),patch.object(mod,'OPERATIONS',self.ops),patch.object(mod,'ATTEMPT',self.ops/'TA2STG-TSO002-attempt.json')]
+        (self.pack/'ta2-stage-volume-approval-20261119.json').write_text(json.dumps(self.volume_approval)+'\n')
+        ps=[patch.object(mod,'ROOT',self.root),patch.object(mod,'PROPOSAL',self.pack/'ta2-stage-space-proposal-20261119.json'),patch.object(mod,'VOLUME_APPROVAL',self.pack/'ta2-stage-volume-approval-20261119.json'),patch.object(mod,'APPROVAL',self.pack/'ta2-stage-write-approval.json'),patch.object(mod,'BASE',self.root/'workarea/ta2-stage-readiness'),patch.object(mod,'OPERATIONS',self.ops),patch.object(mod,'ATTEMPT',self.ops/'TA2STG-TSO002-attempt.json')]
         for p in ps:p.start();self.addCleanup(p.stop)
 
     def save_data(self):
@@ -53,6 +55,48 @@ class StagingTests(unittest.TestCase):
 
     def read(self):
         return mod.read_readiness(self.rdir,self.proposal)
+
+    def test_volume_approved_but_space_and_write_not(self):
+        self.assertEqual(self.proposal['status'],'VOLUME_APPROVED_SPACE_AND_WRITE_UNAPPROVED')
+        x=mod.read_volume_approval(self.proposal)
+        self.assertEqual(x['volume'],'TSO002')
+        self.assertIs(x['space_allocation_authorized'],False)
+        self.assertIs(x['iebcopy_submission_authorized'],False)
+        self.assertIs(x['production_tape_authorized'],False)
+
+    def test_volume_approval_missing_refuses(self):
+        mod.VOLUME_APPROVAL.unlink()
+        with self.assertRaises(mod.Refusal):mod.read_volume_approval(self.proposal)
+
+    def test_volume_approval_cannot_authorize_space(self):
+        v=copy.deepcopy(self.volume_approval)
+        v['space_allocation_authorized']=True
+        mod.VOLUME_APPROVAL.write_text(json.dumps(v))
+        with self.assertRaisesRegex(mod.Refusal,'absent or widened'):
+            mod.read_volume_approval(self.proposal)
+
+    def test_volume_approval_cannot_authorize_write(self):
+        v=copy.deepcopy(self.volume_approval)
+        v['iebcopy_submission_authorized']=True
+        mod.VOLUME_APPROVAL.write_text(json.dumps(v))
+        with self.assertRaises(mod.Refusal):mod.read_volume_approval(self.proposal)
+
+    def test_volume_approval_wrong_evidence_refuses(self):
+        v=copy.deepcopy(self.volume_approval)
+        v['readiness_evidence']='workarea/ta2-stage-readiness/other'
+        mod.VOLUME_APPROVAL.write_text(json.dumps(v))
+        with self.assertRaises(mod.Refusal):mod.read_volume_approval(self.proposal)
+
+    def test_volume_approval_wrong_dasd_refuses(self):
+        v=copy.deepcopy(self.volume_approval)
+        v['volume']='TSO003'
+        mod.VOLUME_APPROVAL.write_text(json.dumps(v))
+        with self.assertRaises(mod.Refusal):mod.read_volume_approval(self.proposal)
+
+    def test_volume_approval_link_refuses(self):
+        mod.VOLUME_APPROVAL.unlink()
+        mod.VOLUME_APPROVAL.symlink_to(mod.PROPOSAL)
+        with self.assertRaises(mod.Refusal):mod.read_volume_approval(self.proposal)
 
     def test_all_18_proposed_triples_exact_and_budget(self):
         p,h=mod.read_proposal()

@@ -555,6 +555,24 @@ assistant and the one-shot runner has not run against live MVS.
 No new PDS, release candidate, `BCnnnn` VOLSER or tape image was
 created. TA.2 remains IN PROGRESS.
 
+**TA.2 staging-volume-only owner approval (19 November 2026):**
+The owner ran the read-only `ta2-stage-once --live` gate:
+18/18 source/staging names and 127 selected members with fresh
+MVS PASS; original evidence:
+`workarea/ta2-stage-operations/20261119T234105Z-18708`.
+The owner subsequently stated **“TSO002 approved.”**
+The source-controlled
+[volume-only decision](../../distribution/create-tape/ta2-stage-volume-approval-20261119.json)
+therefore approves **TSO002 as the staging DASD volume**, but it
+does **not** approve any of the 18 distinct `SPACE` triples,
+state-changing IEBCOPY or tape operation. The
+[allocation proposal](../../distribution/create-tape/ta2-stage-space-proposal-20261119.json)
+now says `VOLUME_APPROVED_SPACE_AND_WRITE_UNAPPROVED`, while the
+separate `ta2-stage-write-approval.json` remains deliberately absent.
+The guarded staging runner enforces this distinction with
+**42/42 focused local tests PASS**, including seven new approval
+refusals. **No MVS staging writes were performed.** TA.2 IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
