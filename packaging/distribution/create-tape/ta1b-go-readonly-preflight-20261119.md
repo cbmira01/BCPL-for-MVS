@@ -61,3 +61,12 @@ was required.
 **Acceptance boundary:** The GO has not been executed; no
 restored executable-use PASS, binary byte equivalence or
 TA.1 closure can be claimed yet.
+
+## Subsequent owner authorization of the one-shot GO (19 November 2026)
+
+The owner approved exactly one `TA1BGO` JES submission with the
+canonical eight-step MRREGRES scalar/vector case 01, selecting the
+independently restored `HERC02.BCPL.TA1B.LOAD` in each of the three
+`STEPLIB` DDs. The unchanged runner was reviewed and retained.
+No GO execution was yet observed at this authorization checkpoint.
+See [GO authorization and execution boundary](ta1b-go-submission-authorization-20261119.md).

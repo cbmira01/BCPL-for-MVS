@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 unload JOB 9120, restore JOB 9136, and IEHLIST JOBS 9151/9152 PASS (qualified); restored ICINT19 GO read-only preflight PASS; one TA1BGO submission pending separate authorization**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 unload JOB 9120, restore JOB 9136, IEHLIST JOBS 9151/9152 PASS (qualified); restored ICINT19 GO preflight PASS; owner authorized one TA1BGO, execution results pending**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -300,6 +300,25 @@ ICINT19 executions, and exact scalar/vector `RP:` records.
 **No GO submission has been authorized or executed yet.**
 See [actual GO preflight record](../../distribution/create-tape/ta1b-go-readonly-preflight-20261119.md).
 TA.1 remains IN PROGRESS.
+
+**TA.1 Track B restored ICINT19 GO authorization (19 November 2026):**
+The owner explicitly approved **one** `TA1BGO` JES submission
+after the real read-only GO preflight PASS at
+`acae8bd36b222bc4e3ef7ac5bee57ea482c1dcf3`.
+The unmodified, source-controlled
+`scripts/run-ta1-track-b-go --run` must repeat preflight,
+require typed `RUN RESTORED ICINT19 SCALVEC`, and atomically
+record a no-retry attempt before submitting the canonical
+eight-step MRREGRES scalar/vector case. All three interpreter
+`STEPLIB` DDs are bound to the restored
+`HERC02.BCPL.TA1B.LOAD` on TSO002; all created work datasets
+are temporary. No tape action or permanent MVS dataset change
+is authorized. The source/test package retains its prior
+32/32 isolated offline PASS; an additional 19/19 source-level
+safety review checks PASS without code changes. No MVS
+`TA1BGO` execution result has yet been received, so Track B
+executable-use and TA.1 closure remain pending. See
+[TA.1B GO authorization](../../distribution/create-tape/ta1b-go-submission-authorization-20261119.md).
 
 ## 1. Objective and product boundary
 
