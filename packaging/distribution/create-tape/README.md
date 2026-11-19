@@ -548,3 +548,16 @@ must remain under half the reported volume free tracks, with no
 claim of contiguous extents. No allocation, stage copy, release
 identity or tape write occurs. See the
 [TA.2 allocation design and verification record](ta2-source-bounded-staging-space-20261119.md).
+
+### TA.2 stage readiness — exact saved SPACE and read-only live review
+
+`scripts/ta2-stage-readiness --allocation-evidence <saved-plan> --live`
+strictly replays the source-bounded proposal, unchanged MVS capacity
+receipts, 18 specific destination SPACE allocations, and exactly 127
+IEBCOPY SELECT cards. It repeats read-only MVS source/target checks,
+retains private JES evidence under `workarea/ta2-stage-readiness/`,
+and prints the 18 individually proposed primary/secondary/directory
+values for explicit owner approval. It has **no stage-copy execution
+path**, and total IEHLIST free tracks do not prove free extent
+contiguity. See the
+[TA.2 stage readiness evidence contract](ta2-stage-readiness-review-20261119.md).

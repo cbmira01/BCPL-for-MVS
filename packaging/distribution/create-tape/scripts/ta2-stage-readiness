@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""TA.2 one-shot staging readiness: saved-evidence replay and read-only MVS.
+
+No DASD allocation, IEBCOPY submission, candidate reservation or tape access.
+Reads the immutable TA.2 allocation proposal, prints the 18 exact SPACE
+triples for owner review and saves independently replayed MVS observations.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+PLAN_BASE = ROOT / 'workarea/ta2-allocation-plan'
+OUT = ROOT / 'workarea/ta2-stage-readiness'
+RUN = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
+HASH_ROW = re.compile(r'([a-f0-9]{64})  ([a-z0-9.-]+)\Z')
+MAX_FILE = 16 * 1024 * 1024
+SAVED = {'stage-allocations-proposed.json', 'stage-iebcopy-draft.jcl',
+         'planning-review.json', 'source-stat.txt', 'catalog-report.txt',
+         'vtoc-report.txt'}
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, reason: str) -> None:
+    if not ok:
+        raise Refusal(reason)
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def load(name: str, filename: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(filename))
+    spec = importlib.util.spec_from_loader(name, loader)
+    need(spec is not None and spec.loader is not None, 'TA.2 dependency missing')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def checked_file(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX_FILE,
+         'missing, linked or oversized evidence: ' + path.name)
+    return path.read_bytes()
+
+
+def read_plan(folder: Path) -> tuple[dict[str, bytes], dict, dict, str]:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and
+         PLAN_BASE.is_dir() and not PLAN_BASE.is_symlink() and
+         PLAN_BASE.resolve().parent == work.resolve() and
+         RUN.fullmatch(folder.name) is not None and folder.is_dir() and
+         not folder.is_symlink() and folder.resolve().parent == PLAN_BASE.resolve(),
+         'allocation evidence is not a private TA.2 run under repository workarea')
+    need({p.name for p in folder.iterdir()} == SAVED | {'SHA256SUMS'},
+         'allocation evidence has missing/extra records')
+    digest_lines = checked_file(folder / 'SHA256SUMS').decode('ascii').splitlines()
+    pins = {}
+    for line in digest_lines:
+        m = HASH_ROW.fullmatch(line)
+        need(m is not None and m.group(2) in SAVED and m.group(2) not in pins,
+             'invalid allocation evidence SHA256SUMS')
+        pins[m.group(2)] = m.group(1)
+    need(set(pins) == SAVED, 'allocation SHA256SUMS incomplete')
+    raw = {name: checked_file(folder / name) for name in SAVED}
+    for name, blob in raw.items():
+        need(sha(blob) == pins[name], 'allocation checksum mismatch: ' + name)
+    try:
+        allocation = json.loads(raw['stage-allocations-proposed.json'].decode('utf-8'))
+        planning = json.loads(raw['planning-review.json'].decode('utf-8'))
+    except (UnicodeError, ValueError) as exc:
+        raise Refusal('invalid allocation proposal JSON') from exc
+    need(type(allocation) is dict and type(planning) is dict,
+         'allocation proposal must contain two JSON objects')
+    need(planning.get('status') == 'READ-ONLY MVS PLANNING PASS; ALLOCATIONS UNAPPROVED',
+         'staging allocations were not supported by successful read-only MVS checks')
+    need(raw['source-stat.txt'].startswith(b'RC=0\n') and
+         b'\nRC=' not in raw['source-stat.txt'],
+         'source MVS capacity inquiry did not complete with RC=0')
+    jobs = planning.get('fresh_mvs_jobs')
+    need(isinstance(jobs, dict) and set(jobs) == {'catalog_job', 'vtoc_job'} and
+         all(type(jobs[k]) is int and jobs[k] > 0 for k in jobs) and
+         jobs['catalog_job'] != jobs['vtoc_job'],
+         'saved MVS catalog/VTOC job receipt invalid')
+    need(planning.get('source_stat_sha256') == sha(raw['source-stat.txt']),
+         'saved MVS source report does not match planning receipt')
+    return raw, allocation, planning, sha(raw['planning-review.json'])
+
+
+def replay(original: dict[str, bytes], allocation: dict, planning: dict,
+           modules: dict) -> tuple[dict, dict, dict, list[dict], list[str]]:
+    """Validate original independent source, target and allocation evidence."""
+    planmod, stage, target, reviewmod = (modules[x] for x in
+                                          ('allocation', 'stage', 'target', 'review'))
+    source, capacity, srcreview, stageplan, core = (modules[x] for x in
+                          ('source', 'capacity', 'source_review', 'stageplan', 'core'))
+    canonical = source.core()
+    manifest = canonical.load(ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml')
+    dspal = canonical.load(ROOT / 'config/dspal.yaml')
+    canonical.check(manifest, dspal, ROOT, release=False)
+    volume = planning.get('volume')
+    need(volume == 'TSO002', 'only owner-reviewed TSO002 volume may be proposed')
+    review_path = planning.get('target_review_directory')
+    need(isinstance(review_path, str) and
+         review_path.startswith('workarea/ta2-target-review/') and
+         not Path(review_path).is_absolute() and '..' not in Path(review_path).parts,
+         'unsafe target-review evidence reference')
+    reviewed, reviewed_raw, reviewed_sha = planmod.read_review(ROOT / review_path, volume)
+    need(planning.get('target_review_sha256') == reviewed_sha,
+         'target-review evidence changed')
+    origin = reviewed.get('original_target_evidence')
+    need(isinstance(origin, str) and
+         origin.startswith('workarea/ta2-target-preflight/') and
+         not Path(origin).is_absolute() and '..' not in Path(origin).parts,
+         'unsafe original target evidence reference')
+    original_target = reviewmod.read_original(ROOT / origin)
+    stage_rel = json.loads(original_target['summary.json'])['stage_evidence']
+    need(isinstance(stage_rel, str) and stage_rel.startswith('workarea/ta2-stage-plan/') and
+         '..' not in Path(stage_rel).parts and not Path(stage_rel).is_absolute(),
+         'unsafe stage worksheet evidence reference')
+    worksheet, wsha, saved_stat = stage.read_stage_run(ROOT, ROOT / stage_rel)
+    rows = stage.validate_worksheet(worksheet, manifest, dspal)
+    need(planning.get('source_worksheet_sha256') == wsha,
+         'planning source worksheet SHA-256 differs')
+    stage.verify_history(worksheet, saved_stat, manifest, dspal)
+    checked = planmod.audit_saved(reviewed, reviewed_raw, stage, target, reviewmod,
+                                  core, manifest, dspal, rows, volume)
+    need(checked['worksheet_sha'] == wsha, 'replayed source evidence differs')
+    expected_alloc, sizing = planmod.derive_targets(rows, worksheet['sources'], wsha,
+                                                     reviewed, volume)
+    need(allocation == expected_alloc, 'saved 18 destination SPACE triples differ from source-derived proposal')
+    pinned = stage.validate_allocations(allocation, wsha, rows, dspal)
+    deck = stage.render_jcl(pinned).encode('ascii')
+    need(original['stage-iebcopy-draft.jcl'] == deck,
+         'saved IEBCOPY draft differs from canonical 127-member selection')
+    need(planning.get('primary_tracks_total') == sizing['primary_tracks_total'] and
+         planning.get('secondary_tracks_total') == sizing['secondary_tracks_total'] and
+         planning.get('directory_blocks_total') == sizing['directory_blocks_total'] and
+         planning.get('total_primary_secondary_budget') == sizing['total_primary_secondary_budget'] and
+         planning.get('reported_free_tracks') == sizing['reported_free_tracks'] and
+         planning.get('sources') == sizing['sources'] and
+         planning.get('unused_reported_tracks_after_budget') ==
+         sizing['unused_reported_tracks_after_budget'],
+         'saved planning summary no longer matches replayed allocations')
+    items = source.expected_sources(manifest, dspal)
+    receipt = srcreview.inspect(ROOT / worksheet['source_evidence_directory'], items, source)
+    cap_raw = stageplan.read_capacity(ROOT, ROOT / worksheet['capacity_evidence_directory'])
+    saved = stageplan.replay_capacity(cap_raw, receipt, items, capacity, source)
+    stageplan.compare_current(original['source-stat.txt'].decode('utf-8').split('\n', 1)[1],
+                              saved, items, capacity, source, receipt)
+    names = target.targets(rows, dspal)
+    target.catalog_absence(core, original['catalog-report.txt'].decode('utf-8'), names)
+    fresh = reviewmod.inspect_vtoc(original['vtoc-report.txt'].decode('utf-8'), volume, names)
+    need(fresh['format1_names_sha256'] == reviewed['format1_names_sha256'] and
+         fresh['iehlist_reported_free_total_tracks'] == sizing['reported_free_tracks'],
+         'saved allocation job VTOC inventory/free space no longer matches target review')
+    return checked, sizing, saved, items, names
+
+
+def make_run() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and not OUT.is_symlink(),
+         'unsafe readiness evidence output root')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    folder = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') +
+                    '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    return folder
+
+
+def save_new(path: Path, b: bytes) -> None:
+    need(not path.exists() and not path.is_symlink(), 'readiness evidence overwrite refused')
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    with os.fdopen(fd, 'wb') as f:
+        f.write(b)
+
+
+def seal(folder: Path) -> None:
+    content = ''.join(sha(p.read_bytes()) + '  ' + p.name + '\n'
+                      for p in sorted(folder.iterdir()) if p.is_file())
+    save_new(folder / 'SHA256SUMS', content.encode('ascii'))
+
+
+def inquire_source(folder: Path, stageplan, saved, items, capacity, source, receipt) -> str:
+    """Repeat read-only MVS source inventory, retaining exact output on failure."""
+    result = subprocess.run(['tools/datasets/dspal', 'stat'], cwd=ROOT,
+                            text=True, capture_output=True, timeout=420, check=False,
+                            env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1',
+                                 'TMPDIR': str(folder.resolve())})
+    save_new(folder / 'source-stat.txt',
+             (f'RC={result.returncode}\n' + result.stdout + result.stderr).encode('utf-8'))
+    need(result.returncode == 0, 'fresh MVS source capacity check failed')
+    stageplan.compare_current(result.stdout, saved, items, capacity, source, receipt)
+    return sha(result.stdout.encode('utf-8'))
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--allocation-evidence', type=Path, required=True)
+    parser.add_argument('--live', action='store_true', help='repeat read-only MVS source/target inquiries')
+    args = parser.parse_args(argv)
+    folder = None
+    try:
+        script_paths = {'allocation': 'ta2-allocation-plan', 'stage': 'ta2-stage-jcl',
+                        'target': 'ta2-target-preflight', 'review': 'ta2-target-review',
+                        'source': 'ta2-source-preflight', 'capacity': 'ta2-capacity-preflight',
+                        'source_review': 'ta2-source-review', 'stageplan': 'ta2-stage-plan'}
+        mods = {name: load('ta2_ready_' + name, SCRIPTS / script)
+                for name, script in script_paths.items()}
+        mods['core'] = load('ta2_ready_core', ROOT / 'tools/datasets/dspal-core.py')
+        raw, allocations, planning, receipt_sha = read_plan(args.allocation_evidence)
+        checked, sizing, saved, items, names = replay(raw, allocations, planning, mods)
+        src_plan = checked['plan']
+        source = mods['source']
+        receipt = mods['source_review'].inspect(ROOT / src_plan['source_evidence_directory'],
+                                                 items, source)
+        if not args.live:
+            print('TA.2 STAGING READINESS: saved proposal accepted; fresh read-only MVS recheck still required')
+            print(f'{sizing["primary_tracks_total"]} primary + {sizing["secondary_tracks_total"]} '
+                  f'secondary = {sizing["total_primary_secondary_budget"]} tracks on proposed TSO002')
+            print('No stage allocation, JES copy, candidate/VOLSER or tape operation.')
+            return 0
+        folder = make_run()
+        source_sha = inquire_source(folder, mods['stageplan'], saved, items,
+                                    mods['capacity'], source, receipt)
+        core = mods['core']
+        config = core.load_config()
+        need(config['mvs']['hlq'] == 'HERC02', 'MVS HLQ no longer HERC02')
+        core.require_reader_ready(config)
+        jobs = mods['target'].inquire(core, config, folder, names, sizing['volume'])
+        fresh = mods['review'].inspect_vtoc((folder / 'vtoc-report.txt').read_text(),
+                                            sizing['volume'], names)
+        mods['target'].catalog_absence(core,
+                                       (folder / 'catalog-report.txt').read_text(), names)
+        reviewed = mods['allocation'].read_review(ROOT / planning['target_review_directory'],
+                                                  'TSO002')[0]
+        need(fresh['format1_names_sha256'] == reviewed['format1_names_sha256'] and
+             fresh['iehlist_reported_free_total_tracks'] == sizing['reported_free_tracks'],
+             'fresh MVS VTOC data set names or free-track total changed')
+        summary = {'status': 'READ-ONLY MVS CHECK PASS; STAGING WRITE NOT AUTHORIZED',
+                   'allocation_evidence': args.allocation_evidence.as_posix(),
+                   'allocation_review_sha256': receipt_sha,
+                   'volume': sizing['volume'],
+                   'format1_datasets': fresh['format1_datasets_seen'],
+                   'mvs_jobs': jobs, 'source_stdout_sha256': source_sha,
+                   'reported_free_tracks': sizing['reported_free_tracks'],
+                   'primary_tracks': sizing['primary_tracks_total'],
+                   'secondary_tracks': sizing['secondary_tracks_total'],
+                   'directory_blocks': sizing['directory_blocks_total'],
+                   'requested_total_tracks': sizing['total_primary_secondary_budget'],
+                   'staging_datasets': 18, 'selected_members': 127,
+                   'qualification': 'No proof of free extent contiguity. No MVS stage writes.'}
+        save_new(folder / 'readiness.json', (json.dumps(summary, indent=2)+'\n').encode('utf-8'))
+        seal(folder)
+        print(f'TA.2 STAGING READINESS: 18/18 PDS; 127 selected; '
+              f'proposed TSO002 free {sizing["reported_free_tracks"]} tracks; fresh MVS PASS')
+        print(f'  required primary {sizing["primary_tracks_total"]}, secondary '
+              f'{sizing["secondary_tracks_total"]}, total {sizing["total_primary_secondary_budget"]}')
+        print('BTnnnn  primary secondary directory')
+        for target in allocations['targets']:
+            space = target['space']
+            print(f'BT{target["sequence"]:04d}  {space["primary_tracks"]:7d} '
+                  f'{space["secondary_tracks"]:9d} {space["directory_blocks"]:9d}')
+        print('Private MVS readiness evidence: ' + str(folder.relative_to(ROOT)))
+        print('No stage allocation, IEBCOPY submission, candidate or tape change.')
+        return 0
+    except (Refusal, OSError, ValueError, TypeError, KeyError, UnicodeError,
+            subprocess.TimeoutExpired, RuntimeError) as exc:
+        if folder is not None:
+            try:
+                save_new(folder / 'failure.json',
+                         (json.dumps({'status': 'REFUSED', 'reason': str(exc)})+'\n').encode())
+                seal(folder)
+                print('Private MVS evidence retained: ' + str(folder.relative_to(ROOT)))
+            except (Refusal, OSError):
+                pass
+        print('TA.2 STAGING READINESS REFUSED: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

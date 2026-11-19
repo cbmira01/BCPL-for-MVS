@@ -514,6 +514,23 @@ suitability, target-volume selection, SPACE approval, JES staging,
 record fidelity and release-media acceptance remain open. No staging
 PDS, candidate identity or VOLSER was allocated. TA.2 IN PROGRESS.
 
+**TA.2 owner-reported source-bounded staging SPACE proposal and read-only readiness (19 November 2026):**
+The owner reported one real MVS-backed proposal: 18 PDSes, 127 selected
+members, **645 primary plus 65 secondary = 710 proposed tracks** on
+TSO002, against **16,045 IEHLIST-reported free tracks**. Private
+original evidence:
+`workarea/ta2-allocation-plan/20261119T204153Z-17905`.
+The 18 individual SPACE triples and VTOC extents are not in the
+assistant context and are **not approved**. The new
+[TA.2 stage readiness evidence gate](../../distribution/create-tape/ta2-stage-readiness-review-20261119.md)
+independently replays exact saved allocation, canonical 127-member
+IEBCOPY JCL, original MVS source/capacity/stage and target history,
+then (with `--live`) repeats read-only source and target MVS
+inquiries and prints all 18 proposed primary/secondary/directory
+triples. **35/35 focused offline tests PASS**; a live MVS readiness
+run is pending. No new DASD PDS, IEBCOPY staging submission, production
+VOLSER or tape image has been created. TA.2 IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
