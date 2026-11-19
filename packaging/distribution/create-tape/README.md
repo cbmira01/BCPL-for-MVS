@@ -289,3 +289,18 @@ See [Track B write evidence and readback gate](ta1b-write-evidence-and-readback-
 **Status:** TA.1 Track B WRITE PASS (qualified); independent restoration,
 IEHLIST directory comparison and executable GO still pending separate
 approval and actual MVS verification.
+
+## TA.1B independent restore preflight: live PASS (18 November 2026)
+
+The owner executed `scripts/run-ta1-track-b-restore` in default
+read-only mode at `52c128ca4dac2b82549114976f4f4eee807aa9d6`.
+The verified original JOB 9120 BTA102 receipt and AWS SHA-256 were
+unchanged, 0480 was EMPTY, and the new target
+`HERC02.BCPL.TA1B.LOAD` did not exist. The MVS-facing run saved
+private evidence at
+`workarea/ta1b-operations/BTA102-track-b-restore-20261119T002435Z-10407/`.
+See [the read-only preflight record](ta1b-restore-readonly-preflight-20261118.md).
+No remount, PDS creation, restore, IEHLIST or GO occurred. A
+one-shot `TA1BREST` will require **separate explicit owner
+stateful authorization**; the exact-image conditional mount and
+no-retry refusal are already controlled by the committed runner.

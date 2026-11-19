@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified), saved MVS/Hercules physical-file review completed; Track B write approved; first attempt halted read-only at MVS unit-state gate; Track B BTA102 unload PASS (qualified), JOB 9120 IEBCOPY RC=0000; separate load-library restore/GO pending; milestone IN PROGRESS**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write PASS (qualified), JOB 9120; independent restore preflight PASS, restore/directory comparison/GO pending separate authorization**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -144,6 +144,28 @@ without its own explicit owner authorization and typed confirmations.
 Its 26 synthetic/negative offline tests PASS. See
 [Track B write receipt and restore staging](../../distribution/create-tape/ta1b-write-evidence-and-readback-preparation-20261118.md).
 TA.1 remains IN PROGRESS; no restore/GO acceptance is claimed.
+
+**TA.1 Track B independent restore read-only preflight checkpoint (18 November 2026, 19:24 EST / 19 November 00:24 UTC):**
+The owner ran the newly committed
+`packaging/distribution/create-tape/scripts/run-ta1-track-b-restore`
+without `--run`, on GitHub `main`
+`52c128ca4dac2b82549114976f4f4eee807aa9d6`.
+Its live saved-receipt and MVS/Hercules checks reported
+`BTA102 JOB 9120 write receipt and immutable SHA-256 PASS; drive empty`
+and `TA.1 Track B restore preflight PASS (new DASD PDS still absent)`.
+Evidence path:
+`workarea/ta1b-operations/BTA102-track-b-restore-20261119T002435Z-10407/`.
+The runner did NOT mount/remount BTA102, allocate a new DASD load
+library, submit `TA1BREST`, run IEHLIST or execute ICINT19 GO.
+The checksum validated is the original
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+This is **owner-reported live preflight evidence**, not independent
+restoration acceptance. The separately approved design provides for
+one conditional exact-volume remount and one IEBCOPY `TA1BREST`
+into **new** `HERC02.BCPL.TA1B.LOAD` (PO/U/0/6144).
+**Stateful restoration is not yet authorized**; directory comparison
+and restored STEPLIB execution remain separate MVS verification gates.
+See [TA.1B restore preflight record](../../distribution/create-tape/ta1b-restore-readonly-preflight-20261118.md).
 
 ## 1. Objective and product boundary
 

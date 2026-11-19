@@ -90,3 +90,17 @@ Track B write is **PASS (qualified)**; TA.1 remains **IN PROGRESS**.
 No independent BTA102 restore, directory metadata comparison,
 restored executable use, product tape release, or recipient install
 has been accepted.
+
+## Subsequent live restore preflight PASS (18 November 2026, 19:24 EST)
+
+The owner ran the committed `run-ta1-track-b-restore` with its default
+read-only mode on GitHub `main`
+`52c128ca4dac2b82549114976f4f4eee807aa9d6`. The runner
+verified the original BTA102 JOB 9120 receipt and SHA-256, found
+Hercules 0480 empty and the intended new DASD load PDS still absent,
+and returned `TA.1 Track B restore preflight PASS`. Its evidence is
+under `workarea/ta1b-operations/BTA102-track-b-restore-20261119T002435Z-10407/`.
+The run performed NO tape mount, new DASD PDS allocation, restore,
+IEHLIST directory comparison or restored ICINT19 GO. Those stages
+remain pending separate authorization and actual MVS evidence.
+See [the qualified read-only result](ta1b-restore-readonly-preflight-20261118.md).
