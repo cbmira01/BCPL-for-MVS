@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer READY FOR DESIGN AND READ-ONLY PREFLIGHT ONLY — no candidate production authorized**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (design/offline/read-only work only) — no candidate production authorized**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -391,6 +391,19 @@ before implementing. No frozen candidate manifest or identity,
 new VOLSER allocation, AWS image production, MVS tape operation,
 installation or publication is authorized by this transition.
 See [TA.2 kickoff](ta2-kickoff-20261119.md).
+
+**TA.2 read-only MVS source-inventory checkpoint (19 November 2026):**
+After correcting the live preflight's managed-`dspal stat` heading parser,
+the owner reported `18/18 checked; 0 blocker(s); 76 unselected development
+members`, with the full private read-only MVS evidence in
+`workarea/ta2-source-preflight/20261119T140206Z-15135`.
+All 127 curated PDS members are reported present; the 76 development
+extras remain excluded from selection. A separate saved-evidence reviewer
+and strict candidate evidence gate have been implemented and synthetic
+tested, but have not re-reviewed these private files in the assistant
+environment. No source bytes, legal provenance, isolated staging, tape
+production or candidate identity is accepted by this checkpoint.
+See the [TA.2 implementation record](../../distribution/create-tape/ta2-offline-producer-implementation-20261119.md).
 
 ## 1. Objective and product boundary
 

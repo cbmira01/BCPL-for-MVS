@@ -178,9 +178,18 @@ def verify_saved_mvs(root: Path, row: dict) -> None:
     need(isinstance(receipt, dict) and set(receipt) == expected_fields,
          f'BT{seq:04d} requires pinned saved stat/ls evidence')
     stat = pinned_attachment(root, receipt['stat']).upper()
+    need(stat.startswith('RC=0\n'),
+         f'BT{seq:04d} saved stat does not establish a successful inquiry')
     dsn = row['producer_source_dsn']
-    need(re.search(r'(?m)^DATASET:\s+' + re.escape(dsn) + r'\s*$', stat) is not None,
-         f'BT{seq:04d} source stat names wrong dataset')
+    logical = row.get('producer_source_key')
+    need(logical is None or (isinstance(logical, str) and
+         MEMBER.fullmatch(logical) is not None),
+         f'BT{seq:04d} unsafe source logical key')
+    heading = (r'DATASET:\s+' + re.escape(dsn) +
+               (r'\s+\(' + re.escape(logical) + r'\)' if logical else '') + r'\s*')
+    headings = re.findall(r'(?m)^DATASET:[^\n]*$', stat)
+    need(len(headings) == 1 and re.fullmatch(heading, headings[0]) is not None,
+         f'BT{seq:04d} source stat DSN/logical key ambiguous or mismatched')
     for name, value in row['source_dcb'].items():
         need(re.search(r'\b' + re.escape(name.upper()) + r'\s*:\s*' +
                        re.escape(str(value).upper()) + r'\b', stat) is not None,
@@ -190,8 +199,10 @@ def verify_saved_mvs(root: Path, row: dict) -> None:
          f'BT{seq:04d} source DASD volume unverified/mismatched')
     if seq > 1:
         listing = pinned_attachment(root, receipt['ls']).upper()
-        need(re.search(r'(?m)^' + re.escape(dsn) + r':\s*$', listing) is not None,
-             f'BT{seq:04d} saved directory names wrong PDS')
+        need(listing.startswith('RC=0\n'),
+             f'BT{seq:04d} saved member listing does not establish a successful inquiry')
+        headings = re.findall(r'(?m)^' + re.escape(dsn) + r':\s*$', listing)
+        need(len(headings) == 1, f'BT{seq:04d} saved directory heading ambiguous/wrong')
         found = re.findall(r'(?m)^    ([A-Z0-9@$#]{1,8})\s*$', listing)
         need(len(found) == len(set(found)) and set(found) == set(row['members']),
              f'BT{seq:04d} staged member list differs from selected manifest')

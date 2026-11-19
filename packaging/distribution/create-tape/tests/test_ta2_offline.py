@@ -72,12 +72,12 @@ class TA2OfflineTests(unittest.TestCase):
             n = row['sequence']
             dsn = row['producer_source_dsn']
             row['producer_source_volume'] = 'TSO003'
-            stat = f'DATASET:   {dsn}\nVOLUME:   TSO003\n'
+            stat = f'RC=0\nDATASET:   {dsn}\nVOLUME:   TSO003\n'
             for k, v in row['source_dcb'].items():
                 stat += f'{k.upper()}:   {v}\n'
             attachments = {'stat': stat}
             if n > 1:
-                attachments['ls'] = dsn + ':\n' + ''.join(
+                attachments['ls'] = 'RC=0\n' + dsn + ':\n' + ''.join(
                     '    ' + mem + '\n' for mem in row['members'])
             row['mvs_inventory_receipt'] = {}
             for name, content in attachments.items():
@@ -90,6 +90,45 @@ class TA2OfflineTests(unittest.TestCase):
     def check(self):
         return mod.check_candidate(self.m, self.dspal, self.reg, ROOT, self.raw,
                                    self.core, check_git=False)
+
+    def rewrite_receipt(self, n, part, change):
+        receipt = self.m['datasets'][n - 1]['mvs_inventory_receipt'][part]
+        path = ROOT / receipt['path']
+        path.write_text(change(path.read_text()))
+        receipt['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def test_failed_stat_inquiry_refused_even_with_good_fields(self):
+        self.rewrite_receipt(3, 'stat', lambda s: s.replace('RC=0', 'RC=2', 1))
+        with self.assertRaisesRegex(mod.Refusal, 'successful inquiry'):
+            self.check()
+
+    def test_failed_directory_inquiry_refused_even_with_good_members(self):
+        self.rewrite_receipt(3, 'ls', lambda s: s.replace('RC=0', 'RC=2', 1))
+        with self.assertRaisesRegex(mod.Refusal, 'successful inquiry'):
+            self.check()
+
+    def test_managed_logical_key_must_match_when_declared(self):
+        row = self.m['datasets'][2]
+        row['producer_source_key'] = 'EXAMPLE'
+        self.rewrite_receipt(3, 'stat',
+                             lambda s: s.replace('DATASET:   TEST.SRC.PDS',
+                                                 'DATASET:   TEST.SRC.PDS (EXAMPLE)'))
+        self.assertEqual(self.check()['logical_datasets'], 3)
+        row['producer_source_key'] = 'WRONG'
+        with self.assertRaisesRegex(mod.Refusal, 'logical key'):
+            self.check()
+
+    def test_unexpected_managed_key_in_unmanaged_staging_refused(self):
+        self.rewrite_receipt(3, 'stat',
+                             lambda s: s.replace('DATASET:   TEST.SRC.PDS',
+                                                 'DATASET:   TEST.SRC.PDS (EXAMPLE)'))
+        with self.assertRaisesRegex(mod.Refusal, 'logical key'):
+            self.check()
+
+    def test_ambiguous_saved_stat_heading_refused(self):
+        self.rewrite_receipt(3, 'stat', lambda s: s + 'DATASET: TEST.BAD.DSN\n')
+        with self.assertRaisesRegex(mod.Refusal, 'ambiguous'):
+            self.check()
 
     def test_happy_offline_candidate(self):
         self.assertEqual(self.check()['logical_datasets'], 3)

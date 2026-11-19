@@ -100,3 +100,52 @@ preserving the complete private list. The original evidence is untouched.
 next step is a new separately saved, read-only MVS `--live` execution of
 the corrected tool. It must establish actual DCB/member findings; no
 source inventory PASS or tape/candidate authority is inferred from the fix.
+
+## Corrected source preflight: MVS owner checkpoint (19 November 2026)
+
+The owner executed the corrected `ta2-source-preflight --live` at
+`82a01ed81202bb7a0e7c9fc245c7c40fed07f215` on actual MVS and reported:
+
+```text
+TA.2 MVS SOURCE PREFLIGHT: 18/18 checked; 0 blocker(s); 76 unselected development members
+Private saved MVS evidence: workarea/ta2-source-preflight/20261119T140206Z-15135
+```
+
+This is **owner-reported actual MVS LISTDS metadata/directory success**, not
+assistant-side inspection of the private files or MVS source bytes. It
+verifies presence of the 127 manifest-selected members across 18 source PDSes
+and reports 76 other development members, **not selected for release**.
+No DASD/tape writes occurred. The initial failed preflight run remains
+separate, retained historical evidence of the corrected parser defect.
+
+The separate `scripts/ta2-source-review` now independently checks a saved
+source-preflight run under `workarea/ta2-source-preflight/`, including:
+
+- all 36 captured `dspal stat`/`ls` reports, the summary and the exact
+  `SHA256SUMS` set (37 checksum entries), excluding unexpected files;
+- successful saved inquiry RC, exact source DSN/logical name/volume/DCB,
+  18 manifest-driven source PDS identities and 127 curated member selections;
+- raw member directories and their excluded members against every reported
+  JSON summary entry, with no trust placed in aggregate counts alone;
+- missing/extra/linked evidence, file-hash drift, changed DCBs, missing
+  selected members, duplicate headings, source identity drift or failed
+  inquiry is a hard refusal.
+
+The reviewer is read-only and emits a concise review or JSON. The owner-run
+private files have **not** been accessible in the assistant environment for
+independent live-evidence re-review. The new code must be tested against that
+specific saved MVS evidence before its reviewer PASS can be claimed.
+
+The `ta2-offline` candidate evidence gate also now requires `RC=0` on
+each saved stat/ls inquiry and one unambiguous DSN heading; a managed
+logical name in parentheses is accepted only when declared via
+`producer_source_key`. Distinct isolated staging with exact 127-member
+selection remains required; the 76 development extras cannot enter staging.
+
+**Assistant isolated-workspace checks:** 77/77 TA.2 synthetic tests PASS
+(35 original producer tests + 15 original source-preflight tests + five
+candidate-gate tests + 22 saved-evidence reviewer tests); Python compilation
+PASS. Tests do not establish source bytes, object provenance/rights,
+IEBCOPY staging execution, record fidelity, or tape acceptance. No candidate
+manifest/version/source freeze/VOLSER, staging DASD data set, or AWS media
+was created or reserved. TA.2 remains IN PROGRESS.

@@ -449,3 +449,16 @@ canonical design manifest, and stores SHA-256-pinned private records under
 reported but never selected for release. This is neither a candidate
 staging operation nor an MVS content comparison; it does not write DASD/tape.
 Offline parser/safety tests: `tests/test_ta2_source_preflight.py`.
+
+### TA.2 independent saved-source-evidence review
+
+`scripts/ta2-source-review --evidence workarea/ta2-source-preflight/<run-id>`
+performs a **host-only, read-only** independent recheck of a completed
+`ta2-source-preflight --live` MVS inquiry run. It verifies SHA-256 checksums,
+success RC and original MVS dataset/member listings against the single TA.0
+manifest, and refuses changed or incomplete evidence. The reviewer neither
+submits an MVS job nor modifies the source evidence. The 19 November MVS
+source-inventory checkpoint is recorded in the
+[TA.2 implementation record](ta2-offline-producer-implementation-20261119.md).
+It does not substitute for the future isolated staging inventory or source
+byte/provenance verification.
