@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write JOB 9120 and restore JOB 9136 PASS (qualified); source/restored directory live read-only preflight PASS, two IEHLIST jobs and restored GO pending separate authorization**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write JOB 9120 and restore JOB 9136 PASS (qualified); source/restored directory read-only preflight PASS; owner authorized one TA1BSRC and one TA1BDST; results pending; restored ICINT19 GO not authorized**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -218,6 +218,29 @@ It preserves all existing BCPL data, requires independent
 MVS success/IEF142I, and performs no tape, restoration or GO operation.
 TA.1 remains IN PROGRESS.
 See [live directory preflight record](../../distribution/create-tape/ta1b-directory-readonly-preflight-20261118.md).
+
+**TA.1 Track B IEHLIST comparison authorization (18 November 2026, 21:46 EST):**
+Following the live read-only directory preflight PASS at
+`58f98db10dd5b790ea52c488070c6de2a98b98d5`,
+the owner explicitly approved the next gate: exactly **one
+`TA1BSRC`** IEHLIST `LISTPDS FORMAT` JES job against
+`HERC02.BCPL.MR10KIT.LOAD` on **TSO003**, and exactly
+**one `TA1BDST`** against restored `HERC02.BCPL.TA1B.LOAD`
+on **TSO002**. Both use `DISP=SHR`; the approved scope
+includes read-only MVS JES/SYSPRINT output and independent
+`ICINT19` directory comparison, **not** a tape operation,
+load-library modification, `TA1BREST` rerun or `ICINT19` GO.
+The pre-existing, source-controlled, offline-tested
+`scripts/run-ta1-track-b-directory --run` already enforces
+fresh MVS inquiry, exact confirmation
+`COMPARE ICINT19 DIRECTORIES`, durable exclusive-create
+no-retry marker and strict individual JES RC/IEF142I checks.
+A fresh source review reconfirmed all 12 relevant safeguards
+(no source edits needed); the established offline isolated tests
+were reported 35/35 PASS in the previous commit.
+**Neither IEHLIST job has yet been observed to execute**.
+See [this authorization record](../../distribution/create-tape/ta1b-directory-submission-authorization-20261118.md).
+TA.1 remains IN PROGRESS.
 
 ## 1. Objective and product boundary
 

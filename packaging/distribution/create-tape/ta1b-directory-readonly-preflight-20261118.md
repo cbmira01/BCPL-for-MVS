@@ -48,3 +48,12 @@ equivalence or successful ICINT19 program fetch/execution.
 The canonical restored-STEPLIB eight-step MR10 scalar/vector
 execution remains separately gated.
 TA.1 is **IN PROGRESS**.
+
+## Subsequent owner approval of IEHLIST submission (18 November 2026, 21:46 EST)
+
+After the above read-only PASS, the owner expressly authorized
+one `TA1BSRC` and one `TA1BDST` read-only IEHLIST FORMAT job,
+with no tape operation and no restored `ICINT19` GO.
+The guarded one-shot runner was re-reviewed without source changes;
+this note records permission only, **not** any JES execution result.
+See [IEHLIST authorization](ta1b-directory-submission-authorization-20261118.md).
