@@ -15,26 +15,45 @@ loader.exec_module(mod)
 class SourcePreflightTests(unittest.TestCase):
     dcb = {'dsorg': 'PO', 'recfm': 'U', 'lrecl': 0, 'blksize': 6144}
     dsn = 'HERC02.BCPL.MR10KIT.LOAD'
-    stat = ('DATASET:   HERC02.BCPL.MR10KIT.LOAD\nDSORG:PO\nRECFM:U\n'
-            'LRECL:0\nBLKSIZE:6144\nVOLUME:TSO003\n')
+    stat = ('Dataset:   HERC02.BCPL.MR10KIT.LOAD (MR10_LOAD)\n'
+            '    Job:9169,  Volume:TSO003,  DSORG:PO,  RECFM:U,  LRECL:0,  BLKSIZE:6144\n')
     ls = 'HERC02.BCPL.MR10KIT.LOAD:\n    ICINT19\n'
 
     def test_actual_ta1b_shape(self):
-        self.assertEqual(mod.inspect_stat(self.stat, self.dsn, self.dcb), 'TSO003')
+        self.assertEqual(mod.inspect_stat(self.stat, self.dsn, 'MR10_LOAD', self.dcb), 'TSO003')
         self.assertEqual(mod.inspect_ls(self.ls, self.dsn, ['ICINT19'])['missing_members'], [])
 
     def test_stat_wrong_dsn(self):
         with self.assertRaises(mod.Refusal):
-            mod.inspect_stat(self.stat, 'HERC02.BCPL.BOOT.OBJ', self.dcb)
+            mod.inspect_stat(self.stat, 'HERC02.BCPL.BOOT.OBJ', 'BOOT_OBJ', self.dcb)
+
+    def test_stat_wrong_logical_key(self):
+        with self.assertRaises(mod.Refusal):
+            mod.inspect_stat(self.stat, self.dsn, 'MR10_OBJ', self.dcb)
+
+    def test_stat_missing_logical_key(self):
+        with self.assertRaises(mod.Refusal):
+            mod.inspect_stat(self.stat.replace(' (MR10_LOAD)', ''),
+                             self.dsn, 'MR10_LOAD', self.dcb)
+
+    def test_stat_duplicated_or_spoofed_heading(self):
+        with self.assertRaises(mod.Refusal):
+            mod.inspect_stat(self.stat.replace(' (MR10_LOAD)', ' (MR10_LOAD) unexpected'),
+                             self.dsn, 'MR10_LOAD', self.dcb)
+
+    def test_stat_multiple_dataset_headings_refused(self):
+        with self.assertRaises(mod.Refusal):
+            mod.inspect_stat(self.stat + 'Dataset:   HERC02.BCPL.BOOT.OBJ (BOOT_OBJ)\n',
+                             self.dsn, 'MR10_LOAD', self.dcb)
 
     def test_stat_wrong_dcb(self):
         for key, value in [('dsorg', 'PS'), ('recfm', 'FB'), ('lrecl', 80), ('blksize', 800)]:
             with self.subTest(key=key), self.assertRaises(mod.Refusal):
-                mod.inspect_stat(self.stat, self.dsn, {**self.dcb, key: value})
+                mod.inspect_stat(self.stat, self.dsn, 'MR10_LOAD', {**self.dcb, key: value})
 
     def test_stat_without_volume(self):
         with self.assertRaises(mod.Refusal):
-            mod.inspect_stat(self.stat.replace('VOLUME:TSO003', ''), self.dsn, self.dcb)
+            mod.inspect_stat(self.stat.replace('Volume:TSO003', ''), self.dsn, 'MR10_LOAD', self.dcb)
 
     def test_extra_development_members_not_selected(self):
         x = mod.inspect_ls(self.ls + '    EXTRA\n', self.dsn, ['ICINT19'])

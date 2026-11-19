@@ -73,3 +73,30 @@ still requires execution by the owner on the actual TK5 system.
 
 Do not substitute raw development member inventories for the exact
 candidate-specific isolated staging required by the frozen producer.
+
+## Source-preflight parser correction — 19 November 2026
+
+The owner's first authorized `ta2-source-preflight --live` run reported
+`18/18 checked; 18 blocker(s); 0 unselected development members`, with
+private evidence at `workarea/ta2-source-preflight/20261119T132954Z-13975`.
+The assistant did not read those private raw MVS reports or `summary.json`.
+
+Code inspection identified a deterministic parser-contract defect:
+`dspal stat KEY` emits `Dataset:   <fully-qualified-DSN> (KEY)`, but
+`inspect_stat` previously required the heading to end immediately after
+the DSN. This would reject each otherwise correctly formatted result
+before requesting any `dspal ls` member directory. The reported zero
+unselected members was thus **not a verified member inventory**.
+
+The corrected checker requires exactly one DSN heading with the matching
+parenthesized logical key, rejecting wrong keys, extra text, multiple
+headings, bad DCB or missing volume. It reports **incomplete directory
+coverage** instead of a misleading zero when some `ls` inquiries were
+not reached, and prints at most four actionable blocker lines while
+preserving the complete private list. The original evidence is untouched.
+
+**Assistant-workspace checks:** 50/50 focused TA.2 offline tests passed
+(35 producer + 15 source-preflight tests); Python syntax checked. The
+next step is a new separately saved, read-only MVS `--live` execution of
+the corrected tool. It must establish actual DCB/member findings; no
+source inventory PASS or tape/candidate authority is inferred from the fix.

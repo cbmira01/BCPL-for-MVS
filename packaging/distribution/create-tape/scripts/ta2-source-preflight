@@ -56,10 +56,19 @@ def expected_sources(manifest: dict, dspal: dict) -> list[dict]:
     return items
 
 
-def inspect_stat(text: str, dsn: str, dcb: dict) -> str:
+def inspect_stat(text: str, dsn: str, logical: str, dcb: dict) -> str:
+    """Match the actual `dspal stat KEY` heading, including `(KEY)`.
+
+    `dspal stat` appends the managed logical key in parentheses. Requiring
+    that exact key prevents accepting a response for the wrong PDS mapping.
+    """
     upper = text.upper()
-    need(re.search(r'(?m)^DATASET:\s+' + re.escape(dsn) + r'\s*$', upper) is not None,
-         'stat source DSN mismatch: ' + dsn)
+    heading = (r'DATASET:\s+' + re.escape(dsn.upper()) +
+               r'\s+\(' + re.escape(logical.upper()) + r'\)\s*')
+    rows = re.findall(r'(?m)^DATASET:[^\n]*$', upper)
+    need(len(rows) == 1 and re.fullmatch(heading, rows[0]) is not None,
+         'stat source DSN/logical-key mismatch or ambiguous heading: ' +
+         dsn + ' (' + logical + ')')
     for name, value in dcb.items():
         need(re.search(r'\b' + re.escape(name.upper()) + r'\s*:\s*' +
                        re.escape(str(value).upper()) + r'\b', upper) is not None,
@@ -113,7 +122,7 @@ def run_live(items: list[dict]) -> int:
             record = dict(key=key, source_dsn=item['dsn'], tape_sequence=item['sequence'])
             try:
                 s = capture(['tools/datasets/dspal', 'stat', key], root / (key + '.stat.txt'))
-                record['source_volume'] = inspect_stat(s, item['dsn'], item['dcb'])
+                record['source_volume'] = inspect_stat(s, item['dsn'], key, item['dcb'])
                 listing = capture(['tools/datasets/dspal', 'ls', key], root / (key + '.ls.txt'))
                 record.update(inspect_ls(listing, item['dsn'], item['selected']))
                 if record['missing_members']:
@@ -130,9 +139,18 @@ def run_live(items: list[dict]) -> int:
         sums = [f'{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.name}' for f in files]
         (root / 'SHA256SUMS').write_text('\n'.join(sums) + '\n', encoding='utf-8')
         (root / 'SHA256SUMS').chmod(0o600)
+        directory_count = sum('observed_members' in c for c in checks)
         extras = sum(len(c.get('development_extras', [])) for c in checks)
+        extra_note = (f'{extras} unselected development members'
+                      if directory_count == len(items) else
+                      f'unselected member total incomplete ({directory_count}/{len(items)} directories checked)')
         print(f'TA.2 MVS SOURCE PREFLIGHT: {len(checks)}/{len(items)} checked; '
-              f'{len(errors)} blocker(s); {extras} unselected development members')
+              f'{len(errors)} blocker(s); {extra_note}')
+        if errors:
+            for reason in errors[:4]:
+                print('  BLOCKER: ' + reason)
+            if len(errors) > 4:
+                print(f'  {len(errors) - 4} additional blocker(s) in private summary.json')
         print('Private saved MVS evidence: ' + str(root.relative_to(ROOT)))
         print('No DASD/tape changes; source contents and build provenance remain unverified.')
         return 1 if errors else 0
