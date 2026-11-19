@@ -104,3 +104,16 @@ The run performed NO tape mount, new DASD PDS allocation, restore,
 IEHLIST directory comparison or restored ICINT19 GO. Those stages
 remain pending separate authorization and actual MVS evidence.
 See [the qualified read-only result](ta1b-restore-readonly-preflight-20261118.md).
+
+## BTA102 independent MVS restore completed (18 November 2026)
+
+The owner executed the separately authorized `TA1BREST` one-shot
+restore at GitHub main `b99395e19dcd3264351c753ce285b035c9a5c008`.
+MVS JOB **9136** completed `RESTORE IEBCOPY RC=0000` and the
+restored load library `HERC02.BCPL.TA1B.LOAD(ICINT19)` was
+verified on **TSO002** with `PO/U/0/6144`. BTA102 retained its
+original SHA-256. Private evidence:
+`workarea/ta1b-operations/BTA102-track-b-restore-20261119T021135Z-10863/`.
+Prior statements that restoration was pending are historical.
+IEHLIST directory comparison and actual restored ICINT19 GO remain
+pending; see [directory verification preparation](ta1b-restore-evidence-and-directory-gate-20261118.md).

@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write PASS (qualified), JOB 9120; independent restore preflight PASS, restore/directory comparison/GO pending separate authorization**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write JOB 9120 and restore JOB 9136 PASS (qualified); source/restored directory comparison and executable GO pending separate authorization**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -166,6 +166,34 @@ into **new** `HERC02.BCPL.TA1B.LOAD` (PO/U/0/6144).
 **Stateful restoration is not yet authorized**; directory comparison
 and restored STEPLIB execution remain separate MVS verification gates.
 See [TA.1B restore preflight record](../../distribution/create-tape/ta1b-restore-readonly-preflight-20261118.md).
+
+**TA.1 Track B independent restore PASS checkpoint (18 November 2026, 21:11 EST / 19 November 02:11 UTC):**
+The owner separately authorized one conditional BTA102 remount and one
+IEBCOPY `TA1BREST` into a new DASD load-library PDS.
+On GitHub main `b99395e19dcd3264351c753ce285b035c9a5c008`,
+the `run-ta1-track-b-restore --run` runner repeated its live safety
+preflight, conditionally mounted the original BTA102 on Hercules 0480,
+and reported `TA1BREST` **JOB 9136**, `RESTORE IEBCOPY RC=0000`.
+It verified `HERC02.BCPL.TA1B.LOAD(ICINT19)` on **TSO002**
+with **PO/U/0/6144** dataset attributes. The original BTA102 AWS
+SHA-256 remained
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+Private restore evidence:
+`workarea/ta1b-operations/BTA102-track-b-restore-20261119T021135Z-10863/`.
+This establishes independent **Track B unload/restore PASS (qualified)**
+at the MVS IEBCOPY/dataset level; it does **not** establish a matching
+IEHLIST directory or successful program fetch/execution from the
+restored load library. The new
+`scripts/run-ta1-track-b-directory` performs read-only MVS source/
+target library inquiries by default and, **after distinct owner
+authorization only**, can submit two one-shot read-only IEHLIST FORMAT
+jobs to compare nonalias ICINT19 entry point `000000` and attributes
+`02E2` on source TSO003 and restored TSO002. It never touches tape.
+**35/35 assistant-workspace offline tests PASS** (27 extended guards
+and 8 tracked contract checks). Neither directory jobs nor the
+restored eight-step MRREGRES scalar/vector GO have been submitted.
+See [restore acceptance and IEHLIST preparation](../../distribution/create-tape/ta1b-restore-evidence-and-directory-gate-20261118.md).
+TA.1 remains IN PROGRESS.
 
 ## 1. Objective and product boundary
 

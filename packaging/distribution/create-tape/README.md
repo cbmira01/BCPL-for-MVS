@@ -304,3 +304,26 @@ No remount, PDS creation, restore, IEHLIST or GO occurred. A
 one-shot `TA1BREST` will require **separate explicit owner
 stateful authorization**; the exact-image conditional mount and
 no-retry refusal are already controlled by the committed runner.
+
+## TA.1B independent IEBCOPY restore PASS and directory comparison gate
+
+The owner authorized the independent restore, and `TA1BREST` JOB
+**9136** completed IEBCOPY RESTORE **RC=0000**, creating
+`HERC02.BCPL.TA1B.LOAD(ICINT19)` on DASD **TSO002**, `PO/U/0/6144`.
+BTA102 retained original AWS SHA-256
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+Original private MVS evidence:
+`workarea/ta1b-operations/BTA102-track-b-restore-20261119T021135Z-10863/`.
+
+The new `scripts/run-ta1-track-b-directory` defaults to read-only
+live `dspal stat/ls` MVS inquiries and checks saved JOB 9136 evidence
+and immutable BTA102. Only after **separate owner approval** may
+`--run` submit exactly two one-shot `IEHLIST LISTPDS FORMAT` jobs:
+source TSO003 and restored TSO002. It verifies job RC=0000,
+IEF142I and matching nonalias `ICINT19` entry `000000`/attrs `02E2`.
+It never initializes, mounts or rewrites tape, modifies an existing
+load library, or executes the restored module. **35/35 offline tests
+PASS** across the extended standalone checks and the tracked contract
+module. Source/target IEHLIST and actual restored-STEPLIB GO remain
+unexecuted and separately authorized. See
+[the restore and directory-stage record](ta1b-restore-evidence-and-directory-gate-20261118.md).

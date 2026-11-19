@@ -58,3 +58,15 @@ remain subsequent, distinct verification gates.
 PASS (qualified) and restore read-only preflight PASS;
 Track B restore, directory comparison, and restored executable
 test PENDING. TA.1 remains IN PROGRESS.
+
+## Subsequently authorized and completed restoration (18 November 2026)
+
+After explicit separate authorization the owner executed the exact
+one-shot restore. `TA1BREST` JOB **9136** returned IEBCOPY RC=0000,
+`HERC02.BCPL.TA1B.LOAD(ICINT19)` was verified on TSO002 as
+PO/U/0/6144, and the original BTA102 SHA-256 was unchanged.
+The ignored evidence is in
+`workarea/ta1b-operations/BTA102-track-b-restore-20261119T021135Z-10863/`.
+This supersedes the preceding preflight-only status, but does not
+assert directory equality or executable proof. See
+[the next verification gate](ta1b-restore-evidence-and-directory-gate-20261118.md).
