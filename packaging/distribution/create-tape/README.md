@@ -341,3 +341,32 @@ authorized next stage, **not approved by this PASS**, is the guarded
 one-shot submission of `TA1BSRC` and `TA1BDST` for source/restored
 ICINT19 directory attributes. See
 [the live read-only preflight](ta1b-directory-readonly-preflight-20261118.md).
+
+## TA.1B IEHLIST directory match PASS and restored ICINT19 GO preflight
+
+The owner executed the approved pair of read-only IEHLIST jobs:
+`TA1BSRC` **JOB 9151** for source TSO003 and
+`TA1BDST` **JOB 9152** for restored TSO002.
+Both reported `DIRLIST IEHLIST RC=0000`; nonalias `ICINT19`
+entry `000000` and attrs `02E2` matched.
+The original BTA102 SHA-256 stayed
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+Evidence:
+`workarea/ta1b-operations/BTA102-track-b-directory-20261119T024927Z-11906/`.
+
+The new `scripts/run-ta1-track-b-go` defaults to **read-only MVS
+source/restored inquiry**. It validates actual saved IEHLIST jobs
+9151/9152 from raw JES reports, original restored-load JOB 9136,
+BTA102 SHA, exact source TSO003/restored TSO002 PO/U/0/6144,
+and the pinned canonical MRREGRES scalar/vector JCL.
+**32 isolated tests PASS**, including altered evidence, source
+STEPLIB drift, report tampering, and the one-shot no-retry guard.
+
+A separately owner-authorized `--run` can submit **one** authenticated
+`TA1BGO` eight-step MR10 scalar/vector job, with all three `STEPLIB`
+DDs pointing at restored `HERC02.BCPL.TA1B.LOAD`, and only temporary
+`&&` outputs. It would require all steps RC=0000, corresponding
+IEF142I messages, interpreted CODE=0 and exact scalar/vector RP
+records. No tape operations or persistent MVS dataset modification
+occur in default mode, and actual GO remains **not yet authorized**.
+See [directory PASS and GO preflight design](ta1b-directory-match-and-go-preparation-20261118.md).

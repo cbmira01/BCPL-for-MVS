@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 write JOB 9120 and restore JOB 9136 PASS (qualified); source/restored directory read-only preflight PASS; owner authorized one TA1BSRC and one TA1BDST; results pending; restored ICINT19 GO not authorized**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 unload JOB 9120, restore JOB 9136, and IEHLIST source/restored directory JOBS 9151/9152 PASS (qualified); restored ICINT19 GO pending separate authorization**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -241,6 +241,40 @@ were reported 35/35 PASS in the previous commit.
 **Neither IEHLIST job has yet been observed to execute**.
 See [this authorization record](../../distribution/create-tape/ta1b-directory-submission-authorization-20261118.md).
 TA.1 remains IN PROGRESS.
+
+**TA.1 Track B actual source/restored IEHLIST directory comparison PASS (18 November 2026 EST / 19 November UTC):**
+Following the separately authorized single pair of read-only IEHLIST jobs,
+the owner ran `run-ta1-track-b-directory --run` at GitHub main
+`a296b8b60d1c3459a1c263ea4c4487632644277b` and typed
+`COMPARE ICINT19 DIRECTORIES`. Actual MVS `TA1BSRC`
+**JOB 9151** on source **TSO003** and `TA1BDST` **JOB 9152**
+on restored **TSO002** both returned IEHLIST `DIRLIST RC=0000`.
+Both independently reported nonalias `ICINT19`
+**entry `000000` and attributes `02E2`**. The runner reported
+`TA.1B SOURCE/RESTORED ICINT19 DIRECTORY MATCH (IEHLIST FORMAT only)`.
+The original BTA102 AWS SHA-256 remained
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+Private actual JES/SYSPRINT evidence:
+`workarea/ta1b-operations/BTA102-track-b-directory-20261119T024927Z-11906/`.
+This establishes **Track B load-module directory preservation
+PASS (qualified)**, not load byte equality or restored execution.
+
+The new `packaging/distribution/create-tape/scripts/run-ta1-track-b-go`
+provides a separate **read-only-by-default** restored-`STEPLIB` GO
+preflight. It revalidates the preserved BTA102 SHA, successful 9136
+receipt, actual IEHLIST 9151/9152 source/target job reports and
+typed `000000/02E2` entries, exact DASD DCB/volumes, and the pinned
+MRREGRES eight-step scalar/vector JCL generator. The authorized
+`--run` mode remains **gated by distinct owner approval** and would
+submit one `TA1BGO`, with `HERC02.BCPL.TA1B.LOAD` in all three
+ICINT19 `STEPLIB` DDs. It only creates temporary `&&` working
+datasets, never touches tape or persistent source/target libraries,
+and insists on 8 steps RC=0000 and exact semantic RP output.
+**32/32 isolated synthetic/refusal tests PASS; both promoted source/test
+Git blobs match tested workspace bytes.**
+**No restored ICINT19 GO has yet been submitted or approved.**
+See [Track B directory PASS and GO preflight](../../distribution/create-tape/ta1b-directory-match-and-go-preparation-20261118.md).
+TA.1 stays IN PROGRESS.
 
 ## 1. Objective and product boundary
 

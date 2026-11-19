@@ -1,0 +1,281 @@
+#!/usr/bin/env python3
+"""TA.1 Track B: independent restored-STEPLIB ICINT19 executable verification.
+
+Default: read-only MVS catalog, pinned source/JCL and completed directory
+receipt validation. --run: requires separate owner authorization and TTY;
+submits exactly one canonical eight-step scalar/vector job using the
+restored HERC02.BCPL.TA1B.LOAD in all three STEPLIBs. No tape operations,
+no permanent MVS outputs, no automatic retries or resubmission.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+OPS = ROOT / 'workarea/ta1b-operations'
+LOG = OPS / ('BTA102-track-b-go-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+MARKER = OPS / 'BTA102-track-b-go-attempt.json'
+DIRECTORY_LOG = OPS / 'BTA102-track-b-directory-20261119T024927Z-11906'
+DIRECTORY_MARKER = OPS / 'BTA102-track-b-directory-attempt.json'
+TAPE = ROOT / 'mvs-state/tape/bcpl-ta1-b-20261117-01.aws'
+SHA = 'c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210'
+SOURCE = 'HERC02.BCPL.MR10KIT.LOAD'
+TARGET = 'HERC02.BCPL.TA1B.LOAD'
+JOBNAME = 'TA1BGO'
+STEPS = ('SSYNI', 'STRNI', 'SCGI', 'SBLIBI', 'SICLIB', 'C01A', 'G01A', 'R01')
+PROGRAMS = ('IEBGENER',) * 5 + ('ICINT19',) * 3
+GOLDEN = ('RP: SCALAR 17 42', 'RP: VECTOR 5 10 15 20')
+NAME = re.compile(r'(?m)^//([A-Z0-9]{1,8})\s+EXEC PGM=([A-Z0-9]+)')
+CODE = re.compile(r'\bCODE\s*=\s*([0-9]+)\b')
+RP = re.compile(r'(?<![A-Z])RP:\s*(SCALAR|VECTOR)\s+([0-9 ]+)\b')
+
+
+class Halt(RuntimeError):
+    pass
+
+
+def need(ok: bool, reason: str) -> None:
+    if not ok:
+        raise Halt(reason)
+
+
+def helper(path: Path, label: str):
+    need(path.is_file() and not path.is_symlink(), 'missing/unsafe helper: ' + label)
+    loader = importlib.machinery.SourceFileLoader(label, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'helper load failed: ' + label)
+    obj = importlib.util.module_from_spec(spec)
+    loader.exec_module(obj)
+    return obj
+
+
+def read_private(path: Path, limit: int = 32 * 1024 * 1024) -> str:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= limit,
+         'missing/unsafe original evidence: ' + path.name)
+    return path.read_text(encoding='utf-8')
+
+
+def write_private(path: Path, data: str) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
+    with os.fdopen(os.open(path, flags, 0o600), 'w', encoding='utf-8') as out:
+        out.write(data)
+        out.flush()
+        os.fsync(out.fileno())
+
+
+def verify_directory_receipts(directory) -> None:
+    need(DIRECTORY_LOG.is_dir() and not DIRECTORY_LOG.is_symlink(),
+         'actual JOB 9151/9152 IEHLIST evidence missing/unsafe')
+    receipt = json.loads(read_private(DIRECTORY_MARKER, 8192))
+    need(type(receipt) is dict and receipt.get('state') == 'DIRECTORY_SUBMISSION_ATTEMPTED' and
+         receipt.get('jobs') == ['TA1BSRC', 'TA1BDST'] and
+         receipt.get('restore_job') == 9136 and receipt.get('image_sha256') == SHA and
+         receipt.get('no_retry') is True,
+         'directory jobs original no-retry marker mismatch')
+    record = json.loads(read_private(DIRECTORY_LOG/'directory-comparison.json', 8192))
+    need(type(record) is dict and
+         record.get('status') == 'IEHLIST_DIRECTORY_MATCH_ONLY_NOT_EXECUTABLE_PROOF',
+         'directory comparison receipt missing or wrongly qualified')
+    entries = []
+    for jobname, dsn, vol, number in (
+            ('TA1BSRC', SOURCE, 'TSO003', 9151),
+            ('TA1BDST', TARGET, 'TSO002', 9152)):
+        jobdir = DIRECTORY_LOG / jobname
+        need(jobdir.is_dir() and not jobdir.is_symlink(), jobname + ' evidence missing/unsafe')
+        summary = read_private(jobdir/'summary.txt')
+        report = read_private(jobdir/'report.txt')
+        directory.validate_job(summary, report, jobname, number)
+        checker = helper(ROOT / 'tools/distribution/verify-iehlist-load-directory.py',
+                         'ta1b_go_iehlist_parser')
+        parsed = checker.parse_directory(report, dsn=dsn, volser=vol, member='ICINT19')
+        need(parsed['other_member_rows'] == 0 and parsed['member'] == 'ICINT19' and
+             parsed['directory_dataset'] == dsn and parsed['directory_volume'] == vol,
+             jobname + ' actual directory report contains unexpected entries')
+        entries.append({'job':number, 'jobname':jobname, 'dsn':dsn, 'volume':vol,
+                        'entry':parsed['entry_point_hex'],
+                        'attributes':parsed['attributes_hex']})
+    need(directory.compare(entries) == record,
+         'saved source/restored IEHLIST metadata contradicts actual job reports')
+    need(TAPE.is_file() and not TAPE.is_symlink(), 'BTA102 AWS missing/unsafe')
+    with TAPE.open('rb') as f:
+        need(hashlib.file_digest(f, 'sha256').hexdigest() == SHA,
+             'original BTA102 AWS checksum changed')
+
+
+def job_body(contract) -> str:
+    body = contract.go_body()
+    need(tuple(NAME.findall(body)) == tuple(zip(STEPS, PROGRAMS)),
+         'pinned eight-step GO program order drift')
+    need(body.count('DSN=' + TARGET + ',DISP=SHR') == 3 and
+         'DSN=' + SOURCE + ',DISP=SHR' not in body and
+         body.count('//STEPLIB') == 3,
+         'all ICINT19 STEPLIB DDs must use restored library')
+    need('HERC02.BCPL.MR10KIT.TESTS(SCALVEC)' in body,
+         'canonical scalar/vector source not selected')
+    need('DSN=&&' in body and 'DISP=(NEW,PASS)' in body and
+         all(len(line) <= 80 and '\t' not in line for line in body.splitlines()),
+         'JCL temporary work/card width inconsistent')
+    # Reject any unexpected non-temporary NEW/MOD output; source PDSes stay SHARE.
+    for line in body.splitlines():
+        if 'DISP=(NEW' in line or 'DISP=NEW' in line or 'DISP=MOD' in line:
+            # DD output card may be separate from its DSN line; canonical pin
+            # and exact eight-step contract are the primary defense.
+            need('DISP=(NEW,PASS)' in line, 'unexpected permanent MVS output')
+    return body
+
+
+def live_preflight(directory, preflight, contract, folder: Path) -> str:
+    contract.validate_static()
+    branch = preflight.checked(['git','branch','--show-current'], 'git-branch', folder)
+    need(branch.strip() == 'main', 'GitHub main branch required')
+    changed = preflight.checked(['git','status','--porcelain','--untracked-files=no','--',
+                                  'packaging/distribution/create-tape/scripts/run-ta1-track-b-go',
+                                  'packaging/distribution/create-tape/scripts/ta1b-contract',
+                                  'packaging/distribution/create-tape/scripts/run-ta1-track-b-directory',
+                                  'mr10-kit-compiler/jcl/run-regression-tests.jcl',
+                                  'tools/distribution/verify-icint19-executable.py'],
+                                 'git-go-guard', folder)
+    need(not changed.strip(), 'tracked GO contract/JCL modified locally')
+    # Directory submission is complete; its no-retry marker must be present.
+    # Never call the directory submission preflight, which requires it absent.
+    for key, dsn, vol in directory.JOBS:
+        stat = preflight.checked(['tools/datasets/dspal', 'stat', dsn],
+                                 'stat-' + key, folder)
+        directory.stat_contract(stat, dsn, vol)
+        listing = preflight.checked(['tools/datasets/dspal', 'ls', dsn],
+                                    'members-' + key, folder)
+        directory.check_list(listing, dsn)
+    directory.verify_receipt()
+    verify_directory_receipts(directory)
+    golden = ROOT/'mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.expected'
+    need(golden.is_file() and not golden.is_symlink() and
+         tuple(golden.read_text(encoding='ascii').splitlines()) == GOLDEN,
+         'canonical MR10 scalar/vector expected output changed')
+    body = job_body(contract)
+    need(not MARKER.exists() and not MARKER.is_symlink(),
+         'restored-STEPLIB GO already attempted: no automatic retry')
+    return body
+
+
+def begin_once() -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
+    with os.fdopen(os.open(MARKER, flags, 0o600), 'w', encoding='ascii') as f:
+        json.dump({'state':'RESTORED_GO_ATTEMPTED','job':JOBNAME,'directory_jobs':[9151,9152],
+                   'target':TARGET,'image_sha256':SHA,'no_retry':True}, f)
+        f.write('\n'); f.flush(); os.fsync(f.fileno())
+
+
+def validate_execution(report: str, summary: str, job: int) -> dict:
+    need(re.search(r'(?m)^JOB\s+'+str(job)+r'\s+'+JOBNAME+r'\s*$',summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'GO job identity/result/highest RC mismatch')
+    steps = re.findall(r'(?m)^([A-Z0-9]{1,8})\s+([A-Z0-9]+)\s+RC=(\d{4})\s*$',summary)
+    need(steps == [(n, p, '0000') for n,p in zip(STEPS, PROGRAMS)],
+         'GO summary does not contain all eight RC=0000 steps')
+    starts = re.findall(r'^\s*\S+\s+JOB\s+(\d+)\s+\$HASP373\s+'+JOBNAME+r'\s+STARTED\b',report,re.M)
+    ends = re.findall(r'^\s*\S+\s+JOB\s+(\d+)\s+\$HASP395\s+'+JOBNAME+r'\s+ENDED\b',report,re.M)
+    need(starts == [str(job)] and ends == [str(job)],
+         'GO JES start/end identity mismatch')
+    rows = re.findall(r'^\s*\S+\s+JOB\s+(\d+)\s+'+JOBNAME+
+                      r'\s+([A-Z0-9]{1,8})\s+(IEBGENER|ICINT19)\s+RC=\s*(\d{4})\s*$',report,re.M)
+    need([(int(n),a,b,c) for n,a,b,c in rows] ==
+         [(job,a,b,'0000') for a,b in zip(STEPS,PROGRAMS)],
+         'GO report missing, extra, reordered or failed step')
+    for name in STEPS:
+        need(len(re.findall(r'(?m)^IEF142I\s+'+JOBNAME+r'\s+'+name+
+                            r'\s+-\s+STEP WAS EXECUTED\s+-\s+COND CODE 0000\s*$',report)) == 1,
+             'MVS IEF142I confirmation absent/duplicate: '+name)
+    need(not re.search(r'\b(?:IEF450I|IEF472I|IEA995I)\b',report),
+         'MVS potential ABEND in GO')
+    rp = tuple('RP: '+m.group(1)+' '+' '.join(m.group(2).split()) for m in RP.finditer(report))
+    need(rp == GOLDEN, 'restored ICINT19 scalar/vector RP differs from golden')
+    codes = [int(x) for x in CODE.findall(report)]
+    need(len(codes) >= 3 and all(x == 0 for x in codes),
+         'interpreted CODE= values incomplete or nonzero')
+    return {'verification':'RESTORED_ICINT19_SCALAR_VECTOR_EXECUTED_NOT_BINARY_IDENTITY',
+            'job':job,'steps':list(STEPS),'step_rc':[0]*len(STEPS),
+            'icint19_invocations':3,'interpreted_codes':codes,'rp_records':list(rp)}
+
+
+def submit_once(core, config: dict, preflight, body: str) -> dict:
+    cursor = OPS/'BTA102-TA1BGO.cursor.json'
+    cards = core.authenticated_job_card(config, JOBNAME, 'TA1B RESTORED GO', redact_password=False)
+    deck = '\n'.join(cards)+'\n'+body
+    previous = tempfile.tempdir
+    try:
+        tempfile.tempdir = str(OPS)
+        job, summary = core.submit_and_wait(config, deck, max_rc=0, cursor_file=cursor)
+    finally:
+        tempfile.tempdir = previous
+    need(type(job) is int and 1 <= job <= 9999, 'MVS GO job number ambiguous')
+    write_private(LOG/'summary.txt',summary)
+    report = preflight.checked(['tools/mvs/dump-report-for-job',str(job),
+                                 '--cursor-file',str(cursor)],'jes-report',LOG)
+    result = validate_execution(report,summary,job)
+    write_private(LOG/'result.json',json.dumps(result,indent=2,sort_keys=True)+'\n')
+    return result
+
+
+def operation(*, run: bool) -> int:
+    need(OPS.is_dir() and not OPS.is_symlink(), 'TA1B operations dir absent/unsafe')
+    need(not LOG.exists() and not LOG.is_symlink(), 'GO evidence path collision')
+    LOG.mkdir(mode=0o700,exist_ok=False)
+    directory = helper(SCRIPTS/'run-ta1-track-b-directory','ta1b_go_directory')
+    preflight = helper(SCRIPTS/'ta1b-preflight','ta1b_go_preflight')
+    contract = helper(SCRIPTS/'ta1b-contract','ta1b_go_contract')
+    first = LOG/'preflight-first';first.mkdir(mode=0o700)
+    body = live_preflight(directory,preflight,contract,first)
+    print('TA.1B RESTORED GO READ-ONLY PREFLIGHT PASS: IEHLIST jobs 9151/9152, entry 000000 attrs 02E2.')
+    print('MVS source TSO003 / restored TSO002 PO/U/0/6144; original BTA102 SHA-256 preserved.')
+    if not run:
+        print('No ICINT19 GO JES submission; no MVS dataset or tape change.')
+        print('Evidence: '+str(LOG.relative_to(ROOT)))
+        return 0
+    need(sys.stdin.isatty(), 'separate GO owner authorization and operator TTY required')
+    token = 'RUN RESTORED ICINT19 SCALVEC'
+    need(input(f'Type {token} to authorize one restored STEPLIB MR10 GO: ').strip() == token,
+         'GO not explicitly confirmed')
+    second = LOG/'preflight-second';second.mkdir(mode=0o700)
+    need(live_preflight(directory,preflight,contract,second) == body,
+         'canonical GO body drifted between preflights')
+    core = helper(ROOT/'tools/datasets/dspal-core.py','ta1b_go_dspal_core')
+    config = core.load_config()
+    need(str(config['mvs']['hlq']).upper() == 'HERC02', 'MVS HLQ changed')
+    # No retry marker is durable before generating/submitting a JES deck.
+    begin_once()
+    result = submit_once(core,config,preflight,body)
+    verify_directory_receipts(directory)
+    print(f"TA1BGO MVS JOB {result['job']}: 8 steps RC=0000; 3 restored ICINT19 calls; scalar/vector RP PASS.")
+    print('BTA102 unchanged; executable-use PASS (qualified; not binary equality).')
+    print('Evidence: '+str(LOG.relative_to(ROOT)))
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run',action='store_true',help='requires separate explicit owner GO authorization')
+    args=parser.parse_args(argv)
+    try:
+        return operation(run=args.run)
+    except (Halt,OSError,RuntimeError,ValueError,UnicodeError) as exc:
+        reason = str(exc) if isinstance(exc,Halt) else type(exc).__name__
+        print('TA.1B RESTORED GO HALTED: '+reason,file=sys.stderr)
+        print('No JES retry; preserve source/restored libraries, BTA102 and private evidence.',file=sys.stderr)
+        print('Evidence: '+str(LOG.relative_to(ROOT)),file=sys.stderr)
+        return 2
+
+
+if __name__=='__main__':
+    raise SystemExit(main())

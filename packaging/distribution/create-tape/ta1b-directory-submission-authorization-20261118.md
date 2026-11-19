@@ -59,3 +59,16 @@ preservation only, not byte-for-byte equality or successful
 System/370 execution. The canonical MR10 scalar/vector `ICINT19`
 GO using the **restored STEPLIB** requires a separate
 explicit owner authorization. TA.1 remains IN PROGRESS.
+
+## Subsequent actual MVS IEHLIST result — 18 November 2026 EST
+
+The owner used the approved runner at `a296b8b60d1c3459a1c263ea4c4487632644277b`
+and entered `COMPARE ICINT19 DIRECTORIES`. The exact one-shot jobs
+`TA1BSRC` **9151** and `TA1BDST` **9152** both completed `DIRLIST IEHLIST RC=0000`,
+reporting `ICINT19` entry `000000` and attributes `02E2`.
+The BTA102 checksum stayed unchanged. Ignored original MVS evidence:
+`workarea/ta1b-operations/BTA102-track-b-directory-20261119T024927Z-11906/`.
+The earlier AUTHORIZED/NOT EXECUTED heading is the historical approval
+state; the directory comparison is now **PASS (qualified)**.
+**No restored-STEPLIB ICINT19 GO is authorized or executed**.
+See [GO preparation](ta1b-directory-match-and-go-preparation-20261118.md).
