@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+"""TA.2 read-only source-capacity recheck and curated staging selection plan.
+
+Requires independently checksum-verified source and capacity receipts. On
+--live, queries current MVS LISTDS/IEHLIST via dspal stat (read-only). Never
+creates a dataset, allocates a release ID/VOLSER, submits IEBCOPY or uses tape.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+DESIGN = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+OUT = ROOT / 'workarea/ta2-stage-plan'
+RUN_ID = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
+SHA256_LINE = re.compile(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)\Z')
+MAX_REPORT = 16 * 1024 * 1024
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(value: bool, message: str) -> None:
+    if not value:
+        raise Refusal(message)
+
+
+def import_script(name: str, path: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'missing TA.2 dependency')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def checked_file(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink(), 'missing/linked evidence: ' + path.name)
+    need(path.stat().st_size <= MAX_REPORT, 'oversized evidence file: ' + path.name)
+    return path.read_bytes()
+
+
+def checksum(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def read_capacity(root: Path, folder: Path) -> dict[str, bytes]:
+    """Check the exact original receipt, not the collector's PASS line."""
+    parent = root / 'workarea/ta2-capacity-preflight'
+    work = root / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         parent.is_dir() and not parent.is_symlink() and
+         work.resolve().is_relative_to(root.resolve()), 'unsafe capacity evidence root')
+    need(RUN_ID.fullmatch(folder.name) is not None and
+         folder.is_dir() and not folder.is_symlink() and
+         folder.resolve().parent == parent.resolve(), 'unsafe capacity run directory')
+    expected = {'summary.json', 'dspal-stat-all.txt'}
+    need({p.name for p in folder.iterdir()} == expected | {'SHA256SUMS'},
+         'capacity evidence has missing/unexpected files')
+    try:
+        lines = checked_file(folder / 'SHA256SUMS').decode('ascii').splitlines()
+    except UnicodeDecodeError as exc:
+        raise Refusal('non-ASCII capacity SHA256SUMS') from exc
+    declared = {}
+    for line in lines:
+        match = SHA256_LINE.fullmatch(line)
+        need(match is not None, 'malformed capacity SHA256SUMS')
+        digest, name = match.groups()
+        need(name in expected and name not in declared, 'duplicate/unknown capacity checksum')
+        declared[name] = digest
+    need(set(declared) == expected, 'capacity checksum list incomplete')
+    data = {name: checked_file(folder / name) for name in expected}
+    for name in expected:
+        need(checksum(data[name]) == declared[name], 'capacity checksum drift: ' + name)
+    return data
+
+
+def replay_capacity(raw: dict[str, bytes], receipt: dict, items: list[dict],
+                    capacity, source) -> dict:
+    try:
+        saved = json.loads(raw['summary.json'].decode('utf-8'))
+        report = raw['dspal-stat-all.txt'].decode('utf-8')
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise Refusal('invalid UTF-8/JSON capacity evidence') from exc
+    need(report.startswith('RC=0\n') and '\nRC=' not in report,
+         'capacity MVS inquiry did not return RC=0')
+    need(isinstance(saved, dict) and
+         saved.get('source_evidence_directory') == receipt['evidence_directory'] and
+         saved.get('source_review_summary_sha256') == receipt['summary_sha256'] and
+         saved.get('source_review_sha256sums_sha256') == receipt['sha256sums_sha256'],
+         'capacity receipt does not bind independently verified source inquiry')
+    try:
+        computed = capacity.reconcile(report.split('\n', 1)[1], items, source, receipt)
+    except (capacity.Refusal, source.Refusal) as exc:
+        raise Refusal('saved capacity report invalid: ' + str(exc)) from exc
+    for name, value in computed.items():
+        need(saved.get(name) == value, 'saved capacity summary mismatch: ' + name)
+    need(set(saved) == set(computed) | {
+        'source_evidence_directory', 'source_review_summary_sha256',
+        'source_review_sha256sums_sha256'}, 'capacity summary has unexpected/missing fields')
+    need(computed['libraries'] == 18 and computed['selected_members'] == 127,
+         'capacity selected inventory drift')
+    return computed
+
+
+def compare_current(report: str, saved: dict, items: list[dict], capacity,
+                    source, reviewed: dict) -> dict:
+    """Require fresh source metadata/space to match the pinned MVS report."""
+    current = capacity.reconcile(report, items, source, reviewed)
+    need(current['results'] == saved['results'],
+         'current MVS source DCB/space differs from saved capacity receipt')
+    return current
+
+
+def make_worksheet(replayed: dict, items: list[dict]) -> dict:
+    """Inventory-derived planning facts only; NO assumed space allocation."""
+    need(len(items) == len(replayed['results']) == 18, 'expected 18 source records')
+    groups = []
+    for item, capacity_row in zip(items, replayed['results']):
+        need(item['sequence'] == capacity_row['sequence'] and
+             item['dsn'] == capacity_row['dsn'] and
+             item['key'] == capacity_row['key'], 'capacity sequence/source mismatch')
+        selected = item['selected']
+        need(len(set(selected)) == len(selected), 'duplicate selected member')
+        need(len(selected) == capacity_row['selected_members'], 'selection count mismatch')
+        groups.append({'tape_sequence': item['sequence'], 'source_key': item['key'],
+                       'source_dsn': item['dsn'], 'source_volume': capacity_row['source_volume'],
+                       'source_dcb': item['dcb'], 'selected_members': selected,
+                       'selected_count': len(selected),
+                       'source_tracks_allocated': capacity_row['tracks_allocated'],
+                       'source_tracks_through_hwm': capacity_row['tracks_through_hwm'],
+                       'source_directory_allocated': capacity_row['directory_allocated'],
+                       'source_directory_used': capacity_row['directory_used'],
+                       'staging_dsn': None, 'stage_space': None,
+                       'allocation_approved': False})
+    need(sum(x['selected_count'] for x in groups) == 127, 'curated inventory count drift')
+    need([x['tape_sequence'] for x in groups] == list(range(3, 21)),
+         'noncontiguous design-stage sequence')
+    return {'status': 'READ-ONLY PLAN; STAGING NOT AUTHORIZED',
+            'source_pds': 18, 'selected_members': 127,
+            'excluded_development_members': replayed['excluded_development_members'],
+            'sources': groups,
+            'pending': ['Approve per-PDS staging DSN and volume',
+                        'Approve explicit SPACE primary/secondary/directory sizing',
+                        'Preflight target catalog absence and free DASD capacity',
+                        'Generate/test exact 18-PDS selective IEBCOPY staging JCL',
+                        'Authorize one-shot MVS staging and independent readback',
+                        'Establish byte/provenance/rights evidence'],
+            'qualification': 'Source PDS allocation and high-water are not compact curated footprint'}
+
+
+def new_evidence() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()), 'unsafe workarea')
+    need(not OUT.is_symlink(), 'linked TA.2 stage-plan root')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    folder = OUT / (stamp + '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    return folder
+
+
+def save_exclusive(path: Path, data: bytes) -> None:
+    need(not path.exists() and not path.is_symlink(), 'evidence overwrite refused')
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, 'wb') as stream:
+        stream.write(data)
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--live', action='store_true', help='one read-only fresh MVS stat/IEHLIST query')
+    ap.add_argument('--source-evidence', type=Path)
+    ap.add_argument('--capacity-evidence', type=Path)
+    args = ap.parse_args(argv)
+    folder = None
+    try:
+        if not args.live:
+            need(args.source_evidence is None and args.capacity_evidence is None,
+                 'saved-evidence paths require --live')
+            print('TA.2 STAGE PLAN: read-only capacity replay + fresh MVS stat; use --live with both evidence paths')
+            return 0
+        need(args.source_evidence is not None and args.capacity_evidence is not None,
+             '--live requires exact source and capacity evidence directories')
+        source = import_script('ta2_stage_source', SCRIPTS / 'ta2-source-preflight')
+        reviewer = import_script('ta2_stage_review', SCRIPTS / 'ta2-source-review')
+        capacity = import_script('ta2_stage_capacity', SCRIPTS / 'ta2-capacity-preflight')
+        canonical = source.core()
+        manifest, dspal = canonical.load(DESIGN), canonical.load(DSPAL)
+        info = canonical.check(manifest, dspal, ROOT, release=False)
+        need(manifest['phase'] == 'design' and info['logical_datasets'] == 20,
+             'canonical TA.0 design inventory drift')
+        items = source.expected_sources(manifest, dspal)
+        reviewed = reviewer.inspect(args.source_evidence, items, source)
+        saved_raw = read_capacity(ROOT, args.capacity_evidence)
+        saved = replay_capacity(saved_raw, reviewed, items, capacity, source)
+        folder = new_evidence()
+        p = subprocess.run(['tools/datasets/dspal', 'stat'], cwd=ROOT,
+                           text=True, capture_output=True, timeout=420, check=False,
+                           env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+        raw = (f'RC={p.returncode}\n' + p.stdout + p.stderr).encode('utf-8')
+        save_exclusive(folder / 'dspal-stat-all.txt', raw)
+        need(p.returncode == 0, 'fresh read-only MVS stat failed')
+        compare_current(p.stdout, saved, items, capacity, source, reviewed)
+        plan = make_worksheet(saved, items)
+        plan['source_evidence_directory'] = reviewed['evidence_directory']
+        plan['source_review_summary_sha256'] = reviewed['summary_sha256']
+        plan['source_review_sha256sums_sha256'] = reviewed['sha256sums_sha256']
+        plan['capacity_evidence_directory'] = args.capacity_evidence.as_posix()
+        plan['capacity_summary_sha256'] = checksum(saved_raw['summary.json'])
+        plan['capacity_sha256sums_sha256'] = checksum(checked_file(args.capacity_evidence / 'SHA256SUMS'))
+        save_exclusive(folder / 'stage-worksheet.json', (json.dumps(plan, indent=2) + '\n').encode())
+        files = sorted(p for p in folder.iterdir() if p.is_file())
+        save_exclusive(folder / 'SHA256SUMS', ('\n'.join(
+            checksum(p.read_bytes()) + '  ' + p.name for p in files) + '\n').encode('ascii'))
+        print('TA.2 STAGE PLAN PREFLIGHT: 18/18 source PDSes; 127 selected; '
+              f'{plan["excluded_development_members"]} excluded; 0 blockers')
+        print('Private MVS planning evidence: ' + str(folder.relative_to(ROOT)))
+        print('No staging allocation, data copy, candidate identity or tape change.')
+        return 0
+    except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
+        if folder is not None:
+            try:
+                if not (folder / 'stage-worksheet.json').exists():
+                    save_exclusive(folder / 'failure.json',
+                                   (json.dumps({'status': 'REFUSED', 'reason': str(exc)}, indent=2) + '\n').encode())
+                files = sorted(p for p in folder.iterdir() if p.is_file())
+                if not (folder / 'SHA256SUMS').exists():
+                    save_exclusive(folder / 'SHA256SUMS', ('\n'.join(
+                        checksum(p.read_bytes()) + '  ' + p.name for p in files) + '\n').encode())
+                print('Private MVS evidence retained: ' + str(folder.relative_to(ROOT)))
+            except (OSError, Refusal):
+                pass
+        print('TA.2 STAGE PLAN REFUSED: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

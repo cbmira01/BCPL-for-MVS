@@ -475,3 +475,14 @@ and does **not** allocate or copy MVS datasets, mount tapes, or reserve
 candidate identities. Source PDS high-water figures are only conservative
 staging-planning evidence, not exact curated payload sizing.
 See [the capacity-preflight design and evidence contract](ta2-capacity-preflight-20261119.md).
+
+### TA.2 staging worksheet (read-only MVS recheck)
+
+`scripts/ta2-stage-plan --live --source-evidence <saved-source-run>
+--capacity-evidence <saved-capacity-run>` independently replays the
+checksum-pinned source and capacity inquiries, and **then** performs a
+fresh, read-only MVS `dspal stat`/IEHLIST observation. An exact 18-PDS
+source-capacity match produces a private checksum-pinned worksheet under
+`workarea/ta2-stage-plan/`; destination DSNs and `SPACE` values remain
+**unset**. No stage allocation/IEBCOPY/tape or candidate identity is performed.
+See [the staging-plan evidence contract](ta2-stage-plan-20261119.md).

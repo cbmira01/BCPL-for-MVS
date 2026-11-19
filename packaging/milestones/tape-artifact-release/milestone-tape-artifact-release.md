@@ -418,6 +418,21 @@ observations only, not exact curated-library footprint measurements.
 No candidate identity or stateful production is authorized here.
 
 
+**TA.2 source-capacity live checkpoint and staging worksheet (19 November 2026):**
+The owner reported **18/18 source PDSes; 127 selected; 76 excluded; 0
+blockers** from a real read-only MVS `dspal stat`/LISTDS/IEHLIST
+capacity run, saving original private evidence at
+`workarea/ta2-capacity-preflight/20261119T150315Z-16868`.
+The assistant did not inspect the private numeric values.
+The [TA.2 staging worksheet tool](../../distribution/create-tape/ta2-stage-plan-20261119.md)
+now independently replays both saved source and capacity receipts,
+checksum-checks their MVS reports and demands a fresh read-only capacity
+match before writing a private, **non-executable** staging worksheet.
+31/31 focused synthetic tests passed, but this new tool has **not**
+been run on the owner's MVS. No staging DSN or `SPACE` size is approved;
+no DASD/tape modification, release identity or VOLSER reservation is
+authorized. TA.2 remains IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
