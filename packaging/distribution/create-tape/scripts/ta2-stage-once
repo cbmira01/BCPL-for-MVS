@@ -1,0 +1,396 @@
+#!/usr/bin/env python3
+"""TA.2 bounded, no-retry selective PDS staging; no media or release candidate.
+
+Default: independently replay pinned MVS evidence, optionally recheck with --live.
+--run is permanently disabled until a separate Git-tracked owner approval is
+committed on main and bound to the precise preflight and allocations. No
+staging write is authorized by merely installing this runner.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+PACKAGING = ROOT / 'packaging/distribution/create-tape'
+PROPOSAL = PACKAGING / 'ta2-stage-space-proposal-20261119.json'
+APPROVAL = PACKAGING / 'ta2-stage-write-approval.json'  # NOT PRESENT without owner approval
+BASE = ROOT / 'workarea/ta2-stage-readiness'
+OPERATIONS = ROOT / 'workarea/ta2-stage-operations'
+ATTEMPT = OPERATIONS / 'TA2STG-TSO002-attempt.json'
+RUN = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
+HASH_ROW = re.compile(r'([a-f0-9]{64})  ([a-z0-9.-]+)\Z')
+JOB = 'TA2STAGE'
+READINESS_FILES = {'readiness.json', 'source-stat.txt', 'catalog-report.txt', 'vtoc-report.txt'}
+MAX = 16 * 1024 * 1024
+ACTIVE_FOLDER: Path | None = None  # failure receipts after any live inquiry
+
+class Refusal(RuntimeError):
+    pass
+
+def need(ok: bool, message: str) -> None:
+    if not ok:
+        raise Refusal(message)
+
+def digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+def relative(path: Path) -> str:
+    return str(path.relative_to(ROOT))
+
+def checked_file(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX,
+         'missing/linked/oversized evidence: ' + path.name)
+    return path.read_bytes()
+
+def load(name: str, path: Path):
+    need(path.is_file() and not path.is_symlink(), 'missing/unsafe helper: ' + path.name)
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(name, loader)
+    need(spec is not None and spec.loader is not None, 'unable to load helper: ' + name)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def safe_run(path: Path, parent: Path) -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and work.resolve().is_relative_to(ROOT.resolve()) and
+         parent.is_dir() and not parent.is_symlink() and parent.resolve().parent == work.resolve() and
+         RUN.fullmatch(path.name) is not None and path.is_dir() and not path.is_symlink() and
+         path.resolve().parent == parent.resolve(), 'readiness evidence not a private TA.2 run')
+    return path.resolve()
+
+def read_pinned(path: Path, expected: set[str]) -> dict[str, bytes]:
+    need({p.name for p in path.iterdir()} == expected | {'SHA256SUMS'},
+         'readiness evidence missing/extra files')
+    rows = checked_file(path / 'SHA256SUMS').decode('ascii').splitlines()
+    seen = {}
+    for row in rows:
+        m = HASH_ROW.fullmatch(row)
+        need(m is not None and m.group(2) in expected and m.group(2) not in seen,
+             'invalid/duplicate readiness checksum row')
+        seen[m.group(2)] = m.group(1)
+    need(set(seen) == expected, 'incomplete readiness checksums')
+    data = {name: checked_file(path / name) for name in expected}
+    for name, blob in data.items():
+        need(digest(blob) == seen[name], 'readiness SHA256 mismatch: ' + name)
+    return data
+
+def read_proposal() -> tuple[dict, str]:
+    data = checked_file(PROPOSAL)
+    p = json.loads(data)
+    need(isinstance(p, dict) and set(p) ==
+         {'status', 'readiness_evidence', 'allocation_evidence', 'volume', 'targets',
+          'primary_total', 'secondary_total', 'total_budget', 'selected_members'} and
+         p['status'] == 'PROPOSED_ONLY_NOT_APPROVED' and p['volume'] == 'TSO002' and
+         p['selected_members'] == 127 and
+         (p['primary_total'], p['secondary_total'], p['total_budget']) == (645, 65, 710),
+         'unapproved/malformed fixed TA.2 proposal')
+    values = p['targets']
+    need(isinstance(values, list) and len(values) == 18 and
+         [v.get('sequence') for v in values if isinstance(v, dict)] == list(range(3, 21)) and
+         all(isinstance(v, dict) and set(v) == {'sequence','primary_tracks','secondary_tracks','directory_blocks'} and
+             all(type(v[k]) is int and 1 <= v[k] <= 65535 for k in
+                 ('primary_tracks','secondary_tracks','directory_blocks')) for v in values) and
+         sum(v['primary_tracks'] for v in values) == 645 and
+         sum(v['secondary_tracks'] for v in values) == 65,
+         '18 exact staging allocation triples invalid')
+    return p, digest(data)
+
+def read_readiness(path: Path, proposal: dict) -> tuple[dict, dict[str, bytes], str]:
+    safe_run(path, BASE)
+    need(relative(path) == proposal['readiness_evidence'], 'readiness evidence differs from proposal')
+    data = read_pinned(path, READINESS_FILES)
+    receipt = json.loads(data['readiness.json'])
+    need(isinstance(receipt, dict) and
+         receipt.get('status') == 'READ-ONLY MVS CHECK PASS; STAGING WRITE NOT AUTHORIZED' and
+         receipt.get('allocation_evidence') == proposal['allocation_evidence'] and
+         receipt.get('volume') == 'TSO002' and receipt.get('staging_datasets') == 18 and
+         receipt.get('selected_members') == 127 and receipt.get('primary_tracks') == 645 and
+         receipt.get('secondary_tracks') == 65 and receipt.get('requested_total_tracks') == 710 and
+         receipt.get('reported_free_tracks') == 16045 and
+         type(receipt.get('format1_datasets')) is int and receipt['format1_datasets'] == 30,
+         'readiness receipt does not attest exact successful MVS checks')
+    jobs = receipt.get('mvs_jobs')
+    need(type(jobs) is dict and set(jobs) == {'catalog_job','vtoc_job'} and
+         all(type(n) is int and n > 0 for n in jobs.values()) and
+         jobs['catalog_job'] != jobs['vtoc_job'], 'missing/ambiguous MVS job identities')
+    need(data['source-stat.txt'].startswith(b'RC=0\n') and
+         b'\nRC=' not in data['source-stat.txt'], 'saved source MVS stat failed')
+    return receipt, data, digest(data['readiness.json'])
+
+def modules() -> dict:
+    names = {'ready':'ta2-stage-readiness', 'allocation':'ta2-allocation-plan',
+             'stage':'ta2-stage-jcl', 'target':'ta2-target-preflight',
+             'review':'ta2-target-review', 'source':'ta2-source-preflight',
+             'capacity':'ta2-capacity-preflight', 'source_review':'ta2-source-review',
+             'stageplan':'ta2-stage-plan'}
+    d = {key: load('ta2_stage_once_'+key, SCRIPTS / name) for key,name in names.items()}
+    d['core'] = load('ta2_stage_once_core', ROOT / 'tools/datasets/dspal-core.py')
+    return d
+
+def replay(proposal: dict, evidence: dict[str, bytes], receipt: dict, mods: dict):
+    ready = mods['ready']
+    raw, alloc, planning, planning_sha = ready.read_plan(ROOT / proposal['allocation_evidence'])
+    checked, sizing, saved, items, names = ready.replay(raw, alloc, planning, mods)
+    need(sizing['volume'] == 'TSO002' and sizing['reported_free_tracks'] == 16045 and
+         sizing['primary_tracks_total'] == 645 and sizing['secondary_tracks_total'] == 65 and
+         sizing['total_primary_secondary_budget'] == 710 and
+         planning_sha == receipt['allocation_review_sha256'],
+         'original stage allocation MVS evidence changed')
+    actual = []
+    for row in alloc['targets']:
+        actual.append({'sequence': row['sequence'], **row['space']})
+        need(row['volume'] == 'TSO002', 'staging target volume changed')
+    need(actual == proposal['targets'], 'individual SPACE triples differ from owner-reviewed proposal')
+    need(names == [f'HERC02.BCPL.TA2STG.BT{i:04d}' for i in range(3,21)],
+         'staging names differ from owner-approved namespace')
+    need(receipt['directory_blocks'] == sizing['directory_blocks_total'],
+         'readiness PDS directories differ from source-reviewed allocation')
+    srcreceipt = mods['source_review'].inspect(
+        ROOT / checked['plan']['source_evidence_directory'], items, mods['source'])
+    mods['stageplan'].compare_current(evidence['source-stat.txt'].decode('utf-8').split('\n',1)[1],
+                                      saved, items, mods['capacity'], mods['source'], srcreceipt)
+    mods['target'].catalog_absence(mods['core'], evidence['catalog-report.txt'].decode('utf-8'), names)
+    vtoc = mods['review'].inspect_vtoc(evidence['vtoc-report.txt'].decode('utf-8'),'TSO002',names)
+    need(vtoc['format1_datasets_seen'] == 30 and
+         vtoc['format1_names_sha256'] ==
+            mods['allocation'].read_review(ROOT / planning['target_review_directory'], 'TSO002')[0]['format1_names_sha256'] and
+         vtoc['iehlist_reported_free_total_tracks'] == 16045,
+         'pinned readiness target VTOC inventory/capacity differs')
+    body = mods['stage'].render_jcl(mods['stage'].validate_allocations(
+        alloc, planning['source_worksheet_sha256'],
+        mods['stage'].validate_worksheet(checked['plan'],
+            mods['source'].core().load(ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'),
+            mods['source'].core().load(ROOT / 'config/dspal.yaml')),
+        mods['source'].core().load(ROOT / 'config/dspal.yaml')))
+    need(body.encode('ascii') == raw['stage-iebcopy-draft.jcl'] and
+         body.count(' EXEC PGM=IEBCOPY') == 18 and body.count(' SELECT MEMBER=') == 127,
+         'original IEBCOPY draft not canonical')
+    return checked, sizing, saved, items, names, srcreceipt, body
+
+def make_folder() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and not OPERATIONS.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()), 'unsafe operations directory')
+    OPERATIONS.mkdir(mode=0o700, exist_ok=True)
+    folder = OPERATIONS / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    return folder
+
+def save(path: Path, payload: bytes) -> None:
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os,'O_NOFOLLOW',0)
+    with os.fdopen(os.open(path, flags, 0o600),'wb') as f:
+        f.write(payload)
+        f.flush()
+        os.fsync(f.fileno())
+
+def seal(folder: Path) -> None:
+    files = sorted(p for p in folder.iterdir() if p.is_file())
+    save(folder / 'SHA256SUMS', ''.join(digest(p.read_bytes())+'  '+p.name+'\n'
+                                      for p in files).encode('ascii'))
+
+def git_original(path: Path) -> bytes:
+    rel = relative(path)
+    branch = subprocess.run(['git','branch','--show-current'],cwd=ROOT,
+                            capture_output=True,text=True,timeout=10,check=False)
+    need(branch.returncode == 0 and branch.stdout.strip() == 'main',
+         'write approval requires main branch')
+    head = subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,
+                          capture_output=True,text=True,timeout=10,check=False)
+    origin = subprocess.run(['git','rev-parse','refs/remotes/origin/main'],cwd=ROOT,
+                            capture_output=True,text=True,timeout=10,check=False)
+    need(head.returncode == origin.returncode == 0 and head.stdout == origin.stdout,
+         'local main must match fetched official origin/main')
+    status = subprocess.run(['git','status','--porcelain','--',rel],cwd=ROOT,
+                            capture_output=True,text=True,timeout=10,check=False)
+    need(status.returncode == 0 and not status.stdout.strip(),
+         'approval file must be unchanged and Git-tracked')
+    doc = subprocess.run(['git','show','HEAD:'+rel],cwd=ROOT,capture_output=True,
+                         timeout=10,check=False)
+    need(doc.returncode == 0 and doc.stdout == checked_file(path),
+         'approval file must be committed at official main HEAD')
+    return doc.stdout
+
+def read_approval(p_sha: str, r_sha: str) -> dict:
+    need(APPROVAL.is_file() and not APPROVAL.is_symlink(),
+         'owner has not approved state-changing TA.2 staging on GitHub main')
+    data = git_original(APPROVAL)
+    a = json.loads(data)
+    need(type(a) is dict and set(a) ==
+         {'status','volume','approval_scope','proposal_sha256','readiness_sha256',
+          'readiness_evidence','no_retry'} and
+         a['status'] == 'OWNER_APPROVED_ONE_SHOT_STAGING' and
+         a['volume'] == 'TSO002' and a['approval_scope'] == '18_NEW_PDS_IEBCOPY_ONLY' and
+         a['proposal_sha256'] == p_sha and a['readiness_sha256'] == r_sha and
+         a['readiness_evidence'] == 'workarea/ta2-stage-readiness/20261119T210718Z-18180' and
+         a['no_retry'] is True,
+         'owner approval not pinned to this exact 18-PDS readiness and proposal')
+    return a
+
+def fresh_check(folder: Path, mods: dict, checked, sizing, saved, items, names, srcreceipt,
+                pinned_vtoc: dict) -> dict:
+    """Only read-only inquiries before any possible IEBCOPY submission."""
+    ready = mods['ready']
+    source_sha = ready.inquire_source(folder, mods['stageplan'], saved, items,
+                                     mods['capacity'], mods['source'], srcreceipt)
+    core = mods['core']
+    config = core.load_config()
+    need(config['mvs']['hlq'] == 'HERC02', 'unexpected MVS HLQ')
+    core.require_reader_ready(config)
+    jobs = mods['target'].inquire(core, config, folder, names, 'TSO002')
+    catalog = (folder / 'catalog-report.txt').read_text(encoding='utf-8')
+    vtoc_text = (folder / 'vtoc-report.txt').read_text(encoding='utf-8')
+    mods['target'].catalog_absence(core,catalog,names)
+    vtoc = mods['review'].inspect_vtoc(vtoc_text,'TSO002',names)
+    need(vtoc['format1_names_sha256'] == pinned_vtoc['format1_names_sha256'] and
+         vtoc['format1_datasets_seen'] == 30 and
+         vtoc['iehlist_reported_free_total_tracks'] == sizing['reported_free_tracks'],
+         'fresh MVS target VTOC or free space drifted')
+    return {'mvs_jobs':jobs, 'source_stdout_sha256':source_sha,
+            'vtoc_names_sha256':vtoc['format1_names_sha256'],
+            'reported_free_tracks':vtoc['iehlist_reported_free_total_tracks']}
+
+def job_deck(core, config: dict, body: str) -> str:
+    need(body.startswith('//* TA.2 DRAFT: NOT APPROVED FOR MVS SUBMISSION.\n') and
+         body.endswith('//\n') and body.count(' EXEC PGM=IEBCOPY') == 18 and
+         body.count(' SELECT MEMBER=') == 127,
+         'unsupported IEBCOPY source JCL layout')
+    approved_body = body.replace('//* TA.2 DRAFT: NOT APPROVED FOR MVS SUBMISSION.',
+                                 '//* TA.2 OWNER-APPROVED ISOLATED PDS STAGING.',1)
+    cards = core.authenticated_job_card(config, JOB, 'TA2 STAGE', redact_password=False)
+    deck = '\n'.join(cards)+'\n'+approved_body
+    need(all(line.isascii() and len(line) <= 80 for line in deck.splitlines()),
+         'authenticated MVS JCL exceeds 80 columns')
+    need(all(len(line) <= 71 for line in deck.splitlines()
+             if line.startswith('//') and not line.startswith('//*')),
+         'MVS JCL continuation beyond column 71')
+    return deck
+
+def arm_attempt(data: dict) -> None:
+    need(not ATTEMPT.exists() and not ATTEMPT.is_symlink(),
+         'staging already attempted, DO NOT RETRY or reset without investigation')
+    save(ATTEMPT,(json.dumps(data,indent=2,sort_keys=True)+'\n').encode('utf-8'))
+
+def validate_job(job: int, summary: str, report: str) -> dict:
+    need(type(job) is int and 1 <= job <= 9999, 'ambiguous MVS job number')
+    need(re.search(r'(?m)^JOB\s+'+str(job)+r'\s+'+JOB+r'\s*$',summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'MVS IEBCOPY JES identity or highest RC not PASS')
+    steps = re.findall(r'(?m)^([A-Z0-9]{1,8})\s+IEBCOPY\s+RC=(\d{4})\s*$', summary)
+    need(steps == [(f'S{i:04d}','0000') for i in range(3,21)],
+         'not all 18 IEBCOPY steps completed RC=0000')
+    for name in [f'S{i:04d}' for i in range(3,21)]:
+        need(len(re.findall(r'(?m)^IEF142I\s+'+JOB+r'\s+'+name+
+                            r'\s+-\s+STEP WAS EXECUTED\s+-\s+COND CODE 0000\s*$',report)) == 1,
+             name + ': required IEF142I absent/duplicate')
+    need(not re.search(r'\b(?:IEF450I|IEF472I|IEA995I)\b',report),
+         'MVS IEBCOPY job reports ABEND')
+    return {'status':'18_IEBCOPY_STEPS_RC0000_ONLY_DIRECTORY_AND_RECORD_AUDIT_PENDING',
+            'mvs_job':job,'step_count':18,'selected_member_cards':127}
+
+def operation(args) -> int:
+    global ACTIVE_FOLDER
+    ACTIVE_FOLDER = None
+    proposal, proposal_sha = read_proposal()
+    path = ROOT / proposal['readiness_evidence']
+    need(args.readiness_evidence.resolve() == path.resolve(), 'explicit readiness path differs from pinned proposal')
+    receipt, raw, receipt_sha = read_readiness(path, proposal)
+    mods = modules()
+    checked,sizing,saved,items,names,srcreceipt,body = replay(proposal,raw,receipt,mods)
+    approved = None
+    if args.run:
+        approved = read_approval(proposal_sha,receipt_sha)
+        need(sys.stdin.isatty(), 'state-changing IEBCOPY requires an operator TTY')
+    if not args.live and not args.run:
+        print('TA.2 STAGE ONCE: saved readiness/18-PDS selection accepted; MVS recheck still required')
+        print('TSO002: 645 primary + 65 secondary; 127 selected; NO MVS STAGING SUBMITTED.')
+        return 0
+    folder = make_folder()
+    ACTIVE_FOLDER = folder
+    pinned = mods['review'].inspect_vtoc(raw['vtoc-report.txt'].decode('utf-8'),'TSO002',names)
+    preflight = fresh_check(folder,mods,checked,sizing,saved,items,names,srcreceipt,pinned)
+    save(folder/'preflight.json',(json.dumps(preflight,indent=2)+'\n').encode())
+    print('TA.2 STAGING WRITE GATE: 18/18 source/targets, 127 selected, fresh MVS PASS; TSO002.')
+    if not args.run:
+        seal(folder)
+        print('Read-only; staging volumes/SPACE still unapproved; no IEBCOPY submitted.')
+        print('Private MVS evidence: '+relative(folder))
+        return 0
+    token = 'AUTHORIZE TA2STAGE TSO002 18 PDS'
+    need(input('Type '+token+' for the ONE approved no-retry staging attempt: ').strip() == token,
+         'explicit one-shot operator confirmation absent')
+    need(approved is not None, 'owner approval absent')
+    second = folder/'second-preflight'
+    second.mkdir(mode=0o700)
+    fresh_check(second,mods,checked,sizing,saved,items,names,srcreceipt,pinned)
+    core = mods['core']; config = core.load_config()
+    deck = job_deck(core,config,body)
+    # Never persist an authenticated password-bearing deck in evidence.
+    cursor = folder/'stage-cursor.json'
+    arm_attempt({'state':'SUBMISSION_ATTEMPTED_NO_RETRY', 'proposal_sha256':proposal_sha,
+                 'readiness_sha256':receipt_sha,'approval_sha256':digest(checked_file(APPROVAL)),
+                 'attempt_evidence':relative(folder),'jobname':JOB,'expected_pds':18,
+                 'no_retry':True})
+    before = tempfile.tempdir
+    oldtmp = os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder)
+        os.environ['TMPDIR'] = str(folder)
+        job, summary = core.submit_and_wait(config,deck,max_rc=0,cursor_file=cursor)
+    finally:
+        tempfile.tempdir = before
+        if oldtmp is None: os.environ.pop('TMPDIR',None)
+        else: os.environ['TMPDIR'] = oldtmp
+    save(folder/'stage-summary.txt',summary.encode('utf-8'))
+    report = core.job_report(job,cursor_file=cursor)
+    save(folder/'stage-report.txt',report.encode('utf-8'))
+    result = validate_job(job,summary,report)
+    save(folder/'stage-result.json',(json.dumps(result,indent=2)+'\n').encode('utf-8'))
+    seal(folder)
+    print(f'TA.2 STAGING MVS JOB {job}: 18 IEBCOPY steps RC=0000; separate PDS/record verification REQUIRED.')
+    print('Private evidence: '+relative(folder))
+    return 0
+
+def main(argv=None) -> int:
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--readiness-evidence',required=True,type=Path)
+    parser.add_argument('--live',action='store_true',help='fresh read-only MVS check')
+    parser.add_argument('--run',action='store_true',help='requires separately committed owner approval and operator TTY')
+    args=parser.parse_args(argv)
+    if args.run:args.live=True
+    try:
+        return operation(args)
+    except (Refusal,OSError,RuntimeError,ValueError,KeyError,UnicodeError,
+            subprocess.TimeoutExpired) as exc:
+        reason = str(exc) if isinstance(exc, Refusal) else type(exc).__name__
+        if ACTIVE_FOLDER is not None and ACTIVE_FOLDER.is_dir():
+            try:
+                if not (ACTIVE_FOLDER/'SHA256SUMS').exists():
+                    save(ACTIVE_FOLDER/'failure.json',
+                         (json.dumps({'status':'REFUSED_NO_RETRY',
+                                      'reason':reason,
+                                      'submission_may_have_occurred':ATTEMPT.exists()},
+                                     indent=2)+'\n').encode('utf-8'))
+                    seal(ACTIVE_FOLDER)
+                print('Private MVS evidence: '+relative(ACTIVE_FOLDER))
+            except (OSError, Refusal):
+                pass
+        print('TA.2 STAGE ONCE REFUSED: '+reason,file=sys.stderr)
+        print('No automatic retry; keep all existing staging PDSes and private evidence.',file=sys.stderr)
+        return 2
+
+if __name__=='__main__':
+    raise SystemExit(main())

@@ -561,3 +561,24 @@ values for explicit owner approval. It has **no stage-copy execution
 path**, and total IEHLIST free tracks do not prove free extent
 contiguity. See the
 [TA.2 stage readiness evidence contract](ta2-stage-readiness-review-20261119.md).
+
+### TA.2 read-only staging readiness and guarded one-shot preparation
+
+The owner's actual `ta2-stage-readiness --live` completed with
+18 PDSes, 127 selected members, 16,045 IEHLIST-reported free tracks on
+TSO002, and **645+65=710 proposed staging tracks**. The 18 separate
+primary/secondary/directory triples are preserved in a tracked
+[unapproved proposal](ta2-stage-space-proposal-20261119.json).
+The guarded `scripts/ta2-stage-once --readiness-evidence
+workarea/ta2-stage-readiness/20261119T210718Z-18180 --live`
+independently replays source/target and exact selected-member receipts,
+checks saved proposal/review evidence, and repeats read-only MVS source,
+catalog, and IEHLIST inquiries. It never writes a PDS in default
+or `--live` mode. **The `--run` path refuses without a separately
+owner-approved, Git-tracked, checksum-pinned approval file, which is
+deliberately absent.** Even after separate approval it uses a TTY
+confirmation, a second MVS recheck, and an exclusive no-retry marker
+before one possible 18-step IEBCOPY JES submission. No staging data sets
+have been created; records/DCB/source-to-staged identity must still be
+checked independently after any approved write. See the
+[TA.2 one-shot staging safety contract](ta2-stage-once-design-20261119.md).

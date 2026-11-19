@@ -531,6 +531,30 @@ triples. **35/35 focused offline tests PASS**; a live MVS readiness
 run is pending. No new DASD PDS, IEBCOPY staging submission, production
 VOLSER or tape image has been created. TA.2 IN PROGRESS.
 
+**TA.2 actual MVS staging-readiness pass and one-shot staging gate (19 November 2026):**
+The owner reported the read-only `ta2-stage-readiness --live` PASS:
+18/18 target PDSes, 127 selected members, fresh MVS source/catalog/VTOC
+PASS, and TSO002 reporting 16,045 available tracks. The exact owner-reported
+18 `SPACE=(TRK,(primary,secondary,directory))` triples total
+**645 primary + 65 secondary = 710 proposed tracks**.
+Private MVS evidence:
+`workarea/ta2-stage-readiness/20261119T210718Z-18180`.
+The exact proposals are source-controlled in
+[TA.2 stage SPACE proposal](../../distribution/create-tape/ta2-stage-space-proposal-20261119.json)
+as `PROPOSED_ONLY_NOT_APPROVED`. The new
+[guarded one-shot preparation](../../distribution/create-tape/ta2-stage-once-design-20261119.md)
+implements a read-only MVS preflight and a separately owner-gated
+18-IEBCOPY one-shot mechanism, with an immutable source/evidence binding,
+an absent-until-approved tracked approval file, TTY confirmation,
+double fresh MVS recheck, and permanent no-retry attempt marker.
+The owner's TSO002 allocation choice and each SPACE triple **have not
+been approved for writes**, and no approval file has been committed.
+The assistant's isolated **35/35 focused offline tests PASS**; the
+actual saved private JES reports were not directly inspected by the
+assistant and the one-shot runner has not run against live MVS.
+No new PDS, release candidate, `BCnnnn` VOLSER or tape image was
+created. TA.2 remains IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:

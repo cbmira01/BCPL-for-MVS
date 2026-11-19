@@ -1,0 +1,120 @@
+{
+  "status": "PROPOSED_ONLY_NOT_APPROVED",
+  "readiness_evidence": "workarea/ta2-stage-readiness/20261119T210718Z-18180",
+  "allocation_evidence": "workarea/ta2-allocation-plan/20261119T204153Z-17905",
+  "volume": "TSO002",
+  "targets": [
+    {
+      "sequence": 3,
+      "primary_tracks": 9,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 4,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 5,
+      "primary_tracks": 176,
+      "secondary_tracks": 16,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 6,
+      "primary_tracks": 110,
+      "secondary_tracks": 10,
+      "directory_blocks": 13
+    },
+    {
+      "sequence": 7,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 8,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 9,
+      "primary_tracks": 29,
+      "secondary_tracks": 3,
+      "directory_blocks": 9
+    },
+    {
+      "sequence": 10,
+      "primary_tracks": 39,
+      "secondary_tracks": 4,
+      "directory_blocks": 13
+    },
+    {
+      "sequence": 11,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 12,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 13,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 14,
+      "primary_tracks": 44,
+      "secondary_tracks": 4,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 15,
+      "primary_tracks": 44,
+      "secondary_tracks": 4,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 16,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 17,
+      "primary_tracks": 19,
+      "secondary_tracks": 2,
+      "directory_blocks": 13
+    },
+    {
+      "sequence": 18,
+      "primary_tracks": 14,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 19,
+      "primary_tracks": 14,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    },
+    {
+      "sequence": 20,
+      "primary_tracks": 14,
+      "secondary_tracks": 2,
+      "directory_blocks": 7
+    }
+  ],
+  "primary_total": 645,
+  "secondary_total": 65,
+  "total_budget": 710,
+  "selected_members": 127
+}
