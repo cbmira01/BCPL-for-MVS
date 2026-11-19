@@ -127,3 +127,22 @@ real version or VOLSER assignment is created by this documentation.**
 
 Related: [native compiler distribution design](native-cambridge-compiler-distribution-decisions-20261108.md);
 [multi-dataset/append experiments](multi-dataset-tape-and-append-experiment-20261108.md).
+
+## TA.2 owner decision — production VOLSER naming (19 November 2026)
+
+The owner **approved** the permanent production-volume naming convention
+`BCnnnn`, where `nnnn` is a zero-padded decimal serial number from
+`0001` to `9999`. The first new production tape candidate **may** use
+`BC0001` only after its distinct explicit registry reservation and media
+collision preflight. This is a **naming-policy decision, not a reservation**.
+`BC0000`, `Q00001`, and the accepted scratch identities
+`BTA101`/`BTA102` are not conforming *new production* VOLSERs.
+
+Serials are independent of release version, monotonically allocated through
+the one Git-controlled registry, permanently retained after a used or failed
+candidate, and never silently reused. An exact unmodified duplicate image
+retains its original VOLSER and SHA-256, subject to receiving-site management
+restrictions; any changed tape image needs a fresh identity. The original
+illustrative `BC0001` in this document was not a reservation; its proposed
+status remains unchanged. This decision does not create the registry file,
+reserve a candidate, approve tape creation, or modify the TA.0/TA.1 closures.

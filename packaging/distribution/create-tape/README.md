@@ -497,3 +497,21 @@ source-selection check. With such a proposal it emits **only a new private
 JOB-less draft** under `workarea/`, never submits MVS, touches DASD, or
 assigns release media. No staging parameters or authorization exist yet.
 See the [design and exact remaining gates](ta2-selective-staging-deck-20261119.md).
+
+### TA.2 owner-approved namespace and read-only target probe
+
+The **approved** staging namespace is
+`HERC02.BCPL.TA2STG.BT0003`–`BT0020`; the approved future
+production tape VOLSER format is `BCnnnn` (`BC0001`–`BC9999`),
+**without any current VOLSER reservation**.
+
+`scripts/ta2-target-preflight --stage-evidence <run> --volume TSO002 --live`
+independently replays the original source/capacity/stage receipt and
+performs two **read-only MVS JES** inquiries: exact TSO LISTDS catalog
+absence for all 18 staging names, followed by a raw IEHLIST VTOC
+observation of the *proposed* volume. No allocation, copy or tape I/O
+is performed. Its compact result and original JES evidence are private
+under `workarea/ta2-target-preflight/`. Raw VTOC free-space and
+uncataloged-collision interpretation still require follow-up review;
+`TSO002` is only a proposed volume for the read-only inquiry. See
+[the target safety contract](ta2-namespace-volser-and-target-preflight-20261119.md).

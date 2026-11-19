@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""TA.2 target namespace collision inquiry; read-only MVS/JES, no staging writes.
+
+Requires complete independently replayed TA.2 source/stage-plan evidence. One
+TSO LISTDS job checks catalog absence for the 18 approved target DSNs; one
+IEHLIST LISTVTOC job retains raw volume evidence for independent space and
+uncataloged-collision review. No result authorizes an allocation or retry.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+OUT = ROOT / 'workarea/ta2-target-preflight'
+NAMESPACE = 'HERC02.BCPL.TA2STG'
+VOLUME = re.compile(r'[A-Z0-9]{1,6}\Z')
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(condition: bool, message: str) -> None:
+    if not condition:
+        raise Refusal(message)
+
+
+def import_script(name: str, path: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'missing TA.2 dependency')
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def targets(rows: list[dict], dspal: dict) -> list[str]:
+    """Only the owner-approved namespace and canonical 18-source sequence."""
+    need(dspal['mvs']['hlq'] == 'HERC02', 'approved namespace belongs to HERC02')
+    need(len(rows) == 18 and [x['sequence'] for x in rows] == list(range(3, 21)),
+         'TA.2 source sequence is not canonical')
+    names = [f'{NAMESPACE}.BT{n:04d}' for n in range(3, 21)]
+    all_dev = {dspal['mvs']['hlq'] + '.' + spec['dsn']
+               for spec in dspal['datasets'].values()}
+    need(all(name not in all_dev for name in names) and len(set(names)) == 18,
+         'approved staging name collides with managed source')
+    need(all(len(name) <= 44 for name in names), 'staging DSN exceeds MVS limit')
+    return names
+
+
+def vtoc_deck(core, config: dict, volume: str) -> str:
+    need(isinstance(volume, str) and VOLUME.fullmatch(volume) is not None,
+         'invalid proposed DASD VOLSER')
+    cards = core.authenticated_job_card(config, 'TA2VTOC', 'TA2 VTOC READ',
+                                         redact_password=False)
+    cards += [
+        '//* READ-ONLY TARGET VTOC; NO DASD ALLOCATION',
+        '//VTOC     EXEC PGM=IEHLIST',
+        '//SYSPRINT DD SYSOUT=*',
+        f'//VOL      DD UNIT=SYSDA,VOL=SER={volume},DISP=SHR',
+        '//SYSIN    DD *',
+        f' LISTVTOC FORMAT,VOL=SYSDA={volume}',
+        '/*', '//',
+    ]
+    need(all(len(s) <= 80 and s.isascii() for s in cards),
+         'IEHLIST deck would exceed FB80')
+    return '\n'.join(cards) + '\n'
+
+
+def catalog_absence(core, report: str, names: list[str]) -> None:
+    """Every exact target must have LISTDS's recognized missing response."""
+    need(len(names) == 18 and len(set(names)) == 18, 'invalid target catalog set')
+    for name in names:
+        need(core.dataset_missing(report, name),
+             name + ': no confirmed MVS LISTDS catalog-absence response')
+        block = core.extract_listds_block(report, name)
+        need(not (block and core.parse_listds(block)),
+             name + ': contradictory catalog/attributes output')
+
+
+def vtoc_observation(report: str, volume: str, names: list[str]) -> None:
+    """Retain full VTOC: this is NOT a machine-proven free-space verdict."""
+    upper = report.upper()
+    need(volume in upper and ('IEH' in upper or 'LISTVTOC' in upper),
+         'IEHLIST output does not identify inspected volume and utility')
+    # The VTOC job does not include staging DSNs in its input, so a match in
+    # its output is a possible uncataloged allocation and must stop planning.
+    for name in names:
+        need(re.search(r'(?<![A-Z0-9@$#.-])' + re.escape(name) +
+                       r'(?![A-Z0-9@$#.-])', upper) is None,
+             name + ': possible uncataloged VTOC collision')
+
+
+def run_dir() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()), 'unsafe workarea')
+    need(not OUT.is_symlink(), 'linked evidence directory refused')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    name = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid())
+    path = OUT / name
+    path.mkdir(mode=0o700, exist_ok=False)
+    return path
+
+
+def save(path: Path, data: bytes) -> None:
+    need(not path.exists() and not path.is_symlink(), 'evidence overwrite refused')
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    with os.fdopen(fd, 'wb') as f:
+        f.write(data)
+
+
+def checksums(folder: Path) -> None:
+    files = sorted(x for x in folder.iterdir() if x.is_file())
+    body = ''.join(hashlib.sha256(x.read_bytes()).hexdigest() + '  ' + x.name + '\n'
+                   for x in files)
+    save(folder / 'SHA256SUMS', body.encode('ascii'))
+
+
+def inquire(core, config: dict, directory: Path, names: list[str],
+            volume: str) -> dict:
+    """Two read-only MVS jobs. Save original full JES reports, never retry."""
+    # The existing dspal core uses tempfile.NamedTemporaryFile for JES input.
+    # Keep those ephemeral files inside this repository, even on failure.
+    previous_tmp = tempfile.tempdir
+    previous_env = os.environ.get('TMPDIR')
+    tempfile.tempdir = str(directory)
+    os.environ['TMPDIR'] = str(directory)
+    jobs = {}
+    try:
+        stat_jcl = core.stat_deck(config, names)
+        need(all(len(line) <= 80 for line in stat_jcl.splitlines()),
+             'LISTDS job exceeds 80-column card')
+        job, _ = core.submit_and_wait(config, stat_jcl, max_rc=8)
+        jobs['catalog_job'] = job
+        report = core.job_report(job)
+        save(directory / 'catalog-report.txt', report.encode('utf-8'))
+        catalog_absence(core, report, names)
+
+        job, _ = core.submit_and_wait(config, vtoc_deck(core, config, volume), max_rc=0)
+        jobs['vtoc_job'] = job
+        vtoc = core.job_report(job)
+        save(directory / 'vtoc-report.txt', vtoc.encode('utf-8'))
+        vtoc_observation(vtoc, volume, names)
+    finally:
+        tempfile.tempdir = previous_tmp
+        if previous_env is None:
+            os.environ.pop('TMPDIR', None)
+        else:
+            os.environ['TMPDIR'] = previous_env
+    return jobs
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--stage-evidence', type=Path, required=True)
+    ap.add_argument('--volume', required=True,
+                    help='explicit read-only proposed target DASD volume (not allocation approval)')
+    ap.add_argument('--live', action='store_true', help='perform two read-only JES inquiries')
+    args = ap.parse_args(argv)
+    folder = None
+    try:
+        need(VOLUME.fullmatch(args.volume) is not None, 'invalid DASD volume')
+        stage = import_script('ta2_target_stage_jcl', SCRIPTS / 'ta2-stage-jcl')
+        source = import_script('ta2_target_source', SCRIPTS / 'ta2-source-preflight')
+        canonical = source.core()
+        manifest, dspal = canonical.load(
+            ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'), canonical.load(
+            ROOT / 'config/dspal.yaml')
+        canonical.check(manifest, dspal, ROOT, release=False)
+        plan, digest, saved_stat = stage.read_stage_run(ROOT, args.stage_evidence)
+        rows = stage.validate_worksheet(plan, manifest, dspal)
+        stage.verify_history(plan, saved_stat, manifest, dspal)
+        names = targets(rows, dspal)
+        if not args.live:
+            print('TA.2 TARGET PREFLIGHT PLAN: 18 staging DSNs, one LISTDS + one IEHLIST job; no MVS inquiry')
+            return 0
+        core = import_script('ta2_target_dspal_core', ROOT / 'tools/datasets/dspal-core.py')
+        config = core.load_config()
+        need(config['mvs']['hlq'] == 'HERC02', 'authenticated MVS HLQ differs from approved namespace')
+        core.require_reader_ready(config)
+        folder = run_dir()
+        jobs = inquire(core, config, folder, names, args.volume)
+        receipt = {'status': 'CATALOG ABSENCE CHECKED; VTOC SPACE REVIEW PENDING',
+                   'staging_namespace': NAMESPACE, 'proposed_dasd_volume': args.volume,
+                   'target_dsns': names, 'stage_evidence': args.stage_evidence.as_posix(),
+                   'stage_worksheet_sha256': digest, 'mvs_jobs': jobs,
+                   'qualification': 'MVS catalog absence plus saved raw VTOC; no free-space or uncataloged-absence acceptance'}
+        save(folder / 'summary.json', (json.dumps(receipt, indent=2) + '\n').encode())
+        checksums(folder)
+        print('TA.2 TARGET PREFLIGHT: 18/18 catalog-absence observations; 1 raw IEHLIST VTOC saved')
+        print('Private MVS evidence: ' + str(folder.relative_to(ROOT)))
+        print('VTOC free capacity/uncataloged allocations still require review; no DASD/tape changes.')
+        return 0
+    except (Refusal, OSError, KeyError, TypeError, ValueError) as exc:
+        if folder is not None:
+            try:
+                save(folder / 'failure.json', (json.dumps({'status':'REFUSED','reason':str(exc)},
+                                                         indent=2)+'\n').encode())
+                checksums(folder)
+                print('Private MVS evidence retained: ' + str(folder.relative_to(ROOT)))
+            except (Refusal, OSError):
+                pass
+        print('TA.2 TARGET PREFLIGHT REFUSED: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

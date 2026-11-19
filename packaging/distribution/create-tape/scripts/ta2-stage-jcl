@@ -182,9 +182,8 @@ def validate_allocations(allocation: dict, worksheet_sha: str, rows: list[dict],
          allocation['stage_worksheet_sha256'] == worksheet_sha,
          'staging allocation proposal not bound to exact source worksheet')
     prefix = allocation['staging_namespace']
-    need(valid_dsn(prefix) and len(prefix) <= 37 and
-         prefix.startswith(dspal['mvs']['hlq'] + '.BCPL.'),
-         'unsafe or unrelated staging namespace')
+    need(prefix == 'HERC02.BCPL.TA2STG' and dspal['mvs']['hlq'] == 'HERC02',
+         'staging namespace must be owner-approved HERC02.BCPL.TA2STG')
     targets = allocation['targets']
     need(isinstance(targets, list) and len(targets) == 18,
          'exactly 18 explicit allocation records required')

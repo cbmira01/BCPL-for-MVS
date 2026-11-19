@@ -101,3 +101,19 @@ test suites were not rerun in this isolated workspace.
 
 **TA.2 remains IN PROGRESS. No staging dataset, release candidate, VOLSER
 or AWS tape has been created or reserved.**
+
+## TA.2 subsequent owner approval — exact staging namespace
+
+The owner approved **`HERC02.BCPL.TA2STG.BT0003` through
+`HERC02.BCPL.TA2STG.BT0020`**, one isolated staging PDS for each of
+the 18 curated source libraries. The draft-only staging generator now
+refuses any other namespace, even another syntactically valid `HERC02.BCPL`
+prefix. This approves only names: it does **not** select a destination DASD
+volume, `SPACE` allocation, state-changing JES, tape identity or release
+candidate.
+
+The owner independently approved the `BCnnnn` production tape VOLSER
+convention, starting at a possible future `BC0001`, but did **not**
+reserve an identity. The offline TA.2 candidate/registry gate now enforces
+`BC0001`–`BC9999`. See the
+[TA.2 target-collision preflight](ta2-namespace-volser-and-target-preflight-20261119.md).

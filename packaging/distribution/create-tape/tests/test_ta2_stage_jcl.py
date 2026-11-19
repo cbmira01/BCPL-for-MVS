@@ -211,6 +211,11 @@ class StageJCLTests(unittest.TestCase):
         with self.assertRaisesRegex(mod.Refusal,'overlaps'):
             self.checked()
 
+    def test_other_but_valid_namespace_refused(self):
+        self.allocation['staging_namespace']='HERC02.BCPL.PRIVATE'
+        with self.assertRaisesRegex(mod.Refusal, 'owner-approved'):
+            self.checked()
+
     def test_wrong_namespace_refused(self):
         self.allocation['staging_namespace']='HERC02.BCPL'
         with self.assertRaises(mod.Refusal):

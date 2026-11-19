@@ -35,7 +35,7 @@ class TA2OfflineTests(unittest.TestCase):
             'phase': 'candidate',
             'release': {'candidate_id': 'EXAMPLE', 'version': '0.1.0-rc1',
                         'source_commit': 'a' * 40, 'native_compiler': 'absent'},
-            'volume': {'volser': 'Q00001', 'registry_reservation': 'EXAMPLE'},
+            'volume': {'volser': 'BC0001', 'registry_reservation': 'EXAMPLE'},
             'generation': {'producer_sha256': mod.digest(SRC.read_bytes()),
                            'canonical_validator_sha256': mod.digest(mod.VALIDATOR.read_bytes())},
             'datasets': [
@@ -61,7 +61,7 @@ class TA2OfflineTests(unittest.TestCase):
                                                           'THREE': 'example/three.bcpl'}}}}
         self.raw = b'fixture-release-candidate-manifest\n'
         self.record = {'candidate_id': 'EXAMPLE', 'state': 'reserved', 'version': '0.1.0-rc1',
-                       'source_commit': 'a' * 40, 'volser': 'Q00001',
+                       'source_commit': 'a' * 40, 'volser': 'BC0001',
                        'manifest_sha256': mod.digest(self.raw)}
         self.reg = {'schema_version': 1, 'candidates': [self.record]}
         self.core = SimpleNamespace(check=lambda manifest, dspal, root, release: {
@@ -180,6 +180,22 @@ class TA2OfflineTests(unittest.TestCase):
     def test_bad_member_refused(self):
         self.m['datasets'][2]['members'].append('9BAD')
         with self.assertRaises(mod.Refusal): mod.render_write_jcl(self.m)
+
+    def test_nonconforming_candidate_volser_refused(self):
+        for vol in ('BC0000', 'Q00001', 'BCAB12', 'BC10000', 'BTA101'):
+            with self.subTest(vol=vol):
+                self.m['volume']['volser'] = vol
+                with self.assertRaises(mod.Refusal):
+                    mod.render_write_jcl(self.m)
+        self.m['volume']['volser'] = 'BC0001'
+
+    def test_nonconforming_registry_volser_refused(self):
+        for vol in ('BC0000', 'Q00001', 'BCAB12'):
+            with self.subTest(vol=vol):
+                self.record['volser'] = vol
+                with self.assertRaises(mod.Refusal):
+                    self.check()
+        self.record['volser'] = 'BC0001'
 
     def test_old_scratch_volser_refused(self):
         self.m['volume']['volser'] = 'BTA102'

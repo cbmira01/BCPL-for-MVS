@@ -447,6 +447,24 @@ target volumes/SPACE allocations before it can emit a JOB-less
 There is **no staging allocation map, JES execution, VOLSER reservation
 or candidate tape**. TA.2 remains IN PROGRESS.
 
+**TA.2 owner-approved namespace/VOLSER naming and target safety preflight (19 November 2026):**
+The owner approved exactly `HERC02.BCPL.TA2STG.BT0003` through `BT0020`
+for isolated staging and `BCnnnn` (`BC0001`–`BC9999`) for future,
+distinct, non-reused **production tape** identities. No VOLSER was
+reserved. The offline producer now rejects nonconforming candidate/registry
+VOLSERs; the selective staging deck renderer refuses any other
+staging namespace. The new [read-only MVS target-collision
+preflight](../../distribution/create-tape/ta2-namespace-volser-and-target-preflight-20261119.md)
+first replays the original owner-reported MVS source/capacity/stage-plan
+receipts, then queries 18 destination names with TSO LISTDS and saves
+a raw IEHLIST LISTVTOC report for a separately specified *proposed*
+DASD volume. **69/69 tested focused staging/target synthetic cases PASS**
+(43 staging + 26 target) in the assistant's repository-root workspace.
+Nine additional direct VOLSER-pattern assertions PASS; the amended
+offline-producer regression suite has not been rerun in that workspace.
+No MVS stage data set, tape image, candidate reservation or allocated
+DASD volume is accepted by these checks. TA.2 remains IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
