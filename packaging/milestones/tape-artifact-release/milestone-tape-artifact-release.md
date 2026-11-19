@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 unload JOB 9120, restore JOB 9136, and IEHLIST source/restored directory JOBS 9151/9152 PASS (qualified); restored ICINT19 GO pending separate authorization**
+**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 unload JOB 9120, restore JOB 9136, and IEHLIST JOBS 9151/9152 PASS (qualified); restored ICINT19 GO read-only preflight PASS; one TA1BGO submission pending separate authorization**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -275,6 +275,31 @@ Git blobs match tested workspace bytes.**
 **No restored ICINT19 GO has yet been submitted or approved.**
 See [Track B directory PASS and GO preflight](../../distribution/create-tape/ta1b-directory-match-and-go-preparation-20261118.md).
 TA.1 stays IN PROGRESS.
+
+**TA.1 Track B live restored-STEPLIB GO preflight PASS (19 November 2026, 06:49 EST / 11:49 UTC):**
+The owner ran `packaging/distribution/create-tape/scripts/run-ta1-track-b-go`
+in its default read-only mode at GitHub `main`
+`acae8bd36b222bc4e3ef7ac5bee57ea482c1dcf3`. The tool reported:
+`TA.1B RESTORED GO READ-ONLY PREFLIGHT PASS: IEHLIST jobs 9151/9152, entry 000000 attrs 02E2`;
+`MVS source TSO003 / restored TSO002 PO/U/0/6144; original BTA102 SHA-256 preserved`.
+It confirmed no `ICINT19` GO JES submission and no MVS dataset
+or tape change. Original private evidence:
+`workarea/ta1b-operations/BTA102-track-b-go-20261119T114903Z-13321/`.
+The runner revalidates both actual IEHLIST receipts against the
+stored MVS reports, the independent JOB 9136 restore, BTA102 SHA
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`,
+and the source/restored PDS identities. A further **14/14 static
+safety contract checks** of the already committed GO runner PASS;
+no code edits were necessary. The earlier 32/32 offline test
+result was not rerun in this documentation-only checkpoint.
+The remaining TA.1 Track B acceptance gate is **one** separately
+authorized `TA1BGO` JES job: pinned eight-step MR10 scalar/vector
+sequence, all three interpreter `STEPLIB` DDs bound to the
+restored `HERC02.BCPL.TA1B.LOAD`, RC=0000, three successful
+ICINT19 executions, and exact scalar/vector `RP:` records.
+**No GO submission has been authorized or executed yet.**
+See [actual GO preflight record](../../distribution/create-tape/ta1b-go-readonly-preflight-20261119.md).
+TA.1 remains IN PROGRESS.
 
 ## 1. Objective and product boundary
 

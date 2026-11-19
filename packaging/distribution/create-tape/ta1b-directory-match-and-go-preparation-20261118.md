@@ -69,3 +69,15 @@ tests PASS, plus Python source and test bytecode compilation.
 The Git blob hashes of both tracked files match the tested bytes.
 TA.1 remains **IN PROGRESS**, and GO authorization and execution
 remain open.
+
+## Subsequent live restored-GO read-only preflight PASS — 19 November 2026
+
+The owner ran `scripts/run-ta1-track-b-go` without `--run`
+on GitHub `main` `acae8bd36b222bc4e3ef7ac5bee57ea482c1dcf3`.
+The actual MVS-facing preflight reported valid IEHLIST JOBS 9151/9152,
+matching ICINT19 entry `000000`, attrs `02E2`, source TSO003,
+restored TSO002, matching PO/U/0/6144 and preserved BTA102 SHA-256.
+It executed **NO** GO JES job and made **NO** MVS or tape changes.
+Evidence: `workarea/ta1b-operations/BTA102-track-b-go-20261119T114903Z-13321/`.
+The separate one-shot `TA1BGO` execution authorization remains pending.
+See [live read-only GO preflight receipt](ta1b-go-readonly-preflight-20261119.md).

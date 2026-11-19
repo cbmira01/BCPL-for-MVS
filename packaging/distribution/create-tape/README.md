@@ -370,3 +370,15 @@ IEF142I messages, interpreted CODE=0 and exact scalar/vector RP
 records. No tape operations or persistent MVS dataset modification
 occur in default mode, and actual GO remains **not yet authorized**.
 See [directory PASS and GO preflight design](ta1b-directory-match-and-go-preparation-20261118.md).
+
+## TA.1B restored-STEPLIB GO live read-only preflight PASS — 19 November 2026
+
+The owner ran the committed `scripts/run-ta1-track-b-go` in default
+read-only mode on GitHub main `acae8bd36b222bc4e3ef7ac5bee57ea482c1dcf3`.
+The actual guest checks reported IEHLIST jobs 9151/9152 accepted
+(entry `000000`, attrs `02E2`), source PDS TSO003 and restored
+PDS TSO002 both PO/U/0/6144, and original BTA102 SHA-256 unchanged.
+Private evidence: `workarea/ta1b-operations/BTA102-track-b-go-20261119T114903Z-13321/`.
+There was **no ICINT19 GO JES submission or MVS/tape modification**.
+The separate owner authorization for a single `TA1BGO` remains
+pending. See [the live restored-GO preflight record](ta1b-go-readonly-preflight-20261119.md).
