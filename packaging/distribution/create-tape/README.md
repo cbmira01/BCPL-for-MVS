@@ -527,3 +527,10 @@ totals and, *only if MVS provides an unambiguous volume summary*, the
 volume-reported empty tracks. It never computes an approved per-PDS
 staging `SPACE` or submits state-changing JCL. See the
 [TA.2 saved-VTOC evidence contract](ta2-target-saved-vtoc-review-20261119.md).
+
+**FORMAT-1 IEHLIST parser correction (19 November):** The saved target
+review initially refused the owner's two attempts because its synthetic
+fixture omitted the DSCB type `1` field. The reviewer now recognizes the
+MVS FORMAT-1 layout used by `dspal-space.py`; the original target
+evidence remains unchanged. See the
+[correction and validation record](ta2-target-format1-parser-correction-20261119.md).

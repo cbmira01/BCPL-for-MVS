@@ -64,8 +64,8 @@ class ReviewTests(unittest.TestCase):
         self.vtoc = '''SYSTEMS SUPPORT UTILITIES---IEHLIST
  CONTENTS OF VTOC ON VOL TSO002
  ---------------DATA SET NAME----------------  SER NO  SEQNO  DATE.CRE
- SYS1.PARMLIB                              TSO002     1    2026.323
- HERC02.BCPL.MR10KIT.LOAD                  TSO002     1    2026.323
+ SYS1.PARMLIB                              1 TSO002     1    00001
+ HERC02.BCPL.MR10KIT.LOAD                  1 TSO002     1    00001
  FORMAT 4 DSCB
 '''
         self._save()
@@ -99,6 +99,29 @@ class ReviewTests(unittest.TestCase):
     def inspect(self):
         return mod.inspect_saved(self.raw(),'a'*64,self.names,self.stage_rel,
                                  self.target,self.core)
+
+    def test_real_iehlist_format1_dscb_field(self):
+        # Actual MVS VTOC FORMAT-1 as parsed by tools/datasets/dspal-space.py:
+        # DSN, DSCB type 1, VOLSER, sequence, date.
+        rows = [(m.group(1), m.group(2)) for m in mod.ENTRY.finditer(self.vtoc)]
+        self.assertEqual(rows, [('SYS1.PARMLIB', 'TSO002'),
+                                ('HERC02.BCPL.MR10KIT.LOAD', 'TSO002')])
+        self.assertEqual(self.inspect()['format1_datasets_seen'], 2)
+
+    def test_old_fixture_layout_still_recognized(self):
+        old = self.vtoc.replace('1 TSO002     1    00001',
+                                'TSO002     1    2026.323')
+        self.assertEqual(mod.inspect_vtoc(old, 'TSO002', self.names)['format1_names_sha256'],
+                         mod.inspect_vtoc(self.vtoc, 'TSO002', self.names)['format1_names_sha256'])
+
+    def test_other_dscb_type_not_counted_as_format1(self):
+        stray = self.vtoc + ' SYS1.LINKLIB 4 TSO002 1 00001\n'
+        self.assertEqual(mod.inspect_vtoc(stray, 'TSO002', self.names)['format1_datasets_seen'], 2)
+
+    def test_actual_dscb_field_other_volume_still_refused(self):
+        bad = self.vtoc + ' SYS1.LINKLIB 1 TSO003 1 00001\n'
+        with self.assertRaisesRegex(mod.Refusal, 'unexpected VOLSER'):
+            mod.inspect_vtoc(bad, 'TSO002', self.names)
 
     def test_exact_checked_evidence(self):
         self.assertEqual(len(self.raw()),3)

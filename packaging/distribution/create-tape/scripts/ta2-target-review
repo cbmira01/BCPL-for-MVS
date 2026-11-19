@@ -24,10 +24,12 @@ OUT = ROOT / 'workarea/ta2-target-review'
 RUN = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
 SUM = re.compile(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)\Z')
 HEAD = re.compile(r'CONTENTS\s+OF\s+VTOC\s+ON\s+VOL\s+([A-Z0-9]{1,6})\b', re.I)
-# Classic MVS IEHLIST FORMAT-1 rows: dataset name, SER NO, SEQNO, DATE.CRE.
-# This identifies listed names, NOT the volume's free extents or free tracks.
+# IEHLIST FORMAT-1 has an explicit DSCB-format '1' between dataset name
+# and SER NO in actual dspal-space.py VTOC parsing. Preserve support for the
+# earlier synthetic fixture without that field; never interpret a non-1 DSCB
+# type as a FORMAT-1 dataset row. This is an inventory, not free-space proof.
 ENTRY = re.compile(r'(?m)^[ \t]*([A-Z@$#][A-Z0-9@$#-]{0,7}(?:\.[A-Z@$#][A-Z0-9@$#-]{0,7})+)[ \t]+'
-                   r'([A-Z0-9]{1,6})[ \t]+([0-9]{1,5})[ \t]+')
+                   r'(?:1[ \t]+)?([A-Z0-9]{1,6})[ \t]+([0-9]{1,5})[ \t]+')
 MAX = 16 * 1024 * 1024
 TRACKS_PER_CYL = 15  # TK5 target DASD: reconcile with project dspal-space.py
 FREE = re.compile(r'THERE\s+ARE\s+(\d+)\s+EMPTY\s+CYLINDERS\s+PLUS\s+(\d+)\s+'

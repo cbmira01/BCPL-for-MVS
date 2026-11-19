@@ -480,6 +480,22 @@ free-DASD-space/fragmentation acceptance has yet occurred.
 No DASD stage allocation, candidate identity/VOLSER reservation or
 tape operation occurred. TA.2 stays IN PROGRESS.
 
+**TA.2 saved VTOC FORMAT-1 parser correction (19 November 2026):**
+The owner ran `ta2-target-review --live` twice against the immutable
+`20261119T170234Z-17334` target evidence. Both runs refused before a
+new MVS inquiry because the reviewer did not recognize FORMAT-1
+dataset rows. Investigation found a mismatch between the new
+reviewer's synthetic row format and the established
+`tools/datasets/dspal-space.py` MVS IEHLIST parser: genuine
+FORMAT-1 rows include DSCB type `1` between DSN and SER NO.
+The reviewer and regression fixture were corrected without relaxing
+catalog, VOLSER or staging collision refusals. **17/17 focused
+isolated parser/inspector tests passed**; the private IEHLIST evidence
+has not yet been successfully reviewed using the correction.
+See the [TA.2 parser correction record](../../distribution/create-tape/ta2-target-format1-parser-correction-20261119.md).
+No staging SPACE, DASD allocation, candidate VOLSER or tape operation
+is authorized. TA.2 remains IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
