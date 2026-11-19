@@ -382,3 +382,28 @@ Private evidence: `workarea/ta1b-operations/BTA102-track-b-go-20261119T114903Z-1
 There was **no ICINT19 GO JES submission or MVS/tape modification**.
 The separate owner authorization for a single `TA1BGO` remains
 pending. See [the live restored-GO preflight record](ta1b-go-readonly-preflight-20261119.md).
+
+## TA.1B actual tape-restored ICINT19 executable-use PASS — 19 November 2026
+
+On separately authorized `run-ta1-track-b-go --run`, the owner
+reported MVS **TA1BGO JOB 9165**: all eight original scalar/vector
+MRREGRES steps RC=0000, three interpreter `ICINT19` invocations,
+and exact scalar/vector `RP:` output PASS from the
+`HERC02.BCPL.TA1B.LOAD` restored `STEPLIB`. The runner checks
+three interpreted `CODE=0` outcomes and eight `IEF142I`
+success confirmations as part of PASS. Original BTA102 SHA-256
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`
+remained unchanged. Actual private evidence:
+`workarea/ta1b-operations/BTA102-track-b-go-20261119T121015Z-13509/`.
+
+**Track B PASS (qualified)** now includes IEBCOPY unload JOB 9120,
+independent restore JOB 9136, matching source/restored directory
+IEHLIST JOBS 9151/9152 (entry `000000`, attrs `02E2`),
+and restored executable-use JOB 9165.
+Track A previously passed its two-dataset SL tape round-trip.
+The [TA.1 formal qualified acceptance candidate](../../milestones/tape-artifact-release/ta1-qualified-acceptance-candidate-20261119.md)
+is ready for owner review; TA.1 is **not formally closed**
+without approval. No byte-identical load module or public release
+acceptance is claimed. The next march, **TA.2 — Manifest-Driven Tape
+Producer**, remains separately scoped and unauthorized for stateful
+production. See [GO evidence](ta1b-restored-go-evidence-20261119.md).

@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 IN PROGRESS — Track A PASS (qualified); Track B BTA102 unload JOB 9120, restore JOB 9136, IEHLIST JOBS 9151/9152 PASS (qualified); restored ICINT19 GO preflight PASS; owner authorized one TA1BGO, execution results pending**
+**Status:** **TA.0 CLOSED (qualified); TA.1 ACCEPTANCE CANDIDATE — Track A and Track B PASS (qualified), including restored ICINT19 GO JOB 9165; formal owner approval of TA.1 closure pending**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -319,6 +319,45 @@ safety review checks PASS without code changes. No MVS
 `TA1BGO` execution result has yet been received, so Track B
 executable-use and TA.1 closure remain pending. See
 [TA.1B GO authorization](../../distribution/create-tape/ta1b-go-submission-authorization-20261119.md).
+
+**TA.1 Track B restored-STEPLIB GO actual MVS PASS (19 November 2026, 12:10 UTC / 07:10 EST):**
+After specific one-shot approval, the owner ran
+`packaging/distribution/create-tape/scripts/run-ta1-track-b-go --run`
+from GitHub `main` `199ea8536bb0ece10ad04c0a32020a18335b60b5`
+and confirmed `RUN RESTORED ICINT19 SCALVEC`. The runner reported
+**`TA1BGO` JOB 9165**, **all eight ordered MRREGRES scalar/vector
+steps RC=0000**, **three `ICINT19` invocations** using the
+independently tape-restored `HERC02.BCPL.TA1B.LOAD` via all three
+`STEPLIB` DDs, and **scalar/vector `RP:` PASS**.
+The pinned golden expected records are `RP: SCALAR 17 42` and
+`RP: VECTOR 5 10 15 20`; the guarded runner checks exact records
+and interpreted `CODE=0`, full JES step sequence and IEF142I messages.
+The original BTA102 AWS SHA-256 remained unchanged:
+`c3b235ca78d221432199adcde1f7a83aead4f76bab0e0eaa19d77c81d9912210`.
+Private actual-MVS evidence:
+`workarea/ta1b-operations/BTA102-track-b-go-20261119T121015Z-13509/`.
+This establishes **restored executable-use PASS (qualified)**,
+not load-module byte identity. See [Track B GO evidence](../../distribution/create-tape/ta1b-restored-go-evidence-20261119.md).
+
+**TA.1 formal qualified acceptance candidate (19 November 2026):**
+Track A independently exercised two logical standard-label datasets
+on BTA101, restored and IEBCOMPR-verified both, and reviewed the
+physical files `3,3,2,2,25,2,0`; the immutable BTA101 SHA was
+preserved. Track B independently exercised `RECFM=U` load-library
+selective IEBCOPY unload/restore on BTA102 (JOBS 9120/9136),
+source/restored IEHLIST directory match (JOBS 9151/9152),
+and the executed canonical MR10 scalar/vector case using the
+**restored** `ICINT19` (JOB 9165).
+Both bounded tracks now satisfy the actual MVS/Hercules acceptance
+criteria on a **qualified** basis, with source-level evidence
+summarized from owner-reported runner output; the assistant has
+not independently inspected private raw JES/HETMAP artifacts.
+No unsupported raw load-module byte equality is claimed.
+**Owner approval of formal TA.1 closure is pending**; this is a
+review-ready candidate, not a declaration of TA.1 CLOSED.
+Release producer, recipient installer, complete distribution
+acceptance, permissions and publication remain later marches.
+See [TA.1 qualified acceptance candidate](ta1-qualified-acceptance-candidate-20261119.md).
 
 ## 1. Objective and product boundary
 

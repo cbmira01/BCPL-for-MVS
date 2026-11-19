@@ -60,3 +60,16 @@ until actual JES/ICINT19 results are reviewed. A successful
 execution would establish restored load-module behavior for
 this accepted bounded test, not binary byte-for-byte identity
 or finished release acceptance.
+
+## Subsequent authorized actual MVS result (19 November 2026)
+
+After the approval recorded above, the owner ran the guarded
+`run-ta1-track-b-go --run` and confirmed
+`RUN RESTORED ICINT19 SCALVEC`. MVS `TA1BGO`
+**JOB 9165** returned 8 steps RC=0000, 3 restored `ICINT19`
+calls and scalar/vector `RP:` PASS. The original AWS checksum
+remained unchanged. Evidence:
+`workarea/ta1b-operations/BTA102-track-b-go-20261119T121015Z-13509/`.
+The earlier authorization-status heading is historical;
+the one-shot GO is now **PASS (qualified)**, not merely approved.
+See [actual GO evidence](ta1b-restored-go-evidence-20261119.md).

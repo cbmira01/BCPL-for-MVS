@@ -70,3 +70,14 @@ independently restored `HERC02.BCPL.TA1B.LOAD` in each of the three
 `STEPLIB` DDs. The unchanged runner was reviewed and retained.
 No GO execution was yet observed at this authorization checkpoint.
 See [GO authorization and execution boundary](ta1b-go-submission-authorization-20261119.md).
+
+## Subsequent authorized restored-GO execution PASS — 19 November 2026
+
+The owner later authorized and performed exactly one
+`TA1BGO` JES submission. **JOB 9165** reported 8 steps
+RC=0000, 3 `ICINT19` restored-`STEPLIB` invocations and
+scalar/vector `RP:` PASS. BTA102 checksum stayed unchanged.
+Private evidence:
+`workarea/ta1b-operations/BTA102-track-b-go-20261119T121015Z-13509/`.
+The earlier read-only-only status remains a historical checkpoint.
+See [actual restored execution](ta1b-restored-go-evidence-20261119.md).
