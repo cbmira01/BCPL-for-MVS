@@ -51,3 +51,25 @@ Run in the assistant workspace, without MVS/Docker/JES calls:
 `python3 -B -m unittest discover -s packaging/distribution/create-tape/tests -p 'test_ta2_offline.py' -v`
 
 **First implementation:** 35 isolated synthetic success/refusal tests. They exercise tape positions, selectable members, duplicate registry IDs/VOLSERs, forbidden TA.1 scratch identities, state transitions, SHA-pinned saved MVS evidence, staging DCB/volume/member discrepancies, Git freeze gate invocation, and JCL column widths. A local synthetic test run cannot replace current-source MVS evidence or production acceptance.
+
+## Read-only MVS source inventory extension
+
+The separately reviewed `scripts/ta2-source-preflight` implements a
+consolidated **read-only live MVS** preflight for the 18 development-source
+PDSes selected by the TA.0 manifest. Its default invocation is host-only
+planning; only `--live` invokes existing `dspal stat` and `dspal ls`
+inquiries. It verifies dataset identity, DASD volume, expected DCB, and
+presence of selected members, while separately reporting *unselected*
+development members. It preserves original query output, private JSON
+summary, and SHA-256 digests exclusively under ignored
+`workarea/ta2-source-preflight/`. An inquiry failure or inconsistent
+attributes causes a refusal, never a dataset rewrite.
+
+**Offline verification:** 11 additional synthetic parser/refusal checks,
+for **46 focused TA.2 tests** across the two tools. Live MVS results have
+not yet been supplied; these tests do not establish binary equality,
+rights clearance, or any production candidate. The read-only MVS inquiry
+still requires execution by the owner on the actual TK5 system.
+
+Do not substitute raw development member inventories for the exact
+candidate-specific isolated staging required by the frozen producer.

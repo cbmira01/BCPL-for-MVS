@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""TA.2 live read-only 18-PDS source DCB/member preflight.
+
+Uses only existing dspal stat/ls read inquiries. Does not create/replace MVS
+objects, submit a tape job, mount media, allocate a VOLSER or freeze a release.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import yaml
+
+ROOT = Path(__file__).resolve().parents[4]
+DESIGN = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+VALIDATOR = ROOT / 'tools/distribution/validate-manifest.py'
+WORK = ROOT / 'workarea'
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(flag: bool, reason: str) -> None:
+    if not flag:
+        raise Refusal(reason)
+
+
+def core():
+    need(VALIDATOR.is_file(), 'canonical validator unavailable')
+    spec = importlib.util.spec_from_file_location('ta2_source_core', VALIDATOR)
+    need(spec is not None and spec.loader is not None, 'validator cannot import')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def expected_sources(manifest: dict, dspal: dict) -> list[dict]:
+    hlq = dspal.get('mvs', {}).get('hlq')
+    need(isinstance(hlq, str) and re.fullmatch(r'[A-Z@$#][A-Z0-9@$#]{0,7}', hlq),
+         'MVS source HLQ absent/invalid')
+    items = []
+    for row in manifest['datasets'][2:]:
+        key = row['dspal_key']
+        d = row['target_dcb']
+        need(key in dspal['datasets'], 'source key absent in development map')
+        items.append({'key': key, 'dsn': hlq + '.' + dspal['datasets'][key]['dsn'],
+                      'dcb': d, 'selected': row['members'], 'sequence': row['sequence']})
+    return items
+
+
+def inspect_stat(text: str, dsn: str, dcb: dict) -> str:
+    upper = text.upper()
+    need(re.search(r'(?m)^DATASET:\s+' + re.escape(dsn) + r'\s*$', upper) is not None,
+         'stat source DSN mismatch: ' + dsn)
+    for name, value in dcb.items():
+        need(re.search(r'\b' + re.escape(name.upper()) + r'\s*:\s*' +
+                       re.escape(str(value).upper()) + r'\b', upper) is not None,
+             dsn + ': DCB ' + name + ' mismatch')
+    match = re.search(r'\bVOLUME\s*:\s*([A-Z0-9]{1,6})\b', upper)
+    need(match is not None, dsn + ': source DASD volume missing')
+    return match.group(1)
+
+
+def inspect_ls(text: str, dsn: str, selected: list[str]) -> dict:
+    upper = text.upper()
+    need(re.search(r'(?m)^' + re.escape(dsn) + r':\s*$', upper) is not None,
+         dsn + ': directory heading missing/wrong')
+    members = re.findall(r'(?m)^    ([A-Z0-9@$#]{1,8})\s*$', upper)
+    need(members and len(set(members)) == len(members), dsn + ': missing/duplicate directory rows')
+    missing = sorted(set(selected) - set(members))
+    extras = sorted(set(members) - set(selected))
+    return {'observed_members': len(members), 'selected_members': len(selected),
+            'missing_members': missing, 'development_extras': extras}
+
+
+def evidence_folder() -> Path:
+    need(WORK.is_dir() and not WORK.is_symlink() and
+         WORK.resolve().is_relative_to(ROOT.resolve()), 'unsafe workarea root')
+    base = WORK / 'ta2-source-preflight'
+    need(not base.is_symlink(), 'unsafe TA.2 evidence directory')
+    base.mkdir(mode=0o700, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    p = base / (stamp + '-' + str(os.getpid()))
+    p.mkdir(mode=0o700, exist_ok=False)
+    return p
+
+
+def capture(argv: list[str], path: Path) -> str:
+    proc = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True,
+                          timeout=180, check=False, env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+    data = f'RC={proc.returncode}\n' + proc.stdout + proc.stderr
+    path.write_text(data, encoding='utf-8')
+    path.chmod(0o600)
+    need(proc.returncode == 0, 'read-only MVS source inquiry failed; see saved evidence')
+    return proc.stdout
+
+
+def run_live(items: list[dict]) -> int:
+    root = evidence_folder()
+    checks = []
+    errors = []
+    try:
+        for item in items:
+            key = item['key']
+            record = dict(key=key, source_dsn=item['dsn'], tape_sequence=item['sequence'])
+            try:
+                s = capture(['tools/datasets/dspal', 'stat', key], root / (key + '.stat.txt'))
+                record['source_volume'] = inspect_stat(s, item['dsn'], item['dcb'])
+                listing = capture(['tools/datasets/dspal', 'ls', key], root / (key + '.ls.txt'))
+                record.update(inspect_ls(listing, item['dsn'], item['selected']))
+                if record['missing_members']:
+                    errors.append(key + ': selected members missing from source')
+            except (Refusal, subprocess.TimeoutExpired, OSError) as exc:
+                errors.append(f'{key}: {exc}')
+            checks.append(record)
+        payload = {'status': 'PASS (source metadata only)' if not errors else 'REFUSED',
+                   'source_dataset_count': len(items), 'results': checks, 'errors': errors,
+                   'qualification': 'MVS LISTDS metadata only; not member bytes or release provenance'}
+        (root / 'summary.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+        (root / 'summary.json').chmod(0o600)
+        files = sorted(p for p in root.iterdir() if p.is_file())
+        sums = [f'{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.name}' for f in files]
+        (root / 'SHA256SUMS').write_text('\n'.join(sums) + '\n', encoding='utf-8')
+        (root / 'SHA256SUMS').chmod(0o600)
+        extras = sum(len(c.get('development_extras', [])) for c in checks)
+        print(f'TA.2 MVS SOURCE PREFLIGHT: {len(checks)}/{len(items)} checked; '
+              f'{len(errors)} blocker(s); {extras} unselected development members')
+        print('Private saved MVS evidence: ' + str(root.relative_to(ROOT)))
+        print('No DASD/tape changes; source contents and build provenance remain unverified.')
+        return 1 if errors else 0
+    except (OSError, Refusal) as exc:
+        print('TA.2 evidence collection halted: ' + str(exc), file=sys.stderr)
+        print('Preserve existing private evidence under ' + str(root.relative_to(ROOT)))
+        return 1
+
+
+def main(args: list[str] | None = None) -> int:
+    args = sys.argv[1:] if args is None else args
+    if args not in ([], ['--live']):
+        print('Usage: ta2-source-preflight [--live]', file=sys.stderr)
+        return 2
+    try:
+        c = core()
+        manifest, dspal = c.load(DESIGN), c.load(DSPAL)
+        info = c.check(manifest, dspal, ROOT, release=False)
+        need(info['logical_datasets'] == 20 and manifest['phase'] == 'design',
+             'TA.0 design inventory not recognized')
+        items = expected_sources(manifest, dspal)
+        need(len(items) == 18, 'expected eighteen curated source PDSes')
+        if args == []:
+            print('TA.2 SOURCE PREFLIGHT PLAN: 18 read-only MVS stat/ls pairs; '
+                  'no MVS inquiry executed; --live requires operator approval')
+            return 0
+        return run_live(items)
+    except (Refusal, OSError, ValueError, KeyError, yaml.YAMLError) as exc:
+        print('TA.2 SOURCE PREFLIGHT REFUSED: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

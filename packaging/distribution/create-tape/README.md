@@ -437,3 +437,15 @@ inventory review. `--candidate` is a strict, separately authorized frozen
 manifest/registry/evidence gate. `--emit-jcl` only renders a validated JOB-less
 JCL body; it never submits it. There is no candidate manifest, registry
 reservation, tape write, full producer, or TA.2 acceptance yet.
+
+### TA.2 read-only MVS source inventory collector
+
+After separate approval of **read-only MVS inquiries**, invoke
+`scripts/ta2-source-preflight --live` from the repository root.
+This collects one `dspal stat` and `dspal ls` per selected development
+PDS (18 each), checks DCBs and selected member presence against the
+canonical design manifest, and stores SHA-256-pinned private records under
+`workarea/ta2-source-preflight/`. Unselected development members are
+reported but never selected for release. This is neither a candidate
+staging operation nor an MVS content comparison; it does not write DASD/tape.
+Offline parser/safety tests: `tests/test_ta2_source_preflight.py`.
