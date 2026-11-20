@@ -22,7 +22,7 @@ MEMBER = re.compile(r"^[A-Z@$#][A-Z0-9@$#]{0,7}$")
 DSN_PART = re.compile(r"^[A-Z@$#][A-Z0-9@$#]{0,7}$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 VOLSER = re.compile(r"^[A-Z0-9@$#]{6}$")
-GROUPS = {"common", "mr10", "native", "cambridge"}
+GROUPS = {"common", "mr10", "native", "cambridge", "cambridge-source"}
 PROFILES = {
     "mr10-only": {"common", "mr10"},
     "native-only": {"common", "native"},
@@ -32,6 +32,9 @@ FORBIDDEN = {"BOOT_DEVOBJ", "BOOT_INTCODE"}
 CAMBRIDGE_KEYS = {"CAMB_SOURCE", "CAMB_ASM", "CAMB_JCL", "CAMB_LIBRARY",
                   "CAMB_BCPLDEMO", "CAMB_LANGDEMO", "CAMB_TESTS",
                   "CAMB_OBJ", "CAMB_LOAD"}
+# TA.2 successor: source-only Cambridge is distinct from a native compiler.
+SOURCE_ONLY_KEYS = {"CAMB_SOURCE", "CAMB_DEMOTED"}
+SOURCE_ONLY_COUNTS = {"CAMB_SOURCE": 15, "CAMB_DEMOTED": 15}
 BINARY_KEYS = {"BOOT_OBJ", "EXT_OBJ", "MR10_OBJ", "MR10_LOAD"}
 REQUIRED_COUNTS = {
     "DIST_DOCS": 7,
@@ -133,6 +136,10 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
     require(isinstance(rel, dict) and isinstance(vol, dict), "release/volume sections required")
     native = rel.get("native_compiler")
     require(native in {"absent", "included"}, "native_compiler must be absent/included")
+    source_only = rel.get("cambridge_source", "absent")
+    require(source_only in {"absent", "included"}, "cambridge_source must be absent/included")
+    require(not (native == "included" and source_only == "included"),
+            "native compiler and source-only Cambridge need separate approved selection")
     require(vol.get("format") == "aws" and vol.get("labeling") == "SL", "expected AWS standard-label")
     require(vol.get("volume_ordinal") == 1, "only single-volume release is designed")
     if release:
@@ -147,6 +154,8 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
         expected = set(groups)
         if native == "included" and k != "mr10-only":
             expected.add("cambridge")
+        if source_only == "included" and k != "mr10-only":
+            expected.add("cambridge-source")
         require(isinstance(profiles[k], list) and len(profiles[k]) == len(set(profiles[k])) and
                 set(profiles[k]) == expected, f"invalid {k} dependency closure")
     entries = manifest.get("datasets")
@@ -180,7 +189,9 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
             require(key not in seen_key, f"{where}: duplicate dspal key {key}")
             seen_key.add(key)
             require(key not in FORBIDDEN, f"{where}: development-only dataset {key}")
-            require(not (key.startswith("CAMB_") and native == "absent"), f"{where}: compiler placeholder not permitted")
+            require(not (key.startswith("CAMB_") and native == "absent" and
+                         not (source_only == "included" and key in SOURCE_ONLY_KEYS)),
+                    f"{where}: native compiler placeholder not permitted")
             suffix = managed[key].get("dsn")
             require(valid_dsn(suffix), f"{where}: invalid dspal DSN")
             target = row.get("target_dsn_template")
@@ -190,6 +201,8 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
             seen_dsn.add(target)
             group = ("mr10" if key.startswith("MR10_") else
                      "native" if key.startswith(("BOOT_", "EXT_")) else
+                     "cambridge-source" if source_only == "included" and
+                     key in SOURCE_ONLY_KEYS else
                      "cambridge" if key.startswith("CAMB_") else "common")
             require(row["group"] == group, f"{where}: wrong group for {key}")
             d = row.get("target_dcb")
@@ -200,6 +213,15 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
             if key in REQUIRED_COUNTS:
                 require(len(members) == REQUIRED_COUNTS[key],
                         f"{where}: incorrect TA.0 member count for {key}")
+            if source_only == "included" and key in SOURCE_ONLY_KEYS:
+                require(len(members) == SOURCE_ONLY_COUNTS[key],
+                        f"{where}: incorrect Cambridge source member count for {key}")
+                require(row.get("owner") == "cambridge-compiler-source" and
+                        row.get("source_family") ==
+                        ("historical" if key == "CAMB_SOURCE" else "demoted-and-support") and
+                        row.get("rights_status") ==
+                        "preservation-policy-approved-rights-unresolved",
+                        f"{where}: Cambridge source classification/rights disclosure")
             if key == "BOOT_OBJ":
                 require(set(members) == REQUIRED_OBJECTS,
                         "BOOT_OBJ differs from accepted ten-member production contract")
@@ -210,6 +232,12 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
             present = managed[key].get("members", {}) or {}
             generated = managed[key].get("generated_members", {}) or {}
             extra_generated = row.get("generated_members", {}) or {}
+            if source_only == "included" and key in SOURCE_ONLY_KEYS:
+                require(managed[key].get("populate") is True and
+                        set(members) == set(present) | set(generated) and
+                        set(present) & set(generated) == set() and
+                        (key != "CAMB_DEMOTED" or "SNOTICE" in present),
+                        f"{where}: Cambridge source/derivative inventory mismatch")
             require(isinstance(extra_generated, dict) and set(extra_generated) <= set(members),
                     f"{where}: generated_members must only name selected members")
             for member in members:
@@ -248,16 +276,21 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
         if n <= 2:
             check_dcb(row.get("target_dcb"), kind, where)
     require(entries[0].get("sequence") == 1 and entries[1].get("sequence") == 2, "bootstrap sequence mismatch")
-    require(set(seen_key) == set(REQUIRED_COUNTS) if native == "absent" else
-            set(REQUIRED_COUNTS) <= seen_key,
-            "TA.0 selected dataset inventory is missing/extra")
+    require(set(seen_key) == (set(REQUIRED_COUNTS) |
+                             (SOURCE_ONLY_KEYS if source_only == "included" else set()))
+            if native == "absent" else set(REQUIRED_COUNTS) <= seen_key,
+            "TA.0/TA.2 selected dataset inventory is missing/extra")
     require(len([x for x in entries if x.get("group") == "mr10"]) == 9, "all nine MR10 PDSes required")
     require(len([x for x in entries if x.get("group") == "native"]) == 8, "all eight native component PDSes required")
     if native == "included":
         require(CAMBRIDGE_KEYS <= seen_key,
                 "native compiler included but nine compiler datasets are not selected")
     else:
-        require(not any(x["group"] == "cambridge" for x in entries), "no-native compiler must have no compiler payload")
+        require(not any(x["group"] == "cambridge" for x in entries),
+                "no-native compiler must have no executable-compiler payload")
+    require(len([x for x in entries if x["group"] == "cambridge-source"]) ==
+            (2 if source_only == "included" else 0),
+            "Cambridge source-only PDS layout mismatch")
     require(sum(len(x.get("members", [])) for x in entries if x["group"] == "mr10") == 79,
             "MR10 member inventory must contain 79 selected members")
     require(total > 0, "empty selected members")
