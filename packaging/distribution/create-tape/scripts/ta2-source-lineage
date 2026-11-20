@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""TA.2 frozen Git-source lineage: evidence, NOT redistribution approval.
+
+Read only. Derives exact selected members from the canonical TA.0 validator,
+checks the reserved candidate, and pins Git-backed paths to source Git blobs.
+Does not contact JES/MVS or turn historical public availability into rights.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+DESIGN = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+CANDIDATE = ROOT / 'packaging/distribution/manifest/releases/BCPL-0.1.0-rc1.yaml'
+REGISTRY = ROOT / 'packaging/distribution/registry/releases.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+VALIDATOR = ROOT / 'tools/distribution/validate-manifest.py'
+WORKAREA = ROOT / 'workarea'
+COMMIT = '146ae09a58398c9b4d685500760f85592e770e1e'
+CANDIDATE_ID = 'BCPL-0.1.0-rc1'
+VOLSER = 'BC0001'
+PATH = re.compile(r'[A-Za-z0-9_./-]+\Z')
+HEX40 = re.compile(r'[a-f0-9]{40}\Z')
+MEMBER = re.compile(r'[A-Z@$#][A-Z0-9@$#]{0,7}\Z')
+MAX = 16 * 1024 * 1024
+CLASSES = {'git_source', 'generated', 'resident_binary'}
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, reason: str) -> None:
+    if not ok:
+        raise Refusal(reason)
+
+
+def sha256(raw: bytes) -> str:
+    return hashlib.sha256(raw).hexdigest()
+
+
+def source_bytes(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX,
+         'missing, linked or oversized input: ' + path.name)
+    return path.read_bytes()
+
+
+def load_validator():
+    need(VALIDATOR.is_file() and not VALIDATOR.is_symlink(),
+         'canonical TA.0 validator unavailable')
+    loader = importlib.machinery.SourceFileLoader('ta2_source_validator', str(VALIDATOR))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'cannot load TA.0 validator')
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+def relative_path(path: str) -> bool:
+    return (isinstance(path, str) and bool(path) and PATH.fullmatch(path) is not None
+            and not path.startswith('/') and '..' not in Path(path).parts
+            and not path.startswith('./') and '//' not in path)
+
+
+def git_call(*args: str, expected: int = 0) -> bytes:
+    cp = subprocess.run(['git', '-C', str(ROOT), *args], stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE, timeout=30, check=False)
+    need(cp.returncode == expected,
+         'frozen Git source revision or authoritative main unavailable')
+    return cp.stdout
+
+
+def parse_tree(blob: bytes) -> dict[str, tuple[str, str]]:
+    """Parse git ls-tree -rz NUL-delimited records (including file mode)."""
+    rows: dict[str, tuple[str, str]] = {}
+    need(blob.endswith(b'\0'), 'incomplete Git tree listing')
+    for item in blob[:-1].split(b'\0'):
+        need(b'\t' in item, 'malformed Git ls-tree row')
+        head, raw_path = item.split(b'\t', 1)
+        fields = head.decode('ascii').split(' ')
+        need(len(fields) == 3 and fields[1] == 'blob' and HEX40.fullmatch(fields[2]) is not None,
+             'Git tree contains an unexpected object')
+        try:
+            path = raw_path.decode('utf-8', errors='strict')
+        except UnicodeDecodeError as exc:
+            raise Refusal('non-UTF-8 frozen Git path') from exc
+        need(relative_path(path) and path not in rows, 'unsafe or repeated Git source path')
+        rows[path] = (fields[0], fields[2])
+    return rows
+
+
+def frozen_trees(paths: list[str]) -> tuple[dict, dict]:
+    need(paths and len(set(paths)) == len(paths) and all(relative_path(x) for x in paths),
+         'frozen source path selection invalid')
+    need(git_call('symbolic-ref', '--short', 'HEAD').strip() == b'main',
+         'frozen source review requires current main branch')
+    need(git_call('cat-file', '-t', COMMIT).strip() == b'commit',
+         'approved source SHA is not a Git commit')
+    git_call('merge-base', '--is-ancestor', COMMIT, 'HEAD')
+    return (parse_tree(git_call('ls-tree', '-rz', COMMIT, '--', *paths)),
+            parse_tree(git_call('ls-tree', '-rz', 'HEAD', '--', *paths)))
+
+
+def triage_category(row: dict) -> str:
+    cls = row['source_class']
+    if cls == 'generated':
+        return 'GENERATED_CHAIN_EVIDENCE_REQUIRED'
+    if cls == 'resident_binary':
+        return 'MVS_BINARY_BUILD_CHAIN_REQUIRED'
+    source = row['source_reference']
+    if source.startswith(('richards-bcpltape/', 'intcode/')):
+        return 'HISTORICAL_MATERIAL_RIGHTS_REVIEW'
+    if source.startswith('mr10-kit-compiler/'):
+        return 'HISTORICAL_DERIVATION_RIGHTS_REVIEW'
+    return 'PROJECT_OR_DERIVED_RIGHTS_REVIEW'
+
+
+def build(candidate: dict, design: dict, registry: dict, worksheet: dict,
+          frozen: dict, current: dict, manifest_sha: str) -> dict:
+    need(candidate.get('schema_version') == design.get('schema_version') == 1 and
+         candidate.get('phase') == 'candidate' and type(candidate.get('datasets')) is list and
+         type(design.get('datasets')) is list and
+         len(candidate['datasets']) == len(design['datasets']) == 20,
+         'the canonical 20-position inventory differs')
+    # Do not silently accept new payload selection in the approved candidate.
+    selection_keys = ('sequence', 'owner', 'group', 'kind', 'transfer', 'generator',
+                      'dspal_key', 'target_dcb', 'target_dsn_template', 'members',
+                      'member_owners', 'generated_members')
+    for n, (row, canonical) in enumerate(zip(candidate['datasets'], design['datasets']), 1):
+        need(all(row.get(k) == canonical.get(k) for k in selection_keys)
+             and row.get('sequence') == n, f'BT{n:04d}: selection changed')
+    rel = candidate.get('release', {})
+    vol = candidate.get('volume', {})
+    need(rel.get('candidate_id') == CANDIDATE_ID and rel.get('source_commit') == COMMIT and
+         rel.get('version') == '0.1.0-rc1' and rel.get('native_compiler') == 'absent' and
+         vol.get('volser') == VOLSER and vol.get('registry_reservation') == CANDIDATE_ID,
+         'release identity differs from owner-approved candidate')
+    records = registry.get('candidates')
+    need(registry.get('schema_version') == 1 and isinstance(records, list) and
+         len(records) == 1 and records[0].get('state') == 'reserved' and
+         all(records[0].get(k) == v for k, v in {
+             'candidate_id': CANDIDATE_ID, 'version': '0.1.0-rc1',
+             'source_commit': COMMIT, 'volser': VOLSER,
+             'manifest_sha256': manifest_sha}.items()),
+         'sole canonical registry or candidate manifest SHA differs')
+    items = worksheet.get('members')
+    need(isinstance(items, list) and len(items) == 127, 'TA.0 worksheet must contain 127 members')
+    expected = [(r['sequence'], r['dspal_key'], member)
+                for r in design['datasets'][2:] for member in r['members']]
+    need([(r.get('tape_sequence'), r.get('dataset_key'), r.get('member')) for r in items] == expected,
+         'TA.0 source worksheet differs from selected 127 members/order')
+    counts = {k: 0 for k in CLASSES}
+    decisions: dict[str, int] = {}
+    refs = []
+    for row in items:
+        cls = row.get('source_class')
+        need(cls in CLASSES and row.get('redistribution_review') == 'UNREVIEWED' and
+             row.get('mvs_build_receipt') is None and
+             MEMBER.fullmatch(row['member']) is not None,
+             'unexpected certified or malformed TA.0 source worksheet')
+        counts[cls] += 1
+        source = row.get('source_reference')
+        blob_ref = None
+        if cls == 'git_source':
+            need(relative_path(source) and source in frozen and source in current,
+                 'selected Git source missing at frozen/current SHA')
+            mode, obj = frozen[source]
+            need(mode in {'100644', '100755'} and current[source] == (mode, obj),
+                 'selected Git source changed after approved source freeze: ' + source)
+            blob_ref = f'git:{COMMIT}:{source}@{obj}'
+        else:
+            need(not source or cls == 'generated',
+                 'binary source falsely represented as Git-backed input')
+        category = triage_category(row)
+        decisions[category] = decisions.get(category, 0) + 1
+        refs.append({'tape_sequence': row['tape_sequence'],
+                     'dataset_key': row['dataset_key'], 'member': row['member'],
+                     'logical_owner': row['logical_owner'], 'source_class': cls,
+                     'frozen_git_source_ref': blob_ref,
+                     'existing_generated_reference': source if cls == 'generated' else None,
+                     'source_hint_not_evidence': row.get('source_hint_not_evidence'),
+                     'review_track': category, 'redistribution_review': 'UNREVIEWED',
+                     'rights_ref': None, 'build_receipt': None})
+    need(counts == {'git_source': 110, 'generated': 2, 'resident_binary': 15},
+         'source provenance classes/counts differ from accepted TA.0 audit')
+    return {
+        'status': 'TA2_FROZEN_SOURCE_LINEAGE_VERIFIED_RIGHTS_PENDING',
+        'scope': 'DERIVED_EVIDENCE_WORKSHEET_NOT_RELEASE_MANIFEST_OR_RIGHTS_APPROVAL',
+        'candidate_id': CANDIDATE_ID, 'source_git_sha': COMMIT,
+        'reserved_volser': VOLSER, 'candidate_manifest_sha256': manifest_sha,
+        'source_summary': {**counts, 'git_blob_refs_verified': counts['git_source'],
+                           'redistribution_unreviewed': 127,
+                           'generated_or_binary_build_receipts_pending': 17},
+        'review_tracks': dict(sorted(decisions.items())),
+        'sources': refs,
+        'next_actions': [
+            'Review every selected source family against LICENSE.md, THIRD-PARTY-NOTICES.md and PUBLIC-RELEASE-AUDIT.md; Git identity alone is not a grant of redistribution rights',
+            'Resolve two generated source chains and fifteen object/load build receipts using established BCPL/IFOX/IEWL evidence',
+            'Preserve the approved candidate manifest/registry SHA until controlled final-evidence amendment and review',
+            'Do not authorize or create a BC0001 AWS image merely because Git source blobs match']}
+
+
+def evaluate() -> dict:
+    core = load_validator()
+    raw = source_bytes(CANDIDATE)
+    candidate = core.load(CANDIDATE)
+    design = core.load(DESIGN)
+    dspal = core.load(DSPAL)
+    registry = core.load(REGISTRY)
+    # Only the existing validator determines selected member and source class.
+    core.check(candidate, dspal, ROOT, release=False)
+    worksheet = core.provenance_report(design, dspal)
+    sources = sorted({r['source_reference'] for r in worksheet['members']
+                      if r['source_class'] == 'git_source'})
+    frozen, current = frozen_trees(sources)
+    return build(candidate, design, registry, worksheet, frozen, current, sha256(raw))
+
+
+def write_new(file: Path, report: dict) -> None:
+    need(WORKAREA.is_dir() and not WORKAREA.is_symlink() and
+         WORKAREA.resolve().is_relative_to(ROOT.resolve()) and
+         file.parent.resolve() == WORKAREA.resolve() and not file.is_symlink(),
+         'report must be new and directly under repository workarea/')
+    raw = (json.dumps(report, sort_keys=True, indent=2) + '\n').encode('utf-8')
+    with os.fdopen(os.open(file, os.O_CREAT | os.O_EXCL | os.O_WRONLY |
+                          getattr(os, 'O_NOFOLLOW', 0), 0o600), 'wb') as stream:
+        stream.write(raw)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path,
+                        help='new read-only derived source worksheet under workarea/')
+    args = parser.parse_args(argv)
+    try:
+        result = evaluate()
+        if args.output is not None:
+            write_new(args.output, result)
+        summary = result['source_summary']
+        print('TA.2 SOURCE LINEAGE: 110/110 Git blobs frozen and unchanged; '
+              '2 generated and 15 resident binary chains pending.')
+        print('REDISTRIBUTION: 127/127 reviews pending; no release rights or AWS write approved.')
+        if args.output is not None:
+            print('Private source worksheet: ' + str(args.output))
+        return 0
+    except (Refusal, OSError, ValueError, KeyError, TypeError,
+            subprocess.TimeoutExpired) as exc:
+        print('TA.2 SOURCE LINEAGE REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
