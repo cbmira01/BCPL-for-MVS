@@ -55,3 +55,6 @@ or free space. The latter key is no longer a release input and needs no
 further investigation for the tape. The original 20 staging inputs are
 accepted; do not restage them. New `BT0021` staging and any `BC0002`
 AWS operation require their own evidence and authorization.
+
+See the [rc2 historical-only correction evidence](rc2-historical-source-correction-evidence-20261120.md)
+for the source freeze, registry digest, offline tests and pending MVS gates.
