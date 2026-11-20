@@ -67,3 +67,14 @@ the exact 15 frozen Git source files and the existing `dspal`
 4000-card batch boundaries without writing anything. Its 10 focused
 synthetic tests pass; the original `dspal populate CAMB_SOURCE --batch`
 remains the only intended source-population mechanism.
+
+**Population operation approved on 20 November 2026.**
+Use the tracked [one-shot CAMB_SOURCE population runner](rc2-populate-cambsource-once.py)
+only under this specific authorization. The original owner-reported
+source PDS is empty. Its runner verifies a fresh MVS empty directory,
+the exact frozen 15-member source plan, runs the existing 8+7-member
+`dspal` IEBGENER batches once, preserves private MVS receipts and
+checks the resulting member directory. The attempt marker is
+persistent; failures are **not automatically retryable**.
+See [owner authorization and local tests](rc2-source-population-authorization-20261120.md).
+It does not stage BT0021 or produce an AWS tape.

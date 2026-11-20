@@ -939,3 +939,33 @@ before separately authorizing selective IEBCOPY staging to BT0021.
 Existing BT0001–BT0020 staging remains accepted and untouched.
 See [the source population decision/evidence](../../distribution/compiler-source/rc2-cambsource-empty-source-evidence-20261120.md).
 **TA.2 remains IN PROGRESS.**
+
+## TA.2 owner-authorized historical Cambridge source population — 20 November 2026
+
+The owner explicitly **approved one-time source population** of the
+15 archival Cambridge source members in existing
+`HERC02.BCPL.CAMBRIDG.SOURCE`, after actual read-only MVS
+`dspal ls CAMB_SOURCE` RC=0 confirmed **(empty)**.
+This is limited to the original 15 historical members and does not
+authorize the separate `BT0021` staging dataset, tape writing or
+release publication.
+
+The tracked
+[one-shot MVS population runner](../../distribution/compiler-source/rc2-populate-cambsource-once.py)
+validates the frozen source and release selection, guards the exact
+empty MVS source directory, then calls the established `dspal`
+population mechanism for **two** bounded IEBGENER batches (8+7).
+It retains original MVS receipts under a persistent private
+`workarea/ta2-rc2-cambsource-population-once/` attempt marker,
+verifies both batch receipts and requires the exact 15-member
+post-write directory. Failure or ambiguous state is **not** an
+authorization for an automatic retry.
+
+**8/8 new synthetic guard tests and 15/15 earlier compact rc2
+tests PASS in the assistant workspace**; code was compiled and Git
+object identities were checked. The MVS population has not yet
+been executed by the owner or independently verified. Read-only
+record-content verification and a separate BT0021 staging decision
+remain future gates. See the
+[formal source-population authorization](../../distribution/compiler-source/rc2-source-population-authorization-20261120.md).
+**TA.2 IN PROGRESS; TA.0/TA.1 CLOSED (qualified).**
