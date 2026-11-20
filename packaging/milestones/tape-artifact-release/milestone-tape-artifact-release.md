@@ -912,3 +912,30 @@ proves historical member contents or staging acceptance. Only
 record investigation. No new JES/DASD writing or BC0002 AWS
 operation was performed or authorized by this design correction.
 **TA.2 remains IN PROGRESS; TA.0 and TA.1 CLOSED (qualified).**
+
+## TA.2 owner-reported CAMB_SOURCE empty PDS and source population preflight — 20 November 2026
+
+The owner's read-only `dspal ls CAMB_SOURCE` inquiry returned **RC=0** and
+`HERC02.BCPL.CAMBRIDG.SOURCE: (empty)`, preserving the actual saved
+MVS listing at
+`workarea/ta2-rc2-cambsource-20261120T202805Z-855/mvs-members.txt`.
+This demonstrates an existing **empty source PDS**, not a ready or
+staged `BT0021` input. The 15 historical Git sources were separately
+inspected at the frozen rc2 source SHA; 15/15 are representable as FB80
+and together contain 6,577 records.
+
+The maintained `dspal populate CAMB_SOURCE --batch` mechanism can
+partition the 15 members into **two** bounded IEBGENER jobs (8 + 7
+members, 3,985 and 2,697 counted JCL cards), after its own live MVS
+target-attribute checks. A new **read-only** historical-source preflight
+checks frozen Git bytes and saved MVS directory identity before any
+population decision. Python compilation and **10/10 focused synthetic
+tests PASS**; no MVS job was submitted by this change.
+
+**Separate owner authorization is required before population**, since
+writing 15 members changes an MVS PDS. Never blindly retry a partial
+batch. After population, verify exact MVS member names and records
+before separately authorizing selective IEBCOPY staging to BT0021.
+Existing BT0001–BT0020 staging remains accepted and untouched.
+See [the source population decision/evidence](../../distribution/compiler-source/rc2-cambsource-empty-source-evidence-20261120.md).
+**TA.2 remains IN PROGRESS.**

@@ -58,3 +58,12 @@ AWS operation require their own evidence and authorization.
 
 See the [rc2 historical-only correction evidence](rc2-historical-source-correction-evidence-20261120.md)
 for the source freeze, registry digest, offline tests and pending MVS gates.
+
+The current read-only MVS source directory is empty (owner-reported
+`dspal ls CAMB_SOURCE`, RC=0). See
+[BT0021 empty-source evidence and proposed population batches](rc2-cambsource-empty-source-evidence-20261120.md).
+The new `rc2-cambsource-readiness.py` checks a saved MVS listing,
+the exact 15 frozen Git source files and the existing `dspal`
+4000-card batch boundaries without writing anything. Its 10 focused
+synthetic tests pass; the original `dspal populate CAMB_SOURCE --batch`
+remains the only intended source-population mechanism.
