@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""TA.2 final accepted 20-input stage map, derived from existing MVS evidence.
+
+Purely offline. No JES, DASD, tape, utility retesting, or independent manifest.
+The TA.0 canonical inventory remains the only logical selection authority.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+DESIGN = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+CANDIDATE = ROOT / 'packaging/distribution/manifest/releases/BCPL-0.1.0-rc1.yaml'
+REGISTRY = ROOT / 'packaging/distribution/registry/releases.yaml'
+BT_RECEIPT = ROOT / 'workarea/ta2-bootstrap-stage-verification/20261120T132703Z-22108'
+ORIGINAL_BT_STAGE = 'workarea/ta2-bootstrap-stage-operations/20261120T132013Z-21957'
+MEMBERS = ['INSTALL', 'DATASETS', 'RELEASE', 'RESTORE']
+DSNS = [f'HERC02.BCPL.TA2STG.BT{i:04d}' for i in range(1, 21)]
+SHA = re.compile(r'[0-9a-f]{64}\Z')
+CHECKROW = re.compile(r'([0-9a-f]{64})  ([a-z][a-z0-9-]*\.(?:txt|json))\Z')
+MAX = 16 * 1024 * 1024
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, description: str) -> None:
+    if not ok:
+        raise Refusal(description)
+
+
+def digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def checked_bytes(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX,
+         'missing, linked, or oversized source: ' + path.name)
+    return path.read_bytes()
+
+
+def read_receipt(folder: Path) -> tuple[dict, str]:
+    need(folder == BT_RECEIPT and folder.is_dir() and not folder.is_symlink() and
+         folder.resolve().parent == (ROOT / 'workarea/ta2-bootstrap-stage-verification').resolve() and
+         folder.resolve().is_relative_to((ROOT / 'workarea').resolve()),
+         'only the owner-accepted JOBS 9318/9319 MVS evidence may be used')
+    lines = checked_bytes(folder / 'SHA256SUMS').decode('ascii').splitlines()
+    pins: dict[str, str] = {}
+    for line in lines:
+        m = CHECKROW.fullmatch(line)
+        need(m is not None and m.group(2) not in pins,
+             'original BT MVS evidence seal malformed or duplicate')
+        pins[m.group(2)] = m.group(1)
+    need({p.name for p in folder.iterdir()} == set(pins) | {'SHA256SUMS'} and
+         {'verification.json', 'catalog-report.txt', 'catalog-summary.txt',
+          'members-report.txt', 'members-summary.txt'} <= set(pins),
+         'original BT MVS evidence is incomplete or has unexpected files')
+    for name, expected in pins.items():
+        need(digest(checked_bytes(folder / name)) == expected,
+             'original BT MVS evidence checksum mismatch: ' + name)
+    result = json.loads(checked_bytes(folder / 'verification.json'))
+    need(type(result) is dict and result.get('status') == 'MVS_BT0001_BT0002_DCB_DIRECTORY_PASS' and
+         result.get('stage_job') == 9317 and result.get('stage_evidence') == ORIGINAL_BT_STAGE and
+         result.get('volume') == 'TSO002' and result.get('datasets') == 2 and
+         result.get('installer_members') == MEMBERS and
+         result.get('mvs_jobs') == {'catalog': 9318, 'members': 9319} and
+         isinstance(result.get('stage_result_sha256'), str) and
+         SHA.fullmatch(result['stage_result_sha256']) is not None,
+         'BT0001/BT0002 accepted MVS receipt identity/status differs')
+    return result, digest(checked_bytes(folder / 'verification.json'))
+
+
+def source_mapper():
+    path = SCRIPTS / 'ta2-release-input-plan'
+    need(path.is_file() and not path.is_symlink(), 'original accepted 18-PDS mapper missing')
+    loader = SourceFileLoader('ta2_initial_input_map', str(path))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'cannot load original staging mapper')
+    module = module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def build(earlier: dict, bt: dict, bt_sha: str, candidate: dict,
+          design: dict, registry: dict, candidate_sha: str) -> dict:
+    rows = candidate.get('datasets')
+    accepted = earlier.get('inputs')
+    need(candidate.get('schema_version') == design.get('schema_version') == 1 and
+         candidate.get('phase') == 'candidate' and
+         isinstance(rows, list) and len(rows) == 20 and
+         isinstance(accepted, list) and len(accepted) == 20 and
+         len(design.get('datasets', [])) == 20,
+         'candidate/TA.0/accepted input inventory length differs')
+    for i, (a, b) in enumerate(zip(rows, design['datasets']), 1):
+        keys = ('sequence', 'group', 'owner', 'kind', 'generator', 'transfer',
+                'target_dcb', 'dspal_key', 'target_dsn_template', 'members')
+        need(all(a.get(k) == b.get(k) for k in keys) and a.get('sequence') == i,
+             f'BT{i:04d}: candidate selection differs from canonical TA.0')
+    rel, vol = candidate.get('release', {}), candidate.get('volume', {})
+    need(rel.get('candidate_id') == 'BCPL-0.1.0-rc1' and rel.get('version') == '0.1.0-rc1' and
+         rel.get('source_commit') == '146ae09a58398c9b4d685500760f85592e770e1e' and
+         rel.get('native_compiler') == 'absent' and vol.get('volser') == 'BC0001' and
+         vol.get('registry_reservation') == rel['candidate_id'],
+         'approved candidate identity changed')
+    records = registry.get('candidates')
+    need(registry.get('schema_version') == 1 and isinstance(records, list) and
+         len(records) == 1 and records[0].get('state') == 'reserved' and
+         all(records[0].get(k) == v for k, v in {
+             'candidate_id': rel['candidate_id'], 'version': rel['version'],
+             'source_commit': rel['source_commit'], 'volser': vol['volser'],
+             'manifest_sha256': candidate_sha}.items()),
+         'approved candidate registry/manifest digest differs')
+    need(earlier.get('status') == 'ACCEPTED_STAGED_PDS; BT0001/BT0002_PENDING' and
+         earlier.get('staging', {}).get('directory_dcb_jobs') == {'catalog': 9311, 'members': 9312} and
+         earlier['staging'].get('members') == 127 and
+         all(accepted[i]['status'] == 'ACCEPTED_STAGING' and
+             accepted[i]['producer_source_dsn'] == DSNS[i] for i in range(2, 20)),
+         'original 18-PDS acceptance differs')
+    need(bt.get('mvs_jobs') == {'catalog': 9318, 'members': 9319} and
+         bt.get('installer_members') == MEMBERS and SHA.fullmatch(bt_sha) is not None,
+         'BT0001/BT0002 MVS stage not accepted')
+    result = [dict(row) for row in accepted]
+    for n in (1, 2):
+        row = result[n-1]
+        need(row['sequence'] == n and row['tape_alias'] == f'BCPL.BT{n:04d}' and
+             row['status'] == 'NOT_PREPARED' and row['producer_source_dsn'] is None,
+             f'BT{n:04d}: original staging plan unexpectedly changed')
+        row.update({'status': 'ACCEPTED_STAGING', 'producer_source_dsn': DSNS[n-1],
+                    'source_dcb': rows[n-1]['target_dcb'], 'source_volume': 'TSO002'})
+        if n == 2:
+            row['selected_members'] = list(MEMBERS)
+    need(all(r['producer_source_dsn'] == DSNS[i] for i, r in enumerate(result)) and
+         len({r['producer_source_dsn'] for r in result}) == 20 and
+         sum(len(r.get('selected_members', [])) for r in result[2:]) == 127,
+         'accepted 20-input mapping is incomplete')
+    return {'status': 'ALL_20_STAGE_INPUTS_ACCEPTED',
+            'scope': 'DERIVED_STAGE_INPUT_MAP_NOT_FROZEN_RELEASE_MANIFEST',
+            'candidate_id': rel['candidate_id'], 'version': rel['version'],
+            'source_commit': rel['source_commit'], 'volser_reserved': vol['volser'],
+            'candidate_manifest_sha256': candidate_sha,
+            'mvs_receipts': {'BT0001_BT0002': bt_sha,
+                             'BT0003_BT0020': earlier['accepted_verification_sha256']},
+            'mvs_jobs': {'bootstrap_stage': 9317, 'bootstrap_catalog': 9318,
+                         'bootstrap_members': 9319, 'pds_stage': 9310,
+                         'pds_catalog': 9311, 'pds_members': 9312},
+            'datasets': 20, 'pds': 19, 'sequential': 1,
+            'selected_payload_members': 127, 'installer_members': list(MEMBERS),
+            'inputs': result,
+            'blockers': ['Release manifest per-member rights/lineage and build receipts are pending',
+                         'Final producer evidence/transfer DCB metadata and strict frozen gate pending',
+                         'AWS candidate write/readback not authorized or performed']}
+
+
+def evaluate() -> dict:
+    old = source_mapper()
+    earlier = old.evaluate()
+    bt, bt_sha = read_receipt(BT_RECEIPT)
+    candidate_raw = checked_bytes(CANDIDATE)
+    candidate = yaml.safe_load(candidate_raw)
+    design = yaml.safe_load(checked_bytes(DESIGN))
+    registry = yaml.safe_load(checked_bytes(REGISTRY))
+    need(all(isinstance(x, dict) for x in (candidate, design, registry)),
+         'canonical YAML input is not a mapping')
+    return build(earlier, bt, bt_sha, candidate, design, registry, digest(candidate_raw))
+
+
+def write_new(path: Path, plan: dict) -> None:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and not path.is_symlink() and
+         path.parent.resolve() == work.resolve(),
+         'output must be a new direct file inside repository workarea')
+    raw = (json.dumps(plan, indent=2, sort_keys=True) + '\n').encode()
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                          getattr(os, 'O_NOFOLLOW', 0), 0o600), 'wb') as f:
+        f.write(raw)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, help='exclusive JSON snapshot in workarea/')
+    args = parser.parse_args(argv)
+    try:
+        plan = evaluate()
+        if args.output is not None:
+            write_new(args.output, plan)
+        print('TA.2 STAGING ACCEPTED: 20/20 inputs on TSO002; '
+              '19 PDSes, 1 PS, 127 selected payload members.')
+        print('JOBS 9310/9311/9312 and 9317/9318/9319 accepted; '
+              'release rights and tape candidate still pending.')
+        if args.output is not None:
+            print('Private input map: ' + str(args.output))
+        return 0
+    except (Refusal, OSError, KeyError, ValueError, TypeError, yaml.YAMLError) as exc:
+        print('TA.2 COMPLETE STAGE INPUTS REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

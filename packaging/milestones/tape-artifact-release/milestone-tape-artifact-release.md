@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (JOB 9310 staging plus JOBS 9311/9312 directory/DCB accepted; candidate inputs pending) — no candidate production authorized**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (all 20 staging inputs MVS directory/DCB accepted; release provenance and candidate-media gates pending) — no candidate production authorized**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -835,3 +835,9 @@ The owner separately approved the exact **one-shot** six-step IEBGENER/IEFBR14 B
 The owner executed the separately authorized one-shot six-step creation of BT0001 (PS/FB/80/800) and BT0002 (PO/FB/80/800) on TSO002: **JOB 9317, 6/6 steps RC=0000**. Fresh preflight again reported both names absent before allocation and 15,400 IEHLIST free tracks. Saved original MVS evidence: `workarea/ta2-bootstrap-stage-operations/20261120T132013Z-21957`. This owner-reported execution proves the stage job completed successfully; directory/DCB acceptance remains open. **Never rerun the one-shot stage job**. Prior BT0003–BT0020 staging is unchanged.
 
 The new [read-only bootstrap-stage verifier](../../distribution/create-tape/ta2-bootstrap-stage-job9317-and-verification-20261120.md) replays the original immutable JOB 9317 receipt and submits only `LISTDS LABEL` for both and `LISTDS MEMBERS` for BT0002 (exact INSTALL/DATASETS/RELEASE/RESTORE). **16/16 focused local synthetic tests PASS**. Live MVS verification is pending. The full 20-input candidate, final rights/provenance, strict producer gate and AWS tape write/readback are not accepted; no media production authorization is inferred. **TA.2 IN PROGRESS.**
+
+## TA.2 all 20 producer staging inputs accepted — JOBS 9318/9319, 20 November 2026
+
+The owner executed the read-only `ta2-bootstrap-stage-verify --live` after the one-shot JOB 9317 staging and reported **2/2 DCB PASS, 4/4 installer PDS members, TSO002, MVS PASS**. The actual MVS inquiry jobs were **catalog 9318 and members 9319**. Original private evidence remains at `workarea/ta2-bootstrap-stage-verification/20261120T132703Z-22108`. Together with accepted JOB 9310 and read-only JOBS 9311/9312, **all 20 logical input datasets are staged and their MVS DCB/directory interfaces verified** (one PS plus 19 PDSes; 127 selected payload PDS members and four installer members). Do not rerun any accepted staging or add hypothetical IBM utility fidelity tests.
+
+The new [read-only all-input reconciler](../../distribution/create-tape/ta2-all-inputs-accepted-20261120.md) uses the accepted saved receipts plus the frozen TA.0 selection, Git-controlled candidate manifest and unique BC0001 registry reservation. Its 10/10 local synthetic tests PASS; it performs **no** new JES inquiry or tape operation. **TA.2 IN PROGRESS**: release rights/provenance, verified source/transfer metadata, strict final producer gate and AWS write/readback remain open. TA.3 has not begun.
