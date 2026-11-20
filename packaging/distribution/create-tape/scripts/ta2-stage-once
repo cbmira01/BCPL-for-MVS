@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""TA.2 bounded, no-retry selective PDS staging; no media or release candidate.
+"""TA.2 owner-approved conditional-retry selective PDS staging; no tape.
 
-Default: independently replay pinned MVS evidence, optionally recheck with --live.
---run is permanently disabled until a separate Git-tracked owner approval is
-committed on main and bound to the precise preflight and allocations. No
-staging write is authorized by merely installing this runner.
+Default: replay pinned MVS evidence. --live performs only MVS inquiries.
+--run uses one reviewed 18-step IEBCOPY deck. A retry is allowed only after
+a conclusively completed failed JES job AND fresh MVS proves all 18 staging
+DSNs absent on both catalog and VTOC. Unknown or partial runs stop closed.
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -31,6 +32,8 @@ APPROVAL = PACKAGING / 'ta2-stage-write-approval.json'  # NOT PRESENT without ow
 BASE = ROOT / 'workarea/ta2-stage-readiness'
 OPERATIONS = ROOT / 'workarea/ta2-stage-operations'
 ATTEMPT = OPERATIONS / 'TA2STG-TSO002-attempt.json'
+RETRY = re.compile(r'TA2STG-TSO002-retry-([0-9]{4})\.json\Z')
+INTENT = 'submission-intent.json'
 RUN = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
 HASH_ROW = re.compile(r'([a-f0-9]{64})  ([a-z0-9.-]+)\Z')
 JOB = 'TA2STAGE'
@@ -248,20 +251,166 @@ def git_original(path: Path) -> bytes:
     return doc.stdout
 
 def read_approval(p_sha: str, r_sha: str) -> dict:
+    """Independent owner decision pins tracked proposal and saved MVS run.
+
+    The readiness SHA-256 cannot appear in Git because the private MVS receipt
+    is intentionally not committed; read_readiness cryptographically validates
+    the exact run and the runtime attempt journal records r_sha.
+    """
     need(APPROVAL.is_file() and not APPROVAL.is_symlink(),
-         'owner has not approved state-changing TA.2 staging on GitHub main')
+         'owner has not approved TA.2 staging on GitHub main')
     data = git_original(APPROVAL)
     a = json.loads(data)
     need(type(a) is dict and set(a) ==
-         {'status','volume','approval_scope','proposal_sha256','readiness_sha256',
-          'readiness_evidence','no_retry'} and
-         a['status'] == 'OWNER_APPROVED_ONE_SHOT_STAGING' and
-         a['volume'] == 'TSO002' and a['approval_scope'] == '18_NEW_PDS_IEBCOPY_ONLY' and
-         a['proposal_sha256'] == p_sha and a['readiness_sha256'] == r_sha and
+         {'schema_version','status','volume','approval_scope','proposal_sha256',
+          'readiness_evidence','retry_policy','selected_members','space_targets',
+          'production_tape_authorized'} and
+         type(a['schema_version']) is int and a['schema_version'] == 1 and
+         a['status'] == 'OWNER_APPROVED_RETRYABLE_IEBCOPY_STAGING' and
+         a['volume'] == 'TSO002' and
+         a['approval_scope'] == '18_NEW_PDS_IEBCOPY_ONLY' and
+         a['proposal_sha256'] == p_sha and
          a['readiness_evidence'] == 'workarea/ta2-stage-readiness/20261119T210718Z-18180' and
-         a['no_retry'] is True,
-         'owner approval not pinned to this exact 18-PDS readiness and proposal')
+         a['retry_policy'] == 'PREVIOUS_JES_ENDED_AND_ALL_18_ABSENT_ONLY' and
+         type(a['selected_members']) is int and a['selected_members'] == 127 and
+         type(a['space_targets']) is int and a['space_targets'] == 18 and
+         a['production_tape_authorized'] is False and
+         bool(re.fullmatch(r'[a-f0-9]{64}', r_sha)),
+         'owner approval not pinned to this exact 18-PDS MVS proposal')
     return a
+
+
+def cleanup_empty_fetch_head() -> bool:
+    """Explicitly owner-requested removal of *only* untracked empty root file.
+
+    Never touch Git's .git/FETCH_HEAD. Refuse symlinks, non-empty/modified or
+    tracked files; do not ignore or hide unexpected data.
+    """
+    target = ROOT / 'FETCH_HEAD'
+    need(ROOT.is_dir() and (ROOT / '.git').is_dir(),
+         'cannot verify the repository before FETCH_HEAD cleanup')
+    top = subprocess.run(['git','rev-parse','--show-toplevel'],cwd=ROOT,
+                         capture_output=True,text=True,check=False,timeout=10)
+    need(top.returncode == 0 and Path(top.stdout.strip()).resolve() == ROOT.resolve(),
+         'FETCH_HEAD cleanup requires exactly this repository root')
+    tracked = subprocess.run(['git','ls-files','--error-unmatch','--','FETCH_HEAD'],
+                             cwd=ROOT,capture_output=True,text=True,check=False,timeout=10)
+    need(tracked.returncode == 1 and not tracked.stdout.strip(),
+         'root FETCH_HEAD is tracked or Git cannot establish its status')
+    try:
+        st = target.lstat()
+    except FileNotFoundError:
+        return False
+    need(stat.S_ISREG(st.st_mode) and st.st_size == 0 and st.st_nlink == 1,
+         'root FETCH_HEAD is not an empty, single-link regular file')
+    flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0)
+    with os.fdopen(os.open(target, flags), 'rb') as handle:
+        again = os.fstat(handle.fileno())
+        now = target.lstat()
+        need(stat.S_ISREG(again.st_mode) and again.st_size == 0 and
+             (again.st_dev,again.st_ino) == (st.st_dev,st.st_ino) ==
+             (now.st_dev,now.st_ino),
+             'root FETCH_HEAD changed during cleanup; not deleted')
+        target.unlink()
+    return True
+
+
+def _pinned_operation(folder: Path) -> dict:
+    """Check each previous attempt's complete, immutable private evidence."""
+    need(folder.parent == OPERATIONS and folder.is_dir() and
+         not folder.is_symlink() and RUN.fullmatch(folder.name) is not None,
+         'unsafe prior staging attempt directory')
+    hashes = checked_file(folder/'SHA256SUMS').decode('ascii').splitlines()
+    pins = {}
+    for line in hashes:
+        m = HASH_ROW.fullmatch(line)
+        need(m is not None and m.group(2) not in pins, 'previous attempt checksums invalid')
+        pins[m.group(2)] = m.group(1)
+    actual = {x.name for x in folder.iterdir() if x.is_file()}
+    need(set(pins) == actual - {'SHA256SUMS'} and
+         {INTENT,'stage-summary.txt','stage-report.txt','stage-result.json'} <= set(pins),
+         'previous MVS staging attempt is incomplete or unsealed; do not retry')
+    for name, value in pins.items():
+        need(digest(checked_file(folder/name)) == value, 'prior JES evidence checksum drift')
+    result = json.loads(checked_file(folder/'stage-result.json'))
+    need(type(result) is dict and type(result.get('mvs_job')) is int,
+         'prior completed JES job receipt invalid')
+    reconstructed = completed_failure(result['mvs_job'],
+         checked_file(folder/'stage-summary.txt').decode('utf-8'),
+         checked_file(folder/'stage-report.txt').decode('utf-8'))
+    need(result == reconstructed,
+         'prior MVS result differs from independently replayed JES evidence')
+    return result
+
+
+def retry_next(proposal_sha: str, receipt_sha: str) -> int:
+    """Only an ended failed JES job (not uncertain or partial) can be retried.
+
+    The fresh catalog/VTOC absence test is an additional independent gate.
+    This does not retry a partial allocation; a separate recovery design is
+    required for any existing BTnnnn PDS.
+    """
+    attempts = sorted(p for p in OPERATIONS.iterdir()
+                      if p.is_dir() and (p / INTENT).exists()) if OPERATIONS.exists() else []
+    markers = sorted(p for p in OPERATIONS.iterdir()
+                     if RETRY.fullmatch(p.name)) if OPERATIONS.exists() else []
+    if not ATTEMPT.exists() and not ATTEMPT.is_symlink():
+        need(not attempts and not markers, 'orphan stage attempt; refuse a new submission')
+        return 1
+    need(ATTEMPT.is_file() and not ATTEMPT.is_symlink(),
+         'unsafe or ambiguous staging first-attempt marker')
+    expected_count = len(attempts)
+    need(expected_count >= 1 and len(markers) == expected_count-1,
+         'missing/ambiguous previous retry attempt marker')
+    expected_names = [f'TA2STG-TSO002-retry-{k:04d}.json'
+                      for k in range(2,expected_count+1)]
+    need([p.name for p in markers] == expected_names,
+         'retry journal not contiguous')
+    for i, folder in enumerate(attempts,1):
+        marker_path = ATTEMPT if i == 1 else markers[i-2]
+        marker = json.loads(checked_file(marker_path))
+        intent = json.loads(checked_file(folder/INTENT))
+        need(type(marker) is dict and type(intent) is dict and marker == intent and
+             marker.get('state') == 'SUBMISSION_INTENT_RETRYABLE' and
+             marker.get('attempt_number') == i and
+             marker.get('attempt_evidence') == relative(folder) and
+             marker.get('proposal_sha256') == proposal_sha and
+             marker.get('readiness_sha256') == receipt_sha,
+             'prior staging attempt identity or approval mismatch')
+        result = _pinned_operation(folder)
+        need(type(result) is dict and
+             result.get('status') == 'MVS_JOB_ENDED_FAILED_RETRY_ONLY_IF_ALL_ABSENT' and
+             type(result.get('mvs_job')) is int and 1 <= result['mvs_job'] <= 9999,
+             'previous MVS job not conclusively failed/ended; do not retry')
+    return expected_count+1
+
+
+def record_submission_intent(folder: Path, record: dict, attempt_number: int) -> None:
+    need(record.get('attempt_number') == attempt_number and
+         record.get('state') == 'SUBMISSION_INTENT_RETRYABLE',
+         'invalid retry attempt identity')
+    marker = ATTEMPT if attempt_number == 1 else OPERATIONS / f'TA2STG-TSO002-retry-{attempt_number:04d}.json'
+    need(not marker.exists() and not marker.is_symlink(),
+         'this staging attempt already reserved; refuse parallel retry')
+    payload = (json.dumps(record,indent=2,sort_keys=True)+'\n').encode()
+    save(marker,payload)  # Exclusive durable journal BEFORE possible JES handoff.
+    save(folder/INTENT,payload)
+
+
+def completed_failure(job: int, summary: str, report: str) -> dict:
+    """Recognize a finished failed JES job; uncertain/ABEND/JCL errors stop."""
+    need(type(job) is int and 1 <= job <= 9999, 'missing failed JES job number')
+    need(re.search(r'(?m)^JOB\s+'+str(job)+r'\s+'+JOB+r'\s*$',summary) is not None and
+         'JOB RESULT: FAILURE' in summary and
+         not re.search(r'(?m)^(?:ABEND:|JCL ERROR:)',summary) and
+         re.search(r'\b(?:IEF450I|IEF472I|IEA995I)\b',report) is None and
+         re.search(r'(?m)^\s*\S+\s+JOB\s+'+str(job)+r'\s+\$HASP373\s+'+JOB+r'\b',report) is not None and
+         re.search(r'(?m)^\s*\S+\s+JOB\s+'+str(job)+r'\s+\$HASP395\s+'+JOB+r'\b',report) is not None,
+         'failed JES job is not conclusively ended without ABEND/JCL error')
+    return {'status':'MVS_JOB_ENDED_FAILED_RETRY_ONLY_IF_ALL_ABSENT',
+            'mvs_job':job,
+            'qualification':'A fresh MVS catalog/VTOC check must show ALL 18 targets absent. No partial staging retry.'}
+
 
 def fresh_check(folder: Path, mods: dict, checked, sizing, saved, items, names, srcreceipt,
                 pinned_vtoc: dict) -> dict:
@@ -302,11 +451,6 @@ def job_deck(core, config: dict, body: str) -> str:
          'MVS JCL continuation beyond column 71')
     return deck
 
-def arm_attempt(data: dict) -> None:
-    need(not ATTEMPT.exists() and not ATTEMPT.is_symlink(),
-         'staging already attempted, DO NOT RETRY or reset without investigation')
-    save(ATTEMPT,(json.dumps(data,indent=2,sort_keys=True)+'\n').encode('utf-8'))
-
 def validate_job(job: int, summary: str, report: str) -> dict:
     need(type(job) is int and 1 <= job <= 9999, 'ambiguous MVS job number')
     need(re.search(r'(?m)^JOB\s+'+str(job)+r'\s+'+JOB+r'\s*$',summary) is not None and
@@ -335,10 +479,15 @@ def operation(args) -> int:
     mods = modules()
     checked,sizing,saved,items,names,srcreceipt,body = replay(proposal,raw,receipt,mods)
     approved = None
+    attempt_number = None
     if args.run:
         approved = read_approval(proposal_sha,receipt_sha)
         git_original(VOLUME_APPROVAL)  # Both owner decisions must be committed on main.
+        git_original(PROPOSAL)  # Exact 18 triples, unchanged from official main.
         need(sys.stdin.isatty(), 'state-changing IEBCOPY requires an operator TTY')
+        attempt_number = retry_next(proposal_sha,receipt_sha)
+        if cleanup_empty_fetch_head():
+            print('Removed verified empty, untracked root FETCH_HEAD (Git metadata preserved).')
     if not args.live and not args.run:
         print('TA.2 STAGE ONCE: saved readiness/18-PDS selection accepted; MVS recheck still required')
         print('TSO002: 645 primary + 65 secondary; 127 selected; NO MVS STAGING SUBMITTED.')
@@ -351,12 +500,13 @@ def operation(args) -> int:
     print('TA.2 STAGING WRITE GATE: 18/18 source/targets, 127 selected, fresh MVS PASS; TSO002.')
     if not args.run:
         seal(folder)
-        print('Read-only; TSO002 approved, 18 SPACE triples and IEBCOPY unapproved; no submission.')
+        print('Read-only; TSO002 and 18 SPACE triples/IEBCOPY approved; no submission.')
         print('Private MVS evidence: '+relative(folder))
         return 0
-    token = 'AUTHORIZE TA2STAGE TSO002 18 PDS'
-    need(input('Type '+token+' for the ONE approved no-retry staging attempt: ').strip() == token,
-         'explicit one-shot operator confirmation absent')
+    token = ('AUTHORIZE TA2STAGE TSO002 18 PDS' if attempt_number == 1 else
+             'RETRY TA2STAGE TSO002 ALL 18 ABSENT')
+    need(input('Type '+token+' to authorize this exact staging attempt: ').strip() == token,
+         'explicit staging confirmation absent')
     need(approved is not None, 'owner approval absent')
     second = folder/'second-preflight'
     second.mkdir(mode=0o700)
@@ -365,16 +515,38 @@ def operation(args) -> int:
     deck = job_deck(core,config,body)
     # Never persist an authenticated password-bearing deck in evidence.
     cursor = folder/'stage-cursor.json'
-    arm_attempt({'state':'SUBMISSION_ATTEMPTED_NO_RETRY', 'proposal_sha256':proposal_sha,
-                 'readiness_sha256':receipt_sha,'approval_sha256':digest(checked_file(APPROVAL)),
-                 'attempt_evidence':relative(folder),'jobname':JOB,'expected_pds':18,
-                 'no_retry':True})
+    record_submission_intent(folder,{
+         'state':'SUBMISSION_INTENT_RETRYABLE',
+         'attempt_number':attempt_number,
+         'proposal_sha256':proposal_sha,
+         'readiness_sha256':receipt_sha,
+         'approval_sha256':digest(checked_file(APPROVAL)),
+         'attempt_evidence':relative(folder),'jobname':JOB,'expected_pds':18,
+         'retry_policy':'PREVIOUS_JES_ENDED_AND_ALL_18_ABSENT_ONLY'
+         },attempt_number)
     before = tempfile.tempdir
     oldtmp = os.environ.get('TMPDIR')
     try:
         tempfile.tempdir = str(folder)
         os.environ['TMPDIR'] = str(folder)
-        job, summary = core.submit_and_wait(config,deck,max_rc=0,cursor_file=cursor)
+        try:
+            job, summary = core.submit_and_wait(config,deck,max_rc=0,cursor_file=cursor)
+        except Exception as exc:
+            # The established MVS core raises 'JOB N failed:' only after
+            # the JES summary identifies an ended job with bad return code.
+            m = re.fullmatch(r'JOB ([0-9]{1,4}) failed:\n(.*)',str(exc),re.S)
+            if m is None:
+                raise  # Submission/timeout/unknown: cannot ever auto-retry.
+            job = int(m.group(1)); summary = m.group(2) + '\n'
+            save(folder/'stage-summary.txt',summary.encode('utf-8'))
+            report = core.job_report(job,cursor_file=cursor)
+            save(folder/'stage-report.txt',report.encode('utf-8'))
+            result = completed_failure(job,summary,report)
+            save(folder/'stage-result.json',(json.dumps(result,indent=2)+'\n').encode('utf-8'))
+            seal(folder)
+            print('TA.2 IEBCOPY job ended with failure; retry only after fresh MVS proves ALL 18 staging DSNs absent.')
+            print('Private evidence: '+relative(folder))
+            return 3
     finally:
         tempfile.tempdir = before
         if oldtmp is None: os.environ.pop('TMPDIR',None)
@@ -405,7 +577,7 @@ def main(argv=None) -> int:
             try:
                 if not (ACTIVE_FOLDER/'SHA256SUMS').exists():
                     save(ACTIVE_FOLDER/'failure.json',
-                         (json.dumps({'status':'REFUSED_NO_RETRY',
+                         (json.dumps({'status':'REFUSED_PRESERVE_STATE',
                                       'reason':reason,
                                       'submission_may_have_occurred':ATTEMPT.exists()},
                                      indent=2)+'\n').encode('utf-8'))
@@ -414,7 +586,7 @@ def main(argv=None) -> int:
             except (OSError, Refusal):
                 pass
         print('TA.2 STAGE ONCE REFUSED: '+reason,file=sys.stderr)
-        print('No automatic retry; keep all existing staging PDSes and private evidence.',file=sys.stderr)
+        print('No blind retry; preserve all existing staging PDSes and private evidence.',file=sys.stderr)
         return 2
 
 if __name__=='__main__':

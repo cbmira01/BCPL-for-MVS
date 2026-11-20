@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "OWNER_APPROVED_RETRYABLE_IEBCOPY_STAGING",
+  "volume": "TSO002",
+  "approval_scope": "18_NEW_PDS_IEBCOPY_ONLY",
+  "proposal_sha256": "526b98745e77a557e86d5af1fc61d894a7e8db5ab5ff385041844066218e2a18",
+  "readiness_evidence": "workarea/ta2-stage-readiness/20261119T210718Z-18180",
+  "retry_policy": "PREVIOUS_JES_ENDED_AND_ALL_18_ABSENT_ONLY",
+  "selected_members": 127,
+  "space_targets": 18,
+  "production_tape_authorized": false
+}

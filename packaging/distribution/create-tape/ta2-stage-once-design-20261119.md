@@ -4,7 +4,7 @@
 **Milestone:** Tape artifact release  
 **March:** TA.2 — Manifest-Driven Tape Producer  
 **Date:** 19 November 2026  
-**Status:** TSO002 staging volume approved by owner; 18 SPACE triples and write approval still pending.
+**Status:** TSO002 plus all 18 staging SPACE triples and conditional-retry IEBCOPY submission owner-approved; actual MVS staging pending.
 
 ## Owner-reported MVS readiness
 
@@ -25,9 +25,9 @@ saved MVS readiness and allocation evidence. The proposal is not a
 release dataset/member manifest. The TA.0 inventory remains authoritative
 for all 127 selected members.
 
-**TSO002 is now approved as the staging DASD destination (owner decision,
-19 November 2026); the 18 per-PDS SPACE allocation triples and the
-state-changing IEBCOPY staging operation remain unapproved.** The MVS free-track
+**TSO002 was approved first (19 November 2026); in a subsequent
+explicit decision the owner approved the exact 18 per-PDS SPACE triples
+and retryable IEBCOPY submission.** The MVS free-track
 total alone does not establish free-extent contiguity or guaranteed 18
 successful allocations.
 
@@ -80,9 +80,9 @@ checks also pass. The actual private MVS evidence has not been imported
 into the assistant workspace and the live one-shot runner has **not** been
 executed on MVS; no acceptance of staging execution is claimed.
 
-**Next owner gate:** explicitly approve or revise **all 18** `SPACE`
-triples on the now-approved TSO002 volume. A separate owner authorization
-is required before any state-changing IEBCOPY job. TA.2 remains IN PROGRESS.
+**The subsequent explicit owner decision approves all 18 exact SPACE triples and
+conditional-retry IEBCOPY submission; actual MVS staging and readback remain
+pending. TA.2 remains IN PROGRESS.**
 
 ## Subsequent explicit owner decision: TSO002 volume only
 
@@ -142,3 +142,80 @@ No current tracked-code reference was found in the GitHub code search.
 Its creator is not established by this evidence. This unrelated
 local file should not be ignored merely to disguise it, and no
 automatic deletion was added to the staging tooling.
+
+
+## Owner approval: all 18 SPACE triples and conditional-retry IEBCOPY
+
+**Explicit owner decision, 19 November 2026:** “18 triples and retryable
+IEBCOPY submission approved. Get rid of FETCH_HEAD.”
+
+This *supersedes* earlier no-write / absolute no-retry gates **for the
+exact existing staging dataset selection only**. The single original
+TA.0 member inventory remains authoritative, and the 18 triples in
+`ta2-stage-space-proposal-20261119.json` remain unchanged. Their
+provenance is still the saved actual MVS `ta2-stage-readiness --live`
+receipt at
+`workarea/ta2-stage-readiness/20261119T210718Z-18180`, followed by
+the later owner-reported fresh MVS `ta2-stage-once --live` PASS at
+`workarea/ta2-stage-operations/20261119T234948Z-18994`.
+
+The exact, Git-tracked [staging write approval](ta2-stage-write-approval.json)
+pins the original proposal's SHA-256
+`526b98745e77a557e86d5af1fc61d894a7e8db5ab5ff385041844066218e2a18`,
+the private readiness run path, TSO002, 18 targets and 127 members.
+Because the private `readiness.json` is not committed, its actual
+SHA-256 is independently checked at runtime and preserved in each
+attempt's private journal rather than guessed in the approval file.
+All earlier source/capacity/target evidence is independently replayed
+and two fresh MVS read-only preflights still precede submission.
+The user must type the runner's explicit confirmation.
+
+### Conditional retry safety
+
+The new `ta2-stage-once --run` can issue the *first* approved
+18-step selective IEBCOPY job. A subsequent invocation is a **new
+attempt** only if **each prior** JES job has a checksum-pinned complete
+report, a recognized JOB-number match, clear `$HASP373` STARTED and
+`$HASP395` ENDED banners, a nonzero failed result and no detected
+ABEND/JCL error. A second fresh MVS source, LISTDS and IEHLIST query
+must independently establish that **all 18** stage target names
+remain absent both from the catalog and formatted VTOC, and that
+the original VTOC inventory/free-track observation is unchanged.
+The original 18-step JCL uses `DISP=(NEW,CATLG,DELETE)`; it never
+overwrites an existing PDS. Each retry has an exclusive new, sequential,
+per-attempt marker and private SHA256-sealed evidence.
+
+This is **retryable, not blind/automatic resubmission**. Unknown JES
+outcome, incomplete evidence, an unended job, any cataloged or
+uncataloged staging target, a success result, JCL/ABEND diagnostics,
+or source/VTOC drift **halts further submission**. Partial staging
+requires a separately verified recovery method; deleting, resetting,
+or overwriting prior PDSes is not authorized. There is no caplessly
+automated retry loop; only the owner can invoke a subsequent attempt.
+
+### Root-level FETCH_HEAD cleanup
+
+The user showed an empty **untracked root-level** `FETCH_HEAD` file
+separate from Git's actual `.git/FETCH_HEAD`. On an authorized
+`--run`, after Git-tracked approvals and prior attempt checks but
+before any new MVS submission, the script checks the exact repository
+root, confirms the file is untracked and a zero-byte single-link
+regular file with stable identity, and unlinks it. Symlinks, tracked
+files and nonempty/changed files fail closed. No `.git/` contents
+are modified. The assistant cannot directly observe the user's WSL
+file until that on-host runner executes.
+
+### Verification boundary
+
+**54/54 focused synthetic/offline tests passed** in the assistant's
+isolated repository-root workspace, plus Python syntax checks.
+Coverage includes owner/volume/proposal/hash refusal, all 18 exact
+allocations, MVS source/target evidence replay, positive and failed
+JES result parsing, prior-attempt checksum identity, unresolved/partial
+retry refusal, parallel attempt marker exclusion and root `FETCH_HEAD`
+cleanup conditions. **No state-changing MVS job has been submitted
+or independently verified by the assistant.** Actual MVS IEBCOPY
+output, 18 cataloged PDS attributes, 127 exact member sets and
+record/binary fidelity must be verified before using the staged
+datasets in a release tape. No production VOLSER, AWS tape or
+publication authorization is granted.

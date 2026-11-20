@@ -185,21 +185,35 @@ class StagingTests(unittest.TestCase):
         with patch.object(mod,'git_original',side_effect=mod.Refusal('not committed on main')):
             with self.assertRaisesRegex(mod.Refusal,'not committed'):mod.read_approval('a'*64,'b'*64)
 
-    def test_approval_exact_two_hashes(self):
+    def approved_data(self,p):
+        return {'schema_version':1,'status':'OWNER_APPROVED_RETRYABLE_IEBCOPY_STAGING',
+           'volume':'TSO002','approval_scope':'18_NEW_PDS_IEBCOPY_ONLY',
+           'proposal_sha256':p,
+           'readiness_evidence':self.proposal['readiness_evidence'],
+           'retry_policy':'PREVIOUS_JES_ENDED_AND_ALL_18_ABSENT_ONLY',
+           'selected_members':127,'space_targets':18,'production_tape_authorized':False}
+
+    def test_approval_exact_replayed_proposal_and_private_receipt(self):
         p,r='a'*64,'b'*64
-        a={'status':'OWNER_APPROVED_ONE_SHOT_STAGING','volume':'TSO002',
-           'approval_scope':'18_NEW_PDS_IEBCOPY_ONLY','proposal_sha256':p,'readiness_sha256':r,
-           'readiness_evidence':self.proposal['readiness_evidence'],'no_retry':True}
+        a=self.approved_data(p)
         mod.APPROVAL.write_text(json.dumps(a))
         with patch.object(mod,'git_original',return_value=mod.APPROVAL.read_bytes()):
             self.assertEqual(mod.read_approval(p,r),a)
             with self.assertRaises(mod.Refusal):mod.read_approval('c'*64,r)
-            with self.assertRaises(mod.Refusal):mod.read_approval(p,'c'*64)
+            with self.assertRaises(mod.Refusal):mod.read_approval(p,'invalid-hash')
 
     def test_approval_cannot_approve_different_volume(self):
-        a={'status':'OWNER_APPROVED_ONE_SHOT_STAGING','volume':'TSO003',
-           'approval_scope':'18_NEW_PDS_IEBCOPY_ONLY','proposal_sha256':'a'*64,'readiness_sha256':'b'*64,
-           'readiness_evidence':self.proposal['readiness_evidence'],'no_retry':True}
+        a=self.approved_data('a'*64);a['volume']='TSO003'
+        mod.APPROVAL.write_text(json.dumps(a))
+        with patch.object(mod,'git_original',return_value=mod.APPROVAL.read_bytes()):
+            with self.assertRaises(mod.Refusal):mod.read_approval('a'*64,'b'*64)
+
+    def test_approval_cannot_approve_tape_or_blanket_retry(self):
+        a=self.approved_data('a'*64);a['production_tape_authorized']=True
+        mod.APPROVAL.write_text(json.dumps(a))
+        with patch.object(mod,'git_original',return_value=mod.APPROVAL.read_bytes()):
+            with self.assertRaises(mod.Refusal):mod.read_approval('a'*64,'b'*64)
+        a['production_tape_authorized']=False;a['retry_policy']='ALWAYS_RETRY'
         mod.APPROVAL.write_text(json.dumps(a))
         with patch.object(mod,'git_original',return_value=mod.APPROVAL.read_bytes()):
             with self.assertRaises(mod.Refusal):mod.read_approval('a'*64,'b'*64)
@@ -232,11 +246,114 @@ class StagingTests(unittest.TestCase):
         core=SimpleNamespace(authenticated_job_card=lambda *a,**k:['//'+'X'*89])
         with self.assertRaises(mod.Refusal):mod.job_deck(core,{},body)
 
-    def test_attempt_file_one_shot(self):
+    def sample_failed_job(self,job=4321):
+        summary=f'JOB {job} TA2STAGE\nJOB RESULT: FAILURE\nHIGHEST RC: 0008\nS0003 IEBCOPY RC=0008\n'
+        report=(f'17.10.11 JOB {job} $HASP373 TA2STAGE STARTED\n'
+                f'17.10.12 JOB {job} $HASP395 TA2STAGE ENDED\n')
+        return summary, report
+
+    def make_failed_attempt(self,p='a'*64,r='b'*64,number=1,job=4321):
+        folder=self.ops/f'20261119T23410{number}Z-{18700+number}'
+        folder.mkdir(parents=True,exist_ok=True)
+        record={'state':'SUBMISSION_INTENT_RETRYABLE',
+                'attempt_number':number,'proposal_sha256':p,
+                'readiness_sha256':r,'attempt_evidence':mod.relative(folder),
+                'approval_sha256':'c'*64,'jobname':mod.JOB,'expected_pds':18,
+                'retry_policy':'PREVIOUS_JES_ENDED_AND_ALL_18_ABSENT_ONLY'}
+        mod.record_submission_intent(folder,record,number)
+        summary,report=self.sample_failed_job(job)
+        for filename,value in [('stage-summary.txt',summary),('stage-report.txt',report),
+                               ('stage-result.json',json.dumps(mod.completed_failure(job,summary,report))+'\n')]:
+            (folder/filename).write_text(value)
+        mod.seal(folder)
+        return folder
+
+    def test_first_submission_marker_exclusive_and_journal(self):
         self.ops.mkdir()
-        mod.arm_attempt({'state':'SUBMISSION_ATTEMPTED_NO_RETRY','no_retry':True})
+        self.assertEqual(mod.retry_next('a'*64,'b'*64),1)
+        folder=self.ops/'20261119T234101Z-18701';folder.mkdir()
+        data={'state':'SUBMISSION_INTENT_RETRYABLE','attempt_number':1}
+        mod.record_submission_intent(folder,data,1)
         self.assertTrue(mod.ATTEMPT.exists())
-        with self.assertRaisesRegex(mod.Refusal,'DO NOT RETRY'):mod.arm_attempt({})
+        self.assertEqual(json.loads((folder/mod.INTENT).read_text()),data)
+        with self.assertRaisesRegex(mod.Refusal,'already reserved'):
+            mod.record_submission_intent(folder,data,1)
+
+    def test_retry_from_completed_failed_job(self):
+        self.make_failed_attempt()
+        self.assertEqual(mod.retry_next('a'*64,'b'*64),2)
+        self.make_failed_attempt(number=2,job=4322)
+        self.assertEqual(mod.retry_next('a'*64,'b'*64),3)
+
+    def test_retry_unresolved_submission_refused(self):
+        folder=self.make_failed_attempt()
+        (folder/'stage-result.json').unlink()
+        with self.assertRaises(mod.Refusal):mod.retry_next('a'*64,'b'*64)
+
+    def test_retry_prior_result_pass_refused(self):
+        folder=self.make_failed_attempt()
+        (folder/'stage-result.json').write_text(json.dumps({'status':'STAGED','mvs_job':4321}))
+        # Checksum invalid -> refuses; no modifying previous evidence
+        with self.assertRaises(mod.Refusal):mod.retry_next('a'*64,'b'*64)
+
+    def test_retry_prior_evidence_drift_refused(self):
+        folder=self.make_failed_attempt()
+        (folder/'stage-report.txt').write_text('tampered')
+        with self.assertRaises(mod.Refusal):mod.retry_next('a'*64,'b'*64)
+
+    def test_retry_wrong_source_receipt_refused(self):
+        self.make_failed_attempt()
+        with self.assertRaises(mod.Refusal):mod.retry_next('z'*64,'b'*64)
+        with self.assertRaises(mod.Refusal):mod.retry_next('a'*64,'z'*64)
+
+    def test_retry_orphan_marker_refused(self):
+        self.ops.mkdir()
+        mod.ATTEMPT.write_text('{}')
+        with self.assertRaises(mod.Refusal):mod.retry_next('a'*64,'b'*64)
+
+    def test_failed_job_completion_requires_confirmed_end(self):
+        summary,report=self.sample_failed_job()
+        result=mod.completed_failure(4321,summary,report)
+        self.assertEqual(result['mvs_job'],4321)
+        with self.assertRaises(mod.Refusal):mod.completed_failure(4321,summary,report.replace('$HASP395','$HASP397'))
+        with self.assertRaises(mod.Refusal):mod.completed_failure(4321,summary,report+'IEF450I TA2STAGE ABEND\n')
+        with self.assertRaises(mod.Refusal):mod.completed_failure(4321,summary.replace('FAILURE','SUCCESS'),report)
+
+    def git_fake(self,tracked=False):
+        def fake(args,**kwargs):
+            if args[1]=='rev-parse':return SimpleNamespace(returncode=0,stdout=str(self.root)+'\n')
+            if args[1]=='ls-files':return SimpleNamespace(returncode=0 if tracked else 1,stdout='FETCH_HEAD\n' if tracked else '')
+            raise AssertionError(args)
+        return fake
+
+    def test_fetch_head_removes_only_empty_untracked_root_file(self):
+        (self.root/'.git').mkdir()
+        (self.root/'FETCH_HEAD').write_bytes(b'')
+        with patch.object(mod.subprocess,'run',side_effect=self.git_fake()):
+            self.assertTrue(mod.cleanup_empty_fetch_head())
+        self.assertFalse((self.root/'FETCH_HEAD').exists())
+        self.assertFalse((self.root/'.git'/'FETCH_HEAD').exists())
+        with patch.object(mod.subprocess,'run',side_effect=self.git_fake()):
+            self.assertFalse(mod.cleanup_empty_fetch_head())
+
+    def test_fetch_head_nonempty_refuses(self):
+        (self.root/'.git').mkdir();(self.root/'FETCH_HEAD').write_bytes(b'important data')
+        with patch.object(mod.subprocess,'run',side_effect=self.git_fake()):
+            with self.assertRaises(mod.Refusal):mod.cleanup_empty_fetch_head()
+        self.assertEqual((self.root/'FETCH_HEAD').read_bytes(),b'important data')
+
+    def test_fetch_head_symlink_refuses(self):
+        (self.root/'.git').mkdir();(self.root/'.git'/'FETCH_HEAD').write_bytes(b'')
+        (self.root/'FETCH_HEAD').symlink_to(self.root/'.git'/'FETCH_HEAD')
+        with patch.object(mod.subprocess,'run',side_effect=self.git_fake()):
+            with self.assertRaises(mod.Refusal):mod.cleanup_empty_fetch_head()
+        self.assertTrue((self.root/'FETCH_HEAD').is_symlink())
+
+    def test_fetch_head_tracked_refuses(self):
+        (self.root/'.git').mkdir();(self.root/'FETCH_HEAD').write_bytes(b'')
+        with patch.object(mod.subprocess,'run',side_effect=self.git_fake(tracked=True)):
+            with self.assertRaises(mod.Refusal):mod.cleanup_empty_fetch_head()
+        self.assertTrue((self.root/'FETCH_HEAD').exists())
 
     def test_job_mvs_success_all_18(self):
         steps=[f'S{i:04d}' for i in range(3,21)]

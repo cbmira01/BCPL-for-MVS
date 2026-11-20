@@ -600,3 +600,22 @@ any purported widening to SPACE or tape/JES authorization.
 **42/42 focused offline tests PASS.** No additional MVS stage,
 candidate identity or tape operation was performed. See
 [the one-shot design record](ta2-stage-once-design-20261119.md).
+
+### TA.2 owner-authorized 18-PDS staging — conditional retry
+
+The owner explicitly approved **all 18** source-bounded
+`SPACE=(TRK,(primary,secondary,directory))` proposals on TSO002
+and a **retryable selective IEBCOPY submission**. The separate
+[tracked write approval](ta2-stage-write-approval.json) pins the
+existing proposed allocation SHA, 18 PDSes and 127 selected members.
+The [staging runner](scripts/ta2-stage-once) is now allowed to submit
+one 18-step job with `--run`, following strict source, catalog and
+VTOC MVS preflights and an interactive confirmation. Conditional
+retry requires checksum-sealed proof that all earlier jobs are
+finished failures and a fresh MVS check that **all 18** destination
+PDSes remain absent. Unresolved or partial writes never retry
+blindly. The runner also removes the owner-identified zero-byte,
+untracked root `FETCH_HEAD` safely during `--run`, without touching
+`.git/FETCH_HEAD`. **54/54 focused offline tests PASS**.
+No actual staging JES submission or tape write has yet occurred.
+See the [owner approval and retry conditions](ta2-stage-once-design-20261119.md).

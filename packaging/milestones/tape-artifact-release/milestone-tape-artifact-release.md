@@ -585,6 +585,27 @@ production tape identity or modify media. All 18 proposed `SPACE`
 triples and the state-changing one-shot submission **remain separately
 unapproved**. TA.2 IN PROGRESS.
 
+**TA.2 explicit 18-PDS SPACE and retryable IEBCOPY owner authorization (19 November 2026):**
+After the owner-reported fresh MVS read-only staging checks (18/18,
+127 selected, TSO002), the owner authorized **all 18 exact
+source-bounded SPACE triples and a retryable IEBCOPY submission**.
+The
+[Git-tracked write approval](../../distribution/create-tape/ta2-stage-write-approval.json)
+pins the original unchanged allocation proposal SHA-256, exact
+readiness evidence, TSO002, 18 target PDSes and 127 selected
+members. The improved [TA.2 staging runner and retry contract](../../distribution/create-tape/ta2-stage-once-design-20261119.md)
+permit one manually invoked 18-step IEBCOPY job; retries are allowed
+**only after each previous failed job is conclusively ended with
+private pinned evidence and a fresh MVS inquiry proves all 18 stage
+targets absent**. No automatic replays, PDS overwrite or
+recovery of partially staged libraries is authorized. The runner
+also performs the owner's specifically requested safe deletion
+of the **empty, untracked, root-level** `FETCH_HEAD`, not
+`.git/FETCH_HEAD`, as part of an authorized `--run`.
+**54/54 focused synthetic tests PASS**; the write path has not
+yet been run against MVS and no staged PDS or tape candidate
+is claimed. TA.2 remains IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
