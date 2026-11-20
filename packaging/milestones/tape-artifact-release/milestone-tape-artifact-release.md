@@ -994,3 +994,25 @@ The separate `BT0021` stage input is still **unverified and unwritten**.
 No new AWS tape image, public release, rights approval or native-running
 Cambridge Compiler is implied; previously accepted BT0001–BT0020
 staging remains untouched. **TA.2 IN PROGRESS.**
+
+## TA.2 read-only historical Cambridge source readback mismatch — 20 November 2026
+
+Following accepted MVS **JOBs 9325/9326** and exact 15/15
+`CAMB_SOURCE` directory inventory, the owner executed the
+read-only `rc2-cambsource-record-readback.py`. It **HALTED** with
+`MVS readback differs from frozen normalized source`, retaining
+private original MVS evidence at
+`workarea/ta2-rc2-cambsource-record-readback/`.
+Record-content acceptance is therefore **open**. The mismatch
+does not retroactively invalidate successful MVS directory staging
+evidence, but `BT0021` must not be staged.
+
+A new **offline, saved-evidence-only** diagnostic was tested
+**10/10 PASS** against synthetic mismatch and tampered-receipt
+cases. It reports the differing member/record/column and
+content-independent codepoint/length metadata, without making
+new JES calls or changing the original evidence. No new MVS
+writing, re-population, IEBCOPY or AWS production has been
+authorized or attempted. See
+[the evidence boundary and diagnostic](../../distribution/compiler-source/rc2-readback-mismatch-evidence-20261120.md).
+**TA.2 IN PROGRESS.**

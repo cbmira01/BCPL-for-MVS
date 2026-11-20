@@ -89,3 +89,13 @@ frozen historical Git source. See [population acceptance and record
 readback evidence](rc2-population-accepted-readback-design-20261120.md).
 Record readback and BT0021 staging remain pending. Raw CP037 bytes
 are not claimed verified by the text readback.
+
+**Readback mismatch (20 November 2026):** the owner ran the
+15-member read-only MVS source readback; its normalized source-content
+comparison failed. The saved MVS evidence is preserved in
+`workarea/ta2-rc2-cambsource-record-readback/`. Do not rerun source
+population, overwrite the readback, or stage `BT0021`. The
+[read-only saved-evidence diagnostic](rc2-cambsource-diagnose-readback.py)
+prints the first differing record/column and hashes without reading
+MVS again or printing source. See the
+[TA.2 mismatch evidence and diagnostic gate](rc2-readback-mismatch-evidence-20261120.md).
