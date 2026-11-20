@@ -20,3 +20,13 @@ proposal**; placeholders for HLQ, tape unit, DASD unit and each allocation
 must be supplied and checked before use. TA.3 must still establish safe
 recipient installations and independent profile selection on actual MVS.
 No installer PDS has yet been created or written to tape.
+
+## Proposed pre-staging installer job preparation
+
+The [TA.2 preparatory material and target preflight](../create-tape/ta2-bootstrap-prestaging-mvs-preflight-20261119.md)
+adds a **not-submitted** MVS IEBGENER/IEFBR14 staging job for BT0001
+bootstrap text and four BT0002 installer PDS members. `DD DATA,DLM=ZZ`
+preserves the proposed RESTORE member's JCL statements as in-stream
+**data**. It is not a recipient installation approval. The recipient
+must still supply site parameters, and TA.3 must verify actual installation
+with MVS-only tools. No live stage or tape test has been executed.

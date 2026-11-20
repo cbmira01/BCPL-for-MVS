@@ -8,6 +8,8 @@ import hashlib
 import json
 from pathlib import Path
 import tempfile
+import yaml
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -179,6 +181,109 @@ class BootstrapTests(unittest.TestCase):
         self.candidate['release']['candidate_id']='INJECT\n//JOB'
         with self.assertRaisesRegex(mod.Refusal,'candidate_id'):
             mod.render(self.candidate,self.design)
+
+    def test_stage_deck_contains_six_mvs_steps_and_two_new_datasets(self):
+        deck = mod.render(self.candidate, self.design)['STAGE-NEW-BT0001-BT0002.jcl'].decode()
+        self.assertIn('DD DATA,DLM=ZZ', deck)
+        self.assertEqual(deck.count('//SYSUT1 DD DATA,DLM=ZZ'), 5)
+        self.assertEqual(deck.splitlines().count('ZZ'), 5)
+        self.assertIn('DSN=HERC02.BCPL.TA2STG.BT0001', deck)
+        self.assertIn('DSN=HERC02.BCPL.TA2STG.BT0002', deck)
+        self.assertIn('VOL=SER=TSO002', deck)
+        self.assertEqual(deck.count('EXEC PGM=IEBGENER'), 5)
+        self.assertEqual(deck.count('EXEC PGM=IEFBR14'), 1)
+        self.assertIn('DD DSN=HERC02.BCPL.TA2STG.BT0002(RESTORE)', deck)
+        self.assertEqual(sum(x.startswith('//M') and ' EXEC PGM=' in x
+                             for x in deck.splitlines()), 4)
+        self.assertTrue(all(len(x) <= 80 for x in deck.splitlines()))
+
+    def test_critical_restore_jcl_is_data_in_staging(self):
+        deck = mod.render(self.candidate, self.design)['STAGE-NEW-BT0001-BT0002.jcl'].decode()
+        self.assertIn('//R0003 EXEC PGM=IEBCOPY', deck)
+        self.assertIn('/*', deck)
+        self.assertIn(' DD DATA,DLM=ZZ', deck)
+        # Only staging uses new allocations; 18 embedded restores are IN-STREAM DATA.
+        before_restore = deck.split('//SYSUT2 DD DSN=HERC02.BCPL.TA2STG.BT0002(RESTORE)')[0]
+        self.assertIn('//R0020 EXEC PGM=IEBCOPY', before_restore)
+
+    def test_instream_delimiter_collision_refused(self):
+        contents = {'BT0001': 'ZZTHIS COLLIDES', 'INSTALL': 'ok',
+                    'DATASETS': 'ok', 'RELEASE': 'ok', 'RESTORE': 'ok'}
+        with self.assertRaisesRegex(mod.Refusal, 'collides'):
+            mod.render_stage_jcl(contents)
+
+    def test_stage_volume_changed_refused(self):
+        contents = {'BT0001': 'ok', 'INSTALL': 'ok',
+                    'DATASETS': 'ok', 'RELEASE': 'ok', 'RESTORE': 'ok'}
+        with self.assertRaisesRegex(mod.Refusal, 'TSO002'):
+            mod.render_stage_jcl(contents, volume='TSO003')
+
+    def test_stage_material_count_refused(self):
+        with self.assertRaisesRegex(mod.Refusal, 'exactly'):
+            mod.render_stage_jcl({'BT0001': 'test'})
+
+    def test_stage_member_uses_safe_data_width(self):
+        contents = {'BT0001': 'ok', 'INSTALL': 'ok',
+                    'DATASETS': 'ok', 'RELEASE': 'ok', 'RESTORE': 'X' * 81}
+        with self.assertRaisesRegex(mod.Refusal, 'FB80'):
+            mod.render_stage_jcl(contents)
+
+    def _candidate_manifest_for_cli(self):
+        release_dir = self.root / 'releases'
+        release_dir.mkdir()
+        mf = release_dir / 'SYNTHETIC.yaml'
+        mf.write_text(yaml.safe_dump(self.candidate, sort_keys=False))
+        canonical = self.root / 'design.yaml'
+        canonical.write_text(yaml.safe_dump(self.design, sort_keys=False))
+        return mf, canonical, release_dir
+
+    def test_prepare_cli_succeeds_without_final_gate(self):
+        mf, canonical, release_dir = self._candidate_manifest_for_cli()
+        with patch.object(mod, 'CANONICAL', canonical), \
+             patch.object(mod, 'RELEASES', release_dir), \
+             patch.object(mod, 'ROOT', self.root), \
+             patch.object(mod.subprocess, 'run') as call:
+            rc = mod.main(['--manifest', str(mf), '--output', str(self.root / 'out'),
+                           '--prepare'])
+        self.assertEqual(rc, 0)
+        call.assert_not_called()
+        self.assertTrue((self.root / 'out' / 'STAGE-NEW-BT0001-BT0002.jcl').is_file())
+
+    def test_strict_cli_refuses_without_producer_gate(self):
+        mf, canonical, release_dir = self._candidate_manifest_for_cli()
+        with patch.object(mod, 'CANONICAL', canonical), \
+             patch.object(mod, 'RELEASES', release_dir), \
+             patch.object(mod, 'ROOT', self.root):
+            rc = mod.main(['--manifest', str(mf), '--output', str(self.root / 'out')])
+        self.assertEqual(rc, 2)
+        self.assertFalse((self.root / 'out').exists())
+
+    def test_strict_cli_propagates_gate_failure(self):
+        mf, canonical, release_dir = self._candidate_manifest_for_cli()
+        preflight = self.root / 'packaging/distribution/create-tape/scripts/ta2-offline'
+        preflight.parent.mkdir(parents=True)
+        preflight.write_text('stub gate: test only')
+        with patch.object(mod, 'CANONICAL', canonical), \
+             patch.object(mod, 'RELEASES', release_dir), \
+             patch.object(mod, 'ROOT', self.root), \
+             patch.object(mod.subprocess, 'run', return_value=SimpleNamespace(returncode=3)):
+            rc = mod.main(['--manifest', str(mf), '--output', str(self.root / 'out')])
+        self.assertEqual(rc, 2)
+        self.assertFalse((self.root / 'out').exists())
+
+    def test_strict_cli_requires_frozen_gate_success(self):
+        mf, canonical, release_dir = self._candidate_manifest_for_cli()
+        preflight = self.root / 'packaging/distribution/create-tape/scripts/ta2-offline'
+        preflight.parent.mkdir(parents=True)
+        preflight.write_text('stub gate: test only')
+        with patch.object(mod, 'CANONICAL', canonical), \
+             patch.object(mod, 'RELEASES', release_dir), \
+             patch.object(mod, 'ROOT', self.root), \
+             patch.object(mod.subprocess, 'run', return_value=SimpleNamespace(returncode=0)) as run:
+            rc = mod.main(['--manifest', str(mf), '--output', str(self.root / 'out')])
+        self.assertEqual(rc, 0)
+        run.assert_called_once()
+        self.assertIn('--candidate', run.call_args.args[0])
 
     def test_incorrect_schema_refused(self):
         self.candidate['schema_version']=2

@@ -85,3 +85,24 @@ Hercules tape labels/readback will determine whether the proposal works.
 
 **TA.2 remains IN PROGRESS.** TA.0/TA.1 qualified closures unchanged;
 no TA.3–TA.8 renumbering or premature closure.
+
+## Subsequent pre-staging correction — 19 November 2026 EST
+
+The previous final-only entry point created a circular dependency:
+BT0001/BT0002 MVS `stat`/`ls` receipts were required *before*
+rendering the two inputs that would be staged and inspected. The
+[pre-staging correction](ta2-bootstrap-prestaging-mvs-preflight-20261119.md)
+adds a strictly **offline** `--prepare` path for identity-complete
+proposed candidate manifests. The no-flag default still requires the
+original strict `ta2-offline --candidate` gate. Preparatory mode does
+**not** authorize tape production or claim registry/rights/source acceptance.
+
+Material output also now includes **one proposed six-step one-shot MVS
+stage deck**, using IEBGENER / IEFBR14 for precisely BT0001 and BT0002
+and `DD DATA,DLM=ZZ` for embedded installer JCL. The separate
+read-only `scripts/ta2-bootstrap-target-preflight --live` performs
+two MVS LISTDS/IEHLIST jobs, retaining original reports under
+`workarea/ta2-bootstrap-target-preflight/`. All staging writes
+remain separately unapproved; accepted JOB 9310 targets BT0003–BT0020
+are unchanged. **43/43 combined synthetic tests PASS**, with no live MVS
+result claimed. TA.2 remains IN PROGRESS.

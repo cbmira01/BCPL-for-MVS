@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""Read-only MVS LISTDS/IEHLIST for TA.2 BT0001 and BT0002 target absence.
+
+Preserves original reports under ignored workarea. No dataset or tape writes.
+Only these two names; accepted BT0003 through BT0020 are never retested.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+OUT = ROOT / 'workarea/ta2-bootstrap-target-preflight'
+VOLUME = 'TSO002'
+NAMES = ['HERC02.BCPL.TA2STG.BT0001', 'HERC02.BCPL.TA2STG.BT0002']
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(value: bool, why: str) -> None:
+    if not value:
+        raise Refusal(why)
+
+
+def import_script(name: str, path: Path):
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None and path.is_file() and
+         not path.is_symlink(), 'missing read-only MVS tool')
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def ensure_names(names: list[str], volume: str) -> None:
+    need(volume == VOLUME and names == NAMES,
+         'only exact two BT0001/BT0002 names on TSO002 may be inspected')
+
+
+def catalog_absence(core, report: str, names: list[str]) -> None:
+    ensure_names(names, VOLUME)
+    for dsn in names:
+        need(core.dataset_missing(report, dsn),
+             dsn + ': no positive LISTDS catalog-absence response')
+        block = core.extract_listds_block(report, dsn)
+        need(not (block and core.parse_listds(block)),
+             dsn + ': contradictory LISTDS attributes')
+
+
+def folder_new() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and not OUT.is_symlink(),
+         'unsafe workarea evidence root')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    run = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+    run.mkdir(mode=0o700, exist_ok=False)
+    return run
+
+
+def save(path: Path, raw: bytes) -> None:
+    with os.fdopen(os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY |
+                          getattr(os, 'O_NOFOLLOW', 0), 0o600), 'wb') as stream:
+        stream.write(raw)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def seal(folder: Path) -> None:
+    files = sorted(x for x in folder.iterdir() if x.is_file() and x.name != 'SHA256SUMS')
+    hashes = ''.join(hashlib.sha256(x.read_bytes()).hexdigest() + '  ' + x.name + '\n'
+                     for x in files)
+    save(folder / 'SHA256SUMS', hashes.encode('ascii'))
+
+
+def inquire(core, config: dict, target, folder: Path, names: list[str] = NAMES) -> dict:
+    ensure_names(names, VOLUME)
+    # dspal-core uses temporary JES input; keep it under repository workarea.
+    previous_tmp, previous_env = tempfile.tempdir, os.environ.get('TMPDIR')
+    tempfile.tempdir = str(folder)
+    os.environ['TMPDIR'] = str(folder)
+    try:
+        catalog_jcl = core.stat_deck(config, names)
+        need(all(len(x) <= 80 and x.isascii() for x in catalog_jcl.splitlines()),
+             'LISTDS job invalid JCL card width')
+        catalog_cursor = folder / 'catalog-cursor.json'
+        job1, _ = core.submit_and_wait(config, catalog_jcl, max_rc=8,
+                                       cursor_file=catalog_cursor)
+        catalog = core.job_report(job1, cursor_file=catalog_cursor)
+        save(folder / 'catalog-report.txt', catalog.encode('utf-8'))
+        catalog_absence(core, catalog, names)
+        vtoc_jcl = target.vtoc_deck(core, config, VOLUME)
+        vtoc_cursor = folder / 'vtoc-cursor.json'
+        job2, _ = core.submit_and_wait(config, vtoc_jcl, max_rc=0,
+                                       cursor_file=vtoc_cursor)
+        report = core.job_report(job2, cursor_file=vtoc_cursor)
+        save(folder / 'vtoc-report.txt', report.encode('utf-8'))
+        target.vtoc_observation(report, VOLUME, names)
+        return {'status': 'READ_ONLY_MVS_CATALOG_ABSENCE_VTOC_OBSERVED',
+                'volume': VOLUME, 'targets': names, 'jobs': {'catalog': job1, 'vtoc': job2},
+                'qualification': 'No staging write or free-space approval; VTOC raw report retained'}
+    finally:
+        tempfile.tempdir = previous_tmp
+        if previous_env is None:
+            os.environ.pop('TMPDIR', None)
+        else:
+            os.environ['TMPDIR'] = previous_env
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--live', action='store_true',
+                        help='submit only two read-only LISTDS/IEHLIST MVS jobs')
+    args = parser.parse_args(argv)
+    folder = None
+    try:
+        ensure_names(NAMES, VOLUME)
+        if not args.live:
+            print('TA.2 BT TARGET PLAN: 2 new staging targets; read-only LISTDS/IEHLIST jobs.')
+            return 0
+        core = import_script('ta2_bt_core', ROOT / 'tools/datasets/dspal-core.py')
+        target = import_script('ta2_bt_target', SCRIPTS / 'ta2-target-preflight')
+        config = core.load_config()
+        need(config['mvs']['hlq'] == 'HERC02', 'wrong MVS HLQ')
+        core.require_reader_ready(config)
+        folder = folder_new()
+        result = inquire(core, config, target, folder)
+        save(folder / 'result.json', (json.dumps(result, indent=2) + '\n').encode())
+        seal(folder)
+        print('TA.2 BT TARGET PREFLIGHT: 2 catalog-absent; TSO002 VTOC observed.')
+        print('Private MVS evidence: ' + str(folder.relative_to(ROOT)))
+        print('No allocation, tape write or repeat of accepted JOB 9310.')
+        return 0
+    except (Refusal, KeyError, ValueError, OSError, TypeError) as exc:
+        if folder is not None:
+            try:
+                save(folder / 'failure.json', (json.dumps({'status': 'REFUSED',
+                    'reason': str(exc)}, indent=2) + '\n').encode())
+                seal(folder)
+                print('Private MVS evidence: ' + str(folder.relative_to(ROOT)))
+            except (OSError, Refusal):
+                pass
+        print('TA.2 BT TARGET PREFLIGHT REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

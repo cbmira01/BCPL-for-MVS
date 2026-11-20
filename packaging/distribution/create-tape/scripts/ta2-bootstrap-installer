@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""TA.2 offline BT0001/BT0002 material generator; never submits or stages MVS.
+"""TA.2 offline BT0001/BT0002 material and MVS staging-deck generator.
+
+Never submits JES or stages MVS. --prepare resolves the two-input build
+cycle, while final candidate use retains the full ta2-offline trust gate.
 
 Output is intentionally incomplete site JCL: <HLQ>/<DASD>/<P>/<S>/<D>
 must be replaced by the recipient before attempting allocation/restoration.
@@ -245,6 +248,73 @@ def installer_members(manifest: dict, rows: list[dict]) -> dict[str, str]:
             'RESTORE': restore_template(manifest, rows)}
 
 
+
+def render_stage_jcl(materials: dict[str, str], *, volume: str = 'TSO002') -> str:
+    """One-shot proposed stage JCL; requires new explicit MVS write approval.
+
+    DD DATA with an alternate delimiter is essential: the RESTORE member
+    contains literal // and /* cards. Never resubmit after an ambiguous
+    result; a partial PDS and partial PS must be investigated first.
+    """
+    need(volume == 'TSO002', 'TA.2 stage volume changed from owner-approved TSO002')
+    need(set(materials) == {'BT0001', 'INSTALL', 'DATASETS', 'RELEASE', 'RESTORE'},
+         'expected exactly one bootstrap and four installer members')
+    lines = [
+        '//* TA.2 BT0001/BT0002 ONE-SHOT MVS STAGING PROPOSAL.',
+        '//* JOB CARD REQUIRED. DO NOT SUBMIT WITHOUT OWNER WRITE APPROVAL.',
+        '//* ALL EXISTING BT0003-BT0020 STAGING MUST REMAIN UNCHANGED.',
+        '//* INPUT FROM REVIEWED CANDIDATE MATERIALS; NO AUTOMATIC RETRY.',
+    ]
+
+    def data(source: str) -> list[str]:
+        body = source.splitlines()
+        card_lines(body)
+        need(body and all(not line.startswith('ZZ') for line in body),
+             'staging data collides with DD DATA DLM=ZZ')
+        return ['//SYSUT1 DD DATA,DLM=ZZ', *body, 'ZZ']
+
+    lines.extend(['//B0001 EXEC PGM=IEBGENER,REGION=512K',
+                  '//SYSPRINT DD SYSOUT=*',
+                  '//SYSIN DD DUMMY',
+                  *data(materials['BT0001']),
+                  '//SYSUT2 DD DSN=HERC02.BCPL.TA2STG.BT0001,',
+                  '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,',
+                  '//            VOL=SER=TSO002,SPACE=(TRK,(5,1)),',
+                  '//            DCB=(DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=800)',
+                  '//B0002 EXEC PGM=IEFBR14,COND=(0,NE)',
+                  '//OUTPDS DD DSN=HERC02.BCPL.TA2STG.BT0002,',
+                  '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,',
+                  '//            VOL=SER=TSO002,SPACE=(TRK,(20,5,10)),',
+                  '//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,BLKSIZE=800)'])
+    for n, member in enumerate(('INSTALL', 'DATASETS', 'RELEASE', 'RESTORE'), 1):
+        lines.extend([f'//M{n:04d} EXEC PGM=IEBGENER,REGION=512K,COND=(0,NE)',
+                      '//SYSPRINT DD SYSOUT=*',
+                      '//SYSIN DD DUMMY',
+                      *data(materials[member]),
+                      f'//SYSUT2 DD DSN=HERC02.BCPL.TA2STG.BT0002({member}),',
+                      '//            DISP=SHR'])
+    lines.append('//')
+    deck = card_lines(lines, jcl=True)
+    outer, inside = [], False
+    for line in deck.splitlines():
+        if line == '//SYSUT1 DD DATA,DLM=ZZ':
+            need(not inside, 'nested staging in-stream input')
+            inside = True
+            outer.append(line)
+        elif line == 'ZZ' and inside:
+            inside = False
+        elif not inside:
+            outer.append(line)
+    need(not inside and sum(x == '//SYSUT1 DD DATA,DLM=ZZ' for x in outer) == 5 and
+         sum('EXEC PGM=IEBGENER' in x for x in outer) == 5 and
+         sum('EXEC PGM=IEFBR14' in x for x in outer) == 1 and
+         sum('DISP=(NEW,CATLG,DELETE)' in x for x in outer) == 2 and
+         sum('COND=(0,NE)' in x for x in outer) == 5 and
+         deck.splitlines().count('ZZ') == 5,
+         'staging deck generation incomplete')
+    return deck
+
+
 def render(manifest: dict, design: dict) -> dict[str, bytes]:
     rows = validate(manifest, design)
     items: dict[str, bytes] = {}
@@ -256,6 +326,8 @@ def render(manifest: dict, design: dict) -> dict[str, bytes]:
     for member, source in installer_members(manifest, rows).items():
         items[f'BT0002-{member}.txt'] = source.encode('ascii')
         items[f'BT0002-{member}.ebcdic-fb80'] = fb80(source)
+    sources = {'BT0001': boot, **installer_members(manifest, rows)}
+    items['STAGE-NEW-BT0001-BT0002.jcl'] = render_stage_jcl(sources).encode('ascii')
     meta = {'status': 'OFFLINE_MATERIALS_NOT_MVS_ACCEPTED',
             'candidate_id': manifest['release']['candidate_id'],
             'volser': manifest['volume']['volser'],
@@ -284,6 +356,8 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--manifest', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--prepare', action='store_true',
+                   help='offline pre-stage materials only; no frozen registry/MVS gate')
     args = p.parse_args(argv)
     try:
         need(args.manifest.parent.resolve() == RELEASES.resolve() and
@@ -294,18 +368,21 @@ def main(argv: list[str] | None = None) -> int:
              args.manifest.name == str(candidate.get('release', {}).get('candidate_id')) + '.yaml',
              'candidate manifest filename/identity mismatch')
         design = yaml.safe_load(CANONICAL.read_text())
-        # Reuse the canonical frozen manifest, registry, provenance and MVS
-        # evidence gate; this renderer must not create a second trust path.
-        preflight = ROOT / 'packaging/distribution/create-tape/scripts/ta2-offline'
-        need(preflight.is_file() and not preflight.is_symlink(),
-             'canonical TA.2 producer gate missing')
-        cp = subprocess.run([sys.executable, '-B', str(preflight),
-                             '--candidate', '--manifest', str(args.manifest)],
-                            cwd=ROOT, capture_output=True, text=True, timeout=90)
-        need(cp.returncode == 0, 'canonical candidate/registry/MVS preflight failed')
+        # Preparatory mode can render BT0001/2 BEFORE their MVS stat/ls
+        # receipts exist. Final candidate use retains the canonical strict
+        # producer gate: prepare NEVER authorizes media production.
         files = render(candidate, design)
+        if not args.prepare:
+            preflight = ROOT / 'packaging/distribution/create-tape/scripts/ta2-offline'
+            need(preflight.is_file() and not preflight.is_symlink(),
+                 'canonical TA.2 producer gate missing')
+            cp = subprocess.run([sys.executable, '-B', str(preflight),
+                                 '--candidate', '--manifest', str(args.manifest)],
+                                cwd=ROOT, capture_output=True, text=True, timeout=90)
+            need(cp.returncode == 0, 'canonical candidate/registry/MVS preflight failed')
         write_new(args.output, files)
-        print('TA.2 BOOTSTRAP MATERIALS: offline FB80/JCL generated; MVS not tested.')
+        phase = 'PREPARE ONLY, NOT FROZEN' if args.prepare else 'STRICT CANDIDATE INPUT'
+        print('TA.2 BOOTSTRAP MATERIALS: ' + phase + '; offline JCL, NOT submitted.')
         print('Private files: ' + str(args.output))
         return 0
     except (Refusal, KeyError, ValueError, OSError, yaml.YAMLError,

@@ -662,3 +662,19 @@ The installer template has deliberately invalid site placeholders and is
 not ready for submission. **20/20 offline synthetic tests PASS**;
 there is no MVS input staging, tape production, approved site installer,
 new version or VOLSER from this change. TA.2 remains IN PROGRESS.
+
+## TA.2 proposed BT0001/BT0002 staging and read-only gate
+
+The [pre-staging correction and MVS inquiry](ta2-bootstrap-prestaging-mvs-preflight-20261119.md)
+resolves a build cycle: preparatory `scripts/ta2-bootstrap-installer --prepare`
+generates the **unsubmitted** BT0001/BT0002 material and one-shot six-step
+staging JCL without requiring the not-yet-created sources' final MVS
+receipts. It still needs an explicit proposed candidate identity and does
+not bypass `ta2-offline --candidate` for the actual tape producer.
+
+`scripts/ta2-bootstrap-target-preflight --live` checks only two new
+target names with read-only MVS LISTDS and IEHLIST, saving compact,
+SHA256-sealed evidence under ignored `workarea/`. It performs
+no allocation or tape write and never resubmits accepted staging.
+**43/43 focused offline tests PASS**. BT input staging needs further
+owner approval and actual MVS results; no candidate VOLSER was reserved.

@@ -788,3 +788,22 @@ until the recipient supplies site settings and the later installation
 acceptance is demonstrated. **20/20 focused local synthetic tests PASS**.
 No version/VOLSER has been reserved or production tape authorized.
 **TA.2 IN PROGRESS**.
+
+## TA.2 release-input pre-staging correction and MVS read-only gate — 19 November 2026 EST
+
+A real preparatory/final-gate dependency cycle was identified: the strict
+frozen-candidate gate requires actual MVS receipts for BT0001/BT0002,
+but the old material generator would not emit them until that gate passed.
+This is resolved by adding an **offline-only** `--prepare` path for a
+proposed identity-complete candidate manifest, with the existing strict
+`ta2-offline --candidate` retained for final production.
+A proposed six-step IEBGENER/IEFBR14 JCL deck prepares two **new**
+BT0001/BT0002 staging inputs on approved-volume TSO002, subject to a
+**separate explicit MVS allocation/submission approval**. The read-only
+`ta2-bootstrap-target-preflight --live` queries catalog/VTOC for
+the two absent targets, retaining original JES evidence privately.
+See [pre-staging design/evidence](../../distribution/create-tape/ta2-bootstrap-prestaging-mvs-preflight-20261119.md).
+**43/43 assistant-workspace synthetic tests PASS; no new MVS execution,
+candidate reservation, AWS media or recipient installation accepted.**
+Earlier 18 PDS / 127 member staging remains accepted and untouched.
+**TA.2 remains IN PROGRESS.**
