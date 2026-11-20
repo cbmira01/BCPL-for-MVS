@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """TA.2 source-family preflight and optional *offline* FB80 deck conversion.
 
-This is a design worksheet consumer, not an alternative release manifest or
-an MVS PDS/tape writer. Historical and demoted material are never conflated.
+This is a GitHub development worksheet, not a release manifest or MVS writer.
+Only historical-family records may be exported as potential MVS FB80 decks.
+Demoted/instrumented sections and their support stay in GitHub.
 """
 from __future__ import annotations
 
@@ -121,11 +122,14 @@ def evaluate(root: Path, selection: dict, *, include_generated: bool = False):
                        "source_sha256": hashlib.sha256(raw).hexdigest(),
                        "fb80_sha256": hashlib.sha256(deck).hexdigest(),
                        "records": count})
-        decks[(role, member)] = deck
+        if role == "historical":
+            decks[(role, member)] = deck
     return report, decks
 
 
 def write_decks(root: Path, destination: Path, report: list, decks: dict) -> None:
+    require(all(role == "historical" for role, _ in decks),
+            "demoted and support files are GitHub-only; no distribution decks")
     workarea = (root / "workarea").resolve()
     dest = destination.resolve()
     require(dest.is_relative_to(workarea) and dest != workarea,
@@ -144,13 +148,13 @@ def write_decks(root: Path, destination: Path, report: list, decks: dict) -> Non
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--include-generated", action="store_true",
-                   help="require generated sources from accepted demotion path")
+                   help="inspect generated sources in GitHub workspace; never export them")
     p.add_argument("--write-decks", type=Path,
                    help="new, nonexisting directory beneath workarea (offline only)")
     args = p.parse_args(argv)
     try:
-        require(args.write_decks is None or args.include_generated,
-                "--write-decks requires --include-generated")
+        require(args.write_decks is None or not args.include_generated,
+                "demoted sources are GitHub-only; cannot export with --include-generated")
         selection = json.loads(SELECTION.read_text(encoding="utf-8"))
         report, decks = evaluate(ROOT, selection,
                                  include_generated=args.include_generated)
@@ -161,7 +165,7 @@ def main(argv=None) -> int:
         print(f"TA.2 CAMBRIDGE SOURCE: {counts['historical']} historical, "
               f"{counts['derived']} derived, {counts['support']} support members; "
               f"derived {'checked' if args.include_generated else 'pending'}")
-        print("DESIGN-ONLY: no successor identity, MVS staging, rights approval or tape")
+        print("GITHUB-ONLY DEMOTION: only historical FB80 decks are exportable; no MVS operation")
         return 0
     except (InvalidSource, OSError, ValueError) as exc:
         print(f"TA.2 CAMBRIDGE SOURCE HALTED: {exc}", file=sys.stderr)

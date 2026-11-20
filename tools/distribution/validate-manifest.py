@@ -33,8 +33,8 @@ CAMBRIDGE_KEYS = {"CAMB_SOURCE", "CAMB_ASM", "CAMB_JCL", "CAMB_LIBRARY",
                   "CAMB_BCPLDEMO", "CAMB_LANGDEMO", "CAMB_TESTS",
                   "CAMB_OBJ", "CAMB_LOAD"}
 # TA.2 successor: source-only Cambridge is distinct from a native compiler.
-SOURCE_ONLY_KEYS = {"CAMB_SOURCE", "CAMB_DEMOTED"}
-SOURCE_ONLY_COUNTS = {"CAMB_SOURCE": 15, "CAMB_DEMOTED": 15}
+SOURCE_ONLY_KEYS = {"CAMB_SOURCE"}
+SOURCE_ONLY_COUNTS = {"CAMB_SOURCE": 15}
 BINARY_KEYS = {"BOOT_OBJ", "EXT_OBJ", "MR10_OBJ", "MR10_LOAD"}
 REQUIRED_COUNTS = {
     "DIST_DOCS": 7,
@@ -218,7 +218,7 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
                         f"{where}: incorrect Cambridge source member count for {key}")
                 require(row.get("owner") == "cambridge-compiler-source" and
                         row.get("source_family") ==
-                        ("historical" if key == "CAMB_SOURCE" else "demoted-and-support") and
+                        "historical" and
                         row.get("rights_status") ==
                         "preservation-policy-approved-rights-unresolved",
                         f"{where}: Cambridge source classification/rights disclosure")
@@ -234,10 +234,9 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
             extra_generated = row.get("generated_members", {}) or {}
             if source_only == "included" and key in SOURCE_ONLY_KEYS:
                 require(managed[key].get("populate") is True and
-                        set(members) == set(present) | set(generated) and
-                        set(present) & set(generated) == set() and
-                        (key != "CAMB_DEMOTED" or "SNOTICE" in present),
-                        f"{where}: Cambridge source/derivative inventory mismatch")
+                        set(members) == set(present) and not generated and
+                        not extra_generated,
+                        f"{where}: historical Cambridge source must be Git-backed only")
             require(isinstance(extra_generated, dict) and set(extra_generated) <= set(members),
                     f"{where}: generated_members must only name selected members")
             for member in members:
@@ -289,7 +288,7 @@ def check(manifest: dict[str, Any], dspal: dict[str, Any], root: Path, *, releas
         require(not any(x["group"] == "cambridge" for x in entries),
                 "no-native compiler must have no executable-compiler payload")
     require(len([x for x in entries if x["group"] == "cambridge-source"]) ==
-            (2 if source_only == "included" else 0),
+            (1 if source_only == "included" else 0),
             "Cambridge source-only PDS layout mismatch")
     require(sum(len(x.get("members", [])) for x in entries if x["group"] == "mr10") == 79,
             "MR10 member inventory must contain 79 selected members")

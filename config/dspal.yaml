@@ -298,7 +298,7 @@ datasets:
     blksize: 6144
     populate: false
 
-  # TA.2 rc2 Cambridge SOURCE DISTRIBUTION (not native compiler)
+  # TA.2 rc2: archival Cambridge source PDS ONLY; demotion stays in GitHub.
   CAMB_SOURCE:
     dsn: BCPL.CAMBRIDG.SOURCE
     description: Historical Cambridge compiler source and CG370 reference
@@ -327,36 +327,6 @@ datasets:
       MAKEOBJ: richards-bcpltape/bcplib/jcl/makeobj
       MAKELIB: richards-bcpltape/bcplib/jcl/makelib
       PROGRAM: richards-bcpltape/bcplib/asm/program
-
-  CAMB_DEMOTED:
-    dsn: BCPL.CAMBRIDG.DEMOTED
-    description: Demoted Cambridge source and bootstrap support (not native executable)
-    primary: 40
-    secondary: 10
-    directory: 20
-    type: pds
-    dsorg: PO
-    recfm: FB
-    lrecl: 80
-    blksize: 800
-    populate: true
-    members:
-      BOOTHOST: bootstrap-toolchain/bootstrap-cambridge/bootstrap-host.bcpl
-      CAMBPARM: bootstrap-toolchain/bootstrap-cambridge/cambridge-options.txt
-      CAMBBLD: bootstrap-toolchain/jcl/cambbld.jcl
-      SNOTICE: packaging/distribution/compiler-source/SNOTICE.txt
-    generated_members:
-      BCPL: workarea/bootstrap-cambridge/demoted/bcpl
-      BLIB: workarea/bootstrap-cambridge/demoted/blib
-      SYN: workarea/bootstrap-cambridge/demoted/syn
-      LEX: workarea/bootstrap-cambridge/demoted/lex
-      TRNA: workarea/bootstrap-cambridge/demoted/trna
-      TRNB: workarea/bootstrap-cambridge/demoted/trnb
-      CGA: workarea/bootstrap-cambridge/demoted/cga
-      CGB: workarea/bootstrap-cambridge/demoted/cgb
-      CGC: workarea/bootstrap-cambridge/demoted/cgc
-      CGD: workarea/bootstrap-cambridge/demoted/cgd
-      CGE: workarea/bootstrap-cambridge/demoted/cge
 
   CAMB_ASM:
     dsn: BCPL.CAMBRIDG.ASM

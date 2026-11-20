@@ -87,31 +87,29 @@ separate acceptance obligations. PyYAML is required only on the development host
 
 `python3 -B tools/distribution/validate-manifest.py --audit-json` creates an on-demand 127-member JSON worksheet from the canonical TA.0 design inventory and `dspal` mappings. It marks **all redistribution reviews `UNREVIEWED`** and build receipts absent, preserving candidate source hints as investigation leads rather than proof. See the [TA.0 provenance and JCL dependency audit](ta0-provenance-and-dependency-audit.md). The read-only validator additionally rejects unsafe Git paths, unselected generated members and a claim that the native Cambridge Compiler is included without all nine reserved compiler datasets. Its 24 offline tests use synthetic mappings, not resident MVS inventories.
 
-## TA.2 source-only Cambridge extension (approved 20 November 2026)
+## TA.2 historical Cambridge source extension (revised 20 November 2026)
 
-This is an explicit, backward-compatible **schema-v1 addition** to the
-earlier TA.0 blanket `CAMB_*` exclusion for `native_compiler: absent`.
-The optional `release.cambridge_source: absent | included` defaults to
-`absent`, preserving `BCPL-0.1.0-rc1` behavior. When it is `included`,
-exactly `CAMB_SOURCE` and `CAMB_DEMOTED` are permitted as two
-`cambridge-source` group source PDSes, with no native compiler
-executable or `CAMB_OBJ`/`CAMB_LOAD` inclusion. The combination of
-`native_compiler: included` and `cambridge_source: included` requires
-a separate future schema/selection review and is currently refused.
+This backward-compatible **schema-v1** `release.cambridge_source`
+flag defaults to `absent`, retaining the `rc1` behavior. For the
+owner-approved `rc2` successor it is `included`, but permits only
+the **historical** `CAMB_SOURCE` PDS as `cambridge-source`.
+`CAMB_DEMOTED` is not a development PDS mapped for this release.
+The demoted source generator, transformation filters, instrumentation
+and regression context remain GitHub-only. The new logical tape
+dataset is `BT0021`; `BT0022` is not selected.
 
-The MR10-only profile remains `[common, mr10]`; the native-components
-and combined profiles include the two source PDSes. `BT0001` and
-`BT0002` retain their reserved bootstrap/installation roles. Historical
-source, generated demoted sections, three bootstrap support members and
-`SNOTICE` are physically separate from the historical Base Library
-and the executable native compiler. Both new source PDS DCBs are
-PO/FB/80/800. This extension is selection/validation code, **not**
-permission to stage new MVS data sets, release historical material, or
-produce an AWS image.
+Both `native_compiler: included` and
+`cambridge_source: included` together are refused pending a separate
+native-executable schema review. Source-only is not a runnable compiler.
+The 15 historical source members use PO/FB/80/800 and require exact
+Git-source provenance and MVS staging/record evidence.
+`mr10-only` remains `[common, mr10]`; `native-only` and `combined`
+each acquire `cambridge-source`. The original 20 dataset selections,
+the reserved BT0001/BT0002 roles and rc1 acceptance remain unchanged.
 
-See `../compiler-source/README.md` and the approved canonical
-`releases/BCPL-0.1.0-rc2.yaml`. The existing strict
-`tools/distribution/validate-manifest.py --release` and
-`create-tape/scripts/ta2-offline --candidate` gates stay fail-closed
-until actual new-stage MVS evidence, member provenance, correct
-rc2-specific installer/docs and required build receipts exist.
+This is source **selection and validation only**, not permission
+to perform MVS writes, distribute unlicensed historical materials
+or produce an AWS image. The canonical strict `--release` and
+TA.2 offline producer gate must remain closed until actual candidate
+MVS evidence, source/build provenance, rights review, release-specific
+installation material and notice requirements are satisfied.

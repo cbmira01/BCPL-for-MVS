@@ -883,3 +883,32 @@ No stateful new MVS staging, initialized `BC0002` AWS tape,
 native compiler executable, recipient installation, or public release
 has been authorized or accomplished. **TA.2 IN PROGRESS**;
 **TA.0 and TA.1 remain CLOSED (qualified)**.
+
+## TA.2 owner correction: historical Cambridge source only — 20 November 2026
+
+**This decision supersedes the preceding two-PDS rc2 source proposal.**
+The owner retained `BCPL-0.1.0-rc2` and the reserved `BC0002`
+VOLSER but expressly excluded the demoted Cambridge Compiler and
+its filtered, instrumented, GitHub-specific development context
+from the MVS distribution tape. The only extra release selection is
+**`BT0021`: `CAMB_SOURCE` with 15 historical Cambridge source
+members (PO/FB/80/800)**. There is no `BT0022` or
+`CAMB_DEMOTED` release PDS. The existing 20 accepted inputs are
+unchanged, making 21 logical datasets and 142 selected PDS members.
+
+The historical sources remain distinct from an executable native
+Cambridge Compiler: `cambridge_source: included` does not change
+`native_compiler: absent`. The MR10 Kit Compiler retains independent
+operation. Repository-specific demotion recipes, generated sections,
+regression instrumentation and support are kept in GitHub for
+reproduction in repository context rather than misleading MVS restore.
+
+The owner reported a read-only `dspal stat CAMB_SOURCE` RC=0 and
+`dspal stat CAMB_DEMOTED` RC=2, evidence path
+`workarea/ta2-rc2-mvs-20261120T194333Z-855`. The report text
+was not independently inspected here; neither return code
+proves historical member contents or staging acceptance. Only
+`CAMB_SOURCE` merits further rc2 MVS read-only directory and
+record investigation. No new JES/DASD writing or BC0002 AWS
+operation was performed or authorized by this design correction.
+**TA.2 remains IN PROGRESS; TA.0 and TA.1 CLOSED (qualified).**

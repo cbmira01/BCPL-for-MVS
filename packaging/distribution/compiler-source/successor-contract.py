@@ -34,12 +34,12 @@ def read_yaml(path: Path) -> dict:
     need(isinstance(doc, dict), f'{path.name}: malformed YAML document')
     return doc
 
-def expected_members(selection: dict) -> tuple[dict, dict, dict]:
+def expected_members(selection: dict) -> dict:
+    """Historical selection only; demoted material is GitHub development context."""
     groups = {g['role']: g['members'] for g in selection['source_sets']}
-    need(set(groups) == {'historical','derived','support'}, 'source family mismatch')
-    need(len(groups['historical']) == 15 and len(groups['derived']) == 11
-         and len(groups['support']) == 3, 'source family count mismatch')
-    return groups['historical'], groups['derived'], groups['support']
+    need('historical' in groups and len(groups['historical']) == 15,
+         'fifteen historical Cambridge members required')
+    return groups['historical']
 
 def verify(rc1: dict, rc2: dict, dspal: dict, registry: dict,
            selection: dict, rc2_bytes: bytes) -> dict:
@@ -64,7 +64,7 @@ def verify(rc1: dict, rc2: dict, dspal: dict, registry: dict,
     need(rel['source_commit'] != prior['source_commit'],
          'new source-inclusive candidate must use new Git freeze')
     entries = rc2['datasets']; base = rc1['datasets']
-    need(len(base) == 20 and len(entries) == 22, 'two additional datasets required')
+    need(len(base) == 20 and len(entries) == 21, 'one historical-source PDS required')
     need(entries[:20] == base, 'accepted rc1 dataset selection changed')
     need(entries[0]['generator'] == 'bootstrap_fb80' and
          entries[1]['generator'] == 'installer_pds',
@@ -76,36 +76,32 @@ def verify(rc1: dict, rc2: dict, dspal: dict, registry: dict,
         'native-only': ['common','native',GROUP],
         'combined': ['common','mr10','native',GROUP],
     }, 'source profile closure mismatch')
-    names = ('CAMB_SOURCE','CAMB_DEMOTED')
-    hist, derived, support = expected_members(selection)
-    expected = (hist, {**support, 'SNOTICE':
-                      'packaging/distribution/compiler-source/SNOTICE.txt'})
-    generated = derived
-    for i, key in enumerate(names, 20):
-        row = entries[i]
-        managed = dspal['datasets'][key]
-        need(row['sequence'] == i+1 and row['dspal_key'] == key and
-             row['group'] == GROUP and row['kind'] == 'pds_unload' and
-             row['owner'] == 'cambridge-compiler-source' and
-             row['transfer'] == 'iebcopy_unload',
-             f'BT{i+1:04d}: Cambridge source metadata mismatch')
-        need(row['target_dsn_template'] == '{HLQ}.' + managed['dsn'],
-             f'BT{i+1:04d}: recipient DSN differs from dspal')
-        need(managed['populate'] is True and managed['type'] == 'pds',
-             f'{key}: release source is not populated PDS')
-        dcb = {'dsorg': 'PO','recfm': 'FB','lrecl': 80,'blksize': 800}
-        need(row['target_dcb'] == dcb and all(managed[k] == v for k,v in dcb.items()),
-             f'{key}: FB80 target DCB mismatch')
-        need(managed['members'] == expected[i-20] and
-             set(row['members']) == set(expected[i-20]) | (set(generated) if i==21 else set()),
-             f'{key}: selected source lineage mismatch')
-        need(managed.get('generated_members',{}) == (generated if i==21 else {}),
-             f'{key}: generator member mapping mismatch')
-        need(row.get('source_family') == ('historical' if i == 20 else 'demoted-and-support'),
-             f'{key}: source family disclosure missing')
-        need(row.get('rights_status') == 'preservation-policy-approved-rights-unresolved',
-             f'{key}: historical/derivative rights claims changed')
-    need(len(set(r.get('dspal_key') for r in entries[2:])) == 20,
+    need('CAMB_DEMOTED' not in dspal['datasets'],
+         'demoted compiler must remain outside the managed MVS PDS map')
+    row = entries[20]
+    key = 'CAMB_SOURCE'
+    managed = dspal['datasets'][key]
+    hist = expected_members(selection)
+    need(row['sequence'] == 21 and row['dspal_key'] == key and
+         row['group'] == GROUP and row['kind'] == 'pds_unload' and
+         row['owner'] == 'cambridge-compiler-source' and
+         row['transfer'] == 'iebcopy_unload',
+         'BT0021: historical Cambridge source metadata mismatch')
+    need(row['target_dsn_template'] == '{HLQ}.' + managed['dsn'],
+         'BT0021: recipient DSN differs from dspal')
+    need(managed['populate'] is True and managed['type'] == 'pds',
+         'historical Cambridge PDS must be populated')
+    dcb = {'dsorg': 'PO','recfm': 'FB','lrecl': 80,'blksize': 800}
+    need(row['target_dcb'] == dcb and all(managed[k] == v for k,v in dcb.items()),
+         'BT0021: FB80 target DCB mismatch')
+    need(managed['members'] == hist and set(row['members']) == set(hist) and
+         len(row['members']) == 15 and not managed.get('generated_members') and
+         not row.get('generated_members'),
+         'BT0021: historical members must be original Git sources only')
+    need(row.get('source_family') == 'historical' and
+         row.get('rights_status') == 'preservation-policy-approved-rights-unresolved',
+         'BT0021: source family or unresolved rights disclosure missing')
+    need(len(set(r.get('dspal_key') for r in entries[2:])) == 19,
          'duplicate selected PDS alias')
     candidates = registry['candidates']
     need(len(candidates)==2 and
@@ -125,9 +121,9 @@ def verify(rc1: dict, rc2: dict, dspal: dict, registry: dict,
     need(len({x['volser'] for x in candidates}) == len(candidates),
          'duplicate reserved VOLSER')
     return {'candidate_id':rel['candidate_id'], 'volser':vol['volser'],
-            'tape_datasets':len(entries), 'added_pds':2, 'new_source_members':30,
-            'historical_sources':15,'derived_sources':11,'support_sources':3,
-            'notice_members':1,'native_compiler':'absent',
+            'tape_datasets':len(entries), 'added_pds':1, 'new_source_members':15,
+            'historical_sources':15,'derived_sources_on_tape':0,
+            'support_sources_on_tape':0,'native_compiler':'absent',
             'mvs_stage_verified':False,'rights_verified':False}
 
 def main(argv=None):
@@ -144,7 +140,7 @@ def main(argv=None):
     if args.json:
         print(json.dumps(result,sort_keys=True,indent=2))
     else:
-        print('TA.2 RC2 SOURCE LAYOUT: 22 logical datasets; 2 new PDSes; 30 source/notice members PASS')
+        print('TA.2 RC2 SOURCE LAYOUT: 21 datasets; 1 historical PDS; 15 source members PASS')
         print('RELEASE GATES OPEN: MVS staging, provenance receipts, native compiler absent; no tape created')
     return 0
 if __name__ == '__main__':

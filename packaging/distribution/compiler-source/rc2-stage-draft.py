@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only rc2 extension: draft only the two new PDS selective IEBCOPY steps.
+"""Read-only rc2 extension: draft only historical BT0021 selective IEBCOPY.
 
 Does not stage MVS datasets, modify accepted BT0001-BT0020, or write a tape.
 Production submission requires a separate owner-approved, no-retry runner and
@@ -29,7 +29,7 @@ def checked_dsn(name):
 
 def render(manifest:dict,dspal:dict,*,volume:str, primary:int=40,
            secondary:int=10,directory:int=20)->str:
-    """Render the known accepted IEBCOPY pattern for *new* BT0021/22 only."""
+    """Render the accepted IEBCOPY pattern for historical BT0021 only."""
     need(manifest['release']['candidate_id']=='BCPL-0.1.0-rc2' and
          manifest['release']['cambridge_source']=='included' and
          manifest['release']['native_compiler']=='absent' and
@@ -38,16 +38,17 @@ def render(manifest:dict,dspal:dict,*,volume:str, primary:int=40,
     need(volume=='TSO002','volume is a proposal requiring fresh MVS approval')
     need(all(type(x) is int and 1<=x<=999 for x in (primary,secondary,directory)),
          'staging SPACE must be explicit positive track/directory values')
-    need(len(manifest['datasets'])==22,'22 logical datasets required')
+    need(len(manifest['datasets'])==21,'21 logical datasets required')
     rows=manifest['datasets'][20:]
-    need([r['sequence'] for r in rows]==[21,22] and
-         [r['dspal_key'] for r in rows]==['CAMB_SOURCE','CAMB_DEMOTED'],
-         'not the approved two-PDS source extension')
+    need([r['sequence'] for r in rows]==[21] and
+         [r['dspal_key'] for r in rows]==['CAMB_SOURCE'] and
+         'CAMB_DEMOTED' not in dspal['datasets'],
+         'only historical Cambridge PDS is permitted')
     hlq=dspal['mvs']['hlq']
     need(hlq=='HERC02','source staging restricted to accepted HERC02 namespace')
     cards=['//* TA.2 RC2 DRAFT ONLY: NOT AUTHORIZED FOR MVS SUBMISSION.',
            '//* BT0001-BT0020 ARE ALREADY ACCEPTED; DO NOT RESTAGE.',
-           '//* TWO NEW PDS INPUTS; FAIL CLOSED IF EITHER EXISTS.']
+           '//* ONE NEW HISTORICAL PDS; FAIL CLOSED IF IT EXISTS.']
     total=0
     for i,r in enumerate(rows):
         n=21+i; key=r['dspal_key']; source=dspal['datasets'][key]
@@ -59,6 +60,7 @@ def render(manifest:dict,dspal:dict,*,volume:str, primary:int=40,
         need(len(r['members'])==15 and len(set(r['members']))==15 and
              all(QUAL.fullmatch(m) for m in r['members']),
              'source members not exact, unique MVS names')
+        need(not source.get('generated_members'), 'generated sources must remain in GitHub')
         names=set(source.get('members',{}))|set(source.get('generated_members',{}))
         need(set(r['members'])==names,'selected source members disagree with dspal')
         source_dsn=checked_dsn(hlq+'.'+source['dsn'])
@@ -81,7 +83,7 @@ def render(manifest:dict,dspal:dict,*,volume:str, primary:int=40,
         cards.extend(f' SELECT MEMBER=({m})' for m in r['members'])
         cards.append('/*');total+=len(r['members'])
     cards.append('//')
-    need(total==30 and sum(' EXEC PGM=IEBCOPY' in x for x in cards)==2,
+    need(total==15 and sum(' EXEC PGM=IEBCOPY' in x for x in cards)==1,
          'source staging step/member count mismatch')
     need(all(x.isascii() and '\t' not in x and len(x)<=80 for x in cards) and
          all(len(x)<=71 for x in cards if x.startswith('//') and not x.startswith('//*')),
@@ -110,7 +112,7 @@ def main(argv=None):
                  output.parent.is_dir() and not output.parent.is_symlink(),
                  'draft output must be a NEW file below workarea')
             with output.open('x',encoding='ascii') as fp:fp.write(jcl)
-        print('TA.2 RC2 STAGE DRAFT: 2 IEBCOPY steps; 30 selected members; FB80 PASS')
+        print('TA.2 RC2 STAGE DRAFT: 1 IEBCOPY step; 15 historical members; FB80 PASS')
         print('DRAFT ONLY: no MVS staging/tape, no new allocation or write approved')
         return 0
     except (Refusal,Exception) as e:

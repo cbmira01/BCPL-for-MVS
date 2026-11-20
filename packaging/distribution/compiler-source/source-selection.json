@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "design-only: not a release manifest or MVS staging authority",
+  "status": "GitHub-only development worksheet: historical family may feed rc2; derived and support never appear on distribution tape",
   "capabilities": {
     "cambridge_compiler_source": "proposed",
     "native_cambridge_executable": "absent"

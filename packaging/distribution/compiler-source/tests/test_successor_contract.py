@@ -35,8 +35,7 @@ class TestSuccessor(unittest.TestCase):
         self.dspal={'datasets':{}}
         groups={g['role']:g['members'] for g in SELECTION['source_sets']}
         for seq,key,mapping,generated,family in [
-            (21,'CAMB_SOURCE',groups['historical'],{},'historical'),
-            (22,'CAMB_DEMOTED',dict(**groups['support'],SNOTICE='packaging/distribution/compiler-source/SNOTICE.txt'),groups['derived'],'demoted-and-support')]:
+            (21,'CAMB_SOURCE',groups['historical'],{},'historical')]:
             dsn='BCPL.CAMBRIDG.'+('SOURCE' if seq==21 else 'DEMOTED')
             self.dspal['datasets'][key]=dict(dsn=dsn,populate=True,type='pds',**DCB,
                                             members=copy.deepcopy(mapping),generated_members=copy.deepcopy(generated))
@@ -59,7 +58,7 @@ class TestSuccessor(unittest.TestCase):
     def test_valid(self):
         v=self.check()
         self.assertEqual((v['tape_datasets'],v['new_source_members'],v['native_compiler']),
-                         (22,30,'absent'))
+                         (21,15,'absent'))
         self.assertFalse(v['mvs_stage_verified'])
     def test_version_drift(self):
         self.rc2['release']['version']='0.1.0-rc1'
@@ -91,15 +90,20 @@ class TestSuccessor(unittest.TestCase):
     def test_mutated_historical_member(self):
         self.dspal['datasets']['CAMB_SOURCE']['members']['BCPL']='unapproved'
         self.assertRaises(mod.ContractError,self.check)
-    def test_missing_demoted_member(self):
-        self.rc2['datasets'][-1]['members'].remove('CGE')
+    def test_demoted_pds_forbidden_even_if_unselected(self):
+        self.dspal['datasets']['CAMB_DEMOTED'] = {'populate': False}
         self.assertRaises(mod.ContractError,self.check)
-    def test_missing_notice(self):
-        self.dspal['datasets']['CAMB_DEMOTED']['members'].pop('SNOTICE')
+    def test_demoted_tape_append_forbidden(self):
+        extra = copy.deepcopy(self.rc2['datasets'][-1])
+        extra.update(sequence=22, dspal_key='CAMB_DEMOTED')
+        self.rc2['datasets'].append(extra)
         self.assertRaises(mod.ContractError,self.check)
-    def test_no_generated_without_mapping(self):
-        self.dspal['datasets']['CAMB_DEMOTED'].pop('generated_members')
+    def test_historical_source_must_not_be_generated(self):
+        self.dspal['datasets']['CAMB_SOURCE']['generated_members']={'CG': 'workarea/cg'}
         self.assertRaises(mod.ContractError,self.check)
+    def test_development_family_is_not_a_tape_selection(self):
+        self.selection['source_sets'][1]['members']['MORE'] = 'workarea/only'
+        self.assertEqual(self.check()['new_source_members'], 15)
     def test_unverified_rights_guard(self):
         self.rc2['datasets'][-1]['rights_status']='approved'
         self.assertRaises(mod.ContractError,self.check)

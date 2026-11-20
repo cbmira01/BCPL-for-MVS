@@ -53,7 +53,7 @@ class SourcePackTests(unittest.TestCase):
         (self.root / 'workarea/bootstrap-cambridge/demoted/derive').unlink()
         result, decks = pack.evaluate(self.root, self.selection)
         self.assertEqual(len(result), 3)
-        self.assertEqual(len(decks), 2)
+        self.assertEqual(len(decks), 1)
         self.assertEqual(result[1]['status'], 'requires-derivation')
 
     def test_generated_requires_source(self):
@@ -64,7 +64,7 @@ class SourcePackTests(unittest.TestCase):
     def test_full_derived_report(self):
         report, decks = pack.evaluate(self.root, self.selection, include_generated=True)
         self.assertEqual(len(report), 3)
-        self.assertEqual(len(decks), 3)
+        self.assertEqual(len(decks), 1)
         self.assertTrue(all(len(x['fb80_sha256']) == 64 for x in report))
         self.assertEqual(report[0]['records'], 2)
 
@@ -117,10 +117,22 @@ class SourcePackTests(unittest.TestCase):
         report, decks = pack.evaluate(self.root, self.selection, include_generated=True)
         output = self.root / 'workarea' / 'decks'
         pack.write_decks(self.root, output, report, decks)
-        self.assertEqual(len(list(output.glob('*.fb80'))), 3)
+        self.assertEqual([x.name for x in output.glob('*.fb80')], ['historical-HIST.fb80'])
         self.assertTrue((output / 'source-receipt.json').is_file())
         with self.assertRaisesRegex(pack.InvalidSource, 'already exists'):
             pack.write_decks(self.root, output, report, decks)
+
+    def test_demoted_and_support_decks_refused(self):
+        report, decks = pack.evaluate(self.root, self.selection,
+                                      include_generated=True)
+        self.assertEqual(set(decks), {('historical', 'HIST')})
+        for forbidden in [('derived', 'DERIVE'), ('support', 'HELP')]:
+            with self.subTest(role=forbidden[0]):
+                forged = dict(decks)
+                forged[forbidden] = b' ' * 80
+                with self.assertRaisesRegex(pack.InvalidSource, 'GitHub-only'):
+                    pack.write_decks(self.root, self.root / 'workarea' / 'decks',
+                                     report, forged)
 
     def test_outside_workarea_rejected(self):
         report, decks = pack.evaluate(self.root, self.selection, include_generated=True)

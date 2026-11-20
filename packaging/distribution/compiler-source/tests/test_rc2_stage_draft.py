@@ -16,13 +16,13 @@ class TestDraft(unittest.TestCase):
         self.dspal=data.dspal
         self.dspal['mvs']={'hlq':'HERC02'}
     def render(self):return mod.render(self.manifest,self.dspal,volume='TSO002')
-    def test_exact_two_step_jcl(self):
+    def test_exact_historical_step_jcl(self):
         text=self.render()
-        self.assertEqual(text.count(' EXEC PGM=IEBCOPY'),2)
-        self.assertEqual(text.count(' SELECT MEMBER='),30)
-        self.assertEqual(text.count('DISP=(NEW,CATLG,DELETE)'),2)
+        self.assertEqual(text.count(' EXEC PGM=IEBCOPY'),1)
+        self.assertEqual(text.count(' SELECT MEMBER='),15)
+        self.assertEqual(text.count('DISP=(NEW,CATLG,DELETE)'),1)
         self.assertIn('HERC02.BCPL.TA2STG.BT0021',text)
-        self.assertIn('HERC02.BCPL.TA2STG.BT0022',text)
+        self.assertNotIn('HERC02.BCPL.TA2STG.BT0022',text)
         self.assertNotIn('TA2STG.BT0020',text)
         self.assertNotIn('LABEL=(',text)
     def test_jcl_columns(self):
@@ -31,14 +31,14 @@ class TestDraft(unittest.TestCase):
         self.assertTrue(all(len(v)<=71 for v in lines if v.startswith('//') and not v.startswith('//*')))
     def test_exact_member_selection(self):
         text=self.render()
-        self.assertEqual(text.count(' SELECT MEMBER=(SNOTICE)'),1)
-        self.assertEqual(text.count(' SELECT MEMBER=(CGA)'),1)
+        self.assertEqual(text.count(' SELECT MEMBER=(SNOTICE)'),0)
+        self.assertEqual(text.count(' SELECT MEMBER=(CGA)'),0)
         self.assertEqual(text.count(' SELECT MEMBER=(CG)'),1)
-        self.assertEqual(text.count(' SELECT MEMBER=(BCPL)'),2)
+        self.assertEqual(text.count(' SELECT MEMBER=(BCPL)'),1)
     def test_reject_foreign_volume(self):
         self.assertRaises(mod.Refusal,mod.render,self.manifest,self.dspal,volume='TSO003')
     def test_reject_unknown_source(self):
-        self.dspal['datasets']['CAMB_DEMOTED']['generated_members'].pop('CGE')
+        self.dspal['datasets']['CAMB_SOURCE']['members'].pop('CG')
         self.assertRaises(mod.Refusal,self.render)
     def test_reject_wrong_source_identity(self):
         self.manifest['release']['native_compiler']='included'
@@ -50,10 +50,16 @@ class TestDraft(unittest.TestCase):
         self.manifest['datasets'][20]['members'][0]='OTHER'
         self.assertRaises(mod.Refusal,self.render)
     def test_reject_stage_step_gap(self):
-        self.manifest['datasets'][21]['sequence']=23
+        self.manifest['datasets'][20]['sequence']=22
         self.assertRaises(mod.Refusal,self.render)
     def test_reject_missing_job(self):
         self.manifest['datasets'].pop()
+        self.assertRaises(mod.Refusal,self.render)
+    def test_reject_demoted_pds_mapping(self):
+        self.dspal['datasets']['CAMB_DEMOTED'] = {'populate':False}
+        self.assertRaises(mod.Refusal,self.render)
+    def test_reject_generated_historical_source(self):
+        self.dspal['datasets']['CAMB_SOURCE']['generated_members']={'CG':'workarea/cg'}
         self.assertRaises(mod.Refusal,self.render)
     def test_reject_bad_space(self):
         self.assertRaises(mod.Refusal,mod.render,self.manifest,self.dspal,volume='TSO002',directory=0)
