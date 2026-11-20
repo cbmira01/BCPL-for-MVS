@@ -136,6 +136,36 @@ class VerifyTests(unittest.TestCase):
         got=mod.verify_stage_receipt(stage,self.stage_dir,'a'*64,'b'*64,'c'*64)
         self.assertEqual(got['mvs_job'],9310)
 
+    def test_real_sealed_success_receipt_passes_stage_verifier(self):
+        # Regression: the prior reader treated every sealed result as FAILURE.
+        stage = mod.stage_module()
+        steps = range(3,21)
+        summary = ('JOB 9310 TA2STAGE\nJOB RESULT: SUCCESS\nHIGHEST RC: 0000\n' +
+                   ''.join(f'S{i:04d} IEBCOPY RC=0000\n' for i in steps))
+        report = ''.join(f'IEF142I TA2STAGE S{i:04d} - STEP WAS EXECUTED - COND CODE 0000\n'
+                         for i in steps)
+        result = stage.validate_job(9310,summary,report)
+        marker = {'state':'SUBMISSION_INTENT_RETRYABLE', 'attempt_number':1,
+                  'proposal_sha256':'a'*64, 'readiness_sha256':'b'*64,
+                  'approval_sha256':'c'*64, 'attempt_evidence':str(self.stage_dir.relative_to(self.root)),
+                  'jobname':'TA2STAGE', 'expected_pds':18,
+                  'retry_policy':'PREVIOUS_JES_ENDED_AND_ALL_18_ABSENT_ONLY'}
+        for name, value in [('stage-summary.txt',summary),('stage-report.txt',report),
+                            ('stage-result.json',json.dumps(result)),
+                            ('submission-intent.json',json.dumps(marker))]:
+            (self.stage_dir/name).write_text(value)
+        journal = self.ops/'TA2STG-TSO002-attempt.json'
+        journal.write_text(json.dumps(marker))
+        with patch.object(stage,'ROOT',self.root), patch.object(stage,'OPERATIONS',self.ops), \
+             patch.object(stage,'ATTEMPT',journal):
+            stage.seal(self.stage_dir)
+            got = mod.verify_stage_receipt(stage,self.stage_dir,'a'*64,'b'*64,'c'*64)
+            self.assertEqual(got['mvs_job'],9310)
+            self.assertEqual(got['step_count'],18)
+            # Reading an already successful job may not authorize another stage.
+            with self.assertRaisesRegex(stage.Refusal,'not conclusively failed/ended'):
+                stage.retry_next('a'*64,'b'*64)
+
     def test_stage_identity_mismatch_refused(self):
         stage=self.receipt()
         with self.assertRaisesRegex(mod.Refusal,'journal'):

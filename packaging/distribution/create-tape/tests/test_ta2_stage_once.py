@@ -279,6 +279,58 @@ class StagingTests(unittest.TestCase):
         mod.seal(folder)
         return folder
 
+    def make_success_attempt(self, job=9310):
+        """A complete, sealed RC=0000 receipt, not a mocked validator."""
+        folder = self.ops / '20261120T002516Z-19547'
+        folder.mkdir(parents=True)
+        intent = {'state':'SUBMISSION_INTENT_RETRYABLE', 'attempt_number':1,
+                  'proposal_sha256':'a'*64, 'readiness_sha256':'b'*64,
+                  'approval_sha256':'c'*64, 'attempt_evidence':mod.relative(folder),
+                  'jobname':mod.JOB, 'expected_pds':18,
+                  'retry_policy':'PREVIOUS_JES_ENDED_AND_ALL_18_ABSENT_ONLY'}
+        mod.record_submission_intent(folder,intent,1)
+        summary = (f'JOB {job} TA2STAGE\nJOB RESULT: SUCCESS\nHIGHEST RC: 0000\n' +
+                   ''.join(f'S{i:04d} IEBCOPY RC=0000\n' for i in range(3,21)))
+        report = ''.join(f'IEF142I TA2STAGE S{i:04d} - STEP WAS EXECUTED - COND CODE 0000\n'
+                         for i in range(3,21))
+        result = mod.validate_job(job,summary,report)
+        for filename,value in [('stage-summary.txt',summary),('stage-report.txt',report),
+                               ('stage-result.json',json.dumps(result)+'\n')]:
+            (folder/filename).write_text(value)
+        mod.seal(folder)
+        return folder
+
+    def test_successful_job_9310_can_be_independently_read(self):
+        folder = self.make_success_attempt()
+        receipt = mod._pinned_operation(folder)
+        self.assertEqual(receipt['mvs_job'],9310)
+        self.assertEqual(receipt['step_count'],18)
+        self.assertIn('AUDIT_PENDING',receipt['status'])
+
+    def test_successful_job_9310_must_never_retry(self):
+        self.make_success_attempt()
+        with self.assertRaisesRegex(mod.Refusal,'not conclusively failed/ended'):
+            mod.retry_next('a'*64,'b'*64)
+
+    def test_success_receipt_rejects_altered_report_even_with_resealed_hash(self):
+        folder = self.make_success_attempt()
+        (folder/'SHA256SUMS').unlink()
+        report = folder/'stage-report.txt'
+        report.write_text(report.read_text().replace('COND CODE 0000','COND CODE 0008',1))
+        mod.seal(folder)
+        with self.assertRaisesRegex(mod.Refusal,'required IEF142I'):
+            mod._pinned_operation(folder)
+
+    def test_success_receipt_rejects_unknown_status_even_with_resealed_hash(self):
+        folder = self.make_success_attempt()
+        (folder/'SHA256SUMS').unlink()
+        f = folder/'stage-result.json'
+        x = json.loads(f.read_text()); x['status'] = 'STAGED_WITHOUT_PROOF'
+        f.write_text(json.dumps(x)+'\n')
+        mod.seal(folder)
+        with self.assertRaisesRegex(mod.Refusal,'unknown staging result'):
+            mod._pinned_operation(folder)
+
     def test_first_submission_marker_exclusive_and_journal(self):
         self.ops.mkdir()
         self.assertEqual(mod.retry_next('a'*64,'b'*64),1)

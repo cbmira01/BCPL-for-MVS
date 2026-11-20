@@ -64,3 +64,35 @@ Python syntax checks passed. Actual post-staging MVS verification is **pending**
 
 **No TA.2 tape candidate, AWS image, production VOLSER or release publication
 is authorized by this checkpoint.** TA.2 remains IN PROGRESS.
+
+## TA.2 original-success replay correction — 19 November 2026 EST
+
+The owner executed the new `ta2-stage-verify --live` against the original
+JOB 9310 evidence and received:
+
+```text
+TA.2 STAGE VERIFICATION REFUSED: failed JES job is not conclusively ended without ABEND/JCL error
+```
+
+This occurred during the **saved-success evidence replay**, before any new MVS
+`LISTDS` inquiry. No new IEBCOPY, dataset change, or tape operation occurred.
+The defect was in the host-side shared `ta2-stage-once._pinned_operation`:
+it unconditionally called `completed_failure` even when the authenticated
+receipt had the successful 18-step RC=0000 status.
+
+The corrected reader uses the original result status to dispatch to
+`validate_job` (success: all 18 IEBCOPY steps and IEF142I RC=0000) or
+`completed_failure` (conclusively ended failure), then checks the exact
+reconstructed result against the SHA256-pinned original. Unknown statuses
+and modified reports still refuse. Importantly, `retry_next` **still rejects
+a successful JOB 9310**: a valid result for read-only verification is not
+permission to repeat staging.
+
+The focused tests now include a **real, sealed 18-step success replay
+through the stage verifier**, a no-retry success case, and negative tests
+for re-sealed/tampered reports and unknown statuses. The combined local suite
+passed **80/80 tests**, plus Python syntax checks. The user's original
+`workarea/ta2-stage-operations/20261120T002516Z-19547` remains untouched;
+the next operation is the same **read-only** `ta2-stage-verify --live`.
+Actual post-staging catalog, directory, record and binary verification
+remain pending.

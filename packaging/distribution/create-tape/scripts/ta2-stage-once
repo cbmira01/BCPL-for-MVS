@@ -316,7 +316,7 @@ def cleanup_empty_fetch_head() -> bool:
 
 
 def _pinned_operation(folder: Path) -> dict:
-    """Check each previous attempt's complete, immutable private evidence."""
+    """Check a completed attempt's immutable evidence, success or failure."""
     need(folder.parent == OPERATIONS and folder.is_dir() and
          not folder.is_symlink() and RUN.fullmatch(folder.name) is not None,
          'unsafe prior staging attempt directory')
@@ -335,9 +335,17 @@ def _pinned_operation(folder: Path) -> dict:
     result = json.loads(checked_file(folder/'stage-result.json'))
     need(type(result) is dict and type(result.get('mvs_job')) is int,
          'prior completed JES job receipt invalid')
-    reconstructed = completed_failure(result['mvs_job'],
-         checked_file(folder/'stage-summary.txt').decode('utf-8'),
-         checked_file(folder/'stage-report.txt').decode('utf-8'))
+    summary = checked_file(folder/'stage-summary.txt').decode('utf-8')
+    report = checked_file(folder/'stage-report.txt').decode('utf-8')
+    if result.get('status') == '18_IEBCOPY_STEPS_RC0000_ONLY_DIRECTORY_AND_RECORD_AUDIT_PENDING':
+        # Completed staging is valid evidence for a READ-ONLY inspection.
+        # It never authorizes a retry: retry_next separately requires a
+        # conclusively failed/ended job and 18 absent MVS destinations.
+        reconstructed = validate_job(result['mvs_job'], summary, report)
+    elif result.get('status') == 'MVS_JOB_ENDED_FAILED_RETRY_ONLY_IF_ALL_ABSENT':
+        reconstructed = completed_failure(result['mvs_job'], summary, report)
+    else:
+        raise Refusal('unknown staging result; neither verified success nor ended failure')
     need(result == reconstructed,
          'prior MVS result differs from independently replayed JES evidence')
     return result

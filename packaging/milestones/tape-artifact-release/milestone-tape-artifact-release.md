@@ -628,6 +628,21 @@ PASS**; no new live MVS verification job has yet been run.
 The accepted staging JOB 9310 must not be resubmitted.
 TA.2 remains IN PROGRESS.
 
+**TA.2 staged-success evidence replay correction (19 November 2026 EST):**
+The owner's initial read-only `ta2-stage-verify --live` was
+refused before any new JES inquiry because the shared immutable
+attempt reader incorrectly invoked the failed-job validator on
+the successful **JOB 9310** receipt. The
+[verification design record](../../distribution/create-tape/ta2-staged-directory-verification-20261119.md)
+documents the correction: validate successful receipts through the
+full 18-step `validate_job` logic; validate failed receipts through
+the existing conclusive-end rules; refuse unknown or altered results.
+**Successful staged jobs remain ineligible for IEBCOPY retry.**
+Focused offline checks passed **80/80**, including a true
+SHA256-sealed JOB 9310-style success replay. No staging or tape
+operation was repeated. **Live staged catalog/member verification
+remains pending.** TA.2 IN PROGRESS.
+
 ## 1. Objective and product boundary
 
 Deliver reproducible, independently installable releases. The **complete** configuration contains two usable, independent programming environments:
