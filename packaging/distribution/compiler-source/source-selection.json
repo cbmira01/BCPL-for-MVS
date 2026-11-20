@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "status": "design-only: not a release manifest or MVS staging authority",
+  "capabilities": {
+    "cambridge_compiler_source": "proposed",
+    "native_cambridge_executable": "absent"
+  },
+  "generation": {
+    "generator": "bootstrap-toolchain/bootstrap-cambridge/make-demoted.py",
+    "derived_root": "workarea/bootstrap-cambridge/demoted"
+  },
+  "source_sets": [
+    {
+      "role": "historical",
+      "provenance": "historical-third-party; THIRD-PARTY-NOTICES.md; PUBLIC-RELEASE-AUDIT.md",
+      "members": {
+        "BCPL": "richards-bcpltape/bcplib/bcpl/bcpl",
+        "BLIB": "richards-bcpltape/bcplib/bcpl/blib",
+        "CG": "richards-bcpltape/bcplib/bcpl/cg",
+        "CGHDR": "richards-bcpltape/bcplib/bcpl/cghdr",
+        "EDITMAIN": "richards-bcpltape/bcplib/bcpl/editmain",
+        "IOS": "richards-bcpltape/bcplib/bcpl/ios",
+        "LIBHDR": "richards-bcpltape/sys3/bcpl/libhdr",
+        "PM": "richards-bcpltape/bcplib/bcpl/pm",
+        "SYN": "richards-bcpltape/bcplib/bcpl/syn",
+        "SYNHDR": "richards-bcpltape/bcplib/bcpl/synhdr",
+        "TRN": "richards-bcpltape/bcplib/bcpl/trn",
+        "TRNHDR": "richards-bcpltape/bcplib/bcpl/trnhdr",
+        "MAKEOBJ": "richards-bcpltape/bcplib/jcl/makeobj",
+        "MAKELIB": "richards-bcpltape/bcplib/jcl/makelib",
+        "PROGRAM": "richards-bcpltape/bcplib/asm/program"
+      }
+    },
+    {
+      "role": "derived",
+      "provenance": "bootstrap derivative of historical source; generator and historical inputs required; rights review pending",
+      "members": {
+        "BCPL": "workarea/bootstrap-cambridge/demoted/bcpl",
+        "BLIB": "workarea/bootstrap-cambridge/demoted/blib",
+        "SYN": "workarea/bootstrap-cambridge/demoted/syn",
+        "LEX": "workarea/bootstrap-cambridge/demoted/lex",
+        "TRNA": "workarea/bootstrap-cambridge/demoted/trna",
+        "TRNB": "workarea/bootstrap-cambridge/demoted/trnb",
+        "CGA": "workarea/bootstrap-cambridge/demoted/cga",
+        "CGB": "workarea/bootstrap-cambridge/demoted/cgb",
+        "CGC": "workarea/bootstrap-cambridge/demoted/cgc",
+        "CGD": "workarea/bootstrap-cambridge/demoted/cgd",
+        "CGE": "workarea/bootstrap-cambridge/demoted/cge"
+      }
+    },
+    {
+      "role": "support",
+      "provenance": "project bootstrap support; historical dependency and rights qualifications retained",
+      "members": {
+        "BOOTHOST": "bootstrap-toolchain/bootstrap-cambridge/bootstrap-host.bcpl",
+        "CAMBPARM": "bootstrap-toolchain/bootstrap-cambridge/cambridge-options.txt",
+        "CAMBBLD": "bootstrap-toolchain/jcl/cambbld.jcl"
+      }
+    }
+  ]
+}
