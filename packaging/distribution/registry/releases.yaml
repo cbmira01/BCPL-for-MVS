@@ -8,3 +8,9 @@ candidates:
     volser: BC0001
     manifest_sha256: 9eb6fe9c56059d27fa08c184eab7e402d6708fd0b246f6b58d35e9434dc40832
     state: reserved
+  - candidate_id: BCPL-0.1.0-rc2
+    version: 0.1.0-rc2
+    source_commit: 0a4f169f734e22acfa2a55653fd49942e38f9f05
+    volser: BC0002
+    manifest_sha256: 9ea4c7861779b4c175c90be2a3e2bf96f435913b3f50f7ecd0df7b1a62f49303
+    state: reserved
