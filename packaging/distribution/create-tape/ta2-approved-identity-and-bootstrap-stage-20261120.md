@@ -41,3 +41,7 @@ Use the existing Git-tracked `scripts/ta2-bootstrap-stage-once --run --manifest 
 The Git-created identity files passed **10/10 offline identity/inventory checks**, including the SHA-256 implementation's known-answer test, 20 contiguous datasets, unchanged TA.0 inventory, exactly 127 selected members, the `MR10_LOAD` `RECFM=U` exception, approved source SHA, registry singularity and no-tape authorization. No actual MVS job was executed during this commit.
 
 After the six-step staging job, use actual MVS `LISTDS` attributes and exact BT0002 directory members to accept the two new inputs. Continue TA.2 with source/provenance/rights review, the existing strict producer gate, new AWS tape candidate generation only under separately approved media authority, and independent tape readback. TA.3 recipient installation verification remains later. **TA.2 IN PROGRESS; TA.0/TA.1 qualified closure unchanged.**
+
+## Actual one-shot MVS staging execution — JOB 9317
+
+The owner executed the authorized six-step `TA2BTSTR` job with the approved identity and reported **6/6 steps RC=0000**, after a successful fresh absent-name and TSO002 15,400-free-track preflight. Original MVS evidence: `workarea/ta2-bootstrap-stage-operations/20261120T132013Z-21957`. The next action is the new **read-only**, two-job `ta2-bootstrap-stage-verify --live` DCB/directory check. No rerun of JOB 9317 is allowed; the attempt marker is permanent. See [the JOB 9317 record](ta2-bootstrap-stage-job9317-and-verification-20261120.md). No BC0001 tape image was written.

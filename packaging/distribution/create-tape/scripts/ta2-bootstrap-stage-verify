@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""TA.2 read-only JOB 9317 BT0001/BT0002 LISTDS attributes/directory review.
+
+No re-staging, record fidelity experiment, candidate tape, or media operations.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+OPERATIONS = ROOT / 'workarea/ta2-bootstrap-stage-operations'
+STAGED = OPERATIONS / '20261120T132013Z-21957'
+OUT = ROOT / 'workarea/ta2-bootstrap-stage-verification'
+MARKER = OPERATIONS / 'TA2BT-TSO002-one-shot-attempt.json'
+JOB = 9317
+NAMES = ('HERC02.BCPL.TA2STG.BT0001', 'HERC02.BCPL.TA2STG.BT0002')
+MEMBERS = ('INSTALL', 'DATASETS', 'RELEASE', 'RESTORE')
+MAX = 16 * 1024 * 1024
+HASHROW = re.compile(r'([0-9a-f]{64})  ([a-zA-Z0-9_.-]+)\Z')
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, detail: str) -> None:
+    if not ok:
+        raise Refusal(detail)
+
+
+def digest(blob: bytes) -> str:
+    return hashlib.sha256(blob).hexdigest()
+
+
+def read(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX,
+         'missing, linked or oversized original file: ' + path.name)
+    return path.read_bytes()
+
+
+def import_script(name: str, path: Path):
+    need(path.is_file() and not path.is_symlink(), 'project MVS parser unavailable')
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'project import failed')
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+def sealed(folder: Path) -> dict[str, bytes]:
+    need(folder == STAGED and folder.is_dir() and not folder.is_symlink() and
+         folder.resolve().parent == OPERATIONS.resolve() and
+         OPERATIONS.resolve().is_relative_to((ROOT / 'workarea').resolve()),
+         'only the original JOB 9317 staging run can be reviewed')
+    ledger = read(folder / 'SHA256SUMS').decode('ascii').splitlines()
+    hashes = {}
+    for line in ledger:
+        m = HASHROW.fullmatch(line)
+        need(m is not None and m[2] not in hashes, 'invalid original evidence SHA256SUMS')
+        hashes[m[2]] = m[1]
+    actual = {x.name for x in folder.iterdir() if x.is_file()}
+    need(actual == set(hashes) | {'SHA256SUMS'}, 'original evidence contents differ from seal')
+    need({'stage-summary.txt', 'stage-report.txt', 'stage-result.json'} <= set(hashes),
+         'original JES job evidence incomplete')
+    evidence = {name: read(folder / name) for name in hashes}
+    need(all(digest(data) == hashes[name] for name, data in evidence.items()),
+         'original MVS evidence checksum differs')
+    return evidence
+
+
+def stage_receipt(evidence: dict[str, bytes], stage, marker: dict) -> dict:
+    summary = evidence['stage-summary.txt'].decode('utf-8')
+    report = evidence['stage-report.txt'].decode('utf-8')
+    result = json.loads(evidence['stage-result.json'])
+    verified = stage.validate_job(JOB, summary, report)
+    need(result == verified and verified.get('status') ==
+         'SIX_STEP_MVS_STAGING_RC0000_DIRECTORY_PENDING' and
+         verified.get('targets') == list(NAMES) and verified.get('volume') == 'TSO002',
+         'original JOB 9317 result does not match MVS JES proof')
+    need(marker.get('state') == 'SUBMISSION_INTENT_NO_RETRY' and
+         marker.get('jobname') == 'TA2BTSTR' and marker.get('targets') == list(NAMES) and
+         marker.get('attempt_evidence') == STAGED.relative_to(ROOT).as_posix() and
+         marker.get('candidate_id') == 'BCPL-0.1.0-rc1' and
+         marker.get('material_jcl_sha256') is not None,
+         'permanent no-retry staging marker missing or changed')
+    return result
+
+
+def audit_attributes(core, report: str) -> None:
+    for n, expected_org in zip(NAMES, ('PS', 'PO')):
+        need(not core.dataset_missing(report, n), n + ': not found in catalog')
+        lines = core.extract_listds_block(report, n)
+        attrs = core.parse_listds(lines) if lines else {}
+        expected = {'volume': 'TSO002', 'dsorg': expected_org, 'recfm': 'FB',
+                    'lrecl': '80', 'blksize': '800'}
+        need(all(attrs.get(k) == v for k, v in expected.items()),
+             n + ': MVS LISTDS DCB or volume differs')
+
+
+def audit_directory(ls, report: str) -> None:
+    blocks = ls.member_blocks(report, [NAMES[1]])
+    need(set(blocks) == {NAMES[1]}, 'BT0002 directory missing from MVS LISTDS')
+    actual = ls.parse_members(blocks[NAMES[1]])
+    need(len(actual) == len(MEMBERS) and len(set(actual)) == len(MEMBERS) and
+         set(actual) == set(MEMBERS), 'BT0002 directory differs from four installer members')
+
+
+def make_run() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and not OUT.is_symlink(),
+         'unsafe repository workarea')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    path = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+    path.mkdir(mode=0o700, exist_ok=False)
+    return path
+
+
+def save(path: Path, blob: bytes) -> None:
+    with os.fdopen(os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY |
+                          getattr(os, 'O_NOFOLLOW', 0), 0o600), 'wb') as stream:
+        stream.write(blob)
+
+
+def seal(folder: Path) -> None:
+    names = sorted(x for x in folder.iterdir() if x.is_file() and x.name != 'SHA256SUMS')
+    save(folder / 'SHA256SUMS', ''.join(digest(read(x)) + '  ' + x.name + '\n'
+                                      for x in names).encode('ascii'))
+
+
+def live_checks(core, ls, config, folder: Path) -> dict:
+    core.require_reader_ready(config)
+    jobs = {}
+    before, env = tempfile.tempdir, os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder)
+        os.environ['TMPDIR'] = str(folder)
+        for label, deck, audit in (
+            ('catalog', core.stat_deck(config, list(NAMES)),
+             lambda report: audit_attributes(core, report)),
+            ('members', ls.list_members_deck(config, [NAMES[1]]),
+             lambda report: audit_directory(ls, report))):
+            need(all(x.isascii() and len(x) <= 80 for x in deck.splitlines()),
+                 label + ': bad MVS JCL card')
+            cursor = folder / (label + '-cursor.json')
+            job, summary = core.submit_and_wait(config, deck, max_rc=8, cursor_file=cursor)
+            save(folder / (label + '-summary.txt'), summary.encode())
+            need(type(job) is int and 1 <= job <= 9999, 'MVS job number invalid')
+            report = core.job_report(job, cursor_file=cursor)
+            save(folder / (label + '-report.txt'), report.encode('utf-8'))
+            audit(report)
+            jobs[label] = job
+    finally:
+        tempfile.tempdir = before
+        if env is None:
+            os.environ.pop('TMPDIR', None)
+        else:
+            os.environ['TMPDIR'] = env
+    need(set(jobs) == {'catalog', 'members'} and jobs['catalog'] != jobs['members'],
+         'MVS verification jobs incomplete or duplicated')
+    return jobs
+
+
+def operation(live: bool) -> int:
+    stage = import_script('bt_v_stage', SCRIPTS / 'ta2-bootstrap-stage-once')
+    need(STAGED.is_dir() and STAGED.resolve().parent == OPERATIONS.resolve(),
+         'JOB 9317 original evidence unavailable')
+    evidence = sealed(STAGED)
+    marker = json.loads(read(MARKER))
+    result = stage_receipt(evidence, stage, marker)
+    need(result['job'] == JOB and result['steps'] == 6, 'original MVS job identity/steps changed')
+    if not live:
+        print('TA.2 BT STAGE RECEIPT: JOB 9317, 6/6 MVS RC=0000; directory/DCB inquiry pending.')
+        return 0
+    core = import_script('bt_v_core', ROOT / 'tools/datasets/dspal-core.py')
+    ls = import_script('bt_v_ls', ROOT / 'tools/datasets/dspal-ls.py')
+    config = core.load_config()
+    need(config['mvs']['hlq'] == 'HERC02', 'MVS HLQ differs from accepted staging')
+    folder = make_run()
+    try:
+        jobs = live_checks(core, ls, config, folder)
+        verification = {'status': 'MVS_BT0001_BT0002_DCB_DIRECTORY_PASS',
+                        'stage_job': JOB, 'stage_evidence': STAGED.relative_to(ROOT).as_posix(),
+                        'stage_result_sha256': digest(evidence['stage-result.json']),
+                        'volume': 'TSO002', 'datasets': 2, 'installer_members': list(MEMBERS),
+                        'mvs_jobs': jobs, 'qualification': 'MVS DCB and directory only; tape not produced'}
+        save(folder / 'verification.json', (json.dumps(verification, sort_keys=True, indent=2)+'\n').encode())
+        seal(folder)
+        print('TA.2 BT INPUTS: 2/2 DCB PASS, 4/4 installer members, TSO002; MVS PASS.')
+        print('MVS jobs: catalog ' + str(jobs['catalog']) + ', members ' + str(jobs['members']) + '.')
+        print('Private MVS evidence: ' + folder.relative_to(ROOT).as_posix())
+        return 0
+    except Exception as exc:
+        try:
+            save(folder / 'failure.json', (json.dumps({'status':'REFUSED', 'reason':str(exc)})+'\n').encode())
+            seal(folder)
+        except OSError:
+            pass
+        print('TA.2 BT READ-ONLY VERIFICATION REFUSED: ' + str(exc), file=sys.stderr)
+        print('Private MVS evidence: ' + folder.relative_to(ROOT).as_posix())
+        return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--live', action='store_true', help='submit only two read-only MVS LISTDS inquiries')
+    args = ap.parse_args(argv)
+    try:
+        return operation(args.live)
+    except (Refusal, OSError, ValueError, KeyError, UnicodeError, TypeError) as exc:
+        print('TA.2 BT VERIFICATION REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
