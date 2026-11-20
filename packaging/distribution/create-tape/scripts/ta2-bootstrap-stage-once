@@ -1,0 +1,359 @@
+#!/usr/bin/env python3
+"""TA.2: guarded, one-shot MVS BT0001/BT0002 input staging.
+
+The owner approved the two-dataset staging *operation*, not the proposed
+release identity. An additional committed identity approval and canonical
+candidate manifest are therefore mandatory before the single JES submission.
+No AWS image is ever touched. All evidence lives in repository workarea/.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+STAGE_APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-bootstrap-stage-approval.json'
+IDENTITY_APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-bootstrap-identity-approval.json'
+DESIGN = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+RELEASES = ROOT / 'packaging/distribution/manifest/releases'
+OPERATIONS = ROOT / 'workarea/ta2-bootstrap-stage-operations'
+PREFLIGHT = ROOT / 'workarea/ta2-bootstrap-target-preflight/20261120T025333Z-20572'
+REVIEW = ROOT / 'workarea/ta2-bootstrap-preflight-review/20261120T030402Z-20698'
+MARKER = OPERATIONS / 'TA2BT-TSO002-one-shot-attempt.json'
+NAMES = ['HERC02.BCPL.TA2STG.BT0001', 'HERC02.BCPL.TA2STG.BT0002']
+STEPS = [('B0001', 'IEBGENER'), ('B0002', 'IEFBR14')] + [
+    (f'M{i:04d}', 'IEBGENER') for i in range(1, 5)]
+VOL = 'TSO002'
+JOB = 'TA2BTSTR'
+HEX64 = re.compile(r'[a-f0-9]{64}\Z')
+DSN_PREFIX = 'HERC02.BCPL.TA2STG.BT'
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, reason: str) -> None:
+    if not ok:
+        raise Refusal(reason)
+
+
+def sha(raw: bytes) -> str:
+    return hashlib.sha256(raw).hexdigest()
+
+
+def import_script(name: str, path: Path):
+    need(path.is_file() and not path.is_symlink(), 'missing trusted repository tool')
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'tool import failed')
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def safe_file(path: Path, max_size: int = 4_000_000) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= max_size,
+         'missing, linked or oversized required source: ' + path.name)
+    return path.read_bytes()
+
+
+def git_committed(path: Path) -> bytes:
+    """Require clean current tracked file, on authoritative local main."""
+    need(path.resolve().is_relative_to(ROOT.resolve()) and not path.is_symlink(),
+         'tracked input outside repository')
+    rel = path.relative_to(ROOT).as_posix()
+    branch = subprocess.run(['git', '-C', str(ROOT), 'symbolic-ref', '--short', 'HEAD'],
+                            capture_output=True, text=True, timeout=15)
+    need(branch.returncode == 0 and branch.stdout.strip() == 'main',
+         'operation requires the existing local main branch')
+    status = subprocess.run(['git', '-C', str(ROOT), 'status', '--porcelain',
+                             '--untracked-files=no'], capture_output=True, text=True, timeout=20)
+    need(status.returncode == 0 and not status.stdout.strip(),
+         'tracked working tree is not clean')
+    original = subprocess.run(['git', '-C', str(ROOT), 'show', 'HEAD:' + rel],
+                              capture_output=True, timeout=20)
+    need(original.returncode == 0 and original.stdout == safe_file(path),
+         'approval/manifest is not committed unchanged to main: ' + rel)
+    return original.stdout
+
+
+def load_approval(approval: dict, identity: dict, manifest: dict,
+                  manifest_sha: str) -> None:
+    """Never infer identity consent from staging-operation consent."""
+    need(type(approval) is dict and approval == {
+        'schema_version': 1,
+        'status': 'OWNER_APPROVED_ONE_SHOT_BT0001_BT0002_STAGING',
+        'volume': VOL,
+        'targets': NAMES,
+        'space': {'BT0001': {'primary': 5, 'secondary': 1},
+                  'BT0002': {'primary': 20, 'secondary': 5, 'directory': 10}},
+        'steps': 6,
+        'retry': False,
+        'mvs_preflight_evidence': PREFLIGHT.relative_to(ROOT).as_posix(),
+        'saved_review_evidence': REVIEW.relative_to(ROOT).as_posix(),
+        'production_tape_authorized': False,
+    }, 'one-shot staging approval differs from owner-approved scope')
+    need(type(identity) is dict and set(identity) == {
+        'schema_version', 'status', 'candidate_id', 'version', 'source_commit',
+        'volser', 'manifest_sha256', 'native_compiler', 'production_tape_authorized'
+    } and identity.get('schema_version') == 1 and
+         identity.get('status') == 'OWNER_APPROVED_BOOTSTRAP_IDENTITY' and
+         identity.get('production_tape_authorized') is False and
+         identity.get('native_compiler') == 'absent' and
+         isinstance(identity.get('manifest_sha256'), str) and
+         HEX64.fullmatch(identity['manifest_sha256']) is not None and
+         identity['manifest_sha256'] == manifest_sha,
+         'separate release identity approval missing or inconsistent')
+    for item, other in (('candidate_id', 'candidate_id'),
+                        ('version', 'version'), ('source_commit', 'source_commit')):
+        need(identity[item] == manifest['release'][other],
+             'manifest differs from approved release ' + item)
+    need(identity['volser'] == manifest['volume']['volser'] and
+         identity['native_compiler'] == manifest['release']['native_compiler'],
+         'manifest volume/compiler differs from separate approval')
+
+
+def check_saved_review(review: dict, original: dict) -> None:
+    need(review.get('status') == 'READ_ONLY_SAVED_MVS_REVIEW_PASS' and
+         review.get('source_evidence') == PREFLIGHT.relative_to(ROOT).as_posix() and
+         review.get('source_seal_sha256') == sha(safe_file(PREFLIGHT / 'SHA256SUMS')) and
+         review.get('volume') == VOL and review.get('targets') == NAMES and
+         original.get('volume') == VOL and original.get('targets') == NAMES and
+         review.get('jobs') == original.get('jobs') and
+         type(review.get('iehlist_reported_free_tracks')) is int and
+         review['iehlist_reported_free_tracks'] == 15400 and
+         review.get('proposed_track_budget') == 31,
+         'owner-reported saved MVS review differs from accepted checkpoint')
+
+
+def review_original() -> dict:
+    """Replay sealed MVS saved output, no second inquiry."""
+    reviewer = import_script('bt_stage_review', SCRIPTS / 'ta2-bootstrap-preflight-review')
+    original = reviewer.review_saved(PREFLIGHT)
+    need(REVIEW.is_dir() and not REVIEW.is_symlink() and
+         REVIEW.resolve().parent == (ROOT / 'workarea/ta2-bootstrap-preflight-review').resolve(),
+         'review evidence missing or not in repository workarea')
+    actual = {p.name for p in REVIEW.iterdir()}
+    need(actual == {'review.json', 'SHA256SUMS'}, 'saved review incomplete or unexpected files')
+    review_raw = safe_file(REVIEW / 'review.json')
+    seal = safe_file(REVIEW / 'SHA256SUMS')
+    need(seal == (sha(review_raw) + '  review.json\n').encode(),
+         'saved review SHA256 seal mismatch')
+    review = json.loads(review_raw)
+    check_saved_review(review, original)
+    return review
+
+
+def check_deck(body: str) -> None:
+    """Validate outer JES control cards, excluding embedded installer JCL."""
+    lines = body.splitlines()
+    need(lines and all(line.isascii() and len(line) <= 80 for line in lines) and
+         body.endswith('//\n'), 'stage JCL not ASCII FB80-safe')
+    outer, inside = [], False
+    for line in lines:
+        if line == '//SYSUT1 DD DATA,DLM=ZZ':
+            need(not inside, 'nested in-stream data')
+            inside = True
+            outer.append(line)
+        elif line == 'ZZ' and inside:
+            inside = False
+        elif not inside:
+            outer.append(line)
+    need(not inside, 'unterminated in-stream source')
+    actual = re.findall(r'^//([A-Z0-9]{1,8}) EXEC PGM=(IEBGENER|IEFBR14)',
+                        '\n'.join(outer), re.M)
+    need(actual == STEPS and len(lines) <= 2500 and
+         sum(x == '//SYSUT1 DD DATA,DLM=ZZ' for x in outer) == 5 and
+         sum('DISP=(NEW,CATLG,DELETE)' in x for x in outer) == 2 and
+         all(len(x) <= 71 for x in outer if x.startswith('//') and not x.startswith('//*')) and
+         set(re.findall(r'HERC02\.BCPL\.TA2STG\.BT\d{4}', '\n'.join(outer))) == set(NAMES),
+         'stage JCL changed from six approved steps or two new targets')
+
+
+def authenticated_deck(core, config: dict, body: str) -> str:
+    check_deck(body)
+    header = core.authenticated_job_card(config, JOB, 'TA2 BT STAGE', redact_password=False)
+    deck = '\n'.join(header) + '\n' + body
+    need(all(len(x) <= 80 and x.isascii() for x in deck.splitlines()),
+         'MVS authenticated deck exceeds card widths')
+    return deck
+
+
+def validate_job(job: int, summary: str, report: str) -> dict:
+    need(type(job) is int and 1 <= job <= 9999 and isinstance(summary, str) and
+         isinstance(report, str), 'missing MVS JES job identity/reports')
+    need(re.search(r'(?m)^JOB\s+' + str(job) + r'\s+' + JOB + r'\s*$', summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'MVS staging job/RC not PASS')
+    steps = re.findall(r'(?m)^([A-Z0-9]{1,8})\s+(IEBGENER|IEFBR14)\s+RC=(\d{4})\s*$', summary)
+    need(steps == [(s, p, '0000') for s, p in STEPS],
+         'not all six approved MVS stages executed RC=0000')
+    for step, pgm in STEPS:
+        need(len(re.findall(r'(?m)^IEF142I\s+' + JOB + r'\s+' + step +
+                            r'\s+-\s+STEP WAS EXECUTED\s+-\s+COND CODE 0000\s*$',
+                            report)) == 1,
+             step + ': MVS IEF142I confirmation missing or duplicate')
+    need(not re.search(r'\b(?:IEF450I|IEF472I|IEA995I|ABEND)\b', report),
+         'MVS error/ABEND observed')
+    return {'status': 'SIX_STEP_MVS_STAGING_RC0000_DIRECTORY_PENDING',
+            'job': job, 'steps': 6, 'targets': NAMES, 'volume': VOL}
+
+
+def new_run() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and
+         not OPERATIONS.is_symlink() and OPERATIONS.resolve().parent == work.resolve(),
+         'unsafe staging workarea')
+    OPERATIONS.mkdir(mode=0o700, exist_ok=True)
+    name = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid())
+    path = OPERATIONS / name
+    path.mkdir(mode=0o700, exist_ok=False)
+    return path
+
+
+def save(path: Path, blob: bytes) -> None:
+    with os.fdopen(os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY |
+                          getattr(os, 'O_NOFOLLOW', 0), 0o600), 'wb') as f:
+        f.write(blob)
+        f.flush()
+        os.fsync(f.fileno())
+
+
+def save_json(path: Path, data: dict) -> None:
+    save(path, (json.dumps(data, indent=2, sort_keys=True) + '\n').encode())
+
+
+def seal(folder: Path) -> None:
+    files = sorted(x for x in folder.iterdir() if x.is_file() and x.name != 'SHA256SUMS')
+    ledger = ''.join(sha(x.read_bytes()) + '  ' + x.name + '\n' for x in files)
+    save(folder / 'SHA256SUMS', ledger.encode())
+
+
+def run_guarded(manifest_path: Path) -> int:
+    need(sys.stdin.isatty(), 'one-shot MVS staging requires operator TTY')
+    # An existing intent is permanent; never assume the previous JES result.
+    need(not MARKER.exists() and not MARKER.is_symlink(),
+         'one-shot MVS staging attempt already exists; never resubmit')
+    need(not any(OPERATIONS.iterdir()) if OPERATIONS.is_dir() else True,
+         'prior bootstrap staging evidence exists; refuse second attempt')
+    approval = json.loads(git_committed(STAGE_APPROVAL))
+    identity = json.loads(git_committed(IDENTITY_APPROVAL))
+    need(manifest_path.is_file() and not manifest_path.is_symlink() and
+         manifest_path.resolve().parent == RELEASES.resolve(),
+         'candidate manifest must be tracked under canonical releases directory')
+    manifest_raw = git_committed(manifest_path)
+    manifest = __import__('yaml').safe_load(manifest_raw)
+    design = __import__('yaml').safe_load(safe_file(DESIGN))
+    generator = import_script('bt_stage_generator', SCRIPTS / 'ta2-bootstrap-installer')
+    generator.validate(manifest, design)
+    need(manifest_path.name == manifest['release']['candidate_id'] + '.yaml',
+         'manifest file/candidate ID mismatch')
+    load_approval(approval, identity, manifest, sha(manifest_raw))
+    saved = review_original()
+    materials = generator.render(manifest, design)
+    body = materials['STAGE-NEW-BT0001-BT0002.jcl'].decode('ascii')
+    check_deck(body)
+    core = import_script('bt_stage_core', ROOT / 'tools/datasets/dspal-core.py')
+    preflight = import_script('bt_stage_preflight', SCRIPTS / 'ta2-bootstrap-target-preflight')
+    old_target = import_script('bt_stage_target', SCRIPTS / 'ta2-target-preflight')
+    vtoc_parser = import_script('bt_stage_vtoc', SCRIPTS / 'ta2-target-review')
+    config = core.load_config()
+    need(config['mvs']['hlq'] == 'HERC02', 'authenticated MVS HLQ differs')
+    core.require_reader_ready(config)
+    folder = new_run()
+    try:
+        live = folder / 'preflight'
+        live.mkdir(mode=0o700)
+        current = preflight.inquire(core, config, old_target, live)
+        save_json(live / 'result.json', current)
+        preflight.seal(live)
+        vtoc = vtoc_parser.inspect_vtoc((live / 'vtoc-report.txt').read_text(), VOL, NAMES)
+        free = vtoc.get('iehlist_reported_free_total_tracks')
+        need(type(free) is int and free >= 31 and
+             vtoc.get('staging_names_in_formatted_vtoc') == 0,
+             'fresh MVS VTOC cannot support two new staging targets')
+        print(f'TA.2 BT STAGING PREFLIGHT: 2/2 absent; TSO002 free tracks {free}; six steps approved.')
+        need(input('Submit one-shot BT0001/BT0002 staging? [y/N]: ').strip().upper() == 'Y',
+             'operator did not confirm one-shot staging')
+        need(not MARKER.exists() and not MARKER.is_symlink(),
+             'one-shot stage marker appeared during read-only preflight')
+        # Only materials hashes are saved; no password-bearing authenticated JCL.
+        save_json(folder / 'materials.json', json.loads(materials['materials.json']))
+        intent = {'state': 'SUBMISSION_INTENT_NO_RETRY', 'volume': VOL,
+                  'targets': NAMES, 'jobname': JOB,
+                  'candidate_id': identity['candidate_id'],
+                  'manifest_sha256': sha(manifest_raw),
+                  'stage_approval_sha256': sha(safe_file(STAGE_APPROVAL)),
+                  'identity_approval_sha256': sha(safe_file(IDENTITY_APPROVAL)),
+                  'original_review_seal_sha256': sha(safe_file(REVIEW / 'SHA256SUMS')),
+                  'material_jcl_sha256': sha(materials['STAGE-NEW-BT0001-BT0002.jcl']),
+                  'attempt_evidence': folder.relative_to(ROOT).as_posix()}
+        deck = authenticated_deck(core, config, body)  # Validate before intent.
+        save_json(MARKER, intent)  # Exclusive irreversible no-retry marker.
+        previous_tmp, previous_env = tempfile.tempdir, os.environ.get('TMPDIR')
+        try:
+            tempfile.tempdir = str(folder)
+            os.environ['TMPDIR'] = str(folder)
+            cursor = folder / 'stage-cursor.json'
+            job, summary = core.submit_and_wait(config, deck, max_rc=0, cursor_file=cursor)
+            save(folder / 'stage-summary.txt', summary.encode('utf-8'))
+            report = core.job_report(job, cursor_file=cursor)
+            save(folder / 'stage-report.txt', report.encode('utf-8'))
+            result = validate_job(job, summary, report)
+            save_json(folder / 'stage-result.json', result)
+        finally:
+            tempfile.tempdir = previous_tmp
+            if previous_env is None:
+                os.environ.pop('TMPDIR', None)
+            else:
+                os.environ['TMPDIR'] = previous_env
+        seal(folder)
+        print(f'TA.2 BT STAGING: JOB {job}; 6/6 steps RC=0000. Directory/DCB review pending.')
+        print('Private MVS evidence: ' + folder.relative_to(ROOT).as_posix())
+        return 0
+    except Exception:
+        # Never print potentially password-bearing core exceptions or delete marker.
+        if not (folder / 'failure.json').exists():
+            save_json(folder / 'failure.json', {'state': 'STOP_NO_RETRY',
+                      'reason': 'MVS inquiry, JES or result validation did not complete safely',
+                      'has_submission_intent': MARKER.exists()})
+        if not (folder / 'SHA256SUMS').exists():
+            seal(folder)
+        print('TA.2 BT STAGING STOPPED; inspect private MVS evidence; NO RETRY.', file=sys.stderr)
+        print('Private evidence: ' + folder.relative_to(ROOT).as_posix(), file=sys.stderr)
+        return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run', action='store_true', help='perform the separately approved one-shot MVS staging')
+    parser.add_argument('--manifest', type=Path, help='Git-committed candidate manifest')
+    args = parser.parse_args(argv)
+    try:
+        if not args.run:
+            print('TA.2 BT STAGING PLAN: six steps authorized on TSO002;')
+            print('separate release identity approval/manifest required; no MVS job submitted.')
+            return 0
+        need(args.manifest is not None, '--run requires an explicit frozen candidate manifest')
+        return run_guarded(args.manifest)
+    except (Refusal, OSError, KeyError, TypeError, ValueError, subprocess.TimeoutExpired) as exc:
+        print('TA.2 BT STAGING REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "status": "OWNER_APPROVED_ONE_SHOT_BT0001_BT0002_STAGING",
+  "volume": "TSO002",
+  "targets": [
+    "HERC02.BCPL.TA2STG.BT0001",
+    "HERC02.BCPL.TA2STG.BT0002"
+  ],
+  "space": {
+    "BT0001": {"primary": 5, "secondary": 1},
+    "BT0002": {"primary": 20, "secondary": 5, "directory": 10}
+  },
+  "steps": 6,
+  "retry": false,
+  "mvs_preflight_evidence": "workarea/ta2-bootstrap-target-preflight/20261120T025333Z-20572",
+  "saved_review_evidence": "workarea/ta2-bootstrap-preflight-review/20261120T030402Z-20698",
+  "production_tape_authorized": false
+}
