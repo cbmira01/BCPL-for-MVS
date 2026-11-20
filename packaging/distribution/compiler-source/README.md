@@ -35,6 +35,10 @@ FB80 copy pads each record with EBCDIC spaces, so it is **not** a byte-exact
 replacement for the original Git text file. Preservation of the authoritative
 archive and its provenance remains in `richards-bcpltape/`.
 
+`SNOTICE.txt` is an 80-column-safe offline source-family notice with the
+project MIT terms and historical/derivative qualifications. It is intended
+for successor release documentation, but is not yet on distribution tape.
+
 **Rights:** See `LICENSE.md`, `THIRD-PARTY-NOTICES.md`, and
 `PUBLIC-RELEASE-AUDIT.md`. Historical files and their demoted derivatives are
 not automatically MIT-licensed. Selection and syntax checks do not establish

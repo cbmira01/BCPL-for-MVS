@@ -1,0 +1,59 @@
+CAMBRIDGE BCPL SOURCE - COPYRIGHT, PROVENANCE, AND CAPABILITIES
+================================================================
+
+This notice accompanies the proposed Cambridge source distribution.
+It is not a grant of rights to historical third-party source code.
+
+ORIGINAL PROJECT WORK
+Copyright (c) 2026 Calvin Miracle.
+Project-created work is licensed under the MIT License unless a file
+specifically says otherwise. The MIT terms follow below.
+
+HISTORICAL BCPL MATERIAL
+The original BCPL transport-tape material is associated with Martin
+Richards. Ken Yap archived the tape. Robert Nordier corrected character
+mappings, organized the files, and publicly preserved them as bcpltape.
+The original archival README and tape INDEX are retained in GitHub.
+Historical source files remain subject to their original copyrights.
+No blanket unrestricted license for all the old tape files was found.
+Public archival access is evidence of provenance, not relicensing.
+
+DERIVED CAMBRIDGE SOURCE
+Demoted SYN, LEX, TRNA, TRNB, BCPL, BLIB and CGA through CGE are generated
+by the project's make-demoted.py from the historical Cambridge sources.
+These are adaptations for the interpreter-hosted bootstrap compiler.
+Reconstruction does not remove historical design/source provenance.
+The generated source is distinct from the unmodified archival source.
+
+COMPILER STATUS
+The demoted Cambridge compiler executes as INTCODE under ICINT19 and
+produces System/370 assembler. That is not a native-running compiler.
+An independently native-running Cambridge compiler is still unfinished.
+Historical MAKEOBJ and MAKELIB are reference texts, not ready-to-run
+MVS installation jobs. CAMBBLD is development JCL requiring adaptation.
+
+MIT LICENSE FOR ORIGINAL PROJECT WORK ONLY
+Copyright (c) 2026 Calvin Miracle
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The MIT License above does not relicense historical BCPL source or
+reconstructions to the extent that they retain third-party rights.
+See the repository's LICENSE.md, THIRD-PARTY-NOTICES.md and
+PUBLIC-RELEASE-AUDIT.md for the complete preservation-policy discussion.
