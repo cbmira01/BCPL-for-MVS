@@ -5,7 +5,7 @@ release:
   product: Cambridge BCPL Programming System for MVS 3.8J
   version: 0.1.0-rc2
   candidate_id: BCPL-0.1.0-rc2
-  source_commit: 0a4f169f734e22acfa2a55653fd49942e38f9f05
+  source_commit: 78baec9a8546e4ab09caee779aa2b675379272f3
   native_compiler: absent
   cambridge_source: included
 volume:
@@ -214,16 +214,3 @@ datasets:
     rights_status: preservation-policy-approved-rights-unresolved
     provenance_reference: THIRD-PARTY-NOTICES.md
 
-  - sequence: 22
-    group: cambridge-source
-    owner: cambridge-compiler-source
-    kind: pds_unload
-    dspal_key: CAMB_DEMOTED
-    target_dsn_template: "{HLQ}.BCPL.CAMBRIDG.DEMOTED"
-    transfer: iebcopy_unload
-    target_dcb: {dsorg: PO, recfm: FB, lrecl: 80, blksize: 800}
-    members: [BCPL, BLIB, SYN, LEX, TRNA, TRNB, CGA, CGB, CGC, CGD, CGE, BOOTHOST, CAMBPARM, CAMBBLD, SNOTICE]
-    source_family: demoted-and-support
-    rights_status: preservation-policy-approved-rights-unresolved
-    provenance_reference: packaging/distribution/compiler-source/SNOTICE.txt
-    generation_recipe: bootstrap-toolchain/bootstrap-cambridge/make-demoted.py

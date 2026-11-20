@@ -10,7 +10,7 @@ candidates:
     state: reserved
   - candidate_id: BCPL-0.1.0-rc2
     version: 0.1.0-rc2
-    source_commit: 0a4f169f734e22acfa2a55653fd49942e38f9f05
+    source_commit: 78baec9a8546e4ab09caee779aa2b675379272f3
     volser: BC0002
-    manifest_sha256: 9ea4c7861779b4c175c90be2a3e2bf96f435913b3f50f7ecd0df7b1a62f49303
+    manifest_sha256: 12b2dd8cc9c2edab033575bd3c60864be4a983b0e163fdec2823efb14086d19a
     state: reserved
