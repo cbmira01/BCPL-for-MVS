@@ -10,3 +10,13 @@ The installer must be usable without GitHub, WSL, Python, TSO or project develop
 
 The [expanded release scope](../release-payload-scope-decision-20261116.md) requires **independent MVS-only installation and verification** for both the native Cambridge Compiler and the MR10 Kit Compiler. MR10 must ship with its 11 language demonstrations, 17 BCPL demonstrations, and 12-case regression panel. Its existing `MRREGRES` job runs on MVS. The [subsequent owner decision](../mr10-regression-exp-manual-verification-decision-20261116.md) requires fixed `EXP:` and actual `RP:` report records and **human per-case review of all 12 plus interpreted `CODE=`** on MVS, with recorded PASS/FAIL and sign-off; an automatic MVS semantic comparator is **not** required. This report format and manual acceptance procedure remain to be implemented and proven. Host-side `dspal` and Python verification are not acceptable recipient dependencies.
 
+## TA.2 proposed installer materials; recipient acceptance pending
+
+The manifest-derived [offline installer material generator](../create-tape/ta2-bootstrap-installer-materials-20261119.md)
+now provides four proposed MVS PDS members (INSTALL, DATASETS, RELEASE,
+RESTORE), an 18-step IEBCOPY restoration template, and the BT0002
+bootstrap restoration job body. This is an **unexecuted, site-parametric
+proposal**; placeholders for HLQ, tape unit, DASD unit and each allocation
+must be supplied and checked before use. TA.3 must still establish safe
+recipient installations and independent profile selection on actual MVS.
+No installer PDS has yet been created or written to tape.

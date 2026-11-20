@@ -648,3 +648,17 @@ See [the staged verification record](ta2-staged-directory-verification-20261119.
 Owner-accepted MVS JOB 9310 staged 18 PDSes/127 selected members; independently run JOBS 9311/9312 established exact TSO002 PDS directory/DCB inventories. The owner expressly adopted trust of successful IBM MVS utility operations absent concrete anomalies, so routine full member byte re-comparison and a custom load-module extractor are **not** additional staging gates.
 
 `[ta2-release-input-plan](scripts/ta2-release-input-plan)` is a host-only, read-only mapper that derives BT0003–BT0020 source identities from the canonical inventory and the accepted saved verification receipt. It does not repeat JES or reserve identities. BT0001 release-specific FB80 bootstrap and BT0002 MVS-only installer remain **not prepared**, with no candidate manifest, source freeze or new VOLSER yet approved. See [accepted staging and release-input preparation](ta2-accepted-stage-and-release-inputs-20261119.md). Real TA.2 tape candidate write/readback still requires specific approval and actual MVS verification.
+
+## TA.2 offline BT0001/BT0002 material generator
+
+The [TA.2 bootstrap and installer preparation](ta2-bootstrap-installer-materials-20261119.md)
+adds `scripts/ta2-bootstrap-installer` for a future **frozen and
+registry-reserved candidate**, using the existing `ta2-offline --candidate`
+gate. It emits readable and CP037 EBCDIC FB80 bootstrap records, two
+candidate-specific MVS-only bootstrap job bodies, four proposed installer
+PDS members and an 18-PDS IEBCOPY restoration template. All output is
+exclusive, private `workarea/` evidence/material, not committed media.
+The installer template has deliberately invalid site placeholders and is
+not ready for submission. **20/20 offline synthetic tests PASS**;
+there is no MVS input staging, tape production, approved site installer,
+new version or VOLSER from this change. TA.2 remains IN PROGRESS.

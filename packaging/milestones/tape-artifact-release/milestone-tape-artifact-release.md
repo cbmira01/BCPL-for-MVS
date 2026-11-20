@@ -773,3 +773,18 @@ The owner accepted TA2STAGE JOB 9310 (18 IEBCOPY RC=0000, 127 selected members o
 Owner engineering direction: trust established IBM MVS system utilities when their actual operations succeed; investigate failures when there is a concrete anomaly, not speculative corruption. The previously proposed 126-member IEBCOMPR panel and special load-module byte extractor are **not required routine staging gates** and are not promoted. Source-to-staging copy fidelity is accepted on the bounded IEBCOPY and directory/DCB results; no separate per-member byte hash is asserted. The independent **new AWS tape structure, label/position, restoration, checksum and provenance acceptance gates remain mandatory** because those test this project's producer integration.
 
 The new read-only `create-tape/scripts/ta2-release-input-plan` derives the accepted BT0003–BT0020 source associations from the canonical TA.0 manifest and the saved JOBS 9311/9312 receipt; its 16/16 isolated tests passed. `BT0001` release-specific bootstrap, `BT0002` MVS-only installer, frozen candidate source/rights and version/VOLSER remain open. See [TA.2 accepted staging and release-input preparation](../../distribution/create-tape/ta2-accepted-stage-and-release-inputs-20261119.md). No candidate production, staging retry, tape initialization, remount, publication or owner authorization is inferred. **TA.2 remains IN PROGRESS.**
+
+## TA.2 BT0001/BT0002 offline generator checkpoint — 19 November 2026 EST
+
+The accepted BT0003–BT0020 stage result remains unchanged (MVS JOB 9310,
+independent JOBS 9311/9312). Under the owner's trust-MVS-utilities
+direction, source-to-stage byte recomparison remains unnecessary absent
+an actual anomaly. The new [offline bootstrap/installer material tool](../../distribution/create-tape/ta2-bootstrap-installer-materials-20261119.md)
+uses the frozen-candidate gate, validated canonical 20-position inventory,
+candidate identity and planned `BCPL.BT0001` FB80 text and `BCPL.BT0002`
+MVS-only installer PDS. It creates no MVS datasets or media. A proposed
+18-step site-parameterized IEBCOPY restore template is not executable
+until the recipient supplies site settings and the later installation
+acceptance is demonstrated. **20/20 focused local synthetic tests PASS**.
+No version/VOLSER has been reserved or production tape authorized.
+**TA.2 IN PROGRESS**.

@@ -1,0 +1,318 @@
+#!/usr/bin/env python3
+"""TA.2 offline BT0001/BT0002 material generator; never submits or stages MVS.
+
+Output is intentionally incomplete site JCL: <HLQ>/<DASD>/<P>/<S>/<D>
+must be replaced by the recipient before attempting allocation/restoration.
+Requires frozen candidate identity; does not reserve version or VOLSER.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[4]
+CANONICAL = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+RELEASES = ROOT / 'packaging/distribution/manifest/releases'
+WORKAREA = ROOT / 'workarea'
+TOKEN = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,47}\Z')
+VOL = re.compile(r'BC(?!0000)[0-9]{4}\Z')
+SHA = re.compile(r'[0-9a-f]{40}\Z')
+QUAL = re.compile(r'[A-Z@$#][A-Z0-9@$#]{0,7}\Z')
+FB = {'dsorg': 'PO', 'recfm': 'FB', 'lrecl': 80, 'blksize': 800}
+LOAD = {'dsorg': 'PO', 'recfm': 'U', 'lrecl': 0, 'blksize': 6144}
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(value: bool, why: str) -> None:
+    if not value:
+        raise Refusal(why)
+
+
+def card_lines(lines: list[str], *, jcl: bool = False) -> str:
+    need(all(isinstance(x, str) and x.isascii() and '\r' not in x and
+             '\n' not in x and '\t' not in x and len(x) <= 80 for x in lines),
+         'not printable ASCII FB80 cards')
+    if jcl:
+        need(all(len(x) <= 71 for x in lines if x.startswith('//') and
+                 not x.startswith('//*')), 'JCL operands extend beyond column 71')
+    return '\n'.join(lines) + '\n'
+
+
+def fb80(text: str) -> bytes:
+    lines = text.splitlines()
+    need(bool(lines), 'empty FB80 member')
+    card_lines(lines)
+    return b''.join(line.ljust(80).encode('cp037') for line in lines)
+
+
+def validate(manifest: dict, design: dict) -> list[dict]:
+    """Check only established TA.0 selection + frozen identity; no new tape map."""
+    need(isinstance(manifest, dict) and isinstance(design, dict) and
+         manifest.get('schema_version') == design.get('schema_version') == 1 and
+         manifest.get('phase') == 'candidate', 'requires schema-v1 candidate')
+    identity = manifest.get('release')
+    volume = manifest.get('volume')
+    need(isinstance(identity, dict) and isinstance(volume, dict), 'identity missing')
+    for key in ('candidate_id', 'version'):
+        need(isinstance(identity.get(key), str) and TOKEN.fullmatch(identity[key]) is not None,
+             'unsafe or absent release ' + key)
+    need(isinstance(identity.get('source_commit'), str) and
+         SHA.fullmatch(identity['source_commit']) is not None,
+         '40-digit source SHA required')
+    need(identity.get('native_compiler') == 'absent',
+         'initial TA.0 payload is native-compiler-absent; do not imply inclusion')
+    need(volume.get('format') == 'aws' and volume.get('labeling') == 'SL' and
+         isinstance(volume.get('volser'), str) and VOL.fullmatch(volume['volser']) is not None,
+         'reserved standard-label candidate VOLSER required')
+    rows = manifest.get('datasets')
+    originals = design.get('datasets')
+    need(type(rows) is list and type(originals) is list and len(rows) == len(originals) == 20 and
+         [r.get('sequence') for r in rows if type(r) is dict] == list(range(1, 21)),
+         '20 ordered logical datasets required')
+    total = 0
+    for n, (row, original) in enumerate(zip(rows, originals), 1):
+        for key in ('sequence', 'kind', 'transfer', 'generator', 'target_dcb', 'dspal_key'):
+            need(row.get(key) == original.get(key),
+                 f'BT{n:04d}: {key} differs from accepted selection')
+        if n <= 2:
+            continue
+        need(row.get('members') == original.get('members') and
+             isinstance(row.get('members'), list), f'BT{n:04d}: member selection changed')
+        total += len(row['members'])
+        template = row.get('target_dsn_template')
+        need(isinstance(template, str) and template == original.get('target_dsn_template') and
+             template.startswith('{HLQ}.') and len(template) <= 44 and
+             all(QUAL.fullmatch(x) for x in template[6:].split('.')),
+             f'BT{n:04d}: unsafe recipient target template')
+        expected = LOAD if n == 12 else FB
+        need(row['target_dcb'] == expected, f'BT{n:04d}: unsupported target DCB')
+    need(total == 127 and rows[0]['kind'] == 'sequential_text' and
+         rows[0]['generator'] == 'bootstrap_fb80' and
+         rows[1]['kind'] == 'pds_unload' and rows[1]['generator'] == 'installer_pds',
+         'accepted 127-member inventory or bootstrap role changed')
+    return rows
+
+
+def bootstrap(manifest: dict, rows: list[dict]) -> str:
+    rel = manifest['release']
+    vol = manifest['volume']['volser']
+    lines = [
+        'CAMBRIDGE BCPL PROGRAMMING SYSTEM FOR MVS 3.8J',
+        'STANDARD-LABELED AWS DISTRIBUTION - READ THIS FIRST',
+        'CANDIDATE ' + rel['candidate_id'],
+        'VERSION ' + rel['version'],
+        'SOURCE GIT ' + rel['source_commit'],
+        'VOLUME SERIAL ' + vol,
+        'NATIVE CAMBRIDGE COMPILER: ABSENT (NOT A TWO-COMPILER RELEASE)',
+        '',
+        'USE ORDINARY MVS IEBGENER TO READ THIS FIRST TAPE DATASET.',
+        'EXTERNAL BOOTREAD JCL READS BCPL.BT0001, LABEL=(1,SL).',
+        'EXTERNAL BT2READ JCL RESTORES THE INSTALLER PDS, LABEL=(2,SL).',
+        'SUPPLY YOUR OWN JOB CARD, TAPE UNIT, DASD ALLOCATION AND HLQ.',
+        'INSTALLER PDS CONTAINS INSTALL, DATASETS, RELEASE, RESTORE.',
+        'INSTALLER RESTORE IS A TEMPLATE, NOT DIRECTLY EXECUTABLE.',
+        'REPLACE ALL <HLQ>, <DASD>, <P>, <S>, <D> SITE PARAMETERS.',
+        'NEVER REPLACE AN EXISTING DATASET; TARGETS MUST BE ABSENT.',
+        'REVIEW INSTALLATION AND TEST PROCEDURES BEFORE SUBMISSION.',
+        '',
+        'LOGICAL DATASET ORDER (NOT PHYSICAL AWS FILE NUMBERS):',
+    ]
+    for n, row in enumerate(rows, 1):
+        desc = ('BOOTSTRAP TEXT' if n == 1 else 'INSTALLER PDS' if n == 2
+                else row['dspal_key'])
+        lines.append(f'BCPL.BT{n:04d}  {desc}')
+    lines.extend(['',
+                  'ALL FILES ARE STANDARD-LABELED; DO NOT CATALOG TAPE DSNS.',
+                  'THE ORIGINAL IMAGE CHECKSUM MUST BE SUPPLIED EXTERNALLY.',
+                  'THIS DOCUMENT IS RELEASE-SPECIFIC, NOT A BUILD RECEIPT.'])
+    return card_lines(lines)
+
+
+def bootstrap_read_jcl(manifest: dict, dataset: int) -> str:
+    need(dataset in (1, 2), 'only the first two bootstrap datasets supported')
+    vol = manifest['volume']['volser']
+    if dataset == 1:
+        lines = [
+            '//* READ-ONLY MVS BOOTSTRAP PRINT; ADD SITE JOB CARD.',
+            '//* VERIFY TAPE UNIT IS READY AND VOLSER MATCHES.',
+            '//BOOTREAD EXEC PGM=IEBGENER,REGION=256K',
+            '//SYSPRINT DD SYSOUT=*',
+            '//SYSIN DD DUMMY',
+            '//SYSUT1 DD DSN=BCPL.BT0001,UNIT=<TAPE>,',
+            f'//            VOL=SER={vol},LABEL=(1,SL),DISP=OLD',
+            '//SYSUT2 DD SYSOUT=*',
+            '//',
+        ]
+    else:
+        lines = [
+            '//* RESTORE INSTALLER PDS TO A NEW SITE DATASET; ADD JOB CARD.',
+            '//* REQUIRES SITE HLQ, DASD UNIT, SPACE AND TAPE UNIT.',
+            '//* DO NOT SUBMIT WITH ANY <...> SITE TOKEN PRESENT.',
+            '//BT2READ EXEC PGM=IEBCOPY,REGION=512K',
+            '//SYSPRINT DD SYSOUT=*',
+            '//INTAPE DD DSN=BCPL.BT0002,UNIT=<TAPE>,',
+            f'//            VOL=SER={vol},LABEL=(2,SL),DISP=OLD',
+            '//OUTPDS DD DSN=<HLQ>.BCPL.DIST.INST,',
+            '//            UNIT=<DASD>,SPACE=(TRK,(<P>,<S>,<D>)),',
+            '//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,BLKSIZE=800),',
+            '//            DISP=(NEW,CATLG,DELETE)',
+            '//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+            '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+            '//SYSIN DD *',
+            ' COPY OUTDD=OUTPDS,INDD=INTAPE',
+            '/*',
+            '//',
+        ]
+    return card_lines(lines, jcl=True)
+
+
+def restore_template(manifest: dict, rows: list[dict]) -> str:
+    """MVS-only recipient template, deliberately non-submittable as generated."""
+    vol = manifest['volume']['volser']
+    lines = ['//* MVS RECIPIENT IEBCOPY RESTORE TEMPLATE; ADD SITE JOB CARD.',
+             '//* REPLACE ALL <...> TOKENS; EACH TARGET MUST BE ABSENT.',
+             '//* NO TAPE CATALOGING, DISP=MOD OR OVERWRITE ALLOWED.']
+    for n, row in enumerate(rows[2:], 3):
+        dcb = row['target_dcb']
+        template = row['target_dsn_template'].replace('{HLQ}', '<HLQ>')
+        cond = '' if n == 3 else ',COND=(0,NE)'
+        lines.extend([f'//R{n:04d} EXEC PGM=IEBCOPY,REGION=512K{cond}',
+                      '//SYSPRINT DD SYSOUT=*',
+                      '//INTAPE DD DSN=BCPL.BT%04d,UNIT=<TAPE>,' % n,
+                      f'//            VOL=SER={vol},LABEL=({n},SL),DISP=OLD',
+                      f'//OUTPDS DD DSN={template},',
+                      '//            UNIT=<DASD>,SPACE=(TRK,(<P>,<S>,<D>)),',
+                      ('//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,'
+                       'BLKSIZE=800),' if dcb == FB else
+                       '//            DCB=(DSORG=PO,RECFM=U,BLKSIZE=6144),'),
+                      '//            DISP=(NEW,CATLG,DELETE)',
+                      '//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                      '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                      '//SYSIN DD *',
+                      ' COPY OUTDD=OUTPDS,INDD=INTAPE',
+                      '/*'])
+    lines.append('//')
+    need(sum(x.startswith('//R') and ' EXEC PGM=IEBCOPY' in x for x in lines) == 18 and
+         sum(' COPY OUTDD=OUTPDS,INDD=INTAPE' == x for x in lines) == 18,
+         'installer must contain exactly 18 MVS IEBCOPY steps')
+    return card_lines(lines, jcl=True)
+
+
+def installer_members(manifest: dict, rows: list[dict]) -> dict[str, str]:
+    rel = manifest['release']
+    lines = [
+        'MVS-ONLY BCPL INSTALLATION; CANDIDATE ' + rel['candidate_id'],
+        'USE NORMAL MVS/JES/IEBCOPY; NO BCPL, PYTHON OR DSPAL NEEDED.',
+        'BOOTSTRAP FILE 1 WAS READ USING IEBGENER.',
+        'INSTALLER PDS WAS RESTORED FROM FILE 2 USING IEBCOPY.',
+        'READ RELEASE AND DATASETS BEFORE RUNNING RESTORE.',
+        'RESTORE IS AN INERT JCL TEMPLATE; ADD A SITE JOB CARD.',
+        'REPLACE <HLQ>, <TAPE>, <DASD> AND EACH <P>, <S>, <D>.',
+        'CHOOSE EACH OUTPUT PDS SPACE ALLOCATION FOR YOUR SITE.',
+        'USE NEW, ABSENT OUTPUT DATASETS; DO NOT OVERWRITE EXISTING PDS.',
+        'REVIEW ALL 18 TARGET DSNS, DCB VALUES, LABEL POSITIONS AND VOLSER.',
+        'INSTALL MR10/NATIVE COMPONENTS ONLY UNDER APPROVED SITE PROFILE.',
+        'AFTER RESTORE, CHECK MVS JES RESULTS AND DISTRIBUTED VERIFY DOCS.',
+        'THIS PACKAGE IS A TEMPLATE UNTIL CLEAN-TARGET ACCEPTANCE.',
+    ]
+    dataset_lines = ['LOGICAL TAPE DATASETS; TARGET HLQ IS SITE-SUPPLIED.']
+    for n, row in enumerate(rows[2:], 3):
+        dest = row['target_dsn_template'].replace('{HLQ}', '<HLQ>')
+        dataset_lines.append(f'BCPL.BT{n:04d} -> {dest}')
+    release_lines = [
+        'CAMBRIDGE BCPL PROGRAMMING SYSTEM FOR MVS 3.8J',
+        'CANDIDATE: ' + rel['candidate_id'],
+        'VERSION: ' + rel['version'],
+        'SOURCE SHA: ' + rel['source_commit'],
+        'VOLSER: ' + manifest['volume']['volser'],
+        'NATIVE CAMBRIDGE COMPILER: ABSENT',
+        'EXTERNAL AWS SHA-256/PROVENANCE MUST MATCH RELEASE RECEIPT.',
+        'INSTALLATION IS NOT ACCEPTED UNTIL MVS TESTS ARE REVIEWED.',
+    ]
+    return {'INSTALL': card_lines(lines), 'DATASETS': card_lines(dataset_lines),
+            'RELEASE': card_lines(release_lines),
+            'RESTORE': restore_template(manifest, rows)}
+
+
+def render(manifest: dict, design: dict) -> dict[str, bytes]:
+    rows = validate(manifest, design)
+    items: dict[str, bytes] = {}
+    boot = bootstrap(manifest, rows)
+    items['BT0001.txt'] = boot.encode('ascii')
+    items['BT0001.ebcdic-fb80'] = fb80(boot)
+    for n in (1, 2):
+        items[f'BOOTREAD{n}.jcl'] = bootstrap_read_jcl(manifest, n).encode('ascii')
+    for member, source in installer_members(manifest, rows).items():
+        items[f'BT0002-{member}.txt'] = source.encode('ascii')
+        items[f'BT0002-{member}.ebcdic-fb80'] = fb80(source)
+    meta = {'status': 'OFFLINE_MATERIALS_NOT_MVS_ACCEPTED',
+            'candidate_id': manifest['release']['candidate_id'],
+            'volser': manifest['volume']['volser'],
+            'selected_members_after_bootstrap': 127,
+            'files_sha256': {name: hashlib.sha256(raw).hexdigest() for name, raw in sorted(items.items())}}
+    items['materials.json'] = (json.dumps(meta, sort_keys=True, indent=2) + '\n').encode()
+    return items
+
+
+def write_new(output: Path, files: dict[str, bytes]) -> None:
+    need(output.parent.resolve() == WORKAREA.resolve() and
+         WORKAREA.is_dir() and not WORKAREA.is_symlink() and
+         not output.is_symlink(), 'output must be a new direct child of workarea/')
+    output.mkdir(mode=0o700, exist_ok=False)
+    for name, raw in sorted(files.items()):
+        need(re.fullmatch(r'[A-Za-z0-9_.-]+', name) is not None, 'unsafe generated name')
+        dest = output / name
+        with os.fdopen(os.open(dest, os.O_CREAT | os.O_EXCL | os.O_WRONLY |
+                              getattr(os, 'O_NOFOLLOW', 0), 0o600), 'wb') as out:
+            out.write(raw)
+            out.flush()
+            os.fsync(out.fileno())
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--manifest', type=Path, required=True)
+    p.add_argument('--output', type=Path, required=True)
+    args = p.parse_args(argv)
+    try:
+        need(args.manifest.parent.resolve() == RELEASES.resolve() and
+             not args.manifest.is_symlink(),
+             'only a candidate under canonical manifest/releases/ is permitted')
+        candidate = yaml.safe_load(args.manifest.read_text())
+        need(isinstance(candidate, dict) and
+             args.manifest.name == str(candidate.get('release', {}).get('candidate_id')) + '.yaml',
+             'candidate manifest filename/identity mismatch')
+        design = yaml.safe_load(CANONICAL.read_text())
+        # Reuse the canonical frozen manifest, registry, provenance and MVS
+        # evidence gate; this renderer must not create a second trust path.
+        preflight = ROOT / 'packaging/distribution/create-tape/scripts/ta2-offline'
+        need(preflight.is_file() and not preflight.is_symlink(),
+             'canonical TA.2 producer gate missing')
+        cp = subprocess.run([sys.executable, '-B', str(preflight),
+                             '--candidate', '--manifest', str(args.manifest)],
+                            cwd=ROOT, capture_output=True, text=True, timeout=90)
+        need(cp.returncode == 0, 'canonical candidate/registry/MVS preflight failed')
+        files = render(candidate, design)
+        write_new(args.output, files)
+        print('TA.2 BOOTSTRAP MATERIALS: offline FB80/JCL generated; MVS not tested.')
+        print('Private files: ' + str(args.output))
+        return 0
+    except (Refusal, KeyError, ValueError, OSError, yaml.YAMLError,
+            subprocess.TimeoutExpired) as exc:
+        print('TA.2 BOOTSTRAP MATERIALS REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
