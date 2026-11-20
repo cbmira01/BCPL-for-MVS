@@ -4,7 +4,7 @@
 **Milestone:** Tape artifact release  
 **March:** TA.2 — Manifest-Driven Tape Producer  
 **Date:** 19 November 2026 EST / 20 November 2026 UTC  
-**Status:** Staging IEBCOPY completed; independent MVS verification pending.
+**Status:** Staging and independent MVS directory/DCB verification accepted; producer preparation continues.
 
 ## Original MVS staging result
 
@@ -96,3 +96,16 @@ passed **80/80 tests**, plus Python syntax checks. The user's original
 the next operation is the same **read-only** `ta2-stage-verify --live`.
 Actual post-staging catalog, directory, record and binary verification
 remain pending.
+
+## Owner acceptance of JOBS 9311/9312 — 19 November 2026 EST
+
+The owner ran `ta2-stage-verify --stage-evidence workarea/ta2-stage-operations/20261120T002516Z-19547 --live` after the original-success replay fix. The actual MVS receipt was:
+
+```text
+TA.2 STAGED DIRECTORY/DCB: 18/18 PDS, 127/127 members, TSO002; fresh MVS PASS.
+MVS jobs: catalog 9311, members 9312.
+Record/binary fidelity verification still required.
+Private MVS evidence: workarea/ta2-stage-verification/20261120T005732Z-20183
+```
+
+Subsequently, the owner **accepted staging** based on IEBCOPY JOB 9310 plus the 9311/9312 catalog/directory evidence, adopting the engineering policy to trust IBM MVS system utilities absent concrete evidence of a defect. Therefore the receipt's earlier `record/binary fidelity ... required` statement is historical, **not a current staging acceptance blocker**. The proposed 126-step IEBCOMPR and RECFM=U extraction work is not promoted or required. This does not assert observed byte hashes and does not waive TA.2's eventual independent tape/write/readback/restore gate. See [the accepted-stage and input-preparation record](ta2-accepted-stage-and-release-inputs-20261119.md).

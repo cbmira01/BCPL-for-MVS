@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (staging JOB 9310 RC=0000; independent staged PDS verification pending) — no candidate production authorized**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (JOB 9310 staging plus JOBS 9311/9312 directory/DCB accepted; candidate inputs pending) — no candidate production authorized**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -764,3 +764,12 @@ specific safe scratch operation.
 - [Multi-dataset experiment guidance](../../distribution/multi-dataset-tape-and-append-experiment-20261108.md)
 - [Distribution overview](../../distribution/README.md)
 - [Runtime/library nomenclature](../../architecture/runtime-and-library-nomenclature.md)
+
+
+## TA.2 owner-accepted staging and focus on producer integration — 19 November 2026 EST
+
+The owner accepted TA2STAGE JOB 9310 (18 IEBCOPY RC=0000, 127 selected members on TSO002) together with independent MVS LISTDS JOBS 9311/9312 (18 exact PDS DCBs/directories and 127 exact members). Original private evidence remains at `workarea/ta2-stage-operations/20261120T002516Z-19547` and `workarea/ta2-stage-verification/20261120T005732Z-20183`.
+
+Owner engineering direction: trust established IBM MVS system utilities when their actual operations succeed; investigate failures when there is a concrete anomaly, not speculative corruption. The previously proposed 126-member IEBCOMPR panel and special load-module byte extractor are **not required routine staging gates** and are not promoted. Source-to-staging copy fidelity is accepted on the bounded IEBCOPY and directory/DCB results; no separate per-member byte hash is asserted. The independent **new AWS tape structure, label/position, restoration, checksum and provenance acceptance gates remain mandatory** because those test this project's producer integration.
+
+The new read-only `create-tape/scripts/ta2-release-input-plan` derives the accepted BT0003–BT0020 source associations from the canonical TA.0 manifest and the saved JOBS 9311/9312 receipt; its 16/16 isolated tests passed. `BT0001` release-specific bootstrap, `BT0002` MVS-only installer, frozen candidate source/rights and version/VOLSER remain open. See [TA.2 accepted staging and release-input preparation](../../distribution/create-tape/ta2-accepted-stage-and-release-inputs-20261119.md). No candidate production, staging retry, tape initialization, remount, publication or owner authorization is inferred. **TA.2 remains IN PROGRESS.**

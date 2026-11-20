@@ -642,3 +642,9 @@ The existing `ta2-stage-once --run` prompt is now `[y/N]`
 rather than a long phrase. Read-only probes have **no prompt**.
 **75/75 focused offline tests pass**; actual MVS verification pending.
 See [the staged verification record](ta2-staged-directory-verification-20261119.md).
+
+## TA.2 accepted staging and remaining producer inputs — 19 November 2026 EST
+
+Owner-accepted MVS JOB 9310 staged 18 PDSes/127 selected members; independently run JOBS 9311/9312 established exact TSO002 PDS directory/DCB inventories. The owner expressly adopted trust of successful IBM MVS utility operations absent concrete anomalies, so routine full member byte re-comparison and a custom load-module extractor are **not** additional staging gates.
+
+`[ta2-release-input-plan](scripts/ta2-release-input-plan)` is a host-only, read-only mapper that derives BT0003–BT0020 source identities from the canonical inventory and the accepted saved verification receipt. It does not repeat JES or reserve identities. BT0001 release-specific FB80 bootstrap and BT0002 MVS-only installer remain **not prepared**, with no candidate manifest, source freeze or new VOLSER yet approved. See [accepted staging and release-input preparation](ta2-accepted-stage-and-release-inputs-20261119.md). Real TA.2 tape candidate write/readback still requires specific approval and actual MVS verification.
