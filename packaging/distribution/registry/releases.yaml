@@ -1,0 +1,10 @@
+# TA.2 single authoritative cross-release registry.
+# BC0001 reserved by owner identity decision; NO tape image created.
+schema_version: 1
+candidates:
+  - candidate_id: BCPL-0.1.0-rc1
+    version: 0.1.0-rc1
+    source_commit: 146ae09a58398c9b4d685500760f85592e770e1e
+    volser: BC0001
+    manifest_sha256: 9eb6fe9c56059d27fa08c184eab7e402d6708fd0b246f6b58d35e9434dc40832
+    state: reserved

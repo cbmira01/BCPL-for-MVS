@@ -24,3 +24,7 @@ The new runner was Python-compiled and **28/28 focused synthetic tests passed** 
 **Next approval needed:** explicitly accept or revise the proposed candidate ID, version, source commit and VOLSER, and approve their binding to a release-specific manifest. Only then can the guarded one-shot staging job be submitted. No old staging needs to be repeated.
 
 **TA.2 IN PROGRESS.** TA.0/TA.1 qualified closures and TA.0–TA.8 naming remain unchanged.
+
+## Subsequent explicit identity approval — 20 November 2026
+
+After the stage-only operation approval, the owner approved **all four** identity values proposed earlier: `0.1.0-rc1`, `BCPL-0.1.0-rc1`, source `146ae09a58398c9b4d685500760f85592e770e1e` and VOLSER `BC0001`. The canonical release manifest and one release registry reservation now bind those values; the separate identity approval is Git-controlled. See [approved candidate identity](ta2-approved-identity-and-bootstrap-stage-20261120.md). This removes the previous **identity-only** stage block. The one-shot runner still requires the approved original MVS evidence, a fresh catalog/VTOC inquiry, operator confirmation and its exclusive no-retry marker before it will submit the six-step MVS job. No media production is implied.
