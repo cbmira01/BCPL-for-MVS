@@ -104,3 +104,31 @@ and derived `reconciliation.json` remain private under ignored
 provenance clearance, `RECFM=U` tape restoration, or candidate/release
 acceptance. Continue with the existing eight-build-job provenance intake
 contract without rerunning accepted printer pilots.
+
+## TA.2 — Approved source-inclusive successor candidate, 20 November 2026
+
+Owner-approved **`BCPL-0.1.0-rc2`**, with **`BC0002` reserved**, is
+`manifest/releases/BCPL-0.1.0-rc2.yaml`. It preserves the exact
+twenty-ordered-dataset `rc1` selection (and its historical acceptance)
+and appends `BT0021` historical Cambridge compiler sources and `BT0022`
+demoted source/bootstrap support and `SNOTICE`.
+
+The release declares **`cambridge_source: included`** while retaining
+**`native_compiler: absent`**. The source-only `cambridge-source` group
+is installed with native components and combined profiles; MR10-only retains
+its independent original selection. The previous `rc1` and `BC0001`
+reservation remain distinct and untouched. The source revision is frozen to
+the committed source-schema/PDS preparation, not the old `rc1` revision.
+
+The canonical schema-v1 preflight now permits **only** the two source PDSes
+under an absent-native-compiler candidate. It still rejects any claim of a
+native compiler executable and any unreviewed historical redistribution,
+generated-source evidence, absent MVS staging or producer receipts.
+`compiler-source/successor-contract.py` is a supplementary source-family
+cross-check, **not another manifest authority**.
+
+There is no accepted new MVS staging of `BT0021`/`BT0022`, rc2-specific
+MVS bootstrap/installer, full source/build provenance, producer
+readiness, AWS media or installation acceptance. The original twenty MVS
+stage receipts apply only to the accepted original input selections and
+are not silently reissued as a complete rc2 acceptance.

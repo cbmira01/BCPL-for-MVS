@@ -853,3 +853,33 @@ The two generated and fifteen resident object/load sources still require evidenc
 ## TA.2 MVS source-to-build evidence bridge — 20 November 2026
 
 After owner-reported accepted staging of all 20 logical datasets and independent 110/110 Git-source blob freeze confirmation, the new `create-tape/scripts/ta2-build-chain-reconcile` reuses the authoritative TA.0 binary build-chain auditor. It binds the 15 selected binary targets to eight known build-job JCL contracts and the two generated source inputs, while retaining **zero accepted candidate-specific build receipts** and **127 unreviewed redistribution decisions**. It preserves the distinction between historical Base Library `BLIB` and separate Coroutine Support Library `COROUTIN`, the unshipped `BLIBBLD` development procedure, and the absent native-running compiler. **19/19 focused local synthetic tests PASS; no additional JES, DASD or tape operations occurred.** See [the reconciled source/build-evidence queue](../../distribution/create-tape/ta2-build-chain-reconciliation-20261120.md). Rights policy and existing retained BCPL/IFOX/IEWL receipts need review before a controlled final manifest/registry amendment. No `BC0001` production AWS operation is authorized; **TA.2 IN PROGRESS**. TA.0/TA.1 qualified closures unchanged.
+
+## TA.2 compiler-source successor identity and layout — 20 November 2026
+
+The owner approved the **`BCPL-0.1.0-rc2`** successor and
+**`BC0002` VOLSER reservation** to distribute Cambridge Compiler
+work-in-progress source in addition to the intact independently usable
+MR10 Kit Compiler environment. The new frozen source commit is
+`0a4f169f734e22acfa2a55653fd49942e38f9f05` and the canonical
+successor manifest appends `BT0021` (`CAMB_SOURCE`, fifteen historical
+members) and `BT0022` (`CAMB_DEMOTED`, eleven demoted, three bootstrap
+support, and `SNOTICE`). The exact twenty previously selected datasets
+are preserved in order, while their accepted MVS stage results remain
+historically associated with `rc1`/`BC0001`.
+
+The validator now distinguishes **Cambridge source included** from
+**native Cambridge executable absent**. Both source PDSes belong to
+`cambridge-source`, independent of the future native-running Compiler.
+The MR10-only profile remains unchanged. This is a preservation-first
+source distribution, not a claim of a blanket historical license;
+individual redistribution-rights and MVS generator/build evidence remain
+open. The historical MAKEOBJ/MAKELIB materials are archival, not
+MVS-ready installation jobs.
+
+The supplementary source-family and two-new-PDS selective IEBCOPY
+**draft-only** generators do not submit JES or allocate DASD.
+The accepted 20-input MVS staging remains intact and is not retested.
+No stateful new MVS staging, initialized `BC0002` AWS tape,
+native compiler executable, recipient installation, or public release
+has been authorized or accomplished. **TA.2 IN PROGRESS**;
+**TA.0 and TA.1 remain CLOSED (qualified)**.

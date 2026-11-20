@@ -1,7 +1,8 @@
 # TA.2 — Cambridge Compiler source-family preparation
 
-**Status:** Design-stage, offline source checks only. Not a new release manifest,
-rights approval, MVS staging result, or tape-production authorization.
+**Status:** Owner-approved source-family layout is selected by
+`BCPL-0.1.0-rc2` (`BC0002`, reserved), but the candidate has **no new MVS
+staging or AWS image**. These source checks do not approve rights or release.
 
 This working selection identifies source material suitable for a future
 **Cambridge Compiler source distribution (work in progress)**. It must not be
@@ -17,8 +18,12 @@ interpreted as an available native-running Cambridge Compiler. The accepted
 `source-selection.json` is a non-release worksheet, not a second canonical
 release manifest. The historical and generated families intentionally use some
 identical PDS member names: **they must reside in separate physical PDSes**.
-No source PDS name, new tape sequence, candidate ID, Git freeze or VOLSER is
-assigned here. The eventual successor manifest must own all those assignments.
+The successor canonical manifest assigns `BT0021` to
+`CAMB_SOURCE` (`{HLQ}.BCPL.CAMBRIDG.SOURCE`), with 15 historical
+members, and `BT0022` to `CAMB_DEMOTED`
+(`{HLQ}.BCPL.CAMBRIDG.DEMOTED`), with 11 generated sections, three
+support members and `SNOTICE`. Both are PO/FB/80/800 source PDSes.
+The previous 20 logical dataset selections remain identical to rc1.
 
 `pack.py` checks selected ASCII LF source for FB80 representability. The
 default check intentionally leaves generated source pending. After the
@@ -37,15 +42,25 @@ archive and its provenance remains in `richards-bcpltape/`.
 
 `SNOTICE.txt` is an 80-column-safe offline source-family notice with the
 project MIT terms and historical/derivative qualifications. It is intended
-for successor release documentation, but is not yet on distribution tape.
+as `CAMB_DEMOTED(SNOTICE)`; no completed tape exists.
 
 **Rights:** See `LICENSE.md`, `THIRD-PARTY-NOTICES.md`, and
 `PUBLIC-RELEASE-AUDIT.md`. Historical files and their demoted derivatives are
 not automatically MIT-licensed. Selection and syntax checks do not establish
 redistribution permission. Final tape notices must preserve those caveats.
 
-**Before successor candidate production:** agree on identity and fresh VOLSER,
-source PDS layout, generated-source receipts, MVS staging mechanism, MVS-only
-recipient instructions, and the provenance/rights gate. The existing frozen
-`BCPL-0.1.0-rc1`/`BC0001` reservation and 20 accepted MVS staging inputs are
-not changed or reinterpreted by this preparation.
+**Checks:** `successor-contract.py` is a supplementary fail-closed check
+against the two canonical manifests, development PDS map, source-family
+worksheet and SHA-256-pinned release registry. `rc2-stage-draft.py`
+renders **only** the two additional selective IEBCOPY staging steps; it
+never submits jobs. The existing TA.2 18-PDS stage machinery and all
+accepted rc1 staging receipts are unchanged. The supplementary scripts
+and source packer have 68/68 focused synthetic offline tests passing.
+
+**Before production:** derive and validate the eleven demoted records,
+perform genuine read-only MVS source and available-space preflight, obtain
+separate authority for any MVS creation/staging, and bind new MVS/BCPL
+build and rights evidence to rc2. The existing rc1 `BC0001` reservation
+and accepted twenty input datasets are not modified. Draft recipient
+`DATASETS`/`RELEASE` documentation and bootstrap/installer material
+must also be made rc2-specific before a candidate write.
