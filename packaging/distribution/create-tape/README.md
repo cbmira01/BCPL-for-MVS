@@ -678,3 +678,11 @@ SHA256-sealed evidence under ignored `workarea/`. It performs
 no allocation or tape write and never resubmits accepted staging.
 **43/43 focused offline tests PASS**. BT input staging needs further
 owner approval and actual MVS results; no candidate VOLSER was reserved.
+
+## TA.2 read-only BT0001/BT0002 MVS saved-evidence review — 19 November 2026 EST
+
+The owner reported a successful, actual MVS `ta2-bootstrap-target-preflight --live` run for exactly `HERC02.BCPL.TA2STG.BT0001` and `BT0002` (both absent in LISTDS) and TSO002 IEHLIST VTOC. Original private evidence: `workarea/ta2-bootstrap-target-preflight/20261120T025333Z-20572`. No BT0003–BT0020 staging was repeated.
+
+New `scripts/ta2-bootstrap-preflight-review --evidence <saved-run>` is **offline only**: it reuses existing MVS report parsers, verifies the saved report seal and exact two target identities, and compares IEHLIST-reported free tracks to a **31-track planning allowance** (25 initial tracks plus one 1-track and one 5-track secondary extent; further secondaries remain possible). It preserves an immutable private receipt under ignored `workarea/`. This is not MVS utility certification, an actual allocation or approval to stage BT0001/BT0002. See [saved MVS review checkpoint](ta2-bootstrap-preflight-review-20261119.md).
+
+**57/57 focused synthetic assistant-workspace tests PASS** across the bootstrap materials, preflight and saved-evidence reviewer. The owner's private JES reports have not been independently read in the assistant workspace. Release identity/VOLSER and two target allocations are not yet approved; TA.2 remains IN PROGRESS.

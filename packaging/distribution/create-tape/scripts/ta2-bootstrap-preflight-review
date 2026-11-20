@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""TA.2 review an existing BT0001/BT0002 LISTDS/IEHLIST MVS receipt.
+
+Offline only. Checks our MVS target selection and proposed space budget,
+not the reliability of IBM utilities. Does not repeat the successful jobs.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+INROOT = ROOT / 'workarea/ta2-bootstrap-target-preflight'
+OUTROOT = ROOT / 'workarea/ta2-bootstrap-preflight-review'
+EXPECTED = ('HERC02.BCPL.TA2STG.BT0001', 'HERC02.BCPL.TA2STG.BT0002')
+VOLUME = 'TSO002'
+RUN = re.compile(r'20\d{6}T\d{6}Z-\d+\Z')
+SUM = re.compile(r'([0-9a-f]{64})  ([A-Za-z0-9_.-]+)\Z')
+# BT0001: 5 primary + 1 secondary; BT0002: 20 primary + 5 secondary.
+# This is a *budget*, not a promise about extent placement.
+SPACE = {'BT0001': {'primary': 5, 'secondary': 1},
+         'BT0002': {'primary': 20, 'secondary': 5, 'directory': 10}}
+TRACK_BUDGET = 31
+MAX_FILE = 16 * 1024 * 1024
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, explanation: str) -> None:
+    if not ok:
+        raise Refusal(explanation)
+
+
+def load_module(name: str, path: Path):
+    need(path.is_file() and not path.is_symlink(), 'missing project MVS parser')
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'unavailable MVS parser')
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def saved_files(folder: Path) -> dict[str, bytes]:
+    """Only accept the original, sealed, immutable MVS preflight evidence."""
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and
+         INROOT.is_dir() and not INROOT.is_symlink() and
+         INROOT.resolve().parent == work.resolve(), 'unsafe evidence root')
+    need(RUN.fullmatch(folder.name) is not None and folder.is_dir() and
+         not folder.is_symlink() and folder.resolve().parent == INROOT.resolve(),
+         'selected evidence is not an original BT-only MVS run')
+    files = {}
+    for path in folder.iterdir():
+        need(path.is_file() and not path.is_symlink() and
+             SUM.fullmatch('0' * 64 + '  ' + path.name) is not None and
+             path.stat().st_size <= MAX_FILE and path.name not in files,
+             'linked, oversized, duplicate or foreign evidence file')
+        files[path.name] = path.read_bytes()
+    need('SHA256SUMS' in files, 'evidence checksum ledger missing')
+    try:
+        entries = files.pop('SHA256SUMS').decode('ascii').splitlines()
+    except UnicodeDecodeError as exc:
+        raise Refusal('evidence SHA256SUMS not ASCII') from exc
+    checksums = {}
+    for line in entries:
+        m = SUM.fullmatch(line)
+        need(m is not None and m.group(2) not in checksums,
+             'malformed or duplicated evidence checksum')
+        checksums[m.group(2)] = m.group(1)
+    need(set(files) == set(checksums), 'saved evidence list differs from seal')
+    need({'result.json', 'catalog-report.txt', 'vtoc-report.txt'} <= set(files),
+         'saved MVS original reports/receipt incomplete')
+    for name, content in files.items():
+        need(hashlib.sha256(content).hexdigest() == checksums[name],
+             'MVS evidence changed: ' + name)
+    return files
+
+
+def inspect(files: dict[str, bytes], core, target, review) -> dict:
+    try:
+        result = json.loads(files['result.json'].decode('utf-8'))
+        catalog = files['catalog-report.txt'].decode('utf-8')
+        vtoc = files['vtoc-report.txt'].decode('utf-8')
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError) as exc:
+        raise Refusal('saved MVS evidence not readable') from exc
+    need(isinstance(result, dict) and result.get('status') ==
+         'READ_ONLY_MVS_CATALOG_ABSENCE_VTOC_OBSERVED' and
+         result.get('volume') == VOLUME and result.get('targets') == list(EXPECTED),
+         'MVS target receipt does not match the exact two BT inputs')
+    jobs = result.get('jobs')
+    need(isinstance(jobs, dict) and set(jobs) == {'catalog', 'vtoc'} and
+         all(type(jobs[k]) is int and jobs[k] > 0 for k in jobs) and
+         jobs['catalog'] != jobs['vtoc'], 'missing or conflicting JES job IDs')
+    # These existing readers interpret IBM's actual LISTDS and IEHLIST output.
+    target.catalog_absence(core, catalog, list(EXPECTED))
+    target_old = load_module('ta2_bt_old_target', SCRIPTS / 'ta2-target-preflight')
+    target_old.vtoc_observation(vtoc, VOLUME, list(EXPECTED))
+    vtoc_result = review.inspect_vtoc(vtoc, VOLUME, list(EXPECTED))
+    free_tracks = vtoc_result.get('iehlist_reported_free_total_tracks')
+    need(type(free_tracks) is int and free_tracks >= TRACK_BUDGET,
+         'no sufficient recognized IEHLIST free-track budget for 31 tracks')
+    need(vtoc_result.get('staging_names_in_formatted_vtoc') == 0,
+         'staging target present on formatted VTOC')
+    return {'status': 'READ_ONLY_SAVED_MVS_REVIEW_PASS', 'volume': VOLUME,
+            'targets': list(EXPECTED), 'jobs': jobs,
+            'iehlist_reported_free_tracks': free_tracks,
+            'proposed_track_budget': TRACK_BUDGET,
+            'planned_space': SPACE,
+            'format1_datasets_seen': vtoc_result['format1_datasets_seen'],
+            'qualification': ('Saved catalog/VTOC and space budget observed; '
+                              'extent contiguity, present-time absence, MVS allocation '
+                              'and media production not accepted')}
+
+
+def review_saved(folder: Path) -> dict:
+    files = saved_files(folder)
+    folder = folder.resolve()
+    core = load_module('ta2_bt_dspal_core', ROOT / 'tools/datasets/dspal-core.py')
+    target = load_module('ta2_bt_target_reader', SCRIPTS / 'ta2-bootstrap-target-preflight')
+    vtoc = load_module('ta2_bt_vtoc_reader', SCRIPTS / 'ta2-target-review')
+    result = inspect(files, core, target, vtoc)
+    result['source_evidence'] = folder.relative_to(ROOT).as_posix()
+    result['source_seal_sha256'] = hashlib.sha256((folder / 'SHA256SUMS').read_bytes()).hexdigest()
+    return result
+
+
+def save_review(receipt: dict) -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         OUTROOT.resolve().parent == work.resolve() and not OUTROOT.is_symlink(),
+         'unsafe review output')
+    OUTROOT.mkdir(mode=0o700, exist_ok=True)
+    run = OUTROOT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+    run.mkdir(mode=0o700, exist_ok=False)
+    content = (json.dumps(receipt, indent=2, sort_keys=True) + '\n').encode('utf-8')
+    name = run / 'review.json'
+    with os.fdopen(os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'wb') as stream:
+        stream.write(content)
+    sums = hashlib.sha256(content).hexdigest() + '  review.json\n'
+    with os.fdopen(os.open(run / 'SHA256SUMS', os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                          0o600), 'wb') as stream:
+        stream.write(sums.encode('ascii'))
+    return run
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--evidence', type=Path, required=True,
+                        help='existing SHA256-sealed read-only BT target preflight run')
+    args = parser.parse_args(argv)
+    try:
+        receipt = review_saved(args.evidence)
+        folder = save_review(receipt)
+        print('TA.2 BT SAVED MVS REVIEW: 2/2 absent; IEHLIST free tracks '
+              f'{receipt["iehlist_reported_free_tracks"]}; proposed budget 31.')
+        print('Private review: ' + folder.relative_to(ROOT).as_posix())
+        print('No new JES jobs, staging allocations, candidate VOLSER or tape write.')
+        return 0
+    except (Refusal, OSError, KeyError, ValueError, TypeError) as exc:
+        print('TA.2 BT SAVED MVS REVIEW REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
