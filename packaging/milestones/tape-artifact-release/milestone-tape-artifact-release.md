@@ -969,3 +969,28 @@ record-content verification and a separate BT0021 staging decision
 remain future gates. See the
 [formal source-population authorization](../../distribution/compiler-source/rc2-source-population-authorization-20261120.md).
 **TA.2 IN PROGRESS; TA.0/TA.1 CLOSED (qualified).**
+
+## TA.2 historical CAMB_SOURCE population complete — JOBS 9325/9326, 20 November 2026
+
+The owner executed the single approved `rc2-populate-cambsource-once.py`
+operation, reporting MVS **JOB 9325** and **JOB 9326** with
+**15 historical member writes** and an exact **15/15 MVS directory
+PASS** for `HERC02.BCPL.CAMBRIDG.SOURCE`. Original private evidence:
+`workarea/ta2-rc2-cambsource-population-once/`. The preserved
+post-write LISTDS member check establishes the bounded population
+milestone, but record-level content matching was **not yet performed**.
+Do **not** repeat this one-time operation.
+
+The new [read-only record verifier](../../distribution/compiler-source/rc2-cambsource-record-readback.py)
+reuses `dspal get` / MVS IEBGENER to compare all 15 restored member
+texts against the frozen original Git sources, saving per-member MVS
+job IDs, normalized hashes and text in private `workarea/` evidence.
+**28/28 compact local synthetic rc2 tests PASS.** This text readback
+cannot assert exact raw EBCDIC byte identity because the existing
+get path strips trailing FB80 padding blanks. See the
+[population acceptance and readback plan](../../distribution/compiler-source/rc2-population-accepted-readback-design-20261120.md).
+
+The separate `BT0021` stage input is still **unverified and unwritten**.
+No new AWS tape image, public release, rights approval or native-running
+Cambridge Compiler is implied; previously accepted BT0001–BT0020
+staging remains untouched. **TA.2 IN PROGRESS.**

@@ -78,3 +78,14 @@ checks the resulting member directory. The attempt marker is
 persistent; failures are **not automatically retryable**.
 See [owner authorization and local tests](rc2-source-population-authorization-20261120.md).
 It does not stage BT0021 or produce an AWS tape.
+
+**MVS population accepted (20 November 2026):** the owner executed the
+one-shot 15-member Cambridge source population in JOBS 9325/9326;
+the runner independently verified the exact 15-member MVS directory.
+Do not rerun population. The new [read-only historical source record
+readback](rc2-cambsource-record-readback.py) uses the existing
+`dspal get` MVS service to compare each normalized FB80 record with
+frozen historical Git source. See [population acceptance and record
+readback evidence](rc2-population-accepted-readback-design-20261120.md).
+Record readback and BT0021 staging remain pending. Raw CP037 bytes
+are not claimed verified by the text readback.
