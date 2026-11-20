@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+"""TA.2 offline review: join accepted staged inputs, frozen sources and build chains.
+
+Reuses the existing TA.0 binary chain auditor and TA.2 evidence tools. Never
+submits JES, changes MVS datasets, claims redistribution rights or writes tape.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+SOURCE = SCRIPTS / 'ta2-source-lineage'
+STAGED = SCRIPTS / 'ta2-complete-stage-inputs'
+CHAIN = ROOT / 'tools/distribution/audit-binary-build-chain.py'
+DESIGN = ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+WORKAREA = ROOT / 'workarea'
+MEMBER_REF = re.compile(r'([A-Z][A-Z0-9_]*)\(([A-Z@$#][A-Z0-9@$#]{0,7})\)\Z')
+BUILDER_REF = re.compile(r'(?:MR10_JCL|BOOT_JCL)\([A-Z@$#][A-Z0-9@$#]{0,7}\)\Z')
+STEP = re.compile(r'[A-Z0-9@$#]{1,8}\Z')
+GENERATED = frozenset({'BOOT_SOURCE(BLIB)', 'BOOT_ASM(COROUTIN)'})
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(value: bool, reason: str) -> None:
+    if not value:
+        raise Refusal(reason)
+
+
+def load_script(name: str, path: Path):
+    need(path.is_file() and not path.is_symlink(), 'missing trusted project review tool')
+    loader = SourceFileLoader(name, str(path))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'failed to load project review tool')
+    module = module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def join(staged: dict, lineage: dict, binary: dict) -> dict:
+    """Derive member-to-builder requirements without inventing MVS receipts."""
+    need(staged.get('status') == 'ALL_20_STAGE_INPUTS_ACCEPTED' and
+         staged.get('datasets') == 20 and staged.get('pds') == 19 and
+         staged.get('selected_payload_members') == 127 and
+         len(staged.get('inputs', [])) == 20 and
+         all(x.get('status') == 'ACCEPTED_STAGING' for x in staged['inputs']),
+         'accepted 20-input MVS stage map missing')
+    need(lineage.get('status') == 'TA2_FROZEN_SOURCE_LINEAGE_VERIFIED_RIGHTS_PENDING' and
+         lineage.get('candidate_id') == staged.get('candidate_id') == 'BCPL-0.1.0-rc1' and
+         lineage.get('source_git_sha') == staged.get('source_commit') and
+         lineage.get('reserved_volser') == staged.get('volser_reserved') == 'BC0001' and
+         lineage.get('candidate_manifest_sha256') == staged.get('candidate_manifest_sha256'),
+         'frozen source or reserved candidate differs from accepted staging')
+    summary = lineage.get('source_summary') or {}
+    need(all(summary.get(k) == v for k, v in {
+        'git_source': 110, 'generated': 2, 'resident_binary': 15,
+        'redistribution_unreviewed': 127, 'generated_or_binary_build_receipts_pending': 17,
+        'git_blob_refs_verified': 110}.items()),
+         'source lineage counts or rights status differ')
+    need(binary.get('status') == 'TA.0 RECONSTRUCTION BUILD PLAN ONLY; NO CANDIDATE OR BINARY ACCEPTANCE' and
+         binary.get('summary', {}).get('binary_members') == 15 and
+         binary.get('summary', {}).get('mvs_receipts_verified') == 0 and
+         binary.get('summary', {}).get('rights_approvals') == 0,
+         'binary build-chain audit does not represent pending evidence')
+
+    selected = {}
+    for ds in staged['inputs'][2:]:
+        key = ds['dspal_key']
+        for name in ds['selected_members']:
+            ref = f'{key}({name})'
+            need(ref not in selected, 'duplicate accepted MVS source member')
+            selected[ref] = ds['tape_alias']
+    need(len(selected) == 127, 'accepted MVS source member inventory differs')
+    sources = lineage.get('sources')
+    need(type(sources) is list and len(sources) == 127,
+         'source worksheet must contain exactly 127 selected members')
+    typed = {}
+    for row in sources:
+        ref = f"{row['dataset_key']}({row['member']})"
+        need(ref in selected and ref not in typed and
+             row['tape_sequence'] == int(selected[ref][-4:]) and
+             row['redistribution_review'] == 'UNREVIEWED' and
+             row.get('rights_ref') is None and row.get('build_receipt') is None,
+             'source worksheet selection or unresolved rights differ')
+        cls = row['source_class']
+        need(cls in {'git_source', 'generated', 'resident_binary'},
+             'unknown source class')
+        if cls == 'git_source':
+            need(isinstance(row.get('frozen_git_source_ref'), str) and
+                 row['frozen_git_source_ref'].startswith('git:'),
+                 'selected Git source blob not frozen')
+        else:
+            need(row.get('frozen_git_source_ref') is None,
+                 'generated/binary MVS artifact incorrectly represented as Git blob')
+        typed[ref] = cls
+    need(set(typed) == set(selected) and
+         {k for k,v in typed.items() if v == 'generated'} == GENERATED and
+         len([v for v in typed.values() if v == 'resident_binary']) == 15,
+         'generated/binary member selection differs from accepted audit')
+
+    pending = {}
+    builders = {}
+    generated_consumers = {key: [] for key in GENERATED}
+    records = binary.get('members')
+    need(type(records) is list and len(records) == 15, 'exact 15 binary build chains required')
+    for row in records:
+        target = row.get('target')
+        need(isinstance(target, str) and MEMBER_REF.fullmatch(target) is not None and
+             typed.get(target) == 'resident_binary' and target not in pending,
+             'missing, duplicated or unselected binary build target')
+        refs = row.get('selected_source_members')
+        need(type(refs) is list and bool(refs) and len(refs) == len(set(refs)) and
+             all(isinstance(ref,str) and MEMBER_REF.fullmatch(ref) is not None and
+                 ref in selected for ref in refs),
+             target + ': invalid selected build source chain')
+        builder = row.get('build_job')
+        steps = row.get('reconstruction_step_contract')
+        need(isinstance(builder,str) and BUILDER_REF.fullmatch(builder) is not None and
+             isinstance(row.get('build_jcl_path'),str) and row['build_jcl_path'] and
+             type(steps) is list and bool(steps) and
+             all(isinstance(s,str) and STEP.fullmatch(s) is not None for s in steps),
+             target + ': missing verified IFOX/IEWL build job contract')
+        is_unshipped = builder == 'BOOT_JCL(BLIBBLD)'
+        need(row.get('build_jcl_on_tape') is (not is_unshipped) and
+             row.get('requires_generated_assembler') is (target == 'BOOT_OBJ(COROUTIN)') and
+             row.get('requires_absent_compiler_for_bcpl_source_rebuild') is
+                 (target in {'BOOT_OBJ(BLIB)', 'BOOT_OBJ(COROUTIN)'}) and
+             row.get('mvs_build_receipt') is None and
+             row.get('mvs_input_inventory_receipt') is None and
+             row.get('mvs_binary_readback_receipt') is None and
+             row.get('candidate_source_sha_verified') is False and
+             row.get('redistribution_approved') is False,
+             target + ': binary build chain acceptance not supported')
+        for ref in refs:
+            if ref in generated_consumers:
+                generated_consumers[ref].append(target)
+        builders.setdefault(builder, {'builder': builder, 'build_jcl_path': row['build_jcl_path'],
+                                      'selected_on_tape': not is_unshipped,
+                                      'targets': [], 'mvs_receipt': None})
+        need(builders[builder]['build_jcl_path'] == row['build_jcl_path'] and
+             builders[builder]['selected_on_tape'] == (not is_unshipped),
+             'inconsistent shared builder JCL contract')
+        builders[builder]['targets'].append(target)
+        pending[target] = {
+            'target': target, 'selected_sources': refs, 'build_job': builder,
+            'build_jcl_path': row['build_jcl_path'],
+            'build_jcl_on_tape': not is_unshipped,
+            'expected_steps': steps,
+            'requires_generated_assembler': row['requires_generated_assembler'],
+            'recipient_bcpl_source_rebuild_unavailable': row['requires_absent_compiler_for_bcpl_source_rebuild'],
+            'mvs_build_receipt': None, 'candidate_source_binding': None,
+            'rights_review': 'UNREVIEWED'}
+    need(set(pending) == {ref for ref, cls in typed.items() if cls == 'resident_binary'} and
+         len(builders) == 8 and
+         set(builders) == {
+             'MR10_JCL(IC19BLD)', 'BOOT_JCL(BLDBMAIN)', 'BOOT_JCL(BLIBBLD)',
+             'BOOT_JCL(BLDCORCO)', 'BOOT_JCL(BLDCORLB)',
+             'BOOT_JCL(BCPLDEMO)', 'BOOT_JCL(BCPLTIME)', 'BOOT_JCL(BCPLQSAM)'} and
+         all(generated_consumers.values()),
+         'incomplete 15-binary / 2-generated MVS build-chain coverage')
+    return {
+        'status': 'TA2_STAGE_AND_SOURCE_JOIN_PASS_BUILD_RECEIPTS_PENDING',
+        'scope': 'DERIVED_REVIEW_QUEUE_NOT_RELEASE_MANIFEST_OR_MEDIA_AUTHORIZATION',
+        'candidate_id': staged['candidate_id'],
+        'source_commit': lineage['source_git_sha'],
+        'reserved_volser': 'BC0001',
+        'candidate_manifest_sha256': staged['candidate_manifest_sha256'],
+        'mvs_stage_jobs': staged['mvs_jobs'],
+        'summary': {'mvs_staged_datasets': 20, 'payload_members': 127,
+                    'git_sources_frozen': 110, 'generated_sources_pending': 2,
+                    'binary_targets_pending': 15, 'build_job_contracts_traced': 8,
+                    'unshipped_build_jobs': 1,
+                    'redistribution_reviews_pending': 127,
+                    'candidate_specific_build_receipts_accepted': 0},
+        'generated_sources': [{
+            'source': ref, 'consumed_by': sorted(generated_consumers[ref]),
+            'generation_receipt': None, 'rights_review': 'UNREVIEWED'}
+            for ref in sorted(GENERATED)],
+        'binary_targets': [pending[k] for k in sorted(pending)],
+        'build_jobs': [builders[k] for k in sorted(builders)],
+        'next_decisions': [
+            'Review historical and derivative redistribution separately from the original-project MIT license',
+            'Attach actual retained BCPL/IFOX/IEWL receipts for eight builder contracts, without rerunning accepted staging',
+            'Review generated BLIB and COROUTIN input derivations and candidate source revision binding',
+            'Keep the strict TA.2 producer gate and BC0001 AWS write authorization closed until independently accepted']}
+
+
+def evaluate() -> dict:
+    # Each dependency has its own existing canonical validation rules.
+    stage_tool = load_script('ta2_join_staged', STAGED)
+    source_tool = load_script('ta2_join_lineage', SOURCE)
+    binary_tool = load_script('ta2_join_binary', CHAIN)
+    staged = stage_tool.evaluate()
+    lineage = source_tool.evaluate()
+    manifest = binary_tool.validation.load(DESIGN)
+    dspal = binary_tool.validation.load(DSPAL)
+    binary_tool.validation.check(manifest, dspal, ROOT)
+    binary = binary_tool.build_plan(manifest, dspal, ROOT)
+    return join(staged, lineage, binary)
+
+
+def write_new(file: Path, result: dict) -> None:
+    need(WORKAREA.is_dir() and not WORKAREA.is_symlink() and
+         WORKAREA.resolve().is_relative_to(ROOT.resolve()) and
+         file.parent.resolve() == WORKAREA.resolve() and not file.is_symlink(),
+         'evidence output must be a new file directly under workarea/')
+    data = (json.dumps(result, indent=2, sort_keys=True) + '\n').encode('utf-8')
+    with os.fdopen(os.open(file, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                          getattr(os, 'O_NOFOLLOW', 0), 0o600), 'wb') as stream:
+        stream.write(data)
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--output', type=Path, help='new private build-chain review JSON under workarea/')
+    args = p.parse_args(argv)
+    try:
+        result = evaluate()
+        if args.output is not None:
+            write_new(args.output, result)
+        print('TA.2 BUILD EVIDENCE: 20 MVS staged inputs, 110 frozen Git sources; '
+              '2 generated + 15 binaries mapped to 8 build jobs.')
+        print('PENDING: actual builder receipts and 127 redistribution decisions; '
+              'no AWS tape write authorized.')
+        if args.output is not None:
+            print('Private review: ' + str(args.output))
+        return 0
+    except (Refusal, OSError, ValueError, TypeError, KeyError, RuntimeError) as exc:
+        print('TA.2 BUILD EVIDENCE REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
