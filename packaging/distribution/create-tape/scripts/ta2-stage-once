@@ -468,6 +468,11 @@ def validate_job(job: int, summary: str, report: str) -> dict:
     return {'status':'18_IEBCOPY_STEPS_RC0000_ONLY_DIRECTORY_AND_RECORD_AUDIT_PENDING',
             'mvs_job':job,'step_count':18,'selected_member_cards':127}
 
+def confirm_submission() -> bool:
+    """A short, unambiguous human gate; the --run flag pins the operation."""
+    return input('Submit TA.2 IEBCOPY staging job? [y/N]: ').strip().upper() == 'Y'
+
+
 def operation(args) -> int:
     global ACTIVE_FOLDER
     ACTIVE_FOLDER = None
@@ -503,10 +508,7 @@ def operation(args) -> int:
         print('Read-only; TSO002 and 18 SPACE triples/IEBCOPY approved; no submission.')
         print('Private MVS evidence: '+relative(folder))
         return 0
-    token = ('AUTHORIZE TA2STAGE TSO002 18 PDS' if attempt_number == 1 else
-             'RETRY TA2STAGE TSO002 ALL 18 ABSENT')
-    need(input('Type '+token+' to authorize this exact staging attempt: ').strip() == token,
-         'explicit staging confirmation absent')
+    need(confirm_submission(), 'explicit staging confirmation absent')
     need(approved is not None, 'owner approval absent')
     second = folder/'second-preflight'
     second.mkdir(mode=0o700)

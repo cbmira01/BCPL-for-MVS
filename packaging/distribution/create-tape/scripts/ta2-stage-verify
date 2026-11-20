@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""TA.2 read-only verification of JOB 9310 staged PDS attributes and members.
+
+Replays the checksum-sealed IEBCOPY receipt and canonical TA.0 selection;
+--live submits two consolidated, read-only TSO LISTDS jobs. No confirmation
+prompt, dataset mutation, tape, release candidate or automatic retry.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+OUT = ROOT / 'workarea/ta2-stage-verification'
+STAGE_ROOT = ROOT / 'workarea/ta2-stage-operations'
+EXPECTED_RUN = '20261120T002516Z-19547'
+EXPECTED_JOB = 9310
+MAX = 16 * 1024 * 1024
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(ok: bool, why: str) -> None:
+    if not ok:
+        raise Refusal(why)
+
+
+def digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def read_file(p: Path) -> bytes:
+    need(p.is_file() and not p.is_symlink() and p.stat().st_size <= MAX,
+         'unsafe or missing evidence: ' + p.name)
+    return p.read_bytes()
+
+
+def write_new(p: Path, content: bytes) -> None:
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, 'O_NOFOLLOW', 0)
+    with os.fdopen(os.open(p, flags, 0o600), 'wb') as stream:
+        stream.write(content)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def finish_evidence(folder: Path) -> None:
+    rows = []
+    for f in sorted(folder.iterdir()):
+        if f.is_file():
+            rows.append(digest(read_file(f)) + '  ' + f.name + '\n')
+    write_new(folder / 'SHA256SUMS', ''.join(rows).encode('ascii'))
+
+
+def make_folder() -> Path:
+    work = ROOT / 'workarea'
+    need(work.is_dir() and not work.is_symlink() and
+         work.resolve().is_relative_to(ROOT.resolve()) and not OUT.is_symlink(),
+         'unsafe verification evidence root')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    folder = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') +
+                    '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    return folder
+
+
+def verify_stage_receipt(stage, folder: Path, proposal_sha: str, readiness_sha: str,
+                         approval_sha: str) -> dict:
+    """Independently verify full original success, pinned journal and JES proof."""
+    stage.safe_run(folder, STAGE_ROOT)
+    need(folder.name == EXPECTED_RUN, 'only original owner-reported stage run is accepted')
+    result = stage._pinned_operation(folder)
+    need(type(result) is dict and result.get('mvs_job') == EXPECTED_JOB,
+         'saved staging result is not JOB 9310')
+    summary = read_file(folder / 'stage-summary.txt').decode('utf-8')
+    report = read_file(folder / 'stage-report.txt').decode('utf-8')
+    verified = stage.validate_job(EXPECTED_JOB, summary, report)
+    need(result == verified, 'staging result differs from independently parsed MVS JES proof')
+    # The stage-specific journal must identify this exact immutable source.
+    intent = json.loads(read_file(folder / 'submission-intent.json'))
+    marker = json.loads(read_file(stage.ATTEMPT))
+    need(type(intent) is dict and intent == marker and
+         intent.get('state') == 'SUBMISSION_INTENT_RETRYABLE' and
+         intent.get('attempt_number') == 1 and
+         intent.get('proposal_sha256') == proposal_sha and
+         intent.get('readiness_sha256') == readiness_sha and
+         intent.get('approval_sha256') == approval_sha and
+         intent.get('attempt_evidence') == str(folder.relative_to(ROOT)) and
+         intent.get('jobname') == stage.JOB and
+         intent.get('expected_pds') == 18,
+         'staging job attempt journal is absent, modified or mismatched')
+    need(not any(stage.RETRY.fullmatch(f.name) for f in STAGE_ROOT.iterdir()),
+         'unexpected retry marker after successful staging')
+    return verified
+
+
+def target_expectations(stage, proposal: dict, mods: dict, checked: dict) -> list[dict]:
+    canonical = mods['source'].core()
+    manifest = canonical.load(ROOT / 'packaging/distribution/manifest/ta0-inventory.yaml')
+    dspal = canonical.load(ROOT / 'config/dspal.yaml')
+    rows = mods['stage'].validate_worksheet(checked['plan'], manifest, dspal)
+    worksheet_sha = checked['plan']['stage_worksheet_sha256'] if 'stage_worksheet_sha256' in checked['plan'] else None
+    # Original allocation replay already checks the pinned worksheet SHA-256;
+    # use its original allocation SHA rather than a guessed duplicate.
+    raw, allocations, planning, _ = mods['ready'].read_plan(ROOT / proposal['allocation_evidence'])
+    need(worksheet_sha is None or worksheet_sha == planning['source_worksheet_sha256'],
+         'worksheet SHA changed from original stage run')
+    targets = mods['stage'].validate_allocations(allocations,
+                planning['source_worksheet_sha256'], rows, dspal)
+    need(len(targets) == 18 and sum(len(x['members']) for x in targets) == 127 and
+         [x['staging_dsn'] for x in targets] ==
+         [f'HERC02.BCPL.TA2STG.BT{i:04d}' for i in range(3, 21)] and
+         all(x['volume'] == 'TSO002' for x in targets),
+         'manifest-selected staged destination inventory differs')
+    return targets
+
+
+def audit_attributes(core, report: str, targets: list[dict]) -> None:
+    for x in targets:
+        name = x['staging_dsn']
+        need(not core.dataset_missing(report, name), name + ': missing from MVS catalog')
+        lines = core.extract_listds_block(report, name)
+        attrs = core.parse_listds(lines) if lines else {}
+        dcb = x['dcb']
+        expected = {'volume': x['volume'], 'dsorg': dcb['dsorg'],
+                    'recfm': dcb['recfm'], 'lrecl': str(dcb['lrecl']),
+                    'blksize': str(dcb['blksize'])}
+        need(all(attrs.get(k) == v for k, v in expected.items()),
+             name + ': MVS LISTDS LABEL DCB/VOLSER differs from manifest')
+
+
+def audit_members(ls, report: str, targets: list[dict]) -> None:
+    names = [x['staging_dsn'] for x in targets]
+    blocks = ls.member_blocks(report, names)
+    need(set(blocks) == set(names), 'MVS LISTDS MEMBERS did not return all 18 target directories')
+    for x in targets:
+        actual = ls.parse_members(blocks[x['staging_dsn']])
+        expected = x['members']
+        need(len(actual) == len(set(actual)) and set(actual) == set(expected) and
+             len(actual) == len(expected),
+             x['staging_dsn'] + ': staged member directory has missing/extra/duplicate names')
+
+
+def run_read_only_jobs(stage, folder: Path, targets: list[dict]) -> dict:
+    core = stage.load('ta2_verify_core', ROOT / 'tools/datasets/dspal-core.py')
+    ls = stage.load('ta2_verify_ls', ROOT / 'tools/datasets/dspal-ls.py')
+    config = core.load_config()
+    need(config['mvs']['hlq'] == 'HERC02', 'MVS HLQ differs')
+    core.require_reader_ready(config)
+    names = [x['staging_dsn'] for x in targets]
+    contracts = [('catalog', core.stat_deck(config, names),
+                  lambda report: audit_attributes(core, report, targets)),
+                 ('members', ls.list_members_deck(config, names),
+                  lambda report: audit_members(ls, report, targets))]
+    jobs = {}
+    before = tempfile.tempdir
+    previous_tmp = os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder)
+        os.environ['TMPDIR'] = str(folder)
+        for label, deck, verify in contracts:
+            need(all(line.isascii() and len(line) <= 80 for line in deck.splitlines()),
+                 label + ': generated TSO job contains invalid JCL')
+            # Store reports/summary, never the authenticated JOB card/password.
+            cursor = folder / (label + '-cursor.json')
+            job, summary = core.submit_and_wait(config, deck, max_rc=8,
+                                                cursor_file=cursor)
+            write_new(folder / (label + '-summary.txt'), summary.encode('utf-8'))
+            need(type(job) is int and 1 <= job <= 9999,
+                 label + ': MVS job identity invalid')
+            report = core.job_report(job, cursor_file=cursor)
+            write_new(folder / (label + '-report.txt'), report.encode('utf-8'))
+            verify(report)
+            jobs[label] = job
+    finally:
+        tempfile.tempdir = before
+        if previous_tmp is None:
+            os.environ.pop('TMPDIR', None)
+        else:
+            os.environ['TMPDIR'] = previous_tmp
+    need(set(jobs) == {'catalog', 'members'} and jobs['catalog'] != jobs['members'],
+         'catalog and member inquiry jobs incomplete or duplicated')
+    return jobs
+
+
+def operation(stage_evidence: Path, live: bool) -> int:
+    stage = stage_module()
+    proposal, proposal_sha = stage.read_proposal()
+    stage.read_volume_approval(proposal)
+    r_path = ROOT / proposal['readiness_evidence']
+    _, pinned, readiness_sha = stage.read_readiness(r_path, proposal)
+    stage.read_approval(proposal_sha, readiness_sha)
+    # Owner decisions and 18 triples must be original Git main files.
+    for p in (stage.VOLUME_APPROVAL, stage.APPROVAL, stage.PROPOSAL,
+              SCRIPTS / 'ta2-stage-verify'):
+        stage.git_original(p)
+    need(stage_evidence.resolve() == (STAGE_ROOT / EXPECTED_RUN).resolve(),
+         'stage evidence path differs from owner-reported JOB 9310')
+    stage_evidence = stage.safe_run(stage_evidence, STAGE_ROOT)
+    verify_stage_receipt(stage, stage_evidence, proposal_sha, readiness_sha,
+                         digest(read_file(stage.APPROVAL)))
+    mods = stage.modules()
+    checked, sizing, *_ = stage.replay(proposal, pinned,
+                                      json.loads(pinned['readiness.json']), mods)
+    targets = target_expectations(stage, proposal, mods, checked)
+    if not live:
+        print('TA.2 STAGE VERIFICATION: original JOB 9310 receipt PASS; 18/18 targets, 127 manifest members.')
+        print('MVS target attributes and member directories not yet checked; use --live.')
+        return 0
+    folder = make_folder()
+    try:
+        jobs = run_read_only_jobs(stage, folder, targets)
+        result = {'status': 'MVS_STAGED_DCB_AND_DIRECTORY_PASS_RECORD_CONTENT_PENDING',
+                  'original_stage_job': EXPECTED_JOB,
+                  'original_stage_evidence': str(stage_evidence.relative_to(ROOT)),
+                  'original_stage_receipt_sha256': digest(read_file(stage_evidence / 'stage-result.json')),
+                  'volume': 'TSO002', 'pds': 18, 'selected_members': 127,
+                  'mvs_jobs': jobs,
+                  'qualification': 'LISTDS DCB and exact member names only; per-record and binary identity not proven'}
+        write_new(folder / 'verification.json',
+                  (json.dumps(result, indent=2, sort_keys=True) + '\n').encode('utf-8'))
+        finish_evidence(folder)
+        print('TA.2 STAGED DIRECTORY/DCB: 18/18 PDS, 127/127 members, TSO002; fresh MVS PASS.')
+        print('MVS jobs: catalog ' + str(jobs['catalog']) + ', members ' + str(jobs['members']) + '.')
+        print('Record/binary fidelity verification still required.')
+        print('Private MVS evidence: ' + str(folder.relative_to(ROOT)))
+        return 0
+    except Exception as exc:
+        if not (folder / 'SHA256SUMS').exists():
+            try:
+                write_new(folder / 'failure.json',
+                          (json.dumps({'status': 'REFUSED', 'reason': str(exc)}) + '\n').encode())
+                finish_evidence(folder)
+            except OSError:
+                pass
+        print('TA.2 STAGE VERIFICATION REFUSED: ' + str(exc), file=sys.stderr)
+        print('Private MVS evidence: ' + str(folder.relative_to(ROOT)))
+        return 2
+
+
+def stage_module():
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec, spec_from_loader
+    path = SCRIPTS / 'ta2-stage-once'
+    need(path.is_file() and not path.is_symlink(), 'TA.2 stage runner missing')
+    loader = SourceFileLoader('ta2_verify_once', str(path))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'cannot import TA.2 stage runner')
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--stage-evidence', type=Path, required=True)
+    ap.add_argument('--live', action='store_true', help='submit 2 read-only MVS LISTDS inquiry jobs')
+    a = ap.parse_args(argv)
+    try:
+        return operation(a.stage_evidence, a.live)
+    except (Refusal, OSError, RuntimeError, ValueError, TypeError, KeyError,
+            UnicodeError) as exc:
+        print('TA.2 STAGE VERIFICATION REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

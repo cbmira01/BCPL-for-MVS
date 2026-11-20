@@ -177,6 +177,17 @@ class StagingTests(unittest.TestCase):
         self.rdir.symlink_to(self.rdir.parent/'old',target_is_directory=True)
         with self.assertRaises(mod.Refusal):self.read()
 
+    def test_one_character_write_confirmation(self):
+        with patch('builtins.input',return_value='y'):
+            self.assertTrue(mod.confirm_submission())
+        with patch('builtins.input',return_value='Y'):
+            self.assertTrue(mod.confirm_submission())
+
+    def test_confirmation_refuses_blank_no_or_long_phrase(self):
+        for reply in ('', 'n', 'YES', 'AUTHORIZE TA2STAGE TSO002 18 PDS'):
+            with self.subTest(reply=reply), patch('builtins.input',return_value=reply):
+                self.assertFalse(mod.confirm_submission())
+
     def test_mvs_write_unapproved_refuses(self):
         with self.assertRaisesRegex(mod.Refusal,'not approved'):mod.read_approval('a'*64,'b'*64)
 

@@ -4,7 +4,7 @@
 **Milestone:** Tape artifact release  
 **March:** TA.2 — Manifest-Driven Tape Producer  
 **Date:** 19 November 2026  
-**Status:** TSO002 plus all 18 staging SPACE triples and conditional-retry IEBCOPY submission owner-approved; actual MVS staging pending.
+**Status:** TSO002 staging JOB 9310 completed RC=0000; independent PDS directory/DCB and record verification pending.
 
 ## Owner-reported MVS readiness
 
@@ -219,3 +219,21 @@ output, 18 cataloged PDS attributes, 127 exact member sets and
 record/binary fidelity must be verified before using the staged
 datasets in a release tape. No production VOLSER, AWS tape or
 publication authorization is granted.
+
+## Actual TA.2 stage execution and simplified operator prompts
+
+The owner executed the authorized command and reported **TA2STAGE MVS
+JOB 9310, all 18 IEBCOPY steps RC=0000**, with original private
+MVS evidence at
+`workarea/ta2-stage-operations/20261120T002516Z-19547`.
+This ends the *submission* work; do not repeat a successfully
+completed stage or submit a retry. The separate
+[read-only verification gate](ta2-staged-directory-verification-20261119.md)
+now needs actual LISTDS LABEL/MEMBERS MVS results before staged data
+can be considered inventoried. Record-byte and binary load fidelity
+are a later TA.2 gate.
+
+The owner requested no typed phrases longer than three characters.
+The TA.2 stage runner now accepts only **Y/y** for an
+otherwise separately approved state change. Read-only inquiries
+do not ask for interactive confirmation.

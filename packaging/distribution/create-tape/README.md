@@ -619,3 +619,26 @@ untracked root `FETCH_HEAD` safely during `--run`, without touching
 `.git/FETCH_HEAD`. **54/54 focused offline tests PASS**.
 No actual staging JES submission or tape write has yet occurred.
 See the [owner approval and retry conditions](ta2-stage-once-design-20261119.md).
+
+### TA.2 staging JOB 9310 succeeded; independent staged PDS verification next
+
+The owner reported `TA2STAGE` **MVS JOB 9310**, all **18 IEBCOPY
+steps RC=0000**, following the exact approved 18 `SPACE` triples
+and 127 TA.0 member selections on TSO002. Original private evidence:
+`workarea/ta2-stage-operations/20261120T002516Z-19547`.
+**Do not resubmit this successful job.** RC=0000 does not prove
+the staged member inventories or record bytes.
+
+The new **prompt-free read-only**
+[`scripts/ta2-stage-verify`](scripts/ta2-stage-verify)
+validates the original SHA256-pinned JOB 9310 report and submits
+two consolidated MVS TSO jobs: `LISTDS LABEL` for all 18 PDS DCB/
+volume attributes and `LISTDS MEMBERS` for all 127 selected names.
+Every member set is compared against the original canonical manifest.
+It stores full raw JES evidence privately under
+`workarea/ta2-stage-verification/`. This is a **directory/DCB**
+gate only; **record and binary fidelity remain unproven**.
+The existing `ta2-stage-once --run` prompt is now `[y/N]`
+rather than a long phrase. Read-only probes have **no prompt**.
+**75/75 focused offline tests pass**; actual MVS verification pending.
+See [the staged verification record](ta2-staged-directory-verification-20261119.md).

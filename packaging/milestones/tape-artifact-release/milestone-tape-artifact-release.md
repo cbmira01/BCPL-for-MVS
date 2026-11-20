@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (design/offline/read-only work only) — no candidate production authorized**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (staging JOB 9310 RC=0000; independent staged PDS verification pending) — no candidate production authorized**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -605,6 +605,28 @@ of the **empty, untracked, root-level** `FETCH_HEAD`, not
 **54/54 focused synthetic tests PASS**; the write path has not
 yet been run against MVS and no staged PDS or tape candidate
 is claimed. TA.2 remains IN PROGRESS.
+
+**TA.2 owner-reported staged PDS IEBCOPY success and simplified confirmations (19 November 2026 EST / 20 November UTC):**
+The owner executed the already authorized `ta2-stage-once --run`
+against approved TSO002, confirming the original
+`TA2STAGE` **MVS JOB 9310, all 18 IEBCOPY steps RC=0000**
+and 127 manifest-selected members. Exact original saved
+evidence: `workarea/ta2-stage-operations/20261120T002516Z-19547`.
+This is operator-reported MVS/JES success, **not yet independent
+DCB, member directory, record-byte or load-module verification**;
+no tape candidate or production VOLSER exists. The owner also
+directed an operator-interaction rule: **zero typed confirmations
+for read-only evidence probes**, and **one `Y` character** as the
+maximum necessary interactive confirmation for separately
+authorized state-changing submissions. The staging runner
+now uses `[y/N]`, and the new
+[read-only staged directory/DCB verifier](../../distribution/create-tape/ta2-staged-directory-verification-20261119.md)
+replays the SHA256-sealed JOB 9310 receipt and asks MVS two
+consolidated TSO `LISTDS` jobs to verify exact 18 PDS attributes
+and 127-member inventories. **75/75 synthetic focused tests
+PASS**; no new live MVS verification job has yet been run.
+The accepted staging JOB 9310 must not be resubmitted.
+TA.2 remains IN PROGRESS.
 
 ## 1. Objective and product boundary
 
