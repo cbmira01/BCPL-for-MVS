@@ -29,7 +29,7 @@ class TestWriter(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
 
     def test_yes_no_confirmation_accepts_only_y(self):
-        for reply in ('Y', 'y', ' Y ', 'y\\n'):
+        for reply in ('Y', 'y', ' Y ', 'y\n'):
             with self.subTest(reply=reply), patch('builtins.input', return_value=reply) as prompt:
                 self.assertTrue(mod.confirm_yes('Authorize'))
                 prompt.assert_called_once_with('Authorize [y/N]: ')
