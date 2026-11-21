@@ -95,6 +95,20 @@ class TestWriter(unittest.TestCase):
         (p/'SHA256SUMS').write_text('a'*64+'  result.json\n')
         with patch.object(mod,'WORK',self.path):
             with self.assertRaises(mod.Refusal): mod.sealed(p,{'result.json'})
+    def test_success_evidence_seal(self):
+        folder=self.path/'sealed-write';folder.mkdir()
+        (folder/'result.json').write_text('{"status":"PASS"}\n')
+        (folder/'write-summary.txt').write_text('MVS JOB 9462\n')
+        mod.seal_evidence(folder)
+        with patch.object(mod,'WORK',self.path):
+            items=mod.sealed(folder,{'result.json','write-summary.txt'})
+        self.assertEqual(items['result.json'],b'{"status":"PASS"}\n')
+        with self.assertRaises(mod.Refusal): mod.seal_evidence(folder)
+    def test_evidence_seal_refuses_symlinks(self):
+        folder=self.path/'seal-link';folder.mkdir()
+        (folder/'linked').symlink_to(self.path/'outside')
+        with self.assertRaises(mod.Refusal): mod.seal_evidence(folder)
+        self.assertFalse((folder/'SHA256SUMS').exists())
     def test_marker_exclusive(self):
         p=self.path/'workarea';p.mkdir()
         ops=p/'ops'

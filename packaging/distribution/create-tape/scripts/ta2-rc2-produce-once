@@ -210,6 +210,20 @@ def save(path: Path, data: bytes) -> None:
         os.fsync(stream.fileno())
 
 
+def seal_evidence(folder: Path) -> None:
+    """Seal full original private receipts without modifying earlier evidence."""
+    files = sorted(folder.iterdir())
+    need(not (folder / 'SHA256SUMS').exists() and
+         all(p.is_file() and not p.is_symlink() for p in files),
+         'unsafe/previously sealed candidate-write evidence')
+    rows = []
+    for path in files:
+        with path.open('rb') as stream:
+            rows.append(hashlib.file_digest(stream, 'sha256').hexdigest() +
+                        '  ' + path.name + '\n')
+    save(folder / 'SHA256SUMS', ''.join(rows).encode('ascii'))
+
+
 def capture(folder: Path, name: str, args: list[str], max_seconds: int=90) -> str:
     try:
         p = subprocess.run(args, cwd=ROOT, capture_output=True,text=True,
@@ -401,6 +415,7 @@ def run() -> int:
                  'rights_clearance':False,'publication_authorized':False,
                  'restore_and_clean_target_install':'PENDING'}
         save(folder/'result.json',(json.dumps(receipt,sort_keys=True,indent=2)+'\n').encode())
+        seal_evidence(folder)
         print(f'TA.2 RC2 AWS WRITE: JOB {job}, 21/21 steps RC=0000; '
               '21 labels; 64 physical files PASS.')
         print('Immutable candidate SHA-256: '+digest)
@@ -408,6 +423,14 @@ def run() -> int:
         print('Do not rerun/unmount until separate verification/restore plan.')
         return 0
     except Exception as exc:
+        if not (folder / 'SHA256SUMS').exists():
+            try:
+                save(folder / 'failure.json', (json.dumps({
+                    'status':'HALTED_NO_RETRY',
+                    'reason':str(exc)})+'\n').encode())
+                seal_evidence(folder)
+            except (Refusal, OSError, ValueError):
+                pass
         print('TA.2 RC2 AWS WRITE HALTED: '+str(exc),file=sys.stderr)
         print('NO RETRY; preserve media, mount, attempt marker and evidence: '
               +folder.relative_to(ROOT).as_posix(),file=sys.stderr)
