@@ -112,3 +112,17 @@ and additive checksums for all 15 historical sources. Results
 stay in `workarea/ta2-rc2-cambsource-qsam-fidelity/`.
 See the [TA.2 investigation evidence](rc2-qsam-fidelity-investigation-20261120.md).
 No population repeat, BT0021 stage or BC0002 tape is authorized.
+
+**MVS JOB 9330 transport reconciliation:** all 15 historical
+`CAMB_SOURCE` members have the frozen source's FB80 record and
+trailing-blank counts. The eight raw CP037 checksum differences
+were precisely reproduced, including order-sensitive FNV, by three
+observed reader character mappings: `|` → `6A`, `[` → `AD`,
+`]` → `BD` (other tested ASCII uses CP037). The original
+7/15 CP037 result is preserved; it is not a byte-for-byte
+CP037 PASS. Run
+[the saved-MVS-evidence reconciliation](rc2-qsam-reconcile-transport.py)
+to check JOB 9330's retained actual JES report and receipt
+without another MVS run. Details and release design decision:
+[TA.2 JOB 9330 transport evidence](rc2-qsam-job9330-transport-reconciliation-20261120.md).
+The BT0021 stage and encoding-policy decision remain open.

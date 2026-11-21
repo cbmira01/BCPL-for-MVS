@@ -89,3 +89,18 @@ The first 20 staged inputs remain accepted and untouched; demoted
 Cambridge development sources remain GitHub-only. Historical source
 rights and final release verification remain independent open gates.
 **TA.2 remains IN PROGRESS.**
+
+## JOB 9330 subsequent MVS result and byte-translation reconciliation
+
+Actual owner-reported MVS JOB 9330 completed all 15 QSAM
+read steps. It found **15/15 exact record and trailing blank
+counts**, but only **7/15 literal CP037 fingerprints** match.
+The other eight are now independently explained **exactly**
+in both FNV and additive checksums by three empirically
+observed reader bytes: `|` → `6A`, `[` → `AD`, `]` →
+`BD`. There is therefore no MVS evidence of missing
+Cambridge source records. Preserve the original CP037
+mismatch and see the
+[follow-up transport reconciliation evidence](rc2-qsam-job9330-transport-reconciliation-20261120.md).
+The release's canonical source encoding remains an owner
+design choice and `BT0021` is not yet authorized to stage.

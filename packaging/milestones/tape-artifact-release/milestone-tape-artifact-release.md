@@ -1046,3 +1046,36 @@ Do not repeat MVS JOBs 9325/9326 or stage `BT0021` until
 the real QSAM results identify the cause. BT0001–BT0020 and the
 rc2 manifest/BC0002 registry are unchanged.
 **TA.2 IN PROGRESS.**
+
+## TA.2 MVS JOB 9330 empirical source-reader mapping — 20 November 2026
+
+The owner executed read-only IFOX/IEWL/QSAM **JOB 9330**.
+All 15 historical Cambridge source members have **exact
+expected 80-byte record counts and trailing blank counts**.
+The earlier `dspal get` text readback was responsible for
+omitting `BLIB`'s two blank tail records; no PDS repair
+or repeat of accepted population JOBs 9325/9326 is justified.
+
+The reported **7/15 raw CP037 checksum PASS** can be
+fully explained by three actual TK5/Hercules reader byte
+substitutions: `|` **4F→6A**, `[` **BA→AD**, `]`
+**BB→BD**. Assistant-side reconstruction of all 15
+historical source FB80 byte streams under this narrow
+empirical translation profile matches **15/15 actual
+MVS JOB 9330 record counts, trailing blanks, additive
+sums and FNV-1a fingerprints**, including all eight
+initially failing members. This establishes a compelling
+transport-fidelity explanation, **not literal CP037
+byte equality**.
+
+A new fail-closed, read-only saved-JES reconciliation
+script, with **10/10 focused assistant-workspace tests
+PASS**, will independently verify the preserved full
+MVS report and receipt before documenting a reconciled
+result. See
+[JOB 9330 transport evidence and pending source-encoding decision](../../distribution/compiler-source/rc2-qsam-job9330-transport-reconciliation-20261120.md).
+The owner must choose whether the final release accepts
+and documents the reader's observed source encoding or
+requires literal CP037 correction. No source-PDS rewrite,
+BT0021 IEBCOPY staging or BC0002 tape production
+has been authorized. **TA.2 remains IN PROGRESS.**
