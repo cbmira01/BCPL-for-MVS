@@ -130,17 +130,104 @@ class TestWriter(unittest.TestCase):
         with patch.multiple(mod,ROOT=self.path,WORK=self.path/'workarea',TAPES=t,OPS=ops,
                             MARKER=ops/'marker.json',TAPE=t/'future.aws'):
             with self.assertRaises(mod.Refusal): mod.safe_workspace()
+    @staticmethod
+    def hetmap_fixture(volser='BTO001', extra=None):
+        lines = ["Label               : 'VOL1'",
+                 f"Volume Serial       : '{volser}'",
+                 "Label               : 'HDR1'",
+                 "Dataset ID          : 'BCPL.BT0001'",
+                 f"Volume Serial       : '{volser}'",
+                 "Label               : 'HDR2'",
+                 "Label               : 'EOF1'",
+                 f"Volume Serial       : '{volser}'",
+                 "Label               : 'EOF2'"]
+        if extra is not None:
+            lines.extend(extra)
+        return '\n'.join(lines) + '\n'
+    def test_vol1_parse_repeated_serial(self):
+        self.assertEqual(mod.volser_from_hetmap(self.hetmap_fixture('BTO001')), 'BTO001')
+    def test_vol1_detect_true_collision(self):
+        self.assertEqual(mod.volser_from_hetmap(self.hetmap_fixture('BC0002')), 'BC0002')
+    def test_vol1_missing_is_refused(self):
+        with self.assertRaises(mod.Refusal):
+            mod.volser_from_hetmap(self.hetmap_fixture().replace("Label               : 'VOL1'", '', 1))
+    def test_vol1_duplicate_is_refused(self):
+        with self.assertRaises(mod.Refusal):
+            mod.volser_from_hetmap(self.hetmap_fixture(extra=["Label               : 'VOL1'", "Volume Serial       : 'BTO001'"]))
+    def test_vol1_conflicting_secondary_label_is_refused(self):
+        bad = self.hetmap_fixture().replace("Volume Serial       : 'BTO001'", "Volume Serial       : 'BC0002'", 2)
+        with self.assertRaises(mod.Refusal): mod.volser_from_hetmap(bad)
+    def test_vol1_duplicate_field_is_refused(self):
+        bad = self.hetmap_fixture().replace("Label               : 'HDR1'",
+            "Volume Serial       : 'BTO001'\nLabel               : 'HDR1'")
+        with self.assertRaises(mod.Refusal): mod.volser_from_hetmap(bad)
+    def test_vol1_unlabelled_image_is_refused(self):
+        with self.assertRaises(mod.Refusal): mod.volser_from_hetmap("Volume Serial       : 'BTO001'\n")
+
+    def test_new_recovery_approval_exact(self):
+        valid = {'schema_version': 1,
+                 'status': 'OWNER_APPROVED_NEW_PRESTATEFUL_RC2_ATTEMPT',
+                 'candidate': 'BCPL-0.1.0-rc2', 'volser': mod.VOL,
+                 'image': mod.IMAGE, 'hercules_unit': '0480',
+                 'original_halt_evidence': mod.INCIDENT.relative_to(mod.ROOT).as_posix(),
+                 'prior_write_attempt_marker_created': False,
+                 'original_existing_image': 'bcpl-objtest-20261108-01.aws',
+                 'jcl_sha256': 'a'*64, 'publication_authorized': False,
+                 'automatic_retry': False}
+        mod.verify_recovery_approval(json.dumps(valid).encode('utf-8'), 'a'*64)
+        with self.assertRaises(mod.Refusal):
+            mod.verify_recovery_approval(json.dumps(valid).encode('utf-8'), 'b'*64)
+        valid['automatic_retry'] = True
+        with self.assertRaises(mod.Refusal):
+            mod.verify_recovery_approval(json.dumps(valid).encode('utf-8'), 'a'*64)
+    def test_review_prior_halt_replays_sealed_original_report(self):
+        work = self.path / 'workarea'; work.mkdir()
+        ops = work / 'operations'; ops.mkdir()
+        incident = ops / 'original'; incident.mkdir()
+        failure = {'status':'HALTED_NO_RETRY',
+                   'reason':'unrecognized/reused BC0002 volume in existing image: '
+                            'bcpl-objtest-20261108-01.aws'}
+        (incident/'failure.json').write_text(json.dumps(failure) + '\n')
+        (incident/'vol-000.txt').write_text(self.hetmap_fixture('BTO001'))
+        mod.seal_evidence(incident)
+        with patch.multiple(mod,WORK=work,OPS=ops,INCIDENT=incident,
+                            MARKER=ops/'marker.json',TAPE=self.path/'candidate.aws'):
+            self.assertEqual(mod.review_prior_prestateful_halt(), 'BTO001')
+            (incident/'vol-000.txt').write_text(self.hetmap_fixture('BC0002'))
+            with self.assertRaises(mod.Refusal): mod.review_prior_prestateful_halt()
+    def test_review_prior_halt_refuses_true_collision(self):
+        work = self.path / 'workarea'; work.mkdir()
+        incident = work / 'prior'; incident.mkdir()
+        failure = {'status':'HALTED_NO_RETRY',
+                   'reason':'unrecognized/reused BC0002 volume in existing image: '
+                            'bcpl-objtest-20261108-01.aws'}
+        (incident/'failure.json').write_text(json.dumps(failure)+'\n')
+        (incident/'vol-000.txt').write_text(self.hetmap_fixture('BC0002'))
+        mod.seal_evidence(incident)
+        with patch.multiple(mod,WORK=work,INCIDENT=incident,
+                            MARKER=work/'absent-marker',TAPE=work/'absent-tape.aws'):
+            with self.assertRaisesRegex(mod.Refusal,'true BC0002 collision'):
+                mod.review_prior_prestateful_halt()
+    def test_review_prior_halt_refuses_existing_attempt_marker(self):
+        work = self.path / 'workarea'; work.mkdir()
+        ops = work / 'ops'; ops.mkdir()
+        marker = ops / 'marker.json'; marker.write_text('occupied')
+        with patch.multiple(mod,WORK=work,OPS=ops,INCIDENT=ops/'incident',
+                            MARKER=marker,TAPE=work/'candidate.aws'):
+            with self.assertRaisesRegex(mod.Refusal,'NEVER RETRY'):
+                mod.review_prior_prestateful_halt()
+
     def test_existing_media_wrong_volser(self):
         t=self.path/'tape';t.mkdir(); (t/'existing.aws').write_text('test')
         e=self.path/'evidence';e.mkdir()
         with patch.multiple(mod,TAPES=t,TAPE=t/mod.IMAGE):
-            with patch.object(mod,'capture',return_value="Volume Serial : 'BC0002'\n"):
+            with patch.object(mod,'capture',return_value=self.hetmap_fixture("BC0002")):
                 with self.assertRaises(mod.Refusal): mod.existing_media(e)
     def test_existing_media_unique(self):
         t=self.path/'tape';t.mkdir(); (t/'existing.aws').write_text('test')
         e=self.path/'evidence';e.mkdir()
         with patch.multiple(mod,TAPES=t,TAPE=t/mod.IMAGE):
-            with patch.object(mod,'capture',return_value="Volume Serial : 'BTA101'\n"):
+            with patch.object(mod,'capture',return_value=self.hetmap_fixture("BTA101")):
                 self.assertEqual(mod.existing_media(e),1)
     def test_existing_media_directory_rejected(self):
         t=self.path/'tape';t.mkdir(); (t/'unsafe').mkdir()

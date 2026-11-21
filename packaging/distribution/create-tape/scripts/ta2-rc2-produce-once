@@ -25,6 +25,8 @@ WORK = ROOT / 'workarea'
 TAPES = ROOT / 'mvs-state/tape'
 OPS = WORK / 'ta2-rc2-production-operations'
 MARKER = OPS / 'BC0002-one-shot-attempt.json'
+INCIDENT = OPS / '20261121T145906Z-26113'
+RECOVERY_APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-rc2-prestateful-recovery-approval.json'
 IMAGE = 'bcpl-0.1.0-rc2-BC0002.aws'
 VOL = 'BC0002'
 UNIT = '480'
@@ -175,6 +177,41 @@ def verify_approval(raw: bytes, jcl_sha: str) -> None:
          'exact separate owner media-write authorization missing/changed')
 
 
+def review_prior_prestateful_halt() -> str:
+    """Replay the sealed owner-reported refusal; never modify original media.
+
+    An earlier preflight invocation may not be silently retried, even when
+    it failed before the permanent no-retry write marker was created.
+    """
+    need(not MARKER.exists() and not MARKER.is_symlink() and
+         not TAPE.exists() and not TAPE.is_symlink(),
+         'prior BC0002 stateful attempt/image exists: NEVER RETRY')
+    original = sealed(INCIDENT, {'failure.json', 'vol-000.txt'})
+    failure = json.loads(original['failure.json'])
+    need(failure == {
+        'status': 'HALTED_NO_RETRY',
+        'reason': 'unrecognized/reused BC0002 volume in existing image: '
+                  'bcpl-objtest-20261108-01.aws'},
+        'original prestateful media preflight failure differs')
+    serial = volser_from_hetmap(original['vol-000.txt'].decode('utf-8'))
+    need(serial != VOL, 'original existing-media report reveals true BC0002 collision')
+    return serial
+
+
+def verify_recovery_approval(raw: bytes, jcl_sha: str) -> None:
+    expected = {'schema_version': 1,
+                'status': 'OWNER_APPROVED_NEW_PRESTATEFUL_RC2_ATTEMPT',
+                'candidate': 'BCPL-0.1.0-rc2', 'volser': VOL,
+                'image': IMAGE, 'hercules_unit': '0480',
+                'original_halt_evidence': INCIDENT.relative_to(ROOT).as_posix(),
+                'prior_write_attempt_marker_created': False,
+                'original_existing_image': 'bcpl-objtest-20261108-01.aws',
+                'jcl_sha256': jcl_sha,
+                'publication_authorized': False, 'automatic_retry': False}
+    need(type(json.loads(raw)) is dict and json.loads(raw) == expected,
+         'new prestateful-operation owner authorization does not match original halt')
+
+
 def git_approved(jcl_sha: str) -> None:
     need(APPROVAL.is_file() and not APPROVAL.is_symlink(),
          'NO MEDIA AUTHORIZATION: approval JSON not yet committed; --run disabled')
@@ -190,6 +227,17 @@ def git_approved(jcl_sha: str) -> None:
     need(p.returncode == 0 and p.stdout == safe_bytes(APPROVAL),
          'media approval not original Git committed content')
     verify_approval(p.stdout,jcl_sha)
+    if INCIDENT.exists() or INCIDENT.is_symlink():
+        serial = review_prior_prestateful_halt()
+        need(RECOVERY_APPROVAL.is_file() and not RECOVERY_APPROVAL.is_symlink(),
+             'previous preflight halted; NEW owner authorization required before any restart')
+        q = subprocess.run(['git', '-C', str(ROOT), 'show', 'HEAD:' +
+                            str(RECOVERY_APPROVAL.relative_to(ROOT))],
+                           capture_output=True, check=False, timeout=20)
+        need(q.returncode == 0 and q.stdout == safe_bytes(RECOVERY_APPROVAL),
+             'new incident-specific approval not committed to main')
+        verify_recovery_approval(q.stdout, jcl_sha)
+        need(serial != VOL, 'original existing-media VOL1 is BC0002')
 
 
 def safe_workspace() -> None:
@@ -252,6 +300,31 @@ def check_docker(folder: Path) -> None:
     need('-d' in helptext and '-i' in helptext,'installed HETINIT options changed')
 
 
+def volser_from_hetmap(report: str) -> str:
+    """Read one physical VOL1 serial, not every HDR1/EOF1 serial on tape.
+
+    Standard-label tapes legitimately repeat the same Volume Serial field
+    inside each logical data set's label group. Those repeated occurrences
+    are NOT independent physical volume labels or BC0002 collisions.
+    """
+    markers = list(re.finditer(r"(?m)^Label\s+: '([A-Z0-9]{4})'\s*$", report))
+    need(markers and markers[0].group(1) == 'VOL1' and
+         sum(m.group(1) == 'VOL1' for m in markers) == 1,
+         'HETMAP missing, repeated or displaced physical VOL1 label')
+    for i, label in enumerate(markers):
+        end = markers[i + 1].start() if i + 1 < len(markers) else len(report)
+        chunk = report[label.end():end]
+        serials = re.findall(r"(?m)^Volume Serial\s+: '([A-Z0-9]{1,6})'\s*$", chunk)
+        need((len(serials) == 1 if i == 0 else len(serials) <= 1),
+             'HETMAP label has missing/duplicate volume serial: ' + label.group(1))
+        if i == 0:
+            volser = serials[0]
+        elif serials:
+            need(serials[0] == volser,
+                 'HETMAP label contradicts physical VOL1 serial: ' + label.group(1))
+    return volser
+
+
 def existing_media(folder: Path) -> int:
     need(not TAPE.exists() and not TAPE.is_symlink(), 'BC0002 image already exists')
     seen = 0
@@ -261,9 +334,8 @@ def existing_media(folder: Path) -> int:
              'unsafe or unknown existing tape image: ' + path.name)
         report = capture(folder,f'vol-{seen:03d}',
                          ['docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+path.name],120)
-        rows = re.findall(r"(?m)^Volume Serial\s+: '([A-Z0-9]{1,6})'\s*$",report)
-        need(len(rows) == 1 and rows[0] != VOL,
-             'unrecognized/reused BC0002 volume in existing image: ' + path.name)
+        serial = volser_from_hetmap(report)
+        need(serial != VOL, 'BC0002 already present in existing image: ' + path.name)
         seen += 1
     return seen
 

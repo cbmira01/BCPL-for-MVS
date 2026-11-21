@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified), 19 November 2026; TA.2 — Manifest-Driven Tape Producer IN PROGRESS (all 20 staging inputs MVS directory/DCB accepted; release provenance and candidate-media gates pending) — no candidate production authorized**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (21 staged inputs accepted; one private BC0002 candidate preflight halted before media initialization; new owner authorization required before restart)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1258,3 +1258,7 @@ A new [guarded rc2 candidate producer and independent AWS reviewer](../../distri
 ## TA.2 owner-approved single private BC0002 AWS production — 21 November 2026 EST
 
 Following a real owner-reported read-only **Hercules 0480 empty / MVS unit 480 O-NRD** PASS, the owner explicitly approved **one private BCPL-0.1.0-rc2/BC0002 candidate build**: new `mvs-state/tape/bcpl-0.1.0-rc2-BC0002.aws`, exactly 21 standard-labeled datasets, one guarded `TA2RC2WR` job, no automatic retry. The [committed media-write approval and detailed boundary](../../distribution/create-tape/ta2-rc2-private-build-authorization-20261121.md) bind the exact JOB-less producer JCL SHA-256 `85eca6f3e1e83c2d0e476f24870a20664bde2a50e2de8653606bfa351af54b4f`, the frozen candidate identity and permanent attempt marker. The writer now seals the original private JES/HETMAP output in `workarea/`; **62/62 assistant-workspace synthetic tests PASS**. **Only the private initialization/mount/single write is authorized.** No image, MVS job, clean-target install or independent AWS readback has been reported under this approval, and release publication/provenance rights remain unresolved. **TA.2 IN PROGRESS.**
+
+## TA.2 BC0002 original media-inventory refusal and corrected VOL1 gate — 21 November 2026 EST
+
+The owner ran the previously approved private rc2 candidate producer, which returned **RC=2** while inspecting existing `bcpl-objtest-20261108-01.aws`, before the no-retry write marker, image initialization, mount or JES submission. The original SHA256-sealed refusal evidence is `workarea/ta2-rc2-production-operations/20261121T145906Z-26113`; the underlying private HETMAP report has not been directly inspected by the assistant. The producer's original parser incorrectly required one occurrence of `Volume Serial` across an entire standard-label tape, even though HDR1/EOF1 labels repeat the physical VOL1 serial. The [incident and qualified defect correction](../../distribution/create-tape/ta2-rc2-prestateful-halt-analysis-20261121.md) preserve this distinction without claiming BC0002 had been reused. The corrected code and 73/73 assistant-workspace focused offline tests have passed. A new incident-specific owner authorization remains **absent**; no automatic restart, AWS tape creation, restoration or publication is approved. **TA.2 IN PROGRESS.**
