@@ -217,6 +217,24 @@ class TestWriter(unittest.TestCase):
             with self.assertRaisesRegex(mod.Refusal,'NEVER RETRY'):
                 mod.review_prior_prestateful_halt()
 
+    def test_git_approval_refuses_missing_prior_incident(self):
+        from types import SimpleNamespace
+        approval = self.path / 'approval.json'
+        raw = json.dumps(self.approval()).encode('utf-8')
+        approval.write_bytes(raw)
+        def fake_git(args, **kwargs):
+            if args[3] == 'branch': return SimpleNamespace(returncode=0,stdout='main\n')
+            if args[3] == 'status': return SimpleNamespace(returncode=0,stdout='')
+            if args[3] == 'show': return SimpleNamespace(returncode=0,stdout=raw)
+            raise AssertionError('unexpected git call')
+        with patch.multiple(mod,ROOT=self.path,APPROVAL=approval,
+                            INCIDENT=self.path/'missing-original-incident',
+                            MARKER=self.path/'missing-marker',
+                            TAPE=self.path/'missing-image.aws'):
+            with patch.object(mod.subprocess,'run',side_effect=fake_git):
+                with self.assertRaisesRegex(mod.Refusal,'untrusted saved evidence folder'):
+                    mod.git_approved('a'*64)
+
     def test_existing_media_wrong_volser(self):
         t=self.path/'tape';t.mkdir(); (t/'existing.aws').write_text('test')
         e=self.path/'evidence';e.mkdir()

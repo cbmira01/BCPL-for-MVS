@@ -35,3 +35,6 @@ That new approval file is **intentionally absent**. Without it, the updated prod
 **Assistant-workspace checks:** 73/73 isolated rc2 tests PASS, with Python AST checks. Negative tests cover invalid/duplicate VOL1, conflicting label fields, actual VOLSER reuse, sealed-evidence tampering, an existing marker and altered recovery approval. These are host-side tests, not new MVS execution.
 
 The next owner decision is whether to authorize **one new guarded pre-stateful private BC0002 attempt**, contingent on the original evidence and fresh preflight passing. Rights, installation and publication remain outside scope. **TA.2 — Manifest-Driven Tape Producer remains IN PROGRESS.**
+## Subsequent owner approval — 21 November 2026 EST
+
+The owner subsequently approved one **new conditional** private BC0002 attempt following this precise pre-stateful failure. The new Git-committed authorization and mandatory sealed-incident replay are documented in [the recovery authorization](ta2-rc2-recovery-authorization-20261121.md). The original failed invocation is **not** reopened, its private reports and any attempt markers must be preserved, and no MVS or AWS state change has yet been reported under the new approval.

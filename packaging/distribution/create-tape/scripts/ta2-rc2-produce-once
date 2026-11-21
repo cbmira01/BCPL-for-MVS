@@ -227,17 +227,18 @@ def git_approved(jcl_sha: str) -> None:
     need(p.returncode == 0 and p.stdout == safe_bytes(APPROVAL),
          'media approval not original Git committed content')
     verify_approval(p.stdout,jcl_sha)
-    if INCIDENT.exists() or INCIDENT.is_symlink():
-        serial = review_prior_prestateful_halt()
-        need(RECOVERY_APPROVAL.is_file() and not RECOVERY_APPROVAL.is_symlink(),
-             'previous preflight halted; NEW owner authorization required before any restart')
-        q = subprocess.run(['git', '-C', str(ROOT), 'show', 'HEAD:' +
-                            str(RECOVERY_APPROVAL.relative_to(ROOT))],
-                           capture_output=True, check=False, timeout=20)
-        need(q.returncode == 0 and q.stdout == safe_bytes(RECOVERY_APPROVAL),
-             'new incident-specific approval not committed to main')
-        verify_recovery_approval(q.stdout, jcl_sha)
-        need(serial != VOL, 'original existing-media VOL1 is BC0002')
+    # This candidate has already had a failed owner-authorized invocation.
+    # Missing original evidence must NEVER fall through to the old approval.
+    serial = review_prior_prestateful_halt()
+    need(RECOVERY_APPROVAL.is_file() and not RECOVERY_APPROVAL.is_symlink(),
+         'previous preflight halted; NEW owner authorization required before any restart')
+    q = subprocess.run(['git', '-C', str(ROOT), 'show', 'HEAD:' +
+                        str(RECOVERY_APPROVAL.relative_to(ROOT))],
+                       capture_output=True, check=False, timeout=20)
+    need(q.returncode == 0 and q.stdout == safe_bytes(RECOVERY_APPROVAL),
+         'new incident-specific approval not committed to main')
+    verify_recovery_approval(q.stdout, jcl_sha)
+    need(serial != VOL, 'original existing-media VOL1 is BC0002')
 
 
 def safe_workspace() -> None:

@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (21 staged inputs accepted; one private BC0002 candidate preflight halted before media initialization; new owner authorization required before restart)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (21 staged inputs accepted; incident-bound private BC0002 pre-stateful retry authorized, MVS write pending)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1262,3 +1262,7 @@ Following a real owner-reported read-only **Hercules 0480 empty / MVS unit 480 O
 ## TA.2 BC0002 original media-inventory refusal and corrected VOL1 gate — 21 November 2026 EST
 
 The owner ran the previously approved private rc2 candidate producer, which returned **RC=2** while inspecting existing `bcpl-objtest-20261108-01.aws`, before the no-retry write marker, image initialization, mount or JES submission. The original SHA256-sealed refusal evidence is `workarea/ta2-rc2-production-operations/20261121T145906Z-26113`; the underlying private HETMAP report has not been directly inspected by the assistant. The producer's original parser incorrectly required one occurrence of `Volume Serial` across an entire standard-label tape, even though HDR1/EOF1 labels repeat the physical VOL1 serial. The [incident and qualified defect correction](../../distribution/create-tape/ta2-rc2-prestateful-halt-analysis-20261121.md) preserve this distinction without claiming BC0002 had been reused. The corrected code and 73/73 assistant-workspace focused offline tests have passed. A new incident-specific owner authorization remains **absent**; no automatic restart, AWS tape creation, restoration or publication is approved. **TA.2 IN PROGRESS.**
+
+## TA.2 owner-approved incident-bound conditional BC0002 attempt — 21 November 2026 EST
+
+The owner approved **one new conditional pre-stateful private `BCPL-0.1.0-rc2` / `BC0002` attempt** after the earlier saved HETMAP inventory refusal. The [new recovery approval](../../distribution/create-tape/ta2-rc2-recovery-authorization-20261121.md) is committed and binds the original sealed incident, exact AWS basename, reserved VOLSER, and unmodified 21-position JCL hash. The producer now requires the original SHA256-sealed incident to exist, confirms no existing stateful attempt marker/candidate media and no genuine `BC0002` VOL1 collision, then repeats fresh media/MVS catalog/drive preflight before operator-confirmed initialization/mount and one 21-step JES write. **74/74 assistant-workspace focused rc2 tests PASS**, including a new negative test that forbids silently bypassing the original incident gate. No AWS candidate or new JES job has been reported under this renewed authorization. Tape restoration, clean-target install and publication are still outside scope. **TA.2 IN PROGRESS.**

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "status": "OWNER_APPROVED_NEW_PRESTATEFUL_RC2_ATTEMPT",
+  "candidate": "BCPL-0.1.0-rc2",
+  "volser": "BC0002",
+  "image": "bcpl-0.1.0-rc2-BC0002.aws",
+  "hercules_unit": "0480",
+  "original_halt_evidence": "workarea/ta2-rc2-production-operations/20261121T145906Z-26113",
+  "prior_write_attempt_marker_created": false,
+  "original_existing_image": "bcpl-objtest-20261108-01.aws",
+  "jcl_sha256": "85eca6f3e1e83c2d0e476f24870a20664bde2a50e2de8653606bfa351af54b4f",
+  "publication_authorized": false,
+  "automatic_retry": false
+}
