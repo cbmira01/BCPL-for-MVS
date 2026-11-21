@@ -1142,3 +1142,30 @@ character handling and source-language compatibility remain
 an **open design gate**. No source rewrite, BT0021 stage,
 media operation or manifest modification is authorized.
 **TA.2 IN PROGRESS.**
+
+## TA.2 BT0021 consolidated read-only MVS preflight implementation — 20 November 2026
+
+Following qualified accepted historical `CAMB_SOURCE` record-level
+fidelity from JOB 9330 (15/15 members, 6,577 FB80 records under the
+observed Hercules reader translation), a new
+[BT0021 read-only preflight](../../distribution/compiler-source/rc2-bt0021-readonly-preflight-design-20261120.md)
+has been implemented for **the sole new staging target**
+`HERC02.BCPL.TA2STG.BT0021`, TSO002. It replays
+the original saved JOB 9330 MVS report/receipt and the separate
+reconciliation receipt against the frozen source/rc2 manifest; the
+existing selective IEBCOPY draft is validated, **not submitted**.
+Only on explicit `--live` execution does it submit one read-only
+MVS catalog LISTDS and one read-only IEHLIST LISTVTOC, preserving
+their original reports, jobs and a SHA-256-sealed private receipt
+under repository `workarea/`. A no-argument Hercules `codepage`
+panel inquiry is captured as diagnostic only. **15/15 focused
+assistant-workspace synthetic tests PASS** and Python syntax checks
+pass. No new MVS inquiry has yet occurred.
+
+This does not reverse qualified acceptance of JOB 9330 or open
+BT0001–BT0020 for restaging. Actual MVS target preflight, the
+historical-source encoding policy, separate owner authorization for
+BT0021 IEBCOPY staging, rights/provenance, the final strict producer
+gate and BC0002 AWS construction/independent roundtrip remain
+**open**. The 21-dataset `BCPL-0.1.0-rc2` manifest and
+`BC0002` reservation are unchanged. **TA.2 IN PROGRESS.**

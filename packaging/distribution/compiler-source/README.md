@@ -158,3 +158,20 @@ qualifies the earlier recommendation to preserve the existing
 MVS bytes: preservation of the source-only payload does
 not automatically establish historical compiler compatibility.
 No encoding-policy change is approved by this research.
+
+**BT0021 read-only preflight implementation (20 November 2026):** after
+the accepted JOB 9330 saved-evidence reconciliation, the
+[guarded preflight](rc2-bt0021-preflight.py) replays the original
+JES/transport fingerprints against frozen source and the canonical rc2
+historical-only manifest, validates the single 15-member IEBCOPY stage
+draft without executing it, then (only with `--live`) submits
+read-only MVS LISTDS and IEHLIST inquiries for the one proposed new
+`HERC02.BCPL.TA2STG.BT0021` on TSO002. It also captures the
+no-operand Hercules `codepage` response if available, without changing
+its configuration or inferring a confirmed code page from a raw response.
+Original reports and SHA-256-sealed results stay only under
+`workarea/ta2-rc2-bt0021-preflight/`. **15/15 focused offline tests
+PASS**; actual MVS preflight has not been run.
+See [implementation and acceptance boundary](rc2-bt0021-readonly-preflight-design-20261120.md).
+No BT0021 allocation/staging, source-PDS rewriting, release encoding
+policy, BC0002 tape writing or redistribution approval is implied.
