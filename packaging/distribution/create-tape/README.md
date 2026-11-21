@@ -724,3 +724,13 @@ Following accepted MVS JOBS 9318/9319, all 20 staging inputs are DCB/directory v
 ## TA.2 accepted-stage to build-evidence reconciliation — 20 November 2026
 
 New read-only `scripts/ta2-build-chain-reconcile` joins the existing **20/20 accepted MVS stage** receipt map, **110/110 frozen Git-source** worksheet and canonical TA.0 **15 binary / eight build-job contract** audit. It identifies the **two distinct generated sources** (`BOOT_SOURCE(BLIB)`, `BOOT_ASM(COROUTIN)`) and the one development-only unshipped `BLIBBLD` procedure without claiming missing MVS utility success, candidate-specific binary-build receipts, or automatic redistribution rights. Its optional exclusive private JSON output stays inside `workarea/`; default output is compact. **19/19 focused synthetic tests PASS**, with no actual MVS job or AWS tape action. See [TA.2 build-chain reconciliation](ta2-build-chain-reconciliation-20261120.md). All 127 per-member redistribution reviews and candidate-specific build receipts remain explicitly open; `BC0001` is still only reserved. TA.2 remains IN PROGRESS.
+## TA.2 rc2 21-position guarded private producer (21 November 2026)
+
+The original 21 inputs are accepted on MVS 3.8J (qualified). A combined Hercules+MVS read-only inquiry observed `0480` empty / MVS `480 O-NRD`. See [the producer design, stage receipts, and safety boundaries](ta2-rc2-guarded-producer-20261121.md).
+
+- `scripts/ta2-rc2-produce-once`: default is **offline**, replaying retained MVS stage receipts and the canonical `BCPL-0.1.0-rc2` 21-position JCL; `--run` requires a separately approved and committed exact one-shot media approval. No automatic retry.
+- `scripts/ta2-rc2-aws-review`: independent **read-only** HETMAP reviewer for the candidate, with a saved-report mode and a read-only image mode. It validates expected standard labels and filemarks; member bytes and MVS restore must be tested separately.
+
+For assistant/developer offline testing, run `python3 -B -m unittest discover -s packaging/distribution/create-tape/tests -p 'test_ta2_rc2_*.py' -q`. The 60 isolated tests were last run successfully on 21 November 2026; they do not replace MVS/JES execution.
+
+**No `BC0002` AWS write is authorized at present.** The approval file is intentionally absent; tape operations require a further owner decision. Historical Cambridge compiler source is archival-only and does not prove a native-running Cambridge Compiler or redistribution clearance.

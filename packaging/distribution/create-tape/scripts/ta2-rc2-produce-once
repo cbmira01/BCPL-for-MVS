@@ -1,0 +1,438 @@
+#!/usr/bin/env python3
+"""TA.2 rc2: guarded, no-retry private 21-dataset AWS candidate producer.
+
+Default --review is offline, saved-MVS-evidence-only. --run is disabled
+unless a separate owner-approved, Git-committed media-write approval exists.
+No release publication, no automatic retries, no source PDS writes, no restore.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+HERE = Path(__file__).resolve().parent
+WORK = ROOT / 'workarea'
+TAPES = ROOT / 'mvs-state/tape'
+OPS = WORK / 'ta2-rc2-production-operations'
+MARKER = OPS / 'BC0002-one-shot-attempt.json'
+IMAGE = 'bcpl-0.1.0-rc2-BC0002.aws'
+VOL = 'BC0002'
+UNIT = '480'
+JOBNAME = 'TA2RC2WR'
+TAPE = TAPES / IMAGE
+APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-rc2-media-write-approval.json'
+PREVIEW = HERE / 'ta2-rc2-producer-preview'
+MEDIA = HERE / 'ta2-rc2-media-preflight'
+AWS = HERE / 'ta2-rc2-aws-review'
+STAGE_18 = WORK / 'ta2-stage-verification/20261120T005732Z-20183'
+STAGE_2 = WORK / 'ta2-bootstrap-stage-verification/20261120T132703Z-22108'
+STAGE_21 = WORK / 'ta2-rc2-bt0021-stage-operations/20261121T124159Z-25452'
+STAGE_21_Q = WORK / 'ta2-rc2-bt0021-verification/20261121T130011Z-23628'
+DRIVE_Q = WORK / 'ta2-rc2-media-preflight/20261121T133703Z-25915'
+CHECK = re.compile(r'([0-9a-f]{64})  ([A-Za-z0-9_.-]+)\Z')
+MAX = 16 * 1024 * 1024
+STAGES = [('T0001', 'IEBGENER')] + [(f'T{i:04d}', 'IEBCOPY') for i in range(2, 22)]
+HISTORICAL = ('BCPL','BLIB','CG','CGHDR','EDITMAIN','IOS','LIBHDR','PM',
+              'SYN','SYNHDR','TRN','TRNHDR','MAKEOBJ','MAKELIB','PROGRAM')
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, why: str) -> None:
+    if not ok:
+        raise Refusal(why)
+
+
+def safe_bytes(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and 0 <= path.stat().st_size <= MAX,
+         'missing, linked or excessive evidence: ' + path.name)
+    return path.read_bytes()
+
+
+def sealed(folder: Path, required: set[str]) -> dict[str, bytes]:
+    need(folder.is_dir() and not folder.is_symlink() and
+         folder.resolve().is_relative_to(WORK.resolve()),
+         'untrusted saved evidence folder: ' + folder.name)
+    lines = safe_bytes(folder / 'SHA256SUMS').decode('ascii').splitlines()
+    checked = {}
+    for line in lines:
+        match = CHECK.fullmatch(line)
+        need(match is not None and match.group(2) not in checked,
+             'duplicate/malformed saved evidence seal')
+        name = match.group(2)
+        data = safe_bytes(folder / name)
+        need(hashlib.sha256(data).hexdigest() == match.group(1),
+             'saved evidence checksum mismatch: ' + name)
+        checked[name] = data
+    need(required <= set(checked),
+         'saved receipt missing original MVS reports')
+    actual = {p.name for p in folder.iterdir() if p.is_file()}
+    need(actual == set(checked) | {'SHA256SUMS'},
+         'saved receipt has unsealed/extra files')
+    return checked
+
+
+def original_inputs(preview) -> dict:
+    """Bind all three accepted stage groups to immutable original MVS data."""
+    need(WORK.is_dir() and not WORK.is_symlink(), 'missing workarea')
+    a = sealed(STAGE_18, {'verification.json','catalog-report.txt','members-report.txt'})
+    b = sealed(STAGE_2, {'verification.json','catalog-report.txt','members-report.txt'})
+    c = sealed(STAGE_21, {'stage-result.json','stage-summary.txt','stage-report.txt'})
+    d = sealed(STAGE_21_Q, {'query-rc.txt','catalog-report.txt','members-report.txt'})
+    first = json.loads(a['verification.json'])
+    second = json.loads(b['verification.json'])
+    last = json.loads(c['stage-result.json'])
+    need(first.get('status') == 'MVS_STAGED_DCB_AND_DIRECTORY_PASS_RECORD_CONTENT_PENDING' and
+         first.get('original_stage_job') == 9310 and first.get('volume') == 'TSO002' and
+         first.get('pds') == 18 and first.get('selected_members') == 127 and
+         first.get('mvs_jobs') == {'catalog':9311,'members':9312},
+         'original 18-PDS acceptance differs')
+    need(second.get('status') == 'MVS_BT0001_BT0002_DCB_DIRECTORY_PASS' and
+         second.get('stage_job') == 9317 and second.get('volume') == 'TSO002' and
+         second.get('mvs_jobs') == {'catalog':9318,'members':9319} and
+         second.get('installer_members') == ['INSTALL','DATASETS','RELEASE','RESTORE'],
+         'original bootstrap acceptance differs')
+    need(last == {'status':'BT0021_IEBCOPY_MVS_RC0000_DIRECTORY_VERIFICATION_PENDING',
+                  'mvs_job':9335,'step':'S0021','selected_members':15,
+                  'target':'HERC02.BCPL.TA2STG.BT0021','volume':'TSO002'},
+         'original BT0021 IEBCOPY receipt differs')
+    need(d['query-rc.txt'] == b'LISTDS LABEL RC=0\nLISTDS MEMBERS RC=0\n',
+         'independent BT0021 inquiry return codes differ')
+    core = preview.module('rc2_prod_core', ROOT / 'tools/datasets/dspal-core.py')
+    ls = preview.module('rc2_prod_ls', ROOT / 'tools/datasets/dspal-ls.py')
+    name = 'HERC02.BCPL.TA2STG.BT0021'
+    report = d['catalog-report.txt'].decode('utf-8')
+    need('IEF142I DSPALST STAT - STEP WAS EXECUTED - COND CODE 0000' in report and
+         'JES2.JOB09336.' in report and not core.dataset_missing(report,name),
+         'independent BT0021 catalog MVS evidence is ambiguous')
+    block = core.extract_listds_block(report,name)
+    attrs = core.parse_listds(block) if block else {}
+    need(attrs == {'volume':'TSO002','dsorg':'PO','recfm':'FB','lrecl':'80','blksize':'800'},
+         'BT0021 staged volume/DCB differs from accepted MVS inquiry')
+    m = ls.member_blocks(d['members-report.txt'].decode('utf-8'), [name])
+    actual = ls.parse_members(m[name]) if name in m else []
+    need(len(actual) == len(HISTORICAL) and len(set(actual)) == len(actual) and
+         set(actual) == set(HISTORICAL),
+         'BT0021 accepted directory missing/extra/duplicate historical members')
+    stage = preview.module('rc2_prod_stage21', ROOT / 'packaging/distribution/compiler-source/rc2-bt0021-stage-once.py')
+    need(stage.validate_job(9335, c['stage-summary.txt'].decode('utf-8'),
+                            c['stage-report.txt'].decode('utf-8')) == last,
+         'BT0021 saved JES stage result cannot be replayed')
+    return {'18_pds_receipt_sha256': hashlib.sha256(a['verification.json']).hexdigest(),
+            'bootstrap_receipt_sha256': hashlib.sha256(b['verification.json']).hexdigest(),
+            'bt0021_stage_receipt_sha256': hashlib.sha256(c['stage-result.json']).hexdigest(),
+            'bt0021_inquiry_receipt_sha256': hashlib.sha256(d['SHA256SUMS'] if 'SHA256SUMS' in d else
+                                                            safe_bytes(STAGE_21_Q / 'SHA256SUMS')).hexdigest(),
+            'datasets':21,'selected_pds_members':146,'volume':'TSO002'}
+
+
+def verified_plan():
+    preview = load('rc2_prod_preview', PREVIEW)
+    media = load('rc2_prod_media', MEDIA)
+    aws = load('rc2_prod_aws', AWS)
+    digest = media.validate_plan()  # canonical manifest, registry and source contract
+    rc1 = preview.yaml.safe_load(preview.RC1.read_bytes())
+    rc2 = preview.yaml.safe_load(preview.RC2.read_bytes())
+    renderer = preview.module('rc2_prod_renderer', preview.RENDERER)
+    jcl = preview.preview(rc1,rc2,renderer)
+    need(hashlib.sha256(jcl.encode('ascii')).hexdigest() == digest,
+         'JCL changed between independent canonical replays')
+    return preview, media, aws, jcl, digest
+
+
+def load(name: str, path: Path):
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec, spec_from_loader
+    need(path.is_file() and not path.is_symlink(), 'canonical script not found: ' + path.name)
+    loader = SourceFileLoader(name, str(path))
+    spec = spec_from_loader(name,loader)
+    need(spec is not None and spec.loader is not None,'cannot import ' + path.name)
+    mod = module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def verify_approval(raw: bytes, jcl_sha: str) -> None:
+    obj = json.loads(raw)
+    expected = {'schema_version':1,'status':'OWNER_APPROVED_ONE_SHOT_RC2_PRIVATE_AWS',
+                'candidate':'BCPL-0.1.0-rc2','volser':'BC0002',
+                'image':IMAGE,'hercules_unit':'0480','datasets':21,
+                'jobname':JOBNAME,'jcl_sha256':jcl_sha,
+                'publication_authorized':False,'automatic_retry':False}
+    need(type(obj) is dict and obj == expected,
+         'exact separate owner media-write authorization missing/changed')
+
+
+def git_approved(jcl_sha: str) -> None:
+    need(APPROVAL.is_file() and not APPROVAL.is_symlink(),
+         'NO MEDIA AUTHORIZATION: approval JSON not yet committed; --run disabled')
+    p = subprocess.run(['git','-C',str(ROOT),'branch','--show-current'],
+                       capture_output=True,text=True,check=False,timeout=20)
+    need(p.returncode == 0 and p.stdout.strip() == 'main',
+         'writer only permitted from authoritative main')
+    p = subprocess.run(['git','-C',str(ROOT),'status','--porcelain','--untracked-files=no'],
+                       capture_output=True,text=True,check=False,timeout=20)
+    need(p.returncode == 0 and not p.stdout.strip(), 'tracked files differ from main')
+    p = subprocess.run(['git','-C',str(ROOT),'show','HEAD:'+str(APPROVAL.relative_to(ROOT))],
+                       capture_output=True,check=False,timeout=20)
+    need(p.returncode == 0 and p.stdout == safe_bytes(APPROVAL),
+         'media approval not original Git committed content')
+    verify_approval(p.stdout,jcl_sha)
+
+
+def safe_workspace() -> None:
+    need(WORK.is_dir() and not WORK.is_symlink() and
+         WORK.resolve().is_relative_to(ROOT.resolve()), 'unsafe workarea')
+    need(TAPES.is_dir() and not TAPES.is_symlink() and
+         TAPES.resolve().is_relative_to(ROOT.resolve()), 'unsafe image folder')
+    need(not OPS.is_symlink() and not MARKER.exists() and
+         not MARKER.is_symlink() and not TAPE.exists() and not TAPE.is_symlink(),
+         'media filename or irreversible attempt already exists: NEVER RETRY')
+
+
+def save(path: Path, data: bytes) -> None:
+    with os.fdopen(os.open(path, os.O_CREAT|os.O_EXCL|os.O_WRONLY|
+                          getattr(os,'O_NOFOLLOW',0),0o600),'wb') as stream:
+        stream.write(data)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def capture(folder: Path, name: str, args: list[str], max_seconds: int=90) -> str:
+    try:
+        p = subprocess.run(args, cwd=ROOT, capture_output=True,text=True,
+                           check=False,timeout=max_seconds)
+    except (subprocess.TimeoutExpired,OSError) as exc:
+        raise Refusal(name + ': host inquiry failed (' + type(exc).__name__ + ')') from exc
+    output = p.stdout + ('\n'+p.stderr if p.stderr else '')
+    save(folder / (name+'.txt'), output.encode('utf-8'))
+    need(p.returncode == 0 and bool(p.stdout),name + ': command RC=' + str(p.returncode))
+    return p.stdout
+
+
+def check_docker(folder: Path) -> None:
+    need(capture(folder,'docker-running',['docker','inspect','-f','{{.State.Running}}','mvs38j']).strip() == 'true',
+         'MVS container not running')
+    bind = capture(folder,'docker-tape-bind',['docker','inspect','-f',
+                      '{{range .Mounts}}{{if eq .Destination "/tk5/tape"}}{{.Source}}{{end}}{{end}}','mvs38j']).strip()
+    need(Path(bind).resolve() == TAPES.resolve(), 'Docker tape directory bind differs')
+    envargs = ['docker','inspect','-f','{{json .Config.Env}}','mvs38j']
+    p = subprocess.run(envargs,cwd=ROOT,capture_output=True,text=True,check=False,timeout=30)
+    need(p.returncode == 0,'MVS Docker runtime identity unavailable')
+    env = dict(x.split('=',1) for x in json.loads(p.stdout) if '=' in x)
+    need(env.get('MVS_UID') == str(os.getuid()) and env.get('MVS_GID') == str(os.getgid()),
+         'Docker tape UID/GID does not match host')
+    helptext = capture(folder,'hetinit-help',['docker','exec','mvs38j','hetinit','-h'])
+    need('-d' in helptext and '-i' in helptext,'installed HETINIT options changed')
+
+
+def existing_media(folder: Path) -> int:
+    need(not TAPE.exists() and not TAPE.is_symlink(), 'BC0002 image already exists')
+    seen = 0
+    for path in sorted(TAPES.iterdir()):
+        if path.name == '.gitkeep': continue
+        need(path.is_file() and not path.is_symlink() and path.suffix.lower() in ('.aws','.het'),
+             'unsafe or unknown existing tape image: ' + path.name)
+        report = capture(folder,f'vol-{seen:03d}',
+                         ['docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+path.name],120)
+        rows = re.findall(r"(?m)^Volume Serial\s+: '([A-Z0-9]{1,6})'\s*$",report)
+        need(len(rows) == 1 and rows[0] != VOL,
+             'unrecognized/reused BC0002 volume in existing image: ' + path.name)
+        seen += 1
+    return seen
+
+
+def fresh_drive(media,folder: Path,stage: str) -> None:
+    need(media.parse_hercules(media.inquire(media.HERCULES,stage+'-hercules',folder)) == 'EMPTY',
+         'Hercules 0480 has media')
+    need(media.parse_mvs(media.inquire(media.MVS,stage+'-mvs',folder)) in ('O','O-NRD'),
+         'MVS tape unit 480 unsafe')
+
+
+def fresh_catalog(preview, folder:Path) -> int:
+    core = preview.module('rc2_prod_stat', ROOT / 'tools/datasets/dspal-core.py')
+    config = core.load_config()
+    need(config['mvs']['hlq'] == 'HERC02', 'MVS source HLQ differs')
+    core.require_reader_ready(config)
+    dsns = [f'BCPL.BT{i:04d}' for i in range(1,22)]
+    deck = core.stat_deck(config,dsns)
+    need(all(x.isascii() and len(x)<=80 for x in deck.splitlines()), 'LISTDS inquiry JCL invalid')
+    original = tempfile.tempdir
+    previous = os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder)
+        os.environ['TMPDIR'] = str(folder)
+        job, summary = core.submit_and_wait(config,deck,max_rc=8,cursor_file=folder/'catalog-cursor.json')
+        save(folder / 'catalog-summary.txt', summary.encode('utf-8'))
+        report = core.job_report(job,cursor_file=folder/'catalog-cursor.json')
+        save(folder / 'catalog-report.txt',report.encode('utf-8'))
+    finally:
+        tempfile.tempdir = original
+        if previous is None: os.environ.pop('TMPDIR',None)
+        else: os.environ['TMPDIR'] = previous
+    need(type(job) is int and 1 <= job <= 9999,
+         'MVS catalog inquiry job identity ambiguous')
+    for dsn in dsns:
+        need(core.dataset_missing(report,dsn),dsn + ' catalog collision/ambiguous inquiry')
+        block = core.extract_listds_block(report,dsn)
+        need(not (block and core.parse_listds(block)),dsn + ' LISTDS response contradicted absence')
+    return job
+
+
+def validate_job(job: int,summary: str,report: str) -> None:
+    need(re.search(rf'(?m)^JOB\s+{job}\s+{JOBNAME}\s*$',summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         '21-step MVS job identity/result unverified')
+    steps = re.findall(r'(?m)^([A-Z0-9]{1,8})\s+(IEBGENER|IEBCOPY)\s+RC=(\d{4})\s*$',summary)
+    need(steps == [(step,pgm,'0000') for step,pgm in STAGES],
+         '21-step MVS IEBGENER/IEBCOPY sequence or RC differs')
+    actual = re.findall(rf'(?m)^IEF142I\s+{JOBNAME}\s+(T\d{{4}})\s+-\s+STEP WAS EXECUTED\s+-\s+COND CODE (\d{{4}})\s*$',report)
+    need(actual == [(step,'0000') for step,_ in STAGES] and
+         re.search(r'\b(?:ABEND|IEF450I|IEF472I|IEA995I)\b',report,re.I) is None,
+         'MVS actual IEF142I sequence incomplete/ambiguous or ABEND')
+
+
+def marker_once(jcl_sha: str, evidence: Path) -> None:
+    need(not MARKER.exists() and not MARKER.is_symlink(), 'one-shot attempt already exists')
+    OPS.mkdir(mode=0o700,exist_ok=True)
+    blob = json.dumps({'state':'STATEFUL_SUBMISSION_INTENT_NO_RETRY',
+                       'candidate':'BCPL-0.1.0-rc2','volser':VOL,
+                       'image':IMAGE,'unit':'0480','jcl_sha256':jcl_sha,
+                       'evidence':evidence.relative_to(ROOT).as_posix(),
+                       'do_not_retry':True},sort_keys=True,indent=2)+'\n'
+    save(MARKER,blob.encode('utf-8'))
+
+
+def create_image() -> None:
+    fd = os.open(TAPE,os.O_CREAT|os.O_EXCL|os.O_WRONLY|
+                 getattr(os,'O_NOFOLLOW',0),0o600)
+    os.close(fd)
+
+
+def run() -> int:
+    need(sys.stdin.isatty(), 'a real operator TTY is required for media writing')
+    preview,media,aws,jcl,jcl_sha = verified_plan()
+    git_approved(jcl_sha)  # Fail BEFORE any MVS/host media operations until approved.
+    input_receipts = original_inputs(preview)
+    safe_workspace()
+    OPS.mkdir(mode=0o700,exist_ok=True)
+    folder = OPS / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+str(os.getpid()))
+    folder.mkdir(mode=0o700,exist_ok=False)
+    try:
+        check_docker(folder)
+        count=existing_media(folder)
+        fresh_drive(media,folder,'first')
+        cat_job=fresh_catalog(preview,folder)
+        print(f'TA.2 RC2 WRITE PREFLIGHT PASS: 21 accepted inputs, 21 tape aliases absent; '
+              f'{count} existing images checked. LISTDS JOB {cat_job}.')
+        token='INIT MOUNT WRITE BC0002 21'
+        need(input('Type '+token+' to authorize this ONE private AWS write: ').strip()==token,
+             'operator declined candidate media write')
+        safe_workspace()
+        existing_media(folder)
+        fresh_drive(media,folder,'final')
+        marker_once(jcl_sha,folder)     # Persistent irreversible intent first.
+        create_image()                  # O_EXCL: never reuse or overwrite image.
+        capture(folder,'hetinit', ['docker','exec','--user',f'{os.getuid()}:{os.getgid()}',
+                                  'mvs38j','hetinit','-d','-i','/tk5/tape/'+IMAGE,VOL])
+        initial = capture(folder,'labels-initial',
+                          ['docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+IMAGE])
+        need(re.search(r"(?m)^Volume Serial\s+: 'BC0002'\s*$",initial) is not None,
+             'initialized VOL1 did not report BC0002')
+        fresh_drive(media,folder,'pre-mount')
+        capture(folder,'mount', ['tools/mvs/mvs-console','--yes','tape','mount',UNIT,IMAGE])
+        mounted=media.inquire(media.HERCULES,'mounted-hercules',folder)
+        need(re.search(r'\b0:0480\s+3420\s+\S*'+re.escape(IMAGE),mounted) is not None and
+             re.search(r'\bbusy\b',mounted,re.I) is None,
+             'expected BC0002 image not provably mounted')
+        mvs=media.inquire(media.MVS,'mounted-mvs',folder)
+        need(media.parse_mvs(mvs)=='O','MVS drive not online/ready after mount')
+        print('BC0002 initialized and mounted at 0480. Next confirmation submits exactly one 21-step job.')
+        token='SUBMIT TA2RC2WR BC0002'
+        need(input('Type '+token+' to submit the 21-step MVS job: ').strip()==token,
+             'submission declined; preserve mounted image and one-shot marker')
+        core=preview.module('rc2_prod_core_live',ROOT/'tools/datasets/dspal-core.py')
+        config=core.load_config()
+        need(config['mvs']['hlq']=='HERC02','MVS HLQ drift')
+        auth='\n'.join(core.authenticated_job_card(config,JOBNAME,'TA2 RC2 AWS',
+                                                   redact_password=False))+'\n'+jcl
+        need(auth.isascii() and all(len(x)<=80 for x in auth.splitlines()),
+             'authenticated candidate deck invalid')
+        original=tempfile.tempdir
+        previous=os.environ.get('TMPDIR')
+        try:
+            tempfile.tempdir=str(folder)
+            os.environ['TMPDIR']=str(folder)
+            job,summary=core.submit_and_wait(config,auth,max_rc=0,
+                                             cursor_file=folder/'write-cursor.json')
+            save(folder/'write-summary.txt',summary.encode('utf-8'))
+            report=core.job_report(job,cursor_file=folder/'write-cursor.json')
+            save(folder/'write-report.txt',report.encode('utf-8'))
+        finally:
+            tempfile.tempdir=original
+            if previous is None: os.environ.pop('TMPDIR',None)
+            else: os.environ['TMPDIR']=previous
+        validate_job(job,summary,report)
+        labels=capture(folder,'labels-final',
+                       ['docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+IMAGE])
+        files=capture(folder,'files-final',
+                      ['docker','exec','mvs38j','hetmap','-f','/tk5/tape/'+IMAGE])
+        result=aws.evaluate(labels,files)
+        need(result['logical_datasets']==21 and result['physical_files']==64,
+             'BC0002 physical layout unexpected')
+        with TAPE.open('rb') as f:
+            digest=hashlib.file_digest(f,'sha256').hexdigest()
+        receipt={'status':'PRIVATE_RC2_AWS_WRITTEN_MVS_RC0000_AWS_STRUCTURE_PASS',
+                 'mvs_job':job,'candidate':'BCPL-0.1.0-rc2','volser':VOL,
+                 'image':IMAGE,'sha256':digest,'jcl_sha256':jcl_sha,
+                 'stage_receipts':input_receipts,'physical':result,
+                 'rights_clearance':False,'publication_authorized':False,
+                 'restore_and_clean_target_install':'PENDING'}
+        save(folder/'result.json',(json.dumps(receipt,sort_keys=True,indent=2)+'\n').encode())
+        print(f'TA.2 RC2 AWS WRITE: JOB {job}, 21/21 steps RC=0000; '
+              '21 labels; 64 physical files PASS.')
+        print('Immutable candidate SHA-256: '+digest)
+        print('Private evidence: '+folder.relative_to(ROOT).as_posix())
+        print('Do not rerun/unmount until separate verification/restore plan.')
+        return 0
+    except Exception as exc:
+        print('TA.2 RC2 AWS WRITE HALTED: '+str(exc),file=sys.stderr)
+        print('NO RETRY; preserve media, mount, attempt marker and evidence: '
+              +folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        return 2
+
+
+def main(argv=None) -> int:
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--run',action='store_true',help='disabled without separately committed owner write approval')
+    a=p.parse_args(argv)
+    try:
+        preview,media,aws,jcl,jcl_sha=verified_plan()
+        if a.run:
+            return run()
+        # Default: read-only original evidence replay, no JES, tape, or media scan.
+        receipts=original_inputs(preview)
+        print('TA.2 RC2 PRODUCTION REVIEW PASS: 21 accepted staged inputs, '
+              '146 selected PDS members; 21-position write JCL checked.')
+        print('JCL SHA-256: '+jcl_sha)
+        print('No tape operation. Private BC0002 write requires separately committed approval.')
+        return 0
+    except (Refusal,ValueError,OSError,KeyError,TypeError,RuntimeError) as exc:
+        print('TA.2 RC2 PRODUCTION REFUSED: '+str(exc),file=sys.stderr)
+        return 2
+
+
+if __name__=='__main__':
+    raise SystemExit(main())
