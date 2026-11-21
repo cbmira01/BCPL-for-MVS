@@ -35,3 +35,7 @@ In the assistant's separate repository-root workspace, **14/14** isolated execut
 **Not authorized:** automatic retry, media overwrite, recovery after stateful failure, independent tape restore/installation, repository source modifications on the owner's WSL machine, release publication, unresolved redistribution-rights clearance or a claim that the native-running Cambridge Compiler exists. Further steps require actual MVS/JES and independent HETMAP evidence.
 
 **TA.2 — Manifest-Driven Tape Producer remains IN PROGRESS** until the owner-reported private candidate is verified.
+
+## Owner-reported single stateful invocation — 21 November 2026 EST
+
+This authorization was **consumed** by one private candidate initialization/mount and the one `TA2RC2WR` job. The runner reported **RC=2** in the subsequent HETMAP physical-file number/block-count check, **after** its 21-step JES/IEF142I RC=0000 and standard-label checks. The exclusive permanent no-retry marker and image must remain untouched. Original saved evidence: `workarea/ta2-rc2-production-operations/20261121T231644Z-27163`. The [new post-write investigation](ta2-rc2-postwrite-physical-file-review-20261121.md) does **not** authorize repeat production, media movement or installation. The original qualified write evidence awaits independent read-only review.

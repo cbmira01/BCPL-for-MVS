@@ -1,0 +1,240 @@
+#!/usr/bin/env python3
+"""TA.2: read-only forensic audit of the one-shot BC0002 candidate write.
+
+Replays the original sealed JES/HETMAP evidence, independently checks 21
+JES steps, compares saved and fresh read-only HETMAP maps, diagnoses tape
+file numbering without changing the candidate, and hashes its AWS bytes.
+No mount, unmount, rewind, initialize, JCL submission or tape write.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+WORK = ROOT / 'workarea'
+TAPES = ROOT / 'mvs-state/tape'
+IMAGE = 'bcpl-0.1.0-rc2-BC0002.aws'
+TAPE = TAPES / IMAGE
+OPS = WORK / 'ta2-rc2-production-operations'
+ORIGINAL = OPS / '20261121T231644Z-27163'
+MARKER = OPS / 'BC0002-one-shot-attempt.json'
+OUT = WORK / 'ta2-rc2-postwrite-audit'
+FILE = re.compile(r'(?m)^File\s+#\s*:\s*(\d+)\s*$')
+BLOCK = re.compile(r'(?m)^Blocks\s*:\s*(\d+)\s*$')
+SEAL = re.compile(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)\Z')
+MAX = 16 * 1024 * 1024
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(condition: bool, why: str) -> None:
+    if not condition:
+        raise Refusal(why)
+
+
+def read_safe(path: Path) -> bytes:
+    need(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX,
+         'missing, linked or oversized original evidence: ' + path.name)
+    return path.read_bytes()
+
+
+def original_receipt() -> dict[str, bytes]:
+    need(ORIGINAL.is_dir() and not ORIGINAL.is_symlink() and
+         ORIGINAL.resolve().is_relative_to(WORK.resolve()),
+         'original postwrite evidence unavailable or unsafe')
+    result: dict[str, bytes] = {}
+    for line in read_safe(ORIGINAL / 'SHA256SUMS').decode('ascii').splitlines():
+        m = SEAL.fullmatch(line)
+        need(m is not None, 'malformed original evidence seal')
+        name = m.group(2)
+        need(name not in result, 'duplicate original seal entry')
+        raw = read_safe(ORIGINAL / name)
+        need(hashlib.sha256(raw).hexdigest() == m.group(1),
+             'original evidence hash mismatch: ' + name)
+        result[name] = raw
+    required = {'failure.json', 'write-summary.txt', 'write-report.txt',
+                'labels-final.txt', 'files-final.txt'}
+    need(required <= set(result), 'original postwrite evidence is incomplete')
+    actual = {p.name for p in ORIGINAL.iterdir() if p.is_file()}
+    need(actual == set(result) | {'SHA256SUMS'},
+         'original evidence has unsealed files')
+    reason = json.loads(result['failure.json'])
+    need(reason == {'status': 'HALTED_NO_RETRY',
+                    'reason': 'HETMAP file number/block count missing, repeated or out of order'},
+         'original postwrite failure differs')
+    return result
+
+
+def validate_jes(summary: str, report: str) -> int:
+    jobs = re.findall(r'(?m)^JOB\s+(\d+)\s+TA2RC2WR\s*$', summary)
+    need(len(jobs) == 1 and 1 <= int(jobs[0]) <= 9999,
+         'saved TA2RC2WR job identity ambiguous')
+    need('JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'saved JES result not successful')
+    expected = [(f'T{i:04d}', 'IEBGENER' if i == 1 else 'IEBCOPY', '0000')
+                for i in range(1, 22)]
+    actual = re.findall(r'(?m)^(T\d{4})\s+(IEBGENER|IEBCOPY)\s+RC=(\d{4})\s*$', summary)
+    need(actual == expected, 'saved JES summary does not show 21 ordered RC=0000 steps')
+    messages = re.findall(r'(?m)^IEF142I\s+TA2RC2WR\s+(T\d{4})\s+-\s+'
+                          r'STEP WAS EXECUTED\s+-\s+COND CODE (\d{4})\s*$', report)
+    need(messages == [(step, '0000') for step, _, _ in expected] and
+         re.search(r'\b(?:ABEND|IEF450I|IEF472I|IEA995I)\b', report, re.I) is None,
+         'saved MVS IEF142I results incomplete or include an ABEND')
+    return int(jobs[0])
+
+
+def map_diagnostic(report: str) -> dict:
+    headers = list(FILE.finditer(report))
+    numbers = [int(m.group(1)) for m in headers]
+    entries = []
+    for i, match in enumerate(headers):
+        end = headers[i + 1].start() if i + 1 < len(headers) else len(report)
+        counts = [int(m.group(1)) for m in BLOCK.finditer(report, match.end(), end)]
+        entries.append({'row': i+1, 'file': numbers[i], 'blocks': counts})
+    issues = [entry for entry in entries if entry['file'] != entry['row'] or
+              len(entry['blocks']) != 1]
+    counts = [entry['blocks'][0] if len(entry['blocks']) == 1 else None
+              for entry in entries]
+    layout = (len(entries) == 64 and not issues and
+              all(counts[3*i] == (3 if i == 0 else 2) and
+                  isinstance(counts[3*i+1], int) and counts[3*i+1] > 0 and
+                  counts[3*i+2] == 2 for i in range(21)) and counts[-1] == 0)
+    layout_issues = []
+    if len(counts) == 64:
+        for i in range(21):
+            triple = counts[3*i:3*i+3]
+            if not (triple[0] == (3 if i == 0 else 2) and
+                    isinstance(triple[1], int) and triple[1] > 0 and
+                    triple[2] == 2):
+                layout_issues.append({'dataset': f'BCPL.BT{i+1:04d}',
+                                      'actual_three_file_blocks': triple})
+    # Preserve numbering, including any offset. Do not silently renumber.
+    return {'file_entries': len(entries), 'first_file_numbers': numbers[:8],
+            'last_file_numbers': numbers[-8:], 'sequential_from_zero': numbers == list(range(len(numbers))),
+            'sequential_from_one': numbers == list(range(1,len(numbers)+1)),
+            'missing_or_repeated_block_counts': sum(len(e['blocks']) != 1 for e in entries),
+            'first_number_or_count_discrepancies': issues[:6],
+            'first_block_counts': counts[:10], 'last_block_counts': counts[-10:],
+            'first_dataset_layout_discrepancies': layout_issues[:6],
+            'strict_21_dataset_layout_pass': layout}
+
+
+def marker_and_image() -> tuple[str, int]:
+    need(MARKER.is_file() and not MARKER.is_symlink(),
+         'permanent no-retry attempt marker missing')
+    marker = json.loads(read_safe(MARKER))
+    need(marker.get('state') == 'STATEFUL_SUBMISSION_INTENT_NO_RETRY' and
+         marker.get('candidate') == 'BCPL-0.1.0-rc2' and
+         marker.get('volser') == 'BC0002' and marker.get('image') == IMAGE and
+         marker.get('do_not_retry') is True and
+         marker.get('evidence') == ORIGINAL.relative_to(ROOT).as_posix(),
+         'permanent no-retry marker differs from written candidate')
+    need(TAPES.is_dir() and not TAPES.is_symlink() and
+         TAPES.resolve().is_relative_to(ROOT.resolve()) and
+         TAPE.is_file() and not TAPE.is_symlink() and TAPE.stat().st_size > 0,
+         'existing BC0002 AWS image unavailable/unsafe')
+    with TAPE.open('rb') as image:
+        sha = hashlib.file_digest(image, 'sha256').hexdigest()
+    return sha, TAPE.stat().st_size
+
+
+def save(folder: Path, name: str, data: bytes) -> None:
+    with os.fdopen(os.open(folder/name, os.O_CREAT|os.O_EXCL|os.O_WRONLY|
+                          getattr(os,'O_NOFOLLOW',0), 0o600), 'wb') as f:
+        f.write(data)
+        f.flush()
+        os.fsync(f.fileno())
+
+
+def capture_map(folder: Path, flag: str, name: str) -> str:
+    command = ['docker', 'exec', 'mvs38j', 'hetmap', flag, '/tk5/tape/'+IMAGE]
+    p = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+                       check=False, timeout=120)
+    save(folder, name+'.txt', (p.stdout + ('\n'+p.stderr if p.stderr else '')).encode())
+    need(p.returncode == 0 and bool(p.stdout) and not p.stderr.strip(),
+         f'read-only HETMAP {flag} failed; original AWS preserved')
+    return p.stdout
+
+
+def seal(folder: Path) -> None:
+    files = sorted(x for x in folder.iterdir() if x.is_file())
+    rows = [hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in files]
+    save(folder, 'SHA256SUMS', ''.join(rows).encode('ascii'))
+
+
+def run() -> int:
+    need(WORK.is_dir() and not WORK.is_symlink() and
+         WORK.resolve().is_relative_to(ROOT.resolve()) and not OUT.is_symlink(),
+         'untrusted workarea audit location')
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    folder = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    try:
+        evidence = original_receipt()
+        job = validate_jes(evidence['write-summary.txt'].decode('utf-8'),
+                           evidence['write-report.txt'].decode('utf-8'))
+        sha, size = marker_and_image()
+        saved_files = evidence['files-final.txt'].decode('utf-8')
+        saved_labels = evidence['labels-final.txt'].decode('utf-8')
+        saved_diag = map_diagnostic(saved_files)
+        live_files = capture_map(folder, '-f', 'live-files')
+        live_labels = capture_map(folder, '-l', 'live-labels')
+        full_map = capture_map(folder, '-a', 'live-all')
+        live_diag = map_diagnostic(live_files)
+        need(saved_files == live_files and saved_labels == live_labels,
+             'current HETMAP reports differ from original saved postwrite reports')
+        labels = list(re.finditer(r"(?m)^Label\s+: '([A-Z0-9]{4})'\s*$", live_labels))
+        label_types = [m.group(1) for m in labels]
+        expected = ['VOL1'] + [v for _ in range(21) for v in ('HDR1','HDR2','EOF1','EOF2')]
+        need(label_types == expected, 'original 21-dataset standard label order/count changed')
+        need(len(re.findall(r"(?m)^Volume Serial\s+: 'BC0002'\s*$",live_labels))>=1,
+             'BC0002 VOL1 serial missing')
+        result = {
+            'status': 'POSTWRITE_JES_21_RC0000_LABELS_21_ACCEPTED_FILE_MAP_REVIEW_PENDING',
+            'candidate': 'BCPL-0.1.0-rc2', 'volume': 'BC0002',
+            'mvs_job': job, 'mvs_steps': 21, 'standard_label_datasets': 21,
+            'image': IMAGE, 'image_size_bytes': size, 'image_sha256': sha,
+            'original_evidence': ORIGINAL.relative_to(ROOT).as_posix(),
+            'saved_hetmap': saved_diag, 'live_hetmap': live_diag,
+            'live_all_hetmap': map_diagnostic(full_map),
+            'source_reports_unchanged': True, 'no_retry': True,
+            'publication_authorized': False,
+        }
+        save(folder, 'result.json', (json.dumps(result, indent=2, sort_keys=True)+'\n').encode())
+        seal(folder)
+        print(f'TA.2 RC2 POSTWRITE: JES JOB {job}, 21/21 steps RC=0000; '
+              f'21 SL datasets; AWS {size} bytes.')
+        print('Saved/live HETMAP -f agree: '+json.dumps(live_diag, separators=(',',':')))
+        print('AWS SHA-256: '+sha)
+        print('Read-only evidence: '+folder.relative_to(ROOT).as_posix())
+        print('No media change. Tape file-map acceptance is pending original HETMAP review.')
+        return 0
+    except (Refusal, OSError, ValueError, subprocess.SubprocessError, UnicodeError) as exc:
+        try:
+            save(folder, 'failure.json', (json.dumps({'status':'READ_ONLY_REVIEW_REFUSED',
+                                                     'reason':str(exc)})+'\n').encode())
+            seal(folder)
+        except OSError:
+            pass
+        print('TA.2 RC2 POSTWRITE REVIEW REFUSED: '+str(exc), file=sys.stderr)
+        print('Read-only evidence: '+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        print('Candidate AWS and one-shot attempt remain unchanged.',file=sys.stderr)
+        return 2
+
+
+def main() -> int:
+    return run()
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
