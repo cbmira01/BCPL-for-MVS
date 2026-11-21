@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "status": "OWNER_APPROVED_ONE_SHOT_BT0021_STAGING",
+  "candidate": "BCPL-0.1.0-rc2",
+  "volser": "BC0002",
+  "volume": "TSO002",
+  "source": "HERC02.BCPL.CAMBRIDG.SOURCE",
+  "target": "HERC02.BCPL.TA2STG.BT0021",
+  "historical_members": 15,
+  "source_records": 6577,
+  "source_byte_policy": "preserve-verified-hercules-translated-FB80-as-archival-source",
+  "preflight_evidence": "workarea/ta2-rc2-bt0021-preflight/20261121T051500Z-24489",
+  "preflight_jobs": {
+    "catalog": 9331,
+    "vtoc": 9332
+  },
+  "retry": false,
+  "production_tape_authorized": false
+}

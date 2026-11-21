@@ -1199,3 +1199,41 @@ rather than historical compiler-lexer compatibility, is
 proposed but not approved. BT0001–BT0020 remain accepted,
 and no BC0002 tape construction, publication, rights approval,
 or new IEBCOPY job has occurred. **TA.2 IN PROGRESS.**
+
+## TA.2 owner-approved archive-byte policy and one-shot BT0021 stage — 21 November 2026 EST
+
+The owner explicitly approved **both** consequential decisions following actual
+read-only MVS JOBS **9331 (LISTDS)** and **9332 (IEHLIST)** and qualified
+source-record verification JOB **9330**:
+
+1. Preserve the **existing Hercules-translated FB80 bytes** of the 15
+   historical Cambridge source members in `BT0021` without converting
+   them to literal CP037. This is the **source-only archival transport**
+   representation; it is **not** a claim that the native Cambridge
+   Compiler accepts the historical lexical punctuation or that the
+   source PDS uses universal CP037 or historical MR10 EBCDIC bytes.
+2. Authorize **exactly one** guarded IEBCOPY staging operation creating
+   `HERC02.BCPL.TA2STG.BT0021` on **TSO002**, sourcing only
+   `HERC02.BCPL.CAMBRIDG.SOURCE` and selecting the release's
+   exact 15 historical members. The original CAMB_SOURCE remains read-only.
+
+The approval is tracked as
+[`rc2-bt0021-stage-approval.json`](../../distribution/compiler-source/rc2-bt0021-stage-approval.json)
+and is constrained to `BCPL-0.1.0-rc2` / reserved `BC0002`,
+the accepted read-only MVS evidence directory
+`workarea/ta2-rc2-bt0021-preflight/20261121T051500Z-24489`,
+JOBS 9331/9332, 6,577 original source records and an immutable
+no-retry submission-intent marker. The already tested
+[`rc2-bt0021-stage-once.py`](../../distribution/compiler-source/rc2-bt0021-stage-once.py)
+must replay original saved MVS evidence, require fresh LISTDS/IEHLIST and
+operator confirmation, and validate exactly one real MVS IEBCOPY step;
+it must never automatically retry an ambiguous or failed submission.
+
+**Authorization is for the BT0021 stage operation only.** It does not
+authorize modifying `CAMB_SOURCE`, restaging `BT0001`–`BT0020`,
+writing/mounting/initializing the `BC0002` AWS tape, installing to
+another MVS system, changing release rights, or publication.
+The owner's approval **does not establish that IEBCOPY has executed**:
+as of this record, no BT0021 staging JOB has been reported.
+Inspect actual JES result before independent directory/DCB verification.
+**TA.2 — Manifest-Driven Tape Producer remains IN PROGRESS.**

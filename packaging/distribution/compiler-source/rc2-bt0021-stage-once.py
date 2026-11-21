@@ -24,7 +24,7 @@ WORK = ROOT / 'workarea'
 PREFLIGHT = WORK / 'ta2-rc2-bt0021-preflight/20261121T051500Z-24489'
 OPERATIONS = WORK / 'ta2-rc2-bt0021-stage-operations'
 MARKER = OPERATIONS / 'BT0021-TSO002-one-shot-attempt.json'
-APPROVAL = HERE / 'rc2-bt0021-stage-approval.json'  # Intentionally absent pending approval.
+APPROVAL = HERE / 'rc2-bt0021-stage-approval.json'  # Tracked owner approval; verified against main.
 MANIFEST = ROOT / 'packaging/distribution/manifest/releases/BCPL-0.1.0-rc2.yaml'
 TARGET = 'HERC02.BCPL.TA2STG.BT0021'
 VOLUME = 'TSO002'
@@ -301,7 +301,7 @@ def main(argv=None):
     parser.add_argument('--run', action='store_true', help='requires separate committed owner approval; one MVS IEBCOPY after fresh read-only checks')
     args = parser.parse_args(argv)
     if not args.run:
-        print('TA.2 BT0021 stage runner ready; no approved write until separate committed owner decision.')
+        print('TA.2 BT0021 staging: preview only; --run requires original MVS evidence, fresh preflight and operator confirmation.')
         return 0
     try:
         return run()

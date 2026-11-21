@@ -196,3 +196,16 @@ interactive confirmation, and a permanent non-retry attempt marker.
 intentionally absent, therefore no `--run` IEBCOPY is authorized.
 See [the BT0021 preflight acceptance and bounded staging design](rc2-bt0021-stage-authorization-proposal-20261121.md).
 No source PDS modification or BC0002 AWS write was performed.
+
+**Owner decision — 21 November 2026 EST:** The source-only archival
+byte policy and **exactly one** guarded `BT0021` IEBCOPY operation
+on TSO002 are now **APPROVED**. See the committed
+[`rc2-bt0021-stage-approval.json`](rc2-bt0021-stage-approval.json)
+and [staging decision record](rc2-bt0021-stage-authorization-proposal-20261121.md).
+The existing MVS source PDS is to be copied unchanged with its measured
+Hercules-translated EBCDIC FB80 records—not rewritten as CP037;
+historical compiler-lexer compatibility is not asserted.
+`rc2-bt0021-stage-once.py --run` remains a no-retry, manually
+confirmed **MVS-facing** operation and has **not yet been executed**.
+This approval does not authorize tape production, restaging accepted
+inputs or release publication.

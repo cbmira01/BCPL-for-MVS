@@ -54,3 +54,37 @@ A second, separate choice is whether to authorize **exactly one** IEBCOPY stage 
 Until the owner explicitly chooses both source-byte policy and the new staging operation, the approval file is absent and the runner **must refuse `--run`**.
 
 **TA.2 IN PROGRESS.**
+
+## Owner decision recorded — 21 November 2026 EST (supersedes open proposal)
+
+The owner **explicitly approved** the two decisions in this proposal:
+
+1. **Archival source representation:** retain the verified Hercules-translated
+   FB80 data bytes in the `CAMB_SOURCE` dataset through `BT0021`.
+   **Do not** convert the original records to literal CP037. This is
+   transport-preservation acceptance and does **not** establish historical
+   Cambridge Compiler lexical encoding compatibility.
+2. **One-shot MVS operation:** authorize only one guarded IEBCOPY
+   selected-member stage from
+   `HERC02.BCPL.CAMBRIDG.SOURCE` to the **new**
+   `HERC02.BCPL.TA2STG.BT0021` on **TSO002**, with precisely 15
+   frozen Cambridge historical members.
+
+The exact source-controlled scope is
+[`rc2-bt0021-stage-approval.json`](rc2-bt0021-stage-approval.json),
+including accepted read-only JOBS 9331/9332,
+`BCPL-0.1.0-rc2`, `BC0002`, the permanent no-retry constraint,
+and `production_tape_authorized: false`.
+
+**Decision status: APPROVED — staging execution NOT YET REPORTED.**
+Use the one-shot runner only with its `--run` option, from the original
+repository on clean `main`; it must replay saved evidence, execute
+fresh read-only MVS inquiries, ask for interactive confirmation, and
+record the attempt marker before JES submission. Do not blindly rerun
+on failure, timeout or ambiguous state. Verify actual MVS IEBCOPY
+JOB RC and then separately check staged PDS DCB and directory.
+
+The approval does **not** extend to any `BC0002` AWS tape write,
+media initialization/mount, publication, redistribution-rights
+determination, source PDS rewrite, or restaging `BT0001`–`BT0020`.
+TA.2 remains **IN PROGRESS**.
