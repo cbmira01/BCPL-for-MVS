@@ -288,7 +288,10 @@ class TestWriter(unittest.TestCase):
              'hercules_unit':'0480',
              'original_halt_evidence':mod.INCIDENT.relative_to(mod.ROOT).as_posix(),
              'second_halt_evidence':mod.SECOND_INCIDENT.relative_to(mod.ROOT).as_posix(),
-             'prior_write_attempt_marker_created':False,'jcl_sha256':'a'*64,
+             'prior_write_attempt_marker_created':False,
+             'accepted_media_inspection':mod.ACCEPTED_INSPECTION.relative_to(mod.ROOT).as_posix(),
+             'accepted_existing_image_volser':'BTO001',
+             'accepted_existing_image_count':5,'jcl_sha256':'a'*64,
              'publication_authorized':False,'automatic_retry':False}
         mod.verify_second_recovery_approval(json.dumps(obj).encode(),'a'*64)
         with self.assertRaises(mod.Refusal): mod.verify_second_recovery_approval(json.dumps(obj).encode(),'b'*64)
@@ -312,6 +315,71 @@ class TestWriter(unittest.TestCase):
         self.assertEqual(data['original_existing_image_volser'],'BTO001')
         self.assertFalse(data['stateful_write_authorized_by_this_review'])
         self.assertTrue((folder/'SHA256SUMS').exists())
+
+    def test_accepted_media_inspection_replay_and_tamper(self):
+        work=self.path/'workarea';work.mkdir()
+        folder=work/'inspected';folder.mkdir()
+        first=work/'halt-a';second=work/'halt-b'
+        receipt={
+            'status':'READ_ONLY_TWO_INCIDENTS_AND_MEDIA_INVENTORY_PASS',
+            'candidate':'BCPL-0.1.0-rc2','volser_reserved':'BC0002',
+            'original_existing_image_volser':'BTO001',
+            'original_incidents':[first.relative_to(self.path).as_posix(),
+                                  second.relative_to(self.path).as_posix()],
+            'existing_images_checked':5,
+            'candidate_image_present':False,
+            'write_attempt_marker_present':False,
+            'stateful_write_authorized_by_this_review':False}
+        (folder/'result.json').write_text(json.dumps(receipt)+'\n')
+        (folder/'inspection-hercules-report.txt').write_text('Hercules display saved')
+        (folder/'inspection-mvs-report.txt').write_text('MVS display saved')
+        for i in range(5):
+            (folder/f'vol-{i:03d}.txt').write_text(
+                self.hetmap_fixture(f'BTO{i+1:03d}'))
+        mod.seal_evidence(folder)
+        with patch.multiple(mod,ROOT=self.path,WORK=work,
+                            INCIDENT=first,SECOND_INCIDENT=second,
+                            ACCEPTED_INSPECTION=folder):
+            self.assertEqual(mod.review_accepted_media_inspection(),receipt)
+            (folder/'vol-003.txt').write_text(self.hetmap_fixture('BC0002'))
+            with self.assertRaisesRegex(mod.Refusal,'checksum mismatch'):
+                mod.review_accepted_media_inspection()
+            (folder/'SHA256SUMS').unlink()
+            mod.seal_evidence(folder)
+            with self.assertRaisesRegex(mod.Refusal,'inventory contains BC0002'):
+                mod.review_accepted_media_inspection()
+
+    def test_media_inventory_two_scans_create_distinct_original_evidence(self):
+        tape=self.path/'tape';tape.mkdir()
+        (tape/'old.aws').write_text('unchanged placeholder')
+        folder=self.path/'evidence';folder.mkdir()
+        report=self.hetmap_fixture('BTO001')
+        def original_capture(folder,name,argv,*args):
+            mod.save(folder/(name+'.txt'),report.encode('utf-8'))
+            return report
+        with patch.multiple(mod,TAPES=tape,TAPE=tape/mod.IMAGE):
+            with patch.object(mod,'capture',side_effect=original_capture):
+                self.assertEqual(mod.existing_media(folder),1)
+                self.assertEqual(mod.existing_media(folder,pass_name='final'),1)
+                self.assertEqual({p.name for p in folder.iterdir()},
+                                 {'vol-initial-000.txt','vol-final-000.txt'})
+                with self.assertRaises(mod.Refusal):
+                    mod.existing_media(folder,pass_name='invalid')
+
+    def test_saved_media_receipt_requires_exact_inventory_count(self):
+        work=self.path/'workarea';work.mkdir()
+        folder=work/'inspected';folder.mkdir()
+        (folder/'result.json').write_text('{}')
+        (folder/'inspection-hercules-report.txt').write_text('display')
+        (folder/'inspection-mvs-report.txt').write_text('display')
+        for i in range(5):
+            (folder/f'vol-{i:03d}.txt').write_text(self.hetmap_fixture('BTO001'))
+        mod.seal_evidence(folder)
+        with patch.multiple(mod,ROOT=self.path,WORK=work,
+                            INCIDENT=work/'halt-a',SECOND_INCIDENT=work/'halt-b',
+                            ACCEPTED_INSPECTION=folder):
+            with self.assertRaisesRegex(mod.Refusal,'inspection receipt changed'):
+                mod.review_accepted_media_inspection()
 
     def test_existing_media_wrong_volser(self):
         t=self.path/'tape';t.mkdir(); (t/'existing.aws').write_text('test')

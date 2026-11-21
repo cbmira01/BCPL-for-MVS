@@ -28,6 +28,7 @@ MARKER = OPS / 'BC0002-one-shot-attempt.json'
 INCIDENT = OPS / '20261121T145906Z-26113'
 SECOND_INCIDENT = OPS / '20261121T155143Z-26237'
 SECOND_RECOVERY_APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-rc2-after-second-halt-approval.json'
+ACCEPTED_INSPECTION = WORK / 'ta2-rc2-media-inspection/20261121T222712Z-26883'
 RECOVERY_APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-rc2-prestateful-recovery-approval.json'
 IMAGE = 'bcpl-0.1.0-rc2-BC0002.aws'
 VOL = 'BC0002'
@@ -224,6 +225,33 @@ def replay_both_incidents() -> str:
     return first
 
 
+def review_accepted_media_inspection() -> dict:
+    """Replay the qualified, sealed five-image MVS-facing media inspection."""
+    required = {'result.json', 'inspection-hercules-report.txt',
+                'inspection-mvs-report.txt'} | {f'vol-{i:03d}.txt' for i in range(5)}
+    original = sealed(ACCEPTED_INSPECTION, required)
+    result = json.loads(original['result.json'])
+    expected = {
+        'status': 'READ_ONLY_TWO_INCIDENTS_AND_MEDIA_INVENTORY_PASS',
+        'candidate': 'BCPL-0.1.0-rc2',
+        'volser_reserved': VOL,
+        'original_existing_image_volser': 'BTO001',
+        'original_incidents': [INCIDENT.relative_to(ROOT).as_posix(),
+                               SECOND_INCIDENT.relative_to(ROOT).as_posix()],
+        'existing_images_checked': 5,
+        'candidate_image_present': False,
+        'write_attempt_marker_present': False,
+        'stateful_write_authorized_by_this_review': False,
+    }
+    need(result == expected,
+         'original owner-accepted media inspection receipt changed')
+    serials = [volser_from_hetmap(original[f'vol-{i:03d}.txt'].decode('utf-8'))
+               for i in range(5)]
+    need(serials[0] == 'BTO001' and VOL not in serials,
+         'sealed original image inventory contains BC0002 or changed initial VOL1')
+    return result
+
+
 def verify_second_recovery_approval(raw: bytes, jcl_sha: str) -> None:
     expected = {
         'schema_version': 1,
@@ -233,6 +261,9 @@ def verify_second_recovery_approval(raw: bytes, jcl_sha: str) -> None:
         'original_halt_evidence': INCIDENT.relative_to(ROOT).as_posix(),
         'second_halt_evidence': SECOND_INCIDENT.relative_to(ROOT).as_posix(),
         'prior_write_attempt_marker_created': False,
+        'accepted_media_inspection': ACCEPTED_INSPECTION.relative_to(ROOT).as_posix(),
+        'accepted_existing_image_volser': 'BTO001',
+        'accepted_existing_image_count': 5,
         'jcl_sha256': jcl_sha,
         'publication_authorized': False, 'automatic_retry': False}
     need(type(json.loads(raw)) is dict and json.loads(raw) == expected,
@@ -280,6 +311,7 @@ def git_approved(jcl_sha: str) -> None:
          'new incident-specific approval not committed to main')
     verify_recovery_approval(q.stdout, jcl_sha)
     need(serial != VOL, 'original existing-media VOL1 is BC0002')
+    review_accepted_media_inspection()  # Mandatory accepted, sealed live review replay.
     # The second approved prestateful invocation also halted. The *prior*
     # recovery approval is not an unlimited permit to submit another job.
     need(SECOND_RECOVERY_APPROVAL.is_file() and not SECOND_RECOVERY_APPROVAL.is_symlink(),
@@ -371,14 +403,16 @@ def volser_from_hetmap(report: str) -> str:
     return serials[0]
 
 
-def existing_media(folder: Path) -> int:
+def existing_media(folder: Path, *, pass_name: str='initial') -> int:
+    need(pass_name in ('initial','final','inspection'),
+         'invalid existing-media scan phase')
     need(not TAPE.exists() and not TAPE.is_symlink(), 'BC0002 image already exists')
     seen = 0
     for path in sorted(TAPES.iterdir()):
         if path.name == '.gitkeep': continue
         need(path.is_file() and not path.is_symlink() and path.suffix.lower() in ('.aws','.het'),
              'unsafe or unknown existing tape image: ' + path.name)
-        report = capture(folder,f'vol-{seen:03d}',
+        report = capture(folder,f'vol-{pass_name}-{seen:03d}',
                          ['docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+path.name],120)
         serial = volser_from_hetmap(report)
         need(serial != VOL, 'BC0002 already present in existing image: ' + path.name)
@@ -468,7 +502,7 @@ def inspect_media(media) -> int:
                     '-' + str(os.getpid()))
     folder.mkdir(mode=0o700, exist_ok=False)
     try:
-        count = existing_media(folder)  # only HETMAP -l, no mounts/writes
+        count = existing_media(folder, pass_name='inspection')  # only HETMAP -l, no mounts/writes
         fresh_drive(media, folder, 'inspection')  # 2 display commands only
         receipt = {
             'status': 'READ_ONLY_TWO_INCIDENTS_AND_MEDIA_INVENTORY_PASS',
@@ -518,7 +552,8 @@ def run() -> int:
         need(confirm_yes('Initialize and mount ONE NEW private BC0002 AWS image on 0480?'),
              'operator declined candidate media write')
         safe_workspace()
-        existing_media(folder)
+        final_count=existing_media(folder, pass_name='final')
+        need(final_count==count, 'existing tape image inventory changed after confirmation')
         fresh_drive(media,folder,'final')
         marker_once(jcl_sha,folder)     # Persistent irreversible intent first.
         create_image()                  # O_EXCL: never reuse or overwrite image.

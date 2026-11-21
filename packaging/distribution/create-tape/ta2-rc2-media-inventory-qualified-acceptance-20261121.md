@@ -35,3 +35,7 @@ The original approved private release candidate is unchanged:
 **A third private write invocation has NOT been owner-authorized.** The Git-committed writer deliberately refuses `--run` without the absent, incident-specific `packaging/distribution/create-tape/ta2-rc2-after-second-halt-approval.json`. Do not repurpose either prior approval, rerun the stage operations, or submit an MVS write merely because this read-only check passed. When the owner authorizes the exact third attempt, commit the new approval, rerun own-workspace focused tests, then perform the one guarded MVS-facing operation once.
 
 **TA.2 — Manifest-Driven Tape Producer IN PROGRESS.** Publication, archive-source rights decisions, clean-target restore, and native Cambridge Compiler claims are outside this PASS.
+
+## Subsequent owner approval and guarded production repair — 21 November 2026 EST
+
+After accepting this **qualified read-only inspection PASS**, the owner authorized **one** new private `BC0002` production attempt. [The explicit third-attempt record](ta2-rc2-third-attempt-authorization-20261121.md) binds this sealed inspection evidence, both original pre-stateful failures and the frozen JCL hash to the new Git-committed authorization, without changing accepted source datasets or previous tapes. The producer's repeated-media-scan evidence collision was independently found and corrected before execution. The actual candidate write is still pending MVS/JES results.
