@@ -126,3 +126,18 @@ to check JOB 9330's retained actual JES report and receipt
 without another MVS run. Details and release design decision:
 [TA.2 JOB 9330 transport evidence](rc2-qsam-job9330-transport-reconciliation-20261120.md).
 The BT0021 stage and encoding-policy decision remain open.
+
+**TA.2 MVS record-fidelity reconciliation accepted (qualified):** the owner
+executed the saved JOB 9330 reconciliation at GitHub `main` and received
+RC=0, **15/15 selected Cambridge historical FB80 source members** and
+**6,577 source records reconciled** under the observed MVS reader
+encoding. Original literal CP037 verification remains **7/15**;
+the three measured special-character byte mappings remain documented.
+There is no evidence supporting re-population of the accepted source PDS.
+
+The [reconciliation acceptance and source-encoding decision proposal](rc2-job9330-reconciliation-acceptance-and-encoding-decision-20261120.md)
+recommends **preserving the actual MVS source bytes through IEBCOPY**,
+not converting them to CP037 merely to satisfy a host-codepage check.
+The owner has not yet approved this encoding policy or any `BT0021`
+staging operation. The release manifest, rights limitations and
+`BT0001`–`BT0020` acceptance remain unchanged.

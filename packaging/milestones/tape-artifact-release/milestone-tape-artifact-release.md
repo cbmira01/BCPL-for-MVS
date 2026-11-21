@@ -1079,3 +1079,33 @@ and documents the reader's observed source encoding or
 requires literal CP037 correction. No source-PDS rewrite,
 BT0021 IEBCOPY staging or BC0002 tape production
 has been authorized. **TA.2 remains IN PROGRESS.**
+
+## TA.2 JOB 9330 original MVS evidence reconciled — 20 November 2026
+
+The owner executed the committed saved-evidence tool
+`rc2-qsam-reconcile-transport.py --saved-job9330`, reporting
+**RC=0** and **15/15 full FB80 member fingerprints reconciled**,
+comprising **6,577 historical Cambridge source records**. This
+verification cross-checked the preserved JOB 9330 summary,
+actual JES report and original failed CP037 receipt against the
+frozen historical Git source. The original MVS QSAM examination
+confirmed **15/15 physical record counts and trailing blanks**.
+The only identified differences in expected byte fingerprints
+were the MVS reader substitutions `|`: 4F→6A, `[`: BA→AD,
+and `]`: BB→BD. Original literal CP037 matching remains
+**7/15**, while **15/15** match the observed transport profile.
+This accepts the actual-source-transport verification on a
+**qualified** basis; it does not claim universal EBCDIC codepage
+identity or collision-free byte equality.
+
+Source PDS population in JOBs 9325/9326 is accepted; no
+repopulation or adjustment to BT0001–BT0020 is needed.
+A [formal acceptance and encoding-policy proposal](../../distribution/compiler-source/rc2-job9330-reconciliation-acceptance-and-encoding-decision-20261120.md)
+recommends preserving the verified native MVS bytes through IEBCOPY
+instead of rewriting the PDS to host CP037. **That significant
+design choice is not yet approved by the owner**; the `BT0021`
+staging PDS has not been written and requires separate authority.
+Source redistribution rights and final recipient installation
+remain independent open release gates. The `BCPL-0.1.0-rc2`
+21-dataset manifest and reserved `BC0002` identity remain
+unchanged. **TA.2 IN PROGRESS.**
