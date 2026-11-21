@@ -175,3 +175,24 @@ PASS**; actual MVS preflight has not been run.
 See [implementation and acceptance boundary](rc2-bt0021-readonly-preflight-design-20261120.md).
 No BT0021 allocation/staging, source-PDS rewriting, release encoding
 policy, BC0002 tape writing or redistribution approval is implied.
+
+**BT0021 preflight accepted on actual MVS (21 November 2026 EST):**
+the owner executed the read-only preflight at `83ef858` and reported
+`RC=0`. **JOB 9331** positively verified catalog absence of
+`HERC02.BCPL.TA2STG.BT0021`; **JOB 9332** inspected TSO002
+VTOC without a target collision. Both original JES reports and
+the SHA-256-sealed receipt remain at
+`workarea/ta2-rc2-bt0021-preflight/20261121T051500Z-24489`.
+The Hercules `codepage` response was captured but remains unparsed.
+Accepted source JOB 9330 still shows 15/15 transport-profile matches
+and 6,577 FB80 records.
+
+A new [owner-gated BT0021 IEBCOPY runner](rc2-bt0021-stage-once.py)
+replays that original MVS evidence and the frozen source selection;
+it requires a **separately committed approval** of archive-byte policy
+and the exact one-shot write, fresh read-only LISTDS/IEHLIST, an
+interactive confirmation, and a permanent non-retry attempt marker.
+**16/16 assistant-workspace tests PASS**. The approval file is
+intentionally absent, therefore no `--run` IEBCOPY is authorized.
+See [the BT0021 preflight acceptance and bounded staging design](rc2-bt0021-stage-authorization-proposal-20261121.md).
+No source PDS modification or BC0002 AWS write was performed.

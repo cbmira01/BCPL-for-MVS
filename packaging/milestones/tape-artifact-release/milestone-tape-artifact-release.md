@@ -1169,3 +1169,33 @@ BT0021 IEBCOPY staging, rights/provenance, the final strict producer
 gate and BC0002 AWS construction/independent roundtrip remain
 **open**. The 21-dataset `BCPL-0.1.0-rc2` manifest and
 `BC0002` reservation are unchanged. **TA.2 IN PROGRESS.**
+
+## TA.2 BT0021 actual MVS preflight accepted; guarded stage implementation — 21 November 2026 EST
+
+The owner ran `rc2-bt0021-preflight.py --live` after
+`83ef858ce26ef346a2b89275eeff831d85d86b45`, returning
+**RC=0**. Actual **MVS JOB 9331** (LISTDS) confirmed
+`HERC02.BCPL.TA2STG.BT0021` catalog-absent and
+**MVS JOB 9332** (IEHLIST) observed TSO002 VTOC with no
+target collision. Original saved raw JES material is
+`workarea/ta2-rc2-bt0021-preflight/20261121T051500Z-24489`.
+The Hercules panel `codepage` response is preserved **unparsed**.
+This is a target preflight PASS, **not** a new dataset or an
+approved source-byte policy; original JOB 9330 source fidelity
+remains 15/15 qualified under measured transport encoding.
+
+The separately gated one-shot
+[BT0021 staging runner and approval proposal](../../distribution/compiler-source/rc2-bt0021-stage-authorization-proposal-20261121.md)
+are now implemented. The exact 15-member selective IEBCOPY,
+frozen source/JOB 9330 evidence, original sealed JOBS 9331/9332
+receipts, fresh MVS absence/VTOC checks, explicit
+operator confirmation, permanent no-retry intent, and
+actual JES RC/IEF142I checks have **16/16 focused
+assistant-workspace synthetic tests PASS**. A separately
+committed, owner-authorized `rc2-bt0021-stage-approval.json`
+is required for any new write and **does not yet exist**.
+The source-only archival preservation of current MVS bytes,
+rather than historical compiler-lexer compatibility, is
+proposed but not approved. BT0001–BT0020 remain accepted,
+and no BC0002 tape construction, publication, rights approval,
+or new IEBCOPY job has occurred. **TA.2 IN PROGRESS.**
