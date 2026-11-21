@@ -141,3 +141,20 @@ not converting them to CP037 merely to satisfy a host-codepage check.
 The owner has not yet approved this encoding policy or any `BT0021`
 staging operation. The release manifest, rights limitations and
 `BT0001`–`BT0020` acceptance remain unchanged.
+
+**Historical charset research (20 November 2026):** the original
+Cambridge transport tape was **EBCDIC**, later converted to
+Unix-compatible text with character-mapping repairs, not an
+originally ASCII compiler distribution. The historical
+`MR10.PRINT(MANUAL)` System/370 BCPL appendix explicitly
+assigns `|` X'4F', `[` X'42', and `]` X'43'.
+The traditional Hercules default ASCII-to-EBCDIC table
+maps those same characters to X'6A', X'AD', X'BD'—
+**precisely** the observed JOB 9330 byte differences.
+Thus historical compiler lexical requirements are a third
+important criterion beyond CP037 versus the current MVS
+source PDS. The [new primary-source research note](ta2-historical-ebcdic-and-hercules-research-20261120.md)
+qualifies the earlier recommendation to preserve the existing
+MVS bytes: preservation of the source-only payload does
+not automatically establish historical compiler compatibility.
+No encoding-policy change is approved by this research.

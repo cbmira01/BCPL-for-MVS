@@ -1109,3 +1109,36 @@ Source redistribution rights and final recipient installation
 remain independent open release gates. The `BCPL-0.1.0-rc2`
 21-dataset manifest and reserved `BC0002` identity remain
 unchanged. **TA.2 IN PROGRESS.**
+
+## TA.2 historical System/370 BCPL character set and Hercules mapping research — 20 November 2026
+
+Further primary-source investigation establishes that the original
+Richards Cambridge transport-tape/compiler PDS files were **EBCDIC**.
+Ken Yap recorded EBCDIC-to-Unix translation problems; Nordier
+later corrected source character mappings. The surviving
+`MR10.PRINT(MANUAL)` Appendix C defines the historical 370
+BCPL values `|` X'4F', `[` X'42', and `]` X'43'.
+These differ from **both** literal CP037 and the measured
+current Hercules reader mapping.
+
+The published traditional Hercules `default` ASCII-to-EBCDIC
+table maps `|`→6A, `[`→AD and `]`→BD exactly as
+JOB 9330 measured. Hercules `CODEPAGE`, its no-argument
+`codepage` panel query, the `HERCULES_CP` environment
+fallback, and 3505 `ascii`/`ebcdic` reader settings govern
+input conversion. No MVS 3.8 global source-PDS CCSID
+setting establishes compiler lexical semantics. `IEBPTPCH`
+`PRINT TOTCONV=XE` and the existing IFOX/QSAM reader
+can independently inspect raw source bytes.
+
+See [primary historical and Hercules research](../../distribution/compiler-source/ta2-historical-ebcdic-and-hercules-research-20261120.md).
+**Revise the preceding conditional recommendation:** preserving
+the verified current MVS bytes through IEBCOPY is suitable for
+source-only archival transport **only if the bytes are clearly
+documented**; it must not be presented as evidence that the
+historical Cambridge lexer accepts all intended punctuation.
+The exact deployed `CODEPAGE` remains unqueried. Compiler
+character handling and source-language compatibility remain
+an **open design gate**. No source rewrite, BT0021 stage,
+media operation or manifest modification is authorized.
+**TA.2 IN PROGRESS.**
