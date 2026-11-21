@@ -408,6 +408,10 @@ def create_image() -> None:
     os.close(fd)
 
 
+def confirm_yes(prompt: str) -> bool:
+    """Accept only Y/y, treating N/n, Enter and other inputs as No."""
+    return input(prompt + ' [y/N]: ').strip().upper() == 'Y'
+
 def run() -> int:
     need(sys.stdin.isatty(), 'a real operator TTY is required for media writing')
     preview,media,aws,jcl,jcl_sha = verified_plan()
@@ -424,8 +428,7 @@ def run() -> int:
         cat_job=fresh_catalog(preview,folder)
         print(f'TA.2 RC2 WRITE PREFLIGHT PASS: 21 accepted inputs, 21 tape aliases absent; '
               f'{count} existing images checked. LISTDS JOB {cat_job}.')
-        token='INIT MOUNT WRITE BC0002 21'
-        need(input('Type '+token+' to authorize this ONE private AWS write: ').strip()==token,
+        need(confirm_yes('Initialize and mount ONE NEW private BC0002 AWS image on 0480?'),
              'operator declined candidate media write')
         safe_workspace()
         existing_media(folder)
@@ -447,8 +450,7 @@ def run() -> int:
         mvs=media.inquire(media.MVS,'mounted-mvs',folder)
         need(media.parse_mvs(mvs)=='O','MVS drive not online/ready after mount')
         print('BC0002 initialized and mounted at 0480. Next confirmation submits exactly one 21-step job.')
-        token='SUBMIT TA2RC2WR BC0002'
-        need(input('Type '+token+' to submit the 21-step MVS job: ').strip()==token,
+        need(confirm_yes('Submit the ONE 21-step TA2RC2WR MVS job to BC0002?'),
              'submission declined; preserve mounted image and one-shot marker')
         core=preview.module('rc2_prod_core_live',ROOT/'tools/datasets/dspal-core.py')
         config=core.load_config()

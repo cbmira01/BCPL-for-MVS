@@ -28,6 +28,23 @@ class TestWriter(unittest.TestCase):
         self.path=Path(self.tmp.name)
         self.addCleanup(self.tmp.cleanup)
 
+    def test_yes_no_confirmation_accepts_only_y(self):
+        for reply in ('Y', 'y', ' Y ', 'y\\n'):
+            with self.subTest(reply=reply), patch('builtins.input', return_value=reply) as prompt:
+                self.assertTrue(mod.confirm_yes('Authorize'))
+                prompt.assert_called_once_with('Authorize [y/N]: ')
+        for reply in ('N', 'n', '', ' ', 'yes', 'YES', '1', 'no', 'Y/N'):
+            with self.subTest(reply=reply), patch('builtins.input', return_value=reply):
+                self.assertFalse(mod.confirm_yes('Authorize'))
+    def test_both_state_changing_checkpoints_use_yes_no(self):
+        import inspect
+        src = inspect.getsource(mod.run)
+        self.assertEqual(src.count('confirm_yes('), 2)
+        self.assertNotIn("token='INIT MOUNT", src)
+        self.assertNotIn("token='SUBMIT", src)
+        self.assertIn('operator declined candidate media write', src)
+        self.assertIn('submission declined; preserve mounted image and one-shot marker', src)
+
     def test_21_step_good(self):
         summary,report=good_job()
         self.assertIsNone(mod.validate_job(9462,summary,report))
