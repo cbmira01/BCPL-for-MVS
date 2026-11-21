@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (21 staged inputs accepted; two pre-stateful BC0002 media-inventory refusals; read-only investigation ready, fresh write authorization pending)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (21 staged inputs accepted; two original pre-stateful refusals independently replayed by the MVS-facing inspection; BC0002 private write remains pending a new owner authorization)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1273,3 +1273,7 @@ The owner directed that both interactive confirmations for the already approved 
 ## TA.2 second pre-stateful BC0002 inventory halt — 21 November 2026 EST
 
 The owner reported `TA.2 RC2 AWS WRITE HALTED: HETMAP label contradicts physical VOL1 serial: HDR1` (RC=2), with original private evidence at `workarea/ta2-rc2-production-operations/20261121T155143Z-26237`. The code path halted during existing-media HETMAP inventory, **before image creation, permanent attempt marker, HETINIT, mount or JES submission**. The earlier refusal remains preserved. `VOL1` is the actual physical volume identity; the existing-media guard must not require the unrelated data-set serial field on existing `HDR1`/`EOF1` labels to equal `VOL1`. The [incident record and correction](../../distribution/create-tape/ta2-rc2-second-prestateful-halt-20261121.md) add read-only replay of both SHA256-sealed original incidents, fresh existing AWS physical VOLSER inspection and MVS/Hercules display verification in one `--inspect-media` operation. **82/82 focused rc2 offline tests PASS**. A *third* write is **not** authorized; a separate incident-bound owner approval file remains absent, and no existing media or accepted stage inputs were altered. **TA.2 IN PROGRESS.**
+
+## TA.2 actual owner-reported rc2 read-only media inspection PASS — 21 November 2026 EST
+
+The owner executed the committed `ta2-rc2-produce-once --inspect-media` after two pre-stateful `BC0002` inventory refusals. The runner returned **RC=0**, independently replayed **both sealed refusal receipts**, identified physical `VOL1 BTO001` for the previously rejected `bcpl-objtest-20261108-01.aws`, scanned **five existing tape images**, and confirmed **Hercules 0480 empty** through the read-only Hercules/MVS display inquiries. Private sealed evidence: `workarea/ta2-rc2-media-inspection/20261121T222712Z-26883`. See [the qualified inspection acceptance record](../../distribution/create-tape/ta2-rc2-media-inventory-qualified-acceptance-20261121.md). The assistant verified the committed source logic and the owner's terminal PASS but did not directly inspect private raw HETMAP/JES contents. No candidate image, permanent write marker, mount, tape write or JES job is reported. The collision-parser issue is **resolved for the inspected media at the inspected time**. A separately authorized third private candidate write remains pending; the absent Git approval file continues to **block `--run`**. **TA.2 IN PROGRESS.**

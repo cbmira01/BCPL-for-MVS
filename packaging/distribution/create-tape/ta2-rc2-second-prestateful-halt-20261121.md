@@ -4,7 +4,7 @@
 **Milestone:** Tape artifact release  
 **March:** TA.2 — Manifest-Driven Tape Producer  
 **Date:** 21 November 2026 EST  
-**State:** **Second private producer invocation halted before media creation; incident investigation and code correction implemented; read-only MVS/Hercules verification pending.**
+**State:** **Second private producer invocation halted before media creation; incident investigation and code correction implemented; read-only Hercules/MVS inspection passed (qualified); third private write approval pending.**
 
 ## Owner-reported MVS/Hercules result
 
@@ -33,3 +33,7 @@ Both original refusals and their evidence must remain intact. The old owner auth
 **Assistant workspace:** Python AST checks and **82/82 combined focused rc2 offline tests PASS**, including inconsistent HDR1/data-set serial, true physical BC0002 collision, both sealed incident replays, tampering, absence of a marker/image, read-only inspection PASS and refusal paths. These tests are synthetic; actual owner-local reports and live MVS console results remain the next source of acceptance evidence.
 
 **TA.2 — Manifest-Driven Tape Producer remains IN PROGRESS.** No publication, source-rights clearance, restore or clean-target installation is authorized.
+
+## Subsequent live read-only inspection — PASS (qualified)
+
+The owner ran `ta2-rc2-produce-once --inspect-media` and reported **RC=0** on 21 November 2026 EST: both SHA256-sealed original refusal reports replayed successfully, the existing scratch image has physical `VOL1 BTO001`, **five** local AWS/HET images were inventoried without a BC0002 VOLSER collision, and Hercules device `0480` was empty. Original private evidence is under `workarea/ta2-rc2-media-inspection/20261121T222712Z-26883`. [The formal qualified acceptance record](ta2-rc2-media-inventory-qualified-acceptance-20261121.md) preserves the exact owner-reported terminal text, qualifications and next approval gate. This does not authorize a third write by itself.
