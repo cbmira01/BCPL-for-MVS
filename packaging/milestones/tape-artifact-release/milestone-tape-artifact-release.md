@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (21 staged inputs accepted; incident-bound private BC0002 pre-stateful retry authorized, MVS write pending)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (21 staged inputs accepted; two pre-stateful BC0002 media-inventory refusals; read-only investigation ready, fresh write authorization pending)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1269,3 +1269,7 @@ The owner approved **one new conditional pre-stateful private `BCPL-0.1.0-rc2` /
 ## TA.2 owner-directed short Y/N confirmations — 21 November 2026 EST
 
 The owner directed that both interactive confirmations for the already approved one-shot private `BC0002` producer use **`[y/N]`** instead of typed phrases. The two irreversible boundaries remain separate: initial image creation/mount and later `TA2RC2WR` 21-step JES submission. Only `Y`/`y` proceeds; No/blank/other answers refuse without automatic cleanup, rerun or recovery. The [recovery authorization record](../../distribution/create-tape/ta2-rc2-recovery-authorization-20261121.md) now documents this operator-interface amendment. The source-controlled JCL hash and both authorizations are unchanged. **76/76 focused offline tests PASS**; actual MVS media production remains pending. **TA.2 IN PROGRESS.**
+
+## TA.2 second pre-stateful BC0002 inventory halt — 21 November 2026 EST
+
+The owner reported `TA.2 RC2 AWS WRITE HALTED: HETMAP label contradicts physical VOL1 serial: HDR1` (RC=2), with original private evidence at `workarea/ta2-rc2-production-operations/20261121T155143Z-26237`. The code path halted during existing-media HETMAP inventory, **before image creation, permanent attempt marker, HETINIT, mount or JES submission**. The earlier refusal remains preserved. `VOL1` is the actual physical volume identity; the existing-media guard must not require the unrelated data-set serial field on existing `HDR1`/`EOF1` labels to equal `VOL1`. The [incident record and correction](../../distribution/create-tape/ta2-rc2-second-prestateful-halt-20261121.md) add read-only replay of both SHA256-sealed original incidents, fresh existing AWS physical VOLSER inspection and MVS/Hercules display verification in one `--inspect-media` operation. **82/82 focused rc2 offline tests PASS**. A *third* write is **not** authorized; a separate incident-bound owner approval file remains absent, and no existing media or accepted stage inputs were altered. **TA.2 IN PROGRESS.**

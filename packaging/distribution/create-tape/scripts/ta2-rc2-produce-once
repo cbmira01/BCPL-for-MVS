@@ -26,6 +26,8 @@ TAPES = ROOT / 'mvs-state/tape'
 OPS = WORK / 'ta2-rc2-production-operations'
 MARKER = OPS / 'BC0002-one-shot-attempt.json'
 INCIDENT = OPS / '20261121T145906Z-26113'
+SECOND_INCIDENT = OPS / '20261121T155143Z-26237'
+SECOND_RECOVERY_APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-rc2-after-second-halt-approval.json'
 RECOVERY_APPROVAL = ROOT / 'packaging/distribution/create-tape/ta2-rc2-prestateful-recovery-approval.json'
 IMAGE = 'bcpl-0.1.0-rc2-BC0002.aws'
 VOL = 'BC0002'
@@ -198,6 +200,45 @@ def review_prior_prestateful_halt() -> str:
     return serial
 
 
+def review_second_prestateful_halt() -> str:
+    """Replay the second original pre-media refusal; it was NOT a write."""
+    need(not MARKER.exists() and not MARKER.is_symlink() and
+         not TAPE.exists() and not TAPE.is_symlink(),
+         'prior BC0002 stateful attempt/image exists: NEVER RETRY')
+    original = sealed(SECOND_INCIDENT, {'failure.json', 'vol-000.txt'})
+    failure = json.loads(original['failure.json'])
+    need(failure == {
+        'status': 'HALTED_NO_RETRY',
+        'reason': 'HETMAP label contradicts physical VOL1 serial: HDR1'},
+        'second prestateful failure differs from owner-reported halt')
+    serial = volser_from_hetmap(original['vol-000.txt'].decode('utf-8'))
+    need(serial != VOL, 'second incident reveals a real BC0002 VOL1 collision')
+    return serial
+
+
+def replay_both_incidents() -> str:
+    first = review_prior_prestateful_halt()
+    second = review_second_prestateful_halt()
+    need(first == second,
+         'physical VOL1 changed between saved incident reports')
+    return first
+
+
+def verify_second_recovery_approval(raw: bytes, jcl_sha: str) -> None:
+    expected = {
+        'schema_version': 1,
+        'status': 'OWNER_APPROVED_NEW_RC2_ATTEMPT_AFTER_TWO_PRESTATEFUL_HALTS',
+        'candidate': 'BCPL-0.1.0-rc2', 'volser': VOL,
+        'image': IMAGE, 'hercules_unit': '0480',
+        'original_halt_evidence': INCIDENT.relative_to(ROOT).as_posix(),
+        'second_halt_evidence': SECOND_INCIDENT.relative_to(ROOT).as_posix(),
+        'prior_write_attempt_marker_created': False,
+        'jcl_sha256': jcl_sha,
+        'publication_authorized': False, 'automatic_retry': False}
+    need(type(json.loads(raw)) is dict and json.loads(raw) == expected,
+         'new approval following second halt is missing or differs')
+
+
 def verify_recovery_approval(raw: bytes, jcl_sha: str) -> None:
     expected = {'schema_version': 1,
                 'status': 'OWNER_APPROVED_NEW_PRESTATEFUL_RC2_ATTEMPT',
@@ -229,7 +270,7 @@ def git_approved(jcl_sha: str) -> None:
     verify_approval(p.stdout,jcl_sha)
     # This candidate has already had a failed owner-authorized invocation.
     # Missing original evidence must NEVER fall through to the old approval.
-    serial = review_prior_prestateful_halt()
+    serial = replay_both_incidents()
     need(RECOVERY_APPROVAL.is_file() and not RECOVERY_APPROVAL.is_symlink(),
          'previous preflight halted; NEW owner authorization required before any restart')
     q = subprocess.run(['git', '-C', str(ROOT), 'show', 'HEAD:' +
@@ -239,6 +280,16 @@ def git_approved(jcl_sha: str) -> None:
          'new incident-specific approval not committed to main')
     verify_recovery_approval(q.stdout, jcl_sha)
     need(serial != VOL, 'original existing-media VOL1 is BC0002')
+    # The second approved prestateful invocation also halted. The *prior*
+    # recovery approval is not an unlimited permit to submit another job.
+    need(SECOND_RECOVERY_APPROVAL.is_file() and not SECOND_RECOVERY_APPROVAL.is_symlink(),
+         'second prestateful halt requires NEW owner approval; no automatic retry')
+    q = subprocess.run(['git', '-C', str(ROOT), 'show', 'HEAD:' +
+                        str(SECOND_RECOVERY_APPROVAL.relative_to(ROOT))],
+                       capture_output=True, check=False, timeout=20)
+    need(q.returncode == 0 and q.stdout == safe_bytes(SECOND_RECOVERY_APPROVAL),
+         'second recovery approval is not committed unchanged to main')
+    verify_second_recovery_approval(q.stdout, jcl_sha)
 
 
 def safe_workspace() -> None:
@@ -302,28 +353,22 @@ def check_docker(folder: Path) -> None:
 
 
 def volser_from_hetmap(report: str) -> str:
-    """Read one physical VOL1 serial, not every HDR1/EOF1 serial on tape.
+    """Identify the *physical* volume from its single initial VOL1 label.
 
-    Standard-label tapes legitimately repeat the same Volume Serial field
-    inside each logical data set's label group. Those repeated occurrences
-    are NOT independent physical volume labels or BC0002 collisions.
+    HDR1/EOF1 carry a DATA SET serial (possibly a different value). An
+    existing-media collision scan must not mistake those fields for extra
+    physical VOL1 labels. Full dataset-label consistency is checked only
+    by the independent reviewer for our newly produced BC0002 candidate.
     """
-    markers = list(re.finditer(r"(?m)^Label\s+: '([A-Z0-9]{4})'\s*$", report))
-    need(markers and markers[0].group(1) == 'VOL1' and
-         sum(m.group(1) == 'VOL1' for m in markers) == 1,
+    labels = list(re.finditer(r"(?m)^Label\s+: '([A-Z0-9]{4})'\s*$", report))
+    need(labels and labels[0].group(1) == 'VOL1' and
+         sum(m.group(1) == 'VOL1' for m in labels) == 1,
          'HETMAP missing, repeated or displaced physical VOL1 label')
-    for i, label in enumerate(markers):
-        end = markers[i + 1].start() if i + 1 < len(markers) else len(report)
-        chunk = report[label.end():end]
-        serials = re.findall(r"(?m)^Volume Serial\s+: '([A-Z0-9]{1,6})'\s*$", chunk)
-        need((len(serials) == 1 if i == 0 else len(serials) <= 1),
-             'HETMAP label has missing/duplicate volume serial: ' + label.group(1))
-        if i == 0:
-            volser = serials[0]
-        elif serials:
-            need(serials[0] == volser,
-                 'HETMAP label contradicts physical VOL1 serial: ' + label.group(1))
-    return volser
+    end = labels[1].start() if len(labels) > 1 else len(report)
+    chunk = report[labels[0].end():end]
+    serials = re.findall(r"(?m)^Volume Serial\s+: '([A-Z0-9]{1,6})'\s*$", chunk)
+    need(len(serials) == 1, 'HETMAP physical VOL1 serial missing/duplicated')
+    return serials[0]
 
 
 def existing_media(folder: Path) -> int:
@@ -411,6 +456,48 @@ def create_image() -> None:
 def confirm_yes(prompt: str) -> bool:
     """Accept only Y/y, treating N/n, Enter and other inputs as No."""
     return input(prompt + ' [y/N]: ').strip().upper() == 'Y'
+
+def inspect_media(media) -> int:
+    """Read-only consolidated review: both sealed halts, fresh HETMAP, unit."""
+    volser = replay_both_incidents()
+    safe_workspace()
+    out = WORK / 'ta2-rc2-media-inspection'
+    need(not out.is_symlink(), 'unsafe media-inspection evidence root')
+    out.mkdir(parents=True, mode=0o700, exist_ok=True)
+    folder = out / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') +
+                    '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    try:
+        count = existing_media(folder)  # only HETMAP -l, no mounts/writes
+        fresh_drive(media, folder, 'inspection')  # 2 display commands only
+        receipt = {
+            'status': 'READ_ONLY_TWO_INCIDENTS_AND_MEDIA_INVENTORY_PASS',
+            'candidate': 'BCPL-0.1.0-rc2', 'volser_reserved': VOL,
+            'original_existing_image_volser': volser,
+            'original_incidents': [INCIDENT.relative_to(ROOT).as_posix(),
+                                   SECOND_INCIDENT.relative_to(ROOT).as_posix()],
+            'existing_images_checked': count,
+            'candidate_image_present': False,
+            'write_attempt_marker_present': False,
+            'stateful_write_authorized_by_this_review': False,
+        }
+        save(folder / 'result.json', (json.dumps(receipt, sort_keys=True, indent=2)+'\n').encode())
+        seal_evidence(folder)
+        print(f'TA.2 RC2 READ-ONLY MEDIA REVIEW PASS: 2 sealed preflight halts; '
+              f'original VOL1 {volser}; {count} existing images; drive 0480 empty.')
+        print('Private evidence: ' + folder.relative_to(ROOT).as_posix())
+        print('No tape/media/JES changes; another private write needs separate owner approval.')
+        return 0
+    except (Refusal, OSError, ValueError, RuntimeError) as exc:
+        try:
+            save(folder/'failure.json', (json.dumps({'status':'REFUSED', 'reason':str(exc)})+'\n').encode())
+            seal_evidence(folder)
+        except (Refusal, OSError, ValueError):
+            pass
+        print('TA.2 RC2 READ-ONLY MEDIA REVIEW REFUSED: ' + str(exc), file=sys.stderr)
+        print('Private evidence: ' + folder.relative_to(ROOT).as_posix(), file=sys.stderr)
+        return 2
+
 
 def run() -> int:
     need(sys.stdin.isatty(), 'a real operator TTY is required for media writing')
@@ -514,10 +601,14 @@ def run() -> int:
 
 def main(argv=None) -> int:
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--run',action='store_true',help='disabled without separately committed owner write approval')
+    g=p.add_mutually_exclusive_group()
+    g.add_argument('--run',action='store_true',help='requires separately committed owner approval')
+    g.add_argument('--inspect-media',action='store_true',help='read-only original incident replay and live HETMAP/device inquiries')
     a=p.parse_args(argv)
     try:
         preview,media,aws,jcl,jcl_sha=verified_plan()
+        if a.inspect_media:
+            return inspect_media(media)
         if a.run:
             return run()
         # Default: read-only original evidence replay, no JES, tape, or media scan.
@@ -527,7 +618,7 @@ def main(argv=None) -> int:
         print('JCL SHA-256: '+jcl_sha)
         print('No tape operation. Private BC0002 write requires separately committed approval.')
         return 0
-    except (Refusal,ValueError,OSError,KeyError,TypeError,RuntimeError) as exc:
+    except (Refusal,ValueError,OSError,KeyError,TypeError,RuntimeError,subprocess.SubprocessError) as exc:
         print('TA.2 RC2 PRODUCTION REFUSED: '+str(exc),file=sys.stderr)
         return 2
 

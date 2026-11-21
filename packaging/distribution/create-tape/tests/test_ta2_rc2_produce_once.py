@@ -171,9 +171,13 @@ class TestWriter(unittest.TestCase):
     def test_vol1_duplicate_is_refused(self):
         with self.assertRaises(mod.Refusal):
             mod.volser_from_hetmap(self.hetmap_fixture(extra=["Label               : 'VOL1'", "Volume Serial       : 'BTO001'"]))
-    def test_vol1_conflicting_secondary_label_is_refused(self):
-        bad = self.hetmap_fixture().replace("Volume Serial       : 'BTO001'", "Volume Serial       : 'BC0002'", 2)
-        with self.assertRaises(mod.Refusal): mod.volser_from_hetmap(bad)
+    def test_vol1_secondary_dataset_serial_is_not_physical_volser(self):
+        # The original bcpl-objtest tape has a differing HDR1 serial.
+        # Unique physical volumes are identified by VOL1, never HDR1/EOF1.
+        divergent = self.hetmap_fixture().replace(
+            "Dataset ID          : 'BCPL.BT0001'\nVolume Serial       : 'BTO001'",
+            "Dataset ID          : 'BCPL.BT0001'\nVolume Serial       : 'BC0002'", 1)
+        self.assertEqual(mod.volser_from_hetmap(divergent), 'BTO001')
     def test_vol1_duplicate_field_is_refused(self):
         bad = self.hetmap_fixture().replace("Label               : 'HDR1'",
             "Volume Serial       : 'BTO001'\nLabel               : 'HDR1'")
@@ -252,6 +256,63 @@ class TestWriter(unittest.TestCase):
                 with self.assertRaisesRegex(mod.Refusal,'untrusted saved evidence folder'):
                     mod.git_approved('a'*64)
 
+    def test_second_prestateful_halt_saved_evidence_replay(self):
+        work=self.path/'workarea';work.mkdir()
+        first=work/'first';first.mkdir()
+        second=work/'second';second.mkdir()
+        for directory,reason in ((first,
+                'unrecognized/reused BC0002 volume in existing image: bcpl-objtest-20261108-01.aws'),
+                (second,'HETMAP label contradicts physical VOL1 serial: HDR1')):
+            (directory/'failure.json').write_text(json.dumps({'status':'HALTED_NO_RETRY','reason':reason})+'\n')
+            (directory/'vol-000.txt').write_text(self.hetmap_fixture('BTO001').replace(
+                "Dataset ID          : 'BCPL.BT0001'\nVolume Serial       : 'BTO001'",
+                "Dataset ID          : 'BCPL.BT0001'\nVolume Serial       : 'BC0002'", 1))
+            mod.seal_evidence(directory)
+        with patch.multiple(mod,WORK=work,INCIDENT=first,SECOND_INCIDENT=second,
+                            MARKER=work/'no-marker',TAPE=work/'no-image'):
+            self.assertEqual(mod.replay_both_incidents(), 'BTO001')
+            (second/'failure.json').write_text('{}')
+            with self.assertRaisesRegex(mod.Refusal,'checksum mismatch'):
+                mod.replay_both_incidents()
+    def test_second_halt_requires_evidence_and_no_marker(self):
+        work=self.path/'workarea';work.mkdir()
+        with patch.multiple(mod,WORK=work,SECOND_INCIDENT=work/'missing',
+                            MARKER=work/'absent',TAPE=work/'image.aws'):
+            with self.assertRaises(mod.Refusal): mod.review_second_prestateful_halt()
+            (work/'absent').write_text('attempt already started')
+            with self.assertRaisesRegex(mod.Refusal,'NEVER RETRY'):
+                mod.review_second_prestateful_halt()
+    def test_second_recovery_approval_contract(self):
+        obj={'schema_version':1,'status':'OWNER_APPROVED_NEW_RC2_ATTEMPT_AFTER_TWO_PRESTATEFUL_HALTS',
+             'candidate':'BCPL-0.1.0-rc2','volser':'BC0002','image':mod.IMAGE,
+             'hercules_unit':'0480',
+             'original_halt_evidence':mod.INCIDENT.relative_to(mod.ROOT).as_posix(),
+             'second_halt_evidence':mod.SECOND_INCIDENT.relative_to(mod.ROOT).as_posix(),
+             'prior_write_attempt_marker_created':False,'jcl_sha256':'a'*64,
+             'publication_authorized':False,'automatic_retry':False}
+        mod.verify_second_recovery_approval(json.dumps(obj).encode(),'a'*64)
+        with self.assertRaises(mod.Refusal): mod.verify_second_recovery_approval(json.dumps(obj).encode(),'b'*64)
+        obj['automatic_retry']=True
+        with self.assertRaises(mod.Refusal): mod.verify_second_recovery_approval(json.dumps(obj).encode(),'a'*64)
+    def test_media_inspection_no_state_change_and_sealed_result(self):
+        work=self.path/'workarea';work.mkdir()
+        tapes=self.path/'mvs-state/tape';tapes.mkdir(parents=True)
+        ops=work/'ops';ops.mkdir()
+        with patch.multiple(mod,ROOT=self.path,WORK=work,OPS=ops,TAPES=tapes,
+                            INCIDENT=ops/'incident1',SECOND_INCIDENT=ops/'incident2',
+                            MARKER=ops/'absent-marker',TAPE=tapes/mod.IMAGE):
+            with patch.object(mod,'replay_both_incidents',return_value='BTO001'):
+                with patch.object(mod,'existing_media',return_value=4) as checked:
+                    with patch.object(mod,'fresh_drive') as drive:
+                        result=mod.inspect_media(object())
+        self.assertEqual(result,0)
+        checked.assert_called_once();drive.assert_called_once()
+        folder=next((work/'ta2-rc2-media-inspection').iterdir())
+        data=json.loads((folder/'result.json').read_text())
+        self.assertEqual(data['original_existing_image_volser'],'BTO001')
+        self.assertFalse(data['stateful_write_authorized_by_this_review'])
+        self.assertTrue((folder/'SHA256SUMS').exists())
+
     def test_existing_media_wrong_volser(self):
         t=self.path/'tape';t.mkdir(); (t/'existing.aws').write_text('test')
         e=self.path/'evidence';e.mkdir()
@@ -264,6 +325,31 @@ class TestWriter(unittest.TestCase):
         with patch.multiple(mod,TAPES=t,TAPE=t/mod.IMAGE):
             with patch.object(mod,'capture',return_value=self.hetmap_fixture("BTA101")):
                 self.assertEqual(mod.existing_media(e),1)
+    def test_existing_media_accepts_unrelated_hdr1_serial(self):
+        tapes=self.path/'tape';tapes.mkdir();(tapes/'older.aws').write_text('test')
+        evidence=self.path/'evidence';evidence.mkdir()
+        report=self.hetmap_fixture('BTO001').replace(
+            "Dataset ID          : 'BCPL.BT0001'\nVolume Serial       : 'BTO001'",
+            "Dataset ID          : 'BCPL.BT0001'\nVolume Serial       : 'BC0002'",1)
+        with patch.multiple(mod,TAPES=tapes,TAPE=tapes/mod.IMAGE):
+            with patch.object(mod,'capture',return_value=report):
+                self.assertEqual(mod.existing_media(evidence),1)
+    def test_media_inspection_refuses_existing_bc0002_vol1(self):
+        work=self.path/'workarea';work.mkdir()
+        tapes=self.path/'mvs-state/tape';tapes.mkdir(parents=True)
+        ops=work/'ops';ops.mkdir()
+        with patch.multiple(mod,ROOT=self.path,WORK=work,OPS=ops,TAPES=tapes,
+                            INCIDENT=ops/'incident1',SECOND_INCIDENT=ops/'incident2',
+                            MARKER=ops/'absent-marker',TAPE=tapes/mod.IMAGE):
+            with patch.object(mod,'replay_both_incidents',return_value='BTO001'):
+                with patch.object(mod,'existing_media',side_effect=mod.Refusal('BC0002 already present')):
+                    with patch.object(mod,'fresh_drive') as display:
+                        self.assertEqual(mod.inspect_media(object()),2)
+                        display.assert_not_called()
+        folder=next((work/'ta2-rc2-media-inspection').iterdir())
+        self.assertEqual(json.loads((folder/'failure.json').read_text())['status'],'REFUSED')
+        self.assertTrue((folder/'SHA256SUMS').exists())
+
     def test_existing_media_directory_rejected(self):
         t=self.path/'tape';t.mkdir(); (t/'unsafe').mkdir()
         e=self.path/'evidence';e.mkdir()
