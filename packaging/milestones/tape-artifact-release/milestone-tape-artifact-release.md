@@ -1237,3 +1237,9 @@ The owner's approval **does not establish that IEBCOPY has executed**:
 as of this record, no BT0021 staging JOB has been reported.
 Inspect actual JES result before independent directory/DCB verification.
 **TA.2 — Manifest-Driven Tape Producer remains IN PROGRESS.**
+
+## TA.2 BT0021 MVS stage-input acceptance and 21-position preview — 21 November 2026 EST
+
+The owner reported the one authorized **TA2C21ST IEBCOPY JOB 9335 RC=0000** and separate **LISTDS LABEL JOB 9336**, independently observing `HERC02.BCPL.TA2STG.BT0021` on TSO002 as PO/FB/80/800. The LISTDS MEMBERS query returned exactly the 15 historical Cambridge source names. Original private receipts are preserved under `workarea/ta2-rc2-bt0021-stage-operations/20261121T124159Z-25452` and `workarea/ta2-rc2-bt0021-verification/20261121T130011Z-23628`. See [qualified BT0021 acceptance](../../distribution/create-tape/ta2-bt0021-qualified-acceptance-20261121.md). **BT0001–BT0021 are accepted as staged MVS input datasets (qualified)**. The runner's irreversible attempt marker must not be deleted or replayed.
+
+The [rc2 producer preview](../../distribution/create-tape/ta2-rc2-producer-preview-20261121.md) reuses the canonical TA.2 offline renderer to propose a 21-position JOB-less deck. Assistant-workspace syntax and eight focused offline tests passed. It **does not authorize** AWS initialization, mounting, writing, installation or publication. Historical Cambridge lexical encoding compatibility and redistribution rights remain unresolved. **TA.2 remains IN PROGRESS.**

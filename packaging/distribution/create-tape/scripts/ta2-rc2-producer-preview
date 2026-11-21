@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""TA.2 rc2: validate the frozen 21-position source map and preview tape JCL.
+
+Host-only, no MVS, JES, AWS, mount, registry modification or publication.
+A preview is NOT a production authorization or a completed provenance gate.
+"""
+from __future__ import annotations
+
+import argparse
+from copy import deepcopy
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+import yaml
+
+ROOT = Path(__file__).resolve().parents[4]
+BASE = ROOT / 'packaging/distribution'
+RC1 = BASE / 'manifest/releases/BCPL-0.1.0-rc1.yaml'
+RC2 = BASE / 'manifest/releases/BCPL-0.1.0-rc2.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+REGISTRY = BASE / 'registry/releases.yaml'
+SELECTION = BASE / 'compiler-source/source-selection.json'
+CONTRACT = BASE / 'compiler-source/successor-contract.py'
+RENDERER = BASE / 'create-tape/scripts/ta2-offline'
+WORK = ROOT / 'workarea'
+INSTALLER = ('INSTALL', 'DATASETS', 'RELEASE', 'RESTORE')
+FB = {'dsorg': 'PO', 'recfm': 'FB', 'lrecl': 80, 'blksize': 800}
+LOAD = {'dsorg': 'PO', 'recfm': 'U', 'lrecl': 0, 'blksize': 6144}
+
+
+class Refusal(ValueError):
+    pass
+
+
+def need(ok: bool, why: str) -> None:
+    if not ok:
+        raise Refusal(why)
+
+
+def module(name: str, path: Path):
+    need(path.is_file() and not path.is_symlink(), 'missing canonical ' + path.name)
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'cannot load ' + path.name)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def source_plan(rc1: dict, rc2: dict) -> dict:
+    """Supply stage DSNs to the existing renderer; never change the manifest."""
+    need(rc2.get('phase') == 'candidate' and
+         rc2.get('release', {}).get('candidate_id') == 'BCPL-0.1.0-rc2' and
+         rc2.get('volume', {}).get('volser') == 'BC0002' and
+         rc2.get('release', {}).get('native_compiler') == 'absent' and
+         rc2.get('release', {}).get('cambridge_source') == 'included',
+         'rc2 identity or source-only scope changed')
+    rows = rc2.get('datasets')
+    need(isinstance(rows, list) and len(rows) == 21 and
+         len(rc1.get('datasets', [])) == 20 and
+         rows[:20] == rc1['datasets'] and
+         all(type(r) is dict and r.get('sequence') == n
+             for n, r in enumerate(rows, 1)),
+         'rc1 source order or rc2 21-position manifest changed')
+    new = deepcopy(rc2)
+    for n, row in enumerate(new['datasets'], 1):
+        need(row['kind'] == ('sequential_text' if n == 1 else 'pds_unload'),
+             f'BT{n:04d} transfer kind changed')
+        expect = {'dsorg': 'PS', 'recfm': 'FB', 'lrecl': 80, 'blksize': 800} if n == 1 else (LOAD if n == 12 else FB)
+        need(row.get('target_dcb') == expect, f'BT{n:04d} target DCB changed')
+        if n == 1:
+            need(row.get('generator') == 'bootstrap_fb80', 'bootstrap role changed')
+        elif n == 2:
+            need(row.get('generator') == 'installer_pds', 'installer role changed')
+            need(not row.get('members'), 'installer members must come from approved generator')
+            row['members'] = list(INSTALLER)
+        else:
+            members = row.get('members')
+            need(isinstance(members, list) and members and
+                 len(members) == len(set(members)) and
+                 all(isinstance(m, str) and 1 <= len(m) <= 8 and
+                     m.isupper() and m.replace('@','A').replace('#','A').replace('$','A').isalnum()
+                     for m in members), f'BT{n:04d} member selection invalid')
+            need(row.get('transfer') == 'iebcopy_unload',
+                 f'BT{n:04d} transport changed')
+        row['producer_source_dsn'] = f'HERC02.BCPL.TA2STG.BT{n:04d}'
+    need(sum(len(x.get('members', [])) for x in new['datasets'][2:20]) == 127 and
+         len(new['datasets'][20]['members']) == 15 and
+         len(new['datasets'][1]['members']) == 4,
+         'rc2 curated PDS member totals changed')
+    need(new['datasets'][20].get('dspal_key') == 'CAMB_SOURCE' and
+         new['datasets'][20].get('rights_status') == 'preservation-policy-approved-rights-unresolved',
+         'historical Cambridge source/rights qualification removed')
+    return new
+
+
+def preview(rc1: dict, rc2: dict, renderer) -> str:
+    plan = source_plan(rc1, rc2)
+    jcl = renderer.render_write_jcl(plan)
+    need(jcl.count(' EXEC PGM=IEBGENER') == 1 and
+         jcl.count(' EXEC PGM=IEBCOPY') == 20 and
+         jcl.count(' SELECT MEMBER=') == 146 and
+         jcl.count('LABEL=(') == 21 and
+         jcl.count('DSN=BCPL.BT') == 21 and
+         'BCPL.BT0021' in jcl and
+         all(line.isascii() and len(line) <= 80 for line in jcl.splitlines()),
+         'generated 21-position write preview differs from approved manifest')
+    return jcl
+
+
+def save_preview(path: Path, jcl: str) -> None:
+    need(WORK.is_dir() and not WORK.is_symlink() and
+         WORK.resolve().is_relative_to(ROOT.resolve()), 'unsafe workarea')
+    need(not path.is_symlink() and path.parent.resolve() == WORK.resolve() and
+         not path.exists(), 'preview must be a NEW direct workarea file')
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, 'O_NOFOLLOW', 0)
+    with os.fdopen(os.open(path, flags, 0o600), 'wb') as stream:
+        stream.write(jcl.encode('ascii'))
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, help='new JOB-less JCL path directly in workarea/')
+    args = parser.parse_args(argv)
+    try:
+        contract = module('ta2_rc2_contract', CONTRACT)
+        renderer = module('ta2_rc2_renderer', RENDERER)
+        rc1 = yaml.safe_load(RC1.read_bytes())
+        rc2_bytes = RC2.read_bytes()
+        rc2 = yaml.safe_load(rc2_bytes)
+        dspal = yaml.safe_load(DSPAL.read_bytes())
+        registry = yaml.safe_load(REGISTRY.read_bytes())
+        selection = json.loads(SELECTION.read_bytes())
+        contract.verify(rc1, rc2, dspal, registry, selection, rc2_bytes)
+        jcl = preview(rc1, rc2, renderer)
+        if args.output is not None:
+            save_preview(args.output, jcl)
+        print('TA.2 RC2 PRODUCER PREVIEW PASS: 21 logical datasets; 1 IEBGENER, 20 IEBCOPY; 146 SELECT cards.')
+        print('NO AWS/JES operation; rights, fresh media preflight, and one-shot write authorization remain pending.')
+        if args.output is not None:
+            print('JOB-less preview: ' + str(args.output))
+        return 0
+    except (Refusal, ValueError, TypeError, KeyError, OSError, yaml.YAMLError) as exc:
+        print('TA.2 RC2 PREVIEW REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
