@@ -24,11 +24,19 @@ def maptext(number_start=1):
     blocks=[]
     for i in range(21):blocks.extend([3 if i==0 else 2, i+1,2])
     blocks.append(0)
-    return ''.join(f'File # : {i}\nBlocks : {b}\n' for i,b in enumerate(blocks,number_start))
+    body = ''.join(f'File # : {i}\nBlocks : {b}\n' for i,b in enumerate(blocks,number_start))
+    return body + f'Summary             :\nFiles               : {len(blocks)}\nBlocks              : {sum(blocks)}\n'
 
 def labels():
-    return "Label               : 'VOL1'\nVolume Serial       : 'BC0002'\n"+''.join(
-        f"Label               : '{label}'\n" for i in range(21) for label in ('HDR1','HDR2','EOF1','EOF2'))
+    rows = ["Label               : 'VOL1'", "Volume Serial       : 'BC0002'"]
+    for seq in range(1, 22):
+        for label in ('HDR1', 'HDR2', 'EOF1', 'EOF2'):
+            rows.append(f"Label               : '{label}'")
+            if label in ('HDR1', 'EOF1'):
+                rows.extend((f"Dataset ID          : 'BCPL.BT{seq:04d}'",
+                             "Volume Serial       : 'BC0002'",
+                             f"Dataset Sequence    : '{seq:04d}'"))
+    return '\n'.join(rows) + '\n' 
 
 class TestAudit(unittest.TestCase):
     def setUp(self):
@@ -60,6 +68,33 @@ class TestAudit(unittest.TestCase):
     def test_map_63_does_not_claim_success(self):
         d=mod.map_diagnostic(maptext().replace('File # : 64\nBlocks : 0\n',''))
         self.assertEqual(d['file_entries'],63);self.assertFalse(d['strict_21_dataset_layout_pass'])
+    def test_aggregate_footer_is_not_file_64_block_count(self):
+        d=mod.map_diagnostic(maptext())
+        self.assertEqual(d['footer_files'], 64)
+        self.assertEqual(d['footer_blocks'], 316)
+        self.assertEqual(d['last_block_counts'][-1], 0)
+        self.assertTrue(d['footer_reconciles'])
+        self.assertEqual(d['missing_or_repeated_block_counts'], 0)
+    def test_wrong_aggregate_footer_refused(self):
+        d=mod.map_diagnostic(maptext().replace('Blocks              : 316','Blocks              : 9999'))
+        self.assertFalse(d['footer_reconciles'])
+        self.assertFalse(d['strict_21_dataset_layout_pass'])
+    def test_aws_image_hash_drift_rejected_before_hetmap(self):
+        s,r=good_jes()
+        original={'write-summary.txt':s.encode(),'write-report.txt':r.encode(),
+                  'files-final.txt':maptext().encode(),'labels-final.txt':labels().encode()}
+        with patch.multiple(mod,ROOT=self.root,WORK=self.work,OUT=self.work/'review',
+                            ORIGINAL=self.work/'original'):
+            with patch.object(mod,'original_receipt',return_value=original):
+                with patch.object(mod,'marker_and_image',return_value=('f'*64,10)):
+                    with patch.object(mod,'capture_map') as capture:
+                        self.assertEqual(mod.run(),2)
+                        capture.assert_not_called()
+    def test_missing_summary_does_not_pass_diagnostic(self):
+        d=mod.map_diagnostic(maptext().split('Summary')[0])
+        self.assertFalse(d['footer_reconciles'])
+        self.assertFalse(d['strict_21_dataset_layout_pass'])
+
     def test_sealed_original_receipt(self):
         evidence=self.work/'sealed';evidence.mkdir()
         s,r=good_jes()
@@ -100,13 +135,15 @@ class TestAudit(unittest.TestCase):
         with patch.multiple(mod,ROOT=self.root,WORK=self.work,OUT=self.work/'review',
                             ORIGINAL=self.work/'original'):
             with patch.object(mod,'original_receipt',return_value=original):
-                with patch.object(mod,'marker_and_image',return_value=(hashlib.sha256(bytes_).hexdigest(),len(bytes_))):
+                with patch.object(mod,'marker_and_image',return_value=(mod.EXPECTED_SHA,len(bytes_))):
                     with patch.object(mod,'capture_map',side_effect=capture) as call:
                         self.assertEqual(mod.run(),0)
         self.assertEqual(call.call_count,3)
         folder=next((self.work/'review').iterdir())
         receipt=json.loads((folder/'result.json').read_text())
         self.assertEqual(receipt['mvs_steps'],21)
+        self.assertEqual(receipt['status'], 'PRIVATE_RC2_AWS_MVS_21_RC0000_LABEL_AND_FILE_STRUCTURE_PASS_QUALIFIED')
+        self.assertTrue(receipt['live_hetmap']['footer_reconciles'])
         self.assertTrue(receipt['saved_hetmap']['strict_21_dataset_layout_pass'])
         self.assertFalse(receipt['publication_authorized'])
         self.assertTrue((folder/'SHA256SUMS').exists())
@@ -120,7 +157,7 @@ class TestAudit(unittest.TestCase):
         with patch.multiple(mod,ROOT=self.root,WORK=self.work,OUT=self.work/'review',
                             ORIGINAL=self.work/'original'):
             with patch.object(mod,'original_receipt',return_value=orig):
-                with patch.object(mod,'marker_and_image',return_value=('a'*64,25)):
+                with patch.object(mod,'marker_and_image',return_value=(mod.EXPECTED_SHA,25)):
                     with patch.object(mod,'capture_map',side_effect=capture):
                         self.assertEqual(mod.run(),2)
         folder=next((self.work/'review').iterdir())

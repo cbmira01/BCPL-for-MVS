@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
 import json
 import os
 from pathlib import Path
@@ -31,6 +33,9 @@ FILE = re.compile(r'(?m)^File\s+#\s*:\s*(\d+)\s*$')
 BLOCK = re.compile(r'(?m)^Blocks\s*:\s*(\d+)\s*$')
 SEAL = re.compile(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)\Z')
 MAX = 16 * 1024 * 1024
+EXPECTED_SHA = '123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375'
+AWS_REVIEW = ROOT / 'packaging/distribution/create-tape/scripts/ta2-rc2-aws-review'
+SUMMARY = re.compile(r'(?m)^Summary\s*:\s*$')
 
 
 class Refusal(ValueError):
@@ -94,21 +99,27 @@ def validate_jes(summary: str, report: str) -> int:
 
 
 def map_diagnostic(report: str) -> dict:
-    headers = list(FILE.finditer(report))
+    """Diagnose 64 physical files separately from the HETMAP summary footer."""
+    summary = list(SUMMARY.finditer(report))
+    body = report[:summary[0].start()] if len(summary) == 1 else report
+    footer = report[summary[0].end():] if len(summary) == 1 else ''
+    headers = list(FILE.finditer(body))
     numbers = [int(m.group(1)) for m in headers]
     entries = []
     for i, match in enumerate(headers):
-        end = headers[i + 1].start() if i + 1 < len(headers) else len(report)
-        counts = [int(m.group(1)) for m in BLOCK.finditer(report, match.end(), end)]
+        end = headers[i + 1].start() if i + 1 < len(headers) else len(body)
+        counts = [int(m.group(1)) for m in BLOCK.finditer(body, match.end(), end)]
         entries.append({'row': i+1, 'file': numbers[i], 'blocks': counts})
     issues = [entry for entry in entries if entry['file'] != entry['row'] or
               len(entry['blocks']) != 1]
     counts = [entry['blocks'][0] if len(entry['blocks']) == 1 else None
               for entry in entries]
-    layout = (len(entries) == 64 and not issues and
-              all(counts[3*i] == (3 if i == 0 else 2) and
-                  isinstance(counts[3*i+1], int) and counts[3*i+1] > 0 and
-                  counts[3*i+2] == 2 for i in range(21)) and counts[-1] == 0)
+    total_files = re.findall(r'(?m)^Files\s*:\s*(\d+)\s*$', footer)
+    total_blocks = re.findall(r'(?m)^Blocks\s*:\s*(\d+)\s*$', footer)
+    footer_ok = (len(summary) == 1 and len(total_files) == len(total_blocks) == 1 and
+                 not FILE.search(footer) and int(total_files[0]) == len(counts) and
+                 all(isinstance(x, int) for x in counts) and
+                 int(total_blocks[0]) == sum(counts))
     layout_issues = []
     if len(counts) == 64:
         for i in range(21):
@@ -118,15 +129,33 @@ def map_diagnostic(report: str) -> dict:
                     triple[2] == 2):
                 layout_issues.append({'dataset': f'BCPL.BT{i+1:04d}',
                                       'actual_three_file_blocks': triple})
-    # Preserve numbering, including any offset. Do not silently renumber.
+    layout = (len(counts) == 64 and not issues and not layout_issues and
+              counts[-1] == 0 and footer_ok)
     return {'file_entries': len(entries), 'first_file_numbers': numbers[:8],
-            'last_file_numbers': numbers[-8:], 'sequential_from_zero': numbers == list(range(len(numbers))),
+            'last_file_numbers': numbers[-8:],
+            'sequential_from_zero': numbers == list(range(len(numbers))),
             'sequential_from_one': numbers == list(range(1,len(numbers)+1)),
             'missing_or_repeated_block_counts': sum(len(e['blocks']) != 1 for e in entries),
             'first_number_or_count_discrepancies': issues[:6],
             'first_block_counts': counts[:10], 'last_block_counts': counts[-10:],
+            'footer_files': int(total_files[0]) if len(total_files) == 1 else None,
+            'footer_blocks': int(total_blocks[0]) if len(total_blocks) == 1 else None,
+            'footer_reconciles': footer_ok,
             'first_dataset_layout_discrepancies': layout_issues[:6],
             'strict_21_dataset_layout_pass': layout}
+
+
+def independent_review(labels: str, files: str) -> dict:
+    """Run the separate canonical AWS reviewer against saved/fresh reports."""
+    need(AWS_REVIEW.is_file() and not AWS_REVIEW.is_symlink(),
+         'canonical AWS verifier is missing or linked')
+    loader = SourceFileLoader('ta2_rc2_postwrite_independent_aws', str(AWS_REVIEW))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None,
+         'canonical AWS reviewer cannot be loaded')
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.evaluate(labels, files)
 
 
 def marker_and_image() -> tuple[str, int]:
@@ -184,6 +213,7 @@ def run() -> int:
         job = validate_jes(evidence['write-summary.txt'].decode('utf-8'),
                            evidence['write-report.txt'].decode('utf-8'))
         sha, size = marker_and_image()
+        need(sha == EXPECTED_SHA, 'BC0002 SHA-256 changed since original forensic audit')
         saved_files = evidence['files-final.txt'].decode('utf-8')
         saved_labels = evidence['labels-final.txt'].decode('utf-8')
         saved_diag = map_diagnostic(saved_files)
@@ -191,6 +221,7 @@ def run() -> int:
         live_labels = capture_map(folder, '-l', 'live-labels')
         full_map = capture_map(folder, '-a', 'live-all')
         live_diag = map_diagnostic(live_files)
+        all_diag = map_diagnostic(full_map)
         need(saved_files == live_files and saved_labels == live_labels,
              'current HETMAP reports differ from original saved postwrite reports')
         labels = list(re.finditer(r"(?m)^Label\s+: '([A-Z0-9]{4})'\s*$", live_labels))
@@ -199,14 +230,25 @@ def run() -> int:
         need(label_types == expected, 'original 21-dataset standard label order/count changed')
         need(len(re.findall(r"(?m)^Volume Serial\s+: 'BC0002'\s*$",live_labels))>=1,
              'BC0002 VOL1 serial missing')
+        reviewed = independent_review(live_labels, live_files)
+        need(saved_diag['strict_21_dataset_layout_pass'] and
+             live_diag['strict_21_dataset_layout_pass'] and
+             all_diag['strict_21_dataset_layout_pass'],
+             'HETMAP physical-file/aggregate footer does not reconcile')
+        need(all_diag['footer_blocks'] == live_diag['footer_blocks'] and
+             all_diag['footer_files'] == reviewed['physical_files'],
+             'HETMAP -a and -f physical summaries disagree')
+        final_sha, final_size = marker_and_image()
+        need((final_sha, final_size) == (sha, size),
+             'AWS bytes changed while read-only audit was running')
         result = {
-            'status': 'POSTWRITE_JES_21_RC0000_LABELS_21_ACCEPTED_FILE_MAP_REVIEW_PENDING',
+            'status': 'PRIVATE_RC2_AWS_MVS_21_RC0000_LABEL_AND_FILE_STRUCTURE_PASS_QUALIFIED',
             'candidate': 'BCPL-0.1.0-rc2', 'volume': 'BC0002',
             'mvs_job': job, 'mvs_steps': 21, 'standard_label_datasets': 21,
             'image': IMAGE, 'image_size_bytes': size, 'image_sha256': sha,
             'original_evidence': ORIGINAL.relative_to(ROOT).as_posix(),
             'saved_hetmap': saved_diag, 'live_hetmap': live_diag,
-            'live_all_hetmap': map_diagnostic(full_map),
+            'live_all_hetmap': all_diag, 'independent_aws_structure': reviewed,
             'source_reports_unchanged': True, 'no_retry': True,
             'publication_authorized': False,
         }
@@ -217,7 +259,7 @@ def run() -> int:
         print('Saved/live HETMAP -f agree: '+json.dumps(live_diag, separators=(',',':')))
         print('AWS SHA-256: '+sha)
         print('Read-only evidence: '+folder.relative_to(ROOT).as_posix())
-        print('No media change. Tape file-map acceptance is pending original HETMAP review.')
+        print('AWS label/file structure PASS (qualified); MVS restore, member-byte fidelity and publication NOT authorized.')
         return 0
     except (Refusal, OSError, ValueError, subprocess.SubprocessError, UnicodeError) as exc:
         try:

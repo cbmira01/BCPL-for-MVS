@@ -27,6 +27,7 @@ IMAGE = 'bcpl-0.1.0-rc2-BC0002.aws'
 LABEL = re.compile(r"(?m)^Label\s+: '([A-Z0-9]{4})'\s*$")
 FILE = re.compile(r'(?m)^File\s+#\s*:\s*(\d+)\s*$')
 BLOCKS = re.compile(r'(?m)^Blocks\s*:\s*(\d+)\s*$')
+SUMMARY = re.compile(r'(?m)^Summary\s*:\s*$')
 RECORD = re.compile(r"(?m)^([A-Za-z ]+?)\s+: '([^']*)'\s*$")
 
 
@@ -68,25 +69,32 @@ def labels_report(report: str) -> dict:
 
 
 def files_report(report: str) -> list[int]:
-    """TA.1's observed SL physical tape-file model: 3*N+1 files."""
-    rows = list(FILE.finditer(report))
-    need(len(rows) == COUNT * 3 + 1,
+    """Only physical file sections hold per-file Blocks; Summary is aggregate."""
+    summary = list(SUMMARY.finditer(report))
+    need(len(summary) == 1, 'HETMAP -f summary missing/repeated')
+    body, footer = report[:summary[0].start()], report[summary[0].end():]
+    rows = list(FILE.finditer(body))
+    need(len(rows) == COUNT * 3 + 1 and not FILE.search(footer),
          f'physical tape files differ: expected {COUNT * 3 + 1}, observed {len(rows)}')
-    result = []
+    counts = []
     for i, m in enumerate(rows):
-        end = rows[i+1].start() if i + 1 < len(rows) else len(report)
-        section = report[m.end():end]
-        block = list(BLOCKS.finditer(section))
-        need(int(m.group(1)) == i + 1 and len(block) == 1,
+        end = rows[i + 1].start() if i + 1 < len(rows) else len(body)
+        blocks = list(BLOCKS.finditer(body, m.end(), end))
+        need(int(m.group(1)) == i + 1 and len(blocks) == 1,
              'HETMAP file number/block count missing, repeated or out of order')
-        result.append(int(block[0].group(1)))
+        counts.append(int(blocks[0].group(1)))
+    footer_files = re.findall(r'(?m)^Files\s*:\s*(\d+)\s*$', footer)
+    footer_blocks = re.findall(r'(?m)^Blocks\s*:\s*(\d+)\s*$', footer)
+    need(len(footer_files) == len(footer_blocks) == 1 and
+         int(footer_files[0]) == len(counts) and
+         int(footer_blocks[0]) == sum(counts),
+         'HETMAP summary Files/Blocks does not reconcile with 64 physical files')
     for n in range(COUNT):
-        header, data, trailer = result[3*n:3*n+3]
+        header, data, trailer = counts[3*n:3*n+3]
         need(header == (3 if n == 0 else 2) and data > 0 and trailer == 2,
              f'BCPL.BT{n+1:04d}: unexpected header, empty data or trailer file')
-    need(result[-1] == 0, 'no terminal empty tape file')
-    return result
-
+    need(counts[-1] == 0, 'no terminal empty tape file')
+    return counts
 
 def evaluate(labels: str, files: str) -> dict:
     audited = labels_report(labels)

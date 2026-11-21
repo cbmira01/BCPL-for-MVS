@@ -24,7 +24,9 @@ def fixture(n=21):
                                f"Dataset Sequence    : '{seq:04d}'"])
         files.extend([3 if seq == 1 else 2, 7 if seq == 12 else 3, 2])
     files.append(0)
-    return '\n'.join(labels)+'\n', ''.join(f'File # : {i}\nBlocks : {count}\n' for i,count in enumerate(files,1))
+    body=''.join(f'File # : {i}\nBlocks : {count}\n' for i,count in enumerate(files,1))
+    footer=f'Summary             :\nFiles               : {len(files)}\nBlocks              : {sum(files)}\nUncompressed bytes  : 1957296\n'
+    return '\n'.join(labels)+'\n', body+footer
 
 
 class TestAWS(unittest.TestCase):
@@ -54,7 +56,7 @@ class TestAWS(unittest.TestCase):
     def test_terminal_nonempty(self):
         with self.assertRaises(mod.Refusal): mod.evaluate(self.labels,self.files.replace('File # : 64\nBlocks : 0','File # : 64\nBlocks : 1'))
     def test_duplicate_file(self):
-        with self.assertRaises(mod.Refusal): mod.evaluate(self.labels,self.files+self.files[-27:])
+        with self.assertRaises(mod.Refusal): mod.evaluate(self.labels,self.files.replace('Summary             :', 'File # : 65\nBlocks : 0\nSummary             :',1))
     def test_wrong_count(self):
         labels,files=fixture(20)
         with self.assertRaises(mod.Refusal): mod.evaluate(labels,files)
@@ -64,5 +66,25 @@ class TestAWS(unittest.TestCase):
         with self.assertRaises(mod.Refusal): mod.evaluate(self.labels,self.files.replace('File # : 22','File # : 23'))
     def test_no_guess_on_short_input(self):
         with self.assertRaises(mod.Refusal): mod.evaluate('VOL1','File # : 1\nBlocks : 0')
+
+    def test_real_hetmap_footer_does_not_duplicate_file_64_blocks(self):
+        result=mod.files_report(self.files)
+        self.assertEqual(len(result),64)
+        self.assertEqual(result[-1],0)
+    def test_missing_footer_rejected(self):
+        with self.assertRaisesRegex(mod.Refusal,'summary missing'):
+            mod.evaluate(self.labels, self.files.split('Summary')[0])
+    def test_duplicate_footer_rejected(self):
+        with self.assertRaisesRegex(mod.Refusal,'summary missing'):
+            mod.evaluate(self.labels, self.files + self.files[self.files.index('Summary'):])
+    def test_footer_block_total_mismatch_rejected(self):
+        with self.assertRaisesRegex(mod.Refusal,'does not reconcile'):
+            mod.evaluate(self.labels, self.files.replace('Blocks              : 152','Blocks              : 9999'))
+    def test_footer_file_count_mismatch_rejected(self):
+        with self.assertRaisesRegex(mod.Refusal,'does not reconcile'):
+            mod.evaluate(self.labels, self.files.replace('Files               : 64','Files               : 63'))
+    def test_double_file_block_rejected(self):
+        with self.assertRaisesRegex(mod.Refusal,'number/block'):
+            mod.evaluate(self.labels, self.files.replace('File # : 64\nBlocks : 0','File # : 64\nBlocks : 0\nBlocks : 0'))
 
 if __name__=='__main__': unittest.main()

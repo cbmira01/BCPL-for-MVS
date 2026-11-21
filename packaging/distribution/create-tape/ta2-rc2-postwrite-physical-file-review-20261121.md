@@ -42,3 +42,7 @@ The new tracked `scripts/ta2-rc2-postwrite-audit` does **not** issue any tape po
 ## Next gate
 
 Run the **single read-only post-write audit** and use its original JES report, HETMAP file numbers/block counts and immutable AWS SHA-256 to determine whether the physical-map failure reflects incorrect assumptions in the independent parser, or an actual tape-format defect. Fix parsers only after observing those real values. Keep the existing AWS and no-retry marker; continue TA.2 toward independent readback only when the original candidate can be accepted on evidence. **TA.2 — Manifest-Driven Tape Producer remains IN PROGRESS.**
+
+## Subsequent owner-reported actual postwrite HETMAP diagnosis — 21 November 2026 EST
+
+The owner executed the new read-only reviewer, which reported JOB **9339**, **21/21 MVS RC=0000**, **21 SL datasets**, **64 numbered physical tape files**, and AWS SHA-256 `123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375` (1,957,296 bytes). Original raw evidence was sealed at `workarea/ta2-rc2-postwrite-audit/20261121T234319Z-27684`. The diagnostic's `File 64 Blocks:[0,2559]` originates from the distinct HETMAP **Summary Files:64 Blocks:2559** footer; see [the correction and verification plan](ta2-rc2-hetmap-summary-footer-correction-20261121.md). The corrected AWS viewer and postwrite auditor have passed isolated offline negative tests, but no corrected live PASS has yet been reported. The one-shot media and marker must remain preserved.
