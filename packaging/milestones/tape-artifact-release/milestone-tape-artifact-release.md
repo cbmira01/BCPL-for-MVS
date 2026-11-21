@@ -1016,3 +1016,33 @@ writing, re-population, IEBCOPY or AWS production has been
 authorized or attempted. See
 [the evidence boundary and diagnostic](../../distribution/compiler-source/rc2-readback-mismatch-evidence-20261120.md).
 **TA.2 IN PROGRESS.**
+
+## TA.2 Cambridge historical-source end-of-member diagnostic — 20 November 2026
+
+The owner returned actual MVS saved-readback analysis: **BCPL**
+normalized records match under JOB 9328; **BLIB** readback JOB 9329
+returned 472 of its frozen 474 records, with the mismatch beginning
+at the first of **two final empty records**. The frozen `LIBHDR`
+and `TRNHDR` sources each also end in one empty record. The
+readback cannot distinguish MVS source-PDS record loss from a
+SYSOUT/extraction trimming effect.
+
+Rather than relaxing record fidelity or repeating successful
+source population, the project now has a **read-only QSAM
+full-FB80 fingerprint verifier** in
+`packaging/distribution/compiler-source/rc2-qsam-fidelity.asm`
+and its JCL/verification runner. One temporary IFOX/IEWL build
+reads exactly the 15 approved PDS members, counting physical
+80-byte records and trailing all-blank records and computing
+two raw CP037 byte checksums, compared with independently
+calculated frozen historical source expectations. The runner
+refuses source-selection drift, permanent destination updates,
+or a repeated/overwritten evidence location. **10/10 focused
+assistant-workspace synthetic tests PASS.** No actual assembler,
+link-editor, or MVS verification result has been observed yet.
+
+See [the end-of-member investigation](../../distribution/compiler-source/rc2-qsam-fidelity-investigation-20261120.md).
+Do not repeat MVS JOBs 9325/9326 or stage `BT0021` until
+the real QSAM results identify the cause. BT0001–BT0020 and the
+rc2 manifest/BC0002 registry are unchanged.
+**TA.2 IN PROGRESS.**

@@ -99,3 +99,16 @@ population, overwrite the readback, or stage `BT0021`. The
 prints the first differing record/column and hashes without reading
 MVS again or printing source. See the
 [TA.2 mismatch evidence and diagnostic gate](rc2-readback-mismatch-evidence-20261120.md).
+
+**End-of-member record diagnostic (20 November 2026):** the saved
+MVS `dspal get` result for `BLIB` ended at record 472; the
+frozen original has two more empty records. `LIBHDR` and
+`TRNHDR` also have trailing empty records. Do **not** assume
+that the source PDS lost them or that the SYSOUT text extractor did.
+The new read-only [QSAM FB80 fingerprint verifier](rc2-qsam-fidelity.py)
+uses [IFOX assembly](rc2-qsam-fidelity.asm) to report actual
+MVS record counts, consecutive trailing all-blank records, FNV-1a
+and additive checksums for all 15 historical sources. Results
+stay in `workarea/ta2-rc2-cambsource-qsam-fidelity/`.
+See the [TA.2 investigation evidence](rc2-qsam-fidelity-investigation-20261120.md).
+No population repeat, BT0021 stage or BC0002 tape is authorized.
