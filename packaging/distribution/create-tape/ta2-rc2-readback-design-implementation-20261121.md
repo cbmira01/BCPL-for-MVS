@@ -39,3 +39,7 @@ The owner reported `--volume TSO002 --live` **RC=2**: Hercules 0480 did not demo
 ## Design implementation update: empty drive does not block read-only DASD inquiry
 
 The [actual device diagnosis](ta2-rc2-empty-drive-readonly-preflight-20261121.md) confirms original and fresh Hercules 0480 EMPTY, MVS 480 O-NRD. A read-only preflight revision allows consistent empty or exact mounted states and keeps the existing new-target LISTDS/VTOC inquiries unchanged. It does not authorize a mount, scratch allocation, or a readback job. The accepted tape remains structurally qualified and immutable.
+
+## Owner-reported VTOC/catalog acceptance and subsequent gated execution code
+
+The owner ran the revised empty-drive-tolerant preflight and reported **RC=0**: **JOBS 9340/9341** checked the 21 absent targets and IEHLIST reported **15,335 free tracks** on `TSO002`. Private SHA256SUMS evidence is `workarea/ta2-rc2-readback-preflight/20261122T010923Z-28068`. The [new readback runner implementation](ta2-rc2-readback-preflight-pass-and-one-shot-implementation-20261121.md) reuses this accepted plan and exact JOB-less JCL hash `226819ef3702234a1367c7a7df96399cf9fcaf32d99152061db1df98fed12e73`, and is independently gated behind a **missing** owner execution-approval file. No MVS tape mount or DASD restore is authorized by this documentation update.

@@ -40,3 +40,7 @@ The owner-approved readback *design* remains unchanged: 21 new `HERC02.BCPL.TA2R
 Perform exactly one fresh **read-only** `--volume TSO002 --live` inquiry. If it passes, inspect MVS LISTDS/IEHLIST and the new SHA256SUMS evidence; then decide whether to approve the scratch DASD volume, controlled exact-image mount on empty 0480, and one-shot 21-step MVS readback. **None of those state changes are authorized by this evidence or code revision.**
 
 **TA.2 — Manifest-Driven Tape Producer IN PROGRESS.** The original production no-retry marker and accepted AWS image remain immutable; no new release publication or clean recipient installation claim is made.
+
+## Subsequent owner-reported successful read-only MVS preflight
+
+The owner executed `ta2-rc2-readback-plan --volume TSO002 --live`, now reporting **RC=0**: Hercules 0480 EMPTY, MVS O-NRD, **21** new target dataset absences, **catalog JOB 9340**, **VTOC JOB 9341** and **15,335** reported free tracks. Original receipt: `workarea/ta2-rc2-readback-preflight/20261122T010923Z-28068`. See the [accepted read-only preflight and owner-gated runner record](ta2-rc2-readback-preflight-pass-and-one-shot-implementation-20261121.md). The earlier device refusal and its evidence remain preserved. Actual mount and 21-step MVS readback are not yet authorized.

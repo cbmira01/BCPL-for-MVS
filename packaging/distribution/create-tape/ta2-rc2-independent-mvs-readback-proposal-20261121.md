@@ -40,3 +40,7 @@ TA.2 cannot be formally closed solely on the present structural PASS. The indepe
 ## Owner design approval and implementation checkpoint
 
 The owner explicitly approved this design. [Implementation and test record](ta2-rc2-readback-design-implementation-20261121.md) documents the source-controlled JOB-less JCL and read-only MVS preflight. The suggested `TSO002` allocation and exact new 21-dataset track/extent budget are not yet approved; do not submit `TA2RC2RB` or attempt tape positioning until a separate owner decision. The accepted `BC0002` image, device and original SHA-256 remain unchanged.
+
+## Actual read-only MVS preflight and guarded runner implementation
+
+The owner subsequently verified `TSO002` with **JOBS 9340/9341**, 21 target absences and 15,335 reported free tracks, with sealed evidence `workarea/ta2-rc2-readback-preflight/20261122T010923Z-28068`. The [completed design-stage code and qualified MVS preflight](ta2-rc2-readback-preflight-pass-and-one-shot-implementation-20261121.md) now include an exact `TA2RC2RB` 21-step readback runner with conditional mount only on an empty 0480. This is **not** a separate execution authorization; the required Git-tracked approval JSON is not present. The 21 restore allocations, mount and tape reads remain pending one explicit owner decision.

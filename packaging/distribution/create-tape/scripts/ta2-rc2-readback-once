@@ -1,0 +1,286 @@
+#!/usr/bin/env python3
+"""Owner-gated one-shot BC0002 tape readback to 21 NEW MVS DASD datasets.
+
+The accepted --live preflight and JOB-less JCL are reused, not reimplemented.
+--run is closed until an exact separate owner approval exists on GitHub main.
+No media write, initialization, unmounting, automatic retry, or overwrite.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import argparse
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT=Path(__file__).resolve().parents[4]
+BASE=ROOT/'packaging/distribution/create-tape'
+WORK=ROOT/'workarea'
+OUT=WORK/'ta2-rc2-readback-operations'
+PLAN=BASE/'scripts/ta2-rc2-readback-plan'
+PRODUCER=BASE/'scripts/ta2-rc2-produce-once'
+MEDIA_HELPER=BASE/'scripts/ta2-rc2-media-preflight'
+CORE=ROOT/'tools/datasets/dspal-core.py'
+APPROVAL=BASE/'ta2-rc2-readback-execution-approval.json'  # NOT PRESENT
+PREVIOUS=WORK/'ta2-rc2-readback-preflight/20261122T010923Z-28068'
+AWS=ROOT/'mvs-state/tape/bcpl-0.1.0-rc2-BC0002.aws'
+AWS_SHA='123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375'
+JCL_SHA='226819ef3702234a1367c7a7df96399cf9fcaf32d99152061db1df98fed12e73'
+PERMANENT=OUT/'BC0002-readback-one-shot.json'
+INVOKED=OUT/'BC0002-readback-execution-invoked.json'
+JOB='TA2RC2RB'
+VOLUME='TSO002'
+
+class Refusal(RuntimeError):pass
+
+def need(ok,reason):
+    if not ok:raise Refusal(reason)
+
+def load(name,path):
+    need(path.is_file() and not path.is_symlink(),'missing/linked canonical code: '+path.name)
+    loader=SourceFileLoader(name,str(path)); spec=spec_from_loader(loader.name,loader)
+    need(spec is not None and spec.loader is not None,'canonical module load failed')
+    module=module_from_spec(spec);spec.loader.exec_module(module);return module
+
+def save(path,contents):
+    with os.fdopen(os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|
+                          getattr(os,'O_NOFOLLOW',0),0o600),'wb') as stream:
+        stream.write(contents);stream.flush();os.fsync(stream.fileno())
+
+def seal(folder):
+    need(not (folder/'SHA256SUMS').exists() and all(p.is_file() and not p.is_symlink()
+         for p in folder.iterdir()),'unsealable private evidence')
+    lines=''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n'
+                  for p in sorted(folder.iterdir()) if p.is_file())
+    save(folder/'SHA256SUMS',lines.encode('ascii'))
+
+def candidate():
+    plan=load('ta2_rb_once_plan',PLAN)
+    rows=plan.rows(plan.source())
+    deck=plan.render(rows,VOLUME)
+    sha=hashlib.sha256(deck.encode('ascii')).hexdigest()
+    need(len(rows)==21 and sha==JCL_SHA and
+         sum(len(x['members']) for x in rows)==146,
+         'rc2 21-position accepted readback deck changed')
+    return plan,rows,deck,sha
+
+def replay_accepted(plan,sha):
+    """Replay original SHA256-sealed JOBS 9340/9341 and accepted AWS identity."""
+    producer=load('ta2_rb_once_producer',PRODUCER)
+    evidence=producer.sealed(PREVIOUS,{
+        'result.json','mounted-hercules.txt','mounted-mvs.txt',
+        'catalog-report.txt','vtoc-report.txt'})
+    record=json.loads(evidence['result.json'])
+    expected={'status':'RC2_READBACK_READ_ONLY_MVS_PREFLIGHT_PASS',
+              'catalog_job':9340,'vtoc_job':9341,'proposed_dasd_volume':VOLUME,
+              'reported_free_tracks':15335,
+              'target_datasets':[f'HERC02.BCPL.TA2RB.BT{i:04d}' for i in range(1,22)],
+              'readback_jcl_sha256':sha,
+              'hercules_drive_state':'EMPTY','mvs_drive_state':'O-NRD',
+              'stateful_execution_authorized':False}
+    need(record==expected,'accepted read-only MVS preflight evidence changed')
+    original_state,_=plan.device_identity(evidence['mounted-hercules.txt'].decode('utf-8'))
+    need(original_state=='EMPTY','original preflight 0480 not empty')
+    need(plan.original_image()==AWS_SHA,'original AWS/sealed acceptance changed')
+
+def verify_permission(sha):
+    """The approved readback DESIGN does not itself authorize execution."""
+    need(APPROVAL.is_file() and not APPROVAL.is_symlink(),
+         'readback execution approval missing: --run CLOSED')
+    def git(*args):
+        p=subprocess.run(['git','-C',str(ROOT),*args],capture_output=True,
+                         check=False,timeout=20)
+        need(p.returncode==0,'Git main verification failed')
+        return p.stdout
+    need(git('branch','--show-current').strip()==b'main','not on main')
+    need(not git('status','--porcelain','--untracked-files=no').strip(),
+         'tracked repo files modified')
+    raw=APPROVAL.read_bytes()
+    need(git('show','HEAD:'+APPROVAL.relative_to(ROOT).as_posix())==raw,
+         'readback approval differs from Git main')
+    expected={'schema_version':1,'status':'OWNER_APPROVED_SINGLE_MVS_RC2_READBACK',
+              'candidate':'BCPL-0.1.0-rc2','volser':'BC0002',
+              'image':AWS.name,'aws_sha256':AWS_SHA,
+              'accepted_mvs_catalog_job':9340,'accepted_mvs_vtoc_job':9341,
+              'accepted_free_tracks':15335,
+              'preflight_evidence':PREVIOUS.relative_to(ROOT).as_posix(),
+              'hercules_unit':'0480','source_write_job':9339,
+              'jobname':JOB,'tape_datasets':21,'restore_namespace':'HERC02.BCPL.TA2RB',
+              'restore_dasd_volume':VOLUME,'jobless_jcl_sha256':sha,
+              'mount_only_if_0480_empty':True,'no_retry':True,
+              'publication_authorized':False}
+    obj=json.loads(raw)
+    need(type(obj) is dict and obj==expected,'exact owner readback approval mismatch')
+
+def report(folder,key,cmd,timeout=90):
+    try:
+        p=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True,
+                         check=False,timeout=timeout)
+    except (OSError,subprocess.TimeoutExpired) as exc:
+        raise Refusal(key+' inquiry/action transport failed ('+type(exc).__name__+')') from exc
+    output=p.stdout+('\n'+p.stderr if p.stderr else '')
+    save(folder/(key+'.txt'),output.encode())
+    need(p.returncode==0,key+' failed RC='+str(p.returncode))
+    return p.stdout
+
+def device(plan,media,folder,phase):
+    dev=report(folder,phase+'-hercules',
+               ['tools/mvs/mvs-console','tape','status','0480'])
+    state,_=plan.device_identity(dev)
+    need(state in ('EMPTY','MOUNTED_BC0002'),
+         'Hercules 0480 is busy, foreign, or unverified: '+state)
+    guest=report(folder,phase+'-mvs',
+                 ['tools/mvs/mvs-console','mvs','D U,TAPE'])
+    mvs=media.parse_mvs(guest)
+    need(mvs==('O-NRD' if state=='EMPTY' else 'O'),
+         'Hercules/MVS device states conflict')
+    return state
+
+def inspect_targets(core,config,rows,folder):
+    """One fresh MVS LISTDS inquiry, no additional VTOC or accepted work repeats."""
+    names=[r['target'] for r in rows]+[r['source'] for r in rows]
+    job,_,output=submit(core,config,core.stat_deck(config,names),folder,'catalog',8)
+    for r in rows:
+        target=r['target'];source=r['source'];dcb=r['dcb']
+        need(core.dataset_missing(output,target),target+' already exists/ambiguous')
+        block=core.extract_listds_block(output,target)
+        need(not (block and core.parse_listds(block)),target+' contradictory attributes')
+        need(not core.dataset_missing(output,source),source+' missing from MVS')
+        src=core.extract_listds_block(output,source)
+        attrs=core.parse_listds(src) if src else {}
+        expected={'volume':'TSO002','dsorg':dcb['dsorg'],'recfm':dcb['recfm'],
+                  'lrecl':str(dcb['lrecl']),'blksize':str(dcb['blksize'])}
+        need(all(attrs.get(k)==v for k,v in expected.items()),
+             source+' source DCB/volume drift')
+    return job
+
+def submit(core,config,deck,folder,key,max_rc):
+    need(deck.isascii() and all(len(x)<=80 for x in deck.splitlines()),
+         'invalid 80-column JES deck')
+    old,env=tempfile.tempdir,os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir=str(folder);os.environ['TMPDIR']=str(folder)
+        job,summary=core.submit_and_wait(config,deck,max_rc=max_rc,
+                                          cursor_file=folder/(key+'-cursor.json'))
+        save(folder/(key+'-summary.txt'),summary.encode())
+        output=core.job_report(job,cursor_file=folder/(key+'-cursor.json'))
+        save(folder/(key+'-report.txt'),output.encode())
+    finally:
+        tempfile.tempdir=old
+        if env is None:os.environ.pop('TMPDIR',None)
+        else:os.environ['TMPDIR']=env
+    need(type(job) is int and 1<=job<=9999,'ambiguous MVS JES job identity')
+    return job,summary,output
+
+def check_job(job,summary,output):
+    need(re.search(rf'(?m)^JOB\s+{job}\s+{JOB}\s*$',summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'readback JES job/result ambiguous')
+    got=re.findall(r'(?m)^(R\d{4})\s+(IEBGENER|IEBCOPY)\s+RC=(\d{4})\s*$',summary)
+    expected=[(f'R{i:04d}','IEBGENER' if i==1 else 'IEBCOPY','0000')
+              for i in range(1,22)]
+    need(got==expected,'21 MVS readback steps missing/nonzero/out of order')
+    actual=re.findall(rf'(?m)^IEF142I\s+{JOB}\s+(R\d{{4}})\s+-\s+STEP WAS EXECUTED\s+-\s+COND CODE (\d{{4}})\s*$',output)
+    need(actual==[(x[0],'0000') for x in expected] and
+         re.search(r'\b(?:ABEND|IEF450I|IEF472I|IEA995I)\b',output,re.I) is None,
+         'readback MVS IEF142I confirmations incomplete/ABEND')
+
+def run():
+    plan,rows,deck,sha=candidate()
+    verify_permission(sha)  # BEFORE any new MVS inquiry or operator question.
+    replay_accepted(plan,sha)
+    need(sys.stdin.isatty(),'readback operation requires an interactive TTY')
+    need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+         'unsafe repository workarea')
+    need(not INVOKED.exists() and not PERMANENT.exists(),
+         'readback already invoked/attempted: NEVER RETRY')
+    OUT.mkdir(mode=0o700,exist_ok=True)
+    folder=OUT/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+str(os.getpid()))
+    folder.mkdir(mode=0o700,exist_ok=False)
+    # Invoke-once marker before any MVS inquiry: failed preflights require new approval.
+    save(INVOKED,(json.dumps({'state':'RC2_READBACK_INVOCATION_CONSUMED_NO_RETRY',
+                              'candidate':'BCPL-0.1.0-rc2','volume':'BC0002',
+                              'restore_volume':VOLUME,'jobless_jcl_sha256':sha,
+                              'evidence':folder.relative_to(ROOT).as_posix(),
+                              'no_retry':True},sort_keys=True)+'\n').encode())
+    try:
+        producer=load('ta2_rb_run_producer',PRODUCER)
+        media=load('ta2_rb_run_media',MEDIA_HELPER)
+        core=load('ta2_rb_run_core',CORE)
+        config=core.load_config()
+        need(config['mvs']['hlq']=='HERC02','wrong MVS HLQ')
+        core.require_reader_ready(config)
+        producer.check_docker(folder)
+        before=device(plan,media,folder,'initial')
+        fresh_job=inspect_targets(core,config,rows,folder)
+        plan.original_image()
+        # Validate the entire authenticated deck before committing to a mount.
+        auth='\n'.join(core.authenticated_job_card(config,JOB,'TA2 RC2 READBACK',False))+'\n'+deck
+        need(auth.isascii() and all(len(x)<=80 for x in auth.splitlines()),
+             'authenticated MVS readback deck malformed')
+        print(f'TA.2 RC2 READBACK SAFETY PASS: 21 targets absent, source DCBs match; '
+              f'LISTDS JOB {fresh_job}, drive {before}; TSO002 accepted screening 15335 tracks.')
+        if input('Mount existing BC0002 if 0480 is empty and submit ONE 21-step readback? [y/N]: ').strip().upper()!='Y':
+            raise Refusal('operator declined; authorization consumed, no stateful action')
+        # No-repeat intent is recorded before any possible device mount or JES readback.
+        save(PERMANENT,(json.dumps({'state':'BC0002_READBACK_MOUNT_AND_SUBMISSION_INTENT_NO_RETRY',
+                                    'source_write_job':9339,'target_volume':VOLUME,
+                                    'aws_sha256':AWS_SHA,'jobless_jcl_sha256':sha,
+                                    'evidence':folder.relative_to(ROOT).as_posix(),
+                                    'no_retry':True},sort_keys=True)+'\n').encode())
+        immediate=device(plan,media,folder,'final-before')
+        if immediate=='EMPTY':
+            report(folder,'mount-existing-BC0002',
+                   ['tools/mvs/mvs-console','--yes','tape','mount','0480',AWS.name],90)
+        need(device(plan,media,folder,'final-after')=='MOUNTED_BC0002',
+             'expected existing BC0002 not mounted; NO RETRY')
+        plan.original_image()
+        job,summary,printer=submit(core,config,auth,folder,'readback',0)
+        check_job(job,summary,printer)
+        plan.original_image()
+        save(folder/'result.json',(json.dumps({
+            'status':'MVS_RC2_READBACK_21_RC0000_RESTORED_INSPECTION_PENDING',
+            'job':job,'steps':21,'volser':'BC0002','restore_volume':VOLUME,
+            'restore_targets':[r['target'] for r in rows],
+            'aws_sha256':AWS_SHA,'jcl_sha256':sha,
+            'member_contents_compared':False,'publication_authorized':False
+            },sort_keys=True,indent=2)+'\n').encode())
+        seal(folder)
+        print(f'TA.2 RC2 READBACK JOB {job}: 21/21 MVS steps RC=0000; original AWS SHA unchanged.')
+        print('Evidence: '+folder.relative_to(ROOT).as_posix())
+        print('Restored DCB/members/contents remain pending; DO NOT RETRY.')
+        return 0
+    except Exception as exc:
+        try:
+            save(folder/'failure.json',(json.dumps({'status':'HALTED_NO_RETRY',
+                                                   'reason':str(exc)})+'\n').encode())
+            seal(folder)
+        except (OSError,ValueError,Refusal):pass
+        print('TA.2 RC2 READBACK HALTED: '+str(exc),file=sys.stderr)
+        print('Evidence: '+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        print('NO RETRY; preserve original AWS, state markers and any restored datasets.',file=sys.stderr)
+        return 2
+
+def main(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run',action='store_true',help='requires new exact Git-committed owner approval')
+    args=parser.parse_args(argv)
+    try:
+        if args.run:return run()
+        _,rows,_,sha=candidate()
+        print(f'TA.2 RC2 READBACK OFFLINE PLAN: 21 positions; 146 selected PDS members; '
+              f'JCL SHA-256 {sha}; MVS execution NOT authorized.')
+        return 0
+    except (Refusal,ValueError,OSError,KeyError,TypeError,subprocess.SubprocessError) as exc:
+        print('TA.2 RC2 READBACK REFUSED: '+str(exc),file=sys.stderr)
+        return 2
+
+if __name__=='__main__':raise SystemExit(main())
