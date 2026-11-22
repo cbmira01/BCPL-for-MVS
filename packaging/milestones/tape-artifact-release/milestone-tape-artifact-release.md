@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BC0002 AWS structural acceptance; owner-reported JOB 9343 readback 21/21 RC=0000; installed-content/use acceptance pending)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BC0002 restored and isolated MR10 installation/12-case semantics accepted qualified; updated EXP-source MVS regression 12/12 PASS; new media/recipient acceptance pending)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1390,3 +1390,27 @@ do not rerun the one-shot RC2 installation. See
 [the semantic checkpoint and source-preparation record](../../distribution/install-from-tape/ta2-rc2-12-case-comparison-and-ta4-exp-preparation-20261122.md).
 No new VOLSER, publication or formal march closure is authorized.
 **TA.2 remains IN PROGRESS.**
+
+
+## TA.2 — Updated TA.4 EXP BCPL source regression on actual MVS (22 November 2026)
+
+After the 23 literal `EXP:` records were committed in the 12 canonical
+BCPL tests, the owner ran `tools/mr10/run-regression-panel` from repository
+`main` and reported **PASS 12 / FAIL 0 / TOTAL 12 / RC=0** with
+`ICINT: mr10-kit-compiler/asm/icintv19.asm` and canonical `ICLIB`.
+The command ran all twelve named test cases successfully on the existing
+development MVS/ICINT execution path. This is **owner-reported real MVS
+compile/generate/execute verification of the revised Git-controlled
+sources**, not a synthetic test, and it supersedes the pending
+source-regression check identified in the prior TA.2 checkpoint.
+
+The existing development runner verifies unchanged `RP:` semantic golden
+records and interpreted `CODE=` against each test's accepted expectation.
+Its summary does **not** independently attest that the new `EXP:` print
+records appeared in captured MVS SYSOUT; a new recipient/distribution
+candidate must verify `TEST:`, `EXP:`, `RP:`, and `CODE=` together,
+and retain the approved 12-case human review/sign-off. The sealed BC0002
+AWS and original MVS 9343–9346 and review evidence remain untouched,
+and contain the earlier regression source version without `EXP:`.
+No RC2 rerun, publication, new VOLSER or TA.2 formal closure is authorized
+by this record. **TA.2 remains IN PROGRESS.**

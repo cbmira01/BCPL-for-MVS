@@ -53,3 +53,16 @@ Owner-reported JOBS **9344** (21 source DCBs and 21 absent targets PASS), **9345
 ## MR10 regression golden/display contract preparation
 
 The 22 November 2026 [TA.2 installed MR10 evidence and TA.4 EXP source preparation](ta2-rc2-12-case-comparison-and-ta4-exp-preparation-20261122.md) records **12/12** saved MVS `RP:`/`CODE=0` comparisons against the immutable `BC0002` tape. The revised canonical BCPL panel sources now contain **23 fixed literal `EXP:` records** matching the tracked golden files. The read-only `scripts/mr10-exp-source-check` guards those source literals; new MVS compilation is required. These changes are *not* present on original `BC0002` or its accepted installation.
+
+## Updated TA.4 EXP source MVS regression — 22 November 2026
+
+The owner executed `tools/mr10/run-regression-panel` against the
+post-`83620618` 12-case BCPL source panel using `icintv19.asm`
+and canonical ICLIB: **12 PASS / 0 FAIL / RC=0** on the development
+MVS path. This verifies the modified source's compile/run behavior
+and unchanged computed golden results, but the automated runner does
+not independently validate the newly printed `EXP:` lines. That
+requires captured MVS report inspection and human sign-off for an
+updated future distribution candidate; the earlier BC0002 tape and
+its installed sources are immutable. See
+[the consolidated checkpoint](ta2-rc2-12-case-comparison-and-ta4-exp-preparation-20261122.md).

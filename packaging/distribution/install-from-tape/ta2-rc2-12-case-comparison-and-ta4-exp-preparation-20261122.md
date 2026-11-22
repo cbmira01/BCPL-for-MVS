@@ -5,7 +5,7 @@
 **Current march:** TA.2 — Manifest-Driven Tape Producer (IN PROGRESS)  
 **Subsequent applicable acceptance:** TA.4 — MR10 Kit Compiler Distribution and Verification  
 **Date:** 22 November 2026  
-**Status:** Recorded owner-reported MVS success; proposed source enhancement validated offline; MVS retest of enhancement pending.
+**Status:** Owner-reported updated-source MVS regression 12/12 PASS; new candidate/recipient EXP evidence and sign-off pending.
 
 ## Real MVS checkpoint
 
@@ -39,3 +39,21 @@ The new read-only `packaging/distribution/install-from-tape/scripts/mr10-exp-sou
 The next controlled MVS-facing verification is to run the existing 12-case WSL `tools/mr10/run-regression-panel` against these new Git-controlled BCPL sources, expecting 12 automatic `RP:`/`CODE=0` PASS. A subsequent separately governed producer/recipient candidate must include the new source bytes and produce all 12 `TEST:`/`EXP:`/`RP:`/`CODE=` records on recipient MVS; that is when human per-case review and final TA.4/TA.7 acceptance can be considered. No new candidate identifier, VOLSER, tape-write operation, installation attempt or publication is authorized by this record.
 
 **TA.2 remains IN PROGRESS, and TA.3–TA.8 remain governed by their original acceptance gates.**
+
+## Follow-up: updated-source real MVS regression — PASS
+
+On 22 November 2026 the owner ran `tools/mr10/run-regression-panel`
+after pulling GitHub `main` with the 23 new fixed `EXP:` records.
+The reported output selected `mr10-kit-compiler/asm/icintv19.asm`,
+canonical ICLIB and all 12 manifest cases. **Each of the 12 cases
+printed PASS; 0 FAIL; TOTAL 12; process RC=0.** The unmodified WSL
+regression runner exercises the real MVS compile/generate/execute
+pipeline and checks the computed `RP:` output against the golden
+files and the interpreted completion code.
+
+This clears the pending TA.4 **source-level MVS regression** checkpoint
+for the modified panel. The reporter did not include a complete new
+JES report in this conversation, so whether each fixed `EXP:` record
+actually appeared in MVS SYSOUT has **not** been separately verified.
+It is not recipient-distribution acceptance, does not change BC0002,
+and does not satisfy the later signed 12-case human review.
