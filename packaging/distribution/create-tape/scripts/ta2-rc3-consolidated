@@ -343,34 +343,75 @@ def drive(folder, prod, media):
     return status
 
 
-def catalog(core, cfg, folder, rows):
-    names = [r['source'] for r in rows] + [r['stage'] for r in rows] + [r['target'] for r in rows]
+def catalog(core, cfg, folder, rows, *, recipient=False):
+    """Read-only TSO LISTDS gate before production or after tape restore."""
+    key = 'recipient' if recipient else 'preflight'
+    names = ([r['target'] for r in rows] if recipient else
+             [r['source'] for r in rows] +
+             [r['stage'] for r in rows] + [r['target'] for r in rows])
     deck = core.stat_deck(cfg, names)
     old, env = tempfile.tempdir, os.environ.get('TMPDIR')
     try:
         tempfile.tempdir = str(folder); os.environ['TMPDIR'] = str(folder)
-        job, summary = core.submit_and_wait(cfg, deck, max_rc=8,
-                                             cursor_file=folder / 'preflight-cursor.json')
-        artifact(folder, 'preflight-summary.txt', summary)
-        report = core.job_report(job, cursor_file=folder / 'preflight-cursor.json')
-        artifact(folder, 'preflight-report.txt', report)
+        job, summary = core.submit_and_wait(cfg, deck,
+                                             max_rc=0 if recipient else 8,
+                                             cursor_file=folder / (key + '-cursor.json'))
+        artifact(folder, key + '-summary.txt', summary)
+        report = core.job_report(job, cursor_file=folder / (key + '-cursor.json'))
+        artifact(folder, key + '-report.txt', report)
     finally:
         tempfile.tempdir = old
         if env is None: os.environ.pop('TMPDIR',None)
         else: os.environ['TMPDIR'] = env
+    if recipient:
+        need('JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+             'post-restore MVS LISTDS job not clean')
     for row in rows:
-        need(core.dataset_missing(report, row['stage']) and
-             core.dataset_missing(report, row['target']),
-             'revised staging or recipient already exists')
-        src = core.extract_listds_block(report, row['source'])
-        actual = core.parse_listds(src) if src else {}
+        if recipient:
+            dsn = row['target']
+            need(not core.dataset_missing(report, dsn),
+                 'restored recipient dataset missing: ' + dsn)
+        else:
+            need(core.dataset_missing(report, row['stage']) and
+                 core.dataset_missing(report, row['target']),
+                 'revised staging or recipient already exists')
+            dsn = row['source']
+            need(not core.dataset_missing(report, dsn),
+                 'original RC2 source dataset missing: ' + dsn)
+        block = core.extract_listds_block(report, dsn)
+        actual = core.parse_listds(block) if block else {}
         d = row['dcb']
         expected = {'volume': VOLUME, 'dsorg': d['dsorg'], 'recfm': d['recfm'],
                     'lrecl': str(d['lrecl']), 'blksize': str(d['blksize'])}
-        need(not core.dataset_missing(report, row['source']) and
-             all(actual.get(k) == v for k, v in expected.items()),
-             'RC2 source DCB/volume differs: ' + row['source'])
+        need(all(actual.get(k) == v for k, v in expected.items()),
+             ('recipient' if recipient else 'RC2 source') +
+             ' DCB/volume differs: ' + dsn)
     return job
+
+
+def verify_regression_execution(summary, report, deck):
+    """Require every canonical MVS utility/ICINT19 step, not only the Rxx GO steps."""
+    expected = re.findall(r'(?m)^//([A-Z0-9]{1,8})\s+EXEC PGM=(IEBGENER|ICINT19)\b', deck)
+    need(len(expected) == 63 and len(set(n for n, _ in expected)) == 63 and
+         sum(p == 'IEBGENER' for _, p in expected) == 5,
+         'canonical MRREGRES 63-step sequence differs')
+    observed = re.findall(r'(?m)^([A-Z0-9]{1,8})\s+(IEBGENER|ICINT19)\s+RC=(\d{4})\s*$', summary)
+    need(observed == [(n, p, '0000') for n, p in expected],
+         'MRREGRES 63-step JES summary missing/reordered/nonzero')
+    system = re.findall(
+        rf'(?m)^IEF142I\s+{JOBS["regression"]}\s+([A-Z0-9]{{1,8}})\s+-\s+'
+        r'STEP WAS EXECUTED\s+-\s+COND CODE (\d{4})\s*$', report)
+    need(system == [(n, '0000') for n, _ in expected],
+         'MRREGRES 63-step MVS IEF142I evidence missing/reordered/nonzero')
+
+
+def validated_semantics(reviewer, report, job):
+    """Bind semantic comparison to actual RC3 JOB, never old RC2 JOB 9346."""
+    result = reviewer.inspect(report, reviewer.panel())
+    need(result['exp_contract_met'] and result['golden_rp_and_code_match'] and
+         result['status'] == 'EXP_RP_CODE_COMPARISON_PASS_HUMAN_SIGNOFF_PENDING',
+         'BCPL EXP/RP/CODE semantic contract FAILED; inspect MVS report')
+    return dict(result, mvs_job=job, candidate_id=CANDIDATE)
 
 
 def seal(folder):
@@ -462,24 +503,26 @@ def execute():
         rb, _, _ = mvs_job(core,cfg,folder,'restore',JOBS['restore'],reader,
             [(f'R{i:04d}', 'IEBGENER' if i == 1 else 'IEBCOPY') for i in range(1,22)])
         print(f'RC3 RESTORE/INSTALL PASS: JOB {rb}, 21 new recipient datasets.')
+        vjob = catalog(core, cfg, folder, rows, recipient=True)
+        print(f'RC3 RECIPIENT DCB PASS: JOB {vjob}; 21/21 restored datasets.')
         mr, report, summary = mvs_job(core,cfg,folder,'regression',JOBS['regression'],regression,[])
         acceptance = load('ta2r3casecheck',BASE/'install-from-tape/scripts/ta2-rc2-acceptance')
         # Existing validator checks twelve executed Rxx MVS steps; identity now differs.
         renamed = re.sub(rf'(?m)^JOB\s+{mr}\s+{JOBS["regression"]}\s*$',
                          f'JOB {mr} TA2MR10',summary)
         acceptance.regression_steps(mr,renamed)
-        result = reviewer.inspect(report, reviewer.panel())
-        need(result['exp_contract_met'] and result['golden_rp_and_code_match'] and
-             result['status'] == 'EXP_RP_CODE_COMPARISON_PASS_HUMAN_SIGNOFF_PENDING',
-             'BCPL EXP/RP/CODE semantic contract FAILED; inspect MVS report')
+        verify_regression_execution(summary, report, regression)
+        result = validated_semantics(reviewer, report, mr)
         artifact(folder,'semantic-review.json',json.dumps(result,indent=2)+'\n')
         artifact(folder,'result.json',json.dumps({'status':'RC3_MVS_RESTORE_INSTALL_USE_PASS_HUMAN_REVIEW_PENDING',
                 'candidate':CANDIDATE, 'volser':VOLSER, 'aws_sha256':tape_sha,
-                'mvs_jobs':{'preflight':job,'stage':st,'write':wr,'restore':rb,'regression':mr},
+                'mvs_jobs':{'preflight':job,'stage':st,'write':wr,'restore':rb,
+                            'recipient_catalog':vjob,'regression':mr},
                 'installed_datasets':21,'bcpl_cases':12,'exp_rp_code':True,
                 'human_signoff':'PENDING','publication_authorized':False},indent=2)+'\n')
         seal(folder)
-        print(f'RC3 MVS ACCEPTANCE: 12/12 EXP/RP/CODE PASS; JOB {mr}. HUMAN SIGNOFF PENDING.')
+        print(f'RC3 MVS ACCEPTANCE: 63/63 JES steps; 12/12 EXP/RP/CODE PASS; '
+              f'JOB {mr}. HUMAN SIGNOFF PENDING.')
         print('Evidence: '+folder.relative_to(ROOT).as_posix())
         return 0
     except Exception as exc:
