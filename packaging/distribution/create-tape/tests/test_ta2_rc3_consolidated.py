@@ -96,6 +96,68 @@ class Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=mod.WORK) as d:
             with self.assertRaises(mod.Refusal):mod.catalog(core,{},Path(d),self.rows)
 
+    def test_postrestore_catalog_dcb_and_volume(self):
+        core = Mock()
+        core.stat_deck.return_value = '//STAT EXEC PGM=IKJEFT01\n'
+        core.submit_and_wait.return_value = (
+            9373, 'JOB 9373 DSPALST\nJOB RESULT: SUCCESS\nHIGHEST RC: 0000\n')
+        core.job_report.return_value = 'MVS LISTDS RECIPIENT'
+        core.dataset_missing.return_value = False
+        core.extract_listds_block.side_effect = lambda report, dsn: [dsn]
+        def parse(block):
+            n = int(block[0][-4:])
+            d = self.rows[n-1]['dcb']
+            return {'volume':'TSO002','dsorg':d['dsorg'],'recfm':d['recfm'],
+                    'lrecl':str(d['lrecl']),'blksize':str(d['blksize'])}
+        core.parse_listds.side_effect = parse
+        with tempfile.TemporaryDirectory(dir=mod.WORK) as d:
+            self.assertEqual(mod.catalog(core,{},Path(d),self.rows,recipient=True),9373)
+        core.parse_listds.side_effect = lambda block: dict(parse(block), volume='TSO003')
+        with tempfile.TemporaryDirectory(dir=mod.WORK) as d:
+            with self.assertRaises(mod.Refusal):
+                mod.catalog(core,{},Path(d),self.rows,recipient=True)
+
+    def test_all_63_regression_jes_steps(self):
+        import re
+        deck = mod.JCL.read_text('ascii')
+        expected = re.findall(
+            r'(?m)^//([A-Z0-9]{1,8})\\s+EXEC PGM=(IEBGENER|ICINT19)\\b', deck)
+        self.assertEqual(len(expected), 63)
+        summary = 'JOB 9374 TA2R3MR\nJOB RESULT: SUCCESS\nHIGHEST RC: 0000\n'
+        summary += '\n'.join(f'{n} {p} RC=0000' for n,p in expected) + '\n'
+        report = '\n'.join(
+            f'IEF142I TA2R3MR {n} - STEP WAS EXECUTED - COND CODE 0000'
+            for n,_ in expected) + '\n'
+        mod.verify_regression_execution(summary,report,deck)
+        with self.assertRaises(mod.Refusal):
+            mod.verify_regression_execution(
+                summary.replace('C01A ICINT19 RC=0000\n',''),report,deck)
+        with self.assertRaises(mod.Refusal):
+            mod.verify_regression_execution(
+                summary.replace('R12 ICINT19 RC=0000','R12 ICINT19 RC=0004'),report,deck)
+        with self.assertRaises(mod.Refusal):
+            mod.verify_regression_execution(
+                summary,report.replace(
+                    'IEF142I TA2R3MR C01A - STEP WAS EXECUTED - COND CODE 0000\n',''),deck)
+        with self.assertRaises(mod.Refusal):
+            mod.verify_regression_execution(
+                summary,report +
+                    'IEF142I TA2R3MR R12 - STEP WAS EXECUTED - COND CODE 0000\n',deck)
+
+    def test_semantics_bind_real_rc3_job_id(self):
+        reviewer = Mock()
+        reviewer.panel.return_value = []
+        reviewer.inspect.return_value = {
+            'exp_contract_met': True, 'golden_rp_and_code_match': True,
+            'status': 'EXP_RP_CODE_COMPARISON_PASS_HUMAN_SIGNOFF_PENDING',
+            'mvs_job': 9346}
+        result = mod.validated_semantics(reviewer,'REAL SYSOUT',9375)
+        self.assertEqual(result['mvs_job'],9375)
+        self.assertEqual(result['candidate_id'],'BCPL-0.1.0-rc3')
+        reviewer.inspect.return_value['exp_contract_met'] = False
+        with self.assertRaises(mod.Refusal):
+            mod.validated_semantics(reviewer,'BAD SYSOUT',9375)
+
     def test_revised_bootstrap_and_nineteenth_installer_dataset(self):
         class Boot:
             @staticmethod
