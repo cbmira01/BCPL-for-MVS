@@ -756,3 +756,40 @@ full revised 11-test module was not executed in a complete assistant
 checkout. No new RC3 stateful operation or MVS acceptance is claimed:
 actual MVS results and human per-case sign-off remain necessary.
 
+
+
+## TA.2 — RC3 real MVS tape-write checkpoint and guarded readback continuation (22 November 2026)
+
+On actual MVS 3.8J the owner reported `TA2R3STG` JOB **9360**
+(new stage and 16 member updates) and `TA2R3WR` JOB **9361**
+(21 standard-labeled datasets, 64 AWS files), both PASS. The image
+`mvs-state/tape/bcpl-0.1.0-rc3-BC0003.aws` has SHA-256
+`6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1`.
+The original runner stopped only because MVS automatically demounted
+the tape at the end of the write. The original one-shot attempt was
+consumed. **Never rerun `ta2-rc3-consolidated --run`.**
+
+The separately owner-approved
+`scripts/ta2-rc3-restore-continuation` is a one-shot **readback/
+recipient verification/installed MR10 regression** for the existing
+`BC0003` image. Its default mode validates the sealed original MVS
+receipt and the existing AWS image without MVS operations. With
+`--run`, it performs live read-only tape and 21-target absence
+preflight, asks one **[y/N]** confirmation, then mounts only the
+already-written tape (no `hetinit`, restaging or tape write).
+One 21-step IEBGENER/IEBCOPY restore job writes the new isolated
+`HERC02.BCPL.TA2R3I.*` recipients on `TSO002`; LISTDS validates
+all 21 DCBs, LISTDS MEMBERS validates all **146** expected PDS members,
+and canonical installed MRREGRES checks all **63** JES/IEF142I steps
+plus **12** exact `TEST:`/`EXP:`/`RP:`/`CODE=0` results.
+A second exclusive no-retry marker is separate from the consumed
+production marker. Evidence is sealed under
+`workarea/ta2-rc3-restore-continuation/`. Preserve the image and
+evidence if any stateful operation halts; **no automatic retry**.
+Human semantic sign-off and publication are not implied.
+
+The exact committed continuation/test blobs match the tested
+assistant-workspace source, with **10/10 isolated tests PASS**
+(positive and refusal cases, including full mocked orchestration).
+Actual MVS restore/installed-execution results are pending. See the
+[RC3 acceptance and recovery record](ta2-rc3-consolidated-candidate-20261122.md).
