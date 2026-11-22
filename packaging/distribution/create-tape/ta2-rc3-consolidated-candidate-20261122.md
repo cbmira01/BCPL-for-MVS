@@ -65,3 +65,43 @@ pulling this correction. Existing `BC0002` remains immutable.
 RC3 production, installed execution, EXP/RP/CODE acceptance, TA.4 human
 signoff, and publication remain pending **actual MVS evidence**.
 **TA.2 remains IN PROGRESS.**
+
+
+## 22 November RC3 pre-stateful staging-count refusal and correction
+
+After pulling the DD DATA column-width repair, the owner reran the RC3
+entry point, which refused \`RC3 REFUSED: stage JCL count/safety contract
+altered\`. This is another **pre-stateful** refusal: the runner reaches
+\`stage_body()\` before creating its one-shot marker, invoking MVS
+preflight or submitting JES.
+
+The stage generator writes the recipient's BT0002(RESTORE) installer
+template as in-stream \`DD DATA,DLM=Z9\` input. That inert distributed
+member contains **19 genuine-looking IEBCOPY EXEC statements** and
+**19 DISP=(NEW,CATLG,DELETE) allocations**. The old safety gate
+scanned the *entire rendered text*, counting these as active JCL:
+56 instead of 37 EXEC cards and 40 instead of 21 allocations.
+The earlier lightweight stage fixture used an inert \`RESTORE\` string
+and therefore did not cover this important case.
+
+The repaired safety gate uses the same delimiter-aware JCL/card scanner
+to exclude in-stream data, checks the **exact ordered 37-step**
+IEBGENER/IEBCOPY sequence (21 S, 4 B, 12 E), **21 active NEW
+allocations**, and **17 active DD DATA sections**. It retains the
+FB80 limit for all records, strict JCL operand column-71 checks,
+forbidden legacy namespace checks and missing/orphan delimiter
+refusals. New tracked regression cases include a realistic 19-step
+embedded RESTORE and active-step-order drift; an existing test now
+validates actual JCL rather than mistaking embedded BCPL data for
+control statements.
+
+An executable assistant-workspace harness using the corrected
+\`stage_body\` contract passed **9/9** positive and negative checks,
+including the 19 embedded IEBCOPY statements, 73/80-column
+in-stream BCPL data, exact active step order and malformed/overwidth
+rejection. This is **not** a full checked-out repository test run.
+The tracked test module now has **15** tests, but no full module or
+MVS execution was performed in the assistant's isolated environment.
+The owner may safely retry the original guarded RC3 operation after
+updating to the new GitHub \`main\` commit. \`BC0002\` remains untouched.
+**TA.2 remains IN PROGRESS** pending real MVS evidence.
