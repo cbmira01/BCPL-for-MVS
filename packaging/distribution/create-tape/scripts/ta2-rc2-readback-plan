@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+"""TA.2 rc2 readback: immutable 21-step JCL design and read-only MVS preflight.
+
+No image write, tape positioning, mount, DASD allocation or readback submission.
+The eventual stateful one-shot runner needs separate owner execution approval.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+sys.dont_write_bytecode=True
+ROOT=Path(__file__).resolve().parents[4]
+BASE=ROOT/'packaging/distribution/create-tape'
+SCRIPTS=BASE/'scripts'
+WORK=ROOT/'workarea'
+OUT=WORK/'ta2-rc2-readback-preflight'
+SPACE=BASE/'ta2-stage-space-proposal-20261119.json'
+IMAGE=ROOT/'mvs-state/tape/bcpl-0.1.0-rc2-BC0002.aws'
+SHA='123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375'
+WRITE_SHA='85eca6f3e1e83c2d0e476f24870a20664bde2a50e2de8653606bfa351af54b4f'
+QUALIFIED=WORK/'ta2-rc2-postwrite-audit/20261122T001850Z-27778'
+VOL=re.compile(r'[A-Z0-9]{1,6}\Z')
+
+class Refusal(ValueError):pass
+
+def need(ok,why):
+    if not ok:raise Refusal(why)
+
+def load(name,path):
+    need(path.is_file() and not path.is_symlink(),'missing/linked helper: '+path.name)
+    l=SourceFileLoader(name,str(path));s=spec_from_loader(name,l)
+    need(s is not None and s.loader is not None,'cannot import '+path.name)
+    m=module_from_spec(s);s.loader.exec_module(m);return m
+
+def source():
+    writer=load('ta2rb_writer',SCRIPTS/'ta2-rc2-produce-once')
+    preview,_,_,jcl,sha=writer.verified_plan()
+    need(sha==WRITE_SHA and hashlib.sha256(jcl.encode('ascii')).hexdigest()==sha,
+         'original release write JCL changed')
+    writer.original_inputs(preview)
+    plan=preview.source_plan(preview.yaml.safe_load(preview.RC1.read_bytes()),
+                             preview.yaml.safe_load(preview.RC2.read_bytes()))
+    need(len(plan['datasets'])==21 and plan['volume']['volser']=='BC0002',
+         'canonical rc2 identity/21-position manifest changed')
+    return plan
+
+def rows(plan):
+    budget=json.loads(SPACE.read_text())
+    base=budget.get('targets',[])
+    need(budget.get('status')=='VOLUME_APPROVED_SPACE_AND_WRITE_UNAPPROVED' and
+         budget.get('volume')=='TSO002' and
+         [x.get('sequence') for x in base]==list(range(3,21)) and
+         budget.get('primary_total')==645 and budget.get('secondary_total')==65,
+         'source staging space reference changed')
+    sizes={x['sequence']:(x['primary_tracks'],x['secondary_tracks'],x['directory_blocks']) for x in base}
+    sizes.update({1:(5,1,0),2:(20,5,10),21:(100,10,10)})
+    result=[]
+    for n,x in enumerate(plan['datasets'],1):
+        d=x['target_dcb']
+        want=({'dsorg':'PS','recfm':'FB','lrecl':80,'blksize':800} if n==1 else
+              {'dsorg':'PO','recfm':'U','lrecl':0,'blksize':6144} if n==12 else
+              {'dsorg':'PO','recfm':'FB','lrecl':80,'blksize':800})
+        need(d==want,f'BT{n:04d} DCB changed')
+        p,s,b=sizes[n]
+        need(all(type(v) is int and 0<=v<=1000 for v in (p,s,b)) and p>0 and s>0 and
+             ((b==0) if n==1 else b>0),f'BT{n:04d} SPACE invalid')
+        members=x.get('members',[])
+        need(len(set(members))==len(members) and
+             (not members if n==1 else bool(members)),f'BT{n:04d} members invalid')
+        result.append({'n':n,'source':x['producer_source_dsn'],
+                       'tape':f'BCPL.BT{n:04d}',
+                       'target':f'HERC02.BCPL.TA2RB.BT{n:04d}',
+                       'dcb':d,'members':members,'space':(p,s,b)})
+    need(len(result)==21 and sum(len(x['members']) for x in result)==146 and
+         sum(x['space'][0] for x in result)==770 and
+         sum(x['space'][1] for x in result)==81,
+         'release member/space totals differ')
+    return result
+
+def render(rows,volume):
+    need(VOL.fullmatch(volume) is not None and volume not in
+         {'BC0002','BTA101','BTA102','BTO001'},'invalid or tape-reserved DASD volume')
+    need([r['n'] for r in rows]==list(range(1,22)),
+         'noncontiguous readback tape sequence')
+    cards=['//* TA.2 RC2 READBACK DESIGN ONLY; MVS EXECUTION NOT YET APPROVED.',
+           '//* ONLY NEW HERC02.BCPL.TA2RB DATASETS; PRESERVE BC0002 AWS.']
+    for r in rows:
+        n=r['n'];d=r['dcb'];p,s,b=r['space']
+        cards.extend([f'//R{n:04d} EXEC PGM={"IEBGENER" if n==1 else "IEBCOPY"},REGION=512K'+
+                      ('' if n==1 else ',COND=(0,NE)'),
+                      '//SYSPRINT DD SYSOUT=*'])
+        if n==1:cards.append('//SYSIN DD DUMMY')
+        cards.extend([f'//{"SYSUT1" if n==1 else "INTAPE"} DD DSN={r["tape"]},UNIT=480,',
+                      '//            VOL=(PRIVATE,RETAIN,SER=BC0002),',
+                      f'//            LABEL=({n},SL),DISP=OLD',
+                      f'//{"SYSUT2" if n==1 else "OUTPDS"} DD DSN={r["target"]},',
+                      '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,',
+                      f'//            VOL=SER={volume},',
+                      f'//            SPACE=(TRK,({p},{s}'+(f',{b})),' if n>1 else ')),'),
+                      f'//            DCB=(DSORG={d["dsorg"]},RECFM={d["recfm"]},'
+                      f'LRECL={d["lrecl"]},BLKSIZE={d["blksize"]})'])
+        if n>1:cards.extend(['//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                             '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                             '//SYSIN DD *',' COPY OUTDD=OUTPDS,INDD=INTAPE','/*'])
+    cards.append('//')
+    need(all(x.isascii() and len(x)<=80 and '\t' not in x for x in cards) and
+         all(len(x)<=71 for x in cards if x.startswith('//') and not x.startswith('//*')),
+         'JCL beyond MVS card/operand boundaries')
+    body='\n'.join(cards)+'\n'
+    need(body.count(' EXEC PGM=IEBGENER')==1 and body.count(' EXEC PGM=IEBCOPY')==20 and
+         body.count('LABEL=(')==21 and body.count('DISP=OLD')==21 and
+         body.count('DISP=(NEW,CATLG,DELETE)')==21 and
+         body.count('DSN=HERC02.BCPL.TA2RB.BT')==21,
+         'MVS readback JCL drift')
+    return body
+
+def original_image():
+    need(IMAGE.is_file() and not IMAGE.is_symlink() and IMAGE.stat().st_size==1957296,
+         'original BC0002 candidate changed/missing')
+    with IMAGE.open('rb') as f:digest=hashlib.file_digest(f,'sha256').hexdigest()
+    need(digest==SHA,'original BC0002 AWS hash drift')
+    writer=load('ta2rb_original',SCRIPTS/'ta2-rc2-produce-once')
+    evidence=writer.sealed(QUALIFIED,{'result.json','live-files.txt','live-labels.txt'})
+    receipt=json.loads(evidence['result.json'])
+    need(receipt.get('status')=='PRIVATE_RC2_AWS_MVS_21_RC0000_LABEL_AND_FILE_STRUCTURE_PASS_QUALIFIED' and
+         receipt.get('image_sha256')==SHA and receipt.get('mvs_job')==9339 and
+         receipt.get('mvs_steps')==21 and receipt.get('standard_label_datasets')==21 and
+         receipt.get('live_hetmap',{}).get('footer_reconciles') is True,
+         'qualified original MVS evidence changed')
+    return digest
+
+def save(path,data):
+    with os.fdopen(os.open(path,os.O_CREAT|os.O_EXCL|os.O_WRONLY|
+                          getattr(os,'O_NOFOLLOW',0),0o600),'wb') as f:
+        f.write(data);f.flush();os.fsync(f.fileno())
+
+def live(rows,volume,jobless_sha):
+    need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+         'unsafe repo workarea')
+    original_image()
+    folder=OUT/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+str(os.getpid()))
+    OUT.mkdir(mode=0o700,exist_ok=True);folder.mkdir(mode=0o700,exist_ok=False)
+    try:
+        producer=load('ta2rb_producer',SCRIPTS/'ta2-rc2-produce-once')
+        media=load('ta2rb_media',SCRIPTS/'ta2-rc2-media-preflight')
+        core=load('ta2rb_core',ROOT/'tools/datasets/dspal-core.py')
+        target=load('ta2rb_target',SCRIPTS/'ta2-target-preflight')
+        review=load('ta2rb_target_review',SCRIPTS/'ta2-target-review')
+        producer.check_docker(folder)
+        console=producer.capture(folder,'mounted-hercules',
+                 ['tools/mvs/mvs-console','tape','status','0480'])
+        need(len([x for x in console.splitlines() if re.search(r'\b0:0480\s+3420\s+',x) and
+                  IMAGE.name in x and not re.search(r'\bbusy\b',x,re.I)])==1,
+             'Hercules 0480 does not hold exact BC0002 candidate')
+        mvs=producer.capture(folder,'mounted-mvs',['tools/mvs/mvs-console','mvs','D U,TAPE'])
+        need(media.parse_mvs(mvs)=='O','MVS 480 not online/ready')
+        config=core.load_config();need(config['mvs']['hlq']=='HERC02','MVS HLQ differs')
+        core.require_reader_ready(config)
+        names=[r['target'] for r in rows];sources=[r['source'] for r in rows]
+        before=tempfile.tempdir;env=os.environ.get('TMPDIR')
+        try:
+            tempfile.tempdir=str(folder);os.environ['TMPDIR']=str(folder)
+            job,_=core.submit_and_wait(config,core.stat_deck(config,names+sources),
+                                        max_rc=8,cursor_file=folder/'catalog-cursor.json')
+            report=core.job_report(job,cursor_file=folder/'catalog-cursor.json')
+            save(folder/'catalog-report.txt',report.encode('utf-8'))
+            for r in rows:
+                need(core.dataset_missing(report,r['target']),r['target']+' exists/ambiguous')
+                need(not core.dataset_missing(report,r['source']),r['source']+' is missing')
+                lines=core.extract_listds_block(report,r['source'])
+                attrs=core.parse_listds(lines) if lines else {}
+                expected={'volume':'TSO002', 'dsorg':r['dcb']['dsorg'],
+                          'recfm':r['dcb']['recfm'],
+                          'lrecl':str(r['dcb']['lrecl']),
+                          'blksize':str(r['dcb']['blksize'])}
+                need(all(attrs.get(k)==v for k,v in expected.items()),
+                     r['source']+' original source DCB changed')
+            vjob,_=core.submit_and_wait(config,target.vtoc_deck(core,config,volume),
+                                         max_rc=0,cursor_file=folder/'vtoc-cursor.json')
+            vrept=core.job_report(vjob,cursor_file=folder/'vtoc-cursor.json')
+            save(folder/'vtoc-report.txt',vrept.encode('utf-8'))
+        finally:
+            tempfile.tempdir=before
+            if env is None:os.environ.pop('TMPDIR',None)
+            else:os.environ['TMPDIR']=env
+        target.vtoc_observation(vrept,volume,names)
+        capacity=review.inspect_vtoc(vrept,volume,names)['iehlist_reported_free_total_tracks']
+        need(type(capacity) is int and capacity>951,
+             'MVS IEHLIST does not show sufficient proposed free tracks')
+        original_image()
+        receipt={'status':'RC2_READBACK_READ_ONLY_MVS_PREFLIGHT_PASS',
+                 'catalog_job':job,'vtoc_job':vjob,'proposed_dasd_volume':volume,
+                 'reported_free_tracks':capacity,'target_datasets':names,
+                 'readback_jcl_sha256':jobless_sha,'stateful_execution_authorized':False}
+        save(folder/'result.json',(json.dumps(receipt,sort_keys=True,indent=2)+'\n').encode())
+        producer.seal_evidence(folder)
+        print(f'TA.2 RC2 READBACK PREFLIGHT PASS: 21 new targets absent; '
+              f'catalog JOB {job}, VTOC JOB {vjob}; IEHLIST reports {capacity} free tracks.')
+        print('Evidence: '+folder.relative_to(ROOT).as_posix())
+        print('No tape read/position, DASD allocation or readback job was performed.')
+        return 0
+    except Exception as exc:
+        if not (folder/'SHA256SUMS').exists():
+            try:
+                save(folder/'failure.json',(json.dumps({'status':'READ_ONLY_REFUSED','reason':str(exc)})+'\n').encode())
+                producer.seal_evidence(folder)
+            except (OSError,Refusal,ValueError,UnboundLocalError):pass
+        print('TA.2 RC2 READBACK PREFLIGHT REFUSED: '+str(exc),file=sys.stderr)
+        print('Evidence: '+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        return 2
+
+def main(argv=None):
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--volume',required=True,help='proposed scratch DASD VOLSER; no default')
+    p.add_argument('--live',action='store_true',help='read-only Hercules/MVS inquiries and LISTDS/IEHLIST')
+    a=p.parse_args(argv)
+    try:
+        manifest=source();items=rows(manifest);deck=render(items,a.volume.upper())
+        sha=hashlib.sha256(deck.encode('ascii')).hexdigest()
+        if a.live:return live(items,a.volume.upper(),sha)
+        print(f'TA.2 RC2 READBACK DESIGN PASS: 21 datasets, 1 IEBGENER, 20 IEBCOPY, '
+              f'146 PDS members, proposed 770 primary + 81 secondary tracks.')
+        print('JOB-less readback JCL SHA-256: '+sha)
+        print('No MVS operation. A separate owner approval is required for readback execution.')
+        return 0
+    except (Refusal,OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError) as exc:
+        print('TA.2 RC2 READBACK DESIGN REFUSED: '+str(exc),file=sys.stderr)
+        return 2
+
+if __name__=='__main__':raise SystemExit(main())

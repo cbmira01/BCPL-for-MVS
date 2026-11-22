@@ -4,7 +4,7 @@
 **Milestone:** Tape artifact release  
 **March:** TA.2 — Manifest-Driven Tape Producer  
 **Date:** 21 November 2026 EST  
-**Status:** **DESIGN PROPOSAL ONLY — no JCL submission, media repositioning, target dataset allocation or new tape operation is authorized.**
+**Status:** **OWNER APPROVED DESIGN (21 November 2026); read-only JCL/preflight code implemented. Stateful readback and DASD allocation remain separately unauthorized.**
 
 ## Accepted starting point
 
@@ -36,3 +36,7 @@ Perform one **separately authorized, guarded MVS readback** using the already mo
 TA.2 cannot be formally closed solely on the present structural PASS. The independent tape-readback result must demonstrate the restored datasets, selected member inventory, applicable record/binary content checks and preserved AWS SHA. If a narrower first readback is chosen, document its scope and continue verification without representing a partial result as complete TA.2 acceptance.
 
 **Await owner review of this design before implementing or submitting state-changing readback JCL.**
+
+## Owner design approval and implementation checkpoint
+
+The owner explicitly approved this design. [Implementation and test record](ta2-rc2-readback-design-implementation-20261121.md) documents the source-controlled JOB-less JCL and read-only MVS preflight. The suggested `TSO002` allocation and exact new 21-dataset track/extent budget are not yet approved; do not submit `TA2RC2RB` or attempt tape positioning until a separate owner decision. The accepted `BC0002` image, device and original SHA-256 remain unchanged.
