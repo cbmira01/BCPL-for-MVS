@@ -85,15 +85,13 @@ def check_git():
     return git
 
 
-def cards(lines):
-    """Check JCL columns outside DD DATA; embedded BCPL records are FB80 data.
+def jcl_control_cards(lines):
+    """Return active JCL cards, excluding DD DATA,DLM=Z9 installer/source records.
 
-    DD DATA,DLM=Z9 deliberately carries BCPL source comments beginning //.
-    Those are data, not JCL statements, and may occupy columns 72-80.
+    The distributed RESTORE member embeds real IEBCOPY JCL text, which must
+    not be counted as executing staging steps or active DASD allocations.
     """
-    text = '\n'.join(lines) + '\n'
-    need(text.isascii() and all('\t' not in x and len(x) <= 80 for x in lines),
-         'not FB80-safe MVS records')
+    outer = []
     in_data = False
     for number, line in enumerate(lines, 1):
         if in_data:
@@ -104,9 +102,18 @@ def cards(lines):
         if line.startswith('//') and not line.startswith('//*'):
             need(len(line) <= 71,
                  f'JCL operands over column 71 at record {number} (width {len(line)})')
+        outer.append(line)
         if line == '//SYSUT1 DD DATA,DLM=Z9':
             in_data = True
     need(not in_data, 'unterminated DD DATA,DLM=Z9')
+    return outer
+
+
+def cards(lines):
+    text = '\n'.join(lines) + '\n'
+    need(text.isascii() and all('\t' not in x and len(x) <= 80 for x in lines),
+         'not FB80-safe MVS records')
+    jcl_control_cards(lines)
     return text
 
 
@@ -261,9 +268,17 @@ def stage_body(rows, changes, boot):
                   *in_data(content), f'//SYSUT2 DD DSN={dsn},DISP=SHR']
     lines.append('//')
     result = cards(lines)
-    need(result.count(' EXEC PGM=') == 37 and
-         result.count('DISP=(NEW,CATLG,DELETE)') == 21 and
-         result.count('DLM=Z9') == 17 and
+    outer = jcl_control_cards(lines)
+    steps = [(match.group(1), match.group(2))
+             for line in outer
+             if (match := re.match(r'^//([A-Z0-9]{1,8}) EXEC PGM=([A-Z0-9]{1,8})(?:,|$)', line))]
+    expected = [(f'S{i:04d}', 'IEBGENER' if i == 1 else 'IEBCOPY')
+                for i in range(1, 22)]
+    expected += [(f'B{i:04d}', 'IEBGENER') for i in range(1, 5)]
+    expected += [(f'E{i:04d}', 'IEBGENER') for i in range(1, 13)]
+    need(steps == expected and
+         sum('DISP=(NEW,CATLG,DELETE)' in line for line in outer) == 21 and
+         outer.count('//SYSUT1 DD DATA,DLM=Z9') == 17 and
          'TA2STG.' not in result and 'TA2INS.' not in result,
          'stage JCL count/safety contract altered')
     return result
