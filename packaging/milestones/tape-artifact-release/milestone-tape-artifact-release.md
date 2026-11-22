@@ -1490,3 +1490,29 @@ the refusal has been observed. See [RC3 candidate corrective evidence](../../dis
 After updating `main`, the owner may reissue the single guarded RC3
 operation; this is **not** a repeat of a consumed tape attempt.
 **TA.2 remains IN PROGRESS** pending actual RC3 MVS evidence and TA.4 review.
+
+
+## TA.2 — RC3 staging-deck inert RESTORE JCL count repair — 22 November 2026
+
+The owner's next RC3 run after pulling the in-stream JCL width repair
+returned `RC3 REFUSED: stage JCL count/safety contract altered`.
+This is a second pre-stateful refusal: no one-shot marker, AWS tape
+initialization, MVS preflight or JES submission occurred.
+
+Investigation of the real producer and installer generator isolated a
+safety-gate error: the staged BT0002(RESTORE) distribution member
+contains 19 IEBCOPY/NEW-allocation template entries embedded within
+`DD DATA,DLM=Z9`. The former whole-text counts incorrectly treated
+this inert installation material as active staging JCL. The renderer
+now counts only the delimiter-aware active cards and requires the exact
+ordered 21 S + 4 B + 12 E steps, 21 NEW allocations and 17 data sections,
+while retaining column-71 JCL and FB80 data checks. Two new repository
+tests exercise embedded RESTORE and active-step-order drift; the
+15-test repository module was not run in a full assistant checkout.
+A 9/9 executable mock-stage safety harness passed in the assistant's
+isolated repository workarea.
+
+See [RC3 corrective evidence](../../distribution/create-tape/ta2-rc3-consolidated-candidate-20261122.md).
+The owner can retry the **original, unconsumed** RC3 MVS operation after
+updating GitHub `main`. No actual RC3 MVS acceptance yet.
+**TA.2 is IN PROGRESS**, with TA.4 semantic review and publication pending.
