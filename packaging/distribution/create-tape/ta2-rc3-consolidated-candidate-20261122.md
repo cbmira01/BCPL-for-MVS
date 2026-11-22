@@ -168,3 +168,39 @@ release publication remain separately governed.
 
 **TA.2 remains IN PROGRESS** until actual continuation results are
 reviewed.
+
+
+## 22 November — RC3 MVS 21-step restore PASS; BOOT DCB diagnosis pending
+
+The owner pulled the committed one-shot readback continuation,
+passed read-only recipient-absence preflight **JOB 9362**, and
+explicitly approved the mount and new installation attempt.
+**TA2R3RES JOB 9363** restored all 21 ordered tape datasets
+to the isolated `HERC02.BCPL.TA2R3I.*` recipient namespace
+with IEBGENER/IEBCOPY **RC=0000** throughout. This establishes
+**readback/restore JES PASS (qualified)**, not yet a 21-dataset
+DCB/directory or installed compiler acceptance.
+
+The continuation halted at
+`RC3 RESTORE REFUSED: recipient DCB/volume differs:
+HERC02.BCPL.TA2R3I.BOOT` during post-restore MVS
+`LISTDS LABEL` verification. Its immutable private receipt is
+`workarea/ta2-rc3-restore-continuation/20261122T232532Z-31994`.
+The second, distinct one-shot restore marker is **consumed**.
+Do **not** repeat the original production, mount-and-restore or
+21-step JOB 9363, do not delete or replace restored recipient
+datasets, and preserve BC0003 plus both sealed incidents.
+
+The failure text does **not** identify whether the actual discrepancy
+concerns VOLUME, DSORG, RECFM, LRECL or BLKSIZE, nor whether
+classic TSO LISTDS parsing is at fault; **no DCB cause is asserted**.
+A separately committed read-only
+`scripts/ta2-rc3-recipient-diagnostic --live` first validates the
+sealed original receipt, JOB 9363's 21 step summary/IEF142I records,
+original one-shot marker and unchanged AWS SHA, then issues two
+fresh actual-MVS TSO queries. It captures all 21 DCB comparisons,
+exact BOOT parsed and raw values, and 20 PDS directories against
+146 manifest members. Only diagnosis, not acceptance or installed
+MR10 execution, is authorized by this operation.
+Ten local isolated tests PASS; the real MVS output remains the
+acceptance authority. **TA.2 IN PROGRESS**.
