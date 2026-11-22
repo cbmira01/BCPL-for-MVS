@@ -35,15 +35,38 @@ class Tests(unittest.TestCase):
 
     def test_stage_card_contract(self):
         deck=mod.stage_body(self.rows,self.changes,self.boot)
-        self.assertEqual(deck.count(' EXEC PGM='),37)
-        self.assertEqual(deck.count('DISP=(NEW,CATLG,DELETE)'),21)
-        self.assertEqual(deck.count('DLM=Z9'),17)
+        outer=mod.jcl_control_cards(deck.splitlines())
+        self.assertEqual(sum(' EXEC PGM=' in x for x in outer),37)
+        self.assertEqual(sum('DISP=(NEW,CATLG,DELETE)' in x for x in outer),21)
+        self.assertEqual(outer.count('//SYSUT1 DD DATA,DLM=Z9'),17)
         self.assertEqual(deck.count(' COPY OUTDD=OUTPDS,INDD=INPDS'),20)
         self.assertIn('DSORG=PO,RECFM=U,LRECL=0,BLKSIZE=6144',deck)
         self.assertNotIn(mod.INSTALL,deck)
         self.assertNotIn('DSN=BCPL.BT',deck)
         self.assertTrue(all(len(x)<=80 for x in deck.splitlines()))
-        self.assertTrue(all(len(x)<=71 for x in deck.splitlines() if x.startswith('//') and not x.startswith('//*')))
+        self.assertTrue(all(len(x)<=71 for x in outer if x.startswith('//') and not x.startswith('//*')))
+
+    def test_inert_installer_restore_jcl_does_not_inflate_stage_contract(self):
+        # Actual BT0002(RESTORE) includes nineteen IEBCOPY statements and
+        # DASD allocations. As DD DATA, these must not count as active JCL.
+        boot = dict(self.boot)
+        boot['RESTORE'] = ''.join(
+            f'//R{i:04d} EXEC PGM=IEBCOPY,REGION=512K\n'
+            f'//OUTPDS DD DSN=<HLQ>.BCPL.TEST{i},\n'
+            '//            DISP=(NEW,CATLG,DELETE)\n'
+            for i in range(3, 22))
+        deck = mod.stage_body(self.rows,self.changes,boot)
+        outer = mod.jcl_control_cards(deck.splitlines())
+        self.assertEqual(sum(' EXEC PGM=' in x for x in outer),37)
+        self.assertEqual(sum('DISP=(NEW,CATLG,DELETE)' in x for x in outer),21)
+        self.assertEqual(deck.count(' EXEC PGM='),56)
+        self.assertEqual(deck.count('DISP=(NEW,CATLG,DELETE)'),40)
+        self.assertEqual(outer.count('//SYSUT1 DD DATA,DLM=Z9'),17)
+
+    def test_stage_guard_rejects_active_step_order_drift(self):
+        with self.assertRaisesRegex(mod.Refusal,'stage JCL count/safety'):
+            mod.stage_body([self.rows[1],self.rows[0],*self.rows[2:]],
+                           self.changes,self.boot)
 
     def test_real_bcpl_source_comment_width_in_dd_data(self):
         # The twelve canonical MR10 sources have 73-column // separators.
