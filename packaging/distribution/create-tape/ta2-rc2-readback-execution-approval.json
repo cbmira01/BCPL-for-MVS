@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "status": "OWNER_APPROVED_SINGLE_MVS_RC2_READBACK",
+  "candidate": "BCPL-0.1.0-rc2",
+  "volser": "BC0002",
+  "image": "bcpl-0.1.0-rc2-BC0002.aws",
+  "aws_sha256": "123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375",
+  "accepted_mvs_catalog_job": 9340,
+  "accepted_mvs_vtoc_job": 9341,
+  "accepted_free_tracks": 15335,
+  "preflight_evidence": "workarea/ta2-rc2-readback-preflight/20261122T010923Z-28068",
+  "hercules_unit": "0480",
+  "source_write_job": 9339,
+  "jobname": "TA2RC2RB",
+  "tape_datasets": 21,
+  "restore_namespace": "HERC02.BCPL.TA2RB",
+  "restore_dasd_volume": "TSO002",
+  "jobless_jcl_sha256": "226819ef3702234a1367c7a7df96399cf9fcaf32d99152061db1df98fed12e73",
+  "mount_only_if_0480_empty": true,
+  "no_retry": true,
+  "publication_authorized": false
+}

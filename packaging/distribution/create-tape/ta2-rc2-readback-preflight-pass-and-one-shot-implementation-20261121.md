@@ -43,3 +43,7 @@ The exact new runner and its 14 synthetic negative/positive tests passed in the 
 **No new write/restore approval file is committed. No MVS mount, tape positioning, IEBGENER/IEBCOPY readback, new DASD allocation or source modification has been performed by this code work.** A separate affirmative owner decision for a single `BC0002` mount on **only an empty 0480** and single `TA2RC2RB` JES job on **TSO002** is required before creating the exact execution approval and giving any `--run` command. Do not rerun accepted tape production or modify the original image.
 
 **TA.2 — Manifest-Driven Tape Producer remains IN PROGRESS.** TA.3 recipient installation and publication are separate marches.
+
+## Subsequent owner authorization — 21 November 2026 EST
+
+The owner explicitly approved exactly **one** conditional existing-image mount and **one** 21-step `TA2RC2RB` readback to 21 new `TSO002` restore datasets. The [scope and limits](ta2-rc2-readback-execution-authorization-20261121.md) and `ta2-rc2-readback-execution-approval.json` now supersede the earlier **missing execution approval** statement. The runner and JCL are unchanged. No actual mount or readback has yet occurred.
