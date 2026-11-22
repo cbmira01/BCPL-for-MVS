@@ -45,6 +45,36 @@ class Tests(unittest.TestCase):
         self.assertTrue(all(len(x)<=80 for x in deck.splitlines()))
         self.assertTrue(all(len(x)<=71 for x in deck.splitlines() if x.startswith('//') and not x.startswith('//*')))
 
+    def test_real_bcpl_source_comment_width_in_dd_data(self):
+        # The twelve canonical MR10 sources have 73-column // separators.
+        comment = '// ' + '=' * 70
+        self.assertEqual(len(comment), 73)
+        deck = mod.cards(['//E0001 EXEC PGM=IEBGENER',
+                          '//SYSUT1 DD DATA,DLM=Z9',
+                          comment, '// ' + 'X' * 77, 'Z9',
+                          '//SYSUT2 DD DSN=OUTPUT,DISP=SHR'])
+        self.assertIn(comment, deck)
+        self.assertEqual(len('// ' + 'X' * 77), 80)
+        changes = list(self.changes)
+        member, path, content = changes[0]
+        changes[0] = (member, path, comment + '\n' + content)
+        staged = mod.stage_body(self.rows, changes, self.boot)
+        self.assertIn(comment, staged)
+
+    def test_dd_data_not_permit_actual_overwidth_jcl(self):
+        with self.assertRaisesRegex(mod.Refusal, 'JCL operands over column 71'):
+            mod.cards(['//E0001 EXEC PGM=IEBGENER',
+                       '//SYSUT1 DD DATA,DLM=Z9',
+                       '// ' + '=' * 70, 'Z9', '//X DD ' + 'a' * 72])
+        with self.assertRaisesRegex(mod.Refusal, 'not FB80-safe'):
+            mod.cards(['//SYSUT1 DD DATA,DLM=Z9',
+                       '// ' + '=' * 78, 'Z9'])
+        with self.assertRaisesRegex(mod.Refusal, 'unterminated DD DATA'):
+            mod.cards(['//SYSUT1 DD DATA,DLM=Z9',
+                       '// ' + '=' * 70])
+        with self.assertRaisesRegex(mod.Refusal, 'orphan in-stream Z9'):
+            mod.cards(['Z9'])
+
     def test_reject_data_delimiter_and_overwidth(self):
         with self.assertRaises(mod.Refusal):mod.in_data('Z9-A\n')
         with self.assertRaises(mod.Refusal):mod.cards(['//X DD ' + 'a'*72])
