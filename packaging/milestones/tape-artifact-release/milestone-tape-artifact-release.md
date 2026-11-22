@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BC0002 AWS structure accepted qualified; 21-dataset readback design approved and read-only JCL/MVS preflight implemented; new DASD volume and tape-read execution approval pending; NO RETRY)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BC0002 AWS structure accepted qualified; first readback preflight refused unverified Hercules 0480 attachment; read-only device diagnostic prepared; no tape read/DASD allocation authorized; NO RETRY)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1297,3 +1297,7 @@ The owner reran the **read-only corrected** `ta2-rc2-postwrite-audit` at GitHub 
 ## TA.2 owner-approved readback design and bounded implementation — 21 November 2026 EST
 
 Following structural acceptance of the immutable `BC0002` AWS, the owner **approved the independent 21-dataset MVS readback design** but did **not** authorize a new scratch DASD volume or state-changing tape/DASD execution. The [design implementation and test record](../../distribution/create-tape/ta2-rc2-readback-design-implementation-20261121.md) now includes a source-controlled `ta2-rc2-readback-plan`: a 21-step IEBGENER/IEBCOPY JOB-less readback JCL plan with `LABEL=(1..21,SL)`, newly isolated `HERC02.BCPL.TA2RB.BTnnnn` targets, manifest DCBs including `BT0012 PO/U/0/6144`, and an optional *read-only* MVS LISTDS/IEHLIST/Hercules preflight. **12/12** offline design tests PASS and the Git blob matches the checked source. A new DASD volume and the reported 770 primary + 81 secondary track budget (plus screening margin) remain **proposals**, not grants. There is deliberately **no `--run`**; once MVS preflight supplies current catalog/VTOC evidence, the owner must separately approve the exact scratch allocation and one-shot readback JES submission. No existing tape/media/accepted stage was changed. **TA.2 IN PROGRESS; TA.0/TA.1 unchanged.**
+
+## TA.2 first independent readback preflight: Hercules 0480 refusal — 21 November 2026 EST
+
+The owner ran the approved-design `ta2-rc2-readback-plan --volume TSO002 --live`; it **refused RC=2** at `Hercules 0480 does not hold exact BC0002 candidate`, preserving sealed original evidence at `workarea/ta2-rc2-readback-preflight/20261122T005713Z-27881`. The guard halted after the original AWS/receipt and Docker checks but **before** any readback, LISTDS, IEHLIST or DASD allocation. The original TA2RC2WR write JCL did not request `RETAIN` on its final tape dataset, so a released drive is possible, **not yet proven**. The [read-only device investigation](../../distribution/create-tape/ta2-rc2-readback-device-refusal-20261121.md) adds a strict `--inspect-drive` mode to replay the sealed failure, distinguish an empty, expected, foreign, busy or unrecognized Hercules unit, display MVS 480 state, and preserve new SHA256-sealed evidence. **18/18** focused offline tests PASS. No mounts, tape positioning, production retries or restored datasets occurred. A new volume or execution permission is still absent. **TA.2 IN PROGRESS.**

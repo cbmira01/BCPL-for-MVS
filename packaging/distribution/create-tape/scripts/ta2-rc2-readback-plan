@@ -30,6 +30,8 @@ IMAGE=ROOT/'mvs-state/tape/bcpl-0.1.0-rc2-BC0002.aws'
 SHA='123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375'
 WRITE_SHA='85eca6f3e1e83c2d0e476f24870a20664bde2a50e2de8653606bfa351af54b4f'
 QUALIFIED=WORK/'ta2-rc2-postwrite-audit/20261122T001850Z-27778'
+FAILED=OUT/'20261122T005713Z-27881'
+DRIVE_RE=re.compile(r'\bHHC02279I\s+(?:(?:[0-9A-Fa-f]+):)?0480\s+3420(?:-[A-Za-z0-9]+)?\s+(.*)$')
 VOL=re.compile(r'[A-Z0-9]{1,6}\Z')
 
 class Refusal(ValueError):pass
@@ -220,14 +222,85 @@ def live(rows,volume,jobless_sha):
         print('Evidence: '+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
         return 2
 
+def device_identity(output):
+    """Classify an exact Hercules 0480 status line, never guess a mount."""
+    lines=[(line.strip(),m.group(1).strip()) for line in output.splitlines()
+           if (m:=DRIVE_RE.search(line)) is not None]
+    if len(lines)!=1:return ('UNVERIFIED','no unique HHC02279I 0480/3420 device row')
+    raw,detail=lines[0]
+    if re.search(r'\bbusy\b',detail,re.I):return ('BUSY',raw)
+    words=detail.split()
+    if words and words[0]=='*':return ('EMPTY',raw)
+    exact='/tk5/tape/'+IMAGE.name
+    if exact in words:return ('MOUNTED_BC0002',raw)
+    return ('FOREIGN_OR_UNRECOGNIZED',raw)
+
+
+def inspect_drive():
+    """Replay original halted preflight plus fresh display-only inquiries."""
+    producer=load('ta2rb_drive_producer',SCRIPTS/'ta2-rc2-produce-once')
+    media=load('ta2rb_drive_media',SCRIPTS/'ta2-rc2-media-preflight')
+    need(WORK.is_dir() and not WORK.is_symlink() and
+         not OUT.is_symlink() and FAILED.is_dir() and not FAILED.is_symlink(),
+         'original failed readback preflight is missing/unsafe')
+    original=producer.sealed(FAILED,{'mounted-hercules.txt','failure.json'})
+    failure=json.loads(original['failure.json'])
+    need(failure=={'status':'READ_ONLY_REFUSED',
+          'reason':'Hercules 0480 does not hold exact BC0002 candidate'},
+         'original failed drive preflight receipt has unexpected identity')
+    orig_state,orig_line=device_identity(original['mounted-hercules.txt'].decode('utf-8'))
+    original_image()  # original qualified SHA and original sealed acceptance
+    folder=OUT/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+str(os.getpid()))
+    folder.mkdir(mode=0o700,exist_ok=False)
+    try:
+        producer.check_docker(folder)
+        fresh=producer.capture(folder,'drive-hercules',
+                    ['tools/mvs/mvs-console','tape','status','0480'])
+        fresh_state,fresh_line=device_identity(fresh)
+        guest=producer.capture(folder,'drive-mvs',
+                    ['tools/mvs/mvs-console','mvs','D U,TAPE'])
+        try:
+            guest_state=media.parse_mvs(guest)
+        except ValueError:
+            guest_state='UNVERIFIED'
+        original_image()
+        result={'status':'READ_ONLY_DEVICE_DIAGNOSTIC_ONLY',
+                'original_failed_preflight':str(FAILED.relative_to(ROOT)),
+                'original_drive_class':orig_state,'original_device_row':orig_line,
+                'current_drive_class':fresh_state,'current_device_row':fresh_line,
+                'current_mvs_state':guest_state,'image_sha256':SHA,
+                'stateful_execution_authorized':False}
+        save(folder/'result.json',(json.dumps(result,indent=2,sort_keys=True)+'\n').encode())
+        producer.seal_evidence(folder)
+        print('TA.2 RC2 READBACK DEVICE DIAGNOSTIC: original='+orig_state+
+              '; fresh='+fresh_state+'; MVS 480='+guest_state)
+        print('Original 0480: '+orig_line[:500])
+        print('Fresh 0480: '+fresh_line[:500])
+        print('Evidence: '+str(folder.relative_to(ROOT)))
+        print('No tape movement/mount, readback job, or DASD allocation.')
+        return 0
+    except (Refusal,ValueError,RuntimeError,OSError,subprocess.SubprocessError) as exc:
+        try:
+            save(folder/'failure.json',(json.dumps({'status':'DIAGNOSTIC_REFUSED',
+                                                     'reason':str(exc)})+'\n').encode())
+            producer.seal_evidence(folder)
+        except (OSError,ValueError,RuntimeError):pass
+        print('TA.2 RC2 DEVICE DIAGNOSTIC REFUSED: '+str(exc),file=sys.stderr)
+        print('Evidence: '+str(folder.relative_to(ROOT)),file=sys.stderr)
+        return 2
+
+
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--volume',required=True,help='proposed scratch DASD VOLSER; no default')
-    p.add_argument('--live',action='store_true',help='read-only Hercules/MVS inquiries and LISTDS/IEHLIST')
+    choices=p.add_mutually_exclusive_group()
+    choices.add_argument('--live',action='store_true',help='read-only Hercules/MVS inquiries and LISTDS/IEHLIST')
+    choices.add_argument('--inspect-drive',action='store_true',help='replay halted 0480 evidence and fresh display-only device inquiries')
     a=p.parse_args(argv)
     try:
         manifest=source();items=rows(manifest);deck=render(items,a.volume.upper())
         sha=hashlib.sha256(deck.encode('ascii')).hexdigest()
+        if a.inspect_drive:return inspect_drive()
         if a.live:return live(items,a.volume.upper(),sha)
         print(f'TA.2 RC2 READBACK DESIGN PASS: 21 datasets, 1 IEBGENER, 20 IEBCOPY, '
               f'146 PDS members, proposed 770 primary + 81 secondary tracks.')

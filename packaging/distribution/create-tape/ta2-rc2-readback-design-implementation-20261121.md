@@ -31,3 +31,7 @@ The exact new script and companion `tests/test_ta2_rc2_readback_plan.py` were te
 **Not implemented or authorized in this checkpoint:** a stateful `--run` argument, tape positioning, JCL submission for the actual 21-step readback, scratch DASD allocation, restored member/record comparisons, IEHLIST/executable-use follow-up for `RECFM=U`, clean recipient installation or publication. Subsequent one-shot runner implementation must be owner-reviewed with exact volume, readback-JCL SHA and actual read-only MVS preflight evidence. No approval file for a stateful readback is created here.
 
 **TA.2 remains IN PROGRESS.** Only the existing qualified AWS structure is accepted; full MVS readback/content verification still remains.
+
+## Live design preflight refused: read-only device diagnosis pending
+
+The owner reported `--volume TSO002 --live` **RC=2**: Hercules 0480 did not demonstrate the expected attached BC0002 image. The original sealed error evidence resides in `workarea/ta2-rc2-readback-preflight/20261122T005713Z-27881`; no LISTDS/IEHLIST jobs, tape movement or scratch allocation occurred. The [investigation record](ta2-rc2-readback-device-refusal-20261121.md) and `--inspect-drive` provide only fresh display inquiries and a bounded device classification. The candidate image and accepted structural review remain unchanged. This refusal is **not a readback operation** and does not authorize a mount or JES readback.

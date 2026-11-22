@@ -3,6 +3,9 @@ import importlib.machinery
 import importlib.util
 from pathlib import Path
 from unittest.mock import patch
+from unittest.mock import MagicMock
+import tempfile
+import types
 import hashlib
 import json
 import unittest
@@ -110,5 +113,76 @@ class ReadbackPlanTests(unittest.TestCase):
         self.assertIn('core.dataset_missing(report',s)
         self.assertIn('target.vtoc_observation(vrept,volume,names)',s)
         self.assertIn('producer.check_docker(folder)',s)
+
+    def test_drive_identity_exact_validated_mount(self):
+        row=("HHC02279I 0:0480 3420 /tk5/tape/"+mod.IMAGE.name)
+        self.assertEqual(mod.device_identity(row)[0], 'MOUNTED_BC0002')
+        self.assertEqual(mod.device_identity("HHC02279I 0480 3420 /tk5/tape/"+mod.IMAGE.name)[0],
+                         'MOUNTED_BC0002')
+    def test_drive_identity_empty(self):
+        self.assertEqual(mod.device_identity('HHC02279I 0:0480 3420 *')[0], 'EMPTY')
+    def test_drive_identity_foreign_and_prefix_collision(self):
+        for path in ['/tk5/tape/other.aws', '/tk5/tape/'+mod.IMAGE.name+'.bak']:
+            with self.subTest(path=path):
+                self.assertEqual(mod.device_identity('HHC02279I 0:0480 3420 '+path)[0],
+                                 'FOREIGN_OR_UNRECOGNIZED')
+    def test_drive_identity_ambiguous_and_busy_refused(self):
+        row='HHC02279I 0:0480 3420 /tk5/tape/'+mod.IMAGE.name
+        self.assertEqual(mod.device_identity(row+' busy')[0], 'BUSY')
+        self.assertEqual(mod.device_identity(row+'\n'+row)[0], 'UNVERIFIED')
+        self.assertEqual(mod.device_identity('HHC02279I 0:0480 3390 *')[0], 'UNVERIFIED')
+    def test_device_review_writes_only_new_private_evidence(self):
+        base=SCRIPT.parents[4]/'workarea'
+        base.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=base) as root:
+            root=Path(root)
+            work=root/'workarea';work.mkdir()
+            out=work/'ta2-rc2-readback-preflight';out.mkdir()
+            failed=out/'first';failed.mkdir()
+            original='HHC02279I 0:0480 3420 *'
+            mounted='HHC02279I 0:0480 3420 /tk5/tape/'+mod.IMAGE.name
+            def sealed(_,required):
+                self.assertEqual(required,{'mounted-hercules.txt','failure.json'})
+                return {'mounted-hercules.txt':original.encode(),
+                        'failure.json':json.dumps({'status':'READ_ONLY_REFUSED',
+                        'reason':'Hercules 0480 does not hold exact BC0002 candidate'}).encode()}
+            def capture(folder,name,args):
+                self.assertNotIn('mount',args)
+                self.assertNotIn('devinit',args)
+                v=mounted if name=='drive-hercules' else 'MVS 480 3400 O'
+                mod.save(folder/(name+'.txt'),v.encode())
+                return v
+            def seal(folder):
+                import hashlib
+                contents=''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n'
+                                 for p in sorted(folder.iterdir()) if p.is_file())
+                mod.save(folder/'SHA256SUMS',contents.encode())
+            producer=types.SimpleNamespace(sealed=sealed,check_docker=lambda _:None,
+                         capture=capture,seal_evidence=seal)
+            media=types.SimpleNamespace(parse_mvs=lambda _:'O')
+            def loader(name,path):
+                return producer if 'producer' in name else media
+            with patch.multiple(mod,ROOT=root,WORK=work,OUT=out,FAILED=failed):
+                with patch.object(mod,'load',side_effect=loader):
+                    with patch.object(mod,'original_image',return_value=mod.SHA):
+                        self.assertEqual(mod.inspect_drive(),0)
+            folder=next(p for p in out.iterdir() if p!=failed)
+            record=json.loads((folder/'result.json').read_text())
+            self.assertEqual(record['original_drive_class'],'EMPTY')
+            self.assertEqual(record['current_drive_class'],'MOUNTED_BC0002')
+            self.assertFalse(record['stateful_execution_authorized'])
+            self.assertTrue((folder/'SHA256SUMS').exists())
+    def test_device_review_original_failure_mismatch_refuses(self):
+        base=SCRIPT.parents[4]/'workarea'
+        base.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=base) as root:
+            root=Path(root);work=root/'workarea';work.mkdir()
+            out=work/'ta2-rc2-readback-preflight';out.mkdir();failed=out/'failed';failed.mkdir()
+            p=types.SimpleNamespace(sealed=lambda *_:{'mounted-hercules.txt':b'empty',
+                       'failure.json':b'{}'})
+            with patch.multiple(mod,ROOT=root,WORK=work,OUT=out,FAILED=failed):
+                with patch.object(mod,'load',return_value=p):
+                    with self.assertRaisesRegex(mod.Refusal,'unexpected identity'):
+                        mod.inspect_drive()
 
 if __name__=='__main__':unittest.main()
