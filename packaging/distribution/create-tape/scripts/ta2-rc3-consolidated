@@ -86,11 +86,27 @@ def check_git():
 
 
 def cards(lines):
+    """Check JCL columns outside DD DATA; embedded BCPL records are FB80 data.
+
+    DD DATA,DLM=Z9 deliberately carries BCPL source comments beginning //.
+    Those are data, not JCL statements, and may occupy columns 72-80.
+    """
     text = '\n'.join(lines) + '\n'
     need(text.isascii() and all('\t' not in x and len(x) <= 80 for x in lines),
          'not FB80-safe MVS records')
-    need(all(len(x) <= 71 for x in lines if x.startswith('//') and not x.startswith('//*')),
-         'JCL operands over column 71')
+    in_data = False
+    for number, line in enumerate(lines, 1):
+        if in_data:
+            if line == 'Z9':
+                in_data = False
+            continue
+        need(line != 'Z9', f'orphan in-stream Z9 delimiter at record {number}')
+        if line.startswith('//') and not line.startswith('//*'):
+            need(len(line) <= 71,
+                 f'JCL operands over column 71 at record {number} (width {len(line)})')
+        if line == '//SYSUT1 DD DATA,DLM=Z9':
+            in_data = True
+    need(not in_data, 'unterminated DD DATA,DLM=Z9')
     return text
 
 
