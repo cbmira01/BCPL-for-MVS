@@ -744,10 +744,15 @@ The new guarded `scripts/ta2-rc3-consolidated` has one operator-facing
 `--run` procedure: preflight, new staging with the 12 tested EXP-enabled
 BCPL members, regeneration of the release-specific bootstrap/installer,
 one new standard-label AWS write, direct tape restore into a separate
-recipient namespace, then `MRREGRES` and 12 printed
-`EXP:`/`RP:`/`CODE=` checks. One explicit Y activates no-retry.
-The original `BC0002` tape and RC2 datasets remain untouched. The RC3
-8-case offline test module PASS is a code check, **not** MVS acceptance:
-new stateful operations and all semantic results remain pending until
-the owner executes the new one-shot command and supplies JES evidence.
+recipient namespace, a read-only 21-dataset MVS recipient DCB/volume check,
+then `MRREGRES` with all 63 ordered JES/IEF142I step results and 12
+interpreted `TEST:`/`EXP:`/`RP:`/`CODE=` checks. The semantic evidence
+records the actual RC3 JOB number. One explicit Y activates no-retry.
+The original `BC0002` tape and RC2 datasets remain untouched. The
+original 8-case offline test module passed; three new focused regression
+cases guard postrestore DCBs, the full JES chain and actual RC3 JOB
+identity. Standalone positive/refusal validation checks passed, but the
+full revised 11-test module was not executed in a complete assistant
+checkout. No new RC3 stateful operation or MVS acceptance is claimed:
+actual MVS results and human per-case sign-off remain necessary.
 
