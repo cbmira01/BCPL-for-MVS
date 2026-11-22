@@ -1466,3 +1466,27 @@ are unchanged. **No RC3 AWS image, actual staging/write/restore/GO,
 MVS acceptance, TA.4 human sign-off, or release publication is claimed.**
 The next evidence must come from the owner-executed MVS one-shot and
 retained JES/HETMAP/SYSOUT reports. **TA.2 remains IN PROGRESS.**
+
+
+## TA.2 — RC3 pre-stateful JCL operand-width correction — 22 November 2026
+
+The owner ran the consolidated RC3 one-shot entry point after pulling
+GitHub `main`; it refused `JCL operands over column 71` before
+any one-shot marker, live JES submission, AWS media initialization or
+MVS state change. Direct GitHub source inspection found two 73-column
+`//` comment separators in each of the 12 historical MR10 regression
+BCPL test programs. Those records are in-stream FB80 source data
+carried by `DD DATA,DLM=Z9`, **not** MVS JCL operands.
+The RC3 `cards()` validator now tracks the exact data boundary,
+checks 80-column data limits, preserves strict JCL column-71 enforcement
+outside inline data and refuses unterminated/orphan delimiters.
+
+Two new repository regression tests cover source-data width and negative
+JCL/delimiter cases. A separate 9/9 executable isolated test of the exact
+corrected validator passed in an assistant repository workarea. The
+complete tracked RC3 test module was **not** executed against an assistant
+full checkout, and no actual MVS write/restore/installed execution after
+the refusal has been observed. See [RC3 candidate corrective evidence](../../distribution/create-tape/ta2-rc3-consolidated-candidate-20261122.md).
+After updating `main`, the owner may reissue the single guarded RC3
+operation; this is **not** a repeat of a consumed tape attempt.
+**TA.2 remains IN PROGRESS** pending actual RC3 MVS evidence and TA.4 review.
