@@ -121,7 +121,7 @@ class Tests(unittest.TestCase):
         import re
         deck = mod.JCL.read_text('ascii')
         expected = re.findall(
-            r'(?m)^//([A-Z0-9]{1,8})\\s+EXEC PGM=(IEBGENER|ICINT19)\\b', deck)
+            r'(?m)^//([A-Z0-9]{1,8})\s+EXEC PGM=(IEBGENER|ICINT19)\b', deck)
         self.assertEqual(len(expected), 63)
         summary = 'JOB 9374 TA2R3MR\nJOB RESULT: SUCCESS\nHIGHEST RC: 0000\n'
         summary += '\n'.join(f'{n} {p} RC=0000' for n,p in expected) + '\n'
