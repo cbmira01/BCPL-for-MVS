@@ -13,6 +13,8 @@ $(
    AND V = VEC 3
 
    WRITEF("TEST: Scalar assignments and vector load/store*N")
+   WRITEF("EXP: SCALAR 17 42*N")
+   WRITEF("EXP: VECTOR 5 10 15 20*N")
    V!0 := 5
    V!1 := 10
    V!2 := 15

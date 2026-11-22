@@ -22,6 +22,12 @@ $(
    AND B = VEC 3
 
    WRITEF("TEST: String memory and number conversion helpers*N")
+   WRITEF("EXP: STRING HELLO BCPL 10 0 7*N")
+   WRITEF("EXP: MEM 0 72*N")
+   WRITEF("EXP: SET 88 88 88*N")
+   WRITEF("EXP: VEC 11 22 33 44*N")
+   WRITEF("EXP: CLEAR 0 0*N")
+   WRITEF("EXP: CONV -321 -12345 48879 BEEF*N")
    STRCPY(S, "HELLO")
    STRCAT(S, " BCPL")
    STRCPY(T, S)

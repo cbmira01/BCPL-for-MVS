@@ -13,6 +13,7 @@ $(
    AND B = 0
 
    WRITEF("TEST: GETVEC FREEVEC and reuse of freed storage*N")
+   WRITEF("EXP: GETVEC 0 11 13*N")
    HEAPINIT(ARENA, 101)
 
    A := GETVEC(5)

@@ -21,6 +21,10 @@ $(
    AND N = 0
 
    WRITEF("TEST: Named input streams and line I/O helpers*N")
+   WRITEF("EXP: LINE1 5 ABCDE*N")
+   WRITEF("EXP: LINE2 20 second line*N")
+   WRITEF("EXP: EOF -1*N")
+   WRITEF("EXP: WRITELINE OK*N")
    IF S=0 DO
    $( WRITEF("RP: LINE OPEN FAILED*N")
       FINISH

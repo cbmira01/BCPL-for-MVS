@@ -11,6 +11,7 @@ $(
  LET A = 17
    AND B = 5
    WRITEF("TEST: Integer arithmetic and remainder*N")
+   WRITEF("EXP: ARITH 22 12 85 3 2*N")
    WRITEF("RP: ARITH %N %N %N %N %N*N",
           A+B, A-B, A*B, A/B, A REM B)
    FINISH

@@ -1364,3 +1364,29 @@ TA.2 remains IN PROGRESS.
 The owner executed the consolidated `--run` procedure and reported **RC=0**. The saved operation is `workarea/ta2-rc2-install-acceptance/20261122T133139Z-29894`. **JOB 9344**: MVS read-only LISTDS preflight passed (21/21 restored DCBs correct; 21 installation targets initially absent). **JOB 9345**: all 21 new `HERC02.BCPL.TA2INS.*` datasets copied successfully by IEBGENER/IEBCOPY. **JOB 9346**: installed MR10 Kit Compiler/interpreter `MRREGRES` completed its JES pipeline and all 12 `R01`–`R12` execution steps at RC=0000. These are owner-reported MVS results, not independently inspected reports in this commit; the original sealed evidence must be reviewed and retained. **Do not retry or alter the original tape/readback/installation.**
 
 The new **`ta2-rc2-acceptance --review`** mode performs no MVS submission or dataset operation. It verifies the saved report's SHA-256 evidence seal and accepted receipt, then compares ordered `TEST:`/`RP:` and interpreted `CODE=` for all 12 cases against the tracked regression-panel manifest and `.expected` files. It saves a separate sealed semantic report under `workarea/ta2-rc2-install-acceptance/review-*/`. Missing, reordered, mismatched, duplicated, or nonzero interpreted cases are reported as failures. The current 12 canonical regression BCPL programs **do not print `EXP:` records** (the approved TA.4 implementation remains pending), so a successful RP/CODE comparison is expressly **provisional**; it does not replace the required `EXP:` output nor human case-by-case review, does not certify a fresh-recipient TA.3/TA.7 installation, and does not authorize publication. **TA.2 remains IN PROGRESS** until relevant acceptance boundaries are met.
+
+
+## TA.2 BC0002 semantic checkpoint and approved TA.4 EXP source preparation — 22 November 2026
+
+The owner reported that the saved-report review of installed MR10 JOB **9346**
+found **12/12 GOLDEN/CODE MATCH** (all ordered `RP:` values equal the
+independently maintained golden files and interpreted `CODE=0`).
+All 12 also reported **EXP ABSENT**, yielding
+`GOLDEN_RP_CODE_MATCH_EXP_REQUIRED` with reviewer RC=0. This establishes
+the historical RC2 MR10 behavioral comparison, **not** fulfillment of
+TA.4 human-readable `EXP:` and human sign-off acceptance.
+
+The approved 16 November TA.4 source-display contract is now prepared in
+the canonical 12 BCPL panel sources: **23 fixed literal `EXP:` lines**
+derived from the unchanged goldens, preceding the unchanged computed
+`RP:` outputs. The source/JCL/golden contract is guarded by
+`install-from-tape/scripts/mr10-exp-source-check` with isolated negative
+tests in the assistant workspace. Real MVS compile/run of the *updated*
+source remains pending. The immutable **BC0002** image, original MVS
+staging/readback/installed data and JOB 9346 **do not** contain these new
+lines; a future separately governed candidate must incorporate them.
+Original sealed review evidence remains in the owner's `workarea/`;
+do not rerun the one-shot RC2 installation. See
+[the semantic checkpoint and source-preparation record](../../distribution/install-from-tape/ta2-rc2-12-case-comparison-and-ta4-exp-preparation-20261122.md).
+No new VOLSER, publication or formal march closure is authorized.
+**TA.2 remains IN PROGRESS.**

@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Validate literal EXP: display records against the MR10 golden RP: panel.
+
+Read-only, host-side source contract check. Does not compile, run, install, or
+replace the owner-approved actual MVS/BCPL execution verification.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[4]
+MANIFEST = ROOT / 'mr10-kit-compiler/tests/00-regression-panel/manifest.tsv'
+JCL = ROOT / 'mr10-kit-compiler/jcl/run-regression-tests.jcl'
+TEST = re.compile(r'^\s*WRITEF\("TEST:\s*[^"\r\n]*\*N"\)\s*$', re.M)
+EXP = re.compile(r'^\s*WRITEF\("(EXP:[^"*\r\n]*)\*N"\)\s*$', re.M)
+EXPECTED_NAMES = (
+    'scalar-vector', 'bytes', 'integer-arithmetic', 'branches-loops',
+    'nested-recursion', 'separate-module', 'basic-library',
+    'library-scalars', 'library-strings', 'library-line-io',
+    'getvec-reuse', 'basic-coroutine'
+)
+
+
+def check_manifest(root: Path = ROOT) -> tuple[int, int]:
+    manifest = root / 'mr10-kit-compiler/tests/00-regression-panel/manifest.tsv'
+    jcl = root / 'mr10-kit-compiler/jcl/run-regression-tests.jcl'
+    rows = []
+    for item in manifest.read_text(encoding='utf-8').splitlines():
+        if not item or item.startswith('#'):
+            continue
+        parts = item.split('\t')
+        if len(parts) != 7:
+            raise ValueError('invalid MR10 manifest row width')
+        rows.append(parts)
+    if tuple(r[0] for r in rows) != EXPECTED_NAMES:
+        raise ValueError('MR10 12-case panel order differs')
+    body = jcl.read_text(encoding='ascii')
+    records = 0
+    for index, (name, _category, source, _extras, _args, gold, code) in enumerate(rows, 1):
+        if code != '0':
+            raise ValueError(f'{name}: expected interpreted completion changed')
+        for relative in (source, gold):
+            if relative.startswith('/') or '..' in relative.split('/') or '\\' in relative:
+                raise ValueError(f'{name}: unsafe manifest path')
+        if f'//* EXECUTE CASE {index:02d}: {name}' not in body:
+            raise ValueError(f'{name}: MVS JCL case identity changed')
+        text = (root / source).read_text(encoding='ascii')
+        golden = (root / gold).read_text(encoding='utf-8').splitlines()
+        if not golden or any(not rec.startswith('RP:') for rec in golden):
+            raise ValueError(f'{name}: invalid golden RP lines')
+        found = TEST.findall(text)
+        if len(found) != 1:
+            raise ValueError(f'{name}: expected exactly one TEST label')
+        actual = EXP.findall(text)
+        wanted = [record.replace('RP:', 'EXP:', 1) for record in golden]
+        if actual != wanted:
+            raise ValueError(f'{name}: EXP literals differ from golden RP lines')
+        if any('RP:' in record or '%' in record for record in actual):
+            raise ValueError(f'{name}: EXP must be constant literal, without RP or formatting')
+        if any(len(line) > 80 or '\t' in line for line in text.splitlines()):
+            raise ValueError(f'{name}: BCPL exceeds FB80 card width')
+        records += len(actual)
+    return len(rows), records
+
+
+def main() -> int:
+    try:
+        count, records = check_manifest()
+    except (OSError, UnicodeError, ValueError) as exc:
+        print('MR10 EXP source check FAIL: ' + str(exc), file=sys.stderr)
+        return 2
+    print(f'MR10 EXP source check PASS: {count}/12 BCPL cases, {records} fixed literals match canonical golden records; MVS execution remains required.')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

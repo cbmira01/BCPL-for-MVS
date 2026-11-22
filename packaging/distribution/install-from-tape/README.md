@@ -49,3 +49,7 @@ The first operator invocation of `--run` refused at a redundant Git approval-fil
 ## Post-run semantic review of installed MR10 (read-only)
 
 Owner-reported JOBS **9344** (21 source DCBs and 21 absent targets PASS), **9345** (21 installed datasets, RC=0000) and **9346** (`MRREGRES` 12 execution steps, JES RC=0000) completed on 22 November 2026; no rerun is permitted. Run the **same** `scripts/ta2-rc2-acceptance` entry point with **`--review`** to inspect its original SHA-256-sealed JOB 9346 report; this performs no MVS submission. It writes only a fresh sealed semantic comparison under repository `workarea/`. Its golden `RP:` and interpreted `CODE=` comparison is diagnostic; current BCPL tests do **not** emit the owner-approved `EXP:` lines, and individual human sign-off remains pending. See [consolidated acceptance record](ta2-rc2-consolidated-acceptance-20261121.md).
+
+## MR10 regression golden/display contract preparation
+
+The 22 November 2026 [TA.2 installed MR10 evidence and TA.4 EXP source preparation](ta2-rc2-12-case-comparison-and-ta4-exp-preparation-20261122.md) records **12/12** saved MVS `RP:`/`CODE=0` comparisons against the immutable `BC0002` tape. The revised canonical BCPL panel sources now contain **23 fixed literal `EXP:` records** matching the tracked golden files. The read-only `scripts/mr10-exp-source-check` guards those source literals; new MVS compilation is required. These changes are *not* present on original `BC0002` or its accepted installation.

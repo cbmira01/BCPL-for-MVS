@@ -13,6 +13,7 @@ AND FACT(N) = N=0 -> 1, N*FACT(N-1)
 AND START() BE
 $(
    WRITEF("TEST: Arguments nested calls and recursive factorial*N")
+   WRITEF("EXP: CALLS 9 120*N")
  WRITEF("RP: CALLS %N %N*N", ADD3(2,3,4), FACT(5))
    FINISH
 $)

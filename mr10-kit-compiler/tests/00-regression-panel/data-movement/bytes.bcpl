@@ -10,6 +10,7 @@ LET START() BE
 $(
  LET V = VEC 1
    WRITEF("TEST: GETBYTE and PUTBYTE preserve byte values*N")
+   WRITEF("EXP: BYTES 65 66 67 68*N")
    V!0 := 0
    V!1 := 0
    PUTBYTE(V, 0, 65)

@@ -17,6 +17,9 @@ LET B(N) = N -> 1, 0
 AND START() BE
 $(
    WRITEF("TEST: Random integer and character utilities*N")
+   WRITEF("EXP: RAND 16807 282475249 73*N")
+   WRITEF("EXP: INT 17 4 9 -1 21 243*N")
+   WRITEF("EXP: CHAR 1 1 1 B q*N")
  SRAND(1)
    WRITEF("RP: RAND %N %N %N*N", RAND(), RAND(), RANDRANGE(100))
    WRITEF("RP: INT %N %N %N %N %N %N*N",

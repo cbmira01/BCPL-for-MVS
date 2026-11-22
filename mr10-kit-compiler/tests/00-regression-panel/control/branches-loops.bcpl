@@ -20,6 +20,7 @@ $(
    AND F = 0
 
    WRITEF("TEST: IF FOR SWITCHON and CASE control flow*N")
+   WRITEF("EXP: CONTROL 10 1 10 30*N")
    FOR I = 1 TO 4 DO S := S+I
    IF S=10 DO F := 1
 
