@@ -31,3 +31,37 @@ The regenerated installer includes the nineteenth Cambridge historical-source PD
 The initial RC3 source-controlled module passed **8/8 offline synthetic and negative tests**. Three further repository tests now cover recipient DCB/volume verification, all 63 regression JES/IEF142I steps (including missing, duplicate, reordered or nonzero evidence), and the actual RC3 semantic-review JOB identity. The new 63-step and job-identity validators were independently exercised in an isolated Python execution with one valid and multiple invalid synthetic reports; the full revised 11-test module has **not** been executed against a complete local repository checkout in this environment. The real MVS result remains the acceptance authority. No AWS image or MVS success is claimed by this commit.
 
 TA.2 remains IN PROGRESS. TA.3/TA.7 fresh-recipient requirements, TA.4 human per-case sign-off, third-party source rights qualifications, and publication approval remain separate acceptance gates.
+
+
+## 22 November RC3 pre-stateful JCL-column refusal and correction
+
+The owner ran `python3 -B .../ta2-rc3-consolidated --run` on current
+GitHub `main` and received `RC3 REFUSED: JCL operands over column 71`.
+The attempt did **not** consume the permanent one-shot marker, initialize
+or mount `BC0003`, submit any JES job, or modify MVS datasets: the
+validation runs in `stage_body()` before `execute()` creates its
+stateful-attempt marker and before live preflight.
+
+Root cause was identified in the exact 12 canonical Git BCPL sources:
+each starts with 73-column `// ===...` comment separators. During
+`DD DATA,DLM=Z9` inline staging these lines are ordinary 80-column
+source data, but the former `cards()` validator indiscriminately applied
+the JCL column-71 operand rule to all lines beginning `//`.
+
+The corrected renderer tracks the `DD DATA,DLM=Z9` region through its
+exact `Z9` delimiter, retaining the 80-column source-record bound while
+applying column-71 checks only to actual JCL control statements.
+An orphan/missing in-stream delimiter is rejected. Two tracked regression
+tests cover 73- and 80-column source data, genuine overlong JCL,
+overwidth data and malformed delimiters. The exact validator algorithm
+passed **9/9 isolated executable positive/negative checks** in an
+assistant workspace under the repository workarea, including 17
+consecutive data sections. The complete revised 13-test module and
+real MVS tape/install/regression workflow were **not** executed in the
+assistant's workspace.
+
+The user may now rerun the original `--run` entry point once after
+pulling this correction. Existing `BC0002` remains immutable.
+RC3 production, installed execution, EXP/RP/CODE acceptance, TA.4 human
+signoff, and publication remain pending **actual MVS evidence**.
+**TA.2 remains IN PROGRESS.**
