@@ -105,3 +105,66 @@ MVS execution was performed in the assistant's isolated environment.
 The owner may safely retry the original guarded RC3 operation after
 updating to the new GitHub `main` commit. `BC0002` remains untouched.
 **TA.2 remains IN PROGRESS** pending real MVS evidence.
+
+
+## 22 November — MVS BC0003 write PASS (qualified), automatic demount, and approved TA.2 continuation
+
+The owner executed the corrected consolidated RC3 runner on actual MVS
+3.8J at GitHub `main` `fd2f7737`. **JOB 9359** passed its
+read-only MVS preflight (21 existing original source DCBs, 42 new
+staging/recipient datasets absent, `BC0003` unused, empty tape unit).
+**JOB 9360** completed all new staging and 16 member updates.
+**JOB 9361** completed the 21-position standard-labeled AWS write at
+RC=0000; independent HETMAP verification reported **21 labels** and
+**64 physical tape files**. The owner supplied immutable AWS SHA-256:
+
+`6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1`
+
+The original stateful runner then halted at `BC0003 disappeared after
+write`. The owner's independently reviewed, sealed evidence in
+`workarea/ta2-rc3-consolidated/20261122T202323Z-30995`
+demonstrates that Hercules unit `0480` was mounted immediately
+before JOB 9361, then became EMPTY after it. MVS unit `480` was
+`O` while mounted and `O-NRD` after the job. This is a normal
+final-step **tape-volume demount**, consistent with the write JCL
+omitting `RETAIN` on its final dataset; it is not an unsuccessful
+write. The owner's `sha256sum -c SHA256SUMS` reported all files
+**OK**, and the current AWS image still matched the exact original
+SHA-256. Original receipt `failure.json` documents the misleading
+halt, and the original production one-shot marker remains consumed.
+
+**Do not rerun `ta2-rc3-consolidated --run` or reinitialize,
+restage, rewrite, delete, or replace `BC0003`.** No RC3 restore,
+recipient inventory or installed MR10 execution had yet been attempted.
+
+The owner explicitly approved a **separate one-shot TA.2 readback,
+installation, and regression continuation**. The source-controlled
+`scripts/ta2-rc3-restore-continuation` reuses the exact original
+RC3 manifest, MVS reader and installed MRREGRES generator. It
+requires immutable original JES/HETMAP evidence, original marker,
+original image SHA, the exact JOB 9360/9361 ordered RC0000 and
+IEF142I results, fresh HETMAP validation, empty/ready 0480, and
+a new MVS read-only preflight proving 21 new recipient targets absent.
+Only after one explicit `Y` does it exclusively mark the distinct
+restore attempt, mount the **existing** `BC0003` image, submit one
+21-step `TA2R3RES`, verify 21 recipient DCBs on `TSO002`, use
+independent `LISTDS MEMBERS` to compare **all 146 PDS members**,
+execute canonical `TA2R3MR` with 63/63 JES+IEF142I RC0000,
+and compare 12/12 interpreted `TEST:`, `EXP:`, `RP:` and
+`CODE=0` against the actual MVS report. It accepts either
+mounted or automatically demounted tape after use, but requires
+unchanged AWS SHA and records all JES/HETMAP evidence in a separately
+sealed recipient workarea. Any stateful halt is **NO RETRY**.
+It never executes `hetinit`, source staging, a tape-write job,
+or a destructive cleanup.
+
+The exact continuation source was syntax-checked and its assistant-workspace
+isolated safety/negative/mock-MVS test module passed **10/10**.
+No complete GitHub checkout/MVS 3.8J was available in that assistant
+workspace, and **no actual RC3 restore or installed regression has
+yet been observed**. Human TA.4 per-case sign-off, TA.3/TA.7
+fresh-recipient requirements, redistribution-rights review, and
+release publication remain separately governed.
+
+**TA.2 remains IN PROGRESS** until actual continuation results are
+reviewed.
