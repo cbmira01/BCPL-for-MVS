@@ -1414,3 +1414,29 @@ AWS and original MVS 9343–9346 and review evidence remain untouched,
 and contain the earlier regression source version without `EXP:`.
 No RC2 rerun, publication, new VOLSER or TA.2 formal closure is authorized
 by this record. **TA.2 remains IN PROGRESS.**
+
+## TA.2 — RC3 consolidated release candidate promoted for MVS verification (22 November 2026)
+
+Following the owner-reported 12/12 MVS PASS of the EXP-enabled canonical
+MR10 source panel, the next reserved candidate is
+`BCPL-0.1.0-rc3` on a **new** standard-labeled AWS `BC0003`.
+The registry manifest SHA-256 is
+`b130e4a246cecb6d810f45febd945e3ed0e854164e83012899c86c730f365486`,
+with source revision `e910de51c19c09698be139e33084a90401511cc9`.
+The 21 logical datasets, 146 members, original DCB assignments, and
+Cambridge historical compiler source inclusion are preserved. The native
+Cambridge Compiler remains absent as a runnable native compiler.
+
+The owner-directed [RC3 unified execution plan](../../distribution/create-tape/ta2-rc3-consolidated-candidate-20261122.md)
+uses one guarded `ta2-rc3-consolidated --run` for new staging,
+21-dataset tape write, **direct** tape-to-recipient dataset installation,
+and installed 12-case MRREGRES with all printed TEST, EXP, RP and
+interpreted CODE=0 results. Separate RC3 `TA2R3S` and `TA2R3I`
+namespaces preserve the entire previously accepted RC2 environment.
+The operator must explicitly confirm once; an exclusive marker enforces
+no automatic retry. The implementation has **8/8 offline tests PASS**.
+There has been **no RC3 MVS operation or AWS production yet**, and
+no recipient acceptance, TA.4 human sign-off, formal march closure or
+publication is asserted. Continue from actual MVS feedback;
+**TA.2 remains IN PROGRESS.**
+

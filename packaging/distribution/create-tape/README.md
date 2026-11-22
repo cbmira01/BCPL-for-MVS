@@ -734,3 +734,20 @@ The original 21 inputs are accepted on MVS 3.8J (qualified). A combined Hercules
 For assistant/developer offline testing, run `python3 -B -m unittest discover -s packaging/distribution/create-tape/tests -p 'test_ta2_rc2_*.py' -q`. The 60 isolated tests were last run successfully on 21 November 2026; they do not replace MVS/JES execution.
 
 **No `BC0002` AWS write is authorized at present.** The approval file is intentionally absent; tape operations require a further owner decision. Historical Cambridge compiler source is archival-only and does not prove a native-running Cambridge Compiler or redistribution clearance.
+
+## TA.2 — Revised RC3 one-shot tape / recipient test preparation (22 November 2026)
+
+The [RC3 consolidation record](ta2-rc3-consolidated-candidate-20261122.md)
+reserves `BCPL-0.1.0-rc3` / `BC0003` in the authoritative registry,
+preserving the 21-dataset logical manifest and 146 selected PDS members.
+The new guarded `scripts/ta2-rc3-consolidated` has one operator-facing
+`--run` procedure: preflight, new staging with the 12 tested EXP-enabled
+BCPL members, regeneration of the release-specific bootstrap/installer,
+one new standard-label AWS write, direct tape restore into a separate
+recipient namespace, then `MRREGRES` and 12 printed
+`EXP:`/`RP:`/`CODE=` checks. One explicit Y activates no-retry.
+The original `BC0002` tape and RC2 datasets remain untouched. The RC3
+8-case offline test module PASS is a code check, **not** MVS acceptance:
+new stateful operations and all semantic results remain pending until
+the owner executes the new one-shot command and supplies JES evidence.
+

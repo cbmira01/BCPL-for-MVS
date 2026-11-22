@@ -1,0 +1,515 @@
+#!/usr/bin/env python3
+"""TA.2 RC3 one-shot MVS tape producer, direct installation and BCPL acceptance.
+
+Default: offline contract preview. --run: one operator-confirmed MVS attempt.
+Preserves BC0002, RC2 staging/readback/installation and all accepted evidence.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+import yaml
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+BASE = ROOT / 'packaging/distribution'
+SCRIPTS = BASE / 'create-tape/scripts'
+TAPES = ROOT / 'mvs-state/tape'
+WORK = ROOT / 'workarea'
+OUT = WORK / 'ta2-rc3-consolidated'
+MARKER = OUT / 'BC0003-one-shot.json'
+RC2 = BASE / 'manifest/releases/BCPL-0.1.0-rc2.yaml'
+RC3 = BASE / 'manifest/releases/BCPL-0.1.0-rc3.yaml'
+REGISTRY = BASE / 'registry/releases.yaml'
+DSPAL = ROOT / 'config/dspal.yaml'
+PANEL = ROOT / 'mr10-kit-compiler/tests/00-regression-panel/manifest.tsv'
+JCL = ROOT / 'mr10-kit-compiler/jcl/run-regression-tests.jcl'
+IMAGE = TAPES / 'bcpl-0.1.0-rc3-BC0003.aws'
+CANDIDATE = 'BCPL-0.1.0-rc3'
+VOLSER = 'BC0003'
+COMMIT = 'e910de51c19c09698be139e33084a90401511cc9'
+SHA_RC2 = '123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375'
+SRC = 'HERC02.BCPL.TA2RB.'
+STAGE = 'HERC02.BCPL.TA2R3S.'
+INSTALL = 'HERC02.BCPL.TA2R3I.'
+VOLUME = 'TSO002'
+JOBS = {'stage': 'TA2R3STG', 'write': 'TA2R3WR', 'restore': 'TA2R3RES',
+        'regression': 'TA2R3MR'}
+MEMBERS = ('INSTALL', 'DATASETS', 'RELEASE', 'RESTORE')
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(ok, reason):
+    if not ok:
+        raise Refusal(reason)
+
+
+def load(name, path):
+    need(path.is_file() and not path.is_symlink(), 'missing canonical dependency ' + path.name)
+    loader = SourceFileLoader(name, str(path))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'cannot load ' + path.name)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def check_git():
+    def git(*args):
+        cp = subprocess.run(['git', '-C', str(ROOT), *args], capture_output=True,
+                            check=False, timeout=25)
+        need(cp.returncode == 0, 'Git source provenance check failed')
+        return cp.stdout
+    need(git('branch', '--show-current').strip() == b'main', 'require GitHub main')
+    need(not git('status', '--porcelain', '--untracked-files=no').strip(),
+         'tracked checkout has local changes')
+    git('merge-base', '--is-ancestor', COMMIT, 'HEAD')
+    return git
+
+
+def cards(lines):
+    text = '\n'.join(lines) + '\n'
+    need(text.isascii() and all('\t' not in x and len(x) <= 80 for x in lines),
+         'not FB80-safe MVS records')
+    need(all(len(x) <= 71 for x in lines if x.startswith('//') and not x.startswith('//*')),
+         'JCL operands over column 71')
+    return text
+
+
+def in_data(text):
+    body = text.rstrip('\n').split('\n')
+    need(bool(body) and not any(line.startswith('Z9') for line in body),
+         'data delimiter collision')
+    return ['//SYSUT1 DD DATA,DLM=Z9', *body, 'Z9']
+
+
+def source_rows(manifest, cfg):
+    cases = [line.split('\t') for line in PANEL.read_text().splitlines()
+             if line and not line.startswith('#')]
+    mapping = cfg['datasets']['MR10_TESTS']['members']
+    selected = manifest['datasets'][9]['members']
+    result = []
+    for row in cases:
+        need(len(row) == 7 and row[-1] == '0', 'regression manifest drift')
+        matches = [member for member, path in mapping.items() if path == row[2]]
+        need(len(matches) == 1 and matches[0] in selected,
+             'missing unique selected MR10 source member ' + row[0])
+        path = ROOT / row[2]
+        need(path.is_file() and not path.is_symlink(), 'missing BCPL source ' + row[0])
+        body = path.read_text('ascii')
+        need(body.count('WRITEF("TEST:') == 1 and 'WRITEF("EXP:' in body,
+             'new regression source lacks TEST/EXP literals: ' + row[0])
+        need(all(len(x) <= 80 for x in body.splitlines()), 'BCPL FB80 overflow')
+        result.append((matches[0], row[2], body))
+    need(len(result) == 12 and len({x[0] for x in result}) == 12,
+         'not twelve distinct BCPL source replacements')
+    return result
+
+
+def materials(manifest, boot):
+    rows = manifest['datasets']
+    raw = boot.installer_members(manifest, rows[:20])
+    raw['INSTALL'] = raw['INSTALL'].replace('ALL 18 TARGET DSNS', 'ALL 19 TARGET DSNS')
+    raw['DATASETS'] = raw['DATASETS'].rstrip('\n') + ('\nBCPL.BT0021 -> ' +
+                   rows[20]['target_dsn_template'].replace('{HLQ}', '<HLQ>') + '\n')
+    # Retain the accepted 18-step template and add the selected Cambridge
+    # historical-source PDS as the nineteenth recipient IEBCOPY step.
+    restore = raw['RESTORE'].splitlines()
+    need(restore[-1] == '//' and restore.count(' COPY OUTDD=OUTPDS,INDD=INTAPE') == 18,
+         'accepted installer RESTORE template changed')
+    restore.pop()
+    restore.extend([
+        '//R0021 EXEC PGM=IEBCOPY,REGION=512K,COND=(0,NE)',
+        '//SYSPRINT DD SYSOUT=*',
+        '//INTAPE DD DSN=BCPL.BT0021,UNIT=<TAPE>,',
+        '//            VOL=SER=BC0003,LABEL=(21,SL),DISP=OLD',
+        '//OUTPDS DD DSN=<HLQ>.BCPL.CAMBRIDG.SOURCE,',
+        '//            UNIT=<DASD>,SPACE=(TRK,(<P>,<S>,<D>)),',
+        '//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,',
+        '//            BLKSIZE=800),DISP=(NEW,CATLG,DELETE)',
+        '//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+        '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+        '//SYSIN DD *', ' COPY OUTDD=OUTPDS,INDD=INTAPE', '/*', '//'])
+    raw['RESTORE'] = cards(restore)
+    raw['BT0001'] = boot.bootstrap(manifest, rows)
+    need('BC0003' in raw['BT0001'] and 'BCPL.BT0021' in raw['RESTORE'] and
+         all('BC0002' not in body and '0.1.0-rc2' not in body for body in raw.values()),
+         'revised bootstrap still mentions original candidate')
+    return raw
+
+
+def plan():
+    rc2 = yaml.safe_load(RC2.read_bytes())
+    raw = RC3.read_bytes()
+    m = yaml.safe_load(raw)
+    registry = yaml.safe_load(REGISTRY.read_bytes())
+    cfg = yaml.safe_load(DSPAL.read_bytes())
+    need(m['schema_version'] == 1 and m['phase'] == 'candidate' and
+         m['release'] == dict(rc2['release'], version='0.1.0-rc3',
+                              candidate_id=CANDIDATE, source_commit=COMMIT) and
+         m['volume'] == dict(rc2['volume'], volser=VOLSER,
+                             registry_reservation=CANDIDATE) and
+         m['datasets'] == rc2['datasets'] and len(m['datasets']) == 21,
+         'RC3 manifest must preserve exact RC2 selection and scope')
+    candidates = registry['candidates']
+    need(registry.get('schema_version') == 1 and len(candidates) == 3 and
+         candidates[-1] == {'candidate_id': CANDIDATE, 'version': '0.1.0-rc3',
+                            'source_commit': COMMIT, 'volser': VOLSER,
+                            'manifest_sha256': digest(raw), 'state': 'reserved'} and
+         len({x['volser'] for x in candidates}) == 3,
+         'RC3 registry reservation or manifest checksum changed')
+    preview = load('ta2r3preview', SCRIPTS / 'ta2-rc2-producer-preview')
+    renderer = load('ta2r3renderer', SCRIPTS / 'ta2-offline')
+    r = load('ta2r3readback', SCRIPTS / 'ta2-rc2-readback-plan')
+    boot = load('ta2r3bootstrap', SCRIPTS / 'ta2-bootstrap-installer')
+    p = preview.source_plan(yaml.safe_load(preview.RC1.read_bytes()), rc2)
+    p['release'] = m['release']
+    p['volume'] = m['volume']
+    for index, row in enumerate(p['datasets'], 1):
+        row['producer_source_dsn'] = STAGE + f'BT{index:04d}'
+    rows = r.rows(p)
+    original_rows = [dict(row) for row in rows]
+    for row in rows:
+        i = row['n']
+        row['source'] = SRC + f'BT{i:04d}'
+        row['stage'] = STAGE + f'BT{i:04d}'
+        row['target'] = (INSTALL + ('BOOT' if i == 1 else 'INSTALL') if i < 3 else
+                         INSTALL + m['datasets'][i-1]['target_dsn_template'][len('{HLQ}.BCPL.'):])
+    need(len({x['target'] for x in rows}) == 21 and
+         all(len(x['target']) <= 44 for x in rows), 'unsafe RC3 recipient namespace')
+    changes = source_rows(m, cfg)
+    items = materials(m, boot)
+    writer = renderer.render_write_jcl(p)
+    reader = r.render(original_rows, VOLUME).replace('BC0002', VOLSER)
+    for row in rows:
+        original_target = SRC + f'BT{row["n"]:04d}'
+        need(reader.count(original_target) == 1, 'RC2 reader output position drift')
+        reader = reader.replace(original_target, row['target'])
+    regression = load('ta2r3install', BASE / 'install-from-tape/scripts/ta2-rc2-acceptance')
+    regress = regression.regression_body(JCL.read_text('ascii')).replace(
+        'HERC02.BCPL.TA2INS.', INSTALL)
+    need(writer.count('DSN=BCPL.BT') == 21 and writer.count(STAGE) == 21 and
+         reader.count('DISP=(NEW,CATLG,DELETE)') == 21 and
+         reader.count('VOL=(PRIVATE,RETAIN,SER=BC0003)') == 21 and regress.count(INSTALL + 'MR10KIT.') >= 40 and
+         all('BC0002' not in x for x in (writer, reader, regress)),
+         'tape/recipient/regression JCL retarget failed')
+    return rows, changes, items, writer, reader, regress
+
+
+def stage_body(rows, changes, boot):
+    lines = ['//* TA.2 RC3: COPY RC2 READBACK TO NEW STAGING; NEVER CHANGE RC2.']
+    for row in rows:
+        i = row['n']
+        d = row['dcb']; p, s, directory = row['space']
+        lines.extend([f'//S{i:04d} EXEC PGM={"IEBGENER" if i == 1 else "IEBCOPY"},REGION=512K' +
+                      ('' if i == 1 else ',COND=(0,NE)'), '//SYSPRINT DD SYSOUT=*'])
+        if i == 1:
+            lines += ['//SYSIN DD DUMMY', *in_data(boot['BT0001'])]
+        else:
+            lines += [f'//INPDS DD DSN={row["source"]},DISP=SHR']
+        lines += [f'//{"SYSUT2" if i == 1 else "OUTPDS"} DD DSN={row["stage"]},',
+                  '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,',
+                  '//            VOL=SER=TSO002,',
+                  f'//            SPACE=(TRK,({p},{s}' + (f',{directory})),' if i > 1 else ')),'),
+                  f'//            DCB=(DSORG={d["dsorg"]},RECFM={d["recfm"]},'
+                  f'LRECL={d["lrecl"]},BLKSIZE={d["blksize"]})']
+        if i > 1:
+            lines += ['//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                      '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                      '//SYSIN DD *', ' COPY OUTDD=OUTPDS,INDD=INPDS', '/*']
+    updates = [(f'B{i:04d}', STAGE + 'BT0002(' + member + ')', boot[member])
+               for i, member in enumerate(MEMBERS, 1)]
+    updates += [(f'E{i:04d}', STAGE + 'BT0010(' + member + ')', text)
+                for i, (member, _, text) in enumerate(changes, 1)]
+    for step, dsn, content in updates:
+        lines += [f'//{step} EXEC PGM=IEBGENER,REGION=512K,COND=(0,NE)',
+                  '//SYSPRINT DD SYSOUT=*', '//SYSIN DD DUMMY',
+                  *in_data(content), f'//SYSUT2 DD DSN={dsn},DISP=SHR']
+    lines.append('//')
+    result = cards(lines)
+    need(result.count(' EXEC PGM=') == 37 and
+         result.count('DISP=(NEW,CATLG,DELETE)') == 21 and
+         result.count('DLM=Z9') == 17 and
+         'TA2STG.' not in result and 'TA2INS.' not in result,
+         'stage JCL count/safety contract altered')
+    return result
+
+
+def accepted_rc2():
+    old = load('ta2r3original', SCRIPTS / 'ta2-rc2-readback-plan')
+    need(old.original_image() == SHA_RC2, 'original BC0002 image changed')
+    acceptance = load('ta2r3receipt', BASE / 'install-from-tape/scripts/ta2-rc2-acceptance')
+    acceptance.accepted_readback()  # replay sealed 9343 receipt
+    return True
+
+
+def exclusive(path, data):
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, 'O_NOFOLLOW', 0)
+    with os.fdopen(os.open(path, flags, 0o600), 'wb') as f:
+        f.write(data); f.flush(); os.fsync(f.fileno())
+
+
+def artifact(folder, name, data):
+    exclusive(folder / name, data.encode('utf-8') if isinstance(data, str) else data)
+
+
+def run_command(folder, key, command, timeout=120):
+    cp = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+                        check=False, timeout=timeout)
+    artifact(folder, key + '.txt', cp.stdout + ('\n' + cp.stderr if cp.stderr else ''))
+    need(cp.returncode == 0 and bool(cp.stdout), key + ': host command failed')
+    return cp.stdout
+
+
+def mvs_job(core, cfg, folder, key, name, body, expected):
+    deck = cards(core.authenticated_job_card(cfg, name, 'TA2 RC3', False)) + body
+    need(all(len(x) <= 80 for x in deck.splitlines()), 'authenticated MVS deck too wide')
+    old, env = tempfile.tempdir, os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder); os.environ['TMPDIR'] = str(folder)
+        job, summary = core.submit_and_wait(cfg, deck, max_rc=0,
+                                             cursor_file=folder / (key + '-cursor.json'))
+        artifact(folder, key + '-summary.txt', summary)
+        report = core.job_report(job, cursor_file=folder / (key + '-cursor.json'))
+        artifact(folder, key + '-report.txt', report)
+    finally:
+        tempfile.tempdir = old
+        if env is None: os.environ.pop('TMPDIR', None)
+        else: os.environ['TMPDIR'] = env
+    need(re.search(rf'(?m)^JOB\s+{job}\s+{name}\s*$', summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         key + ': MVS job did not finish cleanly')
+    found = re.findall(r'(?m)^([A-Z][0-9]{4})\s+(IEBGENER|IEBCOPY)\s+RC=(\d{4})\s*$', summary)
+    if expected:
+        need(found == [(x, p, '0000') for x, p in expected],
+             key + ': MVS utility steps missing/nonzero')
+        system_rc = re.findall(
+            rf'(?m)^IEF142I\s+{name}\s+([A-Z][0-9]{{4}})\s+-\s+'
+            r'STEP WAS EXECUTED\s+-\s+COND CODE (\d{4})\s*$', report)
+        need(system_rc == [(x, '0000') for x, _ in expected],
+             key + ': MVS IEF142I step evidence incomplete/nonzero')
+    need(re.search(r'\b(?:ABEND|IEF450I|IEF472I|IEA995I)\b', report, re.I) is None,
+         key + ': MVS system reports an ABEND')
+    return job, report, summary
+
+
+def existing_media(folder, prod):
+    need(not IMAGE.exists() and not IMAGE.is_symlink(), 'BC0003 image already exists')
+    files = sorted(TAPES.iterdir())
+    need(len(files) <= 64, 'unexpected tape directory inventory size')
+    for i, p in enumerate(files):
+        if p.name == '.gitkeep': continue
+        need(p.is_file() and not p.is_symlink() and p.suffix.lower() in ('.aws','.het'),
+             'unknown object in tape directory')
+        report = run_command(folder, f'media-{i:03d}',
+                             ['docker', 'exec', 'mvs38j', 'hetmap', '-l', '/tk5/tape/' + p.name])
+        need(prod.volser_from_hetmap(report) != VOLSER, 'BC0003 already used by ' + p.name)
+
+
+def drive(folder, prod, media):
+    h = run_command(folder, f'drive-h-{len(list(folder.glob("drive-h-*")))}',
+                    ['tools/mvs/mvs-console', 'tape', 'status', '480'])
+    m = run_command(folder, f'drive-m-{len(list(folder.glob("drive-m-*")))}',
+                    ['tools/mvs/mvs-console', 'mvs', 'tapes'])
+    matches = re.findall(r'\bHHC02279I\s+(?:[0-9A-Fa-f]+:)?0480\s+3420\s+(.*)', h)
+    need(len(matches) == 1, 'Hercules tape 0480 ambiguous')
+    detail = matches[0]
+    need('busy' not in detail.lower(), 'tape drive busy')
+    if re.match(r'\*\s', detail): status = 'EMPTY'
+    elif IMAGE.name in detail: status = 'RC3'
+    elif 'bcpl-0.1.0-rc2-BC0002.aws' in detail: status = 'RC2'
+    else: raise Refusal('foreign tape currently mounted on 0480')
+    state = media.parse_mvs(m)
+    need(state == ('O-NRD' if status == 'EMPTY' else 'O'),
+         'Hercules / MVS tape status conflict')
+    return status
+
+
+def catalog(core, cfg, folder, rows):
+    names = [r['source'] for r in rows] + [r['stage'] for r in rows] + [r['target'] for r in rows]
+    deck = core.stat_deck(cfg, names)
+    old, env = tempfile.tempdir, os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder); os.environ['TMPDIR'] = str(folder)
+        job, summary = core.submit_and_wait(cfg, deck, max_rc=8,
+                                             cursor_file=folder / 'preflight-cursor.json')
+        artifact(folder, 'preflight-summary.txt', summary)
+        report = core.job_report(job, cursor_file=folder / 'preflight-cursor.json')
+        artifact(folder, 'preflight-report.txt', report)
+    finally:
+        tempfile.tempdir = old
+        if env is None: os.environ.pop('TMPDIR',None)
+        else: os.environ['TMPDIR'] = env
+    for row in rows:
+        need(core.dataset_missing(report, row['stage']) and
+             core.dataset_missing(report, row['target']),
+             'revised staging or recipient already exists')
+        src = core.extract_listds_block(report, row['source'])
+        actual = core.parse_listds(src) if src else {}
+        d = row['dcb']
+        expected = {'volume': VOLUME, 'dsorg': d['dsorg'], 'recfm': d['recfm'],
+                    'lrecl': str(d['lrecl']), 'blksize': str(d['blksize'])}
+        need(not core.dataset_missing(report, row['source']) and
+             all(actual.get(k) == v for k, v in expected.items()),
+             'RC2 source DCB/volume differs: ' + row['source'])
+    return job
+
+
+def seal(folder):
+    lines = []
+    for p in sorted(folder.iterdir()):
+        need(p.is_file() and not p.is_symlink(), 'unsafe evidence member')
+        lines.append(digest(p.read_bytes()) + '  ' + p.name + '\n')
+    exclusive(folder / 'SHA256SUMS', ''.join(lines).encode('ascii'))
+
+
+def execute():
+    need(sys.stdin.isatty(), 'stateful operation requires interactive operator')
+    need(WORK.is_dir() and TAPES.is_dir() and not WORK.is_symlink() and
+         not TAPES.is_symlink() and not OUT.is_symlink(), 'unsafe repository workarea/tape')
+    need(not MARKER.exists() and not MARKER.is_symlink(), 'RC3 one-shot already consumed; NO RETRY')
+    git = check_git()
+    rows, changes, boot, writer, reader, regression = plan()
+    # The revised BCPL sources must be byte-identical to the owner-tested
+    # release commit; do not permit silent post-regression source drift.
+    for member, relative, body in changes:
+        need(git('show', COMMIT + ':' + relative) == body.encode('ascii'),
+             'source differs from tested Git revision: ' + member)
+    staging = stage_body(rows, changes, boot)
+    accepted_rc2()
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    folder = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    marked = False
+    try:
+        core = load('ta2r3core', ROOT / 'tools/datasets/dspal-core.py')
+        prod = load('ta2r3producer', SCRIPTS / 'ta2-rc2-produce-once')
+        media = load('ta2r3media', SCRIPTS / 'ta2-rc2-media-preflight')
+        aws = load('ta2r3aws', SCRIPTS / 'ta2-rc2-aws-review')
+        reviewer = load('ta2r3review', BASE / 'install-from-tape/scripts/ta2-rc2-mr10-review')
+        cfg = core.load_config()
+        need(cfg['mvs']['hlq'] == 'HERC02', 'unexpected MVS identity')
+        core.require_reader_ready(cfg)
+        prod.check_docker(folder)
+        existing_media(folder, prod)
+        state = drive(folder, prod, media)
+        need(state in ('EMPTY', 'RC2'), 'cannot displace mounted RC3')
+        job = catalog(core, cfg, folder, rows)
+        print(f'RC3 MVS PREFLIGHT PASS: JOB {job}; 21 source DCBs, 42 new targets absent, '
+              f'BC0003 unused, tape 0480 {state}.')
+        if input('Produce BC0003, restore/install 21 datasets, run 12 BCPL cases ONCE? [y/N]: ').strip().upper() != 'Y':
+            print('RC3 declined; no staging, installation or tape write.')
+            artifact(folder, 'result.json', json.dumps({'status': 'DECLINED_NO_STATEFUL_WORK'})+'\n')
+            seal(folder)
+            return 0
+        exclusive(MARKER, (json.dumps({'status':'ONE_SHOT_CONSENT_CONSUMED_NO_RETRY',
+             'candidate': CANDIDATE, 'volser': VOLSER,
+             'evidence':folder.relative_to(ROOT).as_posix()}, sort_keys=True)+'\n').encode())
+        marked = True
+        expected_stage = [(f'S{i:04d}', 'IEBGENER' if i == 1 else 'IEBCOPY')
+                          for i in range(1,22)]
+        expected_stage += [(f'B{i:04d}', 'IEBGENER') for i in range(1,5)]
+        expected_stage += [(f'E{i:04d}', 'IEBGENER') for i in range(1,13)]
+        st, _, _ = mvs_job(core, cfg, folder, 'stage', JOBS['stage'], staging, expected_stage)
+        print(f'RC3 STAGING PASS: JOB {st}; 21 datasets + 16 updated members.')
+        state = drive(folder, prod, media)
+        if state == 'RC2':
+            run_command(folder, 'unmount-rc2',
+                        ['tools/mvs/mvs-console', '--yes', 'tape', 'unmount', '480'])
+            need(drive(folder, prod, media) == 'EMPTY', 'RC2 release not verified')
+        else: need(state == 'EMPTY', 'unexpected tape at stage end')
+        exclusive(IMAGE, b'')
+        run_command(folder, 'initialize', ['docker','exec','--user',
+          f'{os.getuid()}:{os.getgid()}', 'mvs38j','hetinit','-d','-i',
+          '/tk5/tape/'+IMAGE.name,VOLSER])
+        run_command(folder, 'mount', ['tools/mvs/mvs-console','--yes','tape','mount','480',IMAGE.name])
+        need(drive(folder,prod,media) == 'RC3', 'BC0003 not mounted')
+        wr, _, _ = mvs_job(core,cfg,folder,'write',JOBS['write'],writer,
+            [(f'T{i:04d}', 'IEBGENER' if i == 1 else 'IEBCOPY') for i in range(1,22)])
+        labels = run_command(folder, 'aws-labels',
+                    ['docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+IMAGE.name])
+        files = run_command(folder, 'aws-files',
+                    ['docker','exec','mvs38j','hetmap','-f','/tk5/tape/'+IMAGE.name])
+        aws.VOLSER = VOLSER
+        aws.evaluate(labels, files)  # independent label, ordinal, 64-file audit
+        with IMAGE.open('rb') as f: tape_sha = hashlib.file_digest(f,'sha256').hexdigest()
+        print(f'RC3 TAPE PASS: JOB {wr}, 21 labels, 64 physical files, SHA256 {tape_sha}.')
+        need(drive(folder,prod,media) == 'RC3', 'BC0003 disappeared after write')
+        run_command(folder, 'rewind-unmount',
+                    ['tools/mvs/mvs-console','--yes','tape','unmount','480'])
+        need(drive(folder,prod,media) == 'EMPTY', 'tape 0480 not empty after release')
+        run_command(folder, 'rewind-remount',
+                    ['tools/mvs/mvs-console','--yes','tape','mount','480',IMAGE.name])
+        need(drive(folder,prod,media) == 'RC3', 'BC0003 remount failed')
+        rb, _, _ = mvs_job(core,cfg,folder,'restore',JOBS['restore'],reader,
+            [(f'R{i:04d}', 'IEBGENER' if i == 1 else 'IEBCOPY') for i in range(1,22)])
+        print(f'RC3 RESTORE/INSTALL PASS: JOB {rb}, 21 new recipient datasets.')
+        mr, report, summary = mvs_job(core,cfg,folder,'regression',JOBS['regression'],regression,[])
+        acceptance = load('ta2r3casecheck',BASE/'install-from-tape/scripts/ta2-rc2-acceptance')
+        # Existing validator checks twelve executed Rxx MVS steps; identity now differs.
+        renamed = re.sub(rf'(?m)^JOB\s+{mr}\s+{JOBS["regression"]}\s*$',
+                         f'JOB {mr} TA2MR10',summary)
+        acceptance.regression_steps(mr,renamed)
+        result = reviewer.inspect(report, reviewer.panel())
+        need(result['exp_contract_met'] and result['golden_rp_and_code_match'] and
+             result['status'] == 'EXP_RP_CODE_COMPARISON_PASS_HUMAN_SIGNOFF_PENDING',
+             'BCPL EXP/RP/CODE semantic contract FAILED; inspect MVS report')
+        artifact(folder,'semantic-review.json',json.dumps(result,indent=2)+'\n')
+        artifact(folder,'result.json',json.dumps({'status':'RC3_MVS_RESTORE_INSTALL_USE_PASS_HUMAN_REVIEW_PENDING',
+                'candidate':CANDIDATE, 'volser':VOLSER, 'aws_sha256':tape_sha,
+                'mvs_jobs':{'preflight':job,'stage':st,'write':wr,'restore':rb,'regression':mr},
+                'installed_datasets':21,'bcpl_cases':12,'exp_rp_code':True,
+                'human_signoff':'PENDING','publication_authorized':False},indent=2)+'\n')
+        seal(folder)
+        print(f'RC3 MVS ACCEPTANCE: 12/12 EXP/RP/CODE PASS; JOB {mr}. HUMAN SIGNOFF PENDING.')
+        print('Evidence: '+folder.relative_to(ROOT).as_posix())
+        return 0
+    except Exception as exc:
+        try:
+            artifact(folder,'failure.json',json.dumps({'status':'HALTED_NO_RETRY' if marked else 'PREFLIGHT_HALTED',
+                                                       'reason':str(exc)})+'\n')
+            seal(folder)
+        except (OSError,Refusal): pass
+        print('RC3 HALTED: '+str(exc),file=sys.stderr)
+        print('Evidence: '+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        if marked: print('NO RETRY: preserve BC0003 image, datasets and JES reports.',file=sys.stderr)
+        return 2
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--run',action='store_true',help='one guarded stateful MVS attempt')
+    args = p.parse_args(argv)
+    try:
+        if args.run:return execute()
+        rows, changes, boot, writer, reader, regression = plan()
+        deck = stage_body(rows,changes,boot)
+        print(f'RC3 PLAN PASS: 21 datasets, {len(changes)} EXP sources, 37 stage steps, '
+              f'21 tape writes, 21 direct installs, 12 interpreted BCPL cases; '
+              f'JCL SHA256 {digest(deck.encode())}; NO MVS operation.')
+        return 0
+    except Exception as exc:
+        print('RC3 REFUSED: '+str(exc),file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
