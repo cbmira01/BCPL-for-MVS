@@ -793,3 +793,35 @@ assistant-workspace source, with **10/10 isolated tests PASS**
 (positive and refusal cases, including full mocked orchestration).
 Actual MVS restore/installed-execution results are pending. See the
 [RC3 acceptance and recovery record](ta2-rc3-consolidated-candidate-20261122.md).
+
+
+## TA.2 — BC0003 restored JOB 9363; recipient DCB check under investigation
+
+The operator reported successful MVS `TA2R3RES` JOB **9363**:
+all 21 IEBGENER/IEBCOPY steps completed RC=0000. The isolated
+one-shot restore continuation halted at the first follow-up MVS
+`LISTDS` DCB/volume comparison for
+`HERC02.BCPL.TA2R3I.BOOT`, after the operator's `Y`.
+The original continuation is **consumed; never rerun**. No directory
+acceptance or installed MR10 execution has been established.
+
+The new `scripts/ta2-rc3-recipient-diagnostic --live` submits
+**only two read-only MVS TSO inquiries**: `LISTDS LABEL` for all
+21 existing recipients and `LISTDS MEMBERS` for all 20 restored
+PDSes. It first replays and verifies the original sealed
+`workarea/ta2-rc3-restore-continuation/20261122T232532Z-31994`
+evidence, original one-shot marker and exact 21-step JES/IEF142I
+record, plus immutable BC0003 AWS checksum. It reports the exact
+expected-versus-actual BOOT DCB and all recipient discrepancies,
+including a bounded raw LISTDS extract, and checks the 146 selected
+PDS member identities. New evidence is independently sealed under
+`workarea/ta2-rc3-recipient-diagnostic/`. There is no mount,
+readback, RESTORE, `hetinit`, tape writing or BCPL execution.
+
+The source and ten tests were executed **10/10 PASS** in the
+assistant's isolated `workarea` repository skeleton; checked GitHub
+blob identities match those tested. Actual MVS data must determine
+whether there is a DCB difference or a LISTDS parsing issue.
+No change to the release DCB contract, no new stateful recovery
+approval, and no installed acceptance is inferred from the
+owner-reported halt. **TA.2 IN PROGRESS.**
