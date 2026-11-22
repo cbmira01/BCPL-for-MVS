@@ -45,3 +45,7 @@ The installation is a same-system pilot, not a clean-target TA.3/TA.7 PASS.
 No new MVS operation is claimed.
 
 The first operator invocation of `--run` refused at a redundant Git approval-file gate (RC=2, no MVS operation or one-shot marker). The revised procedure removes that gate; the explicit `[y/N]` response is the sole stateful authorization and the durable no-retry marker is created only after `Y`. No stateful MVS installation result has been reported.
+
+## Post-run semantic review of installed MR10 (read-only)
+
+Owner-reported JOBS **9344** (21 source DCBs and 21 absent targets PASS), **9345** (21 installed datasets, RC=0000) and **9346** (`MRREGRES` 12 execution steps, JES RC=0000) completed on 22 November 2026; no rerun is permitted. Run the **same** `scripts/ta2-rc2-acceptance` entry point with **`--review`** to inspect its original SHA-256-sealed JOB 9346 report; this performs no MVS submission. It writes only a fresh sealed semantic comparison under repository `workarea/`. Its golden `RP:` and interpreted `CODE=` comparison is diagnostic; current BCPL tests do **not** emit the owner-approved `EXP:` lines, and individual human sign-off remains pending. See [consolidated acceptance record](ta2-rc2-consolidated-acceptance-20261121.md).

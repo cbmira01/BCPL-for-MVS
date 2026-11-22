@@ -47,3 +47,9 @@ outputs still require 12-case manual `EXP:/RP:/CODE=` review. The
 37/37 local install-from-tape tests (16 in the acceptance module) passed;
 new consent/decline and one-shot guards were exercised synthetically.
 No claim of a new MVS JOB or semantic PASS is made by this fix.
+
+## Owner-reported consolidated MVS outcome and saved semantic review
+
+22 November 2026: the owner reported `--run` RC=0: JOB **9344** (21/21 restored DCBs; 21 new installation targets absent), **9345** (21 dataset installation copies successful), and **9346** (`MRREGRES`, installed MR10, 12/12 interpreted execution steps at MVS RC=0000). Evidence: `workarea/ta2-rc2-install-acceptance/20261122T133139Z-29894`. The results prove a qualified isolated installation-and-usage checkpoint; they do not themselves establish case-by-case BCPL result equality or all release requirements.
+
+`--review`, on the **same** `ta2-rc2-acceptance` command, now reads and validates the original sealed evidence without touching MVS or repeating any job. Its ordered 12-case `TEST:`/`RP:` and interpreted `CODE=` comparison uses the canonical manifest, BCPL sources and `.expected` golden files. Output is a separate sealed JSON review record. This diagnostic check cannot replace the owner-approved `EXP:` + actual `RP:` display and human disposition: the present BCPL regression sources contain no `EXP:` lines. All 14 new synthetic reviewer tests passed; actual JOB 9346 semantics are pending review of its saved report. No publication or TA.3/TA.7 acceptance is implied.

@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""Review sealed TA.2 JOB 9346 MVS output against canonical MR10 golden files.
+
+Reads accepted saved JES evidence only; no submission, dataset change, media I/O,
+or modification of the original evidence. The 16 Nov EXP/manual contract is NOT
+superseded by this diagnostic comparison.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+BASE = ROOT / 'packaging/distribution'
+WORK = ROOT / 'workarea'
+OUTPUT = WORK / 'ta2-rc2-install-acceptance'
+MARKER = OUTPUT / 'BC0002-install-invoked.json'
+PRODUCER = BASE / 'create-tape/scripts/ta2-rc2-produce-once'
+MANIFEST = ROOT / 'mr10-kit-compiler/tests/00-regression-panel/manifest.tsv'
+JCL = ROOT / 'mr10-kit-compiler/jcl/run-regression-tests.jcl'
+EXPECTED = ('scalar-vector', 'bytes', 'integer-arithmetic', 'branches-loops',
+            'nested-recursion', 'separate-module', 'basic-library',
+            'library-scalars', 'library-strings', 'library-line-io',
+            'getvec-reuse', 'basic-coroutine')
+CODE = re.compile(r'EXECUTION CYCLES\s*=.*?,\s*CODE\s*=\s*(-?\d+)', re.I)
+TITLE = re.compile(r'\bWRITEF\s*\(\s*"TEST:\s*([^"\r\n]*?)\*N"', re.I)
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(check, explanation):
+    if not check:
+        raise Refusal(explanation)
+
+
+def load(name, path):
+    need(path.is_file() and not path.is_symlink(), 'canonical dependency missing: ' + path.name)
+    loader = SourceFileLoader(name, str(path))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'cannot load ' + path.name)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def source_file(relative):
+    need(relative and not relative.startswith('/') and '..' not in relative.split('/'),
+         'unsafe manifest path')
+    path = ROOT / relative
+    need(path.is_file() and not path.is_symlink() and
+         path.resolve().is_relative_to(ROOT.resolve()), 'canonical manifest file missing')
+    return path
+
+
+def panel():
+    jcl = JCL.read_text(encoding='ascii')
+    rows = []
+    for raw in MANIFEST.read_text(encoding='utf-8').splitlines():
+        if not raw or raw.startswith('#'):
+            continue
+        fields = raw.split('\t')
+        need(len(fields) == 7, 'regression manifest field count changed')
+        name, _category, src, _extra, _args, golden, exit_code = fields
+        need(len(rows) < 12 and name == EXPECTED[len(rows)] and exit_code == '0',
+             'MR10 regression panel order or interpreted code changed')
+        match = TITLE.search(source_file(src).read_text(encoding='ascii'))
+        need(match is not None, 'BCPL TEST title absent: ' + name)
+        title = match.group(1).strip()
+        records = [line.rstrip() for line in source_file(golden).read_text(
+            encoding='utf-8').splitlines()]
+        need(records and all(line.startswith('RP:') for line in records),
+             'golden RP records invalid: ' + name)
+        need(f'//* EXECUTE CASE {len(rows)+1:02d}: {name}' in jcl,
+             'MVS regression JCL order differs: ' + name)
+        rows.append({'step': f'R{len(rows)+1:02d}', 'name': name, 'title': title,
+                     'golden': records, 'expected_code': int(exit_code)})
+    need(len(rows) == 12, 'MR10 panel is not exactly 12 cases')
+    return rows
+
+
+def read_receipt(producer):
+    need(MARKER.is_file() and not MARKER.is_symlink(),
+         'original installation attempt marker missing')
+    marker = json.loads(MARKER.read_text(encoding='utf-8'))
+    need(marker.get('status') == 'OPERATOR_CONFIRMED_ONE_SHOT_INSTALL_NO_RETRY'
+         and marker.get('readback_job') == 9343 and marker.get('datasets') == 21
+         and marker.get('install_job') == 'TA2INST'
+         and marker.get('regression_job') == 'TA2MR10',
+         'unexpected one-shot installation marker')
+    relative = marker.get('evidence')
+    need(type(relative) is str and re.fullmatch(
+         r'workarea/ta2-rc2-install-acceptance/[0-9]{8}T[0-9]{6}Z-[0-9]+', relative),
+         'original evidence folder identity mismatch')
+    folder = ROOT / relative
+    need(folder.resolve().is_relative_to(OUTPUT.resolve()),
+         'original evidence folder outside repository workarea')
+    files = producer.sealed(folder, {
+        'result.json', 'catalog-summary.txt', 'catalog-report.txt',
+        'install-summary.txt', 'install-report.txt',
+        'regression-summary.txt', 'regression-report.txt'})
+    result = json.loads(files['result.json'])
+    need(result == {
+        'status': 'INSTALL_AND_REGRESSION_JES_COMPLETE_SEMANTIC_REVIEW_PENDING',
+        'readback_job': 9343, 'catalog_job': 9344,
+        'install_job': 9345, 'regression_job': 9346,
+        'new_datasets': 21, 'mr10_cases': 12,
+        'semantic_case_review_completed': False, 'publication_authorized': False},
+        'saved MVS JOBS 9344–9346 receipt identity changed')
+    # Cross-check recorded summary using the canonical MVS step validator;
+    # it does not by itself establish BCPL semantics.
+    acceptance = load('ta2_review_install_acceptance',
+                      BASE / 'install-from-tape/scripts/ta2-rc2-acceptance')
+    acceptance.regression_steps(9346, files['regression-summary.txt'].decode('utf-8'))
+    return folder, files['regression-report.txt'].decode('utf-8', errors='replace')
+
+
+def line_value(line, prefix):
+    pos = line.find(prefix)
+    return line[pos:].rstrip() if pos >= 0 else None
+
+
+def inspect(report, cases):
+    """Compare ordered MVS print records, flag missing EXP without inventing it."""
+    seen = []
+    orphan = []
+    current = None
+    for raw in report.splitlines():
+        if (value := line_value(raw, 'TEST:')) is not None:
+            current = {'title': value[5:].strip(), 'rp': [], 'exp': [], 'codes': []}
+            seen.append(current)
+            continue
+        if (value := line_value(raw, 'RP:')) is not None:
+            if current is None:
+                orphan.append('RP')
+            else:
+                current['rp'].append(value)
+        if (value := line_value(raw, 'EXP:')) is not None:
+            if current is None:
+                orphan.append('EXP')
+            else:
+                current['exp'].append(value)
+        match = CODE.search(raw)
+        if match is not None and current is not None:
+            current['codes'].append(int(match.group(1)))
+    results = []
+    for index, definition in enumerate(cases):
+        actual = seen[index] if index < len(seen) else None
+        checks = {'test_identity': bool(actual and actual['title'] == definition['title']),
+                  'rp_matches_golden': bool(actual and actual['rp'] == definition['golden']),
+                  'interpreted_code_zero': bool(actual and actual['codes'] == [definition['expected_code']]),
+                  'exp_present': bool(actual and actual['exp']),
+                  'exp_matches_golden': bool(actual and actual['exp'] ==
+                              [line.replace('RP:', 'EXP:', 1) for line in definition['golden']])}
+        results.append({'step': definition['step'], 'name': definition['name'],
+                        'expected_test': definition['title'],
+                        'actual_test': None if actual is None else actual['title'],
+                        'golden_rp': definition['golden'],
+                        'actual_rp': [] if actual is None else actual['rp'],
+                        'printed_exp': [] if actual is None else actual['exp'],
+                        'interpreted_codes': [] if actual is None else actual['codes'],
+                        'checks': checks,
+                        'golden_and_code_match': all(checks[k] for k in
+                            ('test_identity', 'rp_matches_golden', 'interpreted_code_zero'))})
+    complete = (len(seen) == len(cases) and not orphan and
+                all(row['golden_and_code_match'] for row in results))
+    exp_invalid = any(row['checks']['exp_present'] and not
+                      row['checks']['exp_matches_golden'] for row in results)
+    exp_complete = complete and not exp_invalid and all(
+        row['checks']['exp_matches_golden'] for row in results)
+    return {'status': ('MVS_MR10_SEMANTIC_COMPARISON_FAIL' if (not complete or exp_invalid)
+                       else 'EXP_RP_CODE_COMPARISON_PASS_HUMAN_SIGNOFF_PENDING' if exp_complete
+                       else 'GOLDEN_RP_CODE_MATCH_EXP_REQUIRED'),
+            'mvs_job': 9346, 'observed_test_count': len(seen),
+            'orphan_print_records': orphan, 'cases': results,
+            'golden_rp_and_code_match': complete, 'exp_contract_met': exp_complete,
+            'human_signoff': 'PENDING', 'publication_authorized': False}
+
+
+def create_evidence(result, original, report):
+    need(OUTPUT.is_dir() and not OUTPUT.is_symlink(),
+         'expected repository workarea missing')
+    folder = OUTPUT / ('review-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+                       + '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    content = dict(result,
+                   original_evidence=str(original.relative_to(ROOT)),
+                   original_report_sha256=hashlib.sha256(report.encode('utf-8')).hexdigest())
+    path = folder / 'semantic-review.json'
+    with path.open('x', encoding='utf-8') as f:
+        json.dump(content, f, indent=2)
+        f.write('\n')
+    data = path.read_bytes()
+    (folder / 'SHA256SUMS').write_text(
+        hashlib.sha256(data).hexdigest() + '  semantic-review.json\n', encoding='ascii')
+    return folder
+
+
+def main():
+    try:
+        producer = load('ta2_review_seal', PRODUCER)
+        original, report = read_receipt(producer)
+        result = inspect(report, panel())
+        output = create_evidence(result, original, report)
+        for entry in result['cases']:
+            ok = entry['golden_and_code_match']
+            exp = entry['checks']['exp_matches_golden']
+            print(f"{entry['step']} {entry['name']}: {'GOLDEN/CODE MATCH' if ok else 'MISMATCH'}; "
+                  f"EXP {'MATCH' if exp else 'ABSENT' if not entry['checks']['exp_present'] else 'MISMATCH'}")
+        print('TA.2 MR10 JOB 9346: ' + result['status'])
+        print('Evidence: ' + str(output.relative_to(ROOT)))
+        return 2 if result['status'] == 'MVS_MR10_SEMANTIC_COMPARISON_FAIL' else 0
+    except Exception as exc:
+        print('TA.2 saved MVS semantic review REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+if __name__ == '__main__':
+    raise SystemExit(main())
