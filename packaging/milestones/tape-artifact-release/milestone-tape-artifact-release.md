@@ -1600,3 +1600,49 @@ Do not adjust the accepted DCB contract, mark all 146 PDS members
 PASS, run MR10, or advance TA.2 closure until MVS evidence
 identifies the discrepancy and justifies any subsequent action.
 **TA.2 remains IN PROGRESS.**
+
+
+## TA.2 — MVS JOB 9365 BOOT/BOOT.JCL parsing defect and JOB 9366 146-member verification — 22 November 2026
+
+Following successful `BC0003` tape write and one-shot restore (JOB
+**9363**, all 21 IEBGENER/IEBCOPY RC0000), the owner executed the
+approved `ta2-rc3-recipient-diagnostic --live`. **JOB 9365**
+queried all 21 recipient DCBs. The single apparent mismatch is
+a **verification defect**: the original substring-based TSO
+`extract_listds_block()` matched
+`HERC02.BCPL.TA2R3I.BOOT.JCL` while asked for
+`HERC02.BCPL.TA2R3I.BOOT`. The raw PO/FB/80/800
+`BOOT.JCL` response does **not** establish an incorrect DCB
+for the separate PS bootstrap dataset. A strict exact-DSN
+MVS inquiry remains required before asserting 21/21 DCB acceptance.
+
+**JOB 9366** returned **20/20 expected PDS member directories**
+with the **146 canonical PDS member identities**; this is real
+MVS LISTDS MEMBERS evidence, **PASS (qualified)**. Original
+evidence is retained at
+`workarea/ta2-rc3-recipient-diagnostic/20261122T234725Z-32362`;
+no media or restored datasets were modified by diagnosis.
+No new MVS `MRREGRES` was executed in that diagnostic operation.
+Both prior stateful RC3 one-shot markers remain consumed.
+
+The owner-authorized TA.2 continuation is now committed as
+`packaging/distribution/create-tape/scripts/ta2-rc3-installed-mr10-continuation`.
+It replays original 9360/9361, 9363 and 9365/9366 sealed evidence,
+requires preserved `BC0003` SHA-256 and the tested historical
+BCPL source revision, independently reparses 9365 with exact
+stand-alone DSN labels, performs fresh actual MVS `LISTDS LABEL`
+for **21/21 DCB/volume** and `LISTDS MEMBERS` for **146/146**
+members, and offers a single operator confirmation for **one**
+installed `TA2R3MR` 63-step compile/execute and 12-case
+`TEST:`/`EXP:`/`RP:`/`CODE=0` comparison. A distinct
+exclusive no-retry marker is written only after Y. No tape
+initialization, mount/unmount, unload, restore, restaging or rewrite
+is part of this continuation. **18/18 isolated Python positive and
+negative tests passed** and the tracked GitHub script/test blob
+SHAs match the executable-tested files. No full checkout/MVS
+GO was executed in the assistant workspace.
+
+TA.2 is **IN PROGRESS** pending the actual BOOT exact-DSN
+verification and installed MR10 results. TA.4 human sign-off,
+TA.3/TA.7 fresh-recipient gates, redistribution-rights reviews and
+publication are not closed.
