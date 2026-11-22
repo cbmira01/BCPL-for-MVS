@@ -1567,3 +1567,36 @@ See [the detailed RC3 MVS and recovery record](../../distribution/create-tape/ta
 **TA.2 remains IN PROGRESS.** TA.4 individual human semantic review,
 TA.3/TA.7 fresh-recipient acceptance, redistribution-rights decisions
 and publication remain separate release gates.
+
+
+## TA.2 — BC0003 21-step MVS readback and recipient DCB halt — 22 November 2026
+
+After the owner-approved separate TA.2 restore continuation and new
+`Y`, **JOB 9362** passed initial MVS recipient-absence preflight
+with the existing `BC0003` image unchanged and tape unit EMPTY.
+**JOB 9363** (`TA2R3RES`) completed all **21 IEBGENER/IEBCOPY
+steps RC=0000** on actual MVS 3.8J, restoring the reserved
+`HERC02.BCPL.TA2R3I.*` namespace. This is a **readback/restore
+JES PASS (qualified)**, not yet DCB/directory or executable MR10
+acceptance. The continuation halted during its subsequent
+`LISTDS LABEL` DCB check for `HERC02.BCPL.TA2R3I.BOOT`
+with `recipient DCB/volume differs`. Original receipt:
+`workarea/ta2-rc3-restore-continuation/20261122T232532Z-31994`.
+Original stage/write and restore one-shot markers are now consumed.
+**Neither production nor restore may be repeated.**
+
+The new `scripts/ta2-rc3-recipient-diagnostic` provides a bounded
+**read-only** MVS investigation: it verifies the complete original
+sealed JOB 9363 evidence and immutable AWS image SHA, submits one
+21-DSN `DSPALST` `LISTDS LABEL` inquiry and one 20-PDS
+`DSPALLS` `LISTDS MEMBERS` inquiry, compares expected and
+actual DCB/volume, prints the bounded raw BOOT block and verifies all
+146 selected PDS members. The new sealed diagnostic evidence is
+saved only under repository `workarea/`. This does not mount or
+rewrite media, allocate datasets or execute the interpreter.
+**10/10 assistant-workspace tests passed** and committed GitHub
+blobs match the exact tested files; actual MVS results pending.
+Do not adjust the accepted DCB contract, mark all 146 PDS members
+PASS, run MR10, or advance TA.2 closure until MVS evidence
+identifies the discrepancy and justifies any subsequent action.
+**TA.2 remains IN PROGRESS.**
