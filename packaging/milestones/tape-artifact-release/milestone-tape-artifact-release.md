@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BC0002 AWS structure accepted qualified; LISTDS JOB 9340 and VTOC JOB 9341 PASS; one conditional existing-image mount and 21-step TA2RC2RB readback owner-approved, execution pending; NO RETRY)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BC0002 AWS structural acceptance; owner-reported JOB 9343 readback 21/21 RC=0000; installed-content/use acceptance pending)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1313,3 +1313,27 @@ The owner ran `ta2-rc2-readback-plan --volume TSO002 --live` after the empty-dri
 ## TA.2 — Explicit one-shot readback operation approval (21 November 2026 EST)
 
 The owner explicitly **approved exactly one private MVS readback** of the existing SHA-256-pinned `BC0002` AWS, conditional mount only if Hercules 0480 is empty, a single 21-step `TA2RC2RB` job, and 21 **new** `HERC02.BCPL.TA2RB.BTnnnn` restore datasets on `TSO002`. See [exact authorization](../../distribution/create-tape/ta2-rc2-readback-execution-authorization-20261121.md) and [machine-readable permission](../../distribution/create-tape/ta2-rc2-readback-execution-approval.json). The original MVS preflight JOBS **9340/9341**, 15,335 reported free tracks and frozen JOB-less JCL SHA256 `226819ef3702234a1367c7a7df96399cf9fcaf32d99152061db1df98fed12e73` are bound to the permission. The runner/JCL remain unchanged and require a new fresh target/source/device preflight, a single [y/N] operator confirmation, and permanent **NO RETRY** markers. **Execution has not occurred; TA.2 IN PROGRESS; no publication authorized.**
+
+## TA.2 — Owner-reported JOB 9343 readback and consolidated install/usage pilot preparation (21 November 2026 EST)
+
+The owner reported that `TA2RC2RB` JOB **9343** restored all **21** logical
+BC0002 datasets as new `HERC02.BCPL.TA2RB.BT0001`–`BT0021` on
+`TSO002`, with all 21 IEBGENER/IEBCOPY steps **RC=0000**.
+This is an owner-reported successful MVS readback checkpoint, not independent
+member-content equality or final release acceptance. Preserve original
+BC0002 media, stage datasets, immutable operation markers and original JES
+evidence; **DO NOT RETRY**.
+
+The [consolidated acceptance design](../../distribution/install-from-tape/ta2-rc2-consolidated-acceptance-20261121.md)
+and offline-tested `install-from-tape/scripts/ta2-rc2-acceptance` now provide
+one MVS-facing entry point for an isolated installation/usage pilot.
+The immediate `--live` procedure issues one **read-only** MVS LISTDS
+job for all 21 restored DCBs and 21 absent proposed `TA2INS` destinations.
+A stateful `--run` is **refused** until a separate owner-approved,
+Git-committed exact execution contract authorizes 21 new datasets on
+TSO002, one TA2INST 21-step IEBGENER/IEBCOPY job and one TA2MR10
+63-step canonical MRREGRES job. The 12 interpreted regression cases and
+manual `EXP:`/`RP:`/`CODE=` review remain distinct semantic gates;
+this candidate declares `native_compiler: absent`. No new MVS inquiry,
+allocation, installation, MR10 regression or publication is asserted by
+this commit. **TA.2 remains IN PROGRESS; TA.3+ unchanged.**

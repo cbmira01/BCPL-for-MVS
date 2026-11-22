@@ -30,3 +30,16 @@ preserves the proposed RESTORE member's JCL statements as in-stream
 **data**. It is not a recipient installation approval. The recipient
 must still supply site parameters, and TA.3 must verify actual installation
 with MVS-only tools. No live stage or tape test has been executed.
+
+## TA.2 BC0002 isolated installation/usage pilot — designed, not executed
+
+The [consolidated acceptance record](ta2-rc2-consolidated-acceptance-20261121.md)
+and tested `scripts/ta2-rc2-acceptance` provide a single MVS-facing entry
+point. `--live` performs a read-only catalog/DCB preflight of the 21
+JOB-9343 readback datasets and confirms 21 new installation destinations
+absent. The distinct `--run` phase, currently locked pending **separate
+owner approval**, would allocate a new `HERC02.BCPL.TA2INS.*` environment,
+copy all 21 restored datasets with IEBGENER/IEBCOPY, and run the canonical
+12-case MRREGRES from the independently installed MR10 inputs/load module.
+The installation is a same-system pilot, not a clean-target TA.3/TA.7 PASS.
+No new MVS operation is claimed.

@@ -1,0 +1,366 @@
+#!/usr/bin/env python3
+"""TA.2 BC0002 restore/install/use acceptance; MVS results are authoritative.
+
+Default: offline contract preview. --live: read-only MVS LISTDS preflight.
+--run: one new installation and MRREGRES, CLOSED pending exact owner approval.
+No tape command, target overwrite, automatic retry or publication.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+BASE = ROOT / 'packaging/distribution'
+WORK = ROOT / 'workarea'
+OUTPUT = WORK / 'ta2-rc2-install-acceptance'
+PLANNER = BASE / 'create-tape/scripts/ta2-rc2-readback-plan'
+PRODUCER = BASE / 'create-tape/scripts/ta2-rc2-produce-once'
+CORE = ROOT / 'tools/datasets/dspal-core.py'
+REGRESSION = ROOT / 'mr10-kit-compiler/jcl/run-regression-tests.jcl'
+APPROVAL = BASE / 'install-from-tape/ta2-rc2-install-execution-approval.json'
+INTENT = OUTPUT / 'BC0002-install-invoked.json'
+SOURCE_PREFIX = 'HERC02.BCPL.TA2RB.'
+INST_PREFIX = 'HERC02.BCPL.TA2INS.'
+VOLUME = 'TSO002'
+EXPECTED_AWS = '123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375'
+JOBS = ('TA2INST', 'TA2MR10')
+
+class Refusal(RuntimeError):
+    pass
+
+def need(ok, reason):
+    if not ok:
+        raise Refusal(reason)
+
+def script(name, path):
+    need(path.is_file() and not path.is_symlink(), 'missing canonical dependency: ' + path.name)
+    loader = SourceFileLoader(name, str(path))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'unable to load ' + path.name)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def save(path, content):
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, 'O_NOFOLLOW', 0)
+    with os.fdopen(os.open(path, flags, 0o600), 'wb') as stream:
+        stream.write(content)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+def seal(folder):
+    members = sorted(folder.iterdir())
+    need(all(p.is_file() and not p.is_symlink() for p in members), 'unsafe evidence files')
+    save(folder / 'SHA256SUMS', ''.join(
+        hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'
+        for p in members).encode('ascii'))
+
+def evidence_dir():
+    need(WORK.is_dir() and not WORK.is_symlink() and not OUTPUT.is_symlink(),
+         'unsafe repository workarea')
+    OUTPUT.mkdir(mode=0o700, exist_ok=True)
+    folder = OUTPUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    return folder
+
+def cards(deck):
+    need(deck.isascii() and all(len(x) <= 80 and '\t' not in x for x in deck.splitlines()),
+         'non-FB80 MVS JCL card')
+    need(all(len(x) <= 71 for x in deck.splitlines()
+             if x.startswith('//') and not x.startswith('//*')),
+         'JCL operand exceeds column 71')
+    return deck
+
+def mapped(rows, manifest):
+    need(len(rows) == len(manifest['datasets']) == 21 and
+         manifest['release']['native_compiler'] == 'absent' and
+         manifest['volume']['volser'] == 'BC0002', 'unexpected candidate identity')
+    output = []
+    for n, (row, source) in enumerate(zip(rows, manifest['datasets']), 1):
+        need(row['n'] == source['sequence'] == n and
+             row['target'] == SOURCE_PREFIX + f'BT{n:04d}',
+             'readback ordering/namespace differs')
+        if n <= 2:
+            suffix = ('BOOT', 'INSTALL')[n - 1]
+        else:
+            pattern = source.get('target_dsn_template')
+            need(type(pattern) is str and pattern.startswith('{HLQ}.BCPL.'),
+                 f'BT{n:04d} manifest target missing')
+            suffix = pattern[len('{HLQ}.BCPL.'):]
+        dest = INST_PREFIX + suffix
+        need(len(dest) <= 44 and re.fullmatch(r'[A-Z0-9.]+', dest) and
+             dest != row['source'] and dest != row['target'],
+             f'BT{n:04d} illegal or aliased destination')
+        output.append(dict(row, install=dest))
+    need(len({x['install'] for x in output}) == 21 and
+         sum(len(x['members']) for x in output) == 146 and
+         output[11]['dcb'] == {'dsorg':'PO','recfm':'U','lrecl':0,'blksize':6144},
+         'install member identity/DCB changed')
+    return output
+
+def prepare():
+    plan = script('ta2_install_planner', PLANNER)
+    manifest = plan.source()
+    rows = mapped(plan.rows(manifest), manifest)
+    need(plan.original_image() == EXPECTED_AWS, 'original AWS image changed')
+    return rows
+
+def installation_body(rows):
+    need(len(rows) == 21 and [r['n'] for r in rows] == list(range(1, 22)),
+         'installation dataset mapping incomplete')
+    lines = ['//* TA.2 RC2 INSTALLATION: NEW DATASETS ONLY, NO TAPE OPERATION.']
+    for row in rows:
+        n = row['n']
+        d = row['dcb']
+        p, s, directory = row['space']
+        pgm = 'IEBGENER' if n == 1 else 'IEBCOPY'
+        lines.extend([f'//I{n:04d} EXEC PGM={pgm},REGION=512K' + ('' if n == 1 else ',COND=(0,NE)'),
+                      '//SYSPRINT DD SYSOUT=*'])
+        if n == 1:
+            lines.append('//SYSIN DD DUMMY')
+        lines.extend([f'//{"SYSUT1" if n == 1 else "INPDS"} DD DSN={row["target"]},DISP=SHR',
+                      f'//{"SYSUT2" if n == 1 else "OUTPDS"} DD DSN={row["install"]},',
+                      '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,',
+                      f'//            VOL=SER={VOLUME},',
+                      f'//            SPACE=(TRK,({p},{s}' + (f',{directory})),' if n > 1 else ')),'),
+                      f'//            DCB=(DSORG={d["dsorg"]},RECFM={d["recfm"]},'
+                      f'LRECL={d["lrecl"]},BLKSIZE={d["blksize"]})'])
+        if n != 1:
+            lines.extend(['//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                          '//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))',
+                          '//SYSIN DD *', ' COPY OUTDD=OUTPDS,INDD=INPDS', '/*'])
+    lines.append('//')
+    deck = cards('\n'.join(lines) + '\n')
+    need(deck.count(' EXEC PGM=IEBGENER') == 1 and
+         deck.count(' EXEC PGM=IEBCOPY') == 20 and
+         deck.count('DISP=(NEW,CATLG,DELETE)') == 21 and
+         deck.count('DSN=HERC02.BCPL.TA2RB.') == 21 and
+         deck.count('DSN=HERC02.BCPL.TA2INS.') == 21 and
+         'BCPL.BT0001' not in deck and 'UNIT=480' not in deck,
+         'installation JCL contract violated')
+    return deck
+
+def regression_body(source):
+    need(source.isascii() and source.startswith('//*') and
+         'MRREGRES' in source[:500] and source.count(' EXEC PGM=') == 63,
+         'canonical MRREGRES job changed')
+    old = 'HERC02.BCPL.MR10KIT.'
+    need(source.count(old) >= 40 and
+         len(re.findall(r'(?m)^//(?:SSYNI|STRNI|SCGI|SBLIBI|SICLIB)\s+EXEC PGM=IEBGENER\b', source)) == 5 and
+         not re.search(r'(?m)^//(?:\S+\s+)?JOB\b', source),
+         'MRREGRES is not a JOB-less canonical body')
+    deck = source.replace(old, INST_PREFIX + 'MR10KIT.')
+    need(old not in deck and
+         len(re.findall(r'(?m)^//R\d\d\s+EXEC PGM=ICINT19\b', deck)) == 12 and
+         len(re.findall(r'(?m)^//[CG]\d\d[A-Z]\s+EXEC PGM=ICINT19\b', deck)) == 46 and
+         'DSN=HERC02.BCPL.TA2INS.MR10KIT.LOAD' in deck,
+         'MRREGRES retargeting/12-case contract changed')
+    return cards(deck.rstrip('\n') + '\n//\n')
+
+def prepared_decks(rows, regress_source):
+    install = installation_body(rows)
+    regression = regression_body(regress_source)
+    return install, regression, (hashlib.sha256(install.encode('ascii')).hexdigest(),
+                                 hashlib.sha256(regression.encode('ascii')).hexdigest())
+
+def accepted_readback():
+    """Replay accepted one-shot JOB 9343; never touch media or source stage."""
+    marker = BASE / 'create-tape/scripts/ta2-rc2-readback-once'
+    original = script('ta2_install_original', marker)
+    producer = script('ta2_install_producer', PRODUCER)
+    need(original.PERMANENT.is_file() and not original.PERMANENT.is_symlink(),
+         'one-shot readback intent missing')
+    journal = json.loads(original.PERMANENT.read_text())
+    need(journal.get('source_write_job') == 9339 and journal.get('aws_sha256') == EXPECTED_AWS,
+         'accepted readback intent altered')
+    relative = journal.get('evidence', '')
+    need(type(relative) is str and re.fullmatch(
+         r'workarea/ta2-rc2-readback-operations/[0-9TZ-]+', relative),
+         'invalid pinned readback evidence location')
+    folder = ROOT / relative
+    need(folder.resolve().is_relative_to((WORK / 'ta2-rc2-readback-operations').resolve()),
+         'readback evidence path escaped repository')
+    files = producer.sealed(folder, {'result.json', 'readback-summary.txt', 'readback-report.txt'})
+    record = json.loads(files['result.json'])
+    need(record.get('status') == 'MVS_RC2_READBACK_21_RC0000_RESTORED_INSPECTION_PENDING' and
+         record.get('job') == 9343 and record.get('steps') == 21 and
+         record.get('volser') == 'BC0002' and record.get('restore_volume') == VOLUME and
+         record.get('aws_sha256') == EXPECTED_AWS and
+         record.get('restore_targets') == [SOURCE_PREFIX + f'BT{n:04d}' for n in range(1,22)],
+         'accepted JOB 9343 readback evidence incomplete or mismatched')
+    return record
+
+def validate_catalog(core, report, rows):
+    for row in rows:
+        src, dest, dcb = row['target'], row['install'], row['dcb']
+        need(core.dataset_missing(report, dest), dest + ' already installed or ambiguous')
+        need(not core.dataset_missing(report, src), src + ' not in catalog')
+        b = core.extract_listds_block(report, src)
+        attrs = core.parse_listds(b) if b else {}
+        expected = {'volume':VOLUME, 'dsorg':dcb['dsorg'], 'recfm':dcb['recfm'],
+                    'lrecl':str(dcb['lrecl']), 'blksize':str(dcb['blksize'])}
+        need(all(attrs.get(k) == v for k, v in expected.items()),
+             src + ' MVS DCB/volume mismatch')
+
+def inquire(core, cfg, folder, rows):
+    dsns = [r['target'] for r in rows] + [r['install'] for r in rows]
+    deck = cards(core.stat_deck(cfg, dsns))
+    return submit(core, cfg, folder, 'catalog', deck, 8)
+
+def submit(core, cfg, folder, label, body, max_rc):
+    old_dir, old_env = tempfile.tempdir, os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder)
+        os.environ['TMPDIR'] = str(folder)
+        job, summary = core.submit_and_wait(cfg, body, max_rc=max_rc,
+                                            cursor_file=folder / (label + '-cursor.json'))
+        save(folder / (label + '-summary.txt'), summary.encode('utf-8'))
+        report = core.job_report(job, cursor_file=folder / (label + '-cursor.json'))
+        save(folder / (label + '-report.txt'), report.encode('utf-8'))
+    finally:
+        tempfile.tempdir = old_dir
+        if old_env is None:
+            os.environ.pop('TMPDIR', None)
+        else:
+            os.environ['TMPDIR'] = old_env
+    need(type(job) is int and 1 <= job <= 9999, 'ambiguous JES job identity')
+    return job, summary, report
+
+def exact_install_result(job, summary, report):
+    need(re.search(rf'(?m)^JOB\s+{job}\s+TA2INST\s*$', summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'installation JES job not wholly successful')
+    got = re.findall(r'(?m)^(I\d{4})\s+(IEBGENER|IEBCOPY)\s+RC=(\d{4})\s*$', summary)
+    want = [(f'I{i:04d}', 'IEBGENER' if i == 1 else 'IEBCOPY', '0000') for i in range(1,22)]
+    need(got == want and 'ABEND' not in report.upper(), '21 installation JES steps failed')
+
+def regression_steps(job, summary):
+    """MVS JES confirms execution, never asserts BCPL output semantics."""
+    need(re.search(rf'(?m)^JOB\s+{job}\s+TA2MR10\s*$', summary) is not None and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'MRREGRES JES result ambiguous')
+    matches = re.findall(r'(?m)^(R\d\d)\s+ICINT19\s+RC=(\d{4})\s*$', summary)
+    need(matches == [(f'R{i:02d}', '0000') for i in range(1,13)],
+         'MRREGRES 12 interpreted execution steps incomplete or nonzero')
+
+
+def owner_approval(shas):
+    """Locked unless the owner explicitly approves these *new* allocations."""
+    need(APPROVAL.is_file() and not APPROVAL.is_symlink(),
+         '--run CLOSED: separate owner approval for TA2INS allocations is missing')
+    need(APPROVAL.read_text().strip() != '', 'empty owner approval')
+    def git(*args):
+        result = subprocess.run(['git','-C',str(ROOT),*args], capture_output=True,
+                                timeout=20, check=False)
+        need(result.returncode == 0, 'Git main check failed')
+        return result.stdout
+    need(git('branch','--show-current').strip() == b'main' and
+         not git('status','--porcelain','--untracked-files=no').strip() and
+         git('show','HEAD:'+APPROVAL.relative_to(ROOT).as_posix()) == APPROVAL.read_bytes(),
+         'owner approval does not match clean Git main')
+    data = json.loads(APPROVAL.read_text())
+    need(data == {'schema_version':1,'status':'OWNER_APPROVED_SINGLE_RC2_INSTALL_AND_MRREGRES',
+                  'candidate':'BCPL-0.1.0-rc2','tape_volser':'BC0002',
+                  'source_readback_job':9343, 'source_prefix':SOURCE_PREFIX,
+                  'new_target_prefix':INST_PREFIX, 'dasd_volume':VOLUME,
+                  'installed_datasets':21,'installation_job':'TA2INST',
+                  'regression_job':'TA2MR10','installation_body_sha256':shas[0],
+                  'regression_body_sha256':shas[1],
+                  'single_attempt':True,'publication_authorized':False},
+         'owner approval content does not match planned MVS work')
+
+def with_job(core, cfg, job, description, body):
+    return cards('\n'.join(core.authenticated_job_card(cfg, job, description, False)) +
+                 '\n' + body)
+
+def run(live, execute):
+    rows = prepare()
+    originals = accepted_readback()
+    canonical = REGRESSION.read_text(encoding='ascii')
+    install, regression, shas = prepared_decks(rows, canonical)
+    if execute:
+        owner_approval(shas)  # before first JES inquiry or irreversible marker
+        need(sys.stdin.isatty(), 'one-shot install requires interactive terminal')
+        need(not INTENT.exists(), 'install attempt already consumed; do not retry')
+    if not live and not execute:
+        print('TA.2 RC2 acceptance plan: JOB 9343 evidence, 21 new installation targets; '
+              'one TA2INST and one TA2MR10 MVS job; stateful execution NOT authorized.')
+        return 0
+    folder = evidence_dir()
+    if execute:
+        save(INTENT, (json.dumps({'status':'ONE_SHOT_INSTALL_INVOCATION_CONSUMED_NO_RETRY',
+                                 'evidence':str(folder.relative_to(ROOT)),
+                                 'install_sha256':shas[0], 'regression_sha256':shas[1]})+'\n').encode('ascii'))
+    try:
+        core = script('ta2_install_core', CORE)
+        cfg = core.load_config()
+        need(cfg['mvs']['hlq'] == 'HERC02', 'unexpected MVS HLQ')
+        core.require_reader_ready(cfg)
+        catalog, summary, report = inquire(core, cfg, folder, rows)
+        validate_catalog(core, report, rows)
+        print(f'TA.2 RC2 install preflight PASS: JOB {catalog}; 21/21 restored DCBs; '
+              '21 new install targets absent; JOB 9343 evidence accepted.')
+        if execute:
+            if input('Create 21 new TA2INS datasets and run MRREGRES once? [y/N]: ').strip().upper() != 'Y':
+                raise Refusal('operator declined; no retry without new approval')
+            install_job, s, r = submit(core, cfg, folder, 'install',
+                                       with_job(core,cfg,JOBS[0],'TA2 INSTALL',install),0)
+            exact_install_result(install_job, s, r)
+            reg_job, s, r = submit(core, cfg, folder, 'regression',
+                                   with_job(core,cfg,JOBS[1],'TA2 MR10 PROOF',regression),0)
+            regression_steps(reg_job, s)
+            save(folder / 'result.json', (json.dumps({
+                 'status':'INSTALL_AND_REGRESSION_JES_COMPLETE_SEMANTIC_REVIEW_PENDING',
+                 'readback_job':9343,'catalog_job':catalog,'install_job':install_job,
+                 'regression_job':reg_job,'new_datasets':21,'mr10_cases':12,
+                 'semantic_case_review_completed':False,'publication_authorized':False},indent=2)+'\n').encode())
+            seal(folder)
+            print(f'TA.2 RC2 MVS installation JOB {install_job} and MRREGRES JOB {reg_job}: '
+                  'JES complete; 12-case semantic review still required.')
+        else:
+            save(folder / 'result.json', (json.dumps({
+                 'status':'READ_ONLY_INSTALL_PREFLIGHT_PASS',
+                 'readback_job':9343,'catalog_job':catalog,'restored_datasets':21,
+                 'missing_install_targets':21,'stateful_execution_authorized':False},indent=2)+'\n').encode())
+            seal(folder)
+        print('Evidence: ' + str(folder.relative_to(ROOT)))
+        return 0
+    except Exception as exc:
+        try:
+            save(folder / 'failure.json', (json.dumps({'status':'HALTED',
+                                                       'reason':str(exc)})+'\n').encode())
+            seal(folder)
+        except (OSError,Refusal):
+            pass
+        print('TA.2 RC2 acceptance HALTED: ' + str(exc), file=sys.stderr)
+        print('Evidence: ' + str(folder.relative_to(ROOT)), file=sys.stderr)
+        if execute:
+            print('NO RETRY: preserve partial installation and JES reports.',file=sys.stderr)
+        return 2
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__)
+    group = p.add_mutually_exclusive_group()
+    group.add_argument('--live', action='store_true', help='one read-only MVS preflight job')
+    group.add_argument('--run', action='store_true', help='exact owner-approved one-shot installation/usage')
+    a = p.parse_args(argv)
+    try:
+        return run(a.live, a.run)
+    except (Refusal,OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError) as exc:
+        print('TA.2 RC2 acceptance REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+if __name__ == '__main__':
+    raise SystemExit(main())
