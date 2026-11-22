@@ -825,3 +825,41 @@ whether there is a DCB difference or a LISTDS parsing issue.
 No change to the release DCB contract, no new stateful recovery
 approval, and no installed acceptance is inferred from the
 owner-reported halt. **TA.2 IN PROGRESS.**
+
+
+## TA.2 — BC0003 restored; exact-name DCB and installed MR10 continuation
+
+Actual MVS 3.8J `TA2R3RES` JOB **9363** completed all **21**
+new-dataset restores at RC0000. A subsequent `LISTDS LABEL`
+parser incorrectly read `HERC02.BCPL.TA2R3I.BOOT.JCL` as the
+`HERC02.BCPL.TA2R3I.BOOT` DCB, claiming the former PDS's
+`DSORG=PO` for a bootstrap expected to be `DSORG=PS`.
+Actual follow-up read-only JOB **9365** reproduced the parser defect;
+JOB **9366** verified **20/20 restored PDS directories** containing
+the **146 expected selected members**. The BOOT PS DCB is pending
+**exact-name actual MVS verification**, not presumed accepted.
+All original production/restore one-shot markers are consumed;
+**never repeat the tape or restoration**.
+
+The separately gated
+`scripts/ta2-rc3-installed-mr10-continuation` uses original sealed
+JES/HETMAP/diagnostic receipts and preserved AWS SHA. Its default
+mode is offline receipt review. Its `--run` mode performs one
+fresh MVS TSO `LISTDS LABEL` inquiry for the 21 recipients with
+exact stand-alone DSN identity and canonical DCB/volume comparison,
+plus one `LISTDS MEMBERS` inquiry verifying all 146 PDS members.
+Only after both succeed does one operator **Y** consume a distinct
+no-retry marker and authorize the installed 63-step `TA2R3MR` and
+12-case `TEST:`/`EXP:`/`RP:`/`CODE=0` verification.
+The original Cambridge archival compiler is still not a runnable
+native Cambridge Compiler in this release. Human semantic review,
+fresh-recipient installation and publication remain pending.
+
+The exact committed Python source and tests were executable-tested in
+an isolated repo-shaped assistant workspace: **18/18 focused tests
+PASS**, including full mocked MVS sequencing and error/refusal paths.
+No actual new installed execution is asserted. Reports are sealed only
+inside `workarea/ta2-rc3-installed-mr10-continuation/`.
+The operation does not initialize, mount/unmount, restage,
+rewrite or restore any tape. See the
+[RC3 evidence ledger](ta2-rc3-consolidated-candidate-20261122.md).
