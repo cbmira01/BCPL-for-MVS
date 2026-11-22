@@ -204,3 +204,62 @@ exact BOOT parsed and raw values, and 20 PDS directories against
 MR10 execution, is authorized by this operation.
 Ten local isolated tests PASS; the real MVS output remains the
 acceptance authority. **TA.2 IN PROGRESS**.
+
+
+## 22 November — JOBS 9365/9366 isolate BOOT-prefix parser error; installed MR10 continuation
+
+The owner executed the independently source-controlled read-only
+`ta2-rc3-recipient-diagnostic --live` following successful JOB **9363**
+(21/21 IEBGENER/IEBCOPY restore RC0000). The actual MVS results:
+
+- **JOB 9365**: `LISTDS LABEL` for all 21 existing recipient datasets.
+  Existing `core.extract_listds_block()` reported one apparent difference:
+  `HERC02.BCPL.TA2R3I.BOOT` expected `PS/FB/80/800`, but parsed `PO`.
+- The saved *raw block* for that BOOT query begins
+  `HERC02.BCPL.TA2R3I.BOOT.JCL` and reports
+  `PO/FB/80/800` on `TSO002`. That is a **different dataset**.
+  The generic parser's unbounded substring match and last-occurrence
+  selection used `BOOT.JCL` rather than the exact `BOOT` label.
+  This demonstrates a **false-positive DCB mismatch in the verifier**;
+  it is not yet an independent affirmation of BOOT's actual PS DCB.
+- **JOB 9366**: `LISTDS MEMBERS` for 20 restored PDSes, **20/20
+  directories match** the expected member identities; collectively
+  **146 selected members** verified on actual MVS, qualified by the
+  read-only directory inquiry.
+- Both the saved prior `LISTDS` and fresh JOB 9365 inquiry were
+  misparsed identically. Original diagnostic evidence:
+  `workarea/ta2-rc3-recipient-diagnostic/20261122T234725Z-32362`.
+  The AWS image, 21 restored DASD datasets, source stage and original
+  write/restore receipts remain untouched.
+
+The new **TA.2 installed MR10 continuation**
+`scripts/ta2-rc3-installed-mr10-continuation` targets this exact
+accepted state. It first replays all original sealed MVS evidence
+(9360/9361, 9363, 9365/9366), both consumed operation markers,
+unchanged `BC0003` SHA-256, exact 21-member recipient selection
+and the 146-member result. It reinterprets saved JOB 9365 using an
+**exact standalone DSN-label** parser that refuses prefix-only,
+missing, conflicting or ambiguous LISTDS responses. It then executes
+one fresh **read-only** MVS `LISTDS LABEL` for all 21 recipients and
+one `LISTDS MEMBERS` for all 20 PDSes. It requires the entire
+canonical DCB/volume contract and **146/146** directory identities
+before offering one **[y/N]** approval for a single installed
+`TA2R3MR` regression. It then requires all 63 JES+IEF142I steps
+RC0000 and all 12 `TEST:`/`EXP:`/`RP:`/`CODE=0` semantic checks.
+An exclusive no-retry marker protects that **new regression attempt**.
+
+This continuation **does not mount, unmount, initialize, readback,
+restore, restage, or rewrite any tape or dataset**. It does not
+modify the generic `dspal-core.py` parser during this bounded
+MVS acceptance stage; wider parser regression remediation can be
+addressed separately after verified MVS results. The exact code
+and test blobs committed to GitHub match the executable assistant
+workspace artifacts byte-for-byte. **18/18 focused Python tests
+PASS**, including success, the observed BOOT/BOOT.JCL collision,
+contradictory entry refusal, original-receipt tampering,
+full one-shot mocked execution and genuine DCB-failure refusal.
+The complete repository test panel was not run in the isolated
+workspace; no new actual installed `TA2R3MR` result is claimed.
+
+**TA.2 remains IN PROGRESS.** Human TA.4 case sign-off, fresh
+recipient TA.3/TA.7, rights review and publication remain separate.
