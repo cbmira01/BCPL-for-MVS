@@ -1516,3 +1516,54 @@ See [RC3 corrective evidence](../../distribution/create-tape/ta2-rc3-consolidate
 The owner can retry the **original, unconsumed** RC3 MVS operation after
 updating GitHub `main`. No actual RC3 MVS acceptance yet.
 **TA.2 is IN PROGRESS**, with TA.4 semantic review and publication pending.
+
+
+## TA.2 — BC0003 original MVS write PASS (qualified) and separate recovery continuation — 22 November 2026
+
+The owner executed the corrected consolidated `BCPL-0.1.0-rc3`
+producer against real MVS 3.8J. **JOB 9359**: new-stage and
+recipient-absence/21-source DCB preflight PASS. **JOB 9360**
+(`TA2R3STG`): 21 new staging datasets plus 16 updated member
+writes PASS. **JOB 9361** (`TA2R3WR`): all 21 ordered MVS
+standard-label tape datasets and the independent 64-file HETMAP audit
+PASS. `BC0003` AWS SHA-256:
+`6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1`.
+
+The original operation stopped after the successful write at
+`BC0003 disappeared after write`. Owner-provided original
+Hercules/MVS reports conclusively show the final tape was automatically
+demounted (`0480` empty, `480 O-NRD`) after the write, not lost or
+overwritten. `sha256sum -c SHA256SUMS` reported all evidence OK and
+a new independent checksum of the existing AWS was unchanged.
+Original original evidence is sealed at
+`workarea/ta2-rc3-consolidated/20261122T202323Z-30995`;
+the exclusive `BC0003` production marker is consumed.
+**RC3 staging and AWS writing are PASS (qualified)**; restore,
+recipient inspection and installed MR10 still await MVS execution.
+Do **not** rerun the original producer or reinitialize the tape.
+
+The owner expressly approved TA.2 readback, installed use and
+continuation as a **new, distinct one-shot operation**. The
+source-controlled `scripts/ta2-rc3-restore-continuation`
+verifies the exact original sealed evidence and JOB 9360/9361
+MVS summaries/IEF142I, reserved image SHA/HETMAP, active
+Hercules/MVS empty drive, and 21 absent new recipient DSNs
+before one **Y** and a new nonretry marker. It mounts only the
+existing `BC0003` and executes the 21-step `TA2R3RES`;
+it independently verifies all 21 target DCBs plus 146 target
+PDS directory members via actual MVS LISTDS/LISTDS MEMBERS, then
+runs the installed 63-step `TA2R3MR` and compares 12/12
+`TEST:`/`EXP:`/`RP:`/`CODE=0` against canonical goldens.
+It refuses an existing continuation marker, image/receipt drift,
+foreign media, occupied targets, missing/duplicate members,
+nonzero JES/IEF142I, and any semantic mismatch. No existing stage,
+original `BC0002`, original `BC0003` write or release registry
+content is modified. Evidence is separately sealed in repository
+`workarea/`. **10/10 assistant-workspace isolated positive/negative
+tests passed**, and both committed GitHub blobs match the exact
+locally tested bytes. Full-repository/MVS execution remains pending.
+
+See [the detailed RC3 MVS and recovery record](../../distribution/create-tape/ta2-rc3-consolidated-candidate-20261122.md).
+**TA.2 remains IN PROGRESS.** TA.4 individual human semantic review,
+TA.3/TA.7 fresh-recipient acceptance, redistribution-rights decisions
+and publication remain separate release gates.
