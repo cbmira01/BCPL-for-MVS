@@ -1440,3 +1440,29 @@ no recipient acceptance, TA.4 human sign-off, formal march closure or
 publication is asserted. Continue from actual MVS feedback;
 **TA.2 remains IN PROGRESS.**
 
+
+
+## TA.2 — RC3 consolidated MVS validation hardening (22 November 2026)
+
+The existing Git-controlled `BCPL-0.1.0-rc3` / `BC0003` one-shot
+producer was strengthened without changing the reserved identity,
+21-position manifest, 146 selected members, tested EXP-enabled BCPL sources,
+or approved original RC2 evidence. Following `TA2R3RES`, one read-only
+MVS LISTDS job must verify **all 21 recipient datasets** on `TSO002`
+with matching DSORG, RECFM, LRECL and BLKSIZE before interpreter execution.
+The `TA2R3MR` 63-step MRREGRES must show **all 63 ordered RC=0000
+summary steps and corresponding IEF142I MVS records**, in addition to
+the 12 exact `TEST:` / `EXP:` / `RP:` / interpreted `CODE=0`
+comparisons. The sealed semantic report uses the **actual RC3 JES job
+number**, not the hard-coded RC2 JOB 9346 in the reused reviewer.
+
+These changes and three additional positive/refusal regression test cases
+are committed to GitHub `main`. The earlier 8/8 RC3 tests and isolated
+executable validation are documented; the complete revised 11-case module
+has **not** been rerun in an assistant-local full repository checkout.
+One explicit `Y` remains required before any stateful operation;
+the exclusive one-shot/no-retry marker and preservation of `BC0002`
+are unchanged. **No RC3 AWS image, actual staging/write/restore/GO,
+MVS acceptance, TA.4 human sign-off, or release publication is claimed.**
+The next evidence must come from the owner-executed MVS one-shot and
+retained JES/HETMAP/SYSOUT reports. **TA.2 remains IN PROGRESS.**
