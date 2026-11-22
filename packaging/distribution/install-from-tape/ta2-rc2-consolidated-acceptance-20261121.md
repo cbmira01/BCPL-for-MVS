@@ -16,11 +16,11 @@ The owner-reported `TA2RC2RB` JOB **9343** completed the 21 tape-to-TSO002 resto
 
 - Default: offline manifest/JCL preview and saved-readback evidence validation.
 - `--live`: **one read-only** MVS `LISTDS LABEL` inquiry, no allocation or tape operation.
-- `--run`: one owner-approved, guarded attempt, with a single interactive `[y/N]`; refuses without a separate exact Git-committed `ta2-rc2-install-execution-approval.json`. **This execution approval has not yet been given or committed.**
+- `--run`: one owner-approved, guarded attempt, with a single interactive `[y/N]`. The operator's explicit `Y` is the stateful authorization; no separate Git approval file is needed. A refusal or any response other than `Y` does not consume the one-shot attempt.
 
 For the proposed stateful operation, the runner creates **21 new** `HERC02.BCPL.TA2INS.*` datasets on `TSO002` from the already restored `HERC02.BCPL.TA2RB.BT0001`–`BT0021`: one `IEBGENER` PS copy and twenty `IEBCOPY` PDS copies. Destination names derive from the frozen release manifest. Every output uses `DISP=(NEW,CATLG,DELETE)`; `BT0012` preserves `PO/U/0/6144`. It then submits the original canonical 63-step `MRREGRES` JCL **retargeted exclusively to the new installed MR10 datasets**. The 12 interpreted `R01`–`R12` execution steps must be present at RC=0000. No existing development, staging, readback or installed dataset is an output; the runner never initializes, mounts, unmounts, positions or writes tape.
 
-Each operation saves MVS JES reports and SHA-256-sealed evidence under `workarea/ta2-rc2-install-acceptance/`. A durable exclusive invocation marker prevents an unattended retry. The operator must preserve partial allocations and diagnostics after a failure and authorize any recovery separately.
+Each operation saves MVS JES reports and SHA-256-sealed evidence under `workarea/ta2-rc2-install-acceptance/`. A durable exclusive one-shot invocation marker is created **only after** the operator enters `Y` and before the first installation JCL submission; it prevents any unattended retry. The operator must preserve partial allocations and diagnostics after a failure and authorize any recovery separately.
 
 ## Acceptance semantics
 
@@ -28,4 +28,22 @@ Each operation saves MVS JES reports and SHA-256-sealed evidence under `workarea
 
 ## Verification and authorization
 
-Locally, `test_ta2_rc2_acceptance.py` passes **14/14 synthetic/negative tests** and the Python entry point compiles. The JCL planner was checked for 21 position mapping, unique new DSNs, 80-column cards/71-column operands, one RECFM=U load library, no input tape operations, and exactly 63 MRREGRES steps / 12 execution cases. There is no observed recipient MVS result from this new procedure yet. **Before enabling `--run`, obtain a separate owner authorization for the exact `TA2INS` namespace, DASD TSO002 allocations, one `TA2INST` job, and one `TA2MR10` job.** No other scope or publication is implicitly authorized.
+Locally, `test_ta2_rc2_acceptance.py` passes **16/16 synthetic/negative tests** (37/37 across the install-from-tape suite) and the Python entry point compiles. The JCL planner was checked for 21 position mapping, unique new DSNs, 80-column cards/71-column operands, one RECFM=U load library, no input tape operations, and exactly 63 MRREGRES steps / 12 execution cases. There is no observed recipient MVS result from this new procedure yet. **The `--run` prompt expressly identifies the 21 new `TA2INS` datasets and one MRREGRES execution. An explicit `Y` authorizes that single installation-and-regression attempt; `N` leaves the installation unstarted and the one-shot marker absent.** No other scope or publication is implicitly authorized.
+
+## Follow-up — blocked first invocation and operator-consent fix
+
+The owner attempted the consolidated `--run` command and observed
+`TA.2 RC2 acceptance REFUSED: --run CLOSED: separate owner approval for TA2INS allocations is missing`,
+RC=2. This refusal occurred before any JES inquiry, MVS allocation,
+installation or one-shot intent marker. The extra file gate was redundant
+with the intended one-command, one-confirmation operator contract.
+
+The revised runner retains a 42-dataset MVS LISTDS safety preflight and
+the immutable JOB 9343 readback receipt, then prompts once. It writes the
+exclusive no-retry intent marker **after an explicit Y**, just before
+submitting `TA2INST`. The unchanged successful path remains 21 newly
+allocated datasets and a single 63-step canonical MRREGRES job; accepted
+outputs still require 12-case manual `EXP:/RP:/CODE=` review. The
+37/37 local install-from-tape tests (16 in the acceptance module) passed;
+new consent/decline and one-shot guards were exercised synthetically.
+No claim of a new MVS JOB or semantic PASS is made by this fix.

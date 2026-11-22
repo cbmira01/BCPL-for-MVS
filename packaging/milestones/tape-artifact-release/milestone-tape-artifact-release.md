@@ -1329,11 +1329,32 @@ and offline-tested `install-from-tape/scripts/ta2-rc2-acceptance` now provide
 one MVS-facing entry point for an isolated installation/usage pilot.
 The immediate `--live` procedure issues one **read-only** MVS LISTDS
 job for all 21 restored DCBs and 21 absent proposed `TA2INS` destinations.
-A stateful `--run` is **refused** until a separate owner-approved,
-Git-committed exact execution contract authorizes 21 new datasets on
-TSO002, one TA2INST 21-step IEBGENER/IEBCOPY job and one TA2MR10
-63-step canonical MRREGRES job. The 12 interpreted regression cases and
+A stateful `--run` now performs the same read-only preflight and
+requires one explicit **[y/N]** confirmation before authorizing 21 new
+datasets on TSO002, one TA2INST 21-step IEBGENER/IEBCOPY job and one
+TA2MR10 63-step canonical MRREGRES job. The exclusive no-retry marker
+is created only after operator confirmation; no separate Git approval
+file is required. The 12 interpreted regression cases and
 manual `EXP:`/`RP:`/`CODE=` review remain distinct semantic gates;
 this candidate declares `native_compiler: absent`. No new MVS inquiry,
 allocation, installation, MR10 regression or publication is asserted by
 this commit. **TA.2 remains IN PROGRESS; TA.3+ unchanged.**
+
+## TA.2 — Consolidated acceptance gate refusal resolved (21 November 2026 EST)
+
+The owner ran the consolidated installation/usage entry point and received
+`--run CLOSED: separate owner approval for TA2INS allocations is missing`
+(RC=2); no MVS operation or installation marker was created. The
+corrected implementation removes the redundant approval-file prerequisite
+but retains all manifest, AWS SHA, immutable JOB 9343 readback evidence,
+21 restored DCB / 21 target-absence MVS LISTDS checks, explicit interactive
+`[y/N]` confirmation and one-shot/no-retry protections.
+
+The owner now confirms the **combined** 21-dataset TSO002 TA2INS installation
+and single 12-case MR10 regression once, in the one `--run` procedure.
+The runner writes the exclusive attempt marker **after Y** and immediately
+before submitting installation JCL. An N/cancel before that point does not
+consume a one-shot installation attempt. The 16 focused synthetic tests and
+37 entire local install-from-tape tests passed. No MVS installation or
+BCPL usage result is claimed until the owner reports actual JES evidence.
+TA.2 remains IN PROGRESS.

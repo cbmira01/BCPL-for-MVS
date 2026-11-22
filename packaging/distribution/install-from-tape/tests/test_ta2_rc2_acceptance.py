@@ -2,8 +2,10 @@
 import importlib.machinery
 import importlib.util
 import json
+import contextlib
+import io
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import tempfile
 import unittest
 
@@ -136,10 +138,67 @@ class AcceptanceTests(unittest.TestCase):
         with self.assertRaises(mod.Refusal):
             mod.regression_steps(9350,summary.replace('R09 ICINT19 RC=0000','R09 ICINT19 RC=0004'))
 
-    def test_run_closed_before_any_mvs_job(self):
-        with patch.object(mod,'APPROVAL',Path('/missing/approval')):
-            with self.assertRaisesRegex(mod.Refusal,'separate owner approval'):
-                mod.owner_approval(('a','b'))
+    def test_consent_marker_exclusive_and_provenance(self):
+        with tempfile.TemporaryDirectory(dir=SCRIPT.parents[4] / 'workarea') as path:
+            folder=Path(path)
+            marker=folder/'one-shot.json'
+            with patch.object(mod,'INTENT',marker), patch.object(mod.sys,'stdin',Mock(isatty=lambda: True)):
+                mod.arm_once(folder, ('a'*64,'b'*64))
+                record=json.loads(marker.read_text())
+                self.assertEqual(record['status'],'OPERATOR_CONFIRMED_ONE_SHOT_INSTALL_NO_RETRY')
+                self.assertEqual(record['datasets'],21)
+                self.assertEqual(record['install_sha256'],'a'*64)
+                self.assertFalse(record['publication_authorized'])
+                with self.assertRaises(FileExistsError):mod.arm_once(folder, ('a'*64,'b'*64))
+
+    def exercise_operator(self, consent):
+        with tempfile.TemporaryDirectory(dir=SCRIPT.parents[4] / 'workarea') as temp:
+            root=Path(temp); marker=root/'one-shot.json'; reg=root/'regression.jcl'
+            reg.write_text(fake_regression())
+            core=Mock()
+            core.load_config.return_value={'mvs':{'hlq':'HERC02'}}
+            core.authenticated_job_card.side_effect=lambda cfg,name,desc,redact: [f'//{name} JOB (BCPL)']
+            install_summary='JOB 9350 TA2INST\nJOB RESULT: SUCCESS\nHIGHEST RC: 0000\n'+''.join(
+                f'I{i:04d} {"IEBGENER" if i==1 else "IEBCOPY"} RC=0000\n' for i in range(1,22))
+            mr_summary='JOB 9351 TA2MR10\nJOB RESULT: SUCCESS\nHIGHEST RC: 0000\n'+''.join(
+                f'R{i:02d} ICINT19 RC=0000\n' for i in range(1,13))
+            def fake_submit(core,cfg,folder,label,body,max_rc):
+                return {'install':(9350,install_summary,'IEF142I complete'),
+                        'regression':(9351,mr_summary,'IEF142I complete')}[label]
+            with (patch.object(mod,'OUTPUT',root), patch.object(mod,'INTENT',marker),
+                  patch.object(mod,'REGRESSION',reg),
+                  patch.object(mod,'prepare',return_value=self.rows),
+                  patch.object(mod,'accepted_readback',return_value={'job':9343}),
+                  patch.object(mod,'prepared_decks',return_value=('//I0001 EXEC PGM=IEBGENER\n',
+                      '//R01 EXEC PGM=ICINT19\n',('a'*64,'b'*64))),
+                  patch.object(mod,'script',return_value=core),
+                  patch.object(mod,'inquire',return_value=(9349,'','catalog')) as query,
+                  patch.object(mod,'validate_catalog'),
+                  patch.object(mod,'submit',side_effect=fake_submit) as submitted,
+                  patch.object(mod.sys,'stdin',Mock(isatty=lambda: True)),
+                  patch('builtins.input',return_value=consent),
+                  contextlib.redirect_stdout(io.StringIO()),
+                  contextlib.redirect_stderr(io.StringIO())):
+                result=mod.run(False,True)
+                self.assertEqual(query.call_count,1)
+                self.assertEqual(marker.exists(), consent=='Y')
+                self.assertEqual(submitted.call_count, 2 if consent=='Y' else 0)
+                if consent=='Y':
+                    self.assertEqual(result,0)
+                    with self.assertRaisesRegex(mod.Refusal,'already consumed'):
+                        mod.run(False,True)
+                else:
+                    self.assertEqual(result,2)
+                folders=list(root.glob('20*'))
+                self.assertEqual(len(folders),1)
+                self.assertTrue((folders[0]/'SHA256SUMS').is_file())
+                self.assertTrue((folders[0]/('result.json' if consent=='Y' else 'failure.json')).exists())
+
+    def test_operator_decline_consumes_no_install_attempt(self):
+        self.exercise_operator('N')
+
+    def test_operator_yes_arms_then_submits_once(self):
+        self.exercise_operator('Y')
 
     def test_refuse_unsafe_jcl(self):
         with self.assertRaises(mod.Refusal):mod.cards('//'+'X'*72+'\n')

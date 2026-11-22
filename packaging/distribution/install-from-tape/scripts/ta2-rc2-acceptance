@@ -2,7 +2,7 @@
 """TA.2 BC0002 restore/install/use acceptance; MVS results are authoritative.
 
 Default: offline contract preview. --live: read-only MVS LISTDS preflight.
---run: one new installation and MRREGRES, CLOSED pending exact owner approval.
+--run: one operator-confirmed installation and MRREGRES, no separate approval file.
 No tape command, target overwrite, automatic retry or publication.
 """
 from __future__ import annotations
@@ -16,7 +16,6 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 import tempfile
 
@@ -29,7 +28,6 @@ PLANNER = BASE / 'create-tape/scripts/ta2-rc2-readback-plan'
 PRODUCER = BASE / 'create-tape/scripts/ta2-rc2-produce-once'
 CORE = ROOT / 'tools/datasets/dspal-core.py'
 REGRESSION = ROOT / 'mr10-kit-compiler/jcl/run-regression-tests.jcl'
-APPROVAL = BASE / 'install-from-tape/ta2-rc2-install-execution-approval.json'
 INTENT = OUTPUT / 'BC0002-install-invoked.json'
 SOURCE_PREFIX = 'HERC02.BCPL.TA2RB.'
 INST_PREFIX = 'HERC02.BCPL.TA2INS.'
@@ -256,30 +254,16 @@ def regression_steps(job, summary):
          'MRREGRES 12 interpreted execution steps incomplete or nonzero')
 
 
-def owner_approval(shas):
-    """Locked unless the owner explicitly approves these *new* allocations."""
-    need(APPROVAL.is_file() and not APPROVAL.is_symlink(),
-         '--run CLOSED: separate owner approval for TA2INS allocations is missing')
-    need(APPROVAL.read_text().strip() != '', 'empty owner approval')
-    def git(*args):
-        result = subprocess.run(['git','-C',str(ROOT),*args], capture_output=True,
-                                timeout=20, check=False)
-        need(result.returncode == 0, 'Git main check failed')
-        return result.stdout
-    need(git('branch','--show-current').strip() == b'main' and
-         not git('status','--porcelain','--untracked-files=no').strip() and
-         git('show','HEAD:'+APPROVAL.relative_to(ROOT).as_posix()) == APPROVAL.read_bytes(),
-         'owner approval does not match clean Git main')
-    data = json.loads(APPROVAL.read_text())
-    need(data == {'schema_version':1,'status':'OWNER_APPROVED_SINGLE_RC2_INSTALL_AND_MRREGRES',
-                  'candidate':'BCPL-0.1.0-rc2','tape_volser':'BC0002',
-                  'source_readback_job':9343, 'source_prefix':SOURCE_PREFIX,
-                  'new_target_prefix':INST_PREFIX, 'dasd_volume':VOLUME,
-                  'installed_datasets':21,'installation_job':'TA2INST',
-                  'regression_job':'TA2MR10','installation_body_sha256':shas[0],
-                  'regression_body_sha256':shas[1],
-                  'single_attempt':True,'publication_authorized':False},
-         'owner approval content does not match planned MVS work')
+def arm_once(folder, shas):
+    """Record an exclusive one-shot intent only after explicit operator consent."""
+    need(sys.stdin.isatty(), 'installation consent requires an interactive terminal')
+    save(INTENT, (json.dumps({
+        'status':'OPERATOR_CONFIRMED_ONE_SHOT_INSTALL_NO_RETRY',
+        'evidence':str(folder.relative_to(ROOT)),
+        'install_sha256':shas[0], 'regression_sha256':shas[1],
+        'readback_job':9343, 'volume':VOLUME,
+        'datasets':21, 'install_job':JOBS[0], 'regression_job':JOBS[1],
+        'publication_authorized':False}, sort_keys=True) + '\n').encode('ascii'))
 
 def with_job(core, cfg, job, description, body):
     return cards('\n'.join(core.authenticated_job_card(cfg, job, description, False)) +
@@ -291,7 +275,6 @@ def run(live, execute):
     canonical = REGRESSION.read_text(encoding='ascii')
     install, regression, shas = prepared_decks(rows, canonical)
     if execute:
-        owner_approval(shas)  # before first JES inquiry or irreversible marker
         need(sys.stdin.isatty(), 'one-shot install requires interactive terminal')
         need(not INTENT.exists(), 'install attempt already consumed; do not retry')
     if not live and not execute:
@@ -299,10 +282,6 @@ def run(live, execute):
               'one TA2INST and one TA2MR10 MVS job; stateful execution NOT authorized.')
         return 0
     folder = evidence_dir()
-    if execute:
-        save(INTENT, (json.dumps({'status':'ONE_SHOT_INSTALL_INVOCATION_CONSUMED_NO_RETRY',
-                                 'evidence':str(folder.relative_to(ROOT)),
-                                 'install_sha256':shas[0], 'regression_sha256':shas[1]})+'\n').encode('ascii'))
     try:
         core = script('ta2_install_core', CORE)
         cfg = core.load_config()
@@ -314,7 +293,8 @@ def run(live, execute):
               '21 new install targets absent; JOB 9343 evidence accepted.')
         if execute:
             if input('Create 21 new TA2INS datasets and run MRREGRES once? [y/N]: ').strip().upper() != 'Y':
-                raise Refusal('operator declined; no retry without new approval')
+                raise Refusal('operator declined; no installation submitted')
+            arm_once(folder, shas)
             install_job, s, r = submit(core, cfg, folder, 'install',
                                        with_job(core,cfg,JOBS[0],'TA2 INSTALL',install),0)
             exact_install_result(install_job, s, r)
@@ -346,7 +326,7 @@ def run(live, execute):
             pass
         print('TA.2 RC2 acceptance HALTED: ' + str(exc), file=sys.stderr)
         print('Evidence: ' + str(folder.relative_to(ROOT)), file=sys.stderr)
-        if execute:
+        if execute and INTENT.exists():
             print('NO RETRY: preserve partial installation and JES reports.',file=sys.stderr)
         return 2
 
@@ -354,7 +334,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     group = p.add_mutually_exclusive_group()
     group.add_argument('--live', action='store_true', help='one read-only MVS preflight job')
-    group.add_argument('--run', action='store_true', help='exact owner-approved one-shot installation/usage')
+    group.add_argument('--run', action='store_true', help='operator-confirmed one-shot installation/usage')
     a = p.parse_args(argv)
     try:
         return run(a.live, a.run)

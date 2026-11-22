@@ -37,9 +37,11 @@ The [consolidated acceptance record](ta2-rc2-consolidated-acceptance-20261121.md
 and tested `scripts/ta2-rc2-acceptance` provide a single MVS-facing entry
 point. `--live` performs a read-only catalog/DCB preflight of the 21
 JOB-9343 readback datasets and confirms 21 new installation destinations
-absent. The distinct `--run` phase, currently locked pending **separate
-owner approval**, would allocate a new `HERC02.BCPL.TA2INS.*` environment,
+absent. The consolidated `--run` phase performs the same read-only preflight and
+then requires one explicit operator **Y** confirmation before allocating a new `HERC02.BCPL.TA2INS.*` environment,
 copy all 21 restored datasets with IEBGENER/IEBCOPY, and run the canonical
 12-case MRREGRES from the independently installed MR10 inputs/load module.
 The installation is a same-system pilot, not a clean-target TA.3/TA.7 PASS.
 No new MVS operation is claimed.
+
+The first operator invocation of `--run` refused at a redundant Git approval-file gate (RC=2, no MVS operation or one-shot marker). The revised procedure removes that gate; the explicit `[y/N]` response is the sole stateful authorization and the durable no-retry marker is created only after `Y`. No stateful MVS installation result has been reported.
