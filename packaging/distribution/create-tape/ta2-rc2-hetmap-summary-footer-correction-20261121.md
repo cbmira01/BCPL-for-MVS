@@ -38,3 +38,7 @@ A successful revised audit will record a **qualified MVS/JES + SL label/file str
 **Offline verification:** Python AST checks; **37/37** tests in the two updated source-controlled reviewer test suites, plus **12/12** additional footer-parser negative and integration checks in the assistant's separate repository-root workarea, all PASS. This does not replace the actual MVS tape evidence.
 
 **Preserve:** `mvs-state/tape/bcpl-0.1.0-rc2-BC0002.aws`, its existing mount, original postwrite and production evidence, and permanent no-retry marker. **Do not rerun, reinitialize, remount, rewind, unmount or overwrite** this tape. The next operation is exactly **one read-only structural re-review**. No MVS restore, byte-for-byte member verification, clean-target installation, source-rights clearance or publication is authorized. **TA.2 remains IN PROGRESS.**
+
+## Follow-up: owner-reported corrected independent audit PASS
+
+The owner ran the corrected read-only postwrite auditor; it reported **RC=0**, JOB **9339** 21/21 RC=0000, **21 SL datasets**, exactly **64 physical files / 2,559 blocks**, no per-file/count/layout discrepancies and SHA-256 `123657b2feaeea739350853f8b8437ccb73b0e917442ddd3220589c7ae180375` unchanged. Private SHA256SUMS-sealed evidence: `workarea/ta2-rc2-postwrite-audit/20261122T001850Z-27778`. [Qualified AWS structural acceptance](ta2-rc2-aws-structural-qualified-acceptance-20261121.md) records the verified scope. No AWS rewrite or new tape write was performed; independent MVS readback remains pending.
