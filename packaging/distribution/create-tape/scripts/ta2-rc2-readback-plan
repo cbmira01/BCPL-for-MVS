@@ -147,6 +147,26 @@ def save(path,data):
                           getattr(os,'O_NOFOLLOW',0),0o600),'wb') as f:
         f.write(data);f.flush();os.fsync(f.fileno())
 
+def preflight_device(producer, media, folder):
+    """Accept read-only DASD inquiries with an empty or exact candidate drive.
+
+    Does not authorize positioning or tape reads. Recheck a mounted candidate
+    immediately before any separately approved stateful readback submission.
+    """
+    console=producer.capture(folder,'mounted-hercules',
+                 ['tools/mvs/mvs-console','tape','status','0480'])
+    drive,detail=device_identity(console)
+    need(drive in ('EMPTY','MOUNTED_BC0002'),
+         'Hercules 0480 is not empty or the exact BC0002 candidate: '+drive)
+    guest=producer.capture(folder,'mounted-mvs',
+                 ['tools/mvs/mvs-console','mvs','D U,TAPE'])
+    state=media.parse_mvs(guest)
+    expected='O-NRD' if drive=='EMPTY' else 'O'
+    need(state==expected,
+         'MVS 480 state conflicts with Hercules '+drive+': '+state)
+    return drive,state
+
+
 def live(rows,volume,jobless_sha):
     need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
          'unsafe repo workarea')
@@ -160,13 +180,7 @@ def live(rows,volume,jobless_sha):
         target=load('ta2rb_target',SCRIPTS/'ta2-target-preflight')
         review=load('ta2rb_target_review',SCRIPTS/'ta2-target-review')
         producer.check_docker(folder)
-        console=producer.capture(folder,'mounted-hercules',
-                 ['tools/mvs/mvs-console','tape','status','0480'])
-        need(len([x for x in console.splitlines() if re.search(r'\b0:0480\s+3420\s+',x) and
-                  IMAGE.name in x and not re.search(r'\bbusy\b',x,re.I)])==1,
-             'Hercules 0480 does not hold exact BC0002 candidate')
-        mvs=producer.capture(folder,'mounted-mvs',['tools/mvs/mvs-console','mvs','D U,TAPE'])
-        need(media.parse_mvs(mvs)=='O','MVS 480 not online/ready')
+        drive_state,mvs_state=preflight_device(producer,media,folder)
         config=core.load_config();need(config['mvs']['hlq']=='HERC02','MVS HLQ differs')
         core.require_reader_ready(config)
         names=[r['target'] for r in rows];sources=[r['source'] for r in rows]
@@ -204,10 +218,13 @@ def live(rows,volume,jobless_sha):
         receipt={'status':'RC2_READBACK_READ_ONLY_MVS_PREFLIGHT_PASS',
                  'catalog_job':job,'vtoc_job':vjob,'proposed_dasd_volume':volume,
                  'reported_free_tracks':capacity,'target_datasets':names,
-                 'readback_jcl_sha256':jobless_sha,'stateful_execution_authorized':False}
+                 'readback_jcl_sha256':jobless_sha,
+                 'hercules_drive_state':drive_state,'mvs_drive_state':mvs_state,
+                 'stateful_execution_authorized':False}
         save(folder/'result.json',(json.dumps(receipt,sort_keys=True,indent=2)+'\n').encode())
         producer.seal_evidence(folder)
-        print(f'TA.2 RC2 READBACK PREFLIGHT PASS: 21 new targets absent; '
+        print(f'TA.2 RC2 READBACK PREFLIGHT PASS: Hercules 0480 {drive_state}, MVS {mvs_state}; '
+              '21 new targets absent; '
               f'catalog JOB {job}, VTOC JOB {vjob}; IEHLIST reports {capacity} free tracks.')
         print('Evidence: '+folder.relative_to(ROOT).as_posix())
         print('No tape read/position, DASD allocation or readback job was performed.')

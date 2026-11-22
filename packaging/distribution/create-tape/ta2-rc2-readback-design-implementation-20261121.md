@@ -35,3 +35,7 @@ The exact new script and companion `tests/test_ta2_rc2_readback_plan.py` were te
 ## Live design preflight refused: read-only device diagnosis pending
 
 The owner reported `--volume TSO002 --live` **RC=2**: Hercules 0480 did not demonstrate the expected attached BC0002 image. The original sealed error evidence resides in `workarea/ta2-rc2-readback-preflight/20261122T005713Z-27881`; no LISTDS/IEHLIST jobs, tape movement or scratch allocation occurred. The [investigation record](ta2-rc2-readback-device-refusal-20261121.md) and `--inspect-drive` provide only fresh display inquiries and a bounded device classification. The candidate image and accepted structural review remain unchanged. This refusal is **not a readback operation** and does not authorize a mount or JES readback.
+
+## Design implementation update: empty drive does not block read-only DASD inquiry
+
+The [actual device diagnosis](ta2-rc2-empty-drive-readonly-preflight-20261121.md) confirms original and fresh Hercules 0480 EMPTY, MVS 480 O-NRD. A read-only preflight revision allows consistent empty or exact mounted states and keeps the existing new-target LISTDS/VTOC inquiries unchanged. It does not authorize a mount, scratch allocation, or a readback job. The accepted tape remains structurally qualified and immutable.

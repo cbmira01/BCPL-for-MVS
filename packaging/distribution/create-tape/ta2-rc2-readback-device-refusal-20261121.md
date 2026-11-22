@@ -43,3 +43,7 @@ The correction does **not** relax or bypass the original strict `--live` mounted
 **18/18 focused synthetic offline tests PASS** for the updated readback-plan test module in the assistant's repository-root workspace, including the accepted manifest/JCL design, exact mounted image, empty/busy/foreign/ambiguous device output, tampered original failure receipt and sealed read-only report. Python AST passed. Exact Git blobs of the changed code and tests matched local `git hash-object` before the documentation commit.
 
 **TA.2 remains IN PROGRESS.** The accepted `BC0002` AWS, original no-retry marker and prior reports are immutable. Neither a 21-step readback job nor additional MVS state change was authorized or executed.
+
+## Follow-up: confirmed empty unit and read-only preflight correction
+
+The owner executed the preserved-report `--inspect-drive` against actual Hercules/MVS with **RC=0**. Original and fresh 0480 show **EMPTY**, and MVS reports **O-NRD**; private sealed evidence: `workarea/ta2-rc2-readback-preflight/20261122T010414Z-27961`. The exact owner-reported device rows and the narrow source change are recorded in [the qualified diagnosis and read-only correction](ta2-rc2-empty-drive-readonly-preflight-20261121.md). The previously blocked `--live` DASD LISTDS/IEHLIST preflight can run with an empty unit, but **no BC0002 mount or MVS readback is authorized**.

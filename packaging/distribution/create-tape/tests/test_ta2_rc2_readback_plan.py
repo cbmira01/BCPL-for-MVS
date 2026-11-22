@@ -172,6 +172,57 @@ class ReadbackPlanTests(unittest.TestCase):
             self.assertEqual(record['current_drive_class'],'MOUNTED_BC0002')
             self.assertFalse(record['stateful_execution_authorized'])
             self.assertTrue((folder/'SHA256SUMS').exists())
+    def test_empty_drive_allows_readonly_dasd_preflight(self):
+        response=('HHC02279I 0:0480 3420 * IO[3171] maxsize=0 eotmargin=128K deonirq=N')
+        queried=[]
+        def capture(folder,name,args):
+            queried.append((name,tuple(args)))
+            return response if name=='mounted-hercules' else '480 3400 O-NRD'
+        producer=types.SimpleNamespace(capture=capture)
+        media=types.SimpleNamespace(parse_mvs=lambda text:'O-NRD')
+        self.assertEqual(mod.preflight_device(producer,media,Path('/ignored')),
+                         ('EMPTY','O-NRD'))
+        self.assertEqual(len(queried),2)
+        self.assertEqual([name for name,_ in queried],['mounted-hercules','mounted-mvs'])
+        self.assertTrue(all(('tape','mount') not in cmd and 'devinit' not in cmd
+                            for _,cmd in queried))
+    def test_mounted_exact_drive_allows_readonly_dasd_preflight(self):
+        response='HHC02279I 0:0480 3420 /tk5/tape/'+mod.IMAGE.name
+        p=types.SimpleNamespace(capture=lambda folder,name,args:
+                                response if name=='mounted-hercules' else '480 3400 O')
+        m=types.SimpleNamespace(parse_mvs=lambda x:'O')
+        self.assertEqual(mod.preflight_device(p,m,Path('/ignored')),
+                         ('MOUNTED_BC0002','O'))
+    def test_preflight_rejects_foreign_and_busy_without_guest_inquiry(self):
+        for line in ('HHC02279I 0:0480 3420 /tk5/tape/foreign.aws',
+                     'HHC02279I 0:0480 3420 /tk5/tape/'+mod.IMAGE.name+' busy',
+                     'unrecognized DEVLIST'):
+            calls=[]
+            def capture(folder,name,args):
+                calls.append(name)
+                return line
+            p=types.SimpleNamespace(capture=capture)
+            m=types.SimpleNamespace(parse_mvs=lambda _:'O')
+            with self.subTest(line=line),self.assertRaises(mod.Refusal):
+                mod.preflight_device(p,m,Path('/ignored'))
+            self.assertEqual(calls,['mounted-hercules'])
+    def test_preflight_rejects_inconsistent_mvs_state(self):
+        for drive,state in (('*','O'),
+                            ('/tk5/tape/'+mod.IMAGE.name,'O-NRD')):
+            response='HHC02279I 0:0480 3420 '+drive
+            p=types.SimpleNamespace(capture=lambda folder,name,args:
+                                    response if name=='mounted-hercules' else state)
+            m=types.SimpleNamespace(parse_mvs=lambda _ : state)
+            with self.subTest(state=state,drive=drive),self.assertRaisesRegex(mod.Refusal,'conflicts'):
+                mod.preflight_device(p,m,Path('/ignored'))
+    def test_original_image_not_changed_in_live_preflight(self):
+        text=SCRIPT.read_text()
+        self.assertIn('drive_state,mvs_state=preflight_device(producer,media,folder)',text)
+        self.assertIn('original_image()',text)
+        self.assertIn("'hercules_drive_state':drive_state",text)
+        self.assertIn("'mvs_drive_state':mvs_state",text)
+        self.assertNotIn("'tape','mount'",text)
+
     def test_device_review_original_failure_mismatch_refuses(self):
         base=SCRIPT.parents[4]/'workarea'
         base.mkdir(exist_ok=True)
