@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+"""TA.3: guarded BC0003 native-only and combined MVS recipient trials.
+
+No accepted TA.2 or TA3N1 job is repeated. The recipient uses standard
+MVS IEBGENER, IEBCOPY, LISTDS and, in combined mode, installed ICINT19.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+BASE = ROOT / 'packaging/distribution'
+JCL = BASE / 'install-from-tape/jcl'
+SCRIPTS = BASE / 'create-tape/scripts'
+WORK = ROOT / 'workarea'
+OUT = WORK / 'ta3-rc3-remaining-profiles'
+MARKER = OUT / 'BC0003-TA3N2-TA3N3-one-shot.json'
+PROFILE = (
+    ('native-only', 'TA3N2', 'TA3NATV', [3] + list(range(13,22)), 67),
+    ('combined', 'TA3N3', 'TA3BOTH', list(range(3,22)), 146),
+)
+BOOT = ('INSTALL', 'DATASETS', 'RELEASE', 'RESTORE')
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(ok, message):
+    if not ok:
+        raise Refusal(message)
+
+
+def tools():
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec, spec_from_loader
+    path = JCL.parent / 'scripts/ta3-rc3-recipient'
+    need(path.is_file() and not path.is_symlink(), 'TA3N1 runner missing')
+    loader = SourceFileLoader('ta3n1_tools', str(path))
+    spec = spec_from_loader(loader.name, loader)
+    need(spec is not None and spec.loader is not None, 'cannot load TA3N1 runner')
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def selection(manifest, pre):
+    need(manifest['release']['candidate_id']=='BCPL-0.1.0-rc3' and
+         manifest['release']['native_compiler']=='absent' and
+         manifest['volume']['volser']=='BC0003', 'candidate identity differs')
+    all_rows = manifest['datasets']
+    need(len(all_rows)==21 and
+         [r['sequence'] for r in all_rows]==list(range(1,22)),
+         'manifest sequence differs from 1..21')
+    result={}
+    for label, tag, job, positions, expected_members in PROFILE:
+        prefix = pre+'BCPL.'+tag
+        rows=[(2,prefix+'.DIST.INST',list(BOOT))]
+        for n in positions:
+            row=all_rows[n-1]
+            expected_group=('common' if n==3 else
+                            'mr10' if 4<=n<=12 else
+                            'native' if 13<=n<=20 else 'cambridge-source')
+            need(row['group']==expected_group, f'BT{n:04d} group mismatch')
+            suffix=row['target_dsn_template']
+            need(suffix.startswith('{HLQ}.BCPL.'),f'BT{n:04d} DSN template')
+            dsn=prefix+'.'+suffix[len('{HLQ}.BCPL.'):]
+            need(len(dsn)<=44 and len(dsn.split('.'))<=22,
+                 'recipient MVS DSN too long '+dsn)
+            rows.append((n,dsn,row['members'],row['target_dcb']))
+        need(len(rows)==len(positions)+1 and
+             sum(len(x[2]) for x in rows)==expected_members,
+             label+' selected member count differs')
+        result[label]=(tag,job,rows)
+    names=[x[1] for _,_,rows in result.values() for x in rows]
+    need(len(names)==31 and len(names)==len(set(names)),
+         'recipient dataset isolation or count invalid')
+    return result
+
+
+def render(name, prefix, ref):
+    need(name in ('TA3BOOT','TA3BT2','TA3VIEW','TA3NATV','TA3BOTH','TA3GO'),
+         'unknown recipient job body')
+    path = JCL/(name+'.jcl')
+    need(path.is_file() and not path.is_symlink(), name+' not source-controlled')
+    body=path.read_text('ascii')
+    body=(body.replace('<HLQ>.BCPL.', prefix+'.')
+              .replace('<INST>',prefix)
+              .replace('<TAPE>',ref.TAPE_UNIT)
+              .replace('<DASD>','SYSDA')
+              .replace('<DVOL>',ref.VOLUME))
+    active=[x for x in body.splitlines() if not x.startswith('//*')]
+    need(body.isascii() and body.endswith('//\n') and
+         all(len(x)<=80 and '\t' not in x for x in body.splitlines()) and
+         all(len(x)<=71 for x in active if x.startswith('//')) and
+         all('<' not in x and '>' not in x for x in active) and
+         all(' JOB ' not in x for x in active if x.startswith('//')) and
+         'HERC02.BCPL.MR10KIT.' not in body,
+         name+': JCL site substitution/card-width validation failed')
+    return body
+
+
+def validate_bodies(bodies, selected, ref):
+    for label,(tag,job,rows) in selected.items():
+        prefix='HERC02.BCPL.'+tag
+        b=bodies[label]
+        positions=[r[0] for r in rows[1:]]
+        steps=re.findall(r'(?m)^//(R\d{4})\s+EXEC PGM=IEBCOPY',b[job])
+        need(steps==[f'R{n:04d}' for n in positions] and
+             b[job].count('DISP=(NEW,CATLG,DELETE)')==len(positions) and
+             b[job].count('VOL=(PRIVATE,RETAIN,SER=BC0003)')==len(positions),
+             label+': tape profile steps/allocation differ')
+        for n,dest,members,dcb in rows[1:]:
+            need(f'DSN=BCPL.BT{n:04d},UNIT={ref.TAPE_UNIT}' in b[job] and
+                 f'LABEL=({n},SL)' in b[job] and f'DSN={dest},' in b[job] and
+                 f'RECFM={dcb["recfm"]}' in b[job] and
+                 f'BLKSIZE={dcb["blksize"]}' in b[job],
+                 label+f': incorrect position/DCB BT{n:04d}')
+        need('LABEL=(1,SL)' in b['TA3BOOT'] and
+             'LABEL=(2,SL)' in b['TA3BT2'] and
+             f'DSN={prefix}.DIST.INST,' in b['TA3BT2'] and
+             b['TA3VIEW'].count(' EXEC PGM=IEBGENER')==4 and
+             all(f'{prefix}.DIST.INST({m})' in b['TA3VIEW'] for m in BOOT),
+             label+': installer bootstrap/view mismatch')
+    combined=bodies['combined']['TA3GO']
+    need(re.findall(r'(?m)^//([A-Z0-9]{2,8})\s+EXEC PGM=([A-Z0-9]+)',combined)==
+         ref.GO_STEPS and
+         combined.count('DSN=HERC02.BCPL.TA3N3.MR10KIT.LOAD')==3 and
+         'HERC02.BCPL.TA3N3.MR10KIT.TESTS(SCALVEC)' in combined,
+         'combined installed BCPL demo source changed')
+
+
+def query_absence(ref,rc3,core,cfg,folder,targets):
+    body=ref.deck_without_stat(core.stat_deck(cfg,targets))
+    job,report,_=ref.mvs_job(rc3,core,cfg,folder,'preflight',
+                             'DSPALST',body,None,max_rc=8)
+    need(ref.absent(core,report,targets),
+         'MVS catalog found an existing/unverified profile recipient')
+    return job
+
+
+def verify(rc3,ref,core,cfg,installed,ls,folder,label,rows):
+    names=[r[1] for r in rows]
+    body=ref.deck_without_stat(core.stat_deck(cfg,names))
+    cat,report,_=ref.mvs_job(rc3,core,cfg,folder,label+'-catalog',
+                             'DSPALST',body,[('STAT','IKJEFT01')])
+    for n,dsn,*rest in rows:
+        dcb={'recfm':'FB','lrecl':80,'blksize':800} if n==2 else rest[1]
+        actual,_=installed.exact_listds(core,report,dsn)
+        expect={'volume':ref.VOLUME,'dsorg':'PO','recfm':dcb['recfm'],
+                'lrecl':str(dcb['lrecl']),'blksize':str(dcb['blksize'])}
+        need(all(actual.get(k)==v for k,v in expect.items()),
+             label+': recipient MVS DCB/volume differs: '+dsn)
+    directory_deck=ref.deck_without_job(ls.list_members_deck(cfg,names))
+    job,report,_=ref.mvs_job(rc3,core,cfg,folder,label+'-directory',
+                             'DSPALLS',directory_deck,[('LIST','IKJEFT01')])
+    blocks=ls.member_blocks(report,names)
+    need(set(blocks)==set(names),label+': MVS PDS directory incomplete')
+    count=0
+    for n,dsn,members,*_ in rows:
+        actual=ls.parse_members(blocks[dsn])
+        need(len(actual)==len(set(actual)) and set(actual)==set(members)
+             and len(actual)==len(members),
+             label+': member directory mismatch: '+dsn)
+        count+=len(actual)
+    return cat,job,count
+
+
+def prior_checkpoint(ref):
+    """Read-only verification of the accepted TA3N1 local, sealed MVS receipt."""
+    need(ref.MARKER.is_file() and not ref.MARKER.is_symlink(),
+         'TA3N1 successful install marker absent')
+    marker=json.loads(ref.MARKER.read_text('utf-8'))
+    need(marker.get('status')=='OWNER_AUTHORIZED_TA3_BC0003_MR10_NO_RETRY' and
+         marker.get('aws_sha256')==ref.AWS_SHA256 and
+         marker.get('recipient_prefix')==ref.PREFIX,
+         'TA3N1 authorization receipt identity differs')
+    rel=marker.get('evidence','')
+    need(re.fullmatch(r'workarea/ta3-rc3-recipient/[0-9]{8}T[0-9]{6}Z-[0-9]+',rel),
+         'TA3N1 evidence path not canonical')
+    folder=ROOT/rel
+    need(folder.is_dir() and not folder.is_symlink() and
+         folder.resolve().is_relative_to((WORK/'ta3-rc3-recipient').resolve()),
+         'TA3N1 evidence directory missing/unsafe')
+    sha=folder/'SHA256SUMS'
+    need(sha.is_file() and not sha.is_symlink(), 'TA3N1 evidence not sealed')
+    listed=set()
+    for line in sha.read_text('ascii').splitlines():
+        match=re.fullmatch(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)',line)
+        need(match is not None,'TA3N1 seal format invalid')
+        hexsha,name=match.groups()
+        member=folder/name
+        need(name not in listed and member.is_file() and not member.is_symlink() and
+             hashlib.sha256(member.read_bytes()).hexdigest()==hexsha,
+             'TA3N1 saved JES evidence changed: '+name)
+        listed.add(name)
+    all_names={p.name for p in folder.iterdir()}
+    need(all_names==listed|{'SHA256SUMS'},'TA3N1 evidence inventory differs')
+    need({'result.json','go-semantic.json','go-report.txt','directory-report.txt'}
+         .issubset(listed),'TA3N1 essential MVS records missing')
+    result=json.loads((folder/'result.json').read_text('utf-8'))
+    semantic=json.loads((folder/'go-semantic.json').read_text('utf-8'))
+    jobs=result.get('jobs',{})
+    need(result.get('status')==
+         'TA3_BC0003_MVS_BOOTSTRAP_MR10_INSTALL_GO_PASS_ISOLATED_NAMESPACE' and
+         result.get('recipient_prefix')==ref.PREFIX and
+         result.get('restored_pds')==11 and
+         result.get('verified_members')==90 and
+         result.get('go_steps')==8 and
+         jobs=={'absence_preflight':9370,'boot':9371,'installer_restore':9372,
+                'installer_view':9373,'profile_restore':9374,'catalog':9375,
+                'directory':9376,'installed_go':9377} and
+         semantic.get('exp_contract_met') is True and
+         semantic.get('golden_rp_and_code_match') is True,
+         'TA3N1 successful installed BCPL evidence does not match owner checkpoint')
+    return rel
+
+
+def run(live=False):
+    rc3=ref=None
+    folder=None
+    marked=False
+    try:
+        ref=tools()
+        rc3=ref.load_module()
+        import yaml
+        manifest=yaml.safe_load((BASE/'manifest/releases/BCPL-0.1.0-rc3.yaml').read_text('utf-8'))
+        selected=selection(manifest,'HERC02.')
+        bodies={}
+        for label,(tag,job,rows) in selected.items():
+            prefix='HERC02.BCPL.'+tag
+            bodies[label]={name:render(name,prefix,ref) for name in
+                           ('TA3BOOT','TA3BT2','TA3VIEW',job)}
+            if label=='combined':
+                bodies[label]['TA3GO']=render('TA3GO',prefix,ref)
+        validate_bodies(bodies,selected,ref)
+        need(ref.digest_file(ref.IMAGE)==ref.AWS_SHA256,
+             'immutable BC0003 SHA-256 changed')
+        if not live:
+            print('TA.3 PROFILES PLAN PASS: TA3N2 native-only 11 PDS/67 members; '
+                  'TA3N3 combined 20 PDS/146 members; no MVS operation.')
+            return 0
+        need(sys.stdin.isatty(), 'stateful operation requires one owner confirmation')
+        rc3.check_git()
+        accepted_n1=prior_checkpoint(ref)
+        need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+             'repository workarea not suitable for sealed results')
+        need(not MARKER.exists() and not MARKER.is_symlink(),
+             'TA.3 N2/N3 stateful attempt consumed: NO RETRY')
+        OUT.mkdir(mode=0o700, exist_ok=True)
+        folder=OUT/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+
+                    '-'+str(os.getpid()))
+        folder.mkdir(mode=0o700, exist_ok=False)
+        core=rc3.load('ta3p_core',ROOT/'tools/datasets/dspal-core.py')
+        ls=rc3.load('ta3p_ls',ROOT/'tools/datasets/dspal-ls.py')
+        prod=rc3.load('ta3p_prod',SCRIPTS/'ta2-rc2-produce-once')
+        media=rc3.load('ta3p_media',SCRIPTS/'ta2-rc2-media-preflight')
+        installed=rc3.load('ta3p_installed',SCRIPTS/'ta2-rc3-installed-mr10-continuation')
+        reviewer=rc3.load('ta3p_semantics',JCL.parent/'scripts/ta2-rc2-mr10-review')
+        cfg=core.load_config()
+        need(cfg['mvs']['hlq']=='HERC02','operator MVS identity changed')
+        core.require_reader_ready(cfg)
+        drive_before=rc3.drive(folder,prod,media)
+        need(drive_before in ('EMPTY','RC3'),
+             'drive 0480 holds media other than the accepted BC0003')
+        names=[r[1] for _,_,rows in selected.values() for r in rows]
+        preflight=query_absence(ref,rc3,core,cfg,folder,names)
+        need(rc3.drive(folder,prod,media)==drive_before and
+             ref.digest_file(ref.IMAGE)==ref.AWS_SHA256,
+             'tape drive/image changed during MVS preflight')
+        print(f'TA.3 PROFILE PREFLIGHT PASS: JOB {preflight}; '
+              f'31 absent targets, BC0003 intact, drive {drive_before}.')
+        if input('Install native-only TA3N2 and combined TA3N3 ONCE? [y/N]: ').strip().upper()!='Y':
+            rc3.artifact(folder,'result.json',json.dumps({'status':'DECLINED_NO_INSTALL'})+'\n')
+            rc3.seal(folder)
+            print('No stateful profile installation attempted.')
+            return 0
+        rc3.exclusive(MARKER,(json.dumps({
+            'status':'OWNER_AUTHORIZED_TA3_BC0003_PROFILES_NO_RETRY',
+            'profiles':[x[0] for x in PROFILE],
+            'accepted_ta3n1_evidence':accepted_n1,
+            'namespaces':['HERC02.BCPL.TA3N2','HERC02.BCPL.TA3N3'],
+            'image_sha256':ref.AWS_SHA256,
+            'evidence':folder.relative_to(ROOT).as_posix(),
+            'no_tape_write':True,'no_overwrite':True,
+            'publication_authorized':False},sort_keys=True)+'\n').encode())
+        marked=True
+        results={}
+        for label,(tag,job,rows) in selected.items():
+            source=bodies[label]
+            proof={'profile':label,'prefix':'HERC02.BCPL.'+tag}
+            ref.ensure_tape(rc3,prod,media,folder)
+            boot,report,_=ref.mvs_job(rc3,core,cfg,folder,label+'-boot',
+                          'TA3BOOT',source['TA3BOOT'],[('BOOTREAD','IEBGENER')])
+            need('CAMBRIDGE BCPL PROGRAMMING SYSTEM FOR MVS 3.8J' in report and
+                 'VOLUME SERIAL BC0003' in report and 'BCPL.BT0021' in report,
+                 label+': BT0001 bootstrap identity missing')
+            proof['boot']=boot
+            ref.ensure_tape(rc3,prod,media,folder)
+            bt2,_,_=ref.mvs_job(rc3,core,cfg,folder,label+'-installer',
+                                'TA3BT2',source['TA3BT2'],[('BT2REST','IEBCOPY')])
+            proof['installer']=bt2
+            view,report,_=ref.mvs_job(rc3,core,cfg,folder,label+'-view',
+                       'TA3VIEW',source['TA3VIEW'],[(f'V{n:04d}','IEBGENER')
+                                                    for n in range(1,5)])
+            need('MVS-ONLY BCPL INSTALLATION' in report and
+                 'NATIVE CAMBRIDGE COMPILER: ABSENT' in report and
+                 'BCPL.BT0021' in report,
+                 label+': installed BT0002 text incomplete')
+            proof['view']=view
+            ref.ensure_tape(rc3,prod,media,folder)
+            positions=[n for n,*_ in rows[1:]]
+            restore,_,_=ref.mvs_job(rc3,core,cfg,folder,label+'-profile',
+                             job,source[job],[(f'R{n:04d}','IEBCOPY') for n in positions])
+            proof['restore']=restore
+            need(ref.digest_file(ref.IMAGE)==ref.AWS_SHA256,
+                 label+': accepted BC0003 tape image changed')
+            cat,directory,count=verify(rc3,ref,core,cfg,installed,ls,folder,label,rows)
+            proof.update({'catalog':cat,'directory':directory,
+                          'restored_pds':len(rows),'verified_members':count})
+            if label=='combined':
+                go,go_report,_=ref.mvs_job(rc3,core,cfg,folder,label+'-go',
+                                           'TA3GO',source['TA3GO'],ref.GO_STEPS)
+                ref.go_semantics(rc3,folder,go_report,reviewer)
+                proof['installed_bcpl_go']=go
+            rc3.artifact(folder,label+'-checkpoint.json',json.dumps(proof,indent=2)+'\n')
+            print(f'TA.3 {label.upper()} PASS: {len(rows)} PDSes, {count} members; '
+                  +('installed SCALVEC TEST/EXP/RP/CODE PASS.' if label=='combined'
+                    else 'no native compiler claimed.'))
+            results[label]=proof
+        need(ref.digest_file(ref.IMAGE)==ref.AWS_SHA256,
+             'accepted image changed after combined profile')
+        rc3.artifact(folder,'result.json',json.dumps({
+            'status':'TA3_BC0003_NATIVE_ONLY_AND_COMBINED_PROFILES_PASS',
+            'candidate':'BCPL-0.1.0-rc3','volser':'BC0003',
+            'aws_sha256':ref.AWS_SHA256,'absence_preflight':preflight,
+            'profile_results':results,'native_compiler':'absent',
+            'independent_mvs_system':False,
+            'publication_authorized':False},indent=2)+'\n')
+        rc3.seal(folder)
+        print('TA.3 PROFILES PASS: native-only and combined install; BC0003 unchanged.')
+        print('Evidence: '+folder.relative_to(ROOT).as_posix())
+        return 0
+    except Exception as exc:
+        if rc3 is not None and folder is not None:
+            try:
+                rc3.artifact(folder,'failure.json',json.dumps({
+                    'status':'STATEFUL_NO_RETRY' if marked else 'PREFLIGHT_HALTED',
+                    'reason':str(exc)},indent=2)+'\n')
+                rc3.seal(folder)
+            except Exception:
+                pass
+        print('TA.3 REMAINING PROFILES HALTED: '+str(exc),file=sys.stderr)
+        if folder is not None:
+            print('Evidence: '+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        if marked:
+            print('NO RETRY: preserve BC0003, partial recipients and JES evidence.',
+                  file=sys.stderr)
+        return 2
+
+
+def main(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run',action='store_true',
+                        help='one guarded MVS native-only and combined installation')
+    return run(parser.parse_args(argv).run)
+
+
+if __name__=='__main__':
+    raise SystemExit(main())
