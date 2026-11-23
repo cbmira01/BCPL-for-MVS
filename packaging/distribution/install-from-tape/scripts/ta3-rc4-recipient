@@ -32,9 +32,9 @@ ORIGINAL_SHA="6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1"
 PROD=WORK/"ta3-rc4-production"
 PROD_MARKER=PROD/"BC0004-one-shot-production.json"
 PROFILES={
-    "MR10":("R4MR","TA4MR10",tuple(range(3,13)),94),
-    "NATIVE":("R4NT","TA4NATV",(3,*range(13,22)),71),
-    "COMBINED":("R4CB","TA4BOTH",tuple(range(3,22)),150),
+    "MR10":("R4MR","T3R4MR",tuple(range(3,13)),94),
+    "NATIVE":("R4NT","T3R4NT",(3,*range(13,22)),71),
+    "COMBINED":("R4CB","T3R4CB",tuple(range(3,22)),150),
 }
 SITE="HERC02.BCPL."
 VOL="BC0004"
@@ -367,7 +367,7 @@ def run(live=False):
         marked=True
         ensure_rc4(rc3,media,folder,"boot")
         boot,boot_report,_=ref.mvs_job(
-            rc3,core,cfg,folder,"boot","TA4BOOT",
+            rc3,core,cfg,folder,"boot","T3R4BO",
             boot_and_installer(ref,SITE+"R4MR")["TA3BOOT"],
             [("BOOTREAD","IEBGENER")])
         need("CANDIDATE BCPL-0.1.0-rc4" in boot_report and
@@ -379,7 +379,7 @@ def run(live=False):
             report_result={"prefix":prefix}
             ensure_rc4(rc3,media,folder,label.lower()+"-installer-tape")
             bt2,_,_=ref.mvs_job(
-                rc3,core,cfg,folder,label.lower()+"-bt2","TA4BT2",
+                rc3,core,cfg,folder,label.lower()+"-bt2","T3R4BT",
                 boot_and_installer(ref,prefix)["TA3BT2"],
                 [("BT2REST","IEBCOPY")])
             report_result["installer_job"]=bt2
@@ -387,7 +387,7 @@ def run(live=False):
             # of the newly tape-restored BT0002 member, not local JCL.
             view,report,_=ref.mvs_job(
                 rc3,core,cfg,folder,label.lower()+"-readback",
-                "TA4PRNT",readback_deck(prefix,label),
+                "T3R4PR",readback_deck(prefix,label),
                 [("P0001","IEBGENER"),("P0002","IEBGENER")])
             deck=extract_profile(report,source_members[label])
             need("COPY OUTDD=OUTPDS,INDD=INTAPE" in report,
@@ -410,7 +410,7 @@ def run(live=False):
             if label=="COMBINED":
                 go,go_report,_=ref.mvs_job(
                     rc3,core,cfg,folder,"combined-go",
-                    "TA4GO",source_go,ref.GO_STEPS)
+                    "T3R4GO",source_go,ref.GO_STEPS)
                 ref.go_semantics(rc3,folder,go_report,reviewer)
                 report_result["installed_bcpl_go"]=go
             rc3.artifact(folder,label.lower()+"-checkpoint.json",
