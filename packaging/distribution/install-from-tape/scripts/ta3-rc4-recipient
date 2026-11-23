@@ -282,11 +282,17 @@ def profile_result(name,report,summary,positions):
     entries=re.findall(
         rf"(?m)^IEF142I\s+{name}\s+(.+?)\s+-\s+"
         r"STEP WAS EXECUTED\s+-\s+COND CODE (\d{4})\s*$",report)
-    steps=[(field.split()[-1],rc) for field,rc in entries]
+    steps=[]
+    for field,rc in entries:
+        names=[word for word in field.split() if re.fullmatch(r"R\d{4}",word)]
+        need(len(names)==1,
+             "ambiguous MVS in-stream PROC step identity for "+name)
+        steps.append((names[0],rc))
     need(steps==[(f"R{n:04d}","0000") for n in positions],
          "actual IEF142I tape-resident PROC step list/RC differs: "+name)
-    need(len(re.findall(r"\bIEBCOPY\b",summary))>=len(positions),
-         "MVS job summary lacks installed IEBCOPY procedure steps")
+    need(len(re.findall(r"(?m)^.*\bIEBCOPY\s+RC=0000\s*$",summary))==
+         len(positions),
+         "MVS job summary IEBCOPY executed-step count differs")
     return len(steps)
 
 
