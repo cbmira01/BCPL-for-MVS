@@ -263,3 +263,64 @@ workspace; no new actual installed `TA2R3MR` result is claimed.
 
 **TA.2 remains IN PROGRESS.** Human TA.4 case sign-off, fresh
 recipient TA.3/TA.7, rights review and publication remain separate.
+
+
+## 22 November EST / 23 November UTC — RC3 installed MR10 MVS acceptance checkpoint
+
+The owner executed the isolated `ta2-rc3-installed-mr10-continuation --run`
+from GitHub `main` after the confirmed BOOT/BOOT.JCL exact-DSN
+parser correction. Actual MVS 3.8J results supplied by the owner:
+
+- **JOB 9367**: fresh `LISTDS LABEL` verified **21/21**
+  recipient datasets, including the PS/FB/80/800 BOOT dataset,
+  on the expected volume; original saved JOB 9365 exact BOOT replay
+  also **PASS**.
+- **JOB 9368**: independent `LISTDS MEMBERS` verified
+  **146/146** members in the 20 restored PDS directories.
+- With explicit operator `Y`, **JOB 9369** (`TA2R3MR`) ran
+  the **63/63** ordered MVS IEBGENER/ICINT19 steps at RC0000 with
+  matching `IEF142I` records. The runner reported **12/12**
+  semantic comparisons of real MVS `TEST:`, printed literal
+  `EXP:`, computed `RP:`, and interpreted `CODE=0` as PASS.
+- Sealed private run receipt:
+  `workarea/ta2-rc3-installed-mr10-continuation/20261123T000015Z-32502`.
+
+Combined with accepted MVS staging/write JOBS **9360/9361**,
+HETMAP **21 standard-labeled logical tape datasets / 64 physical
+files**, original AWS SHA-256
+`6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1`,
+and 21-step tape-to-DASD readback JOB **9363**, this supports
+**BCPL-0.1.0-rc3 / BC0003 TA.2 producer/readback and installed
+MR10 verification PASS (qualified)**.
+
+These are owner-supplied authentic MVS runner outputs. The
+assistant cannot directly inspect private `workarea/` evidence on
+the owner's WSL system; actual SHA-seal and semantic-replay
+validation is the next required independent review. The 12-case
+automated PASS is **not** an identified human per-case sign-off,
+a full TA.4 (11 + 17 demonstrations and rebuild) PASS, independent
+fresh-recipient TA.3/TA.7 acceptance, rights clearance, or
+authorization to publish. The release manifest still identifies the
+native Cambridge Compiler as `absent`, not included.
+
+The separately committed
+`scripts/ta2-rc3-human-review` replays the original sealed
+JOBS 9367–9369 evidence, exact accepted marker, AWS checksum,
+63-step MVS `IEF142I` and twelve semantic records. Default
+execution displays `TEST:`, `EXP:`, `RP:` and `CODE=` for
+each of R01–R12, recording only **PENDING** human review.
+Optional `--signoff` requires an explicit human **PASS/FAIL**
+decision on **each** of the 12 cases, a reviewer identifier and
+a final literal `SIGN` confirmation. It persists a new sealed
+per-case evidence receipt in repository `workarea/`, preserving
+all original MVS reports. Any human FAIL blocks acceptance.
+**17/17 focused local positive/negative tests passed**, with
+GitHub blobs byte-identical to tested files. This review uses saved
+MVS SYSOUT only; it does not recompile, rerun, restore, initialize,
+mount or modify the existing `BC0003` tape.
+
+The production, restore and installed-regression one-shot markers
+are all consumed. Do not repeat those operations; continue
+through accepted evidence and independently governed next gates.
+**TA.2 remains IN PROGRESS pending formal qualified closure;
+TA.4 human sign-off is pending.**
