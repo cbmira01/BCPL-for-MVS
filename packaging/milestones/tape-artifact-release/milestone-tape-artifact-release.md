@@ -1956,3 +1956,47 @@ acceptance jobs.
 See [TA.3 BC0004 tape-resident recipient run](../../distribution/install-from-tape/ta3-rc4-tape-resident-recipient-run-20261123.md).
 **TA.3 — MVS Bootstrap and Installation remains IN PROGRESS.**
 
+## TA.3 — BC0004 on-tape first-recipient evidence halt and guarded no-replay continuation (23 November 2026 EST)
+
+The owner reported **JOB 9398** RC4 recipient MVS preflight PASS
+(42 recipient PDSes absent, BC0004 hash verified, tape drive empty),
+then approved the original once-only installation attempt. The
+first on-tape MR10 profile was submitted; the runner halted at
+`MVS job summary IEBCOPY executed-step count differs`.
+The source code demonstrates that it had first validated exact
+ordered `IEF142I` execution/RC0000 evidence and then incorrectly
+required a program-name label which the project's `IEFACTRT`
+summary parser treats as optional. This is a **runner evidence
+interpretation defect**, not demonstrated IEBCOPY malfunction.
+The original run remains **STATEFUL_NO_RETRY**, with evidence at
+`workarea/ta3-rc4-recipient/20261123T133542Z-36979`.
+
+A corrected source-controlled `profile_result` now requires
+the exact MVS IEF142I ordered Rnnnn/RC0000 sequence and a clean
+JES summary without requiring optional `IEBCOPY` text.
+A **new**, separately marked `ta3-rc4-continuation` has been
+implemented. Before new consent/state it must:
+
+- Authenticate the unchanged SHA256-sealed **original failure**,
+  consumed marker, first on-tape MR10 JCL and actual MVS JES receipt.
+- Freshly check that the first MR10 installation has **11 valid
+  PDSes / 94 members** on MVS; no first-profile acceptance is
+  presumed from the console halt alone.
+- Check all **31 remaining** NATIVE/COMBINED recipient PDSes absent
+  on MVS, media integrity and drive readiness.
+- If and only if all gates pass, request **one fresh approval** to
+  complete just NATIVE and COMBINED from verified on-tape JCL;
+  preserve and never replay accepted RC4 production or first MR10
+  installation, marker and evidence.
+
+Targeted local Python regression checks passed for PROC IEF142I
+with omitted summary-program labels, duplicates, missing steps,
+nonzero return codes and native/combined profile step sequences.
+The dedicated repository tests also include sealed incident
+acceptance/tamper-refusal and no-replay selection fixtures.
+
+The exact first MR10 JES job number will be obtained only from
+original sealed local evidence. No further state-changing
+continuation has yet been executed; **TA.3 remains IN PROGRESS**
+pending actual MVS recovery results. See
+[RC4 interrupted recipient recovery](../../distribution/install-from-tape/ta3-rc4-interrupted-recipient-recovery-20261123.md).
