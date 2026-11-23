@@ -1,3 +1,33 @@
+## TA.3 — RC4 MVS PROC proof and guarded tape producer
+
+**MVS JOB 9392 PASS** (owner-reported): the read-only
+`ta3-rc4-proc-probe` demonstrated in-stream `PROC` expansion,
+symbolic PDS-member DSN substitution and IEBGENER RC0000 on
+actual MVS 3.8J. Evidence:
+`workarea/ta3-rc4-proc-probe/20261123T054327Z-35363`.
+
+The source-controlled
+[RC4 production runner](../create-tape/scripts/ta3-rc4-production)
+preflights 19 accepted RC3 staging PDSes, two absent new stage
+targets, the immutable BC0003 SHA, unused BC0004 identity and
+MVS/Hercules tape drive. One `Y` confirmation authorizes:
+new `TA3R4S.BT0001` and `BT0002` staging; MVS DCB and eight-member
+directory verification; and **a new BC0004** 21-step standard-label
+AWS tape write, independently checked against 64 physical files.
+Full reports are sealed under `workarea/ta3-rc4-production/`.
+
+The runner accepts an idle empty drive or the **verified original
+BC0003** already mounted, dismounting only that accepted image
+after confirmation. Foreign media, existing output datasets,
+existing BC0004, nonzero JES steps or ambiguous results are refused
+without retry. Original BC0003, accepted TA.2/TA.3 jobs and
+one-shot markers are not repeated or replaced.
+
+**Actual RC4 staging and tape write remain pending.** Following
+MVS production, a separate fresh-recipient tape-resident profile
+installation must be verified before TA.3 closure. See
+[RC4 implementation and execution contract](../create-tape/ta3-rc4-tape-resident-installer-design-20261123.md).
+
 ## TA.3 — RC4 replacement tape-resident installer (in development)
 
 The owner approved replacing the inert `BC0003` on-tape
