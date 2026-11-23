@@ -55,3 +55,47 @@ individual PASS/FAIL verdicts, a reviewer identifier and exact uppercase
 `SIGN`. No new MRREGRES job is required merely for sign-off.
 
 **TA.4 cannot close until all remaining actual MVS and human gates pass.**
+
+## 23 November — first TA.4 preflight refusal; tested RC contract repair
+
+The owner reported:
+
+```text
+TA.4 VERIFICATION HALTED: T4R1PRE: actual MVS step list/RC differs
+Evidence: workarea/ta4-mr10-verification/20261123T211811Z-39250
+```
+
+This occurred within the **read-only** TSO `LISTDS LABEL` preflight,
+before the `[y/N]` prompt and before any no-retry marker or build allocation.
+The original private `workarea` JES report is retained on the owner's system;
+its exact observed RC has **not** been independently inspected in the
+assistant workspace. No IFOX, IEWL, compiler, demo or signed review result
+is claimed.
+
+The source defect was identified in the runner: it invoked the shared
+`ta3-rc3-recipient.mvs_job` with `max_rc=8` while also passing
+`expected=[('STAT','IKJEFT01')]`. That helper demands exactly RC0000 for
+each supplied expected step, contradicting the accepted return-code range
+for a `LISTDS` inquiry of two intentionally nonexistent target PDSes.
+
+The correction calls that shared helper with `expected=None` for this
+preflight only, then independently requires the single exact
+`STAT/IKJEFT01` JES step at RC0000/0004/0008 and a matching, unique
+`IEF142I` MVS completion. It continues to reject system abends and to
+verify *every* installed dataset's exact PDS/DCB plus both build targets'
+nonexistence. **Successful overall preflight requires all these checks**;
+accepting RC0008 does not by itself assert success.
+
+The assistant executed **21/21** isolated local unit tests for the revised
+runner, including RC0000/0004/0008 successes, RC0012, wrong job/step,
+duplicate MVS completion, JES/IEF142I disagreement, abend refusals, and
+the separate per-dataset checks. Both new Git blob contents were checked
+against the tested local files' Git object IDs. Actual amended MVS
+preflight and state-changing verification remain outstanding.
+
+Since the first operation never reached owner confirmation, the original
+one-shot marker should remain absent. The guarded runner may be invoked
+again after updating GitHub `main`; it performs another **read-only**
+preflight and requests a fresh `[y/N]` confirmation before changing MVS
+state. Preserve the first refusal evidence and do not replay any earlier
+accepted producer, installer, or regression operation.

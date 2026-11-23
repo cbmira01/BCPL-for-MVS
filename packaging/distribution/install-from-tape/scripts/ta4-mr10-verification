@@ -216,11 +216,41 @@ def sha_file(path):
     need(h.hexdigest() == AWS_SHA256, 'immutable RC4 AWS digest mismatch')
 
 
+def verify_catalog_job(job, summary, report):
+    """Require the *actual* single IKJEFT01 step and matching MVS completion.
+
+    LISTDS of the two intentionally absent build targets may give the TSO
+    command processor RC=4 or RC=8.  That is not a successful allocation or
+    proof of absence: individual LISTDS records are checked by live_catalog.
+    Refusing everything but RC=0000 here would reject the normal absence
+    preflight *before* its dataset results could be inspected.
+    """
+    need(re.search(rf'(?m)^JOB\s+{job}\s+T4R1PRE\s*$', summary) is not None
+         and 'JOB RESULT: SUCCESS' in summary,
+         'T4R1PRE: wrong or unsuccessful JES job')
+    rows = re.findall(r'(?m)^([A-Z][A-Z0-9]{1,7})\s+'
+                      r'([A-Z][A-Z0-9]{1,7})\s+RC=(\d{4})\s*$', summary)
+    need(len(rows) == 1 and rows[0][:2] == ('STAT', 'IKJEFT01') and
+         rows[0][2] in ('0000', '0004', '0008'),
+         'T4R1PRE: expected one IKJEFT01 STAT step, RC 0000/0004/0008')
+    mvs = re.findall(r'(?m)^IEF142I\s+T4R1PRE\s+([A-Z0-9]{1,8})\s+-\s+'
+                     r'STEP WAS EXECUTED\s+-\s+COND CODE (\d{4})\s*$', report)
+    need(mvs == [('STAT', rows[0][2])],
+         'T4R1PRE: MVS IEF142I step/completion disagrees with JES')
+    need(re.search(r'\b(IEF450I|IEF472I|IEA995I|ABEND)\b', report, re.I)
+         is None, 'T4R1PRE: MVS reported an abend')
+    return int(rows[0][2])
+
+
 def live_catalog(rc3, ref, installed, core, cfg, folder):
     targets = [INST + kind for kind in NEEDED] + [OBJ, LOAD]
     deck = ref.deck_without_stat(core.stat_deck(cfg, targets))
-    job, report, _ = ref.mvs_job(rc3, core, cfg, folder, 'preflight',
-                                 'T4R1PRE', deck, [('STAT', 'IKJEFT01')], max_rc=8)
+    # The shared TA.3 helper's explicit expected-step contract insists on
+    # RC0000 even when max_rc=8.  For this absence inquiry inspect the exact
+    # actual step and return code separately, then verify each dataset.
+    job, report, summary = ref.mvs_job(rc3, core, cfg, folder, 'preflight',
+                                       'T4R1PRE', deck, None, max_rc=8)
+    verify_catalog_job(job, summary, report)
     for kind in NEEDED:
         dsn = INST + kind
         got, _ = installed.exact_listds(core, report, dsn)

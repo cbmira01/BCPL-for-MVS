@@ -146,6 +146,55 @@ class TestJclContract(unittest.TestCase):
             ta4.verify_demos(report.replace('DEMO: finished DECLS', 'ERROR'),
                              ta4.LANG, [('X', 'ICINT19')] * 33)
 
+    def test_missing_target_preflight_accepted_if_mvs_agrees(self):
+        for rc in ('0000', '0004', '0008'):
+            with self.subTest(rc=rc):
+                summary = ('JOB 9408 T4R1PRE\nJOB RESULT: SUCCESS\n'
+                           f'STAT IKJEFT01 RC={rc}\n')
+                report = ('IEF142I T4R1PRE STAT - STEP WAS EXECUTED - '
+                          f'COND CODE {rc}\n')
+                self.assertEqual(ta4.verify_catalog_job(9408, summary, report),
+                                 int(rc))
+
+    def test_catalog_step_bad_or_inconsistent_mvs_refused(self):
+        good = 'JOB 9408 T4R1PRE\nJOB RESULT: SUCCESS\nSTAT IKJEFT01 RC=0008\n'
+        mvs = 'IEF142I T4R1PRE STAT - STEP WAS EXECUTED - COND CODE 0008\n'
+        cases = (
+            (good.replace('T4R1PRE', 'T4R1OLD'), mvs),
+            (good.replace('RC=0008', 'RC=0012'), mvs),
+            (good + 'EXTRA IEBGENER RC=0000\n', mvs),
+            (good, mvs.replace('0008', '0000')),
+            (good, mvs + mvs),
+            (good, mvs + 'IEF450I T4R1PRE ABEND\n'),
+        )
+        for summary, report in cases:
+            with self.subTest(summary=summary, report=report):
+                with self.assertRaises(ta4.Refusal):
+                    ta4.verify_catalog_job(9408, summary, report)
+
+    def test_catalog_inquiry_delegates_step_and_dcb_checks(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4]) as tmp:
+            summary = ('JOB 9408 T4R1PRE\nJOB RESULT: SUCCESS\n'
+                       'STAT IKJEFT01 RC=0008\n')
+            report = ('IEF142I T4R1PRE STAT - STEP WAS EXECUTED - '
+                      'COND CODE 0008\n')
+            ref = SimpleNamespace(
+                deck_without_stat=lambda x: x,
+                mvs_job=lambda *a, **k: (9408, report, summary))
+            core = SimpleNamespace(
+                stat_deck=lambda cfg, dsns: '//STAT EXEC PGM=IKJEFT01\n',
+                dataset_missing=lambda rpt, dsn: dsn in (ta4.OBJ, ta4.LOAD),
+                extract_listds_block=lambda rpt, dsn: [],
+                parse_listds=lambda x: {})
+            installed = SimpleNamespace(exact_listds=lambda core, report, dsn: (
+                {'volume':'TSO002', 'dsorg':'PO',
+                 'recfm':'U' if dsn.endswith('.LOAD') else 'FB',
+                 'lrecl':'0' if dsn.endswith('.LOAD') else '80',
+                 'blksize':'6144' if dsn.endswith('.LOAD') else '800'}, []))
+            self.assertEqual(ta4.live_catalog(None, ref, installed, core, {},
+                                              Path(tmp)), 9408)
+
     def test_default_plan_has_no_mvs_side_effects(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[4]) as temp:
             with patch.object(ta4, 'MARKER', Path(temp) / 'absent.json'), \
