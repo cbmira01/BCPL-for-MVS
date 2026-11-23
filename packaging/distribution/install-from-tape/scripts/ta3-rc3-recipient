@@ -1,0 +1,395 @@
+#!/usr/bin/env python3
+"""TA.3: one guarded BC0003 MVS-only MR10 recipient bootstrap/install/use.
+
+Only the recipient jobs execute on MVS. This WSL operator runner prepares
+site job cards, mounts accepted read-only media, and retains JES evidence.
+It never initializes/writes tape, scratches datasets, or repeats TA.2 jobs.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import json
+import hashlib
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+BASE = ROOT / 'packaging/distribution'
+JCL = BASE / 'install-from-tape/jcl'
+SCRIPTS = BASE / 'create-tape/scripts'
+WORK = ROOT / 'workarea'
+OUT = WORK / 'ta3-rc3-recipient'
+MARKER = OUT / 'BC0003-TA3N1-one-shot.json'
+IMAGE = ROOT / 'mvs-state/tape/bcpl-0.1.0-rc3-BC0003.aws'
+AWS_SHA256 = '6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1'
+PREFIX = 'HERC02.BCPL.TA3N1'
+VOLUME = 'TSO002'
+TAPE_UNIT = '480'
+FILES = ('TA3BOOT', 'TA3BT2', 'TA3VIEW', 'TA3MR10', 'TA3GO')
+BOOT_MEMBERS = ('INSTALL', 'DATASETS', 'RELEASE', 'RESTORE')
+GO_STEPS = [('SSYNI', 'IEBGENER'), ('STRNI', 'IEBGENER'),
+            ('SCGI', 'IEBGENER'), ('SBLIBI', 'IEBGENER'),
+            ('SICLIB', 'IEBGENER'), ('C01A', 'ICINT19'),
+            ('G01A', 'ICINT19'), ('R01', 'ICINT19')]
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(condition, reason):
+    if not condition:
+        raise Refusal(reason)
+
+
+def digest_file(path):
+    need(path.is_file() and not path.is_symlink(),
+         'accepted AWS image absent/unsafe')
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def load(rc3, key, relative):
+    return rc3.load(key, ROOT / relative)
+
+
+def target_rows(manifest):
+    need(manifest['release']['candidate_id'] == 'BCPL-0.1.0-rc3' and
+         manifest['release']['native_compiler'] == 'absent' and
+         manifest['volume']['volser'] == 'BC0003', 'release identity changed')
+    rows = manifest['datasets']
+    need(len(rows) == 21 and
+         [r['sequence'] for r in rows] == list(range(1, 22)),
+         'tape positions are not exact 1..21')
+    need([r['group'] for r in rows[2:12]] == ['common'] + ['mr10']*9,
+         'MR10 profile selection changed')
+    result = [(2, PREFIX+'.DIST.INST', list(BOOT_MEMBERS))]
+    for row in rows[2:12]:
+        n = row['sequence']
+        suffix = row['target_dsn_template']
+        need(suffix.startswith('{HLQ}.BCPL.'), 'recipient template differs')
+        dest = PREFIX + '.' + suffix[len('{HLQ}.BCPL.'):]
+        need(len(dest) <= 44, 'target DSN exceeds MVS limit')
+        result.append((n, dest, row['members']))
+    need(len(result) == 11 and sum(len(x[2]) for x in result) == 90,
+         'installer/MR10 expected 90 selected members')
+    return result
+
+
+def render(name):
+    need(name in FILES, 'unexpected installation job name')
+    path = JCL / (name + '.jcl')
+    need(path.is_file() and not path.is_symlink(), 'missing source-controlled '+name)
+    body = path.read_text('ascii')
+    need(body.isascii(), name+' non-ASCII cards')
+    body = (body.replace('<HLQ>.BCPL.', PREFIX+'.')
+            .replace('<INST>', PREFIX)
+            .replace('<TAPE>', TAPE_UNIT)
+            .replace('<DASD>', 'SYSDA')
+            .replace('<DVOL>', VOLUME))
+    need('<' not in body and '>' not in body and 'HERC02.BCPL.MR10KIT.' not in body,
+         name+': unresolved site parameter or development DSN')
+    lines = body.splitlines()
+    need(lines and all(len(x) <= 80 and '\t' not in x for x in lines) and
+         all(len(x) <= 71 for x in lines if x.startswith('//') and
+             not x.startswith('//*')), name+': MVS card/JCL column overflow')
+    need(not any(x.startswith('//') and ' JOB ' in x for x in lines),
+         name+': embedded site JOB card is prohibited')
+    need(body.endswith('//\n'), name+': required job terminator missing')
+    return body
+
+
+def check_jcl(bodies, targets):
+    mr = bodies['TA3MR10']
+    need(mr.count(' EXEC PGM=IEBCOPY') == 10 and
+         mr.count('DISP=(NEW,CATLG,DELETE)') == 10 and
+         mr.count('VOL=(PRIVATE,RETAIN,SER=BC0003)') == 10 and
+         'DISP=MOD' not in mr, 'profile has unexpected allocation policy')
+    for n, dest, _ in targets[1:]:
+        need(f'DSN=BCPL.BT{n:04d},UNIT={TAPE_UNIT}' in mr and
+             f'LABEL=({n},SL)' in mr and f'DSN={dest},' in mr,
+             f'BT{n:04d} tape-to-target mismatch')
+    need('RECFM=U,BLKSIZE=6144' in mr and
+         f'DSN={PREFIX}.MR10KIT.LOAD,' in mr,
+         'ICINT19 load-PDS DCB missing')
+    need('LABEL=(1,SL)' in bodies['TA3BOOT'] and
+         'EXEC PGM=IEBGENER' in bodies['TA3BOOT'], 'BT0001 print missing')
+    need('LABEL=(2,SL)' in bodies['TA3BT2'] and
+         f'DSN={PREFIX}.DIST.INST,' in bodies['TA3BT2'] and
+         'DISP=(NEW,CATLG,DELETE)' in bodies['TA3BT2'],
+         'BT0002 isolated allocation missing')
+    need(bodies['TA3VIEW'].count(' EXEC PGM=IEBGENER') == 4 and
+         all(f'{PREFIX}.DIST.INST({m})' in bodies['TA3VIEW']
+             for m in BOOT_MEMBERS), 'four installed installer members not visible')
+    actual_go = re.findall(r'(?m)^//([A-Z0-9]{2,8})\s+EXEC PGM=([A-Z0-9]+)',
+                           bodies['TA3GO'])
+    need(actual_go == GO_STEPS and
+         bodies['TA3GO'].count('DSN='+PREFIX+'.MR10KIT.LOAD') == 3 and
+         f'DSN={PREFIX}.MR10KIT.TESTS(SCALVEC)' in bodies['TA3GO'],
+         'installed-only MR10 scalar/vector GO selection differs')
+
+
+def mvs_job(rc3, core, cfg, folder, key, name, body, expected, max_rc=0):
+    """Submit one JES job, save full report and demand each expected MVS RC."""
+    rc3.artifact(folder, key+'-body.jcl', body)  # no authentication secret
+    jobcard = core.authenticated_job_card(cfg, name, 'TA3 RC3', False)
+    deck = '\n'.join(jobcard)+'\n'+body
+    need(all(len(x) <= 71 for x in jobcard) and
+         all(len(x) <= 80 for x in deck.splitlines()), 'job card overflow')
+    oldtmp, oldenv = tempfile.tempdir, os.environ.get('TMPDIR')
+    try:
+        tempfile.tempdir = str(folder)
+        os.environ['TMPDIR'] = str(folder)
+        job, summary = core.submit_and_wait(
+            cfg, deck, max_rc=max_rc, cursor_file=folder/(key+'-cursor.json'))
+        rc3.artifact(folder, key+'-summary.txt', summary)
+        report = core.job_report(job, cursor_file=folder/(key+'-cursor.json'))
+        rc3.artifact(folder, key+'-report.txt', report)
+    finally:
+        tempfile.tempdir = oldtmp
+        if oldenv is None:
+            os.environ.pop('TMPDIR', None)
+        else:
+            os.environ['TMPDIR'] = oldenv
+    need(re.search(rf'(?m)^JOB\s+{job}\s+{name}\s*$', summary) is not None and
+         'JOB RESULT: SUCCESS' in summary, name+': JES completion not confirmed')
+    actual = re.findall(r'(?m)^([A-Z][A-Z0-9]{1,7})\s+'
+                        r'([A-Z][A-Z0-9]{1,7})\s+RC=(\d{4})\s*$', summary)
+    if expected is not None:
+        need(actual == [(a,b,'0000') for a,b in expected],
+             name+': actual MVS step list/RC differs')
+        for step, _ in expected:
+            need(re.search(rf'(?m)^IEF142I\s+{name}\s+{step}\s+-\s+'
+                           r'STEP WAS EXECUTED\s+-\s+COND CODE 0000\s*$',
+                           report) is not None,
+                 name+': IEF142I RC0000 missing for '+step)
+    need(re.search(r'\b(IEF450I|IEF472I|IEA995I|ABEND)\b', report, re.I) is None,
+         name+': system abend reported')
+    return job, report, summary
+
+
+def absent(core, report, dsns):
+    return all(core.dataset_missing(report, d) for d in dsns)
+
+
+def catalog(rc3, core, cfg, installed, folder, targets):
+    """Verify every newly cataloged MVS PDS with exact-name LISTDS LABEL."""
+    names = [r[1] for r in targets]
+    deck = deck_without_stat(core.stat_deck(cfg,names))
+    job, report, _ = mvs_job(rc3,core,cfg,folder,'catalog','DSPALST',deck,
+                             [('STAT','IKJEFT01')])
+    for n, dsn, _ in targets:
+        got, _ = installed.exact_listds(core,report,dsn)
+        expected = {'volume':VOLUME,'dsorg':'PO',
+                    'recfm':'U' if n==12 else 'FB',
+                    'lrecl':'0' if n==12 else '80',
+                    'blksize':'6144' if n==12 else '800'}
+        need(all(got.get(k)==v for k,v in expected.items()),
+             'recipient DCB/volume mismatch: '+dsn)
+    return job
+
+
+def inventory(rc3, core, cfg, ls, folder, targets):
+    names = [r[1] for r in targets]
+    deck = ls.list_members_deck(cfg, names)
+    job, report, summary = mvs_job(rc3, core, cfg, folder, 'inventory',
+                                   'DSPALLS', deck_without_job(deck),
+                                   [('LIST','IKJEFT01')])
+    blocks = ls.member_blocks(report, names)
+    need(set(blocks) == set(names), 'MVS LISTDS MEMBERS omitted recipient PDS')
+    for _, dest, expected in targets:
+        members = ls.parse_members(blocks[dest])
+        need(len(members)==len(set(members)) and set(members)==set(expected)
+             and len(members)==len(expected),
+             'recipient MVS directory mismatch: '+dest)
+    return job
+
+
+def deck_without_job(deck):
+    """Drop only the three trusted authenticated JOB cards for re-use."""
+    lines=deck.splitlines()
+    need(len(lines)>=4 and lines[0].startswith('//DSPALLS ') and
+         lines[1].startswith('//             USER=') and
+         lines[2].startswith('//             MSGLEVEL='),
+         'unexpected authenticated directory deck')
+    return '\n'.join(lines[3:])+'\n'
+
+
+def ensure_tape(rc3, prod, media, folder):
+    current = rc3.drive(folder, prod, media)
+    need(current in ('EMPTY', 'RC3'), 'tape 0480 holds foreign media')
+    if current == 'EMPTY':
+        rc3.run_command(folder, 'mount-%02d' % len(list(folder.glob('mount-*.txt'))),
+                        ['tools/mvs/mvs-console','--yes','tape','mount',
+                         TAPE_UNIT, IMAGE.name])
+    need(rc3.drive(folder,prod,media)=='RC3', 'BC0003 not ready after mount')
+
+
+def go_semantics(rc3, folder, report, reviewer):
+    evidence = reviewer.inspect(report, [reviewer.panel()[0]])
+    need(evidence['observed_test_count'] == 1 and
+         evidence['exp_contract_met'] is True and
+         evidence['golden_rp_and_code_match'] is True,
+         'installed BCPL SCALVEC TEST/EXP/RP/CODE mismatch')
+    rc3.artifact(folder,'go-semantic.json',json.dumps(evidence,indent=2)+'\n')
+
+
+def run(execute=False):
+    rc3 = None
+    folder = None
+    marked = False
+    try:
+        rc3 = load_module()
+        import yaml
+        rows = target_rows(yaml.safe_load((BASE / 'manifest/releases/BCPL-0.1.0-rc3.yaml').read_text()))
+        bodies = {name:render(name) for name in FILES}
+        check_jcl(bodies,rows)
+        need(digest_file(IMAGE)==AWS_SHA256, 'immutable BC0003 AWS SHA-256 differs')
+        if not execute:
+            print('TA.3 RC3 PLAN PASS: exact 11 new recipient PDSes; '
+                  'BT0001/BT0002, MR10-only 10 IEBCOPY, installed SCALVEC.')
+            print('No MVS job, tape mount, or recipient allocation attempted.')
+            return 0
+        need(sys.stdin.isatty(), 'one operator approval requires a terminal')
+        rc3.check_git()
+        need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+             'unsafe workarea location')
+        need(not MARKER.exists() and not MARKER.is_symlink(),
+             'TA.3 recipient attempt already consumed: NO RETRY')
+        OUT.mkdir(mode=0o700, exist_ok=True)
+        folder = OUT/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+
+                      '-'+str(os.getpid()))
+        folder.mkdir(mode=0o700, exist_ok=False)
+        core=load(rc3,'ta3_core','tools/datasets/dspal-core.py')
+        ls=load(rc3,'ta3_ls','tools/datasets/dspal-ls.py')
+        prod=load(rc3,'ta3_prod','packaging/distribution/create-tape/scripts/ta2-rc2-produce-once')
+        media=load(rc3,'ta3_media','packaging/distribution/create-tape/scripts/ta2-rc2-media-preflight')
+        installed=load(rc3,'ta3_installed','packaging/distribution/create-tape/scripts/ta2-rc3-installed-mr10-continuation')
+        reviewer=load(rc3,'ta3_semantics','packaging/distribution/install-from-tape/scripts/ta2-rc2-mr10-review')
+        cfg=core.load_config()
+        need(cfg['mvs']['hlq']=='HERC02', 'recipient operator identity changed')
+        core.require_reader_ready(cfg)
+        need(rc3.drive(folder,prod,media)=='EMPTY',
+             'tape unit 0480 must begin empty and unallocated')
+        prebody=deck_without_stat(core.stat_deck(cfg,[x[1] for x in rows]))
+        prejob, prereport, _=mvs_job(rc3,core,cfg,folder,'preflight',
+                                    'DSPALST',prebody,None,max_rc=8)
+        need(absent(core,prereport,[x[1] for x in rows]),
+             'recipient targets not all absent in MVS catalog')
+        need(rc3.drive(folder,prod,media)=='EMPTY',
+             'tape drive changed during recipient absence inquiry')
+        need(digest_file(IMAGE)==AWS_SHA256, 'BC0003 changed during preflight')
+        print(f'TA.3 PREFLIGHT PASS: JOB {prejob}; all 11 PDS targets absent; '
+              'BC0003 verified, drive empty.')
+        if input('Install MR10 to new HERC02.BCPL.TA3N1 only? [y/N]: ').strip().upper()!='Y':
+            rc3.artifact(folder,'result.json',json.dumps({'status':'DECLINED_NO_INSTALL'})+'\n')
+            rc3.seal(folder)
+            print('TA.3 installation declined; no tape mount or allocation.')
+            return 0
+        rc3.exclusive(MARKER,(json.dumps({
+            'status':'OWNER_AUTHORIZED_TA3_BC0003_MR10_NO_RETRY',
+            'recipient_prefix':PREFIX,'aws_sha256':AWS_SHA256,
+            'evidence':folder.relative_to(ROOT).as_posix(),
+            'no_tape_write':True,'no_overwrite':True,
+            'publication_authorized':False},sort_keys=True)+'\n').encode())
+        marked=True
+        jobs={'absence_preflight':prejob}
+        ensure_tape(rc3,prod,media,folder)
+        boot,boot_report,_=mvs_job(rc3,core,cfg,folder,'boot','TA3BOOT',bodies['TA3BOOT'],
+                                   [('BOOTREAD','IEBGENER')])
+        need('CAMBRIDGE BCPL PROGRAMMING SYSTEM FOR MVS 3.8J' in boot_report and
+             'VOLUME SERIAL BC0003' in boot_report and
+             'BCPL.BT0021' in boot_report,
+             'BT0001 MVS SYSOUT bootstrap text missing')
+        jobs['boot']=boot
+        ensure_tape(rc3,prod,media,folder)
+        bt2,_,_=mvs_job(rc3,core,cfg,folder,'bt2','TA3BT2',bodies['TA3BT2'],
+                        [('BT2REST','IEBCOPY')])
+        jobs['installer_restore']=bt2
+        view,view_report,_=mvs_job(rc3,core,cfg,folder,'view','TA3VIEW',bodies['TA3VIEW'],
+                [('V0001','IEBGENER'),('V0002','IEBGENER'),
+                 ('V0003','IEBGENER'),('V0004','IEBGENER')])
+        need('MVS-ONLY BCPL INSTALLATION' in view_report and
+             'BCPL.BT0021' in view_report and
+             'NATIVE CAMBRIDGE COMPILER: ABSENT' in view_report,
+             'BT0002 restored text missing from MVS SYSOUT')
+        jobs['installer_view']=view
+        ensure_tape(rc3,prod,media,folder)
+        profile,_,_=mvs_job(rc3,core,cfg,folder,'mr10','TA3MR10',bodies['TA3MR10'],
+                 [(f'R{n:04d}','IEBCOPY') for n in range(3,13)])
+        jobs['profile_restore']=profile
+        need(digest_file(IMAGE)==AWS_SHA256, 'BC0003 changed during MR10 restore')
+        dcb_job=catalog(rc3,core,cfg,installed,folder,rows)
+        jobs['catalog']=dcb_job
+        directory=inventory(rc3,core,cfg,ls,folder,rows)
+        jobs['directory']=directory
+        go, go_report, _=mvs_job(rc3,core,cfg,folder,'go','TA3GO',bodies['TA3GO'],GO_STEPS)
+        jobs['installed_go']=go
+        go_semantics(rc3,folder,go_report,reviewer)
+        need(digest_file(IMAGE)==AWS_SHA256, 'BC0003 changed after installed GO')
+        rc3.artifact(folder,'result.json',json.dumps({
+            'status':'TA3_BC0003_MVS_BOOTSTRAP_MR10_INSTALL_GO_PASS_ISOLATED_NAMESPACE',
+            'candidate':'BCPL-0.1.0-rc3','volser':'BC0003',
+            'recipient_prefix':PREFIX,'jobs':jobs,
+            'restored_pds':11,'verified_members':90,
+            'go_steps':8,'semantic_cases':1,'aws_sha256':AWS_SHA256,
+            'independent_system_acceptance':False,
+            'publication_authorized':False},indent=2)+'\n')
+        rc3.seal(folder)
+        print('TA.3 ISOLATED MR10 PASS: BT0001 printed; BT0002 installer restored; '
+              '10/10 PDS restores; 90/90 members; SCALVEC TEST/EXP/RP/CODE PASS.')
+        print('MVS JOBS: '+', '.join(f'{x}={y}' for x,y in jobs.items()))
+        print('Evidence: '+folder.relative_to(ROOT).as_posix())
+        return 0
+    except Exception as exc:
+        if rc3 is not None and folder is not None:
+            try:
+                rc3.artifact(folder,'failure.json',json.dumps({
+                    'status':'STATEFUL_NO_RETRY' if marked else 'PREFLIGHT_HALTED',
+                    'reason':str(exc)},indent=2)+'\n')
+                rc3.seal(folder)
+            except Exception:
+                pass
+        print('TA.3 RECIPIENT HALTED: '+str(exc),file=sys.stderr)
+        if folder is not None:
+            print('Evidence: '+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        if marked:
+            print('NO RETRY: retain BC0003, partial recipient datasets and JES evidence.',
+                  file=sys.stderr)
+        return 2
+
+
+def deck_without_stat(deck):
+    lines=deck.splitlines()
+    need(len(lines)>=4 and lines[0].startswith('//DSPALST ') and
+         lines[1].startswith('//             USER=') and
+         lines[2].startswith('//             MSGLEVEL='),
+         'unexpected MVS LISTDS preflight JOB cards')
+    return '\n'.join(lines[3:])+'\n'
+
+
+def load_module():
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec, spec_from_loader
+    path=SCRIPTS/'ta2-rc3-consolidated'
+    loader=SourceFileLoader('ta3_rc3_base',str(path))
+    spec=spec_from_loader(loader.name,loader)
+    need(spec is not None and spec.loader is not None,'missing accepted TA.2 tools')
+    module=module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def main(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run', action='store_true',help='one guarded MVS operation')
+    return run(parser.parse_args(argv).run)
+
+
+if __name__=='__main__':
+    raise SystemExit(main())
