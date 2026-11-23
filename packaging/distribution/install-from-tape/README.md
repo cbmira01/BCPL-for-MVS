@@ -1,3 +1,28 @@
+## TA.3 — BC0004 tape-resident installation technical PASS
+
+The owner reported actual MVS completion of the separately guarded
+`ta3-rc4-continuation --run` after the original post-MR10
+`IEFACTRT` summary-label halt. **JOB 9403** verified the preserved
+first MR10 installation (11 PDSes/94 members) and absence of the
+other 31 targets. Following one new approval, actual MVS
+**NATIVE 11 PDSes/71 members/10 IEBCOPY steps PASS** and
+**COMBINED 20 PDSes/150 members/19 IEBCOPY steps PASS**.
+The combined `ICINT19` SCALVEC `TEST:/EXP:/RP:/CODE=0`
+semantic check passed; `BC0004` remained unchanged.
+
+**Three on-tape profiles PASS: 42 PDSes, 315 members.**
+Technical TA.3 qualified acceptance is recorded in
+[all-profile MVS results](ta3-rc4-all-profiles-accepted-20261123.md).
+The [qualified closure/TA.4 preparation](../../milestones/tape-artifact-release/ta3-qualified-acceptance-and-ta4-preparation-20261123.md)
+awaits explicit owner formal transition direction.
+
+Do **not** rerun `ta3-rc4-production`,
+`ta3-rc4-recipient` or `ta3-rc4-continuation`
+in stateful mode. All their one-shot authorizations are consumed;
+preserve both AWS images, the incident and recovery receipts.
+The full TA.4/TA.5/TA.7 gates and release-publication approval
+are **not** implied by TA.3 technical acceptance.
+
 ## TA.3 — BC0004 interrupted on-tape recipient: no replay; guarded recovery
 
 The owner reported **MVS JOB 9398 recipient preflight PASS** (42 targets
