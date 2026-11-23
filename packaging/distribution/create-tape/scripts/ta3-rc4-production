@@ -160,6 +160,49 @@ def report_catalog(gen,rc3,core,cfg,folder,phase,source,targets):
     return job
 
 
+def stage_job(rc3,core,cfg,folder,body):
+    """Full JES+IEF142I validation including the required IEFBR14 step."""
+    name="TA3R4STG"
+    expected=[("B0001","IEBGENER"),("A0002","IEFBR14"),
+              *MVS_STAGES[1:]]
+    rc3.artifact(folder,"stage-body.jcl",body)
+    jobcard=rc3.cards(core.authenticated_job_card(cfg,name,"TA3 RC4",False))
+    deck=jobcard+body
+    need(all(len(x)<=80 for x in deck.splitlines()),
+         "RC4 MVS stage job card exceeds FB80")
+    oldtmp,oldenv=tempfile.tempdir,os.environ.get("TMPDIR")
+    try:
+        tempfile.tempdir=str(folder)
+        os.environ["TMPDIR"]=str(folder)
+        job,summary=core.submit_and_wait(
+            cfg,deck,max_rc=0,cursor_file=folder/"stage-cursor.json")
+        rc3.artifact(folder,"stage-summary.txt",summary)
+        report=core.job_report(job,cursor_file=folder/"stage-cursor.json")
+        rc3.artifact(folder,"stage-report.txt",report)
+    finally:
+        tempfile.tempdir=oldtmp
+        if oldenv is None:
+            os.environ.pop("TMPDIR",None)
+        else:
+            os.environ["TMPDIR"]=oldenv
+    need(re.search(rf"(?m)^JOB\s+{job}\s+{name}\s*$",summary) and
+         "JOB RESULT: SUCCESS" in summary and
+         "HIGHEST RC: 0000" in summary,
+         "RC4 staging JES result not clean")
+    observed=re.findall(r"(?m)^([A-Z][0-9]{4})\s+"
+                        r"(IEBGENER|IEFBR14|IEBCOPY)\s+RC=(\d{4})\s*$",
+                        summary)
+    need(observed==[(step,pgm,"0000") for step,pgm in expected],
+         "RC4 staging exact MVS utility/IEFBR14 steps differ")
+    system=re.findall(
+        rf"(?m)^IEF142I\s+{name}\s+([A-Z][0-9]{{4}})\s+-\s+"
+        r"STEP WAS EXECUTED\s+-\s+COND CODE (\d{4})\s*$",report)
+    need(system==[(step,"0000") for step,_ in expected] and
+         re.search(r"\b(?:ABEND|IEF450I|IEF472I|IEA995I)\b",report,re.I) is None,
+         "RC4 stage IEF142I step sequence/RC or ABEND differs")
+    return job
+
+
 def installed_members(rc3,core,cfg,ls,folder,expected):
     """Read MVS PDS directory, never infer successful writing from JES alone."""
     body=ls.list_members_deck(cfg,[STAGE+"BT0002"])
@@ -315,12 +358,7 @@ def execute():
             "overwrite_existing":False,"publication_authorized":False},
             sort_keys=True)+"\n").encode("ascii"))
         marked=True
-        staged,stage_report,_=rc3.mvs_job(core,cfg,folder,"stage",
-                           "TA3R4STG",stage,MVS_STAGES)
-        need(re.search(r"(?m)^IEF142I\s+TA3R4STG\s+A0002\s+-\s+"
-                       r"STEP WAS EXECUTED\s+-\s+COND CODE 0000\s*$",
-                       stage_report),
-             "MVS IEFBR14 PDS allocation A0002 RC0000 missing")
+        staged=stage_job(rc3,core,cfg,folder,stage)
         cat=report_catalog(gen,rc3,core,cfg,folder,"staged",
                             source_rows(m),DST)
         directory=installed_members(rc3,core,cfg,ls,folder,members)
