@@ -1789,3 +1789,34 @@ The record is [TA.3 three-profile operator results](../../distribution/install-f
 **TA.3 — MVS Bootstrap and Installation remains IN PROGRESS** until
 explicit formal disposition.
 
+## TA.3 — Owner-approved RC4 operational tape-resident installer development (23 November 2026 EST)
+
+Following the separately verified **MR10-only**, **native-only** and
+**combined** `BC0003` isolated-recipient MVS installation passes,
+the owner approved producing a **new candidate** to remove the frozen
+`BT0002` inert installation-template limitation, rather than
+closing TA.3 with that limitation.
+
+The corrective `BCPL-0.1.0-rc4` / `BC0004` identity is now
+reserved in the authoritative registry. The RC4 manifest preserves
+all 21 tape positions and all accepted MR10, native
+runtime/library/extension and Cambridge source members.
+Only the `BT0001` bootstrap and `BT0002` installer library are to
+be replaced. The new installer has eight members, three
+executable MVS `PROC` profile job bodies, and one reusable `COPY`
+control member to avoid unsupported in-stream data inside procedures.
+The source-controlled generator produces only offline artifacts
+and proposed new-stage/new-image JCL.
+
+**Immediate MVS gate:** execute the read-only PROC/symbolic
+`HERC02.BCPL.TA3N1.DIST.INST(INSTALL)` probe on actual MVS 3.8J
+before any RC4 staging, tape initialization or write.
+This probe is a new, non-destructive test of the installer
+mechanism; it is **not** a repeat of accepted TA.2/TA.3 jobs.
+
+Design and acceptance boundaries are documented in
+[TA.3 RC4 operational installer](../../distribution/create-tape/ta3-rc4-tape-resident-installer-design-20261123.md).
+The original `BC0003` AWS and every one-shot receipt remain
+immutable; the new candidate is not yet written or MVS-accepted.
+
+**Status: TA.3 — MVS Bootstrap and Installation remains IN PROGRESS.**
