@@ -2117,3 +2117,17 @@ human verdicts plus identified, sealed overall `SIGN` receipt** remain
 outstanding. See the [TA.4 RC4 MVS technical checkpoint](ta4-rc4-mvs-technical-verification-checkpoint-20261123.md).
 **TA.4 remains IN PROGRESS.** TA.5/TA.7/TA.8, rights and publication
 acceptance remain independent; TA.6 is N/A for this candidate.
+
+## TA.4 — compact twelve-verdict human sign-off ready (23 November 2026 EST)
+
+The original sealed RC3 JOB 9369 twelve-case manual verification remains a
+required **human** acceptance gate. The existing read-only reviewer now
+supports `--compact-signoff`: display all twelve `TEST:/EXP:/RP:/CODE=`
+cases, then accept **twelve individual ordered P/F case verdicts,
+reviewer identity and literal `SIGN` in one human response**. Original
+`--signoff` and unsigned review remain available. It neither submits
+MVS jobs nor mutates original evidence; any human FAIL blocks acceptance.
+A signed receipt has **not yet been supplied**. See the
+[TA.4 compact sign-off preparation](ta4-compact-human-signoff-preparation-20261123.md).
+**TA.4 remains IN PROGRESS until the actual identified human receipt is
+presented, verified and accepted by the owner.**

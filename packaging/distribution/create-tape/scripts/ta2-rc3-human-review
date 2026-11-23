@@ -4,7 +4,9 @@
 No MVS operations. Default --review replays MVS JES and semantic evidence,
 displays all 12 actual EXP/RP/CODE cases, and saves an independent PENDING
 review receipt. --signoff adds 12 explicit human PASS/FAIL decisions plus
-an identified overall signature. Never modifies original evidence or tape.
+an identified overall signature. --compact-signoff retains those twelve
+decisions and explicit SIGN, but collects them in one reply after showing
+every EXP/RP/CODE record. Never modifies original evidence or tape.
 """
 from __future__ import annotations
 
@@ -124,8 +126,37 @@ def human_decisions(cases, ask):
     return reviews, reviewer
 
 
-def run(signoff=False, *, ask=input):
+def compact_human_decisions(cases, ask):
+    """Collect 12 independently chosen case verdicts and one explicit SIGN.
+
+    A single terminal input replaces 14 prompts. The user still examines all
+    12 printed EXP/RP/CODE records and selects a verdict for *each* case.
+    No automated comparison or prior choices can supply these decisions.
+    """
+    need(len(cases) == 12 and [c['step'] for c in cases] ==
+         [f'R{i:02d}' for i in range(1, 13)],
+         'compact review requires exactly 12 ordered MVS cases')
+    for case in cases:
+        show_case(case)
+    print('Inspect all EXP:/RP: pairs and ICINT CODE=0; select P=PASS or F=FAIL for EACH case.')
+    print('Verdicts are in R01..R12 order. A case marked F blocks release.')
+    line = ask('12 P/F verdicts, reviewer identifier, then uppercase SIGN: ').strip()
+    match = re.fullmatch(r'([PpFf]{12})[ \t]+([A-Za-z0-9][A-Za-z0-9 ._-]{0,63})[ \t]+SIGN', line)
+    need(match is not None,
+         'human review requires 12 P/F verdicts, identified reviewer and exact SIGN')
+    verdicts, reviewer = match.groups()
+    reviewer = reviewer.strip()
+    need(bool(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}', reviewer)),
+         'valid reviewer identifier required')
+    reviews = [{'step': c['step'], 'name': c['name'],
+                'human_verdict': 'PASS' if mark.upper() == 'P' else 'FAIL'}
+               for c, mark in zip(cases, verdicts)]
+    return reviews, reviewer
+
+
+def run(signoff=False, *, ask=input, compact=False):
     try:
+        need(not compact or signoff, 'compact sign-off mode must collect a signature')
         from importlib.machinery import SourceFileLoader
         from importlib.util import module_from_spec, spec_from_loader
         def load(label, path):
@@ -146,7 +177,8 @@ def run(signoff=False, *, ask=input):
              'unsafe review destination')
         if signoff:
             need(sys.stdin.isatty(), 'sign-off requires an interactive human terminal')
-            reviews, signer = human_decisions(cases, ask)
+            reviews, signer = (compact_human_decisions(cases, ask)
+                               if compact else human_decisions(cases, ask))
         else:
             for case in cases:
                 show_case(case)
@@ -162,6 +194,9 @@ def run(signoff=False, *, ask=input):
                   'aws_sha256': restore.AWS_SHA256, 'cases': reviews,
                   'reviewer_identifier': signer,
                   'human_signoff': 'RECORDED' if signoff else 'PENDING',
+                  'human_signature_token': 'SIGN' if signoff else None,
+                  'signoff_input_mode': ('COMPACT_ONE_LINE' if compact else
+                                         'INDIVIDUAL_PROMPTS' if signoff else 'READ_ONLY'),
                   'publication_authorized': False,
                   'fresh_recipient_acceptance': False}
         OUT.mkdir(mode=0o700, exist_ok=True)
@@ -182,9 +217,13 @@ def run(signoff=False, *, ask=input):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--signoff', action='store_true',
-                   help='show all MVS cases, collect individual human verdicts and identified sign-off')
-    return run(p.parse_args(argv).signoff)
+    group = p.add_mutually_exclusive_group()
+    group.add_argument('--signoff', action='store_true',
+                       help='legacy 14-prompt, 12-case identified human review')
+    group.add_argument('--compact-signoff', action='store_true',
+                       help='show all 12 MVS cases; collect 12 verdicts, reviewer and SIGN in one reply')
+    args = p.parse_args(argv)
+    return run(args.signoff or args.compact_signoff, compact=args.compact_signoff)
 
 
 if __name__ == '__main__':

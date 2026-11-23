@@ -146,7 +146,7 @@ class Tests(unittest.TestCase):
         with self.assertRaisesRegex(mod.Refusal,'reviewer identifier'):
             mod.human_decisions(cases(),lambda _:next(prompts))
 
-    def mocked_run(self, signoff, answers=()):
+    def mocked_run(self, signoff, answers=(), *, compact=False):
         output=self.work/'review';output.mkdir(exist_ok=True)
         self.rc3.artifact.side_effect=lambda folder,name,data:(folder/name).write_text(data)
         self.rc3.seal.side_effect=lambda folder:(folder/'SHA256SUMS').write_text('sealed')
@@ -162,7 +162,7 @@ class Tests(unittest.TestCase):
              p('importlib.util.module_from_spec',side_effect=[self.rc3,self.installed,self.restore,self.reviewer]), \
              p.object(mod,'accepted',return_value=cases()), \
              p.object(mod.sys.stdin,'isatty',return_value=True):
-            rc=mod.run(signoff,ask=lambda _:next(answers))
+            rc=mod.run(signoff,ask=lambda _:next(answers),compact=compact)
         files=list(output.glob('review-*/review.json'))
         self.assertEqual(len(files),1)
         return rc,json.loads(files[0].read_text())
@@ -192,5 +192,55 @@ class Tests(unittest.TestCase):
         self.assertEqual(receipt['status'],'SIGNED_CASE_FAILURES_RELEASE_BLOCKED')
         self.assertEqual(receipt['cases'][0]['human_verdict'],'FAIL')
         self.assertFalse(receipt['publication_authorized'])
+
+    def test_compact_one_line_all_pass_identified_signed(self):
+        answers=iter(['PPPPPPPPPPPP reviewer-1 SIGN'])
+        rc,receipt=self.mocked_run(True,answers,compact=True)
+        self.assertEqual(rc,0)
+        self.assertEqual(receipt['status'],'SIGNED_12_CASES_PASS_HUMAN_VERDICT')
+        self.assertEqual(receipt['reviewer_identifier'],'reviewer-1')
+        self.assertEqual(receipt['human_signature_token'],'SIGN')
+        self.assertEqual(receipt['signoff_input_mode'],'COMPACT_ONE_LINE')
+        self.assertEqual(len(receipt['cases']),12)
+        self.assertTrue(all(x['human_verdict']=='PASS' for x in receipt['cases']))
+        self.assertFalse(receipt['publication_authorized'])
+        self.rc3.mvs_job.assert_not_called()
+
+    def test_compact_one_line_failure_blocks(self):
+        rc,receipt=self.mocked_run(True,iter(['PPFPPPPPPPPP reviewer-2 SIGN']),
+                                    compact=True)
+        self.assertEqual(rc,2)
+        self.assertEqual(receipt['cases'][2]['human_verdict'],'FAIL')
+        self.assertEqual(receipt['status'],'SIGNED_CASE_FAILURES_RELEASE_BLOCKED')
+
+    def test_compact_one_line_invalid_input_refused(self):
+        for entry in ('PPPPPPPPPPP reviewer SIGN',
+                      'PPPPPPPPPPPP reviewer sign',
+                      'PPPPPPPPPPPP SIGN',
+                      'PPPPPPPPPPPP reviewer SIGN EXTRA',
+                      'PPPPPPPPPPPPP reviewer SIGN',
+                      'QQQQQQQQQQQQ reviewer SIGN'):
+            with self.subTest(entry=entry), self.assertRaises(mod.Refusal):
+                mod.compact_human_decisions(cases(),lambda _:entry)
+
+    def test_compact_requires_exact_order_and_case_count(self):
+        for invalid in (cases()[:11],list(reversed(cases()))):
+            with self.subTest(case_count=len(invalid)), self.assertRaises(mod.Refusal):
+                mod.compact_human_decisions(invalid,lambda _:'PPPPPPPPPPPP reviewer SIGN')
+
+    def test_compact_asks_once_after_displaying_twelve_cases(self):
+        seen=[]
+        def ask(prompt):
+            self.assertEqual(seen,[f'R{i:02d}' for i in range(1,13)])
+            return 'PPPPPPPPPPPP reviewer SIGN'
+        with patch.object(mod,'show_case',side_effect=lambda c:seen.append(c['step'])):
+            reviewed,reviewer=mod.compact_human_decisions(cases(),ask)
+        self.assertEqual(len(reviewed),12)
+        self.assertEqual(reviewer,'reviewer')
+
+    def test_compact_refuses_unsigned_mode(self):
+        with self.assertRaisesRegex(mod.Refusal, 'must collect a signature'):
+            mod.run(False, compact=True)
+
 
 if __name__=='__main__': unittest.main()
