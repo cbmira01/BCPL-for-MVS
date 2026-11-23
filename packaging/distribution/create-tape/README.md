@@ -863,3 +863,39 @@ inside `workarea/ta2-rc3-installed-mr10-continuation/`.
 The operation does not initialize, mount/unmount, restage,
 rewrite or restore any tape. See the
 [RC3 evidence ledger](ta2-rc3-consolidated-candidate-20261122.md).
+
+
+## TA.2 RC3 actual MVS installed MR10 PASS and saved-job TA.4 human review
+
+The owner's 22 November EST / 23 November UTC report from actual
+MVS shows **JOB 9367** passing exact-name recipient `LISTDS LABEL`
+DCB/volume checks (**21/21**), **JOB 9368** passing all restored
+PDS directory member identities (**146/146**), and installed
+**JOB 9369** executing **63/63** MVS JES/IEF142I steps RC0000,
+with **12/12** interpreted `TEST:` / literal `EXP:` /
+computed `RP:` / `CODE=0` automated comparisons PASS.
+Source evidence is preserved at
+`workarea/ta2-rc3-installed-mr10-continuation/20261123T000015Z-32502`.
+The accepted AWS `BC0003`, original staging and tape write
+(JOBS 9360/9361) and complete restore (JOB 9363) must not
+be rerun or modified. The tape producer/readback and installed
+MR10 verification are **PASS (qualified)**, with formal TA.2
+closure and further marches still governed by the milestone.
+
+`scripts/ta2-rc3-human-review` operates **only on the sealed,
+saved MVS JOB 9369 evidence**. Running it without arguments
+prints all 12 actual MVS `TEST:`, `EXP:`, `RP:`, `CODE=`
+sets and records a new independently sealed **PENDING** review
+in `workarea/ta2-rc3-human-review/`. The optional
+`--signoff` requires one human `P` or `F` for each R01–R12,
+then a reviewer identifier and literal `SIGN` to record the
+identified per-case verdict. A case failure records a blocking
+FAIL, never a PASS. Sign-off does not authorize publishing the
+AWS image or imply TA.3/TA.7 clean-target verification.
+
+No MVS JES submission, tape mount/readback, object/code generation,
+dataset modification or automatic reexecution occurs in either
+mode. The original MVS reports are never rewritten. The source
+and tests were verified **17/17 PASS** in an isolated repository
+workspace; GitHub blob IDs match the tested bytes. See the
+[RC3 acceptance ledger](ta2-rc3-consolidated-candidate-20261122.md).
