@@ -69,8 +69,9 @@ class TestRecipient(unittest.TestCase):
         summary=("JOB 9399 T3R4MR\nJOB RESULT: SUCCESS\n"
                  "HIGHEST RC: 0000\nR0003 IEBCOPY RC=0000\n"
                  "R0004 IEBCOPY RC=0000\n")
-        for ordering in ("GO R0003","R0003 GO"):
-            second=("GO R0004" if ordering=="GO R0003" else "R0004 GO")
+        for ordering in ("GO R0003","R0003 GO","GO.R0003"):
+            second=("GO R0004" if ordering=="GO R0003" else
+                    "GO.R0004" if ordering=="GO.R0003" else "R0004 GO")
             report=(f"IEF142I T3R4MR {ordering} - "
                     "STEP WAS EXECUTED - COND CODE 0000\n"+
                     f"IEF142I T3R4MR {second} - "
