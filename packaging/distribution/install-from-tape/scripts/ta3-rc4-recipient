@@ -284,7 +284,8 @@ def profile_result(name,report,summary,positions):
         r"STEP WAS EXECUTED\s+-\s+COND CODE (\d{4})\s*$",report)
     steps=[]
     for field,rc in entries:
-        names=[word for word in field.split() if re.fullmatch(r"R\d{4}",word)]
+        names=[word for word in re.split(r"[\s.]+",field)
+               if re.fullmatch(r"R\d{4}",word)]
         need(len(names)==1,
              "ambiguous MVS in-stream PROC step identity for "+name)
         steps.append((names[0],rc))
