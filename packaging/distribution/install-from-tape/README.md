@@ -1,3 +1,24 @@
+## TA.3 recipient report and remaining profiles
+
+The owner reported **TA3N1 MR10-only PASS** on actual MVS JOBS
+9370–9377: the `BT0001`/`BT0002` bootstrap, 10/10 restored
+MR10/documentation PDSes, 90/90 members, and actual installed
+`ICINT19` SCALVEC `TEST:/EXP:/RP:/CODE=0`. See the
+[operator result record](ta3-rc3-n1-operator-result-20261122.md);
+the sealed local JES files have not been separately inspected here.
+
+The committed [remaining-profile runner](scripts/ta3-rc3-remaining-profiles)
+performs one guarded native-only `TA3N2` install (11 PDSes,
+67 members) and one separate combined `TA3N3` install (20 PDSes,
+146 members). It first verifies the prior sealed `TA3N1` receipt,
+all 31 new destinations absent on MVS, and the unchanged BC0003
+image. Each profile re-reads the bootstrap and independently restores
+`BT0002`; the combined profile additionally executes installed MR10
+SCALVEC. The [execution and evidence contract](ta3-rc3-remaining-profiles-run-20261122.md)
+records the one-confirmation/no-retry policy. **Actual TA3N2/TA3N3 MVS
+execution is still outstanding.** The tape is unchanged; no native
+Cambridge Compiler is claimed.
+
 # Install from tape
 
 ## TA.3 authorized isolated MR10 recipient trial
