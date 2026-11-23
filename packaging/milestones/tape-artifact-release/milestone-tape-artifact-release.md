@@ -1750,3 +1750,42 @@ Do not reopen TA.2 without a specific demonstrated product defect;
 do not repeat the consumed staging, tape writing, restoration or
 installed MR10 one-shot operations; and do not modify the accepted
 `BC0003` media or original MVS evidence.
+
+## TA.3 — Three isolated BC0003 installation profiles PASS (qualified technical checkpoint, 23 November 2026 EST)
+
+The owner reported the following **actual MVS 3.8J** outcomes, with
+the original `BC0003` image verified unchanged:
+
+- **MR10-only / TA3N1:** MVS JOBS 9370–9377; 11 newly restored PDSes,
+  90/90 members, and installed `ICINT19` SCALVEC
+  `TEST:/EXP:/RP:/CODE=0` PASS.
+- **Native-only / TA3N2:** fresh MVS preflight JOB 9378 verified all
+  31 TA3N2+TA3N3 targets absent. The native-only installation restored
+  11 PDSes with 67/67 members verified. No native Cambridge Compiler
+  execution is asserted.
+- **Combined / TA3N3:** 20 newly restored PDSes with 146/146 members
+  verified. Combined-recipient installed `ICINT19` SCALVEC
+  `TEST:/EXP:/RP:/CODE=0` PASS. Original immutable AWS unchanged.
+- Preserve the accepted `workarea/ta3-rc3-recipient/` and
+  `workarea/ta3-rc3-remaining-profiles/` sealed MVS evidence on
+  the owner system, existing dataset recipients, one-shot markers,
+  and all preceding TA.2 acceptance evidence. No additional replay.
+
+These results demonstrate **all three independently selected MVS-only
+profile JCL paths** on isolated new dataset namespaces within the same
+MVS 3.8J system. They do **not** establish an independently IPL'd
+recipient, standalone native component link/execute validation, or
+native Cambridge Compiler presence.
+
+**Open TA.3 acceptance-design distinction:** `BC0003` tape-resident
+`BT0002(RESTORE)` is a human-editable placeholder template; the
+three successful executable installation job bodies are external
+source-controlled MVS JCL. Formal march closure requires owner direction
+whether this is acceptable on a **qualified** basis, or whether
+tape-resident operable profile JCL is mandatory (which requires a new
+authorized tape candidate, never in-place modification of `BC0003`).
+
+The record is [TA.3 three-profile operator results](../../distribution/install-from-tape/ta3-rc3-all-profiles-operator-results-20261123.md).
+**TA.3 — MVS Bootstrap and Installation remains IN PROGRESS** until
+explicit formal disposition.
+
