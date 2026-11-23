@@ -2,8 +2,11 @@
 import importlib.machinery
 import importlib.util
 from pathlib import Path
+import hashlib
+import json
 import tempfile
 import unittest
+from types import SimpleNamespace
 
 ROOT=Path(__file__).resolve().parents[1]
 SCRIPT=ROOT/'scripts/ta3-rc3-remaining-profiles'
@@ -85,6 +88,54 @@ class TestProfiles(unittest.TestCase):
         class Ref:
             MARKER=SCRIPT.parents[4]/'workarea'/'not-a-ta3n1-receipt'
         with self.assertRaises(mod.Refusal):mod.prior_checkpoint(Ref())
+
+    def test_prior_checkpoint_accepts_sealed_n1_and_refuses_tamper(self):
+        """Regression: the first recipient wrote inventory-report, not directory-report."""
+        work=SCRIPT.parents[4]/'workarea'
+        work.mkdir(exist_ok=True)
+        previous_root,previous_work=mod.ROOT,mod.WORK
+        try:
+            with tempfile.TemporaryDirectory(dir=work) as td:
+                mod.ROOT=Path(td)
+                mod.WORK=mod.ROOT/'workarea'
+                evidence_rel='workarea/ta3-rc3-recipient/20261123T014830Z-33002'
+                evidence=mod.ROOT/evidence_rel
+                evidence.mkdir(parents=True)
+                source_ref=mod.tools()
+                ref=SimpleNamespace(
+                    MARKER=mod.ROOT/'prior-marker.json',
+                    AWS_SHA256=source_ref.AWS_SHA256,
+                    PREFIX=source_ref.PREFIX)
+                ref.MARKER.write_text(json.dumps({
+                    'status':'OWNER_AUTHORIZED_TA3_BC0003_MR10_NO_RETRY',
+                    'aws_sha256':ref.AWS_SHA256,
+                    'recipient_prefix':ref.PREFIX,
+                    'evidence':evidence_rel})+'\n')
+                completed={
+                    'status':'TA3_BC0003_MVS_BOOTSTRAP_MR10_INSTALL_GO_PASS_ISOLATED_NAMESPACE',
+                    'recipient_prefix':ref.PREFIX,
+                    'restored_pds':11,'verified_members':90,'go_steps':8,
+                    'jobs':{'absence_preflight':9370,'boot':9371,
+                            'installer_restore':9372,'installer_view':9373,
+                            'profile_restore':9374,'catalog':9375,
+                            'directory':9376,'installed_go':9377}}
+                files={
+                    'result.json':json.dumps(completed)+'\n',
+                    'go-semantic.json':json.dumps({
+                        'exp_contract_met':True,'golden_rp_and_code_match':True})+'\n',
+                    'go-report.txt':'IEF142I TA3GO R01 - STEP WAS EXECUTED - COND CODE 0000\n',
+                    'inventory-report.txt':'MVS LISTDS MEMBERS: 90/90\n'}
+                for name,body in files.items():
+                    (evidence/name).write_text(body)
+                seal=''.join(hashlib.sha256(body.encode()).hexdigest()+
+                             '  '+name+'\n' for name,body in sorted(files.items()))
+                (evidence/'SHA256SUMS').write_text(seal)
+                self.assertEqual(mod.prior_checkpoint(ref),evidence_rel)
+                (evidence/'inventory-report.txt').write_text('tampered\n')
+                with self.assertRaises(mod.Refusal):
+                    mod.prior_checkpoint(ref)
+        finally:
+            mod.ROOT,mod.WORK=previous_root,previous_work
 
     def test_recipient_uses_existing_mvs_tooling(self):
         ref=mod.tools()
