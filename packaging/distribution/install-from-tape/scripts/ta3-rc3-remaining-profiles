@@ -206,7 +206,7 @@ def prior_checkpoint(ref):
         listed.add(name)
     all_names={p.name for p in folder.iterdir()}
     need(all_names==listed|{'SHA256SUMS'},'TA3N1 evidence inventory differs')
-    need({'result.json','go-semantic.json','go-report.txt','directory-report.txt'}
+    need({'result.json','go-semantic.json','go-report.txt','inventory-report.txt'}
          .issubset(listed),'TA3N1 essential MVS records missing')
     result=json.loads((folder/'result.json').read_text('utf-8'))
     semantic=json.loads((folder/'go-semantic.json').read_text('utf-8'))
