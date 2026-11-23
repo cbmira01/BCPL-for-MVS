@@ -1,3 +1,29 @@
+## TA.3 — BC0004 tape-resident installer: MVS production PASS, recipient pending
+
+The owner reported **actual MVS 3.8J RC4 production PASS**
+on **JOBS 9393–9397**: two new BT0001/BT0002 stage datasets,
+eight installer PDS members, 21 standard-labeled datasets and
+64 AWS physical tape files. Candidate `BCPL-0.1.0-rc4`, VOLSER
+`BC0004`, SHA-256
+`7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1`.
+See [production evidence record](../create-tape/ta3-rc4-production-operator-result-20261123.md).
+**Do not repeat production or overwrite either BC0003 or BC0004.**
+
+The [one-shot BC0004 recipient runner](scripts/ta3-rc4-recipient)
+performs one MVS absence preflight for 42 fresh datasets, then
+with a single operator confirmation restores three separate
+eight-member installer libraries and obtains each **actual
+on-tape** `MR10`, `NATIVE`, `COMBINED` JCL body using MVS
+IEBGENER SYSOUT. Every recovered card is checked before it is
+submitted back to actual JES. MVS IEBCOPY profile restoration,
+LISTDS/DCB/member-directory verification, and combined installed
+`ICINT19` SCALVEC `TEST:/EXP:/RP:/CODE=0` follow.
+
+The [recipient trial contract](ta3-rc4-tape-resident-recipient-run-20261123.md)
+details the 11/11/20 PDS and 94/71/150 member targets.
+**The recipient run is not yet executed; TA.3 remains IN PROGRESS.**
+No executable native Cambridge Compiler is implied.
+
 ## TA.3 — RC4 MVS PROC proof and guarded tape producer
 
 **MVS JOB 9392 PASS** (owner-reported): the read-only
