@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BCPL-0.1.0-rc3 / BC0003 MVS staging, 21-position AWS writing, readback, 21 DCBs, 146 PDS members and installed 12-case MR10 accepted qualified; formal TA.2 closure and TA.4 human review pending)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified) by owner direction; TA.3 — MVS Bootstrap and Installation IN PROGRESS (BCPL-0.1.0-rc3 / BC0003 preserved)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1706,3 +1706,47 @@ automatic test contract is unchanged.
 See the [RC3 evidence ledger](../../distribution/create-tape/ta2-rc3-consolidated-candidate-20261122.md).
 **TA.2 remains IN PROGRESS pending formal qualified closure; TA.4
 human sign-off remains pending until actual owner-reviewed evidence.**
+
+
+## TA.2 — Owner-directed formal qualified closure; TA.3 immediate kickoff (22 November 2026 EST / 23 November UTC)
+
+The owner explicitly directed **close TA.2 now and move immediately to TA.3**.
+This is a **formal owner-directed closure**, not a provisional
+recommendation: **TA.2 — Manifest-Driven Tape Producer: CLOSED (qualified)**.
+The qualified evidence comprises immutable `BCPL-0.1.0-rc3` /
+`BC0003`, 21 standard-labeled MVS datasets / 64 AWS physical files,
+21-step restored tape-to-DASD roundtrip, independently verified
+21/21 DCBs, 146/146 PDS directory members, and real MVS installed
+MR10 JOB 9369 (63/63 JES/IEF142I RC0000 and 12/12
+`TEST:`/`EXP:`/`RP:`/`CODE=0` semantic PASS).
+Earlier MVS JOBS 9360, 9361, 9363, 9367 and 9368 and all
+private sealed original evidence are preserved. The candidate
+AWS SHA-256 remains
+`6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1`.
+
+The optional 12-case human sign-off script was separately invoked by
+the owner: the terminal transcript shows **all twelve individual
+PASS decisions** and reviewer identifier `cm`. A lowercase
+`sign` was rejected by a case-sensitive command token. **No
+sealed sign-off file was produced**; this procedural defect is **not
+a reason to keep TA.2 open** or make the owner repeat accepted MVS
+tests. Human review disposition and full demonstration/source rebuild
+acceptance remain under TA.4, independent of the TA.2 producer.
+
+This milestone therefore advances **TA.3 — MVS Bootstrap and
+Installation: IN PROGRESS**, with the separately approved
+[TA.2 formal closure](ta2-formal-qualified-closure-and-ta3-transition-20261122.md)
+and [TA.3 kickoff](ta3-kickoff-20261122.md).
+TA.3 must establish independent **MVS-only** recipient bootstrap and
+installation from `BCPL.BT0001`/`BCPL.BT0002`, recipient
+site-HLQ/allocation/overwrite safeguards and candidate-appropriate
+independent profile selection. Current same-system TA.2 readback is
+**not** a clean-recipient TA.3/TA.7 test. The declared native
+Cambridge Compiler remains `absent`; TA.6 is candidate **N/A**,
+not PASS. TA.4/TA.5/TA.7/TA.8, provenance and publication
+approval retain their gates.
+
+Do not reopen TA.2 without a specific demonstrated product defect;
+do not repeat the consumed staging, tape writing, restoration or
+installed MR10 one-shot operations; and do not modify the accepted
+`BC0003` media or original MVS evidence.
