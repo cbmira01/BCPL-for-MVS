@@ -86,7 +86,6 @@ def original_receipt(rec,ref,gen):
          "consumed approval marker identity or namespace differs")
     need(not (INCIDENT/"mr10-checkpoint.json").exists(),
          "original run already completed MR10 acceptance differently")
-    m=gen.load()[0]
     expected=gen.materials(*gen.load())[1]["MR10"]
     saved=(INCIDENT/"mr10-on-tape-profile.jcl").read_text("ascii")
     need(saved==expected,
@@ -163,6 +162,20 @@ def run(live=False):
         manifest=gen.load()[0]
         selected=rec_selection(manifest,gen)
         rec=load("ta3r4original",BASE/"install-from-tape/scripts/ta3-rc4-recipient")
+        # Build and validate every future MVS job body before any
+        # recovery marker or stateful operation can be consumed.
+        expected_members=gen.materials(*gen.load())[1]
+        remaining={}
+        for label in ("NATIVE","COMBINED"):
+            prefix,_,_,_,_=selected[label]
+            remaining[label]={
+                "bootstrap":rec.boot_and_installer(ref,prefix)["TA3BT2"],
+                "readback":rec.readback_deck(prefix,label),
+                "profile":expected_members[label]
+            }
+        source_go=rem.render("TA3GO","HERC02.BCPL.R4CB",ref)
+        need("HERC02.BCPL.R4CB.MR10KIT.TESTS(SCALVEC)" in source_go,
+             "combined installed SCALVEC JCL differs")
         need(rec.hashfile(rec.AWS)==rec.IMAGE_SHA and
              rec.hashfile(rec.ORIGINAL)==rec.ORIGINAL_SHA,
              "accepted BC0004 or BC0003 media differs")
@@ -227,19 +240,18 @@ def run(live=False):
         },sort_keys=True)+"\n").encode("ascii"))
         marked=True
         results={"MR10":{**prior,**checkpoint}}
-        source_go=rem.render("TA3GO","HERC02.BCPL.R4CB",ref)
         for label in ("NATIVE","COMBINED"):
             prefix,jobname,positions,rows,count=selected[label]
             rec.ensure_rc4(rc3,media,folder,label.lower()+"-installer")
             bt2,_,_=ref.mvs_job(
                 rc3,core,cfg,folder,label.lower()+"-bt2",
-                "T3R4BT",rec.boot_and_installer(ref,prefix)["TA3BT2"],
+                "T3R4BT",remaining[label]["bootstrap"],
                 [("BT2REST","IEBCOPY")])
             view,report,_=ref.mvs_job(
                 rc3,core,cfg,folder,label.lower()+"-readback",
-                "T3R4PR",rec.readback_deck(prefix,label),
+                "T3R4PR",remaining[label]["readback"],
                 [("P0001","IEBGENER"),("P0002","IEBGENER")])
-            expected=gen.materials(*gen.load())[1][label]
+            expected=remaining[label]["profile"]
             deck=rec.extract_profile(report,expected)
             need("COPY OUTDD=OUTPDS,INDD=INTAPE" in report,
                  label+": actual MVS COPY member not printed")
