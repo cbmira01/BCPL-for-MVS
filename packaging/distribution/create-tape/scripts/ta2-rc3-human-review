@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""TA.4 human review of saved, sealed RC3 installed MR10 JOB 9369.
+
+No MVS operations. Default --review replays MVS JES and semantic evidence,
+displays all 12 actual EXP/RP/CODE cases, and saves an independent PENDING
+review receipt. --signoff adds 12 explicit human PASS/FAIL decisions plus
+an identified overall signature. Never modifies original evidence or tape.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+SCRIPTS = ROOT / 'packaging/distribution/create-tape/scripts'
+WORK = ROOT / 'workarea'
+OUT = WORK / 'ta2-rc3-human-review'
+ORIGINAL = WORK / 'ta2-rc3-installed-mr10-continuation/20261123T000015Z-32502'
+ORIGINAL_MARKER = (WORK / 'ta2-rc3-installed-mr10-continuation/'
+                   'BC0003-installed-mr10-one-shot.json')
+JOB = 9369
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(ok, why):
+    if not ok:
+        raise Refusal(why)
+
+
+def accepted(rc3, installed, restore, reviewer):
+    """Recompute every semantic check from the *saved* actual MVS SYSOUT."""
+    need(ORIGINAL_MARKER.is_file() and not ORIGINAL_MARKER.is_symlink(),
+         'MR10 one-shot marker not found')
+    marker = json.loads(ORIGINAL_MARKER.read_text('utf-8'))
+    need(marker == {
+        'status': 'OWNER_APPROVED_RC3_INSTALLED_MR10_NO_RETRY',
+        'candidate': restore.CANDIDATE,
+        'volser': restore.VOL,
+        'original_restore_job': 9363,
+        'verification_jobs': {'catalog': 9367, 'directory': 9368},
+        'image_sha256': restore.AWS_SHA256,
+        'evidence': ORIGINAL.relative_to(ROOT).as_posix(),
+        'no_media_operations': True, 'no_restore': True,
+        'publication_authorized': False}, 'MR10 marker not exact accepted original')
+    installed.sealed(ORIGINAL, rc3, {'result.json', 'semantic-review.json',
+             'regression-summary.txt', 'regression-report.txt',
+             'catalog-summary.txt', 'catalog-report.txt',
+             'directory-summary.txt', 'directory-report.txt'})
+    receipt = json.loads((ORIGINAL / 'result.json').read_text('utf-8'))
+    need(receipt == {
+        'status': 'RC3_INSTALLED_MR10_EXP_RP_CODE_PASS_HUMAN_SIGNOFF_PENDING',
+        'candidate': restore.CANDIDATE, 'volser': restore.VOL,
+        'aws_sha256': restore.AWS_SHA256, 'original_restore_job': 9363,
+        'mvs_jobs': {'catalog': 9367, 'directory': 9368, 'regression': JOB},
+        'verified_datasets': 21, 'verified_members': 146,
+        'mr10_steps': 63, 'mr10_cases': 12, 'exp_rp_code': True,
+        'human_signoff': 'PENDING', 'publication_authorized': False},
+        'original 21/146/63/12 acceptance receipt differs')
+    _, changes, _, _, _, regression = rc3.plan()
+    need(len(changes) == 12, 'canonical BCPL MR10 source selection changed')
+    summary = (ORIGINAL / 'regression-summary.txt').read_text('utf-8')
+    report = (ORIGINAL / 'regression-report.txt').read_text('utf-8')
+    need(re.search(rf'(?m)^JOB\s+{JOB}\s+TA2R3MR\s*$', summary) and
+         'JOB RESULT: SUCCESS' in summary and 'HIGHEST RC: 0000' in summary,
+         'original JOB 9369 result differs')
+    rc3.verify_regression_execution(summary, report, regression)
+    computed = rc3.validated_semantics(reviewer, report, JOB)
+    need(json.loads((ORIGINAL / 'semantic-review.json').read_text('utf-8')) == computed,
+         'original 12-case semantic receipt differs from MVS SYSOUT')
+    need(computed['mvs_job'] == JOB and computed['candidate_id'] == restore.CANDIDATE and
+         computed['observed_test_count'] == 12 and
+         computed['human_signoff'] == 'PENDING' and
+         computed['publication_authorized'] is False,
+         'original MVS semantic comparison incomplete')
+    need(restore.digest(restore.IMAGE) == restore.AWS_SHA256,
+         'BC0003 image changed since MVS acceptance')
+    cases = computed['cases']
+    need(len(cases) == 12 and [r['step'] for r in cases] ==
+         [f'R{i:02d}' for i in range(1, 13)],
+         '12-case MVS step order differs')
+    for case in cases:
+        checks = case['checks']
+        need(all(checks.get(k) is True for k in (
+             'test_identity', 'rp_matches_golden', 'interpreted_code_zero',
+             'exp_present', 'exp_matches_golden')) and
+             case['golden_and_code_match'] is True and
+             len(case['printed_exp']) == len(case['actual_rp']) > 0 and
+             case['interpreted_codes'] == [0],
+             'automated semantic comparison not PASS for ' + case['step'])
+    return cases
+
+
+def show_case(case):
+    print(f'{case["step"]} {case["name"]} | TEST: {case["actual_test"]}')
+    for exp, rp in zip(case['printed_exp'], case['actual_rp']):
+        print('    ' + exp)
+        print('    ' + rp)
+    print('    ICINT CODE=' + ','.join(str(x) for x in case['interpreted_codes']))
+
+
+def human_decisions(cases, ask):
+    reviews = []
+    for case in cases:
+        show_case(case)
+        verdict = ask(f'Human review {case["step"]} [P=PASS/F=FAIL/Q=quit]: ').strip().upper()
+        need(verdict in ('P', 'F'), 'human review incomplete or aborted')
+        reviews.append({'step': case['step'], 'name': case['name'],
+                        'human_verdict': 'PASS' if verdict == 'P' else 'FAIL'})
+    reviewer = ask('Reviewer identifier (initials or name): ').strip()
+    need(bool(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}', reviewer)),
+         'valid reviewer identifier required')
+    token = 'SIGN'
+    need(ask('Type SIGN to record all 12 human verdicts: ').strip() == token,
+         'explicit human sign-off not received')
+    return reviews, reviewer
+
+
+def run(signoff=False, *, ask=input):
+    try:
+        from importlib.machinery import SourceFileLoader
+        from importlib.util import module_from_spec, spec_from_loader
+        def load(label, path):
+            need(path.is_file() and not path.is_symlink(),
+                 'missing canonical code: '+path.name)
+            loader = SourceFileLoader(label, str(path))
+            spec = spec_from_loader(loader.name, loader)
+            module = module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+        rc3 = load('ta2_rc3_review_core', SCRIPTS / 'ta2-rc3-consolidated')
+        installed = load('ta2_rc3_review_installed', SCRIPTS / 'ta2-rc3-installed-mr10-continuation')
+        restore = load('ta2_rc3_review_restore', SCRIPTS / 'ta2-rc3-restore-continuation')
+        reviewer = load('ta2_rc3_review_semantics', ROOT /
+              'packaging/distribution/install-from-tape/scripts/ta2-rc2-mr10-review')
+        cases = accepted(rc3, installed, restore, reviewer)
+        need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+             'unsafe review destination')
+        if signoff:
+            need(sys.stdin.isatty(), 'sign-off requires an interactive human terminal')
+            reviews, signer = human_decisions(cases, ask)
+        else:
+            for case in cases:
+                show_case(case)
+            reviews = [{'step':case['step'],'name':case['name'],
+                        'human_verdict':'PENDING'} for case in cases]
+            signer = None
+        status = ('SIGNED_12_CASES_PASS_HUMAN_VERDICT' if signoff and
+                  all(r['human_verdict']=='PASS' for r in reviews) else
+                  'SIGNED_CASE_FAILURES_RELEASE_BLOCKED' if signoff else
+                  'AUTOMATED_12_CASES_PASS_HUMAN_REVIEW_PENDING')
+        result = {'status': status, 'candidate': restore.CANDIDATE,
+                  'mvs_job': JOB, 'original_evidence': ORIGINAL.relative_to(ROOT).as_posix(),
+                  'aws_sha256': restore.AWS_SHA256, 'cases': reviews,
+                  'reviewer_identifier': signer,
+                  'human_signoff': 'RECORDED' if signoff else 'PENDING',
+                  'publication_authorized': False,
+                  'fresh_recipient_acceptance': False}
+        OUT.mkdir(mode=0o700, exist_ok=True)
+        folder = OUT / ('review-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+
+                        '-' + str(os.getpid()))
+        folder.mkdir(mode=0o700, exist_ok=False)
+        rc3.artifact(folder, 'review.json', json.dumps(result, indent=2)+'\n')
+        rc3.seal(folder)
+        print(f'RC3 JOB {JOB}: 12/12 automated EXP/RP/CODE PASS; human review: {status}.')
+        print('Evidence: '+folder.relative_to(ROOT).as_posix())
+        if status == 'SIGNED_CASE_FAILURES_RELEASE_BLOCKED':
+            return 2
+        return 0
+    except Exception as exc:
+        print('RC3 HUMAN REVIEW REFUSED: '+str(exc), file=sys.stderr)
+        return 2
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--signoff', action='store_true',
+                   help='show all MVS cases, collect individual human verdicts and identified sign-off')
+    return run(p.parse_args(argv).signoff)
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
