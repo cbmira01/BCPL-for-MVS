@@ -105,3 +105,15 @@ the technical MVS evidence above and proceed into
 **TA.4 — MR10 Kit Compiler Distribution and Verification**
 with this read-only-first plan. Until explicitly approved,
 this document is **preparation**, not a formal march transition.
+
+## Superseding owner decision — formal closure accepted 23 November 2026 EST
+
+The owner subsequently directed **“Close TA3 and open TA4.”**
+Accordingly the review-ready status above is now **superseded**:
+**TA.3 — MVS Bootstrap and Installation formally CLOSED
+(qualified)**; **TA.4 — MR10 Kit Compiler Distribution and
+Verification OPEN / IN PROGRESS**. The governing decision is the
+[formal closure and TA.4 transition](ta3-formal-qualified-closure-and-ta4-transition-20261123.md);
+the [TA.4 kickoff](ta4-kickoff-20261123.md) establishes the
+next read-only-first work. Preserve all accepted media and
+one-shot MVS receipts.
