@@ -99,3 +99,16 @@ again after updating GitHub `main`; it performs another **read-only**
 preflight and requests a fresh `[y/N]` confirmation before changing MVS
 state. Preserve the first refusal evidence and do not replay any earlier
 accepted producer, installer, or regression operation.
+
+## 23 November — actual MVS RC4 technical verification PASS (qualified)
+
+The owner's corrected, guarded runner completed **JOBS 9418–9422**:
+read-only preflight, fresh IFOX/IEWL interpreter rebuild (4 steps),
+rebuilt SCALVEC (8 steps), 11 language demonstrations (38 steps), and
+17 BCPL demonstrations (62 steps). The end-to-end runner reported PASS
+and sealed its evidence at
+`workarea/ta4-mr10-verification/20261123T212347Z-39337`.
+**Do not repeat this accepted one-shot operation.** Earlier pending
+MVS status above is historical; the subsequent qualified checkpoint is
+recorded in [TA.4 RC4 MVS technical verification](ta4-rc4-mvs-technical-verification-checkpoint-20261123.md).
+Twelve-case human `SIGN` remains pending and TA.4 is not closed.

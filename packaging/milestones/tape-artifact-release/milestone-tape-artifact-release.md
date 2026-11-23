@@ -2097,3 +2097,23 @@ separately unproven.
 
 See the [formal TA.3 acceptance and transition](ta3-formal-qualified-closure-and-ta4-transition-20261123.md)
 and the [TA.4 kickoff](ta4-kickoff-20261123.md).
+
+## TA.4 — RC4 owner-reported rebuilt-interpreter and 28 demonstrations PASS (23 November 2026 EST)
+
+Owner-reported actual MVS 3.8J `BC0004` verification succeeded: read-only
+`T4R1PRE` **JOB 9418** checked 9 installed MR10 PDSes and two absent
+verification targets; isolated IFOX/IEWL rebuild **JOB 9419** (4 steps),
+rebuilt `ICINT19` SCALVEC **JOB 9420** (8 steps), 11 language demos
+**JOB 9421** (38 steps), and 17 BCPL demos **JOB 9422** (62 steps),
+all reported PASS. Original `R4MR` installation and media remained
+unchanged. Owner-reported sealed evidence:
+`workarea/ta4-mr10-verification/20261123T212347Z-39337`.
+
+The successful TA.4 verification is **accepted as a qualified technical MVS
+checkpoint**, not a formal TA.4 closure. Preserve and do not rerun the
+one-shot verification. The existing **JOB 9369** 63-step/12-case
+`MRREGRES` remains accepted predecessor evidence; **twelve individual
+human verdicts plus identified, sealed overall `SIGN` receipt** remain
+outstanding. See the [TA.4 RC4 MVS technical checkpoint](ta4-rc4-mvs-technical-verification-checkpoint-20261123.md).
+**TA.4 remains IN PROGRESS.** TA.5/TA.7/TA.8, rights and publication
+acceptance remain independent; TA.6 is N/A for this candidate.
