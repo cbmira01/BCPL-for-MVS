@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BC0002 restored and isolated MR10 installation/12-case semantics accepted qualified; updated EXP-source MVS regression 12/12 PASS; new media/recipient acceptance pending)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer IN PROGRESS (BCPL-0.1.0-rc3 / BC0003 MVS staging, 21-position AWS writing, readback, 21 DCBs, 146 PDS members and installed 12-case MR10 accepted qualified; formal TA.2 closure and TA.4 human review pending)**
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -1646,3 +1646,63 @@ TA.2 is **IN PROGRESS** pending the actual BOOT exact-DSN
 verification and installed MR10 results. TA.4 human sign-off,
 TA.3/TA.7 fresh-recipient gates, redistribution-rights reviews and
 publication are not closed.
+
+
+## TA.2 — BC0003 MVS installed acceptance JOBS 9367–9369 and TA.4 human review preparation (22 November EST / 23 November UTC)
+
+The owner executed the previously approved, source-controlled
+`ta2-rc3-installed-mr10-continuation --run` on actual MVS 3.8J.
+The terminal result provides the following **owner-reported, actual
+MVS** acceptance evidence:
+
+- **JOB 9367:** exact-name `LISTDS LABEL` **21/21 DCB/volume PASS**,
+  including `HERC02.BCPL.TA2R3I.BOOT` as PS, correcting the
+  former `BOOT.JCL` false-prefix parser result.
+- **JOB 9368:** independent `LISTDS MEMBERS` **146/146 selected
+  PDS members PASS** across 20 restored PDS datasets.
+- After the operator's explicit `Y`, **JOB 9369** (`TA2R3MR`)
+  **63/63 ordered MVS JES / IEF142I steps RC0000** and **12/12**
+  installed MR10 Kit Compiler `TEST:`/`EXP:`/`RP:`/
+  interpreted `CODE=0` automated semantic comparisons PASS.
+- Immutable private MVS evidence:
+  `workarea/ta2-rc3-installed-mr10-continuation/20261123T000015Z-32502`.
+
+Together with accepted original production JOBS **9360/9361**,
+new immutable AWS `BCPL-0.1.0-rc3` / `BC0003` (21 logical
+standard-label tape datasets, 64 physical files, SHA-256
+`6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1`),
+and accepted 21-step readback JOB **9363**, this completes the
+**TA.2 producer/readback and installed-MR10 technical verification
+on the current development MVS system — PASS (qualified)**.
+The successful MVS state must be preserved; stage, tape write,
+readback and installed-regression one-shot markers are all consumed.
+
+This is a **qualified acceptance checkpoint, not a formal TA.2
+owner-directed closure**, a TA.3 independent recipient installation,
+or full TA.4 closure. The project requires 12 individually human-reviewed
+MR10 cases and identified overall sign-off; all 11 language and 17
+BCPL demonstrations, distributed source rebuild and further included
+native-component tests are separately governed. A recipient needs
+MVS-only bootstrap/installation without developer tools, which is
+not established by this same-system pilot. The candidate still
+declares `native_compiler: absent`; do not claim native Cambridge
+Compiler availability or TA.6 PASS. Provenance, redistribution-rights
+review and publication authority remain pending.
+
+The new `scripts/ta2-rc3-human-review` independently replays
+the sealed MVS JOB 9369 regression report and original
+12-case semantic comparison, displays each actual `TEST:`,
+literal `EXP:`, calculated `RP:` and `CODE=` result, then
+optionally takes twelve individual human PASS/FAIL verdicts,
+reviewer identifier and explicit `SIGN`. Any human FAIL
+blocks release acceptance. It writes a separate SHA256-sealed
+review record under `workarea/` and never contacts MVS or
+alters tape, source, installation or original evidence.
+**17/17 local focused tests passed**, and the committed reviewer
+and test Git blob IDs are exactly those exercised in the
+isolated assistant workspace. The original WSL MR10 RP/CODE
+automatic test contract is unchanged.
+
+See the [RC3 evidence ledger](../../distribution/create-tape/ta2-rc3-consolidated-candidate-20261122.md).
+**TA.2 remains IN PROGRESS pending formal qualified closure; TA.4
+human sign-off remains pending until actual owner-reviewed evidence.**
