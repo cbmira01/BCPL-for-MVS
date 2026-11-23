@@ -92,9 +92,11 @@ def render(name):
             .replace('<TAPE>', TAPE_UNIT)
             .replace('<DASD>', 'SYSDA')
             .replace('<DVOL>', VOLUME))
-    need('<' not in body and '>' not in body and 'HERC02.BCPL.MR10KIT.' not in body,
-         name+': unresolved site parameter or development DSN')
     lines = body.splitlines()
+    active = [x for x in lines if not x.startswith('//*')]
+    need(all('<' not in x and '>' not in x for x in active) and
+         'HERC02.BCPL.MR10KIT.' not in body,
+         name+': unresolved active site parameter or development DSN')
     need(lines and all(len(x) <= 80 and '\t' not in x for x in lines) and
          all(len(x) <= 71 for x in lines if x.startswith('//') and
              not x.startswith('//*')), name+': MVS card/JCL column overflow')
