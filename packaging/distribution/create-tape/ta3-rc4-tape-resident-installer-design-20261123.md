@@ -151,6 +151,40 @@ Six source-controlled offline production refusal/safety tests and
 eight RC4 generator contract tests cover the design. Actual new
 MVS staging, tape write and recipient execution are **pending**.
 
+## RC4 first production invocation: pre-stateful offline validator halt (23 November 2026 EST)
+
+The owner pulled source-controlled `ta3-rc4-production --run` and received:
+
+```text
+TA.3 RC4 PRODUCTION HALTED: RC4 plan identity/21-position payload selection changed
+```
+
+This was **before MVS submission, operator confirmation, the one-shot
+marker, staging allocation, or BC0004 image creation**. The failure
+originated in `cards_and_identity`, which counted all
+`DISP=(NEW,CATLG,DELETE)` text in the staging deck as active JCL.
+The DD `DATA,DLM=Z9` payload includes three installer PROC members
+with **39 dormant IEBCOPY allocation steps**; the outer staging job
+has **exactly two** new allocations. The same outer/embedded
+distinction applies to IEBCOPY EXEC step recognition.
+
+The correction uses the already accepted TA.2
+`ta2-rc3-consolidated.jcl_control_cards` parser to exclude
+the nine in-stream data regions and check only active outer JCL
+allocations, nine IEBGENER steps and one IEFBR14 stage-allocation step.
+The original 21-dataset tape-write contract, 150 selected member
+cards, immutable BC0003 SHA and one-shot guards remain unchanged.
+Offline regression tests include successful filtering of the
+39 embedded IEBCOPY steps and refusal of an additional *active*
+allocation. A targeted synthetic reproduction in the assistant's
+project workspace also passed.
+
+**Disposition:** No stateful attempt was consumed. Following
+`git pull --ff-only`, rerunning `--run` is safe, subject to all
+normal current MVS/media preflight gates and a new explicit owner
+`Y` confirmation. No completed MVS production or RC4 tape is
+claimed by this correction.
+
 ## Status
 
 **TA.3 remains IN PROGRESS.** RC4 design and source generation are
