@@ -160,8 +160,8 @@ def profile(m,sizes,which):
             "//            VOL=SER=&DV,",
             f"//            SPACE=(TRK,({p},{s},{b})),",
             ("//            DCB=(DSORG=PO,RECFM=U,BLKSIZE=6144)" if n==12
-             else "//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,",
-                  "//            BLKSIZE=800)"),
+             else "//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,"),
+            *([] if n==12 else ["//            BLKSIZE=800)"]),
             "//SYSUT3 DD UNIT=SYSDA,SPACE=(TRK,(10,5))",
             "//SYSUT4 DD UNIT=SYSDA,SPACE=(TRK,(10,5))",
             "//SYSIN DD DSN=&HLQ..BCPL.&SITE..DIST.INST(COPY),",
