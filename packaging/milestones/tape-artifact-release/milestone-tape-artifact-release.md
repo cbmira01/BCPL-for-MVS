@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified) by owner direction; TA.3 — MVS Bootstrap and Installation IN PROGRESS (BCPL-0.1.0-rc3 / BC0003 preserved)**
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified); TA.3 — MVS Bootstrap and Installation CLOSED (qualified) by owner direction, 23 November 2026; TA.4 — MR10 Kit Compiler Distribution and Verification IN PROGRESS.** Candidate: `BCPL-0.1.0-rc4` / `BC0004`; original `BC0003` preserved.
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -2051,3 +2051,49 @@ producer, original recipient or continuation operations. No
 publication or advancement of TA.4/TA.5 acceptance is inferred.
 
 See [qualified TA.3 all-profile MVS acceptance](../../distribution/install-from-tape/ta3-rc4-all-profiles-accepted-20261123.md).
+
+
+## TA.3 formal qualified closure and TA.4 march opening — 23 November 2026 EST
+
+**Owner direction:** “Close TA3 and open TA4. Give me a handoff
+prompt.”
+
+**TA.3 — MVS Bootstrap and Installation is formally CLOSED
+(qualified).** This explicitly accepts the
+[RC4 all-profile technical gate](../../distribution/install-from-tape/ta3-rc4-all-profiles-accepted-20261123.md)
+with its stated qualifications: on actual MVS 3.8J, the
+standard-labeled `BCPL-0.1.0-rc4` / `BC0004`
+tape delivered operable MVS-only `BT0001`/`BT0002`
+bootstrap and three tape-resident installation profiles.
+All **42 PDSes / 315 members** were installed and
+verified; combined installed `ICINT19` SCALVEC
+`TEST:`/`EXP:`/`RP:`/`CODE=0` passed. The
+no-replay recovery validated first MR10 (11/94) before
+executing NATIVE (11/71) and COMBINED (20/150).
+Owner-provided continuation evidence:
+`workarea/ta3-rc4-continuation/20261123T163929Z-37828`.
+Immutable `BC0004` SHA-256 remains
+`7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1`.
+
+Closure does **not** certify an independently IPLed clean target,
+different recipient site parameters, the complete MR10
+demonstrations/regression human sign-off, included native
+component link/execute, provenance/rights clearance, or
+publication. These belong to their distinct TA.4, TA.5,
+TA.7 and TA.8 gates. The native Cambridge Compiler remains
+`absent`; TA.6 is N/A for this candidate, not PASS.
+Preserve all TA.2/TA.3 one-shot receipts and never replay
+successful prior MVS or tape operations.
+
+**TA.4 — MR10 Kit Compiler Distribution and Verification is
+OPEN / IN PROGRESS** under the approved milestone gate.
+Begin with read-only audit of distributed `ICINT19`
+rebuild source/JCL, 11 language/17 BCPL demonstrations,
+12-case `MRREGRES` semantic evidence and missing
+human-identified sign-off. The already accepted RC3
+**JOB 9369** 63-step/12-case MVS test is predecessor
+evidence only; do not repeat it. TA.4 acceptance remains
+separately unproven.
+
+See the [formal TA.3 acceptance and transition](ta3-formal-qualified-closure-and-ta4-transition-20261123.md)
+and the [TA.4 kickoff](ta4-kickoff-20261123.md).
