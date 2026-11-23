@@ -85,3 +85,14 @@ sealed receipt, inspect the receipt's status and signature against the
 accepted milestone before proposing **TA.4 formal closure**.
 Do not prematurely close TA.4 based on this source commit alone.
 TA.5, TA.7, TA.8 and publication remain independent release gates.
+
+## 23 November — correction after first compact review refusal
+
+The initial invocation refused before the signature prompt because the
+old RC3 producer `plan()` demanded exactly three release registry
+candidates, while the accepted registry now includes RC4. Current RC3
+and RC4 manifest digests match their reservations. The historical
+reviewer is now decoupled from that producer restriction without relaxing
+the original sealed MVS/JES/semantic/BC0003 hash checks. See the
+[TA.4 RC3 registry correction](ta4-rc3-signed-review-historical-registry-correction-20261123.md).
+The signed review must still be performed; **no receipt was forged**.

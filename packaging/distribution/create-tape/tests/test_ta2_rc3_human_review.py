@@ -4,6 +4,9 @@ import importlib.util
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
+
+import yaml
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -67,7 +70,10 @@ class Tests(unittest.TestCase):
         (self.folder/'regression-report.txt').write_text('MVS SYSOUT')
 
     def accepted(self):
-        with patch.object(mod,'ORIGINAL',self.folder), patch.object(mod,'ORIGINAL_MARKER',self.marker):
+        with patch.object(mod,'ORIGINAL',self.folder), \
+             patch.object(mod,'ORIGINAL_MARKER',self.marker), \
+             patch.object(mod,'historical_regression_plan',
+                          return_value=([('test',None,None)]*12,'MRREGRES')):
             return mod.accepted(self.rc3,self.installed,self.restore,self.reviewer)
 
     def test_valid_immutable_12_case_original(self):
@@ -241,6 +247,111 @@ class Tests(unittest.TestCase):
     def test_compact_refuses_unsigned_mode(self):
         with self.assertRaisesRegex(mod.Refusal, 'must collect a signature'):
             mod.run(False, compact=True)
+
+
+
+    def historical_fixture(self):
+        base=self.work/'historical';(base/'manifest/releases').mkdir(parents=True)
+        rc2={'schema_version':1,'phase':'candidate',
+             'release':{'product':'Cambridge BCPL','version':'0.1.0-rc2',
+                        'candidate_id':'BCPL-0.1.0-rc2','source_commit':'rc2'},
+             'volume':{'format':'aws','volser':'BC0002',
+                       'registry_reservation':'BCPL-0.1.0-rc2'},
+             'datasets':[{'sequence':n} for n in range(1,22)]}
+        rc3=json.loads(json.dumps(rc2))
+        rc3['release'].update(version='0.1.0-rc3',
+                              candidate_id='BCPL-0.1.0-rc3',
+                              source_commit='pinned')
+        rc3['volume'].update(volser='BC0003',
+                             registry_reservation='BCPL-0.1.0-rc3')
+        def write(path, data):
+            path.write_text(yaml.safe_dump(data,sort_keys=False))
+        a=base/'manifest/releases/BCPL-0.1.0-rc2.yaml'
+        b=base/'manifest/releases/BCPL-0.1.0-rc3.yaml'
+        c=base/'manifest/releases/BCPL-0.1.0-rc4.yaml'
+        write(a,rc2);write(b,rc3)
+        rc4=json.loads(json.dumps(rc3))
+        rc4['release'].update(version='0.1.0-rc4',candidate_id='BCPL-0.1.0-rc4')
+        rc4['volume'].update(volser='BC0004',
+                             registry_reservation='BCPL-0.1.0-rc4')
+        write(c,rc4)
+        rows=[
+          {'candidate_id':'BCPL-0.1.0-rc1','volser':'BC0001'},
+          {'candidate_id':'BCPL-0.1.0-rc2','volser':'BC0002'},
+          {'candidate_id':'BCPL-0.1.0-rc3','version':'0.1.0-rc3',
+           'source_commit':'pinned','volser':'BC0003',
+           'manifest_sha256':hashlib.sha256(b.read_bytes()).hexdigest(),
+           'state':'reserved'},
+          {'candidate_id':'BCPL-0.1.0-rc4','version':'0.1.0-rc4',
+           'source_commit':'pinned','volser':'BC0004',
+           'manifest_sha256':hashlib.sha256(c.read_bytes()).hexdigest(),
+           'state':'reserved'},
+        ]
+        registry=base/'registry.yaml'
+        write(registry,{'schema_version':1,'candidates':rows})
+        config=base/'dspal.yaml';write(config,{'datasets':{}})
+        jcl=base/'regress.jcl';jcl.write_text('canonical JCL')
+        def compiler(_path):
+            return SimpleNamespace(regression_body=lambda src:
+                     ('DSN=HERC02.BCPL.TA2INS.MR10KIT.LOAD\\n'*41))
+        fake=SimpleNamespace(RC2=a,RC3=b,REGISTRY=registry,DSPAL=config,
+                             BASE=base,JCL=jcl,
+                             CANDIDATE='BCPL-0.1.0-rc3',COMMIT='pinned',
+                             VOLSER='BC0003',INSTALL='HERC02.BCPL.TA2R3I.',
+                             digest=lambda raw:hashlib.sha256(raw).hexdigest(),
+                             source_rows=lambda manifest,cfg:
+                                  [('SCALVEC','source','bcpl')]*12,
+                             load=lambda label,path:compiler(path))
+        return fake,registry,c,b
+
+    def test_historical_unchanged_rc3_with_rc4_append_passes(self):
+        rc3,registry,rc4,manifest=self.historical_fixture()
+        changes,deck=mod.historical_regression_plan(rc3)
+        self.assertEqual(len(changes),12)
+        self.assertEqual(deck.count(rc3.INSTALL+'MR10KIT.LOAD'),41)
+
+    def test_historical_rc3_registry_checksum_tamper_refused(self):
+        rc3,registry,rc4,manifest=self.historical_fixture()
+        data=yaml.safe_load(registry.read_text())
+        data['candidates'][2]['manifest_sha256']='0'*64
+        registry.write_text(yaml.safe_dump(data))
+        with self.assertRaisesRegex(mod.Refusal,'historical RC3 registry'):
+            mod.historical_regression_plan(rc3)
+
+    def test_historical_rc4_append_tamper_refused(self):
+        rc3,registry,rc4,manifest=self.historical_fixture()
+        rc4.write_bytes(rc4.read_bytes()+bytes([10])+b'# altered'+bytes([10]))
+        with self.assertRaisesRegex(mod.Refusal,'post-RC3 manifest'):
+            mod.historical_regression_plan(rc3)
+
+    def test_historical_rc3_volume_relabel_refused(self):
+        rc3,registry,rc4,manifest=self.historical_fixture()
+        data=yaml.safe_load(registry.read_text())
+        data['candidates'][3]['volser']='BC0003'
+        registry.write_text(yaml.safe_dump(data))
+        with self.assertRaisesRegex(mod.Refusal,'historical RC3 registry'):
+            mod.historical_regression_plan(rc3)
+
+    def test_historical_rc3_payload_change_refused(self):
+        rc3,registry,rc4,manifest=self.historical_fixture()
+        data=yaml.safe_load(manifest.read_text())
+        data['datasets'][0]['sequence']=99
+        manifest.write_text(yaml.safe_dump(data))
+        with self.assertRaisesRegex(mod.Refusal,'historical RC3 release manifest'):
+            mod.historical_regression_plan(rc3)
+
+    def test_historical_rc3_three_candidates_still_accepted(self):
+        rc3,registry,rc4,manifest=self.historical_fixture()
+        data=yaml.safe_load(registry.read_text())
+        data['candidates']=data['candidates'][:3]
+        registry.write_text(yaml.safe_dump(data))
+        self.assertEqual(len(mod.historical_regression_plan(rc3)[0]),12)
+
+    def test_historical_rc4_manifest_missing_refused(self):
+        rc3,registry,rc4,manifest=self.historical_fixture()
+        rc4.unlink()
+        with self.assertRaisesRegex(mod.Refusal,'post-RC3 manifest missing'):
+            mod.historical_regression_plan(rc3)
 
 
 if __name__=='__main__': unittest.main()

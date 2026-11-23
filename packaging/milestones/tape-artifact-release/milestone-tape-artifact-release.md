@@ -2131,3 +2131,18 @@ A signed receipt has **not yet been supplied**. See the
 [TA.4 compact sign-off preparation](ta4-compact-human-signoff-preparation-20261123.md).
 **TA.4 remains IN PROGRESS until the actual identified human receipt is
 presented, verified and accepted by the owner.**
+
+## TA.4 — historical RC3 sign-off review compatibility correction (23 November 2026 EST)
+
+The first `--compact-signoff` invocation halted before any signature with
+`RC3 registry reservation or manifest checksum changed`. The original
+RC3 tape producer's three-candidate-only `plan()` was incorrectly reused
+by a historical **read-only** review after RC4 had been appended to the
+release registry. Both RC3 and RC4 manifest SHA-256 values were checked
+against the current authoritative registry and match. The reviewer now
+reconstructs the canonical RC3 regression deck through a dedicated
+historical helper, retaining full RC3 manifest/source/JES/semantic/seal
+checks and verifying later append-only reservations separately; the
+original RC3 producer is **unchanged**. Focused local execution 7/7 PASS.
+See the [signed-review compatibility correction](ta4-rc3-signed-review-historical-registry-correction-20261123.md).
+**No human receipt has yet been reported; TA.4 remains IN PROGRESS.**

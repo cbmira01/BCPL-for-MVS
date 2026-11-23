@@ -11,12 +11,15 @@ every EXP/RP/CODE record. Never modifies original evidence or tape.
 from __future__ import annotations
 
 import argparse
+import hashlib
 from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
 import re
 import sys
+
+import yaml
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[4]
@@ -36,6 +39,69 @@ class Refusal(RuntimeError):
 def need(ok, why):
     if not ok:
         raise Refusal(why)
+
+
+def historical_regression_plan(rc3):
+    """Reconstruct the accepted RC3 MRREGRES deck without RC3 production planning.
+
+    The immutable RC3 manifest/registry entry stays exact. Later release
+    reservations are legitimate append-only entries, not a reason to reject
+    an already executed JOB 9369. Do not change the production planner.
+    """
+    rc2 = yaml.safe_load(rc3.RC2.read_bytes())
+    raw = rc3.RC3.read_bytes()
+    m = yaml.safe_load(raw)
+    registry = yaml.safe_load(rc3.REGISTRY.read_bytes())
+    cfg = yaml.safe_load(rc3.DSPAL.read_bytes())
+    need(m['schema_version'] == 1 and m['phase'] == 'candidate' and
+         m['release'] == dict(rc2['release'], version='0.1.0-rc3',
+                              candidate_id=rc3.CANDIDATE,
+                              source_commit=rc3.COMMIT) and
+         m['volume'] == dict(rc2['volume'], volser=rc3.VOLSER,
+                             registry_reservation=rc3.CANDIDATE) and
+         m['datasets'] == rc2['datasets'] and len(m['datasets']) == 21,
+         'historical RC3 release manifest differs from accepted RC2 scope')
+    candidates = registry.get('candidates', [])
+    expected = {'candidate_id': rc3.CANDIDATE, 'version': '0.1.0-rc3',
+                'source_commit': rc3.COMMIT, 'volser': rc3.VOLSER,
+                'manifest_sha256': rc3.digest(raw), 'state': 'reserved'}
+    need(registry.get('schema_version') == 1 and len(candidates) >= 3 and
+         [row.get('candidate_id') for row in candidates[:3]] ==
+         ['BCPL-0.1.0-rc1', 'BCPL-0.1.0-rc2', rc3.CANDIDATE] and
+         candidates[2] == expected and
+         len({row['candidate_id'] for row in candidates}) == len(candidates) and
+         len({row['volser'] for row in candidates}) == len(candidates),
+         'historical RC3 registry identity/checksum changed or not append-only')
+    # Verify that later entries really are immutable, distinct manifests.
+    # The RC4 reservation is allowed, but cannot silently relabel BC0003.
+    for row in candidates[3:]:
+        candidate_id = row['candidate_id']
+        suffix = re.fullmatch(r'BCPL-0\.1\.0-rc([1-9][0-9]*)', candidate_id)
+        need(suffix is not None and int(suffix.group(1)) >= 4,
+             'unexpected post-RC3 candidate identity')
+        path = rc3.BASE / 'manifest/releases' / (candidate_id + '.yaml')
+        need(path.is_file() and not path.is_symlink(),
+             'post-RC3 manifest missing: ' + candidate_id)
+        later = path.read_bytes()
+        later_manifest = yaml.safe_load(later)
+        need(hashlib.sha256(later).hexdigest() == row.get('manifest_sha256') and
+             later_manifest['release']['candidate_id'] == candidate_id and
+             later_manifest['release']['version'] == row.get('version') and
+             later_manifest['release']['source_commit'] == row.get('source_commit') and
+             later_manifest['volume']['volser'] == row.get('volser') and
+             later_manifest['volume']['registry_reservation'] == candidate_id,
+             'post-RC3 manifest/registry reservation mismatch: ' + candidate_id)
+    changes = rc3.source_rows(m, cfg)
+    need(len(changes) == 12, 'canonical BCPL MR10 source selection changed')
+    acceptance = rc3.load('ta2_rc3_historical_regression',
+                          rc3.BASE / 'install-from-tape/scripts/ta2-rc2-acceptance')
+    regression = acceptance.regression_body(rc3.JCL.read_text('ascii')).replace(
+        'HERC02.BCPL.TA2INS.', rc3.INSTALL)
+    need(regression.count(rc3.INSTALL + 'MR10KIT.') >= 40 and
+         'HERC02.BCPL.TA2INS.' not in regression and
+         'BC0002' not in regression,
+         'historical RC3 installed MRREGRES JCL retarget differs')
+    return changes, regression
 
 
 def accepted(rc3, installed, restore, reviewer):
@@ -67,7 +133,7 @@ def accepted(rc3, installed, restore, reviewer):
         'mr10_steps': 63, 'mr10_cases': 12, 'exp_rp_code': True,
         'human_signoff': 'PENDING', 'publication_authorized': False},
         'original 21/146/63/12 acceptance receipt differs')
-    _, changes, _, _, _, regression = rc3.plan()
+    changes, regression = historical_regression_plan(rc3)
     need(len(changes) == 12, 'canonical BCPL MR10 source selection changed')
     summary = (ORIGINAL / 'regression-summary.txt').read_text('utf-8')
     report = (ORIGINAL / 'regression-report.txt').read_text('utf-8')
