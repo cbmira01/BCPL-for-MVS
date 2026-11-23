@@ -43,6 +43,29 @@ class TestRecipient(unittest.TestCase):
         self.assertEqual(mod.deck_without_stat(j),'//STAT EXEC PGM=IKJEFT01\n')
         with self.assertRaises(mod.Refusal): mod.deck_without_stat('junk\n'+j)
 
+    def test_comments_can_name_parameters_and_job_cards(self):
+        work=SCRIPT.parents[4]/'workarea'
+        work.mkdir(exist_ok=True)
+        old=mod.JCL
+        try:
+            with tempfile.TemporaryDirectory(dir=work) as td:
+                mod.JCL=Path(td)
+                (mod.JCL/'TA3BT2.jcl').write_text(
+                    '//* ADD JOB CARD; SUBSTITUTE <HLQ> <TAPE> <DASD> <DVOL>.\n'
+                    '//BT2REST EXEC PGM=IEBCOPY\n'
+                    '//OUTPDS DD DSN=<HLQ>.BCPL.DIST.INST,\n'
+                    '//            UNIT=<DASD>,VOL=SER=<DVOL>\n'
+                    '//\n')
+                rendered=mod.render('TA3BT2')
+                self.assertIn('DSN=HERC02.BCPL.TA3N1.DIST.INST',rendered)
+                self.assertIn('//* ADD JOB CARD;',rendered)
+                (mod.JCL/'TA3BT2.jcl').write_text(
+                    '//BT2REST EXEC PGM=IEBCOPY\n'
+                    '//OUTPDS DD DSN=<UNRESOLVED>.BCPL.DIST.INST\n//\n')
+                with self.assertRaises(mod.Refusal):mod.render('TA3BT2')
+        finally:
+            mod.JCL=old
+
     def test_report_step_sequence_rejection(self):
         class RC:
             @staticmethod
