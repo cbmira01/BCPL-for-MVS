@@ -1917,3 +1917,42 @@ See [TA.3 RC4 production operator result](../../distribution/create-tape/ta3-rc4
 **TA.3 remains IN PROGRESS** pending actual tape-resident MVS
 recipient installation acceptance.
 
+## TA.3 — BC0004 tape-resident three-profile recipient acceptance trial prepared (23 November 2026 EST)
+
+The original BC0004 production operation **succeeded** on actual
+MVS JOBS 9393–9397; the 21-dataset standard-labeled, 64-file AWS
+candidate has SHA-256
+`7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1`.
+That one-shot operation is closed for repetition.
+
+A new, separately guarded `ta3-rc4-recipient` implementation
+now prepares a true **on-tape** MVS installation verification.
+The operator's one confirmation follows an actual LISTDS
+preflight of 42 absent recipient PDSes, source SHA verification
+and sealed producer evidence checking. The runner independently
+restores BC0004 `BT0002` three times to isolated
+`HERC02.BCPL.R4MR`, `HERC02.BCPL.R4NT`, and
+`HERC02.BCPL.R4CB` namespaces.
+
+For each profile it prints the tape-restored source member
+`MR10`, `NATIVE` or `COMBINED` and `COPY` using actual
+MVS IEBGENER. The **read-back exact card sequence**, not
+external source-controlled profile JCL, is submitted to JES
+with the site's authenticated JOB card. Acceptance requires
+actual IEBCOPY execution and JES IEF142I steps, LISTDS DCB
+and member inventories (11/11/20 PDSes; 94/71/150 members),
+and the combined installed MR10 `ICINT19` SCALVEC
+`TEST:`/`EXP:`/`RP:`/`CODE=0` semantic contract.
+
+Nine focused source-controlled offline tests cover source
+isolation, missing/altered JCL cards, procedure-step identities,
+and signed production evidence; a separate targeted assistant
+workspace check of exact readback/IEF142I logic passed.
+**Actual BC0004 recipient MVS execution is still pending.**
+The runner creates a fresh no-retry receipt and never writes
+BC0003/BC0004 tape media or replays the earlier TA.2/TA.3
+acceptance jobs.
+
+See [TA.3 BC0004 tape-resident recipient run](../../distribution/install-from-tape/ta3-rc4-tape-resident-recipient-run-20261123.md).
+**TA.3 — MVS Bootstrap and Installation remains IN PROGRESS.**
+
