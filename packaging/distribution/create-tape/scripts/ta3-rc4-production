@@ -212,6 +212,27 @@ def media_scan(rc3,prod,folder):
     return len(entries)
 
 
+def drive_prior(rc3,media,folder,key):
+    """Accept only an idle empty drive or mounted immutable original BC0003."""
+    h=rc3.run_command(folder,key+"-hercules",
+        ["tools/mvs/mvs-console","tape","status","480"])
+    m=rc3.run_command(folder,key+"-mvs",
+        ["tools/mvs/mvs-console","mvs","tapes"])
+    matches=re.findall(r"\bHHC02279I\s+(?:[0-9A-Fa-f]+:)?0480\s+3420\s+(.*)",h)
+    need(len(matches)==1 and "busy" not in matches[0].lower(),
+         "Hercules tape 0480 missing, ambiguous or busy")
+    if re.match(r"\*\s",matches[0]):
+        need(media.parse_mvs(m)=="O-NRD",
+             "MVS reports a nonempty or allocated idle drive")
+        return "EMPTY"
+    need(ORIGINAL.name in matches[0] and
+         IMAGE.name not in matches[0] and
+         media.parse_mvs(m)=="O",
+         "tape 0480 holds foreign medium; never unmount it automatically")
+    original_guard()
+    return "RC3"
+
+
 def drive_empty(rc3,media,folder,key):
     h=rc3.run_command(folder,key+"-hercules",
         ["tools/mvs/mvs-console","tape","status","480"])
@@ -268,15 +289,16 @@ def execute():
         core.require_reader_ready(cfg)
         prod.check_docker(folder)
         media_scan(rc3,prod,folder)
-        drive_empty(rc3,media,folder,"preflight")
+        prior=drive_prior(rc3,media,folder,"preflight")
         pre=report_catalog(gen,rc3,core,cfg,folder,"preflight",
                            source_rows(m),DST)
-        drive_empty(rc3,media,folder,"post-preflight")
+        need(drive_prior(rc3,media,folder,"post-preflight")==prior,
+             "tape status changed during MVS preflight")
         original_guard()
         need(not IMAGE.exists() and not IMAGE.is_symlink(),
              "new AWS image appeared during MVS preflight")
         print(f"TA.3 RC4 PREFLIGHT PASS: JOB {pre}; 19 accepted RC3 sources; "
-              "2 new stage targets absent; BC0004 unused; drive empty.")
+              f"2 new stage targets absent; BC0004 unused; drive {prior}.")
         if input("Stage 2 new PDSes and write new BC0004 tape ONCE? [y/N]: ").strip().upper()!="Y":
             rc3.artifact(folder,"result.json",json.dumps({
                 "status":"DECLINED_NO_STAGE_OR_MEDIA_WRITE"})+"\n")
@@ -305,6 +327,11 @@ def execute():
         print(f"TA.3 RC4 STAGING PASS: JOB {staged}; new BT0001/BT0002; "
               f"DCB JOB {cat}; 8 installer members JOB {directory}.")
         original_guard()
+        need(drive_prior(rc3,media,folder,"pre-image-check")==prior,
+             "unexpected tape drive status before RC4 image")
+        if prior=="RC3":
+            rc3.run_command(folder,"unmount-original-bc0003",
+                ["tools/mvs/mvs-console","--yes","tape","unmount","480"])
         drive_empty(rc3,media,folder,"pre-image")
         need(not IMAGE.exists() and not IMAGE.is_symlink(),
              "new AWS appeared before guarded initialization")
