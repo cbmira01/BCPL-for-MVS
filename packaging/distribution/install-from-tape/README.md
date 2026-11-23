@@ -1,3 +1,27 @@
+## TA.3 all three installation profiles — MVS PASS (qualified)
+
+**Owner-reported actual MVS 3.8J results (23 November 2026 EST):**
+the native-only TA3N2 recipient restored and verified **11 PDSes / 67
+members**; combined TA3N3 restored and verified **20 PDSes / 146
+members** and executed installed `ICINT19` SCALVEC with
+`TEST:/EXP:/RP:/CODE=0` PASS. MVS preflight **JOB 9378** verified all
+31 destinations absent and BC0003 intact. The original TA3N1 MR10-only
+recipient previously passed **11 PDSes / 90 members**, with installed
+SCALVEC execution (JOBS 9370–9377).
+
+See the [complete three-profile operator evidence](ta3-rc3-all-profiles-operator-results-20261123.md).
+New profile evidence is sealed locally under
+`workarea/ta3-rc3-remaining-profiles/20261123T050551Z-34032`.
+Do not repeat any accepted stateful job or overwrite the immutable tape.
+
+**TA.3 remains IN PROGRESS:** These are namespace-isolated trials on
+one running MVS system, not independent clean-IPL acceptance. The
+`BT0002(RESTORE)` tape-resident member remains an inert site-parameter
+template, whereas the successfully executed profiles are separate
+source-controlled MVS JCL decks. That distinction needs formal owner
+disposition before any qualified march closure. No executable native
+Cambridge Compiler or TA.5 native link/execute proof is claimed.
+
 ## TA.3 recipient report and remaining profiles
 
 The owner reported **TA3N1 MR10-only PASS** on actual MVS JOBS
