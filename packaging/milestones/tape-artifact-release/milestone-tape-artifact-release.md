@@ -1878,3 +1878,42 @@ earlier TA.2/TA.3 evidence. Further RC4 production and installation
 remain outstanding. See the
 [RC4 incident/implementation record](../../distribution/create-tape/ta3-rc4-tape-resident-installer-design-20261123.md).
 **TA.3 remains IN PROGRESS.**
+
+## TA.3 — RC4 BC0004 first MVS production PASS (23 November 2026 EST)
+
+The owner reported successful actual MVS 3.8J guarded production of
+the revised tape-resident MVS installer candidate,
+**`BCPL-0.1.0-rc4` / `BC0004`**:
+
+- **9393** read-only preflight: 19 accepted RC3 PDSes, two absent
+  new stage destinations, unused BC0004 identity and empty tape drive.
+- Owner confirmed the one-time stateful operation.
+- **9394** BT0001/BT0002 staging PASS, **9395** staged DCB PASS,
+  **9396** eight-member staged installer PDS directory PASS.
+- **9397** 21 standard-labeled tape datasets and 64 physical AWS
+  files PASS under the independent HETMAP structural auditor.
+- New AWS `mvs-state/tape/bcpl-0.1.0-rc4-BC0004.aws` SHA-256:
+  `7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1`.
+- Owner evidence:
+  `workarea/ta3-rc4-production/20261123T130731Z-36363`.
+
+**Production ACCEPTED as operator-reported actual MVS evidence**.
+The exact raw JES and HETMAP files remain in owner `workarea/` and
+have not been directly re-read by the assistant; job numbers and SHA
+above are not inferred. The one-shot RC4 stage/write marker has been
+consumed. No producer replay, BC0003/BC0004 rewrite, or repeat of
+prior accepted installations is authorized.
+
+**TA.3 next gate:** independently restore *BC0004* BT0001/BT0002
+into fresh MVS recipient namespaces; verify and execute the three
+**on-tape** profile JCL members `MR10`, `NATIVE`, `COMBINED`
+using the restored `COPY` IEBCOPY control member, MVS directory/DCB
+results and installed BCPL SCALVEC `TEST:/EXP:/RP:/CODE=0`.
+This is distinct from the accepted BC0003 external-JCL installs.
+No native compiler is claimed. The independent fresh IPL,
+full TA.4/TA.5 and TA.7/TA.8 release gates are not pre-accepted.
+
+See [TA.3 RC4 production operator result](../../distribution/create-tape/ta3-rc4-production-operator-result-20261123.md).
+**TA.3 remains IN PROGRESS** pending actual tape-resident MVS
+recipient installation acceptance.
+
