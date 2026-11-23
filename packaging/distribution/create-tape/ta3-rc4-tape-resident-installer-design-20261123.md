@@ -101,6 +101,56 @@ The RC4 generator's `--prepare` option writes preview data **only**
 under project `workarea/`, not JES or media. It is not an installation
 or a successful new tape build.
 
+## Verified MVS prerequisite and next production operation
+
+The owner executed the read-only RC4 symbolic-procedure probe on
+actual MVS 3.8J on **23 November 2026 EST**:
+
+```text
+TA.3 RC4 MVS PROC PASS: JOB 9392; symbolic PDS member read RC0000.
+Evidence: workarea/ta3-rc4-proc-probe/20261123T054327Z-35363
+```
+
+**This proves** an in-stream `PROC`, symbolic DSN substitution and
+IEBGENER from the previously accepted
+`HERC02.BCPL.TA3N1.DIST.INST(INSTALL)` work together on MVS 3.8J.
+This was a read-only probe; no BC0004 staging or tape write was
+performed. It does not yet prove the full 10/19-step profile procedure.
+
+The source-controlled
+`scripts/ta3-rc4-production --run` now implements one guarded,
+stateful **new** RC4 stage/write attempt. It first confirms:
+
+- The original BC0003 AWS SHA-256 remains unchanged.
+- The frozen RC4 manifest and new reservation match.
+- All 19 original RC3 staged payload PDSes have the expected MVS
+  DCB/volume and the new two RC4 stage datasets are absent.
+- A BC0004 image and VOLSER are not already in use.
+- Tape drive 0480 is idle and either empty or mounted with the exact
+  verified original BC0003. Only that original is automatically
+  unmounted, **after** owner consent and just before initializing
+  the new tape.
+
+**One owner `Y` confirmation** creates a no-retry marker before
+any allocation or tape initialization. The runner executes one
+11-step stage job (BT0001, new BT0002 allocation, eight installer
+members); rechecks MVS DCBs and the eight-member directory; initializes
+a previously nonexistent `BC0004` AWS; then submits the 21-step
+IEBGENER/IEBCOPY standard-label tape write job. Its independent
+`hetmap` audit requires **21 logical datasets and 64 physical
+AWS files**, followed by an original-BC0003 SHA check.
+
+MVS JOB numbers and full JES evidence are retained under
+`workarea/ta3-rc4-production/`; only compact outcomes are printed.
+**A successful write does not establish full TA.3 recipient acceptance.**
+The next gate will restore the *actual BC0004 tape-resident members*
+into fresh isolated recipient datasets and execute at least the combined
+profile's installed BCPL example. No existing TA.2/TA.3 job is replayed.
+
+Six source-controlled offline production refusal/safety tests and
+eight RC4 generator contract tests cover the design. Actual new
+MVS staging, tape write and recipient execution are **pending**.
+
 ## Status
 
 **TA.3 remains IN PROGRESS.** RC4 design and source generation are
