@@ -100,7 +100,7 @@ def render(name):
     need(lines and all(len(x) <= 80 and '\t' not in x for x in lines) and
          all(len(x) <= 71 for x in lines if x.startswith('//') and
              not x.startswith('//*')), name+': MVS card/JCL column overflow')
-    need(not any(x.startswith('//') and ' JOB ' in x for x in lines),
+    need(not any(x.startswith('//') and ' JOB ' in x for x in active),
          name+': embedded site JOB card is prohibited')
     need(body.endswith('//\n'), name+': required job terminator missing')
     return body
