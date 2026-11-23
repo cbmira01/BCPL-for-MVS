@@ -20,3 +20,9 @@ candidates:
     volser: BC0003
     manifest_sha256: b130e4a246cecb6d810f45febd945e3ed0e854164e83012899c86c730f365486
     state: reserved
+  - candidate_id: BCPL-0.1.0-rc4
+    version: 0.1.0-rc4
+    source_commit: e910de51c19c09698be139e33084a90401511cc9
+    volser: BC0004
+    manifest_sha256: 72c241201a95953546923f62ea6bfb43fcf56349c5ec7618671d7802d2ee6c1a
+    state: reserved
