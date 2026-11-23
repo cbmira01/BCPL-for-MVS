@@ -77,25 +77,37 @@ def original_guard():
          "immutable BC0003 original SHA-256 differs")
 
 
-def cards_and_identity(gen):
+def cards_and_identity(gen, rc3):
+    """Inspect the OUTER staging job, excluding nested DD DATA,DLM=Z9.
+
+    The new BT0002(MR10/NATIVE/COMBINED) members contain real
+    DISP=(NEW,CATLG,DELETE) and IEBCOPY EXEC cards as *data*.
+    These must never be counted as executed staging JCL.
+    """
     m,sizes=gen.load()
     bt1,members,stage,write=gen.plan()
+    outer=rc3.jcl_control_cards(stage.splitlines())
+    outer_text="\n".join(outer)+"\n"
     need(m["release"]["candidate_id"]=="BCPL-0.1.0-rc4" and
          m["volume"]["volser"]==VOL and
          len(members)==8 and
-         stage.count("//SYSUT1 DD DATA,DLM=Z9")==9 and
-         stage.count("DISP=(NEW,CATLG,DELETE)")==2 and
+         outer_text.count("//SYSUT1 DD DATA,DLM=Z9")==9 and
+         outer_text.count("DISP=(NEW,CATLG,DELETE)")==2 and
          write.count(" SELECT MEMBER=")==150 and
          write.count("LABEL=(")==21 and
          write.count("DSN=BCPL.BT")==21,
-         "RC4 plan identity/21-position payload selection changed")
+         "RC4 active staging/write plan identity or tape selection changed")
     need(re.findall(r"(?m)^//([A-Z][0-9]{4}) EXEC PGM=(IEBGENER|IEBCOPY)",
-                    stage)==MVS_STAGES and
+                    outer_text)==MVS_STAGES and
          re.findall(r"(?m)^//([A-Z][0-9]{4}) EXEC PGM=(IEBGENER|IEBCOPY)",
                     write)==MVS_WRITES,
-         "RC4 source job step order differs")
+         "RC4 active staging/write step order differs")
+    need(re.findall(r"(?m)^//([A-Z][0-9]{4}) EXEC PGM=IEFBR14",
+                    outer_text)==["A0002"] and
+         all(len(x)<=71 for x in outer
+             if x.startswith("//") and not x.startswith("//*")),
+         "RC4 stage allocation step/JCL card limits differ")
     return m,members,stage,write
-
 
 def source_rows(m):
     rows=[]
@@ -309,7 +321,7 @@ def execute():
     marked=False
     try:
         gen,rc3,load=components()
-        m,members,stage,writer=cards_and_identity(gen)
+        m,members,stage,writer=cards_and_identity(gen,rc3)
         original_guard()
         need(sys.stdin.isatty(),"stateful RC4 tape write requires one operator approval")
         rc3.check_git()
@@ -437,7 +449,7 @@ def main(argv=None):
         return execute()
     try:
         gen,rc3,_=components()
-        cards_and_identity(gen)
+        cards_and_identity(gen,rc3)
         original_guard()
         print("TA.3 RC4 OFFLINE PLAN PASS: 2 new stage datasets, "
               "19 accepted RC3 payload PDSes, 21 tape positions, "
