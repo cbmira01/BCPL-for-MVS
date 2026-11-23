@@ -6,6 +6,29 @@
 **Candidate:** `BCPL-0.1.0-rc3`; VOLSER `BC0003`  
 **Immutable AWS SHA-256:** `6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1`
 
+## Preflight diagnostic and correction (22 November 2026 EST)
+
+The first owner invocation of `ta3-rc3-remaining-profiles --run`
+halted with `TA3N1 essential MVS records missing`.
+The initial runner incorrectly required `directory-report.txt`
+for accepted TA3N1. The original successful TA3N1 runner's
+`inventory` job writes `inventory-report.txt`, not that filename.
+This is a runner receipt-naming error, **not** an MVS failure.
+
+The checkpoint requirement now uses the actual
+`inventory-report.txt` while preserving all original
+SHA-256 seal checks, required receipts, successful MVS job
+identities, and semantics checks. An added synthetic sealed
+TA3N1 fixture test verifies successful recognition and
+tamper refusal; local Python acceptance/refusal checks pass.
+
+**State:** This halt occurred before the new runner created its
+stateful marker, issued any new MVS jobs, or allocated any
+TA3N2/TA3N3 datasets. The corrected `--run` command can
+safely be issued again after `git pull --ff-only`; its
+normal preflight and one operator confirmation remain mandatory.
+The already accepted TA3N1 and immutable BC0003 remain unchanged.
+
 ## Accepted prerequisite
 
 The owner supplied a successful MR10-only `HERC02.BCPL.TA3N1.*`
