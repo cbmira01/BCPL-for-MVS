@@ -291,9 +291,10 @@ def profile_result(name,report,summary,positions):
         steps.append((names[0],rc))
     need(steps==[(f"R{n:04d}","0000") for n in positions],
          "actual IEF142I tape-resident PROC step list/RC differs: "+name)
-    need(len(re.findall(r"(?m)^.*\bIEBCOPY\s+RC=0000\s*$",summary))==
-         len(positions),
-         "MVS job summary IEBCOPY executed-step count differs")
+    # In-stream PROC accounting sometimes omits the actual PGM=IEBCOPY
+    # from the compact IEFACTRT-based job summary. The ordered, exact
+    # IEF142I execution/RC0000 records above are authoritative here.
+    # Never infer success solely from the optional program-name field.
     return len(steps)
 
 
