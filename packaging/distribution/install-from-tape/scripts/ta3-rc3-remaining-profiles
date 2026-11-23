@@ -175,6 +175,7 @@ def verify(rc3,ref,core,cfg,installed,ls,folder,label,rows):
     return cat,job,count
 
 
+
 def prior_checkpoint(ref):
     """Read-only verification of the accepted TA3N1 local, sealed MVS receipt."""
     need(ref.MARKER.is_file() and not ref.MARKER.is_symlink(),
