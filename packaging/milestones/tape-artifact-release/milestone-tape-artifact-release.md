@@ -1820,3 +1820,37 @@ The original `BC0003` AWS and every one-shot receipt remain
 immutable; the new candidate is not yet written or MVS-accepted.
 
 **Status: TA.3 — MVS Bootstrap and Installation remains IN PROGRESS.**
+
+## TA.3 — RC4 historical MVS PROC verification passed; new BC0004 production ready (23 November 2026 EST)
+
+The owner ran the read-only `ta3-rc4-proc-probe` after pulling
+GitHub `main`. **Actual MVS JOB 9392 PASS:** in-stream `PROC`
+symbolic substitution and IEBGENER from
+`HERC02.BCPL.TA3N1.DIST.INST(INSTALL)` returned RC0000.
+Saved evidence: `workarea/ta3-rc4-proc-probe/20261123T054327Z-35363`.
+No MVS datasets or tape media were changed by this probe.
+
+The approved `BCPL-0.1.0-rc4` / `BC0004` corrective candidate is
+separate from immutable `BC0003`. The source-controlled
+`ta3-rc4-production` runner stages **only two new RC4 datasets**
+(`BT0001` and eight-member `BT0002`), draws all **19 unchanged**
+payload PDSes from accepted RC3 staging, and writes a **new** 21-position
+standard-label AWS tape under one operator approval/no-retry marker.
+
+Preflight checks MVS source DCBs, absence of both new stage datasets,
+original BC0003 SHA, empty or verified original tape on 0480,
+and new VOLSER/media collision. The post-stage gate checks actual JES
+completion including the IEFBR14 PDS-allocation step and independent
+MVS directory/record attributes. The post-write gate uses the
+original independent HETMAP auditor for 21 logical datasets and
+64 physical AWS files, and rehashes original BC0003.
+
+All acceptance and safety gates remain **pending actual new MVS
+execution**; RC4 has not yet been written or recipient-installed.
+The next operation is this new guarded RC4 stage/write process,
+followed by fresh-tape recipient tests of the three **tape-resident**
+profile JCL members. No accepted TA.2/TA.3 job may be rerun.
+
+See [TA.3 RC4 MVS installation design and JOB 9392](../../distribution/create-tape/ta3-rc4-tape-resident-installer-design-20261123.md).
+**TA.3 — MVS Bootstrap and Installation remains IN PROGRESS.**
+
