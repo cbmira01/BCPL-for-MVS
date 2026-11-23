@@ -73,7 +73,7 @@ class TestProduction(unittest.TestCase):
     def test_media_scan_never_permits_colliding_volser(self):
         prev_tapes,prev_img=module.TAPES,module.IMAGE
         try:
-            with tempfile.TemporaryDirectory() as d:
+            with tempfile.TemporaryDirectory(dir=SCRIPT.parents[4]/"workarea") as d:
                 base=Path(d)
                 (base/"another.aws").write_bytes(b"synthetic")
                 module.TAPES=base
@@ -89,6 +89,41 @@ class TestProduction(unittest.TestCase):
                     module.media_scan(RC(),Prod(),None)
         finally:
             module.TAPES,module.IMAGE=prev_tapes,prev_img
+
+    def test_full_stage_jcl_requires_iefbr14(self):
+        """Stage must check the real allocation step, not just IEBGENER steps."""
+        class RC:
+            @staticmethod
+            def cards(lines):return "\n".join(lines)+"\n"
+            @staticmethod
+            def artifact(folder,name,blob):
+                (folder/name).write_text(blob,encoding="utf-8")
+        expected=[("B0001","IEBGENER"),("A0002","IEFBR14"),
+                  *module.MVS_STAGES[1:]]
+        summary=("JOB 9393 TA3R4STG\nJOB RESULT: SUCCESS\n"
+                 "HIGHEST RC: 0000\n"+
+                 "".join(f"{step} {pgm} RC=0000\n" for step,pgm in expected))
+        report="".join(
+            f"IEF142I TA3R4STG {step} - STEP WAS EXECUTED - COND CODE 0000\n"
+            for step,_ in expected)
+        class Core:
+            @staticmethod
+            def authenticated_job_card(cfg,name,desc,redact):
+                return ["//TA3R4STG JOB (X)"]
+            @staticmethod
+            def submit_and_wait(cfg,deck,max_rc,cursor_file):
+                return 9393,summary
+            @staticmethod
+            def job_report(job,cursor_file):return report
+        with tempfile.TemporaryDirectory(dir=SCRIPT.parents[4]/"workarea") as d:
+            folder=Path(d)
+            self.assertEqual(module.stage_job(
+                RC(),Core(),{},folder,"//B0001 EXEC PGM=IEBGENER\n//\n"),9393)
+            Core.submit_and_wait=staticmethod(lambda cfg,deck,max_rc,cursor_file:
+                (9393,summary.replace("A0002 IEFBR14 RC=0000\n","")))
+            with self.assertRaises(module.Refusal):
+                module.stage_job(
+                    RC(),Core(),{},folder,"//B0001 EXEC PGM=IEBGENER\n//\n")
 
     def test_source_prefix_and_marker_never_overlap_accepted_stage(self):
         self.assertNotEqual(module.STAGE,module.SOURCE)
