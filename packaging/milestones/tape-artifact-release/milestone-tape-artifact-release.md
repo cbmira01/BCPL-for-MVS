@@ -2000,3 +2000,54 @@ original sealed local evidence. No further state-changing
 continuation has yet been executed; **TA.3 remains IN PROGRESS**
 pending actual MVS recovery results. See
 [RC4 interrupted recipient recovery](../../distribution/install-from-tape/ta3-rc4-interrupted-recipient-recovery-20261123.md).
+
+## TA.3 — BC0004 tape-resident three-profile MVS technical acceptance PASS (23 November 2026 EST)
+
+The owner-reported actual MVS **TA.3** continuation finished successfully:
+
+- **JOB 9403** read-only forensic preflight independently verified
+  that the original on-tape `MR10` installation was intact:
+  **11 PDSes / 94 directory members**, with the 31 NATIVE and
+  COMBINED recipient datasets still absent and drive empty.
+- After a separate explicit `Y` authorizing only the unfinished
+  profiles, **NATIVE tape-resident install PASS**: **11 PDSes,
+  71 members**, ten ordered actual MVS IEBCOPY steps.
+- **COMBINED tape-resident install PASS**: **20 PDSes, 150 members**,
+  nineteen actual MVS IEBCOPY steps. Executed installed
+  `ICINT19` SCALVEC and observed `TEST:`/`EXP:`/`RP:`/
+  `CODE=0` semantic PASS.
+- Total: **three MVS-native on-tape installation profiles,
+  42 isolated PDSes and 315 verified directory members**.
+  The original MR10 restore was **not replayed**.
+- Original `BC0004` AWS was rehashed unchanged at end. SHA-256:
+  `7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1`.
+- Private preserved evidence:
+  `workarea/ta3-rc4-continuation/20261123T163929Z-37828`.
+  The earlier original interrupted receipt
+  `workarea/ta3-rc4-recipient/20261123T133542Z-36979`
+  and consumed no-retry marker are unmodified.
+
+The source-controlled continuation explicitly verifies original
+sealed MVS `IEF142I` records, tape-restored byte-checked
+installer JCL, fresh MVS `LISTDS`/DCB and directory/member
+inventories, and actual installed BCPL execution. The MVS
+job numbers for the final NATIVE/COMBINED restores are retained
+in the private receipt; only **9403** was reported on the console
+and no additional job IDs are inferred.
+
+**TA.3 acceptance gate: TECHNICALLY SATISFIED (qualified).**
+The default MVS 3.8J site HLQ/volume was tested on the existing
+MVS system in **fresh isolated namespaces**. Other site overrides
+were not independently tried; independent clean IPL/new-system
+installation belongs to TA.7. The complete MR10 11+17 demos,
+12-case human-signed semantic review and distributed interpreter
+rebuild belong to TA.4; native runtime/BLIB/coroutine/extension
+tests belong to TA.5. The candidate declares
+`native_compiler: absent`; TA.6 is N/A.
+
+**No formal owner-directed TA.3 closure is yet recorded.**
+Preserve both `BC0003` and `BC0004`; never rerun the consumed
+producer, original recipient or continuation operations. No
+publication or advancement of TA.4/TA.5 acceptance is inferred.
+
+See [qualified TA.3 all-profile MVS acceptance](../../distribution/install-from-tape/ta3-rc4-all-profiles-accepted-20261123.md).
