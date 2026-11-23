@@ -1,5 +1,32 @@
 # Install from tape
 
+## TA.3 — BC0003 bootstrap and profile restoration implementation
+
+**Current status:** TA.3 — MVS Bootstrap and Installation IN PROGRESS.
+The immutable `BCPL-0.1.0-rc3` / `BC0003` image was accepted
+under TA.2 (qualified); its original tape, records and receipts are preserved.
+
+Six MVS-only job bodies are now source-controlled in [`jcl/`](jcl/):
+`TA3BOOT` reads `BT0001` using IEBGENER; `TA3BT2` restores
+`BT0002` using IEBCOPY; `TA3VIEW` displays its four installer members;
+`TA3MR10`, `TA3NATV`, and `TA3BOTH` implement independently selectable
+MR10-only, native-component/source-only, and combined IEBCOPY restores.
+All outputs must be absent and are allocated with `DISP=(NEW,CATLG,DELETE)`.
+
+Read the [TA.3 BC0003 MVS installation record](ta3-bc0003-mvs-installation-20261122.md)
+for the exact profile contents, site job-card/HLQ/unit/VOLSER contract,
+allocation policy and current acceptance limitations. Static source/JCL
+checks passed; **no new TA.3 MVS execution has yet occurred**.
+A separately authorized isolated recipient run is the next requirement.
+The on-tape `BT0002(RESTORE)` remains a 19-step site-parameter template,
+not a selectable installer; the present JCL is external support material,
+and changes to the frozen image are not authorized.
+
+The older sections below are historical TA.2 development checkpoints;
+their earlier descriptions of unexecuted staging must not be read as
+the present BC0003 acceptance status.
+
+
 Consumer-side source intended to be carried on distribution media.
 
 - `jcl/`: MVS dataset allocation, IEBCOPY restore, and verification jobs.
