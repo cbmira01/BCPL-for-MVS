@@ -1854,3 +1854,27 @@ profile JCL members. No accepted TA.2/TA.3 job may be rerun.
 See [TA.3 RC4 MVS installation design and JOB 9392](../../distribution/create-tape/ta3-rc4-tape-resident-installer-design-20261123.md).
 **TA.3 — MVS Bootstrap and Installation remains IN PROGRESS.**
 
+## TA.3 — RC4 first offline production gate corrected before MVS state (23 November 2026 EST)
+
+The owner's first `ta3-rc4-production --run` invocation halted at
+`RC4 plan identity/21-position payload selection changed`
+**before any MVS job, confirmation, new stage dataset, one-shot
+marker or tape image creation**. The validator incorrectly treated
+39 IEBCOPY/`DISP=(NEW,CATLG,DELETE)` records embedded in the
+new BT0002 profile members as executable outer-stage JCL.
+The outer staging job has only **two** allocations.
+
+The guarded producer now reuses the accepted TA.2
+`jcl_control_cards` parser to exclude `DD DATA,DLM=Z9` payload
+records from staging allocation and step counts. Targeted offline
+regression checks show 41 raw allocation strings versus two active
+allocations, 39 embedded IEBCOPY steps excluded, nine actual
+IEBGENER steps, and one required IEFBR14 step.
+
+**No stateful trial was consumed**; the corrected original
+`--run` operation may be executed with normal fresh preflight and
+one explicit operator approval. Preserve BC0003 and all accepted
+earlier TA.2/TA.3 evidence. Further RC4 production and installation
+remain outstanding. See the
+[RC4 incident/implementation record](../../distribution/create-tape/ta3-rc4-tape-resident-installer-design-20261123.md).
+**TA.3 remains IN PROGRESS.**
