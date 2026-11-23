@@ -16,7 +16,7 @@ spec.loader.exec_module(module)
 class TestProduction(unittest.TestCase):
     def test_complete_mvs_deck_and_source_mapping(self):
         gen,rc3,_=module.components()
-        m,members,stage,writer=module.cards_and_identity(gen)
+        m,members,stage,writer=module.cards_and_identity(gen,rc3)
         source=module.source_rows(m)
         self.assertEqual(len(source),19)
         self.assertEqual(source[0][0],"HERC02.BCPL.TA2R3S.BT0003")
@@ -27,6 +27,40 @@ class TestProduction(unittest.TestCase):
         self.assertEqual(stage.count("DISP=(NEW,CATLG,DELETE)"),2)
         self.assertEqual(writer.count(" SELECT MEMBER="),150)
         self.assertNotIn("SER=BC0003",writer)
+
+    def test_embedded_installer_jcl_is_not_executed_staging_jcl(self):
+        """Regression for the RC4 preflight halt before any MVS operation."""
+        gen,rc3,_=module.components()
+        m,members,stage,writer=module.cards_and_identity(gen,rc3)
+        outer=rc3.jcl_control_cards(stage.splitlines())
+        raw_alloc=stage.count("DISP=(NEW,CATLG,DELETE)")
+        active_alloc=sum("DISP=(NEW,CATLG,DELETE)" in x for x in outer)
+        self.assertEqual(raw_alloc,41)  # 2 actual, 39 embedded profiles
+        self.assertEqual(active_alloc,2)
+        self.assertEqual(len(members),8)
+        self.assertEqual(sum(" EXEC PGM=IEBCOPY" in x for x in outer),0)
+        self.assertEqual(stage.count(" EXEC PGM=IEBCOPY"),39)
+        self.assertEqual(sum(" EXEC PGM=IEBGENER" in x for x in outer),9)
+        self.assertEqual(sum(" EXEC PGM=IEFBR14" in x for x in outer),1)
+        self.assertEqual(sum(x=="//SYSUT1 DD DATA,DLM=Z9" for x in outer),9)
+        self.assertEqual(writer.count(" SELECT MEMBER="),150)
+
+    def test_active_stage_validator_refuses_extra_real_allocation(self):
+        gen,rc3,_=module.components()
+        original=gen.plan
+        def tampered():
+            bt,members,stage,write=original()
+            stage=stage.replace(
+                "//OUTPDS DD DSN=HERC02.BCPL.TA3R4S.BT0002,",
+                "//EXTRA DD DISP=(NEW,CATLG,DELETE)\n"
+                "//OUTPDS DD DSN=HERC02.BCPL.TA3R4S.BT0002,")
+            return bt,members,stage,write
+        try:
+            gen.plan=tampered
+            with self.assertRaises(module.Refusal):
+                module.cards_and_identity(gen,rc3)
+        finally:
+            gen.plan=original
 
     def test_preflight_drive_empty_only_when_mvs_agrees(self):
         class RC:
