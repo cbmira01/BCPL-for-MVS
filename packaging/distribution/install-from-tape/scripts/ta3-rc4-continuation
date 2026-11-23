@@ -1,0 +1,350 @@
+#!/usr/bin/env python3
+"""TA.3 BC0004: guarded continuation after the single RC4 recipient halt.
+
+Read-only first: authenticate sealed interrupted run, actual first MR10
+IEF142I steps, 11 restored MR10 PDS/DCBs/directories and absence of all
+31 unfinished native/combined targets. Never replay MR10 or the original
+42-target recipient one-shot. One new approval permits only missing work.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+import yaml
+
+sys.dont_write_bytecode=True
+ROOT=Path(__file__).resolve().parents[4]
+BASE=ROOT/"packaging/distribution"
+WORK=ROOT/"workarea"
+INCIDENT=WORK/"ta3-rc4-recipient/20261123T133542Z-36979"
+OLD_MARKER=WORK/"ta3-rc4-recipient/BC0004-recipient-one-shot.json"
+OUT=WORK/"ta3-rc4-continuation"
+MARKER=OUT/"BC0004-after-IEFACTRT-one-shot.json"
+CAUSE="MVS job summary IEBCOPY executed-step count differs"
+PREFIXES=("HERC02.BCPL.R4MR","HERC02.BCPL.R4NT","HERC02.BCPL.R4CB")
+
+
+class Refusal(RuntimeError):pass
+
+
+def need(ok,reason):
+    if not ok:raise Refusal(reason)
+
+
+def original_receipt(rec,ref,gen):
+    """Strict read-only trust gate for prior *consumed* failed recipient."""
+    need(INCIDENT.is_dir() and not INCIDENT.is_symlink() and
+         INCIDENT.resolve().is_relative_to(WORK.resolve()),
+         "interrupted recipient evidence not available in repository workarea")
+    seal=INCIDENT/"SHA256SUMS"
+    need(seal.is_file() and not seal.is_symlink(),
+         "interrupted recipient evidence seal missing")
+    seen=set()
+    for line in seal.read_text("ascii").splitlines():
+        match=re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9_.-]+)",line)
+        need(match is not None,"interrupted evidence SHA256SUMS malformed")
+        digest,name=match.groups()
+        file=INCIDENT/name
+        need(name not in seen and file.is_file() and not file.is_symlink() and
+             hashlib.sha256(file.read_bytes()).hexdigest()==digest,
+             "interrupted evidence changed: "+name)
+        seen.add(name)
+    need({p.name for p in INCIDENT.iterdir()}==seen|{"SHA256SUMS"},
+         "interrupted evidence inventory changed after original halt")
+    required={"failure.json","absence-report.txt","mr10-restore-summary.txt",
+              "mr10-restore-report.txt","mr10-on-tape-profile.jcl",
+              "mr10-bt2-report.txt","mr10-readback-report.txt",
+              "boot-report.txt"}
+    need(required<=seen and
+         not any(n.startswith("native-") or n.startswith("combined-")
+                 for n in seen),
+         "interrupted evidence is not precisely first-profile-only")
+    failure=json.loads((INCIDENT/"failure.json").read_text("utf-8"))
+    need(failure.get("status")=="STATEFUL_NO_RETRY" and
+         failure.get("reason")==CAUSE,
+         "interrupted run failed for different or unknown reason")
+    need(OLD_MARKER.is_file() and not OLD_MARKER.is_symlink(),
+         "consumed first recipient approval marker missing")
+    marker=json.loads(OLD_MARKER.read_text("utf-8"))
+    need(marker.get("status")==
+         "OWNER_APPROVED_TA3_BC0004_TAPE_RESIDENT_PROFILES_NO_RETRY" and
+         marker.get("candidate")=="BCPL-0.1.0-rc4" and
+         marker.get("volser")=="BC0004" and
+         marker.get("aws_sha256")==rec.IMAGE_SHA and
+         marker.get("evidence")==INCIDENT.relative_to(ROOT).as_posix() and
+         marker.get("destinations")==list(PREFIXES) and
+         marker.get("no_tape_write") is True and
+         marker.get("no_overwrite") is True and
+         marker.get("publication_authorized") is False,
+         "consumed approval marker identity or namespace differs")
+    need(not (INCIDENT/"mr10-checkpoint.json").exists(),
+         "original run already completed MR10 acceptance differently")
+    m=gen.load()[0]
+    expected=gen.materials(*gen.load())[1]["MR10"]
+    saved=(INCIDENT/"mr10-on-tape-profile.jcl").read_text("ascii")
+    need(saved==expected,
+         "MVS-read-back first installer JCL differs from frozen RC4 candidate")
+    need("COPY OUTDD=OUTPDS,INDD=INTAPE" in
+         (INCIDENT/"mr10-readback-report.txt").read_text("utf-8") and
+         "CAMBRIDGE BCPL PROGRAMMING SYSTEM" in
+         (INCIDENT/"boot-report.txt").read_text("utf-8"),
+         "prior MVS tape bootstrap or actual COPY readback missing")
+    summary=(INCIDENT/"mr10-restore-summary.txt").read_text("utf-8")
+    report=(INCIDENT/"mr10-restore-report.txt").read_text("utf-8")
+    need(re.search(r"(?m)^JOB\s+(\d+)\s+T3R4MR\s*$",summary),
+         "first on-tape MR10 restore job identity ambiguous")
+    name="T3R4MR"
+    actual=rec.profile_result(name,report,summary,tuple(range(3,13)))
+    need(actual==10,"first actual MVS MR10 restore incomplete")
+    return {"original_evidence":INCIDENT.relative_to(ROOT).as_posix(),
+            "original_halt_reason":CAUSE,
+            "mr10_restore_job":int(re.search(
+                r"(?m)^JOB\s+(\d+)\s+T3R4MR\s*$",summary).group(1)),
+            "mr10_ief142i_steps":actual,
+            "operator_approval_marker":OLD_MARKER.relative_to(ROOT).as_posix()}
+
+
+def preflight(ref,rem,rc3,rec,gen,core,cfg,installed,ls,folder,selected):
+    """Read-only fresh catalog gate and first-profile directory acceptance."""
+    names=[r[1] for _,_,_,rows,_ in selected.values() for r in rows]
+    need(len(names)==42 and len(set(names))==42,
+         "unexpected total recipient DSN count")
+    body=ref.deck_without_stat(core.stat_deck(cfg,names))
+    pre,report,_=ref.mvs_job(rc3,core,cfg,folder,"recovery-catalog",
+                             "DSPALST",body,None,max_rc=8)
+    for label,(prefix,job,positions,rows,count) in selected.items():
+        for row in rows:
+            n,dsn=row[:2]
+            if label=="MR10":
+                actual,_=installed.exact_listds(core,report,dsn)
+                dcb=({"dsorg":"PO","recfm":"FB","lrecl":"80","blksize":"800"}
+                     if n==2 else
+                     {k:str(v) for k,v in
+                      selected_dcb(n,gen).items()})
+                want={"volume":"TSO002",**dcb}
+                need(all(actual.get(k)==v for k,v in want.items()),
+                     "first MR10 installed dataset DCB/volume mismatch: "+dsn)
+            else:
+                need(core.dataset_missing(report,dsn),
+                     "unfinished native/combined target already exists: "+dsn)
+                block=core.extract_listds_block(report,dsn)
+                need(not block or not core.parse_listds(block),
+                     "ambiguous absent profile DSN inquiry: "+dsn)
+    cat,directory,members=rem.verify(
+        rc3,ref,core,cfg,installed,ls,folder,"mr10-recovery",
+        selected["MR10"][3])
+    need(members==94,
+         "first MR10 on-tape 11 PDS member inventory incomplete")
+    return {"mvs_preflight":pre,"mr10_catalog_job":cat,
+            "mr10_directory_job":directory,
+            "mr10_restored_pds":11,"mr10_verified_members":94,
+            "missing_native_and_combined_pds":31}
+
+
+def selected_dcb(n,gen):
+    d=gen.load()[0]["datasets"][n-1]["target_dcb"]
+    return {"dsorg":d["dsorg"],"recfm":d["recfm"],
+            "lrecl":d.get("lrecl",0),"blksize":d["blksize"]}
+
+
+def run(live=False):
+    folder=None
+    rc3=None
+    marked=False
+    try:
+        ref,rem,gen,rc3,load=load_tools()
+        manifest=gen.load()[0]
+        selected=rec_selection(manifest,gen)
+        rec=load("ta3r4original",BASE/"install-from-tape/scripts/ta3-rc4-recipient")
+        need(rec.hashfile(rec.AWS)==rec.IMAGE_SHA and
+             rec.hashfile(rec.ORIGINAL)==rec.ORIGINAL_SHA,
+             "accepted BC0004 or BC0003 media differs")
+        source=rec.production_receipt()
+        prior=original_receipt(rec,ref,gen)
+        need(not MARKER.exists() and not MARKER.is_symlink(),
+             "RC4 guarded recovery continuation already consumed: NO RETRY")
+        if not live:
+            print("TA.3 RC4 RECOVERY OFFLINE PASS: sealed original halt; "
+                  "10 actual first MR10 IEF142I steps; no recipient work.")
+            return 0
+        need(sys.stdin.isatty(),
+             "one new operator approval requires a terminal")
+        rc3.check_git()
+        need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+             "unsafe recovery workarea")
+        OUT.mkdir(mode=0o700,exist_ok=True)
+        folder=OUT/(datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")+
+                    "-"+str(os.getpid()))
+        folder.mkdir(mode=0o700,exist_ok=False)
+        core=load("ta3r4c_core",ROOT/"tools/datasets/dspal-core.py")
+        ls=load("ta3r4c_ls",ROOT/"tools/datasets/dspal-ls.py")
+        installed=load("ta3r4c_installed",
+                       BASE/"create-tape/scripts/ta2-rc3-installed-mr10-continuation")
+        media=load("ta3r4c_media",
+                   BASE/"create-tape/scripts/ta2-rc2-media-preflight")
+        reviewer=load("ta3r4c_review",
+                      BASE/"install-from-tape/scripts/ta2-rc2-mr10-review")
+        cfg=core.load_config()
+        need(cfg["mvs"]["hlq"]=="HERC02","MVS recipient HLQ differs")
+        core.require_reader_ready(cfg)
+        before=rec.tape_status(rc3,media,folder,"preflight")
+        checkpoint=preflight(ref,rem,rc3,rec,gen,core,cfg,
+                             installed,ls,folder,selected)
+        need(rec.tape_status(rc3,media,folder,"post-preflight")==before and
+             rec.hashfile(rec.AWS)==rec.IMAGE_SHA and
+             rec.hashfile(rec.ORIGINAL)==rec.ORIGINAL_SHA,
+             "MVS tape status/image changed during recovery inquiry")
+        rc3.artifact(folder,"mr10-recovered.json",
+                     json.dumps({**prior,**checkpoint},indent=2)+"\n")
+        print("TA.3 RC4 RECOVERY PREFLIGHT PASS: "
+              f"JOB {checkpoint['mvs_preflight']}; first MR10 11 PDS/94 "
+              "members verified; native+combined 31 targets absent; "
+              f"drive {before}.")
+        if input("Install ONLY remaining NATIVE and COMBINED on-tape profiles ONCE? [y/N]: ").strip().upper()!="Y":
+            rc3.artifact(folder,"result.json",
+                         json.dumps({"status":"DECLINED_NO_RECOVERY_INSTALL"})+"\n")
+            rc3.seal(folder)
+            print("TA.3 RC4 recovery declined; no stateful continuation.")
+            return 0
+        rc3.exclusive(MARKER,(json.dumps({
+            "status":"OWNER_AUTHORIZED_TA3_BC0004_ONLY_MISSING_PROFILES_NO_RETRY",
+            "original_approval":prior["operator_approval_marker"],
+            "original_evidence":prior["original_evidence"],
+            "production_evidence":source,
+            "verified_first_profile":checkpoint,
+            "remaining":["NATIVE","COMBINED"],
+            "aws_sha256":rec.IMAGE_SHA,
+            "evidence":folder.relative_to(ROOT).as_posix(),
+            "no_replay_original_mr10":True,"no_tape_write":True,
+            "no_overwrite":True,"publication_authorized":False
+        },sort_keys=True)+"\n").encode("ascii"))
+        marked=True
+        results={"MR10":{**prior,**checkpoint}}
+        source_go=rem.render("TA3GO","HERC02.BCPL.R4CB",ref)
+        for label in ("NATIVE","COMBINED"):
+            prefix,jobname,positions,rows,count=selected[label]
+            rec.ensure_rc4(rc3,media,folder,label.lower()+"-installer")
+            bt2,_,_=ref.mvs_job(
+                rc3,core,cfg,folder,label.lower()+"-bt2",
+                "T3R4BT",rec.boot_and_installer(ref,prefix)["TA3BT2"],
+                [("BT2REST","IEBCOPY")])
+            view,report,_=ref.mvs_job(
+                rc3,core,cfg,folder,label.lower()+"-readback",
+                "T3R4PR",rec.readback_deck(prefix,label),
+                [("P0001","IEBGENER"),("P0002","IEBGENER")])
+            expected=gen.materials(*gen.load())[1][label]
+            deck=rec.extract_profile(report,expected)
+            need("COPY OUTDD=OUTPDS,INDD=INTAPE" in report,
+                 label+": actual MVS COPY member not printed")
+            rc3.artifact(folder,label.lower()+"-on-tape-profile.jcl",deck)
+            rec.ensure_rc4(rc3,media,folder,label.lower()+"-profile")
+            restored,jes_report,jes_summary=ref.mvs_job(
+                rc3,core,cfg,folder,label.lower()+"-restore",
+                jobname,deck,None)
+            steps=rec.profile_result(jobname,jes_report,jes_summary,positions)
+            cat,directory,total=rem.verify(
+                rc3,ref,core,cfg,installed,ls,folder,label.lower(),rows)
+            need(total==count and steps==len(positions),
+                 label+": actual MVS data/steps verification incomplete")
+            detail={"installer_job":bt2,"readback_job":view,
+                    "profile_restore_job":restored,"executed_ief142i_steps":steps,
+                    "catalog_job":cat,"directory_job":directory,
+                    "restored_pds":len(rows),"verified_members":total}
+            if label=="COMBINED":
+                go,go_report,_=ref.mvs_job(
+                    rc3,core,cfg,folder,"combined-go",
+                    "T3R4GO",source_go,ref.GO_STEPS)
+                ref.go_semantics(rc3,folder,go_report,reviewer)
+                detail["installed_bcpl_go"]=go
+            results[label]=detail
+            rc3.artifact(folder,label.lower()+"-checkpoint.json",
+                         json.dumps(detail,indent=2)+"\n")
+            print(f"TA.3 RC4 {label} TAPE-RESIDENT PASS: "
+                  f"{len(rows)} PDSes; {total} members; "
+                  f"{steps} MVS IEBCOPY steps."
+                  +(" SCALVEC TEST/EXP/RP/CODE PASS." if label=="COMBINED" else ""))
+        need(rec.hashfile(rec.AWS)==rec.IMAGE_SHA and
+             rec.hashfile(rec.ORIGINAL)==rec.ORIGINAL_SHA,
+             "accepted BC0004/BC0003 media modified after recovery")
+        rc3.artifact(folder,"result.json",json.dumps({
+            "status":"TA3_RC4_RECOVERED_FIRST_MR10_THEN_COMPLETED_NATIVE_COMBINED",
+            "candidate":"BCPL-0.1.0-rc4","volser":"BC0004",
+            "aws_sha256":rec.IMAGE_SHA,
+            "original_bc0003_sha256":rec.ORIGINAL_SHA,
+            "original_interrupted_receipt":prior["original_evidence"],
+            "profile_results":results,"installed_pds":42,
+            "verified_members":315,
+            "native_compiler":"absent","independent_mvs_system":False,
+            "publication_authorized":False},indent=2)+"\n")
+        rc3.seal(folder)
+        print("TA.3 RC4 ALL TAPE-RESIDENT PROFILES PASS: "
+              "MR10 recovered without replay; NATIVE+COMBINED installed; "
+              "BC0004 unchanged.")
+        print("Evidence: "+folder.relative_to(ROOT).as_posix())
+        return 0
+    except Exception as exc:
+        if folder is not None and rc3 is not None:
+            try:
+                rc3.artifact(folder,"failure.json",json.dumps({
+                    "status":"STATEFUL_NO_RETRY" if marked else "READ_ONLY_HALTED",
+                    "reason":str(exc)},indent=2)+"\n")
+                rc3.seal(folder)
+            except Exception:pass
+        print("TA.3 RC4 RECOVERY HALTED: "+str(exc),file=sys.stderr)
+        if folder is not None:
+            print("Evidence: "+folder.relative_to(ROOT).as_posix(),file=sys.stderr)
+        if marked:
+            print("NO RETRY: preserve original incident, "
+                  "partial new recipients and both immutable tapes.",file=sys.stderr)
+        return 2
+
+
+def load_tools():
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec,spec_from_loader
+    def load(name,path):
+        need(path.is_file() and not path.is_symlink(),
+             "missing source-controlled tool "+path.name)
+        loader=SourceFileLoader(name,str(path))
+        spec=spec_from_loader(loader.name,loader)
+        need(spec is not None and spec.loader is not None,
+             "cannot load source-controlled tool "+name)
+        m=module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+    ref=load("ta3r4c_ref",BASE/"install-from-tape/scripts/ta3-rc3-recipient")
+    rem=load("ta3r4c_rem",BASE/"install-from-tape/scripts/ta3-rc3-remaining-profiles")
+    gen=load("ta3r4c_gen",BASE/"create-tape/scripts/ta3-rc4-installer")
+    rc3=ref.load_module()
+    return ref,rem,gen,rc3,load
+
+
+def rec_selection(manifest,gen):
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec,spec_from_loader
+    path=BASE/"install-from-tape/scripts/ta3-rc4-recipient"
+    loader=SourceFileLoader("ta3r4c_recsel",str(path))
+    spec=spec_from_loader(loader.name,loader)
+    need(spec is not None and spec.loader is not None,
+         "cannot import original profile selection")
+    m=module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m.selection(manifest,gen)
+
+
+def main(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run",action="store_true",
+                        help="read-only forensic preflight then one confirmation for missing profiles")
+    return run(parser.parse_args(argv).run)
+
+
+if __name__=="__main__":
+    raise SystemExit(main())
