@@ -106,3 +106,15 @@ This file is the review-ready technical acceptance record;
 a **formal owner-directed TA.3 closure and TA.4 kickoff** is a
 separate project decision and is not implicitly authorized by
 successful output alone.
+
+## Subsequent owner decision — formal qualified TA.3 closure
+
+On 23 November 2026 EST the owner directed **“Close TA3 and
+open TA4.”** The originally qualified technical acceptance
+documented above is formally accepted for **TA.3 — MVS Bootstrap
+and Installation: CLOSED (qualified)**. The separate
+**TA.4 — MR10 Kit Compiler Distribution and Verification** march
+is **OPEN / IN PROGRESS**. This does not alter the qualified
+limitations, the immutable MVS evidence or the remaining
+TA.4, TA.5, TA.7 and TA.8 gates. Refer to the
+[formal milestone closure and handoff](../../milestones/tape-artifact-release/ta3-formal-qualified-closure-and-ta4-transition-20261123.md).
