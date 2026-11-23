@@ -1,3 +1,31 @@
+## TA.3 — BC0004 interrupted on-tape recipient: no replay; guarded recovery
+
+The owner reported **MVS JOB 9398 recipient preflight PASS** (42 targets
+absent) and authorized the first BC0004 tape-resident profile trial.
+The run halted after the first MR10 profile job at the
+optional **job-summary `IEBCOPY` program-name count** validator.
+The MVS `IEF142I` step evidence had already passed before that
+redundant count. The original recipient one-shot marker was consumed:
+**NEVER rerun `scripts/ta3-rc4-recipient --run`.**
+
+The corrected validator relies on exact ordered MVS `IEF142I`
+procedure-step and condition-code evidence, not a program label that
+the `IEFACTRT` summary parser may omit for in-stream procedures.
+
+The [separately guarded continuation](scripts/ta3-rc4-continuation)
+first checks the **original SHA256-sealed incident** and consumed
+marker, verifies the actual first MR10 restore job's ten MVS
+`IEF142I` RC0000 steps, then runs **read-only MVS LISTDS and
+directory checks** to confirm the original 11 MR10 PDSes/94 members
+and **all 31 remaining NATIVE/COMBINED targets absent**.
+Only after those gates does it ask one new explicit `Y`
+confirmation to submit the two **unfinished on-tape** profile jobs
+and the combined installed SCALVEC test. It never reruns MR10,
+stages anything, or rewrites the BC0004 tape.
+
+See the [original incident and approved no-replay recovery contract](ta3-rc4-interrupted-recipient-recovery-20261123.md).
+**Actual continuation is pending; TA.3 remains IN PROGRESS.**
+
 ## TA.3 — BC0004 tape-resident installer: MVS production PASS, recipient pending
 
 The owner reported **actual MVS 3.8J RC4 production PASS**
