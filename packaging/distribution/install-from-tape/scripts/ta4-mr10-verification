@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""TA.4 RC4 installed MR10: guarded, non-replay rebuild and demo verification.
+
+Default is an offline JCL plan. --preflight performs only a read-only MVS
+catalog inquiry. --run repeats that preflight, prompts once, then executes
+one fresh ICINT19 rebuild, rebuilt-STEPLIB SCALVEC and the 11+17 demos.
+The sealed JOB 9369 MRREGRES and human sign-off remain separate.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+DIST = ROOT / 'packaging/distribution'
+WORK = ROOT / 'workarea'
+OUT = WORK / 'ta4-mr10-verification'
+MARKER = OUT / 'BC0004-TA4R1-verification-no-retry.json'
+CANON = 'HERC02.BCPL.MR10KIT.'
+INST = 'HERC02.BCPL.R4MR.MR10KIT.'
+BUILD = 'HERC02.BCPL.TA4R1'
+OBJ, LOAD = BUILD + '.OBJ', BUILD + '.LOAD'
+AWS = ROOT / 'mvs-state/tape/bcpl-0.1.0-rc4-BC0004.aws'
+AWS_SHA256 = '7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1'
+RELEASE = 'BCPL-0.1.0-rc4'
+PINNED = 'e910de51c19c09698be139e33084a90401511cc9'
+FILES = {
+    'build': 'mr10-kit-compiler/jcl/build-icintv19.jcl',
+    'language': 'mr10-kit-compiler/jcl/run-language-demos.jcl',
+    'bcpl': 'mr10-kit-compiler/jcl/run-bcpl-demos.jcl',
+    'smoke': 'packaging/distribution/install-from-tape/jcl/TA3GO.jcl',
+}
+LANG = ('DECLS', 'VALOFRES', 'SWITCHON', 'TABVECT', 'MANIGLOB',
+        'REPEAT', 'STRBYTES', 'TESTTHEN', 'BOOLOPS', 'PTRIDIOM', 'FUNCVAL')
+BCPL = ('RFACT', 'QUEENS', 'KNIGHT', 'HANOI', 'SIEVE', 'GCD',
+        'QUICKSRT', 'BSEARCH', 'LINKLIST', 'BINTREE', 'HASHTABL',
+        'WORDCNT', 'RPNCALC', 'EXPRPARS', 'MAZE', 'STRMFANO', 'COROUTIN')
+NEEDED = ('SOURCE', 'ASM', 'JCL', 'LIBRARY', 'LANGDEMO', 'BCPLDEMO',
+          'TESTS', 'OBJ', 'LOAD')
+STEP = re.compile(r'^//([A-Z0-9]{2,8})\s+EXEC PGM=([A-Z0-9]+)\b', re.M)
+CODE = re.compile(r'EXECUTION CYCLES\s*=.*?,\s*CODE\s*=\s*(-?\d+)', re.I)
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(ok, message):
+    if not ok:
+        raise Refusal(message)
+
+
+def load_tools():
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec, spec_from_loader
+
+    def load(label, relative):
+        path = ROOT / relative
+        need(path.is_file() and not path.is_symlink(), 'missing dependency ' + relative)
+        loader = SourceFileLoader(label, str(path))
+        spec = spec_from_loader(loader.name, loader)
+        module = module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    rc3 = load('ta4_rc3', 'packaging/distribution/create-tape/scripts/ta2-rc3-consolidated')
+    ref = load('ta4_ref', 'packaging/distribution/install-from-tape/scripts/ta3-rc3-recipient')
+    installed = load('ta4_installed', 'packaging/distribution/create-tape/scripts/ta2-rc3-installed-mr10-continuation')
+    core = load('ta4_core', 'tools/datasets/dspal-core.py')
+    reviewer = load('ta4_reviewer', 'packaging/distribution/install-from-tape/scripts/ta2-rc2-mr10-review')
+    return rc3, ref, installed, core, reviewer
+
+
+def cards(body):
+    lines = body.splitlines()
+    need(bool(lines) and body.endswith('\n') and body.isascii(), 'invalid MVS deck encoding')
+    need(all('\t' not in x and len(x) <= 80 for x in lines), 'MVS FB80 card overflow')
+    need(all(len(x) <= 71 for x in lines if x.startswith('//') and
+             not x.startswith('//*')), 'MVS JCL control column overflow')
+    need(not any(' JOB ' in x for x in lines if x.startswith('//') and
+                 not x.startswith('//*')), 'injected JOB card')
+    need(not any('<' in x or '>' in x for x in lines if x.startswith('//') and
+                 not x.startswith('//*')), 'unresolved JCL placeholder')
+    return body
+
+
+def build_body(source):
+    need(source.count('DSN=' + CANON + 'ASM(ICINT19)') == 1 and
+         source.count('DSN=' + CANON + 'OBJ(ICINT19)') == 1 and
+         source.count('DSN=' + CANON + 'LOAD,DISP=SHR') == 1,
+         'distributed IC19BLD source/object/load contract drift')
+    need(STEP.findall(source) == [('ASM', 'IFOX00'), ('LKED', 'IEWL'),
+                                  ('SAVEOBJ', 'IEBGENER')],
+         'distributed IC19BLD steps drift')
+    alloc = (
+        '//ALLOC    EXEC PGM=IEFBR14\n'
+        '//ALLOBJ   DD DSN=' + OBJ + ',\n'
+        '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,\n'
+        '//            SPACE=(TRK,(30,10,10)),\n'
+        '//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,BLKSIZE=800)\n'
+        '//ALLLOAD  DD DSN=' + LOAD + ',\n'
+        '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,\n'
+        '//            SPACE=(TRK,(30,10,10)),\n'
+        '//            DCB=(DSORG=PO,RECFM=U,BLKSIZE=6144)\n'
+        '//*\n'
+    )
+    original = (source.replace(CANON + 'ASM(ICINT19)',
+                               INST + 'ASM(ICINT19)')
+                      .replace(CANON + 'OBJ(ICINT19)', OBJ + '(ICINT19)')
+                      .replace(CANON + 'LOAD(ICINT19)', LOAD + '(ICINT19)')
+                      .replace('DSN=' + CANON + 'LOAD,DISP=SHR',
+                               'DSN=' + LOAD + ',DISP=SHR'))
+    need(CANON not in original, 'development MR10 namespace remains in rebuild')
+    body = alloc + original
+    if not body.endswith('\n'):
+        body += '\n'
+    return cards(body + '//\n')
+
+
+def suite_body(source, selection, expected):
+    expected_steps = 5 + (22 if selection == LANG else 40) + len(selection)
+    need(CANON in source and 'DSN=' + CANON + 'LOAD' in source,
+         'distributed MR10 JCL not using canonical source namespace')
+    need('DISP=(NEW,CATLG' not in source and 'DISP=MOD' not in source and
+         'DSN=&&' in source, 'demo JCL tries persistent writes')
+    cases = re.findall(r'^//\* CASE \d\d: ([A-Z0-9]+)\s*$', source, re.M)
+    runs = re.findall(r'^//\* EXECUTE CASE \d\d: ([A-Z0-9]+)\s*$', source, re.M)
+    need(tuple(cases) == selection and tuple(runs) == selection,
+         'demo case order/selection drift')
+    steps = STEP.findall(source)
+    need(len(steps) == expected_steps and
+         len({s for s, _ in steps}) == expected_steps and
+         sum(p == 'IEBGENER' for _, p in steps) == 5 and
+         all(p == 'ICINT19' for _, p in steps[5:]),
+         'demo stage/compile/generate/run step count drift')
+    body = source.replace(CANON, INST)
+    need(CANON not in body and 'DSN=' + INST + 'LOAD' in body,
+         'MR10 recipient retarget failed')
+    return cards(body if body.endswith('//\n') else body.rstrip('\n') + '\n//\n'), steps
+
+
+def smoke_body(source):
+    need(source.count('<INST>.MR10KIT.LOAD') == 3 and
+         '<INST>.MR10KIT.TESTS(SCALVEC)' in source,
+         'canonical SCALVEC template drift')
+    body = (source.replace('<INST>.MR10KIT.LOAD', LOAD)
+                  .replace('<INST>.MR10KIT.', INST)
+                  .replace('<INST>', INST.split('.MR10KIT.')[0]))
+    need(body.count('DSN=' + LOAD) == 3 and
+         'DSN=' + INST + 'TESTS(SCALVEC)' in body,
+         'rebuilt interpreter smoke isolation failed')
+    steps = STEP.findall(body)
+    need(len(steps) == 8 and
+         sum(p == 'IEBGENER' for _, p in steps) == 5 and
+         sum(p == 'ICINT19' for _, p in steps) == 3,
+         'SCALVEC smoke expected eight steps')
+    return cards(body), steps
+
+
+def plan():
+    sources = {}
+    for name, path in FILES.items():
+        p = ROOT / path
+        need(p.is_file() and not p.is_symlink(), 'canonical JCL missing: ' + path)
+        sources[name] = p.read_text('ascii')
+    build = build_body(sources['build'])
+    language, language_steps = suite_body(sources['language'], LANG, 11)
+    bcpl, bcpl_steps = suite_body(sources['bcpl'], BCPL, 17)
+    smoke, smoke_steps = smoke_body(sources['smoke'])
+    return {
+        'build': (build, [('ALLOC', 'IEFBR14'), ('ASM', 'IFOX00'),
+                          ('LKED', 'IEWL'), ('SAVEOBJ', 'IEBGENER')]),
+        'smoke': (smoke, smoke_steps),
+        'language': (language, language_steps),
+        'bcpl': (bcpl, bcpl_steps),
+    }
+
+
+def provenance():
+    import subprocess
+    def git(*args):
+        proc = subprocess.run(['git', '-C', str(ROOT), *args],
+                              capture_output=True, timeout=30, check=False)
+        need(proc.returncode == 0, 'Git provenance inquiry failed: ' + ' '.join(args))
+        return proc.stdout
+    need(git('branch', '--show-current').strip() == b'main', 'TA.4 requires main')
+    need(not git('status', '--porcelain', '--untracked-files=no'),
+         'tracked checkout has local modifications')
+    need(git('merge-base', '--is-ancestor', PINNED, 'HEAD') == b'',
+         'release source commit unavailable')
+    paths = [FILES['build'], FILES['language'], FILES['bcpl'],
+             'mr10-kit-compiler/asm/icintv19.asm']
+    for path in paths:
+        blob = git('show', PINNED + ':' + path)
+        need(blob == (ROOT / path).read_bytes(),
+             'frozen release source differs: ' + path)
+    return git('rev-parse', 'HEAD').decode('ascii').strip()
+
+
+def sha_file(path):
+    need(path.is_file() and not path.is_symlink(), 'immutable RC4 AWS unavailable')
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        while True:
+            chunk = f.read(1048576)
+            if not chunk:
+                break
+            h.update(chunk)
+    need(h.hexdigest() == AWS_SHA256, 'immutable RC4 AWS digest mismatch')
+
+
+def live_catalog(rc3, ref, installed, core, cfg, folder):
+    targets = [INST + kind for kind in NEEDED] + [OBJ, LOAD]
+    deck = ref.deck_without_stat(core.stat_deck(cfg, targets))
+    job, report, _ = ref.mvs_job(rc3, core, cfg, folder, 'preflight',
+                                 'T4R1PRE', deck, [('STAT', 'IKJEFT01')], max_rc=8)
+    for kind in NEEDED:
+        dsn = INST + kind
+        got, _ = installed.exact_listds(core, report, dsn)
+        want = {'volume': 'TSO002', 'dsorg': 'PO',
+                'recfm': 'U' if kind == 'LOAD' else 'FB',
+                'lrecl': '0' if kind == 'LOAD' else '80',
+                'blksize': '6144' if kind == 'LOAD' else '800'}
+        need(all(got.get(k) == v for k, v in want.items()),
+             'installed MR10 PDS DCB mismatch: ' + dsn)
+    for dsn in (OBJ, LOAD):
+        need(core.dataset_missing(report, dsn), 'TA.4 target already allocated: ' + dsn)
+        need(not core.parse_listds(core.extract_listds_block(report, dsn)),
+             'ambiguous TA.4 target absence: ' + dsn)
+    return job
+
+
+def verify_codes(report, expected):
+    codes = [int(c) for c in CODE.findall(report)]
+    need(codes == [0] * expected,
+         f'interpreted ICINT19 CODE contract failed: {len(codes)}/{expected}')
+    return codes
+
+
+def verify_demos(report, selection, steps):
+    # All compile, generate and run steps are ICINT19 invocations.
+    codes = verify_codes(report, sum(p == 'ICINT19' for _, p in steps))
+    demo = [x.strip() for x in report.splitlines() if 'DEMO:' in x]
+    need(len(demo) == len(selection),
+         f'demo output count differs: {len(demo)}/{len(selection)}')
+    need(not any('ABEND' in x.upper() for x in demo),
+         'demo application reported abend')
+    return {'run_cases': list(selection), 'interpreted_zero_codes': len(codes),
+            'demo_print_records': demo}
+
+
+def run(mode):
+    folder = None
+    rc3 = None
+    marked = False
+    try:
+        decks = plan()
+        need(not MARKER.exists() and not MARKER.is_symlink(),
+             'TA.4 R1 already attempted: NO RETRY')
+        if mode == 'plan':
+            print('TA.4 PLAN PASS: isolated IFOX/IEWL/IEBGENER build, SCALVEC, '
+                  '11 language and 17 BCPL demos; no MVS calls.')
+            return 0
+        need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+             'repository workarea unavailable or unsafe')
+        rc3, ref, installed, core, reviewer = load_tools()
+        sha_file(AWS)
+        git_head = provenance()
+        cfg = core.load_config()
+        need(cfg['mvs']['hlq'] == 'HERC02', 'unexpected site HLQ')
+        core.require_reader_ready(cfg)
+        OUT.mkdir(mode=0o700, exist_ok=True)
+        folder = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') +
+                        '-' + str(os.getpid()))
+        folder.mkdir(mode=0o700, exist_ok=False)
+        for key, (body, _) in decks.items():
+            rc3.artifact(folder, key + '-planned.jcl', body)
+        prejob = live_catalog(rc3, ref, installed, core, cfg, folder)
+        sha_file(AWS)
+        print(f'TA.4 RC4 READ-ONLY PREFLIGHT PASS: MVS JOB {prejob}; '
+              '9 installed MR10 PDSes checked; two fresh targets absent.')
+        if mode == 'preflight':
+            rc3.artifact(folder, 'result.json', json.dumps({
+                'status': 'READ_ONLY_PREFLIGHT_PASS', 'job': prejob,
+                'candidate': RELEASE, 'github_head': git_head,
+                'publication_authorized': False}, indent=2) + '\n')
+            rc3.seal(folder)
+            print('Evidence: ' + folder.relative_to(ROOT).as_posix())
+            return 0
+        need(sys.stdin.isatty(), 'stateful TA.4 execution needs a human terminal')
+        if input('Run TA.4 new ICINT19 build + 11 + 17 demos ONCE? [y/N]: ').strip().upper() != 'Y':
+            rc3.artifact(folder, 'result.json', '{"status":"DECLINED_NO_MVS_MUTATION"}\n')
+            rc3.seal(folder)
+            print('TA.4 declined; no build or demonstrations executed.')
+            return 0
+        rc3.exclusive(MARKER, (json.dumps({
+            'status': 'TA4_RC4_REBUILD_DEMOS_OWNER_CONFIRMATION_CONSUMED_NO_RETRY',
+            'candidate': RELEASE, 'aws_sha256': AWS_SHA256,
+            'github_head': git_head,
+            'new_datasets': [OBJ, LOAD],
+            'evidence': folder.relative_to(ROOT).as_posix(),
+            'no_tape_operations': True, 'no_existing_pds_writes': True,
+            'publication_authorized': False}, sort_keys=True) + '\n').encode('ascii'))
+        marked = True
+        jobs = {'preflight': prejob}
+        for key, jobname in [('build', 'T4R1BLD'), ('smoke', 'T4R1GO'),
+                             ('language', 'T4R1LNG'), ('bcpl', 'T4R1BCD')]:
+            body, expected = decks[key]
+            job, report, _ = ref.mvs_job(rc3, core, cfg, folder, key, jobname,
+                                         body, expected)
+            jobs[key] = job
+            if key == 'smoke':
+                review = reviewer.inspect(report, [reviewer.panel()[0]])
+                need(review['golden_rp_and_code_match'] and
+                     review['exp_contract_met'] and
+                     review['observed_test_count'] == 1,
+                     'rebuilt ICINT19 SCALVEC semantic disagreement')
+                rc3.artifact(folder, 'smoke-semantics.json',
+                             json.dumps(dict(review, mvs_job=job), indent=2) + '\n')
+            elif key in ('language', 'bcpl'):
+                data = verify_demos(report, LANG if key == 'language' else BCPL,
+                                    expected)
+                rc3.artifact(folder, key + '-semantics.json',
+                             json.dumps(dict(data, mvs_job=job), indent=2) + '\n')
+            print(f'TA.4 {key.upper()} PASS: MVS JOB {job}; {len(expected)} steps.')
+        sha_file(AWS)
+        rc3.artifact(folder, 'result.json', json.dumps({
+            'status': 'TA4_RC4_REBUILD_AND_11_17_DEMOS_MVS_PASS',
+            'candidate': RELEASE, 'jobs': jobs, 'source_commit': PINNED,
+            'github_head': git_head, 'fresh_object_pds': OBJ,
+            'fresh_load_pds': LOAD, 'human_12_case_signoff': 'PENDING',
+            'publication_authorized': False}, indent=2) + '\n')
+        rc3.seal(folder)
+        print('TA.4 MVS REBUILD + DEMONSTRATIONS PASS; JOB 9369 preserved; '
+              '12-case human sign-off remains separate.')
+        print('Evidence: ' + folder.relative_to(ROOT).as_posix())
+        return 0
+    except Exception as exc:
+        if folder is not None and rc3 is not None:
+            try:
+                rc3.artifact(folder, 'failure.json', json.dumps({
+                    'status': 'STATEFUL_NO_RETRY' if marked else 'READ_ONLY_HALT',
+                    'reason': str(exc)}, indent=2) + '\n')
+                rc3.seal(folder)
+            except Exception:
+                pass
+        print('TA.4 VERIFICATION HALTED: ' + str(exc), file=sys.stderr)
+        if folder is not None:
+            print('Evidence: ' + folder.relative_to(ROOT).as_posix(), file=sys.stderr)
+        if marked:
+            print('NO RETRY: preserve partial fresh targets and JES evidence.',
+                  file=sys.stderr)
+        return 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    choices = parser.add_mutually_exclusive_group()
+    choices.add_argument('--preflight', action='store_true',
+                         help='read-only MVS catalog/DCB preflight; no allocations')
+    choices.add_argument('--run', action='store_true',
+                         help='fresh MVS preflight, then one guarded build and demos')
+    args = parser.parse_args(argv)
+    return run('run' if args.run else 'preflight' if args.preflight else 'plan')
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
