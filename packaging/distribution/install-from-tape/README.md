@@ -1,5 +1,29 @@
 # Install from tape
 
+## TA.3 authorized isolated MR10 recipient trial
+
+The [isolated BC0003 recipient-run preparation](ta3-rc3-isolated-recipient-run-20261122.md)
+and `scripts/ta3-rc3-recipient` now implement a guarded, single-confirmation,
+no-retry MVS execution path. The operator invokes `--run` after updating to
+current GitHub `main`; all host-side readiness checks and JCL substitutions
+are handled by the runner, not by the owner.
+
+The target is the **new** `HERC02.BCPL.TA3N1.*` namespace. The MVS path
+reads BT0001, restores and prints BT0002, restores the MR10-only profile,
+verifies exact recipient DCBs and all 90 installer/docs/MR10 members,
+then uses the restored ICINT19 in a source-controlled eight-step
+SCALVEC compile/generate/execute demonstration. All JES, LISTDS, IEBGENER,
+IEBCOPY and TEST/EXP/RP/CODE evidence is saved under repository
+`workarea/ta3-rc3-recipient/`; console output is limited to outcomes
+and evidence location.
+
+Offline checks passed, but **no actual new TA.3 MVS job has yet run**.
+The owner has authorized the one isolated stateful operation.
+The accepted `BC0003` image is never rewritten and TA.2 one-shot jobs
+are not repeated. An ambiguous post-approval failure is **NO RETRY**.
+A successful isolated MR10 proof would not establish a fully independent
+system or yet verify the native-only/combined profiles.
+
 ## TA.3 — BC0003 bootstrap and profile restoration implementation
 
 **Current status:** TA.3 — MVS Bootstrap and Installation IN PROGRESS.
