@@ -1,3 +1,24 @@
+## TA.3 — RC4 replacement tape-resident installer (in development)
+
+The owner approved replacing the inert `BC0003` on-tape
+`BT0002(RESTORE)` template with real MVS-native profile jobs **in
+a separate candidate**. The RC4/BC0004 manifest and authoritative
+registry reservation are committed. Original BC0003 and all TA.2/TA.3
+receipts remain immutable.
+
+The [RC4 installer design](../create-tape/ta3-rc4-tape-resident-installer-design-20261123.md)
+documents eight tape-resident BT0002 members, including
+`MR10`, `NATIVE`, `COMBINED` and the shared `COPY` SYSIN member.
+The source-controlled [offline generator](../create-tape/scripts/ta3-rc4-installer)
+builds the changed BT0001/BT0002 members and candidate JCL. The
+[read-only MVS PROC probe](scripts/ta3-rc4-proc-probe) tests
+historical JCL procedure symbols against existing TA3N1 PDS data
+before any new stage/tape write.
+
+**No BC0004 image has been created or written yet.**
+TA.3 remains IN PROGRESS pending actual MVS probe, candidate
+production and independent recipient installation.
+
 ## TA.3 all three installation profiles — MVS PASS (qualified)
 
 **Owner-reported actual MVS 3.8J results (23 November 2026 EST):**
