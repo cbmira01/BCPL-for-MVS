@@ -13,9 +13,10 @@ The MR10 suite runners now live under `tools/mr10/`. Their former tools-root pat
 - `tools/mr10/` — MR10 INTCODE interpreter, compiler, and short-named suite runners.
 - `tools/bootstrap/` — Cambridge/native compilation, bootstrap source staging, native regressions, and resident-JCL build coordination.
 - `tools/checks/` — reusable static checks, test-only QSAM output probes, job/RC auditing, and final-run freshness evidence.
-- `tools/reconstruction/` — read-only preflight (Step 1), single-run approval (Step 2), offline-tested stage engine (Step 3; live execution disabled), and JES2 `$DA` idle diagnostic (pending MVS verification).
+- `tools/reconstruction/` — clean-room reconstruction tooling; see its [README](reconstruction/README.md) and the canonical runbook.
+- `tools/distribution/` — [manifest validation and release evidence tools](distribution/README.md); not a general-purpose release producer.
 
-Only this README and the five subsystem directories remain at the tools root. The M3 manifest now defines 24 managed MR10, reserved CAMB, and NATIVE datasets. See the clean-room runbook for the full reconstruction order.
+See [the managed dataset configuration](../config/dspal.yaml) and [clean-room runbook](../docs/Rebuild-BCPL-for-MVS-from-source.md) for the current development inventory. The published RC4 release is documented separately in [distribution](../packaging/distribution/README.md).
 
 ## Main commands
 
@@ -39,7 +40,7 @@ Only this README and the five subsystem directories remain at the tools root. Th
 | `tools/mr10/run-demo-suite` | Run the 17 general BCPL demonstrations. |
 | `tools/mr10/run-language-demos` | Run the focused BCPL language demonstrations. |
 | `tools/datasets/dspal` | Manage the MVS-side `HERC02.BCPL.*` data sets. |
-| `tools/reconstruction/run --list` | Display the offline-tested reconstruction stage sequence; live `--run` remains disabled. |
+| `tools/reconstruction/run --list` | Display the reconstruction stage sequence; consult the canonical runbook for current execution policy. |
 
 The old Cambridge-first bootstrap generator is no longer a current tool or workflow.
 
@@ -212,68 +213,10 @@ It checks ASCII-only source, tabs, trailing whitespace, and text beyond column
 
 ## Persistent Cambridge compiler on MVS
 
-The native-code regression work has a faster parallel compile path. The
-Cambridge compiler is still INTCODE executed by ICINT V19; it is not yet a
-native MVS compiler.
+The development Cambridge Compiler runs as INTCODE under ICINT19 (the promoted interpreter selected by [CURRENT](../mr10-kit-compiler/asm/CURRENT)); it produces native code but is not itself native-running. Use the [canonical clean-room reconstruction runbook](../docs/Rebuild-BCPL-for-MVS-from-source.md) for current managed dataset aliases, build order and regression commands. Do not use older unqualified dataset aliases or old interpreter-version instructions.
 
-Host-to-MVS positioning is owned by `dspal`. First generate the host-side
-bootstrap derivatives:
+## Distribution
 
-```sh
-python3 bootstrap-toolchain/bootstrap-cambridge/make-demoted.py
-bash bootstrap-toolchain/bootstrap-cambridge/build-mr10-trni-large-names.sh
-```
+The release milestone is closed. [RC4 installation instructions](../packaging/distribution/publication/RC4-README.md) are the recipient-facing procedure. Candidate-specific development and acceptance scripts in [packaging/distribution](../packaging/distribution/README.md) are retained for provenance and shared dependencies, not for replay. See the [post-release audit](../packaging/distribution/post-release-audit-20261124.md) for the retirement policy.
 
-Then populate the managed MVS libraries:
-
-```sh
-tools/datasets/dspal populate SOURCE
-tools/datasets/dspal populate ASM
-tools/datasets/dspal populate INTCODE
-```
-
-Populate the stored build job and submit it through the internal-reader launcher:
-
-```sh
-tools/datasets/dspal populate JCL
-tools/datasets/dspal submit JCL CAMBBLD --wait
-```
-
-The checked-in `CAMBBLD` member is a job body with no JOB card; `dspal submit`
-supplies the authenticated payload JOB card from the local dspal configuration.
-
-The build leaves:
-
-```text
-HERC02.BCPL.LOAD(ICINT19)
-HERC02.BCPL.INTCODE(BCPL)
-HERC02.BCPL.INTCODE(SYN)
-HERC02.BCPL.INTCODE(LEX)
-HERC02.BCPL.INTCODE(TRNA)
-HERC02.BCPL.INTCODE(TRNB)
-HERC02.BCPL.INTCODE(CGA..CGE)
-HERC02.BCPL.INTCODE(BOOTHOST)
-HERC02.BCPL.INTCODE(CAMBCOMP)
-```
-
-`CAMBCOMP` is the packed ICINT-runnable compiler image. The individual
-members are retained for diagnosis and inspection.
-
-Inspect the checked-in resident build job at `bootstrap-toolchain/jcl/cambbld.jcl` before submission.
-
-After inspecting the PDSes, compile a source through that resident image with:
-
-```sh
-python3 tools/bootstrap/compile-mvs path/to/program.bcpl
-```
-
-For the native regression panel, use:
-
-```sh
-bash bootstrap-toolchain/regression/run-test-mvs.sh 24
-```
-
-The original `run-test.sh` remains the bootstrap-from-source path and is
-unchanged by default. `mr10-kit-compiler/asm/CURRENT` remains on ICINT V17.
-
-For a complete rebuild starting with an empty `workarea/`, including interpreter, MR10 suites, resident Cambridge image, runtime objects, and all native regressions, use [the single clean-room reconstruction runbook](../docs/Rebuild-BCPL-for-MVS-from-source.md).
+[Previous host-tool README](https://github.com/cbmira01/BCPL-for-MVS/blob/9f382203fcd6a5424cd916f304e3210c0f650212/tools/README.md) is preserved in Git history.

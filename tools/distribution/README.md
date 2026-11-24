@@ -1,76 +1,17 @@
-# TA.0 read-only manifest validator
+# Distribution tools
 
-Run from the repository root (development host, PyYAML required):
+The Tape artifact release milestone is formally CLOSED (qualified). [RC4](../../packaging/distribution/README.md) is the published candidate. This directory contains the manifest validator and TA.0 evidence/inventory tools; it does not contain a general-purpose release producer.
 
-```sh
-python3 -B tools/distribution/validate-manifest.py
-python3 -B tools/distribution/validate-manifest.py --audit-json
-python3 -B -m unittest discover -s packaging/distribution/manifest/tests -p 'test_*.py' -v
-```
+## Reusable functionality to retain
 
-The TA.0 prototype is read-only and has no JES, MVS dataset, tape or Git write operations.
-The new `--audit-json` option derives a 127-member provenance worksheet: 110 Git-backed sources, 2 generated members, 15 resident binary members, and **all 127 redistribution reviews unreviewed**. No MVS build receipt is inferred. See the [recipient-JCL and provenance audit](../../packaging/distribution/manifest/ta0-provenance-and-dependency-audit.md).
-It validates the approved design selection against `config/dspal.yaml` without
-making that development dataset map the release selection authority.
+- [validate-manifest.py](validate-manifest.py) — read-only schema/selection validation, used by the later producer. The default input is the TA.0 design inventory; explicitly select the intended manifest.
+- [audit-jcl-dependencies.py](audit-jcl-dependencies.py), [audit-binary-build-chain.py](audit-binary-build-chain.py), [audit-mvs-build-evidence.py](audit-mvs-build-evidence.py) — candidate input and saved evidence analysis; historical TA.0 assumptions need review before generalization.
+- IEBPTPCH decoding/page framing, IEHLIST directory review, ICINT19 execution verification and inventory collection — potentially reusable MVS evidence functions; retain tests and extract only demonstrated reusable code.
 
-Expected result: 20 logical tape datasets, 127 selected PDS members
-(79 MR10), last proposed alias `BCPL.BT0020`, `native_compiler: absent`.
+The validator's strict --release mode requires complete inventory and rights evidence. It is not a substitute for the actual qualified RC4 acceptance or legal permission.
 
-The following check MUST fail on this non-candidate design inventory:
+## Historical TA.0 tools
 
-```sh
-python3 -B tools/distribution/validate-manifest.py --release
-```
+The pilot submission/recovery, failed-pilot inspection, evidence reconciliation, relocation and compatibility utilities are retained for historical evidence and possible dependencies. They are not routine operator procedures; some submit JES jobs or move private evidence. Do not replay historical operations.
 
-The design contains no candidate version, source Git SHA, VOLSER registry reservation,
-actual tape unload DCB, MVS binary readback receipts, complete member provenance
-or redistribution approvals. The validator cannot itself demonstrate TA.1–TA.8
-acceptance, producer/installer correctness or legal redistribution.
-
-TA.0 is in progress; TA.1 is separately gated.
-
-## Selected release JCL dependency audit (TA.0)
-
-```sh
-python3 -B tools/distribution/audit-jcl-dependencies.py
-python3 -B tools/distribution/audit-jcl-dependencies.py --json
-python3 -B tools/distribution/audit-jcl-dependencies.py --strict
-```
-
-The default read-only scan checks the **ten selected Git JCL source members** against the proposed TA.0 inventory and `dspal` Git paths. It rejects undeclared datasets, members, program dependencies and MR10/native cross-profile references. Original jobs have no standalone `JOB` cards and hard-code development `HERC02`; consequently the `--strict` command **must fail** until release JCL is separately adapted.
-
-For an inspection of site-adapted *files*, use `--hlq SITEABC --strict --dspal <stage-map.yaml> --root <stage-root>`; the specified development-host map must identify the corresponding staged JCL paths and other selected source inputs. The scanner does **not** create, adapt, submit or validate execution of an MVS job. Program availability, full JCL semantics, site allocation/no-overwrite safety and target MVS verification remain acceptance gates.
-
-The 17 November GitHub review found 260 selected permanent-dataset references, zero unselected or cross-profile references, and seven `SYS1.MACLIB` dependencies. The two offline TA.0 test modules contain **40 passing synthetic-fixture cases**; see [audit details](../../packaging/distribution/manifest/ta0-provenance-and-dependency-audit.md).
-
-## Exact selected binary build-chain review (TA.0)
-
-```sh
-python3 -B tools/distribution/audit-binary-build-chain.py
-python3 -B tools/distribution/audit-binary-build-chain.py --json
-python3 -B tools/distribution/audit-binary-build-chain.py --strict
-```
-
-The first two commands audit the fifteen selected object/load members against the reconstructed Git-backed source/build JCL and `tools/reconstruction/verify.py` (AST inspection; no code execution). The last intentionally **fails closed** because candidate-specific IFOX/IEWL/JES, accepted object readback, load-library execution and redistribution records have not been supplied.
-
-To additionally check the exact **member names** in *saved read-only MVS listing outputs*, supply `--inventory-dir <directory>`; that directory must contain `MR10_OBJ.txt`, `MR10_LOAD.txt`, `BOOT_OBJ.txt`, `EXT_OBJ.txt` as unmodified output from `dspal ls <key>` on the intended MVS system. This tool does not contact MVS, collect those outputs, or equate a matching directory with binary-byte acceptance.
-
-The [TA.0 binary provenance review](../../packaging/distribution/manifest/ta0-provenance-and-dependency-audit.md) documents the limitations. The offline TA.0 suite contains **55 synthetic-fixture cases**. There is no license/rights sign-off, no tape producer or installation approval, and no TA.0 formal closure.
-
-## Saved MVS evidence inspection (read-only TA.0)
-
-```sh
-python3 -B tools/distribution/audit-mvs-build-evidence.py \
-    --index /path/to/saved-evidence/index.json \
-    --source-sha FULL_40_CHARACTER_SOURCE_GIT_SHA \
-    --json
-```
-
-All **20** saved UTF-8 attachments must have SHA-256 digests in the
-operator-supplied index: 8 job summaries, 8 full dump reports, and
-4 exact binary PDS member inventories. See the
-[full evidence contract](../../packaging/distribution/manifest/ta0-mvs-build-evidence-intake.md).
-
-The source SHA check compares two operator claims, not Git bytes to MVS;
-the result is not binary record readback, rights approval, or a tape acceptance.
-
+See the [manifest and tests](../../packaging/distribution/manifest/README.md) and [post-release audit](../../packaging/distribution/post-release-audit-20261124.md). [Previous TA.0 README](https://github.com/cbmira01/BCPL-for-MVS/blob/9f382203fcd6a5424cd916f304e3210c0f650212/tools/distribution/README.md) preserves the original commands and limitations.

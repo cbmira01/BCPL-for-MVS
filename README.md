@@ -6,17 +6,19 @@ The primary historical evidence is the Martin Richards BCPL transport-tape mater
 
 This project appears to be one of the few modern efforts to reconstruct a historical BCPL system for IBM System/370 from surviving compiler and bootstrap materials.
 
-## The two compiler environments
+## Public release and compiler environments
 
-| Directory | Compiler execution | Purpose |
-| --- | --- | --- |
-| [`bootstrap-toolchain/`](bootstrap-toolchain/) | Interpreter-hosted under `ICINT19` | Runs the demoted Cambridge compiler and CG370 to produce native System/370 code, and holds the established runtime, build inputs and shared native regression harness. Numbered test cases now live under [`tests/`](tests/). |
-| [`cambridge-compiler/`](cambridge-compiler/) | Native MVS executable (the new build target) | Owns the work to reconstruct, assemble, link, run and eventually self-compile the native Cambridge compiler on MVS. Historical source authority remains in `richards-bcpltape/`; shared runtime modules remain in `bootstrap-toolchain/`. |
+The first public prerelease, [Cambridge BCPL Programming System for MVS 3.8J — 0.1.0-rc4](https://github.com/cbmira01/BCPL-for-MVS/releases/tag/v0.1.0-rc4), was published on 24 November 2026. Start with the [RC4 companion installation and usage guide](packaging/distribution/publication/RC4-README.md). It supersedes the draft documentation in BT0003.
 
-**Important:** The bootstrap toolchain *generates* native code but its
-compiler does **not** run natively. The native Cambridge compiler is a
-separate deliverable. `tools/bootstrap/` operates the bootstrap toolchain; the MVS
-`BOOT_*` dataset aliases are its established interfaces.
+| Environment | Status and purpose |
+| --- | --- |
+| [MR10 Kit Compiler](mr10-kit-compiler/) | Independently usable on MVS through ICINT19; included and functionally verified in RC4. |
+| [Bootstrap toolchain](bootstrap-toolchain/) | Development toolchain: interpreter-hosted demoted Cambridge Compiler and CG370 generate native System/370 applications. The compiler itself runs as INTCODE. CAMBCOMP is not included in RC4. |
+| [Cambridge Compiler](cambridge-compiler/) | Native-running MVS compiler reconstruction is unfinished. Historical Cambridge sources, native runtime, libraries and System Extensions are distributed in RC4 as work in progress. |
+
+All three installation profiles passed on actual MVS 3.8J in fresh namespaces on the existing system. MR10 and COMBINED passed 80 functional cases in total. Independent IPL, alternate HLQ/site verification and native functional certification were not established.
+
+The [Tape artifact release closure](packaging/milestones/tape-artifact-release/ta8-formal-qualified-closure-and-milestone-completion-20261124.md) records scope and qualifications. TA.5 is closed (qualified); TA.6 is N/A for RC4. Historical redistribution rights remain unresolved under the preservation-first policy. See [third-party notices](THIRD-PARTY-NOTICES.md).
 
 ## Compatibility scope
 
@@ -26,46 +28,11 @@ In particular, even a compiler that successfully compiles itself and passes this
 
 The regression suite therefore demonstrates the behavior explicitly tested by the project; it is not a certification of full historical source, binary, or runtime compatibility.
 
-## Reconstruction status (17 October 2026)
+## Development and reconstruction
 
-The historical MR10 kit compiler runs under reconstructed System/370 ICINT19,
-which is built on MVS as `MR10_LOAD(ICINT19)`. The resident demoted Cambridge
-compiler image is reconstructed into `BOOT_INTCODE(CAMBCOMP)` and generates
-System/370 assembler code; **the compiler itself still runs as INTCODE**.
-Applications are assembled, link-edited, and executed natively on MVS.
+The established development bootstrap runs under ICINT19 and generates native code using the demoted Cambridge Compiler. This is not a native-running compiler.
 
-The complete native panel spanning 00–123 passed with **123 PASS, 0 FAIL,
-1 expected SKIP (083)** using rebuilt objects in `BOOT_OBJ` and
-`BOOT_DEVOBJ`. This is not a claim of full historical BCPL compatibility.
-The separate native Cambridge compiler is developed under
-`cambridge-compiler/` using the reserved `CAMB_*` dataset namespace.
-
-**Current native-stream milestone:** BCPLIO dynamic stream
-**formally CLOSED** 17 October 2026 with owner acceptance of
-the candidate `BOOT_DEVOBJ(BCPLM6+BCPLIO)` under the documented
-QSAM stream contract. A fresh `00..145` native regression
-at Git `57c7354` returned **145 PASS, zero FAIL,
-one expected SKIP 083**, with independent audit
-of **145/145 fresh per-case logs**. JES/QSAM physical
-evidence is recorded for JOBS 8184–8186.
-The accepted DEVOBJ candidate has **not** been promoted
-to production `BOOT_OBJ`; the Cambridge compiler still
-executes as INTCODE under ICINT19. The earlier
-00–123 acceptance above is the M3 *historical* baseline.
-
-Read the [formal BCPLIO milestone sign-off]
-(packaging/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md),
-[current runtime contract]
-(packaging/bcplio-dynamic-stream/BCPLIO-dynamic-runtime-contract.md), and
-[handoff for repository cleanup and regression-runner review]
-(packaging/maintenance/Handoff-repository-cleanup-regression-runner.md).
-
-**Start here:** [Clean-room reconstruction of the entire MVS PDS
-environment](docs/Rebuild-BCPL-for-MVS-from-source.md). The consolidated
-procedure includes source demotion, managed PDS purge/init/population,
-ICINT19 rebuilding, the MR10 interpreter suites, resident compiler
-reconstruction, runtime objects, and the native regression panel. For
-the previously observed acceptance evidence see [M3 reconstruction acceptance](packaging/archive/core-runtime/m3-native-reconstruction-acceptance-20261015.md).
+For reconstruction from source, follow the [canonical clean-room runbook](docs/Rebuild-BCPL-for-MVS-from-source.md). For current architecture and accepted interfaces, see [architecture and contracts](packaging/architecture/README.md); for milestone status, see the [milestone index](packaging/milestones/README.md). Historical native development results remain in the accepted milestone records and [earlier README](https://github.com/cbmira01/BCPL-for-MVS/blob/9f382203fcd6a5424cd916f304e3210c0f650212/README.md); they are not RC4 functional certification.
 
 ## Repository organization
 
@@ -80,17 +47,15 @@ the previously observed acceptance evidence see [M3 reconstruction acceptance](p
 | `tools/bootstrap/` | Native bootstrap preparation, deployment, compilation, and regression runner |
 | `tools/mvs/` | TK5/Hercules, JES and assembler job tools |
 | `tools/checks/` | Repository-owned static and acceptance diagnostics |
+| `tools/distribution/` | Release manifest and evidence inspection tools |
+| `tools/reconstruction/` | Clean-room reconstruction tooling |
 | `config/` | `dspal.yaml` and ignored machine-local overrides |
 | `docs/` | Human-readable educational briefings on BCPL, System/370, MVS, Hercules, IFOX and JCL |
 | `packaging/` | Architecture, engineering contracts, acceptance records, audits, and rebuild procedures; [index](packaging/README.md) |
 | `richards-bcpltape/` | Historical reference sources; third-party rights preserved |
-| `workarea/` | Disposable derived host output, never source authority |
+| `workarea/` | Derived host output; preserve accepted private release receipts and no-retry markers separately before any cleanup |
 
-The M3 manifest has 24 managed datasets (9 MR10, 9 reserved CAMB,
-6 NATIVE). Source code and JCL are authoritative in Git; resident MVS
-datasets are deployed source, rebuildable generated artifacts, and MVS
-execution evidence. Do not migrate INTCODE or object modules from earlier
-libraries to reconstruct M3.
+The managed development dataset inventory is defined by [config/dspal.yaml](config/dspal.yaml). Git is authoritative for source and JCL; MVS establishes target execution evidence. Release selection and installed namespaces are defined separately by the [distribution manifest](packaging/distribution/manifest/README.md).
 
 ## Common operator entry points
 
