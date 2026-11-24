@@ -12,6 +12,7 @@ Start with the [RC4 companion guide](publication/RC4-README.md), which supersede
 | [Registry](registry/releases.yaml) | Version, VOLSER and lifecycle records |
 | [Publication](publication/) | Mandatory RC4 companion, release notes and exact-byte package reviewer |
 | [Create tape](create-tape/README.md) | Retained producer and historical MVS experiments |
+| [Reusable release interface](../../tools/distribution/README.md) | Candidate-independent offline write/install JCL and saved tape/MR10 review |
 | [Install from tape](install-from-tape/README.md) | Installer design and retained recipient/acceptance tooling |
 | [Compiler source](compiler-source/README.md) | Historical source selection and fidelity investigation |
 | [Documentation PDS inputs](docs/) | Frozen draft input text for BT0003; not authoritative RC4 instructions |

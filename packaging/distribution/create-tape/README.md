@@ -9,7 +9,10 @@ This directory preserves the producer, JCL, tests and engineering records used t
 - [RC4 installer generator](scripts/ta3-rc4-installer) and [RC4 production runner](scripts/ta3-rc4-production): accepted candidate-specific implementation. The production operation is consumed; do not replay it.
 - [Offline manifest renderer](scripts/ta2-offline), [bootstrap installer generator](scripts/ta2-bootstrap-installer), RC2/RC3 producers and readback utilities: retain because later scripts dynamically load earlier helpers.
 - [Stage-space proposal](ta2-stage-space-proposal-20261119.json), approval records, JCL and tests: retain as exact historical inputs and regression fixtures.
-- TA.1 and scratch PDS/object tape experiments: historical experiments, not current operator entry points. Retire their runnable wrappers only after checking dependencies and preserving the release-era source.
+- TA.1 Track A and Track B experiment runners, their dedicated tests and six JCL decks have been removed from active main after a static dependency scan. Their exact source is preserved in the [pre-cleanup Git tree](https://github.com/cbmira01/BCPL-for-MVS/tree/52850c4c21b6b10db3174304f5cc778bc95283fe/packaging/distribution/create-tape). All acceptance and investigation records remain. Historical relative links to retired source refer to that pinned tree.
+- Earlier scratch PDS/object experiments predate the milestone; retain their independent files for now.
+
+For new offline writer and installer previews, use the [candidate-independent release interface](../../../tools/distribution/README.md). The legacy RC2–RC4 runners remain intact for accepted evidence and dependencies; they must not be replayed.
 
 See [RC4 production evidence](ta3-rc4-production-operator-result-20261123.md), [installer design](ta3-rc4-tape-resident-installer-design-20261123.md) and the [post-release audit](../post-release-audit-20261124.md).
 

@@ -1,6 +1,23 @@
 # Distribution tools
 
-The Tape artifact release milestone is formally CLOSED (qualified). [RC4](../../packaging/distribution/README.md) is the published candidate. This directory contains the manifest validator and TA.0 evidence/inventory tools; it does not contain a general-purpose release producer.
+The Tape artifact release milestone is formally CLOSED (qualified). [RC4](../../packaging/distribution/README.md) is the published candidate. This directory contains the manifest validator, reusable offline JCL/evidence functions, and retained TA.0 evidence/inventory tools. No generic live producer has been accepted yet.
+
+## Reusable offline release interface
+
+[`release.py`](release.py) is the candidate-independent interface to the established tape JCL and saved-evidence operations. It never submits JES jobs, allocates or deletes datasets, mounts or writes tape, reserves VOLSERs, or publishes a release.
+
+| Subcommand | Inputs | Output |
+| --- | --- | --- |
+| `write-jcl` | `--manifest`, `--source-map`, `--unit` | JOB-less SL write deck using IEBGENER and IEBCOPY |
+| `install-jcl` | `--manifest`, `--allocations`, `--profile`, `--hlq`, `--site`, `--tape-unit`, `--dasd-unit`, `--dasd-vol` | JOB-less in-stream PROC for the selected profile, after BT0002 is restored |
+| `review-tape` | `--manifest`, `--labels`, `--files` | JSON comparison of saved HETMAP -l and -f reports to manifest sequence/volume |
+| `review-mr10` | `--report`, optional `--root` | JSON comparison of ordered TEST, RP, EXP and interpreted CODE against independent MR10 goldens |
+
+Run with Python 3 and PyYAML (manifest commands); see each subcommand's `--help`. Source-map JSON maps decimal sequence strings (e.g. "1") to explicit, already-staged source DSNs and must cover all logical datasets. Allocation JSON maps each payload sequence (3 onward) to three positive integers: primary tracks, secondary tracks and directory blocks. Use the approved manifest and allocation evidence for the intended candidate, never reuse an old staging namespace or approval automatically.
+
+The generated installer uses the accepted RC4 layout (BT0001 FB80 bootstrap, BT0002 PDS COPY control member, FB80/800 and U/6144 recipient PDSes). It refuses unsupported layouts and DCBs. The interface is offline only: it does not establish source lineage, registry or rights approval, catalog absence, free space, JES completion, record fidelity or release acceptance. Before any new live operation, use the canonical manifest validator and obtain the separately approved MVS preflight and operational scope. For historical RC4 use the published companion guide rather than regenerating or replaying it.
+
+Offline test command (from the repository root): `python3 -B -m unittest discover -s tools/distribution -p test_release.py -v`. The tests include frozen RC4 writer and three profile rendering digests. Saved evidence comparisons are not a substitute for fresh actual MVS verification.
 
 ## Reusable functionality to retain
 
