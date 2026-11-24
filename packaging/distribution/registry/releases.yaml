@@ -36,7 +36,17 @@ lifecycle:
     acceptance_record: packaging/milestones/tape-artifact-release/ta7-clean-namespace-acceptance-20261124.md
     rights_status: preservation-policy-approved-rights-unresolved
     documentation: mandatory-rc4-companion-supersedes-bt0003
-    publication_state: owner-authorized-awaiting-upload
+    publication_state: published-prerelease-verified
+    release_tag: v0.1.0-rc4
+    release_tag_commit: 5fca3d6b83b7db6a29cd863e1c977c12a21876f2
+    release_url: https://github.com/cbmira01/BCPL-for-MVS/releases/tag/v0.1.0-rc4
+    github_release_id: 457049551
+    github_asset_id: 787993716
+    published_at: "2026-11-24T16:42:17Z"
+    archive_size_bytes: 254181
+    published_asset_sha256: a3d47d7a3591c3f8fa826c205729a9488423f31a3a7e0c10ed87357d3404e80e
+    publication_verification: github-reported-asset-digest-match
+    closure_record: packaging/milestones/tape-artifact-release/ta8-formal-qualified-closure-and-milestone-completion-20261124.md
     publication_authorization: packaging/milestones/tape-artifact-release/ta8-rc4-publication-authorization-20261124.md
     intended_tag: v0.1.0-rc4
     intended_release_type: prerelease
