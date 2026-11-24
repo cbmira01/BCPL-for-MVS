@@ -2150,3 +2150,25 @@ See the [signed-review compatibility correction](ta4-rc3-signed-review-historica
 ## TA.4 — automatic twelve-case acceptance contract (23 November 2026)
 
 Owner supersedes the earlier human per-case verdict and SIGN gate. Keep all 12 literal EXP:, computed RP:, TEST: and interpreted CODE= results, and compare the original sealed MVS JOB 9369 evidence against independent golden records with fail-on-difference behavior. The new read-only TA.4 acceptance runner independently verifies preserved RC4 JOBS 9418-9422 and seals twelve automatic verdicts. Human sign-off is not required. No historical jobs are rerun and no release is published. TA.4 remains IN PROGRESS until actual automated receipt verification. See ta4-automatic-semantic-acceptance-decision-20261123.md.
+
+## TA.4 — RC4 saved-evidence automated acceptance PASS; technical closure ready (23 November EST / 24 November UTC)
+
+The owner ran the new read-only automated verifier from `main`
+`145da0e3f0306cf0573216cffa8f1e6d5b37029e`. It reported
+**12/12 MRREGRES PASS**, all **11 language + 17 BCPL** demos PASS,
+rebuilt `ICINT19` PASS, and sealed a new independent acceptance receipt:
+`workarea/ta4-mr10-automatic-acceptance/accept-20261124T003512Z-40183`.
+It checks already accepted MVS JOB 9369 and RC4 JOBS 9418–9422;
+no MVS operation was repeated. The unchanged WSL regression panel
+was previously owner-reported **12 PASS / 0 FAIL / RC=0** (22 November).
+All TA.4 technical gates are therefore supported. The prior manual
+`SIGN` obligation was expressly superseded by owner decision.
+
+**TA.4 technical acceptance PASS; READY FOR FORMAL OWNER CLOSURE.**
+The explicit closure decision is separate; no assertion that the owner
+already ordered formal closure is made. See the
+[TA.4 accepted technical evidence](ta4-automatic-acceptance-pass-and-closure-readiness-20261123.md).
+The [TA.5 read-only entry audit](ta5-entry-audit-and-design-preparation-20261123.md)
+prepares the next approved march without opening it or authorizing
+state-changing MVS operations. TA.6 remains N/A for the absent native
+compiler; TA.7/TA.8 and publication are separate.
