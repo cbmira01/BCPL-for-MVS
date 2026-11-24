@@ -1,6 +1,10 @@
 # Distribution tools
 
-The Tape artifact release milestone is formally CLOSED (qualified). [RC4](../../packaging/distribution/README.md) is the published candidate. This directory contains the manifest validator, reusable offline JCL/evidence functions, and retained TA.0 evidence/inventory tools. No generic live producer has been accepted yet.
+The Tape artifact release milestone is formally CLOSED (qualified). [RC4](../../packaging/distribution/README.md) is the published candidate. This directory contains the manifest validator, reusable offline JCL/evidence functions, and retained TA.0 evidence/inventory tools. The new release driver is implemented and offline-tested; actual MVS acceptance is pending.
+
+## Create a release candidate
+
+[`create-release`](create-release) is the single guarded command for proposing/reserving a candidate, generating fresh bootstrap/installer/documentation, producing a tape, installing all three profiles, verifying MR10, packaging the private candidate and proposing a registry lifecycle update. Its default invocation is read-only. See [How to Create a Release Candidate](How-to-Create-a-Release-Candidate.md) for the complete workflow, committed reservation requirements, prepared payload contract and verification limits. It supports the accepted RC4 layout, not a native compiler release or automatic source reconstruction. No automatic commit, push or publication.
 
 ## Reusable offline release interface
 
@@ -37,10 +41,10 @@ See the [manifest and tests](../../packaging/distribution/manifest/README.md) an
 
 [`mvs_release.py`](mvs_release.py) extracts the established MVS operations from the BC0005-tested historical path: staging and bootstrap JCL, tape-unit-480/VOL1 checks, exact installed JCL readback, ordered PROC return-code verification, DSPAL catalog and member/DCB checks, MR10 suite binding and demo verification, JES submission/evidence capture and exclusive evidence sealing. It is a Python library with no standalone live execution command. Use the existing MVS and DSPAL transport; do not bypass authorization, catalog/VTOC and media preflight, exclusive intent or no-retry controls. The module is verified by 13 focused offline tests; its new parameterized interfaces have not yet been exercised in another actual MVS run.
 
-Offline tests for both modules: `python3 -B -m unittest discover -s tools/distribution -p 'test_*release.py' -v`.
+Offline tests for the driver and both helper modules: `python3 -B -m unittest discover -s tools/distribution -p 'test_*release.py' -v`.
 
 ## Private end-to-end integration exercise — completed
 
 The [exact consumed integration harness](https://github.com/cbmira01/BCPL-for-MVS/blob/7d8f1e9a8a94901ca4cdb4c895fbb0838cb12bc2/tools/distribution/integration.py) passed actual MVS on 24 November 2026: BC0005, 21 datasets/64 tape files, 42 installed PDSes/315 members, 24 regressions and 56 demonstrations. Preserve the test tape, marker and `workarea/release-integration/20261124T205914Z-45447`. Do not rerun. BC0005 is permanently recorded as used in the registry and is not RC5.
 
-The fixed-candidate harness and RC2–RC4 production/recipient orchestration, dedicated tests and obsolete installer JCL are retired from active main; the [pre-retirement revision](https://github.com/cbmira01/BCPL-for-MVS/tree/bacf928f0364d24d89c6fa2ed3f88e2ff53fd9fc) preserves them and their dependency graph. The RC4 exact-byte publication reviewer and source preparation/fidelity tools remain. No new generic live producer, source reconstruction or full restored-record-byte verification is implied. See the [audit](../../packaging/distribution/post-release-audit-20261124.md).
+The fixed-candidate harness and RC2–RC4 production/recipient orchestration, dedicated tests and obsolete installer JCL are retired from active main; the [pre-retirement revision](https://github.com/cbmira01/BCPL-for-MVS/tree/bacf928f0364d24d89c6fa2ed3f88e2ff53fd9fc) preserves them and their dependency graph. The RC4 exact-byte publication reviewer and source preparation/fidelity tools remain. The new driver reuses the extracted functions; its live verification remains pending. No source reconstruction or full restored-record-byte verification is implied. See the [audit](../../packaging/distribution/post-release-audit-20261124.md).

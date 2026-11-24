@@ -130,7 +130,9 @@ def deck_without_job(deck, name):
          lines[1].startswith('//             USER=') and
          lines[2].startswith('//             MSGLEVEL='),
          'unexpected authenticated inquiry deck')
-    return '\n'.join(lines[3:])+'\n'
+    body = '\n'.join(lines[3:])+'\n'
+    need(body.endswith(('/*\n','//\n')), 'unexpected DSPAL inquiry termination')
+    return body if body.endswith('//\n') else body+'//\n'
 
 
 def exact_listds(core, report, dsn):

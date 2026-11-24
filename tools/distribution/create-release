@@ -1,0 +1,667 @@
+#!/usr/bin/env python3
+"""Plan, prepare and create a private, verified RC4-layout release candidate.
+
+Never commits, pushes, publishes, purges, or retries an ambiguous write.
+"""
+from __future__ import annotations
+
+import argparse
+from copy import deepcopy
+from datetime import datetime, timezone
+import fcntl
+import hashlib
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import textwrap
+from zipfile import ZipFile, ZIP_DEFLATED
+
+sys.dont_write_bytecode = True
+import yaml
+import release as r
+import mvs_release as mvs
+
+ROOT = Path(__file__).resolve().parents[2]
+DIST = ROOT / 'packaging/distribution'
+REGISTRY = DIST / 'registry/releases.yaml'
+MANIFESTS = DIST / 'manifest/releases'
+BASE = MANIFESTS / 'BCPL-0.1.0-rc4.yaml'
+BASE_SHA = '72c241201a95953546923f62ea6bfb43fcf56349c5ec7618671d7802d2ee6c1a'
+WORK = ROOT / 'workarea'
+OUT = WORK / 'create-release'
+TAPES = ROOT / 'mvs-state/tape'
+HLQ, DASD, UNIT = 'HERC02', 'TSO002', '480'
+VERSION = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-rc([1-9][0-9]*)\Z')
+SHA = re.compile(r'[a-f0-9]{64}\Z')
+GIT_SHA = re.compile(r'[a-f0-9]{40}\Z')
+DOC_MEMBERS = ('README', 'INSTALL', 'DATASETS', 'COMPILE', 'VERIFY', 'RELEASE', 'LICENSE')
+ORIGINALS = {
+    'bcpl-0.1.0-rc3-BC0003.aws': '6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1',
+    'bcpl-0.1.0-rc4-BC0004.aws': '7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1',
+    'bcpl-0.1.0-tooltest1-BC0005.aws': '10ff1f489b280f1d20a7ec6725aad3a4f3cb21292f310b3121468ddbfb8272e3',
+}
+NOTICE_FILES = ('LICENSE.md', 'THIRD-PARTY-NOTICES.md', 'richards-bcpltape/README.Nordier',
+                'richards-bcpltape/README.orig.Yap', 'richards-bcpltape/INDEX')
+LANG = ('DECLS', 'VALOFRES', 'SWITCHON', 'TABVECT', 'MANIGLOB', 'REPEAT', 'STRBYTES',
+        'TESTTHEN', 'BOOLOPS', 'PTRIDIOM', 'FUNCVAL')
+BCPL = ('RFACT', 'QUEENS', 'KNIGHT', 'HANOI', 'SIEVE', 'GCD', 'QUICKSRT', 'BSEARCH',
+        'LINKLIST', 'BINTREE', 'HASHTABL', 'WORDCNT', 'RPNCALC', 'EXPRPARS', 'MAZE', 'STRMFANO', 'COROUTIN')
+SUITES = (('language','MRLANGDM','run-language-demos.jcl',38,LANG),
+          ('bcpl','MRBCDEMO','run-bcpl-demos.jcl',62,BCPL),
+          ('regression','MRREGRES','run-regression-tests.jcl',63,()))
+need = r.need
+
+
+def digest(path):
+    need(path.is_file() and not path.is_symlink(), f'missing or linked file: {path}')
+    with path.open('rb') as f:
+        return hashlib.file_digest(f, 'sha256').hexdigest()
+
+
+def git(*args):
+    cp = subprocess.run(['git','-C',str(ROOT),*args], capture_output=True, text=True, timeout=60)
+    need(cp.returncode == 0, 'Git command failed: ' + ' '.join(args[:2]))
+    return cp.stdout.strip()
+
+
+def clean_main():
+    need(git('symbolic-ref','--short','HEAD')=='main' and not git('status','--porcelain','--untracked-files=no'),
+         'clean main required')
+    head = git('rev-parse','HEAD')
+    git('ls-files','--error-unmatch','tools/distribution/create-release','tools/distribution/mvs_release.py','tools/distribution/release.py','packaging/distribution/registry/releases.yaml')
+    need(git('remote','get-url','origin') in ('https://github.com/cbmira01/BCPL-for-MVS',
+         'https://github.com/cbmira01/BCPL-for-MVS.git','git@github.com:cbmira01/BCPL-for-MVS.git',
+         'ssh://git@github.com/cbmira01/BCPL-for-MVS.git'),'origin is not the authoritative repository')
+    need(git('ls-remote','--exit-code','origin','refs/heads/main').split()==[head,'refs/heads/main'],
+         'local HEAD differs from authoritative origin/main')
+    return head
+
+
+def load(path):
+    need(path.is_file() and not path.is_symlink(), f'missing helper: {path}')
+    loader = SourceFileLoader('dist_' + path.name, str(path))
+    spec = spec_from_loader(loader.name,loader)
+    mod = module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+def registry_entries(reg):
+    need(reg.get('schema_version')==1 and isinstance(reg.get('candidates'),list) and
+         isinstance(reg.get('integration_tests',{}),dict),'unsupported registry')
+    ids, vols, versions = set(), set(), set()
+    for e in reg['candidates']:
+        cid,v,vol = e['candidate_id'],e['version'],e['volser']
+        need(VERSION.fullmatch(v) and cid=='BCPL-'+v and cid not in ids and v not in versions,
+             'duplicate or invalid candidate identity')
+        need(isinstance(vol,str) and r.VOLSER.fullmatch(vol) and vol not in vols,'duplicate/invalid VOLSER')
+        ids.add(cid); versions.add(v); vols.add(vol)
+    for cid,e in reg.get('integration_tests',{}).items():
+        vol=e['volser']
+        need(cid not in ids and r.VOLSER.fullmatch(vol) and vol not in vols,'duplicate private-test identity/VOLSER')
+        ids.add(cid); vols.add(vol)
+    return ids,vols,versions
+
+
+def next_identity(reg, version=None):
+    ids,vols,versions=registry_entries(reg)
+    if version is None:
+        a,b,c,n=max((tuple(map(int,VERSION.fullmatch(v).groups())) for v in versions),default=(0,1,0,0))
+        version=f'{a}.{b}.{c}-rc{n+1}'
+    need(VERSION.fullmatch(version) and len(version)<=24 and 'BCPL-'+version not in ids,'invalid or previously assigned version')
+    n=max((int(v[2:]) for v in vols),default=0)+1
+    need(n<=9999,'production VOLSER space exhausted')
+    return 'BCPL-'+version, f'BC{n:04d}'
+
+
+def read_registry():
+    return yaml.safe_load(REGISTRY.read_text('utf-8'))
+
+
+def base_manifest():
+    need(digest(BASE)==BASE_SHA,'frozen RC4 template changed')
+    return r.read_manifest(BASE)
+
+
+def allocation_budget():
+    b=json.loads((DIST/'create-tape/ta2-stage-space-proposal-20261119.json').read_text())
+    sizes={str(x['sequence']):[x['primary_tracks'],x['secondary_tracks'],x['directory_blocks']] for x in b['targets']}
+    sizes['21']=[100,10,10]
+    # New generated documentation instead of historical BT0003.
+    sizes['3']=[20,5,10]
+    return sizes
+
+
+def sealed_evidence(rel, expected):
+    need(isinstance(rel,str) and Path(rel).parts[:1]==('workarea',) and '..' not in Path(rel).parts,
+         'evidence must be an existing relative workarea directory')
+    p=ROOT/rel
+    need(p.is_dir() and not p.is_symlink() and p.resolve().is_relative_to(WORK.resolve()),'unsafe evidence directory')
+    seal=p/'SHA256SUMS'
+    need(SHA.fullmatch(expected) and digest(seal)==expected,'input evidence seal differs')
+    names=set()
+    for line in seal.read_text('ascii').splitlines():
+        match=re.fullmatch(r'([a-f0-9]{64})  ([A-Za-z0-9_.-]+)',line)
+        need(match and match[2] not in names and match[2] not in ('.','..','SHA256SUMS'),'invalid evidence seal')
+        names.add(match[2]); need(digest(p/match[2])==match[1],'input evidence member differs')
+    need(names and names=={x.name for x in p.iterdir()}-{'SHA256SUMS'},'evidence seal incomplete')
+
+
+def reused_inputs():
+    # Explicitly reuse the accepted prepared payload, not the current source tree.
+    p='workarea/ta3-rc4-production/20261123T130731Z-36363'
+    return {'mode':'reuse-rc4', 'source_commit':base_manifest()['release']['source_commit'],
+            'sources':{str(n):f'HERC02.BCPL.TA2R3S.BT{n:04d}' for n in range(4,22)},
+            'allocations':allocation_budget(), 'evidence':p,
+            'evidence_seal_sha256':digest(ROOT/p/'SHA256SUMS')}
+
+
+def check_inputs(inputs, *, check_evidence=True):
+    need(set(inputs)=={'mode','source_commit','sources','allocations','evidence','evidence_seal_sha256'}, 'unexpected input receipt fields')
+    need(inputs.get('mode') in ('reuse-rc4','prepared') and GIT_SHA.fullmatch(inputs['source_commit']), 'invalid payload source commit/mode')
+    src=inputs['sources']; sizes=inputs['allocations']
+    need(set(src)=={str(n) for n in range(4,22)} and len(set(src.values()))==18 and
+         all(r.safe_dsn(x) and x.startswith(HLQ+'.BCPL.') for x in src.values()),'require 18 explicit prepared project PDSes')
+    need(set(sizes)=={str(n) for n in range(3,22)} and all(isinstance(v,list) and len(v)==3 and
+         all(type(x) is int and 0<x<=10000 for x in v) for v in sizes.values()),'invalid allocation map')
+    if inputs['mode']=='reuse-rc4':
+        need(inputs['source_commit']==base_manifest()['release']['source_commit'] and
+             src=={str(n):f'HERC02.BCPL.TA2R3S.BT{n:04d}' for n in range(4,22)} and
+             sizes==allocation_budget() and inputs['evidence']=='workarea/ta3-rc4-production/20261123T130731Z-36363',
+             'RC4 reuse input contract changed')
+    if check_evidence:
+        sealed_evidence(inputs['evidence'],inputs['evidence_seal_sha256'])
+        if inputs['mode']=='prepared':
+            receipt=ROOT/inputs['evidence']/'prepared-inputs.json'
+            need(receipt.is_file() and json.loads(receipt.read_text('utf-8'))=={k:inputs[k] for k in ('mode','source_commit','sources','allocations')},
+                 'sealed preparation receipt does not bind input mapping')
+        git('merge-base','--is-ancestor',inputs['source_commit'],'HEAD')
+        # All MR10 reference sources, canonical suite decks and goldens must match the frozen payload revision.
+        need(git('rev-parse',inputs['source_commit']+':mr10-kit-compiler')==git('rev-parse','HEAD:mr10-kit-compiler'),
+             'MR10 verification sources differ from frozen input revision')
+
+
+def build_manifest(reg, inputs, version=None):
+    cid,vol=next_identity(reg,version)
+    manifest=deepcopy(base_manifest())
+    manifest['release'].update(candidate_id=cid,version=cid[5:],source_commit=inputs['source_commit'])
+    manifest['volume'].update(volser=vol,registry_reservation=cid)
+    manifest['producer_inputs']=deepcopy(inputs)
+    return manifest
+
+
+def new_entry(manifest, data):
+    cid,vol,_=r.identity(manifest)
+    return dict(candidate_id=cid,version=manifest['release']['version'],source_commit=manifest['release']['source_commit'],
+                volser=vol,manifest_sha256=hashlib.sha256(data).hexdigest(),state='reserved')
+
+
+def append_reservation(text, entry):
+    # Preserve existing registry records and comments byte-for-byte.
+    marker='\n# Lifecycle annotations'
+    need(text.count(marker)==1,'registry layout changed; review needed')
+    block='  - '+ '\n    '.join(f'{k}: {v}' for k,v in entry.items())+'\n'
+    out=text.replace(marker,block+marker,1)
+    before=yaml.safe_load(text); after=yaml.safe_load(out)
+    expected=deepcopy(before); expected['candidates'].append(entry)
+    need(after==expected,'registry append changed prior records')
+    registry_entries(after)
+    return out
+
+
+def check_reservation(reg, manifest, data):
+    registry_entries(reg)
+    cid,vol,_=r.identity(manifest)
+    row=[e for e in reg['candidates'] if e['candidate_id']==cid]
+    need(row==[new_entry(manifest,data)] and cid not in reg.get('lifecycle',{}),'candidate is not an unused committed reservation')
+    need(manifest['release']['version']==cid[5:] and VERSION.fullmatch(cid[5:]),'candidate version mismatch')
+    return vol
+
+
+def fb80(*paragraphs):
+    lines=[]
+    for para in paragraphs:
+        need(para.isascii(),'non-ASCII tape documentation')
+        lines.extend(textwrap.wrap(para,width=76,break_long_words=False,break_on_hyphens=False) or [''])
+    return r.checked_lines(lines)
+
+
+def materials(manifest):
+    cid,vol,rows=r.identity(manifest)
+    base=base_manifest()
+    expected=deepcopy(base); expected['release'].update(candidate_id=cid,version=cid[5:],source_commit=manifest['release']['source_commit'])
+    expected['volume'].update(volser=vol,registry_reservation=cid)
+    expected['producer_inputs']=manifest['producer_inputs']
+    need(manifest==expected,'unsupported candidate manifest change')
+    need(rows==base['datasets'] and manifest['profiles']==base['profiles'] and
+         manifest['release']['native_compiler']=='absent' and manifest['release']['cambridge_source']=='included',
+         'only the accepted RC4 selection and three profiles are supported')
+    serial=vol[2:]; stage=f'{HLQ}.BCPL.R{serial}ST.'
+    inputs=manifest['producer_inputs']; need(inputs['source_commit']==manifest['release']['source_commit'],'payload source revision mismatch'); sizes={int(k):tuple(v) for k,v in inputs['allocations'].items()}
+    m=deepcopy(manifest)
+    for row in m['datasets']:
+        n=row['sequence']; row['producer_source_dsn']=stage+f'BT{n:04d}' if n<=3 else inputs['sources'][str(n)]
+    identity=f'{cid} / {vol}'
+    version=manifest['release']['source_commit']
+    _, restore=mvs.bootstrap_decks(f'{HLQ}.BCPL.R{serial}MR',volser=vol,tape_unit=UNIT,dasd_unit='SYSDA',dasd_vol=DASD)
+    boot=fb80(identity,'Cambridge BCPL Programming System for MVS 3.8J.',
+              'NATIVE CAMBRIDGE COMPILER ABSENT; HISTORICAL SOURCE INCLUDED.',
+              'Read BT0002 into a new site DIST.INST PDS using IEBCOPY.',
+              'Run MR10, NATIVE or COMBINED with an authorized JOB card.',
+              'Read BT0003 DIST.DOCS and the matching companion guide.',
+              'Do not overwrite or restart a failed installation.',
+              'Example BT0002 restore: add a site JOB card; adapt DSN, unit and volume.',
+              'Use a fresh namespace. After restore, choose the matching profile member.')+restore
+    dataset_doc=fb80(identity,*[f'BT{row["sequence"]:04d} {row["group"]} {row.get("target_dsn_template",row.get("generator"))}' for row in rows])
+    release_doc=fb80(identity,'Frozen program-source revision: '+version,
+                     'MR10 Kit Compiler included. Native components are work in progress.',
+                     'Native compiler absent. Historical redistribution rights unresolved.',
+                     'This tape does not itself assert acceptance or publication approval.')
+    docs={'README':boot,'INSTALL':boot,'DATASETS':dataset_doc,
+          'COMPILE':fb80(identity,'Use MR10KIT.JCL members MRLANGDM, MRBCDEMO and MRREGRES with the installed site prefix.',
+                         'ICINT19 executes INTCODE; a native-running Cambridge Compiler is absent.'),
+          'VERIFY':fb80(identity,'Verify all expected PDS directories and DCBs; all JES steps RC0000.',
+                        'MR10 and COMBINED: 11 language demos, 17 BCPL demos, 12 regressions each.',
+                        'Verify TEST, EXP, RP and CODE against independent goldens.'),
+          'RELEASE':release_doc,
+          'LICENSE':fb80(identity,'Original project work: copyright Calvin Miracle, MIT unless marked otherwise.',
+                         'Historical authors retain their rights; no blanket historical license is established.',
+                         'Martin Richards authorship; Ken Yap archived the tape; Robert Nordier corrected character mappings.',
+                         'Keep the complete LICENSE.md, THIRD-PARTY-NOTICES.md and original archival notes with this tape.')+
+                    fb80(*[line for line in (ROOT/'LICENSE.md').read_text('utf-8').splitlines() if line.strip()])}
+    members={'INSTALL':boot,'DATASETS':dataset_doc,'RELEASE':release_doc,'RESTORE':restore,
+             'COPY':' COPY OUTDD=OUTPDS,INDD=INTAPE\n'}
+    profiles={}
+    for profile,suffix in zip(('mr10-only','native-only','combined'),('MR','NT','CB')):
+        label,_=r.PROFILES[profile]; site=f'R{serial}{suffix}'; prefix=f'{HLQ}.BCPL.{site}'
+        positions=r.profile_positions(m,profile)
+        body=r.render_install_jcl(m,sizes,profile,hlq=HLQ,site=site,tape_unit=UNIT,dasd_unit='SYSDA',dasd_vol=DASD)
+        members[label]=body
+        target_rows=[(2,prefix+'.DIST.INST',list(mvs.MEMBERS))]
+        for n in positions:
+            row=rows[n-1]; target_rows.append((n,prefix+'.'+row['target_dsn_template'][len('{HLQ}.BCPL.'):],row['members'],row['target_dcb']))
+        profiles[label]=(prefix,positions,target_rows,body)
+    targets=[stage+f'BT{n:04d}' for n in (1,2,3)]+[row[1] for p in profiles.values() for row in p[2]]
+    need(len(targets)==len(set(targets))==45 and not set(targets)&set(inputs['sources'].values()),'target collision')
+    need([(len(p[2]),sum(len(x[2]) for x in p[2])) for p in profiles.values()]==[(11,94),(11,71),(20,150)],'profile counts changed')
+    tracks=6+55+sum(sizes[3][:2])+75+sum(sum(sizes[n][:2]) for p in profiles.values() for n in p[1])+100
+    return dict(manifest=m,stage=stage,boot=boot,members=members,docs=docs,profiles=profiles,targets=targets,tracks=tracks,
+                writer=r.render_write_jcl(m,unit=UNIT),sizes=sizes)
+
+
+def docs_deck(plan):
+    dsn=plan['stage']+'BT0003'; p,s,b=plan['sizes'][3]
+    lines=['//A0003 EXEC PGM=IEFBR14','//OUTPDS DD DSN='+dsn+',',
+           '//            DISP=(NEW,CATLG,DELETE),UNIT=SYSDA,',f'//            VOL=SER={DASD},SPACE=(TRK,({p},{s},{b})),',
+           '//            DCB=(DSORG=PO,RECFM=FB,LRECL=80,BLKSIZE=800)']
+    for n,name in enumerate(DOC_MEMBERS,1):
+        records=plan['docs'][name].splitlines()
+        need(records and all(not x.startswith('Z9') for x in records),'documentation delimiter collision')
+        lines.extend([f'//D{n:04d} EXEC PGM=IEBGENER,REGION=512K,COND=(0,NE)',
+                      '//SYSPRINT DD SYSOUT=*','//SYSIN DD DUMMY','//SYSUT1 DD DATA,DLM=Z9',*records,'Z9',
+                      f'//SYSUT2 DD DSN={dsn}({name}),','//            DISP=SHR'])
+    lines.append('//'); mvs.jcl_control_cards(lines)
+    return r.checked_lines(lines)
+
+
+def confirm(prompt):
+    need(sys.stdin.isatty(),'interactive operator terminal required')
+    return input(prompt+' [y/N]: ').strip().lower()=='y'
+
+
+def prepare(args):
+    head=clean_main()
+    need(bool(args.reuse_rc4)!=bool(args.inputs),'choose --reuse-rc4 or --inputs')
+    inputs=reused_inputs() if args.reuse_rc4 else json.loads(args.inputs.read_text('utf-8'))
+    check_inputs(inputs)
+    text=REGISTRY.read_text('utf-8'); reg=yaml.safe_load(text)
+    manifest=build_manifest(reg,inputs,args.version); cid,vol,_=r.identity(manifest)
+    plan=materials(manifest); docs_deck(plan); mvs.stage_deck(plan['boot'],plan['members'],stage=plan['stage'],dasd=DASD)
+    data=yaml.safe_dump(manifest,sort_keys=False).encode('utf-8')
+    update=append_reservation(text,new_entry(manifest,data))
+    # Draft only, no tracked file edits or registry mutation by this command.
+    folder=OUT/(cid+'-'+vol+'-reservation')
+    need(not folder.exists() and not folder.is_symlink(),'reservation draft exists; review it rather than overwrite')
+    need(clean_main()==head,'main changed during planning')
+    folder.mkdir(mode=0o700)
+    mvs.artifact(folder,cid+'.yaml',data); mvs.artifact(folder,'releases.yaml',update)
+    mvs.artifact(folder,'base-head.txt',head+'\n'); mvs.seal(folder)
+    print(f'DRAFT {cid} / {vol}: {len(plan["targets"])} targets, {plan["tracks"]} planning tracks.')
+    print('Review the draft, then use --reserve '+str(folder.relative_to(ROOT))+' to apply it locally.')
+    print('Commit and push both reservation files together before --run.')
+    print('Reservation draft: '+str(folder.relative_to(ROOT)))
+
+
+
+def reserve(draft):
+    """Apply an existing sealed reservation draft; never commit or push it."""
+    head=clean_main()
+    need(draft.is_dir() and not draft.is_symlink() and draft.resolve().parent==OUT.resolve(), 'reservation draft outside workarea')
+    sealed_evidence(str(draft.resolve().relative_to(ROOT)),digest(draft/'SHA256SUMS'))
+    need((draft/'base-head.txt').read_text().strip()==head,'draft base changed; regenerate with a new proposed identity')
+    paths=[p for p in draft.iterdir() if p.suffix=='.yaml' and p.name!='releases.yaml']
+    need(len(paths)==1,'invalid reservation draft manifest count')
+    p=paths[0]; data=p.read_bytes(); manifest=r.read_manifest(p); cid,vol,_=r.identity(manifest)
+    need(p.name==cid+'.yaml','draft manifest name differs')
+    need(next_identity(read_registry(),manifest['release']['version'])==(cid,vol),'draft identity no longer available')
+    check_inputs(manifest['producer_inputs']); materials(manifest)
+    old=REGISTRY.read_text('utf-8'); proposed=append_reservation(old,new_entry(manifest,data))
+    need((draft/'releases.yaml').read_text('utf-8')==proposed,'draft registry differs')
+    target=MANIFESTS/p.name; need(not target.exists() and not target.is_symlink(),'manifest exists')
+    if not confirm(f'Apply reservation {cid} / {vol} to the tracked checkout for separate commit?'):
+        print('DECLINED: no reservation changes'); return
+    need(clean_main()==head and REGISTRY.read_text('utf-8')==old,'checkout changed after confirmation')
+    # A partial local edit is harmless: --run requires both files committed on main.
+    mvs.exclusive(target,data)
+    temp=REGISTRY.with_name('.releases.yaml.pending')
+    mvs.exclusive(temp,proposed.encode('utf-8')); temp.chmod(REGISTRY.stat().st_mode & 0o777); os.replace(temp,REGISTRY)
+    print('Reservation applied locally; NOT committed or pushed. Review both tracked files.')
+    print(str(target.relative_to(ROOT))); print(str(REGISTRY.relative_to(ROOT)))
+
+
+def protected_images(reg):
+    """Protect all registry-tracked verified media as well as preexisting RC3."""
+    registry_entries(reg)
+    protected=dict(ORIGINALS)
+    candidates={x['candidate_id']:x for x in reg['candidates']}
+    def add(name, expected):
+        need(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.aws',name) and SHA.fullmatch(expected), 'invalid protected image identity')
+        need(name not in protected or protected[name]==expected,'conflicting accepted image hash')
+        protected[name]=expected
+    for cid,entry in reg.get('lifecycle',{}).items():
+        if 'aws_sha256' in entry:
+            need(cid in candidates and entry['volser']==candidates[cid]['volser'],'invalid lifecycle VOLSER')
+            add(f'bcpl-{candidates[cid]["version"]}-{entry["volser"]}.aws',entry['aws_sha256'])
+    for entry in reg.get('integration_tests',{}).values():
+        if 'aws_sha256' in entry:
+            add(entry['image'],entry['aws_sha256'])
+    return protected
+
+
+def originals():
+    for name,expected in protected_images(read_registry()).items():
+        need(digest(TAPES/name)==expected,'protected image changed or missing: '+name)
+
+
+def check_docker(cmd):
+    need(cmd('docker-running','docker','inspect','-f','{{.State.Running}}','mvs38j').strip()=='true','MVS container not running')
+    bind=cmd('docker-tape-bind','docker','inspect','-f',
+             '{{range .Mounts}}{{if eq .Destination "/tk5/tape"}}{{.Source}}{{end}}{{end}}','mvs38j').strip()
+    need(bind and Path(bind).resolve()==TAPES.resolve(),'Docker tape bind differs')
+    cp=subprocess.run(['docker','inspect','-f','{{json .Config.Env}}','mvs38j'],cwd=ROOT,capture_output=True,text=True,timeout=30)
+    need(cp.returncode==0,'Docker identity unavailable')
+    env=dict(x.split('=',1) for x in json.loads(cp.stdout) if '=' in x)
+    need(env.get('MVS_UID')==str(os.getuid()) and env.get('MVS_GID')==str(os.getgid()),'Docker tape UID/GID mismatch')
+    helptext=cmd('hetinit-help','docker','exec','mvs38j','hetinit','-h')
+    need('-d' in helptext and '-i' in helptext,'HETINIT options differ')
+
+
+
+def valid_plan(cid):
+    need(cid.startswith('BCPL-') and VERSION.fullmatch(cid[5:]),'invalid candidate name')
+    path=MANIFESTS/(cid+'.yaml'); git('ls-files','--error-unmatch',str(path.relative_to(ROOT)))
+    data=path.read_bytes(); manifest=r.read_manifest(path)
+    need(manifest['release']['candidate_id']==cid,'candidate/file mismatch')
+    vol=check_reservation(read_registry(),manifest,data)
+    check_inputs(manifest['producer_inputs'])
+    plan=materials(manifest)
+    cp=subprocess.run([sys.executable,'-B',str(ROOT/'tools/distribution/validate-manifest.py'),'--manifest',str(path)],
+                      cwd=ROOT,capture_output=True,text=True,timeout=60)
+    need(cp.returncode==0,'canonical manifest structural validation failed: '+cp.stderr.strip())
+    return path,data,manifest,vol,plan
+
+
+def run(candidate):
+    head=clean_main()
+    path,data,manifest,vol,plan=valid_plan(candidate)
+    image=TAPES/f'bcpl-{manifest["release"]["version"]}-{vol}.aws'
+    marker=OUT/(vol+'-no-retry.json')
+    need(not marker.exists() and not marker.is_symlink() and not image.exists() and not image.is_symlink(),'consumed intent/image; NO RETRY')
+    need(TAPES.is_dir() and not TAPES.is_symlink(),'unsafe tape directory')
+    originals()
+    core=load(ROOT/'tools/datasets/dspal-core.py'); ls=load(ROOT/'tools/datasets/dspal-ls.py')
+    vtoc=load(DIST/'create-tape/scripts/ta2-target-review')
+    cfg=core.load_config()
+    need(cfg['mvs']['hlq']==HLQ and cfg['mvs']['batch_user']==HLQ,'unexpected MVS site/user')
+    need(all(cfg['runtime'].get(k)==v for k,v in {'docker_container':'mvs38j','reader_host':'127.0.0.1','reader_port':3505,
+          'hercules_host':'127.0.0.1','hercules_port':8038,'printer':'mvs-state/prt/prt00e.txt'}.items()),'unexpected MVS transport')
+    core.require_reader_ready(cfg)
+    cases=r.read_mr10_panel(ROOT,ROOT/'mr10-kit-compiler/tests/00-regression-panel/manifest.tsv',ROOT/'mr10-kit-compiler/jcl/run-regression-tests.jcl')
+    suite_sources={member:(ROOT/'mr10-kit-compiler/jcl'/filename).read_text('ascii') for _,member,filename,_,_ in SUITES}
+    for label,(prefix,_,rows,_) in plan['profiles'].items():
+        if label!='NATIVE':
+            for _,member,_,count,_ in SUITES: mvs.suite_deck(suite_sources[member],prefix,count,{row[1] for row in rows})
+    stage=mvs.stage_deck(plan['boot'],plan['members'],stage=plan['stage'],dasd=DASD); docjcl=docs_deck(plan)
+    # Verify package inputs are available before any write.
+    notices={name:(ROOT/name).read_bytes() for name in NOTICE_FILES}
+    folder=OUT/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+str(os.getpid()))
+    folder.mkdir(mode=0o700)
+    marked=False
+    def save(key,value): mvs.artifact(folder,key+'.json',json.dumps(value,indent=2)+'\n')
+    def job(key,name,body,steps,max_rc=0): return mvs.submit_job(core,cfg,folder,key,name,body,steps,max_rc=max_rc)
+    def cmd(key,*args): return mvs.run_command(folder,key,list(args))
+    def drive(key):
+        h=cmd(key+'-hercules','tools/mvs/mvs-console','tape','status',UNIT)
+        g=cmd(key+'-mvs','tools/mvs/mvs-console','mvs','tapes')
+        return mvs.drive_state(h,g,[image.name])
+    def mount(key):
+        state=drive(key+'-before'); need(state in ('EMPTY',image.name),'foreign media')
+        if state=='EMPTY': cmd(key+'-mount','tools/mvs/mvs-console','--yes','tape','mount',UNIT,image.name)
+        need(drive(key+'-ready')==image.name,'test tape not mounted')
+    def inventory(label,rows): return mvs.verify_inventory(core,cfg,ls,folder,label,rows,volume=DASD)
+    def absent(names):
+        body=mvs.deck_without_job(core.stat_deck(cfg,names),'DSPALST')
+        jid,report,_=job('absence','DSPALST',body,None,8)
+        for name in names:
+            need(core.dataset_missing(report,name),'target absence not established: '+name)
+            block=core.extract_listds_block(report,name)
+            need(not block or not core.parse_listds(block),'ambiguous target: '+name)
+        return jid
+    def check_dcb(key,dsn,dcb):
+        body=mvs.deck_without_job(core.stat_deck(cfg,[dsn]),'DSPALST')
+        jid,report,_=job(key,'DSPALST',body,[('STAT','IKJEFT01')]); actual,_=mvs.exact_listds(core,report,dsn)
+        need(actual==dict(volume=DASD,dsorg=dcb['dsorg'],recfm=dcb['recfm'],lrecl=str(dcb['lrecl']),blksize=str(dcb['blksize'])) or
+             all(actual.get(k)==v for k,v in dict(volume=DASD,dsorg=dcb['dsorg'],recfm=dcb['recfm'],lrecl=str(dcb['lrecl']),blksize=str(dcb['blksize'])).items()),'staged DCB mismatch')
+        return jid
+    def read_member(key,dsn,name):
+        body=r.checked_lines(['//READJCL EXEC PGM=IEBGENER,REGION=512K','//SYSPRINT DD SYSOUT=*','//SYSIN DD DUMMY',
+                             f'//SYSUT1 DD DSN={dsn}({name}),','//            DISP=SHR','//SYSUT2 DD SYSOUT=*','//'])
+        return job(key,'CRREAD',body,[('READJCL','IEBGENER')])
+    try:
+        mvs.artifact(folder,path.name,data); mvs.artifact(folder,'writer.jcl',plan['writer']); mvs.artifact(folder,'producer-head.txt',head+'\n')
+        check_docker(cmd)
+        # Never unmount or displace accepted media; the operator must begin with an empty drive.
+        need(drive('initial')=='EMPTY','unit 480 must be empty')
+        for i,p in enumerate(sorted(TAPES.iterdir())):
+            if p.name=='.gitkeep': continue
+            need(p.is_file() and not p.is_symlink() and p.suffix.lower() in ('.aws','.het'),'unknown tape directory entry')
+            labels=cmd(f'media-{i:03d}','docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+p.name)
+            need(mvs.volser_from_hetmap(labels)!=vol,'VOLSER already present')
+        rows=plan['manifest']['datasets']; sources=[(x['sequence'],x['producer_source_dsn'],x['members'],x['target_dcb']) for x in rows[3:]]
+        source_catalog,source_directory,total=inventory('source',sources)
+        need(total==135,'prepared payload member count differs')
+        ajob=absent(plan['targets']+[f'BCPL.BT{n:04d}' for n in range(1,22)])
+        vbody=r.checked_lines(['//VTOC EXEC PGM=IEHLIST','//SYSPRINT DD SYSOUT=*',f'//VOL DD UNIT=SYSDA,VOL=SER={DASD},DISP=SHR',
+                               '//SYSIN DD *',f' LISTVTOC FORMAT,VOL=SYSDA={DASD}','/*','//'])
+        vjob,report,_=job('vtoc','CRVTOC',vbody,[('VTOC','IEHLIST')]); space=vtoc.inspect_vtoc(report,DASD,plan['targets'])
+        free=space['iehlist_reported_free_total_tracks']; need(free is not None and free>=2*plan['tracks'],'insufficient reported DASD free space')
+        save('preflight',dict(source_catalog=source_catalog,source_directory=source_directory,absence=ajob,vtoc=vjob,space=space,targets=plan['targets']))
+        print(f'PREFLIGHT PASS: {len(plan["targets"])} absent targets; {free} free tracks; {total} prepared members.')
+        if not confirm(f'Create {candidate} / {vol}, install and verify all profiles ONCE?'):
+            save('result',{'status':'DECLINED_NO_WRITE'}); mvs.seal(folder); return 0
+        need(clean_main()==head and drive('authorized')=='EMPTY','checkout or drive changed after preflight')
+        originals(); need(not image.exists() and not image.is_symlink(),'image appeared')
+        mvs.exclusive(marker,(json.dumps(dict(candidate=candidate,volser=vol,head=head,evidence=str(folder.relative_to(ROOT)),publication_authorized=False))+'\n').encode()); marked=True
+        stagejob,_,_=job('stage','CRSTAGE',stage,[('B0001','IEBGENER'),('A0002','IEFBR14')]+[(f'M{i:04d}','IEBGENER') for i in range(1,9)])
+        docjob,_,_=job('docs','CRDOCS',docjcl,[('A0003','IEFBR14')]+[(f'D{i:04d}','IEBGENER') for i in range(1,8)])
+        check_dcb('bootstrap-dcb',plan['stage']+'BT0001',rows[0]['target_dcb'])
+        inventory('staged',[(2,plan['stage']+'BT0002',list(mvs.MEMBERS)),(3,plan['stage']+'BT0003',list(DOC_MEMBERS),rows[2]['target_dcb'])])
+        # Check exact printed generated documentation before it enters the tape.
+        for name,body in plan['docs'].items():
+            _,report,_=read_member('stage-doc-'+name,plan['stage']+'BT0003',name)
+            mvs.read_cards(report,body)
+        need(drive('before-init')=='EMPTY','drive changed'); originals()
+        mvs.exclusive(image,b'')
+        cmd('initialize','docker','exec','--user',f'{os.getuid()}:{os.getgid()}','mvs38j','hetinit','-d','-i','/tk5/tape/'+image.name,vol)
+        mount('writer'); wrote,_,_=job('write','CRWRITE',plan['writer'],[(f'T{n:04d}','IEBGENER' if n==1 else 'IEBCOPY') for n in range(1,22)])
+        labels=cmd('aws-labels','docker','exec','mvs38j','hetmap','-l','/tk5/tape/'+image.name)
+        files=cmd('aws-files','docker','exec','mvs38j','hetmap','-f','/tk5/tape/'+image.name)
+        structure=r.evaluate_hetmap(labels,files,volser=vol,count=21); save('tape-review',structure)
+        tape_sha=digest(image); originals(); print(f'TAPE PASS: JOB {wrote}; {vol}; SHA256 {tape_sha}')
+        def ready(key):
+            need(digest(image)==tape_sha,'new tape changed'); mount(key)
+        boot,_=mvs.bootstrap_decks(plan['profiles']['MR10'][0],volser=vol,tape_unit=UNIT,dasd_unit='SYSDA',dasd_vol=DASD)
+        ready('boot'); bootjob,report,_=job('boot','CRBOOT',boot,[('BOOTREAD','IEBGENER')]); mvs.read_cards(report,plan['boot'])
+        results={}
+        for label,(prefix,positions,rows,canonical) in plan['profiles'].items():
+            key=label.lower(); _,bt2=mvs.bootstrap_decks(prefix,volser=vol,tape_unit=UNIT,dasd_unit='SYSDA',dasd_vol=DASD)
+            ready(key+'-bt2'); bt,_,_=job(key+'-bt2','CRBT2',bt2,[('BT2REST','IEBCOPY')])
+            view,report,_=job(key+'-view','CRVIEW',mvs.readback_deck(prefix,label),[('P0001','IEBGENER'),('P0002','IEBGENER')])
+            deck=mvs.extract_profile(report,canonical); need('COPY OUTDD=OUTPDS,INDD=INTAPE' in report,'COPY member missing')
+            ready(key+'-restore'); restored,report,summary=job(key+'-restore','CRREST',deck,None)
+            mvs.profile_result('CRREST',report,summary,positions)
+            cat,directory,total=inventory(key,rows)
+            for name,body in plan['docs'].items():
+                _,report,_=read_member(key+'-doc-'+name,prefix+'.DIST.DOCS',name); mvs.read_cards(report,body)
+            detail=dict(installer=bt,readback=view,restore=restored,catalog=cat,directory=directory,pdses=len(rows),members=total,functional={})
+            print(f'{label} INSTALL PASS: {len(rows)} PDSes/{total} members; JOB {restored}.')
+            if label!='NATIVE':
+                allowed={row[1] for row in rows}
+                for suite,member,_,count,selection in SUITES:
+                    tag=key+'-'+suite; readjob,report,_=read_member(tag+'-read',prefix+'.MR10KIT.JCL',member)
+                    body,steps=mvs.suite_deck(mvs.read_cards(report,suite_sources[member]),prefix,count,allowed)
+                    jid,report,_=job(tag,'CR'+member[:6],body,steps)
+                    if suite=='regression':
+                        result=r.inspect_mr10(report,cases); need(result['exp_contract_met'] and result['golden_rp_and_code_match'],'MR10 regression mismatch'); n=len(cases)
+                    else: result=mvs.verify_demos(report,selection,steps); n=len(selection)
+                    save(tag+'-semantics',result); detail['functional'][suite]=dict(job=jid,readback_job=readjob,cases=n)
+                    print(f'{label} {member} PASS: {n} cases; JOB {jid}.')
+            results[label]=detail; save(key+'-checkpoint',detail)
+        need(sum(x['pdses'] for x in results.values())==42 and sum(x['members'] for x in results.values())==315 and
+             sum(s['cases'] for x in results.values() for s in x['functional'].values())==80,'acceptance count mismatch')
+        if drive('final')==image.name: cmd('unmount','tools/mvs/mvs-console','--yes','tape','unmount',UNIT)
+        need(drive('released')=='EMPTY' and digest(image)==tape_sha,'final tape state differs'); originals()
+        result=dict(status='PRIVATE_CANDIDATE_VERIFIED_QUALIFIED',candidate=candidate,volser=vol,source_commit=manifest['release']['source_commit'],
+                    producer_commit=head,aws_sha256=tape_sha,stage_job=stagejob,docs_job=docjob,write_job=wrote,boot_job=bootjob,
+                    profiles=results,publication_authorized=False,independent_mvs_system=False,native_compiler='absent')
+        archive,archive_sha=package(folder,path,data,image,result,notices)
+        result.update(archive=archive.name,archive_sha256=archive_sha); save('result',result)
+        save('proposed-lifecycle',dict(candidate_id=candidate,technical_state='verified-qualified-pending-owner-review',volser=vol,
+             aws_sha256=tape_sha,archive_sha256=archive_sha,private_evidence=str(folder.relative_to(ROOT)),publication_authorized=False))
+        mvs.seal(folder)
+        print(f'RELEASE CANDIDATE VERIFIED (QUALIFIED): {archive.name}\nArchive SHA256: {archive_sha}\nPublication requires separate approval.')
+        return 0
+    except (Exception,KeyboardInterrupt) as exc:
+        reason=str(exc)
+        try:
+            secret=core.batch_password(cfg)
+            if secret: reason=reason.replace(secret,'[REDACTED]')
+        except Exception: pass
+        try: save('failure',dict(reason=reason,no_retry=marked)); mvs.seal(folder)
+        except Exception: pass
+        print('HALTED: '+reason+(' (NO RETRY)' if marked else ''),file=sys.stderr); return 2
+    finally: print('Evidence: '+str(folder.relative_to(ROOT)))
+
+
+def package(folder,path,data,image,result,notices):
+    cid=result['candidate']; vol=result['volser']; sha=result['aws_sha256']
+    guide=(f'# Cambridge BCPL Programming System for MVS 3.8J\n\n'
+           f'Candidate {cid} / {vol}. AWS SHA-256 `{sha}`.\n\n'
+           f'Frozen program source: `{result["source_commit"]}`. See the accompanying manifest.\n\n'
+           'MR10 Kit Compiler is included; native components and historical Cambridge sources are work in progress. '
+           'The native-running Cambridge Compiler is absent. Three fresh namespaces passed installation; MR10 and COMBINED '
+           'passed 80 functional cases total. Native functional acceptance, source rebuild, full record-byte identity and independent IPL are not claimed.\n\n'
+           'Install on MVS 3.8J using an authorized JOB card and an empty target namespace. Mount the AWS read-only. '
+           'Use BOOT.jcl to read BT0001, and BT2.jcl (adapt the destination, units and volume) to restore DIST.INST. '
+           'Submit the selected tape-resident MR10, NATIVE or COMBINED member after reviewing HLQ, SITE, TU, DU and DV defaults. '
+           'Do not overwrite existing datasets or retry an ambiguous failure. Verify PDS members and DCBs against the manifest. '
+           'MR10KIT.JCL members MRLANGDM, MRBCDEMO and MRREGRES require the installed site prefix; preserve FB80 card columns. '
+           'Check zero return codes and TEST/EXP/RP/CODE against independent goldens.\n\n'
+           'Original work is MIT licensed unless marked otherwise. Historical material is not relicensed; rights remain unresolved. '
+           'Keep the complete LICENSE, THIRD-PARTY-NOTICES, original archival notes and INDEX with the tape. '
+           'Hercules, TK5 and MVS are not distributed. This is a private candidate, pending separate publication approval.\n')
+    boot,bt2=mvs.bootstrap_decks(f'{HLQ}.BCPL.R{vol[2:]}MR',volser=vol,tape_unit=UNIT,dasd_unit='SYSDA',dasd_vol=DASD)
+    entries={image.name:image.read_bytes(),path.name:data,'README.md':guide.encode(), 'BOOT.jcl':boot.encode(),'BT2.jcl':bt2.encode(),
+             'VERIFICATION.json':(json.dumps(result,indent=2)+'\n').encode()}
+    for name,content in notices.items(): entries[Path(name).name]=content
+    need(hashlib.sha256(entries[image.name]).hexdigest()==sha,'image changed before packaging')
+    entries['SHA256SUMS']=''.join(f'{hashlib.sha256(b).hexdigest()}  {n}\n' for n,b in sorted(entries.items())).encode('ascii')
+    archive=folder/(cid+'-'+vol+'.zip')
+    with ZipFile(archive,'x',compression=ZIP_DEFLATED) as z:
+        for name,content in sorted(entries.items()): z.writestr(name,content)
+    with ZipFile(archive) as z:
+        need(set(z.namelist())==set(entries) and z.testzip() is None and all(z.read(n)==b for n,b in entries.items()),'archive verification failed')
+    archive_sha=digest(archive); mvs.artifact(folder,'ARCHIVE.sha256',f'{archive_sha}  {archive.name}\n')
+    return archive,archive_sha
+
+
+
+def record(folder):
+    """Apply a sealed successful private result as a Git-reviewable lifecycle annotation."""
+    head=clean_main()
+    need(folder.is_dir() and not folder.is_symlink() and folder.resolve().parent==OUT.resolve(), 'invalid evidence folder')
+    rel=str(folder.resolve().relative_to(ROOT)); sealed_evidence(rel,digest(folder/'SHA256SUMS'))
+    result=json.loads((folder/'result.json').read_text()); proposed=json.loads((folder/'proposed-lifecycle.json').read_text())
+    cid=result['candidate']; vol=result['volser']
+    need(cid.startswith('BCPL-') and VERSION.fullmatch(cid[5:]) and r.VOLSER.fullmatch(vol),'invalid result identity')
+    path=MANIFESTS/(cid+'.yaml'); manifest=r.read_manifest(path)
+    need(check_reservation(read_registry(),manifest,path.read_bytes())==vol,'result reservation mismatch')
+    need(result['status']=='PRIVATE_CANDIDATE_VERIFIED_QUALIFIED' and result['publication_authorized'] is False and
+         result['source_commit']==manifest['release']['source_commit'],'unexpected acceptance result')
+    profiles=result['profiles']
+    need([(profiles[k]['pdses'],profiles[k]['members']) for k in ('MR10','NATIVE','COMBINED')]==[(11,94),(11,71),(20,150)] and
+         all([profiles[k]['functional'][s]['cases'] for s in ('language','bcpl','regression')]==[11,17,12] for k in ('MR10','COMBINED')) and
+         profiles['NATIVE']['functional']=={},'acceptance counts differ')
+    marker=OUT/(vol+'-no-retry.json')
+    need(marker.is_file() and not marker.is_symlink(),'missing or linked intent marker')
+    intent=json.loads(marker.read_text()); need(intent['candidate']==cid and intent['evidence']==rel and intent['head']==result['producer_commit'], 'intent mismatch')
+    image=TAPES/f'bcpl-{manifest["release"]["version"]}-{vol}.aws'; archive=folder/(cid+'-'+vol+'.zip')
+    need(digest(image)==result['aws_sha256'] and digest(archive)==result['archive_sha256'] and result['archive']==archive.name,'artifact digests differ')
+    entry={'technical_state':'verified-qualified-pending-owner-review','volser':vol,'aws_sha256':result['aws_sha256'],
+           'archive_sha256':result['archive_sha256'],'private_evidence':rel,'publication_authorized':False}
+    need(proposed==dict(candidate_id=cid,**entry),'proposed lifecycle differs')
+    old=REGISTRY.read_text('utf-8'); mark='\n# Private, non-publication tool verification volumes.'
+    need(old.count(mark)==1,'registry lifecycle layout changed')
+    lines=yaml.safe_dump({cid:entry},sort_keys=False).splitlines()
+    update=old.replace(mark,''.join('  '+line+'\n' for line in lines)+mark,1)
+    want=yaml.safe_load(old); want['lifecycle'][cid]=entry
+    need(yaml.safe_load(update)==want,'lifecycle update changed previous records')
+    if not confirm(f'Record {cid} / {vol} as privately verified, qualified and not published?'):
+        print('DECLINED: registry unchanged'); return
+    need(clean_main()==head and REGISTRY.read_text('utf-8')==old,'checkout changed after confirmation')
+    temp=REGISTRY.with_name('.releases.yaml.pending'); mvs.exclusive(temp,update.encode('utf-8'))
+    temp.chmod(REGISTRY.stat().st_mode & 0o777); os.replace(temp,REGISTRY)
+    print('Private verification recorded locally. Review and commit registry separately. No publication.')
+
+
+def main(argv=None):
+    p=argparse.ArgumentParser(description=__doc__)
+    action=p.add_mutually_exclusive_group(); action.add_argument('--prepare',action='store_true'); action.add_argument('--run',metavar='CANDIDATE'); action.add_argument('--reserve',type=Path,metavar='DRAFT'); action.add_argument('--record',type=Path,metavar='EVIDENCE')
+    p.add_argument('--version'); p.add_argument('--reuse-rc4',action='store_true'); p.add_argument('--inputs',type=Path)
+    a=p.parse_args(argv)
+    need(a.prepare or not (a.reuse_rc4 or a.inputs),'input selection is only for --prepare')
+    need(not ((a.run or a.reserve or a.record) and a.version),'--version is only for plan/prepare')
+    if not (a.prepare or a.run or a.reserve or a.record):
+        cid,vol=next_identity(read_registry(),a.version); print(f'NEXT PROPOSED: {cid} / {vol} (NOT RESERVED)')
+        print('Prepare with --prepare --reuse-rc4 or --prepare --inputs FILE. No MVS operations.'); return 0
+    need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),'unsafe or missing workarea')
+    OUT.mkdir(mode=0o700,exist_ok=True)
+    lock=OUT/'operator.lock'
+    fd=os.open(lock,os.O_CREAT|os.O_RDWR|getattr(os,'O_NOFOLLOW',0),0o600)
+    with os.fdopen(fd,'r+') as handle:
+        fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        if a.prepare: prepare(a); return 0
+        if a.reserve: reserve(a.reserve); return 0
+        if a.record: record(a.record); return 0
+        need(sys.stdin.isatty(),'operator terminal required'); return run(a.run)
+
+
+if __name__=='__main__':
+    try: raise SystemExit(main())
+    except (Exception,KeyboardInterrupt) as exc:
+        print('REFUSED: '+str(exc),file=sys.stderr); raise SystemExit(2)
