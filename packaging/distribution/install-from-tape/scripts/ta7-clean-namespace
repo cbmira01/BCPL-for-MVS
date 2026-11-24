@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""TA.7: RC4 clean-namespace installation and MR10 acceptance on existing MVS."""
+import argparse
+from datetime import datetime, timezone
+from importlib.machinery import SourceFileLoader
+from importlib.util import spec_from_loader, module_from_spec
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+BASE = ROOT / 'packaging/distribution'
+OUT = ROOT / 'workarea/ta7-clean-namespace'
+MARKER = OUT / 'BC0004-ta7-no-retry.json'
+SITES = {'MR10': 'T7MR', 'NATIVE': 'T7NT', 'COMBINED': 'T7CB'}
+SUITES = [('language', 'MRLANGDM', 'run-language-demos.jcl', 38),
+          ('bcpl', 'MRBCDEMO', 'run-bcpl-demos.jcl', 62),
+          ('regression', 'MRREGRES', 'run-regression-tests.jcl', 63)]
+CANON = 'HERC02.BCPL.MR10KIT.'
+
+
+def need(ok, why):
+    if not ok:
+        raise RuntimeError(why)
+
+
+def load(path):
+    p = ROOT / path
+    need(p.is_file() and not p.is_symlink(), 'missing dependency: ' + path)
+    loader = SourceFileLoader('ta7_' + p.name, str(p))
+    mod = module_from_spec(spec_from_loader(loader.name, loader))
+    loader.exec_module(mod)
+    return mod
+
+
+def install_deck(body, proc, site):
+    need(site in SITES.values() and proc in ('M10PROC', 'NATPROC', 'ALLPROC'), 'invalid profile')
+    old = '//GO EXEC ' + proc + '\n//\n'
+    need(body.endswith(old) and body.count(old) == 1, 'unexpected on-tape EXEC')
+    return body[:-len(old)] + '//GO EXEC ' + proc + ',SITE=' + site + '\n//\n'
+
+
+def read_cards(report, canonical):
+    """Recover ordered exact card text from MVS print; refuse missing cards."""
+    expected = canonical.rstrip('\n').splitlines()
+    need(expected and all(x.strip() for x in expected), 'unexpected blank canonical card')
+    actual = []
+    for line in report.splitlines():
+        if len(actual) == len(expected):
+            break
+        card = expected[len(actual)].rstrip()
+        if line.rstrip().endswith(card):
+            actual.append(card)
+    need(actual == [x.rstrip() for x in expected], 'incomplete MVS JCL member readback')
+    return '\n'.join(actual) + '\n'
+
+
+def suite_deck(body, prefix, count, allowed, ta4):
+    need(prefix in ['HERC02.BCPL.' + SITES[x] for x in ('MR10', 'COMBINED')], 'invalid MR10 namespace')
+    target = prefix + '.MR10KIT.'
+    body = body.replace(CANON, target).rstrip('\n') + '\n'
+    if not body.endswith('//\n'):
+        body += '//\n'
+    ta4.cards(body)
+    steps = ta4.STEP.findall(body)
+    need(len(steps) == count and len(set(s for s, _ in steps)) == count and
+         all(p in ('IEBGENER', 'ICINT19') for _, p in steps) and
+         sum(p == 'IEBGENER' for _, p in steps) == 5, 'unexpected MR10 step sequence')
+    need(body.count('DSN=' + target + 'LOAD') == count - 5 and CANON not in body and
+         'DISP=(NEW,CATLG' not in body and 'DISP=MOD' not in body, 'unsafe MR10 deck')
+    dsns = re.findall(r'\bDSN=([A-Z0-9.&]+)', body)
+    need(dsns and all(d.startswith('&&') or d in allowed for d in dsns), 'foreign MR10 dataset')
+    lines = body.splitlines()
+    for index, line in enumerate(lines):
+        match = re.search(r'\bDSN=([A-Z0-9.&]+)', line)
+        if match and not match.group(1).startswith('&&'):
+            # These canonical jobs use either inline DISP=SHR or a following DD card.
+            need('DISP=SHR' in line or (line.endswith(',') and
+                 re.fullmatch(r'//\s+DISP=SHR', lines[index+1])), 'persistent MR10 DD not SHR')
+    return body, steps
+
+
+def run(live):
+    folder = rc3 = None
+    marked = False
+    try:
+        rec = load('packaging/distribution/install-from-tape/scripts/ta3-rc4-recipient')
+        ref, rem, gen, rc3, helper = rec.tools()
+        ta4 = load('packaging/distribution/install-from-tape/scripts/ta4-mr10-verification')
+        auto = load('packaging/distribution/install-from-tape/scripts/ta4-mr10-automatic-acceptance')
+        reviewer = load('packaging/distribution/install-from-tape/scripts/ta2-rc2-mr10-review')
+        m, sizes = gen.load()
+        original = rec.selection(m, gen)
+        plans = {}
+        for label, (old, _, positions, rows, count) in original.items():
+            prefix = 'HERC02.BCPL.' + SITES[label]
+            rows = [(r[0], prefix + r[1][len(old):], *r[2:]) for r in rows]
+            canonical = gen.profile(m, sizes, label)
+            proc = gen.PROFILES[label][0]
+            boot = rec.boot_and_installer(ref, prefix)
+            ta4.cards(install_deck(canonical, proc, SITES[label]))
+            allowed = {r[1] for r in rows}
+            suites = []
+            if label != 'NATIVE':
+                for key, member, filename, n in SUITES:
+                    source = (ROOT / 'mr10-kit-compiler/jcl' / filename).read_text('ascii')
+                    suite_deck(source, prefix, n, allowed, ta4)
+                    suites.append((key, member, source, n))
+            plans[label] = (prefix, positions, rows, count, canonical, proc, boot, suites)
+        targets = [r[1] for p in plans.values() for r in p[2]]
+        need(len(targets) == len(set(targets)) == 42 and sum(p[3] for p in plans.values()) == 315, 'target inventory differs')
+        if not live:
+            print('TA.7 OFFLINE PLAN PASS: 42 PDSes, 315 members; 6 functional jobs.')
+            return 0
+        git = rc3.check_git()
+        need(sys.stdin.isatty(), 'operator terminal required')
+        need(OUT.parent.is_dir() and not OUT.parent.is_symlink() and not OUT.is_symlink() and
+             not MARKER.exists() and not MARKER.is_symlink(), 'unsafe workarea or consumed TA.7 marker; NO RETRY')
+        need(rec.hashfile(rec.AWS) == rec.IMAGE_SHA and rec.hashfile(rec.ORIGINAL) == rec.ORIGINAL_SHA, 'accepted tape checksum differs')
+        production = rec.production_receipt()
+        OUT.mkdir(mode=0o700, exist_ok=True)
+        folder = OUT / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid()))
+        folder.mkdir(mode=0o700)
+        core = helper('ta7core', ROOT / 'tools/datasets/dspal-core.py')
+        ls = helper('ta7ls', ROOT / 'tools/datasets/dspal-ls.py')
+        installed = helper('ta7installed', BASE / 'create-tape/scripts/ta2-rc3-installed-mr10-continuation')
+        media = helper('ta7media', BASE / 'create-tape/scripts/ta2-rc2-media-preflight')
+        cfg = core.load_config()
+        need(cfg['mvs']['hlq'] == 'HERC02' and cfg['mvs']['batch_user'] == 'HERC02', 'unexpected site/user')
+        rt = cfg['runtime']
+        need(all(rt.get(k) == v for k,v in {'docker_container':'mvs38j','reader_host':'127.0.0.1','reader_port':3505,'hercules_host':'127.0.0.1','hercules_port':8038,'printer':'mvs-state/prt/prt00e.txt'}.items()), 'unexpected MVS transport')
+        core.require_reader_ready(cfg)
+        state = rec.tape_status(rc3, media, folder, 'before')
+        pre = rem.query_absence(ref, rc3, core, cfg, folder, targets)
+        need(rec.tape_status(rc3, media, folder, 'after-preflight') == state, 'tape state changed')
+        print(f'TA.7 PREFLIGHT PASS: JOB {pre}; 42 targets absent; drive {state}.')
+        if input('Install RC4 and run MR10 acceptance in T7MR/T7NT/T7CB ONCE? [y/N]: ').strip().upper() != 'Y':
+            rc3.seal(folder)
+            return 0
+        rc3.exclusive(MARKER, (json.dumps({'candidate':'BCPL-0.1.0-rc4','targets':targets,'evidence':str(folder.relative_to(ROOT)), 'head':git('rev-parse','HEAD').decode().strip()})+'\n').encode('ascii'))
+        marked = True
+        def save(key, value):
+            rc3.artifact(folder, key + '.json', json.dumps(value, indent=2) + '\n')
+        def job(key, name, body, steps):
+            return ref.mvs_job(rc3, core, cfg, folder, key, name, body, steps)
+        def mount(key):
+            rec.ensure_rc4(rc3, media, folder, key)
+        mount('boot-tape')
+        bootjob, report, _ = job('boot','T7BOOT',plans['MR10'][6]['TA3BOOT'], [('BOOTREAD','IEBGENER')])
+        need('BC0004' in report and 'NATIVE CAMBRIDGE COMPILER ABSENT' in report, 'wrong tape bootstrap')
+        results = {}
+        for label, (prefix, positions, rows, count, canonical, proc, boot, suites) in plans.items():
+            key = label.lower()
+            mount(key+'-bt2-tape')
+            bt, _, _ = job(key+'-bt2','T7BT2',boot['TA3BT2'], [('BT2REST','IEBCOPY')])
+            view, report, _ = job(key+'-view','T7VIEW',rec.readback_deck(prefix,label), [('P0001','IEBGENER'),('P0002','IEBGENER')])
+            deck = install_deck(rec.extract_profile(report,canonical),proc,SITES[label])
+            need('COPY OUTDD=OUTPDS,INDD=INTAPE' in report, 'missing installed COPY card')
+            mount(key+'-profile-tape')
+            name = 'TA7' + SITES[label][2:]
+            restored, report, summary = job(key+'-restore',name,deck,None)
+            rec.profile_result(name,report,summary,positions)
+            cat, directory, total = rem.verify(rc3,ref,core,cfg,installed,ls,folder,key,rows)
+            need(total == count, 'member count differs')
+            detail = {'installer':bt,'readback':view,'restore':restored,'catalog':cat,'directory':directory,'pdses':len(rows),'members':total,'functional':{}}
+            print(f'TA.7 {label} INSTALL PASS: {len(rows)} PDSes, {total} members.')
+            allowed = {r[1] for r in rows}
+            for suite, member, source, n in suites:
+                tag = key+'-'+suite
+                body = ('//READJCL EXEC PGM=IEBGENER,REGION=512K\n//SYSPRINT DD SYSOUT=*\n//SYSIN DD DUMMY\n//SYSUT1 DD DSN='+prefix+'.MR10KIT.JCL('+member+'),\n//            DISP=SHR\n//SYSUT2 DD SYSOUT=*\n//\n')
+                readjob, report, _ = job(tag+'-read','T7JCL',body,[('READJCL','IEBGENER')])
+                body, steps = suite_deck(read_cards(report,source),prefix,n,allowed,ta4)
+                jid, report, _ = job(tag,'T7'+member[:6],body,steps)
+                if suite == 'regression':
+                    semantic = reviewer.inspect(report,reviewer.panel())
+                    need(semantic['exp_contract_met'] and semantic['golden_rp_and_code_match'], 'MRREGRES semantics differ')
+                    semantic = {'cases':semantic['cases'],'verdicts':auto.automatic_cases(semantic['cases'])}
+                    cases = 12
+                else:
+                    selection = ta4.LANG if suite == 'language' else ta4.BCPL
+                    semantic = ta4.verify_demos(report,selection,steps)
+                    cases = len(selection)
+                save(tag+'-semantics',dict(semantic,mvs_job=jid,readback_job=readjob))
+                detail['functional'][suite] = {'job':jid,'cases':cases}
+                print(f'TA.7 {label} {member} PASS: {cases} cases; JOB {jid}.')
+            results[label] = detail
+            save(key+'-checkpoint',detail)
+        need(rec.hashfile(rec.AWS) == rec.IMAGE_SHA and rec.hashfile(rec.ORIGINAL) == rec.ORIGINAL_SHA, 'accepted tape changed')
+        save('result',{'status':'TA7_CLEAN_NAMESPACE_PASS','independent_mvs_system':False,'candidate':'BCPL-0.1.0-rc4','aws_sha256':rec.IMAGE_SHA,'boot_job':bootjob,'production_evidence':production,'profiles':results,'publication_authorized':False})
+        rc3.seal(folder)
+        print('TA.7 PASS: 42 PDSes / 315 members; 24 regressions, 56 demos; RC4 unchanged.')
+        print('Evidence: '+str(folder.relative_to(ROOT)))
+        return 0
+    except Exception as exc:
+        if folder is not None:
+            try:
+                rc3.artifact(folder,'failure.json',json.dumps({'reason':str(exc),'no_retry':marked})+'\n')
+                rc3.seal(folder)
+            except Exception:
+                pass
+            print('Evidence: '+str(folder.relative_to(ROOT)),file=sys.stderr)
+        print('TA.7 HALTED: '+str(exc)+(' (NO RETRY)' if marked else ''),file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run',action='store_true')
+    raise SystemExit(run(parser.parse_args().run))

@@ -2206,3 +2206,8 @@ The owner limits functional release testing to the MR10 Kit Compiler until a ful
 **Owner direction:** “Close TA5 and proceed to TA7. Give me a handoff prompt.”
 
 **TA.5 — Native Runtime, Libraries, and Extensions Distribution is FORMALLY CLOSED (qualified)** under the owner-approved distribution-only gate. All eight native-group PDSes / 41 members are included in the accepted RC4 NATIVE and COMBINED profiles. Native functional acceptance and rebuild/reproducibility are deferred until the full native compiler is available. No new MVS operation was required. **TA.6 remains N/A for RC4**, not PASS or formal closure. **TA.7 — Clean-Target Integration and Release Acceptance is OPEN / IN PROGRESS**: independent clean MVS recipient, all three installation profiles, MR10-only functional verification, no native functional tests. See [formal closure and transition](ta5-formal-qualified-closure-and-ta7-transition-20261123.md) and [TA.7 kickoff](ta7-kickoff-20261123.md). Existing evidence and BC0004 remain immutable; TA.8 and publication remain separate. No new stateful MVS operation is authorized here.
+
+
+## TA.7 — Owner-approved clean-namespace scope (24 November 2026)
+
+The owner supersedes independent-system IPL with fresh, disjoint PDS namespaces on the existing MVS system: HERC02.BCPL.T7MR, T7NT and T7CB. See the [binding clean-namespace decision](ta7-clean-namespace-decision-20261124.md). The RC4 tape remains unchanged; all three profiles and both full MR10 functional panels are required. Native components remain distribution-only. TA.7 remains OPEN / IN PROGRESS pending actual MVS evidence; TA.8 and publication are separate.
