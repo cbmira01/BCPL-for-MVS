@@ -36,7 +36,10 @@ lifecycle:
     acceptance_record: packaging/milestones/tape-artifact-release/ta7-clean-namespace-acceptance-20261124.md
     rights_status: preservation-policy-approved-rights-unresolved
     documentation: mandatory-rc4-companion-supersedes-bt0003
-    publication_state: private-package-verified-awaiting-owner-approval
+    publication_state: owner-authorized-awaiting-upload
+    publication_authorization: packaging/milestones/tape-artifact-release/ta8-rc4-publication-authorization-20261124.md
+    intended_tag: v0.1.0-rc4
+    intended_release_type: prerelease
     archive_name: BCPL-0.1.0-rc4-BC0004.zip
     archive_sha256: a3d47d7a3591c3f8fa826c205729a9488423f31a3a7e0c10ed87357d3404e80e
     private_evidence: workarea/ta8-rc4-20261124T151859675204Z

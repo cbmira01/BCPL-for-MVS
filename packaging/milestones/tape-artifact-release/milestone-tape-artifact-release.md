@@ -2236,3 +2236,8 @@ Owner extends the repository preservation-first policy to the tape with attribut
 ## TA.8 — Private RC4 package verification PASS (24 November 2026 EST)
 
 The owner reported the committed saved-evidence reviewer PASS: four MVS evidence seals, 326 functional steps, exact accepted RC4 bytes. Private package `workarea/ta8-rc4-20261124T151859675204Z/BCPL-0.1.0-rc4-BC0004.zip`, archive SHA-256 `a3d47d7a3591c3f8fa826c205729a9488423f31a3a7e0c10ed87357d3404e80e`. See [private package acceptance](ta8-private-package-acceptance-20261124.md). The original registry reservations are preserved; lifecycle records verified private preparation. **TA.8 remains OPEN / IN PROGRESS, awaiting separate publication authorization and verified public asset delivery.** Historical rights remain unresolved under the owner-approved preservation-first policy. No MVS replay, tape modification or publication has been performed.
+
+
+## TA.8 — RC4 publication authorized (24 November 2026 EST)
+
+Owner directs “OK. Proceed to RC4 release”. The exact verified RC4 ZIP is approved for GitHub prerelease publication with its mandatory guide and attribution notices. See [publication authorization](ta8-rc4-publication-authorization-20261124.md) and [release notes](../../distribution/publication/RC4-RELEASE-NOTES.md). Registry lifecycle records owner authorization, not completed publication. Historical rights remain unresolved under the preservation-first policy. GitHub connection cannot upload the private binary asset; owner UI upload and subsequent public verification are pending. **TA.8 OPEN / IN PROGRESS.** No MVS replay, tape change, public tag or release has been performed by this commit.
