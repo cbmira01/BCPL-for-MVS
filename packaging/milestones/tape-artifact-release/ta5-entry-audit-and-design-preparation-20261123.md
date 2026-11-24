@@ -1,5 +1,7 @@
 # TA.5 — Native Runtime, Libraries, and Extensions Distribution: entry audit
 
+**SUPERSEDING OWNER DECISION (23 November 2026 EST):** This document records the original scope. Its native rebuild, reproducibility, application generation, linkage, execution and regression requirements are no longer operative for RC4. See the [binding distribution-only scope and acceptance review](ta5-distribution-only-scope-and-acceptance-20261123.md). Functional release testing is MR10-only until the full native compiler is available. No new native test campaign is authorized or required.
+
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Milestone:** Tape artifact release  
 **March:** TA.5 — Native Runtime, Libraries, and Extensions Distribution  
