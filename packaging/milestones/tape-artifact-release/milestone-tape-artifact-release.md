@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified); TA.3 — MVS Bootstrap and Installation CLOSED (qualified); TA.4 — MR10 Kit Compiler Distribution and Verification FORMALLY CLOSED by owner direction, 23 November 2026 EST; TA.5 — Native Runtime, Libraries, and Extensions Distribution OPEN / IN PROGRESS.** Candidate: `BCPL-0.1.0-rc4` / `BC0004`; original `BC0003` preserved.
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified); TA.3 — MVS Bootstrap and Installation CLOSED (qualified); TA.4 — MR10 Kit Compiler Distribution and Verification FORMALLY CLOSED by owner direction, 23 November 2026 EST; TA.5 — Native Runtime, Libraries, and Extensions Distribution CLOSED (qualified); TA.6 N/A for RC4; TA.7 — Clean-Target Integration and Release Acceptance OPEN / IN PROGRESS.** Candidate: `BCPL-0.1.0-rc4` / `BC0004`; original `BC0003` preserved.
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -2200,3 +2200,9 @@ TA.7, TA.8 and controlled publication remain independently gated.
 ## TA.5 — Owner-directed distribution-only scope and technical acceptance (23 November 2026 EST)
 
 The owner limits functional release testing to the MR10 Kit Compiler until a full native Cambridge Compiler is available. Native sources and supporting artifacts are distributed as work in progress; no new native builds, object reproducibility tests, native application generation, linkage, execution or regression are required for RC4. This supersedes earlier TA.5 and TA.7 native test obligations, including those in historical checkpoints. Existing RC4 objects are preserved. The manifest's eight native PDSes / 41 members and accepted TA.3 NATIVE and COMBINED installation evidence satisfy the revised TA.5 distribution gate (qualified). TA.5 remains open pending formal owner closure; TA.6 N/A; TA.7 clean-target installation and MR10-only functional acceptance, TA.8 and publication remain separate. See [binding scope and evidence review](ta5-distribution-only-scope-and-acceptance-20261123.md). No new MVS operation is required for TA.5.
+
+## TA.5 formal qualified closure and TA.7 march opening — 23 November 2026 EST
+
+**Owner direction:** “Close TA5 and proceed to TA7. Give me a handoff prompt.”
+
+**TA.5 — Native Runtime, Libraries, and Extensions Distribution is FORMALLY CLOSED (qualified)** under the owner-approved distribution-only gate. All eight native-group PDSes / 41 members are included in the accepted RC4 NATIVE and COMBINED profiles. Native functional acceptance and rebuild/reproducibility are deferred until the full native compiler is available. No new MVS operation was required. **TA.6 remains N/A for RC4**, not PASS or formal closure. **TA.7 — Clean-Target Integration and Release Acceptance is OPEN / IN PROGRESS**: independent clean MVS recipient, all three installation profiles, MR10-only functional verification, no native functional tests. See [formal closure and transition](ta5-formal-qualified-closure-and-ta7-transition-20261123.md) and [TA.7 kickoff](ta7-kickoff-20261123.md). Existing evidence and BC0004 remain immutable; TA.8 and publication remain separate. No new stateful MVS operation is authorized here.
