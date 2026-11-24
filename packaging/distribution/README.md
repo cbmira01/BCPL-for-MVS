@@ -11,9 +11,9 @@ Start with the [RC4 companion guide](publication/RC4-README.md), which supersede
 | [Manifest](manifest/README.md) | Frozen release manifests, design inventory and schema |
 | [Registry](registry/releases.yaml) | Version, VOLSER and lifecycle records |
 | [Publication](publication/) | Mandatory RC4 companion, release notes and exact-byte package reviewer |
-| [Create tape](create-tape/README.md) | Retained producer and historical MVS experiments |
-| [Reusable release interface](../../tools/distribution/README.md) | Candidate-independent offline write/install JCL and saved tape/MR10 review |
-| [Install from tape](install-from-tape/README.md) | Installer design and retained recipient/acceptance tooling |
+| [Create tape](create-tape/README.md) | Retained source preparation and historical MVS evidence |
+| [Reusable release interface](../../tools/distribution/README.md) | Candidate-independent JCL, saved-evidence review and reusable MVS helper library |
+| [Install from tape](install-from-tape/README.md) | Recipient instructions and historical acceptance evidence |
 | [Compiler source](compiler-source/README.md) | Historical source selection and fidelity investigation |
 | [Documentation PDS inputs](docs/) | Frozen draft input text for BT0003; not authoritative RC4 instructions |
 | [Formal closure](../milestones/tape-artifact-release/ta8-formal-qualified-closure-and-milestone-completion-20261124.md) | Accepted scope and qualifications |
@@ -28,3 +28,7 @@ Use the [canonical clean-room reconstruction runbook](../../docs/Rebuild-BCPL-fo
 Private MVS reports, evidence seals, original release archives and no-retry markers belong under the established ignored workarea or protected owner backups. Preserve accepted release evidence before any workarea cleanup. The historical [TA.0 evidence placement policy](manifest/ta0-evidence-placement-and-migration-20261117.md) remains relevant; the migration operation is not a routine task.
 
 [Previous distribution README](https://github.com/cbmira01/BCPL-for-MVS/blob/9f382203fcd6a5424cd916f304e3210c0f650212/packaging/distribution/README.md) preserves the chronological development notes. Use the current links above for status and procedures.
+
+## Post-release tooling consolidation
+
+BC0005, a private non-publication integration test, passed actual MVS production, installation and all 80 MR10 functional cases. Its one-shot runner and the superseded RC2–RC4 production/recipient orchestration, associated tests and historical installer decks are retired from the active checkout. The exact original files and historical relative links are preserved at the [pre-retirement repository revision](https://github.com/cbmira01/BCPL-for-MVS/tree/bacf928f0364d24d89c6fa2ed3f88e2ff53fd9fc). See the [distribution tools](../../tools/distribution/README.md) and [audit](post-release-audit-20261124.md) for retained capabilities and qualifications. The private tape and used VOLSER remain permanently recorded; do not rerun or publish it.

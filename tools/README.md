@@ -217,6 +217,6 @@ The development Cambridge Compiler runs as INTCODE under ICINT19 (the promoted i
 
 ## Distribution
 
-The release milestone is closed. [RC4 installation instructions](../packaging/distribution/publication/RC4-README.md) are the recipient-facing procedure. Candidate-specific development and acceptance scripts in [packaging/distribution](../packaging/distribution/README.md) are retained for provenance and shared dependencies, not for replay. See the [post-release audit](../packaging/distribution/post-release-audit-20261124.md) for the retirement policy.
+The release milestone is closed. [RC4 installation instructions](../packaging/distribution/publication/RC4-README.md) are the recipient-facing procedure. The [distribution tools](distribution/README.md) contain the consolidated JCL and MVS verification helpers. Retired candidate-specific production/recipient orchestration is preserved in Git history; source-preparation and historical evidence tools remain under [packaging/distribution](../packaging/distribution/README.md), not as authorization to replay consumed operations. See the [post-release audit](../packaging/distribution/post-release-audit-20261124.md) for the retirement policy.
 
 [Previous host-tool README](https://github.com/cbmira01/BCPL-for-MVS/blob/9f382203fcd6a5424cd916f304e3210c0f650212/tools/README.md) is preserved in Git history.

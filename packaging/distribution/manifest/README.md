@@ -4,7 +4,7 @@ The manifest is the authoritative release selection, dataset sequence and DCB co
 
 ## Published candidate
 
-[BCPL-0.1.0-rc4.yaml](releases/BCPL-0.1.0-rc4.yaml) defines BC0004, 21 logical datasets, three installation profiles, native compiler absent and historical Cambridge source included. Preserve all four frozen manifests and their registry reservations. RC1–RC3 are historical candidate records, not current recipient instructions.
+[BCPL-0.1.0-rc4.yaml](releases/BCPL-0.1.0-rc4.yaml) defines BC0004, 21 logical datasets, three installation profiles, native compiler absent and historical Cambridge source included. Preserve all four frozen manifests and their registry reservations. RC1–RC3 are historical candidate records, not current recipient instructions. BC0005 is a permanently used private-test VOLSER, not a release candidate. Any future allocation must exclude both candidate and integration_tests entries in the sole registry; retained historical candidate-only gates do not enforce the latter and are not new production authority.
 
 The [schema v1 design](schema-v1-design.md), [TA.0 inventory](ta0-inventory.yaml), provenance and binary-evidence records retain the original design and acceptance qualifications.
 

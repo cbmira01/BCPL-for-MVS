@@ -13,8 +13,10 @@ Follow the [mandatory RC4 companion guide](../publication/RC4-README.md) for the
 
 See [TA.3 installation results](ta3-rc4-all-profiles-accepted-20261123.md), [TA.5 formal closure](../../milestones/tape-artifact-release/ta5-formal-qualified-closure-and-ta7-transition-20261123.md) and [TA.7 acceptance](../../milestones/tape-artifact-release/ta7-clean-namespace-acceptance-20261124.md).
 
-## Retained development verification
+## Reusable verification and historical implementation
 
-The JCL, RC2/RC3/RC4 trial runners, TA.4 MR10 verification/comparison and TA.7 clean-namespace runner are historical accepted implementation/evidence tools. They are not recipient commands. Several are dynamically imported by later runners; retain them and their tests until common functionality is extracted and dependencies are verified. Do not rerun consumed recipient/continuation or verification operations. Preserve the accepted installations, tape bytes and private receipts.
+The [distribution tools](../../../tools/distribution/README.md) contain the reusable writer/installer JCL renderer, HETMAP and MR10 evidence reviewers and extracted MVS bootstrap, readback, exact catalog/member verification and JES helpers. The dedicated BC0005 exercise passed all three profile installs and 80 MR10 cases; the extracted helper module itself has offline verification only.
 
-See the [post-release audit](../post-release-audit-20261124.md). [Previous chronological README](https://github.com/cbmira01/BCPL-for-MVS/blob/9f382203fcd6a5424cd916f304e3210c0f650212/packaging/distribution/install-from-tape/README.md) retains trial/recovery details.
+The consumed RC2–RC4 trial/recipient/continuation runners, TA.4 and TA.7 orchestration, dedicated tests and seven old external JCL decks have been removed from active main. Their exact contents remain at the [pre-retirement revision](https://github.com/cbmira01/BCPL-for-MVS/tree/bacf928f0364d24d89c6fa2ed3f88e2ff53fd9fc/packaging/distribution/install-from-tape). The MR10 EXP source checker and its tests remain. Historical records are unchanged; use that revision for links to retired files. Do not replay accepted installation or verification operations.
+
+See the [post-release audit](../post-release-audit-20261124.md). Preserve installed namespaces, accepted media and private receipts. The published RC4 companion is still the recipient procedure.
