@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""TA.4 read-only automatic acceptance of sealed MR10 RC3 and RC4 MVS results.
+
+No human verdicts, MVS submissions, tape writes or replays.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+import json
+import os
+from pathlib import Path
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[4]
+WORK = ROOT / 'workarea'
+OUT = WORK / 'ta4-mr10-automatic-acceptance'
+TA4 = WORK / 'ta4-mr10-verification/20261123T212347Z-39337'
+MARKER = WORK / 'ta4-mr10-verification/BC0004-TA4R1-verification-no-retry.json'
+RC3 = ROOT / 'packaging/distribution/create-tape/scripts'
+INSTALL = ROOT / 'packaging/distribution/install-from-tape/scripts'
+JOBS = {'preflight': 9418, 'build': 9419, 'smoke': 9420,
+        'language': 9421, 'bcpl': 9422}
+AWS_SHA = '7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1'
+
+
+class Refusal(RuntimeError):
+    pass
+
+
+def need(condition, reason):
+    if not condition:
+        raise Refusal(reason)
+
+
+def load(label, path):
+    need(path.is_file() and not path.is_symlink(), 'missing canonical script: ' + path.name)
+    loader = SourceFileLoader(label, str(path))
+    spec = spec_from_loader(loader.name, loader)
+    mod = module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def verify_ta4(rc3, installed):
+    """Check sealed RC4 build, smoke and both demonstration suites."""
+    need(MARKER.is_file() and not MARKER.is_symlink(), 'TA.4 no-retry marker absent')
+    marker = json.loads(MARKER.read_text('utf-8'))
+    need(marker.get('status') == 'TA4_RC4_REBUILD_DEMOS_OWNER_CONFIRMATION_CONSUMED_NO_RETRY'
+         and marker.get('candidate') == 'BCPL-0.1.0-rc4'
+         and marker.get('aws_sha256') == AWS_SHA
+         and marker.get('evidence') == TA4.relative_to(ROOT).as_posix()
+         and marker.get('new_datasets') == ['HERC02.BCPL.TA4R1.OBJ',
+                                            'HERC02.BCPL.TA4R1.LOAD']
+         and marker.get('no_tape_operations') is True
+         and marker.get('no_existing_pds_writes') is True
+         and marker.get('publication_authorized') is False,
+         'TA.4 original one-shot identity or protective contract differs')
+    required = {'result.json', 'smoke-semantics.json',
+                'language-semantics.json', 'bcpl-semantics.json'}
+    required.update(key + '-report.txt' for key in JOBS)
+    required.update(key + '-summary.txt' for key in JOBS)
+    installed.sealed(TA4, rc3, required)
+    receipt = json.loads((TA4 / 'result.json').read_text('utf-8'))
+    need(receipt.get('status') == 'TA4_RC4_REBUILD_AND_11_17_DEMOS_MVS_PASS'
+         and receipt.get('candidate') == 'BCPL-0.1.0-rc4'
+         and receipt.get('jobs') == JOBS
+         and receipt.get('fresh_object_pds') == 'HERC02.BCPL.TA4R1.OBJ'
+         and receipt.get('fresh_load_pds') == 'HERC02.BCPL.TA4R1.LOAD'
+         and receipt.get('human_12_case_signoff') == 'PENDING'
+         and receipt.get('publication_authorized') is False,
+         'TA.4 accepted build/demonstration receipt differs')
+    for key, count, codes in (('language', 11, 33), ('bcpl', 17, 57)):
+        data = json.loads((TA4 / (key + '-semantics.json')).read_text('utf-8'))
+        need(data.get('mvs_job') == JOBS[key]
+             and len(data.get('run_cases', [])) == count
+             and len(set(data['run_cases'])) == count
+             and len(data.get('demo_print_records', [])) == count
+             and data.get('interpreted_zero_codes') == codes,
+             'TA.4 ' + key + ' demonstration semantics differs')
+    smoke = json.loads((TA4 / 'smoke-semantics.json').read_text('utf-8'))
+    need(smoke.get('mvs_job') == JOBS['smoke']
+         and smoke.get('observed_test_count') == 1
+         and smoke.get('golden_rp_and_code_match') is True
+         and smoke.get('exp_contract_met') is True,
+         'TA.4 rebuilt ICINT19 smoke semantics differs')
+    return receipt
+
+
+def automatic_cases(cases):
+    """Derive verdicts exclusively from ordered MVS/golden semantic checks."""
+    need(len(cases) == 12 and [c.get('step') for c in cases] ==
+         [f'R{n:02d}' for n in range(1, 13)], '12 ordered regression cases required')
+    results = []
+    for case in cases:
+        checks = case.get('checks', {})
+        need(all(checks.get(k) is True for k in
+                 ('test_identity', 'rp_matches_golden', 'interpreted_code_zero',
+                  'exp_present', 'exp_matches_golden'))
+             and case.get('golden_and_code_match') is True
+             and len(case.get('printed_exp', [])) == len(case.get('actual_rp', [])) > 0
+             and case.get('interpreted_codes') == [0],
+             'regression semantic mismatch: ' + str(case.get('step')))
+        results.append({'step': case['step'], 'name': case['name'],
+                        'verdict': 'PASS', 'basis': 'SAVED_MVS_EXP_RP_GOLDEN_CODE'})
+    return results
+
+
+def accept():
+    rc3 = load('ta4_auto_rc3', RC3 / 'ta2-rc3-consolidated')
+    prior = load('ta4_auto_saved', RC3 / 'ta2-rc3-human-review')
+    installed = load('ta4_auto_seal', RC3 / 'ta2-rc3-installed-mr10-continuation')
+    restore = load('ta4_auto_restore', RC3 / 'ta2-rc3-restore-continuation')
+    reviewer = load('ta4_auto_goldens', INSTALL / 'ta2-rc2-mr10-review')
+    cases = prior.accepted(rc3, installed, restore, reviewer)
+    reviews = automatic_cases(cases)
+    ta4_receipt = verify_ta4(rc3, installed)
+    need(WORK.is_dir() and not WORK.is_symlink() and not OUT.is_symlink(),
+         'unsafe acceptance output directory')
+    result = {
+        'status': 'TA4_RC4_MR10_AUTOMATED_ACCEPTANCE_PASS',
+        'candidate': 'BCPL-0.1.0-rc4',
+        'predecessor_candidate': 'BCPL-0.1.0-rc3',
+        'regression_mvs_job': prior.JOB,
+        'regression_original_evidence': prior.ORIGINAL.relative_to(ROOT).as_posix(),
+        'ta4_evidence': TA4.relative_to(ROOT).as_posix(),
+        'ta4_jobs': ta4_receipt['jobs'],
+        'regression_cases': reviews,
+        'regression_pass_count': len(reviews),
+        'human_signoff_required': False,
+        'no_new_mvs_execution': True,
+        'publication_authorized': False}
+    OUT.mkdir(mode=0o700, exist_ok=True)
+    folder = OUT / ('accept-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+                    + '-' + str(os.getpid()))
+    folder.mkdir(mode=0o700, exist_ok=False)
+    rc3.artifact(folder, 'acceptance.json', json.dumps(result, indent=2) + '\n')
+    rc3.seal(folder)
+    print('TA.4 AUTOMATED ACCEPTANCE PASS: 12/12 MRREGRES; 11+17 demos; rebuilt ICINT19.')
+    print('Evidence: ' + folder.relative_to(ROOT).as_posix())
+    return 0
+
+
+def main():
+    try:
+        need(len(sys.argv) == 1, 'no arguments or human signatures supported')
+        return accept()
+    except Exception as exc:
+        print('TA.4 AUTOMATED ACCEPTANCE REFUSED: ' + str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

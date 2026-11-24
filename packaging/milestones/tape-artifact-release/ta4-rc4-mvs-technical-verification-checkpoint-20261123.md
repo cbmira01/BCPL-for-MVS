@@ -66,3 +66,7 @@ acceptance and closure **PENDING** the identified human sign-off and owner
 decision. TA.5, TA.7 and TA.8 retain their independent gates; TA.6 is
 N/A for this candidate because the native Cambridge Compiler is absent.
 No release publication is authorized.
+
+## 23 November owner correction to acceptance procedure
+
+The earlier pending-human-signoff language is historical and is superseded by the new automated twelve-case semantic comparison. The original JOB 9369, JOBS 9418-9422, AWS images and evidence seals remain immutable. TA.4 remains IN PROGRESS pending a new sealed automatic acceptance receipt.

@@ -48,3 +48,7 @@ Historical MR10 diagnostic/probe suites remain separate and retain their actual 
 ## Implementation boundary
 
 This is **documentation-only**. It does not alter the current 12 BCPL sources, `MRREGRES` JCL, golden `.expected` files, the WSL runner, or any MVS dataset; TA.4 implementation and verification remain outstanding.
+
+## Superseding owner decision (23 November 2026)
+
+The owner has removed per-case human PASS/FAIL choices and the final human SIGN requirement. The literal EXP: and computed RP: output contract, independently maintained golden expectations, all twelve MVS cases, interpreted CODE=0, and fail-on-discrepancy requirements remain mandatory. A read-only source-controlled verifier must recheck original sealed MVS evidence and record twelve automatic decisions. The prior human-signature portions of this historical decision are superseded, not silently erased. See the tape-artifact-release TA.4 automatic semantic acceptance decision.
