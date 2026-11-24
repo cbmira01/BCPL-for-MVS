@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified); TA.3 — MVS Bootstrap and Installation CLOSED (qualified) by owner direction, 23 November 2026; TA.4 — MR10 Kit Compiler Distribution and Verification IN PROGRESS.** Candidate: `BCPL-0.1.0-rc4` / `BC0004`; original `BC0003` preserved.
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified); TA.3 — MVS Bootstrap and Installation CLOSED (qualified); TA.4 — MR10 Kit Compiler Distribution and Verification FORMALLY CLOSED by owner direction, 23 November 2026 EST; TA.5 — Native Runtime, Libraries, and Extensions Distribution OPEN / IN PROGRESS.** Candidate: `BCPL-0.1.0-rc4` / `BC0004`; original `BC0003` preserved.
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -2172,3 +2172,27 @@ The [TA.5 read-only entry audit](ta5-entry-audit-and-design-preparation-20261123
 prepares the next approved march without opening it or authorizing
 state-changing MVS operations. TA.6 remains N/A for the absent native
 compiler; TA.7/TA.8 and publication are separate.
+
+## TA.4 formal closure and TA.5 march opening — 23 November 2026 EST
+
+**Owner direction:** “Close TA4, proceed to TA5. Give me a handoff prompt.”
+
+**TA.4 — MR10 Kit Compiler Distribution and Verification is FORMALLY CLOSED.**
+The accepted read-only automated receipt
+`workarea/ta4-mr10-automatic-acceptance/accept-20261124T003512Z-40183`
+verifies all 12 historical MVS `MRREGRES` cases, independently seals
+12 per-case semantic decisions, and verifies RC4 `ICINT19` rebuild,
+SCALVEC, 11 language and 17 BCPL demos. The earlier unchanged WSL
+regression was reported as 12 PASS / 0 FAIL. Human case-by-case
+signatures were expressly removed by the superseding owner decision.
+See [TA.4 formal closure](ta4-formal-closure-and-ta5-transition-20261123.md).
+No accepted MVS job, original recipient or tape operation is to be replayed.
+
+**TA.5 — Native Runtime, Libraries, and Extensions Distribution is
+OPEN / IN PROGRESS.** Begin with a read-only source/provenance audit
+and design review of the actual installed native release libraries.
+See the [TA.5 kickoff](ta5-kickoff-20261123.md) and
+[TA.5 entry audit](ta5-entry-audit-and-design-preparation-20261123.md).
+Native Core Runtime, Base Library, Coroutine Support and extensions are
+not yet TA.5-accepted. TA.6 is N/A (`native_compiler: absent`);
+TA.7, TA.8 and controlled publication remain independently gated.

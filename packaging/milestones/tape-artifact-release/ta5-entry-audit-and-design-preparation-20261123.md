@@ -3,7 +3,7 @@
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Milestone:** Tape artifact release  
 **March:** TA.5 — Native Runtime, Libraries, and Extensions Distribution  
-**Status:** READ-ONLY ENTRY AUDIT / DESIGN PREPARATION; not yet formally opened  
+**Status:** READ-ONLY ENTRY AUDIT / DESIGN PREPARATION; TA.5 formally OPEN / IN PROGRESS by owner direction 23 November 2026 EST  
 **Date:** 23 November 2026 EST  
 **Candidate:** `BCPL-0.1.0-rc4` / `BC0004` (`native_compiler: absent`)
 
@@ -94,3 +94,7 @@ acceptance (TA.7), rights/provenance clearance (TA.8) or
 release publication. The next action is design review and
 read-only source/evidence planning, guided by the existing
 MVS-native toolchain rather than host-only simulation.
+
+## Formal TA.5 opening (23 November 2026 EST)
+
+By explicit owner direction, TA.4 is now formally CLOSED and TA.5 is OPEN / IN PROGRESS. The earlier entry-boundary statement above remains applicable to the **audit's evidence and authorization**, not the march status: this document does not itself approve stateful MVS execution. See the [TA.5 kickoff](ta5-kickoff-20261123.md) and [formal closure/transition](ta4-formal-closure-and-ta5-transition-20261123.md).
