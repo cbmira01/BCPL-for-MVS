@@ -2231,3 +2231,8 @@ The [read-only audit](ta8-initial-release-audit-20261124.md) confirms all four f
 ## TA.8 — Preservation-first disposition and private package preparation (24 November 2026 EST)
 
 Owner extends the repository preservation-first policy to the tape with attribution, retaining unresolved historical rights without claiming new permission. Owner defers broader documentation restructuring to a separate future milestone. Retain RC4 unchanged with mandatory companion guide and complete notices; preserve frozen manifest/reservations and record lifecycle separately. See [decision and implementation](ta8-preservation-and-private-preparation-20261124.md). The new private packager has 19/19 synthetic checks PASS; saved actual MVS receipt validation and exact-byte package preparation remain pending. TA.8 remains OPEN / IN PROGRESS; no public release authorized.
+
+
+## TA.8 — Private RC4 package verification PASS (24 November 2026 EST)
+
+The owner reported the committed saved-evidence reviewer PASS: four MVS evidence seals, 326 functional steps, exact accepted RC4 bytes. Private package `workarea/ta8-rc4-20261124T151859675204Z/BCPL-0.1.0-rc4-BC0004.zip`, archive SHA-256 `a3d47d7a3591c3f8fa826c205729a9488423f31a3a7e0c10ed87357d3404e80e`. See [private package acceptance](ta8-private-package-acceptance-20261124.md). The original registry reservations are preserved; lifecycle records verified private preparation. **TA.8 remains OPEN / IN PROGRESS, awaiting separate publication authorization and verified public asset delivery.** Historical rights remain unresolved under the owner-approved preservation-first policy. No MVS replay, tape modification or publication has been performed.
