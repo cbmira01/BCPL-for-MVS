@@ -63,4 +63,9 @@ integration_tests:
     volser: BC0005
     base_manifest_sha256: 72c241201a95953546923f62ea6bfb43fcf56349c5ec7618671d7802d2ee6c1a
     image: bcpl-0.1.0-tooltest1-BC0005.aws
-    state: reserved-private-test
+    state: used-private-test-pass
+    aws_sha256: 10ff1f489b280f1d20a7ec6725aad3a4f3cb21292f310b3121468ddbfb8272e3
+    source_commit: 7d8f1e9a8a94901ca4cdb4c895fbb0838cb12bc2
+    evidence: workarea/release-integration/20261124T205914Z-45447
+    verification: owner-reported-mvs-integration-pass
+    publication_authorized: false
