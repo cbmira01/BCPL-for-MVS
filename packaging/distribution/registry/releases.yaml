@@ -54,3 +54,13 @@ lifecycle:
     archive_sha256: a3d47d7a3591c3f8fa826c205729a9488423f31a3a7e0c10ed87357d3404e80e
     private_evidence: workarea/ta8-rc4-20261124T151859675204Z
     package_acceptance_record: packaging/milestones/tape-artifact-release/ta8-private-package-acceptance-20261124.md
+
+# Private, non-publication tool verification volumes. Preserve permanently;
+# future allocation must exclude both candidates and integration_tests.
+# Keeping this outside candidates preserves the historical RC4 reservation gate.
+integration_tests:
+  BCPL-0.1.0-tooltest1:
+    volser: BC0005
+    base_manifest_sha256: 72c241201a95953546923f62ea6bfb43fcf56349c5ec7618671d7802d2ee6c1a
+    image: bcpl-0.1.0-tooltest1-BC0005.aws
+    state: reserved-private-test
