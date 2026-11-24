@@ -26,3 +26,14 @@ candidates:
     volser: BC0004
     manifest_sha256: 72c241201a95953546923f62ea6bfb43fcf56349c5ec7618671d7802d2ee6c1a
     state: reserved
+
+# Lifecycle annotations preserve the original reservation contract above.
+lifecycle:
+  BCPL-0.1.0-rc4:
+    technical_state: accepted-qualified
+    volser: BC0004
+    aws_sha256: 7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1
+    acceptance_record: packaging/milestones/tape-artifact-release/ta7-clean-namespace-acceptance-20261124.md
+    rights_status: preservation-policy-approved-rights-unresolved
+    documentation: mandatory-rc4-companion-supersedes-bt0003
+    publication_state: private-preparation-pending-evidence-review

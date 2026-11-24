@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Check saved actual MVS receipts and assemble a private, exact-byte RC4 package.
+No MVS submission, tape operation, Git mutation or publication.
+"""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import sys
+from datetime import datetime, timezone
+from zipfile import ZipFile, ZIP_DEFLATED
+
+ROOT = Path(__file__).resolve().parents[4]
+CANDIDATE = 'BCPL-0.1.0-rc4'
+AWS = 'mvs-state/tape/bcpl-0.1.0-rc4-BC0004.aws'
+SHA = '7cc5a1d61882bf88469fd9f9e38512f1976ef1a775e3095e12e3988600c57af1'
+OLD = 'mvs-state/tape/bcpl-0.1.0-rc3-BC0003.aws'
+OLD_SHA = '6c54c4df2b75020a698110061c4f8003b09adbe21f738848dcaed3da495d81e1'
+MANIFEST = 'packaging/distribution/manifest/releases/BCPL-0.1.0-rc4.yaml'
+MANIFEST_SHA = '72c241201a95953546923f62ea6bfb43fcf56349c5ec7618671d7802d2ee6c1a'
+PROD = 'workarea/ta3-rc4-production/20261123T130731Z-36363'
+TA3 = 'workarea/ta3-rc4-continuation/20261123T163929Z-37828'
+TA4 = 'workarea/ta4-mr10-automatic-acceptance/accept-20261124T003512Z-40183'
+TA7 = 'workarea/ta7-clean-namespace/20261124T133036Z-41593'
+MARKER = 'workarea/ta7-clean-namespace/BC0004-ta7-no-retry.json'
+GUIDE = 'packaging/distribution/publication/RC4-README.md'
+FILES = (AWS, MANIFEST, GUIDE, 'LICENSE.md', 'THIRD-PARTY-NOTICES.md',
+         'richards-bcpltape/README.Nordier', 'richards-bcpltape/README.orig.Yap',
+         'richards-bcpltape/INDEX')
+SUITES = {'MR10': (9431, 9433, 9435), 'COMBINED': (9447, 9449, 9451)}
+
+
+def need(ok, why):
+    if not ok:
+        raise ValueError(why)
+
+
+def safe(root, relative, directory=False):
+    p = root / relative
+    need(p.resolve() == p and p.is_relative_to(root), 'unsafe path: ' + str(relative))
+    need(p.is_dir() if directory else p.is_file(), 'missing: ' + str(relative))
+    return p
+
+
+def digest(p):
+    h = hashlib.sha256()
+    with p.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+
+def read_seal(root, relative):
+    folder = safe(root, relative, True)
+    seal = safe(root, relative + '/SHA256SUMS')
+    names = set()
+    for line in seal.read_text('ascii').splitlines():
+        m = re.fullmatch(r'([0-9a-f]{64})  ([A-Za-z0-9_.-]+)', line)
+        need(m is not None, 'bad seal: ' + relative)
+        sha, name = m.groups()
+        need(name not in names and name not in ('.', '..', 'SHA256SUMS'), 'bad seal name')
+        need(digest(safe(root, relative + '/' + name)) == sha, 'evidence changed: ' + name)
+        names.add(name)
+    need(names and {p.name for p in folder.iterdir()} == names | {'SHA256SUMS'}, 'seal inventory differs: ' + relative)
+    return {name: folder / name for name in names}, digest(seal)
+
+
+def receipt(files, name):
+    return json.loads(files[name].read_text('utf-8'))
+
+
+def check_suite(files, tag, job, count, steps):
+    sem = receipt(files, tag + '-semantics.json')
+    summary = files[tag + '-summary.txt'].read_text('utf-8')
+    report = files[tag + '-report.txt'].read_text('utf-8')
+    deck = files[tag + '-body.jcl'].read_text('ascii')
+    name = re.search(rf'(?m)^JOB\s+{job}\s+([A-Z0-9]+)\s*$', summary)
+    need(name and sem['mvs_job'] == job and 'JOB RESULT: SUCCESS' in summary, tag + ': JES identity')
+    expected = re.findall(r'(?m)^//([A-Z0-9]{1,8})\s+EXEC PGM=(IEBGENER|ICINT19)\b', deck)
+    actual = re.findall(r'(?m)^([A-Z0-9]{1,8})\s+(IEBGENER|ICINT19)\s+RC=(\d{4})\s*$', summary)
+    system = re.findall(rf'(?m)^IEF142I\s+{name.group(1)}\s+([A-Z0-9]{{1,8}})\s+-\s+STEP WAS EXECUTED\s+-\s+COND CODE (\d{{4}})\s*$', report)
+    need(len(expected) == steps and len(set(n for n, _ in expected)) == steps and actual == [(n,p,'0000') for n,p in expected] and system == [(n,'0000') for n,_ in expected], tag + ': JES steps')
+    if tag.endswith('-regression'):
+        cases = sem['cases']
+        need(len(cases) == len(sem['verdicts']) == count, tag + ': regression count')
+        for i, (case, verdict) in enumerate(zip(cases, sem['verdicts']), 1):
+            need(case['step'] == verdict['step'] == f'R{i:02d}' and verdict['verdict'] == 'PASS' and all(case['checks'].get(k) is True for k in ('test_identity','rp_matches_golden','interpreted_code_zero','exp_present','exp_matches_golden')) and case['interpreted_codes'] == [0], tag + ': regression verdict')
+    else:
+        need(len(sem['run_cases']) == len(set(sem['run_cases'])) == len(sem['demo_print_records']) == count and sem['interpreted_zero_codes'] == steps-5, tag + ': demo receipt')
+
+
+def review(root):
+    for relative, sha in ((AWS,SHA),(OLD,OLD_SHA),(MANIFEST,MANIFEST_SHA)):
+        need(digest(safe(root, relative)) == sha, 'checksum mismatch: ' + relative)
+    seals = {}
+    for relative, name in ((PROD,'production'),(TA3,'installation'),(TA4,'mr10'),(TA7,'integration')):
+        files, seals[name] = read_seal(root, relative)
+        r = receipt(files, 'acceptance.json' if name == 'mr10' else 'result.json')
+        need(r['candidate'] == CANDIDATE and r['publication_authorized'] is False, name + ': receipt identity')
+        if name == 'production':
+            need(r['status'] == 'TA3_RC4_MVS_TWO_DATASET_STAGE_AND_21_DATASET_SL_AWS_WRITE_PASS' and r['sha256'] == SHA and r['original_bc0003_sha256'] == OLD_SHA and r['logical_datasets'] == 21 and r['aws_physical_files'] == 64 and r['mvs_jobs']['tape_write'] == 9397, 'production differs')
+        elif name == 'installation':
+            need(r['status'] == 'TA3_RC4_RECOVERED_FIRST_MR10_THEN_COMPLETED_NATIVE_COMBINED' and r['aws_sha256'] == SHA and r['installed_pds'] == 42 and r['verified_members'] == 315, 'installation differs')
+        elif name == 'mr10':
+            need(r['status'] == 'TA4_RC4_MR10_AUTOMATED_ACCEPTANCE_PASS' and r['regression_pass_count'] == 12 and r['regression_mvs_job'] == 9369 and r['ta4_jobs'] == {'preflight':9418,'build':9419,'smoke':9420,'language':9421,'bcpl':9422}, 'TA.4 differs')
+        else:
+            need(r['status'] == 'TA7_CLEAN_NAMESPACE_PASS' and r['aws_sha256'] == SHA and r['production_evidence'] == PROD and r['independent_mvs_system'] is False, 'TA.7 differs')
+            marker = json.loads(safe(root, MARKER).read_text('utf-8'))
+            need(marker['candidate'] == CANDIDATE and marker['evidence'] == TA7 and len(marker['targets']) == len(set(marker['targets'])) == 42, 'TA.7 marker differs')
+            need(set(r['profiles']) == {'MR10','NATIVE','COMBINED'}, 'profile selection differs')
+            for label, pds, members in (('MR10',11,94),('NATIVE',11,71),('COMBINED',20,150)):
+                p = r['profiles'][label]
+                need(p['pdses'] == pds and p['members'] == members, label + ': inventory differs')
+                need(set(p['functional']) == (set() if label == 'NATIVE' else {'language','bcpl','regression'}), label + ': functional scope differs')
+                if label != 'NATIVE':
+                    for (suite, count, steps), job in zip((('language',11,38),('bcpl',17,62),('regression',12,63)), SUITES[label]):
+                        need(p['functional'][suite] == {'job':job,'cases':count}, label + ': suite result differs')
+                        check_suite(files,label.lower()+'-'+suite,job,count,steps)
+    return seals
+
+
+def prepare(root):
+    seals = review(root)
+    work = safe(root,'workarea',True)
+    folder = work / ('ta8-rc4-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'))
+    paths = [safe(root,name) for name in FILES]
+    names = [p.name for p in paths]
+    need(len(names) == len(set(names)), 'duplicate package name')
+    checksums = {p.name:digest(p) for p in paths}
+    need(checksums[Path(AWS).name] == SHA and checksums[Path(MANIFEST).name] == MANIFEST_SHA, 'inputs changed')
+    folder.mkdir(mode=0o700)
+    archive = folder / (CANDIDATE + '-BC0004.zip')
+    with ZipFile(archive,'x',compression=ZIP_DEFLATED) as z:
+        for p in paths:
+            z.write(p,p.name)
+        z.writestr('SHA256SUMS',''.join(f'{h}  {name}\n' for name,h in sorted(checksums.items())))
+    with ZipFile(archive) as z:
+        need(set(z.namelist()) == set(names) | {'SHA256SUMS'} and len(z.namelist()) == len(names)+1, 'package inventory differs')
+        for name, sha in checksums.items():
+            h = hashlib.sha256()
+            with z.open(name) as stream:
+                for block in iter(lambda: stream.read(1024*1024),b''):
+                    h.update(block)
+            need(h.hexdigest() == sha, 'package byte mismatch: ' + name)
+    need(digest(safe(root,AWS)) == SHA and digest(safe(root,OLD)) == OLD_SHA, 'source media changed')
+    archive_sha = digest(archive)
+    (folder/'SHA256SUMS').write_text(f'{archive_sha}  {archive.name}\n',encoding='ascii')
+    (folder/'review.json').write_text(json.dumps({'status':'TA8_PRIVATE_PACKAGE_VERIFIED','candidate':CANDIDATE,'aws_sha256':SHA,'archive_sha256':archive_sha,'receipt_seals':seals,'publication_authorized':False},indent=2)+'\n',encoding='utf-8')
+    print('TA.8 PRIVATE PACKAGE PASS: 4 MVS evidence seals; 326 functional steps; RC4 exact bytes.')
+    print('Archive SHA256: '+archive_sha)
+    print('Evidence: '+str(folder.relative_to(root)))
+    return 0
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--prepare',action='store_true',help='prepare private ZIP with notices and exact AWS bytes')
+    args = parser.parse_args()
+    try:
+        if args.prepare:
+            raise SystemExit(prepare(ROOT))
+        review(ROOT)
+        print('TA.8 SAVED MVS EVIDENCE PASS: 4 seals; 326 functional steps; RC4 unchanged. No publication.')
+    except Exception as exc:
+        print('TA.8 REFUSED: '+str(exc),file=sys.stderr)
+        raise SystemExit(2)
