@@ -2211,3 +2211,8 @@ The owner limits functional release testing to the MR10 Kit Compiler until a ful
 ## TA.7 — Owner-approved clean-namespace scope (24 November 2026)
 
 The owner supersedes independent-system IPL with fresh, disjoint PDS namespaces on the existing MVS system: HERC02.BCPL.T7MR, T7NT and T7CB. See the [binding clean-namespace decision](ta7-clean-namespace-decision-20261124.md). The RC4 tape remains unchanged; all three profiles and both full MR10 functional panels are required. Native components remain distribution-only. TA.7 remains OPEN / IN PROGRESS pending actual MVS evidence; TA.8 and publication are separate.
+
+
+## TA.7 — Clean-namespace MVS technical acceptance PASS (24 November 2026 EST)
+
+Owner-reported MVS JOB 9423 established all 42 fresh PDS targets absent. All three RC4 installations passed exact manifest-selected inventory/DCB checks (MR10 11/94, NATIVE 11/71, COMBINED 20/150). MR10 JOBS 9431/9433/9435 and COMBINED JOBS 9447/9449/9451 passed 56 demonstrations and 24 automatic semantic regression verdicts, 80/80 total. RC4 remains unchanged. Evidence: `workarea/ta7-clean-namespace/20261124T133036Z-41593`. The [technical acceptance record](ta7-clean-namespace-acceptance-20261124.md) documents the owner-reported result and scope qualification. TA.7 technical PASS (qualified); formal closure awaits owner direction. Do not replay accepted operations. TA.8 remains pending; publication is not authorized.

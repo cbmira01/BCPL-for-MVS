@@ -26,3 +26,8 @@ The new runner is packaging/distribution/install-from-tape/scripts/ta7-clean-nam
 ## Offline verification and limits
 
 Assistant workspace: Python syntax and 18 focused assertions passed (profile SITE override, incomplete readback refusal, MR10 namespace and step-count guard, foreign DSN and write-disposition refusals). Inspected authoritative Git JCL: 38/62/63 steps, five IEBGENER stages each, 33/57/58 ICINT19 STEPLIB references respectively, no unexpected persistent DD disposition or retargeted control-card overflow. Full repository integration and actual MVS execution have not been performed in the assistant workspace; live MVS results remain authoritative. No new TA.7 MVS jobs have been executed. No publication is authorized.
+
+
+## Subsequent MVS result — 24 November 2026
+
+The owner reported a successful complete campaign. See the [TA.7 technical acceptance record](ta7-clean-namespace-acceptance-20261124.md). The earlier pending status above records the implementation checkpoint, not the current technical result. TA.7 technical PASS (qualified); formal owner closure remains separate.
