@@ -1,7 +1,7 @@
 # Milestone — Tape artifact release
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
-**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified); TA.3 — MVS Bootstrap and Installation CLOSED (qualified); TA.4 — MR10 Kit Compiler Distribution and Verification FORMALLY CLOSED by owner direction, 23 November 2026 EST; TA.5 — Native Runtime, Libraries, and Extensions Distribution CLOSED (qualified); TA.6 N/A for RC4; TA.7 — Clean-Target Integration and Release Acceptance OPEN / IN PROGRESS.** Candidate: `BCPL-0.1.0-rc4` / `BC0004`; original `BC0003` preserved.
+**Status:** **TA.0 CLOSED (qualified); TA.1 CLOSED (qualified); TA.2 — Manifest-Driven Tape Producer CLOSED (qualified); TA.3 — MVS Bootstrap and Installation CLOSED (qualified); TA.4 — MR10 Kit Compiler Distribution and Verification FORMALLY CLOSED by owner direction, 23 November 2026 EST; TA.5 — Native Runtime, Libraries, and Extensions Distribution CLOSED (qualified); TA.6 N/A for RC4; TA.7 — Clean-Target Integration and Release Acceptance CLOSED (qualified), 24 November 2026 EST; TA.8 — Release Audit and Controlled Publication OPEN / IN PROGRESS.** Candidate: `BCPL-0.1.0-rc4` / `BC0004`; original `BC0003` preserved.
 **Authoritative source:** GitHub `main`  
 **Target:** Standard-labeled Hercules AWS virtual tape distribution of the **Cambridge BCPL Programming System for MVS 3.8J**
 
@@ -2216,3 +2216,8 @@ The owner supersedes independent-system IPL with fresh, disjoint PDS namespaces 
 ## TA.7 — Clean-namespace MVS technical acceptance PASS (24 November 2026 EST)
 
 Owner-reported MVS JOB 9423 established all 42 fresh PDS targets absent. All three RC4 installations passed exact manifest-selected inventory/DCB checks (MR10 11/94, NATIVE 11/71, COMBINED 20/150). MR10 JOBS 9431/9433/9435 and COMBINED JOBS 9447/9449/9451 passed 56 demonstrations and 24 automatic semantic regression verdicts, 80/80 total. RC4 remains unchanged. Evidence: `workarea/ta7-clean-namespace/20261124T133036Z-41593`. The [technical acceptance record](ta7-clean-namespace-acceptance-20261124.md) documents the owner-reported result and scope qualification. TA.7 technical PASS (qualified); formal closure awaits owner direction. Do not replay accepted operations. TA.8 remains pending; publication is not authorized.
+
+
+## TA.7 formal qualified closure and TA.8 march opening — 24 November 2026 EST
+
+**Owner direction:** “Close TA7 and give me a handoff prompt to implement TA8.” **TA.7 — Clean-Target Integration and Release Acceptance is FORMALLY CLOSED (qualified).** Owner-reported actual MVS installation of 42 PDSes/315 members and 80/80 functional cases (56 demos, 24 automatic regression verdicts) satisfies the superseding clean-namespace gate. RC4 remains unchanged; evidence and original media remain protected. See [formal closure and transition](ta7-formal-qualified-closure-and-ta8-transition-20261124.md). **TA.8 — Release Audit and Controlled Publication is OPEN / IN PROGRESS.** Proceed with [TA.8 kickoff](ta8-kickoff-20261124.md), beginning with read-only provenance/redistribution, scope, registry, documentation, checksum, manifest and evidence audit. TA.6 remains N/A for RC4. No replay, new MVS operation, tape change or public release is authorized. Separate publication approval is required.
