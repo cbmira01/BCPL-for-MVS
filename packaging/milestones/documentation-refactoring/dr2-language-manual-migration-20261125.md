@@ -25,6 +25,8 @@ The [RC4 companion](../../distribution/publication/RC4-README.md) records 80/80 
 | CO.6 common coroutine contract and qualified closure | Tutorial 11; reference 10; future runtime reference | Operative accepted contract remains in place; no transfer | Common domain and failure qualification preserved; complete lifecycle provisions belong in runtime reference |
 | RC4 companion, manifests and frozen release documents | Both manuals: scope and execution | Release authority retained | Site substitutions and release limitations retained; no release bytes changed |
 
+Additional source reconciliation: MR10 TRN TRANSDYNDEFS uses EVALCONST for VEC bounds and LOAD uses EVALCONST for TABLE entries. The MR10 compiler inventory identifies the executable decks; the current demoted Cambridge build documentation distinguishes generated units from old tracked snapshots. Six native cases (08, 18, 22, 34, 38, 40) were cross-checked against the CO.6 tested revision: all 18 source/README/expected blobs match. The language reference cites these native development examples without promoting them to RC4 guarantees. The original historical source and executable paths remain intact.
+
 ## Checks and open qualifications
 
 - Verify both manuals' chapter coverage and relative link targets at the baseline plus the added documents; preserve the existing documentation index while adding navigation for actual manuals.

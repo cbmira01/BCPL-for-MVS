@@ -17,8 +17,8 @@ The MR10 historical SYN lexer recognizes names beginning with an uppercase lette
 | Integer literals | Decimal digits; # followed by octal digits; #B binary, #O octal, #X hexadecimal |
 | Character literal | Single quoted character, e.g. 'A' |
 | String literal | Double quotes, e.g. "BCPL"; historical lexer bounds the character count at 255 |
-| Escape | Asterisk conventions, e.g. *N newline, *S space, *T tab, ** asterisk |
-| Comments | // and \|\| to end of line; /* ... */ |
+| Escape | Asterisk conventions, e.g. `*N` newline, `*S` space, `*T` tab, `**` asterisk |
+| Comments | `//` and `\|\|` to end of line; `/* ... */` |
 | Block brackets | $( and $), optionally tagged |
 | Expression grouping | Parentheses; historical lexer also recognizes [ and ] as parenthesis tokens |
 | Assignment | :=; historical lexer also recognizes underscore |
@@ -39,7 +39,7 @@ declaration  ::= LET definition { AND definition }
                | GLOBAL   $( name : constant ... $)
                | STATIC   $( name = constant ... $)
 definition   ::= name-list = expression-list
-               | name = VEC expression
+               | name = VEC constant
                | name ( [name-list] ) = expression
                | name ( [name-list] ) BE command
 block        ::= $( declarations commands $)
@@ -75,7 +75,7 @@ The expression ? is recognized by MR10 SYN/TRN. Its use as an unspecified value 
 
 Local names are scoped to their block; an inner binding can hide an outer name. The declarations example exercises nesting. Initializers in a declaration group must not be assumed to execute as sequential assignments; use a separate LET for dependent initialization when necessary. Function and routine names can appear in the same AND group (see the recursion regression). MANIFEST values and global slot numbers use the compiler's constant-expression evaluator, which is more restricted in historical MR10 TRN than ordinary expressions.
 
-Static lifetime, initializer constraints, scope restrictions on non-global nested routines and duplicate-name diagnostics require detailed target reconciliation. Do not assume automatic zero initialization of uninitialized words.
+Historical MR10 TRN emits a data label and constant initializer for STATIC; native development case 40 also verifies a static scalar changed by a routine. Detailed MR10 target evidence for static lifetime and initializer constraints, scope restrictions on non-global nested routines, and duplicate-name diagnostics remains to be reconciled. Do not assume automatic zero initialization of uninitialized words.
 
 ## 5. Expressions and operator precedence
 
@@ -86,14 +86,14 @@ The following precedence is derived from historical MR10 SYN REXP and RBEXP, fro
 | Calls F(A), grouping | Calls attached by REXP; parentheses group |
 | V!I | 40, left associative |
 | Prefix @, ! (LV, RV) | Operand parsed at 35 |
-| *, /, REM | 35, left associative |
+| `*`, `/`, REM | 35, left associative |
 | Unary +, - | Operand parsed at 34 (includes multiplication) |
 | Binary +, - | 34, left associative |
-| =, \=, <, >, <=, >= (EQ, NE, LS, GR, LE, GE) | 30; chains form conjunctions of adjacent comparisons |
-| <<, >> (LSHIFT, RSHIFT) | Left binding 25, right operand parsed at 30 |
-| Prefix \ or NOT | Operand parsed at 24 |
-| /\, &, LOGAND | 23, left associative |
-| \/, \|, LOGOR | 22, left associative |
+| `=`, `\=`, `<`, `>`, `<=`, `>=` (EQ, NE, LS, GR, LE, GE) | 30; chains form conjunctions of adjacent comparisons |
+| `<<`, `>>` (LSHIFT, RSHIFT) | Left binding 25, right operand parsed at 30 |
+| Prefix `\` or NOT | Operand parsed at 24 |
+| `/\`, `&`, LOGAND | 23, left associative |
+| `\/`, `\|`, LOGOR | 22, left associative |
 | EQV, NEQV | 21, left associative |
 | C -> E,F | 13, branches parsed as expressions |
 
@@ -134,7 +134,7 @@ Arguments and return values are BCPL words. Passing a pointer copies the address
 
 ## 8. Storage and addressing
 
-VEC N reserves N+1 words, indexed 0 through N, in its enclosing local storage. V!I denotes the word at address V+I; prefix ! dereferences a word address; @ obtains the address of a suitable location. Assigning a pointer does not copy the storage. TABLE yields a pointer to a word table. Treat literal/static table storage separately from local vectors; do not assume literal mutability or particular placement.
+VEC N reserves N+1 words, indexed 0 through N, in its enclosing local storage. Historical MR10 TRN (TRANSDYNDEFS) evaluates N using EVALCONST at translation time: do not use a run-time size in a VEC declaration. V!I denotes the word at address V+I; prefix ! dereferences a word address; @ obtains the address of a suitable location. Assigning a pointer does not copy the storage. TABLE yields a pointer to a word table. Historical MR10 TRN emits each table element using EVALCONST; use constant expressions. Treat literal/static table storage separately from local vectors; do not assume literal mutability or particular placement.
 
 Keep local-vector pointers within their live scope. Do not use pointers after return or deallocation. Bounds are the programmer's responsibility; neither historical syntax nor a passing valid-domain test guarantees general address protection. Byte offsets are not word indices.
 
@@ -160,7 +160,22 @@ Native application generation, assembly, IEWL link-edit, and global installation
 | Coroutine lifecycle | MR10-specific globals and setup; supported tests | Bounded native common-domain contract accepted in development, not RC4 native functional certification |
 | Modern BCPL additions | Not presumed supported | Not presumed supported |
 
-The [historical Cambridge SYN](../../richards-bcpltape/bcplib/bcpl/syn) and [TRN](../../richards-bcpltape/bcplib/bcpl/trn) contain additional syntax compared with [MR10 SYN](../../richards-bcpltape/mr10/bcplkit/syn) and [MR10 TRN](../../richards-bcpltape/mr10/bcplkit/trn). This is a preliminary source-based contrast, not an exhaustive supported-feature matrix. The demoted compiler may differ from its historical source and native-running reconstruction; exact current front-end and backend coverage must be traced separately.
+The [historical Cambridge SYN](../../richards-bcpltape/bcplib/bcpl/syn) and [TRN](../../richards-bcpltape/bcplib/bcpl/trn) contain additional syntax compared with [MR10 SYN](../../richards-bcpltape/mr10/bcplkit/syn) and [MR10 TRN](../../richards-bcpltape/mr10/bcplkit/trn). This is a preliminary source-based contrast, not an exhaustive supported-feature matrix. The [MR10 compiler INTCODE inventory](../../mr10-kit-compiler/source/README.md) identifies the actual historical SYNI/TRNI/CGI decks used on MVS. The [demoted Cambridge build documentation](../../bootstrap-toolchain/bootstrap-cambridge/README.md) identifies its current input containers `source/syn` and `source/trn`, the `make-demoted.py` generator, and the generated compiler units. The tracked `demoted/` directory is an earlier snapshot, not the current clean-room build input. The source containers include the same additional BYTEAP, floating-operator and selector parsing/translation branches described above; those branches alone do not establish supported output behavior. Exact generated front-end and backend coverage must be traced separately.
+
+### Accepted native application examples (development only)
+
+The [CO.6 closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md) records 145 PASS and one expected SKIP (083) for the native bootstrap suite. The following six cases and their source, README and expected-output blobs match the tested revision 216b6707c404a91c796ed8f1419a99ef172b184a. Each expects the diagnostic output value 42. These are native applications generated by the interpreter-hosted demoted Cambridge Compiler, not evidence of a native-running compiler or RC4 native certification.
+
+| Case | Verified positive example |
+| --- | --- |
+| [08](../../tests/bootstrap/08-local-vector-store-load/source.bcpl) | Store and reload a word through a local vector |
+| [18](../../tests/bootstrap/18-recursion/source.bcpl) | Recursive function and conditional expression |
+| [22](../../tests/bootstrap/22-signed-arithmetic/source.bcpl) | Unary negation and signed subtraction |
+| [34](../../tests/bootstrap/34-valof-resultis/source.bcpl) | VALOF/RESULTIS in a local initializer |
+| [38](../../tests/bootstrap/38-putbyte-getbyte-roundtrip/source.bcpl) | Byte store and reload through library calls |
+| [40](../../tests/bootstrap/40-static-scalar-persistence/source.bcpl) | STATIC scalar changed by a separate routine |
+
+These cases are deliberately small and do not establish all semantics of the corresponding constructs. The suite manifest and independent expected outputs remain authoritative.
 
 The accepted [common coroutine behavioral contract](../../packaging/milestones/coroutines/co6-common-coroutine-contract-20261116.md) covers valid cooperative transfers, preserved locals, and bounded deletion/reuse with one root and up to two workers in the common domain. Native stacks are checked 1024-word stacks; MR10 and native global numbers and internal descriptors differ. The original manually constructed fixed-stack MR10 fixture remains a genuine failure under canonical ICINT19, as documented in [CO.6 qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md). Coroutines are library/runtime services, not additional syntax. No transfer of that contract's authority is effected here.
 

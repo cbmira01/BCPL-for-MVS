@@ -58,7 +58,7 @@ LET declarations precede executable commands within a block. A subsequent assign
 
 Return to integer-arithmetic. Evaluate addition, subtraction, multiplication, integer division and remainder. The positive calculation 17/5 gives 3 and 17 REM 5 gives 2.
 
-Run [boolean-operators](../../mr10-kit-compiler/language-demo/boolean-operators/boolean-operators.bcpl). Compare A<B, A=B, and A\=B; combine conditions using /\ and \/. The backslash prefix negates a logical value. Parenthesize mixed expressions to make intent clear. BCPL words can represent integers, bit patterns or logical values; do not import the Boolean rules of another language.
+Run [boolean-operators](../../mr10-kit-compiler/language-demo/boolean-operators/boolean-operators.bcpl). Compare `A<B`, `A=B`, and `A\=B`; combine conditions using `/\` and `\/`. The backslash prefix negates a logical value. Parenthesize mixed expressions to make intent clear. BCPL words can represent integers, bit patterns or logical values; do not import the Boolean rules of another language.
 
 Exercise: predict which comparisons in the example are true, then change B to 7 in your scratch copy. Compare the numeric truth representations printed by WRITEF.
 
