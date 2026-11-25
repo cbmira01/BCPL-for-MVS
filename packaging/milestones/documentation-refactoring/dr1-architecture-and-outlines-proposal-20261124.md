@@ -45,6 +45,8 @@ Proposed directory names are product and project, not four Diátaxis subdirector
 
 ## 3. Proposed first manual catalog and chapter outlines
 
+**Subsequent owner decisions:** see [manual catalog decisions, 25 November 2026](dr1-manual-catalog-owner-decisions-20261125.md). The original proposal below is retained as the discussion baseline; the revised catalog supersedes it where the owner has agreed changes.
+
 Titles and filenames follow the agreed conventions. The following 15 manuals are candidates, not a quota or approved implementation list. Each outline is deliberately bounded. All filenames are proposed relative to docs/product or docs/project. Actual manuals are created only when sufficient verified content exists. Cross-references are part of the outline. Avoid repeating interface tables, command recipes, or status matrices across manuals.
 
 ### Product documentation (DR.2)
