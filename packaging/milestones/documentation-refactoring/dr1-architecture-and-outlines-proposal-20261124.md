@@ -84,6 +84,8 @@ The current 14 orientation briefings are not all product usage material. Propose
 
 ## 4. Authority and status model
 
+**Subsequent owner decision:** [Reference manuals as normative authorities](dr1-reference-authority-owner-decision-20261125.md) establishes the long-term authority direction. The original proposal below is preserved as discussion history; existing contracts remain operative until individual validated transfers are approved.
+
 - Canonical human-authored prose: UTF-8 Markdown in GitHub main; version it with code and freeze release-specific documentation by tag/manifest. No independent Wiki authority. GitHub Pages is a possible derived view only; no new infrastructure now.
 - Normative assignments, accepted ABI/API and evidence remain authoritative at existing paths, not silently superseded by a manual. A reference chapter cites the governing contract and source/header, specifies scope and validation, and summarizes only as necessary. If authority is to migrate, require explicit owner decision, traceability and equivalent contract review.
 - For runtime v1/v2 and DEVOBJ BCPLIO, distinguish candidate-scoped evidence from current installed production. Do not declare either comprehensive without reconciliation. Preserve accepted archived Decision G and QUERY records.

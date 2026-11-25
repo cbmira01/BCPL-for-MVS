@@ -42,7 +42,7 @@ Owner accepted DR.0 and authorized DR.1 and commits on 24 November 2026. See [fo
 
 ### DR.1 — Architecture and Outlines
 
-Agree on coherent subject areas, catalog, canonical source/representation, directory organization, stable references, filenames, navigation and outlines before implementation. Repository Markdown is recommended, not a finalized physical architecture. Wiki, Pages, offline representation and rendering details remain open. Obtain owner approval before bulk rewriting or relocation. See [proposed architecture and outlines](dr1-architecture-and-outlines-proposal-20261124.md).
+Agree on coherent subject areas, catalog, canonical source/representation, directory organization, stable references, filenames, navigation and outlines before implementation. Repository Markdown is recommended, not a finalized physical architecture. Wiki, Pages, offline representation and rendering details remain open. Obtain owner approval before bulk rewriting or relocation. See [proposed architecture and outlines](dr1-architecture-and-outlines-proposal-20261124.md), [manual catalog decisions](dr1-manual-catalog-owner-decisions-20261125.md) and [owner decision on normative reference manuals](dr1-reference-authority-owner-decision-20261125.md).
 
 ### DR.2 — Product Documentation
 
