@@ -202,7 +202,7 @@ tools/datasets/dspal info
 tools/bootstrap/prepare-bootstrap --check-inputs
 ```
 
-Stop on revision or configuration drift. Confirm exclusive operator control and completed prior jobs before deleting anything.
+Stop on revision or configuration drift. The `dspal status --probe` command submits an actual IEFBR14 JES job and checks its result; it is not merely a host readiness observation or a JES-idle check. Confirm that the probe and other prior jobs have completed and that the operator has exclusive control before deleting anything. The separate reconstruction `plan --probe` performs host/endpoint observations without submitting a JES job.
 
 ### Step 1 — clean host workarea
 

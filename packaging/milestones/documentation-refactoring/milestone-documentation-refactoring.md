@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Owner approval:** 24 November 2026 EST — seven marches DR.0–DR.6 approved; DR.0 commencement authorized.  
-**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 CLOSED (qualified); DR.3 IN PROGRESS; DR.4–DR.6 NOT STARTED.  
+**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 CLOSED (qualified); DR.3 CLOSED (qualified); DR.4 IN PROGRESS; DR.5–DR.6 NOT STARTED.  
 **Authority:** GitHub `main`. Inventory baseline: `ed0f8066859ed4e1a310bbb91520d0d629c5dca3`.
 
 ## Objective
@@ -29,8 +29,8 @@ Filenames correspond to titles, with hyphens between words. The preferred System
 | DR.0 | Inventory and Classification | CLOSED (qualified) | Inventory, authority, dependencies and candidate dispositions |
 | DR.1 | Architecture and Outlines | CLOSED | Owner-approved catalog, directory structure, navigation and outlines |
 | DR.2 | Product Documentation | CLOSED (qualified) | Manuals for BCPL programmers and MVS operators |
-| DR.3 | Project Documentation | IN PROGRESS | Development, reconstruction, testing, maintenance, promotion and release procedures |
-| DR.4 | Documentation Distribution | NOT STARTED | GitHub, offline and MVS documentation representations |
+| DR.3 | Project Documentation | CLOSED (qualified) | Development, reconstruction, testing, maintenance, promotion and release procedures |
+| DR.4 | Documentation Distribution | IN PROGRESS | GitHub, offline and MVS documentation representations |
 | DR.5 | Validation and Reconciliation | NOT STARTED | Technical accuracy, consistency and operational verification |
 | DR.6 | Acceptance and Closure | NOT STARTED | Maintenance policy, release integration and formal acceptance |
 
@@ -56,9 +56,13 @@ Owner accepted qualified closure on 25 November 2026 after correction of two acc
 
 Consolidate active reconstruction, development, testing, maintenance, promotion and release instructions. Separate current procedures from historical investigations and accepted engineering records. See the [DR.3 kickoff in the closure record](dr2-formal-qualified-closure-and-dr3-transition-20261125.md).
 
+Owner directed acceptance and transition on 25 November 2026. All five project manuals and 45 chapters are drafted and committed; complete normative reconciliation and target validation remain pending. See [formal qualified closure and DR.4 transition](dr3-formal-qualified-closure-and-dr4-transition-20261125.md).
+
 ### DR.4 — Documentation Distribution
 
 Establish GitHub, offline and MVS FB80 representations. Derive release-specific information from frozen manifests and the release registry where practical. Preserve RC4 frozen documentation and all published bytes. Validate transformation and encoding fidelity; do not silently truncate records.
+
+DR.4 begins with owner design review; see the [DR.4 transition in the closure record](dr3-formal-qualified-closure-and-dr4-transition-20261125.md). Detailed representation and integration decisions are not yet approved.
 
 ### DR.5 — Validation and Reconciliation
 
