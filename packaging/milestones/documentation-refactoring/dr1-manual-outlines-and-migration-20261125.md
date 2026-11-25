@@ -357,6 +357,8 @@ The owner explicitly agreed to the approach explained in the 25 November convers
 
 This is an illustrative destination map, not a completed reconciliation. Map all normative provisions, including QUERY, OPEN, READ, WRITE, CLOSE, INFO and the 1024 total-byte private stage ceiling, against later accepted scope before transfer. Do not retroactively credit subsequent installation evidence to Q.5.
 
-## Remaining DR.1 gate
+## Remaining DR.1 gate (historical)
+
+**Owner disposition:** The outlines were approved on 25 November 2026. See [formal DR.1 closure and DR.2 transition](dr1-formal-closure-and-dr2-transition-20261125.md).
 
 Review these outlines for coverage, overlap and appropriate boundaries; approve chapter plan and practical migration arrangements before formal closure. Actual clause mapping and validation are subsequent implementation work. Rendering and record-format design remains DR.4. No implementation, relocation, deletion, contract transfer, release or MVS operation has been performed. DR.0's qualified dependency audit remains a constraint; no complete dependency graph or individual contract validation is claimed.

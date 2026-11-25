@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Owner approval:** 24 November 2026 EST — seven marches DR.0–DR.6 approved; DR.0 commencement authorized.  
-**Status:** DR.0 CLOSED (qualified); DR.1 IN PROGRESS; DR.2–DR.6 NOT STARTED.  
+**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 IN PROGRESS; DR.3–DR.6 NOT STARTED.  
 **Authority:** GitHub `main`. Inventory baseline: `ed0f8066859ed4e1a310bbb91520d0d629c5dca3`.
 
 ## Objective
@@ -27,8 +27,8 @@ Filenames correspond to titles, with hyphens between words. The preferred System
 | March | Title | Status | Principal deliverable |
 | --- | --- | --- | --- |
 | DR.0 | Inventory and Classification | CLOSED (qualified) | Inventory, authority, dependencies and candidate dispositions |
-| DR.1 | Architecture and Outlines | IN PROGRESS | Owner-approved catalog, directory structure, navigation and outlines |
-| DR.2 | Product Documentation | NOT STARTED | Manuals for BCPL programmers and MVS operators |
+| DR.1 | Architecture and Outlines | CLOSED | Owner-approved catalog, directory structure, navigation and outlines |
+| DR.2 | Product Documentation | IN PROGRESS | Manuals for BCPL programmers and MVS operators |
 | DR.3 | Project Documentation | NOT STARTED | Development, reconstruction, testing, maintenance, promotion and release procedures |
 | DR.4 | Documentation Distribution | NOT STARTED | GitHub, offline and MVS documentation representations |
 | DR.5 | Validation and Reconciliation | NOT STARTED | Technical accuracy, consistency and operational verification |
@@ -43,6 +43,8 @@ Owner accepted DR.0 and authorized DR.1 and commits on 24 November 2026. See [fo
 ### DR.1 — Architecture and Outlines
 
 Agree on coherent subject areas, catalog, canonical source/representation, directory organization, stable references, filenames, navigation and outlines before implementation. Repository Markdown and GitHub presentation are owner-approved; no independent Wiki, Pages deferred pending need. Detailed offline/MVS representations and rendering remain DR.4 design decisions. Obtain owner approval before bulk rewriting or relocation. See [proposed architecture and outlines](dr1-architecture-and-outlines-proposal-20261124.md), [manual catalog decisions](dr1-manual-catalog-owner-decisions-20261125.md) and [owner decision on normative reference manuals](dr1-reference-authority-owner-decision-20261125.md), and [owner-approved directory scheme](dr1-directory-organization-owner-decision-20261125.md), [canonical Markdown decision](dr1-canonical-markdown-owner-decision-20261125.md), and [navigation decision](dr1-navigation-owner-decision-20261125.md). See [manual outlines and approved migration approach](dr1-manual-outlines-and-migration-20261125.md).
+
+Owner approved the chapter outlines and authorized DR.2 on 25 November 2026. See [formal closure and DR.2 transition](dr1-formal-closure-and-dr2-transition-20261125.md).
 
 ### DR.2 — Product Documentation
 
