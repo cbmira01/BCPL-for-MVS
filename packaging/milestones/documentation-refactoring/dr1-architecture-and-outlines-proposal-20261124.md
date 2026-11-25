@@ -121,6 +121,8 @@ DR.5 verifies content against source/contracts and accepted MVS evidence, valida
 
 ## 7. Owner decisions required before DR.1 closure
 
+**Subsequent review:** [Detailed manual outlines and approved migration approach](dr1-manual-outlines-and-migration-20261125.md) records the owner's migration/reconciliation agreement and the complete proposed eighteen-manual chapter plan. Earlier questions below are historical context.
+
 1. Approve canonical repository Markdown, no independent Wiki, optional derived Pages.
 2. Approve the proposed docs/product and docs/project arrangement with reader-need navigation, preserving existing record and dependency paths.
 3. Approve or revise the 15-manual catalog and outlines, including the proposed shared MVS background manual (sixteenth) versus retaining the briefings.
