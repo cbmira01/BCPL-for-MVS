@@ -6,13 +6,21 @@
 
 - [Tutorial on BCPL Programming](product/Tutorial-on-BCPL-Programming.md)
 
+### Explanations
+
+- [Explanation of BCPL Compilers](product/Explanation-of-BCPL-Compilers.md)
+
 ### References
 
 - [Reference for the BCPL Language](product/Reference-for-the-BCPL-Language.md) — working reference; existing authorities retained.
 
+- [Reference for BCPL Compilers](product/Reference-for-BCPL-Compilers.md) — working reference; existing authorities retained.
+
 ## Subject index
 
 - **BCPL language:** [Tutorial](product/Tutorial-on-BCPL-Programming.md), [language reference](product/Reference-for-the-BCPL-Language.md).
+
+- **BCPL compilers:** [Explanation](product/Explanation-of-BCPL-Compilers.md), [compiler reference](product/Reference-for-BCPL-Compilers.md).
 
 The remaining approved manuals will be linked as substantive drafts are added. Existing programmer orientation briefings remain available below during migration.
 
