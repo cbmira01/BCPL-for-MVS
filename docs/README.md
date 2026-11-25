@@ -1,4 +1,22 @@
-# Programmer orientation briefings
+# Documentation
+
+## Product manuals
+
+### Tutorials
+
+- [Tutorial on BCPL Programming](product/Tutorial-on-BCPL-Programming.md)
+
+### References
+
+- [Reference for the BCPL Language](product/Reference-for-the-BCPL-Language.md) — working reference; existing authorities retained.
+
+## Subject index
+
+- **BCPL language:** [Tutorial](product/Tutorial-on-BCPL-Programming.md), [language reference](product/Reference-for-the-BCPL-Language.md).
+
+The remaining approved manuals will be linked as substantive drafts are added. Existing programmer orientation briefings remain available below during migration.
+
+## Programmer orientation briefings
 
 This directory contains **human-readable educational briefings** on BCPL,
 System/370, MVS 3.8J, Hercules, IFOX and JCL. They are explanatory notes,
