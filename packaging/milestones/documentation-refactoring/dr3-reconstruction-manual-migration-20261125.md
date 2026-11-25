@@ -1,0 +1,33 @@
+# DR.3 — Reconstruction manual: migration and evidence
+
+**Date:** 25 November 2026 EST  
+**Baseline:** `2ca15e3feef49eb803bb962ee1644ca97945e44b`  
+**Status:** First substantive working draft prepared; owner review and commit authorization pending. DR.3 remains IN PROGRESS.
+
+## Migration ledger
+
+Destination: [How to Reconstruct BCPL from Source](../../../docs/project/How-to-Reconstruct-BCPL-from-Source.md), eight approved chapters. Existing paths remain operative; this is not an authority transfer or a retirement decision.
+
+| Source / authority | Destination | Reconciliation and qualification |
+| --- | --- | --- |
+| [Routine rebuild guide](../../../docs/Rebuild-BCPL-for-MVS-from-source.md), [manual procedure](../../../docs/Manual-Rebuild-BCPL-for-MVS.md), [actual driver](../../../tools/reconstruction/rebuild-from-source) | 1–8, especially 3–5 and 7 | Exact supported interactive/unattended sequence, two population passes, twelve-generated-member RC=2 exception, no resume, independent regressions; preserve both old paths. |
+| [Dataset config](../../../config/dspal.yaml), [purge](../../../tools/datasets/dspal-purge.py), [population](../../../tools/datasets/dspal-populate.py), [host cleanup](../../../tools/clean-workarea) | 1–2, 4, 7 | 29 tracked logical PDSs; effective overrides govern actual scope; credential and evidence preservation; fixed JCL HLQ must be reconciled before a site adaptation. |
+| [Reconstruction controller README](../../../tools/reconstruction/README.md), [dedicated TK5 decision](../../distribution/dedicated-tk5-operator-controlled-reconstruction-decision-20261106.md) | 2, 8 | Separate scope-fingerprinted controller has pending live integration acceptance; simple accepted driver has no integrated JES-idle check or script-wide immutable-plan gate. Standalone authorization exercise is nontransferable; idle is not a lock. |
+| [ICINT19 JCL](../../../mr10-kit-compiler/jcl/build-icintv19.jcl), [CAMBBLD](../../../bootstrap-toolchain/jcl/cambbld.jcl), [prepare-bootstrap](../../../tools/bootstrap/prepare-bootstrap), [SCALVEC](../../../mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.bcpl) | 5, 7 | Actual IFOX/IEWL and ICINT phases; smoke source-derived EXP/RP values, generated assembler not native compiler execution. |
+| [BLDBMAIN](../../../bootstrap-toolchain/jcl/bldbmain.jcl), [BLIBBLD](../../../bootstrap-toolchain/jcl/blibbld.jcl), [BLDCORCO](../../../bootstrap-toolchain/jcl/bldcorco.jcl), [BLDCORLB](../../../bootstrap-toolchain/jcl/bldcorlb.jcl), [coroutine BCPL source](../../../bootstrap-toolchain/library/coroutines.bcpl), [installed verifier](../../../tools/coroutines/verify-installed-production.py) | 5–7 | Seven initial objects, exact ten installed, two coroutine read-back comparisons and independent 21-record oracle. BLIBBLD has no IEBCOMPR step; correct draft scope without modifying prior procedure or JCL. |
+| [BCPLDEMO](../../../bootstrap-toolchain/jcl/bcpldemo.jcl), [BCPLTIME](../../../bootstrap-toolchain/jcl/bcpltime.jcl), [BCPLQSAM](../../../bootstrap-toolchain/jcl/bcplqsam.jcl) | 5–7 | Three distinct installation jobs, IFOX and IEBGENER read-back, IEBCOMPR; unattended mode skips human checkpoint, so review retained receipts. Installed QSAM selection qualification retained. |
+| [Batch closure](../../distribution/clean-room-batch-reconstruction-closure-20261109.md), [CO.5 production clean-room PASS](../coroutines/co5-production-clean-room-pass-20261116.md), [CO.6 closure](../coroutines/co6-formal-acceptance-and-closure-20261116.md) | 4, 6, 8 | Owner-reported actual MVS execution at recorded revisions; 71 canonical member comparisons qualified for four terminal blank-count cases; exact ten objects, installed native coroutine execution, 208 supported PASS and one expected SKIP 083. Original historical coroutine FAIL and IEWL SB2D preserved. |
+| [Test coordinator](../../../tools/tests/run-project-regressions), [test guide](../../../tools/tests/README.md) | 6, 8 | Eight regular suites, explicit production profile, independent oracles, guarded devices and no retry; historical diagnostics are separate. Older README counts/pending language are historical, not current acceptance claims. |
+| [Distribution index](../../distribution/README.md), [DR.2 operational migration ledger](dr2-operational-manual-migration-20261125.md) | 1–2, 5–6, 8 | RC4 vs development, no release replay or overwrite, preserve private evidence and no-retry markers; source-observed compile-mvs preview output deletion remains a DR.5 qualification. |
+
+## Contradictions and decisions
+
+- The simple driver is the accepted routine path; the guarded controller is a separate implementation, not a replacement. The older controller README's historical pending wording is not grounds to deny the independently accepted simple-driver run. Preserve it as the source of controller-specific behavior.
+- The simple driver pulls `main` and prints status but does not enforce a pinned SHA or clean checkout. The draft makes operator review of post-pull revision and unattended prerequisites explicit; no software guard is added. A future exact-revision gate is a separate design decision, not implied implementation work.
+- The existing manual Step 8 wording can imply all three payloads have read-back comparisons. The actual BLIBBLD JCL has COMP/PREPASM/PREPLK/FIXASM/ASMBLIB/INSTALL, no IEBCOMPR. Distinguish BLIB verification from the explicit coroutine and extension comparisons.
+- Earlier six-suite and controller evidence remains historically valid at its stated revision. The accepted eight-suite CO.6 selection is the current supported target, not a claim that all historical probes pass.
+- The simple driver has no integrated JES guard; use operator quiescence and distinguish additional read-only diagnostics from controller approval. No fresh MVS test is required merely to review this documentation draft.
+
+## Outstanding reconciliation
+
+DR.0 incomplete dependency audit persists. Preserve original canonical rebuild and release how-to paths, existing contracts, source, JCL, manifests, registry and accepted evidence. Complete clause-level authority reconciliation and operational verification in DR.5; no new target run, rehash of release assets, or independent raw local receipt inspection occurred. Source identity across all tested and current revisions has not been established. A requested additional comparison was limited by the connector call budget. No existing procedure is formally superseded; no commit, software change, MVS operation, release production or publication is authorized or performed by this draft.

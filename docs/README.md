@@ -33,6 +33,12 @@
 
 - [Reference for System Extensions](product/Reference-for-System-Extensions.md) — working reference; existing authorities retained.
 
+## Project manuals
+
+### How-to guides
+
+- [How to Reconstruct BCPL from Source](project/How-to-Reconstruct-BCPL-from-Source.md) — working draft; existing reconstruction runbooks remain operative.
+
 ## Subject index
 
 - **BCPL language:** [Tutorial](product/Tutorial-on-BCPL-Programming.md), [language reference](product/Reference-for-the-BCPL-Language.md).
@@ -44,6 +50,8 @@
 - **System Extensions:** [Tutorial](product/Tutorial-on-System-Extensions.md), [how-to](product/How-to-Use-System-Extensions.md), [explanation](product/Explanation-of-System-Extensions.md), [reference](product/Reference-for-System-Extensions.md).
 
 - **Installation and operation:** [Install from tape](product/How-to-Install-BCPL-from-Tape.md), [operate the system](product/How-to-Operate-the-BCPL-Programming-System.md), [compile and run programs](product/How-to-Compile-and-Run-BCPL-Programs.md).
+
+- **Project reconstruction:** [Reconstruct from source](project/How-to-Reconstruct-BCPL-from-Source.md), [existing automated runbook](Rebuild-BCPL-for-MVS-from-source.md), [existing manual procedure](Manual-Rebuild-BCPL-for-MVS.md).
 
 All thirteen approved product manuals now have substantive working drafts. Existing references retain authority pending explicit reconciliation and approval. Existing programmer orientation briefings remain available below during migration.
 
