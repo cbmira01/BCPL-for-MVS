@@ -38,6 +38,7 @@
 ### How-to guides
 
 - [How to Reconstruct BCPL from Source](project/How-to-Reconstruct-BCPL-from-Source.md) — working draft; existing reconstruction runbooks remain operative.
+- [How to Develop and Test BCPL for MVS](project/How-to-Develop-and-Test-BCPL-for-MVS.md) — working draft; existing policies and test authorities retained.
 
 ## Subject index
 
@@ -52,6 +53,8 @@
 - **Installation and operation:** [Install from tape](product/How-to-Install-BCPL-from-Tape.md), [operate the system](product/How-to-Operate-the-BCPL-Programming-System.md), [compile and run programs](product/How-to-Compile-and-Run-BCPL-Programs.md).
 
 - **Project reconstruction:** [Reconstruct from source](project/How-to-Reconstruct-BCPL-from-Source.md), [existing automated runbook](Rebuild-BCPL-for-MVS-from-source.md), [existing manual procedure](Manual-Rebuild-BCPL-for-MVS.md).
+
+- **Project development and testing:** [Develop and test BCPL for MVS](project/How-to-Develop-and-Test-BCPL-for-MVS.md), [native suite contract](../tests/README.md), [test runner guide](../tools/tests/README.md).
 
 All thirteen approved product manuals now have substantive working drafts. Existing references retain authority pending explicit reconciliation and approval. Existing programmer orientation briefings remain available below during migration.
 
