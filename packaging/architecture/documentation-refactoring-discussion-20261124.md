@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Date:** 24 November 2026 EST  
-**Status:** Post-milestone discussion record; proposed direction, not an approved implementation plan.  
+**Status:** Documentation Refactoring discussion record; agreed principles, owner preferences and open design questions, not an approved implementation plan.  
 **Repository baseline:** `main` at `e5eca51ed2738c4f8532e5ee909cea3c55acd3d5`
 
 ## Purpose
@@ -79,6 +79,91 @@ Favor incremental semantic improvement over a wholesale rewrite. Identify author
 
 The technical work should continue to favor real BCPL, JCL and assembly, verified through MVS, the compiler and MVS system tools. Documentation and tooling changes should make that work simpler.
 
+## Continued owner discussion — Documentation Refactoring
+
+The owner agreed to the general approach and the distinction between product documentation and project documentation, emphasized outline-first development and concise human-facing writing, and favored coherent manuals with chapters rather than separate documents for each component. The following records the direction agreed or preferred so far, not a finalized milestone plan.
+
+### Product documentation and project documentation
+
+**Product documentation** describes the Cambridge BCPL Programming System for MVS 3.8J as a usable programming system. **Project documentation** describes the work of reconstructing, developing, verifying, maintaining and distributing it.
+
+The intended audiences overlap:
+
+| Audience | Primary need |
+| --- | --- |
+| BCPL programmers | Write, compile, link and execute applications |
+| MVS operators | Install, configure and operate the programming system |
+| Project developers | Modify, reconstruct and test components |
+| Project maintainers | Manage compatibility, acceptance and releases |
+| Historical researchers | Understand historical BCPL and reconstruction provenance |
+
+Do not create independent, duplicative documentation collections for each audience. A programmer should be able to use BCPLQSAM without reading the history of Q.0–Q.5; a developer must still be able to find that history and its evidence.
+
+Diátaxis applies to human-facing technical documentation in both bodies of knowledge. Governance, engineering records, machine-readable configuration, legal information and preserved historical materials retain their own purposes and need not conform to Diátaxis. A current technical reference may draw on an accepted contract without duplicating or superseding its authority silently.
+
+### Inside-out, outline-first development
+
+Begin substantial documents with their purpose, audience, Diátaxis classification, title, filename and an outline of section headings. Review the outline for coverage, navigation, overlap and logical progression before filling in the text.
+
+Use similar section structures for related documents where useful. For example, explanations of the MR10 Kit Compiler, demoted Cambridge Compiler and future native-running Cambridge Compiler can share headings for purpose, historical origins, architecture, compilation phases, inputs and outputs, execution environment, runtime and library dependencies, capabilities and limitations, and related documentation.
+
+These are flexible conventions, not mandatory templates. Do not invent empty sections or imply that the unfinished native-running Cambridge Compiler is available.
+
+### Editorial and navigational standards
+
+- Write for human readers: use short sentences, simple direct language and concise explanations, while retaining precise BCPL and MVS terminology.
+- Design for both sequential reading and quick consultation. Use predictable, descriptive section headings and linked navigation.
+- Use tables for comparisons, inventories, interfaces, parameters and status codes where they improve clarity.
+- Use graphics for architecture, data flows, relationships and processes where they convey meaning better than prose. Text-based diagram source (for example, Mermaid) is a proposed practical option, not a mandatory renderer.
+- Prefer real BCPL, JCL and assembler examples verified on MVS. Identify illustrative or unverified examples as such.
+- Apply the agreed Diátaxis-inspired title and filename conventions consistently: Tutorial on, How to, Explanation of, Reference for. Filenames correspond to titles with hyphens between words.
+- Avoid repeated explanations, unnecessary narrative history, empty placeholders and artificial document fragmentation.
+
+### Organize by coherent subject, not individual implementation module
+
+The four Diátaxis types are reader needs, not a requirement for four files for every software component. Prefer a small set of coherent manuals with chapters, adding documents only where reader needs or subject complexity justify it. Common material belongs in one place.
+
+The owner's preferred System Extensions documentation family is:
+
+| Filename | Reader's purpose |
+| --- | --- |
+| `Tutorial-on-System-Extensions.md` | Learn through a practical programming exercise |
+| `How-to-Use-System-Extensions.md` | Select, link, register and use extensions |
+| `Explanation-of-System-Extensions.md` | Understand their design, runtime relationship and architecture |
+| `Reference-for-System-Extensions.md` | Consult common conventions and individual extension APIs |
+
+The owner specifically favors **one Reference for System Extensions**, with a chapter for each extension, rather than separate API manuals for BCPLDEMO, BCPLTIME and BCPLQSAM. Additional extensions ordinarily extend the existing manuals. No separate API-reference files are proposed for individual extensions at this stage.
+
+Illustrative outline for the reference:
+
+1. Common conventions: calling convention, global-vector assignments, dispatcher, QUERY and registration.
+2. BCPLDEMO.
+3. BCPLTIME.
+4. BCPLQSAM.
+5. Appendices or links to the Global Number Registry, declaration headers and related contracts.
+
+Within each extension chapter, use a consistent structure where applicable: purpose; header, global number and API version; operations; parameters and representations; results and status codes; linkage, dependencies and JCL; restrictions and verification qualifications. Describe only the accepted capabilities and accurately identify limitations.
+
+BCPLDEMO is the natural tutorial example because it is the permanent supported reference System Extension. The how-to guide should cover practical selection, linking, registration, JCL allocations, capability queries, errors and using multiple extensions. The explanation should cover the relationship to the Cambridge Runtime Library, global-vector and dispatcher architecture, BCEX/BCRG registration, selection and portability. These outlines are illustrative and remain subject to review.
+
+Other possible coherent subject areas include compilers, runtime, libraries, development tools and distribution. The exact manual catalog and directory structure remain open.
+
+### Repository Markdown, Wiki and navigation
+
+The owner raised the question of using GitHub Wiki versus linkable Markdown files in the main repository. The recommendation is to keep canonical human-authored documentation in repository Markdown: it is versioned with source, included in ordinary clones, frozen with release tags, and can change atomically with code. GitHub Wiki has separate Git history and would complicate these properties. GitHub Pages may later provide a derived presentation, but no additional publishing infrastructure is needed now.
+
+A reader-facing index should present documentation by need (tutorials, how-to guides, explanations and references), with access to project records, historical material and provenance. Subject-oriented physical grouping with Diátaxis-oriented navigation is a candidate approach; no directory layout or Wiki/Pages policy is finalized.
+
+### Initial inventory observations
+
+At the reviewed main revision `7734bde86783282b44bac91c883b1ce00c4dced1`, all ten `docs/Guide-to-*.md` files are empty. The IFOX briefing is over 67 KB; length warrants review but is not alone a defect. The BCPLQSAM component README retains development-stage instructions and status predating Q.5 closure. The nomenclature record combines established terms and earlier implementation proposals. The automated and manual reconstruction guides already distinguish routine rebuilding from maintenance steps.
+
+Treat these as audit leads, not authorization to delete, rewrite or relocate anything. A complete semantic inventory, identification of canonical contracts and reconciliation of stale claims remain to be performed. Preserve all accepted records, RC4 frozen documentation and historical material. The new release orchestration is offline-tested but not yet verified by an actual MVS run; the earlier BC0005 integration does not establish that verification.
+
+### Remaining decisions
+
+The exact document catalog and outlines, directory organization, authority and stable-reference migration, appropriate offline and FB80 representations, release-specific derivation, validation, maintenance and acceptance criteria require further discussion. Preserve the distinction between the development dataset map, frozen release manifests and release registry. Preserve licensing and historical provenance without implying resolved historical redistribution rights.
+
 ## References
 
 - [Diátaxis](https://diataxis.fr/) and its [introduction](https://diataxis.fr/start-here/).
@@ -86,4 +171,4 @@ The technical work should continue to favor real BCPL, JCL and assembly, verifie
 - [Tape artifact release formal closure](https://github.com/cbmira01/BCPL-for-MVS/blob/main/packaging/milestones/tape-artifact-release/ta8-formal-qualified-closure-and-milestone-completion-20261124.md).
 - [RC4 companion documentation](https://github.com/cbmira01/BCPL-for-MVS/blob/main/packaging/distribution/publication/RC4-README.md).
 
-This record captures the post-milestone discussion. It does not open a milestone, assign march numbers, approve a documentation architecture, authorize a repository refactoring or authorize MVS operations.
+This record captures the post-milestone and subsequent Documentation Refactoring discussions. It does not formally establish the milestone, assign march numbers, finalize the documentation architecture, authorize implementation or authorize MVS operations.
