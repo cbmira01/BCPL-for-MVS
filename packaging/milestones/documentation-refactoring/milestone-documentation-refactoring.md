@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Owner approval:** 24 November 2026 EST — seven marches DR.0–DR.6 approved; DR.0 commencement authorized.  
-**Status:** DR.0 IN PROGRESS; DR.1–DR.6 NOT STARTED.  
+**Status:** DR.0 CLOSED (qualified); DR.1 IN PROGRESS; DR.2–DR.6 NOT STARTED.  
 **Authority:** GitHub `main`. Inventory baseline: `ed0f8066859ed4e1a310bbb91520d0d629c5dca3`.
 
 ## Objective
@@ -26,8 +26,8 @@ Filenames correspond to titles, with hyphens between words. The preferred System
 
 | March | Title | Status | Principal deliverable |
 | --- | --- | --- | --- |
-| DR.0 | Inventory and Classification | IN PROGRESS | Inventory, authority, dependencies and candidate dispositions |
-| DR.1 | Architecture and Outlines | NOT STARTED | Owner-approved catalog, directory structure, navigation and outlines |
+| DR.0 | Inventory and Classification | CLOSED (qualified) | Inventory, authority, dependencies and candidate dispositions |
+| DR.1 | Architecture and Outlines | IN PROGRESS | Owner-approved catalog, directory structure, navigation and outlines |
 | DR.2 | Product Documentation | NOT STARTED | Manuals for BCPL programmers and MVS operators |
 | DR.3 | Project Documentation | NOT STARTED | Development, reconstruction, testing, maintenance, promotion and release procedures |
 | DR.4 | Documentation Distribution | NOT STARTED | GitHub, offline and MVS documentation representations |
@@ -38,9 +38,11 @@ Filenames correspond to titles, with hyphens between words. The preferred System
 
 Identify relevant information, audience, subject, Diátaxis type where applicable, authority, condition, dependencies and proposed disposition (retain, consolidate, revise, archive or remove). Identify redundant, contradictory, obsolete, incomplete and unnecessarily verbose documents. Preserve historical material and accepted records. Include documentation embedded in tools, tests and release processes; do not assume the Markdown census is exhaustive. No relocation, deletion or bulk rewriting. Acceptance requires an inventory with explicit coverage and limitations, identification of normative sources and dependencies, and owner review of findings. See [initial inventory](dr0-inventory-and-classification-20261124.md). See also the [semantic inventory](dr0-semantic-inventory-20261124.md) and [record classification and dependency review](dr0-record-classification-and-dependencies-20261124.md).
 
+Owner accepted DR.0 and authorized DR.1 and commits on 24 November 2026. See [formal qualified closure](dr0-formal-qualified-closure-and-dr1-transition-20261124.md).
+
 ### DR.1 — Architecture and Outlines
 
-Agree on coherent subject areas, catalog, canonical source/representation, directory organization, stable references, filenames, navigation and outlines before implementation. Repository Markdown is recommended, not a finalized physical architecture. Wiki, Pages, offline representation and rendering details remain open. Obtain owner approval before bulk rewriting or relocation.
+Agree on coherent subject areas, catalog, canonical source/representation, directory organization, stable references, filenames, navigation and outlines before implementation. Repository Markdown is recommended, not a finalized physical architecture. Wiki, Pages, offline representation and rendering details remain open. Obtain owner approval before bulk rewriting or relocation. See [proposed architecture and outlines](dr1-architecture-and-outlines-proposal-20261124.md).
 
 ### DR.2 — Product Documentation
 
