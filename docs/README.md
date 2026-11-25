@@ -10,6 +10,9 @@
 
 ### How-to guides
 
+- [How to Install BCPL from Tape](product/How-to-Install-BCPL-from-Tape.md)
+- [How to Operate the BCPL Programming System](product/How-to-Operate-the-BCPL-Programming-System.md)
+- [How to Compile and Run BCPL Programs](product/How-to-Compile-and-Run-BCPL-Programs.md)
 - [How to Use System Extensions](product/How-to-Use-System-Extensions.md)
 
 ### Explanations
@@ -40,7 +43,9 @@
 
 - **System Extensions:** [Tutorial](product/Tutorial-on-System-Extensions.md), [how-to](product/How-to-Use-System-Extensions.md), [explanation](product/Explanation-of-System-Extensions.md), [reference](product/Reference-for-System-Extensions.md).
 
-The remaining approved manuals will be linked as substantive drafts are added. Existing programmer orientation briefings remain available below during migration.
+- **Installation and operation:** [Install from tape](product/How-to-Install-BCPL-from-Tape.md), [operate the system](product/How-to-Operate-the-BCPL-Programming-System.md), [compile and run programs](product/How-to-Compile-and-Run-BCPL-Programs.md).
+
+All thirteen approved product manuals now have substantive working drafts. Existing references retain authority pending explicit reconciliation and approval. Existing programmer orientation briefings remain available below during migration.
 
 ## Programmer orientation briefings
 
