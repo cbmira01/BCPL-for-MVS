@@ -32,3 +32,17 @@ The [RC4 companion](../../distribution/publication/RC4-README.md) accepts 80/80 
 - Reconcile historical and reconstructed runtime contracts in the runtime/library reference. Do not treat /CKN or /CPN emission as successful execution. No implementation change is authorized by the discrepancy.
 - Validate generated output and target operation only where outstanding questions warrant it; reuse accepted receipts where available. No fresh JES submission, assembly, link-edit or run was made.
 - Existing contracts, source and fixture dependencies, release and allocation registries retain authority. DR.0 dependency-audit qualification remains. Individual authority transfer and march closure require explicit owner approval.
+
+## DR.5 — Compiler-family reconciliation checkpoint
+
+**Baseline:** `14ad7d57965d927fde05cca8dead5ead4d4e8ce9`. Owner authorized initial reconciliation and commits, not normative transfer.
+
+| Provision / source | Destination | Reconciliation and disposition |
+| --- | --- | --- |
+| MR10 option inventory; historical SYN/TRN/CG | Reference 2 | Existing ten spellings, defaults, indexed scanner and option transport retained as source-observed. Independent nondefault-option behavior and source/deck equivalence remain unverified. |
+| Historical Cambridge master (139–217, 265–385); option transport note | Reference 3–5, 7 | Confirmed active/disabled cases, numeric terminator reprocessing, G's verbatim remainder, phase-sensitive N and distinct OCODE/CODE/SYSGO selection. Earlier A/N/ wording is historical, not current default. No broadened bootstrap support. |
+| ICINT19 FINDIN, MAKENAME, DYNFIND; MR10 compile-and-run-core.py --dd | Reference 2.4; explanation 4 | Clarified name normalization, fixed table before dynamic DD allocation discovery, named inputs to compile/run, reserved/duplicate name rejection. Missing-DD, nested include and repeated-open target behavior not asserted. |
+| compile-mvs build_deck and main (60–94, 203–223); bootstrap-host.bcpl FINDPARM | Reference 3.1; explanation 5 | Clarified four header bindings, absence of general --dd, CAMBPARM substitution and preview's existing output deletion. The latter is a source-observed operational hazard, not a software correction. |
+| make-demoted.py demote_lex_readfloat, demote_trnb_abs and packing transformations | Explanation 5; language reference 4 | Distinguished compiler implementation adaptations from target-language recognition and unsupported literal parsing. |
+
+**Proposed future authority-transfer scope:** MR10 option inventory and Cambridge option/parameter transport note to compiler reference chapters 2–5 and 7, explicitly retaining source-observed and historical qualifications. Not ready for approval until remaining input/output, current generated-unit and nondefault-option behavior is reconciled; existing paths remain operative. Historical runtime parameter service, compiler/runtime contracts, Global Number Registry and frozen release facts retain separate authority. No old paths retired. No fresh BCPL, IFOX, IEWL or MVS execution; no private raw evidence reopened. Remaining work includes complete option/diagnostic and GET behavior, precise transport limitations, checked/counting execution restrictions and any target verification warranted by the eventual accepted scope.

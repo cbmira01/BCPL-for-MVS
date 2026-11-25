@@ -2,7 +2,7 @@
 
 *Cambridge BCPL Programming System for MVS 3.8J*
 
-**Status:** DR.2 working reference; not yet a replacement normative authority. Existing contracts retain authority until individually reconciled and approved.
+**Status:** DR.5 reconciliation in progress; not yet a replacement normative authority. Existing contracts retain authority until individually reconciled and approved.
 
 **Scope:** MR10 Kit Compiler and its interpreted applications are the released baseline (BCPL-0.1.0-rc4). The interpreter-hosted demoted Cambridge Compiler is a separate development compiler producing native System/370 applications; the native-running Cambridge Compiler remains unfinished. Neither CAMBCOMP nor a usable native-running compiler is supplied by RC4. Historical Cambridge source recognition is not proof that a feature works in a reconstructed executable.
 
@@ -75,6 +75,19 @@ The expression ? is recognized by MR10 SYN/TRN. Its use as an unspecified value 
 
 Local names are scoped to their block; an inner binding can hide an outer name. The declarations example exercises nesting. Initializers in a declaration group must not be assumed to execute as sequential assignments; use a separate LET for dependent initialization when necessary. Function and routine names can appear in the same AND group (see the recursion regression). MANIFEST values and global slot numbers use the compiler's constant-expression evaluator, which is more restricted in historical MR10 TRN than ordinary expressions.
 
+The following constant-expression domains are derived from the two translators' EVALCONST routines, not from a modern BCPL grammar. They apply to compile-time evaluation, not all runtime expressions.
+
+| Constant form | Historical MR10 TRN | Current Cambridge TRN source container |
+| --- | --- | --- |
+| Integer, TRUE, FALSE, name bound to a number | Recognized | Recognized |
+| Unary negation; addition, subtraction, multiplication, division | Recognized | Recognized |
+| REM, NOT, ABS, LOGAND, LOGOR, EQV, NEQV, shifts | Not cases in EVALCONST | Recognized |
+| Query (?) | Not a case in EVALCONST | Evaluates to zero in EVALCONST |
+| Selector constant (SLCT) | Not a case in EVALCONST | Calls PACKSLCT |
+| Relational comparisons or arbitrary function calls | Not cases in EVALCONST | Not cases in EVALCONST |
+
+MR10 EVALCONST reports unsupported expressions (118) or a nonnumeric name (119); it has no explicit zero-divisor guard in its division case. Cambridge EVALCONST explicitly reports division or remainder by zero (120). The demotion generator rewrites the compiler implementation's unary ABS expression into equivalent conditional arithmetic; that is not removal of the target-language ABS case. These are source observations, not guarantees about diagnostics from the preserved MR10 decks or independently tested support for every Cambridge form. Use numeric constants and the common arithmetic subset in portable examples.
+
 Historical MR10 TRN emits a data label and constant initializer for STATIC; native development case 40 also verifies a static scalar changed by a routine. Detailed MR10 target evidence for static lifetime and initializer constraints, scope restrictions on non-global nested routines, and duplicate-name diagnostics remains to be reconciled. Do not assume automatic zero initialization of uninitialized words.
 
 ## 5. Expressions and operator precedence
@@ -106,7 +119,7 @@ Positive integer arithmetic is release-tested: 17+5=22, 17-5=12, 17*5=85, 17/5=3
 | Form | Meaning |
 | --- | --- |
 | A := E | Assign through a writable destination |
-| A,B := E,F | Multiple assignment (historical parser/translator; evaluation details pending) |
+| A,B := E,F | Multiple assignment; source translators emit component assignments in order (see below) |
 | IF C DO S | Execute S when C holds |
 | UNLESS C DO S | Execute S when C does not hold |
 | TEST C THEN S OR T | Select one of two commands |
@@ -122,7 +135,9 @@ Positive integer arithmetic is release-tested: 17+5=22, 17-5=12, 17*5=85, 17/5=3
 | RETURN / FINISH | Return from a routine / terminate program |
 | RESULTIS E | Produce the result of the enclosing VALOF expression |
 
-DO is optional where historical RCOM ignores its token; use explicit DO for readability. SWITCHON cases are not implicitly separated by a break; use ENDCASE to avoid unintended continuation, or RESULTIS when returning a VALOF result. The switch demonstration includes grouped case labels. The historical translator diagnoses out-of-context BREAK, LOOP, RESULTIS and CASE constructs. Exact FOR bound/step evaluation, negative steps, nonlocal transfer and error behavior are not completely target-reconciled.
+DO is optional where historical RCOM ignores its token; use explicit DO for readability. SWITCHON cases are not implicitly separated by a break; use ENDCASE to avoid unintended continuation, or RESULTIS when returning a VALOF result. The switch demonstration includes grouped case labels. The historical translator diagnoses out-of-context BREAK, LOOP, RESULTIS and CASE constructs. In historical MR10 TRN and the current Cambridge TRN input, TRANSFOR loads the initial value and a nonliteral upper bound before the loop; a literal upper bound becomes an immediate operand. BY is evaluated with EVALCONST, defaults to 1, and is not a runtime step expression. The emitted test is inclusive: GE for a negative step, LE otherwise. LOOP targets the increment point. Neither inspected routine rejects zero step explicitly; avoid it. These are source-derived rules; negative-step, zero-step, bound side effects, arithmetic overflow, nonlocal transfer and error cases are not independently target-reconciled.
+
+The MR10 and Cambridge ASSIGN routines recursively emit the first comma-pair assignment and then the remaining pairs. For a simple name, the generated sequence loads its RHS and stores to that name before the next pair. Do not assume that all RHS expressions are evaluated before any store, or use `A,B := B,A` as a portable swap; use a temporary word. Native case 47 tests independent constants only, not overlapping assignments. The preserved MR10 executable image and the native overlap behavior have not been independently tested here.
 
 The release-tested control regression expects RP: CONTROL 10 1 10 30. The repeat-forms and TEST/THEN/OR demonstrations cover further positive forms.
 
@@ -142,7 +157,7 @@ GETVEC and FREEVEC are library operations, not declaration syntax. The MR10 reco
 
 ## 9. Program structure and separate compilation
 
-A BCPL compilation unit defines procedures and declarations. GET imports source declarations using the compiler's source-input mechanism; historical MR10 and Cambridge SYN have PERFORMGET implementations. Actual search order, header naming and MVS dataset conventions belong to compiler interfaces, and are not inferred from modern include behavior. Historical MR10 source uses a period between sections; historical Cambridge uses SECTION and NEEDS tokens. Exact section and dependency semantics are compiler-specific.
+A BCPL compilation unit defines procedures and declarations. GET imports source declarations using the compiler's source-input mechanism; historical MR10 and Cambridge SYN have PERFORMGET implementations. Actual search order, header naming and MVS dataset conventions belong to compiler interfaces, and are not inferred from modern include behavior. Historical MR10 source uses a period between sections; historical Cambridge uses SECTION and NEEDS tokens. Exact section and dependency semantics are compiler-specific. MR10 PERFORMGET and the Cambridge source container both consume a quoted name, save the prior stream, line count and lookahead character, and call FINDINPUT with that name. End-of-stream or a standalone period in the included input restores the saved stream. MR10 option N consumes the name without opening it; Cambridge first-phase N has an unrelated meaning. The Cambridge source checks the nesting-vector extent before saving a frame; MR10 allocates a VEC 10 without that check in PERFORMGET. Do not promise an arbitrary include depth. On ICINT19 the name resolves to a DDNAME, not a host pathname; see the compiler reference for actual driver bindings.
 
 The system enters an application through START at global slot 1. Independently compiled MR10 units use matching GLOBAL numbers and their INTCODE decks are provided together with the applicable library. The module regression binds HELPER:180 in both units and expects RP: MODULE 43. This local example does not establish a public slot assignment. See [MR10 global map](../../mr10-kit-compiler/library/GLOBALS.md) and [Global Number Registry](../../packaging/architecture/global-number-registry.md).
 
@@ -174,6 +189,8 @@ The [CO.6 closure](../../packaging/milestones/coroutines/co6-formal-acceptance-a
 | [34](../../tests/bootstrap/34-valof-resultis/source.bcpl) | VALOF/RESULTIS in a local initializer |
 | [38](../../tests/bootstrap/38-putbyte-getbyte-roundtrip/source.bcpl) | Byte store and reload through library calls |
 | [40](../../tests/bootstrap/40-static-scalar-persistence/source.bcpl) | STATIC scalar changed by a separate routine |
+
+Five additional native cases have source and independent expected-output blobs identical to the CO.6 tested revision: [41 TABLE](../../tests/bootstrap/41-table-constant-vector/source.bcpl), [42 MANIFEST](../../tests/bootstrap/42-manifest-constant-expression/source.bcpl), [45 shifts/bitwise](../../tests/bootstrap/45-shifts-bitwise/source.bcpl), [46 multiply/divide/remainder](../../tests/bootstrap/46-multiply-divide-rem/source.bcpl), and [47 multiple assignment](../../tests/bootstrap/47-multiple-assignment/source.bcpl). Cases 41, 42, 45 and 46 expect 42; case 47 expects the exact diagnostic string 422517 (sum, A, B). These cases do not test all constant operators, signed remainder, out-of-range shifts, or assignment overlap.
 
 These cases are deliberately small and do not establish all semantics of the corresponding constructs. The suite manifest and independent expected outputs remain authoritative.
 

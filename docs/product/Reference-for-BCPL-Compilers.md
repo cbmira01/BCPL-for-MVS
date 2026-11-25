@@ -2,7 +2,7 @@
 
 *Cambridge BCPL Programming System for MVS 3.8J*
 
-**Status:** DR.2 working reference. Existing compiler documentation and accepted contracts retain their authority pending reconciliation and explicit owner approval. This manual distinguishes source-observed behavior, accepted target evidence, and unsupported or unverified operation. It does not certify every historical switch.
+**Status:** DR.5 reconciliation in progress. Existing compiler documentation and accepted contracts retain their authority pending reconciliation and explicit owner approval. This manual distinguishes source-observed behavior, accepted target evidence, and unsupported or unverified operation. It does not certify every historical switch.
 
 See the [compiler explanation](Explanation-of-BCPL-Compilers.md) for architecture and the [language reference](Reference-for-the-BCPL-Language.md) for syntax.
 
@@ -66,6 +66,10 @@ The scanner maintains a mutable flag index initially zero. P/T/C/M/N set it; eve
 
 The tracked [large-tree record](../../bootstrap-toolchain/bootstrap-cambridge/options-large-tree.txt) contains L12000 and is used when MR10 builds the Cambridge sources. A development host driver can bind this file via its --dd OPTIONS=PATH argument; the argument belongs to the driver, not the BCPL compiler. The corresponding MVS JCL can provide an OPTIONS DD alongside SYSIN. The [CAMBBLD job](../../bootstrap-toolchain/jcl/cambbld.jcl) provides actual examples. Do not replace the RC4 defaults or change workspace/save-space conventions indiscriminately.
 
+### 2.4 GET inputs
+
+Historical SYN PERFORMGET reads a quoted name and invokes FINDINPUT; N bypasses the open. ICINT19 FINDIN checks its fixed stream table before dynamic DD discovery; MAKENAME accepts a counted name of 1–8 bytes and blank-pads it. The dynamic path uses the allocated DD rather than a filesystem search. The current [MR10 driver](../../tools/mr10/compile-and-run-core.py) uppercases and validates --dd names, rejects reserved or duplicate names, reads ASCII records and supplies those named inputs to compilation and final execution. Provide the required DD explicitly and use uppercase names in source. This establishes the host-side transport, not universal nested GET, duplicate-open, missing-DD recovery or compiler-image behavior. See the [language reference](Reference-for-the-BCPL-Language.md#9-program-structure-and-separate-compilation) for the parser's source-derived behavior.
+
 ## 3. Interpreter-hosted demoted Cambridge Compiler
 
 ### 3.1 Inputs and transport
@@ -92,11 +96,11 @@ The exact [bootstrap host source](../../bootstrap-toolchain/bootstrap-cambridge/
 LET FINDPARM() = FINDINPUT("CAMBPARM")
 ```
 
-This is a bootstrap accommodation, not a redefinition of the historical native FINDPARM contract. The driver accepts --cambridge-parm PATH for an alternate record and --show-jcl for a preview. Executing the driver normally submits MVS jobs.
+This is a bootstrap accommodation, not a redefinition of the historical native FINDPARM contract. The driver accepts --cambridge-parm PATH for an alternate record and --show-jcl for a preview. **Preview is not side-effect-free on the host:** the current driver creates the output parent directory and unlinks an existing selected assembler output before the preview branch. Use a distinct scratch output path. Executing the driver normally submits MVS jobs. The driver's built-in GET bindings are the four header DDs listed above; it does not expose the MR10 driver's general --dd option. Other inputs require an explicitly arranged MVS allocation or separately authorized tooling work; do not infer a host include-file search.
 
 ### 3.2 Option grammar and default record
 
-The [historical Cambridge master](../../richards-bcpltape/bcplib/bcpl/bcpl) reads two consecutive phases from FINDPARM. The first slash separates compiler/front-end switches from generator switches. Newline or end-of-stream also terminates the respective loops. Extra slashes in the second phase are ignored. Options are uppercased by the master. Unknown first-phase options are reported and ignored (the parser consumes a numeric suffix); unknown second-phase options stop compilation with STOP(8).
+The [historical Cambridge master](../../richards-bcpltape/bcplib/bcpl/bcpl) reads two consecutive phases from FINDPARM. The first slash separates compiler/front-end switches from generator switches. Newline or end-of-stream also terminates the respective loops. Extra slashes in the second phase are ignored. Options are uppercased by the master. Unknown first-phase options are reported and ignored (READN followed by UNRDCH consumes a numeric suffix and makes the terminating character available again); unknown second-phase options stop compilation with STOP(8).
 
 
 ```text
@@ -139,7 +143,7 @@ Commented-out cases E (PPTRACE), M (MAPPING), T (TREE), V (LEXTEST) and Y (NOTRN
 | Option | Action |
 | --- | --- |
 | C | STKCKING := TRUE |
-| G followed by remainder | LOADGO := TRUE; copies remaining parameter characters into PARMS; must be last |
+| G followed by remainder | LOADGO := TRUE; copies the remaining characters verbatim through newline/end-of-stream into PARMS, sets its length byte and terminates option parsing; must be last |
 | Hnnn | NAMING := TRUE; size NAMES from decimal value, default 600 if zero |
 | K | CALLCOUNTING := TRUE |
 | L | LISTING := TRUE |
@@ -150,7 +154,7 @@ Commented-out cases E (PPTRACE), M (MAPPING), T (TREE), V (LEXTEST) and Y (NOTRN
 
 Defaults: DECK and BINING true; LISTDECK, LISTING, CGTRACE, STKCKING, CALLCOUNTING, COUNTING, MEMBERNAMEING and NAMING false; NAMES=0. An allocated CODE stream makes LISTING true; without CODE, listing output is directed to SYSOPT when enabled. D (LISTDECK) and T (CGTRACE) remain commented-out cases.
 
-G historically loads and enters the generated code; it is not an accepted current bootstrap execution option. Other source-observed switches can require unreconstructed services. In particular, the historical combined C/K or C/P entry path is not safe merely because the compiler emits its instructions (see chapter 6).
+The decimal readers for P/R in phase one and H in phase two call UNRDCH after READN so the following option character can be processed. G historically loads and enters the generated code; it is not an accepted current bootstrap execution option. Other source-observed switches can require unreconstructed services. In particular, the historical combined C/K or C/P entry path is not safe merely because the compiler emits its instructions (see chapter 6).
 
 **N is phase-sensitive:** first-phase N requests numeric OCODE and enables OCODE; second-phase N disables binary object-deck output. MR10 N instead disables GET.
 
@@ -251,4 +255,4 @@ Historical compiler diagnostics include COMPILATION FAILED, INSUFFICIENT REGION 
 | L | Lnnn tree allocation | Not recognized | Listing |
 | A | Character-literal conversion | Historical EBCDIC-to-ASCII | Not recognized |
 
-These differences are not aliases. Source recognition and emitted instructions are not equivalent to verified functional support. Consult the applicable source, installed revision, release guide and test evidence before selecting nondefault modes. This working manual does not supersede the [MR10 option inventory](../../mr10-kit-compiler/docs/compiler-options.md) or [Cambridge option transport note](../../bootstrap-toolchain/bootstrap-cambridge/compiler-options-and-parm.md); the [migration ledger](../../packaging/milestones/documentation-refactoring/dr2-compiler-manual-migration-20261125.md) records their reconciliation.
+These differences are not aliases. Source recognition and emitted instructions are not equivalent to verified functional support. Consult the applicable source, installed revision, release guide and test evidence before selecting nondefault modes. DR.5 comparison of the option inventories with the historical source confirms their recognized switches and inactive cases within source-observed scope. The Cambridge note's early A/N/ wording describes the superseded experiment; the current /N/ record is controlling for the bootstrap. This working manual does not supersede the [MR10 option inventory](../../mr10-kit-compiler/docs/compiler-options.md) or [Cambridge option transport note](../../bootstrap-toolchain/bootstrap-cambridge/compiler-options-and-parm.md); the [migration ledger](../../packaging/milestones/documentation-refactoring/dr2-compiler-manual-migration-20261125.md) records their reconciliation.

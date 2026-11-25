@@ -54,7 +54,7 @@ AND B = 20
 AND C = 30
 ```
 
-LET declarations precede executable commands within a block. A subsequent assignment uses := rather than =. MANIFEST introduces compile-time constants; try [manifest-global](../../mr10-kit-compiler/language-demo/manifest-global/manifest-global.bcpl) and observe ANSWER=42 and TIMESCALE(7)=21. Change the SCALE constant in a scratch copy and predict the output.
+LET declarations precede executable commands within a block. A subsequent assignment uses := rather than =. MANIFEST introduces compile-time constants; try [manifest-global](../../mr10-kit-compiler/language-demo/manifest-global/manifest-global.bcpl) and observe ANSWER=42 and TIMESCALE(7)=21. Change the SCALE constant in a scratch copy and predict the output. Use numeric constants or previously bound MANIFEST names with simple arithmetic. The MR10 compile-time evaluator is narrower than its ordinary expression evaluator; see the language reference.
 
 ## 3. Expressions and operators
 
@@ -73,7 +73,7 @@ Run [repeat-forms](../../mr10-kit-compiler/language-demo/repeat-forms/repeat-for
 FOR I = 1 TO 4 DO S := S+I
 ```
 
-This fragment from [branches-loops](../../mr10-kit-compiler/tests/00-regression-panel/control/branches-loops.bcpl) sums four integers to 10. Its SWITCHON chooses among numbered cases and a DEFAULT. Run [switchon](../../mr10-kit-compiler/language-demo/switchon/switchon.bcpl) to see ENDCASE and grouped case labels. Try changing the loop bound to 5; predict S=15. Inspect [TEST/THEN/OR](../../mr10-kit-compiler/language-demo/test-then-or/test-then-or.bcpl) for a two-way decision.
+This fragment from [branches-loops](../../mr10-kit-compiler/tests/00-regression-panel/control/branches-loops.bcpl) sums four integers to 10. Its SWITCHON chooses among numbered cases and a DEFAULT. Run [switchon](../../mr10-kit-compiler/language-demo/switchon/switchon.bcpl) to see ENDCASE and grouped case labels. Try changing the loop bound to 5; predict S=15. If you use BY, use a compile-time constant, not a variable step. Avoid zero steps. These exercises use the increasing-loop domain already demonstrated by the suite. Inspect [TEST/THEN/OR](../../mr10-kit-compiler/language-demo/test-then-or/test-then-or.bcpl) for a two-way decision.
 
 ## 5. Functions and routines
 
@@ -110,7 +110,7 @@ LET V = VEC 4
 LET P = V
 ```
 
-VEC 4 reserves five words, indexed 0 through 4. P copies the word address, not the contents. The example fills V with 10, 20, 30, 40, 50, then assigns P!2 := 99 and observes V!2=99. Do not dereference outside the allocated extent. @ obtains an address; ! reads or writes a word through an address. See the [scalar/vector regression](../../mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.bcpl) and [TABLE/vector demonstration](../../mr10-kit-compiler/language-demo/table-vector/table-vector.bcpl). Exercise: modify the fourth element through P and print it through V.
+VEC 4 reserves five words, indexed 0 through 4. Its bound is a compile-time constant; use the library allocation operation for a size computed at runtime. P copies the word address, not the contents. When swapping two words, use a temporary word rather than assuming that comma-separated assignment evaluates every right-hand side before storing. The example fills V with 10, 20, 30, 40, 50, then assigns P!2 := 99 and observes V!2=99. Do not dereference outside the allocated extent. @ obtains an address; ! reads or writes a word through an address. See the [scalar/vector regression](../../mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.bcpl) and [TABLE/vector demonstration](../../mr10-kit-compiler/language-demo/table-vector/table-vector.bcpl). Exercise: modify the fourth element through P and print it through V.
 
 ## 7. Strings and character manipulation
 

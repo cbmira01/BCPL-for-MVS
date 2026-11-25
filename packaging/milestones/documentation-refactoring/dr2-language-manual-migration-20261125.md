@@ -33,3 +33,17 @@ Additional source reconciliation: MR10 TRN TRANSDYNDEFS uses EVALCONST for VEC b
 - Exact source extracts from arithmetic, recursion, coroutine generator and word-count were drawn from the baseline with full-line comments removed. Snippets and predicted modifications have not been compiled anew.
 - MR10 historical parser precedence is source-observed. Numeric truth representation, unusual lexical forms, detailed expression evaluation order, STATIC, addressing/lifetime, error semantics, complete GET/section handling, and exhaustive MR10/Cambridge comparison require additional source/target reconciliation.
 - No destructive action, source change, global-number reassignment, test-oracle modification, or normative authority transfer. DR.0 dependency-audit qualification remains applicable. Owner approval required for any individual transfer and DR.2 closure.
+
+## DR.5 — Language-family reconciliation checkpoint
+
+**Baseline:** `14ad7d57965d927fde05cca8dead5ead4d4e8ce9`. Owner authorized the initial four-manual reconciliation and commits; individual authority transfer is not approved. This is a substantive source review, not exhaustive grammar or target acceptance.
+
+| Provision / source | Destination | Reconciliation and disposition |
+| --- | --- | --- |
+| Historical MR10 TRN EVALCONST (812–840); Cambridge input TRN EVALCONST (837–894); make-demoted.py demote_trnb_abs | Reference 4, 8; tutorial 2, 6 | Clarified distinct compile-time domains, diagnostics, division guard and ABS implementation rewrite. Historical MR10 deck behavior and extended native constants remain unverified. |
+| Both TRN TRANSFOR routines (MR10 614–646; Cambridge 627–661) | Reference 6; tutorial 4 | Clarified one-time bound load, constant BY, inclusive signed-direction comparison, LOOP increment and absent explicit zero-step guard. Increasing positive cases accepted; negative/zero steps and side-effect boundaries unverified. |
+| MR10 TRN ASSIGN (after EVALCONST); Cambridge input TRN ASSIGN (after EVALCONST) | Reference 6; tutorial 6 | Clarified recursive component assignment order; no simultaneous assignment or swap guarantee. Case 47 tests independent constants, not overlapping destinations or RHS dependencies. |
+| MR10 SYN PERFORMGET and period/EOF branch; Cambridge input SYN PERFORMGET and period/EOF branch | Reference 9; compiler reference 2–3 | Clarified named-stream stack/restore, MR10 N, Cambridge extent check and distinct top-level period behavior. Exact include depth and failure paths unverified; no host search semantics. |
+| Native 41, 42, 45, 46, 47 source and expected files | Reference 10 | Reconciled positive scope: all ten blobs match CO.6 tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`; case 47 oracle 422517, other four 42. This supplements the six prior examples; no binary identity or fresh GO claimed. |
+
+**Remaining:** complete grammar/lexical and dialect matrix, exact declaration/scope and procedure semantics, runtime truth/short-circuit and arithmetic edge cases, MR10 preserved deck equivalence, extended Cambridge target lowering, and qualification of any authority transfer. Existing historical sources, old references, accepted common coroutine contract, fixtures and oracles retain their roles. No dependency retirement proposed. Consider focused scratch BCPL probes for overlapping assignments, negative BY/bound evaluation and constant/operator edge cases only if needed for accepted scope; no MVS job authorized or run here.
