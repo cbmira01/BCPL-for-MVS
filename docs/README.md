@@ -40,6 +40,10 @@
 - [How to Reconstruct BCPL from Source](project/How-to-Reconstruct-BCPL-from-Source.md) — working draft; existing reconstruction runbooks remain operative.
 - [How to Develop and Test BCPL for MVS](project/How-to-Develop-and-Test-BCPL-for-MVS.md) — working draft; existing policies and test authorities retained.
 
+### References
+
+- [Reference for Project Tools](project/Reference-for-Project-Tools.md) — working reference; existing tool contracts retained.
+
 ## Subject index
 
 - **BCPL language:** [Tutorial](product/Tutorial-on-BCPL-Programming.md), [language reference](product/Reference-for-the-BCPL-Language.md).
@@ -55,6 +59,8 @@
 - **Project reconstruction:** [Reconstruct from source](project/How-to-Reconstruct-BCPL-from-Source.md), [existing automated runbook](Rebuild-BCPL-for-MVS-from-source.md), [existing manual procedure](Manual-Rebuild-BCPL-for-MVS.md).
 
 - **Project development and testing:** [Develop and test BCPL for MVS](project/How-to-Develop-and-Test-BCPL-for-MVS.md), [native suite contract](../tests/README.md), [test runner guide](../tools/tests/README.md).
+
+- **Project tools:** [Reference for Project Tools](project/Reference-for-Project-Tools.md), [host tool directory](../tools/README.md).
 
 All thirteen approved product manuals now have substantive working drafts. Existing references retain authority pending explicit reconciliation and approval. Existing programmer orientation briefings remain available below during migration.
 
