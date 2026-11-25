@@ -6,11 +6,19 @@
 
 - [Tutorial on BCPL Programming](product/Tutorial-on-BCPL-Programming.md)
 
+- [Tutorial on System Extensions](product/Tutorial-on-System-Extensions.md)
+
+### How-to guides
+
+- [How to Use System Extensions](product/How-to-Use-System-Extensions.md)
+
 ### Explanations
 
 - [Explanation of BCPL Compilers](product/Explanation-of-BCPL-Compilers.md)
 
 - [Explanation of the Cambridge Runtime and Libraries](product/Explanation-of-the-Cambridge-Runtime-and-Libraries.md)
+
+- [Explanation of System Extensions](product/Explanation-of-System-Extensions.md)
 
 ### References
 
@@ -20,6 +28,8 @@
 
 - [Reference for the Cambridge Runtime and Libraries](product/Reference-for-the-Cambridge-Runtime-and-Libraries.md) — working reference; existing authorities retained.
 
+- [Reference for System Extensions](product/Reference-for-System-Extensions.md) — working reference; existing authorities retained.
+
 ## Subject index
 
 - **BCPL language:** [Tutorial](product/Tutorial-on-BCPL-Programming.md), [language reference](product/Reference-for-the-BCPL-Language.md).
@@ -27,6 +37,8 @@
 - **BCPL compilers:** [Explanation](product/Explanation-of-BCPL-Compilers.md), [compiler reference](product/Reference-for-BCPL-Compilers.md).
 
 - **Runtime and libraries:** [Explanation](product/Explanation-of-the-Cambridge-Runtime-and-Libraries.md), [runtime and library reference](product/Reference-for-the-Cambridge-Runtime-and-Libraries.md).
+
+- **System Extensions:** [Tutorial](product/Tutorial-on-System-Extensions.md), [how-to](product/How-to-Use-System-Extensions.md), [explanation](product/Explanation-of-System-Extensions.md), [reference](product/Reference-for-System-Extensions.md).
 
 The remaining approved manuals will be linked as substantive drafts are added. Existing programmer orientation briefings remain available below during migration.
 
