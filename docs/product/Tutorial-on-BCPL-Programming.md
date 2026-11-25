@@ -49,7 +49,9 @@ Run [declarations](../../mr10-kit-compiler/language-demo/declarations/declaratio
 
 
 ```bcpl
-LET A = 10\nAND B = 20\nAND C = 30
+LET A = 10
+AND B = 20
+AND C = 30
 ```
 
 LET declarations precede executable commands within a block. A subsequent assignment uses := rather than =. MANIFEST introduces compile-time constants; try [manifest-global](../../mr10-kit-compiler/language-demo/manifest-global/manifest-global.bcpl) and observe ANSWER=42 and TIMESCALE(7)=21. Change the SCALE constant in a scratch copy and predict the output.
@@ -104,7 +106,8 @@ Run [pointer-idioms](../../mr10-kit-compiler/language-demo/pointer-idioms/pointe
 
 
 ```bcpl
-LET V = VEC 4\nLET P = V
+LET V = VEC 4
+LET P = V
 ```
 
 VEC 4 reserves five words, indexed 0 through 4. P copies the word address, not the contents. The example fills V with 10, 20, 30, 40, 50, then assigns P!2 := 99 and observes V!2=99. Do not dereference outside the allocated extent. @ obtains an address; ! reads or writes a word through an address. See the [scalar/vector regression](../../mr10-kit-compiler/tests/00-regression-panel/data-movement/scalar-vector.bcpl) and [TABLE/vector demonstration](../../mr10-kit-compiler/language-demo/table-vector/table-vector.bcpl). Exercise: modify the fourth element through P and print it through V.

@@ -27,7 +27,8 @@ SYN (including lexical analysis) reads BCPL source and constructs the applicativ
 
 
 ```text
-BCPL source -> lexer/parser (SYN) -> AE tree\n            -> translator (TRN) -> OCODE
+BCPL source -> lexer/parser (SYN) -> AE tree
+            -> translator (TRN) -> OCODE
 ```
 
 For example, a source expression that reads two local words and adds them is represented in OCODE by load operations and an addition operation. The back end decides how to realize those operations; the source front end need not prescribe System/370 registers or instructions.
@@ -40,7 +41,10 @@ OCODE is the branching point, not INTCODE.
 
 
 ```text
-                         +-> CGI -> INTCODE -> ICINT -> execution\nBCPL -> SYN/TRN -> OCODE |\n                         +-> CG370 -> CODE -> IFOX -> object deck\n                                   -> SYSGO (historical direct deck)
+                         +-> CGI -> INTCODE -> ICINT -> execution
+BCPL -> SYN/TRN -> OCODE |
+                         +-> CG370 -> CODE -> IFOX -> object deck
+                                   -> SYSGO (historical direct deck)
 ```
 
 The [MR10 CG source](../../richards-bcpltape/mr10/bcplkit/cg), compiled as CGI, lowers OCODE into a compact register-oriented virtual-machine instruction stream. ICINT executes those virtual instructions on the host.
@@ -55,7 +59,12 @@ The MR10 Kit Compiler is the independently usable compiler in RC4. The installed
 
 
 ```text
-MVS ICINT19 running SYNI + TRNI + BLIBI + ICLIB\n    BCPL source -> OCODE\nMVS ICINT19 running CGI + BLIBI + ICLIB\n    OCODE -> application INTCODE\nMVS ICINT19 running application INTCODE + required libraries\n    application -> results
+MVS ICINT19 running SYNI + TRNI + BLIBI + ICLIB
+    BCPL source -> OCODE
+MVS ICINT19 running CGI + BLIBI + ICLIB
+    OCODE -> application INTCODE
+MVS ICINT19 running application INTCODE + required libraries
+    application -> results
 ```
 
 The same interpreter can run both the compiler phases and compiled applications. Compilation and execution are still distinct jobs or steps with distinct input and output artifacts.
@@ -72,7 +81,13 @@ There are also host/target representation accommodations. ICINT19 uses fullword 
 
 
 ```text
-Historical Cambridge compiler source\n    -> controlled source derivation -> MR10 compilation -> CAMBCOMP INTCODE\n\nApplication BCPL source\n    -> CAMBCOMP running under ICINT19\n    -> Cambridge OCODE -> CG370 -> System/370 assembler\n    -> IFOX -> IEWL -> native application
+Historical Cambridge compiler source
+    -> controlled source derivation -> MR10 compilation -> CAMBCOMP INTCODE
+
+Application BCPL source
+    -> CAMBCOMP running under ICINT19
+    -> Cambridge OCODE -> CG370 -> System/370 assembler
+    -> IFOX -> IEWL -> native application
 ```
 
 The compiler remains interpreted. The resulting application is native; it does not use ICINT19 to execute its generated System/370 instructions. The [first native code-generation checkpoint](../../packaging/evidence/bootstrap-cambridge/native-codegen-checkpoint.md) records the factorial probe and the host/target packing correction. The current normal parameter record is /N/ followed by slash fill; the earlier A/N/ experiment was not the correct character-translation direction.
@@ -95,7 +110,9 @@ The historical factorial listing begins with these records (excerpt from the acc
 
 
 ```asm
- CSECT\n EXTRN BCPLMAIN\n USING 4096,1,2,3
+ CSECT
+ EXTRN BCPLMAIN
+ USING 4096,1,2,3
 ```
 
 BCPLMAIN participates in startup, global-vector construction and transfer to the application's START. Ordinary native applications use the Cambridge Runtime Library (Core Runtime plus historical Base Library, BLIB), supplemented by the Coroutine Support Library or selected optional System Extensions as required. A declaration header publishes names/numbers; it is not linked code. A GLOBAL number must agree with the selected implementation and the applicable registry. The [runtime nomenclature](../../packaging/architecture/runtime-and-library-nomenclature.md) distinguishes logical libraries from physical object and load library PDSes.

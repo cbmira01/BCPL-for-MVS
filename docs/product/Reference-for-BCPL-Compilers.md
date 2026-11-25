@@ -100,7 +100,8 @@ The [historical Cambridge master](../../richards-bcpltape/bcplib/bcpl/bcpl) read
 
 
 ```text
-front-end-options / code-generator-options\n/N/
+front-end-options / code-generator-options
+/N/
 ```
 
 The [current CAMBPARM file](../../bootstrap-toolchain/bootstrap-cambridge/cambridge-options.txt) is exactly one 80-character record: slash, N, then 78 slash characters. Slash fill prevents FB80 blank padding from becoming invalid options. The leading slash selects no front-end option; generator N suppresses direct binary SYSGO output. Do not remove N with the present driver.
@@ -161,7 +162,9 @@ The surviving [BCPLCLG procedure](../../richards-bcpltape/sys1/userproc/bcplclg)
 
 
 ```jcl
-//BCPL    EXEC PGM=BCPL,REGION=&REGC,\n//             PARM='$0T&IOSPACE.$&LISTC.&PARMC',\n//             TIME=(&MINC,&SECC),COND=(&CONDC)
+//BCPL    EXEC PGM=BCPL,REGION=&REGC,
+//             PARM='$0T&IOSPACE.$&LISTC.&PARMC',
+//             TIME=(&MINC,&SECC),COND=(&CONDC)
 ```
 
 Defaults include IOSPACE=60K, LISTC empty and PARMC='/CK', producing conceptually $0T60K.$/CK. The prefix belongs to native runtime parameter processing. The compiler consumes a pseudo-input stream through SELECTINPUT(FINDPARM()); [BCPLMAC](../../richards-bcpltape/km10/bcplmac) describes PARMAREA and PARMFLD. CAMBPARM is not the historical native transport.

@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Owner approval:** 24 November 2026 EST — seven marches DR.0–DR.6 approved; DR.0 commencement authorized.  
-**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 IN PROGRESS; DR.3–DR.6 NOT STARTED.  
+**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 CLOSED (qualified); DR.3 IN PROGRESS; DR.4–DR.6 NOT STARTED.  
 **Authority:** GitHub `main`. Inventory baseline: `ed0f8066859ed4e1a310bbb91520d0d629c5dca3`.
 
 ## Objective
@@ -28,8 +28,8 @@ Filenames correspond to titles, with hyphens between words. The preferred System
 | --- | --- | --- | --- |
 | DR.0 | Inventory and Classification | CLOSED (qualified) | Inventory, authority, dependencies and candidate dispositions |
 | DR.1 | Architecture and Outlines | CLOSED | Owner-approved catalog, directory structure, navigation and outlines |
-| DR.2 | Product Documentation | IN PROGRESS | Manuals for BCPL programmers and MVS operators |
-| DR.3 | Project Documentation | NOT STARTED | Development, reconstruction, testing, maintenance, promotion and release procedures |
+| DR.2 | Product Documentation | CLOSED (qualified) | Manuals for BCPL programmers and MVS operators |
+| DR.3 | Project Documentation | IN PROGRESS | Development, reconstruction, testing, maintenance, promotion and release procedures |
 | DR.4 | Documentation Distribution | NOT STARTED | GitHub, offline and MVS documentation representations |
 | DR.5 | Validation and Reconciliation | NOT STARTED | Technical accuracy, consistency and operational verification |
 | DR.6 | Acceptance and Closure | NOT STARTED | Maintenance policy, release integration and formal acceptance |
@@ -50,9 +50,11 @@ Owner approved the chapter outlines and authorized DR.2 on 25 November 2026. See
 
 Develop approved manuals for programmers and operators. Distinguish MR10 Kit Compiler, interpreter-hosted demoted Cambridge Compiler, and unfinished native-running Cambridge Compiler. Accurately state installed, distributed, verified and unfinished capabilities. Retain technical contracts and their authority.
 
+Owner accepted qualified closure on 25 November 2026 after correction of two acceptance-review defects. All thirteen product manuals and 107 chapters are drafted; individual normative transfers and detailed reconciliation remain pending. See [formal qualified closure and DR.3 transition](dr2-formal-qualified-closure-and-dr3-transition-20261125.md).
+
 ### DR.3 — Project Documentation
 
-Consolidate active reconstruction, development, testing, maintenance, promotion and release instructions. Separate current procedures from historical investigations and accepted engineering records.
+Consolidate active reconstruction, development, testing, maintenance, promotion and release instructions. Separate current procedures from historical investigations and accepted engineering records. See the [DR.3 kickoff in the closure record](dr2-formal-qualified-closure-and-dr3-transition-20261125.md).
 
 ### DR.4 — Documentation Distribution
 
