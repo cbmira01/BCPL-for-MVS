@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Owner approval:** 24 November 2026 EST — seven marches DR.0–DR.6 approved; DR.0 commencement authorized.  
-**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 CLOSED (qualified); DR.3 CLOSED (qualified); DR.4 IN PROGRESS; DR.5–DR.6 NOT STARTED.  
+**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 CLOSED (qualified); DR.3 CLOSED (qualified); DR.4 CLOSED (qualified); DR.5 IN PROGRESS; DR.6 NOT STARTED.  
 **Authority:** GitHub `main`. Inventory baseline: `ed0f8066859ed4e1a310bbb91520d0d629c5dca3`.
 
 ## Objective
@@ -30,8 +30,8 @@ Filenames correspond to titles, with hyphens between words. The preferred System
 | DR.1 | Architecture and Outlines | CLOSED | Owner-approved catalog, directory structure, navigation and outlines |
 | DR.2 | Product Documentation | CLOSED (qualified) | Manuals for BCPL programmers and MVS operators |
 | DR.3 | Project Documentation | CLOSED (qualified) | Development, reconstruction, testing, maintenance, promotion and release procedures |
-| DR.4 | Documentation Distribution | IN PROGRESS | GitHub, offline and MVS documentation representations |
-| DR.5 | Validation and Reconciliation | NOT STARTED | Technical accuracy, consistency and operational verification |
+| DR.4 | Documentation Distribution | CLOSED (qualified) | Owner-approved Markdown and existing MVS FB80 distribution policy; additional formats and tests deferred |
+| DR.5 | Validation and Reconciliation | IN PROGRESS | Technical accuracy, consistency and operational verification |
 | DR.6 | Acceptance and Closure | NOT STARTED | Maintenance policy, release integration and formal acceptance |
 
 ### DR.0 — Inventory and Classification
@@ -62,11 +62,11 @@ Owner directed acceptance and transition on 25 November 2026. All five project m
 
 Establish GitHub, offline and MVS FB80 representations. Derive release-specific information from frozen manifests and the release registry where practical. Preserve RC4 frozen documentation and all published bytes. Validate transformation and encoding fidelity; do not silently truncate records.
 
-DR.4 begins with owner design review; see the [DR.4 transition in the closure record](dr3-formal-qualified-closure-and-dr4-transition-20261125.md). Detailed representation and integration decisions are not yet approved.
+Owner approved retaining canonical UTF-8 Markdown and the existing small, plain-text project-EBCDIC FB80 documentation set, unchanged tape layout and existing release generation. Offline rendering, complete manual distribution and additional documentation testing are deferred. No new tooling or target verification is claimed. See [formal qualified closure and DR.5 transition](dr4-formal-qualified-closure-and-dr5-transition-20261125.md).
 
 ### DR.5 — Validation and Reconciliation
 
-Verify technical accuracy, terminology, compiler status, normative contracts, links, navigation, examples, operational procedures, transformation fidelity and retained reconstruction/regression/release capabilities. Seek actual BCPL, IFOX, IEWL, JES and MVS evidence where warranted. Offline checks are not target-system verification. Identify remaining qualifications explicitly.
+Verify technical accuracy, terminology, compiler status, normative contracts, links, navigation, examples, operational procedures, transformation fidelity and retained reconstruction/regression/release capabilities. Seek actual BCPL, IFOX, IEWL, JES and MVS evidence where warranted. Offline checks are not target-system verification. Identify remaining qualifications explicitly. DR.5 begins under the owner-approved transition; see [DR.4 closure and DR.5 kickoff](dr4-formal-qualified-closure-and-dr5-transition-20261125.md). Respect the DR.4 deferral of dedicated documentation transformation tests; technical reconciliation and verification of software behavior remain in scope.
 
 ### DR.6 — Acceptance and Closure
 
