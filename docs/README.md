@@ -41,6 +41,10 @@
 - [How to Develop and Test BCPL for MVS](project/How-to-Develop-and-Test-BCPL-for-MVS.md) — working draft; existing policies and test authorities retained.
 - [How to Create a Release Candidate](project/How-to-Create-a-Release-Candidate.md) — working draft; [canonical execution guide](../tools/distribution/How-to-Create-a-Release-Candidate.md) remains operative.
 
+### Explanations
+
+- [Explanation of the MVS Programming Environment](project/Explanation-of-the-MVS-Programming-Environment.md) — working explanation; original briefings retained.
+
 ### References
 
 - [Reference for Project Tools](project/Reference-for-Project-Tools.md) — working reference; existing tool contracts retained.
@@ -65,7 +69,9 @@
 
 - **Release creation:** [Release candidate review and gates](project/How-to-Create-a-Release-Candidate.md), [canonical execution guide](../tools/distribution/How-to-Create-a-Release-Candidate.md).
 
-All thirteen approved product manuals now have substantive working drafts. Existing references retain authority pending explicit reconciliation and approval. Existing programmer orientation briefings remain available below during migration.
+- **MVS programming environment:** [Consolidated explanation](project/Explanation-of-the-MVS-Programming-Environment.md), [original programmer orientation briefings](#programmer-orientation-briefings).
+
+All thirteen approved product manuals and five approved project manuals now have substantive working drafts. Existing references retain authority pending explicit reconciliation and approval. Existing programmer orientation briefings remain available below during migration.
 
 ## Programmer orientation briefings
 
