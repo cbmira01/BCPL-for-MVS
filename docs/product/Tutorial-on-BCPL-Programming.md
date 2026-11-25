@@ -62,7 +62,7 @@ Return to integer-arithmetic. Evaluate addition, subtraction, multiplication, in
 
 Run [boolean-operators](../../mr10-kit-compiler/language-demo/boolean-operators/boolean-operators.bcpl). Compare `A<B`, `A=B`, and `A\=B`; combine conditions using `/\` and `\/`. The backslash prefix negates a logical value. Parenthesize mixed expressions to make intent clear. BCPL words can represent integers, bit patterns or logical values; do not import the Boolean rules of another language.
 
-Exercise: predict which comparisons in the example are true, then change B to 7 in your scratch copy. Compare the numeric truth representations printed by WRITEF.
+Exercise: predict which comparisons in the example are true, then change B to 7 in your scratch copy. Compare the numeric truth representations printed by WRITEF. Use TRUE/FALSE or a comparison as a condition, rather than an arbitrary nonzero integer. Logical operators used to produce a word are not the same as the compiler's conditional branching path; do not depend on short circuit in a value expression. Sequence calls with observable side effects in separate commands.
 
 ## 4. Conditional execution and iteration
 

@@ -47,3 +47,17 @@ Additional source reconciliation: MR10 TRN TRANSDYNDEFS uses EVALCONST for VEC b
 | Native 41, 42, 45, 46, 47 source and expected files | Reference 10 | Reconciled positive scope: all ten blobs match CO.6 tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`; case 47 oracle 422517, other four 42. This supplements the six prior examples; no binary identity or fresh GO claimed. |
 
 **Remaining:** complete grammar/lexical and dialect matrix, exact declaration/scope and procedure semantics, runtime truth/short-circuit and arithmetic edge cases, MR10 preserved deck equivalence, extended Cambridge target lowering, and qualification of any authority transfer. Existing historical sources, old references, accepted common coroutine contract, fixtures and oracles retain their roles. No dependency retirement proposed. Consider focused scratch BCPL probes for overlapping assignments, negative BY/bound evaluation and constant/operator edge cases only if needed for accepted scope; no MVS job authorized or run here.
+
+### DR.5 — Second reconciliation pass
+
+**Baseline:** `dfc4f8496d643d32707c4c6a6862ef42c91c729f`.
+
+| Source / provision | Destination | Disposition and qualification |
+| --- | --- | --- |
+| MR10 SYN NEXTSYMB, REXP, RDSECT, RDCDEFS, RDBLOCKBODY | Reference 1–2 | Clarified single-quote character/string distinction, tagged closure, newline continuation, declaration delimiters. Source-observed; complete malformed-input recovery and deck behavior remain unverified. |
+| MR10 TRN TRANS, DECLNAMES, CHECKDISTINCT, TRANSNAME; Cambridge TRN TRANSNAME | Reference 4, 7 | Clarified name-table scope, declaration groups, outer-local rejection and diagnostics. No general closure or arity guarantee. |
+| MR10 and Cambridge TRN LOAD, LOADLIST, JUMPCOND; ICINT19 OP4/OP5, DIVINT, REMINT, SHLINT, SHRINT | Reference 5, 7; tutorial 3 | Clarified word-valued logical operations versus conditional control, operand reordering, emitted argument order and interpreter instruction selection. Signed arithmetic, invalid shift counts, side effects and noncanonical condition behavior remain unverified on target. |
+| Cambridge SYN FORMTREE/DECLSYSWORDS/NEXTSYMB/REXP; TRN COMPILEAE/TRANS; generator main | Reference 9–10; compiler explanation 5 | Traced SECTION/NEEDS recognition and OCODE emission, distinguished compiler source adaptation from application grammar, documented additional lexical/assignment forms without certifying native lowering. |
+| RC4 and CO.6 source identity | Reference 10 | RC4 frozen source `e910de51c19c09698be139e33084a90401511cc9`: 5 MR10 INTCODE inputs, 11 language sources, 25 semantic source/oracle files all match. CO.6 `216b6707c404a91c796ed8f1419a99ef172b184a`: 12 source/oracle blobs for native 13–15, 24, 35, 43 all match. Exact tracked input identity only; no new execution or binary identity claimed. |
+
+**Remaining:** comprehensive dialect/backend mapping, independently accepted negative diagnostics and side-effect/boundary cases, and source/deck equivalence. The reference now describes more of the actual parser/translator domains, but does not purport to be an exhaustive formal grammar. Existing normative sources and test oracles retain authority; no transfer requested or retirement authorized in this pass.

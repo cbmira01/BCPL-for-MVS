@@ -60,7 +60,7 @@ The [MR10 options inventory](../../mr10-kit-compiler/docs/compiler-options.md) a
 | L followed by decimal number | Set TREESIZE via READN; terminator is reprocessed |
 | 3 | Set SAVESPACESIZE to 3, affecting translator workspace/save-space offsets |
 
-The scanner maintains a mutable flag index initially zero. P/T/C/M/N set it; every processed character reaching the common assignment sets OPTION!N true. A/S/E/L/3 have additional side effects. Unknown characters are not reliably rejected. Acceptance by the scanner is not a supported-option guarantee. The historical source and the preserved executable SYNI image have not been exhaustively compared behaviorally.
+The scanner maintains a mutable flag index initially zero. P/T/C/M/N set it; every processed character reaching the common assignment sets OPTION!N true. A/S/E/L/3 have additional side effects. Unknown characters are not reliably rejected. Acceptance by the scanner is not a supported-option guarantee. The historical source and the preserved executable SYNI image have not been exhaustively compared behaviorally. All five tracked MR10 INTCODE inputs (SYNI, TRNI, CGI, BLIBI, ICLIB) match the RC4 frozen program-source revision e910de51c19c09698be139e33084a90401511cc9 by blob SHA. That establishes tracked input identity, not source-to-deck regeneration equivalence or independent verification of every option.
 
 ### 2.3 Supplying options
 
@@ -210,7 +210,7 @@ Separate IFOX/IEWL steps are needed to construct native load modules from CODE. 
 | Binary SYSGO output | Not supported by current textual bootstrap transport; retain second-phase N |
 | Native runtime service requirements | Depend on code generator switches, selected Core Runtime and libraries |
 
-The [ICINT19 assembler](../../mr10-kit-compiler/asm/icintv19.asm) defines the program/global capacities and supplies G!54/G!55 stack boundaries for the Cambridge host. Its ICGETBY/ICPUTBY use two logical bytes per fullword-backed interpreted slot, unlike four-byte native word packing. The [demotion generator](../../bootstrap-toolchain/bootstrap-cambridge/make-demoted.py) adjusts OCODE host packing and target packing separately.
+The [ICINT19 assembler](../../mr10-kit-compiler/asm/icintv19.asm) defines the program/global capacities and supplies G!54/G!55 stack boundaries for the Cambridge host. Its ICGETBY/ICPUTBY use two logical bytes per fullword-backed interpreted slot, unlike four-byte native word packing. The [demotion generator](../../bootstrap-toolchain/bootstrap-cambridge/make-demoted.py) adjusts OCODE host packing and target packing separately. Its main routine reads the maintained SYN/TRN source containers and historical master/CG, splits SYN/LEX, TRNA/TRNB and CGA–CGE, checks expected header/spelling occurrence counts, derives the master and emits separate ordinary and diagnostic units. The maintained source containers, generator, bootstrap host and default parameter file (five tracked blobs) match the CO.6 tested revision 216b6707c404a91c796ed8f1419a99ef172b184a. This limited comparison excludes other generator dependencies, installed CAMBCOMP binary identity and independent generation/compilation of nondefault configurations.
 
 ### 6.2 Checked and counted native procedure entry
 
