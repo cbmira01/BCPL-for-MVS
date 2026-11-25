@@ -14,6 +14,8 @@ The proposal is deliberately incremental: preserve existing authoritative paths 
 
 ## 2. Proposed physical and logical organization
 
+**Subsequent owner decision:** [Directory organization](dr1-directory-organization-owner-decision-20261125.md) approves the two-directory scheme. Detailed navigation and migration arrangements remain open.
+
 ```text
 README.md                         project and public-release entry point
 docs/
