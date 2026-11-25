@@ -86,6 +86,8 @@ The current 14 orientation briefings are not all product usage material. Propose
 
 ## 4. Authority and status model
 
+**Subsequent owner decision:** [Canonical documentation format](dr1-canonical-markdown-owner-decision-20261125.md) approves repository Markdown and GitHub presentation, derived offline/MVS representations, no independent Wiki and deferral of Pages. Detailed rendering decisions remain deferred.
+
 **Subsequent owner decision:** [Reference manuals as normative authorities](dr1-reference-authority-owner-decision-20261125.md) establishes the long-term authority direction. The original proposal below is preserved as discussion history; existing contracts remain operative until individual validated transfers are approved.
 
 - Canonical human-authored prose: UTF-8 Markdown in GitHub main; version it with code and freeze release-specific documentation by tag/manifest. No independent Wiki authority. GitHub Pages is a possible derived view only; no new infrastructure now.
