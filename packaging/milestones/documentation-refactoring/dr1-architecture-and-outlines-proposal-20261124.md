@@ -99,6 +99,8 @@ The current 14 orientation briefings are not all product usage material. Propose
 
 ## 5. Navigation, editorial and stable-reference conventions
 
+**Subsequent owner decision:** [Documentation navigation](dr1-navigation-owner-decision-20261125.md) approves the Diátaxis-first catalog and secondary subject index. Both views link to the same manuals.
+
 The proposed docs index starts with "Learn", "Accomplish a task", "Understand", "Consult a reference" and links to product/project manuals. Provide subject access and links to project records, release-specific companion and historical materials. Descriptive headings and stable relative links serve sequential reading and quick consultation. Use a short chapter index for long manuals, numbered headings only where helpful, tables for contracts and comparisons, and simple text diagrams where clearer. Mermaid may be used later if supported by the chosen representations; never make essential information unavailable on MVS. Avoid repeating chapter text in indexes.
 
 Use the agreed title prefixes, title-matching hyphenated filenames and established project terminology. Include purpose, audience, applicable compiler/profile/version, prerequisites and verification limitations where relevant, not a mandatory boilerplate block. Put a warning immediately before destructive steps; use real BCPL, assembler and JCL from accepted examples, mark illustrative/unverified material. Retain code blocks in appropriate source format, including fixed-card constraints where relevant. No generated empty placeholders.
