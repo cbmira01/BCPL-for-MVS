@@ -9,7 +9,9 @@ GET "LIBHDR"
 
 GLOBAL $( DATE:29; WRAPOUTPUT:33; FINDPARM:39 $)
 
-STATIC $( WRAPPING = TRUE $)
+STATIC $( WRAPPING = TRUE
+          RAWREAD=0; RAWSELECT=0; RAWEND=0
+          CURRENT=0; LASTCH=0; VALID=FALSE; REPLAY=FALSE $)
 
 LET WRAPOUTPUT(NEWSTATE) = VALOF
 $(  LET OLDSTATE = WRAPPING
@@ -21,7 +23,61 @@ $)
 || containing its invocation options.  Under the bootstrap harness, keep that
 || stream distinct from the MR10 compiler's OPTIONS DD: CAMBPARM belongs to the
 || resident Cambridge compiler only.
-LET FINDPARM() = FINDINPUT("CAMBPARM")
+LET FINDPARM() = VALOF
+$(  || ICLIB supplies the raw stream operations after global loading.
+    || Install wrappers only in this compiler image, once, before
+    || the first option read; READN in BLIBI uses the same G!13.
+    IF RAWREAD=0 DO
+    $( RAWREAD := RDCH
+       RAWSELECT := SELECTINPUT
+       RAWEND := ENDREAD
+       RDCH := HOSTREAD
+       SELECTINPUT := HOSTSELECT
+       ENDREAD := HOSTEND
+    $)
+    RESULTIS FINDINPUT("CAMBPARM")
+$)
+
+AND HOSTREAD() = VALOF
+$(  IF REPLAY DO
+    $( REPLAY := FALSE
+       RESULTIS LASTCH
+    $)
+    LASTCH := RAWREAD()
+    VALID := CURRENT NE 0
+    RESULTIS LASTCH
+$)
+
+AND UNRDCH() BE
+$(  || One-character replay on the selected stream. Fail closed on
+    || misuse; all historical compiler sites unread once after read.
+    UNLESS VALID DO STOP(8)
+    IF REPLAY DO STOP(8)
+    REPLAY := TRUE
+$)
+
+AND HOSTSELECT(S) BE
+$(  IF S NE CURRENT DO
+    $( IF REPLAY DO STOP(8)
+       VALID := FALSE
+       CURRENT := S
+    $)
+    RAWSELECT(S)
+$)
+
+AND HOSTEND() BE
+$(  VALID := FALSE
+    REPLAY := FALSE
+    CURRENT := 0
+    RAWEND()
+$)
+
+AND SKIPREC() BE
+$(  || Historical SYN uses this after a top-level period.
+    || ICINT19 supplies character records with synthetic newline.
+    LET CH = RDCH()
+    WHILE CH NE '*N' & CH NE ENDSTREAMCH DO CH := RDCH()
+$)
 
 
 || CG370 calls DATE() while constructing the standard object-module header.

@@ -82,3 +82,7 @@ Owner-reported run at `e743ee65e4fbfc41e086aa512c706bafa4138422`: MR10 JOB 9920 
 ### DR.5 — Cambridge JOB 9922 diagnosis
 
 Owner-supplied full receipt establishes COMP and SVCODE RC=0 but ICINT CODE=-1. Trace and global map identify G!15=0 after READN returns 12 and TERMINATOR=81. Historical master calls UNRDCH; current MR10 ICLIB and BOOTHOST do not provide it. All five historical call sites, including independent source lookahead, must be considered. Compiler reference chapter 3 now records the bootstrap restriction. See [candidate record](candidates/compiler-verification/README.md). Native BCPLIO remains unaffected; no GET result, production change, normative transfer or closure. Owner design approval pending.
+
+### DR.5 — Owner-approved bootstrap compatibility correction candidate
+
+BOOTHOST scoped RDCH replay (G!15), stream-selection/close state and historical source period SKIPREC (G!26); permanent Bootstrap cases 190–192, including the accepted newline/FB132 oracle, numeric option paths and multi-source lookahead. No historical/native runtime or MR10 interpreter modification. MVS rebuild and first regular-suite acceptance pending. See [candidate record](candidates/compiler-verification/README.md). No authority transfer.

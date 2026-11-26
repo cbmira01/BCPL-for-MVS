@@ -257,3 +257,15 @@ The six regular project suites and `coroutine-contract` also remain
 unchanged. Never combine historical diagnostic FAIL outcomes into the
 regular PASS total without explicitly distinguishing the separate
 execution groups.
+
+## DR.5 permanent Bootstrap compatibility coverage
+
+Bootstrap now includes IDs 190–192 in addition to 00–145. The existing
+coordinator and both native profiles select all three through the manifest.
+190 independently compares FB132 records, 191 exercises actual Cambridge
+option replay (H600 compile-only), and 192 requires two independent native
+units from one source stream. All use resident CAMBCOMP and read-only BOOT_OBJ;
+no new suite, no device opt-in, no persistent installation. First live
+acceptance pending. The expected supported campaign total becomes 211 PASS,
+0 FAIL, 1 expected SKIP (083), 0 BLOCKED. Historical campaign totals stay as
+recorded. See [case inventory](../../tests/README.md).

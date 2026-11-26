@@ -19,6 +19,7 @@ CASE_ROOTS = (
     (159, 162, ROOT / "tests/system-extensions/bcpltime"),
     (163, 176, ROOT / "tests/system-extensions/bcplqsam"),
     (177, 189, ROOT / "tests/coroutines"),
+    (190, 192, ROOT / "tests/bootstrap"),
 )
 
 
@@ -94,7 +95,7 @@ def parse_args() -> argparse.Namespace:
 def discover() -> tuple[dict[int, str], int]:
     cases: dict[int, str] = {}
 
-    for first, last, base in CASE_ROOTS:
+    for base in dict.fromkeys(directory for _, _, directory in CASE_ROOTS):
         if not base.is_dir():
             raise RuntimeError(f"missing suite directory: {base}")
 
@@ -106,7 +107,11 @@ def discover() -> tuple[dict[int, str], int]:
                 continue
             raw_id = match.group(1)
             test_no = int(raw_id, 10)
-            if not first <= test_no <= last:
+            try:
+                owner = case_directory(test_no)
+            except ValueError as exc:
+                raise RuntimeError(f"unowned case: {path}") from exc
+            if owner != base:
                 raise RuntimeError(f"case in wrong suite: {path}")
             if raw_id != case_id(test_no):
                 raise RuntimeError(f"noncanonical case directory: {path}")

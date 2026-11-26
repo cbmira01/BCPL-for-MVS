@@ -182,6 +182,8 @@ The [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-fo
 | `coroutine-contract` | 2 | 0 | 0 | 0 |
 | **Supported total** | **208** | **0** | **1** | **0** |
 
+DR.5 subsequently added Bootstrap cases 190–192 to the same supported campaign (no change to the eight-suite command). The expected current total after first target acceptance is 211 PASS, 0 FAIL, 1 expected SKIP (083), 0 BLOCKED; this does not replace the historical CO.6 result above. See [native suite inventory](../../tests/README.md).
+
 The original `mr10-coroutines` historical suite independently returned four PASS and one genuine FAIL (manual fixed-stack first activation, `CODE=-1`). Do not replace its unchanged oracle with that of the supported valid-frame case, reclassify it as SKIP/XFAIL, or add overlapping historical passes to the supported total. `mr10-probes` is a distinct diagnostic selection, not part of the eight-suite supported campaign. An earlier Bootstrap 117 IEWL SB2D failure remains recorded despite subsequent passing runs.
 
 Require the new campaign's `PROJECT REGRESSION RESULT: PASS` and inspect the new per-suite counts and evidence; prior PASS is not a substitute. Save `workarea/project-regressions/` summaries and suite logs, native `workarea/test-suites/` receipts and relevant JES reports outside disposable workarea before another cleanup. Retain both failures and successful receipts with source SHA and configuration identity, without credentials.

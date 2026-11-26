@@ -35,6 +35,8 @@ elif (( test_num <= 176 )); then
     case_root="$root/tests/system-extensions/bcplqsam"
 elif (( test_num <= 189 )); then
     case_root="$root/tests/coroutines"
+elif (( test_num <= 192 )); then
+    case_root="$root/tests/bootstrap"
 else
     echo "run-test: no owning suite for test $test_num" >&2
     exit 65
@@ -51,6 +53,18 @@ fi
 
 case_dir=${matches[0]}
 case_name=$(basename "$case_dir")
+if (( test_num >= 190 && test_num <= 192 )); then
+    [[ -f "$case_dir/compatibility-native.txt" &&
+       ${BCPL_RUNTIME_PDS:-1} == 1 &&
+       ${BCPL_RUNTIME_LIBRARY:-} == OBJ &&
+       ${BCPL_RUNTIME_CANDIDATE:-0} == 0 &&
+       -z ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} ]] || {
+        echo "run-test: compatibility cases require production BOOT_OBJ" >&2
+        exit 64
+    }
+    exec python3 -B "$root/tools/checks/run-bootstrap-compatibility.py" \
+        "$test_num" "$case_dir" --run
+fi
 # CO.5 numbered coroutine cases use accepted source-selected candidate linkage.
 # BOOT_OBJ remains read-only; these tests do not install runtime objects.
 if [[ -f "$case_dir/coroutine-native.txt" ]]; then
