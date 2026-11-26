@@ -57,6 +57,7 @@ def check_candidate(source, oracle, labels):
                          not x.startswith(("//", "/*")) for x in rows),
             "invalid BCPL source card")
     expected = oracle.read_text("ascii").splitlines()
+    require(expected, "empty oracle")
     require([x.split()[2] for x in expected] == list(labels),
             "oracle labels differ")
     require(all(x.startswith("RP: DR5 ") for x in expected),
@@ -64,13 +65,17 @@ def check_candidate(source, oracle, labels):
     require(assess("INTCODE SYSTEM ENTERED\n" + "\n".join(expected) +
                    "\nEXECUTION CYCLES = 1, CODE = 0", expected, [0],
                    "INTCODE SYSTEM ENTERED") == expected, "parser self-check")
-    for wrong in (expected[:-1], expected + expected[-1:], expected[::-1]):
+    wrong_cases = [expected[:-1], expected + expected[-1:],
+                   [expected[0] + " EXTRA", *expected[1:]]]
+    if expected[::-1] != expected:
+        wrong_cases.append(expected[::-1])
+    for wrong in wrong_cases:
         try:
             assess("\n".join(wrong), expected)
         except ValueError:
             pass
         else:
-            raise ValueError("oracle accepted missing, duplicate or unordered records")
+            raise ValueError("oracle accepted missing, duplicate, altered or unordered records")
     require(STEP.findall("ASMAP      IFOX00       RC=0000\n"
                          "LKED       IEWL         RC=0000\n"
                          "GO                      RC=0000\n") ==
