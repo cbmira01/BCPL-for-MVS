@@ -80,7 +80,7 @@ The [v1 contract](../../packaging/architecture/runtime-contract-v1.md) describes
 
 BCPLMEM's current implementation allocates 4(N+1)+12 bytes, with a private descriptor containing returned pointer, allocation length and list link. Memory is not promised zero-initialized. MEMDRAIN and MEMBIND are private startup/cleanup interfaces, not public BCPL calls. MEMBIND publishes the allocation-list head for the limited SAVEAREA/BLIB consumers (G!6!48). MEMSTAT uses R1 pointing to four writable fullwords: current and peak live block counts, current and peak allocated bytes including private headers. It is private R14 linkage, R10 scratch, quiescent singleton only; not total task memory or a BCPL API.
 
-The allocator and streams use static state and are not reentrant. Normal cleanup of outstanding allocations is supported at tested scope; skipped case 083 does not establish measured complete resource reclamation.
+GETVEC uses conditional GETMAIN and links only successful allocations; FREEVEC searches the live list before dereferencing allocation metadata, unlinks and frees with the recorded length. These are source-observed protections, not a guarantee of arbitrary pointer safety or recovery from an MVS abend. BCPLBYTE uses R7 pointer/result, R8 byte offset, R9 store value; the source uses R14 as scratch and restores R4 from the current frame. No bounds checking is performed. The allocator and streams use static state and are not reentrant. Normal cleanup of outstanding allocations is supported at tested scope; skipped case 083 does not establish measured complete resource reclamation.
 
 ### 3.2 Termination
 
@@ -136,7 +136,7 @@ M5.1/M5.2 evidence distinguishes class-separated physical writer routing, exact 
 
 ## 5. Base Library (BLIB) — supported formatting, strings, conversions and other routines
 
-The [historical source](../../richards-bcpltape/bcplib/bcpl/blib) and [LIBHDR](../../richards-bcpltape/sys3/bcpl/libhdr) are primary evidence. Native BLIB is independently compiled and its exports imported. The preserved historical assignments are not a blanket support declaration. The following source-observed calls have focused evidence for selected cases; exact argument domains and negative cases remain subject to reconciliation.
+The [historical source](../../richards-bcpltape/bcplib/bcpl/blib) and [LIBHDR](../../richards-bcpltape/sys3/bcpl/libhdr) are primary evidence. Native BLIB is independently compiled and its exports imported. The preserved historical assignments are not a blanket support declaration. At DR.5, matching the 22 top-level BLIB definitions to LIBHDR identifies 21 global-numbered procedure candidates: the 13 ordinary routines below and eight diagnostic routines (G!3 ABORT, G!4 BACKTRACE, G!5 ERRORMESSAGE, G!56 STACKHWM, G!58 INPROGRAM, G!59 VALIDPOINTER, G!69 WRITEARG, G!78 MAPSTORE). PRINTWIDTH is an unnumbered helper; G!71 TERMINATOR is data, not a procedure, and G!79 USERPOSTMORTEM is a referenced hook, not a BLIB definition. The [generator](../../bootstrap-toolchain/bootstrap-cambridge/make-demoted.py) removes SECTION and rewrites two inequality tokens; [BLIBBLD](../../bootstrap-toolchain/jcl/blibbld.jcl) compiles and prepares the separate native object. This is a source inventory, not a byte-level census of the installed export trailer. The following calls have focused evidence for selected cases; other details are source-observed.
 
 | Global | Signature | Behavior |
 | --- | --- | --- |
@@ -148,13 +148,17 @@ The [historical source](../../richards-bcpltape/bcplib/bcpl/blib) and [LIBHDR](.
 | 66 | PACKSTRING(V,S) | V!0 length (low 8 bits), subsequent words characters; packs into S; native result N/4, in-place V=S tested |
 | 67 | UNPACKSTRING(S,V) | Copy length and each character to separate vector words |
 | 68 | WRITED(N,D) | Decimal formatting with width |
-| 70 | READN() | Historical numeric reader, TERMINATOR G!71; complete lexical/error contract pending |
+| 70 | READN() | Read optional sign and decimal digit sequence; consumed terminator in G!71 (see below) |
 | 74 | WRITEX(N) | WRITEHEX(N,8) |
 | 75 | WRITEHEX(N,D) | Hexadecimal formatting with width |
 | 76 | WRITEF(FORMAT,...) | Format and argument cursor; native historical formal parameters A–K after FORMAT |
 | 77 | WRITEOCT(N,D) | Octal formatting with width |
 
-Strings are counted, maximum length 255 in historical LIBHDR. Supply sufficient readable/writable storage (including length byte); unpacked vector requires length+1 words. PACKSTRING's native return is last word index, not character count; this differs from a two-byte interpreted packing computation. Do not generalize tested exact in-place operation to arbitrary overlapping buffers.
+Strings are counted, maximum length 255 in historical LIBHDR. Supply sufficient readable/writable storage (including length byte); unpacked vector requires length+1 words. PACKSTRING masks V!0 to eight bits, clears the final packed word and returns N/4 (integer division), the last word index, not character count. Its explicit saved-word handling supports exact V=S; case 071 verifies five characters in place. Do not generalize to arbitrary overlapping buffers. UNPACKSTRING copies byte zero as well as characters.
+
+READN skips leading '*S', '*T' and '*N', accepts one optional sign, and accumulates consecutive decimal digits. The first character outside the digit range is consumed and left in G!71 TERMINATOR, including EOF (-1). With no digits, the source returns zero, so zero is not a reliable parse-success indicator. Whitespace after the sign is not skipped again; no explicit numeric overflow check or automatic unread is implemented. These are source observations, not an independently executed native numeric-input matrix. The compiler-host option tests exercise a separate interpreted reader and must not be used as native G!70 proof.
+
+WRITED pads on the left with spaces to a minimum width including any minus sign; it never intentionally truncates a longer decimal representation. WRITEHEX and WRITEOCT emit the requested number of digit positions, with leading zeroes where needed within the ordinary supported widths. WRITEX fixes width 8, WRITEO width 11. Arbitrary widths, signed shift edge cases and full-range decimal behavior are not independently certified.
 
 | WRITEF syntax | Historical native BLIB meaning |
 | --- | --- |
@@ -167,7 +171,7 @@ Strings are counted, maximum length 255 in historical LIBHDR. Supply sufficient 
 | %$ | Advance argument cursor without printing |
 | Other conversion | Source default writes conversion character |
 
-Width is one character decoded as digit or alphabetic value (EBCDIC-specific implementation), not an arbitrary decimal width string. Historical WRITEF uses an argument cursor based on @A; do not assume unlimited variadic arguments. Source recognition and individual formatting cases do not establish every width, signed edge case or malformed format. Ordinary format example from native [075](../../tests/bootstrap/075-blib-writef-mixed-object/README.md):
+Width is one character decoded as digit or alphabetic value (EBCDIC-specific implementation), not an arbitrary decimal width string. The source folds the type with X'40' before dispatch; an unknown type emits the original character without advancing the argument cursor. Historical WRITEF uses an argument cursor based on @A and declares eleven argument words after FORMAT. It does not check the number supplied or guard a dangling percent or missing width byte. Use complete formats and enough arguments; do not assume unlimited variadic arguments. Source recognition and individual formatting cases do not establish every width, signed edge case or malformed format. Ordinary format example from native [075](../../tests/bootstrap/075-blib-writef-mixed-object/README.md):
 
 ```bcpl
 WRITEF("C:%C S:%S N:%N", 'Z', "HI", 42)
@@ -175,7 +179,7 @@ WRITEF("C:%C S:%S N:%N", 'Z', "HI", 42)
 
 Expected `C:Z S:HI N:42`. The original failure and later G!76 binding correction are retained; bootstrap WRITEST is fallback only when historical WRITEF is absent. Tests [069](../../tests/bootstrap/069-independent-blib-object/README.md), [070](../../tests/bootstrap/070-blib-unpackstring-object/README.md), [071](../../tests/bootstrap/071-blib-packstring-inplace-object/README.md), [072](../../tests/bootstrap/072-blib-writed-width-object/README.md), [073](../../tests/bootstrap/073-blib-writehex-width-object/README.md), [074](../../tests/bootstrap/074-blib-writeo-object/README.md) and 075–081 give independent-object and calling evidence. Earlier bootstrap formatter cases must not be conflated with the historical BLIB object.
 
-Diagnostic BLIB routines have additional dependencies: STACKHWM G!56 returns a word address or sentinel 0 (overflow) / 1 (unset); test [120](../../tests/bootstrap/120-stackhwm-initialized/README.md) checks a bounded result, not exact peak measurement. INPROGRAM G!58 and VALIDPOINTER G!59 use published extents and selected list metadata; tests 121–123 do not establish arbitrary-address safety. ABORT, ERRORMESSAGE, BACKTRACE, WRITEARG, MAPSTORE and USERPOSTMORTEM have only partially reconstructed support; see chapter 9.
+Diagnostic BLIB routines have additional dependencies (historical ABORT and ERRORMESSAGE reference FINDLOG/WRITETOLOG; BACKTRACE references LEVEL, and ABORT may invoke USERPOSTMORTEM): STACKHWM G!56 returns a word address or sentinel 0 (overflow) / 1 (unset); test [120](../../tests/bootstrap/120-stackhwm-initialized/README.md) checks a bounded result, not exact peak measurement. INPROGRAM G!58 and VALIDPOINTER G!59 use published extents and selected list metadata; tests 121–123 do not establish arbitrary-address safety. ABORT, ERRORMESSAGE, BACKTRACE, WRITEARG, MAPSTORE and USERPOSTMORTEM have only partially reconstructed support; see chapter 9.
 
 ## 6. Coroutine Support Library — creation, activation, transfer, deletion, limits and common behavior
 
@@ -213,9 +217,21 @@ MR10 uses ICINT19, BLIBI and ICLIB. Its compiler and application INTCODE use the
 | 121–125 | ISDIGIT, ISALPHA, ISSPACE, TOUPPER, TOLOWER |
 | 126–127 | READLINE, WRITELINE |
 
-The [MR10 GLOBALS map](../../mr10-kit-compiler/library/GLOBALS.md) retains local allocation authority subject to the registry. Compile the corresponding module with the application; these routines are not all built into ICLIB. The [library README](../../mr10-kit-compiler/library/README.md) identifies modules and existing contracts: strings require adequate caller storage, MEM sizes are bytes, VEC sizes words, overlapping MEMCPY unsupported; deterministic Park-Miller random is not for security, RANDRANGE(N) gives 0 for N<=0; negative IPOW gives 0; ITOHEX nonnegative; READLINE truncates to supplied limit and returns -1 at end of input. Full individual routine signatures and corner cases remain to be reconciled against source and tests before authority transfer.
+The [MR10 GLOBALS map](../../mr10-kit-compiler/library/GLOBALS.md) retains local allocation authority subject to the registry. Compile the corresponding module with the application; these routines are not all built into ICLIB. The following signatures and restrictions are source-observed in the [library modules](../../mr10-kit-compiler/library/README.md), with ordinary-domain evidence from the MR10 Regression Panel (library-scalars, library-strings and library-line-io). They are not native BLIB contracts.
 
-[MR10 allocator](../../mr10-kit-compiler/library/getvec-freevec.bcpl) requires HEAPINIT(BASE,WORDS) on an existing arena, GETVEC(N) returns N+1 words or zero; FREEVEC releases owned storage. This is not MVS GETMAIN/FREEMAIN. [MR10 coroutines](../../mr10-kit-compiler/library/coroutines.bcpl) use the allocator, CHANGECO and explicit root setup; source CALLCO busy result -999 differs from native -2. The [generator demonstration](../../mr10-kit-compiler/bcpl-demo/coroutines/coroutines.bcpl) is the applicable complete example. Retain canonical first-activation frame preconditions; the original historical manually constructed fixed-stack fixture still fails with CODE=-1. The supported valid-frame variant and common CO.6 oracles do not erase that failure.
+| Module | Calls and results | Caller obligations and boundaries |
+| --- | --- | --- |
+| [random](../../mr10-kit-compiler/library/random.bcpl) | SRAND(N), RANDSEED(N) seed; RAND() next value; RANDRANGE(N) returns remainder or 0 for N<=0 | Seed before use; deterministic Park-Miller state, not security randomness; no unbiased-range guarantee |
+| [integer-utils](../../mr10-kit-compiler/library/integer-utils.bcpl) | ABS(N), MIN(A,B), MAX(A,B), SIGN(N) (-1/0/1), GCD(A,B), IPOW(BASE,EXP) | Negative exponent returns 0; exponent 0 returns 1; no explicit overflow handling or minimum-signed-integer guarantee |
+| [char-utils](../../mr10-kit-compiler/library/char-utils.bcpl) | ISDIGIT(CH), ISALPHA(CH), ISSPACE(CH), TOUPPER(CH), TOLOWER(CH) | ASCII character ranges; ISSPACE recognizes space/tab/newline; not native EBCDIC classification |
+| [string-utils](../../mr10-kit-compiler/library/string-utils.bcpl) | STRLEN(S); STRCMP(A,B) (-1/0/1); STRCPY(DST,SRC), STRCAT(DST,SRC) return DST; STRCHR(S,CH) returns first one-based index or 0 | Counted strings, sufficient destination; concatenated length must fit one byte (255), no overlap or overflow checks |
+| [memory-utils](../../mr10-kit-compiler/library/memory-utils.bcpl) | MEMCPY(DST,SRC,N), MEMSET(DST,VALUE,N), MEMCMP(A,B,N); VECCOPY(DST,SRC,N), VECCLEAR(V,N) | MEM sizes bytes, VEC sizes words; copies/fills return destination, comparison -1/0/1; nonpositive count performs no element access; forward copies are not overlap-safe |
+| [numeric-conversion](../../mr10-kit-compiler/library/numeric-conversion.bcpl) | ATOI(S), HEXTOI(S); ITOA(N,S), ITOHEX(N,S) return S on supported input | Parse digit prefix without a separate error indicator; no overflow detection. ITOHEX rejects negative input with 0; minimum signed input to ITOA not established; caller supplies storage |
+| [line-io](../../mr10-kit-compiler/library/line-io.bcpl) | READLINE(S,MAX) returns stored length or -1 on immediate EOF; WRITELINE(S) emits string and newline | MAX is character capacity excluding length byte; keep 0–255 and supply storage. Negative MAX becomes zero; excess input is consumed through newline or EOF; partial final line returned before EOF |
+
+These source-level limits are not exhaustive negative tests. In particular, string/line length overflow, arbitrary overlap and numeric overflow must not be advertised as safe.
+
+[MR10 allocator](../../mr10-kit-compiler/library/getvec-freevec.bcpl) requires HEAPINIT(BASE,WORDS) on an existing arena of at least three words; it resets FREEHEAD and must not be used to reinitialize an arena with live allocations. GETVEC(N) returns a pointer to at least N+1 payload words or zero, using first fit, a two-word private header and splitting only when at least three words remain. FREEVEC(0) is a no-op; nonzero V must be an exact live allocation pointer. The source reinserts by address and coalesces adjacent blocks without native-style live-list validation. Do not pass foreign, stale or duplicate pointers. No explicit arithmetic overflow check for N+3 is provided. This is not MVS GETMAIN/FREEMAIN. [MR10 coroutines](../../mr10-kit-compiler/library/coroutines.bcpl) use the allocator, CHANGECO and explicit root setup; source CALLCO busy result -999 differs from native -2. The [generator demonstration](../../mr10-kit-compiler/bcpl-demo/coroutines/coroutines.bcpl) is the applicable complete example. Retain canonical first-activation frame preconditions; the original historical manually constructed fixed-stack fixture still fails with CODE=-1. The supported valid-frame variant and common CO.6 oracles do not erase that failure.
 
 ## 8. Optional libraries and extensions — linkage, deferred facilities and user/site libraries
 
@@ -245,6 +261,7 @@ DEBUGINT G!150 is a provisional project diagnostic, not a historical BLIB API or
 | M4.4/M5 dynamic streams | 145 PASS plus expected skip; returned-control recovery, separate record byte and printer routing evidence |
 | CO.5 | Ten-member production BOOT_OBJ reconstruction, installed-only coroutine IFOX/IEWL/GO and 21-record oracle; 201 supported post-rebuild passes, skip 083 |
 | CO.6 | 208 supported passes, expected skip 083; two paired coroutine oracles; original historical MR10 failure separately retained |
+| DR.5 | [211 supported passes](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md), expected SKIP 083; corrected compiler host and native newline behavior, not an exhaustive runtime or library boundary matrix |
 | RC4 | 80/80 MR10/COMBINED functional cases; native installation/inventory only |
 
 MVS RC alone is not proof of semantic success: compare interpreted CODE and exact application records where applicable, verify native compiler/IFOX/IEWL/GO individually, and respect profile-specific negative oracles. CO.5 Bootstrap 117's earlier IEWL SB2D remains a genuine incident despite later successful reruns. No complete historical source/binary compatibility or all-exception recovery follows from passing finite panels.
