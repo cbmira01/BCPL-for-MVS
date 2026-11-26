@@ -89,3 +89,7 @@ Owner-reported production-profile eight-suite campaign following documentation c
 ### DR.5 — GET source and diagnostic qualification
 
 Baseline `0de748ebef72965497dd1ac40330a99a33f56cae`. Reconciled language reference chapter 9 with MR10 and Cambridge PERFORMGET/CAEREPORT: both save stream, line and lookahead, Cambridge explicitly rejects fourth simultaneous inclusion and missing DD with fatal reports, MR10 has no frame bound and missing DD enters ordinary error recovery. Positive nested MR10 EOF/period and N-suppression tests and Cambridge LIBHDR/option test prepared in [compiler verification candidate](candidates/compiler-verification/README.md). Target execution pending. No general GET nesting, malformed-source recovery, or compiler-image equivalence claimed; no normative transfer.
+
+### DR.5 — First compiler input verification results
+
+Owner-reported run at `e743ee65e4fbfc41e086aa512c706bafa4138422`: MR10 JOB 9920 nested GET PASS (17 5 20 42), JOB 9921 L6000N suppressed GET PASS (42 and option echo). Exact outputs, required JES steps and zero ICINT codes passed. Cambridge host compile driver RC=2, cause not yet established; no native GO. See [candidate evidence](candidates/compiler-verification/README.md). These results qualify the tested MR10 inclusion and option behavior, not general nesting or malformed-input recovery. No production change or authority transfer; further Cambridge investigation requires the existing diagnostic receipt.
