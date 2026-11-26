@@ -152,7 +152,8 @@ these cases. See the case READMEs. All three passed focused and full production-
 
 The ordinary installed production Bootstrap runner tests the corrected BCPLIO
 with wrong-direction selection guards, fixed input close guards and normalized
-built-in DD identity/cursor preservation. First target acceptance pending.
-The accepted 211-pass campaign predates case 193; the new expected supported
-total after verification is 212 PASS, one expected SKIP (083), zero FAIL/BLOCKED.
+built-in DD identity/cursor preservation. Private candidate JOB 363, BLDIOFIX
+JOB 366 and installed case 193 passed on 26 November 2026. The [subsequent
+supported campaign](../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) reported 212 PASS, one expected SKIP (083),
+zero FAIL/BLOCKED. The earlier 211-pass campaign predates case 193.
 Do not run case 193 against the uncorrected installed BCPLIO.

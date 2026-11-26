@@ -158,14 +158,14 @@ The [native suite manifests](../../tests/README.md) and MR10 manifests retain ow
 | --- | --- | ---: | --- |
 | `mr10` | Independent MR10 Regression Panel | 12 | 12 PASS |
 | `mr10-coroutines-supported` | Five valid-domain interpreted cases | 5 | 5 PASS |
-| `bootstrap` | 00–145, 190–193 | 150 | 148 PASS, 1 SKIP (083); 193 pending |
+| `bootstrap` | 00–145, 190–193 | 150 | 149 PASS, 1 SKIP (083) |
 | `runtime-extensions` | 146–158 | 13 | 13 PASS |
 | `bcpltime` | 159–162 | 4 | 4 PASS |
 | `bcplqsam` | 163–176 | 14 | 14 PASS, device opt-in |
 | `coroutines` | 177–189 | 13 | 13 PASS |
 | `coroutine-contract` | co6-pair, co6-nested | 2 | 2 PASS |
 
-The historical eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) at source revision `3f6a417504ab721c080d5af1ffaf54b580ea346b` reported 211 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP; the table above reflects that campaign. Case 193 is an owner-approved BCPLIO correction candidate requiring the rebuilt object; its first target verification is pending. Neither earlier result is proof that a later checkout has been tested.
+The historical eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) at source revision `3f6a417504ab721c080d5af1ffaf54b580ea346b` reported 211 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP; the subsequent [DR.5 BCPLIO campaign](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) at revision `a0efe9a204e1f3f3968b60cb8c7065e9b423bce7` reported 212 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The table above reflects the latter campaign, including installed case 193. None of these results is proof that a later checkout has been tested.
 
 Inspect selections or run a deliberately limited campaign:
 

@@ -273,10 +273,11 @@ recorded. See [case inventory](../../tests/README.md).
 
 ## DR.5 BCPLIO guard case
 
-Bootstrap additionally owns 193 (150 cases; 194 total native IDs). The first
-target verification is pending; the historical 211-pass supported campaign
-remains the last accepted baseline. The proposed 212-pass campaign requires
-the corrected BOOT_OBJ(BCPLIO). The dedicated
+Bootstrap additionally owns 193 (150 cases; 194 total native IDs). Private
+candidate JOB 363, BLDIOFIX JOB 366 and installed case 193 passed. The
+[subsequent supported campaign](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) reported 212 PASS and one expected
+SKIP (083), zero FAIL/BLOCKED. The earlier 211-pass campaign remains
+historical evidence. The dedicated
 `tools/checks/run-dr5-bcplio-fix.py` driver first verifies a private canonical
 source-selected IFOX/IEWL/GO, and only in explicitly selected rebuild mode
 stages and installs BCPLIO with object readback/IEBCOMPR before ordinary 193.

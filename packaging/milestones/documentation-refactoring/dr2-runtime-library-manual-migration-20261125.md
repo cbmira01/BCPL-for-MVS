@@ -118,3 +118,49 @@ unique labels and existing fault/accounting anchor counts. Git clone in the
 assistant workspace remains unavailable (DNS); no actual IFOX, IEWL, BCPL
 compiler or MVS execution by the assistant. Target verification remains the
 required next gate.
+
+### DR.5 — BCPLIO target verification and full supported regression PASS
+
+Owner-reported 26 November 2026 results, correction source checkpoint
+`a0efe9a204e1f3f3968b60cb8c7065e9b423bce7`. Canonical BCPLIO SHA-256
+`76a5b9ed79cd88aa2ad1f17f2dbd7eede6298930eb9f0f4ca6a64f911f162b9a`.
+Private driver evidence: `workarea/dr5-bcplio-fix/run-2pivdj58`;
+status PASS, stage complete. Compiler JOB 362, private IFOX/IEWL/GO JOB 363,
+and BLDIOFIX JOB 366 (IFOX, install, independent readback, IEBCOMPR) passed
+the tracked driver gates. Ordinary installed case 193 PASS in
+`workarea/test-suites/20261126T133242Z-95570-bootstrap-production-tuns_vgp`.
+This verifies the approved public stream-selection and normalized lookup
+corrections at the fixture scope. Defensive IOWDYN/DQPUT/ENDWRITE checks
+remain source-observed; no deliberate wrong-mode QSAM call or private-state
+fault injection was performed.
+
+The subsequent owner-reported eight-suite production campaign completed
+in 12m 22s, with PROJECT REGRESSION RESULT: PASS. Private summary:
+`workarea/project-regressions/20261126T135428Z-95734-3o_8l8rf/summary.json`.
+No intervening checkout change reported.
+
+| Suite | PASS | FAIL | SKIP | BLOCKED |
+| --- | ---: | ---: | ---: | ---: |
+| mr10 | 12 | 0 | not reported | not reported |
+| mr10-coroutines-supported | 5 | 0 | 0 | 0 |
+| bootstrap | 149 | 0 | 1 (083) | 0 |
+| runtime-extensions | 13 | 0 | 0 | 0 |
+| bcpltime | 4 | 0 | 0 | 0 |
+| bcplqsam | 14 | 0 | 0 | 0 |
+| coroutines | 13 | 0 | 0 | 0 |
+| coroutine-contract | 2 | 0 | 0 | 0 |
+| **Supported total** | **212** | **0** | **1** | **0** |
+
+All 213 selected cases accounted for, including device cases 175/176.
+Case 193 passed a second time. The 211-pass pre-correction campaign and
+earlier historical observations remain preserved. Current supported
+development baseline is 212 PASS with the same expected SKIP. The three
+public stream-selection/lookup discrepancies are resolved at the tested
+scope; no repeat rebuild or regression required absent new evidence.
+Fixed built-in handle reuse, missing built-in allocation policy, MVS abend
+boundary, and physical JES DD attribution limitations remain unchanged.
+
+Evidence consists of owner-supplied console transcripts and driver result,
+not independently inspected private receipts. No clean-room reconstruction,
+release installation, RC4 modification, normative authority transfer or
+DR.5 closure is claimed. Resume reconciliation of System Extensions.
