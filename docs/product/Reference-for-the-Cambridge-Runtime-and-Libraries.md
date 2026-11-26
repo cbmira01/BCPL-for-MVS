@@ -126,6 +126,8 @@ NAME is a counted BCPL string of 1–8 valid DD-name characters; lowercase EBCDI
 | Maximum line | 132 characters before newline; 133rd triggers STOP(12) |
 | Closure | ENDWRITE and normal FINISH/STOP flush pending data at tested scope |
 
+**DR.5 newline representation discrepancy:** The current BCPLIO contract recognizes numeric 10, and native regression 110/111 uses WRCH(10). The compiler adaptation CODE370 deliberately maps host newline 10 to X'25' (37); JOB 9490 emitted that byte in *N strings. Two native candidates (JOBS 9491/9493) ended with RC=12 after output accounting consistent with 132 accumulated bytes rather than individual physical records. Historical BLIB WRITES/WRITEF pass literal bytes to WRCH and NEWLINE uses the character literal '*N'. Do not assume embedded *N or NEWLINE() is equivalent to WRCH(10) in the current native environment. Use explicit WRCH(10) for the established record delimiter pending reconciliation. See the [DR.5 candidate evidence](../../packaging/milestones/documentation-refactoring/candidates/language-verification/README.md); no raw record attribution, installed-image identity or production fix is established.
+
 An ordinary stream cannot preserve significant trailing FB80 blanks. No arbitrary binary/VB, PDS traversal, VSAM, dynamic allocation or general DCB validation is promised. DD attributes must be compatible; QSAM/MVS resolves actual effective attributes. BCPLIO's private templates do not explicitly set all RECFM/LRECL/BLKSIZE values.
 
 The dynamic contract records 32-byte descriptors, 268-byte DCB/record regions and 16-byte stable-handle records. These are private implementation details, not a public layout. Closing releases owned descriptor/DCB resources; retired handle records remain until final drain. Invalid/absent names and conditional allocation or recoverable OPEN failure return zero if control returns, preserving selection. Synthetic GETMAIN/DQOPEN tests 134–145 and private accounting establish bounded returned-control recovery, not actual arbitrary SVC19 failure or full MVS storage-exhaustion recovery. Exploratory OPEN jobs did not demonstrate unsuccessful real OPEN. System abends may bypass cleanup.
@@ -140,7 +142,7 @@ The [historical source](../../richards-bcpltape/bcplib/bcpl/blib) and [LIBHDR](.
 | --- | --- | --- |
 | 60 | WRITES(S) | Write counted string characters using WRCH |
 | 62 | WRITEN(N) | Signed decimal via WRITED(N,0) |
-| 63 | NEWLINE() | WRCH newline |
+| 63 | NEWLINE() | Historical BLIB calls WRCH('*N'); see newline representation qualification in chapter 4 |
 | 64 | NEWPAGE() | WRCH page character; no universal MVS page/device behavior established |
 | 65 | WRITEO(N) | WRITEOCT(N,11) |
 | 66 | PACKSTRING(V,S) | V!0 length (low 8 bits), subsequent words characters; packs into S; native result N/4, in-place V=S tested |

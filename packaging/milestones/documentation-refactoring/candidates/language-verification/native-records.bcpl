@@ -1,0 +1,56 @@
+GLOBAL $( START:1; WRITEF:76; WRCH:14; GETBYTE:85 $)
+
+LET BUMP(P) = VALOF
+$( !P := !P+1
+   RESULTIS TRUE
+$)
+
+LET START() BE
+$( LET A = 10
+   AND B = 20
+   AND SUM = 0
+   AND COUNT = 0
+   AND FLAG = FALSE
+   AND R = 0
+   AND N = -17
+   AND D = 5
+
+   A,B := B,A
+   WRITEF("RP: DR5 ASSIGN %N %N", A, B)
+   WRCH(10)
+
+   B := 3
+   FOR I = 1 TO B DO
+   $( SUM := SUM+I
+      B := 0
+   $)
+   WRITEF("RP: DR5 BOUND %N %N", SUM, B)
+   WRCH(10)
+
+   SUM := 0
+   FOR I = 5 TO 1 BY -2 DO SUM := SUM+I
+   WRITEF("RP: DR5 STEP %N", SUM)
+   WRCH(10)
+
+   IF FLAG & BUMP(@COUNT) DO COUNT := 99
+   WRITEF("RP: DR5 BRANCH %N", COUNT)
+   WRCH(10)
+   R := FLAG & BUMP(@COUNT)
+   WRITEF("RP: DR5 VALUE %N %N", R, COUNT)
+   WRCH(10)
+   FLAG := TRUE
+   IF FLAG | BUMP(@COUNT) DO R := 1
+   WRITEF("RP: DR5 OR %N %N", R, COUNT)
+   WRCH(10)
+
+   WRITEF("RP: DR5 SIGNED %N %N", N/D, N REM D)
+   WRCH(10)
+   N := -1
+   WRITEF("RP: DR5 SHIFT %N %N", 3<<4, N>>31)
+   WRCH(10)
+   WRITEF("RP: DR5 NEWLINE %N %N", GETBYTE("*N",1), '*N')
+   WRCH(10)
+   WRITEF("RP: DR5 END")
+   WRCH(10)
+   FINISH
+$)

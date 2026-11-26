@@ -37,3 +37,7 @@ CO.5 and CO.6 accepted development execution and RC4 release acceptance are dist
 - Check exact current BLIB export inventory, each MR10 library signature, private assembler ABI, built-in versus dynamic stream corner cases and exceptional behavior before requesting normative transfer. Source-derived and accepted-test claims remain distinct.
 
 DR.0 dependency-audit qualification remains applicable. No deletion, relocation, software or oracle change, allocation change, new release, authority transfer or march closure.
+
+### DR.5 — Cross-family newline representation discrepancy
+
+From the [language candidate investigation](candidates/language-verification/README.md), native JOBS 9491/9493 fail with GO RC=12 after seven apparent logical lines and a partial seven-character prefix. Their byte counts (118+7+7=132), JOB 9490's X'25' format bytes, CODE370 host-10-to-37 mapping and BCPLIO IOLF=10/IOWFULL STOP(12) give a strong source/evidence explanation. Historical BLIB WRITES/WRITEF/NEWLINE and the accepted numeric-10 stream contract are not yet reconciled. Reference chapters 4–5 output and NEWLINE qualifications updated; explicit WRCH(10) is the existing contract, not a production repair. Preserve both failures, historical source, regression fixtures and oracles. Owner discussion required before choosing a compiler, runtime or library compatibility change. New explicit-record candidate target execution pending.

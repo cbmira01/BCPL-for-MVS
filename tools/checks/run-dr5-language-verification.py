@@ -16,6 +16,8 @@ SOURCE = FIX / "source.bcpl"
 EXPECTED = FIX / "expected.txt"
 DIAG_SOURCE = FIX / "native-shift-diagnostic.bcpl"
 DIAG_EXPECTED = FIX / "native-shift-diagnostic.expected"
+RECORD_SOURCE = FIX / "native-records.bcpl"
+RECORD_EXPECTED = FIX / "native-records.expected"
 CODE = re.compile(r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)")
 JOB = re.compile(r"^JOB\s+(\d+)\s*$", re.M)
 STEP = re.compile(r"^[ \t]*([A-Z0-9]+)[ \t]+(\S*?)[ \t]+RC=(\d{4})[ \t]*$", re.M)
@@ -89,6 +91,12 @@ def check_diagnostic():
                             "OR", "SIGNED", "ISO", "SHIFT", "SHIFT", "END"))
 
 
+def check_records():
+    return check_candidate(RECORD_SOURCE, RECORD_EXPECTED,
+                           ("ASSIGN", "BOUND", "STEP", "BRANCH", "VALUE",
+                            "OR", "SIGNED", "SHIFT", "NEWLINE", "END"))
+
+
 def command(args, log, env):
     with log.open("w", encoding="utf-8") as out:
         p = subprocess.run([str(x) for x in args], cwd=ROOT, env=env,
@@ -149,10 +157,13 @@ def mr10(folder, expected, env):
     return {"job": job, "records": observed}
 
 
-def native(folder, expected, env, diagnostic=False):
-    source = DIAG_SOURCE if diagnostic else SOURCE
-    compiler_name = "DR5CISO" if diagnostic else "DR5CAMB"
-    number = "901" if diagnostic else "900"
+def native(folder, expected, env, diagnostic=False, explicit_records=False):
+    if explicit_records:
+        source, compiler_name, number = RECORD_SOURCE, "DR5CREC", "902"
+    elif diagnostic:
+        source, compiler_name, number = DIAG_SOURCE, "DR5CISO", "901"
+    else:
+        source, compiler_name, number = SOURCE, "DR5CAMB", "900"
     generated = folder / "native.asm"
     text = run(["tools/bootstrap/compile-mvs", source, "--job-name", compiler_name,
                 "--compiler-image", "CAMBCOMP", "--cambridge-parm",
@@ -182,9 +193,12 @@ def main():
     modes.add_argument("--run", action="store_true")
     modes.add_argument("--run-native-diagnostic", action="store_true",
                        help="execute only the isolated native follow-up")
+    modes.add_argument("--run-native-records", action="store_true",
+                       help="execute native probe with explicit WRCH(10)")
     args = parser.parse_args()
     expected = check()
     diagnostic_expected = check_diagnostic()
+    records_expected = check_records()
     if args.check:
         print("DR.5 source/oracle and parser CHECK PASS (no MVS)")
         return 0
@@ -198,15 +212,23 @@ def main():
         env.pop(key, None)
     env.update(BCPL_RUNTIME_LIBRARY="OBJ", BCPL_RUNTIME_PDS="1",
                BCPL_RUNTIME_CANDIDATE="0", BCPL_PRINTER_WINDOW_TRIAL="0")
-    source = DIAG_SOURCE if args.run_native_diagnostic else SOURCE
-    oracle = DIAG_EXPECTED if args.run_native_diagnostic else EXPECTED
+    if args.run_native_records:
+        source, oracle = RECORD_SOURCE, RECORD_EXPECTED
+    elif args.run_native_diagnostic:
+        source, oracle = DIAG_SOURCE, DIAG_EXPECTED
+    else:
+        source, oracle = SOURCE, EXPECTED
     result = {"source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
               "oracle_sha256": hashlib.sha256(oracle.read_bytes()).hexdigest(),
               "git_head": run(["git", "rev-parse", "HEAD"],
                               folder / "revision.log", env).strip(), "paths": {}}
     actions = (("native-diagnostic", lambda f, e, v: native(f, e, v, True)),) \
         if args.run_native_diagnostic else (("mr10", mr10), ("native", native))
-    if args.run_native_diagnostic:
+    if args.run_native_records:
+        actions = (("native-records", lambda f, e, v: native(
+            f, e, v, explicit_records=True)),)
+        expected = records_expected
+    elif args.run_native_diagnostic:
         expected = diagnostic_expected
     for name, action in actions:
         try:
