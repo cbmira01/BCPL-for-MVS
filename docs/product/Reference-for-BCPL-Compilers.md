@@ -110,7 +110,7 @@ front-end-options / code-generator-options
 
 The [current CAMBPARM file](../../bootstrap-toolchain/bootstrap-cambridge/cambridge-options.txt) is exactly one 80-character record: slash, N, then 78 slash characters. Slash fill prevents FB80 blank padding from becoming invalid options. The leading slash selects no front-end option; generator N suppresses direct binary SYSGO output. Do not remove N with the present driver.
 
-The earlier A/N/ experiment selected the historical EBCDIC-to-ASCII conversion, the wrong direction for an ASCII interpreter host targeting System/370 EBCDIC. The generated bootstrap master installs private CODE370 target conversion by default. The option A retains its historical meaning; it is not a generic cross-compilation flag.
+The earlier A/N/ experiment selected the historical EBCDIC-to-ASCII conversion, the wrong direction for an ASCII interpreter host targeting System/370 EBCDIC. The generated bootstrap master installs private CODE370 target conversion by default. The option A retains its historical meaning; it is not a generic cross-compilation flag. CODE370 maps host newline 10 to X'25' (37); DR.5 native JOB 9495 observed this value both in a packed string and a character literal. The current BCPLIO record delimiter is numeric 10, so embedded *N and historical BLIB NEWLINE() must not be assumed equivalent to WRCH(10). See the [runtime reference](Reference-for-the-Cambridge-Runtime-and-Libraries.md). The compatibility discrepancy remains unrepaired.
 
 ### 3.3 First-phase switches
 

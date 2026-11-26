@@ -6,7 +6,7 @@ This tutorial teaches BCPL by running and modifying existing programs. Use the M
 
 Before starting, have an installed system, access to JES output, an authorized JOB card and a working copy of the supplied suite JCL. Follow the [RC4 companion guide](../../packaging/distribution/publication/RC4-README.md) for installation and site substitutions. The [language reference](Reference-for-the-BCPL-Language.md) describes syntax and dialect boundaries.
 
-**How to use the examples:** run the unmodified installed examples first. The complete repository examples linked below are the exercises; snippets are extracts, not additional standalone programs. Predicted output for demonstrations is derived from the source; regression output is taken from independent golden files. RC4 acceptance covers the unchanged suites. Your modifications need their own runs.
+**How to use the examples:** run the unmodified installed examples first. The complete repository examples linked below are the exercises; snippets are extracts, not additional standalone programs. Predicted output for demonstrations is derived from the source; regression output is taken from independent golden files. RC4 acceptance covers the unchanged suites. Your modifications need their own runs. This tutorial's *N convention is MR10-specific: the current native Cambridge development environment has a verified newline representation discrepancy. See the [runtime reference](Reference-for-the-Cambridge-Runtime-and-Libraries.md) before adapting these examples for native execution.
 
 ## 1. Your first BCPL program
 
@@ -28,7 +28,7 @@ $(
 $)
 ```
 
-GLOBAL associates START with slot 1 and WRITEF with slot 76. START is the application's entry routine. LET introduces local words, WRITEF writes formatted text (%N prints an integer; *N is a newline) and FINISH terminates the application.
+GLOBAL associates START with slot 1 and WRITEF with slot 76. START is the application's entry routine. LET introduces local words, WRITEF writes formatted text (%N prints an integer; *N is a newline in this MR10 environment) and FINISH terminates the application.
 
 Run the supplied MRREGRES member of MR10KIT.JCL. Copy it to a submission deck, replace the development prefix HERC02.BCPL.MR10KIT. with your installed prefix (e.g. HERC02.BCPL.R4MR.MR10KIT.), and add your authorized JOB card. The original must remain intact. The job stages the compiler and library INTCODE, compiles source to OCODE (C steps), generates INTCODE (G steps), then runs applications (R steps).
 

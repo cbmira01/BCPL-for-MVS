@@ -28,3 +28,7 @@ Eighteen tracked files (three package assemblers, three headers, three BCX macro
 - Q.5 independent installed selected/unselected proof remains unestablished by that record. Current installation/catalog and later reported clean-room do not independently establish that specific gate; numbered QSAM tests source-selected, Q5QVFY retired.
 - Complete register preservation, exhaustive fault matrix, exact extension GET transport and raw receipts require additional review before normative transfer. No new JES, IFOX, IEWL, ICINT19 or GO execution.
 - Existing contracts, sources, oracles, allocation, releases and historical evidence unchanged. DR.0 dependency qualification retained; explicit owner approval required for authority transfer and DR.2 closure.
+
+### DR.5 — Native tutorial newline qualification
+
+The [DR.5 language investigation](candidates/language-verification/README.md) confirms native *N=37 while the accepted BCPLIO delimiter is numeric 10. The System Extensions tutorial retains its exact accepted 148/149/151 fixture extracts and adds an explicit warning: short output followed by FINISH does not prove a NEWLINE() physical record boundary. New multi-record examples should use the current WRCH(10) contract pending resolution. Existing regression results and extension APIs are unchanged; no extension suite rerun or physical record verification claimed.
