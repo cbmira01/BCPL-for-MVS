@@ -202,6 +202,10 @@ IOWDYN   LR    9,10
          LR    10,9
          LTR   15,15
          BZ    IOWFULL
+         CLI   7(15),X'02'
+         BNE   IOWFULL
+         CLI   27(15),X'01'
+         BNE   IOWFULL
          LR    2,15
          L     3,16(2)
          L     14,236(3)
@@ -301,7 +305,7 @@ IOSERET  LM    0,9,IOESAVE
          DROP  10
 *
 *
-* M1 STAGING: DD-name normalization; not yet wired to FIND.
+* DD-name normalization shared by built-in and dynamic FIND.
 * Private R14 call: R1=BCPL counted-string byte address,
 * R2=eight-byte caller buffer, R15=0 success/8 invalid.
 * Uppercase ASCII-like BCPL names in host EBCDIC, then pad.
@@ -404,18 +408,24 @@ IOFOUT   LR    4,10
          ST    4,IOOSAVE+40
          STM   0,9,IOOSAVE
          STM   11,15,IOOSAVE+44
-         LR    14,7
-         SLL   14,2
-         CLI   0(14),X'08'
+* Normalize before resolving legacy fixed handles.
+         LR    1,7
+         SLL   1,2
+         LA    2,IOFNORM
+         LR    9,10
+         L     15,=A(IONORM)
+         BALR  14,15
+         LR    10,9
+         LTR   15,15
+         BNZ   IOFZERO
+         CLC   IOFNORM(8),IONAME1
          BNE   IOFALT
-         CLC   1(8,14),IONAME1
-         BNE   IOFALT
+         CLI   IOACTIVE,X'01'
+         BNE   IOFZERO
          LA    7,IOCTL1
          SRL   7,2
          B     IOFRET
-IOFALT   CLI   0(14),X'06'
-         BNE   IOFBAD
-         CLC   1(6,14),IONAME2
+IOFALT   CLC   IOFNORM(8),IONAME2
          BNE   IOFBAD
          CLI   IO2ACTV,X'01'
          BE    IOFOK2
@@ -427,12 +437,15 @@ IOFALT   CLI   0(14),X'06'
 IOFOK2   LA    7,IOCTL2
          SRL   7,2
          B     IOFRET
-IOFBAD   LR    1,14
+IOFBAD   LR    1,7
+         SLL   1,2
          L     15,=A(DQFIND)
          BALR  14,15
 * DQFIND returns a word-address stable handle, or zero.
          LR    7,15
 * DQFIND uses independent R11 base and preserves caller R10.
+         B     IOFRET
+IOFZERO  SR    7,7
 IOFRET   ST    7,IORESULT
          LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
@@ -441,6 +454,7 @@ IOFRET   ST    7,IORESULT
          L     10,IOOSAVE+40
          BCR   15,6
          LTORG
+IOFNORM  DS    CL8
          DROP  10
 *
 IOOUT    LR    4,10
@@ -481,12 +495,18 @@ IOSDYN   LR    9,10
          LR    10,9
          LTR   15,15
          BZ    IOSRET
+         CLI   7(15),X'02'
+         BNE   IOSRET
+         CLI   27(15),X'01'
+         BNE   IOSRET
          C     7,IOCURH
          BE    IOSRET
          ST    7,IOCURH
          MVI   IOSELCT,X'03'
          B     IOSRET
-IOSPRI   MVI   IOSELCT,X'01'
+IOSPRI   CLI   IOACTIVE,X'01'
+         BNE   IOSRET
+         MVI   IOSELCT,X'01'
          ST    7,IOCURH
 IOSRET   LM    0,9,IOOSAVE
          LM    11,15,IOOSAVE+44
@@ -555,6 +575,10 @@ IOEWDYN  LR    9,10
          LR    10,9
          LTR   15,15
          BZ    IOEWDONE
+         CLI   7(15),X'02'
+         BNE   IOEWDONE
+         CLI   27(15),X'01'
+         BNE   IOEWDONE
          ST    15,IOWDESC
          L     2,16(15)
          L     3,236(2)
@@ -701,11 +725,17 @@ IOFINDIN  LR    4,10
          USING *,10
          ST    4,IINBASE
          STM   0,15,IINSAVE
-         LR    14,7
-         SLL   14,2
-         CLI   0(14),X'06'
-         BNE   FTRYIN1
-         CLC   1(6,14),IN2NAME
+* Normalize before resolving legacy fixed handles.
+         LR    1,7
+         SLL   1,2
+         LA    2,INNORM
+         LR    9,10
+         L     15,=A(IONORM)
+         BALR  14,15
+         LR    10,9
+         LTR   15,15
+         BNZ   FZERO
+         CLC   INNORM(8),IN2NAME
          BNE   FTRYIN1
          CLI   IN2OPEN,X'01'
          BE    FIN2OK
@@ -719,12 +749,7 @@ IOFINDIN  LR    4,10
 FIN2OK   LA    7,IN2CTRL
          SRL   7,2
          B     FRET
-FTRYIN1  EQU   *
-         LR    14,7
-         SLL   14,2
-         CLI   0(14),X'05'
-         BNE   FNOTFND
-         CLC   1(5,14),INNAME
+FTRYIN1  CLC   INNORM(8),INNAME
          BNE   FNOTFND
          CLI   INOPEN,X'01'
          BE    FFOUND
@@ -738,16 +763,21 @@ FTRYIN1  EQU   *
 FFOUND   LA    7,INCTRL
          SRL   7,2
          B     FRET
-FNOTFND  LR    1,14
+FNOTFND  LR    1,7
+         SLL   1,2
          L     15,=A(DIFIND)
          BALR  14,15
          LR    7,15
+         B     FRET
+FZERO    SR    7,7
 FRET     ST    7,IINRES
          LM    0,15,IINSAVE
          L     7,IINRES
          L     10,IINBASE
          L     4,0(5)
          BCR   15,6
+         LTORG
+INNORM   DS    CL8
 *
 * G39 opens a dedicated memory stream over the MVS EXEC PARM field.
 * R1 on entry to the load module points to the parameter-list word;
@@ -818,6 +848,8 @@ IOSELIN    LR    4,10
          SRL   14,2
          CR    7,14
          BNE   SELDYN
+         CLI   INOPEN,X'01'
+         BNE   SELIRET
          ST    7,INCURR
          B     SELIRET
 SELDYN   LR    9,10
@@ -835,7 +867,9 @@ SELDYN   LR    9,10
          B     SELIRET
 SELPM    ST    7,INCURR
          B     SELIRET
-SEL2IN   ST    7,INCURR
+SEL2IN   CLI   IN2OPEN,X'01'
+         BNE   SELIRET
+         ST    7,INCURR
 SELIRET  LM    0,15,IINSAVE
          L     10,IINBASE
          L     4,0(5)
@@ -1236,7 +1270,7 @@ PMLAST   DC    F'0'
 * One-stream bootstrap input controls for native regression 094.
          DS    0F
 IN2CTRL  DC    F'2'
-IN2NAME  DC    CL6'BCPINB'
+IN2NAME  DC    CL8'BCPINB'
 IN2OPEN  DC    X'00'
 IN2EOF   DC    X'00'
 IN2NL    DC    X'00'
@@ -1259,7 +1293,7 @@ INLAST   DC    F'0'
 INENDVAL DC    F'-1'
 INPOS    DC    F'80'
 ININIT   DC    F'80'
-INNAME   DC    CL5'BCPIN'
+INNAME   DC    CL8'BCPIN'
 INOPEN   DC    X'00'
 INEOF    DC    X'00'
          DS    0F
@@ -1279,7 +1313,7 @@ IOCURH   DC    F'0'
 IORESULT DC    F'0'
 IOWDESC  DC    F'0'
 IONAME1  DC    CL8'SYSPRINT'
-IONAME2  DC    CL6'BCPALT'
+IONAME2  DC    CL8'BCPALT'
 IOONE    DC    F'1'
 IOTWO    DC    F'2'
 IO2POS   DC    F'0'
@@ -1470,6 +1504,8 @@ DQPUT    BALR  10,0
          ST    2,DQSRC
          LTR   1,1
          BZ    DQBAD
+         CLI   7(1),X'02'
+         BNE   DQBAD
          L     7,24(1)
          LTR   7,7
          BZ    DQBAD

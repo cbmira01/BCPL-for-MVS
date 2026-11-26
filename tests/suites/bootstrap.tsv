@@ -148,3 +148,4 @@ case_id	directory	profiles	requires	tags	policy
 190	190-native-logical-newline	production,installed-r5-t1	boot-obj,temporary-datasets	core,compiler-compatibility	standard
 191	191-cambridge-option-replay	production,installed-r5-t1	boot-obj,temporary-datasets	core,compiler-compatibility	standard
 192	192-cambridge-source-lookahead	production,installed-r5-t1	boot-obj,temporary-datasets	core,compiler-compatibility	standard
+193	193-bcplio-stream-guards	production,installed-r5-t1	boot-obj	core,dynamic-io	standard

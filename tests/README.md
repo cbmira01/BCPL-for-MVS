@@ -5,13 +5,13 @@ CO.5 adds thirteen independently named source-selected coroutine cases
 177–189 without changing the earlier identities or their acceptance contracts.
 Stage 2C physically organizes the unchanged case directories by suite.
 The original case numbers, source contracts and expected results remain unchanged.
-DR.5 appends three permanent compiler-compatibility cases (190–192) to Bootstrap.
+DR.5 appends three permanent compiler-compatibility cases (190–192) and one BCPLIO guard case (193) to Bootstrap.
 `tests/suites/*.tsv` retains the authoritative case inventory and reporting
 metadata. Shared execution machinery remains in `bootstrap-toolchain/regression/`.
 
 | Suite | Manifest | Case IDs | Cases |
 | --- | --- | --- | ---: |
-| Bootstrap | `suites/bootstrap.tsv` | 00–145, 190–192 | 149 |
+| Bootstrap | `suites/bootstrap.tsv` | 00–145, 190–193 | 150 |
 | Runtime Extensions | `suites/runtime-extensions.tsv` | 146–158 | 13 |
 | BCPLTIME | `suites/bcpltime.tsv` | 159–162 | 4 |
 | BCPLQSAM | `suites/bcplqsam.tsv` | 163–176 | 14 |
@@ -31,7 +31,7 @@ case_id  directory  profiles  requires  tags  policy
 ```
 
 (The separators are actual tab characters, not spaces.) Each `case_id` uses
-the historic canonical two-digit (00–52) or three-digit (053–192) form.
+the historic canonical two-digit (00–52) or three-digit (053–193) form.
 `directory` is the literal child directory of its owning suite:
 `tests/bootstrap/`, `tests/runtime-extensions/`,
 `tests/system-extensions/bcpltime/`, or
@@ -82,7 +82,7 @@ tools/tests/run-suite bcplqsam --list --tag integration
 tools/tests/run-suite bcplqsam --run --profile production --case 163
 ```
 
-`--check` validates **all five** manifests against all 193 physical cases,
+`--check` validates **all five** manifests against all 194 physical cases,
 including marker files, canonical IDs, complete coverage, ownership and
 case-directory identity; it is entirely offline. `--list` is also offline.
 `--case ID` can be repeated; `--tag TAG` can be repeated as an AND filter.
@@ -147,3 +147,12 @@ Case 192 exercises top-level period record skipping and source lookahead,
 requiring both independently linked native units to run correctly. No new
 suite or changes to earlier test IDs or oracles. Both existing profiles run
 these cases. See the case READMEs. All three passed focused and full production-profile MVS regression after CAMBBLD JOB 9925. The [DR.5 verification record](../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) records 211 supported passes and one expected SKIP (083).
+
+## DR.5 BCPLIO stream guards (193)
+
+The ordinary installed production Bootstrap runner tests the corrected BCPLIO
+with wrong-direction selection guards, fixed input close guards and normalized
+built-in DD identity/cursor preservation. First target acceptance pending.
+The accepted 211-pass campaign predates case 193; the new expected supported
+total after verification is 212 PASS, one expected SKIP (083), zero FAIL/BLOCKED.
+Do not run case 193 against the uncorrected installed BCPLIO.

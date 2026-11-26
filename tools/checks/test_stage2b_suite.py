@@ -55,8 +55,13 @@ class TestStage2BSuites(unittest.TestCase):
                 (home / "source-reference.txt").write_text("fixture/source.bcpl\n")
                 (home / "expected.txt").write_text("CO3BCPL PASS\n")
                 (home / "README.md").write_text("fixture\n")
-            if i >= 190:
+            if 190 <= i <= 192:
                 for f in ("compatibility-native.txt", "source.bcpl", "expected.txt", "README.md"):
+                    (home / f).touch()
+            if i == 193:
+                for f in ("stream-guards-native.txt", "source.bcpl", "expected.txt",
+                          "expected-alt.txt", "expected-report.txt", "input.records",
+                          "input-b.records", "input-dd01.records", "README.md"):
                     (home / f).touch()
             policy = "skip-installed" if i == 83 else "device-opt-in" if i in (175, 176) else "standard"
             prereqs = ["boot-obj"]
@@ -100,7 +105,7 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         self.assertEqual(suites["bcplqsam"][-1].ident, "176")
         self.assertEqual(suites["coroutines"][0].ident, "177")
         self.assertEqual(suites["coroutines"][-1].ident, "189")
-        self.assertEqual([x.ident for x in suites["bootstrap"][-3:]], ["190", "191", "192"])
+        self.assertEqual([x.ident for x in suites["bootstrap"][-4:]], ["190", "191", "192", "193"])
 
     def test_duplicate_and_missing_case_rejected(self):
         file = self.root / "tests" / "suites" / "bcplqsam.tsv"

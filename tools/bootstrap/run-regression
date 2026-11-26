@@ -19,7 +19,7 @@ CASE_ROOTS = (
     (159, 162, ROOT / "tests/system-extensions/bcpltime"),
     (163, 176, ROOT / "tests/system-extensions/bcplqsam"),
     (177, 189, ROOT / "tests/coroutines"),
-    (190, 192, ROOT / "tests/bootstrap"),
+    (190, 193, ROOT / "tests/bootstrap"),
 )
 
 

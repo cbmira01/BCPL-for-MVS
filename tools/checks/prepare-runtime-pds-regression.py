@@ -168,7 +168,15 @@ def main():
             (args.case_dir / "io-open-fault.txt").is_file(),
             (args.case_dir / "io-accounting.txt").is_file(),
         )
-        if sum(markers) != 1:
+        # DR.5: one explicitly scoped, canonical-source guard candidate.
+        guards = (args.case_dir / "stream-guards-native.txt").is_file()
+        if guards:
+            canonical = ROOT / "bootstrap-toolchain/asm/bcplio.asm"
+            if (n != 193 or candidate != "0" or library != "OBJ"
+                    or args.test_io_asm.resolve() != canonical.resolve()
+                    or any(markers) or args.native or args.library_generated):
+                raise ValueError("invalid DR.5 BCPLIO source-selected scope")
+        elif sum(markers) != 1:
             raise ValueError("test-only BCPLIO requires exactly one marker")
 
     # OBJ is the explicit clean-room production profile: all six runtime

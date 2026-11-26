@@ -270,3 +270,15 @@ production-profile MVS regression passed after CAMBBLD JOB 9925. The
 [DR.5 verification record](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) reports 211 PASS,
 0 FAIL, 1 expected SKIP (083), 0 BLOCKED. Historical campaign totals stay as
 recorded. See [case inventory](../../tests/README.md).
+
+## DR.5 BCPLIO guard case
+
+Bootstrap additionally owns 193 (150 cases; 194 total native IDs). The first
+target verification is pending; the historical 211-pass supported campaign
+remains the last accepted baseline. The proposed 212-pass campaign requires
+the corrected BOOT_OBJ(BCPLIO). The dedicated
+`tools/checks/run-dr5-bcplio-fix.py` driver first verifies a private canonical
+source-selected IFOX/IEWL/GO, and only in explicitly selected rebuild mode
+stages and installs BCPLIO with object readback/IEBCOMPR before ordinary 193.
+The existing installed profiles use the ordinary installed object, not the
+private source-selected diagnostic.

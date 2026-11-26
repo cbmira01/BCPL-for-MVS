@@ -77,3 +77,44 @@ Source checkpoint `48accd2995b7b41486f22f6d1aae07a97ac99243`. Reviewed both oper
 | Returned error and cleanup scope | DQFIND/DIFIND, DDVERIFY, DALLOC, DQOPEN, HNEW, DQCLOSE/DREL, IODRAIN | Preserve M4.2/M4.3 recovery qualifications, M5.1/2 independent sequential-dataset proof and M5.5 accepted candidate results; do not equate printer images with raw spool bytes. |
 
 Proposed owner review: retain legacy fixed built-in handle identity (avoid unnecessary public interface redesign); normalize before built-in dispatch so case-equivalent names take one path; require live open input/output state at selection, especially IOSDYN, and consider defensive direction guards in IOWDYN/DQPUT. Preserve FIND/SELECT separation, primary SYSPRINT ownership and existing MVS recovery boundary. Investigate exact missing built-in allocation policy separately rather than silently expanding the dynamic failure guarantee. For first MVS evidence, an isolated compiled BCPL probe may pass a live dynamic input handle to SELECTOUTPUT, inspect OUTPUT(), and unconditionally restore the saved primary handle before any output/close; report mismatch without invoking wrong-mode QSAM. Similarly check INPUT() after selecting a just-closed built-in handle without issuing GET. Test normalized built-in duplicate lookup only after the code path has been safely corrected or with explicit safe isolation. Permanent case IDs and changes require owner review. No new MVS execution, implementation correction, source/oracle change, or approval to reopen the earlier accepted milestone.
+
+### DR.5 — Owner-approved BCPLIO correction candidate
+
+Owner authorized the proposed correction and commit on 26 November 2026.
+Canonical BCPLIO normalizes counted DD names before built-in dispatch,
+preserves fixed handle identity, checks built-in input open flags and
+dynamic output direction/open state, and defends IOWDYN, DQPUT and dynamic
+ENDWRITE against wrong direction. Existing dynamic lookup, allocation and
+record semantics remain unchanged; no new public globals, general OPEN
+failure contract or fixed-handle identity redesign. Permanent Bootstrap
+case 193 checks both wrong-direction selections safely before any I/O,
+both closed built-in inputs without GET, and mixed-case identity/cursors for
+all four built-in DDs. It verifies the normal REPORT and BCPALT output and
+SYSPRINT completion through existing logical record checks.
+
+The dedicated driver first compiles the application and privately assembles
+and links the actual canonical BCPLIO source; it requires exact zero-code
+compiler and IFOX/IEWL/GO receipts plus the three logical record oracles.
+Only the explicit rebuild mode, after candidate success and a fresh JES-idle
+observation, stages BOOT_ASM(BCPLIO), checks text readback, and replaces only
+BOOT_OBJ(BCPLIO) with an IFOX/IEBGENER/readback/IEBCOMPR job. It then runs
+193 using the ordinary production profile. No new persistent JCL member,
+other runtime rebuild, compiler/BLIB rebuild or RC4 modification. Retain
+private evidence and stop on failure, without automatic retry or rollback.
+
+Bootstrap 150 cases, native inventory 194, expected full supported campaign
+212 PASS plus SKIP 083 after target acceptance. The last accepted 211-pass
+campaign remains historical evidence; no MVS verification yet for this
+candidate. No normative transfer or march closure.
+
+Precommit host checks: exact proposed run-suite and test_stage2b_suite.py
+copies matched Git blob IDs; all eight synthetic suite tests passed, with
+additional case 193 dispatch in both profiles and missing-marker rejection.
+Exact proposed driver copy matched its Git blob and passed Python syntax
+compilation; its actual install_cards function passed synthetic scoped-JCL,
+ordered-step and invalid-configuration checks with mocked DSPAL helpers.
+Verified all 194 manifest IDs and physical ownership, assembler card hygiene,
+unique labels and existing fault/accounting anchor counts. Git clone in the
+assistant workspace remains unavailable (DNS); no actual IFOX, IEWL, BCPL
+compiler or MVS execution by the assistant. Target verification remains the
+required next gate.
