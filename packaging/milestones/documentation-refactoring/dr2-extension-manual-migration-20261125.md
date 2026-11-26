@@ -154,3 +154,26 @@ and installed deck construction, one-member write scope, offline check
 and invalid configuration rejection passed. Local clone unavailable
 (DNS). These are not IFOX/IEWL/GO tests; first target verification pending.
 No normative transfer, release change or march closure.
+
+### DR.5 — Private registrar JOB 796 failure and instruction correction
+
+Owner-reported 26 November 2026: source revision `02b8ffa8d0e23774d99e5858e9f9eefeed15305a`,
+`workarea/dr5-registrar-fix/run-1asz91v4`, ASMT/ASMR/LKED RC0,
+GO RC9 (case 1), live WTO BCPLREG 1006 INVALID PACKAGE COUNTS and
+DR5 REGISTRAR ASSERTION FAILED. Candidate stage stopped before any
+production write. Registrar SHA-256
+`c3abcbb2797fc1473ead131278bf3d38de30fc8e43c90dca3442efb80fd55d0c`;
+probe SHA-256
+`d474b1cb408abb61e505129ad1b91a75e3e8f29960d54efafc05dc074e34077b`.
+
+Source review identifies the newly introduced PFCOUNT instruction
+`L 3,4` as an absolute low-storage load, rather than the intended
+`LR 3,4` register copy (as used in PFSPAN and the previous registrar).
+This corrupts the calculated descriptor extent before the count/length
+comparison. Correct only that assembler instruction; add a static
+regression assertion for the register copy and absence of bare numeric
+absolute L operands. Existing probe and all eighteen oracles unchanged.
+Source/card checks passed; target reexecution required. The reported
+diagnostic establishes the failure category, not an independently
+inspected instruction trace. No production installation or new
+acceptance claimed.

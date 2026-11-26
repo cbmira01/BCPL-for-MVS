@@ -153,7 +153,7 @@ PFHEAD   CLC   0(4,5),=CL4'BCEX'
          BM    ERR1005
          B     PFADV
 * Pass 2: bounded counts and exact length before variable fields.
-PFCOUNT  L     3,4
+PFCOUNT  LR    3,4
          SR    3,5
          L     6,32(5)
          L     7,40(5)
