@@ -1,0 +1,53 @@
+GLOBAL $( START:1; WRITEF:76; WRITES:60; STOP:30; GETBYTE:85 $)
+
+LET BUMP(P) = VALOF
+$( !P := !P+1
+   RESULTIS TRUE
+$)
+
+LET START() BE
+$( LET A = 10
+   AND B = 20
+   AND SUM = 0
+   AND COUNT = 0
+   AND FLAG = FALSE
+   AND R = 0
+   AND N = -17
+   AND D = 5
+
+   A,B := B,A
+   WRITEF("RP: DR5 ASSIGN %N %N*N", A, B)
+
+   B := 3
+   FOR I = 1 TO B DO
+   $( SUM := SUM+I
+      B := 0
+   $)
+   WRITEF("RP: DR5 BOUND %N %N*N", SUM, B)
+
+   SUM := 0
+   FOR I = 5 TO 1 BY -2 DO SUM := SUM+I
+   WRITEF("RP: DR5 STEP %N*N", SUM)
+
+   IF FLAG & BUMP(@COUNT) DO COUNT := 99
+   WRITEF("RP: DR5 BRANCH %N*N", COUNT)
+   R := FLAG & BUMP(@COUNT)
+   WRITEF("RP: DR5 VALUE %N %N*N", R, COUNT)
+   FLAG := TRUE
+   IF FLAG | BUMP(@COUNT) DO R := 1
+   WRITEF("RP: DR5 OR %N %N*N", R, COUNT)
+
+   WRITEF("RP: DR5 SIGNED %N %N*N", N/D, N REM D)
+   N := -1
+   $( LET X = 3<<4
+      AND Y = N>>31
+      AND FMT = "RP: DR5 SHIFT %N %N*N"
+      UNLESS X=48 & Y=1 DO STOP(16)
+      WRITES("RP: DR5 ISO SHIFT OK*N")
+      UNLESS GETBYTE(FMT,0)=20 DO STOP(20)
+      WRITES(FMT)
+      WRITEF(FMT, X, Y)
+   $)
+   WRITEF("RP: DR5 END*N")
+   FINISH
+$)

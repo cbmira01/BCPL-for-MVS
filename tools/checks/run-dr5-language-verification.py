@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 FIX = ROOT / "packaging/milestones/documentation-refactoring/candidates/language-verification"
 SOURCE = FIX / "source.bcpl"
 EXPECTED = FIX / "expected.txt"
+DIAG_SOURCE = FIX / "native-shift-diagnostic.bcpl"
+DIAG_EXPECTED = FIX / "native-shift-diagnostic.expected"
 CODE = re.compile(r"EXECUTION CYCLES\s*=\s*\d+,\s*CODE\s*=\s*(-?\d+)")
 JOB = re.compile(r"^JOB\s+(\d+)\s*$", re.M)
 STEP = re.compile(r"^[ \t]*([A-Z0-9]+)[ \t]+(\S*?)[ \t]+RC=(\d{4})[ \t]*$", re.M)
@@ -46,15 +48,13 @@ def assess(report, expected, codes=None, boundary=None):
     return actual
 
 
-def check():
-    raw = SOURCE.read_bytes()
+def check_candidate(source, oracle, labels):
+    raw = source.read_bytes()
     rows = raw.decode("ascii").splitlines()
     require(rows and all(len(x) <= 80 and "\t" not in x and
                          not x.startswith(("//", "/*")) for x in rows),
             "invalid BCPL source card")
-    expected = EXPECTED.read_text("ascii").splitlines()
-    labels = ("ASSIGN", "BOUND", "STEP", "BRANCH", "VALUE", "OR",
-              "SIGNED", "SHIFT", "END")
+    expected = oracle.read_text("ascii").splitlines()
     require([x.split()[2] for x in expected] == list(labels),
             "oracle labels differ")
     require(all(x.startswith("RP: DR5 ") for x in expected),
@@ -75,6 +75,18 @@ def check():
             [("ASMAP", "IFOX00", "0000"), ("LKED", "IEWL", "0000"),
              ("GO", "", "0000")], "JES summary parser self-check")
     return expected
+
+
+def check():
+    return check_candidate(SOURCE, EXPECTED,
+                           ("ASSIGN", "BOUND", "STEP", "BRANCH", "VALUE",
+                            "OR", "SIGNED", "SHIFT", "END"))
+
+
+def check_diagnostic():
+    return check_candidate(DIAG_SOURCE, DIAG_EXPECTED,
+                           ("ASSIGN", "BOUND", "STEP", "BRANCH", "VALUE",
+                            "OR", "SIGNED", "ISO", "SHIFT", "SHIFT", "END"))
 
 
 def command(args, log, env):
@@ -106,10 +118,15 @@ def receipt(folder, job, name, steps, env, cursor=None):
             break
         require(time.monotonic() < end, "JES completion timeout")
         time.sleep(2)
-    require(rc == 0 and "JOB RESULT: SUCCESS" in summary and
-            "HIGHEST RC: 0000" in summary, "JES job not successful")
     require(re.search(rf"^JOB\s+{re.escape(job)}\s+{name}\s*$", summary, re.M),
             "JES job identity mismatch")
+    report = run(["tools/mvs/dump-report-for-job", job, *cursor_args],
+                 folder / (name + "-report.log"), env)
+    require(rc == 0 and "JOB RESULT: SUCCESS" in summary and
+            "HIGHEST RC: 0000" in summary,
+            f"{name} JOB {job}: JES job not successful; " +
+            repr(STEP.findall(summary)) + "; records=" +
+            repr(records(report.rsplit("AUTHORIZATION CODE IS", 1)[-1])))
     # GO's displayed program field varies with the passed load module;
     # check exact ordered step identities and zero RC, plus fixed programs.
     actual = STEP.findall(summary)
@@ -118,8 +135,6 @@ def receipt(folder, job, name, steps, env, cursor=None):
         require(step == wanted and code == "0000" and
                 (wanted == "GO" or pgm == wanted_pgm),
                 "JES step mismatch: " + repr(actual))
-    report = run(["tools/mvs/dump-report-for-job", job, *cursor_args],
-                 folder / (name + "-report.log"), env)
     return report
 
 
@@ -134,25 +149,28 @@ def mr10(folder, expected, env):
     return {"job": job, "records": observed}
 
 
-def native(folder, expected, env):
+def native(folder, expected, env, diagnostic=False):
+    source = DIAG_SOURCE if diagnostic else SOURCE
+    compiler_name = "DR5CISO" if diagnostic else "DR5CAMB"
+    number = "901" if diagnostic else "900"
     generated = folder / "native.asm"
-    text = run(["tools/bootstrap/compile-mvs", SOURCE, "--job-name", "DR5CAMB",
+    text = run(["tools/bootstrap/compile-mvs", source, "--job-name", compiler_name,
                 "--compiler-image", "CAMBCOMP", "--cambridge-parm",
                 ROOT / "bootstrap-toolchain/bootstrap-cambridge/cambridge-options.txt",
                 "--output", generated], folder / "native-compile.log", env)
     comp = job_id(text)
-    report = receipt(folder, comp, "DR5CAMB", CC_STEPS, env)
+    report = receipt(folder, comp, compiler_name, CC_STEPS, env)
     require([int(x) for x in CODE.findall(report)] == [0], "Cambridge CODE not zero")
     require(generated.is_file() and generated.stat().st_size > 0, "missing CODE")
     deck = folder / "native.jcl"
-    # 900 is only a private helper naming argument, not a suite case number.
+    # Private helper naming arguments only, not suite case numbers.
     run(["python3", "tools/checks/prepare-runtime-pds-regression.py",
-         generated, deck, "--test-number", "900"], folder / "native-build.log", env)
+         generated, deck, "--test-number", number], folder / "native-build.log", env)
     cursor = folder / "native.cursor"
     text = run(["tools/mvs/submit-jcl", "--cursor-file", cursor, deck],
                folder / "native-submit.log", env)
     job = job_id(text)
-    report = receipt(folder, job, "RG900R", GO_STEPS, env, cursor)
+    report = receipt(folder, job, "RG" + number + "R", GO_STEPS, env, cursor)
     observed = assess(report, expected, boundary="AUTHORIZATION CODE IS")
     return {"compiler_job": comp, "job": job, "records": observed}
 
@@ -162,8 +180,11 @@ def main():
     modes = parser.add_mutually_exclusive_group(required=True)
     modes.add_argument("--check", action="store_true")
     modes.add_argument("--run", action="store_true")
+    modes.add_argument("--run-native-diagnostic", action="store_true",
+                       help="execute only the isolated native follow-up")
     args = parser.parse_args()
     expected = check()
+    diagnostic_expected = check_diagnostic()
     if args.check:
         print("DR.5 source/oracle and parser CHECK PASS (no MVS)")
         return 0
@@ -177,11 +198,17 @@ def main():
         env.pop(key, None)
     env.update(BCPL_RUNTIME_LIBRARY="OBJ", BCPL_RUNTIME_PDS="1",
                BCPL_RUNTIME_CANDIDATE="0", BCPL_PRINTER_WINDOW_TRIAL="0")
-    result = {"source_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
-              "oracle_sha256": hashlib.sha256(EXPECTED.read_bytes()).hexdigest(),
+    source = DIAG_SOURCE if args.run_native_diagnostic else SOURCE
+    oracle = DIAG_EXPECTED if args.run_native_diagnostic else EXPECTED
+    result = {"source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+              "oracle_sha256": hashlib.sha256(oracle.read_bytes()).hexdigest(),
               "git_head": run(["git", "rev-parse", "HEAD"],
                               folder / "revision.log", env).strip(), "paths": {}}
-    for name, action in (("mr10", mr10), ("native", native)):
+    actions = (("native-diagnostic", lambda f, e, v: native(f, e, v, True)),) \
+        if args.run_native_diagnostic else (("mr10", mr10), ("native", native))
+    if args.run_native_diagnostic:
+        expected = diagnostic_expected
+    for name, action in actions:
         try:
             result["paths"][name] = {"status": "PASS", **action(folder, expected, env)}
         except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
