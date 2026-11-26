@@ -58,3 +58,7 @@ The [RC4 companion](../../distribution/publication/RC4-README.md) accepts 80/80 
 ### DR.5 — Newline character representation observation
 
 The [language verification evidence](candidates/language-verification/README.md) at `68ce7c76b14affc910f37f0241d4ca326464756b` records native JOB 9495 PASS with explicit WRCH(10), and GETBYTE("*N",1) / '*N' both 37. This confirms CODE370's deliberate host-10-to-X'25' adaptation and its incompatibility with the current BCPLIO numeric-10 stream delimiter. Compiler reference chapter 3 now qualifies the adaptation; no compiler-source, compiler image or BLIB modification, option change or normative transfer authorized. Owner decision pending on the coherent character-stream convention.
+
+### DR.5 — Owner-approved compiler newline correction candidate
+
+Owner approved changing private CODE370 host newline mapping from #45 to 10, preserving ordinary inverse CODEA and the historical source. The generator change is implemented; CAMBCOMP and BLIB must be rebuilt and MVS-verified. See the [focused candidate record](candidates/language-verification/README.md). No external encoding conversion is added and no published release changes. The original native failures and numeric-10 explicit-record PASS remain preserved. Do not represent the correction as accepted before the live result.

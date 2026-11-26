@@ -224,9 +224,11 @@ def demote_master(text: str) -> str:
     # Cambridge compiler under the MR10 ASCII host while CG370 still targets
     # System/370, so the required direction is the inverse: ASCII -> EBCDIC.
     #
-    # The historical table maps both EBCDIC NL (X'15') and LF (X'25') to ASCII
-    # newline.  Choose X'25', matching the target representation expected by
-    # the surviving compiler and the factorial probe.
+    # Preserve logical newline 10 for the native BCPLIO stream contract.
+    # DR.5 JOBS 9491/9493 overflowed when *N became EBCDIC X'25'; JOB
+    # 9495 confirmed 37 for both string and character literals and passed
+    # using WRCH(10).  Ordinary characters still use the inverse CODEA
+    # table.  Physical external encodings belong at their own interfaces.
     marker = "   IF ASCII THEN CHARCODE := CODEA\n"
     if text.count(marker) != 1:
         raise SystemExit(
@@ -236,7 +238,7 @@ def demote_master(text: str) -> str:
 
     target_charcode = r"""AND CODE370(CH) = VALOF
 $(  IF CH=0 RESULTIS 0
-    IF CH=10 RESULTIS #45
+    IF CH=10 RESULTIS 10
     FOR I = 0 TO 255 IF CODEA(I)=CH RESULTIS I
     RESULTIS 0
 $)
