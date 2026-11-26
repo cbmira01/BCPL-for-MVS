@@ -57,3 +57,21 @@ After rebuilding, rerun the unchanged original native candidate and exact oracle
 Owner-reported complete PASS at `828cf88dcd080868d7f126267f3650613571951d`, private run `workarea/dr5-newline-fix/run-7vfr1sqt`, generated master SHA-256 `b1b920f2105ea5b8bbc87d0d94f6166be9cf4788ad31ab4f194ec1ced12ffbe6`. CAMBBLD 9498 passed 23 exact step gates and 22 zero ICINT codes; BLIBBLD 9500 passed six step gates and its zero ICINT code. Cambridge 9501 and native 9502 passed the unchanged original nine-record source/oracle (identical to MR10 9489). Cambridge 9503 and native 9504 passed ASMAP/LKED/GO/VASM/VLINK/VCHK/SHOW, including independent six-record FB132 exact byte and EOF verification. The oracle requires logical newline 10 in both representations, EBCDIC A=193 in both, RDCH boundaries and EOF, BLIB NEWLINE(), WRITES and direct WRCH('*N') record emission, and final completion. Focused newline incompatibility resolved. No raw JES spool-byte proof, clean-room reconstruction, independently established installed binary identity or full post-change regression is claimed. Earlier JOBS 9491/9493 remain FAIL; JOB 9495 remains the explicit-record PASS with 37. Historical sources, all oracles and published RC4 untouched. No replay of successful build required.
 
 Next: existing supported regression campaign against rebuilt development environment before broader acceptance. Full campaign requires separate explicit device authorization for BCPLQSAM 175/176. No march closure or reference authority transfer.
+
+## Post-correction supported regression campaign — PASS
+
+Owner-reported console output after the documentation-only evidence update at `f8ff445bf034d565a22ecee3af34ad0cd4cd5f77` (25 November EST / 26 November UTC 2026). Production profile, all eight supported suites, including authorized device cases 175–176. Private summary: `workarea/project-regressions/20261126T014903Z-52659-y9tu7vtx/summary.json`. Execution time 10m 42s. PROJECT REGRESSION RESULT: PASS.
+
+| Suite | PASS | FAIL | SKIP | BLOCKED |
+| --- | ---: | ---: | ---: | ---: |
+| mr10 | 12 | 0 | not reported | not reported |
+| mr10-coroutines-supported | 5 | 0 | 0 | 0 |
+| bootstrap | 145 | 0 | 1 (083) | 0 |
+| runtime-extensions | 13 | 0 | 0 | 0 |
+| bcpltime | 4 | 0 | 0 | 0 |
+| bcplqsam | 14 | 0 | 0 | 0 |
+| coroutines | 13 | 0 | 0 | 0 |
+| coroutine-contract | 2 | 0 | 0 | 0 |
+| **Supported total** | **208** | **0** | **1** | **0** |
+
+All 209 selected cases accounted for; 083 retains its expected SKIP. Both QSAM device cases passed. This completes focused and supported-regression verification of the approved logical newline correction on the existing rebuilt development installation. The actual summary JSON, recorded campaign revision, private job reports and installed binary identities were not independently examined; the revision above identifies the documentation checkpoint preceding the owner-reported run. No clean-room rebuild, new release, raw spool-byte certification, unrelated diagnostic acceptance, normative authority transfer, or DR.5 closure is claimed. Earlier failure evidence is retained. No repeat rebuild or regression is required for this correction without new evidence of a defect.

@@ -360,7 +360,8 @@ remains 10 rather than X'25' (37), matching BCPLIO's logical record boundary.
 Ordinary inverse CODEA mappings are unchanged. CAMBCOMP and BLIB rebuilds and
 native JOBS 9502/9504 verified the correction, including exact FB132 readback.
 See the [verification record](../../packaging/milestones/documentation-refactoring/candidates/language-verification/README.md).
-Full post-change regression acceptance remains pending.
+The subsequent eight-suite supported regression campaign passed 208 cases,
+with one expected SKIP (083), zero failures and zero blocked cases.
 
 This is a bootstrap transport substitution only. It should not be mistaken for
 the historical native MVS interface.
