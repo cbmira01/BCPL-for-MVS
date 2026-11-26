@@ -78,3 +78,7 @@ Baseline `0de748ebef72965497dd1ac40330a99a33f56cae`. Reopened MR10 SYN 115–203
 ### DR.5 — First compiler input verification results
 
 Owner-reported run at `e743ee65e4fbfc41e086aa512c706bafa4138422`: MR10 JOB 9920 nested GET PASS (17 5 20 42), JOB 9921 L6000N suppressed GET PASS (42 and option echo). Exact outputs, required JES steps and zero ICINT codes passed. Cambridge host compile driver RC=2, cause not yet established; no native GO. See [candidate evidence](candidates/compiler-verification/README.md). These results qualify the tested MR10 inclusion and option behavior, not general nesting or malformed-input recovery. No production change or authority transfer; further Cambridge investigation requires the existing diagnostic receipt.
+
+### DR.5 — Cambridge JOB 9922 diagnosis
+
+Owner-supplied full receipt establishes COMP and SVCODE RC=0 but ICINT CODE=-1. Trace and global map identify G!15=0 after READN returns 12 and TERMINATOR=81. Historical master calls UNRDCH; current MR10 ICLIB and BOOTHOST do not provide it. All five historical call sites, including independent source lookahead, must be considered. Compiler reference chapter 3 now records the bootstrap restriction. See [candidate record](candidates/compiler-verification/README.md). Native BCPLIO remains unaffected; no GET result, production change, normative transfer or closure. Owner design approval pending.
