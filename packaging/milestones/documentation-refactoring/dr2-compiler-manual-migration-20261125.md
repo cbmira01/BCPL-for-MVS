@@ -62,3 +62,7 @@ The [language verification evidence](candidates/language-verification/README.md)
 ### DR.5 — Owner-approved compiler newline correction candidate
 
 Owner approved changing private CODE370 host newline mapping from #45 to 10, preserving ordinary inverse CODEA and the historical source. The generator change is implemented; CAMBCOMP and BLIB must be rebuilt and MVS-verified. See the [focused candidate record](candidates/language-verification/README.md). No external encoding conversion is added and no published release changes. The original native failures and numeric-10 explicit-record PASS remain preserved. Do not represent the correction as accepted before the live result.
+
+### DR.5 — Verified logical newline correction
+
+Owner-reported MVS PASS at `828cf88dcd080868d7f126267f3650613571951d`: CAMBBLD 9498, BLIBBLD 9500, original compile 9501/native GO 9502, independent newline compile 9503 and native FB132 exact readback 9504. The unchanged original source and oracle now pass MR10 9489 and native 9502. The second candidate confirms logical newline 10, ordinary EBCDIC A=193, input/output boundaries and exact sequential-dataset records. See the [verification record](candidates/language-verification/README.md). Earlier failures and pre-fix 37 observations retained. Affected manuals distinguish rebuilt development environment from older objects. Focused defect verification complete; full post-change regression, clean-room reconstruction and normative transfer not established. No software or oracle change in this update.

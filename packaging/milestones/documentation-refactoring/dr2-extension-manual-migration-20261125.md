@@ -32,3 +32,7 @@ Eighteen tracked files (three package assemblers, three headers, three BCX macro
 ### DR.5 — Native tutorial newline qualification
 
 The [DR.5 language investigation](candidates/language-verification/README.md) confirms native *N=37 while the accepted BCPLIO delimiter is numeric 10. The System Extensions tutorial retains its exact accepted 148/149/151 fixture extracts and adds an explicit warning: short output followed by FINISH does not prove a NEWLINE() physical record boundary. New multi-record examples should use the current WRCH(10) contract pending resolution. Existing regression results and extension APIs are unchanged; no extension suite rerun or physical record verification claimed.
+
+### DR.5 — Verified logical newline correction
+
+Owner-reported MVS PASS at `828cf88dcd080868d7f126267f3650613571951d`: CAMBBLD 9498, BLIBBLD 9500, original compile 9501/native GO 9502, independent newline compile 9503 and native FB132 exact readback 9504. The unchanged original source and oracle now pass MR10 9489 and native 9502. The second candidate confirms logical newline 10, ordinary EBCDIC A=193, input/output boundaries and exact sequential-dataset records. See the [verification record](candidates/language-verification/README.md). Earlier failures and pre-fix 37 observations retained. Affected manuals distinguish rebuilt development environment from older objects. Focused defect verification complete; full post-change regression, clean-room reconstruction and normative transfer not established. No software or oracle change in this update.

@@ -126,7 +126,7 @@ NAME is a counted BCPL string of 1–8 valid DD-name characters; lowercase EBCDI
 | Maximum line | 132 characters before newline; 133rd triggers STOP(12) |
 | Closure | ENDWRITE and normal FINISH/STOP flush pending data at tested scope |
 
-**DR.5 newline representation discrepancy:** The current BCPLIO contract recognizes numeric 10, and native regression 110/111 uses WRCH(10). The compiler adaptation CODE370 deliberately maps host newline 10 to X'25' (37); JOB 9490 emitted that byte in *N strings. Two native candidates (JOBS 9491/9493) ended with RC=12 after output accounting consistent with 132 accumulated bytes rather than individual physical records. Cambridge JOB 9494 and native JOB 9495 subsequently passed all ten records using explicit WRCH(10); GETBYTE("*N",1) and '*N' both returned 37, confirming the representation mismatch. Historical BLIB WRITES/WRITEF pass literal bytes to WRCH and NEWLINE uses the character literal '*N'. Do not assume embedded *N or NEWLINE() is equivalent to WRCH(10) in the current native environment. Use explicit WRCH(10) for the established record delimiter pending reconciliation; RDCH synthesizes 10 at input record boundaries, so compare it with numeric 10 rather than '*N' in the current native environment. See the [DR.5 candidate evidence](../../packaging/milestones/documentation-refactoring/candidates/language-verification/README.md); no raw record attribution, installed-image identity or production fix is established.
+**DR.5 logical newline correction:** The accepted BCPLIO delimiter remains 10. Older CAMBCOMP emitted X'25' (37) for *N; JOBS 9491/9493 failed with RC=12, and JOB 9495 verified 37 and passed with explicit WRCH(10). Owner-approved CODE370 correction at `828cf88dcd080868d7f126267f3650613571951d` preserves logical 10. CAMBCOMP/BLIB rebuilds (9498/9500) and JOBS 9502/9504 verified the correction. In the rebuilt development environment, *N, WRCH(10), BLIB NEWLINE() and RDCH synthetic boundaries agree. JOB 9504 independently compared all six FB132 sequential-dataset records including padding and EOF; EBCDIC A=193 also passed. Older objects require regeneration. This is focused verification, not full regression or raw JES spool-byte acceptance. See the [DR.5 candidate evidence](../../packaging/milestones/documentation-refactoring/candidates/language-verification/README.md).
 
 An ordinary stream cannot preserve significant trailing FB80 blanks. No arbitrary binary/VB, PDS traversal, VSAM, dynamic allocation or general DCB validation is promised. DD attributes must be compatible; QSAM/MVS resolves actual effective attributes. BCPLIO's private templates do not explicitly set all RECFM/LRECL/BLKSIZE values.
 
@@ -142,7 +142,7 @@ The [historical source](../../richards-bcpltape/bcplib/bcpl/blib) and [LIBHDR](.
 | --- | --- | --- |
 | 60 | WRITES(S) | Write counted string characters using WRCH |
 | 62 | WRITEN(N) | Signed decimal via WRITED(N,0) |
-| 63 | NEWLINE() | Historical BLIB calls WRCH('*N'); see newline representation qualification in chapter 4 |
+| 63 | NEWLINE() | Historical BLIB calls WRCH('*N'); rebuilt BLIB emits a record using logical 10 (JOB 9504; chapter 4) |
 | 64 | NEWPAGE() | WRCH page character; no universal MVS page/device behavior established |
 | 65 | WRITEO(N) | WRITEOCT(N,11) |
 | 66 | PACKSTRING(V,S) | V!0 length (low 8 bits), subsequent words characters; packs into S; native result N/4, in-place V=S tested |
