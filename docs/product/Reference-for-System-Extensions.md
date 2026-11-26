@@ -19,7 +19,7 @@ Opcode 0 QUERY is side-effect-free except successful writes. SERVICE(0,0,0) retu
 | 4 | Bitmap: bit 0 = opcode 1, bit 31 = opcode 32 |
 | 5 | Package capability flags |
 
-Major/minor match BCEX. Require compatible major, sufficient minor and necessary bits. Unassigned bits zero; >32 needs documented appended map extension. Compatible descriptors append fields, never partial-prefix success.
+Major/minor must match the linked BCEX descriptor; the three maintained packages report 1.0 in both places. Require compatible major, sufficient minor and necessary bits. G! declarations, linkage and registration are independent; QUERY does not discover absent packages. Unassigned bits zero; >32 needs documented appended map extension. Compatible descriptors append fields, never partial-prefix success.
 
 | Condition | Return | Writes |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ Major/minor match BCEX. Require compatible major, sufficient minor and necessary
 | Unsupported nonzero opcode | -2 | No QUERY write required |
 | Null/nonzero capacity or negative capacity | -3 | None |
 
-Negative capacity is argument error before shortage. Ordinary semantics are package-specific. Isolated JOB 2206 included two dispatchers and eight-word descriptor; not exhaustive production interoperability.
+Negative capacity is argument error before shortage. A nonnull vector must designate genuine accessible writable words: the implementations test null and capacity but do not generally validate a nonnull machine address. An invalid nonzero pointer is outside the supported domain. Ordinary semantics are package-specific. Isolated JOB 2206 included two dispatchers and eight-word descriptor; not exhaustive production interoperability.
 
 ## 2. Common registration and selection — BCEX/BCRG v1, limits, diagnostics, collision checks and finalization
 
@@ -65,11 +65,11 @@ All numerical fields fullwords; identifiers uppercase blank-padded EBCDIC CL8; a
 | Aggregate | 12,316 bytes |
 | Global | 1–699, if owned and assigned |
 
-G!0 is metadata. Empty registry 28 bytes, N=M=0. Guard counts before arithmetic. Dependency-first order, exact major and minimum minor; no duplicate/self/cyclic dependency or unauthorized global collision. Actual application/BLIB/Core Runtime ownership ledger, not merely declarations. Retain verified G!76 precedence. Alignment/relocation alone cannot prove callable targets safe.
+G!0 is metadata. Empty registry 28 bytes, N=M=0. Guard counts before arithmetic. The approved contract requires dependency-first order, exact major and minimum minor; no duplicate/self/cyclic dependency or unauthorized global collision. Actual application/BLIB/Core Runtime ownership ledger, not merely declarations. Retain verified G!76 precedence. Alignment/relocation alone cannot prove callable targets safe. The current registrar is single-task/nonreentrant; its dependency-validation discrepancies are recorded below. All three maintained package descriptors are 56 bytes, K=1, D=0, API 1.0. BCPLQSAM alone declares a nonzero finalizer.
 
 ### 2.2 Validation and diagnostics
 
-Per [Decision G](../../packaging/archive/runtime-extensions/runtime-extensions-r0-decision-g-contract-20261021.md): registry extent, header, counts/size; package extent, header, counts/size; identities/entries; ownership and dependencies. First offending linked record within category. Reject before START with RC12 and no optional globals published; exhaustive fault precedence not established.
+Per [Decision G](../../packaging/archive/runtime-extensions/runtime-extensions-r0-decision-g-contract-20261021.md): registry extent, header, counts/size; package extent, header, counts/size; identities/entries; ownership and dependencies. First offending linked record within category. Reject before START with RC12 and no optional globals published. The [registrar source](../../bootstrap-toolchain/asm/bcplrgs.asm) checks the effective G-slot sentinel and per-slot prior-writer ledger, rejects duplicate global numbers and callable entry addresses, and has a separate PUBLISH pass after validation. Numeric slot availability is not enforcement of the source-controlled Global Number Registry; link review must check package ownership. Package and required IDs are checked for blanks and duplicates, but full uppercase/padding syntax is a trusted build obligation, not a runtime-verified grammar.
 
 | ID | Meaning |
 | --- | --- |
@@ -89,11 +89,19 @@ Per [Decision G](../../packaging/archive/runtime-extensions/runtime-extensions-r
 | 1014 | Invalid/duplicate/self dependency |
 | 2001 | Nonzero finalizer return |
 
-1000–1099 startup, 2000–2099 finalization; not JES RCs or package statuses. R.1 integrated acceptance follows isolated R.0 count/size JOB 2203.
+1000–1099 startup, 2000–2099 finalization; not JES RCs or package statuses. R.1 integrated acceptance follows isolated R.0 count/size JOB 2203; R.2 JOB 3092 tests a single dependency and negative cases, not every legal dependency count.
+
+**Open DR.5 registrar discrepancies (source-confirmed, target reproduction pending):**
+
+- `DEDUPE` initializes RGSCAN to zero, subtracts `16*RGSCAN` from the current dependency address, and compares with the current ID. For dependency index 1 or higher, the first comparison is with itself, causing 1014 even for distinct valid dependencies. The approved 0–16 dependency limit is therefore not established by the current implementation; use only the exercised zero/single-dependency scope until corrected.
+- `DEPKGLP` searches all selected descriptor addresses for a dependency name, including later descriptors whose span and header have not yet been validated. It can read an invalid later descriptor before the required extent guard and can produce dependency diagnostics ahead of a later structural error. Do not claim deterministic multi-fault precedence or safe malformed linked descriptors beyond tested cases. The approved Decision G validation order is unchanged.
+- The implementation also does not explicitly reject a negative minimum dependency minor; signed comparison can accept it against a nonnegative available minor. The caller/build must supply well-formed version fields. Exact diagnostic policy for malformed dependency versions requires owner review.
+
+These findings concern generic BCEX/BCRG validation, not the three current zero-dependency packages. See the [migration ledger](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md) for the proposed correction and test scope. No target failure is claimed from source review alone.
 
 ### 2.3 Finalization and selection
 
-No v1 initializer. Finalizers once in reverse order before IOFIN/MEMDRAIN. MVS linkage: R1 points to 8-byte block (+0 reason FINISH=0/STOP=1, +4 STOP code); R13 save area, R14 return, R15 entry/status; preserve R2–R12/R13. Nonzero status -> 2001; ordinary FINISH RC8, STOP(n) retains n. No arbitrary abend recovery.
+No v1 initializer. Finalizers once in reverse order before IOFIN/MEMDRAIN. RGFINI consumes REGCOUNT before calling any finalizer, skips zero entries and continues after returned errors, retaining status 8 if any fails. BCPLMAIN converts that status to FINISH RC8 but leaves STOP(n) unchanged. MVS linkage: R1 points to 8-byte block (+0 reason FINISH=0/STOP=1, +4 STOP code); R13 save area, R14 return, R15 entry/status; preserve R2–R12/R13. Nonzero status -> 2001; ordinary FINISH RC8, STOP(n) retains n. No arbitrary abend recovery.
 
 BCXSEL selects, BCXREQ selects/requires; duplicates suppressed, later requirements upgrade. IFOX BCXPRE + BCXCAT + selection + BCXPOST produces registry and INCLUDE PUNCH cards. Current [BCXCAT](../../system-extensions/bcx/BCXCAT.asm):
 
@@ -115,7 +123,7 @@ Permanent supported project-created reference, [owner decision](../../packaging/
 | 1 GETVALUES | writable vector, word capacity | 3; values 10,20,30 | -1 shortage; -3 null/negative |
 | Other | — | — | -2 |
 
-No partial writes, extra words untouched. Stateless, no dependencies/init/finalizer. [Source](../../system-extensions/bcpldemo/bcpldemo.asm) DMODESC/DMODISP in one object, EXT_OBJ(BCPLDEMO). JOB 5108 installed/readback; cases 146–158 R.5 accepted. Retain permanent support, independent selection and exclusive G!203. See tutorial 148/149/151.
+No partial writes, extra words untouched. GETVALUES requires a nonnull writable vector even at zero capacity; negative capacity is -3, otherwise capacity below three is -1. QUERY alone permits the null/zero size probe. Stateless, no dependencies/init/finalizer. [Source](../../system-extensions/bcpldemo/bcpldemo.asm) DMODESC/DMODISP in one object, EXT_OBJ(BCPLDEMO). JOB 5108 installed/readback; cases 146–158 R.5 accepted. Retain permanent support, independent selection and exclusive G!203. See tutorial 148/149/151.
 
 ## 4. BCPLTIME — purpose, header, TIMESVC, time representations, operations, statuses and linkage
 
@@ -128,7 +136,7 @@ Accepted T.0/T.1; API 1.0 raw time, not calendar library. [bcpltime.h](../../sys
 | 2 MVS | writable vector, at least 2 words | 2; raw R0/R1 from TIME DEC |
 | Other | — | -2 |
 
-Short -1, null/negative -3; no partial write. Private doubleword-aligned scratch; no guarantee of doubleword-aligned BCPL VEC. TIME DEC SYS1.MACLIB expands SVC11; preserves permanent R0/R1. Raw bits, independent date/calendar decoding not established. No dependencies/finalizer; nonreentrant scratch.
+Short -1, null/negative capacity -3; no partial write. Both ordinary operations require a nonnull writable vector, even at zero capacity; only QUERY permits the null/zero size probe. STCK returns three words even when hardware CC is nonzero; the caller interprets the CC independently of the positive word-count return. The source clears its scratch before STCK and captures CC immediately. Private doubleword-aligned scratch; no guarantee of doubleword-aligned BCPL VEC. TIME DEC SYS1.MACLIB expands SVC11; preserves permanent R0/R1. Raw bits, independent date/calendar decoding not established. No dependencies/finalizer; nonreentrant scratch.
 
 [Source](../../system-extensions/bcpltime/bcpltime.asm) TIMDESC/TIMDISP, EXT_SOURCE(TIMEHDR), EXT_OBJ(BCPLTIME). [T.0](../../packaging/milestones/bcpltime/bcpltime-t0-closure-20261024.md) JOB 5436 after genuine JOB 5434 S0C4 and register preservation correction; JES DD attribution not verified. [T.1](../../packaging/milestones/bcpltime/bcpltime-t1-closure-20261024.md) installation 5455, catalog 5457, cases 159–162 source/installed. [Direct caller](../../system-extensions/bcpltime/test.bcpl).
 
@@ -138,7 +146,7 @@ Optional sequential logical-record I/O; not BCPLIO, not historical Cambridge API
 
 ### 5.1 Request and result
 
-Ordinary supported calls QSAMSVC(op,Q,R) require distinct accessible Q=VEC 3 (4 words), R=VEC 7 (8 words). No capacity parameters for these vectors. Result is zeroed except documented fields on valid dispatch. Source rejects unsupported opcodes/nonpositive Q/R before clearing R; returned status is authoritative, do not inspect stale fields.
+Ordinary supported calls QSAMSVC(op,Q,R) require distinct, nonoverlapping accessible Q=VEC 3 (4 words), R=VEC 7 (8 words). Keep record buffers separate from these vectors. READ/WRITE require a positive accessible record-buffer word pointer even for zero-byte capacity/length; zero-length V/VB data does not authorize a null pointer. No capacity parameters for these vectors. Result is zeroed except documented fields on valid dispatch. Source rejects unsupported opcodes/nonpositive Q/R before clearing R; returned status is authoritative, do not inspect stale fields.
 
 | Q word | Meaning |
 | --- | --- |
@@ -204,13 +212,13 @@ One READ/WRITE = one logical record; exact bytes 00–FF including trailing blan
 
 Enums are not DCB flags. **1024 total private stage bytes per handle** is an implementation ceiling, not MVS-wide. V/VB max payload 1020, zero payload is successful data, RDW private, BDW excluded. FBA caller includes ASA byte 0; preserved, interpreted by MVS/JES2. Fixed WRITE length exactly LRECL; variable actual payload 0 through effective maximum. WRITE acceptance is not proof of final device delivery.
 
-Source QCVFORM pre/post-OPEN checks: positive BLKSIZE <=32760; F equals LRECL, FB/FBA integral multiple not smaller, V/VB at least LRECL+4. Source-observed, not all geometries tested. Unsupported format -9, incomplete/invalid geometry -6. RDJFCB, post-OPEN DCB check, conditional GETMAIN before publication. Compatible JCL geometry required; explicit DCB prudent if incomplete. MVS may abend on OPEN. INFO reports actual effective attributes, not copied JCL.
+Source QCVFORM pre/post-OPEN checks exact RECFM values X'80' (F), X'90' (FB), X'40' (V), X'50' (VB), X'94' (FBA) after validating sizes. Positive BLKSIZE <=32760; F equals LRECL, FB/FBA integral multiple not smaller, V/VB at least LRECL+4. Source-observed, not all geometries tested. Unsupported format -9, incomplete/invalid geometry -6. RDJFCB, post-OPEN DCB check, conditional GETMAIN before publication. Compatible JCL geometry required; explicit DCB prudent if incomplete. MVS may abend on OPEN. INFO reports actual effective attributes, not copied JCL.
 
 ### 5.4 Handles, retry, cleanup and devices
 
 Sixteen slots, tested 17th refusal. Positive opaque IDs never recycle on slot reuse; source stops after maximum positive ID. Interleave handles; no arbitrary duplicate-DD guarantee. Private DCB snapshots/stages, nonreentrant single-task.
 
-READ shortage -1, R!1 required data bytes, caller buffer untouched, whole record staged. Repeated short retries no further GET; successful retry consumes pending record. EOF sticky until CLOSE, R!1=0, unchanged buffer. Successful READ only touches actual bytes. CLOSE discards pending record. No public buffer pointer retained after operation.
+READ shortage -1, R!1 required data bytes, caller buffer untouched, whole record staged. Repeated short retries no further GET; successful retry consumes pending record. EOF sticky until CLOSE, R!1=0, unchanged buffer. Successful READ only touches actual bytes. A malformed V/VB RDW (reserved halfword nonzero or length outside 4 through effective LRECL) sets sticky -12 until CLOSE; this is source-observed and not a claim that arbitrary malformed physical records reach this branch safely. CLOSE discards pending record. No public buffer ownership is transferred, and subsequent operations take a fresh caller pointer.
 
 Successful CLOSE frees owned resources/retires ID. Returned -14 quarantines unusable handle and uncertain ownership: no blind retry or unsafe free. Source preserves primary OPEN/stage error during failed rollback CLOSE; combined exceptional precedence remains to reconcile. QSMFIN generic finalizer closes live handles, reports uncertainty, common FINISH/STOP policy. No arbitrary abend recovery.
 
@@ -226,7 +234,7 @@ Sequential F/FB, V/VB, FBA; selected PDS member where compatible. No U, VS/VBS, 
 | [Q.4](../../packaging/milestones/qsam/qsam-q4-closure-20261030.md) | FB80/FBA133 devices; 14/14 and 176 plus skip 083; retained paused-writer failure |
 | [Q.5](../../packaging/milestones/qsam/qsam-q5-closure-20261101.md) | 8140 STOP accounting; 8145 injected stage refusal/real rollback; 8147 injected return after successful CLOSE; 8152 geometry negatives; 8154 real conditional GETMAIN refusal; 8155 temporary PDS packaging |
 
-Q.5 latest panel 175 PASS/1 FAIL/1 SKIP then focused 175 PASS, 176 unique passes across separate runs. Independent installed selected/unselected linkage and genuine exceptional CLOSE not established by Q.5; later reported clean-room and CO.6 source-mode suite do not supply that specific receipt. No new MVS execution here.
+Q.5 latest panel 175 PASS/1 FAIL/1 SKIP then focused 175 PASS, 176 unique passes across separate runs. Independent installed selected/unselected linkage and genuine exceptional CLOSE not established by Q.5; later reported clean-room and CO.6 source-mode suite do not supply that specific receipt. The later DR.5 production campaign (212 PASS, expected SKIP 083) included all 14 BCPLQSAM cases, including the two device cases. This still does not establish exceptional real CLOSE or installed-only BCPLQSAM linkage. See the [DR.5 evidence](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md).
 
 ## 6. Cross-package restrictions, compatibility and verification qualifications
 

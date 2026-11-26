@@ -40,3 +40,67 @@ Owner-reported MVS PASS at `828cf88dcd080868d7f126267f3650613571951d`: CAMBBLD 9
 ### DR.5 — Post-correction supported regression PASS
 
 Owner-reported production-profile eight-suite campaign following documentation checkpoint `f8ff445bf034d565a22ecee3af34ad0cd4cd5f77`: 208 PASS, 0 FAIL, 1 expected SKIP (083), 0 BLOCKED; BCPLQSAM 175/176 PASS; elapsed 10m 42s. See [verification record](candidates/language-verification/README.md) for private summary location and suite counts. The logical newline correction has focused and full supported-regression evidence in the existing development installation. No clean-room rebuild, release acceptance, or independent installed-image identity established. No normative transfer or march closure. Other reconciliation qualifications remain.
+
+### DR.5 — System Extensions implementation reconciliation (26 November 2026)
+
+Reviewed current source checkpoint `0d54ff4139dde495735e775ed4ac1da8a49b03a9`, including BCPLRGS,
+BCPLMAIN startup/finalization, BCXPRE/BCXCAT/BCXPOST, the three public
+headers and their assembler descriptors/dispatchers, BCPLQSAM public
+specification, R.0 Decisions A–H and G/QUERY contracts, R.1/R.2 closures,
+R.2 negative/dependency generator, Q.5 closure and case 164. Updated the
+reference, explanation, how-to and the registry's obsolete G!200
+implementation-status cell; allocation and approved ABI unchanged.
+
+The three descriptors agree with public declarations: BCPLQSAM QSAMSVC
+G!200, BCPLTIME TIMESVC G!201, BCPLDEMO DEMOSVC G!203. Each has API 1.0,
+56-byte descriptor, one export and zero dependencies; only BCPLQSAM
+has QSMFIN. G!202 remains assigned to proposed BCPLDEC with no
+public dispatcher spelling. QUERY returns respectively (1,1,0,6,31,7),
+(1,1,0,6,3,0), (1,1,0,6,1,0). BCX catalog selects precisely these
+three packages. The common numeric return conventions, capacity checks
+and finalization policy agree at the reviewed scope. Preserve prior
+MVS evidence; no independent receipt for installed-only QSAM, genuine
+exceptional CLOSE, or general register-preservation matrix is inferred.
+
+#### Open registrar discrepancies
+
+1. DEDUPE compares the current dependency ID against itself at RGSCAN=0
+   when RGDEPI>0. Thus any second dependency reaches ERR1014 even if
+   distinct and already selected. R.2 make-negatives.py constructs
+   one dependency for validdep, missdep, major, minor, ordering and
+   selfdep; it does not test two distinct dependencies.
+2. DEPKGLP traverses RGCNT descriptors and reads the ID at +16 from
+   a later selected descriptor before PKNEXT validates that descriptor's
+   extent/header. This violates the required bounded validation before
+   reading descriptor fields and can change the Decision G error order.
+   A linked malformed later descriptor can expose an unchecked read;
+   no unsafe pointer execution is authorized.
+3. DEPMATCH uses signed comparison of minimum minor without rejecting
+   negative values. The approved field is a version number, not an
+   unrestricted signed minimum. Clarify malformed-version diagnostic
+   classification before changing behavior. Full ID grammar validation
+   also remains a build responsibility; do not broaden it without
+   owner review.
+
+Proposed correction, subject to owner approval: retain BCEX/BCRG v1,
+limits, ownership ledger, diagnostic IDs and transactional PUBLISH.
+Perform bounded descriptor structural preflight before dependency search;
+compare the current dependency with preceding records, not itself; reject
+malformed dependency version fields with the approved diagnostic policy.
+Verify a private IFOX/IEWL candidate before replacing BCPLRGS. Add a
+focused MVS fixture for two valid earlier dependencies, an actual
+duplicate, missing/forward dependency, malformed later linked extent,
+and malformed version; preserve all earlier negative and finalization
+oracles. No global assignments or package source/API changes necessary.
+Do not use the historical G!298/299 fixture allocation in a native
+coroutine-composed executable. Exact permanent case assignment and
+candidate mechanism follow owner design approval.
+
+DR.5 production campaign at a0efe9a204e1f3f3968b60cb8c7065e9b423bce7
+reported 212 PASS, one expected SKIP 083, no failures/blocked; all
+13 Runtime Extensions, four BCPLTIME and 14 BCPLQSAM cases passed.
+See [BCPLIO verification and campaign ledger](dr2-runtime-library-manual-migration-20261125.md).
+The maintained packages have no dependencies, so these passes do not
+test the new findings. Source inspection only in this increment; no
+new MVS execution, implementation change, normative transfer, release
+change or march closure.

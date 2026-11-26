@@ -28,7 +28,7 @@ and reject new optional overwrites transactionally. See
 
 | Global | Public name | Owner | Allocation | Implementation |
 |---:|---|---|---|---|
-| **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.0 design; not implemented |
+| **200** | **`QSAMSVC`** | **BCPLQSAM**, MVS QSAM logical-record I/O | **Assigned** | Q.5 CLOSED (qualified); source-selected 163–176 PASS in DR.5; installed-only functional linkage remains unestablished by these receipts. See [Q.5 closure](../milestones/qsam/qsam-q5-closure-20261101.md). |
 | **201** | **`TIMESVC`** (accepted published spelling) | **BCPLTIME**, raw System/370 and MVS time primitives | **Assigned** | T.0 JOB 5436 PASS; T.1 installed JOB 5455 / catalog JOB 5457; owner-accepted 00–162 panel, 162 PASS, 0 FAIL, 1 expected SKIP 083 |
 | **202** | Public name to be chosen | **BCPLDEC**, decimal arithmetic | **Assigned** | Proposed; not implemented |
 | **203** | **`DEMOSVC`** | **BCPLDEMO**, supported reference System Extension | **Permanently assigned** (22 Oct 2026); support reaffirmed 24 Oct 2026 | Installed MVS JOB 5108; accepted R.5 native regression 146–158 within 00–158 panel |

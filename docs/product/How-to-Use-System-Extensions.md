@@ -57,7 +57,7 @@ Select each required package explicitly:
          BCXREQ BCPLTIME
 ```
 
-This is an illustrative card pair using the accepted macro syntax. See actual [case 160](../../tests/system-extensions/bcpltime/160-bcpldemo-bcpltime/source.bcpl), 161 reverse order and 162 requirement upgrade. BCXSEL selects; BCXREQ selects and requires. Repeated selections do not duplicate INCLUDE; a later requirement upgrades an existing selection. Arrange dependency-first order explicitly. Inspect MAP/XREF and global ownership against the [registry](../../packaging/architecture/global-number-registry.md). R2TESTB is a fixture, not a supported package.
+This is an illustrative card pair using the accepted macro syntax. See actual [case 160](../../tests/system-extensions/bcpltime/160-bcpldemo-bcpltime/source.bcpl), 161 reverse order and 162 requirement upgrade. BCXSEL selects; BCXREQ selects and requires. Repeated selections do not duplicate INCLUDE; a later requirement upgrades an existing selection. Arrange dependency-first order explicitly. The three maintained packages have zero dependencies; generic multiple-dependency registration has a source-confirmed defect pending correction. Keep new dependent packages within the exercised single-dependency scope and consult reference chapter 2. Inspect MAP/XREF and global ownership against the [registry](../../packaging/architecture/global-number-registry.md). R2TESTB is a fixture, not a supported package.
 
 ## 5. Supply DDs, record geometry and buffers for BCPLQSAM
 
