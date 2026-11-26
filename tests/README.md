@@ -5,14 +5,14 @@ CO.5 adds thirteen independently named source-selected coroutine cases
 177–189 without changing the earlier identities or their acceptance contracts.
 Stage 2C physically organizes the unchanged case directories by suite.
 The original case numbers, source contracts and expected results remain unchanged.
-DR.5 appends three permanent compiler-compatibility cases (190–192) and one BCPLIO guard case (193) to Bootstrap.
+DR.5 appends three permanent compiler-compatibility cases (190–192) and one BCPLIO guard case (193) to Bootstrap, plus four installed-registrar cases (194–197) to Runtime Extensions.
 `tests/suites/*.tsv` retains the authoritative case inventory and reporting
 metadata. Shared execution machinery remains in `bootstrap-toolchain/regression/`.
 
 | Suite | Manifest | Case IDs | Cases |
 | --- | --- | --- | ---: |
 | Bootstrap | `suites/bootstrap.tsv` | 00–145, 190–193 | 150 |
-| Runtime Extensions | `suites/runtime-extensions.tsv` | 146–158 | 13 |
+| Runtime Extensions | `suites/runtime-extensions.tsv` | 146–158, 194–197 | 17 |
 | BCPLTIME | `suites/bcpltime.tsv` | 159–162 | 4 |
 | BCPLQSAM | `suites/bcplqsam.tsv` | 163–176 | 14 |
 | Coroutines | `suites/coroutines.tsv` | 177–189 | 13 |
@@ -31,7 +31,7 @@ case_id  directory  profiles  requires  tags  policy
 ```
 
 (The separators are actual tab characters, not spaces.) Each `case_id` uses
-the historic canonical two-digit (00–52) or three-digit (053–193) form.
+the historic canonical two-digit (00–52) or three-digit (053–197) form.
 `directory` is the literal child directory of its owning suite:
 `tests/bootstrap/`, `tests/runtime-extensions/`,
 `tests/system-extensions/bcpltime/`, or
@@ -157,3 +157,21 @@ JOB 366 and installed case 193 passed on 26 November 2026. The [subsequent
 supported campaign](../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) reported 212 PASS, one expected SKIP (083),
 zero FAIL/BLOCKED. The earlier 211-pass campaign predates case 193.
 Do not run case 193 against the uncorrected installed BCPLIO.
+
+## DR.5 — Registrar regressions 194–197
+
+| ID | Contract |
+| --- | --- |
+| 194 | Multiple distinct dependencies, duplicate/missing, ownership, repeat/finalization |
+| 195 | Nonzero dependency ordinal, single dependency and forward rejection |
+| 196 | Structural preflight and extent/header/count precedence |
+| 197 | Malformed and incompatible dependency versions, self/blank dependency |
+
+These read-only installed BCPLRGS assembler tests derive from the
+[18-assertion contract probe](../bootstrap-toolchain/probes/dr5-registrar/README.md).
+No compiler is needed for these four cases. Both profiles use BOOT_OBJ.
+The owner-reported JOBs 798/801/802 and following 212-PASS production
+campaign establish the corrected installed registrar at their tested
+scope; see [DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
+First numbered execution pending. Expected new eight-suite result:
+216 PASS, 1 expected SKIP 083, 0 FAIL/BLOCKED (217 selected).

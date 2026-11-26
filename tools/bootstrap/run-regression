@@ -20,6 +20,7 @@ CASE_ROOTS = (
     (163, 176, ROOT / "tests/system-extensions/bcplqsam"),
     (177, 189, ROOT / "tests/coroutines"),
     (190, 193, ROOT / "tests/bootstrap"),
+    (194, 197, ROOT / "tests/runtime-extensions"),
 )
 
 
@@ -299,9 +300,12 @@ def main() -> int:
         print(f"RUN   {nn}  {case_name}", flush=True)
         with log.open("w", encoding="utf-8") as handle:
             env = None
-            if args.show_output:
+            if args.show_output or 194 <= test_no <= 197:
                 env = os.environ.copy()
-                env["NATIVE_REGRESSION_SHOW_OUTPUT"] = "1"
+                if args.show_output:
+                    env["NATIVE_REGRESSION_SHOW_OUTPUT"] = "1"
+                if 194 <= test_no <= 197:
+                    env["BCPL_REGISTRAR_LOG_DIR"] = str(log_dir.resolve())
             proc = subprocess.run(
                 ["bash", str(RUNNER), str(test_no)],
                 cwd=ROOT,

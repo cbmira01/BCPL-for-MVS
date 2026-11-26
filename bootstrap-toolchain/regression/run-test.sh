@@ -37,6 +37,8 @@ elif (( test_num <= 189 )); then
     case_root="$root/tests/coroutines"
 elif (( test_num <= 193 )); then
     case_root="$root/tests/bootstrap"
+elif (( test_num <= 197 )); then
+    case_root="$root/tests/runtime-extensions"
 else
     echo "run-test: no owning suite for test $test_num" >&2
     exit 65
@@ -74,6 +76,18 @@ if (( test_num == 193 )); then
         echo "run-test: stream guards require production BOOT_OBJ" >&2
         exit 64
     }
+fi
+if (( test_num >= 194 && test_num <= 197 )); then
+    [[ -f "$case_dir/registrar-native.txt" &&
+       ${BCPL_RUNTIME_PDS:-1} == 1 &&
+       ${BCPL_RUNTIME_LIBRARY:-} == OBJ &&
+       ${BCPL_RUNTIME_CANDIDATE:-0} == 0 &&
+       -z ${BCPL_RUNTIME_CANDIDATE_MEMBER:-} ]] || {
+        echo "run-test: registrar cases require production BOOT_OBJ" >&2
+        exit 64
+    }
+    exec python3 -B "$root/tools/checks/run-registrar-regression.py" \
+        "$test_num" "$case_dir" --run
 fi
 # CO.5 numbered coroutine cases use accepted source-selected candidate linkage.
 # BOOT_OBJ remains read-only; these tests do not install runtime objects.

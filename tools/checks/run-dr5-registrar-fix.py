@@ -32,8 +32,15 @@ def install_cards(config, redact=True):
     return cards
 
 
-def probe_cards(config, installed, redact=True):
+def probe_cards(config, installed, redact=True, *, source=None, job_name=None):
     name = "DR5RGIN" if installed else "DR5RGPR"
+    if source is not None or job_name is not None:
+        require(installed and source is not None and job_name in
+                ("RG194R", "RG195R", "RG196R", "RG197R"),
+                "numbered probe requires installed registrar and known job")
+        name = job_name
+    else:
+        source = PROBE.read_text("ascii")
     spec = config["datasets"]["BOOT_OBJ"]
     require(spec["content_type"] == "object" and spec["dsorg"] == "PO"
             and spec["recfm"] == "FB" and int(spec["lrecl"]) == 80,
@@ -41,7 +48,7 @@ def probe_cards(config, installed, redact=True):
     dsn = CORE["full_dsn"](config, spec)
     cards = CORE["authenticated_job_card"](config, name, "RG CONTRACT", redact)
     cards += TRAIL["asm_step"]("ASMT", "RGTEST",
-                              TRAIL["checked_asm"](PROBE.read_text("ascii"), "probe"))
+                              TRAIL["checked_asm"](source, "probe"))
     steps = [("ASMT", "IFOX00")]
     if not installed:
         cards += TRAIL["asm_step"]("ASMR", "RGPRIV",

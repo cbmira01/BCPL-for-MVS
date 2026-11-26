@@ -284,15 +284,19 @@ stages and installs BCPLIO with object readback/IEBCOMPR before ordinary 193.
 The existing installed profiles use the ordinary installed object, not the
 private source-selected diagnostic.
 
-## DR.5 registrar contract probe
+## DR.5 registrar contract probe and numbered cases
 
 The permanent direct MVS assembler probe in
 [`bootstrap-toolchain/probes/dr5-registrar/`](../../bootstrap-toolchain/probes/dr5-registrar/README.md)
-checks the actual BCPLRGS entry points with eighteen exact status/publication
-assertions and reverse-order/once finalization. It is an independent focused
-contract check, not a numbered native BCPL fixture or an additional regular
-suite. Use the dedicated `tools/checks/run-dr5-registrar-fix.py` driver.
-Private source-selected verification precedes any explicitly authorized
-one-member installation; subsequent installed-only verification links
-BOOT_OBJ(BCPLRGS). No release changes, no new global allocations.
-First MVS acceptance pending; the 212-pass eight-suite baseline is unchanged.
+checks eighteen exact status/publication assertions and reverse-order/once
+finalization. JOBs 798/801/802 passed private, installation/comparison and
+installed gates. The separate `tools/checks/run-dr5-registrar-fix.py` driver
+remains available for guarded installation or full focused verification.
+
+The regular Runtime Extensions suite now includes 194–197 (17 cases).
+The numbered runner links installed BOOT_OBJ(BCPLRGS) in both native
+profiles, using separate derived assembler probes, no permanent writes.
+Each retains its own JES evidence in the run-scoped native logs.
+The last accepted eight-suite campaign has 212 PASS and one expected
+SKIP 083; 216 PASS and one expected SKIP is the new target, pending
+numbered execution. See [DR.5 registrar evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).

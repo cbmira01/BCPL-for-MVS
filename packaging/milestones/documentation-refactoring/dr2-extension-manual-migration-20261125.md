@@ -202,3 +202,58 @@ instruction model checks the actual search/match block for ordered,
 forward and missing dependencies across selection counts 1–32; it
 is not a System/370 emulator or substitute for MVS verification.
 Target reexecution required before any production write.
+
+### DR.5 — Corrected registrar installed and supported regression accepted
+
+Owner-reported source revision `e19d03b4bd8443fe1c2fa22f97189cba897289ef`, 26 November 2026:
+`workarea/dr5-registrar-fix/run-iy218a5e` PASS, complete.
+DR5RGPR JOB 798 (18 assertions and finalization), BLDRGFIX JOB 801
+(IFOX, installation, readback and IEBCOMPR), DR5RGIN JOB 802
+(18 assertions and finalization) all PASS. Canonical registrar
+SHA-256 `a04b9d910582f644f01e0a663a8ef1c49e763506af759a1f4f87c918f21b2b34`;
+unchanged probe SHA-256
+`d474b1cb408abb61e505129ad1b91a75e3e8f29960d54efafc05dc074e34077b`.
+Preserve JOB 796/797 failure history. Four original defects (including
+dependency ordinal) resolved at the exercised scope; no claim of
+exhaustive hostile pointer, maximum dependency or multi-fault validation.
+
+Subsequent eight-suite production campaign, owner-reported
+`workarea/project-regressions/20261126T185752Z-17755-75zd5gej/summary.json`,
+PASS in 12m51s: MR10 12, supported MR10 coroutines 5, Bootstrap
+149 PASS/1 expected SKIP 083, Runtime Extensions 13, BCPLTIME 4,
+BCPLQSAM 14 (including 175/176), Coroutines 13, paired contract 2.
+Total 212 PASS, 0 FAIL/BLOCKED, one expected SKIP; 213 selected.
+Private receipts not independently inspected. No clean-room or release
+acceptance inferred.
+
+Owner then directed addition of four permanent numbered regression tests.
+Runtime Extensions retains 146–158 and appends 194–197. The shared
+previously accepted direct assembler probe remains byte-identical; the
+numbered runner derives distinct test bodies and links the installed
+BCPLRGS in both native profiles. 194 covers multiple dependencies,
+duplicates/missing/ownership/repeat and finalization; 195 isolates the
+nonzero ordinal using a single dependency; 196 checks structural
+preflight and precedence; 197 isolates malformed/incompatible versions
+using one dependency on ordinal zero. Every check verifies exact status,
+REGCOUNT and transactional publication, with reverse finalization
+where applicable. A case is counted once, regardless of internal
+assertion count. The regular inventory grows to 198 numbered cases
+(17 Runtime Extensions), 217 selected across eight supported suites
+with expected 216 PASS and one SKIP. First numbered MVS execution
+pending; the existing 212-PASS campaign is historical and is not
+relabeled. No implementation or installed member change in this
+increment; no new march, release change or normative transfer.
+
+Host validation before commit: exact Git-blob-verified run-suite and
+test_stage2b_suite.py copies passed nine host tests (including all four
+new identities through both synthetic profile wrappers and rejection of
+a mismatched marker). Exact numbered runner and unchanged original
+probe copies matched their Git blobs; Python compilation and four
+host-only tests using mocked driver/configuration/JES boundaries passed,
+covering derived source/oracles, isolated dependency layouts, JCL
+read-only linkage, marker validation, and rejection of invalid modes
+and fixture inputs. All 198 manifest identities/physical directories
+were checked against the proposed Git tree. Git clone unavailable
+(DNS); no claim of a full local repository checkout or MVS execution
+of the four numbered variants. The previous probe and installed
+registrar source remain unchanged.

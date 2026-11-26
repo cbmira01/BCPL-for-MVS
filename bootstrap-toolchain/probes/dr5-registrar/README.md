@@ -35,7 +35,7 @@ REGCOUNT=3, reverse finalizer order C/B/A and no repeat on a second RGFINI.
 Invalid extent uses equal real linked begin/end addresses, not an arbitrary
 address. The test does not certify malicious descriptors, register
 preservation exhaustively, all legal dependency counts or arbitrary
-multi-fault precedence. First MVS verification pending.
+multi-fault precedence. Private JOB 798, installation/IEBCOMPR JOB 801 and installed JOB 802 passed on 26 November 2026.
 
 Run from repository root with explicit operator authorization:
 
@@ -59,4 +59,8 @@ Each GO must finish RC0 after all 18 assertions. Assertion failure returns
 IEWL/GO RC also fails the receipt. Expected registrar WTO diagnostics
 on negative cases do not themselves constitute a test failure. This
 standalone permanent probe is not counted in the regular eight-suite
-regression baseline.
+regression baseline. The regular Runtime Extensions cases 194–197 derive
+separate bodies from this verified shared source, including independent
+single-dependency ordinal and version variants. They count as four
+numbered cases and link installed BCPLRGS in both profiles. First numbered
+execution pending.

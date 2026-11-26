@@ -37,7 +37,7 @@ class TestStage2BSuites(unittest.TestCase):
             location.mkdir(parents=True)
         lines = {name: ["\t".join(MOD.HEADERS)] for name in MOD.SUITES}
         for i in range(sum(MOD.COUNTS)):
-            name = ("bootstrap" if i <= 145 or i >= 190 else "runtime-extensions" if i <= 158
+            name = ("bootstrap" if i <= 145 or 190 <= i <= 193 else "runtime-extensions" if i <= 158 or i >= 194
                     else "bcpltime" if i <= 162 else "bcplqsam" if i <= 176
                     else "coroutines")
             ident = MOD.canonical(i)
@@ -49,7 +49,11 @@ class TestStage2BSuites(unittest.TestCase):
             if name == "bcpltime":
                 (home / "time-selection.asm").touch()
             if name == "runtime-extensions":
-                (home / "extension-selection.asm").touch()
+                if i <= 158:
+                    (home / "extension-selection.asm").touch()
+                else:
+                    (home / "registrar-native.txt").write_text(ident + "\n")
+                    (home / "README.md").touch()
             if name == "coroutines":
                 (home / "coroutine-native.txt").touch()
                 (home / "source-reference.txt").write_text("fixture/source.bcpl\n")
@@ -106,6 +110,19 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         self.assertEqual(suites["coroutines"][0].ident, "177")
         self.assertEqual(suites["coroutines"][-1].ident, "189")
         self.assertEqual([x.ident for x in suites["bootstrap"][-4:]], ["190", "191", "192", "193"])
+
+    def test_registrar_cases_require_exact_markers_and_dispatch(self):
+        rows = MOD.validate(self.root)["runtime-extensions"][-4:]
+        self.assertEqual([x.ident for x in rows], ["194", "195", "196", "197"])
+        for profile in MOD.PROFILES:
+            with self.subTest(profile=profile):
+                a = SimpleNamespace(suite="runtime-extensions", profile=profile,
+                                    allow_device=False)
+                self.assertEqual(MOD.run(self.root, rows, a), 0)
+        marker = self.root / MOD.CASE_ROOTS["runtime-extensions"] / rows[1].directory / "registrar-native.txt"
+        marker.write_text("194\n")
+        with self.assertRaises(MOD.ManifestError):
+            MOD.validate(self.root)
 
     def test_duplicate_and_missing_case_rejected(self):
         file = self.root / "tests" / "suites" / "bcplqsam.tsv"

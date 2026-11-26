@@ -12,3 +12,7 @@ case_id	directory	profiles	requires	tags	policy
 156	156-optional-select-only	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection	standard
 157	157-optional-upgrade-required	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection	standard
 158	158-optional-exclusion	production,installed-r5-t1	boot-obj,bcx,bcpldemo	selection	standard
+194	194-registrar-multiple-dependencies	production,installed-r5-t1	boot-obj,temporary-datasets	registrar,dependency,selection	standard
+195	195-registrar-dependency-ordinal	production,installed-r5-t1	boot-obj,temporary-datasets	registrar,dependency,selection	standard
+196	196-registrar-structural-preflight	production,installed-r5-t1	boot-obj,temporary-datasets	registrar,dependency,structural	standard
+197	197-registrar-dependency-versions	production,installed-r5-t1	boot-obj,temporary-datasets	registrar,dependency,version	standard

@@ -150,7 +150,7 @@ The interpreted result and applicable `CODE=` records must also pass. The MR10 p
 
 The explicit production wrapper sets the runtime PDS and OBJ selection and clears inherited runtime-candidate settings. Do not mix environment overrides or historical DEVOBJ flags into that profile. The installed R.5/T.1 profile still does not change QSAM or coroutine candidate selection. For a candidate not covered by the standard profiles, use a separately reviewed source-selected test adapter and record its actual inputs and linkage.
 
-## 5. Testing — native 00–193, MR10 baseline/supported/development and paired coroutine suites
+## 5. Testing — native 00–197, MR10 baseline/supported/development and paired coroutine suites
 
 The [native suite manifests](../../tests/README.md) and MR10 manifests retain ownership of test identities. Use the project coordinator for regular campaigns and `run-suite` for focused native selection. `--check` and `--list` are host-only; `--run` submits jobs. An explicit native profile is required for native execution; paired coroutine cases have their own pinned compile/linkage choices.
 
@@ -159,13 +159,13 @@ The [native suite manifests](../../tests/README.md) and MR10 manifests retain ow
 | `mr10` | Independent MR10 Regression Panel | 12 | 12 PASS |
 | `mr10-coroutines-supported` | Five valid-domain interpreted cases | 5 | 5 PASS |
 | `bootstrap` | 00–145, 190–193 | 150 | 149 PASS, 1 SKIP (083) |
-| `runtime-extensions` | 146–158 | 13 | 13 PASS |
+| `runtime-extensions` | 146–158, 194–197 | 17 | 13 PASS; 194–197 pending |
 | `bcpltime` | 159–162 | 4 | 4 PASS |
 | `bcplqsam` | 163–176 | 14 | 14 PASS, device opt-in |
 | `coroutines` | 177–189 | 13 | 13 PASS |
 | `coroutine-contract` | co6-pair, co6-nested | 2 | 2 PASS |
 
-The historical eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) at source revision `3f6a417504ab721c080d5af1ffaf54b580ea346b` reported 211 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP; the subsequent [DR.5 BCPLIO campaign](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) at revision `a0efe9a204e1f3f3968b60cb8c7065e9b423bce7` reported 212 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The table above reflects the latter campaign, including installed case 193. None of these results is proof that a later checkout has been tested.
+The historical eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) at source revision `3f6a417504ab721c080d5af1ffaf54b580ea346b` reported 211 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP; the subsequent [DR.5 BCPLIO campaign](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) at revision `a0efe9a204e1f3f3968b60cb8c7065e9b423bce7` reported 212 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 registrar campaign](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md) at revision `e19d03b4bd8443fe1c2fa22f97189cba897289ef` subsequently reported the same 212 PASS/1 expected SKIP after BCPLRGS installation. The table includes the four newly added installed-registrar cases, not yet executed as numbered tests. The expected next supported count is 216 PASS and one expected SKIP (217 selected); none of these earlier results is proof that a later checkout has been tested.
 
 Inspect selections or run a deliberately limited campaign:
 
