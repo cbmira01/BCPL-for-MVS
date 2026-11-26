@@ -65,6 +65,14 @@ class SourceContract(unittest.TestCase):
         self.assertIn('L     1,RGDEPTR', span)
         self.assertIn('CLC   0(8,8),0(1)', span)
 
+    def test_dependency_match_preserves_ordinal(self):
+        # JOB 797: index 1 shifted to offset 8 caused false 1012.
+        reg = (ASM / 'bcplrgs.asm').read_text('ascii')
+        span = reg.split('DEPKGLP  ', 1)[1].split('DEPMATCH ', 1)[0]
+        self.assertIn('LR    2,4\n         SLL   2,3\n         AR    8,2', span)
+        self.assertNotIn('SLL   4,3', span)
+        self.assertIn('DEPMATCH C     4,RGIDX\n         BNL   ERR1012', reg)
+
     def test_structural_count_span_uses_register_copy(self):
         # DR.5 JOB 796: L 3,4 reads low storage instead of copying R4.
         reg = (ASM / 'bcplrgs.asm').read_text('ascii')

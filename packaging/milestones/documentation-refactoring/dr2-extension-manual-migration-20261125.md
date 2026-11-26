@@ -177,3 +177,28 @@ Source/card checks passed; target reexecution required. The reported
 diagnostic establishes the failure category, not an independently
 inspected instruction trace. No production installation or new
 acceptance claimed.
+
+### DR.5 — Private registrar JOB 797: dependency ordinal correction
+
+Owner-reported 26 November 2026, revision `6b80d87c5efea1c2b06da56093aa5e641037d78e`,
+`workarea/dr5-registrar-fix/run-5sxiywjk`: ASMT/ASMR/LKED RC0,
+GO RC9, live WTO BCPLREG 1012 DEPENDENCY ORDER FAILURE, then
+DR5 REGISTRAR ASSERTION FAILED. Structural validation progressed
+beyond the earlier 1006 failure. No production write occurred.
+Registrar SHA-256
+`b34ee44aba07cc14196aa37f74d8a07b4b7cdf1f7a8d98820bef8835b1ffbc1c`.
+
+DEPKGLP shifted the selected-package ordinal in R4 by three to
+form the eight-byte registry-entry offset, then DEPMATCH compared
+that offset against the dependent package ordinal RGIDX. With
+TESTA/TESTB/TESTC in order, TESTB index 1 became offset 8, falsely
+rejecting TESTC index 2. The same instruction sequence predates DR.5
+and the original single-dependency fixture selected index 0.
+Preserve R4 as an ordinal and form the offset in scratch R2,
+which is overwritten by the required API major in DEPMATCH.
+No ABI, diagnostics, probe expectations or installation driver changes.
+Add static coverage of the register distinction. The focused host
+instruction model checks the actual search/match block for ordered,
+forward and missing dependencies across selection counts 1–32; it
+is not a System/370 emulator or substitute for MVS verification.
+Target reexecution required before any production write.

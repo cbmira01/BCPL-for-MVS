@@ -357,8 +357,10 @@ DEPKGLP  L     4,RGSCAN
          C     4,RGCNT
          BNL   ERR1010
          L     8,RGSELECT
-         SLL   4,3
-         AR    8,4
+* Preserve the ordinal in R4 for DEPMATCH; R2 holds byte offset.
+         LR    2,4
+         SLL   2,3
+         AR    8,2
          L     8,0(8)
          L     1,RGDEPTR
          CLC   0(8,1),16(8)
