@@ -1,0 +1,6 @@
+GLOBAL $( START:1; WRITEF:76 $)
+GET "DR5INC"
+LET START() BE
+$( WRITEF("RP: DR5 GET %N %N %N %N*N", A, B, C, A+B+C)
+   FINISH
+$)

@@ -85,3 +85,7 @@ Owner-reported MVS PASS at `828cf88dcd080868d7f126267f3650613571951d`: CAMBBLD 9
 ### DR.5 — Post-correction supported regression PASS
 
 Owner-reported production-profile eight-suite campaign following documentation checkpoint `f8ff445bf034d565a22ecee3af34ad0cd4cd5f77`: 208 PASS, 0 FAIL, 1 expected SKIP (083), 0 BLOCKED; BCPLQSAM 175/176 PASS; elapsed 10m 42s. See [verification record](candidates/language-verification/README.md) for private summary location and suite counts. The logical newline correction has focused and full supported-regression evidence in the existing development installation. No clean-room rebuild, release acceptance, or independent installed-image identity established. No normative transfer or march closure. Other reconciliation qualifications remain.
+
+### DR.5 — GET source and diagnostic qualification
+
+Baseline `0de748ebef72965497dd1ac40330a99a33f56cae`. Reconciled language reference chapter 9 with MR10 and Cambridge PERFORMGET/CAEREPORT: both save stream, line and lookahead, Cambridge explicitly rejects fourth simultaneous inclusion and missing DD with fatal reports, MR10 has no frame bound and missing DD enters ordinary error recovery. Positive nested MR10 EOF/period and N-suppression tests and Cambridge LIBHDR/option test prepared in [compiler verification candidate](candidates/compiler-verification/README.md). Target execution pending. No general GET nesting, malformed-source recovery, or compiler-image equivalence claimed; no normative transfer.

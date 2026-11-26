@@ -1,0 +1,4 @@
+MANIFEST $( A=17 $)
+GET "DR5NEST"
+MANIFEST $( B=5 $)
+.
