@@ -182,7 +182,7 @@ Native profiles: `production` and `installed-r5-t1`. Tags on native suite select
 | --- | --- |
 | mr10 | 12 independent interpreted baseline cases |
 | mr10-coroutines-supported | 5 valid-domain interpreted cases |
-| bootstrap | 00–145, 146 cases; 083 source-only instrumentation expected SKIP in installed profiles |
+| bootstrap | 00–145, 190–192, 149 cases; 083 source-only instrumentation expected SKIP in installed profiles |
 | runtime-extensions | 146–158, 13 cases |
 | bcpltime | 159–162, 4 cases |
 | bcplqsam | 163–176, 14 source-selected cases |
@@ -191,7 +191,7 @@ Native profiles: `production` and `installed-r5-t1`. Tags on native suite select
 | mr10-probes | 11 accepted-contract development probes; six unverified cases excluded |
 | mr10-coroutines | 5 original historical cases; one genuine known fixed-stack FAIL |
 
-The last [CO.6 accepted supported campaign](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md) reports 208 PASS, zero FAIL/BLOCKED and one expected SKIP. Historical original fixed-stack CODE=-1 remains FAIL, not XFAIL or SKIP; the supported valid-frame replacement is separately named. Overlapping selections are not additive acceptance counts. Native manifest, MR10 manifest and individual independent oracles remain controlling.
+The historical [CO.6 accepted supported campaign](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md) reports 208 PASS, zero FAIL/BLOCKED and one expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) reports 211 PASS, zero FAIL/BLOCKED and one expected SKIP; the Bootstrap selection now has 149 cases. Historical original fixed-stack CODE=-1 remains FAIL, not XFAIL or SKIP; the supported valid-frame replacement is separately named. Overlapping selections are not additive acceptance counts. Native manifest, MR10 manifest and individual independent oracles remain controlling.
 
 Native and project suite summaries retain distinct outcome classes. The project coordinator returns 0 for PASS, 1 for failure/incomplete, 2 for blocked or argument/validation errors as applicable. Inspect actual structured results, not just RC. Native case-level evidence lives under `workarea/test-suites/`; project execution creates `workarea/project-regressions/<run>/summary.json` and suite logs. The coordinator checks exact identities, counts and child receipts. NOT_RUN/NOT_SELECTED are not PASS. Preserve these records before cleanup.
 

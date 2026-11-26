@@ -86,3 +86,7 @@ Owner-supplied full receipt establishes COMP and SVCODE RC=0 but ICINT CODE=-1. 
 ### DR.5 — Owner-approved bootstrap compatibility correction candidate
 
 BOOTHOST scoped RDCH replay (G!15), stream-selection/close state and historical source period SKIPREC (G!26); permanent Bootstrap cases 190–192, including the accepted newline/FB132 oracle, numeric option paths and multi-source lookahead. No historical/native runtime or MR10 interpreter modification. MVS rebuild and first regular-suite acceptance pending. See [candidate record](candidates/compiler-verification/README.md). No authority transfer.
+
+### DR.5 — Bootstrap compatibility and full supported regression verified
+
+Owner-reported CAMBBLD JOB 9925 and Bootstrap 190–192 PASS at `3f6a417504ab721c080d5af1ffaf54b580ea346b`, followed by the production-profile eight-suite campaign: 211 PASS, 0 FAIL, 1 expected SKIP (083), 0 BLOCKED, elapsed 11m 31s. G!15 selected-stream replay and G!26 record skip verified at the scope of the permanent fixtures; H600 compile-only. Remove the obsolete current-image restriction from compiler reference chapter 3 and retain the JOB 9922 failure in the [verification record](candidates/compiler-verification/README.md). No general option certification, clean-room rebuild, release acceptance or normative transfer. DR.5 remains open.

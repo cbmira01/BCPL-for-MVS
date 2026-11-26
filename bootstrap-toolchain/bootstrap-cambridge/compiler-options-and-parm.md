@@ -363,6 +363,15 @@ See the [verification record](../../packaging/milestones/documentation-refactori
 The subsequent eight-suite supported regression campaign passed 208 cases,
 with one expected SKIP (083), zero failures and zero blocked cases.
 
+DR.5 also restored the compiler-host G!15 UNRDCH and G!26 SKIPREC services.
+CAMBBLD JOB 9925 and Bootstrap cases 190–192 passed; case 191 verifies unknown
+first-phase and P/R numeric options with native output, and H600 compile-only.
+Case 192 verifies two source units. The subsequent full supported campaign
+reported 211 PASS and one expected SKIP (083). See the [compiler verification
+record](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md).
+These observations do not authorize every historical switch or remove the
+requirement for second-phase N in the textual path.
+
 This is a bootstrap transport substitution only. It should not be mistaken for
 the historical native MVS interface.
 

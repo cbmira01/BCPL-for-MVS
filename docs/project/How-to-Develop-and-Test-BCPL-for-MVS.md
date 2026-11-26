@@ -150,7 +150,7 @@ The interpreted result and applicable `CODE=` records must also pass. The MR10 p
 
 The explicit production wrapper sets the runtime PDS and OBJ selection and clears inherited runtime-candidate settings. Do not mix environment overrides or historical DEVOBJ flags into that profile. The installed R.5/T.1 profile still does not change QSAM or coroutine candidate selection. For a candidate not covered by the standard profiles, use a separately reviewed source-selected test adapter and record its actual inputs and linkage.
 
-## 5. Testing — native 00–189, MR10 baseline/supported/development and paired coroutine suites
+## 5. Testing — native 00–192, MR10 baseline/supported/development and paired coroutine suites
 
 The [native suite manifests](../../tests/README.md) and MR10 manifests retain ownership of test identities. Use the project coordinator for regular campaigns and `run-suite` for focused native selection. `--check` and `--list` are host-only; `--run` submits jobs. An explicit native profile is required for native execution; paired coroutine cases have their own pinned compile/linkage choices.
 
@@ -158,14 +158,14 @@ The [native suite manifests](../../tests/README.md) and MR10 manifests retain ow
 | --- | --- | ---: | --- |
 | `mr10` | Independent MR10 Regression Panel | 12 | 12 PASS |
 | `mr10-coroutines-supported` | Five valid-domain interpreted cases | 5 | 5 PASS |
-| `bootstrap` | 00–145 | 146 | 145 PASS, 1 SKIP (083) |
+| `bootstrap` | 00–145, 190–192 | 149 | 148 PASS, 1 SKIP (083) |
 | `runtime-extensions` | 146–158 | 13 | 13 PASS |
 | `bcpltime` | 159–162 | 4 | 4 PASS |
 | `bcplqsam` | 163–176 | 14 | 14 PASS, device opt-in |
 | `coroutines` | 177–189 | 13 | 13 PASS |
 | `coroutine-contract` | co6-pair, co6-nested | 2 | 2 PASS |
 
-The last accepted eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. These are historical accepted counts, not evidence that the current checkout has just been tested.
+The historical eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) at source revision `3f6a417504ab721c080d5af1ffaf54b580ea346b` reported 211 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP; the table above reflects that campaign. Neither result is proof that a later checkout has been tested.
 
 Inspect selections or run a deliberately limited campaign:
 
@@ -187,7 +187,7 @@ MR10 diagnostics remain independent:
 
 For an individual diagnostic, inspect `tools/mr10/run-dev-probes --list` and use explicit `--run --case CASE_ID` only under approved scope. `--all-provisional` retains the original six-case selection; `--all-candidates` submits the entire 17-entry selection and is not the regular regression campaign.
 
-The native 190-case inventory (including 083) is separate from MR10 and paired cases. Preserve all IDs and expected files when extending test coverage. Update the appropriate manifest and verify unique ownership, expected files and reporting semantics before execution. Do not invent a new test ID or change existing policy without the required review.
+The native 193-case inventory (including 083) is separate from MR10 and paired cases. Preserve all IDs and expected files when extending test coverage. Update the appropriate manifest and verify unique ownership, expected files and reporting semantics before execution. Do not invent a new test ID or change existing policy without the required review.
 
 ## 6. Testing — offline versus MVS results, JES, printer/punch attribution and failure evidence
 

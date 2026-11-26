@@ -31,3 +31,35 @@ Proposed design for owner discussion: add a bootstrap-scoped character replay se
 Owner approved the bootstrap-host compatibility design and permanent Bootstrap coverage. BOOTHOST now installs scoped RDCH/SELECTINPUT/ENDREAD wrappers once at FINDPARM, capturing the loaded ICLIB functions; G!15 replays exactly one previously read character on the same selected stream. Duplicate unread, unread without a selected-stream read, and switching streams with pending replay fail closed. ENDREAD discards replay state; this is not a general cross-stream pushback API. The fifth historical call site requires a top-level period; historical SYN calls unbound G!26 SKIPREC first. Add the small host-only SKIPREC service that drains through the next synthetic newline or EOF, so source lookahead is directly testable. No changes to MR10 ICLIB, ICINT19, historical compiler source, native BCPLIO, native BLIB or published RC4. Rebuild CAMBCOMP using BOOTHOST and existing CAMBBLD; no need to rebuild BLIB for this host-only change. Permanent Bootstrap cases 190–192 appended after existing IDs: exact native newline/FB132, compiler option replay (unknown, P/R, H compile-only), and two-source-unit lookahead. Existing 00–189 fixtures unchanged. Initial target acceptance pending. The earlier MR10 PASS and Cambridge FAIL remain recorded.
 
 Host checks before committing: copied the actual permanent Python runner and all ten source/oracle/option/input files into an isolated workspace, verified their Git blob identities, ran the three --check modes and tested malformed/extra/incomplete assembler-unit rejection. Copied the actual suite runner by matching blob SHA and exercised all 193 IDs, selection, three-case dispatch with a stub native runner, and rejection of missing marker files on a synthetic fixture tree. Reviewed tracked manifest/physical ownership and unchanged historical fixture identities. Local Git clone remains unavailable due to DNS; no actual BCPL compilation or MVS execution performed by the assistant. New regular campaign expectation after target acceptance: Bootstrap 148 PASS/1 expected SKIP, project total 211 PASS/1 expected SKIP, zero FAIL/BLOCKED. Existing 208 PASS result remains the pre-change historical campaign. The dedicated rebuild driver performs preflight and one approved in-place BOOTHOST stage and CAMBBLD; stops before the next case on failure. No automatic retry or rollback.
+
+## Target verification — PASS (26 November 2026 UTC / 25 November EST)
+
+Owner-reported run at `3f6a417504ab721c080d5af1ffaf54b580ea346b`, private evidence `workarea/dr5-bootstrap-host-fix/run-42l_ygz7`, BOOTHOST SHA-256 `6836f384a209e2ec4874a3e8ac1cea608f299abbbba1197f5af16d2f855f2837`. CAMBBLD JOB 9925 passed the driver's 23 ordered JES step/RC gates and 22 zero ICINT completion codes. The driver returned status PASS, stage complete, and all three permanent Bootstrap cases PASS:
+
+| Case | Verified scope | Private suite evidence under workarea/test-suites/ |
+| --- | --- | --- |
+| 190 | Both logical newline representations, ordinary EBCDIC A, input delimiters/EOF, native output, six exact blank-padded FB132 records and EOF via independent QSAM verifier | 20261126T041242Z-73356-bootstrap-production-c16ecqfb |
+| 191 | J12Q/N/ and J12P3000R30Q/N/ warning, quiet diagnostics, GET LIBHDR, zero ICINT CODE, single assembler unit and exact native output; Q/H600N/ compile only | 20261126T041254Z-73458-bootstrap-production-2pikheci |
+| 192 | Top-level period record skip and post-FORMTREE character replay; exactly two complete assembler units with independently verified native executions | 20261126T041327Z-73673-bootstrap-production-xv1ct75_ |
+
+This resolves the missing bootstrap G!15 and G!26 services at the tested scope. Earlier JOB 9922 remains FAIL, and MR10 JOBS 9920/9921 remain PASS. No general cross-stream replay, misuse-path runtime testing, arbitrary GET nesting, actual workspace/name-table extent measurement, H-enabled native execution, or general historical option certification is established. No MR10 ICLIB, ICINT19, native Core Runtime, historical compiler source, BLIB or RC4 changes were required for the host correction.
+
+## Full supported post-correction regression — PASS
+
+Owner-reported production-profile eight-suite campaign, following the above rebuild at the same checkout; no intervening Git update reported. Private summary: `workarea/project-regressions/20261126T041512Z-73815-04_87uje/summary.json`. Elapsed 11m 31s. PROJECT REGRESSION RESULT: PASS.
+
+| Suite | PASS | FAIL | SKIP | BLOCKED |
+| --- | ---: | ---: | ---: | ---: |
+| mr10 | 12 | 0 | not reported | not reported |
+| mr10-coroutines-supported | 5 | 0 | 0 | 0 |
+| bootstrap | 148 | 0 | 1 (083) | 0 |
+| runtime-extensions | 13 | 0 | 0 | 0 |
+| bcpltime | 4 | 0 | 0 | 0 |
+| bcplqsam | 14 | 0 | 0 | 0 |
+| coroutines | 13 | 0 | 0 | 0 |
+| coroutine-contract | 2 | 0 | 0 | 0 |
+| **Supported total** | **211** | **0** | **1** | **0** |
+
+All 212 selected cases accounted for; authorized device cases 175/176 passed. Bootstrap cases 190–192 passed a second time in this campaign. Preserve the pre-change 208 PASS campaign, original failed observations and all existing test identities/oracles. The separate historical MR10 diagnostic failure remains FAIL.
+
+Evidence is the owner's supplied console transcript and focused driver result, interpreted against the tracked gates. Private JSON, per-case receipts and installed binary identities were not independently inspected. No clean-room rebuild, release installation, release promotion, normative authority transfer or march closure is claimed. No repeat rebuild or regression is required for these resolved defects without new evidence.

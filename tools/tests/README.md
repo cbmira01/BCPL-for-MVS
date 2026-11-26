@@ -265,7 +265,8 @@ coordinator and both native profiles select all three through the manifest.
 190 independently compares FB132 records, 191 exercises actual Cambridge
 option replay (H600 compile-only), and 192 requires two independent native
 units from one source stream. All use resident CAMBCOMP and read-only BOOT_OBJ;
-no new suite, no device opt-in, no persistent installation. First live
-acceptance pending. The expected supported campaign total becomes 211 PASS,
+no new suite, no device opt-in, no persistent installation. Focused and full
+production-profile MVS regression passed after CAMBBLD JOB 9925. The
+[DR.5 verification record](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) reports 211 PASS,
 0 FAIL, 1 expected SKIP (083), 0 BLOCKED. Historical campaign totals stay as
 recorded. See [case inventory](../../tests/README.md).

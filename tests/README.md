@@ -146,4 +146,4 @@ compiler options, GET LIBHDR and native output; H600 is a compile-only probe.
 Case 192 exercises top-level period record skipping and source lookahead,
 requiring both independently linked native units to run correctly. No new
 suite or changes to earlier test IDs or oracles. Both existing profiles run
-these cases. See the case READMEs. First live acceptance pending.
+these cases. See the case READMEs. All three passed focused and full production-profile MVS regression after CAMBBLD JOB 9925. The [DR.5 verification record](../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) records 211 supported passes and one expected SKIP (083).
