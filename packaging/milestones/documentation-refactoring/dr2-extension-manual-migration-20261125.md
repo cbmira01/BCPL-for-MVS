@@ -104,3 +104,53 @@ The maintained packages have no dependencies, so these passes do not
 test the new findings. Source inspection only in this increment; no
 new MVS execution, implementation change, normative transfer, release
 change or march closure.
+
+### DR.5 — Owner-approved registrar correction candidate
+
+Owner directed correction and continuation after the preceding findings.
+Canonical BCPLRGS now performs three bounded passes over every selected
+descriptor (extent, fixed header, counts/exact length), then validates
+identities, exports, ownership and finalizer addresses before resolving
+dependencies. No later descriptor ID is read before structural validation.
+DEDUPE addresses prior dependency records from the table base, not the
+current record. A nonpositive required major or negative minimum minor
+is a malformed dependency record (1014); well-formed incompatible versions
+remain 1011. This diagnostic classification is a scoped implementation
+decision consistent with the existing invalid-record identifier. No
+BCEX/BCRG v1 layout, public ABI, limit, global allocation, publication or
+shutdown interface changes. Complete multi-fault precedence beyond the
+structural categories is still qualified.
+
+Permanent direct MVS assembler regression
+[registrar-contract.asm](../../../bootstrap-toolchain/probes/dr5-registrar/registrar-contract.asm)
+uses private relocated tables and a private G vector/owner ledger; it
+does not link BCPLMAIN or register real package names. Eighteen exact
+RGINIT status/publication assertions cover valid two dependencies,
+duplicates, missing/forward/self/blank dependencies, structural precedence,
+malformed and incompatible versions, ownership collision and recovery.
+The two successful cases also check reverse finalization and no repeat.
+All three G slots and REGCOUNT must remain unpublished on rejection.
+GO RC=0 only after every assertion. Existing R.1/R.2 fixtures/oracles
+preserved, except the obsolete static duplicate-loop assertion updated
+to check the corrected table-base addressing. No new regular suite or
+numbered native case; the permanent focused probe is separately invoked.
+The 212-pass regular baseline is unchanged pending post-install regression.
+
+The dedicated driver privately assembles the canonical BCPLRGS with the
+probe, links and runs it, and only in explicit rebuild mode stages and
+readbacks BOOT_ASM(BCPLRGS), assembles and replaces BOOT_OBJ(BCPLRGS),
+verifies installed bytes by IEBCOMPR and runs the same probe linked
+against that installed member. It reuses the accepted BCPLIO single-member
+installation deck shape and exact ordered JES receipt helper. No
+other persistent member is written; no compiler, BLIB or extension
+rebuild. Stop on failure; retain private evidence and no automatic retry
+or rollback.
+
+Host checks: card hygiene, unique labels, case status sequence,
+dependency-loop addressing and structural/dependency/publication control
+flow inspected against exact proposed Git blobs. Exact driver copy verified
+against its Git blob, Python syntax compilation passed, and mocked private
+and installed deck construction, one-member write scope, offline check
+and invalid configuration rejection passed. Local clone unavailable
+(DNS). These are not IFOX/IEWL/GO tests; first target verification pending.
+No normative transfer, release change or march closure.

@@ -59,7 +59,9 @@ class SourceContract(unittest.TestCase):
         reg = (ASM/'bcplrgs.asm').read_text('ascii')
         span = reg.split('DEDUPE   ', 1)[1].split('DEFIND   ', 1)[0]
         self.assertNotIn('CLC   0(8,8),0(8,1)', span)
-        self.assertIn('L     8,RGDEPTR', span)
+        self.assertIn('LA    8,48(8,5)', span)
+        self.assertIn('AR    8,4', span)
+        self.assertNotIn('SR    8,4', span)
         self.assertIn('L     1,RGDEPTR', span)
         self.assertIn('CLC   0(8,8),0(1)', span)
 

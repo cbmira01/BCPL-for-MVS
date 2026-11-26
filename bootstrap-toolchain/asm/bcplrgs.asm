@@ -98,21 +98,26 @@ RGINIT   CSECT
          SLL   1,3
          AR    1,8
          ST    1,RGREQP
+* Complete each structural category for ALL selected descriptors
+* before reading IDs, entries or dependencies. No publication here.
+         XC    RGPASS(4),RGPASS
          XC    RGIDX(4),RGIDX
-* Read selected BCEX package descriptors in BCRG order.
-* Verify bounded extents, header version and unique IDs
-* before trusting export and dependency data.
-PKNEXT   L     6,RGIDX
+PFNEXT   L     6,RGIDX
          C     6,RGCNT
-         BNL   REQLIST
+         BNL   PFEND
          L     8,RGSELECT
          SLL   6,3
          AR    8,6
          L     5,0(8)
          L     4,4(8)
-         ST    5,RGPKG
-         ST    4,RGPKEND
-         LR    0,5
+         L     0,RGPASS
+         LTR   0,0
+         BZ    PFSPAN
+         C     0,=F'1'
+         BE    PFHEAD
+         B     PFCOUNT
+* Pass 0: independently linked extent, no descriptor read.
+PFSPAN   LR    0,5
          N     0,=F'3'
          BNZ   ERR1004
          LR    0,4
@@ -130,7 +135,9 @@ PKNEXT   L     6,RGIDX
          BL    ERR1004
          C     3,=F'368'
          BH    ERR1004
-         CLC   0(4,5),=CL4'BCEX'
+         B     PFADV
+* Pass 1: fixed header and version fields.
+PFHEAD   CLC   0(4,5),=CL4'BCEX'
          BNE   ERR1005
          CLC   4(4,5),=F'1'
          BNE   ERR1005
@@ -138,6 +145,16 @@ PKNEXT   L     6,RGIDX
          BNE   ERR1005
          CLC   44(4,5),=F'0'
          BNE   ERR1005
+         L     0,24(5)
+         LTR   0,0
+         BNP   ERR1005
+         L     0,28(5)
+         LTR   0,0
+         BM    ERR1005
+         B     PFADV
+* Pass 2: bounded counts and exact length before variable fields.
+PFCOUNT  L     3,4
+         SR    3,5
          L     6,32(5)
          L     7,40(5)
          LTR   6,6
@@ -148,14 +165,6 @@ PKNEXT   L     6,RGIDX
          BH    ERR1006
          C     7,=F'16'
          BH    ERR1006
-         ST    6,RGK
-         ST    7,RGD
-         L     0,24(5)
-         LTR   0,0
-         BNP   ERR1005
-         L     0,28(5)
-         LTR   0,0
-         BM    ERR1005
          SLL   6,3
          SLL   7,4
          AR    6,7
@@ -164,6 +173,30 @@ PKNEXT   L     6,RGIDX
          BNE   ERR1006
          C     6,12(5)
          BNE   ERR1006
+PFADV    L     6,RGIDX
+         LA    6,1(6)
+         ST    6,RGIDX
+         B     PFNEXT
+PFEND    L     0,RGPASS
+         A     0,=F'1'
+         ST    0,RGPASS
+         XC    RGIDX(4),RGIDX
+         C     0,=F'3'
+         BL    PFNEXT
+* All selected descriptors now have validated structural fields.
+* Check identities, exports, ownership and finalizer addresses.
+PKNEXT   L     6,RGIDX
+         C     6,RGCNT
+         BNL   DPSTART
+         L     8,RGSELECT
+         SLL   6,3
+         AR    8,6
+         L     5,0(8)
+         ST    5,RGPKG
+         L     6,32(5)
+         ST    6,RGK
+         L     7,40(5)
+         ST    7,RGD
          CLC   16(8,5),=CL8' '
          BE    ERR1007
 * ALREADY VALIDATED PACKAGE IDS MUST BE UNIQUE.
@@ -186,7 +219,7 @@ IDPRIOR  L     4,RGSCAN
 EXBEGIN  XC    RGEXI(4),RGEXI
 EXNEXT   L     6,RGEXI
          C     6,RGK
-         BNL   DEBEGIN
+         BNL   PKDONE
          L     3,RGPKG
          SLL   6,3
          LA    3,48(3)
@@ -263,13 +296,25 @@ EXDONE   L     6,RGEXI
          LA    6,1(6)
          ST    6,RGEXI
          B     EXNEXT
-* DEPENDENCIES MUST ALREADY HAVE BEEN SELECTED (AND VALIDATED).
-* Dependencies must name earlier selected packages with
-* compatible API versions; this fixes their startup order.
+* Dependencies are resolved only after ALL structures, IDs, exports
+* and finalizer addresses have been checked. Require earlier packages.
+DPSTART  XC    RGIDX(4),RGIDX
+DPNEXT   L     6,RGIDX
+         C     6,RGCNT
+         BNL   REQLIST
+         L     8,RGSELECT
+         SLL   6,3
+         AR    8,6
+         L     5,0(8)
+         ST    5,RGPKG
+         L     6,32(5)
+         ST    6,RGK
+         L     7,40(5)
+         ST    7,RGD
 DEBEGIN  XC    RGDEPI(4),RGDEPI
 DENEXT   L     6,RGDEPI
          C     6,RGD
-         BNL   PKDONE
+         BNL   DPDONE
          SLL   6,4
          L     8,RGK
          SLL   8,3
@@ -281,18 +326,28 @@ DENEXT   L     6,RGDEPI
          BE    ERR1014
          CLC   0(8,8),16(5)
          BE    ERR1014
+* Required API major must be positive, minimum minor nonnegative.
+* Malformed version fields are invalid dependency records (1014).
+         L     0,8(8)
+         LTR   0,0
+         BNP   ERR1014
+         L     0,12(8)
+         LTR   0,0
+         BM    ERR1014
 * DO NOT ACCEPT DUPLICATED REQUIREMENTS FROM THIS PACKAGE.
          XC    RGSCAN(4),RGSCAN
 DEDUPE   L     4,RGSCAN
          C     4,RGDEPI
          BNL   DEFIND
+* Address dependency[scan] from the table base, not current record.
          SLL   4,4
-         L     8,RGDEPTR
-         SR    8,4
+         L     8,RGK
+         SLL   8,3
+         LA    8,48(8,5)
+         AR    8,4
          L     1,RGDEPTR
          CLC   0(8,8),0(1)
          BE    ERR1014
-         L     8,RGDEPTR
          L     4,RGSCAN
          LA    4,1(4)
          ST    4,RGSCAN
@@ -325,6 +380,10 @@ DEPMATCH C     4,RGIDX
          LA    6,1(6)
          ST    6,RGDEPI
          B     DENEXT
+DPDONE   L     6,RGIDX
+         LA    6,1(6)
+         ST    6,RGIDX
+         B     DPNEXT
 PKDONE   L     6,RGIDX
          L     8,RGPKG
          L     1,36(8)
@@ -477,7 +536,7 @@ RGREQN   DC    F'0'
 RGREQP   DC    F'0'
 RGIDX    DC    F'0'
 RGPKG    DC    F'0'
-RGPKEND  DC    F'0'
+RGPASS   DC    F'0'
 RGK      DC    F'0'
 RGD      DC    F'0'
 RGEXI    DC    F'0'

@@ -283,3 +283,16 @@ source-selected IFOX/IEWL/GO, and only in explicitly selected rebuild mode
 stages and installs BCPLIO with object readback/IEBCOMPR before ordinary 193.
 The existing installed profiles use the ordinary installed object, not the
 private source-selected diagnostic.
+
+## DR.5 registrar contract probe
+
+The permanent direct MVS assembler probe in
+[`bootstrap-toolchain/probes/dr5-registrar/`](../../bootstrap-toolchain/probes/dr5-registrar/README.md)
+checks the actual BCPLRGS entry points with eighteen exact status/publication
+assertions and reverse-order/once finalization. It is an independent focused
+contract check, not a numbered native BCPL fixture or an additional regular
+suite. Use the dedicated `tools/checks/run-dr5-registrar-fix.py` driver.
+Private source-selected verification precedes any explicitly authorized
+one-member installation; subsequent installed-only verification links
+BOOT_OBJ(BCPLRGS). No release changes, no new global allocations.
+First MVS acceptance pending; the 212-pass eight-suite baseline is unchanged.
