@@ -103,36 +103,59 @@ Native BCPLIO implements the [dynamic runtime contract](../../packaging/mileston
 
 | Global | Call | Effect |
 | --- | --- | --- |
-| 11 | SELECTINPUT(H) | Select valid live input; invalid/retired handle leaves selection unchanged |
-| 12 | SELECTOUTPUT(H) | Corresponding output selection |
+| 11 | SELECTINPUT(H) | Select live input; dynamic direction/lifetime checked; fixed built-in exceptions below |
+| 12 | SELECTOUTPUT(H) | Select live output; intended rejection of invalid/wrong-direction handles; dynamic direction-check discrepancy below |
 | 13 | RDCH() | Next character, synthesized 10 at record boundary, -1 at EOF |
 | 14 | WRCH(CH) | Append to selected output; 10 emits record |
 | 15 | UNRDCH() | One-character replay in selected input, including tested EOF |
 | 16 | INPUT() | Current input handle |
 | 17 | OUTPUT() | Current output handle |
-| 33 | WRAPOUTPUT | Provisional historical interface; tested alternate-output flushing, not general QSAM control |
-| 39 | FINDPARM() | EXEC PARM-related memory stream, not DD allocation |
+| 33 | WRAPOUTPUT() | Provisional; flush selected open built-in BCPALT even if empty; no effect on primary or dynamic output |
+| 39 | FINDPARM() | Dedicated EXEC PARM memory stream, not DD allocation |
 | 41 | FINDOUTPUT(NAME) | Live opaque output handle, or 0 on returned-control failure |
 | 42 | FINDINPUT(NAME) | Live opaque input handle, or 0 on returned-control failure |
-| 46 | ENDREAD() | Close/retire selected input lifetime; no general rewind promise |
-| 47 | ENDWRITE() | Flush pending output, close/retire, restore ordinary selection as tested |
+| 46 | ENDREAD() | Close selected QSAM input, clear selection; retire dynamic handle or reset PARM cursor |
+| 47 | ENDWRITE() | Flush/close selected nonprimary output, restore SYSPRINT; no-op for primary |
 
-NAME is a counted BCPL string of 1–8 valid DD-name characters; lowercase EBCDIC letters normalized to uppercase and names blank-padded for lookup. Reject invalid, empty or overlength names rather than truncate. DD must already be allocated. Built-ins include BCPIN, BCPINB, SYSPRINT and BCPALT. FIND is separate from selection. Repeated FIND of an open normalized DD in the same direction returns the same live handle, without another OPEN; input/output directions are separate. Reopening after close obtains a new lifetime/handle. Treat handles as opaque, not DCB addresses. Dynamic retired handle identities are retained until drain; do not assume unlimited streams. Sixteen concurrently open dynamic inputs were tested (130).
+### 4.1 Discovery, selection and lifetime
+
+The dynamic-name contract accepts a readable counted string of 1–8 characters: EBCDIC alphabetic or @/#/$ initially, and digits also after the first character. IONORM uppercases lowercase EBCDIC and blank-pads the name to eight bytes; invalid/empty/overlength names are rejected without truncation. FIND does not dynamically allocate a DD and does not change selection. The dynamic lookup key is normalized name plus direction. An existing live dynamic handle is returned before RDJFCB or another OPEN; close/reopen produces a new handle, with retired identities retained until final drain. Cases 127, 131, 132 and 134 establish this for dynamic DDs. Sixteen concurrent dynamic inputs were tested (130). Do not assume unlimited resources.
+
+The legacy built-in paths differ from the dynamic path:
+
+| Name or facility | Actual source behavior and use |
+| --- | --- |
+| SYSPRINT | Opened by IOINIT; ordinary selected output; fixed handle; IOFIN owns final flush/CLOSE |
+| BCPALT | Opened lazily by exact uppercase FINDOUTPUT; fixed handle; ENDWRITE flushes nonempty data, closes and selects SYSPRINT |
+| BCPIN, BCPINB | Opened lazily by exact uppercase FINDINPUT; fixed independent input handles/cursors; ENDREAD closes and clears selection |
+| FINDPARM() | Fixed memory-stream handle; capture original EXEC PARM address, clamp length to 100 bytes, deliver bytes without right trimming, one logical newline and then EOF; ENDREAD resets cursor and clears selection |
+
+The FINDPARM details beyond case 108's first-character probe are source-observed. The fixed handle is not a dynamically allocated stable identity. Reopening a built-in can reuse its handle; do not use an old closed handle or assume a general rewind capability. The input selection starts at zero; RDCH with no selection returns -1. ENDREAD does not automatically select another input. Output selection persists until explicitly changed or a nonprimary ENDWRITE restores primary.
+
+**Open DR.5 implementation discrepancies:** the exact uppercase built-in name checks precede normalization, so a differently cased built-in can enter the dynamic RDJFCB/OPEN path rather than returning the existing fixed handle. Built-in input selection does not test its open flag; fixed output BCPALT selection does. In addition, IOSOUT resolves a dynamic identity with HLOOK but does not check input/output direction or the descriptor open state, unlike IOSELIN's dynamic checks. These are source-confirmed deviations from the broad selection/normalization contract; no failing MVS execution has yet been collected. Do not pass input handles to SELECTOUTPUT, reuse closed built-in input handles, or request built-ins using lowercase spellings in the present implementation. In particular, do not attempt output to a misselected input handle: IOWDYN shares the buffer and DQPUT assumes an output DCB. Existing regression passes do not establish these cases. The [migration ledger](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) records the proposed investigation; this warning does not replace or relax the original contract.
+
+### 4.2 Record and replay semantics
 
 | Direction | Supported contract |
 | --- | --- |
 | Input | Sequential text-oriented FB80; trim right EBCDIC X'40' padding, synthesize 10, return -1 at EOF |
 | Output | Sequential text-oriented FB132; independent pending record per output; 10 emits 132 bytes padded X'40'; blank lines emit blank records |
 | Maximum line | 132 characters before newline; 133rd triggers STOP(12) |
-| Closure | ENDWRITE and normal FINISH/STOP flush pending data at tested scope |
+| Closure | Nonprimary ENDWRITE and normal FINISH/STOP flush pending nonempty data at tested scope; no extra empty record on close |
+
+The native replay implementation has an independent last-value, seen and pending flag for each input. UNRDCH schedules one repeat of the last RDCH result (including newline or EOF), not a multi-character stack or physical rewind. The source does nothing before a value has been seen on that input; repeated requests before another RDCH set the same pending flag. This is distinct from the compiler-host UNRDCH wrapper introduced in DR.5. Cases 097 and 099 verify built-in character/newline/EOF replay; dynamic input uses equivalent private state. Output newline compares the complete argument word with 10; ordinary bytes use the low eight bits. No automatic continuation or general character-code translation is performed.
 
 **DR.5 logical newline correction:** The accepted BCPLIO delimiter remains 10. Older CAMBCOMP emitted X'25' (37) for *N; JOBS 9491/9493 failed with RC=12, and JOB 9495 verified 37 and passed with explicit WRCH(10). Owner-approved CODE370 correction at `828cf88dcd080868d7f126267f3650613571951d` preserves logical 10. CAMBCOMP/BLIB rebuilds (9498/9500) and JOBS 9502/9504 verified the correction. In the rebuilt development environment, *N, WRCH(10), BLIB NEWLINE() and RDCH synthetic boundaries agree. JOB 9504 independently compared all six FB132 sequential-dataset records including padding and EOF; EBCDIC A=193 also passed. Older objects require regeneration. The subsequent eight-suite supported regression campaign passed 208 cases, with one expected SKIP (083), zero failures and zero blocked cases. Neither campaign establishes raw JES spool-byte fidelity. See the [DR.5 candidate evidence](../../packaging/milestones/documentation-refactoring/candidates/language-verification/README.md).
 
 An ordinary stream cannot preserve significant trailing FB80 blanks. No arbitrary binary/VB, PDS traversal, VSAM, dynamic allocation or general DCB validation is promised. DD attributes must be compatible; QSAM/MVS resolves actual effective attributes. BCPLIO's private templates do not explicitly set all RECFM/LRECL/BLKSIZE values.
 
-The dynamic contract records 32-byte descriptors, 268-byte DCB/record regions and 16-byte stable-handle records. These are private implementation details, not a public layout. Closing releases owned descriptor/DCB resources; retired handle records remain until final drain. Invalid/absent names and conditional allocation or recoverable OPEN failure return zero if control returns, preserving selection. Synthetic GETMAIN/DQOPEN tests 134–145 and private accounting establish bounded returned-control recovery, not actual arbitrary SVC19 failure or full MVS storage-exhaustion recovery. Exploratory OPEN jobs did not demonstrate unsuccessful real OPEN. System abends may bypass cleanup.
+### 4.3 Ownership, errors and evidence
 
-M5.1/M5.2 evidence distinguishes class-separated physical writer routing, exact sequential dataset FB132 readback, and an intentionally rejected padding-byte mismatch. None is a raw JES2 spool-byte proof. See the original dynamic contract for exact job identities, conditions and preserved negative tests. Use BCPLQSAM for application logical-record I/O, not an undocumented stream-mode switch.
+For dynamic names the source sequence is normalize, live-handle lookup, RDJFCB allocation inquiry, allocate descriptor and DCB/buffer, OPEN, allocate stable handle. Descriptor (32 bytes), DCB/buffer region (268 bytes) and handle record (16 bytes) are private implementation details, not public layout. A failed second allocation frees the first; a returned OPEN failure releases the unopened descriptor; a handle allocation failure after successful OPEN takes CLOSE then release. Normal close retires the handle before freeing the descriptor; IOFIN/IODRAIN frees both live and retired handle records at termination.
+
+Invalid/absent dynamic names, conditional allocation failure and detected recoverable OPEN failure return zero if control returns, preserving selection. The exact uppercase built-in shortcuts use their own OPEN paths without the dynamic RDJFCB/conditional-failure sequence; do not assume the dynamic zero-return contract for a missing built-in allocation. The source checks a field at DCB+48 after SVC19 in DQOPEN; this is not independently verified as a universal OPEN-success oracle. Synthetic GETMAIN/DQOPEN tests 134–145 and private accounting establish bounded returned-control recovery, not actual arbitrary SVC19 failure or full MVS storage-exhaustion recovery. Exploratory jobs 7874–7876 did not demonstrate unsuccessful real OPEN. No general public GET/PUT/CLOSE error-status or recovery API is supplied; system abends may bypass cleanup. Test-only resource counters are not installed BCPL globals and do not establish independent physical storage accounting.
+
+M5.1/M5.2 evidence distinguishes class-separated physical writer routing (8184), exact sequential dataset FB132 readback (8185) and the intentional verifier RC12 for a wrong 132nd padding byte (8186). None is raw JES2 spool-byte proof. [M5.5 final acceptance](../../packaging/milestones/bcplio-dynamic-stream/Milestone-BCPLIO-dynamic-stream-final-acceptance.md) records 145 PASS plus expected SKIP 083 under DEVOBJ; the later DR.5 production campaign reported 211 PASS plus expected SKIP. Neither validates the new discrepancies above. The [fixed-DD predecessor](../../packaging/archive/core-runtime/regression/native-stream-contract.md) preserves the earlier built-in behavior. The existing contracts remain operative pending reconciliation and explicit owner-approved transfer. Use BCPLQSAM for application logical-record I/O, not an undocumented stream-mode switch.
 
 ## 5. Base Library (BLIB) — supported formatting, strings, conversions and other routines
 
