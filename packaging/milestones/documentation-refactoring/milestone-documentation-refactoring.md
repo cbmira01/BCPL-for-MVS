@@ -68,6 +68,8 @@ Owner approved retaining canonical UTF-8 Markdown and the existing small, plain-
 
 Verify technical accuracy, terminology, compiler status, normative contracts, links, navigation, examples, operational procedures, transformation fidelity and retained reconstruction/regression/release capabilities. Seek actual BCPL, IFOX, IEWL, JES and MVS evidence where warranted. Offline checks are not target-system verification. Identify remaining qualifications explicitly. DR.5 begins under the owner-approved transition; see [DR.4 closure and DR.5 kickoff](dr4-formal-qualified-closure-and-dr5-transition-20261125.md). Respect the DR.4 deferral of dedicated documentation transformation tests; technical reconciliation and verification of software behavior remain in scope.
 
+On 27 November 2026 the owner approved the [first individual normative transfer, BCPLQSAM rollback precedence and historical BLIB diagnostic qualifications](dr5-query-authority-and-qsam-precedence-acceptance-20261127.md). Other transfers and operational gates remain open.
+
 ### DR.6 — Acceptance and Closure
 
 Establish practical maintenance and release-integration policy. Record verified results and remaining qualifications; obtain formal owner acceptance and closure.

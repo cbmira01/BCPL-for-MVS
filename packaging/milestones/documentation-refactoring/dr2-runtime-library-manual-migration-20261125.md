@@ -244,3 +244,13 @@ explicit qualifications, rather than expanding this documentation march
 into historical runtime reconstruction. No new native execution or
 production change; owner acceptance of the remaining qualifications
 is still required.
+
+### DR.5 — Owner acceptance of historical BLIB diagnostic limitations
+
+On 27 November 2026 the owner accepted the documented limitations, including
+PRINTWIDTH's incompatible DCB assumption and unestablished historical
+logging, frame traversal and postmortem dependencies. See [owner decision](dr5-query-authority-and-qsam-precedence-acceptance-20261127.md).
+No reconstruction of unsupported diagnostics is required for DR.5 at this
+accepted scope. This is not a transfer of the remaining runtime/library
+contract or acceptance of arbitrary-pointer safety. Preserve the native
+READN, export census and bounded cases 120–123 evidence.

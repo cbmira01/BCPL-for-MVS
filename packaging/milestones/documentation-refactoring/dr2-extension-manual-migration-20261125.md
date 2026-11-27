@@ -481,3 +481,13 @@ rollback. The existing approved returned-CLOSE/finalizer policy and the
 qualification on genuine exceptional MVS CLOSE are preserved. Neither
 proposal is effective before explicit owner approval. No source change
 or repeat execution required for proposal review.
+
+### DR.5 — Owner approval: QUERY and rollback precedence
+
+On 27 November 2026 the owner explicitly approved both proposals and
+commits. See [effective decision](dr5-query-authority-and-qsam-precedence-acceptance-20261127.md).
+Reference chapter 1 becomes normative for common QUERY v1; chapter 5.4
+records the separate primary OPEN error precedence policy. Original
+contracts and native evidence remain intact; all other transfers remain
+pending. Only BCPLQSAM comments changed; non-comment cards and line count
+are identical. No fresh IFOX/IEWL/GO result or installed binary change.

@@ -202,7 +202,7 @@ WRITEF("C:%C S:%S N:%N", 'Z', "HI", 42)
 
 Expected `C:Z S:HI N:42`. The original failure and later G!76 binding correction are retained; bootstrap WRITEST is fallback only when historical WRITEF is absent. Tests [069](../../tests/bootstrap/069-independent-blib-object/README.md), [070](../../tests/bootstrap/070-blib-unpackstring-object/README.md), [071](../../tests/bootstrap/071-blib-packstring-inplace-object/README.md), [072](../../tests/bootstrap/072-blib-writed-width-object/README.md), [073](../../tests/bootstrap/073-blib-writehex-width-object/README.md), [074](../../tests/bootstrap/074-blib-writeo-object/README.md) and 075–081 give independent-object and calling evidence. Earlier bootstrap formatter cases must not be conflated with the historical BLIB object.
 
-The installed export census is not a diagnostic support matrix. The historical BLIB bodies have the following dependencies and limits:
+The installed export census is not a diagnostic support matrix. The owner [accepted these historical diagnostic limitations](../../packaging/milestones/documentation-refactoring/dr5-query-authority-and-qsam-precedence-acceptance-20261127.md) on 27 November 2026 as DR.5 qualifications, without extending the supported native contract or authorizing diagnostic reconstruction. The historical BLIB bodies have the following dependencies and limits:
 
 | Routine | Current evidence and boundary |
 | --- | --- |
