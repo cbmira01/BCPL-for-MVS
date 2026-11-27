@@ -43,12 +43,13 @@ claim that resident MVS objects have been independently probed.
 
 `profiles` currently permits `production` and `installed-r5-t1`:
 
-- `production` uses `BOOT_OBJ` and **source-selected R.5/T.1** optional
-  extension assembly when needed.
-- `installed-r5-t1` uses `BOOT_OBJ` plus installed R.5/T.1 objects in
-  `EXT_OBJ` and macros in `EXT_MAC`.
-- **In both profiles, cases 163–176 use source-selected BCPLQSAM.** Neither
-  profile constitutes proof of installed `EXT_OBJ(BCPLQSAM)` execution.
+- `production` uses `BOOT_OBJ` and source-selected optional extension assembly
+  when needed (R.5/T.1 and BCPLQSAM; case 170 also selects installed BCPLDEMO).
+- `installed-r5-t1` retains its historical profile name and selects installed
+  R.5/T.1 and BCPLQSAM objects from `EXT_OBJ` and macros from `EXT_MAC`.
+  DR.5 extends the existing 163–176 QSAM fixtures to this mode without
+  renumbering or duplicating them. Initial full installed-suite MVS execution
+  is pending; focused installed QUERY and exclusion already passed.
 
 The fixture files (`expected.txt`, GO RC markers, `.asm` selections, etc.)
 remain the sole expected-output/return-code contract. `policy` is one of:
@@ -191,6 +192,7 @@ expanded campaign.
 The separate [installed verification driver](../tools/checks/run-dr5-qsam-installed.py)
 passed cases 163 and 146 using installed objects and resident BCX macros
 (native JOBs 1261 and 1263). This proves installed QUERY selection and
-exclusion at the tested scope; neither numbered regression profile changes.
+exclusion at the tested scope. The later DR.5 dual-mode integration extends
+the installed profile to the existing QSAM cases; its initial run is pending.
 No new case IDs or campaign counts are introduced. See the
 [DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).

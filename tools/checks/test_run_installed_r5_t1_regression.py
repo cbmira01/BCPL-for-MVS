@@ -47,7 +47,7 @@ class WrapperTests(unittest.TestCase):
         )
         self.assertEqual(initial["BCPL_R5_EXTENSION_MODE"], "source")
         self.assertEqual(env["PATH"], "/bin")
-        for prefix in ("BCPL_R5", "BCPL_T1"):
+        for prefix in ("BCPL_R5", "BCPL_T1", "BCPL_QSAM"):
             self.assertEqual(env[prefix + "_EXTENSION_MODE"], "installed")
             self.assertEqual(env[prefix + "_EXTENSION_DSN"], "ALTERN8.BCPL.EXT.OBJ")
             self.assertEqual(env[prefix + "_MACRO_DSN"], "ALTERN8.BCPL.EXT.MAC")

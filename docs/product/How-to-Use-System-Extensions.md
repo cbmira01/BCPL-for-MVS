@@ -45,7 +45,7 @@ tools/bootstrap/run-installed-r5-t1-regression 148
 tools/bootstrap/run-production-regression 168
 ```
 
-The first uses installed R.5/T.1 objects. The second uses the source-selected QSAM writer/reader/verifier. Source-mode PASS is not installed-object acceptance. The separate [DR.5 installed verification driver](../../tools/checks/run-dr5-qsam-installed.py) passed selected QUERY and unselected application execution (JOBs 1261/1263); it does not exercise installed record I/O.
+The first uses installed R.5/T.1 objects. The second uses the source-selected QSAM writer/reader/verifier. DR.5 also permits the same QSAM case under the existing installed-r5-t1 profile, pending initial numbered installed-mode MVS verification. Source-mode PASS is not installed-object acceptance. The separate [DR.5 installed verification driver](../../tools/checks/run-dr5-qsam-installed.py) passed selected QUERY and unselected application execution (JOBs 1261/1263); it does not exercise installed record I/O.
 
 ## 4. Use multiple extensions without collisions
 

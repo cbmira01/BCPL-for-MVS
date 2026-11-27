@@ -43,6 +43,14 @@ def verify(text, number):
     for name in ("TIMDESC", "TIMDISP"):
         if csect(name) is not None:
             problems.append("unexpected BCPLTIME section: " + name)
+    # A resident catalog knows QSAM; empty and DEMO-only selections
+    # must not acquire any QSAM sections or installed INCLUDE.
+    for name in ("QSMDESC", "QSMDISP", "QSMCORE", "QSMCLS1",
+                 "QSMIO", "QSMFIN", "QSMCTRL", "QSMDCBS"):
+        if csect(name) is not None:
+            problems.append("unexpected BCPLQSAM section: " + name)
+    if re.search(r"\bINCLUDE\s+EXTLIB\s*\(\s*BCPLQSAM\s*\)", text):
+        problems.append("unexpected installed BCPLQSAM INCLUDE")
     entries = ENTRY_LINE.findall(text)
     if len(entries) != 1:
         problems.append("expected exactly one IEWL entry address; found " +

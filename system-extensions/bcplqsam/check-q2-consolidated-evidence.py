@@ -19,11 +19,13 @@ MARKERS = (
 )
 
 
-def check(summary: str, report: str) -> list[str]:
+def check(summary: str, report: str, *, installed=False) -> list[str]:
     """Return concrete evidence problems; do not infer missing steps."""
     problems: list[str] = []
     lines = summary.replace("\f", "").splitlines()
     for step in STEPS:
+        if installed and step in ("ASMN", "ASMR", "ASMQ"):
+            continue
         candidates = [
             line.strip() for line in lines
             if re.match(rf"^{step}\s", line)

@@ -20,7 +20,7 @@ ENTRY = re.compile(
     r'([0-9A-F]{1,8})[ \t]*$')
 
 
-def check(summary: str, report: str) -> list[str]:
+def check(summary: str, report: str, *, installed=False) -> list[str]:
     errors: list[str] = []
     if len(re.findall(r'^JOB\s+\d+\s+Q2MIX\s*$', summary, re.M)) != 1:
         errors.append('Q2MIX JOB identity missing or duplicated')
@@ -31,9 +31,10 @@ def check(summary: str, report: str) -> list[str]:
             r'\s+\S.*?\bRC=(\d{4})\s*$', line)
         if match:
             got.setdefault(match.group(1), []).append(int(match.group(2)))
-    if set(got) != set(STEPS):
-        errors.append('native ten-step coverage incomplete')
-    for step in STEPS:
+    steps = tuple(s for s in STEPS if not installed or s not in ("ASMN", "ASMR", "ASMQ"))
+    if set(got) != set(steps):
+        errors.append('native step coverage incomplete')
+    for step in steps:
         value = got.get(step, [])
         want = 8 if step == 'BGO' else 0
         if value != [want]:

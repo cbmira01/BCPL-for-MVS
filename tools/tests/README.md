@@ -314,5 +314,24 @@ compiler JOBs 1260/1262 and native JOBs 1261/1263 passed. The driver
 checks actual compiler/IFOX/IEWL/GO results, selected and unselected maps,
 registry lengths and exact GO records. No permanent PDS writes, device
 operations or installed record I/O. This is supplemental evidence, not
-an extra suite or change to either numbered profile. See the
+an extra suite. The subsequent DR.5 integration extends cases 163–176 to
+installed mode under the existing `installed-r5-t1` profile; the first
+full installed run is pending. See the
 [DR.5 evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
+
+### DR.5 — BCPLQSAM dual-mode regression
+
+The existing profile names and all 14 QSAM IDs remain unchanged. The
+production profile builds source-selected QSAM; the installed profile
+uses resident BOOT_OBJ, EXT_MAC and EXT_OBJ members. Only the application,
+registry and independent I/O test programs are assembled in installed mode.
+Existing exact record oracles, independent IFOX verifiers, expected STOP
+codes, temporary DDs and device guards remain in force. Installed IEWL
+maps must prove QSAM selection and extent/registry sizes, and exclude
+unselected extensions. The R.5 verifier additionally rejects QSAM sections
+in its own maps, including the empty-registry case 146. Before installed
+QSAM compilation the runner generates all fourteen synthetic deck shapes
+in both modes; this is a host preflight, not MVS proof.
+
+Initial installed suite execution pending; the focused JOBs 1261/1263
+remain the accepted installed evidence until the numbered run reports.

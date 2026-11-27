@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Run production regression using installed R.5 and T.1 extension objects.
 
-Numbered BCPLQSAM cases 163-176 remain source-selected; this wrapper
-changes only the R.5 and T.1 profile. The JES2 punch resume requires an
+Numbered BCPLQSAM cases 163-176 use installed objects and resident macros.
+The historical profile name is retained for compatibility. The JES2 punch resume requires an
 explicit --resume-punch option, not an inherited environment variable.
 """
 
@@ -44,7 +44,7 @@ def installed_environment(
     object_dsn = core.full_dsn(config, obj)
     macro_dsn = core.full_dsn(config, macro)
     env = dict(original)
-    for prefix in ("BCPL_R5", "BCPL_T1"):
+    for prefix in ("BCPL_R5", "BCPL_T1", "BCPL_QSAM"):
         env[f"{prefix}_EXTENSION_MODE"] = "installed"
         env[f"{prefix}_EXTENSION_DSN"] = object_dsn
         env[f"{prefix}_MACRO_DSN"] = macro_dsn

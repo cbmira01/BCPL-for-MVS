@@ -218,7 +218,7 @@ Successful CLOSE frees owned resources/retires ID. Returned -14 quarantines unus
 
 Sequential F/FB, V/VB, FBA; selected PDS member where compatible. No U, VS/VBS, VBA, VSAM, BSAM/EXCP, physical blocks, keyed/random access, dynamic allocation, PDS directory management or STOW. Q.4 specifically verifies FB80 punch and FBA133 printer, independent dataset bytes plus device presentation, not arbitrary geometry or raw spool bytes.
 
-[Assembler](../../system-extensions/bcplqsam/bcplqsam.asm): QSMDESC/QSMDISP, private core/I/O, QSMFIN one object. EXT_SOURCE(QSAMHDR), EXT_ASM(BCPLQSAM), BOOT_JCL(BCPLQSAM) installation, EXT_OBJ(BCPLQSAM) target. [Installation design](../../packaging/archive/qsam/qsam-q5-installed-reconstruction-20261101.md) records retired Q5QVFY deck, not current executable proof. Numbered 163–176 remain source-selected even under installed R.5/T.1 profile.
+[Assembler](../../system-extensions/bcplqsam/bcplqsam.asm): QSMDESC/QSMDISP, private core/I/O, QSMFIN one object. EXT_SOURCE(QSAMHDR), EXT_ASM(BCPLQSAM), BOOT_JCL(BCPLQSAM) installation, EXT_OBJ(BCPLQSAM) target. [Installation design](../../packaging/archive/qsam/qsam-q5-installed-reconstruction-20261101.md) records retired Q5QVFY deck, not current executable proof. Numbered 163–176 now support source mode in the production profile and installed mode in the historically named installed-r5-t1 profile. DR.5 initial full installed-suite execution is pending.
 
 | Evidence | Scope |
 | --- | --- |

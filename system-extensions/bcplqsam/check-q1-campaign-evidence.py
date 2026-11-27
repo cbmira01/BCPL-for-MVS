@@ -43,8 +43,10 @@ def finalizer_check(profile: str, summary: str, console: str) -> tuple[bool,list
 
 
 def review(profile: str, summary: str, report: str,
-           console: str | None = None) -> tuple[bool, list[str]]:
+           console: str | None = None, *, installed=False) -> tuple[bool, list[str]]:
     job, expected, go_rc, markers = CASES[profile]
+    if installed:
+        expected = expected - {"ASMN", "ASMR", "ASMQ"}
     errors=[]
     if not re.search(rf'^JOB\s+\d+\s+{job}\s*$',summary,re.M):
         errors.append('summary JOB name/number missing or wrong')

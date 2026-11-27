@@ -2,7 +2,7 @@
 """Native numbered QSAM regressions 163..176; no simulated target results.
 
 Each case compiles BCPL with the resident demoted Cambridge compiler,
-builds real source-mode IFOX/IEWL JCL, submits one JES job and checks
+builds real source- or installed-mode IFOX/IEWL JCL, submits one JES job and checks
 actual steps, records and relevant independent QSAM/IEWL evidence.
 Permanent MVS datasets are read-only; no retry after uncertain submit.
 Q4_PUNCH_RESUME=1 permits one guarded $S PUN1 only for isolated case 175.
@@ -13,6 +13,7 @@ import importlib.util
 import os
 from pathlib import Path
 import re
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -81,6 +82,23 @@ SYSOUT_PATHS = {
     "fba": ROOT / "mvs-state/prt/prt00e.txt",
 }
 LIMIT_CASES = ("vread", "vwrite", "vbread", "vbwrite")
+INSTALLED = runpy.run_path(str(TOOLS / "checks/qsam-installed-mode.py"))
+
+
+def expected_steps(kind):
+    return (SYSOUT_STEPS if kind in SYSOUT_PATHS
+            else LIMIT_READ if kind in ("vread", "vbread")
+            else LIMIT_WRITE if kind in ("vwrite", "vbwrite")
+            else FULL if kind == "full"
+            else LIFE if kind in ("finish", "stop")
+            else STOP if kind in ("stopflush", "mix") else BASIC)
+
+
+def execution_mode():
+    mode = os.environ.get("BCPL_QSAM_EXTENSION_MODE", "source")
+    if mode not in ("source", "installed"):
+        raise ValueError("invalid BCPL_QSAM_EXTENSION_MODE")
+    return mode
 
 
 def load(name: str):
@@ -130,10 +148,13 @@ def checked_fixture(case: Path, filename: str, original: str) -> Path:
     return target
 
 
-def prepare(kind: str, generated: str, reader: str | None) -> str:
+def prepare(kind: str, generated: str, reader: str | None,
+            mode="source", config=None) -> str:
     query = load("prepare-q1-query.py")
     core = query.time_helper().trailer_helper().load_core()
-    cfg = core.load_config()
+    if mode not in ("source", "installed"):
+        raise ValueError("invalid QSAM mode")
+    cfg = core.load_config() if config is None else config
     def object_dsn(name: str) -> str:
         obj = cfg["datasets"][name]
         if (obj.get("dsorg") != "PO" or obj.get("recfm") != "FB"
@@ -142,12 +163,23 @@ def prepare(kind: str, generated: str, reader: str | None) -> str:
             raise ValueError("unapproved FB80 object library: " + name)
         return core.full_dsn(cfg, obj)
     obj = object_dsn("BOOT_OBJ")
-    ext_obj = object_dsn("EXT_OBJ") if kind == "mix" else None
+    ext_obj = object_dsn("EXT_OBJ") if kind == "mix" or mode == "installed" else None
+    if mode == "installed":
+        spec = cfg["datasets"]["EXT_MAC"]
+        if (spec.get("dsorg") != "PO" or spec.get("recfm") != "FB"
+                or int(spec.get("lrecl", 0)) != 80):
+            raise ValueError("EXT_MAC must be an approved FB80 PDS")
+        mac = core.full_dsn(cfg, spec)
+        if config is None:
+            for key, value in (("BCPL_QSAM_EXTENSION_DSN", ext_obj),
+                               ("BCPL_QSAM_MACRO_DSN", mac)):
+                if os.environ.get(key) != value:
+                    raise ValueError(key + " must match manifest DSN")
     original_job = next(job for k, _, job, _ in CASES.values() if k == kind)
     title = ("Q4 NATIVE REG" if kind in SYSOUT_PATHS else
              "Q3 NATIVE REG" if kind in LIMIT_CASES else "Q2 NATIVE REG")
     card = core.authenticated_job_card(
-        cfg, original_job, title, redact_password=False)
+        cfg, original_job, title, redact_password=config is not None)
     if kind == "query":
         deck = load("prepare-q2-query.py").make_deck(generated, card, obj)
     elif kind in ("negative", "output", "finish", "stop"):
@@ -182,20 +214,25 @@ def prepare(kind: str, generated: str, reader: str | None) -> str:
             (line.startswith("//") and not line.startswith("//*") and
              "BOOT_DEVOBJ" in line)):
             raise ValueError("permanent MVS output forbidden")
+    if mode == "installed":
+        deck = INSTALLED["transform"](deck, kind, expected_steps(kind), obj, ext_obj, mac)
     return deck
 
 
-def evidence(number: int, summary: str, report: str) -> list[str]:
+def evidence(number: int, summary: str, report: str, mode="source") -> list[str]:
     kind, _, job, markers = CASES[number]
     issues: list[str] = []
     if len(re.findall(rf"^JOB\s+\d+\s+{job}\s*$", summary, re.M)) != 1:
         issues.append("wrong/missing native JES job name")
-    steps = (SYSOUT_STEPS if kind in SYSOUT_PATHS
-             else LIMIT_READ if kind in ("vread", "vbread")
-             else LIMIT_WRITE if kind in ("vwrite", "vbwrite")
-             else FULL if kind == "full"
-             else LIFE if kind in ("finish", "stop")
-             else STOP if kind in ("stopflush", "mix") else BASIC)
+    steps = expected_steps(kind)
+    if mode == "installed":
+        steps = INSTALLED["installed_steps"](steps)
+        if any(re.search(r"^\s*" + name + r"\s+.*RC=", summary, re.M)
+               for name in INSTALLED["PRIVATE"]):
+            issues.append("unexpected private assembler step")
+        issues += INSTALLED["map_issues"](report, kind, steps)
+    elif mode != "source":
+        raise ValueError("invalid evidence mode")
     found: dict[str, list[int]] = {}
     for line in summary.splitlines():
         match = re.match(
@@ -224,12 +261,12 @@ def evidence(number: int, summary: str, report: str) -> list[str]:
         issues.append("record order incorrect")
     if kind == "full":
         issues += load("check-q2-consolidated-evidence.py").check(
-            summary, report)
+            summary, report, installed=(mode == "installed"))
     if kind == "mix":
-        issues += load("check-q2-mix-evidence.py").check(summary, report)
+        issues += load("check-q2-mix-evidence.py").check(summary, report, installed=(mode == "installed"))
     if kind in ("negative", "output"):
         good, errors = load("check-q1-campaign-evidence.py").review(
-            kind, summary, report)
+            kind, summary, report, installed=(mode == "installed"))
         if not good:
             issues += errors
     return issues
@@ -373,6 +410,9 @@ def run(number: int, case: Path) -> int:
     if number not in CASES or not case.resolve().is_relative_to(REG.resolve()):
         raise ValueError("invalid QSAM case identity")
     kind, original, job, markers = CASES[number]
+    mode = execution_mode()
+    if mode == "installed":
+        check()
     if not case.name.startswith(f"{number:03d}-"):
         raise ValueError("case number/directory mismatch")
     source = checked_fixture(case, "source.bcpl", original)
@@ -390,7 +430,8 @@ def run(number: int, case: Path) -> int:
     # Explicit 0 retains the legacy reader; export so the Cambridge compiler agrees.
     os.environ.setdefault("BCPL_PRINTER_WINDOW_TRIAL", "1")
     printer_args = printer_args_for_attempt(attempt)
-    print(f"QSAM case {number}, JES job {job}, evidence {attempt}", flush=True)
+    print(f"QSAM case {number}, {mode}-mode, JES job {job}, evidence {attempt}", flush=True)
+    (attempt / "mode.txt").write_text(mode + "\n", encoding="ascii")
 
     generated: list[str] = []
     for index, src in enumerate([source, *([extra] if extra else [])]):
@@ -407,12 +448,12 @@ def run(number: int, case: Path) -> int:
         generated.append(path.read_bytes().decode("latin-1"))
 
     deck = prepare(kind, generated[0],
-                   generated[1] if len(generated) > 1 else None)
+                   generated[1] if len(generated) > 1 else None, mode)
     jcl = attempt / "native.jcl"
     with jcl.open("x", encoding="ascii", newline="\n") as out:
         out.write(deck)
     jcl.chmod(0o600)
-    print(f"Source-mode MVS deck: {len(deck.splitlines())} cards", flush=True)
+    print(f"{mode.capitalize()}-mode MVS deck: {len(deck.splitlines())} cards", flush=True)
     offset: int | None = None
     if kind in SYSOUT_PATHS:
         path = SYSOUT_PATHS[kind]
@@ -451,7 +492,7 @@ def run(number: int, case: Path) -> int:
     print(f"JES job {job_number}: summary RC={summary_rc}, report RC={report_rc}")
     if summary_rc or report_rc:
         return 1
-    errors = evidence(number, summary, report)
+    errors = evidence(number, summary, report, mode)
     if kind == "punch" and offset is not None and not errors:
         errors += maybe_resume_punch_writer(offset, attempt, job_number)
     if offset is not None:
@@ -467,7 +508,39 @@ def run(number: int, case: Path) -> int:
     return 0
 
 
+def check():
+    query = load("prepare-q1-query.py")
+    sample = query.time_helper().trailer_helper().sample_generated()
+    config = {"mvs": {"hlq": "DR5", "batch_user": "TEST"},
+              "datasets": {alias: {"dsn": dsn, "dsorg": "PO", "recfm": "FB",
+                                   "lrecl": 80, "content_type": content}
+                           for alias, dsn, content in (
+                               ("BOOT_OBJ", "BCPL.BOOT.OBJ", "object"),
+                               ("EXT_OBJ", "BCPL.EXT.OBJ", "object"),
+                               ("EXT_MAC", "BCPL.EXT.MAC", "text"))}}
+    for number, (kind, _, _, _) in CASES.items():
+        reader = sample if kind == "full" else None
+        source = prepare(kind, sample, reader, "source", config)
+        installed = prepare(kind, sample, reader, "installed", config)
+        if INSTALLED["transform"](source, kind, expected_steps(kind),
+                                  "DR5.BCPL.BOOT.OBJ", "DR5.BCPL.EXT.OBJ",
+                                  "DR5.BCPL.EXT.MAC") != installed:
+            raise ValueError("installed adapter changed unexpectedly")
+        # All GO DDs and independent verifier steps must remain unchanged.
+        if installed.count(" INCLUDE OBJ(BCPLRGS)") != len(INSTALLED["application_links"](kind)):
+            raise ValueError("installed registrar not selected")
+        print(f"CHECK {number}: source={len(source.splitlines())}, installed={len(installed.splitlines())} cards")
+    print("QSAM dual-mode synthetic JCL CHECK PASS (14 cases; no MVS)")
+    return 0
+
+
 def main() -> int:
+    if sys.argv[1:] == ["--check"]:
+        try:
+            return check()
+        except (ValueError, OSError, UnicodeError, KeyError) as exc:
+            print("QSAM CHECK FAILED: " + str(exc), file=sys.stderr)
+            return 1
     if len(sys.argv) != 3:
         print("Usage: run-q2-qsam-regression.py NUMBER CASE_DIR")
         return 64

@@ -316,3 +316,29 @@ exceptional CLOSE, clean-room or release acceptance is claimed by
 this campaign. The numbered 163–176 suites remain source-selected;
 these two supplemental executions do not increase the numbered inventory
 or change the supported campaign totals. No normative transfer.
+
+### DR.5 — QSAM dual-mode regression integration (MVS verification pending)
+
+Owner approved extension of the existing numbered QSAM fixtures before
+adding genuinely distinct numbered behavior tests. The historical
+`installed-r5-t1` profile name is retained. Cases 163–176 now have
+source-selected production and installed-object execution paths. The
+installed adapter removes only private BCPLMAIN, BCPLRGS and BCPLQSAM
+assemblies, reads resident BCXPRE/BCXCAT/BCXPOST, links installed runtime
+and extension members and retains the original application, independent
+IFOX reader/writer/verifier, GO DD and device contracts. Case 170 retains
+both required packages. Installed maps require the correct registry,
+QSAM CSECTs and symbols, exclude unrelated packages, and check independent
+verifier exclusion. The R.5 map checker now rejects unintended QSAM
+inclusion, including case 146. No fixture, public ABI, installed member,
+case ID, historical closure or release artifact changes.
+
+Host adapter compilation and synthetic query, two-application and
+mixed-package transformations passed locally, including malformed deck
+and map rejection. Exact adapter Git blob verified against local tested
+file. Full repository clone blocked by DNS; integrated generator preflight
+runs before installed native compilation. Actual numbered installed
+record I/O and device results remain pending. Do not count these proposed
+executions as new unique cases or as a passing full campaign. Distinct
+rollback/cleanup/competing-status coverage is a subsequent design and
+verification task; genuine exceptional CLOSE remains qualified.

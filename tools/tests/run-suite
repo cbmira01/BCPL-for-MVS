@@ -212,7 +212,8 @@ def run(root: Path, cases: list[Case], args: argparse.Namespace) -> int:
     summary = {
         "schema": 1, "suite": args.suite, "profile": args.profile,
         "git_head": git_head(root), "started_utc": now.isoformat(),
-        "native_qsam": "source-selected (163–176), irrespective of R.5/T.1 profile",
+        "native_qsam": ("installed-object (163–176)" if args.profile == "installed-r5-t1"
+                        else "source-selected (163–176)"),
         "native_coroutines": "source-selected candidate (177–189), read-only BOOT_OBJ",
         "cases": [],
     }
@@ -232,7 +233,8 @@ def run(root: Path, cases: list[Case], args: argparse.Namespace) -> int:
     if args.profile == "production":
         env["BCPL_R5_EXTENSION_MODE"] = "source"
         env["BCPL_T1_EXTENSION_MODE"] = "source"
-        for prefix in ("BCPL_R5", "BCPL_T1"):
+        env["BCPL_QSAM_EXTENSION_MODE"] = "source"
+        for prefix in ("BCPL_R5", "BCPL_T1", "BCPL_QSAM"):
             env.pop(f"{prefix}_EXTENSION_DSN", None)
             env.pop(f"{prefix}_MACRO_DSN", None)
     results = {"PASS": 0, "FAIL": 0, "SKIP": 0, "BLOCKED": 0}

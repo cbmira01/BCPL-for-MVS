@@ -181,7 +181,7 @@ elif [[ ${BCPL_PRINTER_WINDOW_TRIAL:-0} != 0 ]]; then
 fi
 
 # Q.2 System Extension regressions: keep the canonical 00..162 path intact.
-# These cases need multi-step source-mode IFOX/IEWL jobs and JES readback.
+# These cases use multi-step source/installed IFOX/IEWL jobs and JES readback.
 if [[ -f "$case_dir/qsam-native.txt" ]]; then
     [[ ${BCPL_RUNTIME_PDS:-1} == 1 &&
        ${BCPL_RUNTIME_LIBRARY:-} == OBJ &&
