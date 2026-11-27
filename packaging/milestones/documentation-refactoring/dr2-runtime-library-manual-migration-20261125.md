@@ -164,3 +164,16 @@ Evidence consists of owner-supplied console transcripts and driver result,
 not independently inspected private receipts. No clean-room reconstruction,
 release installation, RC4 modification, normative authority transfer or
 DR.5 closure is claimed. Resume reconciliation of System Extensions.
+
+### DR.5 — Focused native READN verification candidate
+
+Source checkpoint `bcfa2c51cb4beaa024c2ded53762969f6a67b588`. The historical BLIB READN routine and LIBHDR,
+BLIBBLD and BCPLMAIN's BLIMP trailer-import path were reviewed again.
+The earlier compiler-host numeric-option evidence does not establish native
+G!70/G!71 behavior. The [focused candidate](candidates/readn-verification/README.md)
+uses installed BOOT_OBJ and four BCPIN records, with 12 independent numeric
+and consumed-terminator expectations (signs, whitespace/newline, nondigit,
+zero, sign without digits and repeated EOF). No existing case or oracle is
+changed. No numeric overflow/tab-input proof, complete installed BLIB
+export-trailer inventory, or new target acceptance yet. Private native
+compile/IFOX/IEWL/GO verification is the next gate. No normative transfer.
