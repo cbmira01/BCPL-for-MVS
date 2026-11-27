@@ -1,6 +1,6 @@
 # BCPLQSAM — supported optional System Extension
 
-**Current DR.5 status (27 November 2026):** Q.0–Q.5 closed at their accepted scope. The installed selection/exclusion checks (JOBs 1261/1263) and installed-mode cases 163–176 passed; private diagnostic cases 198–200 have accepted native evidence. Genuine exceptional MVS CLOSE and fresh installed-object build/readback remain qualified. See the [current System Extensions reference](../../docs/product/Reference-for-System-Extensions.md) and [DR.5 evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md). The following dated candidate sections preserve historical checkpoints, not present status.
+**Current DR.5 status (27 November 2026):** Q.0–Q.5 closed at their accepted scope. The installed selection/exclusion checks (JOBs 1261/1263) and installed-mode cases 163–176 passed; private diagnostic cases 198–200 have accepted native evidence. Genuine exceptional MVS CLOSE and fresh installed-object build/readback remain qualified. See the [current normative public API, Reference for System Extensions chapter 5](../../docs/product/Reference-for-System-Extensions.md) and [DR.5 evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md). The following dated candidate sections preserve historical checkpoints, not present status.
 
 **Q.5 update (1 November 2026):** Optional-extension installation and
 read-only installed-link verification JCL are prepared for the

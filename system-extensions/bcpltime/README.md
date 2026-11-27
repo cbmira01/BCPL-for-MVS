@@ -20,6 +20,8 @@ and [T.1 closure](../../packaging/milestones/bcpltime/bcpltime-t1-closure-202610
 
 ## ABI
 
+The current normative public API is chapter 4 of the [Reference for System Extensions](../../docs/product/Reference-for-System-Extensions.md), effective by DR.5 owner approval. The following summary and dated installation/acceptance history are retained for source orientation and evidence.
+
 TIMESVC(op, vector, capacity_words) follows BCPLDEMO's tested R7/R8/R9
 convention, preserving the shared QUERY version-1 six-word descriptor.
 The result is a word count (6, 3 or 2) or -1/-2/-3.

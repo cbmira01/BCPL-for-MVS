@@ -524,3 +524,13 @@ candidate wording in current BCPLQSAM README/header; corrected current
 status while preserving dated design history and all constants. No
 normative transfer before owner approval; no MVS execution or behavior
 change.
+
+### DR.5 — Three package-specific API transfers effective
+
+On 27 November 2026 the owner approved A, B and C and authorized commits.
+See [effective decision](dr5-extension-package-api-authority-transfer-acceptance-20261127.md).
+Reference chapters 3–5 govern the individual public APIs, with approved
+clarifications and retained evidence limits. Source README links identify
+the normative reference; headers, package support obligations, allocations,
+private implementation, old contracts and closure evidence are preserved.
+No code change, new MVS execution or release action.

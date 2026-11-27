@@ -49,6 +49,8 @@ objects. The R.1 registrar validates everything before calling `START`.
 
 ## Published reference API (version 1.0)
 
+The current normative public API is chapter 3 of the [Reference for System Extensions](../../docs/product/Reference-for-System-Extensions.md), effective by DR.5 owner approval. This local API summary is retained for source orientation; the permanent support decision above remains governing for support and maintenance commitments.
+
 | Opcode | BCPL call | Successful result | Errors |
 | --- | --- | --- | --- |
 | 0 | `DEMOSVC(0, info, capacity_words)` | 6; writes the six-word QUERY v1 descriptor | -1 short; -3 bad arguments |
