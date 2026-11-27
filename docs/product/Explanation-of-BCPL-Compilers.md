@@ -2,7 +2,7 @@
 
 *Cambridge BCPL Programming System for MVS 3.8J*
 
-This manual explains the relationships between the surviving BCPL compilers, their intermediate languages and the MVS reconstruction. For invocation interfaces and option meanings, see the [compiler reference](Reference-for-BCPL-Compilers.md); for programming, see the [BCPL tutorial](Tutorial-on-BCPL-Programming.md) and [language reference](Reference-for-the-BCPL-Language.md).
+This manual explains the relationships between the surviving BCPL compilers, their intermediate languages and the MVS reconstruction. For normative supported invocation interfaces and option meanings, see the [compiler reference](Reference-for-BCPL-Compilers.md); for programming, see the [BCPL tutorial](Tutorial-on-BCPL-Programming.md) and [language reference](Reference-for-the-BCPL-Language.md).
 
 ## 1. BCPL origins and surviving compiler materials
 
