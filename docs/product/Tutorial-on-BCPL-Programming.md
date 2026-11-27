@@ -128,7 +128,7 @@ A GLOBAL declaration describes a slot in the shared vector; it is not an impleme
 
 Run the [GETVEC/FREEVEC regression](../../mr10-kit-compiler/tests/00-regression-panel/storage/getvec-reuse.bcpl). In this MR10 implementation the caller provides an arena to HEAPINIT. The example uses VEC 100 (101 words), initializes the arena, allocates GETVEC(5) (six payload words), frees it and allocates again. Expected result: RP: GETVEC 0 11 13. The zero is the address difference in this specific reuse test, not a portable guarantee.
 
-Inspect the [allocator source](../../mr10-kit-compiler/library/getvec-freevec.bcpl). GETVEC returns zero on failure; check it before accessing storage. FREEVEC releases an owned allocation; never free a local vector, free twice, or access storage after release. Keep the arena alive while its allocations exist. The small regression assumes allocation succeeds; production code must check failure. Native memory management is a separate implementation.
+Consult the [normative runtime reference](Reference-for-the-Cambridge-Runtime-and-Libraries.md) for allocation and ownership rules. Inspect the [allocator source](../../mr10-kit-compiler/library/getvec-freevec.bcpl). GETVEC returns zero on failure; check it before accessing storage. FREEVEC releases an owned allocation; never free a local vector, free twice, or access storage after release. Keep the arena alive while its allocations exist. The small regression assumes allocation succeeds; production code must check failure. Native memory management is a separate implementation.
 
 ## 10. Data structures and algorithms
 
@@ -209,7 +209,7 @@ $)
 
 Expected sequence: the generator yields 1 through 5, the root receives each value, and the final -1 sentinel ends the root loop before deletion. COWAIT suspends the worker rather than starting a new thread; local FOR state survives each transfer. The regression panel separately checks RP: COROUTINE 77 1.
 
-Keep this example's MR10 setup; do not transplant its globals or descriptor layout into native programs. The [accepted common coroutine contract](../../packaging/milestones/coroutines/co6-common-coroutine-contract-20261116.md) describes a bounded common domain; the native implementation has at most two live workers and fixed checked 1024-word worker stacks. An original manually constructed MR10 fixed-stack example genuinely fails under canonical ICINT19; the supported generator is not that fixture. See [qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md). Exercise: predict the sequence if the upper bound changes to 3, then test only the scratch variant.
+Keep this example's MR10 setup; do not transplant its globals or descriptor layout into native programs. The [runtime reference](Reference-for-the-Cambridge-Runtime-and-Libraries.md) now governs the supported coroutine contract. The historical [accepted common coroutine contract](../../packaging/milestones/coroutines/co6-common-coroutine-contract-20261116.md) describes a bounded common domain; the native implementation has at most two live workers and fixed checked 1024-word worker stacks. An original manually constructed MR10 fixed-stack example genuinely fails under canonical ICINT19; the supported generator is not that fixture. See [qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md). Exercise: predict the sequence if the upper bound changes to 3, then test only the scratch variant.
 
 ## 12. Writing a substantial BCPL application
 
