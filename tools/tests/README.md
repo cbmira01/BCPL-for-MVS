@@ -352,6 +352,6 @@ Run the three together with `--case 198 --case 199 --case 200`; no device
 opt-in needed. Initial MVS run passed 198–199; case 200 JOB 1300 native
 behavior passed but its registrar WTO was rejected by the host parser.
 The corrected validator supports read-only retained evidence replay using
-`--review-combined` on the case 200 attempt directory; replay pending.
+`--review-combined` on the case 200 attempt directory; replay passed at e9f0f7380fcf. The original 2 PASS / 1 FAIL receipt remains unchanged.
 Across eight supported suites
 the new expected total is 219 PASS and one expected SKIP (220 selected).

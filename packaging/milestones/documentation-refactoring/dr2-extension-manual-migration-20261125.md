@@ -450,3 +450,21 @@ pending. Original campaign summary remains 2 PASS, 1 FAIL; no fresh native
 run or revised historical summary claimed. No implementation, fixture,
 installed member or production precedence policy change. Genuine MVS
 exceptional CLOSE still unverified. DR.5 remains in progress.
+
+### DR.5 — Case 200 retained evidence reconciliation accepted
+
+Owner-reported revision `e9f0f7380fcf743c748dcc8f3e3fad246f2d4329`:
+`CASE 200 JOB 1300: RETAINED NATIVE EVIDENCE PASS (no JES submission)`.
+The corrected checker accepted the original summary, report and both
+job-bounded diagnostic records. Cases 198–200 therefore all have accepted
+native evidence; the initial suite receipt remains 2 PASS / 1 FAIL and
+is not rewritten. No new JES job, production object change or actual
+exceptional MVS CLOSE is claimed. The combined injected-status case
+characterizes existing provisional precedence, not normative approval.
+All 17 QSAM cases have accepted evidence across separate runs; 163–176
+also passed installed mode. The 219 distinct supported passes and one
+expected SKIP 083 are accounted for across the earlier campaigns and
+this retained-evidence reconciliation, not one consolidated 220-case
+campaign at current HEAD. A consolidated supported campaign remains
+outstanding. No normative transfer or release acceptance. DR.5 remains
+in progress.
