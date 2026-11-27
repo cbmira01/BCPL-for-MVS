@@ -511,3 +511,16 @@ original decisions and evidence are preserved. Structural precedence and
 post-structural linked traversal are explicitly distinguished. Macro/tool
 interfaces and package APIs remain outside this transfer. No code change,
 new MVS execution or march closure.
+
+### DR.5 — Package-specific API transfer proposals
+
+At `6aec1d9558368e59d4604e3cad8e38c58060e1fa` common registration and finalization authority is effective.
+Reconciled the three package headers and existing dispatcher/source review,
+public README APIs, BCPLDEMO support decision, T.0/T.1 and Q.0–Q.5 public
+contracts and closures. See [three bounded API transfer proposals](dr5-extension-package-api-authority-transfer-proposal.md).
+Retain support governance, private implementation details, allocation
+registry, headers and evidence as separate authorities. Identified stale
+candidate wording in current BCPLQSAM README/header; corrected current
+status while preserving dated design history and all constants. No
+normative transfer before owner approval; no MVS execution or behavior
+change.

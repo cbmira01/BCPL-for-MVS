@@ -1,4 +1,4 @@
-// BCPLQSAM System Extension API 1.0; G!200, Q.1 candidate.
+// BCPLQSAM System Extension API 1.0; G!200.
 // This declaration does not link or register BCPLQSAM.
 GLOBAL $( QSAMSVC:200 $)
 MANIFEST $(
