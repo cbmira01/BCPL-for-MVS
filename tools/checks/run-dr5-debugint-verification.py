@@ -34,16 +34,45 @@ def replace_once(text, old, new):
 
 
 def private_cards(deck, source):
-    require(deck.count(source.rstrip("\n")) == 1, "inline BCPLMAIN not unique")
-    require(deck.count("//ASMNAT   EXEC") == 1 and
-            deck.count("//         DD DSN=&&NATOBJ,DISP=(OLD,DELETE)") == 1,
-            "private assembler/link concatenation missing")
-    deck = replace_once(deck, " INCLUDE OBJ(BCPLMAIN)\n", "")
-    deck = replace_once(deck, "//ASMNAT   EXEC PGM=IFOX00,REGION=256K,",
-                        "//ASMNAT   EXEC PGM=IFOX00,REGION=512K,")
-    require(" INCLUDE OBJ(BCPLMAIN)" not in deck and
-            all(len(x) <= 71 and x.isascii() for x in deck.splitlines()),
-            "private deck scope or card width")
+    # --native is the G!151/NATIVEAD application extension, not a runtime
+    # replacement. Start with the ordinary compiled application deck instead.
+    rows = source.splitlines()
+    require(rows and all(row.isascii() and len(row) <= 71 and
+                         not row.startswith('//') and row != '/*'
+                         for row in rows), 'invalid private BCPLMAIN cards')
+    require('NATIVEAD' not in deck and '//ASMNAT ' not in deck and
+            '&&NATOBJ' not in deck, 'not an ordinary application deck')
+    anchor = "//LKED     EXEC PGM=IEWL,PARM='LIST,XREF,MAP',\n"
+    assembly = '\n'.join([
+        '//* DR.5 PRIVATE BCPLMAIN; NO INSTALLED MEMBER WRITE',
+        '//ASMNAT   EXEC PGM=IFOX00,REGION=512K,COND=(0,NE,ASMAP),',
+        "//             PARM='OBJECT,NODECK,LIST,XREF(FULL),ESD,RLD'",
+        '//SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR',
+        '//SYSUT1   DD UNIT=SYSDA,SPACE=(1700,(600,100))',
+        '//SYSUT2   DD UNIT=SYSDA,SPACE=(1700,(300,50))',
+        '//SYSUT3   DD UNIT=SYSDA,SPACE=(1700,(300,50))',
+        '//SYSPRINT DD SYSOUT=*',
+        '//SYSPUNCH DD DUMMY',
+        '//SYSGO    DD DSN=&&NATOBJ,UNIT=SYSDA,',
+        '//             SPACE=(80,(300,100)),DISP=(NEW,PASS),',
+        '//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)',
+        '//SYSIN    DD *', *rows, '/*', '',
+    ])
+    deck = replace_once(deck, anchor + '//             COND=(0,NE,ASMAP)\n',
+                        assembly + anchor +
+                        '//             COND=((0,NE,ASMAP),(0,NE,ASMNAT))\n')
+    deck = replace_once(deck,
+                        '//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)\n'
+                        '//         DD *\n INCLUDE OBJ(BCPLMAIN)\n',
+                        '//SYSLIN   DD DSN=&&APOBJ,DISP=(OLD,DELETE)\n'
+                        '//         DD DSN=&&NATOBJ,DISP=(OLD,DELETE)\n'
+                        '//         DD *\n')
+    deck = replace_once(deck, '//             COND=((0,NE,ASMAP),(0,NE,LKED))\n',
+                        '//             COND=((0,NE,ASMAP),(0,NE,ASMNAT),(0,NE,LKED))\n')
+    require(deck.count(source.rstrip('\n')) == 1 and
+            ' INCLUDE OBJ(BCPLMAIN)' not in deck and
+            all(row.isascii() and len(row) <= 71 for row in deck.splitlines()),
+            'private deck scope or card width')
     return deck
 
 
@@ -107,8 +136,6 @@ def native(common, folder, generated, env, private=False):
     deck = folder / "native.jcl"
     args = ["python3", "tools/checks/prepare-runtime-pds-regression.py",
             generated, deck, "--test-number", "906", "--case-dir", FIX]
-    if private:
-        args += ["--native", ASM]
     common["run"](args, folder / "prepare.log", env)
     if private:
         deck.write_text(private_cards(deck.read_text("ascii"), ASM.read_text("ascii")),
