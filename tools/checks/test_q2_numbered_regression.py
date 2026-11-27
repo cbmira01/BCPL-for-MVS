@@ -86,7 +86,8 @@ class NumberedQ2Tests(unittest.TestCase):
                             R.prepare(kind, code, None, mode, R.synthetic_config())
                 else:
                     self.fail(f"unrecognized QSAM generator kind {kind}")
-                self.assertTrue(deck.startswith(f"//{job} JOB "))
+                # Authenticated JOB cards pad the name field; legacy cards need not.
+                self.assertRegex(deck.splitlines()[0], rf"^//{job} +JOB ")
                 self.assertTrue(all(row.isascii() and len(row) <= 71
                                     for row in deck.splitlines()))
                 self.assertNotIn("DISP=MOD", deck)

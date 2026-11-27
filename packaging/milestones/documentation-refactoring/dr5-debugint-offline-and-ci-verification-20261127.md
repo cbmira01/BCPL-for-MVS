@@ -33,3 +33,17 @@ The assistant copied the workflow into its own workspace, verified exact Git blo
 ## Disposition
 
 The full post-correction offline gate remains outstanding pending actual receipts. No target mutation, source installation, reconstruction, release or march transition is authorized by this record. Prior [reconstruction host verification](dr5-independent-reconstruction-host-verification-20261127.md) remains valid at its tested revision. The owner performs only MVS-facing operations; the assistant retains responsibility for offline checks, and the prior no-retry rules remain in force.
+
+## First actual isolated full-checkout campaign
+
+[GitHub Actions run 46065528195](https://github.com/cbmira01/BCPL-for-MVS/actions/runs/46065528195), job 140729795239, tested `d877309d56a7606fa6a725ec31abf3e980ec6817`. The actual job log establishes:
+
+| Host gate | Observed result |
+| --- | --- |
+| Checker unit discovery | 954 tests executed in 29.599s; 3 subtest failures, no errors; RC=1 |
+| Release unit discovery | 38 tests executed in 0.974s; OK; RC=0 |
+| Project suite inventory | PROJECT SUITE CHECK: PASS; RC=0 |
+| Bootstrap inputs | READY: 18 repository input paths present; no files written; RC=0 |
+| DEBUGINT preflight | check-asm-source OK; DR.5 DEBUGINT CHECK PASS (no MVS); RC=0 |
+
+The three remaining failures (198, 199, 200) all reached the same assertion on the generated first JOB card, line 89 of test_q2_numbered_regression.py. The test required exactly one space before JOB, whereas the actual authenticated_job_card formats the name field with eight-column left justification and the private-diagnostic transformations preserve valid padding when renaming Q16FIN. The existing independent private-fault generator check passed. The corrected assertion still requires the exact named JOB and space-delimited JOB operation, but allows multiple ASCII spaces. It does not change the actual JCL, diagnostic generators, scope, step order, fixture identity, or oracle. An assistant-workspace Python unittest passed for both supported card formats and rejection of wrong job names, operations, comments, tabs and extended operation names. The workflow comment change requests a fresh complete run at the corrected source revision. No results from that new run are claimed yet.
