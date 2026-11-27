@@ -254,3 +254,7 @@ No reconstruction of unsupported diagnostics is required for DR.5 at this
 accepted scope. This is not a transfer of the remaining runtime/library
 contract or acceptance of arbitrary-pointer safety. Preserve the native
 READN, export census and bounded cases 120–123 evidence.
+
+### DR.5 — Owner-approved BCPLIO and Base Library authority transfers
+
+On 27 November 2026 the owner approved both transfers and bounded clarifications in the [proposal](dr5-stream-and-base-library-authority-transfer-proposal.md). See the [acceptance record](dr5-stream-and-base-library-authority-transfer-acceptance-20261127.md). Reference chapter 4 and the relevant stream behavior in chapter 3.2 now govern supported native BCPLIO; chapter 5 governs the supported native BLIB subset and bounded diagnostic behavior. Original contracts and candidate acceptance history are retained unchanged. Remaining Core Runtime startup, ABI, allocation, byte, stack and termination provisions, private assembler interfaces, and coroutine/MR10 contracts remain outside this transfer. No new target execution, implementation or oracle change, or march closure.
