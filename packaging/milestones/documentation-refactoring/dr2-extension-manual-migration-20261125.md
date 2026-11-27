@@ -389,3 +389,37 @@ production runs. No fresh installed-object rebuild/readback, genuine
 exceptional CLOSE, full clean-room or release acceptance, or normative
 transfer is inferred. New distinct rollback/cleanup/status-precedence
 coverage remains to be designed and verified. DR.5 remains in progress.
+
+### DR.5 — Numbered QSAM fault-regression integration
+
+Owner approved the three remaining areas. Append cases 198 (injected
+stage refusal with real successful rollback CLOSE, historical Q5RBFIN),
+199 (genuine conditional 1024-byte GETMAIN RC4 under bounded pressure,
+historical Q5RGM plus final zero-counter check) and 200 (combined primary
+stage refusal and one test-injected nonzero R15 after real successful
+rollback CLOSE, explicit counter and quarantine checks). Case 200
+requires -11 and no published handle despite private CLOSE -14, surviving
+Q00, successful Q01 reopen with the next public ID, one quarantined
+unpublished slot, no stage retained there, no CLOSE retry, and finalizer
+RC8. The existing source's primary-status rule is provisional; these
+assertions characterize that behavior, not a normative transfer or new
+production policy. Genuine exceptional CLOSE remains qualified.
+
+All three compile from checked fixtures on every execution. Both profiles
+use a private temporary ASMQ overlay and existing temporary BCX/runtime
+source construction with read-only BOOT_OBJ; 163–176 keep dual modes.
+Exact native GO and expected return codes, job-bounded console and
+hardcopy WTO sequences, and the historical IFOX fall-through proof for
+198 are mandatory. No historical workarea dependency, device operation,
+production source or installed member change, or release change.
+
+Host validation: exact Git-blob-verified diagnostic helper compiled
+locally, passed synthetic combined overlay/card checks and eight missing
+anchor negatives, and passed bounded console-pair checks for each kind
+plus wrong-job, missing/duplicate marker negatives. All eight anchors
+were independently checked unique in the unchanged actual GitHub
+BCPLQSAM assembler. Full checkout DNS unavailable; integrated synthetic
+JCL preflight and new numbered MVS execution pending. Do not relabel
+prior accepted Q.5 jobs or earlier DR.5 campaign as these new results.
+Inventory 201 native cases (17 QSAM); supported eight-suite target
+219 PASS, 1 expected SKIP 083 (220 selected), not yet demonstrated.

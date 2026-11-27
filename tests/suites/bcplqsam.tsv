@@ -13,3 +13,6 @@ case_id	directory	profiles	requires	tags	policy
 174	174-qsam-vb-write	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,vb-record	standard
 175	175-qsam-fb80-sysout-punch	production,installed-r5-t1	boot-obj,bcplqsam-source,jes-punch	qsam,device	device-opt-in
 176	176-qsam-fba133-sysout-printer	production,installed-r5-t1	boot-obj,bcplqsam-source,jes-printer	qsam,device	device-opt-in
+198	198-qsam-open-rollback	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,diagnostic,rollback	standard
+199	199-qsam-real-getmain-refusal	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,diagnostic,getmain	standard
+200	200-qsam-combined-rollback-quarantine	production,installed-r5-t1	boot-obj,bcplqsam-source,temporary-datasets	qsam,diagnostic,combined	standard

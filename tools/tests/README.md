@@ -302,8 +302,8 @@ profiles, using separate derived assembler probes, no permanent writes.
 Each retains its own JES evidence in the run-scoped native logs.
 The last accepted eight-suite campaign has 212 PASS and one expected
 SKIP 083. The expanded Runtime Extensions production run passed all 17
-cases, including 194–197. The expanded consolidated eight-suite target
-is 216 PASS and one expected SKIP; no such single run reported yet. See [DR.5 registrar evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
+cases, including 194–197. The then-expanded consolidated eight-suite target
+was 216 PASS and one expected SKIP; no such single run reported. See [DR.5 registrar evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
 
 ## DR.5 installed BCPLQSAM selection/exclusion
 
@@ -321,7 +321,7 @@ full installed run passed all 14 cases. See the
 
 ### DR.5 — BCPLQSAM dual-mode regression
 
-The existing profile names and all 14 QSAM IDs remain unchanged. The
+The existing profile names and all 14 original QSAM IDs remain unchanged. The
 production profile builds source-selected QSAM; the installed profile
 uses resident BOOT_OBJ, EXT_MAC and EXT_OBJ members. Only the application,
 registry and independent I/O test programs are assembled in installed mode.
@@ -337,3 +337,17 @@ Initial installed suite execution passed all 14 cases at c96523d970d4,
 including both device cases. Prior case 146 passed the strengthened
 exclusion check. The focused JOBs 1261/1263 remain supplemental evidence;
 no new unique identities or single consolidated full-project run claimed.
+
+### DR.5 — QSAM private fault cases
+
+198–200 extend the BCPLQSAM suite to 17 numbered cases. Both profiles
+run these three as explicitly private diagnostics using fresh compilation,
+temporary source-selected QSAM and no permanent PDS writes. The ordinary
+163–176 execution modes and JES device opt-ins do not change. The runner
+validates all three synthetic diagnostic decks before native compilation
+and captures separate pre-JES console/hardcopy cursors; exact job-bounded
+WTO sequences plus BCPL and JES evidence are mandatory. Expected GO RC=8
+for 200 is a deliberate finalizer qualification, not a failed assertion.
+Run the three together with `--case 198 --case 199 --case 200`; no device
+opt-in needed. Initial MVS execution pending. Across eight supported suites
+the new expected total is 219 PASS and one expected SKIP (220 selected).

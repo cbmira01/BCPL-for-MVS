@@ -25,7 +25,7 @@ CASE_ROOTS = {
     "coroutines": "tests/coroutines",
 }
 SUITES = ("bootstrap", "runtime-extensions", "bcpltime", "bcplqsam", "coroutines")
-COUNTS = (150, 17, 4, 14, 13)
+COUNTS = (150, 17, 4, 17, 13)
 PROFILES = ("production", "installed-r5-t1")
 HEADERS = ("case_id", "directory", "profiles", "requires", "tags", "policy")
 POLICIES = {"standard", "skip-installed", "device-opt-in"}
@@ -127,6 +127,9 @@ def validate(root: Path) -> dict[str, list[Case]]:
             p = root / CASE_ROOTS[row.suite] / row.directory
             if row.suite == "bcplqsam" and not (p / "qsam-native.txt").is_file():
                 raise ManifestError(f"case {row.ident}: missing QSAM native fixture marker")
+            if 198 <= row.number <= 200 and (row.suite != "bcplqsam" or not all(
+                    (p / f).is_file() for f in ("source.bcpl", "expected.txt", "README.md"))):
+                raise ManifestError(f"case {row.ident}: incomplete QSAM diagnostic fixture")
             if row.suite == "bcpltime" and not (p / "time-selection.asm").is_file():
                 raise ManifestError(f"case {row.ident}: missing BCPLTIME selection marker")
             if row.suite == "runtime-extensions" and row.number <= 158 and not (p / "extension-selection.asm").is_file():
@@ -153,10 +156,10 @@ def validate(root: Path) -> dict[str, list[Case]]:
                 if not all((p / name).is_file() for name in
                            ("source-reference.txt", "expected.txt", "README.md")):
                     raise ManifestError(f"case {row.ident}: incomplete coroutine fixture")
-    if set(found) != set(range(198)):
-        missing = sorted(set(range(198)) - set(found))
-        extra = sorted(set(found) - set(range(198)))
-        raise ManifestError(f"suite IDs must cover 00–197 exactly; missing={missing}; extra={extra}")
+    if set(found) != set(range(201)):
+        missing = sorted(set(range(201)) - set(found))
+        extra = sorted(set(found) - set(range(201)))
+        raise ManifestError(f"suite IDs must cover 00–200 exactly; missing={missing}; extra={extra}")
     actual = set()
     for suite_name in SUITES:
         for p in (root / CASE_ROOTS[suite_name]).iterdir():
@@ -214,6 +217,7 @@ def run(root: Path, cases: list[Case], args: argparse.Namespace) -> int:
         "git_head": git_head(root), "started_utc": now.isoformat(),
         "native_qsam": ("installed-object (163–176)" if args.profile == "installed-r5-t1"
                         else "source-selected (163–176)"),
+        "native_qsam_faults": "private source diagnostic (198–200), both profiles",
         "native_coroutines": "source-selected candidate (177–189), read-only BOOT_OBJ",
         "cases": [],
     }
@@ -301,7 +305,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         suites = validate(ROOT)
         if args.check:
-            print("Stage 2B manifests: OK — 198 unique native cases (00–197)")
+            print("Stage 2B manifests: OK — 201 unique native cases (00–200)")
             for name in SUITES:
                 print(f"  {name}: {len(suites[name])}")
             return 0

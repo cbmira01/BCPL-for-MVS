@@ -5,7 +5,7 @@ CO.5 adds thirteen independently named source-selected coroutine cases
 177–189 without changing the earlier identities or their acceptance contracts.
 Stage 2C physically organizes the unchanged case directories by suite.
 The original case numbers, source contracts and expected results remain unchanged.
-DR.5 appends three permanent compiler-compatibility cases (190–192) and one BCPLIO guard case (193) to Bootstrap, plus four installed-registrar cases (194–197) to Runtime Extensions.
+DR.5 appends three permanent compiler-compatibility cases (190–192) and one BCPLIO guard case (193) to Bootstrap, plus four installed-registrar cases (194–197) to Runtime Extensions and three private QSAM diagnostics (198–200).
 `tests/suites/*.tsv` retains the authoritative case inventory and reporting
 metadata. Shared execution machinery remains in `bootstrap-toolchain/regression/`.
 
@@ -14,7 +14,7 @@ metadata. Shared execution machinery remains in `bootstrap-toolchain/regression/
 | Bootstrap | `suites/bootstrap.tsv` | 00–145, 190–193 | 150 |
 | Runtime Extensions | `suites/runtime-extensions.tsv` | 146–158, 194–197 | 17 |
 | BCPLTIME | `suites/bcpltime.tsv` | 159–162 | 4 |
-| BCPLQSAM | `suites/bcplqsam.tsv` | 163–176 | 14 |
+| BCPLQSAM | `suites/bcplqsam.tsv` | 163–176, 198–200 | 17 |
 | Coroutines | `suites/coroutines.tsv` | 177–189 | 13 |
 
 The independent MR10 regression panel remains at
@@ -31,7 +31,7 @@ case_id  directory  profiles  requires  tags  policy
 ```
 
 (The separators are actual tab characters, not spaces.) Each `case_id` uses
-the historic canonical two-digit (00–52) or three-digit (053–197) form.
+the historic canonical two-digit (00–52) or three-digit (053–200) form.
 `directory` is the literal child directory of its owning suite:
 `tests/bootstrap/`, `tests/runtime-extensions/`,
 `tests/system-extensions/bcpltime/`, or
@@ -83,7 +83,7 @@ tools/tests/run-suite bcplqsam --list --tag integration
 tools/tests/run-suite bcplqsam --run --profile production --case 163
 ```
 
-`--check` validates **all five** manifests against all 198 physical cases (00–197),
+`--check` validates **all five** manifests against all 201 physical cases (00–200),
 including marker files, canonical IDs, complete coverage, ownership and
 case-directory identity; it is entirely offline. `--list` is also offline.
 `--case ID` can be repeated; `--tag TAG` can be repeated as an AND filter.
@@ -182,8 +182,8 @@ campaign establish the corrected installed registrar at their tested
 scope; see [DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
 First numbered production-profile execution passed all 17 Runtime Extensions
 cases (146–158 and 194–197). The preceding complete eight-suite campaign
-remains 212 PASS and one expected SKIP; the expected expanded consolidated
-result is 216 PASS, 1 expected SKIP 083, 0 FAIL/BLOCKED (217 selected).
+remains 212 PASS and one expected SKIP; the then-expanded consolidated
+target was 216 PASS, 1 expected SKIP 083, 0 FAIL/BLOCKED (217 selected).
 The two reported runs account for all supported identities but are not one
 expanded campaign.
 
@@ -196,3 +196,22 @@ exclusion at the tested scope. The later DR.5 dual-mode integration extends
 the installed profile to the existing QSAM cases; its initial run passed all 14.
 No new case IDs or campaign counts are introduced. See the
 [DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
+
+## DR.5 — Private QSAM fault regressions 198–200
+
+| Case | Contract | Expected GO RC |
+| --- | --- | ---: |
+| 198 | Injected stage refusal, real rollback CLOSE, reopen and zero finalizer counters | 0 |
+| 199 | Real bounded conditional GETMAIN RC=4, all pressure freed, surviving handle and zero final counters | 0 |
+| 200 | Combined stage refusal and injected nonzero returned CLOSE; primary -11, no published handle, quarantine, no repeat CLOSE | 8 |
+
+Both profiles compile these cases afresh and link a disposable instrumented
+BCPLQSAM object with temporary runtime/registry assemblies and read-only
+BOOT_OBJ. Neither mode uses the installed BCPLQSAM for these diagnostics.
+No permanent writes, device operations or historical workarea prerequisites.
+Exact GO results and job-bounded WTO traces in both console and hardcopy
+are required. Case 200 records the current provisional primary-status
+precedence; genuine exceptional MVS CLOSE remains unverified. Initial
+numbered native execution pending. New inventory 201 native cases;
+complete eight-suite target 219 PASS and one expected SKIP (220 selected).
+Earlier reported counts remain historical, not expanded passing results.

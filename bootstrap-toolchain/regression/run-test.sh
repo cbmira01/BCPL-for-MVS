@@ -39,6 +39,8 @@ elif (( test_num <= 193 )); then
     case_root="$root/tests/bootstrap"
 elif (( test_num <= 197 )); then
     case_root="$root/tests/runtime-extensions"
+elif (( test_num <= 200 )); then
+    case_root="$root/tests/system-extensions/bcplqsam"
 else
     echo "run-test: no owning suite for test $test_num" >&2
     exit 65

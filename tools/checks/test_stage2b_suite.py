@@ -37,8 +37,8 @@ class TestStage2BSuites(unittest.TestCase):
             location.mkdir(parents=True)
         lines = {name: ["\t".join(MOD.HEADERS)] for name in MOD.SUITES}
         for i in range(sum(MOD.COUNTS)):
-            name = ("bootstrap" if i <= 145 or 190 <= i <= 193 else "runtime-extensions" if i <= 158 or i >= 194
-                    else "bcpltime" if i <= 162 else "bcplqsam" if i <= 176
+            name = ("bootstrap" if i <= 145 or 190 <= i <= 193 else "runtime-extensions" if i <= 158 or 194 <= i <= 197
+                    else "bcpltime" if i <= 162 else "bcplqsam" if i <= 176 or i >= 198
                     else "coroutines")
             ident = MOD.canonical(i)
             directory = f"{ident}-fake-case"
@@ -46,6 +46,9 @@ class TestStage2BSuites(unittest.TestCase):
             home.mkdir()
             if name == "bcplqsam":
                 (home / "qsam-native.txt").touch()
+                if i >= 198:
+                    for f in ("source.bcpl", "expected.txt", "README.md"):
+                        (home / f).touch()
             if name == "bcpltime":
                 (home / "time-selection.asm").touch()
             if name == "runtime-extensions":
@@ -106,7 +109,7 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         suites = MOD.validate(self.root)
         self.assertEqual({s: len(c) for s, c in suites.items()}, dict(zip(MOD.SUITES, MOD.COUNTS)))
         self.assertEqual([x.ident for x in suites["bootstrap"][:2]], ["00", "01"])
-        self.assertEqual(suites["bcplqsam"][-1].ident, "176")
+        self.assertEqual(suites["bcplqsam"][-1].ident, "200")
         self.assertEqual(suites["coroutines"][0].ident, "177")
         self.assertEqual(suites["coroutines"][-1].ident, "189")
         self.assertEqual([x.ident for x in suites["bootstrap"][-4:]], ["190", "191", "192", "193"])
@@ -123,6 +126,15 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         marker.write_text("194\n")
         with self.assertRaises(MOD.ManifestError):
             MOD.validate(self.root)
+
+    def test_qsam_private_cases_dispatch_in_both_profiles_without_device_opt_in(self):
+        rows = MOD.validate(self.root)["bcplqsam"][-3:]
+        self.assertEqual([x.ident for x in rows], ["198", "199", "200"])
+        for profile in MOD.PROFILES:
+            with self.subTest(profile=profile):
+                a = SimpleNamespace(suite="bcplqsam", profile=profile,
+                                    allow_device=False)
+                self.assertEqual(MOD.run(self.root, rows, a), 0)
 
     def test_duplicate_and_missing_case_rejected(self):
         file = self.root / "tests" / "suites" / "bcplqsam.tsv"
@@ -172,7 +184,7 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
         self.assertEqual(MOD.run(self.root, [bootstrap[83]], a), 0)
         qsam = MOD.validate(self.root)["bcplqsam"]
         a.suite = "bcplqsam"
-        self.assertEqual(MOD.run(self.root, qsam[-2:], a), 2)
+        self.assertEqual(MOD.run(self.root, [x for x in qsam if x.number in (175, 176)], a), 2)
         entries = list((self.root / "workarea/test-suites").iterdir())
         blocked = [p for p in entries if "bcplqsam" in p.name][0]
         self.assertFalse((blocked / "case-175").exists())
@@ -184,14 +196,14 @@ print('PASS  1\\nFAIL  0\\nSKIP  0\\nTOTAL 1')
             with self.subTest(profile=profile):
                 a = SimpleNamespace(suite="bcplqsam", profile=profile,
                                     allow_device=True)
-                self.assertEqual(MOD.run(self.root, qsam[-2:], a), 0)
+                self.assertEqual(MOD.run(self.root, [x for x in qsam if x.number in (175, 176)], a), 0)
 
     def test_case_175_blocked_does_not_inherit_operator_resume(self):
         qsam = MOD.validate(self.root)["bcplqsam"]
         a = SimpleNamespace(suite="bcplqsam", profile="production",
                             allow_device=False)
         with unittest.mock.patch.dict("os.environ", {"Q4_PUNCH_RESUME": "1"}):
-            self.assertEqual(MOD.run(self.root, qsam[-2:-1], a), 2)
+            self.assertEqual(MOD.run(self.root, [x for x in qsam if x.number == 175], a), 2)
         paths = list((self.root / "workarea/test-suites").iterdir())
         self.assertEqual(len(paths), 1)
         self.assertFalse((paths[0] / "case-175").exists())

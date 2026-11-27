@@ -63,6 +63,12 @@ CASES = {
   176: ("fba", "test-q4-fba.bcpl", "Q4FBA",
         ("BCPLQSAM Q4 FBA133 DUAL WRITE PASS",
          "BCPLQSAM Q4 FBA133 TEMP EXACT 3 PASS")),
+  198: ("rollback", "test-q5-open-rollback.bcpl", "Q5RBFIN",
+        ("BCPLQSAM Q5 OPEN ROLLBACK PASS",)),
+  199: ("getmain", "test-q5-open-rollback.bcpl", "Q5RGM",
+        ("BCPLQSAM Q5 OPEN ROLLBACK PASS",)),
+  200: ("combined", "test-dr5-combined-rollback.bcpl", "DR5QCOM",
+        ("BCPLQSAM DR5 COMBINED ROLLBACK PASS",)),
 }
 BASIC = ("ASMA", "ASMN", "ASMR", "ASMQ", "ASMG", "LKED", "GO")
 LIFE = ("ASMWR", "LKWR", "ASMA", "ASMN", "ASMR",
@@ -83,6 +89,7 @@ SYSOUT_PATHS = {
 }
 LIMIT_CASES = ("vread", "vwrite", "vbread", "vbwrite")
 INSTALLED = runpy.run_path(str(TOOLS / "checks/qsam-installed-mode.py"))
+FAULTS = runpy.run_path(str(TOOLS / "checks/qsam-fault-regressions.py"))
 
 
 def expected_steps(kind):
@@ -90,7 +97,7 @@ def expected_steps(kind):
             else LIMIT_READ if kind in ("vread", "vbread")
             else LIMIT_WRITE if kind in ("vwrite", "vbwrite")
             else FULL if kind == "full"
-            else LIFE if kind in ("finish", "stop")
+            else LIFE if kind in ("finish", "stop", *FAULTS["KINDS"])
             else STOP if kind in ("stopflush", "mix") else BASIC)
 
 
@@ -152,8 +159,10 @@ def prepare(kind: str, generated: str, reader: str | None,
             mode="source", config=None) -> str:
     query = load("prepare-q1-query.py")
     core = query.time_helper().trailer_helper().load_core()
-    if mode not in ("source", "installed"):
+    if mode not in ("source", "installed", "private-diagnostic"):
         raise ValueError("invalid QSAM mode")
+    if (kind in FAULTS["KINDS"]) != (mode == "private-diagnostic"):
+        raise ValueError("diagnostic requires explicit private mode")
     cfg = core.load_config() if config is None else config
     def object_dsn(name: str) -> str:
         obj = cfg["datasets"][name]
@@ -179,8 +188,11 @@ def prepare(kind: str, generated: str, reader: str | None,
     title = ("Q4 NATIVE REG" if kind in SYSOUT_PATHS else
              "Q3 NATIVE REG" if kind in LIMIT_CASES else "Q2 NATIVE REG")
     card = core.authenticated_job_card(
-        cfg, original_job, title, redact_password=config is not None)
-    if kind == "query":
+        cfg, "Q16FIN" if kind in FAULTS["KINDS"] else original_job,
+        title, redact_password=config is not None)
+    if kind in FAULTS["KINDS"]:
+        deck = FAULTS["prepare"](kind, generated, card, obj, load, EXT)
+    elif kind == "query":
         deck = load("prepare-q2-query.py").make_deck(generated, card, obj)
     elif kind in ("negative", "output", "finish", "stop"):
         deck = load("prepare-q1-campaign.py").make_deck(
@@ -231,8 +243,10 @@ def evidence(number: int, summary: str, report: str, mode="source") -> list[str]
                for name in INSTALLED["PRIVATE"]):
             issues.append("unexpected private assembler step")
         issues += INSTALLED["map_issues"](report, kind, steps)
-    elif mode != "source":
+    elif mode not in ("source", "private-diagnostic"):
         raise ValueError("invalid evidence mode")
+    if (kind in FAULTS["KINDS"]) != (mode == "private-diagnostic"):
+        raise ValueError("diagnostic evidence mode mismatch")
     found: dict[str, list[int]] = {}
     for line in summary.splitlines():
         match = re.match(
@@ -243,7 +257,7 @@ def evidence(number: int, summary: str, report: str, mode="source") -> list[str]
         issues.append("missing/unexpected IFOX/IEWL/GO step coverage")
     for step in steps:
         wanted = 8 if (step == "BGO" or
-                       (step == "GO" and kind == "stop")) else 0
+                       (step == "GO" and kind in ("stop", "combined"))) else 0
         if found.get(step) != [wanted]:
             issues.append(f"{step}: expected RC={wanted:04d}, got {found.get(step)}")
     if "JOB RESULT: SUCCESS" not in summary:
@@ -269,6 +283,18 @@ def evidence(number: int, summary: str, report: str, mode="source") -> list[str]
             kind, summary, report, installed=(mode == "installed"))
         if not good:
             issues += errors
+    if kind in FAULTS["KINDS"]:
+        actual_steps = re.findall(r"^\s*([A-Z0-9]{2,8})\s+\S.*?\bRC=\d{4}\s*$",
+                                  summary, re.M)
+        if tuple(actual_steps) != steps:
+            issues.append("wrong private diagnostic step order")
+        if kind == "rollback" and not load("check-q5-rollback-finish.py").fallthrough_confirmed(report):
+            issues.append("Q5RBFIN IFOX fall-through proof missing")
+        if kind == "combined":
+            boundary = [i for i, r in enumerate(records) if "AUTHORIZATION CODE IS" in r]
+            native = records[boundary[-1]+1:] if boundary else []
+            if sum("BCPLREG 2001 FINALIZER RETURNED NONZERO" in r for r in native) != 1:
+                issues.append("combined native finalizer message missing/duplicated")
     return issues
 
 
@@ -410,9 +436,12 @@ def run(number: int, case: Path) -> int:
     if number not in CASES or not case.resolve().is_relative_to(REG.resolve()):
         raise ValueError("invalid QSAM case identity")
     kind, original, job, markers = CASES[number]
-    mode = execution_mode()
+    profile_mode = execution_mode()
+    mode = "private-diagnostic" if kind in FAULTS["KINDS"] else profile_mode
     if mode == "installed":
         check()
+    if mode == "private-diagnostic":
+        check_faults()
     if not case.name.startswith(f"{number:03d}-"):
         raise ValueError("case number/directory mismatch")
     source = checked_fixture(case, "source.bcpl", original)
@@ -462,6 +491,7 @@ def run(number: int, case: Path) -> int:
         offset = path.stat().st_size
         (attempt / "sysout-before.bytes").write_text(
             str(offset) + "\n", encoding="ascii")
+    fault_cursors = FAULTS["cursors"](ROOT) if mode == "private-diagnostic" else None
     rc, response = invoke(
         [str(TOOLS / "mvs/submit-jcl"), "--timeout", "120",
          *printer_args, str(jcl)],
@@ -493,6 +523,8 @@ def run(number: int, case: Path) -> int:
     if summary_rc or report_rc:
         return 1
     errors = evidence(number, summary, report, mode)
+    if fault_cursors is not None:
+        errors += FAULTS["console_issues"](ROOT, attempt, fault_cursors, job_number, kind)
     if kind == "punch" and offset is not None and not errors:
         errors += maybe_resume_punch_writer(offset, attempt, job_number)
     if offset is not None:
@@ -508,17 +540,23 @@ def run(number: int, case: Path) -> int:
     return 0
 
 
-def check():
-    query = load("prepare-q1-query.py")
-    sample = query.time_helper().trailer_helper().sample_generated()
-    config = {"mvs": {"hlq": "DR5", "batch_user": "TEST"},
+def synthetic_config():
+    return {"mvs": {"hlq": "DR5", "batch_user": "TEST"},
               "datasets": {alias: {"dsn": dsn, "dsorg": "PO", "recfm": "FB",
                                    "lrecl": 80, "content_type": content}
                            for alias, dsn, content in (
                                ("BOOT_OBJ", "BCPL.BOOT.OBJ", "object"),
                                ("EXT_OBJ", "BCPL.EXT.OBJ", "object"),
                                ("EXT_MAC", "BCPL.EXT.MAC", "text"))}}
+
+
+def check():
+    query = load("prepare-q1-query.py")
+    sample = query.time_helper().trailer_helper().sample_generated()
+    config = synthetic_config()
     for number, (kind, _, _, _) in CASES.items():
+        if kind in FAULTS["KINDS"]:
+            continue
         reader = sample if kind == "full" else None
         source = prepare(kind, sample, reader, "source", config)
         installed = prepare(kind, sample, reader, "installed", config)
@@ -534,10 +572,28 @@ def check():
     return 0
 
 
+def check_faults():
+    query = load("prepare-q1-query.py")
+    sample = query.time_helper().trailer_helper().sample_generated()
+    for number in (198, 199, 200):
+        kind, _, job, _ = CASES[number]
+        deck = prepare(kind, sample, None, "private-diagnostic", synthetic_config())
+        rows = deck.splitlines()
+        if tuple(INSTALLED["STEP"].match(r).group(1) for r in rows
+                 if INSTALLED["STEP"].match(r)) != LIFE:
+            raise ValueError("private diagnostic step order changed")
+        if not rows[0].startswith("//" + job + " "):
+            raise ValueError("private diagnostic identity changed")
+        if any("SYSOUT=B" in r or "SYSOUT=A" in r or "//EXTLIB" in r for r in rows):
+            raise ValueError("private diagnostic cannot select devices or installed extensions")
+        print(f"CHECK {number}: private diagnostic {len(rows)} cards; no MVS")
+    return 0
+
+
 def main() -> int:
-    if sys.argv[1:] == ["--check"]:
+    if sys.argv[1:] in (["--check"], ["--check-faults"]):
         try:
-            return check()
+            return check() if sys.argv[1:] == ["--check"] else check_faults()
         except (ValueError, OSError, UnicodeError, KeyError) as exc:
             print("QSAM CHECK FAILED: " + str(exc), file=sys.stderr)
             return 1
