@@ -316,7 +316,7 @@ registry lengths and exact GO records. No permanent PDS writes, device
 operations or installed record I/O. This is supplemental evidence, not
 an extra suite. The subsequent DR.5 integration extends cases 163–176 to
 installed mode under the existing `installed-r5-t1` profile; the first
-full installed run is pending. See the
+full installed run passed all 14 cases. See the
 [DR.5 evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
 
 ### DR.5 — BCPLQSAM dual-mode regression
@@ -333,5 +333,7 @@ in its own maps, including the empty-registry case 146. Before installed
 QSAM compilation the runner generates all fourteen synthetic deck shapes
 in both modes; this is a host preflight, not MVS proof.
 
-Initial installed suite execution pending; the focused JOBs 1261/1263
-remain the accepted installed evidence until the numbered run reports.
+Initial installed suite execution passed all 14 cases at c96523d970d4,
+including both device cases. Prior case 146 passed the strengthened
+exclusion check. The focused JOBs 1261/1263 remain supplemental evidence;
+no new unique identities or single consolidated full-project run claimed.

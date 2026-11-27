@@ -363,3 +363,29 @@ Add host regression coverage for actual tracked BCX streams and all
 fourteen generator shapes. No MVS object or oracle changes. The focused
 installed JOBs 1261/1263 remain accepted; full numbered installed-mode
 execution remains pending.
+
+### DR.5 — Numbered installed BCPLQSAM regression accepted
+
+Owner-reported revision `c96523d970d433cb045e58c11d4d70b7836809f0`,
+26 November 2026 EST (receipt directory timestamp 27 November UTC):
+all fourteen actual generator shapes passed the dual-mode synthetic JCL
+preflight. The subsequent installed-r5-t1 BCPLQSAM suite reported
+14 PASS, 0 FAIL, 0 SKIP, 0 BLOCKED, cases 163–176, each native runner RC0.
+Evidence: `workarea/test-suites/20261127T031901Z-41500-bcplqsam-installed-r5-t1-jg1q738t`.
+Together with the prior installed case 146 PASS, this establishes installed
+selection/exclusion and the exercised record-I/O, lifecycle, interoperability
+and device-output contracts. The initial failed host-preflight campaign
+is retained above; its defect is resolved at the reported scope. The
+private individual JES reports and summary JSON were not independently
+inspected. The reported PASS includes the runner's installed MAP/XREF,
+exact GO output, expected STOP RC and independent IFOX/device checks
+as applicable. The earlier source-selected fourteen-case production
+result remains valid at its tested revision; no new full source-mode
+MVS rerun after the adapter change is claimed. Both profiles retain the
+same case IDs and expected-output contracts. The supplemental installed
+run does not change the 198 numbered identities or the 216 distinct
+supported passes plus expected SKIP 083 accounted for across earlier
+production runs. No fresh installed-object rebuild/readback, genuine
+exceptional CLOSE, full clean-room or release acceptance, or normative
+transfer is inferred. New distinct rollback/cleanup/status-precedence
+coverage remains to be designed and verified. DR.5 remains in progress.

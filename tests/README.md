@@ -49,7 +49,7 @@ claim that resident MVS objects have been independently probed.
   R.5/T.1 and BCPLQSAM objects from `EXT_OBJ` and macros from `EXT_MAC`.
   DR.5 extends the existing 163–176 QSAM fixtures to this mode without
   renumbering or duplicating them. Initial full installed-suite MVS execution
-  is pending; focused installed QUERY and exclusion already passed.
+  passed all 14 cases at c96523d970d4; focused installed QUERY and exclusion also passed.
 
 The fixture files (`expected.txt`, GO RC markers, `.asm` selections, etc.)
 remain the sole expected-output/return-code contract. `policy` is one of:
@@ -193,6 +193,6 @@ The separate [installed verification driver](../tools/checks/run-dr5-qsam-instal
 passed cases 163 and 146 using installed objects and resident BCX macros
 (native JOBs 1261 and 1263). This proves installed QUERY selection and
 exclusion at the tested scope. The later DR.5 dual-mode integration extends
-the installed profile to the existing QSAM cases; its initial run is pending.
+the installed profile to the existing QSAM cases; its initial run passed all 14.
 No new case IDs or campaign counts are introduced. See the
 [DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
