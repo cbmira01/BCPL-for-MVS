@@ -538,3 +538,7 @@ No code change, new MVS execution or release action.
 ### DR.5 — Remaining selection-macro reconciliation
 
 At `c2ba705ca7e6bac62484f7ea3483a8b73f7883dd`, reviewed current three-package BCX macros, original R.4/R.5 closures, current MAP verifier, public use guide and subsequent installed-mode evidence. 30/30 selected blobs match CO.6 and RC4 frozen source. See [proposal](dr5-selection-macro-authority-transfer-proposal.md). Corrected current-facing authority summary and source-local BCX status without rewriting historical evidence. Explicit approval still required; no new target execution or macro change.
+
+### DR.5 — BCX selection-macro authority effective
+
+Owner approved the remaining public selection-macro transfer on 27 November 2026; see [acceptance record](dr5-selection-macro-authority-transfer-acceptance-20261127.md). Chapter 2.3 and applicable scope/evidence in chapters 6–7 govern the supported known-package selection interface. Preserve three catalog bindings, first-selection order, idempotence/upgrade, BCRG/PUNCH/ENTRY and independent registrar validation; source-only limit behavior remains qualified. No software or oracle change or new MVS execution. Proceed to offline and target verification.

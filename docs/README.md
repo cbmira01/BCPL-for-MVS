@@ -31,7 +31,7 @@
 
 - [Reference for the Cambridge Runtime and Libraries](product/Reference-for-the-Cambridge-Runtime-and-Libraries.md) — normative within the approved public native and MR10 contracts; detailed DEBUGINT verification pending.
 
-- [Reference for System Extensions](product/Reference-for-System-Extensions.md) — normative for approved QUERY, registration/finalization and package APIs; selection-macro authority transfer pending.
+- [Reference for System Extensions](product/Reference-for-System-Extensions.md) — normative for approved QUERY, registration/finalization, selection macros and package APIs.
 
 ## Project manuals
 
