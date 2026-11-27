@@ -21,8 +21,8 @@ def sample_source():
 
 
 class NumberedQ2Tests(unittest.TestCase):
-    def test_all_fourteen_cases_and_exact_source_parity(self):
-        self.assertEqual(list(R.CASES), list(range(163, 177)))
+    def test_all_seventeen_cases_and_exact_source_parity(self):
+        self.assertEqual(list(R.CASES), list(range(163, 177)) + [198, 199, 200])
         for n, (kind, original, job, markers) in R.CASES.items():
             with self.subTest(n=n):
                 candidates = list(REG.glob(f"{n:03d}-*"))
@@ -72,6 +72,18 @@ class NumberedQ2Tests(unittest.TestCase):
                 elif kind == "fba":
                     deck = R.load("prepare-q4-fba.py").make_deck(
                         code, card, boot)
+                elif kind in ("rollback", "getmain", "combined"):
+                    deck = R.prepare(kind, code, None, "private-diagnostic",
+                                     R.synthetic_config())
+                    self.assertEqual(tuple(
+                        R.INSTALLED["STEP"].match(row).group(1)
+                        for row in deck.splitlines()
+                        if R.INSTALLED["STEP"].match(row)), R.LIFE)
+                    for forbidden in ("SYSOUT=A", "SYSOUT=B", "//EXTLIB"):
+                        self.assertNotIn(forbidden, deck)
+                    for mode in ("source", "installed"):
+                        with self.assertRaisesRegex(ValueError, "private mode"):
+                            R.prepare(kind, code, None, mode, R.synthetic_config())
                 else:
                     self.fail(f"unrecognized QSAM generator kind {kind}")
                 self.assertTrue(deck.startswith(f"//{job} JOB "))
@@ -84,8 +96,17 @@ class NumberedQ2Tests(unittest.TestCase):
                 self.assertIn("PGM=*.LKED.SYSLMOD", deck)
 
     def test_native_pass_checker_rejects_missing_evidence(self):
-        for n in R.CASES:
-            self.assertTrue(R.evidence(n, "", ""))
+        for n, (kind, _, _, _) in R.CASES.items():
+            with self.subTest(n=n):
+                if kind in ("rollback", "getmain", "combined"):
+                    self.assertTrue(R.evidence(n, "", "", "private-diagnostic"))
+                    for mode in ("source", "installed"):
+                        with self.assertRaisesRegex(ValueError, "mode mismatch"):
+                            R.evidence(n, "", "", mode)
+                else:
+                    self.assertTrue(R.evidence(n, "", ""))
+                    with self.assertRaisesRegex(ValueError, "mode mismatch"):
+                        R.evidence(n, "", "", "private-diagnostic")
 
     def test_unmodified_prior_panel_path(self):
         script = (ROOT/"bootstrap-toolchain/regression/run-test.sh").read_text()

@@ -56,8 +56,20 @@ class CanonicalCoroutinePromotionTests(unittest.TestCase):
         candidate = (ROOT / "library/coroutines-co0-candidate.bcpl").read_text(
             encoding="ascii"
         )
-        # Only the four candidate-only introductory comment lines differ.
-        self.assertEqual(canonical, "\n".join(candidate.split("\n")[4:]))
+        # Retain the original CO.0 candidate and account for precisely the
+        # subsequently approved RESUMECO parent-preservation repair.
+        original = "\n".join(candidate.split("\n")[4:])
+        old = "   CURRCO!1 := 0\n   IF CPTR!1 \\= 0 RESULTIS -998\n"
+        new = "   IF CPTR!1 \\= 0 RESULTIS -998\n   CURRCO!1 := 0\n"
+        self.assertEqual(original.count(old), 1)
+        self.assertEqual(canonical, original.replace(old, new, 1))
+        self.assertEqual(canonical.count(new), 1)
+        repaired = (ROOT / "library/coroutines-co0-busy-parent-candidate.bcpl"
+                    ).read_text(encoding="ascii")
+        self.assertEqual(repaired,
+                         "// CO.0 ISOLATED CANDIDATE: busy RESUMECO preserves current parent.\n"
+                         "// Derived from canonical coroutines.bcpl; not approved for promotion.\n"
+                         + canonical)
         self.assertIn("LET COBOOT(FN, SIZE, C)", canonical)
         self.assertIn("P!0 := P", canonical)
         self.assertIn("P!1 := COBOOT", canonical)

@@ -159,8 +159,15 @@ class DatasetContractTests(unittest.TestCase):
         manifest = mod.command_manifest(inv)
         a = mod.canonical_digest(manifest)
         self.assertEqual(a, mod.canonical_digest(manifest))
-        self.assertEqual(len(manifest['operations']), 25)
-        self.assertFalse(any('run-regression' in op.command[0] for op in mod.OPERATIONS))
+        self.assertEqual(len(manifest['operations']), 31)
+        commands = [' '.join(op.command) for op in mod.OPERATIONS]
+        for forbidden in ('run-regression', 'run-project-regressions', 'run-suite',
+                          'git tag', 'release', 'resume'):
+            self.assertFalse(any(forbidden in command for command in commands))
+        self.assertEqual([op.check for op in mod.OPERATIONS
+                          if op.check.startswith('coroutine-')],
+                         ['coroutine-compile', 'coroutine-prepare', 'coroutine-stage',
+                          'coroutine-core', 'coroutine-library', 'coroutine-oracle'])
 
 
 if __name__ == '__main__':

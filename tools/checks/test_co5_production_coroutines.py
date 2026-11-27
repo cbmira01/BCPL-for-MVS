@@ -38,8 +38,13 @@ class ProductionCoroutineTests(unittest.TestCase):
                       ).read_text("ascii")
         expected = CAND.merge_bridge(original, extension)
         marker = "BCPLCO   CSECT"
-        self.assertEqual(production.split(marker, 1)[1],
-                         expected.split(marker, 1)[1])
+        # DR.5 added full-card assembler comments to the production sources.
+        # Keep exact equality of every executable/data/directive card.
+        def body(source):
+            self.assertEqual(source.count(marker), 1)
+            return [row for row in source.split(marker, 1)[1].splitlines()
+                    if not row.startswith("*")]
+        self.assertEqual(body(production), body(expected))
         self.assertEqual(production.count("CO3DROP  STM"), 1)
         self.assertTrue(all(line.isascii() and len(line) <= 71
                             for line in production.splitlines()))

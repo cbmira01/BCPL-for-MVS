@@ -182,7 +182,11 @@ class ReconstructionIntegration(unittest.TestCase):
             return 0, (f'put completed as JOB 5990: {cmd[-1]} -> '
                        f'{inv["BOOT_ASM"]}(COROUTIN)\n')
         if cmd[0] == 'tools/mr10/compile-and-run':
-            return 0, 'INTERPRETER CODE=0\n'
+            return 0, (' INTCODE SYSTEM ENTERED\n'
+                       ' TEST: Scalar assignments and vector load/store\n'
+                       ' RP: SCALAR 17 42\n'
+                       ' RP: VECTOR 5 10 15 20\n'
+                       ' EXECUTION CYCLES = 3290, CODE = 0\n')
         if cmd[1] == 'submit':
             member = cmd[-1]
             if member == 'CAMBBLD':

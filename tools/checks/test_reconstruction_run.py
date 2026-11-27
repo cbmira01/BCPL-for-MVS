@@ -1,7 +1,9 @@
 """Offline Step 3 runner regression tests; no live reconstruction is reachable."""
 from __future__ import annotations
 
+import contextlib
 import importlib.machinery
+import io
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,6 +12,7 @@ import tempfile
 import types
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 TOOLS = Path(__file__).resolve().parents[1]
 RECON = TOOLS / 'reconstruction'
@@ -29,7 +32,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(contract.OPERATIONS[-1].check, 'extensions-members')
         self.assertEqual(set(verify.EXPECTED_STEPS), {
             'IC19BLD', 'CAMBBLD', 'BLDBMAIN', 'BLIBBLD',
-            'BCPLDEMO', 'BCPLTIME', 'BCPLQSAM'})
+            'BLDCORCO', 'BLDCORLB', 'BCPLDEMO', 'BCPLTIME', 'BCPLQSAM'})
         guides = [int(x.guide) for x in contract.OPERATIONS]
         self.assertEqual(guides, sorted(guides))
         self.assertNotIn(4, guides)  # Guide 4 is intentionally outside reconstruction
@@ -113,13 +116,22 @@ class RunnerTests(unittest.TestCase):
             verify.required_inventory('EXT_OBJ', frozenset({'BCPLDEMO'}))
 
     def test_list_cli_is_read_only(self):
-        cp = subprocess.run([sys.executable, str(RECON / 'run'), '--list'],
-                            stdin=subprocess.DEVNULL, timeout=30,
-                            capture_output=True, text=True, check=False)
-        self.assertEqual(cp.returncode, 0, cp.stderr)
-        self.assertIn('BCPLQSAM', cp.stdout)
-        self.assertNotIn(' --run', cp.stdout)
-        self.assertIn('No regressions', cp.stdout)
+        # Printed commands may contain --run; none may be executed.
+        with (patch.object(sys, 'argv', ['run', '--list']),
+              patch.object(run, 'execute_project_command') as execute,
+              patch.object(run, 'authorized_run') as authorize,
+              patch.object(run, 'check_live_guard') as guard,
+              patch('live_entry.run_live') as live,
+              patch.object(run.subprocess, 'run') as subprocess_run,
+              contextlib.redirect_stdout(io.StringIO()) as output):
+            self.assertEqual(run.main(), 0)
+        for mocked in (execute, authorize, guard, live, subprocess_run):
+            mocked.assert_not_called()
+        expected = [f'Guide {op.guide}: {op.name}: {" ".join(op.command)}'
+                    for op in contract.OPERATIONS]
+        expected.append('No regressions, native Cambridge compiler, tags, releases, or resume.')
+        self.assertEqual(output.getvalue().splitlines(), expected)
+        self.assertIn('verify-installed-production.py --run', output.getvalue())
 
     def test_live_run_cli_rejects_noninteractive_without_mutation(self):
         cp = subprocess.run([sys.executable, str(RECON / 'run'), '--run'],

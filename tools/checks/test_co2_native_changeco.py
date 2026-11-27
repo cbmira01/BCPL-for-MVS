@@ -176,6 +176,10 @@ class CO2Tests(unittest.TestCase):
                   patch.object(co,'shell',side_effect=fake_shell),
                   contextlib.redirect_stdout(io.StringIO())):
                 (tmp/'bcplmain.asm').write_text(MAIN)
+                # The driver resolves the bridge beneath its patched ROOT.
+                bridge = tmp/'bootstrap-toolchain/asm/bcplco.asm'
+                bridge.parent.mkdir(parents=True)
+                bridge.write_bytes(ASM.read_bytes())
                 self.assertEqual(co.execute(),0)
             root = next((tmp/'evidence').iterdir())
             record = json.loads((root/'result.json').read_text())

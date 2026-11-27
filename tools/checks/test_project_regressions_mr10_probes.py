@@ -94,8 +94,13 @@ class ProjectMR10ProbesTests(unittest.TestCase):
                          return_value=SimpleNamespace(returncode=0, stdout="OK")),
         ):
             selected = MOD.inventory()
-        self.assertEqual(list(selected), list(MOD.SUITES))
+        # The inventory mapping is not execution order: the CLI explicitly
+        # selects in SUITES order. Require exact suite coverage and isolation.
+        self.assertCountEqual(selected, MOD.SUITES)
         self.assertEqual(selected["mr10-probes"], self.accepted)
+        for suite in MOD.NATIVE_SUITES:
+            self.assertEqual(selected[suite], ["00"])
+            self.assertTrue(set(selected[suite]).isdisjoint(self.accepted))
 
     def test_suite_command_selects_only_accepted_ids(self):
         command = MOD.suite_command(
