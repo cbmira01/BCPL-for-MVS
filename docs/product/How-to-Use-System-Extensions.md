@@ -10,7 +10,7 @@ For native application programmers in the development environment. See the [tuto
 | --- | --- | --- |
 | Learn dispatch or verify interoperability | BCPLDEMO | Accepted installed reference |
 | Read raw clock and MVS time words | BCPLTIME | Accepted source/installed modes |
-| Exact sequential logical records | BCPLQSAM | Accepted source-mode and temporary-PDS selection; installed verification qualified |
+| Exact sequential logical records | BCPLQSAM | Accepted source-mode record I/O; installed QUERY selection/exclusion verified in DR.5 |
 | Decimal arithmetic | BCPLDEC | Proposed, not available |
 
 For ordinary character streams use BCPLIO. Ensure CAMBCOMP, ICINT19, IFOX, IEWL, accepted BOOT_OBJ and BCPLRGS work. Consult [dataset configuration](../../config/dspal.yaml) for EXT_ASM, EXT_SOURCE, EXT_MAC, EXT_OBJ and BOOT_OBJ; these are manifest keys, not literal DDs. Permanent object installation is separate from application linkage.
@@ -45,7 +45,7 @@ tools/bootstrap/run-installed-r5-t1-regression 148
 tools/bootstrap/run-production-regression 168
 ```
 
-The first uses installed R.5/T.1 objects. The second uses the source-selected QSAM writer/reader/verifier. Source-mode PASS is not installed-object acceptance.
+The first uses installed R.5/T.1 objects. The second uses the source-selected QSAM writer/reader/verifier. Source-mode PASS is not installed-object acceptance. The separate [DR.5 installed verification driver](../../tools/checks/run-dr5-qsam-installed.py) passed selected QUERY and unselected application execution (JOBs 1261/1263); it does not exercise installed record I/O.
 
 ## 4. Use multiple extensions without collisions
 

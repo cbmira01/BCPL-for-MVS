@@ -283,3 +283,36 @@ a consolidated run at the expanded inventory has not yet been
 reported. Installed-r5-t1 execution of the new numbered cases has
 not been reported. No release, clean-room, exhaustive ABI or
 normative-transfer claim. DR.5 remains in progress.
+
+### DR.5 — Installed BCPLQSAM selection and exclusion verified
+
+Owner-reported MVS execution at Git revision
+`2cd7d8fa281c0a99659445278d1483e12618ca50`:
+`workarea/dr5-qsam-installed/run-fxc8sbn1`, status PASS, stage complete.
+The [verification driver](../../../tools/checks/run-dr5-qsam-installed.py)
+passed its synthetic JCL/XREF self-check before executing the following jobs.
+
+| Case | Compiler JOB | Native JOB | Exact GO marker |
+| --- | --- | --- | --- |
+| 163 selected | DR5QSC 1260 | DR5QS 1261 | BCPLQSAM Q4 QUERY CARRIAGE PASS |
+| 146 unselected | DR5QNC 1262 | DR5QN 1263 | R5 EXT 146 PASS |
+
+| Case | BCPL source SHA-256 | Generated assembler SHA-256 |
+| --- | --- | --- |
+| 163 | `8a0c3a79f8c877893bb1fb77a365da7a1a6b69a562293056b604f931b8110ea6` | `1aa569da8cfe27002631aaf3bf5aefc7cd2fcdb9154fa786d13e486adc3f0820` |
+| 146 | `d34773015f38a96510f95ae7a844785d678a58d983877210382c846b3db682a6` | `703952546a24d416f7eb6552d60ae1ede868da86a9dc4a49e60120ecb87f0926` |
+
+The reported driver PASS establishes its checked compiler completion,
+IFOX/IEWL/GO zero RCs, IFOX severity, installed BOOT_OBJ and resident
+EXT_MAC selection, IEWL entry, selected EXTLIB(BCPLQSAM) and all QSAM
+CSECTs with 44-byte BCPLREG, and absence of those sections and INCLUDE
+with 28-byte empty BCPLREG. Exact standalone GO markers occur once.
+This is the subsequent installed-object selection/exclusion evidence
+missing from the historical Q.5 closure; that closure is not rewritten.
+The private reports were not independently inspected. No installed
+member replacement, fresh object build/readback comparison, record I/O
+through the installed BCPLQSAM object, device execution, genuine
+exceptional CLOSE, clean-room or release acceptance is claimed by
+this campaign. The numbered 163–176 suites remain source-selected;
+these two supplemental executions do not increase the numbered inventory
+or change the supported campaign totals. No normative transfer.

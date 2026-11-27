@@ -185,3 +185,12 @@ remains 212 PASS and one expected SKIP; the expected expanded consolidated
 result is 216 PASS, 1 expected SKIP 083, 0 FAIL/BLOCKED (217 selected).
 The two reported runs account for all supported identities but are not one
 expanded campaign.
+
+## DR.5 — Supplemental installed BCPLQSAM verification
+
+The separate [installed verification driver](../tools/checks/run-dr5-qsam-installed.py)
+passed cases 163 and 146 using installed objects and resident BCX macros
+(native JOBs 1261 and 1263). This proves installed QUERY selection and
+exclusion at the tested scope; neither numbered regression profile changes.
+No new case IDs or campaign counts are introduced. See the
+[DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).

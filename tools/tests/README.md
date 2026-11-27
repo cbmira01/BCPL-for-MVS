@@ -304,3 +304,15 @@ The last accepted eight-suite campaign has 212 PASS and one expected
 SKIP 083. The expanded Runtime Extensions production run passed all 17
 cases, including 194–197. The expanded consolidated eight-suite target
 is 216 PASS and one expected SKIP; no such single run reported yet. See [DR.5 registrar evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
+
+## DR.5 installed BCPLQSAM selection/exclusion
+
+The focused [driver](../checks/run-dr5-qsam-installed.py) uses existing
+cases 163 and 146, installed Core Runtime/Base Library and BCPLRGS,
+resident EXT_MAC and selected EXT_OBJ(BCPLQSAM). The owner-reported
+compiler JOBs 1260/1262 and native JOBs 1261/1263 passed. The driver
+checks actual compiler/IFOX/IEWL/GO results, selected and unselected maps,
+registry lengths and exact GO records. No permanent PDS writes, device
+operations or installed record I/O. This is supplemental evidence, not
+an extra suite or change to either numbered profile. See the
+[DR.5 evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
