@@ -501,3 +501,13 @@ post-structural diagnostic-order qualification. Current source traversal
 and structural case 196 are distinguished from an unverified exhaustive
 multi-fault matrix. Explicit owner approval remains required; no further
 transfer, code change or native execution in this proposal.
+
+### DR.5 — Common registration and finalization authority effective
+
+The owner approved the transfer and stated diagnostic-order qualification
+on 27 November 2026. See [effective decision](dr5-registration-authority-transfer-acceptance-20261127.md).
+Reference chapter 2 now governs the transferred A–H/Decision G provisions;
+original decisions and evidence are preserved. Structural precedence and
+post-structural linked traversal are explicitly distinguished. Macro/tool
+interfaces and package APIs remain outside this transfer. No code change,
+new MVS execution or march closure.
