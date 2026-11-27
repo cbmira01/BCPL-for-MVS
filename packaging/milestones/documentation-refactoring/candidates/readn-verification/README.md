@@ -1,6 +1,6 @@
 # DR.5 — Focused native Base Library numeric input verification
 
-**Status:** Candidate prepared; native verification pending. Source review
+**Status:** Focused native verification PASS (owner-reported JOBs 1301/1302). Source review
 checkpoint `bcfa2c51cb4beaa024c2ded53762969f6a67b588`. No numbered regression allocation.
 
 The [runtime/library reference](../../../../../docs/product/Reference-for-the-Cambridge-Runtime-and-Libraries.md)
@@ -39,3 +39,27 @@ repository helper integration and actual BCPL/IFOX/IEWL/GO were not run.
 The four code/fixture blobs must match the locally checked copies before
 commit. No production code, oracle of any existing case, or normative
 authority is changed.
+
+## Native execution — PASS
+
+Owner-reported checkout `7bc3196009c8036f4466c325afa06e8aace4c259`, private evidence
+`workarea/dr5-readn-verification/run-vk9rmndr`. Compiler JOB 1301 and native
+JOB 1302 passed the driver's COMP/SVCODE, interpreted CODE=0, ASMAP/LKED/GO
+and exact ordered record gates. All twelve observed records match the
+tracked independent oracle. Reported SHA-256 identities:
+
+| Input | SHA-256 |
+| --- | --- |
+| source.bcpl | `0d79cdfed7e9ee3891948af84c5ca3d259a62bb5c03a9fa11a2d481733578fe2` |
+| expected.txt | `854b610d9aa306b1b882cb6a08e82dd4dfb9c5177fefc165780843f940610aea` |
+| input.records | `c696816a2352afa0cef89525a0d12cd1e98ff6fa92c3d2f67cd0187d143c8e23` |
+
+Accepted scope: resident BLIB READN and TERMINATOR for these four input
+records, including signed numbers, zero, leading blanks, consumed punctuation,
+nondigits, logical newline, signs without digits, and repeated EOF. No
+production correction required. Tab input, overflow, complete installed
+export-trailer identity and other untested boundaries remain qualified.
+The owner-supplied JSON was compared with the tracked oracle; private JES
+receipts and installed bytes were not independently inspected. This is one
+focused candidate, not a new numbered regression, and adds nothing to the
+219 supported-pass count. No normative transfer or march closure.

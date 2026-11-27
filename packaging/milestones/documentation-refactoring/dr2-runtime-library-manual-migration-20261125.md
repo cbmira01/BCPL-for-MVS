@@ -177,3 +177,16 @@ zero, sign without digits and repeated EOF). No existing case or oracle is
 changed. No numeric overflow/tab-input proof, complete installed BLIB
 export-trailer inventory, or new target acceptance yet. Private native
 compile/IFOX/IEWL/GO verification is the next gate. No normative transfer.
+
+### DR.5 — Focused native READN verification accepted
+
+Owner-reported checkout `7bc3196009c8036f4466c325afa06e8aace4c259` and private evidence
+`workarea/dr5-readn-verification/run-vk9rmndr`: compiler JOB 1301 and native
+JOB 1302 PASS, twelve exact observed records matched the tracked oracle.
+See [candidate evidence](candidates/readn-verification/README.md) for the
+reported input SHA-256 values, scope and limits. Reference chapter 5 now
+records native G!70/G!71 acceptance at the exercised scope. No production
+change or repeat submission required. Tab input, overflow, complete BLIB
+export-trailer census and other outstanding ABI/diagnostic qualifications
+remain. No numbered regression allocation or change to supported suite
+counts; no normative transfer, release change or march closure.
