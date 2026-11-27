@@ -48,8 +48,8 @@ An executing command must explicitly select at least one suite.
 Selected native suites require a common explicit profile:
 `production` or `installed-r5-t1`.
 
-The coordinator uses the existing MR10 panel/probe manifests and four
-native suite manifests. It does not duplicate, renumber or relocate cases.
+The coordinator uses the existing MR10 panel/probe manifests, five
+numbered native suite manifests and the separate paired coroutine manifest. It does not duplicate, renumber or relocate cases.
 The six still-unverified MR10 Development Probes are excluded.
 
 MR10 tests retain their `category/name` identities. Native cases retain
@@ -232,7 +232,8 @@ verified; **actual MVS execution remains outstanding**.
 
 The newly registered `coroutine-contract` project suite contains exactly two source-pinned paired cases: **`co6-pair`** (11 output records, single-worker re-entry) and **`co6-nested`** (18 output records, two-worker parent-chain, nested continuations and delete/reuse). It dispatches the accepted `tools/coroutines/run-co6-pair.py` and `run-co6-nested.py` unchanged through `tools/coroutines/run-co6-contract-regressions.py`.
 
-The manifest `tests/suites/coroutine-contract.tsv` pins both case identities, source runners and oracles. `tools/tests/run-project-regressions --check` validates the paired sources without JES work. `--run --suite coroutine-contract` submits MVS work (MR10 plus Cambridge/IFOX/IEWL/GO per case), validates complete separate receipts, and provides case names with `--progress`. This suite **does not need** the native-only `--profile` option, because each paired candidate already owns its proven native compilation/linkage profile. Failure stops later cases and returns nonzero. The original `mr10-coroutines` suite continues to report the qualified manual-frame FAIL and cannot be hidden by the new green-contract suite. The first integrated MVS coordinator run is still pending.
+The manifest `tests/suites/coroutine-contract.tsv` pins both case identities, source runners and oracles. `tools/tests/run-project-regressions --check` validates the paired sources without JES work. `--run --suite coroutine-contract` submits MVS work (MR10 plus Cambridge/IFOX/IEWL/GO per case), validates complete separate receipts, and provides case names with `--progress`. This suite **does not need** the native-only `--profile` option, because each paired candidate already owns its proven native compilation/linkage profile. Failure stops later cases and returns nonzero. The original `mr10-coroutines` suite continues to report the qualified manual-frame FAIL and cannot be hidden by the new green-contract suite. At the time of initial integration the first MVS coordinator run was
+pending; the later DR.5 supported campaigns included both paired cases.
 
 ## CO.6 supported versus historical MR10 coroutine selections
 
@@ -247,8 +248,8 @@ manifest is kept separately at
 The suite retains evidence in `workarea/mr10-supported-coroutines/`
 and its accepted subreceipt in `workarea/mr10-probes/`.
 Use `--suite mr10-coroutines-supported` to select it in
-`tools/tests/run-project-regressions`. Its integrated MVS PASS remains
-pending on this newly committed version.
+`tools/tests/run-project-regressions`. At initial integration its MVS PASS was pending; the later DR.5
+supported campaigns included all five valid-domain cases.
 
 `mr10-coroutines` still selects the **five original historical**
 coroutine probes and retains the original fixed-stack failure as
@@ -273,7 +274,9 @@ recorded. See [case inventory](../../tests/README.md).
 
 ## DR.5 BCPLIO guard case
 
-Bootstrap additionally owns 193 (150 cases; 194 total native IDs). Private
+Bootstrap additionally owns 193 (150 Bootstrap cases). At that stage
+there were 194 total native IDs; cases 194–197 subsequently raised the
+numbered inventory to 198. Private
 candidate JOB 363, BLDIOFIX JOB 366 and installed case 193 passed. The
 [subsequent supported campaign](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) reported 212 PASS and one expected
 SKIP (083), zero FAIL/BLOCKED. The earlier 211-pass campaign remains

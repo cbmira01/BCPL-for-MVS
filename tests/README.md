@@ -35,7 +35,7 @@ the historic canonical two-digit (00–52) or three-digit (053–197) form.
 `directory` is the literal child directory of its owning suite:
 `tests/bootstrap/`, `tests/runtime-extensions/`,
 `tests/system-extensions/bcpltime/`, or
-`tests/system-extensions/bcplqsam/`.
+`tests/system-extensions/bcplqsam/`, or `tests/coroutines/`.
 `profiles`, `requires`, and `tags` are comma-separated identifiers. Case
 identity and ownership are unique; tags may overlap, but must not create
 duplicate acceptance counts. `requires` documents conditions; it is not a
@@ -82,7 +82,7 @@ tools/tests/run-suite bcplqsam --list --tag integration
 tools/tests/run-suite bcplqsam --run --profile production --case 163
 ```
 
-`--check` validates **all five** manifests against all 194 physical cases,
+`--check` validates **all five** manifests against all 198 physical cases (00–197),
 including marker files, canonical IDs, complete coverage, ownership and
 case-directory identity; it is entirely offline. `--list` is also offline.
 `--case ID` can be repeated; `--tag TAG` can be repeated as an AND filter.
@@ -98,8 +98,13 @@ FAIL, SKIP, and BLOCKED; any FAIL or BLOCKED makes its final RC nonzero.
 **Safety:** Case 083 is reported as the established expected SKIP in
 installed-BOOT_OBJ profiles. Cases 175–176 are BLOCKED unless the operator
 explicitly selects `--allow-device` **and** has separate authorization to run
-JES device-dependent cases. The suite runner never enables the JES2 punch
-writer, even if the shell previously exported `Q4_PUNCH_RESUME=1`.
+JES device-dependent cases. The suite runner strips any inherited `Q4_PUNCH_RESUME` setting.
+For explicitly opted-in case 175 only, it enables the guarded single
+`$S PUN1` recovery (production environment flag or installed-profile
+`--resume-punch`). The native QSAM runner requires verified paused
+PUNCH1 and an exclusive current Q4PUNCH queue before starting the writer;
+it does not automatically retry a failed start. Case 176 never starts
+PUNCH1. See the [coordinator safety contract](../tools/tests/README.md).
 Any missing/unproven resident PDS, device availability, allocation and actual
 JES result still requires checking against native evidence; manifest
 prerequisite declarations do not perform MVS probes. Existing runner failures
@@ -117,9 +122,9 @@ rerun; Stage 2B does not rewrite any accepted historical evidence.
 ## Project-level coordination — Stage 3
 
 The project-level coordinator is `tools/tests/run-project-regressions`.
-It includes the independent MR10 regression panel alongside the four
-native suites while preserving separate suite identities, profiles,
-outcomes and evidence. See [coordinator usage](../tools/tests/README.md).
+It includes the independent MR10 regression panel alongside the five
+native suites and separately selectable coroutine contracts/probes, while
+preserving separate suite identities, profiles, outcomes and evidence. See [coordinator usage](../tools/tests/README.md).
 
 ## CO.5 coroutine suite (177–189)
 
@@ -133,8 +138,9 @@ BOOT_OBJ is read-only, and G!289–305 are not public globals.
 Host-only selection: `tools/tests/run-suite coroutines --list`.
 Native execution, following explicit operator approval:
 `tools/tests/run-project-regressions --run --suite coroutines --profile production --progress`.
-CO.5 remains IN PROGRESS until real MVS evidence, clean-room reconstruction,
-release documentation and owner acceptance gates are satisfied.
+This describes the original candidate-source selection. See the later
+[CO.6 qualified closure](../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md)
+for accepted scope; the numbered coroutine cases still use source-selected assemblies.
 
 ## DR.5 compiler compatibility (190–192)
 
