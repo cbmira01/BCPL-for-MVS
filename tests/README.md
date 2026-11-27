@@ -212,6 +212,8 @@ No permanent writes, device operations or historical workarea prerequisites.
 Exact GO results and job-bounded WTO traces in both console and hardcopy
 are required. Case 200 records the current provisional primary-status
 precedence; genuine exceptional MVS CLOSE remains unverified. Initial
-numbered native execution pending. New inventory 201 native cases;
+numbered run passed 198 and 199; JOB 1300 satisfied case 200 native behavior
+but failed the host registrar-message parser. The parser is corrected;
+retained-evidence automated replay is pending. New inventory 201 native cases;
 complete eight-suite target 219 PASS and one expected SKIP (220 selected).
 Earlier reported counts remain historical, not expanded passing results.

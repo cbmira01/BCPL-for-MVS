@@ -155,6 +155,23 @@ def prepare(kind, generated, card, obj, load, ext):
     return campaign.verify(rows, job, "finish")
 
 
+def registrar_issues(summary, report):
+    """JES message sections precede IFOX/IEWL output; require both exact forms."""
+    jobs = re.findall(r"^JOB\s+(\d+)\s+DR5QCOM\s*$", summary, re.M)
+    if len(jobs) != 1:
+        return ["combined registrar message: ambiguous JES identity"]
+    marker = "BCPLREG 2001 FINALIZER RETURNED NONZERO"
+    rows = [r.strip() for r in report.replace("\f", "").splitlines()]
+    wto = re.compile(r"(?:\d{1,2}\.\d{2}\.\d{2}\s+)?JOB\s+"
+                     + re.escape(jobs[0]) + r"\s+\+" + re.escape(marker))
+    issues = []
+    if sum(bool(wto.fullmatch(r)) for r in rows) != 1:
+        issues.append("combined job-attributed registrar WTO missing/duplicated")
+    if rows.count(marker) != 1:
+        issues.append("combined standalone registrar message missing/duplicated")
+    return issues
+
+
 def cursors(root):
     offsets = {}
     for name in LOGS:

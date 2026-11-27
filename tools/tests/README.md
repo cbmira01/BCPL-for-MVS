@@ -349,5 +349,9 @@ and captures separate pre-JES console/hardcopy cursors; exact job-bounded
 WTO sequences plus BCPL and JES evidence are mandatory. Expected GO RC=8
 for 200 is a deliberate finalizer qualification, not a failed assertion.
 Run the three together with `--case 198 --case 199 --case 200`; no device
-opt-in needed. Initial MVS execution pending. Across eight supported suites
+opt-in needed. Initial MVS run passed 198–199; case 200 JOB 1300 native
+behavior passed but its registrar WTO was rejected by the host parser.
+The corrected validator supports read-only retained evidence replay using
+`--review-combined` on the case 200 attempt directory; replay pending.
+Across eight supported suites
 the new expected total is 219 PASS and one expected SKIP (220 selected).

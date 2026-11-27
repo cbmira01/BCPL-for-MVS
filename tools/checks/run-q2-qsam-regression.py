@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native numbered QSAM regressions 163..176; no simulated target results.
+"""Native numbered QSAM regressions 163..176 and 198..200; no simulated target results.
 
 Each case compiles BCPL with the resident demoted Cambridge compiler,
 builds real source- or installed-mode IFOX/IEWL JCL, submits one JES job and checks
@@ -291,10 +291,7 @@ def evidence(number: int, summary: str, report: str, mode="source") -> list[str]
         if kind == "rollback" and not load("check-q5-rollback-finish.py").fallthrough_confirmed(report):
             issues.append("Q5RBFIN IFOX fall-through proof missing")
         if kind == "combined":
-            boundary = [i for i, r in enumerate(records) if "AUTHORIZATION CODE IS" in r]
-            native = records[boundary[-1]+1:] if boundary else []
-            if sum("BCPLREG 2001 FINALIZER RETURNED NONZERO" in r for r in native) != 1:
-                issues.append("combined native finalizer message missing/duplicated")
+            issues += FAULTS["registrar_issues"](summary, report)
     return issues
 
 
@@ -590,7 +587,42 @@ def check_faults():
     return 0
 
 
+def review_combined(attempt: Path) -> int:
+    """Recheck retained case 200 evidence; no JES, no writes or resubmission."""
+    attempt = attempt.resolve()
+    case_root = (WORK / "200-qsam-combined-rollback-quarantine").resolve()
+    if attempt.parent != case_root or not attempt.name.startswith("native-"):
+        raise ValueError("review requires a saved case 200 native attempt")
+    if (attempt / "mode.txt").read_text("ascii").strip() != "private-diagnostic":
+        raise ValueError("saved attempt was not private-diagnostic mode")
+    job = (attempt / "job-number.txt").read_text("ascii").strip()
+    summary = (attempt / "summary.txt").read_text("latin-1")
+    report = (attempt / "report.txt").read_text("latin-1")
+    if not job.isdecimal() or re.findall(r"^JOB\s+(\d+)\s+DR5QCOM\s*$",
+                                         summary, re.M) != [job]:
+        raise ValueError("saved JES identity mismatch")
+    issues = evidence(200, summary, report, "private-diagnostic")
+    for name in FAULTS["LOGS"]:
+        observed = FAULTS["job_markers"](
+            (attempt / (name + ".diagnostic.txt")).read_text("latin-1"),
+            job, "DR5QCOM", "combined")
+        if observed != FAULTS["TRACE"]["combined"]:
+            issues.append(name + ": saved job-bounded markers not verified")
+    for issue in issues:
+        print("QSAM evidence NOT VERIFIED: " + issue)
+    if issues:
+        return 1
+    print(f"CASE 200 JOB {job}: RETAINED NATIVE EVIDENCE PASS (no JES submission)")
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) == 3 and sys.argv[1] == "--review-combined":
+        try:
+            return review_combined(Path(sys.argv[2]))
+        except (ValueError, OSError, UnicodeError, KeyError) as exc:
+            print("QSAM evidence review FAILED: " + str(exc), file=sys.stderr)
+            return 1
     if sys.argv[1:] in (["--check"], ["--check-faults"]):
         try:
             return check() if sys.argv[1:] == ["--check"] else check_faults()

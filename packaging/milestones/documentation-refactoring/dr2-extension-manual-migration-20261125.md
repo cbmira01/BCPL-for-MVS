@@ -423,3 +423,30 @@ JCL preflight and new numbered MVS execution pending. Do not relabel
 prior accepted Q.5 jobs or earlier DR.5 campaign as these new results.
 Inventory 201 native cases (17 QSAM); supported eight-suite target
 219 PASS, 1 expected SKIP 083 (220 selected), not yet demonstrated.
+
+### DR.5 — First numbered QSAM fault results, 26 November 2026 EST
+
+Owner-reported revision `261e6b403e1f7956a7cd4cad256fd9a4708bb3ea`,
+production profile evidence
+`workarea/test-suites/20261127T033236Z-43074-bcplqsam-production-s07a477d`:
+198 PASS, 199 PASS, 200 FAIL (2 PASS, 1 FAIL). The three actual generator
+preflights passed. Case 200 compiler JOB 1299 RC0, native DR5QCOM JOB
+1300 all nine preceding steps RC0, GO RC8 as expected, zero IFOX
+statements flagged/severity, JES SUCCESS, exact BCPL PASS, both independent
+job-bounded diagnostic traces PASS. The sole failure was the registrar
+message checker. Owner supplied report line 20 (job-attributed WTO),
+line 621 (standalone message), and line 10747 (exact BCPL PASS); the
+report organizes JES output by section, not native execution chronology.
+Corrected validator requires exactly one job-attributed registrar WTO
+matching the summary's JOB and exactly one standalone registrar message;
+assembler listing strings cannot satisfy either. Local isolated parser
+checks passed observed record layout and nine negative scenarios.
+Full checkout remains unavailable locally. Retained original report and
+console/hardcopy records can be rechecked without JES submission using
+`--review-combined` on
+`workarea/native-regression/200-qsam-combined-rollback-quarantine/native-4yq8znnp`.
+Native behavior accepted at owner-reported scope; automated replay still
+pending. Original campaign summary remains 2 PASS, 1 FAIL; no fresh native
+run or revised historical summary claimed. No implementation, fixture,
+installed member or production precedence policy change. Genuine MVS
+exceptional CLOSE still unverified. DR.5 remains in progress.
