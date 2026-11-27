@@ -1004,8 +1004,10 @@ WFDECZN  DS    CL15
 DEBUGINT XC    DBGPOS(4),DBGPOS
          LTR   7,7
          BNM   DBGCVT
+         LR    8,7
          LA    10,C'-'
          BAL   14,DBGAPND
+         LR    7,8
 DBGCVT   CVD   7,DECPACK
          UNPK  DECZON(15),DECPACK(8)
          OI    DECZON+14,X'F0'
