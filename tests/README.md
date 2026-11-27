@@ -173,5 +173,9 @@ No compiler is needed for these four cases. Both profiles use BOOT_OBJ.
 The owner-reported JOBs 798/801/802 and following 212-PASS production
 campaign establish the corrected installed registrar at their tested
 scope; see [DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
-First numbered execution pending. Expected new eight-suite result:
-216 PASS, 1 expected SKIP 083, 0 FAIL/BLOCKED (217 selected).
+First numbered production-profile execution passed all 17 Runtime Extensions
+cases (146–158 and 194–197). The preceding complete eight-suite campaign
+remains 212 PASS and one expected SKIP; the expected expanded consolidated
+result is 216 PASS, 1 expected SKIP 083, 0 FAIL/BLOCKED (217 selected).
+The two reported runs account for all supported identities but are not one
+expanded campaign.

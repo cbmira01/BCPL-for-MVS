@@ -63,4 +63,6 @@ regression baseline. The regular Runtime Extensions cases 194–197 derive
 separate bodies from this verified shared source, including independent
 single-dependency ordinal and version variants. They count as four
 numbered cases and link installed BCPLRGS in both profiles. First numbered
-execution pending.
+production-profile execution passed 194–197, together with 146–158
+(17 PASS, no failures, skips or blocks). Installed-r5-t1 execution
+of these new numbered cases has not been reported.

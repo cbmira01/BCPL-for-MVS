@@ -257,3 +257,29 @@ were checked against the proposed Git tree. Git clone unavailable
 (DNS); no claim of a full local repository checkout or MVS execution
 of the four numbered variants. The previous probe and installed
 registrar source remain unchanged.
+
+### DR.5 — Numbered registrar regression integration accepted
+
+Owner-reported 26 November 2026 EST (receipt directory timestamp
+27 November UTC), revision pulled `94574c422fcdc097aeb43a1054727b3eeaa12ac8`:
+`workarea/test-suites/20261127T000418Z-38933-runtime-extensions-production-qoiim7ne`.
+Runtime Extensions, production profile: 17 PASS, 0 FAIL, 0 SKIP,
+0 BLOCKED. All cases 146–158 and 194–197 reported native runner RC0.
+This establishes first numbered MVS execution of the four new
+installed-BCPLRGS cases and continued success of the thirteen earlier
+Runtime Extensions cases. No change to the registrar or shared probe
+since the accepted JOBs 798/801/802. Individual JES receipts and
+summary JSON not independently inspected; the owner-provided suite
+output is the evidence for this acceptance.
+
+The last complete eight-suite campaign remains 212 PASS and one
+expected SKIP at `e19d03b4bd8443fe1c2fa22f97189cba897289ef`.
+The later 17-case suite supersedes its 13-case Runtime Extensions
+result for that suite only. Across the two reported runs, all 216
+distinct supported passing identities and expected SKIP 083 are
+accounted for; do not describe this as a single 216-PASS campaign.
+The expanded eight-suite inventory contains 217 selected cases;
+a consolidated run at the expanded inventory has not yet been
+reported. Installed-r5-t1 execution of the new numbered cases has
+not been reported. No release, clean-room, exhaustive ABI or
+normative-transfer claim. DR.5 remains in progress.

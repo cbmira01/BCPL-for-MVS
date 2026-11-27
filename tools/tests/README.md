@@ -298,5 +298,6 @@ The numbered runner links installed BOOT_OBJ(BCPLRGS) in both native
 profiles, using separate derived assembler probes, no permanent writes.
 Each retains its own JES evidence in the run-scoped native logs.
 The last accepted eight-suite campaign has 212 PASS and one expected
-SKIP 083; 216 PASS and one expected SKIP is the new target, pending
-numbered execution. See [DR.5 registrar evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
+SKIP 083. The expanded Runtime Extensions production run passed all 17
+cases, including 194–197. The expanded consolidated eight-suite target
+is 216 PASS and one expected SKIP; no such single run reported yet. See [DR.5 registrar evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).

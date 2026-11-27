@@ -183,7 +183,7 @@ Native profiles: `production` and `installed-r5-t1`. Tags on native suite select
 | mr10 | 12 independent interpreted baseline cases |
 | mr10-coroutines-supported | 5 valid-domain interpreted cases |
 | bootstrap | 00–145, 190–193, 150 cases; 083 source-only instrumentation expected SKIP in installed profiles |
-| runtime-extensions | 146–158, 194–197; 17 cases (four new installed registrar cases) |
+| runtime-extensions | 146–158, 194–197; 17 cases (all passed in the subsequent production suite) |
 | bcpltime | 159–162, 4 cases |
 | bcplqsam | 163–176, 14 source-selected cases |
 | coroutines | 177–189, 13 candidate-source cases |
