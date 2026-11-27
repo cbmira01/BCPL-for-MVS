@@ -413,7 +413,8 @@ class ReconstructionIntegration(unittest.TestCase):
 
     def test_cli_rejects_noninteractive_without_reconstruction(self):
         import subprocess
-        cp = subprocess.run([sys.executable, str(RECON/'run'), '--run'], text=True, capture_output=True)
+        cp = subprocess.run([sys.executable, str(RECON/'run'), '--run'],
+                            stdin=subprocess.DEVNULL, timeout=30, text=True, capture_output=True)
         self.assertEqual(cp.returncode, 2)
         self.assertIn('BLOCKED: reconstruction requires interactive', cp.stdout)
 

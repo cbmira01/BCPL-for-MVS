@@ -96,7 +96,7 @@ exit 0
             command += ' --batch-populate'
         return subprocess.run(
             ['script', '-q', '-e', '-c', command, '/dev/null'],
-            cwd=self.root, env=env, input=answers,
+            cwd=self.root, env=env, input=answers, timeout=60,
             capture_output=True, text=True, check=False,
         )
 
@@ -112,7 +112,7 @@ exit 0
             flags = list(options)
         return subprocess.run(
             ['bash', 'tools/reconstruction/rebuild-from-source', *flags],
-            cwd=self.root, env=env, stdin=subprocess.DEVNULL,
+            cwd=self.root, env=env, stdin=subprocess.DEVNULL, timeout=60,
             capture_output=True, text=True, check=False,
         )
 
@@ -251,7 +251,7 @@ exit 0
     def test_default_mode_requires_terminal(self):
         result = subprocess.run(
             ['bash', str(SOURCE)], cwd=self.root,
-            stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False,
+            stdin=subprocess.DEVNULL, timeout=30, capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn('interactive terminal', result.stderr)
@@ -260,13 +260,14 @@ exit 0
     def test_unrecognized_option_is_rejected_before_operations(self):
         result = subprocess.run(
             ['bash', str(SOURCE), '--resume'], cwd=self.root,
-            stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False,
+            stdin=subprocess.DEVNULL, timeout=30, capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn('[--unattended]', result.stderr)
         self.assertFalse(self.call_log.exists())
     def test_shell_syntax(self):
         result = subprocess.run(['bash', '-n', str(SOURCE)],
+                                stdin=subprocess.DEVNULL, timeout=30,
                                 capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -319,7 +320,8 @@ exit 0
     def test_no_resume_arguments(self):
         result = subprocess.run(
             ['bash', str(SOURCE), '--resume'],
-            cwd=self.root, capture_output=True, text=True, check=False,
+            cwd=self.root, stdin=subprocess.DEVNULL, timeout=30,
+            capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn('always starts at Step 0', result.stderr)

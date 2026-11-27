@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import importlib.machinery
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 import types
 import unittest
 from types import SimpleNamespace
@@ -112,6 +114,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_list_cli_is_read_only(self):
         cp = subprocess.run([sys.executable, str(RECON / 'run'), '--list'],
+                            stdin=subprocess.DEVNULL, timeout=30,
                             capture_output=True, text=True, check=False)
         self.assertEqual(cp.returncode, 0, cp.stderr)
         self.assertIn('BCPLQSAM', cp.stdout)
@@ -120,16 +123,33 @@ class RunnerTests(unittest.TestCase):
 
     def test_live_run_cli_rejects_noninteractive_without_mutation(self):
         cp = subprocess.run([sys.executable, str(RECON / 'run'), '--run'],
+                            stdin=subprocess.DEVNULL, timeout=30,
                             capture_output=True, text=True, check=False)
         self.assertEqual(cp.returncode, 2)
         self.assertIn('BLOCKED: reconstruction requires interactive', cp.stdout)
 
     def test_clean_workarea_standalone_requires_terminal(self):
-        # No git repository is present at the staging fixture; cleanup must fail,
-        # and must never perform an implicit noninteractive deletion.
-        cp = subprocess.run([sys.executable, str(TOOLS / 'clean-workarea')],
-                            capture_output=True, text=True, check=False)
-        self.assertNotEqual(cp.returncode, 0)
+        # Never point a cleanup regression at the operator's real workarea.
+        # Exercise the actual noninteractive guard in a valid disposable Git tree.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            (root / 'tools/reconstruction').mkdir(parents=True)
+            shutil.copyfile(TOOLS / 'clean-workarea', root / 'tools/clean-workarea')
+            shutil.copyfile(RECON / 'contract.py', root / 'tools/reconstruction/contract.py')
+            (root / 'workarea').mkdir()
+            (root / 'workarea/.gitignore').write_text('*\n')
+            sentinel = root / 'workarea/keep'
+            sentinel.write_bytes(b'preserve')
+            for cmd in (['git', 'init', '-q', '-b', 'main'],
+                        ['git', 'add', '-f', 'workarea/.gitignore']):
+                subprocess.run(cmd, cwd=root, stdin=subprocess.DEVNULL,
+                               capture_output=True, timeout=30, check=True)
+            cp = subprocess.run([sys.executable, str(root / 'tools/clean-workarea')],
+                                cwd=root, stdin=subprocess.DEVNULL, timeout=30,
+                                capture_output=True, text=True, check=False)
+            self.assertEqual(cp.returncode, 2, cp.stdout + cp.stderr)
+            self.assertIn('interactive terminal required', cp.stderr)
+            self.assertEqual(sentinel.read_bytes(), b'preserve')
 
 
 if __name__ == '__main__':

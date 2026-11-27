@@ -25,12 +25,14 @@ class CleanCliTests(unittest.TestCase):
         shutil.copyfile(SOURCE, self.root/'tools/reconstruction/contract.py')
         (self.root/'workarea').mkdir()
         (self.root/'workarea/.gitignore').write_text('*\n')
-        subprocess.run(['git','-C',str(self.root),'init','-q','-b','main'],check=True)
-        subprocess.run(['git','-C',str(self.root),'add','-f','workarea/.gitignore'],check=True)
+        subprocess.run(['git','-C',str(self.root),'init','-q','-b','main'],
+                       stdin=subprocess.DEVNULL, timeout=30, check=True)
+        subprocess.run(['git','-C',str(self.root),'add','-f','workarea/.gitignore'],
+                       stdin=subprocess.DEVNULL, timeout=30, check=True)
 
     def invoke(self, *args):
         return subprocess.run([sys.executable, str(self.root/'tools/clean-workarea'),*args],
-                              text=True, capture_output=True, stdin=subprocess.DEVNULL)
+                              text=True, capture_output=True, stdin=subprocess.DEVNULL, timeout=30)
 
     def test_exact_approved_cleanup_and_marker_preserved(self):
         (self.root/'workarea/one').mkdir()
