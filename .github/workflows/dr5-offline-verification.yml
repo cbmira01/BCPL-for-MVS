@@ -1,0 +1,56 @@
+name: DR.5 offline verification
+
+# Focused host-only verification, not a release or target-system workflow.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/dr5-offline-verification.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source and historical verification baseline
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Execute the five existing host-only gates
+        shell: bash {0}
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PYTHONUNBUFFERED: '1'
+        run: |
+          mkdir -p workarea/dr5-ci-tmp mvs-state/dr5-offline
+          export TMPDIR="$PWD/workarea/dr5-ci-tmp"
+          git rev-parse HEAD
+          python3 --version
+          failures=0
+          gate() {
+            local name="$1"
+            shift
+            printf '\n=== %s ===\n' "$name"
+            timeout --kill-after=10s 10m "$@" </dev/null >"mvs-state/dr5-offline/$name.log" 2>&1
+            local rc=$?
+            tail -n 60 "mvs-state/dr5-offline/$name.log"
+            printf 'GATE %s RC=%s\n' "$name" "$rc"
+            if [ "$rc" -ne 0 ]; then
+              failures=$((failures + 1))
+              grep -E '^(ERROR|FAIL):|^Traceback' "mvs-state/dr5-offline/$name.log" || true
+            fi
+          }
+          gate unit-tests python3 -B -u -m unittest discover -s tools/checks -p 'test_*.py' -v
+          gate release-tests python3 -B -u -m unittest discover -s tools/distribution -p 'test_*release.py' -v
+          gate coordinator tools/tests/run-project-regressions --check
+          gate bootstrap-inputs tools/bootstrap/prepare-bootstrap --check-inputs
+          gate debugint python3 -B tools/checks/run-dr5-debugint-verification.py --check
+          printf '\nOFFLINE GATE FAILURES: %s\n' "$failures"
+          if [ "$failures" -ne 0 ]; then
+            exit 1
+          fi
