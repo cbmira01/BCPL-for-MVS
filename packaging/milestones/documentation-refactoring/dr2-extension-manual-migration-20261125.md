@@ -468,3 +468,16 @@ this retained-evidence reconciliation, not one consolidated 220-case
 campaign at current HEAD. A consolidated supported campaign remains
 outstanding. No normative transfer or release acceptance. DR.5 remains
 in progress.
+
+### DR.5 — First normative decision and transfer proposal
+
+At source checkpoint `1ea630fc8ed1a188d8a7533824006731b41f5d43`, reread the shared QUERY v1 owner decision,
+reference chapter 1, all three maintained dispatcher implementations,
+case 160, 163, 164 and 170 fixtures, and the QSAM OPEN/CLOSE rollback
+paths. The [proposal](dr5-query-authority-and-qsam-precedence-proposal.md)
+maps common QUERY clauses and their evidence to chapter 1 and separately
+requests explicit acceptance of primary-error precedence for failed OPEN
+rollback. The existing approved returned-CLOSE/finalizer policy and the
+qualification on genuine exceptional MVS CLOSE are preserved. Neither
+proposal is effective before explicit owner approval. No source change
+or repeat execution required for proposal review.

@@ -223,3 +223,24 @@ regression, production correction or repeat submission required. Full
 procedure execution, private ABI preservation, diagnostic dependencies,
 and object build provenance remain qualified. No normative transfer,
 release change or march closure.
+
+### DR.5 — Historical BLIB diagnostic dependency reconciliation
+
+Source checkpoint `1ea630fc8ed1a188d8a7533824006731b41f5d43`. Reviewed the eight exported historical
+diagnostic bodies, PRINTWIDTH, current BCPLMAIN initialization/global stores,
+BCPLIO IOFOUT and fixed IOCTL1 handle, BCPLMEM MEMBIND/list publication,
+and exact native case 120–123 sources. G!31 LEVEL and G!36/G!37 logging
+are not populated by the ordinary Core Runtime; historical ABORT's optional
+G!79 callback is not a BLIB export. PRINTWIDTH's assumed byte-address DCB
+is incompatible with the opaque word-address stream handle. Documented
+this concrete source limitation in reference chapter 5; no unsafe direct
+invocation of unestablished diagnostics or public handle representation
+change proposed. Existing bounded STACKHWM/INPROGRAM/VALIDPOINTER evidence
+is retained; 122's manual list publication is distinguished from 123's
+automatic publication. The 21-slot census is not a complete diagnostic
+execution contract. Recommend retaining historical diagnostic recovery,
+exact high-water/sentinel boundaries and arbitrary-pointer safety as
+explicit qualifications, rather than expanding this documentation march
+into historical runtime reconstruction. No new native execution or
+production change; owner acceptance of the remaining qualifications
+is still required.

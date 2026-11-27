@@ -29,7 +29,7 @@ Major/minor must match the linked BCEX descriptor; the three maintained packages
 | Unsupported nonzero opcode | -2 | No QUERY write required |
 | Null/nonzero capacity or negative capacity | -3 | None |
 
-Negative capacity is argument error before shortage. A nonnull vector must designate genuine accessible writable words: the implementations test null and capacity but do not generally validate a nonnull machine address. An invalid nonzero pointer is outside the supported domain. Ordinary semantics are package-specific. Isolated JOB 2206 included two dispatchers and eight-word descriptor; not exhaustive production interoperability.
+Negative capacity is argument error before shortage. A nonnull vector must designate genuine accessible writable words: the implementations test null and capacity but do not generally validate a nonnull machine address. An invalid nonzero pointer is outside the supported domain. Ordinary semantics are package-specific. Isolated JOB 2206 included two dispatchers and an eight-word descriptor. Accepted BCPLDEMO/BCPLTIME cases 160–162 and BCPLQSAM/BCPLDEMO case 170 exercise cross-package calls; case 163 verifies QSAM QUERY fields and error paths in both native profiles. These finite tests do not establish every package combination, every register invariant or an actual maintained extended descriptor. Side-effect-free QUERY excludes OPEN/I/O, clock reads, resource allocation, hidden initialization and package state changes.
 
 ## 2. Common registration and selection — BCEX/BCRG v1, limits, diagnostics, collision checks and finalization
 
