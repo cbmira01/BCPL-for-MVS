@@ -491,3 +491,13 @@ records the separate primary OPEN error precedence policy. Original
 contracts and native evidence remain intact; all other transfers remain
 pending. Only BCPLQSAM comments changed; non-comment cards and line count
 are identical. No fresh IFOX/IEWL/GO result or installed binary change.
+
+### DR.5 — Common registration authority transfer proposal
+
+At `ed04ba40b7155ca0032d9bf0548de547c58d72db` the first QUERY transfer and rollback decision are effective.
+The [registration proposal](dr5-registration-authority-transfer-proposal.md)
+maps A–H and Decision G to reference chapter 2 and identifies a bounded
+post-structural diagnostic-order qualification. Current source traversal
+and structural case 196 are distinguished from an unverified exhaustive
+multi-fault matrix. Explicit owner approval remains required; no further
+transfer, code change or native execution in this proposal.
