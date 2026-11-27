@@ -1,6 +1,6 @@
 # DR.5 — Resident BLIB export-trailer verification
 
-**Status:** Prepared; native verification pending.
+**Status:** Native verification PASS (owner-reported JOBs 1303/1304).
 Source checkpoint `6763eb9f69f7812d84d9d320c6704154f4ebf6ee`.
 
 [Historical JOB 2197](../../../../archive/runtime-extensions/runtime-extensions-r0-trailer-job-2197-evidence-20261021.md)
@@ -43,3 +43,27 @@ exact inventory checks (five negative inventory tests) and mocked
 deck insertion checks (three negative shapes). Full integrated
 preflight runs before live submission; local full checkout remains
 blocked by DNS. No fresh IFOX/IEWL/GO result claimed.
+
+## Native execution — PASS
+
+Owner-reported checkout `bf62ed38816693ca8a000788243e9016dfb54757`, private evidence
+`workarea/dr5-blib-trailer/run-xyrd4qt6`. Compiler JOB 1303 and observer
+JOB 1304 passed the driver's JES step, interpreted CODE=0 and actual
+relocated trailer record gates. Application exports G!1 only. BLIB exports
+exactly the 21 slots above; no application/BLIB overlap. The observed
+BLIB maximum global is 100. It is a trailer limit, not an export count
+or a new allocation rule.
+
+Generated application assembler SHA-256:
+`805526d354cc672f21b1aa1fb217c7497a65e74e079fc016fdfb2edaa5fc51bd`.
+This matches historical JOB 2196's recorded digest exactly. It is evidence
+of the same generated assembler for this application, not general compiler
+or installed BLIB binary identity.
+
+The owner-reported export list was independently compared to the tracked
+exact expected list and historical census. Private raw JES reports and
+object bytes were not independently inspected. No further census required
+at this scope absent new evidence. Procedure execution and full diagnostic
+support are not established by the observer; G!71 and G!79 are not exports.
+No production change, new numbered case, release change or normative
+transfer. DR.5 remains in progress.

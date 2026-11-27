@@ -208,3 +208,18 @@ historical 21-slot set. No startup, procedure calls, PDS updates, device
 operations, production changes, new numbered cases or normative transfer.
 Local Python syntax and isolated exact-inventory/linkage tests passed;
 GitHub DNS prevents full local checkout. Target results pending.
+
+### DR.5 — Resident BLIB export census accepted
+
+Owner-reported checkout `bf62ed38816693ca8a000788243e9016dfb54757`, private run
+`workarea/dr5-blib-trailer/run-xyrd4qt6`: compiler JOB 1303 and observer
+JOB 1304 PASS. Actual resident BLIB exports match all 21 historical slots,
+application exports G!1, no overlap, BLIB maximum global 100. Generated
+application assembler SHA-256 matches historical JOB 2196 exactly; this
+is not general compiler or installed-object binary equivalence.
+See [candidate evidence](candidates/blib-trailer-verification/README.md).
+Reference chapter 5 now records the current census. No new numbered
+regression, production correction or repeat submission required. Full
+procedure execution, private ABI preservation, diagnostic dependencies,
+and object build provenance remain qualified. No normative transfer,
+release change or march closure.
