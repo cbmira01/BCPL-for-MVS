@@ -1,13 +1,13 @@
 # How to Reconstruct BCPL from Source
 
 **Audience:** Project maintainers operating a dedicated Hercules/TK5 MVS 3.8J development system.  
-**Status:** Working draft, DR.3 — Project Documentation. Reviewed source: `2ca15e3feef49eb803bb962ee1644ca97945e44b`.
+**Status:** Reconciled procedural guide; original DR.3 review at `2ca15e3feef49eb803bb962ee1644ca97945e44b`. Current operational verification remains pending.
 
 This procedure reconstructs the MR10 Kit Compiler environment, interpreter-hosted demoted Cambridge Compiler, native application runtime, Base Library, native coroutine support and installed System Extensions from repository inputs. It does not build the unfinished native-running Cambridge Compiler, recreate TK5, install a distribution tape, produce a release or authorize promotion of development objects.
 
 **Destructive operation:** A clean-room rebuild removes managed host workarea contents and recreates the configured BCPL datasets, including installed object and load libraries. Obtain explicit authorization for the actual target and scope. Commands below are documentation, not permission to execute them.
 
-During migration, the existing [automated rebuild guide](../Rebuild-BCPL-for-MVS-from-source.md) and [manual rebuild procedure](../Manual-Rebuild-BCPL-for-MVS.md) remain operative. This draft consolidates their supported workflow without transferring authority or retiring either path. For installation from released media, see [How to Install BCPL from Tape](../product/How-to-Install-BCPL-from-Tape.md).
+The existing [automated rebuild guide](../Rebuild-BCPL-for-MVS-from-source.md) and [manual rebuild procedure](../Manual-Rebuild-BCPL-for-MVS.md) remain operative. This guide consolidates their supported workflow without retiring either path; public tool interfaces are governed by the approved Project Tools reference. For installation from released media, see [How to Install BCPL from Tape](../product/How-to-Install-BCPL-from-Tape.md).
 
 [Documentation catalog](../README.md)
 

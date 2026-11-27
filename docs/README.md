@@ -25,13 +25,13 @@
 
 ### References
 
-- [Reference for the BCPL Language](product/Reference-for-the-BCPL-Language.md) — working reference; existing authorities retained.
+- [Reference for the BCPL Language](product/Reference-for-the-BCPL-Language.md) — normative for supported syntax and semantics.
 
-- [Reference for BCPL Compilers](product/Reference-for-BCPL-Compilers.md) — working reference; existing authorities retained.
+- [Reference for BCPL Compilers](product/Reference-for-BCPL-Compilers.md) — normative for supported compiler interfaces.
 
-- [Reference for the Cambridge Runtime and Libraries](product/Reference-for-the-Cambridge-Runtime-and-Libraries.md) — working reference; existing authorities retained.
+- [Reference for the Cambridge Runtime and Libraries](product/Reference-for-the-Cambridge-Runtime-and-Libraries.md) — normative within the approved public native and MR10 contracts; detailed DEBUGINT verification pending.
 
-- [Reference for System Extensions](product/Reference-for-System-Extensions.md) — working reference; existing authorities retained.
+- [Reference for System Extensions](product/Reference-for-System-Extensions.md) — normative for approved QUERY, registration/finalization and package APIs; selection-macro authority transfer pending.
 
 ## Project manuals
 
@@ -47,7 +47,7 @@
 
 ### References
 
-- [Reference for Project Tools](project/Reference-for-Project-Tools.md) — working reference; existing tool contracts retained.
+- [Reference for Project Tools](project/Reference-for-Project-Tools.md) — normative for specified supported public host-tool interfaces.
 
 ## Subject index
 
@@ -71,7 +71,7 @@
 
 - **MVS programming environment:** [Consolidated explanation](project/Explanation-of-the-MVS-Programming-Environment.md), [original programmer orientation briefings](#programmer-orientation-briefings).
 
-All thirteen approved product manuals and five approved project manuals now have substantive working drafts. Existing references retain authority pending explicit reconciliation and approval. Existing programmer orientation briefings remain available below during migration.
+All thirteen approved product manuals and five approved project manuals are available. The five reference manuals have individual approved normative scopes; consult their status statements and the [Documentation Refactoring milestone](../packaging/milestones/documentation-refactoring/milestone-documentation-refactoring.md). Untransferred contracts, registry, configuration, manifests, independent oracles, canonical procedures and frozen release documentation retain their respective authority. Original engineering records and orientation briefings remain available. DR.5 verification and final closure remain pending.
 
 ## Programmer orientation briefings
 

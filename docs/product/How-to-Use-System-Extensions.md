@@ -2,7 +2,7 @@
 
 *Cambridge BCPL Programming System for MVS 3.8J*
 
-For native application programmers in the development environment. See the [tutorial](Tutorial-on-System-Extensions.md) and [reference](Reference-for-System-Extensions.md). RC4 alone is not an eligible native compilation environment.
+For native application programmers in the development environment. See the [tutorial](Tutorial-on-System-Extensions.md) and [reference](Reference-for-System-Extensions.md) for approved public contracts. RC4 alone is not an eligible native compilation environment.
 
 ## 1. Choose packages and prerequisites
 
@@ -83,7 +83,7 @@ The [BCPLTIME direct caller](../../system-extensions/bcpltime/test.bcpl) checks 
 
 QUERY, DEMO and TIME return positive word counts for success. QSAM ordinary calls return zero, READ EOF=1 or negative error. Check every result. Do not read stale result fields after unsupported opcode or invalid pointer rejection. Explicitly close owned QSAM handles. On returned CLOSE failure the handle is unusable and ownership uncertain; do not retry blindly. Generic normal FINISH/STOP finalization is not arbitrary abend recovery.
 
-Compare actual records and independent verifier output. Cases 175/176 require device opt-in: --allow-device on the coordinator only with operator authorization. --resume-punch may issue JES2 $S PUN1 and release unrelated queued work; do not use indiscriminately. Rendered printer/punch output is not raw EBCDIC record identity.
+Compare actual records and independent verifier output. Cases 175/176 require separate device authorization and --allow-device on the coordinated BCPLQSAM suite. Case 175 alone may start the punch writer once after the fresh exclusive-queue/device guard; case 176 never starts it. A lower-level --resume-punch invocation does not replace that public guard or authorize unrelated queued work, flushing or retry. See the [Project Tools reference](../project/Reference-for-Project-Tools.md). Rendered printer/punch output is not raw EBCDIC record identity.
 
 ## 8. Diagnose selection, registration, linkage and MVS errors
 

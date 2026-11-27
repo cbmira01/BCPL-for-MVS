@@ -169,7 +169,7 @@ tools/datasets/dspal ls
 Runnable members in the managed JCL PDS are stored as job bodies without a JOB statement. Submit one with:
 
 ```sh
-tools/datasets/dspal submit JCL CAMBBLD
+tools/datasets/dspal submit BOOT_JCL CAMBBLD
 ```
 
 `dspal` generates a small authenticated `DSPALSUB` launcher. Its `IEBGENER` input is an authenticated payload JOB card followed by the requested PDS member, and its output is `SYSOUT=(A,INTRDR)`. The member therefore stays on MVS; it is not copied back through the host.

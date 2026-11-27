@@ -1,9 +1,9 @@
 # How to Create a Release Candidate
 
 **Audience:** Project maintainers.  
-**Status:** Working draft, DR.3 — Project Documentation; source reviewed at `a07fe5290c507c575269b2acd1e1ac7914a35704`.
+**Status:** Reconciled review-oriented guide; original DR.3 review at `a07fe5290c507c575269b2acd1e1ac7914a35704`. New release driver live acceptance pending.
 
-Use this manual to plan, review and conduct a privately verified tape candidate of the **Cambridge BCPL Programming System for MVS 3.8J**. The [canonical execution guide](../../tools/distribution/How-to-Create-a-Release-Candidate.md) remains the single operative step-by-step command procedure. Follow its linked steps at each gate below. This manual adds the review and acceptance context around that procedure; it does not create a second independently executable recipe, relocate the existing guide or transfer its authority. DR.5 will review dependencies before any authority transfer.
+Use this manual to plan, review and conduct a privately verified tape candidate of the **Cambridge BCPL Programming System for MVS 3.8J**. The [canonical execution guide](../../tools/distribution/How-to-Create-a-Release-Candidate.md) remains the single operative step-by-step command procedure. Follow its linked steps at each gate below. This manual adds the review and acceptance context around that procedure; it does not create a second independently executable recipe, relocate the existing guide or transfer its authority. The [Project Tools reference](Reference-for-Project-Tools.md) now governs the specified public CLI contracts; the canonical execution guide retains the exact runnable procedure.
 
 The new [create-release driver](../../tools/distribution/create-release) and extracted helpers are implemented and offline-tested, but have not passed a live MVS run. The earlier private BC0005 integration used a different, now retired harness. Nothing in this manual authorizes a new candidate, MVS operation, installation, registry change or publication.
 
@@ -183,4 +183,4 @@ If intent has been consumed, the VOLSER stays unavailable even if no image exist
 
 Before changes to the driver or helper interfaces, use its canonical offline test procedure. The [release tool guide](../../tools/distribution/README.md) describes the simulated success, decline and write failure checks and retained helpers. Mock transport tests do not replace actual MVS acceptance. A future independently authorized candidate must establish the new driver's live verification before it is represented as accepted.
 
-DR.3 documentation drafting does not reopen the Tape artifact release milestone or authorize production. Existing canonical instructions, frozen source records, manifest, registry, evidence and independent oracles retain their authority.
+DR.5 reconciliation does not reopen the Tape artifact release milestone or authorize production. Existing canonical instructions, frozen source records, manifest, registry, evidence and independent oracles retain their authority.

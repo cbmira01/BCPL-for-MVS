@@ -1,9 +1,9 @@
 # How to Develop and Test BCPL for MVS
 
 **Audience:** Developers and maintainers of the BCPL for MVS 3.8 Reconstruction project.  
-**Status:** Working draft, DR.3 — Project Documentation. Source reviewed at `c81fee5ca42263f862e5fa6a9826d68706b47887`.
+**Status:** Reconciled procedural guide; original DR.3 review at `c81fee5ca42263f862e5fa6a9826d68706b47887`. Current operational verification remains pending.
 
-Develop in small, reproducible increments, with real BCPL, assembler and JCL. Verify the behavior on MVS 3.8J before treating a candidate as accepted. This guide covers the development environment, not the operation of the public release or the installation of a distribution tape. The existing policies, contracts, test manifests and accepted engineering records remain authoritative during migration.
+Develop in small, reproducible increments, with real BCPL, assembler and JCL. Verify the behavior on MVS 3.8J before treating a candidate as accepted. This guide covers the development environment, not the operation of the public release or the installation of a distribution tape. The approved reference manuals govern their transferred public contracts; project policies, independent test manifests/oracles and accepted engineering records retain their respective authority.
 
 [Documentation catalog](../README.md) | [Reconstruct from source](How-to-Reconstruct-BCPL-from-Source.md) | [Compile and run BCPL programs](../product/How-to-Compile-and-Run-BCPL-Programs.md)
 
@@ -253,6 +253,6 @@ After focused tests and any authorized installation, run the applicable full sup
 
 Check the newly generated `workarea/project-regressions/<run>/summary.json`, per-suite logs, `workarea/test-suites/` case receipts and relevant printer/punch evidence. Each run has its own scope; preserve per-suite accounting and retain omitted, blocked and not-run distinctions. Keep reports needed for acceptance outside disposable `workarea/` before cleanup. Follow the [distribution evidence preservation rules](../../packaging/distribution/README.md) for protected release materials and consumed one-shot markers. Do not commit private credentials or unredacted authenticated decks.
 
-An acceptance record should identify the milestone/march and decision requested, Git revision and dirty/clean status, exact tool/profile and installed/candidate objects, target and job receipts, independent expected/observed results, PASS/FAIL/SKIP/BLOCKED/NOT_RUN counts, known limitations and preserved earlier failures. Classify owner-reported execution distinctly from independently reviewed raw receipts. If the change modifies public behavior, update the appropriate source contract and working reference; maintain the registry, config, manifest and oracles according to their independent authorities. Never move normative authority by editing a manual alone.
+An acceptance record should identify the milestone/march and decision requested, Git revision and dirty/clean status, exact tool/profile and installed/candidate objects, target and job receipts, independent expected/observed results, PASS/FAIL/SKIP/BLOCKED/NOT_RUN counts, known limitations and preserved earlier failures. Classify owner-reported execution distinctly from independently reviewed raw receipts. If the change modifies public behavior, reconcile the appropriate source and normative reference; maintain the registry, config, manifest and oracles according to their independent authorities. Never move normative authority by editing a manual alone.
 
 The goal is a small reproducible change, independently verified on MVS and reflected in coherent documentation. Seek the owner's acceptance before closing a march. DR.5 retains detailed reconciliation and integrated validation responsibilities. Neither a regression PASS nor documentation acceptance authorizes release production, publication, destructive reconstruction or another milestone's closure.

@@ -534,3 +534,7 @@ clarifications and retained evidence limits. Source README links identify
 the normative reference; headers, package support obligations, allocations,
 private implementation, old contracts and closure evidence are preserved.
 No code change, new MVS execution or release action.
+
+### DR.5 — Remaining selection-macro reconciliation
+
+At `c2ba705ca7e6bac62484f7ea3483a8b73f7883dd`, reviewed current three-package BCX macros, original R.4/R.5 closures, current MAP verifier, public use guide and subsequent installed-mode evidence. 30/30 selected blobs match CO.6 and RC4 frozen source. See [proposal](dr5-selection-macro-authority-transfer-proposal.md). Corrected current-facing authority summary and source-local BCX status without rewriting historical evidence. Explicit approval still required; no new target execution or macro change.
