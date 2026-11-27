@@ -190,3 +190,21 @@ change or repeat submission required. Tab input, overflow, complete BLIB
 export-trailer census and other outstanding ABI/diagnostic qualifications
 remain. No numbered regression allocation or change to supported suite
 counts; no normative transfer, release change or march closure.
+
+### DR.5 — Resident BLIB export-trailer reconciliation
+
+Source checkpoint `6763eb9f69f7812d84d9d320c6704154f4ebf6ee`. Reopened the historical CGGLOBAL emitter,
+canonical BCPLMAIN BLIMP import path, BLIB/LIBHDR, and actual [R.0 JOB 2197
+export census](../../archive/runtime-extensions/runtime-extensions-r0-trailer-job-2197-evidence-20261021.md).
+The older installed BLIB exported exactly 21 procedures, not G!71 data or
+G!79 callback. This agrees with the DR.5 source inventory and is now
+acknowledged in the runtime reference. The earlier binary is not the
+subsequently rebuilt resident BLIB; a fresh census is warranted.
+
+The [DR.5 candidate](candidates/blib-trailer-verification/README.md) reuses
+the unchanged R.0 IFOX observer and parser, adding the current resident
+BCPLRGS/BCPLREG linkage to a disposable deck and requiring the exact
+historical 21-slot set. No startup, procedure calls, PDS updates, device
+operations, production changes, new numbered cases or normative transfer.
+Local Python syntax and isolated exact-inventory/linkage tests passed;
+GitHub DNS prevents full local checkout. Target results pending.
