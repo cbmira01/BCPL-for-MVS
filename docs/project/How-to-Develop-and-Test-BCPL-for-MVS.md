@@ -144,13 +144,15 @@ The interpreted result and applicable `CODE=` records must also pass. The MR10 p
 | --- | --- |
 | `production` | Installed `BOOT_OBJ`; source-selected R.5/T.1 extension tests when needed |
 | `installed-r5-t1` | Installed `BOOT_OBJ`, installed R.5/T.1 extension objects and macros |
-| Both profiles, QSAM 163–176 | Source-selected BCPLQSAM; not new installed-BCPLQSAM execution evidence |
+| `production`, QSAM 163–176 | Source-selected BCPLQSAM |
+| `installed-r5-t1`, QSAM 163–176 | Resident EXT_OBJ(BCPLQSAM) and EXT_MAC; all 14 accepted |
+| Both profiles, QSAM 198–200 | Private instrumented QSAM and temporary runtime/registry assemblies; not installed-object fault tests |
 | Both profiles, coroutines 177–189 | Pinned CO.2–CO.4 candidate-source tests; not a substitute for installed-only coroutine verification |
 | Historic source instrumentation | Case 083 requires source-only counters; expected SKIP in the two installed-BOOT_OBJ profiles |
 
-The explicit production wrapper sets the runtime PDS and OBJ selection and clears inherited runtime-candidate settings. Do not mix environment overrides or historical DEVOBJ flags into that profile. The installed R.5/T.1 profile still does not change QSAM or coroutine candidate selection. For a candidate not covered by the standard profiles, use a separately reviewed source-selected test adapter and record its actual inputs and linkage.
+The explicit production wrapper sets the runtime PDS and OBJ selection and clears inherited runtime-candidate settings. Do not mix environment overrides or historical DEVOBJ flags into that profile. The historically named installed-r5-t1 profile selects resident optional objects for ordinary QSAM cases as well as R.5/T.1; it does not change private diagnostic or coroutine candidate selection. For a candidate not covered by the standard profiles, use a separately reviewed source-selected test adapter and record its actual inputs and linkage.
 
-## 5. Testing — native 00–197, MR10 baseline/supported/development and paired coroutine suites
+## 5. Testing — native 00–200, MR10 baseline/supported/development and paired coroutine suites
 
 The [native suite manifests](../../tests/README.md) and MR10 manifests retain ownership of test identities. Use the project coordinator for regular campaigns and `run-suite` for focused native selection. `--check` and `--list` are host-only; `--run` submits jobs. An explicit native profile is required for native execution; paired coroutine cases have their own pinned compile/linkage choices.
 
@@ -161,11 +163,11 @@ The [native suite manifests](../../tests/README.md) and MR10 manifests retain ow
 | `bootstrap` | 00–145, 190–193 | 150 | 149 PASS, 1 SKIP (083) |
 | `runtime-extensions` | 146–158, 194–197 | 17 | 17 PASS (subsequent production suite) |
 | `bcpltime` | 159–162 | 4 | 4 PASS |
-| `bcplqsam` | 163–176 | 14 | 14 PASS, device opt-in |
+| `bcplqsam` | 163–176, 198–200 | 17 | 17 accepted across separate runs; device opt-in for 175–176 |
 | `coroutines` | 177–189 | 13 | 13 PASS |
 | `coroutine-contract` | co6-pair, co6-nested | 2 | 2 PASS |
 
-The historical eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) at source revision `3f6a417504ab721c080d5af1ffaf54b580ea346b` reported 211 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP; the subsequent [DR.5 BCPLIO campaign](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) at revision `a0efe9a204e1f3f3968b60cb8c7065e9b423bce7` reported 212 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 registrar campaign](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md) at revision `e19d03b4bd8443fe1c2fa22f97189cba897289ef` subsequently reported the same 212 PASS/1 expected SKIP after BCPLRGS installation. The subsequent expanded Runtime Extensions production suite at revision `94574c422fcdc097aeb43a1054727b3eeaa12ac8` reported 17 PASS, including all four new numbered cases. The table combines the latest reported suite results, not a single expanded campaign. The expected consolidated supported count is 216 PASS and one expected SKIP (217 selected); none of these earlier results is proof that a later checkout has been tested.
+The historical eight-suite campaign is recorded in [CO.6 formal qualified closure](../../packaging/milestones/coroutines/co6-formal-acceptance-and-closure-20261116.md), tested revision `216b6707c404a91c796ed8f1419a99ef172b184a`: 208 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 supported campaign](../../packaging/milestones/documentation-refactoring/candidates/compiler-verification/README.md) at source revision `3f6a417504ab721c080d5af1ffaf54b580ea346b` reported 211 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP; the subsequent [DR.5 BCPLIO campaign](../../packaging/milestones/documentation-refactoring/dr2-runtime-library-manual-migration-20261125.md) at revision `a0efe9a204e1f3f3968b60cb8c7065e9b423bce7` reported 212 PASS, 0 FAIL, 0 BLOCKED, 1 expected SKIP. The [DR.5 registrar campaign](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md) at revision `e19d03b4bd8443fe1c2fa22f97189cba897289ef` subsequently reported the same 212 PASS/1 expected SKIP after BCPLRGS installation. The subsequent expanded Runtime Extensions production suite at revision `94574c422fcdc097aeb43a1054727b3eeaa12ac8` reported 17 PASS, including all four new numbered cases. The [DR.5 System Extensions evidence](../../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md) records 17 Runtime Extensions passes, all 14 ordinary BCPLQSAM cases accepted in source and installed modes, and private diagnostics 198–200 accepted across native runs and retained JOB 1300 evidence reconciliation. The original 2 PASS / 1 FAIL diagnostic receipt remains unchanged. The current supported inventory is 220 selected, with 219 distinct accepted passes and one expected SKIP (083) across separate campaigns; a single consolidated campaign remains outstanding. None of these earlier results is proof that a later checkout has been tested.
 
 Inspect selections or run a deliberately limited campaign:
 
@@ -187,7 +189,7 @@ MR10 diagnostics remain independent:
 
 For an individual diagnostic, inspect `tools/mr10/run-dev-probes --list` and use explicit `--run --case CASE_ID` only under approved scope. `--all-provisional` retains the original six-case selection; `--all-candidates` submits the entire 17-entry selection and is not the regular regression campaign.
 
-The native 194-case inventory (including 083) is separate from MR10 and paired cases. Preserve all IDs and expected files when extending test coverage. Update the appropriate manifest and verify unique ownership, expected files and reporting semantics before execution. Do not invent a new test ID or change existing policy without the required review.
+The native 201-case inventory (including 083) is separate from MR10 and paired cases. Preserve all IDs and expected files when extending test coverage. Update the appropriate manifest and verify unique ownership, expected files and reporting semantics before execution. Do not invent a new test ID or change existing policy without the required review.
 
 ## 6. Testing — offline versus MVS results, JES, printer/punch attribution and failure evidence
 
@@ -205,7 +207,7 @@ Do not trust an old job report selected only by a reused job number. The guarded
 
 Device tests require separate authorization. BCPLQSAM case 175 sends FB80 binary card images to the JES punch, and 176 sends FBA133 output to the printer. Without `--allow-device` they are BLOCKED, not SKIP. Neither a successful PUT nor GO RC=0 alone proves the physical output. Use the suite's bounded independent printer/punch capture and exact device-specific checks.
 
-The current `run-suite` and project coordinator strip inherited punch-resume settings. Explicit device opt-in for case 175 alone permits a guarded single `$S PUN1` when PUNCH1 is paused (`P=Y, Q=B`) and a fresh queue check identifies only the current Q4PUNCH job. Unrelated class-B work, missing target or ambiguous state blocks the start. Do not flush the queue, retry a failed start or start a writer for case 176. Case 175 additionally requires the exact new 172-byte punch image and matching job receipt. The older suite README's statement that the runner never enables the writer is superseded by actual current guarded behavior; do not reproduce the older unguarded standalone resume procedure.
+The current `run-suite` and project coordinator strip inherited punch-resume settings. Explicit device opt-in for case 175 alone permits a guarded single `$S PUN1` when PUNCH1 is paused (`P=Y, Q=B`) and a fresh queue check identifies only the current Q4PUNCH job. Unrelated class-B work, missing target or ambiguous state blocks the start. Do not flush the queue, retry a failed start or start a writer for case 176. Case 175 additionally requires the exact new 172-byte punch image and matching job receipt. The current suite README documents this guarded behavior; do not reproduce the older unguarded standalone resume procedure.
 
 | Evidence outcome | Required handling |
 | --- | --- |
@@ -241,7 +243,7 @@ python3 -B tools/coroutines/verify-installed-production.py --check
 python3 -B tools/coroutines/verify-installed-production.py --run
 ```
 
-The first operation is host-only; the second submits MVS jobs. A native candidate-source suite PASS alone cannot replace this installed-only verification. Preserve the qualified coroutine domain (root and at most two live registered workers, fixed 1024-word worker stacks and known-live descriptor lifecycle), not broader unverified behavior. For other components require their own installed-object test and accepted contract; the QSAM source-selected regression profile does not prove installed QSAM linkage.
+The first operation is host-only; the second submits MVS jobs. A native candidate-source suite PASS alone cannot replace this installed-only verification. Preserve the qualified coroutine domain (root and at most two live registered workers, fixed 1024-word worker stacks and known-live descriptor lifecycle), not broader unverified behavior. For other components require their own installed-object test and accepted contract. Ordinary QSAM cases 163–176 passed with installed objects under installed-r5-t1; source-mode results and private diagnostic cases 198–200 do not establish installed-object linkage.
 
 If installation fails partway through, freeze further writes, retain actual job results and determine which members changed. Multi-member replacement is not atomic. Do not assume the previous binary decks are backed up. With separate approval rebuild a coherent known-good source revision using its verified dependency/installation procedure, or correct and redeploy a newly reviewed candidate if that is the approved recovery. Rerun installed tests and record any inability to restore exact incumbent bytes. Do not automatically roll back, purge, retry or publish.
 
