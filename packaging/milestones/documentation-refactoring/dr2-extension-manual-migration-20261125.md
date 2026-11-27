@@ -342,3 +342,24 @@ record I/O and device results remain pending. Do not count these proposed
 executions as new unique cases or as a passing full campaign. Distinct
 rollback/cleanup/competing-status coverage is a subsequent design and
 verification task; genuine exceptional CLOSE remains qualified.
+
+### DR.5 — First numbered installed QSAM attempt blocked in host preflight
+
+Owner-reported revision `8530087dc4dbf3ef31faf76b7891accf0f228ffb`:
+installed-r5-t1 Runtime Extensions case 146 PASS (evidence
+`workarea/test-suites/20261127T031219Z-41171-runtime-extensions-installed-r5-t1-ruqaxxgd`).
+The immediately following installed BCPLQSAM suite reported 0 PASS,
+14 FAIL (evidence
+`workarea/test-suites/20261127T031221Z-41269-bcplqsam-installed-r5-t1-pfqkwtsf`).
+Case 163 runner log reports `unexpected BCX requirements` before compiler
+submission. The adapter's initial synthetic fixtures omitted the actual
+BCXREQ macro prototype; its selection test incorrectly treated
+`BCXREQ &PKG` in BCXPRE as an invocation. All fourteen cases share this
+preflight; the other thirteen individual logs were not inspected.
+This is not evidence of a native BCPLQSAM failure. Fix the adapter to
+recognize MACRO/MEND boundaries and verify the exact top-level selection,
+BCXEND and END cards; retain strict rejection of unexpected invocations.
+Add host regression coverage for actual tracked BCX streams and all
+fourteen generator shapes. No MVS object or oracle changes. The focused
+installed JOBs 1261/1263 remain accepted; full numbered installed-mode
+execution remains pending.

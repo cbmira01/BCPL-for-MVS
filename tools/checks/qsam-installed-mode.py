@@ -23,6 +23,25 @@ def application_links(kind):
     return ("LKED", "LKRD") if kind == "full" else ("LKED",)
 
 
+def macro_invocations(rows):
+    """Return executable cards outside IFOX MACRO/MEND definitions."""
+    result = []
+    in_macro = False
+    for row in rows:
+        if not row.strip() or row.startswith("*"):
+            continue
+        if row.strip() == "MACRO":
+            require(not in_macro, "nested BCX macro definition")
+            in_macro = True
+        elif row.strip() == "MEND":
+            require(in_macro, "unmatched BCX MEND")
+            in_macro = False
+        elif not in_macro:
+            result.append(row)
+    require(not in_macro, "unterminated BCX macro definition")
+    return result
+
+
 def transform(deck, kind, steps, obj, ext, mac):
     """Keep application/independent I/O steps and DDs byte-for-byte unchanged."""
     require(len({obj, ext, mac}) == 3 and all(len(d) <= 44 and DSN.fullmatch(d)
@@ -46,8 +65,9 @@ def transform(deck, kind, steps, obj, ext, mac):
             require(block.count(anchor) == 1 and block.count("/*") == 1
                     and block[-1] == "/*", "unexpected macro stream")
             at = block.index(anchor)
-            require([r for r in block[at:] if r.startswith("         BCXREQ ")] == selection,
-                    "unexpected BCX requirements")
+            require(macro_invocations(block[at+1:-1]) == selection + [
+                        "         BCXEND", "         END   BCPLREG"],
+                    "unexpected BCX invocation sequence")
             block = block[:at] + [
                 f"//SYSIN    DD  DSN={mac}(BCXPRE),DISP=SHR",
                 f"//         DD  DSN={mac}(BCXCAT),DISP=SHR",
