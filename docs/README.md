@@ -37,13 +37,13 @@
 
 ### How-to guides
 
-- [How to Reconstruct BCPL from Source](project/How-to-Reconstruct-BCPL-from-Source.md) — working draft; existing reconstruction runbooks remain operative.
-- [How to Develop and Test BCPL for MVS](project/How-to-Develop-and-Test-BCPL-for-MVS.md) — working draft; existing policies and test authorities retained.
-- [How to Create a Release Candidate](project/How-to-Create-a-Release-Candidate.md) — working draft; [canonical execution guide](../tools/distribution/How-to-Create-a-Release-Candidate.md) remains operative.
+- [How to Reconstruct BCPL from Source](project/How-to-Reconstruct-BCPL-from-Source.md) — reconciled procedure; existing reconstruction runbooks remain operative.
+- [How to Develop and Test BCPL for MVS](project/How-to-Develop-and-Test-BCPL-for-MVS.md) — reconciled procedure; existing policies and test authorities retained.
+- [How to Create a Release Candidate](project/How-to-Create-a-Release-Candidate.md) — reconciled review-oriented guide; [canonical execution guide](../tools/distribution/How-to-Create-a-Release-Candidate.md) remains operative.
 
 ### Explanations
 
-- [Explanation of the MVS Programming Environment](project/Explanation-of-the-MVS-Programming-Environment.md) — working explanation; original briefings retained.
+- [Explanation of the MVS Programming Environment](project/Explanation-of-the-MVS-Programming-Environment.md) — explanatory guide; original briefings retained.
 
 ### References
 
