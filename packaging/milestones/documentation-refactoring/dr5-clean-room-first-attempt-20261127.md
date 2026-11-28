@@ -44,3 +44,24 @@ Source review of ICINT19 MAINEND confirms unconditional RETURN (14,12),RC=0 even
 ## Approved correction under implementation
 
 Owner approved the BLIB-only P2000 reservation and a dedicated negative reconstruction-integrity regression, without another numbered native BCPL application case. BLIBBLD captures the complete compiler SYSPRINT in temporary FB132 COMPRPT, copies it to JES with IEBGENER, and passes it to BLIBPREP. Before opening RAW, the IFOX-assembled gate requires exactly one completion record with unsigned decimal cycle count, CODE = 0, and blank padding; absent, nonzero, malformed or repeated completion records fail with RC8. The downstream steps use all-prior-step zero conditions; INSTALL cannot run if FIXASM or any preceding step has failed. ICINT19, its default return-code convention, global compiler options, BLIB source and runtime code are unchanged. The guarded reconstruction receipt now requires the added COMPRPT IEBGENER step and exact successful interpreted completion. Native verification must test both private success and deliberate CODE8 rejection with a nonpersistent object destination before another authorized clean-room rebuild. No native success of the gate is claimed by this implementation record.
+
+## Private BLIB build-integrity target verification — PASS
+
+Owner supplied actual WSL console output on 27 November 2026 EST, from the [private verification driver](../../../tools/checks/run-dr5-blib-build-verification.py) at `415b1e75f1adfbc561214f96fbf5bceb9a1dc63e` (Git pull RC0). The tested implementation is unchanged from the [final offline PASS](dr5-offline-verification-and-target-gates-20261127.md) at c5b56cef0e2f9aa830a9b49631868cbc5d380b02; the intervening commit records documentation evidence only.
+
+| Observation | DR5BLPOS, JOB 1382 | DR5BLNEG, JOB 1383 |
+| --- | --- | --- |
+| Interpreted compiler CODE | 0 | 8 |
+| COMP | 0 | 0 |
+| COMPRPT | 0 | 0 |
+| PREPASM | 0 | 0 |
+| PREPLK | 0 | 0 |
+| FIXASM | 0 | 8 |
+| ASMBLIB | 0 | FLUSH |
+| INSTALL | 0 | FLUSH |
+
+Driver status PASS, stage complete, process RC0, tee RC0, receipt-copy RC0. The negative result reports installation_flushed=true. Under the reviewed driver oracle, PASS additionally requires the correct JES identities, no ABEND or JCL error, exactly one expected interpreted completion record per job, two zero IFOX severity records for the positive job and one for the negative job, and explicit ASMBLIB and INSTALL flush evidence in the negative report. These additional checks are established through the reported driver verdict; the underlying private JES reports were not independently reopened by the assistant.
+
+Original receipts: workarea/dr5-blib-build/run-gw9bhlu8. Preserved copy: mvs-state/dr5-blib-build/receipts/run-gw9bhlu8; driver.log in mvs-state/dr5-blib-build/. Keep authenticated decks private. Both jobs use the temporary FB80 destination rather than BOOT_OBJ(BLIB). The positive result verifies the P2000 BLIB-specific build through IFOX and private IEBGENER output; the negative result demonstrates the pre-RAW interpreted-completion guard and downstream suppression despite ICINT19 RC0. No persistent installed object replacement is claimed. The missing, malformed and repeated completion scenarios retain offline/source verification only, not separate native executions. No general execution-stack high-water bound is established.
+
+Private positive/negative acceptance is satisfied at this tested scope. Preserve JOB 1379 and all earlier failed reconstruction and diagnostic evidence. Do not resume at Step 8. Next obtain fresh owner authorization for Gate 1, a complete unattended batch clean-room reconstruction on the dedicated TK5 target; Gate 2 independent installed object inventories and Gate 3 consolidated production regression with explicit device authorization remain separate and unstarted. No DR.5 closure, DR.6 activation, release production or full clean-room PASS is claimed.
