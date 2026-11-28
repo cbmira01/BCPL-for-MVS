@@ -2,7 +2,7 @@
 
 **Project:** BCPL for MVS 3.8 Reconstruction  
 **Owner approval:** 24 November 2026 EST — seven marches DR.0–DR.6 approved; DR.0 commencement authorized.  
-**Status:** DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 CLOSED (qualified); DR.3 CLOSED (qualified); DR.4 CLOSED (qualified); DR.5 CLOSED (qualified); DR.6 IN PROGRESS.  
+**Status:** CLOSED (qualified) — 27 November 2026 EST. DR.0 CLOSED (qualified); DR.1 CLOSED; DR.2 CLOSED (qualified); DR.3 CLOSED (qualified); DR.4 CLOSED (qualified); DR.5 CLOSED (qualified); DR.6 CLOSED (qualified).  
 **Authority:** GitHub `main`. Inventory baseline: `ed0f8066859ed4e1a310bbb91520d0d629c5dca3`.
 
 ## Objective
@@ -32,7 +32,7 @@ Filenames correspond to titles, with hyphens between words. The preferred System
 | DR.3 | Project Documentation | CLOSED (qualified) | Development, reconstruction, testing, maintenance, promotion and release procedures |
 | DR.4 | Documentation Distribution | CLOSED (qualified) | Owner-approved Markdown and existing MVS FB80 distribution policy; additional formats and tests deferred |
 | DR.5 | Validation and Reconciliation | CLOSED (qualified) | Technical accuracy, consistency and operational verification |
-| DR.6 | Acceptance and Closure | IN PROGRESS | Maintenance policy, release integration and formal acceptance |
+| DR.6 | Acceptance and Closure | CLOSED (qualified) | Maintenance policy, release integration and formal acceptance |
 
 ### DR.0 — Inventory and Classification
 
@@ -72,7 +72,7 @@ On 27 November 2026 the owner approved the [first individual normative transfer,
 
 ### DR.6 — Acceptance and Closure
 
-Establish practical maintenance and release-integration policy. Record verified results and remaining qualifications; obtain formal owner acceptance and closure. DR.6 is IN PROGRESS by [owner direction](dr5-formal-qualified-closure-and-dr6-transition-20261127.md). Begin with a policy discussion and read-only acceptance review; no new release production, guarded live integration, destructive reconstruction, or automatic expansion of accepted scope.
+Establish practical maintenance and release-integration policy. Record verified results and remaining qualifications; obtain formal owner acceptance and closure. Owner approved the maintenance and release-integration policy and directed formal closure on 27 November 2026 EST. See [DR.6 formal qualified closure and milestone completion](dr6-formal-qualified-closure-and-milestone-completion-20261127.md). DR.6 and Documentation Refactoring are CLOSED (qualified). The accepted maintenance policy is integrated into the [development guide](../../../docs/project/How-to-Develop-and-Test-BCPL-for-MVS.md) and [canonical release procedure](../../../tools/distribution/How-to-Create-a-Release-Candidate.md). All retained qualifications remain effective. No new milestone, release production, live integration or destructive reconstruction is authorized by closure.
 
 ## Preservation and scope boundaries
 
