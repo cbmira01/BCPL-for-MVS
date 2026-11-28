@@ -10,6 +10,7 @@
 - [Post-Documentation Refactoring development direction](post-documentation-refactoring-development-direction-20261128.md) — owner-approved priorities, deferred work and guarded-controller retirement direction.
 - [Cambridge Compiler Bootstrap Restoration — approved design discussion](cambridge-compiler-bootstrap-restoration-design-discussion-20261128.md) — 17 owner-approved decisions; governing milestone and CBR.0 opening recorded separately.
 - [Global Number Registry](global-number-registry.md) — historical and project global-vector assignments
+- [INTCODE X-class Instruction Registry](intcode-x-class-instruction-registry.md) — retained X1–X37 semantics and owner-approved allocation control for interpreter services; no new instruction assigned.
 - [Runtime contract v1](runtime-contract-v1.md) — native runtime interfaces and invariants
 - [CG370 architecture notes](cg370-architecture-notes.md) — historical System/370 generator, code generation and bootstrap distinctions
 - [MR10 and Cambridge runtime interface discussion](runtime-interface-conventions-and-contracts.md) — source-grounded architectural history
