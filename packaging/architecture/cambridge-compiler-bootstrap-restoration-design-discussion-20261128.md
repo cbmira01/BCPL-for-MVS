@@ -327,3 +327,7 @@ The following remain outside the milestone unless separately approved by the own
 - Unrelated historical postmortem and runtime feature reconstruction.
 
 Preserve BCEX/BCRG contracts, accepted System Extensions, Coroutine Support Library, published RC4 artifacts and existing milestone qualifications.
+
+## 7. CBR.0 refinement — ICINT20 storage architecture (28 November 2026 EST)
+
+The owner approved fixed assembly-time PROGVEC capacity with targeted storage checks, rejecting runtime-configurable PROGVEC allocation. This refines decisions 4 and 9 for the interpreted environment; compiler workspace options and the native runtime stack allocation investigation remain distinct. See the [approved ICINT20 bootstrap architecture](../milestones/cambridge-compiler-bootstrap-restoration/cbr0-icint20-bootstrap-architecture-20261128.md) for the controlling detail and verification requirements. No implementation or march transition is authorized.

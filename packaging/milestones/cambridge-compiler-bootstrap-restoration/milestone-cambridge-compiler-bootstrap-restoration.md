@@ -40,6 +40,8 @@ Inventory the effective compiler, interpreter, BLIB/BLIBI/ICLIB dependencies, gl
 
 ### CBR.1 — ICINT20 and Word Representation
 
+Apply the [owner-approved ICINT20 bootstrap architecture](cbr0-icint20-bootstrap-architecture-20261128.md): fixed assembly-time PROGVEC capacity, dynamically obtained storage, targeted critical-operation bounds checking, and independent bootstrap verification. No runtime PROGVEC sizing option is required.
+
 Develop a separately built ICINT20 with 32-bit interpreted words, four-byte packed strings/bytes, ASCII internal characters, appropriate program and stack storage and applicable textual INTCODE compatibility. Inspect existing deck encodings, GETBYTE/PUTBYTE, pack order, character boundaries and program loading. Do not assume two-byte-packed decks execute unchanged. Establish the minimum compatible ICLIB/BLIBI and test fixtures needed for initial bring-up; investigate how to generate four-byte-compatible library and application decks using the preserved MR10 bootstrap, with any necessary target-dependent changes separately justified. Avoid circular build dependencies. Preserve original ICINT19, MR10 BLIB/BLIBI and executable phases.
 
 **Acceptance:** ICINT20 independently assembles, loads and executes controlled INTCODE programs on MVS; independent word, byte, string, arithmetic, storage-boundary and textual loading tests pass. Measured stack/program capacity and format limits are documented; ICINT19 remains intact.
