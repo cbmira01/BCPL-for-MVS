@@ -86,3 +86,25 @@ Owner supplied actual console output from two fresh MVS LISTDS MEMBERS inquiries
 Observed BOOT_OBJ INVENTORY PASS: 10 exact members; EXT_OBJ INVENTORY PASS: 3 exact members. No missing, unexpected or duplicate members. Listings retained in mvs-state/dr5-clean-room-second/inventory/BOOT_OBJ.txt and EXT_OBJ.txt. This accepts Gate 2 at exact directory membership scope; neither byte identity nor executable behavior is inferred from membership. No installed object modification was performed.
 
 Gate 3, the separate consolidated eight-suite production regression, is the sole remaining target campaign. Obtain explicit printer/punch device authorization before invocation with --allow-device. Expected 219 PASS, one expected SKIP (083), 0 FAIL and 0 BLOCKED. Retain Gate 1 and Gate 2 receipts and reconcile outstanding rebuild payload evidence before formal DR.5 closure. DR.6 remains NOT STARTED.
+
+## Gate 3 — Consolidated eight-suite production regression — PASS
+
+Owner explicitly authorized the complete supported campaign including BCPLQSAM printer and punch cases 175–176. Owner supplied the full case-progress transcript on 27 November 2026 EST. Revision a70a424567d670ca8ff60d29da1663903663d09d (Git pull RC0; intervening commits since Gate 1 record evidence only). Two fresh JES idle observations passed. The coordinator ran the eight supported suites with --profile production --allow-device --progress on the reconstructed target.
+
+| Suite | PASS | FAIL | SKIP | BLOCKED |
+| --- | ---: | ---: | ---: | ---: |
+| mr10 | 12 | 0 | 0 | 0 |
+| mr10-coroutines-supported | 5 | 0 | 0 | 0 |
+| bootstrap | 149 | 0 | 1 | 0 |
+| runtime-extensions | 17 | 0 | 0 | 0 |
+| bcpltime | 4 | 0 | 0 | 0 |
+| bcplqsam | 17 | 0 | 0 | 0 |
+| coroutines | 13 | 0 | 0 | 0 |
+| coroutine-contract | 2 | 0 | 0 | 0 |
+| Total | 219 | 0 | 1 | 0 |
+
+MR10 does not implement skip/blocked counters (reported None); zeros in the aggregate denote no such outcomes. The sole expected SKIP is 083 instrumented-storage-reclamation. Cases 175 qsam-fb80-sysout-punch and 176 qsam-fba133-sysout-printer both PASS, as do private rollback cases 198–200. No overlapping historical diagnostics were selected. PROJECT REGRESSION RESULT: PASS; total 13m 40s; regression RC0, log RC0, archive RC0.
+
+Coordinator receipt: workarea/project-regressions/20261128T024630Z-54880-nkvpb0mv/summary.json. Preserved private evidence: mvs-state/dr5-production-regression/regression.log and workarea.tar.gz (complete workarea archive); idle.log also retained. Acceptance is based on the actual owner-supplied progress transcript and the reviewed coordinator's independent suite oracles; raw private JES reports and summary JSON have not been independently reopened. The supported production profile does not imply all optional extension cases use installed rather than source-selected/private objects.
+
+All three distinct target gates now PASS. No additional reconstruction or device campaign is required at this scope. Before formal DR.5 closure, reconcile the retained Gate 1 build payload receipts and remaining documentation qualifications. No DR.6 activation, release production or guarded-controller integration acceptance is implied.
