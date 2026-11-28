@@ -7,6 +7,10 @@
 
 Documentation Refactoring is CLOSED (qualified). The owner and assistant discussed the remaining technical obligations and future opportunities. The owner agreed to prioritize completion of the native-running Cambridge Compiler and directed that the discussion be recorded and committed, followed by a handoff to establish that milestone. This record does not assign a new milestone title or march identifiers, authorize implementation or reopen accepted milestones.
 
+## Subsequent owner-approved sequencing — 28 November 2026 EST
+
+The [Cambridge Compiler Bootstrap Restoration design discussion](cambridge-compiler-bootstrap-restoration-design-discussion-20261128.md) supersedes the native compiler sequencing in this historical record. The [governing milestone](../milestones/cambridge-compiler-bootstrap-restoration/milestone-cambridge-compiler-bootstrap-restoration.md) is established and CBR.0 is OPEN by owner direction. Restore the interpreter-hosted Cambridge Compiler and its supporting environment first, culminating in construction and static linkage of the native compiler load module. Native execution and self-compilation remain subsequent objectives. All unrelated dispositions, historical evidence and qualifications below remain effective. This addendum authorizes no implementation, allocation, MVS operation, promotion or release.
+
 ## Governing philosophy
 
 Keep the project easy to modify, reconstruct from scratch, test, and produce a release. Prefer simple, inspectable orchestration built on independently testable MVS tooling. In particular, clean-room reconstruction should remain a straightforward, deterministic full rebuild, not an elaborate transaction-management system. Preserve independent verification, actual MVS evidence and failure records. Avoid duplicate orchestration, unnecessary infrastructure and recurring verification without a defect or changed scope.
