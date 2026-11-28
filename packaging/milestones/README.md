@@ -11,4 +11,6 @@ Each directory contains the authoritative milestone document and its directly re
 - [Decimal Arithmetic](decimal-arithmetic/) — proposed, not started; **indefinitely deferred to deep background** by owner decision, 16 November 2026; no implementation accepted.
 - [BCPLIO dynamic stream](bcplio-dynamic-stream/README.md) — accepted runtime stream contract, historical plans and final acceptance.
 
+Current development direction: [Post-Documentation Refactoring decisions](../architecture/post-documentation-refactoring-development-direction-20261128.md) — prioritize the native-running Cambridge Compiler; detailed milestone establishment pending. Existing milestone statuses are unchanged.
+
 Older probes, intermediate design notes and individual JES job receipts are in [the archive](../archive/README.md). Detailed BCPLIO receipts are in [evidence](../evidence/README.md).

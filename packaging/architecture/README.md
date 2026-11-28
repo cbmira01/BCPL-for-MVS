@@ -7,6 +7,7 @@
 - [Regression suite separation discussion](regression-suite-separation-20261103.md) — proposed independent bootstrap, extension and future BSL test reporting while preserving acceptance evidence
 - [Diátaxis and semantic documentation refactoring discussion](documentation-refactoring-discussion-20261124.md) — proposed direction, not an approved implementation plan.
 - [Hosted MVS integration discussion and deferred direction](hosted-mvs-integration-discussion-20261127.md) — owner-deferred GitHub Actions integration; feasibility, lifecycle, storage, security and operational control requirements.
+- [Post-Documentation Refactoring development direction](post-documentation-refactoring-development-direction-20261128.md) — owner-approved priorities, deferred work and guarded-controller retirement direction.
 - [Global Number Registry](global-number-registry.md) — historical and project global-vector assignments
 - [Runtime contract v1](runtime-contract-v1.md) — native runtime interfaces and invariants
 - [CG370 architecture notes](cg370-architecture-notes.md) — historical System/370 generator, code generation and bootstrap distinctions
