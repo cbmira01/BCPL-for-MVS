@@ -67,11 +67,15 @@ RPTSKIP  CR    2,3
          B     RPTSKIP
 RPTHEAD  LR    4,3
          SR    4,2
-         C     4,=F'19'
+         C     4,=F'16'
          BL    RPTREAD
-         CLC   0(19,2),=CL19'EXECUTION CYCLES = '
+         CLC   0(16,2),=CL16'EXECUTION CYCLES'
          BNE   RPTREAD
          CLI   RPTCNT,0
+         BNE   RPTBAD
+         C     4,=F'19'
+         BL    RPTBAD
+         CLC   0(19,2),=CL19'EXECUTION CYCLES = '
          BNE   RPTBAD
          LA    2,19(2)
          CR    2,3

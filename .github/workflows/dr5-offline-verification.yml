@@ -5,6 +5,7 @@ name: DR.5 offline verification
 # Repeat after the focused DEBUGINT private BCPLMAIN link-deck correction.
 # Repeat after BLIB workspace and native compiler-completion gate changes.
 # Include the private positive/negative BLIB reconstruction tests.
+# Check inline gate source hygiene and malformed completion rejection.
 on:
   workflow_dispatch:
   push:

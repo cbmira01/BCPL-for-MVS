@@ -22,6 +22,17 @@ class BlibBuildTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 m["deck_for"](malformed, ["//DR5BLPOS JOB (BCPL),'TEST'"])
 
+    def test_inline_assembler_source_hygiene(self):
+        body = m["JCL"].read_text("ascii")
+        source = body.split("//SYSIN    DD *\n", 1)[1].split("\n/*\n", 1)[0]
+        checker = runpy.run_path(str(ROOT / "tools/checks/check-asm-source.py"))
+        self.assertEqual(checker["check_symbol_definitions"](m["JCL"], source), [])
+        self.assertTrue(all(len(row) <= 71 and row.isascii() and
+                            "\t" not in row and not row.endswith(" ")
+                            for row in source.splitlines()))
+        self.assertIn("CLC   0(16,2),=CL16'EXECUTION CYCLES'", source)
+        self.assertIn("CLC   0(10,2),=CL10', CODE = 0'", source)
+
     def evidence(self, negative):
         name = "DR5BLNEG" if negative else "DR5BLPOS"
         steps = m["STEPS"][:5] if negative else m["STEPS"]
