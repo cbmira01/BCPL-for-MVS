@@ -5,7 +5,7 @@
 **March:** DR.5 — Validation and Reconciliation  
 **Date:** 27 November 2026 EST  
 **Reviewed source:** `395bdc4ced06692ddd22996b18a6f9e61fc2d5f9`  
-**Disposition:** Scoped offline PASS; complete offline gate and target evidence pending.
+**Disposition:** Final offline PASS (see final section); remaining target evidence pending.
 
 The [BCX transfer](dr5-selection-macro-authority-transfer-acceptance-20261127.md) completes the planned public reference authority transfers, with retained qualifications. Owner directed offline verification followed by remaining MVS operations.
 
@@ -41,3 +41,23 @@ No new code, oracles, release bytes or MVS state changed. No DR.5 closure or DR.
 At `3056c4e12f2ca37b78a5383b74684f4a28f51014` the operator preflight completed git pull RC0, then hung in unit discovery for approximately one hour. Operator interrupted with Ctrl+C; log ~/dr5-verify.hKmsR1ll/unit-tests.log identifies test_reconstruction_run.RunnerTests.test_clean_workarea_standalone_requires_terminal blocked in subprocess.communicate. Process listing after interruption contained no matching surviving unittest/tool process other than grep. No successful full offline result or DEBUGINT invocation was reported. Preserve the original log. The test inherited terminal stdin despite captured stdout/stderr; it was invoking the real workarea cleaner against the checkout and could prompt for DELETE. Never supply that confirmation to a test. This is a host test isolation defect, not a target defect.
 
 Corrected the cleanup test to use a valid disposable Git repository with real cleaner/contract copies, a tracked marker, a sentinel, DEVNULL stdin, explicit 30-second subprocess bounds, exact RC2/interactive-terminal diagnostic and sentinel preservation checks. Related reconstruction CLI tests explicitly disconnect input for noninteractive cases and bound subprocesses (30 seconds, 60 for mocked rebuild workflows); intentional synthetic PTY tests still receive their scripted answers. No production tool behavior or MVS code changed. Local independent guard smoke used the exact cleaner blob 8369653e30175f2de5806eb1ce5157c7507cbcfa, verified by git hash-object, in a temporary Git repository with scope/deletion functions replaced by assertion-raising stubs: observed RC2, expected refusal and sentinel unchanged. This is not execution of the complete changed test modules. Local DNS still blocks full checkout. Retry only offline preflight with stdin disconnected, verbose log, visible progress and bounded timeout; proceed to DEBUGINT only after all gates pass and no prior write marker. No destructive reconstruction before receipt review.
+
+
+## Final offline verification after BLIBBLD correction — 27 November 2026 EST
+
+**Verified tested revision:** `c5b56cef0e2f9aa830a9b49631868cbc5d380b02`.  
+**Evidence:** [GitHub Actions run 46087048256](https://github.com/cbmira01/BCPL-for-MVS/actions/runs/46087048256), [offline job 140798947580](https://github.com/cbmira01/BCPL-for-MVS/actions/runs/46087048256/job/140798947580). The assistant independently retrieved the completed successful job and its logs; checkout and test revision agree. Execution at 00:17 UTC on 28 November corresponds to 19:17 EST on 27 November.
+
+| Gate | Actual result | Process RC |
+| --- | --- | --- |
+| Checker unit tests | 963 tests, OK | 0 |
+| Release unit tests | 38 tests, OK | 0 |
+| Project regression inventory | PROJECT SUITE CHECK: PASS | 0 |
+| Bootstrap inputs | READY: 18 repository input paths present; no files written | 0 |
+| DEBUGINT preflight | DR.5 DEBUGINT CHECK PASS (no MVS) | 0 |
+
+Actual final summary: OFFLINE GATE FAILURES: 0. The runner also emitted a checkout-action Node.js deprecation warning; it did not fail any gate. This supersedes the earlier incomplete offline status and operator-side offline test assignment. GitHub Actions remains approved for offline verification only; hosted Docker/Hercules/MVS testing is deferred until Documentation Refactoring closes.
+
+The [first clean-room attempt and BLIB correction record](dr5-clean-room-first-attempt-20261127.md) establishes the target failure and owner-approved correction scope. Reviewed the committed [private BLIB verification driver](../../../tools/checks/run-dr5-blib-build-verification.py) and [production BLIBBLD JCL](../../../bootstrap-toolchain/jcl/blibbld.jcl). The driver substitutes a temporary FB80 object destination (NEW,DELETE), checks the six all-prior-step zero guards, and requires compiler-report validation before RAW OPEN. DR5BLPOS uses P2000 and requires all seven steps RC0, interpreted CODE0 and two zero IFOX severity records. DR5BLNEG uses P30000 and requires interpreted CODE8 with COMP RC0, FIXASM RC8, both subsequent steps explicitly flushed, no ABEND, and one zero IFOX severity record. These are acceptance requirements, not observed target results.
+
+Next execute the private driver once on the dedicated target, preserve complete private receipts outside workarea (authenticated decks may contain credentials), and reconcile any failure before retry. No installed object replacement is authorized. DEBUGINT native verification is already accepted at the six-record scope. After successful BLIB verification, obtain fresh destructive reconstruction authorization and conduct three distinct gates in order: unattended batch clean-room reconstruction, independent installed BOOT_OBJ/EXT_OBJ inventories, and consolidated eight-suite production regression with explicit device authorization (219 PASS, one expected SKIP 083, zero FAIL/BLOCKED). Review each gate before the next. Preserve the original failed reconstruction evidence. No DR.5 closure, DR.6 activation, new release, or native acceptance of the BLIB gate is claimed.
