@@ -4,6 +4,7 @@ name: DR.5 offline verification
 # Repeat the five gates after the numbered QSAM JOB-card assertion correction.
 # Repeat after the focused DEBUGINT private BCPLMAIN link-deck correction.
 # Repeat after BLIB workspace and native compiler-completion gate changes.
+# Include the private positive/negative BLIB reconstruction tests.
 on:
   workflow_dispatch:
   push:
