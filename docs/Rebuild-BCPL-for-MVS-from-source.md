@@ -106,7 +106,7 @@ tools/tests/run-project-regressions \
     --progress
 ```
 
-A successful campaign reports `PROJECT REGRESSION RESULT: PASS`. The last accepted campaign recorded **208 PASS, 0 FAIL, 0 BLOCKED and 1 expected SKIP (083)**. Check the results of your own run; do not substitute this earlier result. The coordinator saves a `summary.json` and supporting logs under `workarea/project-regressions/`.
+A successful campaign reports `PROJECT REGRESSION RESULT: PASS`. The historical CO.6 campaign recorded 208 PASS and one expected SKIP. The [final DR.5 consolidated campaign](../packaging/milestones/documentation-refactoring/dr5-final-evidence-reconciliation-and-closure-recommendation-20261127.md) recorded **219 PASS, 0 FAIL, 0 BLOCKED and 1 expected SKIP (083)** (220 selected). Check the results of your own run; do not substitute this earlier result. The coordinator saves a `summary.json` and supporting logs under `workarea/project-regressions/`.
 
 ## If something fails
 

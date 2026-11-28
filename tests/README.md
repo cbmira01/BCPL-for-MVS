@@ -181,8 +181,8 @@ The owner-reported JOBs 798/801/802 and following 212-PASS production
 campaign establish the corrected installed registrar at their tested
 scope; see [DR.5 evidence](../packaging/milestones/documentation-refactoring/dr2-extension-manual-migration-20261125.md).
 First numbered production-profile execution passed all 17 Runtime Extensions
-cases (146–158 and 194–197). The preceding complete eight-suite campaign
-remains 212 PASS and one expected SKIP; the then-expanded consolidated
+cases (146–158 and 194–197). At that time the preceding complete eight-suite campaign
+had 212 PASS and one expected SKIP; the then-expanded consolidated
 target was 216 PASS, 1 expected SKIP 083, 0 FAIL/BLOCKED (217 selected).
 The two reported runs account for all supported identities but are not one
 expanded campaign.
@@ -217,3 +217,7 @@ but failed the host registrar-message parser. The parser is corrected;
 retained-evidence automated replay passed at e9f0f7380fcf without a new JES job. All 17 QSAM cases have accepted evidence across separate runs. New inventory 201 native cases;
 complete eight-suite target 219 PASS and one expected SKIP (220 selected).
 Earlier reported counts remain historical, not expanded passing results.
+
+## DR.5 — Final consolidated production campaign
+
+The [final DR.5 evidence reconciliation](../packaging/milestones/documentation-refactoring/dr5-final-evidence-reconciliation-and-closure-recommendation-20261127.md) records the eight-suite production campaign at `a70a424567d670ca8ff60d29da1663903663d09d`: 219 PASS, 0 FAIL, 1 expected SKIP (083), 0 BLOCKED (220 selected), including authorized device cases 175–176 and private cases 198–200. Historical separate runs and failures remain unchanged. This is development-target verification, not RC4 native certification.

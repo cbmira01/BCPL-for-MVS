@@ -29,7 +29,7 @@
 
 - [Reference for BCPL Compilers](product/Reference-for-BCPL-Compilers.md) — normative for supported compiler interfaces.
 
-- [Reference for the Cambridge Runtime and Libraries](product/Reference-for-the-Cambridge-Runtime-and-Libraries.md) — normative within the approved public native and MR10 contracts; detailed DEBUGINT verification pending.
+- [Reference for the Cambridge Runtime and Libraries](product/Reference-for-the-Cambridge-Runtime-and-Libraries.md) — normative within the approved public native and MR10 contracts; focused DEBUGINT native correction verified; detailed contract remains qualified.
 
 - [Reference for System Extensions](product/Reference-for-System-Extensions.md) — normative for approved QUERY, registration/finalization, selection macros and package APIs.
 
@@ -71,7 +71,7 @@
 
 - **MVS programming environment:** [Consolidated explanation](project/Explanation-of-the-MVS-Programming-Environment.md), [original programmer orientation briefings](#programmer-orientation-briefings).
 
-All thirteen approved product manuals and five approved project manuals are available. The five reference manuals have individual approved normative scopes; consult their status statements and the [Documentation Refactoring milestone](../packaging/milestones/documentation-refactoring/milestone-documentation-refactoring.md). Untransferred contracts, registry, configuration, manifests, independent oracles, canonical procedures and frozen release documentation retain their respective authority. Original engineering records and orientation briefings remain available. DR.5 verification and final closure remain pending.
+All thirteen approved product manuals and five approved project manuals are available. The five reference manuals have individual approved normative scopes; consult their status statements and the [Documentation Refactoring milestone](../packaging/milestones/documentation-refactoring/milestone-documentation-refactoring.md). Untransferred contracts, registry, configuration, manifests, independent oracles, canonical procedures and frozen release documentation retain their respective authority. Original engineering records and orientation briefings remain available. [DR.5 final verification and qualified closure recommendation](../packaging/milestones/documentation-refactoring/dr5-final-evidence-reconciliation-and-closure-recommendation-20261127.md) records completion of the required offline and target gates at their accepted scope; formal owner acceptance remains pending.
 
 ## Programmer orientation briefings
 
