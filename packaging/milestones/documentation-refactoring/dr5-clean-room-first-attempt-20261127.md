@@ -73,3 +73,16 @@ Owner explicitly authorized a new destructive reconstruction from Step 0 using b
 Observed: Guide Step 9 RC0 (42 seconds); final EXT_OBJ listing HERC02.BCPL.EXT.OBJ contains BCPLDEMO, BCPLQSAM and BCPLTIME; listing RC0; REBUILD COMMANDS COMPLETED; total elapsed 8m 05s, rebuild RC0 and log RC0. Protected evidence path: mvs-state/dr5-clean-room-second/rebuild.log. Previous failed attempt and private verification receipts remain separate. Under the reviewed routine driver's stop-on-error stage sequence, this establishes successful execution through all required stages, including corrected BLIBBLD, the built-in BOOT_OBJ inventory check, installed coroutine verification and extension installation jobs. The full retained rebuild log and individual JES reports have not yet been independently reviewed by the assistant; obtain the stage/step and payload evidence excerpts for reconciliation before final march closure. No independent Gate 2 inventory or Gate 3 regression acceptance is inferred from this result.
 
 Gate 1 is accepted at the reported routine-driver completion scope. Next conduct Gate 2 as fresh MVS LISTDS MEMBERS inquiries with the existing strict exact-set inventory oracle for both BOOT_OBJ and EXT_OBJ; retain the listings outside workarea. Gate 3 remains separate and requires explicit device authorization. No guarded-controller acceptance, release production, DR.5 closure or DR.6 activation is claimed.
+
+## Gate 2 — Independent installed object inventories — PASS
+
+Owner supplied actual console output from two fresh MVS LISTDS MEMBERS inquiries at revision 34899a7c4e3460cdbe607b454ae3c35d4fc58a45 (Git pull RC0), following Gate 1 on the same reconstructed target. The intervening revision records only Gate 1 evidence. Both listings were separately checked by the existing strict inventory_members and required_inventory functions in tools/reconstruction/verify.py.
+
+| Library | Actual exact members | Inquiry / log / oracle RC |
+| --- | --- | --- |
+| HERC02.BCPL.BOOT.OBJ | BCPLAPT, BCPLBYTE, BCPLCO, BCPLIO, BCPLMAIN, BCPLMEM, BCPLREG, BCPLRGS, BLIB, COROUTIN | 0 / 0 / 0 |
+| HERC02.BCPL.EXT.OBJ | BCPLDEMO, BCPLQSAM, BCPLTIME | 0 / 0 / 0 |
+
+Observed BOOT_OBJ INVENTORY PASS: 10 exact members; EXT_OBJ INVENTORY PASS: 3 exact members. No missing, unexpected or duplicate members. Listings retained in mvs-state/dr5-clean-room-second/inventory/BOOT_OBJ.txt and EXT_OBJ.txt. This accepts Gate 2 at exact directory membership scope; neither byte identity nor executable behavior is inferred from membership. No installed object modification was performed.
+
+Gate 3, the separate consolidated eight-suite production regression, is the sole remaining target campaign. Obtain explicit printer/punch device authorization before invocation with --allow-device. Expected 219 PASS, one expected SKIP (083), 0 FAIL and 0 BLOCKED. Retain Gate 1 and Gate 2 receipts and reconcile outstanding rebuild payload evidence before formal DR.5 closure. DR.6 remains NOT STARTED.
