@@ -22,7 +22,7 @@ EXPECTED_STEPS: dict[str, tuple[str, ...]] = {
     'IC19BLD': ('ASM', 'LKED', 'SAVEOBJ'),
     'CAMBBLD': (*CAMBRIDGE_PHASES, 'PACKCOMP'),
     'BLDBMAIN': (*ASM_CORE, *PUT_CORE),
-    'BLIBBLD': ('COMP', 'PREPASM', 'PREPLK', 'FIXASM', 'ASMBLIB', 'INSTALL'),
+    'BLIBBLD': ('COMP', 'COMPRPT', 'PREPASM', 'PREPLK', 'FIXASM', 'ASMBLIB', 'INSTALL'),
     'BCPLDEMO': ('ASMDEMO', 'PUTDEMO', 'READBACK', 'VERIFY'),
     'BCPLTIME': ('ASMTIME', 'PUTTIME', 'READBACK', 'VERIFY'),
     'BCPLQSAM': ('ASMQ', 'PUTQSAM', 'READBACK', 'VERIFY'),
@@ -33,7 +33,8 @@ EXPECTED_PROGRAMS = {
     'IC19BLD': {'ASM': 'IFOX00', 'LKED': 'IEWL', 'SAVEOBJ': 'IEBGENER'},
     'CAMBBLD': {**{x: 'ICINT19' for x in CAMBRIDGE_PHASES}, 'PACKCOMP': 'IEBGENER'},
     'BLDBMAIN': {**{x: 'IFOX00' for x in ASM_CORE}, **{x: 'IEBGENER' for x in PUT_CORE}},
-    'BLIBBLD': {'COMP': 'ICINT19', 'PREPASM': 'IFOX00', 'PREPLK': 'IEWL',
+    'BLIBBLD': {'COMP': 'ICINT19', 'COMPRPT': 'IEBGENER',
+                'PREPASM': 'IFOX00', 'PREPLK': 'IEWL',
                 'ASMBLIB': 'IFOX00', 'INSTALL': 'IEBGENER'},
     'BCPLDEMO': {'ASMDEMO': 'IFOX00', 'PUTDEMO': 'IEBGENER',
                  'READBACK': 'IEBGENER', 'VERIFY': 'IEBCOMPR'},
@@ -113,6 +114,11 @@ def verify_payload(member: str, payload_number: int, launcher_number: int,
     severities = [int(x) for x in re.findall(r'\bHIGHEST SEVERITY WAS\s+(\d+)\b', full_report, re.I)]
     if len(severities) != expected_assemblies or any(n != 0 for n in severities):
         raise VerificationError(f'{member}: assembler severity evidence incomplete or nonzero')
+    if member == 'BLIBBLD':
+        completions = re.findall(r'(?m)^[ \t]*EXECUTION CYCLES[^\n]*', full_report)
+        if len(completions) != 1 or not re.fullmatch(
+                r'[ \t]*EXECUTION CYCLES = [0-9]+, CODE = 0[ \t\r]*', completions[0]):
+            raise VerificationError('BLIBBLD: exact successful compiler completion missing')
     count = len(CODE_RECORD.findall(full_report))
     if member in CODE_COUNTS and count != CODE_COUNTS[member]:
         raise VerificationError(f'{member}: expected {CODE_COUNTS[member]} interpreted CODE=0 records; got {count}')

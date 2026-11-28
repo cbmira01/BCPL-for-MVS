@@ -103,7 +103,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(verify.EXPECTED_STEPS['IC19BLD'], ('ASM', 'LKED', 'SAVEOBJ'))
         self.assertEqual(len(verify.EXPECTED_STEPS['CAMBBLD']), 23)
         self.assertEqual(len(verify.EXPECTED_STEPS['BLDBMAIN']), 14)
-        self.assertEqual(len(verify.EXPECTED_STEPS['BLIBBLD']), 6)
+        self.assertEqual(len(verify.EXPECTED_STEPS['BLIBBLD']), 7)
 
     def test_required_object_inventory(self):
         verify.required_inventory('BOOT_OBJ', verify.RUNTIME_MEMBERS)

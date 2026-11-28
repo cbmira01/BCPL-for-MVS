@@ -24,7 +24,9 @@ def fixture(name: str, *, omit=None, wrong_rc=None, wrong_program=None,
     if asm_severity:
         lines.extend(['', 'Assembler:', '  Highest severity:   0'])
     count = v.CODE_COUNTS.get(name, 0) if interpreter_count is None else interpreter_count
-    report = ('INTERPRETER CODE=0\n' * count) + ('HIGHEST SEVERITY WAS 0\n' * v.ASSEMBLER_COUNTS.get(name, 0)) + '\nIEBCOMPR READBACK COMPLETE\n'
+    completion = (' EXECUTION CYCLES = 9515157, CODE = 0\n' if name == 'BLIBBLD'
+                  else 'INTERPRETER CODE=0\n')
+    report = (completion * count) + ('HIGHEST SEVERITY WAS 0\n' * v.ASSEMBLER_COUNTS.get(name, 0)) + '\nIEBCOMPR READBACK COMPLETE\n'
     return '\n'.join(lines) + '\n', report
 
 
@@ -56,6 +58,18 @@ class PayloadTests(unittest.TestCase):
         with self.assertRaisesRegex(v.VerificationError, '22'):
             v.verify_payload('CAMBBLD', 888, 777, summary, report.replace(
                 'EXECUTION CYCLES = 3290, CODE = 0\n', '', 1))
+
+    def test_blib_compiler_completion_is_fail_closed(self):
+        summary, report = fixture('BLIBBLD')
+        self.assertEqual(v.verify_payload('BLIBBLD', 888, 777, summary, report).interpreter_codes, 1)
+        for bad in (report.replace('CODE = 0', 'CODE = 8'),
+                    report.replace('CODE = 0', 'CODE = 00'),
+                    report.replace('CODE = 0', 'CODE = 0 EXTRA'),
+                    report + ' EXECUTION CYCLES = 1, CODE = 8\n',
+                    report + ' EXECUTION CYCLES = 1, CODE = 0\n',
+                    report.replace(' EXECUTION CYCLES = 9515157, CODE = 0\n', '')):
+            with self.subTest(bad=bad), self.assertRaises(v.VerificationError):
+                v.verify_payload('BLIBBLD', 888, 777, summary, bad)
 
     def test_missing_step_is_rejected_even_with_success_and_highest_zero(self):
         for name in v.EXPECTED_STEPS:
