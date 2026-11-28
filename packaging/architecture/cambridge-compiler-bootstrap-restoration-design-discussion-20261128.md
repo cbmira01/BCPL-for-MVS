@@ -53,7 +53,7 @@ Investigate whether one library object with multiple entry points or separate li
 
 Preserve ordinary BLIB behavior.
 
-The implementation architecture remains undecided. Obtain owner approval following technical investigation.
+The owner approved separate BLIB and COMPBLIB build variants from common source on 28 November 2026. See the [CBR.0 COMPBLIB architecture](../milestones/cambridge-compiler-bootstrap-restoration/cbr0-compblib-architecture-20261128.md) for the controlling refinement, historical evidence and deferred implementation decisions. Prefer a common Core Runtime with link-edit-time library selection; detailed binding and ABEND dispatch design remain gated in CBR.4.
 
 ### Decision 3 — Both native object-generation pathways
 
